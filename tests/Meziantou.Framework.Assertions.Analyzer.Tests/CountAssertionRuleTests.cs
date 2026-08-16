@@ -633,7 +633,7 @@ public sealed class CountAssertionRuleTests : AssertionsAnalyzerTestBase
             {
                 public static void M(int[] collection)
                 {
-                    Assert.False({|MFAS0005:collection.Length|} == 0);
+                    Assert.False({|MFAS0004:collection.Length|} == 0);
                 }
             }
             """;
@@ -647,7 +647,7 @@ public sealed class CountAssertionRuleTests : AssertionsAnalyzerTestBase
             {
                 public static void M(int[] collection)
                 {
-                    Assert.DoesNotHaveCount(0, collection);
+                    Assert.NotEmpty(collection);
                 }
             }
             """;
@@ -1018,7 +1018,7 @@ public sealed class CountAssertionRuleTests : AssertionsAnalyzerTestBase
                     Assert.False(collection.Count() <= 10L);
                     Assert.False(collection.Count() > 10L);
                     Assert.False(collection.Count() >= 10L);
-                    Assert.NotEqual(10, collection.Count());
+                    Assert.NotEqual(10L, collection.Count());
                 }
             }
             """;
@@ -1061,5 +1061,157 @@ public sealed class CountAssertionRuleTests : AssertionsAnalyzerTestBase
             """;
 
         await CreateAnalyzerTest<CountAssertionAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Theory]
+    [InlineData("Assert.NotEqual(0, {|MFAS0004:collection.Count|});", "Assert.NotEmpty(collection);")]
+    [InlineData("Assert.NotEqual(3, {|MFAS0005:collection.Count|});", "Assert.DoesNotHaveCount(3, collection);")]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertNotEqualCount(string assertion, string fixedAssertion)
+    {
+        var source = $$"""
+            using System.Collections.Generic;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection)
+                {
+                    {{assertion}}
+                }
+            }
+            """;
+
+        var fixedSource = $$"""
+            using System.Collections.Generic;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection)
+                {
+                    {{fixedAssertion}}
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<CountAssertionAnalyzerType, CountAssertionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Theory]
+    [InlineData("Assert.True({|MFAS0004:collection.Count|} > 0);", "Assert.NotEmpty(collection);")]
+    [InlineData("Assert.True({|MFAS0004:collection.Count|} >= 1);", "Assert.NotEmpty(collection);")]
+    [InlineData("Assert.True({|MFAS0004:collection.Count|} < 1);", "Assert.Empty(collection);")]
+    [InlineData("Assert.True({|MFAS0004:collection.Count|} <= 0);", "Assert.Empty(collection);")]
+    [InlineData("Assert.True({|MFAS0004:collection.Count|} != 0);", "Assert.NotEmpty(collection);")]
+    [InlineData("Assert.False({|MFAS0004:collection.Count|} > 0);", "Assert.Empty(collection);")]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForEmptinessEquivalentComparison(string assertion, string fixedAssertion)
+    {
+        var source = $$"""
+            using System.Collections.Generic;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection)
+                {
+                    {{assertion}}
+                }
+            }
+            """;
+
+        var fixedSource = $$"""
+            using System.Collections.Generic;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection)
+                {
+                    {{fixedAssertion}}
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<CountAssertionAnalyzerType, CountAssertionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForStringLength()
+    {
+        var source = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.Equal(0, {|MFAS0004:value.Length|});
+                    Assert.Equal(3, {|MFAS0005:value.Length|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.Empty(value);
+                    Assert.HasCount(3, value);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<CountAssertionAnalyzerType, CountAssertionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForImmutableArrayLength()
+    {
+        var source = """
+            using System.Collections.Immutable;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(ImmutableArray<int> collection)
+                {
+                    Assert.Equal(0, {|MFAS0004:collection.Length|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.Collections.Immutable;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(ImmutableArray<int> collection)
+                {
+                    Assert.Empty(collection);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<CountAssertionAnalyzerType, CountAssertionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 }

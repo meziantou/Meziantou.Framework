@@ -33,6 +33,7 @@ Assertion helpers for .NET tests.
 - `Matches`: Asserts text matches a regular expression.
 - `DoesNotMatch`: Asserts text does not match a regular expression.
 - `All`: Asserts all items in a collection satisfy an assertion.
+- `DoesNotAll`: Asserts at least one item in a collection does not satisfy a predicate.
 - `Collection`: Asserts collection items match a list of inspectors.
 - `Distinct`: Asserts all items in a sequence are distinct.
 - `NotDistinct`: Asserts a sequence contains duplicate items.
@@ -86,7 +87,7 @@ The package ships analyzers and code fixes to help write clearer assertions.
 | `MFAS0001` | Assertions | Pass the expected value before the actual value | Warning | ✔️ |
 | `MFAS0002` | Assertions | Use Assert.Same instead of Assert.ReferenceEquals | Error | ✔️ |
 | `MFAS0003` | Assertions | Do not use Assert.IsType with static or abstract types | Error | ✔️ |
-| `MFAS0004` | Assertions | Use Assert.Empty for zero count checks | Warning | ✔️ |
+| `MFAS0004` | Assertions | Use Assert.Empty or Assert.NotEmpty for zero count checks | Warning | ✔️ |
 | `MFAS0005` | Assertions | Use specialized count assertions | Warning | ✔️ |
 | `MFAS0006` | Assertions | Use Assert.Null for null comparisons | Warning | ✔️ |
 | `MFAS0007` | Assertions | Use Assert.NotNull for null comparisons | Warning | ✔️ |
@@ -110,4 +111,28 @@ The package ships analyzers and code fixes to help write clearer assertions.
 | `MFAS0025` | Assertions | Use Assert.DoesNotContain instead of Assert.False(collection.Any(...)) | Warning | ✔️ |
 | `MFAS0026` | Assertions | Use Assert.All instead of Assert.True(collection.All(...)) | Warning | ✔️ |
 | `MFAS0027` | Assertions | Use Assert.DoesNotAll instead of Assert.False(collection.All(...)) | Warning | ✔️ |
+| `MFAS0028` | Assertions | Use Assert.NotEmpty instead of Assert.True(collection.Any()) | Warning | ✔️ |
+| `MFAS0029` | Assertions | Use Assert.Empty instead of Assert.False(collection.Any()) | Warning | ✔️ |
+| `MFAS0030` | Assertions | Use Assert.Empty or Assert.NotEmpty instead of a count assertion | Warning | ✔️ |
+| `MFAS0031` | Assertions | Use Assert.Equal instead of Assert.True(a == b) | Warning | ✔️ |
+| `MFAS0032` | Assertions | Use Assert.NotEqual instead of Assert.True(a != b) | Warning | ✔️ |
+| `MFAS0033` | Assertions | Use Assert.Equal instead of Assert.True(a.Equals(b)) | Warning | ✔️ |
+| `MFAS0034` | Assertions | Use Assert.NotEqual instead of Assert.False(a.Equals(b)) | Warning | ✔️ |
+| `MFAS0035` | Assertions | Use Assert.Equal instead of Assert.True(actual.SequenceEqual(expected)) | Warning | ✔️ |
+| `MFAS0036` | Assertions | Use Assert.NotEqual instead of Assert.False(actual.SequenceEqual(expected)) | Warning | ✔️ |
+| `MFAS0037` | Assertions | Use Assert.Same instead of Assert.True(ReferenceEquals(a, b)) | Warning | ✔️ |
+| `MFAS0038` | Assertions | Use Assert.NotSame instead of Assert.False(ReferenceEquals(a, b)) | Warning | ✔️ |
+| `MFAS0039` | Assertions | Use Assert.InRange instead of Assert.True(low <= x && x <= high) | Warning | ✔️ |
+| `MFAS0040` | Assertions | Use Assert.NotInRange instead of Assert.False(low <= x && x <= high) | Warning | ✔️ |
+| `MFAS0041` | Assertions | Use Assert.ProperSubset instead of Assert.True(set.IsProperSubsetOf(other)) | Warning | ✔️ |
+| `MFAS0042` | Assertions | Use Assert.NotProperSubset instead of Assert.False(set.IsProperSubsetOf(other)) | Warning | ✔️ |
+| `MFAS0043` | Assertions | Use Assert.ProperSuperset instead of Assert.True(set.IsProperSupersetOf(other)) | Warning | ✔️ |
+| `MFAS0044` | Assertions | Use Assert.NotProperSuperset instead of Assert.False(set.IsProperSupersetOf(other)) | Warning | ✔️ |
+| `MFAS0045` | Assertions | Use Assert.False instead of Assert.True(!condition) | Warning | ✔️ |
+| `MFAS0046` | Assertions | Use Assert.IsType instead of Assert.True(x.GetType() == typeof(T)) | Warning | ✔️ |
+| `MFAS0047` | Assertions | Use Assert.IsNotType instead of Assert.False(x.GetType() == typeof(T)) | Warning | ✔️ |
+| `MFAS0048` | Assertions | Await assertions that return a Task | Error | ✔️ |
+| `MFAS0049` | Assertions | Await the task passed to an assertion | Error | ✔️ |
+| `MFAS0050` | Assertions | Assertion always produces the same result | Error | ✔️ |
+| `MFAS0051` | Assertions | Use Assert.Fail instead of an assertion that always fails | Warning | ✔️ |
 <!-- analyzer-rules -->

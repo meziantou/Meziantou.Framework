@@ -16,29 +16,28 @@ internal static class AssertionMethodSelectionAnalyzerCommon
 
     internal static bool TryGetNullCheckMatch(IInvocationOperation invocationOperation, INamedTypeSymbol assertType, out NullCheckMatch match)
     {
-        if (!IsAssertInvocation(invocationOperation, assertType, "True"))
+        if (!TryGetAssertCondition(invocationOperation, assertType, out var conditionOperation, out var conditionExpectedToBeFalse))
         {
             match = default;
             return false;
         }
 
-        var conditionArgument = invocationOperation.Arguments.FirstOrDefault(argument => argument.Parameter?.Name == "condition");
-        if (conditionArgument is null)
+        if (TryGetNullCheckMatchFromBinaryOperation(conditionOperation, out match) ||
+            TryGetNullCheckMatchFromPattern(conditionOperation, out match) ||
+            TryGetNullCheckMatchFromHasValue(conditionOperation, out match))
         {
-            match = default;
-            return false;
+            if (conditionExpectedToBeFalse)
+                match = match with { AssertionMethodName = NegateNullAssertionMethodName(match.AssertionMethodName) };
+
+            return true;
         }
-
-        var conditionOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(conditionArgument.Value);
-        if (TryGetNullCheckMatchFromBinaryOperation(conditionOperation, out match))
-            return true;
-
-        if (TryGetNullCheckMatchFromPattern(conditionOperation, out match))
-            return true;
 
         match = default;
         return false;
     }
+
+    private static string NegateNullAssertionMethodName(string assertionMethodName)
+        => assertionMethodName == NullAssertionMethodName ? NotNullAssertionMethodName : NullAssertionMethodName;
 
     internal static bool TryGetNullNotNullValueTypeMatch(
         IInvocationOperation invocationOperation,
@@ -234,6 +233,19 @@ internal static class AssertionMethodSelectionAnalyzerCommon
         if (IsNotNullPattern(isPatternOperation.Pattern))
         {
             match = new NullCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(isPatternOperation.Value), NotNullAssertionMethodName);
+            return true;
+        }
+
+        match = default;
+        return false;
+    }
+
+    private static bool TryGetNullCheckMatchFromHasValue(IOperation conditionOperation, out NullCheckMatch match)
+    {
+        if (conditionOperation is IPropertyReferenceOperation { Property.Name: "HasValue", Instance: { } instance } &&
+            instance.Type?.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+        {
+            match = new NullCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(instance), NotNullAssertionMethodName);
             return true;
         }
 

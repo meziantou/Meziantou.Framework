@@ -7,8 +7,6 @@ public sealed class ConstantAssertionRuleTests : AssertionsAnalyzerTestBase
     [Theory]
     [InlineData("Assert.True(true)")]
     [InlineData("Assert.False(false)")]
-    [InlineData("Assert.Equal(value, value)")]
-    [InlineData("Assert.NotEqual(value, value)")]
     [InlineData("Assert.Same(reference, reference)")]
     [InlineData("Assert.NotSame(reference, reference)")]
     [InlineData("Assert.Equivalent(reference, reference)")]
@@ -50,6 +48,11 @@ public sealed class ConstantAssertionRuleTests : AssertionsAnalyzerTestBase
                     Assert.Equal(value, other);
                     Assert.Same(reference, otherReference);
 
+                    // Equal and NotEqual compare through the type's own Equals, so comparing a value with
+                    // itself is a reflexivity assertion rather than a constant
+                    Assert.Equal(value, value);
+                    Assert.NotEqual(value, value);
+
                     // Assert.True(false) is reported by MFAS0051 instead
                     Assert.True(false);
                     Assert.False(true);
@@ -66,10 +69,10 @@ public sealed class ConstantAssertionRuleTests : AssertionsAnalyzerTestBase
     }
 
     [Fact]
-    public async Task Analyzer_DoesNotReportDiagnostic_ForReflexivityAssertionOnCustomType()
+    public async Task Analyzer_DoesNotReportDiagnostic_ForReflexivityAssertion()
     {
-        // Assert.Equal goes through EqualityComparer<T>.Default and therefore runs Version.Equals, so this is a
-        // reflexivity assertion that fails when that implementation is wrong. Assert.Same never runs user code.
+        // Equal and NotEqual go through EqualityComparer<T>.Default and therefore run the type's own Equals,
+        // so these assert reflexivity. Same compares references and Equivalent compares structurally.
         var source = """
             using Meziantou.Framework.Assertions;
 
@@ -87,10 +90,11 @@ public sealed class ConstantAssertionRuleTests : AssertionsAnalyzerTestBase
                 {
                     Assert.Equal(left, left);
                     Assert.NotEqual(left, left);
+                    Assert.Equal(number, number);
+                    Assert.NotEqual(number, number);
 
                     {|MFAS0050:Assert.Equivalent(left, left)|};
                     {|MFAS0050:Assert.Same(left, left)|};
-                    {|MFAS0050:Assert.Equal(number, number)|};
                 }
             }
             """;
@@ -108,7 +112,7 @@ public sealed class ConstantAssertionRuleTests : AssertionsAnalyzerTestBase
 
             public sealed class Box
             {
-                public int Value;
+                public object Value = new();
             }
 
             public static class TestClass
@@ -118,7 +122,7 @@ public sealed class ConstantAssertionRuleTests : AssertionsAnalyzerTestBase
                 public static void M()
                 {
                     // Each call returns a different box, so this is not a comparison of a value with itself
-                    Assert.Equal(Next().Value, Next().Value);
+                    Assert.Same(Next().Value, Next().Value);
                 }
 
                 private static Box Next() => new Box { Value = Counter++ };
@@ -138,13 +142,13 @@ public sealed class ConstantAssertionRuleTests : AssertionsAnalyzerTestBase
 
             public sealed class Box
             {
-                public int Value;
+                public object Value = new();
 
                 public void M(Box other)
                 {
-                    {|MFAS0050:Assert.Equal(this.Value, this.Value)|};
-                    {|MFAS0050:Assert.Equal(other.Value, other.Value)|};
-                    Assert.Equal(this.Value, other.Value);
+                    {|MFAS0050:Assert.Same(this.Value, this.Value)|};
+                    {|MFAS0050:Assert.Same(other.Value, other.Value)|};
+                    Assert.Same(this.Value, other.Value);
                 }
             }
             """;

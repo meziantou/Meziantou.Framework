@@ -36,7 +36,10 @@ internal static class AwaitAssertionAnalyzerCommon
             return false;
         }
 
-        if (!IsTaskLike(targetMethod.ReturnType, symbols))
+        // The original definition tells an assertion that completes asynchronously apart from one that merely
+        // returns a value which happens to be a task: Assert.Single<T> returns T, so Assert.Single(taskArray)
+        // returns a Task without the assertion itself being asynchronous.
+        if (!IsTaskLike(targetMethod.OriginalDefinition.ReturnType, symbols))
             return false;
 
         // Anything else (await, return, assignment, argument) consumes the task

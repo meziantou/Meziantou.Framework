@@ -84,7 +84,10 @@ public sealed class ConstantAssertionAnalyzer : DiagnosticAnalyzer
 
     private static bool TryGetSelfComparisonMessage(IInvocationOperation invocationOperation, string methodName, out string message)
     {
-        if (methodName is not ("Equal" or "NotEqual" or "Same" or "NotSame" or "Equivalent" or "NotEquivalent" or "EqualUnordered" or "NotEqualUnordered"))
+        // Equal, NotEqual and the unordered variants compare through EqualityComparer<T>.Default and therefore run
+        // the type's own Equals, so comparing a value with itself is a reflexivity assertion rather than a constant.
+        // Same and NotSame compare references and Equivalent compares structurally, neither of which runs user code.
+        if (methodName is not ("Same" or "NotSame" or "Equivalent" or "NotEquivalent"))
         {
             message = null!;
             return false;
@@ -121,53 +124,9 @@ public sealed class ConstantAssertionAnalyzer : DiagnosticAnalyzer
             return false;
         }
 
-        // Reference identity and structural comparison never run the type's Equals, but the equality assertions go
-        // through EqualityComparer<T>.Default and therefore do. Comparing a custom type with itself is then a
-        // reflexivity assertion that fails when that implementation is wrong, so it is not reported.
-        var comparesWithEquals = methodName is "Equal" or "NotEqual" or "EqualUnordered" or "NotEqualUnordered";
-        if (comparesWithEquals && !HasBuiltInEquality(expectedOperation.Type))
-        {
-            message = null!;
-            return false;
-        }
-
         var alwaysSucceeds = !methodName.StartsWith("Not", StringComparison.Ordinal);
         message = $"Assert.{methodName} compares a value with itself and always {(alwaysSucceeds ? "succeeds" : "fails")}";
         return true;
-    }
-
-    /// <summary>
-    /// Types whose equality is defined by the runtime rather than by user code, so that comparing a value of that
-    /// type with itself cannot fail.
-    /// </summary>
-    private static bool HasBuiltInEquality(ITypeSymbol? type)
-    {
-        if (type is null)
-            return false;
-
-        if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
-            return type is INamedTypeSymbol { TypeArguments: [var underlyingType] } && HasBuiltInEquality(underlyingType);
-
-        if (type.TypeKind == TypeKind.Enum)
-            return true;
-
-        return type.SpecialType is
-            SpecialType.System_Boolean or
-            SpecialType.System_Char or
-            SpecialType.System_SByte or
-            SpecialType.System_Byte or
-            SpecialType.System_Int16 or
-            SpecialType.System_UInt16 or
-            SpecialType.System_Int32 or
-            SpecialType.System_UInt32 or
-            SpecialType.System_Int64 or
-            SpecialType.System_UInt64 or
-            SpecialType.System_Single or
-            SpecialType.System_Double or
-            SpecialType.System_Decimal or
-            SpecialType.System_String or
-            SpecialType.System_IntPtr or
-            SpecialType.System_UIntPtr;
     }
 
     /// <summary>

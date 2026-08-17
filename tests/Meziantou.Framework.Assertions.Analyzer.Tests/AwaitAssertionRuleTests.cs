@@ -245,6 +245,32 @@ public sealed class AwaitAssertionRuleTests : AssertionsAnalyzerTestBase
     }
 
     [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_WhenTheAssertionReturnsAValueThatIsATask()
+    {
+        // Assert.Single<T> returns T, so these return a Task without the assertion being asynchronous
+        var source = """
+            using System.Collections.Generic;
+            using System.Threading.Tasks;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(Dictionary<string, Task> tasksByName)
+                {
+                    Task[] items = [];
+                    Assert.Single(items);
+                    Assert.Single(items, item => item is not null);
+                    Assert.Contains("a", tasksByName);
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<AwaitAssertionAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
     public async Task Analyzer_DoesNotReportDiagnostic_WhenTaskIsConsumed()
     {
         var source = """

@@ -1,12 +1,13 @@
 using DirectoryGetParentWithFullPathAnalyzerType = Meziantou.Framework.Analyzers.FullPath.DirectoryGetParentWithFullPathAnalyzer;
 using UseCreateParentDirectoryAnalyzerType = Meziantou.Framework.Analyzers.FullPath.UseCreateParentDirectoryAnalyzer;
+using UseCreateParentDirectoryCodeFixProviderType = Meziantou.Framework.Analyzers.FullPath.UseCreateParentDirectoryCodeFixProvider;
 
 namespace Meziantou.Framework.Tests;
 
 public sealed class UseCreateParentDirectoryRuleTests : FullPathAnalyzerTestBase
 {
     [Fact]
-    public async Task Analyzer_ReportDiagnostic_ForCreateDirectoryWithParent()
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForCreateDirectoryWithParent()
     {
         var source = """
             using System.IO;
@@ -24,7 +25,23 @@ public sealed class UseCreateParentDirectoryRuleTests : FullPathAnalyzerTestBase
             }
             """;
 
-        await CreateAnalyzerTest<UseCreateParentDirectoryAnalyzerType>(source).RunAsync(XunitCancellationToken);
+        var fixedSource = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static void M(FullPath fullPath)
+                    {
+                        fullPath.CreateParentDirectory();
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<UseCreateParentDirectoryAnalyzerType, UseCreateParentDirectoryCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -41,6 +58,28 @@ public sealed class UseCreateParentDirectoryRuleTests : FullPathAnalyzerTestBase
                     public static void M(FullPath fullPath)
                     {
                         Directory.CreateDirectory(fullPath);
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<UseCreateParentDirectoryAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_WhenTheDirectoryInfoIsUsed()
+    {
+        var source = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static DirectoryInfo M(FullPath fullPath)
+                    {
+                        return Directory.CreateDirectory(fullPath.Parent);
                     }
                 }
             }

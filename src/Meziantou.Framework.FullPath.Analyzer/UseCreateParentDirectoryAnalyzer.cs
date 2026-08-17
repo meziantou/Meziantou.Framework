@@ -47,6 +47,10 @@ public sealed class UseCreateParentDirectoryAnalyzer : DiagnosticAnalyzer
         if (invocationOperation.Arguments.Length == 0)
             return;
 
+        // CreateParentDirectory returns void, so the DirectoryInfo must not be used
+        if (invocationOperation.Parent is not IExpressionStatementOperation)
+            return;
+
         if (analyzerContext.UnwrapToFullPath(invocationOperation.Arguments[0].Value) is not IPropertyReferenceOperation { Property.Name: "Parent", Instance: { } instance } property)
             return;
 

@@ -119,7 +119,7 @@ public class TemporaryDirectoryTests
     [Fact]
     public void TemporaryFileCreateWithFullPath()
     {
-        var fullPath = FullPath.FromPath(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".tmp"));
+        var fullPath = FullPath.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".tmp");
         using var file = TemporaryFile.Create(fullPath);
         Assert.Equal(fullPath, file.FullPath);
         Assert.True(File.Exists(fullPath));

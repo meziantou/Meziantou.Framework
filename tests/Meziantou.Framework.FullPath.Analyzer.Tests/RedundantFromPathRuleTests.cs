@@ -1,11 +1,12 @@
 using RedundantFromPathAnalyzerType = Meziantou.Framework.Analyzers.FullPath.RedundantFromPathAnalyzer;
+using RedundantFromPathCodeFixProviderType = Meziantou.Framework.Analyzers.FullPath.RedundantFromPathCodeFixProvider;
 
 namespace Meziantou.Framework.Tests;
 
 public sealed class RedundantFromPathRuleTests : FullPathAnalyzerTestBase
 {
     [Fact]
-    public async Task Analyzer_ReportDiagnostic_ForFromPathWithFullPath()
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForFromPathWithFullPath()
     {
         var source = """
             using Meziantou.Framework;
@@ -22,11 +23,26 @@ public sealed class RedundantFromPathRuleTests : FullPathAnalyzerTestBase
             }
             """;
 
-        await CreateAnalyzerTest<RedundantFromPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+        var fixedSource = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static FullPath M(FullPath fullPath)
+                    {
+                        return fullPath;
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<RedundantFromPathAnalyzerType, RedundantFromPathCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
-    public async Task Analyzer_ReportDiagnostic_ForFromPathWithPathGetFullPath()
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForFromPathWithPathGetFullPath()
     {
         var source = """
             using System.IO;
@@ -44,11 +60,27 @@ public sealed class RedundantFromPathRuleTests : FullPathAnalyzerTestBase
             }
             """;
 
-        await CreateAnalyzerTest<RedundantFromPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+        var fixedSource = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static FullPath M(string path)
+                    {
+                        return FullPath.FromPath(path);
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<RedundantFromPathAnalyzerType, RedundantFromPathCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
-    public async Task Analyzer_ReportDiagnostic_ForFromPathWithPathCombine()
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForFromPathWithPathCombine()
     {
         var source = """
             using System.IO;
@@ -66,7 +98,23 @@ public sealed class RedundantFromPathRuleTests : FullPathAnalyzerTestBase
             }
             """;
 
-        await CreateAnalyzerTest<RedundantFromPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+        var fixedSource = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static FullPath M(string path1, string path2)
+                    {
+                        return FullPath.Combine(path1, path2);
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<RedundantFromPathAnalyzerType, RedundantFromPathCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]

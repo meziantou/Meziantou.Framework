@@ -1,4 +1,5 @@
 using RedundantPathPredicateAnalyzerType = Meziantou.Framework.Analyzers.FullPath.RedundantPathPredicateAnalyzer;
+using RedundantPathPredicateCodeFixProviderType = Meziantou.Framework.Analyzers.FullPath.RedundantPathPredicateCodeFixProvider;
 
 namespace Meziantou.Framework.Tests;
 
@@ -7,7 +8,7 @@ public sealed class RedundantPathPredicateRuleTests : FullPathAnalyzerTestBase
     [Theory]
     [InlineData("IsPathRooted")]
     [InlineData("IsPathFullyQualified")]
-    public async Task Analyzer_ReportDiagnostic_ForPredicateOnFullPath(string methodName)
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForPredicateOnFullPath(string methodName)
     {
         var source = $$"""
             using System.IO;
@@ -25,7 +26,23 @@ public sealed class RedundantPathPredicateRuleTests : FullPathAnalyzerTestBase
             }
             """;
 
-        await CreateAnalyzerTest<RedundantPathPredicateAnalyzerType>(source).RunAsync(XunitCancellationToken);
+        var fixedSource = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static bool M(FullPath fullPath)
+                    {
+                        return !fullPath.IsEmpty;
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<RedundantPathPredicateAnalyzerType, RedundantPathPredicateCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]

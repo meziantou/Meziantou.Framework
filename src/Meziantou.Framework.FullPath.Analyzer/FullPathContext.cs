@@ -7,6 +7,24 @@ internal sealed class FullPathContext(Compilation compilation)
 {
     public INamedTypeSymbol? FullPathType { get; } = compilation.GetTypeByMetadataName("Meziantou.Framework.FullPath");
     public INamedTypeSymbol? PathType { get; } = compilation.GetTypeByMetadataName("System.IO.Path");
+    public INamedTypeSymbol? DirectoryType { get; } = compilation.GetTypeByMetadataName("System.IO.Directory");
+    public INamedTypeSymbol? FileSystemInfoType { get; } = compilation.GetTypeByMetadataName("System.IO.FileSystemInfo");
+
+    public bool IsFullPathMember(IMethodSymbol methodSymbol)
+    {
+        return methodSymbol.IsStatic && SymbolEqualityComparer.Default.Equals(methodSymbol.ContainingType, FullPathType);
+    }
+
+    public bool IsFileSystemInfo(ITypeSymbol? typeSymbol)
+    {
+        for (var current = typeSymbol; current is not null; current = current.BaseType)
+        {
+            if (SymbolEqualityComparer.Default.Equals(current, FileSystemInfoType))
+                return true;
+        }
+
+        return false;
+    }
 
     [MemberNotNullWhen(true, nameof(FullPathType))]
     public bool IsValid => FullPathType is not null;

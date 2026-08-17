@@ -94,7 +94,7 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     public FullPath CreateEmptyFile(string relativePath)
     {
         var path = GetFullPath(relativePath);
-        Directory.CreateDirectory(path.Parent);
+        path.CreateParentDirectory();
         using var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
         return path;
     }
@@ -113,7 +113,7 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     public FullPath CreateTextFile(string relativePath, string content)
     {
         var path = GetFullPath(relativePath);
-        Directory.CreateDirectory(path.Parent);
+        path.CreateParentDirectory();
         File.WriteAllText(path, content);
         return path;
     }
@@ -133,7 +133,7 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     public async Task<FullPath> CreateTextFileAsync(string relativePath, string content, CancellationToken cancellationToken = default)
     {
         var path = GetFullPath(relativePath);
-        Directory.CreateDirectory(path.Parent);
+        path.CreateParentDirectory();
         await File.WriteAllTextAsync(path, content, cancellationToken).ConfigureAwait(false);
         return path;
     }

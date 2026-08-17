@@ -91,9 +91,9 @@ public sealed class ImmutableEquatableArrayTests
         var array = ImmutableEquatableArray.Create(new[] { "a" });
 
         Assert.False(array.Equals(null));
+#pragma warning disable MFAS0007 // Preserve == and != operator validation
         Assert.False(array == null);
         Assert.False(null == array);
-#pragma warning disable MFAS0007 // Preserve == and != operator validation
         Assert.True(array != null);
         Assert.True(null != array);
 #pragma warning restore MFAS0007

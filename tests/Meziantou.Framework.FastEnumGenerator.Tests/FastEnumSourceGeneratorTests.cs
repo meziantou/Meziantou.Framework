@@ -29,7 +29,7 @@ public sealed class FastEnumSourceGeneratorTests
 
         var (runResult, _) = await GenerateFiles(sourceCode);
         Assert.Empty(runResult.Diagnostics);
-        Assert.Equal(3, runResult.GeneratedTrees.Length);
+        Assert.HasCount(3, runResult.GeneratedTrees);
         var generatedTree = Assert.Single(runResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("FastEnumExtensions.g.cs", StringComparison.Ordinal));
         Assert.Contains(runResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("Microsoft.CodeAnalysis.EmbeddedAttribute.g.cs", StringComparison.Ordinal));
         Assert.Contains(runResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("Meziantou.Framework.Annotations.FastEnumAttribute.g.cs", StringComparison.Ordinal));

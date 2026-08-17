@@ -133,7 +133,7 @@ public sealed class YamlSerializerCollectionSupportReflectionTests
 
         var result = YamlSerializer.Deserialize<ImmutableArray<int>>(yaml);
 
-        Assert.Equal(2, result.Length);
+        Assert.HasCount(2, result);
         Assert.Equal(10, result[0]);
         Assert.Equal(20, result[1]);
     }
@@ -195,8 +195,8 @@ public sealed class YamlSerializerCollectionSupportReflectionTests
         var result = YamlSerializer.Deserialize<ImmutableArrayAnchorPayload>(yaml, options);
 
         Assert.NotNull(result);
-        Assert.Equal(2, result.Values.Length);
-        Assert.Equal(2, result.Other.Length);
+        Assert.HasCount(2, result.Values);
+        Assert.HasCount(2, result.Other);
         Assert.Equal(result.Values[0], result.Other[0]);
         Assert.Equal(result.Values[1], result.Other[1]);
     }

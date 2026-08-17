@@ -113,7 +113,7 @@ public sealed partial class SnapshotTests
         var path = settings.SnapshotPathStrategy(context);
         Assert.Matches(SnapshotNameWithIndexRegex(), path.Name);
         Assert.DoesNotMatch(SnapshotNameHashWithIndexFragmentRegex(), path.Name);
-        Assert.True(path.Name.Length <= settings.MaxSnapshotFileNameLength);
+        Assert.HasCountLessThanOrEqual(settings.MaxSnapshotFileNameLength, path.Name);
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public sealed partial class SnapshotTests
         var path = settings.SnapshotPathStrategy(context);
         Assert.Matches(SnapshotNameRegex(), path.Name);
         Assert.DoesNotContain("_0", path.Name);
-        Assert.True(path.Name.Length <= settings.MaxSnapshotFileNameLength);
+        Assert.HasCountLessThanOrEqual(settings.MaxSnapshotFileNameLength, path.Name);
     }
 
     [Fact]
@@ -291,7 +291,7 @@ public sealed partial class SnapshotTests
 
         var path = settings.SnapshotPathStrategy(context);
         Assert.Matches(SnapshotNameWithHashAndIndexRegex(), path.Name);
-        Assert.True(path.Name.Length <= settings.MaxSnapshotFileNameLength);
+        Assert.HasCountLessThanOrEqual(settings.MaxSnapshotFileNameLength, path.Name);
     }
 
     [Theory]
@@ -314,7 +314,7 @@ public sealed partial class SnapshotTests
 
         var path = settings.SnapshotPathStrategy(context);
         Assert.Matches(SnapshotNameWithHashAndIndexRegex(), path.Name);
-        Assert.True(path.Name.Length <= settings.MaxSnapshotFileNameLength);
+        Assert.HasCountLessThanOrEqual(settings.MaxSnapshotFileNameLength, path.Name);
     }
 
     [Fact]

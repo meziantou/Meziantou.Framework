@@ -44,7 +44,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         var (runResult, compilation) = await GenerateAsync(Source);
         Assert.Empty(runResult.Diagnostics);
         Assert.Single(runResult.Results);
-        Assert.Equal(3, runResult.Results[0].GeneratedSources.Length);
+        Assert.HasCount(3, runResult.Results[0].GeneratedSources);
 
         var allGeneratedSources = string.Join('\n', runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
         Assert.Contains("internal partial class FixedStringBuilderAttribute", allGeneratedSources);

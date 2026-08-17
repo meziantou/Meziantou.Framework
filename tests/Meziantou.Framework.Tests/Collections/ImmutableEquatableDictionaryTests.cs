@@ -177,9 +177,9 @@ public sealed class ImmutableEquatableDictionaryTests
         var dict = new[] { ("a", 1) }.ToImmutableEquatableDictionary();
 
         Assert.False(dict.Equals(null));
+#pragma warning disable MFAS0007 // Preserve == and != operator validation
         Assert.False(dict == null);
         Assert.False(null == dict);
-#pragma warning disable MFAS0007 // Preserve == and != operator validation
         Assert.True(dict != null);
         Assert.True(null != dict);
 #pragma warning restore MFAS0007

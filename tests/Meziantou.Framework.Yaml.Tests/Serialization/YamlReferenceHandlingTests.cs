@@ -61,7 +61,7 @@ public class YamlReferenceHandlingTests
         Assert.True(anchorEnd > anchorStart, "Expected an anchor name after 'A: &'.");
 
         var anchor = yaml.Substring(anchorStart, anchorEnd - anchorStart).Trim();
-        Assert.True(anchor.Length > 0);
+        Assert.NotEmpty(anchor);
 
         Assert.Contains($"B: *{anchor}", yaml);
     }

@@ -127,7 +127,9 @@ public sealed partial class StronglyTypedIdTests
     public void TestNullableClass()
     {
         IdClassInt32 value = IdClassInt32.FromInt32(42);
+#pragma warning disable MFAS0007 // Preserve the generated == operator validation
         Assert.False(value == null);
+#pragma warning restore MFAS0007
     }
 
     [Fact]

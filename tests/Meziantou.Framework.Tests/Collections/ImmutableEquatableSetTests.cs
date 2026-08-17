@@ -87,9 +87,9 @@ public sealed class ImmutableEquatableSetTests
         var set = ImmutableEquatableSet.Create(new HashSet<string>(StringComparer.Ordinal) { "a" });
 
         Assert.False(set.Equals(null));
+#pragma warning disable MFAS0007 // Preserve == and != operator validation
         Assert.False(set == null);
         Assert.False(null == set);
-#pragma warning disable MFAS0007 // Preserve == and != operator validation
         Assert.True(set != null);
         Assert.True(null != set);
 #pragma warning restore MFAS0007

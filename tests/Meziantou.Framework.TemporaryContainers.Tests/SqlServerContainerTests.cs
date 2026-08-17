@@ -31,7 +31,7 @@ public sealed class SqlServerContainerTests
         Assert.Equal("Y", definition.Environment.GetValue("ACCEPT_EULA"));
         Assert.Equal(password, definition.Environment.GetValue("MSSQL_SA_PASSWORD"));
         Assert.Equal(password, definition.Environment.GetValue("SA_PASSWORD"));
-        Assert.Equal(24, password.Length);
+        Assert.HasCount(24, password);
         Assert.Contains(password, static c => char.IsUpper(c));
         Assert.Contains(password, static c => char.IsLower(c));
         Assert.Contains(password, static c => char.IsDigit(c));

@@ -265,7 +265,7 @@ public class AvatarGeneratorTests
     private static double GetRelativeLuminance(string hexColor)
     {
         Assert.StartsWith("#", hexColor);
-        Assert.Equal(7, hexColor.Length);
+        Assert.HasCount(7, hexColor);
 
         var red = Convert.ToInt32(hexColor[1..3], fromBase: 16) / 255d;
         var green = Convert.ToInt32(hexColor[3..5], fromBase: 16) / 255d;

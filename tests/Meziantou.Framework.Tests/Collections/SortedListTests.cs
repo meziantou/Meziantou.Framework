@@ -70,7 +70,7 @@ public sealed class SortedListTests
     public void AsSpan()
     {
         var list = new SortedList<int> { 1, 3, 2 };
-        Assert.Equal(3, list.UnsafeAsReadOnlySpan().Length);
+        Assert.HasCount(3, list.UnsafeAsReadOnlySpan());
     }
 
     [Fact]

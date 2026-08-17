@@ -53,7 +53,7 @@ public sealed class FixedStringBuilderTests
         var fixedString = (IFixedString)value;
         var span = fixedString.GetUnsafeFullSpan();
 
-        Assert.Equal(FixedStringBuilder8.MaxLength, span.Length);
+        Assert.HasCount(FixedStringBuilder8.MaxLength, span);
         Assert.Equal('a', span[0]);
         Assert.Equal('b', span[1]);
         Assert.Equal('c', span[2]);

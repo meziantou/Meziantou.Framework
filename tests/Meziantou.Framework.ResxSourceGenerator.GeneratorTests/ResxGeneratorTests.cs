@@ -37,7 +37,7 @@ public class ResxGeneratorTests
     public void GetStringWithDefaultValue()
     {
         // Ensure the value is not nullable
-        Assert.Equal(3, Resource1.GetString("UnknownValue", defaultValue: "abc").Length);
+        Assert.HasCount(3, Resource1.GetString("UnknownValue", defaultValue: "abc"));
     }
 
     [Fact]

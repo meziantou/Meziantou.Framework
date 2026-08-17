@@ -39,6 +39,21 @@ internal static class CompilationExtensions
         return type;
     }
 
+    public static bool SupportGuidCreateVersion7(this Compilation compilation)
+    {
+        var guidSymbol = compilation.GetTypeByMetadataName("System.Guid");
+        if (guidSymbol is null)
+            return false;
+
+        foreach (var member in guidSymbol.GetMembers("CreateVersion7"))
+        {
+            if (member is IMethodSymbol { IsStatic: true, Parameters: [] })
+                return true;
+        }
+
+        return false;
+    }
+
     // https://github.com/dotnet/roslyn/blob/d2ff1d83e8fde6165531ad83f0e5b1ae95908289/src/Workspaces/SharedUtilitiesAndExtensions/Compiler/Core/Extensions/ISymbolExtensions.cs#L28-L73
     private static SymbolVisibility GetResultantVisibility(this ISymbol symbol)
     {

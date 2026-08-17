@@ -39,7 +39,7 @@ public class YamlReferenceHandlingTests
             new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.Preserve });
 
         Assert.NotNull(node);
-        Assert.True(ReferenceEquals(node, node.Next));
+        Assert.Same(node, node.Next);
         Assert.Equal("root", node.Name);
     }
 
@@ -78,7 +78,7 @@ public class YamlReferenceHandlingTests
         Assert.NotNull(container);
         Assert.NotNull(container.A);
         Assert.NotNull(container.B);
-        Assert.True(ReferenceEquals(container.A, container.B));
+        Assert.Same(container.A, container.B);
         Assert.Equal("shared", container.A.Name);
     }
 
@@ -92,7 +92,7 @@ public class YamlReferenceHandlingTests
 
         Assert.NotNull(list);
         Assert.Single(list);
-        Assert.True(ReferenceEquals(list, list[0]));
+        Assert.Same(list, list[0]);
 
         var roundTrip = YamlSerializer.Serialize(list, options);
         Assert.Contains("&id001", roundTrip);
@@ -109,7 +109,7 @@ public class YamlReferenceHandlingTests
 
         Assert.NotNull(dict);
         Assert.True(dict.TryGetValue("self", out var self));
-        Assert.True(ReferenceEquals(dict, self));
+        Assert.Same(dict, self);
 
         var roundTrip = YamlSerializer.Serialize(dict, options);
         Assert.Contains("&id001", roundTrip);
@@ -131,7 +131,7 @@ public class YamlReferenceHandlingTests
 
         var roundTrip = YamlSerializer.Deserialize<Container>(yaml, options);
         Assert.NotNull(roundTrip);
-        Assert.True(ReferenceEquals(roundTrip.A, roundTrip.B));
+        Assert.Same(roundTrip.A, roundTrip.B);
     }
 
     [Fact]
@@ -148,6 +148,6 @@ public class YamlReferenceHandlingTests
 
         var roundTrip = YamlSerializer.Deserialize<Node>(yaml, options);
         Assert.NotNull(roundTrip);
-        Assert.True(ReferenceEquals(roundTrip, roundTrip.Next));
+        Assert.Same(roundTrip, roundTrip.Next);
     }
 }

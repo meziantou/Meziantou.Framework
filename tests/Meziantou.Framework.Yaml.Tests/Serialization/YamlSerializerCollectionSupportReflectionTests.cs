@@ -80,7 +80,7 @@ public sealed class YamlSerializerCollectionSupportReflectionTests
         Assert.NotNull(result);
         Assert.NotNull(result.Primary);
         Assert.NotNull(result.Secondary);
-        Assert.True(ReferenceEquals(result.Primary, result.Secondary));
+        Assert.Same(result.Primary, result.Secondary);
         Assert.Equal("one", result.Primary[1]);
         Assert.Equal("two", result.Primary[2]);
     }
@@ -111,7 +111,7 @@ public sealed class YamlSerializerCollectionSupportReflectionTests
         Assert.NotNull(result);
         Assert.NotNull(result.Primary);
         Assert.NotNull(result.Secondary);
-        Assert.True(ReferenceEquals(result.Primary, result.Secondary));
+        Assert.Same(result.Primary, result.Secondary);
         Assert.Equal(1, result.Primary[TestColor.Red]);
         Assert.Equal(2, result.Primary[TestColor.Green]);
     }
@@ -179,7 +179,7 @@ public sealed class YamlSerializerCollectionSupportReflectionTests
         Assert.NotNull(result);
         Assert.NotNull(result.Values);
         Assert.NotNull(result.Other);
-        Assert.True(ReferenceEquals(result.Values, result.Other));
+        Assert.Same(result.Values, result.Other);
     }
 
     [Fact]

@@ -134,4 +134,9 @@ The package ships analyzers and code fixes to help write clearer assertions.
 | `MFAS0048` | Assertions | Await assertions that return a Task | Error | ✔️ |
 | `MFAS0049` | Assertions | Assertion always produces the same result | Error | ✔️ |
 | `MFAS0050` | Assertions | Use Assert.Fail instead of an assertion that always fails | Warning | ✔️ |
+| `MFAS0051` | Assertions | Use Assert.Contains instead of Assert.NotEmpty(collection.Where(...)) | Warning | ✔️ |
+| `MFAS0052` | Assertions | Use Assert.DoesNotContain instead of Assert.Empty(collection.Where(...)) | Warning | ✔️ |
+| `MFAS0053` | Assertions | Use Assert.Single with a predicate instead of Assert.Single(collection.Where(...)) | Warning | ✔️ |
+| `MFAS0054` | Assertions | Use Assert.Contains with the expected value instead of an equality predicate | Warning | ✔️ |
+| `MFAS0055` | Assertions | Use Assert.DoesNotContain with the expected value instead of an equality predicate | Warning | ✔️ |
 <!-- analyzer-rules -->

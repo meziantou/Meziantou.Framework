@@ -5,3 +5,8 @@ root = false
 # result is known in advance, such as Assert.True(true) or Assert.Same(value, value).
 dotnet_diagnostic.MFAS0049.severity = none
 dotnet_diagnostic.MFAS0050.severity = none
+
+# The predicate overloads of Assert.Contains and Assert.DoesNotContain are validated here,
+# so the predicate cannot be replaced by the expected value.
+dotnet_diagnostic.MFAS0054.severity = none
+dotnet_diagnostic.MFAS0055.severity = none

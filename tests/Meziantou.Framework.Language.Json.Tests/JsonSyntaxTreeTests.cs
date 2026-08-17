@@ -108,7 +108,7 @@ public sealed class JsonSyntaxTreeTests
 """;
 
         var tree = JsonSyntaxTree.ParseText(Text);
-        var comment = Assert.Single(tree.Root.DescendantTrivia().Where(trivia => trivia.Kind == JsonSyntaxKind.SingleLineCommentTrivia));
+        var comment = Assert.Single(tree.Root.DescendantTrivia(), trivia => trivia.Kind == JsonSyntaxKind.SingleLineCommentTrivia);
         var property = Assert.IsType<JsonObjectSyntax>(tree.Root.Value).Members[0];
 
         Assert.Equal("// comment", comment.Text);
@@ -139,7 +139,7 @@ public sealed class JsonSyntaxTreeTests
 """;
 
         var tree = JsonSyntaxTree.ParseText(Text);
-        var comment = Assert.Single(tree.Root.DescendantTrivia().Where(trivia => trivia.Kind == JsonSyntaxKind.SingleLineCommentTrivia));
+        var comment = Assert.Single(tree.Root.DescendantTrivia(), trivia => trivia.Kind == JsonSyntaxKind.SingleLineCommentTrivia);
 
         var updated = tree.Root.ReplaceTrivia(comment, SyntaxFactory.Trivia(JsonSyntaxKind.MultiLineCommentTrivia, "/* new */"));
 

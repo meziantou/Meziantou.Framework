@@ -460,9 +460,9 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 
             public enum GuidGenerationStrategy
             {
-                Version4 = 0,
-                Version7 = 1,
-                None = 2,
+                None = 0,
+                Version4 = 1,
+                Version7 = 2,
             }
         }
         """;

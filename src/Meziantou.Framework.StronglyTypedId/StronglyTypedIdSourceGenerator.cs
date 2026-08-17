@@ -850,9 +850,9 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
     internal enum GuidGenerationStrategy
     {
+        None,
         Version4,
         Version7,
-        None,
     }
 
     internal enum IdType

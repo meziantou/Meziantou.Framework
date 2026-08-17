@@ -66,6 +66,39 @@ public sealed class ConstantAssertionRuleTests : AssertionsAnalyzerTestBase
     }
 
     [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_ForReflexivityAssertionOnCustomType()
+    {
+        // Assert.Equal goes through EqualityComparer<T>.Default and therefore runs Version.Equals, so this is a
+        // reflexivity assertion that fails when that implementation is wrong. Assert.Same never runs user code.
+        var source = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public sealed class Version
+            {
+                public override bool Equals(object? obj) => obj is Version;
+                public override int GetHashCode() => 0;
+            }
+
+            public static class TestClass
+            {
+                public static void M(Version left, int number)
+                {
+                    Assert.Equal(left, left);
+                    Assert.NotEqual(left, left);
+
+                    {|MFAS0050:Assert.Equivalent(left, left)|};
+                    {|MFAS0050:Assert.Same(left, left)|};
+                    {|MFAS0050:Assert.Equal(number, number)|};
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<ConstantAssertionAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
     public async Task Analyzer_DoesNotReportDiagnostic_WhenTheInstanceMayHaveSideEffects()
     {
         var source = """

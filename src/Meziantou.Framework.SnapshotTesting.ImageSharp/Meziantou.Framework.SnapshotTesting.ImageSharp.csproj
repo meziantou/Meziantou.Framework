@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/Images/SsimAccumulator.cs" Link="Images/SsimAccumulator.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
   </ItemGroup>
 

@@ -443,6 +443,13 @@ public sealed partial class StronglyTypedIdTests
     }
 
     [Fact]
+    public void New_Guid_None()
+    {
+        Assert.Empty(typeof(IdGuidNoNew).GetMember("New"));
+        Assert.NotEmpty(typeof(IdGuidNoNew).GetMember("FromGuid"));
+    }
+
+    [Fact]
     public void Bson_Guid_Class_Null()
     {
         IdClassGuid? instance = null;
@@ -503,6 +510,9 @@ public sealed partial class StronglyTypedIdTests
 
     [StronglyTypedId(typeof(Guid), GuidGenerationStrategy = GuidGenerationStrategy.Version7)]
     private partial struct IdGuidVersion7 { }
+
+    [StronglyTypedId(typeof(Guid), GuidGenerationStrategy = GuidGenerationStrategy.None)]
+    private partial struct IdGuidNoNew { }
 
     [StronglyTypedId(typeof(short))]
     private partial struct IdInt16 { }

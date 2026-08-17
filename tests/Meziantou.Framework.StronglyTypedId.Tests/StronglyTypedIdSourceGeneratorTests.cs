@@ -324,6 +324,35 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateStruct_Guid_New_None()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid), GuidGenerationStrategy = Meziantou.Framework.Annotations.GuidGenerationStrategy.None)]
+            public partial struct Test {}
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type =>
+        {
+            Assert.Empty(type.GetMember("New"));
+            Assert.NotEmpty(type.GetMember("FromGuid"));
+        });
+    }
+
+    [Fact]
+    public async Task GenerateStruct_Guid_New_None_NotSupportedByTargetFramework()
+    {
+        // GuidGenerationStrategy.None does not use Guid.CreateVersion7(), so no diagnostic must be reported
+        var sourceCode = AttributeSourceCode + """
+
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid), GuidGenerationStrategy = Meziantou.Framework.Annotations.GuidGenerationStrategy.None)]
+            public partial struct Test {}
+            """;
+
+        var diagnostics = await Analyze(sourceCode, netCoreVersion: "8.0.0", referenceAnnotations: false);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
     public async Task GenerateStruct_Guid_New_Version7_NotSupportedByTargetFramework()
     {
         // Guid.CreateVersion7() was introduced in .NET 9
@@ -433,6 +462,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
             {
                 Version4 = 0,
                 Version7 = 1,
+                None = 2,
             }
         }
         """;

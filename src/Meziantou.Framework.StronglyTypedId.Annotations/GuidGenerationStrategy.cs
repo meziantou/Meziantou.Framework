@@ -10,4 +10,7 @@ public enum GuidGenerationStrategy
 
     /// <summary>Creates a time-ordered UUID (version 7) using <c>Guid.CreateVersion7()</c>. Requires .NET 9 or later.</summary>
     Version7 = 1,
+
+    /// <summary>No <c>New()</c> method is generated.</summary>
+    None = 2,
 }

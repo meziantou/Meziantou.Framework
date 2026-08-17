@@ -130,7 +130,7 @@ You can configure the code generation using the `[StronglyTypedIdAttribute]` att
 public partial struct ProjectId { }
 ````
 
-When the underlying type is `System.Guid`, you can choose how the generated `New()` method creates the value. The default is `Version4` (`Guid.NewGuid()`). `Version7` (`Guid.CreateVersion7()`) requires .NET 9 or later, otherwise the `MFSTID0002` diagnostic is reported. The option only applies to `System.Guid`; using it with another underlying type reports the `MFSTID0003` diagnostic:
+When the underlying type is `System.Guid`, you can choose how the generated `New()` method creates the value. The default is `Version4` (`Guid.NewGuid()`). `Version7` (`Guid.CreateVersion7()`) requires .NET 9 or later, otherwise the `MFSTID0002` diagnostic is reported. `None` doesn't generate the `New()` method. The option only applies to `System.Guid`; using it with another underlying type reports the `MFSTID0003` diagnostic:
 
 ````c#
 [StronglyTypedId<Guid>(GuidGenerationStrategy = GuidGenerationStrategy.Version7)]
@@ -141,6 +141,11 @@ public partial struct ProjectId
 {
     public static ProjectId New() => new ProjectId(Guid.CreateVersion7());
 }
+````
+
+````c#
+[StronglyTypedId<Guid>(GuidGenerationStrategy = GuidGenerationStrategy.None)]
+public partial struct ProjectId { } // No New() method is generated
 ````
 
 You can generate `IComparable`, `IComparable<T>` and comparison operators by adding one interface:

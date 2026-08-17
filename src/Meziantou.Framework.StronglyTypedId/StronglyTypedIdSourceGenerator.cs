@@ -852,6 +852,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
     {
         Version4,
         Version7,
+        None,
     }
 
     internal enum IdType

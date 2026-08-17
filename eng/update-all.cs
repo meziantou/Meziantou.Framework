@@ -1211,6 +1211,7 @@ static IReadOnlyList<AnalyzerRule> GetAnalyzerRulesFromProjectDirectory(FullPath
             \s*category:\s*"(?<category>[^"]+)"\s*,
             \s*(?:defaultSeverity:\s*)?DiagnosticSeverity\.(?<severity>\w+)\s*,
             \s*isEnabledByDefault:\s*(?<enabled>true|false)\s*
+            (?:,\s*[^)]*)?
         \)
         """,
         RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture,

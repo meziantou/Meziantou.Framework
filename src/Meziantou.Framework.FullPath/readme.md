@@ -55,7 +55,7 @@ System.IO.File.WriteAllText(filePath, content);
 | `MFFP0001` | FullPath | Use FullPath directly instead of Path.GetFullPath | Info | ✔️ |
 | `MFFP0002` | FullPath | Use the right FullPath operand directly | Info | ✔️ |
 | `MFFP0003` | FullPath | Use '/' with a FullPath base instead of Path.GetFullPath | Info | ✔️ |
-| `MFFP0004` | FullPath | Use '/' operator instead of Path.Combine | Info | ✔️ |
+| `MFFP0004` | FullPath | Use '/' operator instead of Path.Combine or Path.Join | Info | ✔️ |
 | `MFFP0005` | FullPath | Use FullPath.Name instead of Path.GetFileName | Info | ✔️ |
 | `MFFP0006` | FullPath | Use FullPath.NameWithoutExtension instead of Path.GetFileNameWithoutExtension | Info | ✔️ |
 | `MFFP0007` | FullPath | Use FullPath.Extension instead of Path.GetExtension | Info | ✔️ |
@@ -63,6 +63,9 @@ System.IO.File.WriteAllText(filePath, content);
 | `MFFP0009` | FullPath | Use FullPath.ChangeExtension instead of Path.ChangeExtension | Info | ✔️ |
 | `MFFP0010` | FullPath | Use FullPath.MakePathRelativeTo instead of Path.GetRelativePath | Info | ✔️ |
 | `MFFP0011` | FullPath | Return FullPath instead of string | Info | ✔️ |
+| `MFFP0012` | FullPath | Declare the property as FullPath instead of string | Info | ✔️ |
+| `MFFP0013` | FullPath | Declare the variable as FullPath instead of string | Info | ✔️ |
+| `MFFP0014` | FullPath | Declare the parameter as FullPath instead of string | Info | ✔️ |
 <!-- analyzer-rules -->
 
 # Additional resources

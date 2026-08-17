@@ -601,7 +601,7 @@ public sealed class FullPathTests
         Assert.Contains(longSegment, extended);
     }
 
-    private static void CreateSymlink(string source, string target, bool isDirectory)
+    private static void CreateSymlink(FullPath source, string target, bool isDirectory)
     {
         if (isDirectory)
         {

@@ -83,8 +83,8 @@ public sealed class PathGetRelativePathWithFullPathCodeFixProvider : CodeFixProv
             SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, pathType) &&
             invocationOperation.Arguments.Length == 2)
         {
-            var rootOperation = UnwrapImplicitConversion(invocationOperation.Arguments[0].Value);
-            var valueOperation = UnwrapImplicitConversion(invocationOperation.Arguments[1].Value);
+            var rootOperation = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[0].Value, fullPathType);
+            var valueOperation = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[1].Value, fullPathType);
             if (SymbolEqualityComparer.Default.Equals(rootOperation.Type, fullPathType) &&
                 SymbolEqualityComparer.Default.Equals(valueOperation.Type, fullPathType) &&
                 rootOperation.Syntax is ExpressionSyntax rootExpression &&
@@ -105,15 +105,5 @@ public sealed class PathGetRelativePathWithFullPathCodeFixProvider : CodeFixProv
 
         replacementExpression = null!;
         return false;
-    }
-
-    private static IOperation UnwrapImplicitConversion(IOperation operation)
-    {
-        while (operation is IConversionOperation conversionOperation && conversionOperation.IsImplicit)
-        {
-            operation = conversionOperation.Operand;
-        }
-
-        return operation;
     }
 }

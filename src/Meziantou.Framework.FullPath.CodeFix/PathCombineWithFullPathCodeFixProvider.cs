@@ -79,7 +79,7 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
         out ExpressionSyntax replacementExpression)
     {
         if (semanticModel.GetOperation(expressionSyntax, cancellationToken) is not IInvocationOperation invocationOperation ||
-            invocationOperation.TargetMethod is not { IsStatic: true, Name: "Combine" } targetMethod ||
+            invocationOperation.TargetMethod is not { IsStatic: true, Name: "Combine" or "Join" } targetMethod ||
             !SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, pathType) ||
             invocationOperation.Arguments.Length == 0)
         {
@@ -90,7 +90,7 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
         var fullPathIndex = -1;
         for (var i = 0; i < invocationOperation.Arguments.Length; i++)
         {
-            var argument = UnwrapImplicitConversion(invocationOperation.Arguments[i].Value);
+            var argument = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[i].Value, fullPathType);
             if (SymbolEqualityComparer.Default.Equals(argument.Type, fullPathType))
             {
                 fullPathIndex = i;
@@ -103,7 +103,7 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
             return false;
         }
 
-        var startOperation = UnwrapImplicitConversion(invocationOperation.Arguments[fullPathIndex].Value);
+        var startOperation = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[fullPathIndex].Value, fullPathType);
         if (startOperation.Syntax is not ExpressionSyntax expression)
         {
             replacementExpression = null!;
@@ -113,7 +113,7 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
         replacementExpression = expression.WithoutTrivia();
         for (var i = fullPathIndex + 1; i < invocationOperation.Arguments.Length; i++)
         {
-            var nextOperation = UnwrapImplicitConversion(invocationOperation.Arguments[i].Value);
+            var nextOperation = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[i].Value, fullPathType);
             if (nextOperation.Syntax is not ExpressionSyntax nextExpression)
             {
                 replacementExpression = null!;
@@ -124,15 +124,5 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
         }
 
         return true;
-    }
-
-    private static IOperation UnwrapImplicitConversion(IOperation operation)
-    {
-        while (operation is IConversionOperation conversionOperation && conversionOperation.IsImplicit)
-        {
-            operation = conversionOperation.Operand;
-        }
-
-        return operation;
     }
 }

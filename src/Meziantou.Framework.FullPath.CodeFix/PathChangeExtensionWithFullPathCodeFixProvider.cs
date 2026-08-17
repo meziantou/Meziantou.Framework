@@ -83,7 +83,7 @@ public sealed class PathChangeExtensionWithFullPathCodeFixProvider : CodeFixProv
             SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, pathType) &&
             invocationOperation.Arguments.Length == 2)
         {
-            var fullPathOperation = UnwrapImplicitConversion(invocationOperation.Arguments[0].Value);
+            var fullPathOperation = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[0].Value, fullPathType);
             if (SymbolEqualityComparer.Default.Equals(fullPathOperation.Type, fullPathType) &&
                 fullPathOperation.Syntax is ExpressionSyntax fullPathExpression &&
                 invocationOperation.Arguments[1].Value.Syntax is ExpressionSyntax extensionExpression)
@@ -103,15 +103,5 @@ public sealed class PathChangeExtensionWithFullPathCodeFixProvider : CodeFixProv
 
         replacementExpression = null!;
         return false;
-    }
-
-    private static IOperation UnwrapImplicitConversion(IOperation operation)
-    {
-        while (operation is IConversionOperation conversionOperation && conversionOperation.IsImplicit)
-        {
-            operation = conversionOperation.Operand;
-        }
-
-        return operation;
     }
 }

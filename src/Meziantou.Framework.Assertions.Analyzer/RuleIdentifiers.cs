@@ -29,4 +29,7 @@ internal static class RuleIdentifiers
     internal const string UseCollectionAnyDoesNotContainDiagnosticId = "MFAS0025";
     internal const string UseCollectionAllDiagnosticId = "MFAS0026";
     internal const string UseCollectionDoesNotAllDiagnosticId = "MFAS0027";
+    internal const string UseNotEmptyForAnyDiagnosticId = "MFAS0028";
+    internal const string UseEmptyForAnyDiagnosticId = "MFAS0029";
+    internal const string UseEmptinessAssertionDiagnosticId = "MFAS0030";
 }

@@ -66,6 +66,12 @@ internal static class TrueFalseConditionMethodSelectionAnalyzerCommon
             .Select(m => m.OriginalDefinition)
             .ToImmutableArray();
 
+        var enumerableAnyMethods = enumerableType.GetMembers("Any")
+            .OfType<IMethodSymbol>()
+            .Where(m => m is { IsStatic: true, IsExtensionMethod: true, Parameters.Length: 1 })
+            .Select(m => m.OriginalDefinition)
+            .ToImmutableArray();
+
         var enumerableAllMethods = enumerableType.GetMembers("All")
             .OfType<IMethodSymbol>()
             .Where(m => m is { IsStatic: true, IsExtensionMethod: true, Parameters.Length: 2 })
@@ -93,6 +99,7 @@ internal static class TrueFalseConditionMethodSelectionAnalyzerCommon
             genericReadOnlyDictionaryContainsKeyDefinition,
             enumerableContainsMethods,
             enumerableAnyWithPredicateMethods,
+            enumerableAnyMethods,
             enumerableAllMethods,
             cultureInfoType);
         return true;
@@ -121,7 +128,7 @@ internal static class TrueFalseConditionMethodSelectionAnalyzerCommon
         return true;
     }
 
-    private static bool TryGetAssertCondition(
+    internal static bool TryGetAssertCondition(
         IInvocationOperation invocationOperation,
         INamedTypeSymbol assertType,
         [NotNullWhen(true)] out IOperation? conditionOperation,
@@ -575,6 +582,46 @@ internal static class TrueFalseConditionMethodSelectionAnalyzerCommon
         return true;
     }
 
+    internal static bool TryGetCollectionAnyWithoutPredicateMatch(
+        IInvocationOperation innerInvocation,
+        Symbols symbols,
+        bool conditionExpectedToBeFalse,
+        out TrueFalseConditionMatch match)
+    {
+        if (innerInvocation.TargetMethod.Name != "Any" ||
+            symbols.EnumerableAnyMethods.IsDefaultOrEmpty)
+        {
+            match = default;
+            return false;
+        }
+
+        var originalDef = (innerInvocation.TargetMethod.ReducedFrom ?? innerInvocation.TargetMethod).OriginalDefinition;
+        if (!symbols.EnumerableAnyMethods.Contains(originalDef, SymbolEqualityComparer.Default))
+        {
+            match = default;
+            return false;
+        }
+
+        IOperation collectionOperation;
+        if (innerInvocation.Instance is not null)
+        {
+            collectionOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(innerInvocation.Instance);
+        }
+        else if (innerInvocation.Arguments.FirstOrDefault(a => a.Parameter?.Name == "source") is { } sourceArgument)
+        {
+            collectionOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(sourceArgument.Value);
+        }
+        else
+        {
+            match = default;
+            return false;
+        }
+
+        var assertionMethodName = conditionExpectedToBeFalse ? "Empty" : "NotEmpty";
+        match = new TrueFalseConditionMatch(innerInvocation, assertionMethodName, [collectionOperation]);
+        return true;
+    }
+
     internal static bool TryGetCollectionAllMatch(
         IInvocationOperation innerInvocation,
         Symbols symbols,
@@ -633,6 +680,7 @@ internal static class TrueFalseConditionMethodSelectionAnalyzerCommon
         IMethodSymbol GenericReadOnlyDictionaryContainsKeyDefinition,
         ImmutableArray<IMethodSymbol> EnumerableContainsMethods,
         ImmutableArray<IMethodSymbol> EnumerableAnyWithPredicateMethods,
+        ImmutableArray<IMethodSymbol> EnumerableAnyMethods,
         ImmutableArray<IMethodSymbol> EnumerableAllMethods,
         INamedTypeSymbol? CultureInfoType);
 

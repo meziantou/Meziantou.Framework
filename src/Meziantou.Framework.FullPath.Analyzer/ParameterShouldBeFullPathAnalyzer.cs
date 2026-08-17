@@ -10,8 +10,8 @@ namespace Meziantou.Framework.Analyzers.FullPath;
 /// Reports parameters that are declared as <see cref="string"/> but only ever receive <c>FullPath</c> arguments.
 /// </summary>
 /// <remarks>
-/// Only private methods and local functions are considered, because every call site must be visible in the
-/// compilation for the conclusion to hold.
+/// Only methods that are not visible outside of the assembly are considered, because every call site must be visible
+/// in the compilation for the conclusion to hold.
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class ParameterShouldBeFullPathAnalyzer : DiagnosticAnalyzer
@@ -112,7 +112,7 @@ public sealed class ParameterShouldBeFullPathAnalyzer : DiagnosticAnalyzer
             return false;
 
         // Every call site must be visible in the compilation
-        if (methodSymbol.MethodKind is MethodKind.Ordinary && methodSymbol.DeclaredAccessibility is not Accessibility.Private)
+        if (methodSymbol.IsVisibleOutsideOfAssembly())
             return false;
 
         if (!methodSymbol.ExplicitInterfaceImplementations.IsEmpty)
@@ -130,6 +130,10 @@ public sealed class ParameterShouldBeFullPathAnalyzer : DiagnosticAnalyzer
             return false;
 
         if (parameterSymbol.RefKind is not RefKind.None)
+            return false;
+
+        // FullPath is a struct and cannot represent null
+        if (parameterSymbol.NullableAnnotation is NullableAnnotation.Annotated)
             return false;
 
         // A params array is bound positionally and an optional parameter has a string default value

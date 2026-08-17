@@ -27,6 +27,7 @@ internal static class FullPathAnalyzerCommon
     internal const string UseIsEmptyDiagnosticId = "MFFP0021";
     internal const string UseCreateParentDirectoryDiagnosticId = "MFFP0022";
     internal const string DirectoryGetParentWithFullPathDiagnosticId = "MFFP0023";
+    internal const string UseFullPathFactoryDiagnosticId = "MFFP0024";
 
     /// <summary>
     /// Returns the underlying <c>FullPath</c> operation of an expression that produces its string representation,

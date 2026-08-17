@@ -9,10 +9,33 @@ internal sealed class FullPathContext(Compilation compilation)
     public INamedTypeSymbol? PathType { get; } = compilation.GetTypeByMetadataName("System.IO.Path");
     public INamedTypeSymbol? DirectoryType { get; } = compilation.GetTypeByMetadataName("System.IO.Directory");
     public INamedTypeSymbol? FileSystemInfoType { get; } = compilation.GetTypeByMetadataName("System.IO.FileSystemInfo");
+    public INamedTypeSymbol? EnvironmentType { get; } = compilation.GetTypeByMetadataName("System.Environment");
 
     public bool IsFullPathMember(IMethodSymbol methodSymbol)
     {
         return methodSymbol.IsStatic && SymbolEqualityComparer.Default.Equals(methodSymbol.ContainingType, FullPathType);
+    }
+
+    /// <summary>
+    /// Returns the name of the type declaring <paramref name="methodSymbol"/> when <c>FullPath</c> exposes a factory
+    /// method with the same name and the same parameters, or <see langword="null"/> when there is no equivalent.
+    /// </summary>
+    public string? GetFullPathFactoryEquivalentTypeName(IMethodSymbol methodSymbol)
+    {
+        if (!methodSymbol.IsStatic)
+            return null;
+
+        return methodSymbol switch
+        {
+            // Path.GetTempPath() => FullPath.GetTempPath()
+            { Name: "GetTempPath", Parameters.IsEmpty: true } when SymbolEqualityComparer.Default.Equals(methodSymbol.ContainingType, PathType) => "Path",
+
+            // Environment.GetFolderPath(SpecialFolder) => FullPath.GetFolderPath(SpecialFolder)
+            // The (SpecialFolder, SpecialFolderOption) overload has no FullPath equivalent
+            { Name: "GetFolderPath", Parameters.Length: 1 } when SymbolEqualityComparer.Default.Equals(methodSymbol.ContainingType, EnvironmentType) => "Environment",
+
+            _ => null,
+        };
     }
 
     public bool IsFileSystemInfo(ITypeSymbol? typeSymbol)

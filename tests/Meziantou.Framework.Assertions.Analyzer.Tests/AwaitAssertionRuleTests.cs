@@ -231,6 +231,34 @@ public sealed class AwaitAssertionRuleTests : AssertionsAnalyzerTestBase
     }
 
     [Fact]
+    public async Task Analyzer_ReportsDiagnostic_OnlyForAnExpressionStatement()
+    {
+        // Discarding the task or assigning it observes the result, so the assertion is not lost
+        var source = """
+            using System.Collections.Generic;
+            using System.Threading.Tasks;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static Task M(IAsyncEnumerable<int> actual)
+                {
+                    _ = Assert.Empty(actual);
+                    var task = Assert.Empty(actual);
+
+                    {|MFAS0048:Assert.Empty(actual)|};
+
+                    return task;
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<AwaitAssertionAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
     public async Task Analyzer_DoesNotReportDiagnostic_WhenTaskIsConsumed()
     {
         var source = """

@@ -74,6 +74,7 @@ System.IO.File.WriteAllText(filePath, content);
 | `MFFP0021` | FullPath | Use FullPath.IsEmpty | Info | ✔️ |
 | `MFFP0022` | FullPath | Use FullPath.CreateParentDirectory instead of Directory.CreateDirectory | Info | ✔️ |
 | `MFFP0023` | FullPath | Use FullPath.Parent instead of Directory.GetParent | Info | ✔️ |
+| `MFFP0024` | FullPath | Use the FullPath equivalent of Path.GetTempPath or Environment.GetFolderPath | Info | ✔️ |
 <!-- analyzer-rules -->
 
 # Additional resources

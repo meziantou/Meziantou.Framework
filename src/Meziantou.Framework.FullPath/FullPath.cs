@@ -430,7 +430,13 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     }
 
     /// <summary>Gets the path to the system special folder identified by the specified enumeration.</summary>
+    /// <param name="folder">The special folder to retrieve the path for.</param>
     public static FullPath GetFolderPath(Environment.SpecialFolder folder) => FromPath(Environment.GetFolderPath(folder));
+
+    /// <summary>Gets the path to the system special folder identified by the specified enumeration.</summary>
+    /// <param name="folder">The special folder to retrieve the path for.</param>
+    /// <param name="option">Specifies whether the folder must be verified or created.</param>
+    public static FullPath GetFolderPath(Environment.SpecialFolder folder, Environment.SpecialFolderOption option) => FromPath(Environment.GetFolderPath(folder, option));
 
     /// <summary>Gets the path to a Windows known folder.</summary>
     /// <param name="knownFolder">The known folder to retrieve the path for.</param>

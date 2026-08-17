@@ -48,6 +48,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.FullPath CreateTempFile(string? prefix, string? suffix = ".tmp") => throw null;
         public static Meziantou.Framework.FullPath CreateTempFile(Meziantou.Framework.FullPath? folder, string? prefix, string? suffix = ".tmp") => throw null;
         public static Meziantou.Framework.FullPath GetFolderPath(SpecialFolder folder) => throw null;
+        public static Meziantou.Framework.FullPath GetFolderPath(SpecialFolder folder, SpecialFolderOption option) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
         public static Meziantou.Framework.FullPath GetKnownFolderPath(Meziantou.Framework.KnownFolder knownFolder) => throw null;
         public static Meziantou.Framework.FullPath CurrentDirectory() => throw null;

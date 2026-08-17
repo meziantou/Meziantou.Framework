@@ -21,7 +21,7 @@ public sealed class ConstantAssertionRuleTests : AssertionsAnalyzerTestBase
             {
                 public static void M(int value, object reference)
                 {
-                    {|MFAS0050:{{assertion}}|};
+                    {|MFAS0049:{{assertion}}|};
                 }
             }
             """;
@@ -53,7 +53,7 @@ public sealed class ConstantAssertionRuleTests : AssertionsAnalyzerTestBase
                     Assert.Equal(value, value);
                     Assert.NotEqual(value, value);
 
-                    // Assert.True(false) is reported by MFAS0051 instead
+                    // Assert.True(false) is reported by MFAS0050 instead
                     Assert.True(false);
                     Assert.False(true);
 
@@ -93,8 +93,8 @@ public sealed class ConstantAssertionRuleTests : AssertionsAnalyzerTestBase
                     Assert.Equal(number, number);
                     Assert.NotEqual(number, number);
 
-                    {|MFAS0050:Assert.Equivalent(left, left)|};
-                    {|MFAS0050:Assert.Same(left, left)|};
+                    {|MFAS0049:Assert.Equivalent(left, left)|};
+                    {|MFAS0049:Assert.Same(left, left)|};
                 }
             }
             """;
@@ -146,8 +146,8 @@ public sealed class ConstantAssertionRuleTests : AssertionsAnalyzerTestBase
 
                 public void M(Box other)
                 {
-                    {|MFAS0050:Assert.Same(this.Value, this.Value)|};
-                    {|MFAS0050:Assert.Same(other.Value, other.Value)|};
+                    {|MFAS0049:Assert.Same(this.Value, this.Value)|};
+                    {|MFAS0049:Assert.Same(other.Value, other.Value)|};
                     Assert.Same(this.Value, other.Value);
                 }
             }

@@ -84,46 +84,6 @@ public sealed class AwaitAssertionRuleTests : AssertionsAnalyzerTestBase
     }
 
     [Fact]
-    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForTaskArgument()
-    {
-        var source = """
-            using System.Threading.Tasks;
-            using Meziantou.Framework.Assertions;
-
-            namespace Sample;
-
-            public static class TestClass
-            {
-                public static void M()
-                {
-                    Assert.Equal(42, {|MFAS0049:GetValueAsync()|});
-                }
-
-                private static Task<int> GetValueAsync() => Task.FromResult(42);
-            }
-            """;
-
-        var fixedSource = """
-            using System.Threading.Tasks;
-            using Meziantou.Framework.Assertions;
-
-            namespace Sample;
-
-            public static class TestClass
-            {
-                public static async Task M()
-                {
-                    Assert.Equal(42, await GetValueAsync());
-                }
-
-                private static Task<int> GetValueAsync() => Task.FromResult(42);
-            }
-            """;
-
-        await CreateCodeFixTest<AwaitAssertionAnalyzerType, AwaitAssertionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
-    }
-
-    [Fact]
     public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForExpressionBodiedMethod()
     {
         var source = """
@@ -300,9 +260,11 @@ public sealed class AwaitAssertionRuleTests : AssertionsAnalyzerTestBase
                     Assert.Equal(42, value);
                 }
 
-                public static void ComparingTwoTasks(Task<int> a, Task<int> b)
+                public static void TaskPassedAsAnArgument(Task<int> a, Task<int> b)
                 {
+                    // The rule looks at what the assertion returns, not at the code passed to it
                     Assert.Equal(a, b);
+                    Assert.Equal(42, a);
                 }
             }
             """;

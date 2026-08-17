@@ -6,9 +6,9 @@ namespace Meziantou.Framework.Tests;
 public sealed class UseFailAssertionRuleTests : AssertionsAnalyzerTestBase
 {
     [Theory]
-    [InlineData("{|MFAS0051:Assert.True(false)|};", "Assert.Fail();")]
-    [InlineData("{|MFAS0051:Assert.False(true)|};", "Assert.Fail();")]
-    [InlineData("""{|MFAS0051:Assert.True(false, "unreachable")|};""", """Assert.Fail("unreachable");""")]
+    [InlineData("{|MFAS0050:Assert.True(false)|};", "Assert.Fail();")]
+    [InlineData("{|MFAS0050:Assert.False(true)|};", "Assert.Fail();")]
+    [InlineData("""{|MFAS0050:Assert.True(false, "unreachable")|};""", """Assert.Fail("unreachable");""")]
     public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForUnconditionalFailure(string assertion, string fixedAssertion)
     {
         var source = $$"""
@@ -57,7 +57,7 @@ public sealed class UseFailAssertionRuleTests : AssertionsAnalyzerTestBase
                     Assert.True(condition);
                     Assert.False(condition);
 
-                    // Always succeeds, reported by MFAS0050 instead
+                    // Always succeeds, reported by MFAS0049 instead
                     Assert.True(true);
                     Assert.False(false);
                 }

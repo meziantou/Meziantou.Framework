@@ -16,15 +16,7 @@ public sealed class AwaitAssertionAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor AwaitArgumentDescriptor = new(
-        id: RuleIdentifiers.AwaitAssertionArgumentDiagnosticId,
-        title: "Await the task passed to an assertion",
-        messageFormat: "This assertion compares a task with a value, so it can never succeed",
-        category: "Assertions",
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [AwaitAssertionDescriptor, AwaitArgumentDescriptor];
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [AwaitAssertionDescriptor];
 
     public override void Initialize(AnalysisContext context)
     {
@@ -43,16 +35,9 @@ public sealed class AwaitAssertionAnalyzer : DiagnosticAnalyzer
     private static void Analyze(OperationAnalysisContext context, INamedTypeSymbol assertType, AwaitAssertionAnalyzerCommon.Symbols symbols)
     {
         var invocationOperation = (IInvocationOperation)context.Operation;
-
-        if (AwaitAssertionAnalyzerCommon.IsDiscardedTaskAssertion(invocationOperation, assertType, symbols))
-        {
-            context.ReportDiagnostic(Diagnostic.Create(AwaitAssertionDescriptor, invocationOperation.Syntax.GetLocation()));
+        if (!AwaitAssertionAnalyzerCommon.IsDiscardedTaskAssertion(invocationOperation, assertType, symbols))
             return;
-        }
 
-        if (AwaitAssertionAnalyzerCommon.TryGetTaskArgumentMatch(invocationOperation, assertType, symbols, out var taskArgument))
-        {
-            context.ReportDiagnostic(Diagnostic.Create(AwaitArgumentDescriptor, taskArgument.Value.Syntax.GetLocation()));
-        }
+        context.ReportDiagnostic(Diagnostic.Create(AwaitAssertionDescriptor, invocationOperation.Syntax.GetLocation()));
     }
 }

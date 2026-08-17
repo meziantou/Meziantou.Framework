@@ -70,7 +70,7 @@ public sealed class ConstantAssertionAnalyzer : DiagnosticAnalyzer
             return false;
         }
 
-        // Assert.True(false) and Assert.False(true) are reported by MFAS0051, which suggests Assert.Fail
+        // Assert.True(false) and Assert.False(true) are reported by MFAS0050, which suggests Assert.Fail
         var alwaysSucceeds = methodName == "True" == conditionValue;
         if (!alwaysSucceeds)
         {

@@ -11,8 +11,7 @@ namespace Meziantou.Framework.Analyzers.Assertions;
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(AwaitAssertionCodeFixProvider))]
 public sealed class AwaitAssertionCodeFixProvider : CodeFixProvider
 {
-    public override ImmutableArray<string> FixableDiagnosticIds =>
-        [RuleIdentifiers.AwaitAssertionDiagnosticId, RuleIdentifiers.AwaitAssertionArgumentDiagnosticId];
+    public override ImmutableArray<string> FixableDiagnosticIds => [RuleIdentifiers.AwaitAssertionDiagnosticId];
 
     public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 

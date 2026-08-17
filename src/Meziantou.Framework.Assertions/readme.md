@@ -131,4 +131,7 @@ The package ships analyzers and code fixes to help write clearer assertions.
 | `MFAS0045` | Assertions | Use Assert.False instead of Assert.True(!condition) | Warning | ✔️ |
 | `MFAS0046` | Assertions | Use Assert.IsType instead of Assert.True(x.GetType() == typeof(T)) | Warning | ✔️ |
 | `MFAS0047` | Assertions | Use Assert.IsNotType instead of Assert.False(x.GetType() == typeof(T)) | Warning | ✔️ |
+| `MFAS0048` | Assertions | Await assertions that return a Task | Error | ✔️ |
+| `MFAS0049` | Assertions | Assertion always produces the same result | Error | ✔️ |
+| `MFAS0050` | Assertions | Use Assert.Fail instead of an assertion that always fails | Warning | ✔️ |
 <!-- analyzer-rules -->

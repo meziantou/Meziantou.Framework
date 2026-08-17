@@ -199,6 +199,102 @@ internal static class AssertionCodeFixHelpers
         return true;
     }
 
+    /// <summary>
+    /// Whether awaiting <paramref name="expression"/> is possible without changing a signature the caller relies on.
+    /// </summary>
+    internal static bool CanCreateAwaitFix(ExpressionSyntax expression)
+    {
+        var container = GetEnclosingFunction(expression);
+        return container switch
+        {
+            AnonymousFunctionExpressionSyntax anonymousFunction => anonymousFunction.AsyncKeyword.IsKind(SyntaxKind.AsyncKeyword),
+            LocalFunctionStatementSyntax localFunction => localFunction.Modifiers.Any(SyntaxKind.AsyncKeyword),
+            MethodDeclarationSyntax method => method.Modifiers.Any(SyntaxKind.AsyncKeyword) ||
+                                              method.ReturnType is PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.VoidKeyword },
+            _ => false,
+        };
+    }
+
+    private static SyntaxNode? GetEnclosingFunction(ExpressionSyntax expression)
+        => expression.Ancestors().FirstOrDefault(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax or MemberDeclarationSyntax);
+
+    /// <summary>
+    /// Awaits <paramref name="expression"/>, turning the enclosing method into <c>async Task</c> when needed.
+    /// </summary>
+    internal static bool TryCreateAwaitFix(SyntaxNode root, SemanticModel semanticModel, ExpressionSyntax expression, out SyntaxNode newRoot)
+    {
+        var awaitExpression = SyntaxFactory
+            .AwaitExpression(expression.WithoutLeadingTrivia())
+            .WithLeadingTrivia(expression.GetLeadingTrivia());
+
+        // Await belongs to the closest enclosing function, which is not necessarily the method
+        var container = GetEnclosingFunction(expression);
+
+        // Turning a lambda or a local function into an async one would change the delegate or the signature
+        // it is bound to, so only an already-async one can be fixed
+        if (container is AnonymousFunctionExpressionSyntax anonymousFunction)
+        {
+            if (!anonymousFunction.AsyncKeyword.IsKind(SyntaxKind.AsyncKeyword))
+            {
+                newRoot = null!;
+                return false;
+            }
+
+            newRoot = root.ReplaceNode(expression, awaitExpression);
+            return true;
+        }
+
+        if (container is LocalFunctionStatementSyntax localFunction)
+        {
+            if (!localFunction.Modifiers.Any(SyntaxKind.AsyncKeyword))
+            {
+                newRoot = null!;
+                return false;
+            }
+
+            newRoot = root.ReplaceNode(expression, awaitExpression);
+            return true;
+        }
+
+        if (container is not MethodDeclarationSyntax enclosingMethod)
+        {
+            newRoot = null!;
+            return false;
+        }
+
+        if (enclosingMethod.Modifiers.Any(SyntaxKind.AsyncKeyword))
+        {
+            newRoot = root.ReplaceNode(expression, awaitExpression);
+            return true;
+        }
+
+        // Only a void-returning method can be turned into an async method without changing its contract
+        if (enclosingMethod.ReturnType is not PredefinedTypeSyntax { Keyword.RawKind: (int)SyntaxKind.VoidKeyword })
+        {
+            newRoot = null!;
+            return false;
+        }
+
+        var taskType = semanticModel.Compilation.GetTypeByMetadataName("System.Threading.Tasks.Task");
+        if (taskType is null)
+        {
+            newRoot = null!;
+            return false;
+        }
+
+        var taskTypeSyntax = SyntaxFactory
+            .ParseTypeName(taskType.ToMinimalDisplayString(semanticModel, enclosingMethod.ReturnType.SpanStart))
+            .WithTriviaFrom(enclosingMethod.ReturnType);
+
+        var newMethod = enclosingMethod
+            .ReplaceNode(expression, awaitExpression)
+            .WithReturnType(taskTypeSyntax)
+            .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword).WithTrailingTrivia(SyntaxFactory.Space));
+
+        newRoot = root.ReplaceNode(enclosingMethod, newMethod);
+        return true;
+    }
+
     private static bool TryGetMessageArgument(InvocationExpressionSyntax invocation, out ArgumentSyntax messageArgument)
     {
         var positionalArgumentIndex = 0;

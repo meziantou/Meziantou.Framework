@@ -225,9 +225,11 @@ public sealed class ImmutableEquatableSetTests
         var set = ImmutableEquatableSet.Create(new HashSet<string>(StringComparer.Ordinal) { "a", "b" });
         var iset = (ISet<string>)set;
 
+#pragma warning disable MFAS0041, MFAS0042 // The test validates IsProperSubsetOf itself
         Assert.True(iset.IsProperSubsetOf(new[] { "a", "b", "c" }));
         Assert.False(iset.IsProperSubsetOf(new[] { "a", "b" }));
         Assert.False(iset.IsProperSubsetOf(new[] { "a" }));
+#pragma warning restore MFAS0041, MFAS0042
     }
 
     [Fact]
@@ -236,9 +238,11 @@ public sealed class ImmutableEquatableSetTests
         var set = ImmutableEquatableSet.Create(new HashSet<string>(StringComparer.Ordinal) { "a", "b", "c" });
         var iset = (ISet<string>)set;
 
+#pragma warning disable MFAS0043, MFAS0044 // The test validates IsProperSupersetOf itself
         Assert.True(iset.IsProperSupersetOf(new[] { "a", "b" }));
         Assert.False(iset.IsProperSupersetOf(new[] { "a", "b", "c" }));
         Assert.False(iset.IsProperSupersetOf(new[] { "a", "b", "c", "d" }));
+#pragma warning restore MFAS0043, MFAS0044
     }
 
     [Fact]

@@ -77,7 +77,7 @@ public abstract class ConditionRewriteCodeFixProviderBase : CodeFixProvider
         if (!Matcher(assertOperation, assertType, symbols.Value, out var match))
             return document;
 
-        if (!AssertionCodeFixHelpers.TryCreateConditionRewriteFix(assertInvocation, match, out var fixedInvocation))
+        if (!AssertionCodeFixHelpers.TryCreateConditionRewriteFix(semanticModel, assertInvocation, match, out var fixedInvocation))
             return document;
 
         var newRoot = root.ReplaceNode(assertInvocation, fixedInvocation.WithAdditionalAnnotations(Formatter.Annotation));

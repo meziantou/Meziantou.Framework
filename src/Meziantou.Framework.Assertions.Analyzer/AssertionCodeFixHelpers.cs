@@ -153,6 +153,7 @@ internal static class AssertionCodeFixHelpers
     /// Builds the replacement for an <c>Assert.True</c>/<c>Assert.False</c> call rewritten into a dedicated assertion.
     /// </summary>
     internal static bool TryCreateConditionRewriteFix(
+        SemanticModel semanticModel,
         InvocationExpressionSyntax assertInvocation,
         ConditionRewriteAnalyzerCommon.ConditionRewriteMatch match,
         out InvocationExpressionSyntax fixedInvocation)
@@ -185,8 +186,15 @@ internal static class AssertionCodeFixHelpers
                 messageArgument.Expression.WithoutTrivia()));
         }
 
+        var expression = match.TypeArgument is null
+            ? ReplaceMethodName(assertInvocation.Expression, match.AssertionMethodName)
+            : ReplaceMethodNameWithTypeArgument(
+                assertInvocation.Expression,
+                match.AssertionMethodName,
+                SyntaxFactory.ParseTypeName(match.TypeArgument.ToMinimalDisplayString(semanticModel, assertInvocation.SpanStart)));
+
         fixedInvocation = assertInvocation
-            .WithExpression(ReplaceMethodName(assertInvocation.Expression, match.AssertionMethodName))
+            .WithExpression(expression)
             .WithArgumentList(SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
         return true;
     }

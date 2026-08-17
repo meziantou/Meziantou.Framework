@@ -80,10 +80,12 @@ public class ConcurrentHashSetTests
         var set = new ConcurrentHashSet<string>(StringComparer.OrdinalIgnoreCase);
         set.AddRange("a", "b");
 
+#pragma warning disable MFAS0041, MFAS0043 // The test validates the set comparison methods themselves
         Assert.True(set.IsSubsetOf(["A", "B", "C"]));
         Assert.True(set.IsProperSubsetOf(["A", "B", "C"]));
         Assert.True(set.IsSupersetOf(["A"]));
         Assert.True(set.IsProperSupersetOf(["A"]));
+#pragma warning restore MFAS0041, MFAS0043
         Assert.True(set.Overlaps(["A", "C"]));
         Assert.True(set.SetEquals(["A", "B"]));
     }

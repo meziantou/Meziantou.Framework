@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Operations;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
@@ -15,12 +16,24 @@ internal static class ConditionRewriteAnalyzerCommon
     private const string NotEqualAssertionMethodName = "NotEqual";
     private const string SameAssertionMethodName = "Same";
     private const string NotSameAssertionMethodName = "NotSame";
+    private const string InRangeAssertionMethodName = "InRange";
+    private const string NotInRangeAssertionMethodName = "NotInRange";
+    private const string ProperSubsetAssertionMethodName = "ProperSubset";
+    private const string NotProperSubsetAssertionMethodName = "NotProperSubset";
+    private const string ProperSupersetAssertionMethodName = "ProperSuperset";
+    private const string NotProperSupersetAssertionMethodName = "NotProperSuperset";
+    private const string IsTypeAssertionMethodName = "IsType";
+    private const string IsNotTypeAssertionMethodName = "IsNotType";
+    private const string TrueAssertionMethodName = "True";
+    private const string FalseAssertionMethodName = "False";
 
     internal static bool TryCreateSymbols(Compilation compilation, [NotNullWhen(true)] out Symbols? symbols)
     {
         var enumerableType = compilation.GetTypeByMetadataName("System.Linq.Enumerable");
+        var setType = compilation.GetTypeByMetadataName("System.Collections.Generic.ISet`1");
         var nonGenericEnumerableType = compilation.GetTypeByMetadataName("System.Collections.IEnumerable");
-        if (enumerableType is null || nonGenericEnumerableType is null)
+        var comparableType = compilation.GetTypeByMetadataName("System.IComparable`1");
+        if (enumerableType is null || setType is null || nonGenericEnumerableType is null || comparableType is null)
         {
             symbols = null;
             return false;
@@ -49,12 +62,20 @@ internal static class ConditionRewriteAnalyzerCommon
             .OfType<IMethodSymbol>()
             .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 2 });
 
+        var objectGetTypeMethod = objectType.GetMembers("GetType")
+            .OfType<IMethodSymbol>()
+            .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0 });
+
         var stringStaticEqualsMethods = stringType.GetMembers("Equals")
             .OfType<IMethodSymbol>()
             .Where(m => m.IsStatic && m.Parameters.Length is 2 or 3)
             .ToImmutableArray();
 
-        if (objectReferenceEqualsMethod is null || objectStaticEqualsMethod is null)
+        var setProperSubsetMethod = setType.GetMembers("IsProperSubsetOf").OfType<IMethodSymbol>().FirstOrDefault();
+        var setProperSupersetMethod = setType.GetMembers("IsProperSupersetOf").OfType<IMethodSymbol>().FirstOrDefault();
+
+        if (objectReferenceEqualsMethod is null || objectStaticEqualsMethod is null || objectGetTypeMethod is null ||
+            setProperSubsetMethod is null || setProperSupersetMethod is null)
         {
             symbols = null;
             return false;
@@ -65,8 +86,12 @@ internal static class ConditionRewriteAnalyzerCommon
             sequenceEqualMethods,
             objectReferenceEqualsMethod,
             objectStaticEqualsMethod,
+            objectGetTypeMethod,
             stringStaticEqualsMethods,
-            nonGenericEnumerableType);
+            setProperSubsetMethod,
+            setProperSupersetMethod,
+            nonGenericEnumerableType,
+            comparableType);
         return true;
     }
 
@@ -293,6 +318,260 @@ internal static class ConditionRewriteAnalyzerCommon
     }
 
     // ---------------------------------------------------------------------------------------------------------
+    // Assert.True(low <= x && x <= high) -> Assert.InRange(x, low, high)
+    // ---------------------------------------------------------------------------------------------------------
+    internal static bool TryGetRangeMatch(IInvocationOperation assertInvocation, INamedTypeSymbol assertType, Symbols symbols, out ConditionRewriteMatch match)
+    {
+        if (!TryGetCondition(assertInvocation, assertType, out var conditionOperation, out var conditionExpectedToBeFalse) ||
+            conditionOperation is not IBinaryOperation { OperatorKind: BinaryOperatorKind.ConditionalAnd } andOperation)
+        {
+            match = default;
+            return false;
+        }
+
+        if (!TryGetComparison(andOperation.LeftOperand, symbols, out var first) ||
+            !TryGetComparison(andOperation.RightOperand, symbols, out var second))
+        {
+            match = default;
+            return false;
+        }
+
+        // The value under test is the operand the two comparisons have in common, which works whether the bounds
+        // are constants or variables and whichever side of each comparison the value is written on
+        if (!TryGetSharedValue(first, second, out var value, out var lowOperand, out var highOperand))
+        {
+            match = default;
+            return false;
+        }
+
+        var assertionMethodName = conditionExpectedToBeFalse ? NotInRangeAssertionMethodName : InRangeAssertionMethodName;
+        match = new ConditionRewriteMatch(andOperation, assertionMethodName, [value, lowOperand, highOperand]);
+        return true;
+    }
+
+    private static bool TryGetComparison(IOperation operation, Symbols symbols, out Comparison comparison)
+    {
+        operation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(operation);
+
+        // Assert.InRange is inclusive on both ends, so strict comparisons are not equivalent
+        if (operation is IBinaryOperation binaryOperation &&
+            binaryOperation.OperatorKind is BinaryOperatorKind.GreaterThanOrEqual or BinaryOperatorKind.LessThanOrEqual &&
+            IsComparableWithDefaultComparer(binaryOperation, symbols))
+        {
+            comparison = new Comparison(
+                AssertionsAnalyzerHelpers.UnwrapImplicitConversion(binaryOperation.LeftOperand),
+                AssertionsAnalyzerHelpers.UnwrapImplicitConversion(binaryOperation.RightOperand),
+                binaryOperation.OperatorKind);
+            return true;
+        }
+
+        comparison = default;
+        return false;
+    }
+
+    private static bool TryGetSharedValue(Comparison first, Comparison second, out IOperation value, out IOperation lowOperand, out IOperation highOperand)
+    {
+        foreach (var valueOnFirstLeft in Booleans)
+        {
+            var candidate = valueOnFirstLeft ? first.Left : first.Right;
+            foreach (var valueOnSecondLeft in Booleans)
+            {
+                var other = valueOnSecondLeft ? second.Left : second.Right;
+                if (!SyntaxFactory.AreEquivalent(candidate.Syntax, other.Syntax))
+                    continue;
+
+                var firstIsLowerBound = IsLowerBound(first.OperatorKind, valueOnFirstLeft);
+                var secondIsLowerBound = IsLowerBound(second.OperatorKind, valueOnSecondLeft);
+
+                // One comparison must give the lower bound and the other the upper bound
+                if (firstIsLowerBound == secondIsLowerBound)
+                    continue;
+
+                var firstBound = valueOnFirstLeft ? first.Right : first.Left;
+                var secondBound = valueOnSecondLeft ? second.Right : second.Left;
+
+                value = candidate;
+                lowOperand = firstIsLowerBound ? firstBound : secondBound;
+                highOperand = firstIsLowerBound ? secondBound : firstBound;
+                return true;
+            }
+        }
+
+        value = null!;
+        lowOperand = null!;
+        highOperand = null!;
+        return false;
+    }
+
+    /// <summary>'value &gt;= bound' and 'bound &lt;= value' both express a lower bound.</summary>
+    private static bool IsLowerBound(BinaryOperatorKind operatorKind, bool valueOnLeft)
+        => valueOnLeft
+            ? operatorKind == BinaryOperatorKind.GreaterThanOrEqual
+            : operatorKind == BinaryOperatorKind.LessThanOrEqual;
+
+    private static readonly bool[] Booleans = [true, false];
+
+    private readonly record struct Comparison(IOperation Left, IOperation Right, BinaryOperatorKind OperatorKind);
+
+    private static bool IsComparableWithDefaultComparer(IBinaryOperation binaryOperation, Symbols symbols)
+    {
+        // Built-in relational operators always agree with Comparer<T>.Default
+        if (binaryOperation.OperatorMethod is null)
+            return true;
+
+        var type = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(binaryOperation.LeftOperand).Type;
+        if (type is null)
+            return false;
+
+        foreach (var interfaceType in type.AllInterfaces)
+        {
+            if (SymbolEqualityComparer.Default.Equals(interfaceType.OriginalDefinition, symbols.ComparableType) &&
+                interfaceType.TypeArguments is [var typeArgument] &&
+                SymbolEqualityComparer.Default.Equals(typeArgument, type))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    // Assert.True(set.IsProperSubsetOf(other)) -> Assert.ProperSubset(set, other)
+    // ---------------------------------------------------------------------------------------------------------
+    internal static bool TryGetSetMatch(IInvocationOperation assertInvocation, INamedTypeSymbol assertType, Symbols symbols, out ConditionRewriteMatch match)
+    {
+        if (!TryGetCondition(assertInvocation, assertType, out var conditionOperation, out var conditionExpectedToBeFalse) ||
+            conditionOperation is not IInvocationOperation { Instance: { } instance, Arguments.Length: 1 } invocation)
+        {
+            match = default;
+            return false;
+        }
+
+        var isSubset = invocation.TargetMethod.Name == "IsProperSubsetOf";
+        var isSuperset = invocation.TargetMethod.Name == "IsProperSupersetOf";
+        if (!isSubset && !isSuperset)
+        {
+            match = default;
+            return false;
+        }
+
+        var interfaceMethod = isSubset ? symbols.SetProperSubsetMethod : symbols.SetProperSupersetMethod;
+        if (!ImplementsSetMethod(invocation.TargetMethod, interfaceMethod))
+        {
+            match = default;
+            return false;
+        }
+
+        // Assert.ProperSubset(expected, actual) asserts that 'expected' is a proper subset of 'actual',
+        // which matches the receiver/argument order of ISet<T>.IsProperSubsetOf
+        var assertionMethodName = (isSubset, conditionExpectedToBeFalse) switch
+        {
+            (true, false) => ProperSubsetAssertionMethodName,
+            (true, true) => NotProperSubsetAssertionMethodName,
+            (false, false) => ProperSupersetAssertionMethodName,
+            (false, true) => NotProperSupersetAssertionMethodName,
+        };
+
+        match = new ConditionRewriteMatch(
+            invocation,
+            assertionMethodName,
+            [AssertionsAnalyzerHelpers.UnwrapImplicitConversion(instance), AssertionsAnalyzerHelpers.UnwrapImplicitConversion(invocation.Arguments[0].Value)]);
+        return true;
+    }
+
+    private static bool ImplementsSetMethod(IMethodSymbol method, IMethodSymbol interfaceMethodDefinition)
+    {
+        if (SymbolEqualityComparer.Default.Equals(method.OriginalDefinition, interfaceMethodDefinition))
+            return true;
+
+        foreach (var interfaceType in method.ContainingType.AllInterfaces)
+        {
+            if (!SymbolEqualityComparer.Default.Equals(interfaceType.OriginalDefinition, interfaceMethodDefinition.ContainingType))
+                continue;
+
+            var interfaceMethod = interfaceType.GetMembers(interfaceMethodDefinition.Name).OfType<IMethodSymbol>().FirstOrDefault();
+            if (interfaceMethod is null)
+                continue;
+
+            if (SymbolEqualityComparer.Default.Equals(method.ContainingType.FindImplementationForInterfaceMember(interfaceMethod), method))
+                return true;
+        }
+
+        return false;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    // Assert.True(!condition) -> Assert.False(condition)
+    // ---------------------------------------------------------------------------------------------------------
+    internal static bool TryGetNegatedConditionMatch(IInvocationOperation assertInvocation, INamedTypeSymbol assertType, Symbols symbols, out ConditionRewriteMatch match)
+    {
+        _ = symbols;
+        if (!TryGetCondition(assertInvocation, assertType, out var conditionOperation, out var conditionExpectedToBeFalse) ||
+            conditionOperation is not IUnaryOperation { OperatorKind: UnaryOperatorKind.Not, OperatorMethod: null } unaryOperation)
+        {
+            match = default;
+            return false;
+        }
+
+        var operand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(unaryOperation.Operand);
+        if (operand.Type?.SpecialType != SpecialType.System_Boolean)
+        {
+            match = default;
+            return false;
+        }
+
+        var assertionMethodName = conditionExpectedToBeFalse ? TrueAssertionMethodName : FalseAssertionMethodName;
+        match = new ConditionRewriteMatch(unaryOperation, assertionMethodName, [operand]);
+        return true;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    // Assert.True(x.GetType() == typeof(T)) -> Assert.IsType<T>(x)
+    // ---------------------------------------------------------------------------------------------------------
+    internal static bool TryGetRuntimeTypeMatch(IInvocationOperation assertInvocation, INamedTypeSymbol assertType, Symbols symbols, out ConditionRewriteMatch match)
+    {
+        if (!TryGetCondition(assertInvocation, assertType, out var conditionOperation, out var conditionExpectedToBeFalse) ||
+            conditionOperation is not IBinaryOperation binaryOperation ||
+            binaryOperation.OperatorKind is not (BinaryOperatorKind.Equals or BinaryOperatorKind.NotEquals))
+        {
+            match = default;
+            return false;
+        }
+
+        var left = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(binaryOperation.LeftOperand);
+        var right = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(binaryOperation.RightOperand);
+
+        if (!TryGetGetTypeReceiverAndType(left, right, symbols, out var receiver, out var type) &&
+            !TryGetGetTypeReceiverAndType(right, left, symbols, out receiver, out type))
+        {
+            match = default;
+            return false;
+        }
+
+        var negated = binaryOperation.OperatorKind == BinaryOperatorKind.NotEquals ^ conditionExpectedToBeFalse;
+        var assertionMethodName = negated ? IsNotTypeAssertionMethodName : IsTypeAssertionMethodName;
+        match = new ConditionRewriteMatch(binaryOperation, assertionMethodName, [receiver], TypeArgument: type);
+        return true;
+    }
+
+    private static bool TryGetGetTypeReceiverAndType(IOperation getTypeCandidate, IOperation typeOfCandidate, Symbols symbols, out IOperation receiver, out ITypeSymbol type)
+    {
+        if (getTypeCandidate is IInvocationOperation { TargetMethod.Name: "GetType", Instance: { } instance } getTypeInvocation &&
+            SymbolEqualityComparer.Default.Equals(getTypeInvocation.TargetMethod.OriginalDefinition, symbols.ObjectGetTypeMethod) &&
+            typeOfCandidate is ITypeOfOperation { TypeOperand: { } typeOperand })
+        {
+            receiver = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(instance);
+            type = typeOperand;
+            return true;
+        }
+
+        receiver = null!;
+        type = null!;
+        return false;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
 
     private static bool TryGetCondition(IInvocationOperation assertInvocation, INamedTypeSymbol assertType, out IOperation conditionOperation, out bool conditionExpectedToBeFalse)
     {
@@ -396,12 +675,17 @@ internal static class ConditionRewriteAnalyzerCommon
         ImmutableArray<IMethodSymbol> SequenceEqualMethods,
         IMethodSymbol ObjectReferenceEqualsMethod,
         IMethodSymbol ObjectStaticEqualsMethod,
+        IMethodSymbol ObjectGetTypeMethod,
         ImmutableArray<IMethodSymbol> StringStaticEqualsMethods,
-        INamedTypeSymbol NonGenericEnumerableType);
+        IMethodSymbol SetProperSubsetMethod,
+        IMethodSymbol SetProperSupersetMethod,
+        INamedTypeSymbol NonGenericEnumerableType,
+        INamedTypeSymbol ComparableType);
 
     internal readonly record struct ConditionRewriteMatch(
         IOperation ReportOperation,
         string AssertionMethodName,
         IOperation[] Arguments,
-        bool? IgnoreCaseValue = null);
+        bool? IgnoreCaseValue = null,
+        ITypeSymbol? TypeArgument = null);
 }

@@ -122,4 +122,13 @@ The package ships analyzers and code fixes to help write clearer assertions.
 | `MFAS0036` | Assertions | Use Assert.NotEqual instead of Assert.False(actual.SequenceEqual(expected)) | Warning | ✔️ |
 | `MFAS0037` | Assertions | Use Assert.Same instead of Assert.True(ReferenceEquals(a, b)) | Warning | ✔️ |
 | `MFAS0038` | Assertions | Use Assert.NotSame instead of Assert.False(ReferenceEquals(a, b)) | Warning | ✔️ |
+| `MFAS0039` | Assertions | Use Assert.InRange instead of Assert.True(low <= x && x <= high) | Warning | ✔️ |
+| `MFAS0040` | Assertions | Use Assert.NotInRange instead of Assert.False(low <= x && x <= high) | Warning | ✔️ |
+| `MFAS0041` | Assertions | Use Assert.ProperSubset instead of Assert.True(set.IsProperSubsetOf(other)) | Warning | ✔️ |
+| `MFAS0042` | Assertions | Use Assert.NotProperSubset instead of Assert.False(set.IsProperSubsetOf(other)) | Warning | ✔️ |
+| `MFAS0043` | Assertions | Use Assert.ProperSuperset instead of Assert.True(set.IsProperSupersetOf(other)) | Warning | ✔️ |
+| `MFAS0044` | Assertions | Use Assert.NotProperSuperset instead of Assert.False(set.IsProperSupersetOf(other)) | Warning | ✔️ |
+| `MFAS0045` | Assertions | Use Assert.False instead of Assert.True(!condition) | Warning | ✔️ |
+| `MFAS0046` | Assertions | Use Assert.IsType instead of Assert.True(x.GetType() == typeof(T)) | Warning | ✔️ |
+| `MFAS0047` | Assertions | Use Assert.IsNotType instead of Assert.False(x.GetType() == typeof(T)) | Warning | ✔️ |
 <!-- analyzer-rules -->

@@ -47,6 +47,7 @@ public sealed class ImageLoaderTests
         Assert.Equal(ComputeReferenceMeanSsim(expected, actual), accumulator.ComputeMeanSsim());
     }
 
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test pixels, and the fixed seed keeps the score reproducible.")]
     private static (uint[] Expected, uint[] Actual) CreatePixels(int pixelCount)
     {
         var random = new Random(42);

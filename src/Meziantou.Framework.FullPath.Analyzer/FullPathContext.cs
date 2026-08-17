@@ -30,9 +30,8 @@ internal sealed class FullPathContext(Compilation compilation)
             // Path.GetTempPath() => FullPath.GetTempPath()
             { Name: "GetTempPath", Parameters.IsEmpty: true } when SymbolEqualityComparer.Default.Equals(methodSymbol.ContainingType, PathType) => "Path",
 
-            // Environment.GetFolderPath(SpecialFolder) => FullPath.GetFolderPath(SpecialFolder)
-            // The (SpecialFolder, SpecialFolderOption) overload has no FullPath equivalent
-            { Name: "GetFolderPath", Parameters.Length: 1 } when SymbolEqualityComparer.Default.Equals(methodSymbol.ContainingType, EnvironmentType) => "Environment",
+            // Environment.GetFolderPath(SpecialFolder[, SpecialFolderOption]) => FullPath.GetFolderPath(SpecialFolder[, SpecialFolderOption])
+            { Name: "GetFolderPath", Parameters.Length: 1 or 2 } when SymbolEqualityComparer.Default.Equals(methodSymbol.ContainingType, EnvironmentType) => "Environment",
 
             _ => null,
         };

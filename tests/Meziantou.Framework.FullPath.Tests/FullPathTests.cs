@@ -445,6 +445,20 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public void GetFolderPath()
+    {
+        var expected = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        Assert.Equal(FullPath.FromPath(expected), FullPath.GetFolderPath(Environment.SpecialFolder.UserProfile));
+    }
+
+    [Fact]
+    public void GetFolderPath_WithSpecialFolderOption()
+    {
+        var expected = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
+        Assert.Equal(FullPath.FromPath(expected), FullPath.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify));
+    }
+
+    [Fact]
     public async Task TryFindFirstAncestorOrSelf()
     {
         await using var tempDir = TemporaryDirectory.Create();

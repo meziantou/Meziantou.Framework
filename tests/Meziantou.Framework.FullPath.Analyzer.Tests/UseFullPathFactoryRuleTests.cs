@@ -118,10 +118,11 @@ public sealed class UseFullPathFactoryRuleTests : FullPathAnalyzerTestBase
     }
 
     [Fact]
-    public async Task Analyzer_DoesNotReportDiagnostic_ForEnvironmentGetFolderPathWithSpecialFolderOption()
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForEnvironmentGetFolderPathWithSpecialFolderOption()
     {
         var source = """
             using System;
+            using Meziantou.Framework;
 
             namespace Sample
             {
@@ -129,13 +130,29 @@ public sealed class UseFullPathFactoryRuleTests : FullPathAnalyzerTestBase
                 {
                     public static string M()
                     {
-                        return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.Create);
+                        return {|MFFP0024:Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.Create)|};
                     }
                 }
             }
             """;
 
-        await CreateAnalyzerTest<UseFullPathFactoryAnalyzerType>(source).RunAsync(XunitCancellationToken);
+        var fixedSource = """
+            using System;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M()
+                    {
+                        return FullPath.GetFolderPath(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.Create);
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<UseFullPathFactoryAnalyzerType, UseFullPathFactoryCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]

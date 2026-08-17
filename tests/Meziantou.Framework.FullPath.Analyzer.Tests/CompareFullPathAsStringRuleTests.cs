@@ -5,11 +5,11 @@ namespace Meziantou.Framework.Tests;
 public sealed class CompareFullPathAsStringRuleTests : FullPathAnalyzerTestBase
 {
     [Theory]
-    [InlineData("""fullPath == "value" """)]
-    [InlineData("""fullPath != "value" """)]
-    [InlineData("""fullPath.Value == other.Value""")]
-    [InlineData("""fullPath.ToString() == text""")]
-    [InlineData("""text == fullPath""")]
+    [InlineData("fullPath == \"value\"")]
+    [InlineData("fullPath != \"value\"")]
+    [InlineData("fullPath.Value == other.Value")]
+    [InlineData("fullPath.ToString() == text")]
+    [InlineData("text == fullPath")]
     public async Task Analyzer_ReportDiagnostic_ForStringComparison(string expression)
     {
         var source = $$"""

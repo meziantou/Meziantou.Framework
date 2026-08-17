@@ -2171,7 +2171,7 @@ public class YamlSerializerSourceGenerationTests
         Assert.NotNull(roundtripped);
         Assert.NotNull(roundtripped.First);
         Assert.NotNull(roundtripped.Second);
-        Assert.True(ReferenceEquals(roundtripped.First, roundtripped.Second));
+        Assert.Same(roundtripped.First, roundtripped.Second);
         Assert.Equal("shared", roundtripped.First.Name);
     }
 
@@ -2195,7 +2195,7 @@ public class YamlSerializerSourceGenerationTests
         var roundtripped = YamlSerializer.Deserialize(yaml, typeInfo);
         Assert.NotNull(roundtripped);
         Assert.NotNull(roundtripped.Next);
-        Assert.True(ReferenceEquals(roundtripped, roundtripped.Next));
+        Assert.Same(roundtripped, roundtripped.Next);
     }
 
     [Fact]

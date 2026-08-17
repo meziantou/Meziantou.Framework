@@ -123,6 +123,74 @@ internal static class AssertionCodeFixHelpers
         return true;
     }
 
+    /// <summary>
+    /// Finds the <c>Assert.True</c>/<c>Assert.False</c> invocation that encloses <paramref name="diagnosticNode"/>.
+    /// The condition is not necessarily an invocation, so ancestors are matched semantically rather than by depth.
+    /// </summary>
+    internal static bool TryFindEnclosingAssertTrueFalseInvocation(
+        SemanticModel semanticModel,
+        SyntaxNode diagnosticNode,
+        INamedTypeSymbol assertType,
+        CancellationToken cancellationToken,
+        out InvocationExpressionSyntax assertInvocation)
+    {
+        foreach (var candidate in diagnosticNode.AncestorsAndSelf().OfType<InvocationExpressionSyntax>())
+        {
+            if (TryGetInvocationOperation(semanticModel, candidate, cancellationToken, out var operation) &&
+                operation.TargetMethod is { IsStatic: true, Name: "True" or "False" } targetMethod &&
+                SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, assertType))
+            {
+                assertInvocation = candidate;
+                return true;
+            }
+        }
+
+        assertInvocation = null!;
+        return false;
+    }
+
+    /// <summary>
+    /// Builds the replacement for an <c>Assert.True</c>/<c>Assert.False</c> call rewritten into a dedicated assertion.
+    /// </summary>
+    internal static bool TryCreateConditionRewriteFix(
+        InvocationExpressionSyntax assertInvocation,
+        ConditionRewriteAnalyzerCommon.ConditionRewriteMatch match,
+        out InvocationExpressionSyntax fixedInvocation)
+    {
+        var arguments = new List<ArgumentSyntax>(match.Arguments.Length + 2);
+        foreach (var argument in match.Arguments)
+        {
+            if (!TryGetExpressionSyntax(argument, out var argumentExpression))
+            {
+                fixedInvocation = null!;
+                return false;
+            }
+
+            arguments.Add(SyntaxFactory.Argument(argumentExpression.WithoutTrivia()));
+        }
+
+        if (match.IgnoreCaseValue == true)
+        {
+            arguments.Add(SyntaxFactory.Argument(
+                SyntaxFactory.NameColon(SyntaxFactory.IdentifierName("ignoreCase")),
+                refKindKeyword: default,
+                SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression)));
+        }
+
+        if (TryGetMessageArgument(assertInvocation, out var messageArgument))
+        {
+            arguments.Add(SyntaxFactory.Argument(
+                SyntaxFactory.NameColon(SyntaxFactory.IdentifierName("message")),
+                refKindKeyword: default,
+                messageArgument.Expression.WithoutTrivia()));
+        }
+
+        fixedInvocation = assertInvocation
+            .WithExpression(ReplaceMethodName(assertInvocation.Expression, match.AssertionMethodName))
+            .WithArgumentList(SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
+        return true;
+    }
+
     private static bool TryGetMessageArgument(InvocationExpressionSyntax invocation, out ArgumentSyntax messageArgument)
     {
         var positionalArgumentIndex = 0;

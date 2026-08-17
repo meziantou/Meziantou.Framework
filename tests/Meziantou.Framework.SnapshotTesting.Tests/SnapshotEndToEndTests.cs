@@ -1439,9 +1439,7 @@ public sealed partial class SnapshotEndToEndTests
             }
         }
 
-        Assert.True(
-            result.ExitCode == expectedExitCode,
-            $"dotnet {string.Join(' ', arguments)} returned exit code {result.ExitCode} after {maxAttempts} attempts but {expectedExitCode} was expected.{Environment.NewLine}{output}");
+        Assert.Equal(expectedExitCode, result.ExitCode, message: $"dotnet {string.Join(' ', arguments)} returned exit code {result.ExitCode} after {maxAttempts} attempts but {expectedExitCode} was expected.{Environment.NewLine}{output}");
     }
 
     private static async Task<DotNetExecutionResult> ExecuteDotNet(FullPath workingDirectory, string dotnetPath, IReadOnlyList<string> arguments, int? expectedExitCode = null)

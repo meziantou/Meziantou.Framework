@@ -32,4 +32,12 @@ internal static class RuleIdentifiers
     internal const string UseNotEmptyForAnyDiagnosticId = "MFAS0028";
     internal const string UseEmptyForAnyDiagnosticId = "MFAS0029";
     internal const string UseEmptinessAssertionDiagnosticId = "MFAS0030";
+    internal const string UseEqualForEqualityOperatorDiagnosticId = "MFAS0031";
+    internal const string UseNotEqualForEqualityOperatorDiagnosticId = "MFAS0032";
+    internal const string UseEqualForEqualsMethodDiagnosticId = "MFAS0033";
+    internal const string UseNotEqualForEqualsMethodDiagnosticId = "MFAS0034";
+    internal const string UseEqualForSequenceEqualDiagnosticId = "MFAS0035";
+    internal const string UseNotEqualForSequenceEqualDiagnosticId = "MFAS0036";
+    internal const string UseSameForReferenceEqualsDiagnosticId = "MFAS0037";
+    internal const string UseNotSameForReferenceEqualsDiagnosticId = "MFAS0038";
 }

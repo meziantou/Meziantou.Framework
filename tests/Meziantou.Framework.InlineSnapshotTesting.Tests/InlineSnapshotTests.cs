@@ -1380,9 +1380,7 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
         process.BeginErrorReadLine();
         await process.WaitForExitAsync(TestContext.Current.CancellationToken);
 
-        Assert.True(
-            expectedExitCode == process.ExitCode,
-            $"dotnet {string.Join(' ', arguments)} returned exit code {process.ExitCode} but {expectedExitCode} was expected.{Environment.NewLine}{output}");
+        Assert.Equal(expectedExitCode, process.ExitCode, message: $"dotnet {string.Join(' ', arguments)} returned exit code {process.ExitCode} but {expectedExitCode} was expected.{Environment.NewLine}{output}");
 
         static void AppendLine(StringBuilder builder, string? line)
         {

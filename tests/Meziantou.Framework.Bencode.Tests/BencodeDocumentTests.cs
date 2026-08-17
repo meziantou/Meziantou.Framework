@@ -141,9 +141,11 @@ public sealed class BencodeDocumentTests
         var equal = new BencodeInteger(42);
         var different = new BencodeInteger(-1);
 
+#pragma warning disable MFAS0033, MFAS0034 // Preserve the Equals overload validation
         Assert.True(left.Equals(equal));
         Assert.True(left.Equals((object)equal));
         Assert.False(left.Equals(different));
+#pragma warning restore MFAS0033, MFAS0034
         Assert.Equal(left.GetHashCode(), equal.GetHashCode());
         Assert.Equal("42", left.ToString());
         Assert.Equal("-1", different.ToString());

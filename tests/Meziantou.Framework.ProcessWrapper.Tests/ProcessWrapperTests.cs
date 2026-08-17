@@ -27,9 +27,11 @@ public class ProcessWrapperTests
         var exitCodeB = new ProcessExitCode(42);
         var exitCodeC = new ProcessExitCode(1);
 
+#pragma warning disable MFAS0033, MFAS0034 // Preserve the Equals overload validation
         Assert.True(exitCodeA.Equals(exitCodeB));
         Assert.True(exitCodeA.Equals((object)exitCodeB));
         Assert.False(exitCodeA.Equals(exitCodeC));
+#pragma warning restore MFAS0033, MFAS0034
         Assert.True(exitCodeA == exitCodeB);
         Assert.True(exitCodeA != exitCodeC);
         Assert.Equal(exitCodeA.GetHashCode(), exitCodeB.GetHashCode());

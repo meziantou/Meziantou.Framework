@@ -21,7 +21,7 @@ public sealed class CompareFullPathAsStringRuleTests : FullPathAnalyzerTestBase
                 {
                     public static bool M(FullPath fullPath, FullPath other, string text)
                     {
-                        return {|MFFP0015:{{expression.TrimEnd()}}|};
+                        return {|MFFP0015:{{expression}}|};
                     }
                 }
             }

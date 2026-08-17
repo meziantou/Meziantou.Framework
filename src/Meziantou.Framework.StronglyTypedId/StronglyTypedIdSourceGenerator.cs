@@ -17,6 +17,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
     private const string PropertyName = "Value";
     private const string PropertyAsStringName = "ValueAsString";
 
+    internal const string GuidGenerationStrategyPropertyName = "GuidGenerationStrategy";
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var nonGenericTypes = context.SyntaxProvider
@@ -146,6 +148,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
                 var stringComparison = GetNamedProperty("StringComparison", defaultValue: StringComparison.Ordinal);
                 var generateToStringAsRecord = GetNamedProperty("GenerateToStringAsRecord", defaultValue: true);
+                var guidGenerationStrategy = GetNamedProperty(GuidGenerationStrategyPropertyName, defaultValue: GuidGenerationStrategy.Version4);
 
                 var attributeSyntax = attribute.ApplicationSyntaxReference!.GetSyntax(cancellationToken);
                 var idType = GetIdType(semanticModel.Compilation, type);
@@ -164,7 +167,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                     converters,
                     addCodeGeneratedAttribute,
                     stringComparison,
-                    generateToStringAsRecord);
+                    generateToStringAsRecord,
+                    guidGenerationStrategy);
             }
 
             return null;
@@ -182,6 +186,11 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         if (attribute.IdType is IdType.System_String)
         {
             writer.WriteLine("// StringComparison: " + attribute.StringComparison);
+        }
+
+        if (attribute.IdType is IdType.System_Guid)
+        {
+            writer.WriteLine("// GuidGenerationStrategy: " + attribute.GuidGenerationStrategy);
         }
 
         writer.WriteLine("#pragma warning disable RS0030");
@@ -374,7 +383,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
     private sealed class AttributeInfo : IEquatable<AttributeInfo>
     {
-        public AttributeInfo(Compilation compilation, SyntaxNode attributeSyntax, INamedTypeSymbol typeSymbol, IdType idType, ITypeSymbol idTypeSymbol, StronglyTypedIdConverters converters, bool addCodeGeneratedAttribute, StringComparison stringComparison, bool generateToStringAsRecord)
+        public AttributeInfo(Compilation compilation, SyntaxNode attributeSyntax, INamedTypeSymbol typeSymbol, IdType idType, ITypeSymbol idTypeSymbol, StronglyTypedIdConverters converters, bool addCodeGeneratedAttribute, StringComparison stringComparison, bool generateToStringAsRecord, GuidGenerationStrategy guidGenerationStrategy)
         {
             Debug.Assert(idType != IdType.Unknown);
 
@@ -384,6 +393,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             AddCodeGeneratedAttribute = addCodeGeneratedAttribute;
             StringComparison = stringComparison;
             GenerateToStringAsRecord = generateToStringAsRecord;
+            GuidGenerationStrategy = guidGenerationStrategy;
             TypeName = typeSymbol.Name;
             IsSealed = typeSymbol.IsSealed;
             IsReferenceType = typeSymbol.IsReferenceType;
@@ -487,6 +497,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             SupportMongoDbConverter = compilation.GetTypeByMetadataName("MongoDB.Bson.Serialization.Serializers.SerializerBase`1") is not null;
             SupportNotNullWhenAttribute = compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") is { } type && compilation.IsSymbolAccessibleWithin(type, compilation.Assembly);
             SupportStaticInterfaces = compilation.SyntaxTrees.FirstOrDefault()?.Options is CSharpParseOptions { LanguageVersion: >= (LanguageVersion)1100 };
+            SupportGuidCreateVersion7 = compilation.SupportGuidCreateVersion7();
 
             var icomparableSymbol = compilation.GetTypeByMetadataName("System.IComparable");
             var icomparableCompareToMember = icomparableSymbol?.GetMembers("CompareTo").FirstOrDefault();
@@ -567,6 +578,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool AddCodeGeneratedAttribute { get; }
         public StringComparison StringComparison { get; }
         public bool GenerateToStringAsRecord { get; }
+        public GuidGenerationStrategy GuidGenerationStrategy { get; }
 
         // Computed info
         public string TypeName { get; }
@@ -597,6 +609,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool ImplementsIComparableOfT_CompareTo { get; }
 
         public bool SupportStaticInterfaces { get; }
+        public bool SupportGuidCreateVersion7 { get; }
         public bool SupportIParsable { get; }
         public bool SupportISpanParsable { get; }
         public bool SupportTypeConverter { get; }
@@ -622,6 +635,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public string CSharpNullableTypeName { get; }
 
         public bool IsValueTypeNullable => IdType is IdType.System_String;
+        public bool UseGuidVersion7 => GuidGenerationStrategy is GuidGenerationStrategy.Version7 && SupportGuidCreateVersion7;
         public bool ValueTypeHasParseReadOnlySpan => IdType != IdType.MongoDB_Bson_ObjectId && SupportReadOnlySpanChar;
 
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is AttributeInfo attributeInfo && Equals(attributeInfo);
@@ -636,6 +650,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 && TypeName == other.TypeName
                 && StringComparison == other.StringComparison
                 && GenerateToStringAsRecord == other.GenerateToStringAsRecord
+                && GuidGenerationStrategy == other.GuidGenerationStrategy
+                && SupportGuidCreateVersion7 == other.SupportGuidCreateVersion7
                 && Converters == other.Converters
                 && AddCodeGeneratedAttribute == other.AddCodeGeneratedAttribute
                 && IsSealed == other.IsSealed
@@ -686,6 +702,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             hashcode.Add(Converters);
             hashcode.Add(StringComparison);
             hashcode.Add(GenerateToStringAsRecord);
+            hashcode.Add(GuidGenerationStrategy);
+            hashcode.Add(SupportGuidCreateVersion7);
             hashcode.Add(AddCodeGeneratedAttribute);
             hashcode.Add(IsSealed);
             hashcode.Add(IsCtorDefined);
@@ -828,6 +846,13 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         Newtonsoft_Json = 0x2,
         System_ComponentModel_TypeConverter = 0x4,
         MongoDB_Bson_Serialization = 0x8,
+    }
+
+    internal enum GuidGenerationStrategy
+    {
+        None,
+        Version4,
+        Version7,
     }
 
     internal enum IdType

@@ -125,12 +125,13 @@ public partial class StronglyTypedIdSourceGenerator
         }
 
         // if Guid => New
-        if (context.IdType is IdType.System_Guid && !context.IsNewDefined)
+        if (context.IdType is IdType.System_Guid && !context.IsNewDefined && context.GuidGenerationStrategy is not GuidGenerationStrategy.None)
         {
             WriteNewMember(
-                 XmlSummary("Initializes a new instance of the ", XmlSeeCref(context.TypeName), " using a new ", XmlSeeCref("global::System.Guid"), "."),
+                 XmlSummary("Initializes a new instance of the ", XmlSeeCref(context.TypeName), " using a new ", context.UseGuidVersion7 ? "version 7 " : "", XmlSeeCref("global::System.Guid"), "."),
                  XmlReturn("A new instance of ", XmlSeeCref(context.TypeName), "."));
-            writer.WriteLine($"public static {context.TypeName} New() => new {context.TypeName}(global::System.Guid.NewGuid());");
+            var factoryMethod = context.UseGuidVersion7 ? "CreateVersion7" : "NewGuid";
+            writer.WriteLine($"public static {context.TypeName} New() => new {context.TypeName}(global::System.Guid.{factoryMethod}());");
         }
 
         // GetHashCode

@@ -18,7 +18,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 
     public sealed record NuGetReference(string Name, string Version, string ReferencePath);
 
-    private static async Task<Compilation> CreateCompilation(string sourceText, NuGetReference[] nuGetReferences)
+    private static async Task<Compilation> CreateCompilation(string sourceText, NuGetReference[] nuGetReferences, bool referenceAnnotations = true)
     {
         var dlls = new List<string>();
         foreach (var nuGetReference in nuGetReferences)
@@ -28,7 +28,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 
         MetadataReference[] references =
         [
-            MetadataReference.CreateFromFile(typeof(StronglyTypedIdAttribute).Assembly.Location),
+            .. referenceAnnotations ? [MetadataReference.CreateFromFile(typeof(StronglyTypedIdAttribute).Assembly.Location)] : Array.Empty<MetadataReference>(),
             .. dlls.Select(loc => MetadataReference.CreateFromFile(loc)),
         ];
 
@@ -44,13 +44,13 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 
     private static ISourceGenerator InstantiateGenerator() => new StronglyTypedIdSourceGenerator().AsSourceGenerator();
 
-    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[]? Assembly, byte[] Symbols)> GenerateFiles(string sourceText, bool mustCompile = true)
+    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[]? Assembly, byte[] Symbols)> GenerateFiles(string sourceText, bool mustCompile = true, string? netCoreVersion = null, bool referenceAnnotations = true)
     {
         var compilation = await CreateCompilation(sourceText,
         [
-            new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/"),
+            new NuGetReference("Microsoft.NETCore.App.Ref", netCoreVersion ?? NetCoreVersion, "ref/"),
             new NuGetReference("Newtonsoft.Json", "13.0.4", "lib/netstandard2.0/"),
-        ]);
+        ], referenceAnnotations);
         var generator = InstantiateGenerator();
 
         GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: [generator]);
@@ -78,13 +78,13 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         return (runResult, outputCompilation, result.Success ? outputStream.ToArray() : null, pdbStream.ToArray());
     }
 
-    private static async Task<ImmutableArray<Diagnostic>> Analyze(string sourceText)
+    private static async Task<ImmutableArray<Diagnostic>> Analyze(string sourceText, string? netCoreVersion = null, bool referenceAnnotations = true)
     {
         var compilation = await CreateCompilation(sourceText,
         [
-            new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/"),
+            new NuGetReference("Microsoft.NETCore.App.Ref", netCoreVersion ?? NetCoreVersion, "ref/"),
             new NuGetReference("Newtonsoft.Json", "12.0.3", "lib/netstandard2.0/"),
-        ]);
+        ], referenceAnnotations);
 
         var analyzerOptions = new AnalyzerOptions(ImmutableArray<AdditionalText>.Empty);
         var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(new StronglyTypedIdAnalyzer());
@@ -265,6 +265,213 @@ public sealed class StronglyTypedIdSourceGeneratorTests
             var value = (Guid)type.GetProperty("Value")!.GetValue(newInstance)!;
             Assert.Equal(7, value.Version);
         });
+    }
+
+    [Fact]
+    public async Task GenerateStruct_Guid_New_DefaultStrategy()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid))]
+            public partial struct Test {}
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type =>
+        {
+            Assert.Equal(4, GetNewValue(type).Version);
+        });
+    }
+
+    [Fact]
+    public async Task GenerateStruct_Guid_New_Version4()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid), GuidGenerationStrategy = Meziantou.Framework.Annotations.GuidGenerationStrategy.Version4)]
+            public partial struct Test {}
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type =>
+        {
+            Assert.Equal(4, GetNewValue(type).Version);
+        });
+    }
+
+    [Fact]
+    public async Task GenerateStruct_Guid_New_Version7()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid), GuidGenerationStrategy = Meziantou.Framework.Annotations.GuidGenerationStrategy.Version7)]
+            public partial struct Test {}
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type =>
+        {
+            Assert.Equal(7, GetNewValue(type).Version);
+        });
+    }
+
+    [Fact]
+    public async Task GenerateStruct_Guid_New_Version7_GenericAttribute()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute<System.Guid>(GuidGenerationStrategy = Meziantou.Framework.Annotations.GuidGenerationStrategy.Version7)]
+            public partial struct Test {}
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type =>
+        {
+            Assert.Equal(7, GetNewValue(type).Version);
+        });
+    }
+
+    [Fact]
+    public async Task GenerateStruct_Guid_New_None()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid), GuidGenerationStrategy = Meziantou.Framework.Annotations.GuidGenerationStrategy.None)]
+            public partial struct Test {}
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type =>
+        {
+            Assert.Empty(type.GetMember("New"));
+            Assert.NotEmpty(type.GetMember("FromGuid"));
+        });
+    }
+
+    [Fact]
+    public async Task GenerateStruct_Guid_New_None_NotSupportedByTargetFramework()
+    {
+        // GuidGenerationStrategy.None does not use Guid.CreateVersion7(), so no diagnostic must be reported
+        var sourceCode = AttributeSourceCode + """
+
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid), GuidGenerationStrategy = Meziantou.Framework.Annotations.GuidGenerationStrategy.None)]
+            public partial struct Test {}
+            """;
+
+        var diagnostics = await Analyze(sourceCode, netCoreVersion: "8.0.0", referenceAnnotations: false);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public async Task GenerateStruct_Guid_New_Version7_NotSupportedByTargetFramework()
+    {
+        // Guid.CreateVersion7() was introduced in .NET 9
+        var sourceCode = AttributeSourceCode + """
+
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid), GuidGenerationStrategy = Meziantou.Framework.Annotations.GuidGenerationStrategy.Version7)]
+            public partial struct Test {}
+            """;
+
+        var result = await GenerateFiles(sourceCode, netCoreVersion: "8.0.0", referenceAnnotations: false);
+        var generatedCode = (await Assert.Single(result.GeneratorResult.GeneratedTrees).GetRootAsync(XunitCancellationToken)).ToFullString();
+        Assert.Contains("global::System.Guid.NewGuid()", generatedCode);
+
+        var diagnostics = await Analyze(sourceCode, netCoreVersion: "8.0.0", referenceAnnotations: false);
+        Assert.Collection(diagnostics, diag => Assert.Equal("MFSTID0002", diag.Id));
+    }
+
+    [Fact]
+    public async Task GenerateStruct_Guid_New_Version4_NotReportedOnOldTargetFramework()
+    {
+        var sourceCode = AttributeSourceCode + """
+
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid))]
+            public partial struct Test {}
+            """;
+
+        var diagnostics = await Analyze(sourceCode, netCoreVersion: "8.0.0", referenceAnnotations: false);
+        Assert.Empty(diagnostics);
+    }
+
+    [Theory]
+    [InlineData("typeof(int)")]
+    [InlineData("typeof(string)")]
+    public async Task GuidGenerationStrategy_OnNonGuidType_ReportedByAnalyzer(string idType)
+    {
+        var sourceCode = $$"""
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute({{idType}}, GuidGenerationStrategy = Meziantou.Framework.Annotations.GuidGenerationStrategy.Version7)]
+            public partial struct Test {}
+            """;
+
+        var diagnostics = await Analyze(sourceCode);
+        Assert.Collection(diagnostics, diag => Assert.Equal("MFSTID0003", diag.Id));
+    }
+
+    [Fact]
+    public async Task GuidGenerationStrategy_OnNonGuidGenericType_ReportedByAnalyzer()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute<int>(GuidGenerationStrategy = Meziantou.Framework.Annotations.GuidGenerationStrategy.Version4)]
+            public partial struct Test {}
+            """;
+
+        var diagnostics = await Analyze(sourceCode);
+        Assert.Collection(diagnostics, diag => Assert.Equal("MFSTID0003", diag.Id));
+    }
+
+    [Fact]
+    public async Task GuidGenerationStrategy_OnGuidType_NotReported()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid), GuidGenerationStrategy = Meziantou.Framework.Annotations.GuidGenerationStrategy.Version7)]
+            public partial struct Test {}
+            """;
+
+        var diagnostics = await Analyze(sourceCode);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public async Task GuidGenerationStrategy_NotSet_NotReported()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test {}
+            """;
+
+        var diagnostics = await Analyze(sourceCode);
+        Assert.Empty(diagnostics);
+    }
+
+    /// <summary>
+    /// Declaration of the attribute, so the generator can run against reference assemblies that are older than the ones targeted by the annotations assembly.
+    /// </summary>
+    private const string AttributeSourceCode = """
+        namespace Meziantou.Framework.Annotations
+        {
+            [System.AttributeUsage(System.AttributeTargets.Struct | System.AttributeTargets.Class)]
+            public sealed class StronglyTypedIdAttribute : System.Attribute
+            {
+                public StronglyTypedIdAttribute(System.Type idType,
+                                                bool generateSystemTextJsonConverter = true,
+                                                bool generateNewtonsoftJsonConverter = true,
+                                                bool generateSystemComponentModelTypeConverter = true,
+                                                bool generateMongoDBBsonSerialization = true,
+                                                bool addCodeGeneratedAttribute = true)
+                {
+                    IdType = idType;
+                }
+
+                public System.Type IdType { get; }
+                public System.StringComparison StringComparison { get; set; }
+                public bool GenerateToStringAsRecord { get; set; }
+                public GuidGenerationStrategy GuidGenerationStrategy { get; set; }
+            }
+
+            public enum GuidGenerationStrategy
+            {
+                None = 0,
+                Version4 = 1,
+                Version7 = 2,
+            }
+        }
+        """;
+
+    private static Guid GetNewValue(Type type)
+    {
+        var newMethod = (MethodInfo)type.GetMember("New").Single();
+        var newInstance = newMethod.Invoke(null, null);
+        return (Guid)type.GetProperty("Value")!.GetValue(newInstance)!;
     }
 
     [Fact]

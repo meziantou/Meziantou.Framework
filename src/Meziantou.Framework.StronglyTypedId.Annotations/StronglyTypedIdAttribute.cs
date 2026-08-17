@@ -65,6 +65,9 @@ public sealed class StronglyTypedIdAttribute : Attribute
 
     /// <summary>Gets or sets a value indicating whether the ToString() method should generate output in record format.</summary>
     public bool GenerateToStringAsRecord { get; set; }
+
+    /// <summary>Gets or sets the strategy used by the generated <c>New()</c> method when the underlying type is <see cref="Guid"/>. Use <see cref="GuidGenerationStrategy.None"/> to not generate the method. When the property is not set, <see cref="GuidGenerationStrategy.Version4"/> is used.</summary>
+    public GuidGenerationStrategy GuidGenerationStrategy { get; set; }
 }
 
 #if NET7_0_OR_GREATER
@@ -132,5 +135,8 @@ public sealed class StronglyTypedIdAttribute<T> : Attribute
 
     /// <summary>Gets or sets a value indicating whether the ToString() method should generate output in record format.</summary>
     public bool GenerateToStringAsRecord { get; set; }
+
+    /// <summary>Gets or sets the strategy used by the generated <c>New()</c> method when the underlying type is <see cref="Guid"/>. Use <see cref="GuidGenerationStrategy.None"/> to not generate the method. When the property is not set, <see cref="GuidGenerationStrategy.Version4"/> is used.</summary>
+    public GuidGenerationStrategy GuidGenerationStrategy { get; set; }
 }
 #endif

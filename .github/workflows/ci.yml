@@ -173,10 +173,33 @@ jobs:
           test-projects-only: "true"
           shard: ${{ matrix.shard }}
           total-shards: 2
+          # DeltaBuild balances shards by project count, which is a poor proxy for duration:
+          # a handful of suites account for most of the test time. The projects below are
+          # assigned round-robin in declaration order (1st -> shard 1, 2nd -> shard 2, ...),
+          # so the list is sorted to alternate the expensive suites between shards.
+          # Approximate test duration per project, summed over TFMs (win/linux-x64/linux-arm64/macOS, in seconds):
+          #   SnapshotTesting           2769 / 3237 / 1869 / 2446
+          #   TemporaryContainers       1247 /  609 /  545 /    7
+          #   InlineSnapshotTesting     1060 /  921 /  843 /  790
+          #   PublicApiGenerator.MSBuild 801 /  951 /  557 /  632
+          #   StronglyTypedId            652 /  284 /  188 /  375
+          #   EmbeddedConstantsGenerator 297 /  200 /  170 /  141
+          #   CommandLine                285 /  132 /   98 /   99
+          #   Yaml                       255 /  284 /  164 /  174
+          #   ResxSourceGenerator         88 /   47 /   34 /   53
+          #   DependencyScanning          82 /   12 /    9 /   19
+          # Paths must point to the project file: directory paths are silently ignored.
           shard-separate: |
-            tests/Meziantou.Framework.InlineSnapshotTesting.Tests
-            tests/Meziantou.Framework.PublicApiGenerator.Tests
-            tests/Meziantou.Framework.SnapshotTesting.Tests/
+            tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj
+            tests/Meziantou.Framework.TemporaryContainers.Tests/Meziantou.Framework.TemporaryContainers.Tests.csproj
+            tests/Meziantou.Framework.StronglyTypedId.Tests/Meziantou.Framework.StronglyTypedId.Tests.csproj
+            tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj
+            tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests.csproj
+            tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests.csproj
+            tests/Meziantou.Framework.ResxSourceGenerator.Tests/Meziantou.Framework.ResxSourceGenerator.Tests.csproj
+            tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj
+            tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj
+            tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj

@@ -17,6 +17,8 @@
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Rules/EmptinessAssertionAnalyzerCommon.cs" Link="Rules/EmptinessAssertionAnalyzerCommon.cs" />
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Rules/ConditionRewriteAnalyzerCommon.cs" Link="Rules/ConditionRewriteAnalyzerCommon.cs" />
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Rules/UseFailAssertionAnalyzerCommon.cs" Link="Rules/UseFailAssertionAnalyzerCommon.cs" />
+    <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Rules/CollectionWhereAssertionAnalyzerCommon.cs" Link="Rules/CollectionWhereAssertionAnalyzerCommon.cs" />
+    <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Rules/CollectionContainsPredicateAnalyzerCommon.cs" Link="Rules/CollectionContainsPredicateAnalyzerCommon.cs" />
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Internals/NumericHelpers.cs" Link="Internals/NumericHelpers.cs" />
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/AssertionsAnalyzerHelpers.cs" Link="AssertionsAnalyzerHelpers.cs" />
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/AssertionCodeFixHelpers.cs" Link="AssertionCodeFixHelpers.cs" />

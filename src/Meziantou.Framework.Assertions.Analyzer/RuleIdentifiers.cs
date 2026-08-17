@@ -52,4 +52,9 @@ internal static class RuleIdentifiers
     internal const string AwaitAssertionDiagnosticId = "MFAS0048";
     internal const string ConstantAssertionDiagnosticId = "MFAS0049";
     internal const string UseFailAssertionDiagnosticId = "MFAS0050";
+    internal const string UseContainsForWhereDiagnosticId = "MFAS0051";
+    internal const string UseDoesNotContainForWhereDiagnosticId = "MFAS0052";
+    internal const string UseSingleWithPredicateDiagnosticId = "MFAS0053";
+    internal const string UseContainsWithExpectedValueDiagnosticId = "MFAS0054";
+    internal const string UseDoesNotContainWithExpectedValueDiagnosticId = "MFAS0055";
 }

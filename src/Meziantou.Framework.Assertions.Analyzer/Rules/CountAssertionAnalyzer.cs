@@ -10,8 +10,8 @@ public sealed class CountAssertionAnalyzer : DiagnosticAnalyzer
 {
     public static readonly DiagnosticDescriptor UseEmptyDescriptor = new(
         id: RuleIdentifiers.UseEmptyAssertionDiagnosticId,
-        title: "Use Assert.Empty for zero count checks",
-        messageFormat: "Use Assert.Empty for count checks equal to zero",
+        title: "Use Assert.Empty or Assert.NotEmpty for zero count checks",
+        messageFormat: "Use Assert.{0} for count checks against zero",
         category: "Assertions",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -46,6 +46,9 @@ public sealed class CountAssertionAnalyzer : DiagnosticAnalyzer
         if (!CountAssertionAnalyzerCommon.TryGetAssertionMatch(invocationOperation, assertType, symbols, out var match))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(match.UseEmptyAssertion ? UseEmptyDescriptor : UseHasCountDescriptor, match.CountOperation.Syntax.GetLocation()));
+        var diagnostic = match.UseEmptyAssertion
+            ? Diagnostic.Create(UseEmptyDescriptor, match.CountOperation.Syntax.GetLocation(), match.AssertionMethodName)
+            : Diagnostic.Create(UseHasCountDescriptor, match.CountOperation.Syntax.GetLocation());
+        context.ReportDiagnostic(diagnostic);
     }
 }

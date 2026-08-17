@@ -25,7 +25,7 @@ public sealed class MongoDbContainerTests
         Assert.Equal("root", definition.RootUsername);
         Assert.Equal("root", definition.Environment.GetValue("MONGO_INITDB_ROOT_USERNAME"));
         Assert.Equal(password, definition.Environment.GetValue("MONGO_INITDB_ROOT_PASSWORD"));
-        Assert.Equal(24, password.Length);
+        Assert.HasCount(24, password);
         Assert.Contains(password, static c => char.IsUpper(c));
         Assert.Contains(password, static c => char.IsLower(c));
         Assert.Contains(password, static c => char.IsDigit(c));

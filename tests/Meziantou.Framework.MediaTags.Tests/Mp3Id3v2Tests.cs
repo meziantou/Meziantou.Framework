@@ -73,7 +73,7 @@ public sealed class Mp3Id3v2Tests
 
         var tags = result.Value;
         Assert.NotNull(tags.Title);
-        Assert.True(tags.Title.Length > 100); // Should be very long
+        Assert.HasCountGreaterThan(100, tags.Title); // Should be very long
     }
 
     [Fact]

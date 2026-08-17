@@ -279,7 +279,7 @@ public sealed class PooledMemoryStreamTests
         IBufferWriter<byte> writer = stream;
 
         var span = writer.GetSpan(20);
-        Assert.True(span.Length >= 20);
+        Assert.HasCountGreaterThanOrEqual(20, span);
         for (var i = 0; i < 20; i++)
             span[i] = (byte)i;
         writer.Advance(20);
@@ -288,7 +288,7 @@ public sealed class PooledMemoryStreamTests
         Assert.Equal(20, stream.Position);
 
         var span2 = writer.GetSpan(10);
-        Assert.True(span2.Length >= 10);
+        Assert.HasCountGreaterThanOrEqual(10, span2);
         for (var i = 0; i < 10; i++)
             span2[i] = (byte)(100 + i);
         writer.Advance(10);

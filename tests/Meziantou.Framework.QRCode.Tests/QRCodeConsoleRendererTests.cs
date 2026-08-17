@@ -155,7 +155,7 @@ public class QRCodeConsoleRendererTests
         var withoutQuiet = qr.ToConsoleString(new QRCodeConsoleOptions { QuietZoneModules = 0, ModuleWidth = 2, ModuleHeight = 2 });
         var withQuiet = qr.ToConsoleString(new QRCodeConsoleOptions { QuietZoneModules = 2, ModuleWidth = 2, ModuleHeight = 2 });
 
-        Assert.True(withQuiet.Length > withoutQuiet.Length);
+        Assert.HasCountGreaterThan(withoutQuiet.Length, withQuiet);
     }
 
     [Theory]

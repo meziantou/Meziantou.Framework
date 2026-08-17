@@ -89,7 +89,7 @@ public sealed class JsonPathEvaluateTests
 
         var value = doc.RootElement.EvaluateValue(path);
 
-        Assert.True(value.HasValue);
+        Assert.NotNull(value);
         Assert.Equal(JsonValueKind.Null, value.Value.ValueKind);
     }
 

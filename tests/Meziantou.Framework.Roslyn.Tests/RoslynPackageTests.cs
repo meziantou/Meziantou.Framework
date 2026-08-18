@@ -10,9 +10,25 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
     {
         using var package = ZipFile.OpenRead(fixture.PackagePath);
 
+        Assert.Contains("IsNonAwaitableTypeAttributeSymbol", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/AnnotationAttributes.cs")));
+        Assert.Contains("IsAwaitable", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/AwaitableTypes.cs")));
         Assert.Contains("GetBestTypeByMetadataName", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/CompilationExtensions.cs")));
+        Assert.Contains("ReportDiagnostic", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/ContextExtensions.cs")));
+        Assert.Contains("SyntaxNodeAnalysisContext", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/ContextExtensions.g.cs")));
+        Assert.Contains("ContextExtensions", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/ContextExtensions.tt")));
+        Assert.Contains("DiagnosticReporter", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/DiagnosticReporter.cs")));
+        Assert.Contains("IsInterfaceImplementation", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/MethodSymbolExtensions.cs")));
+        Assert.Contains("GetAllMembers", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/NamespaceOrTypeSymbolExtensions.cs")));
+        Assert.Contains("IsNamespace", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/NamespaceSymbolExtensions.cs")));
+        Assert.Contains("IsSingleBitSet", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/NumericHelpers.cs")));
         Assert.Contains("UnwrapImplicitConversion", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/OperationExtensions.cs")));
+        Assert.Contains("IsInExpressionContext", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/OperationUtilities.cs")));
+        Assert.Contains("FindOverloadWithAdditionalParameterOfType", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/OverloadFinder.cs")));
+        Assert.Contains("OverloadOptions", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/OverloadOptions.cs")));
+        Assert.Contains("OverloadParameterType", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/OverloadParameterType.cs")));
+        Assert.Contains("TryFindNode", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/SuppressorHelpers.cs")));
         Assert.Contains("IsVisibleOutsideOfAssembly", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/SymbolExtensions.cs")));
+        Assert.Contains("GetAttribute", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/SymbolAttributeExtensions.cs")));
         Assert.Contains("IsAssignableTo", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/TypeSymbolExtensions.cs")));
         AssertEntry(package, "buildTransitive/Meziantou.Framework.Roslyn.targets");
         Assert.DoesNotContain(package.Entries, entry => entry.FullName.StartsWith("lib/", StringComparison.Ordinal));
@@ -47,10 +63,10 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
 
         var projectAssets = await File.ReadAllTextAsync(projectDirectory / "obj" / "project.assets.json", XunitCancellationToken);
-        Assert.Contains("contentFiles/cs/any/Meziantou.Framework.Roslyn/CompilationExtensions.cs", projectAssets);
-        Assert.Contains("contentFiles/cs/any/Meziantou.Framework.Roslyn/OperationExtensions.cs", projectAssets);
-        Assert.Contains("contentFiles/cs/any/Meziantou.Framework.Roslyn/SymbolExtensions.cs", projectAssets);
-        Assert.Contains("contentFiles/cs/any/Meziantou.Framework.Roslyn/TypeSymbolExtensions.cs", projectAssets);
+        foreach (var sourceFileName in SourceFileNames)
+        {
+            Assert.Contains($"contentFiles/cs/any/Meziantou.Framework.Roslyn/{sourceFileName}", projectAssets);
+        }
     }
 
     [Fact]
@@ -149,7 +165,9 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
     private static string CreateConsumerSourceWithConstantChecks(string[] expectedConstants)
     {
         return $$"""
+            using System.Threading;
             using Microsoft.CodeAnalysis;
+            using Microsoft.CodeAnalysis.CSharp;
             using Microsoft.CodeAnalysis.Operations;
             using Meziantou.Framework.Roslyn;
 
@@ -159,13 +177,31 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
 
             internal static class Consumer
             {
+                public static AwaitableTypes CreateAwaitableTypes(Compilation compilation) => new(compilation);
                 public static INamedTypeSymbol? GetBestType(Compilation compilation, string fullyQualifiedMetadataName) => compilation.GetBestTypeByMetadataName(fullyQualifiedMetadataName);
+                public static bool IsNet9OrGreater(Compilation compilation) => compilation.IsNet9OrGreater();
                 public static bool CanChangeDeclaredType(ISymbol symbol) => symbol.CanChangeDeclaredType();
                 public static Location? GetLocation(ISymbol symbol) => symbol.GetFirstSourceLocation();
                 public static bool HasObsoleteAttribute(ISymbol symbol) => symbol.HasAttribute("System.ObsoleteAttribute");
                 public static bool IsVisible(ISymbol? symbol) => symbol.IsVisibleOutsideOfAssembly();
+                public static bool IsInterfaceImplementation(IMethodSymbol symbol) => symbol.IsInterfaceImplementation();
+                public static bool IsNamespace(INamespaceSymbol namespaceSymbol) => namespaceSymbol.IsNamespace(["System"]);
+                public static bool IsZero(object? value) => NumericHelpers.IsZero(value);
                 public static IOperation Unwrap(IOperation operation) => operation.UnwrapImplicitConversion();
+                public static IOperation UnwrapOperations(IOperation operation) => operation.UnwrapImplicitConversionOperations();
+                public static LanguageVersion GetOperationLanguageVersion(IOperation operation) => operation.GetCSharpLanguageVersion();
+                public static bool IsExpressionContext(Compilation compilation, IOperation operation) => new OperationUtilities(compilation).IsInExpressionContext(operation);
+                public static OverloadFinder CreateOverloadFinder(Compilation compilation) => new(compilation);
+                public static OverloadOptions DefaultOverloadOptions => new();
+                public static OverloadParameterType CreateOverloadParameterType(ITypeSymbol? symbol) => new(symbol);
+                public static SyntaxNode? TryFindNode(Diagnostic diagnostic, CancellationToken cancellationToken) => diagnostic.TryFindNode(cancellationToken);
                 public static bool IsAssignable(ITypeSymbol typeSymbol, ITypeSymbol baseType) => typeSymbol.IsAssignableTo(baseType);
+                public static bool IsUnitTestClass(ITypeSymbol typeSymbol) => typeSymbol.IsUnitTestClass();
+                public static int? GetNodeLine(SyntaxNode node, CancellationToken cancellationToken) => node.GetLine(cancellationToken);
+                public static bool IsCSharp12(LanguageVersion languageVersion) => languageVersion.IsCSharp12OrAbove();
+                public static ITypeSymbol? GetFlowType(IOperation operation, CancellationToken cancellationToken) => LocalDataFlowAnalysis.GetActualType(operation, cancellationToken);
+                public static string ReporterName => typeof(DiagnosticReporter).Name;
+                public static DiagnosticInvocationReportOptions InvocationReportOptions => DiagnosticInvocationReportOptions.ReportOnMember | DiagnosticInvocationReportOptions.ReportOnArguments;
             }
             """;
     }
@@ -296,6 +332,37 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         "5.3.0",
         "5.6.0",
         "5.9.0",
+    ];
+
+    private static readonly string[] SourceFileNames =
+    [
+        "AnnotationAttributes.cs",
+        "AwaitableTypes.cs",
+        "CompilationExtensions.cs",
+        "ContextExtensions.cs",
+        "ContextExtensions.g.cs",
+        "DiagnosticFieldReportOptions.cs",
+        "DiagnosticInvocationReportOptions.cs",
+        "DiagnosticMethodReportOptions.cs",
+        "DiagnosticParameterReportOptions.cs",
+        "DiagnosticPropertyReportOptions.cs",
+        "DiagnosticReporter.cs",
+        "LanguageVersionExtensions.cs",
+        "LocalDataFlowAnalysis.cs",
+        "LocationExtensions.cs",
+        "MethodSymbolExtensions.cs",
+        "NamespaceOrTypeSymbolExtensions.cs",
+        "NamespaceSymbolExtensions.cs",
+        "NumericHelpers.cs",
+        "OperationExtensions.cs",
+        "OperationUtilities.cs",
+        "OverloadFinder.cs",
+        "OverloadOptions.cs",
+        "OverloadParameterType.cs",
+        "SuppressorHelpers.cs",
+        "SymbolAttributeExtensions.cs",
+        "SymbolExtensions.cs",
+        "TypeSymbolExtensions.cs",
     ];
 
     private static void CreateGlobalJson(FullPath projectDirectory, string dotnetSdkVersion)

@@ -21,8 +21,23 @@ using Meziantou.Framework.Roslyn;
 
 ## Helpers
 
+- `AwaitableTypes`
 - `Compilation.GetBestTypeByMetadataName`
+- `Compilation.IsNet9OrGreater`
+- `ContextExtensions.ReportDiagnostic`
+- `DiagnosticReporter`
 - `IOperation.UnwrapImplicitConversion`
+- `LanguageVersionExtensions`
+- `LocalDataFlowAnalysis`
+- `LocationExtensions`
+- `MethodSymbolExtensions`
+- `NamespaceOrTypeSymbolExtensions`
+- `NamespaceSymbolExtensions`
+- `NumericHelpers`
+- `OperationUtilities`
+- `OverloadFinder`
+- `SuppressorHelpers`
+- `SymbolAttributeExtensions`
 - `ISymbol.CanChangeDeclaredType`
 - `ISymbol.GetFirstSourceLocation`
 - `ISymbol.HasAttribute`

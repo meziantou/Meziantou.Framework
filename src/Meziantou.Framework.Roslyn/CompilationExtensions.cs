@@ -1,3 +1,4 @@
+#nullable enable
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 
@@ -5,6 +6,13 @@ namespace Meziantou.Framework.Roslyn;
 
 internal static class CompilationExtensions
 {
+    public static bool IsNet9OrGreater(this Compilation compilation)
+    {
+        var type = compilation.GetSpecialType(SpecialType.System_Object);
+        var version = type.ContainingAssembly.Identity.Version;
+        return version.Major >= 9;
+    }
+
     public static INamedTypeSymbol? GetBestTypeByMetadataName(this Compilation compilation, string fullyQualifiedMetadataName)
     {
         INamedTypeSymbol? type = null;

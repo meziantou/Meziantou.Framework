@@ -14,13 +14,14 @@
 
   <ItemGroup>
     <None Include="readme.md" Pack="true" PackagePath="" />
-    <Content Include="*.cs"
+    <Content Include="**/*.cs"
              Pack="true"
              PackagePath="contentFiles/cs/any/Meziantou.Framework.Roslyn/%(Filename)%(Extension)">
       <BuildAction>Compile</BuildAction>
       <PackageCopyToOutput>false</PackageCopyToOutput>
       <PackageFlatten>false</PackageFlatten>
     </Content>
+    <None Include="**/*.tt" Pack="true" PackagePath="contentFiles/cs/any/Meziantou.Framework.Roslyn/%(Filename)%(Extension)" />
     <None Include="buildTransitive/**/*.targets" Pack="true" PackagePath="buildTransitive" />
   </ItemGroup>
 

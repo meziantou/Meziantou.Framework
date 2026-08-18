@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="RoslynHelperTests.cs" />
     <Compile Include="../../common/NuGetPackageFixture.cs" Link="NuGetPackageFixture.cs" />
   </ItemGroup>
 

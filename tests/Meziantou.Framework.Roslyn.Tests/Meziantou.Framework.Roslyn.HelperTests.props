@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="RoslynPackageFixture.cs;RoslynPackageTests.cs" />
+    <Compile Include="../../src/Meziantou.Framework.Roslyn/**/*.cs" Exclude="../../src/Meziantou.Framework.Roslyn/bin/**;../../src/Meziantou.Framework.Roslyn/obj/**" LinkBase="RoslynSources" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersion)" />
+  </ItemGroup>
+
+  <Import Project="../../src/Meziantou.Framework.Roslyn/buildTransitive/Meziantou.Framework.Roslyn.targets" />
+</Project>

@@ -1,0 +1,9 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <RoslynVersion>5.6.0</RoslynVersion>
+  </PropertyGroup>
+
+  <Import Project="Meziantou.Framework.Roslyn.HelperTests.props" />
+
+</Project>

@@ -13,7 +13,6 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         Assert.Contains("GetBestTypeByMetadataName", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/CompilationExtensions.cs")));
         Assert.Contains("ReportDiagnostic", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/ContextExtensions.cs")));
         Assert.Contains("SyntaxNodeAnalysisContext", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/ContextExtensions.g.cs")));
-        Assert.Contains("ContextExtensions", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/ContextExtensions.tt")));
         Assert.Contains("DiagnosticReporter", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/DiagnosticReporter.cs")));
         Assert.Contains("IsInterfaceImplementation", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/MethodSymbolExtensions.cs")));
         Assert.Contains("IsNamespace", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/NamespaceSymbolExtensions.cs")));
@@ -23,6 +22,7 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         Assert.Contains("GetFirstAttribute", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/SymbolAttributeExtensions.cs")));
         Assert.Contains("GetUnderlyingNullableTypeOrSelf", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/TypeSymbolExtensions.cs")));
         AssertEntry(package, "buildTransitive/Meziantou.Framework.Roslyn.targets");
+        Assert.DoesNotContain(package.Entries, entry => entry.FullName.EndsWith(".tt", StringComparison.Ordinal));
         Assert.DoesNotContain(package.Entries, entry => entry.FullName.StartsWith("lib/", StringComparison.Ordinal));
         Assert.DoesNotContain(package.Entries, entry => entry.FullName.StartsWith("_manifest/", StringComparison.Ordinal));
     }
@@ -103,7 +103,7 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
     private static ZipArchiveEntry AssertEntry(ZipArchive archive, string entryName)
     {
         var entry = archive.GetEntry(entryName);
-        Assert.NotNull(entry);
+        Assert.NotNull(entry, $"Package does not contain '{entryName}'. Entries:{Environment.NewLine}{string.Join(Environment.NewLine, archive.Entries.Select(packageEntry => packageEntry.FullName).Order(StringComparer.Ordinal))}");
 
         return entry;
     }
@@ -114,13 +114,6 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         using var reader = new StreamReader(stream);
 
         return reader.ReadToEnd();
-    }
-
-    private static void ExtractEntry(ZipArchiveEntry entry, FullPath destination)
-    {
-        using var stream = entry.Open();
-        using var file = File.Create(destination);
-        stream.CopyTo(file);
     }
 
     private static string CreateConsumerSourceWithConstantChecks(string[] expectedConstants)

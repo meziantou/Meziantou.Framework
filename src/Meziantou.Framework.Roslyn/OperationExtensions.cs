@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace Meziantou.Framework.Roslyn;
 
-internal static class OperationExtensions
+internal static partial class OperationExtensions
 {
     public static IEnumerable<IOperation> Ancestors(this IOperation operation)
     {

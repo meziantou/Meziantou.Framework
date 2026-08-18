@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Meziantou.Framework.Roslyn;
 
-internal static class MethodSymbolExtensions
+internal static partial class MethodSymbolExtensions
 {
     public static bool IsPrimaryConstructor(this IMethodSymbol? methodSymbol, CancellationToken cancellationToken, bool includeRecordDeclarations = false)
     {

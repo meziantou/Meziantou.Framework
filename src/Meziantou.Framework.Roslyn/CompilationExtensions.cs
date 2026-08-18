@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.Roslyn;
 
-internal static class CompilationExtensions
+internal static partial class CompilationExtensions
 {
     public static bool IsNet9OrGreater(this Compilation compilation)
     {

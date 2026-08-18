@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.Roslyn;
 
-internal static class LocationExtensions
+internal static partial class LocationExtensions
 {
     /// <summary>
     /// Gets the location in terms of path, line and column for a given token.

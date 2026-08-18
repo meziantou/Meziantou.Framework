@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.Roslyn;
 
-internal static class NamespaceSymbolExtensions
+internal static partial class NamespaceSymbolExtensions
 {
     public static bool IsNamespace(this INamespaceSymbol namespaceSymbol, ReadOnlySpan<string> namespaceParts)
     {

@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.Roslyn;
 
-internal static class SuppressorHelpers
+internal static partial class SuppressorHelpers
 {
     public static SyntaxNode? TryFindNode(this Diagnostic diagnostic, CancellationToken cancellationToken)
     {

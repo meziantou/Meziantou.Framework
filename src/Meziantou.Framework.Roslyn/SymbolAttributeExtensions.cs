@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.Roslyn;
 
-internal static class SymbolAttributeExtensions
+internal static partial class SymbolAttributeExtensions
 {
     public static IEnumerable<AttributeData> GetAttributes(this ISymbol symbol, ITypeSymbol? attributeType, bool inherits = true)
     {

@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis;
 namespace Meziantou.Framework.Roslyn;
 
 // http://source.roslyn.io/#Microsoft.CodeAnalysis.Workspaces/Shared/Extensions/ITypeSymbolExtensions.cs,190b4ed0932458fd,references
-internal static class TypeSymbolExtensions
+internal static partial class TypeSymbolExtensions
 {
     public static IList<INamedTypeSymbol> GetAllInterfacesIncludingThis(this ITypeSymbol type)
     {

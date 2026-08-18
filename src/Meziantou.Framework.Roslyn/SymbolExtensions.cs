@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.Roslyn;
 
-internal static class SymbolExtensions
+internal static partial class SymbolExtensions
 {
     public static bool IsVisibleOutsideOfAssembly([NotNullWhen(true)] this ISymbol? symbol)
     {

@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace Meziantou.Framework.Roslyn;
 
-internal static class LanguageVersionExtensions
+internal static partial class LanguageVersionExtensions
 {
     public static LanguageVersion GetCSharpLanguageVersion(this IOperation operation)
     {

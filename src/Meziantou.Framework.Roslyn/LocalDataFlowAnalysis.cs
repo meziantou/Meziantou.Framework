@@ -13,7 +13,7 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace Meziantou.Framework.Roslyn;
 
-internal static class LocalDataFlowAnalysis
+internal static partial class LocalDataFlowAnalysis
 {
     public static ITypeSymbol? GetActualType(this IOperation operation, CancellationToken cancellationToken)
     {

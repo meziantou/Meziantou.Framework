@@ -21,27 +21,20 @@ using Meziantou.Framework.Roslyn;
 
 ## Helpers
 
-- `AwaitableTypes`
 - `Compilation.GetBestTypeByMetadataName`
 - `Compilation.IsNet9OrGreater`
 - `ContextExtensions.ReportDiagnostic`
 - `DiagnosticReporter`
-- `IOperation.UnwrapImplicitConversion`
+- `IOperation.UnwrapImplicitConversions`
 - `LanguageVersionExtensions`
 - `LocalDataFlowAnalysis`
 - `LocationExtensions`
 - `MethodSymbolExtensions`
-- `NamespaceOrTypeSymbolExtensions`
 - `NamespaceSymbolExtensions`
-- `NumericHelpers`
-- `OperationUtilities`
-- `OverloadFinder`
 - `SuppressorHelpers`
 - `SymbolAttributeExtensions`
-- `ISymbol.CanChangeDeclaredType`
 - `ISymbol.GetFirstSourceLocation`
-- `ISymbol.HasAttribute`
 - `ISymbol.IsVisibleOutsideOfAssembly`
-- `ITypeSymbol.IsAssignableTo`
+- `ITypeSymbol.GetUnderlyingNullableTypeOrSelf`
 
 The package also defines Roslyn and C# feature constants before compilation based on the referenced `Microsoft.CodeAnalysis.*` package version, such as `ROSLYN_4_8_OR_GREATER` and `CSHARP12_OR_GREATER`.

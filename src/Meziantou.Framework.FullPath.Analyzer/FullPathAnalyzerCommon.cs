@@ -69,4 +69,24 @@ internal static class FullPathAnalyzerCommon
         return SymbolEqualityComparer.Default.Equals(typeSymbol, fullPathType);
     }
 
+    internal static bool CanChangeDeclaredType(this ISymbol symbol)
+    {
+        if (symbol.IsOverride || symbol.IsVirtual || symbol.IsAbstract)
+            return false;
+
+        var containingType = symbol.ContainingType;
+        if (containingType is null)
+            return true;
+
+        foreach (var interfaceType in containingType.AllInterfaces)
+        {
+            foreach (var interfaceMember in interfaceType.GetMembers())
+            {
+                if (SymbolEqualityComparer.Default.Equals(containingType.FindImplementationForInterfaceMember(interfaceMember), symbol))
+                    return false;
+            }
+        }
+
+        return true;
+    }
 }

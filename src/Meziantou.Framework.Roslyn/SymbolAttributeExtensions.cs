@@ -29,7 +29,7 @@ internal static class SymbolAttributeExtensions
             }
             else
             {
-                if (attributeType.IsEqualTo(attribute.AttributeClass))
+                if (SymbolEquals(attributeType, attribute.AttributeClass))
                     yield return attribute;
             }
         }
@@ -55,7 +55,7 @@ internal static class SymbolAttributeExtensions
             }
             else
             {
-                if (attributeType.IsEqualTo(attribute.AttributeClass))
+                if (SymbolEquals(attributeType, attribute.AttributeClass))
                     return attribute;
             }
         }
@@ -66,5 +66,10 @@ internal static class SymbolAttributeExtensions
     public static bool HasAttribute(this ISymbol symbol, [NotNullWhen(true)] ITypeSymbol? attributeType, bool inherits = true)
     {
         return GetFirstAttribute(symbol, attributeType, inherits) is not null;
+    }
+
+    private static bool SymbolEquals(ISymbol? symbol, ISymbol? expectedSymbol)
+    {
+        return symbol is not null && expectedSymbol is not null && SymbolEqualityComparer.Default.Equals(symbol, expectedSymbol);
     }
 }

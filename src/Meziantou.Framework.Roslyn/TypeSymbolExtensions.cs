@@ -59,14 +59,14 @@ internal static class TypeSymbolExtensions
         {
             return AnyConstraintTypeMatches(typeParameter, visitedTypeParameters, (constraintType, visitedTypeParameters) =>
             {
-                return !constraintType.IsEqualTo(baseClassType) && constraintType.InheritsFrom(baseClassType, visitedTypeParameters);
+                return !SymbolEquals(constraintType, baseClassType) && constraintType.InheritsFrom(baseClassType, visitedTypeParameters);
             });
         }
 
         var baseType = classSymbol.BaseType;
         while (baseType is not null)
         {
-            if (baseClassType.IsEqualTo(baseType))
+            if (SymbolEquals(baseClassType, baseType))
                 return true;
 
             baseType = baseType.BaseType;
@@ -89,13 +89,13 @@ internal static class TypeSymbolExtensions
         {
             return AnyConstraintTypeMatches(typeParameter, visitedTypeParameters, (constraintType, visitedTypeParameters) =>
             {
-                return constraintType.IsEqualTo(interfaceType) || constraintType.Implements(interfaceType, visitedTypeParameters);
+                return SymbolEquals(constraintType, interfaceType) || constraintType.Implements(interfaceType, visitedTypeParameters);
             });
         }
 
         foreach (var @interface in classSymbol.AllInterfaces)
         {
-            if (@interface.IsEqualTo(interfaceType))
+            if (SymbolEquals(@interface, interfaceType))
                 return true;
         }
 
@@ -116,13 +116,13 @@ internal static class TypeSymbolExtensions
         {
             return AnyConstraintTypeMatches(typeParameter, visitedTypeParameters, (constraintType, visitedTypeParameters) =>
             {
-                return constraintType.OriginalDefinition.IsEqualTo(interfaceType.OriginalDefinition) || constraintType.ImplementsGenericInterface(interfaceType, visitedTypeParameters);
+                return SymbolEquals(constraintType.OriginalDefinition, interfaceType.OriginalDefinition) || constraintType.ImplementsGenericInterface(interfaceType, visitedTypeParameters);
             });
         }
 
         foreach (var iface in classSymbol.AllInterfaces)
         {
-            if (iface.OriginalDefinition.IsEqualTo(interfaceType.OriginalDefinition))
+            if (SymbolEquals(iface.OriginalDefinition, interfaceType.OriginalDefinition))
                 return true;
         }
 
@@ -134,7 +134,7 @@ internal static class TypeSymbolExtensions
         if (interfaceType is null)
             return false;
 
-        return symbol.IsEqualTo(interfaceType) || symbol.Implements(interfaceType);
+        return SymbolEquals(symbol, interfaceType) || symbol.Implements(interfaceType);
     }
 
     public static bool IsOrInheritFrom(this ITypeSymbol symbol, [NotNullWhen(true)] ITypeSymbol? expectedType)
@@ -147,7 +147,7 @@ internal static class TypeSymbolExtensions
         if (expectedType is null)
             return false;
 
-        if (symbol.IsEqualTo(expectedType))
+        if (SymbolEquals(symbol, expectedType))
             return true;
 
         if (symbol is ITypeParameterSymbol typeParameter)
@@ -183,7 +183,7 @@ internal static class TypeSymbolExtensions
 
         foreach (var expectedType in expectedTypes)
         {
-            if (expectedType is not null && symbol.IsEqualTo(expectedType))
+            if (SymbolEquals(symbol, expectedType))
                 return true;
         }
 
@@ -195,7 +195,7 @@ internal static class TypeSymbolExtensions
         if (symbol is null)
             return false;
 
-        if (expectedType1 is not null && symbol.IsEqualTo(expectedType1))
+        if (SymbolEquals(symbol, expectedType1))
             return true;
 
         return false;
@@ -206,10 +206,10 @@ internal static class TypeSymbolExtensions
         if (symbol is null)
             return false;
 
-        if (expectedType1 is not null && symbol.IsEqualTo(expectedType1))
+        if (SymbolEquals(symbol, expectedType1))
             return true;
 
-        if (expectedType2 is not null && symbol.IsEqualTo(expectedType2))
+        if (SymbolEquals(symbol, expectedType2))
             return true;
 
         return false;
@@ -220,13 +220,13 @@ internal static class TypeSymbolExtensions
         if (symbol is null)
             return false;
 
-        if (expectedType1 is not null && symbol.IsEqualTo(expectedType1))
+        if (SymbolEquals(symbol, expectedType1))
             return true;
 
-        if (expectedType2 is not null && symbol.IsEqualTo(expectedType2))
+        if (SymbolEquals(symbol, expectedType2))
             return true;
 
-        if (expectedType3 is not null && symbol.IsEqualTo(expectedType3))
+        if (SymbolEquals(symbol, expectedType3))
             return true;
 
         return false;
@@ -283,6 +283,11 @@ internal static class TypeSymbolExtensions
     public static bool IsEnum([NotNullWhen(returnValue: true)] this ITypeSymbol? symbol)
     {
         return symbol is not null && GetEnumType(symbol) is not null;
+    }
+
+    private static bool SymbolEquals(ISymbol? symbol, ISymbol? expectedSymbol)
+    {
+        return symbol is not null && expectedSymbol is not null && SymbolEqualityComparer.Default.Equals(symbol, expectedSymbol);
     }
 
     public static INamedTypeSymbol? GetEnumType(this ITypeSymbol? symbol)

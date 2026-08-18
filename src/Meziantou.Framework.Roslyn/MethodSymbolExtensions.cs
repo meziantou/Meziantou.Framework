@@ -9,10 +9,6 @@ namespace Meziantou.Framework.Roslyn;
 
 internal static class MethodSymbolExtensions
 {
-    private static readonly string[] MsTestNamespaceParts = ["Microsoft", "VisualStudio", "TestTools", "UnitTesting"];
-    private static readonly string[] NunitNamespaceParts = ["NUnit", "Framework"];
-    private static readonly string[] XunitNamespaceParts = ["Xunit"];
-
     public static bool IsPrimaryConstructor(this IMethodSymbol? methodSymbol, CancellationToken cancellationToken, bool includeRecordDeclarations = false)
     {
         if (methodSymbol is not { MethodKind: MethodKind.Constructor })
@@ -96,12 +92,12 @@ internal static class MethodSymbolExtensions
         if (symbol is null || baseMethod is null)
             return false;
 
-        if (symbol.IsEqualTo(baseMethod))
+        if (SymbolEquals(symbol, baseMethod))
             return true;
 
         while (symbol is not null)
         {
-            if (symbol.IsEqualTo(baseMethod))
+            if (SymbolEquals(symbol, baseMethod))
                 return true;
 
             symbol = symbol.OverriddenMethod;
@@ -147,7 +143,7 @@ internal static class MethodSymbolExtensions
             }
             else
             {
-                if (attributeType.IsEqualTo(attribute.AttributeClass))
+                if (SymbolEquals(attributeType, attribute.AttributeClass))
                     return attribute;
             }
         }
@@ -158,5 +154,10 @@ internal static class MethodSymbolExtensions
     public static bool HasReturnTypeAttribute(this IMethodSymbol method, [NotNullWhen(true)] ITypeSymbol? attributeType, bool inherits = true)
     {
         return GetReturnTypeAttribute(method, attributeType, inherits) is not null;
+    }
+
+    private static bool SymbolEquals(ISymbol? symbol, ISymbol? expectedSymbol)
+    {
+        return symbol is not null && expectedSymbol is not null && SymbolEqualityComparer.Default.Equals(symbol, expectedSymbol);
     }
 }

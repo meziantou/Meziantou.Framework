@@ -14,7 +14,7 @@ internal static class LocalDataFlowAnalysis
 {
     public static ITypeSymbol? GetActualType(this IOperation operation, CancellationToken cancellationToken)
     {
-        operation = operation.UnwrapImplicitConversionOperations();
+        operation = operation.UnwrapImplicitConversions();
 
         var value = GetFlowValue(operation, cancellationToken);
         if (value is not null && value != operation)
@@ -25,7 +25,7 @@ internal static class LocalDataFlowAnalysis
 
     public static bool TryGetConstantValue(this IOperation operation, out object? value, CancellationToken cancellationToken)
     {
-        operation = operation.UnwrapImplicitConversionOperations();
+        operation = operation.UnwrapImplicitConversions();
         if (operation.ConstantValue.HasValue)
         {
             value = operation.ConstantValue.Value;
@@ -88,7 +88,7 @@ internal static class LocalDataFlowAnalysis
             if (semanticModel.GetOperation(assignmentSyntax, cancellationToken) is not ISimpleAssignmentOperation assignment)
                 continue;
 
-            if (assignment.Target.UnwrapImplicitConversionOperations() is not ILocalReferenceOperation localReference || !localReference.Local.IsEqualTo(local))
+            if (assignment.Target.UnwrapImplicitConversions() is not ILocalReferenceOperation localReference || !SymbolEquals(localReference.Local, local))
                 continue;
 
             if (result is null || assignment.Syntax.SpanStart > result.Syntax.SpanStart)
@@ -189,7 +189,7 @@ internal static class LocalDataFlowAnalysis
                     return true;
 
                 var targetSymbol = assignmentSemanticModel.GetSymbolInfo(assignment.Left, cancellationToken).Symbol;
-                if (targetSymbol.IsEqualTo(symbol))
+                if (SymbolEquals(targetSymbol, symbol))
                     return true;
             }
         }
@@ -256,7 +256,7 @@ internal static class LocalDataFlowAnalysis
                 continue;
 
             var targetSymbol = semanticModel.GetSymbolInfo(target, cancellationToken).Symbol;
-            if (targetSymbol.IsEqualTo(symbol))
+            if (SymbolEquals(targetSymbol, symbol))
                 return true;
         }
 
@@ -349,10 +349,15 @@ internal static class LocalDataFlowAnalysis
     {
         foreach (var candidate in symbols)
         {
-            if (candidate.IsEqualTo(symbol))
+            if (SymbolEquals(candidate, symbol))
                 return true;
         }
 
         return false;
+    }
+
+    private static bool SymbolEquals(ISymbol? symbol, ISymbol? expectedSymbol)
+    {
+        return symbol is not null && expectedSymbol is not null && SymbolEqualityComparer.Default.Equals(symbol, expectedSymbol);
     }
 }

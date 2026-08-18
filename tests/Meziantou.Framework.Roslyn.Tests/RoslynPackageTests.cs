@@ -28,6 +28,25 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
     }
 
     [Fact]
+    public void Package_SourceFilesDisableWarningsUnlessOptedIn()
+    {
+        using var package = ZipFile.OpenRead(fixture.PackagePath);
+
+        var sourceEntries = package.Entries
+            .Where(entry => entry.FullName.StartsWith(SourceEntryPrefix, StringComparison.Ordinal) && entry.FullName.EndsWith(".cs", StringComparison.Ordinal))
+            .ToArray();
+
+        Assert.Equal(SourceFileNames, sourceEntries.Select(entry => entry.FullName[SourceEntryPrefix.Length..]).Order(StringComparer.Ordinal));
+
+        var entriesWithoutGuard = sourceEntries
+            .Where(entry => !ReadEntryText(entry).ReplaceLineEndings("\n").StartsWith(WarningsGuard, StringComparison.Ordinal))
+            .Select(entry => entry.FullName)
+            .ToArray();
+
+        Assert.Empty(entriesWithoutGuard);
+    }
+
+    [Fact]
     public async Task Package_AddsSourceAndConstants()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
@@ -261,6 +280,15 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         "5.3.0",
         "5.6.0",
     ];
+
+    private const string SourceEntryPrefix = "contentFiles/cs/any/Meziantou.Framework.Roslyn/";
+
+    private const string WarningsGuard = """
+        #if !MEZIANTOU_FRAMEWORK_ROSLYN_ENABLE_WARNINGS
+        #pragma warning disable
+        #endif
+
+        """;
 
     private static readonly string[] SourceFileNames =
     [

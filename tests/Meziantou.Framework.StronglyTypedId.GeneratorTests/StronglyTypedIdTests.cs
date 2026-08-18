@@ -11,6 +11,9 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using Newtonsoft.Json;
 
+// Validate the assembly-level configuration is applied to all the types of the assembly
+[assembly: StronglyTypedIdDefaults(AddCodeGeneratedAttribute = false)]
+
 namespace Meziantou.Framework.StronglyTypedId.GeneratorTests;
 
 public sealed partial class StronglyTypedIdTests
@@ -143,6 +146,9 @@ public sealed partial class StronglyTypedIdTests
     {
         Assert.NotNull(typeof(IdInt32WithCodeGeneratedAttribute).GetMethod("FromInt32")!.GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>());
         Assert.Null(typeof(IdInt32WithoutCodeGeneratedAttribute).GetMethod("FromInt32")!.GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>());
+
+        // The assembly-level configuration sets AddCodeGeneratedAttribute to false
+        Assert.Null(typeof(IdInt32).GetMethod("FromInt32")!.GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>());
     }
 
     [Fact]

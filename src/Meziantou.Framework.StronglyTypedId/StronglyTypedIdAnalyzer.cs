@@ -43,13 +43,37 @@ public sealed class StronglyTypedIdAnalyzer : DiagnosticAnalyzer
 
     private static void InitializeCore(CompilationStartAnalysisContext context)
     {
-        var nonGenericAttribute = context.Compilation.GetTypeByMetadataName("Meziantou.Framework.Annotations.StronglyTypedIdAttribute");
-        var genericAttribute = context.Compilation.GetTypeByMetadataName("Meziantou.Framework.Annotations.StronglyTypedIdAttribute`1");
+        var nonGenericAttribute = context.Compilation.GetTypeByMetadataName(StronglyTypedIdSourceGenerator.StronglyTypedIdAttributeName);
+        var genericAttribute = context.Compilation.GetTypeByMetadataName(StronglyTypedIdSourceGenerator.StronglyTypedIdGenericAttributeName);
         if (nonGenericAttribute is null && genericAttribute is null)
             return;
 
         var supportGuidCreateVersion7 = context.Compilation.SupportGuidCreateVersion7();
+        if (!supportGuidCreateVersion7 && context.Compilation.GetTypeByMetadataName(StronglyTypedIdSourceGenerator.StronglyTypedIdDefaultsAttributeName) is { } defaultsAttribute)
+        {
+            context.RegisterCompilationEndAction(context => AnalyzeAssemblyDefaults(context, defaultsAttribute));
+        }
+
         context.RegisterSymbolAction(context => AnalyzeSymbol(context, nonGenericAttribute, genericAttribute, supportGuidCreateVersion7), SymbolKind.NamedType);
+    }
+
+    private static void AnalyzeAssemblyDefaults(CompilationAnalysisContext context, INamedTypeSymbol defaultsAttribute)
+    {
+        foreach (var attribute in context.Compilation.Assembly.GetAttributes())
+        {
+            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, defaultsAttribute))
+                continue;
+
+            if (GetGuidGenerationStrategy(attribute) is not StronglyTypedIdSourceGenerator.GuidGenerationStrategy.Version7)
+                continue;
+
+            var location = GetNamedArgumentLocation(attribute, StronglyTypedIdSourceGenerator.GuidGenerationStrategyPropertyName, context.CancellationToken)
+                ?? attribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation();
+            if (location is not null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(UnsupportedGuidGenerationStrategy, location));
+            }
+        }
     }
 
     private static void AnalyzeSymbol(SymbolAnalysisContext context, INamedTypeSymbol? nonGenericAttribute, INamedTypeSymbol? genericAttribute, bool supportGuidCreateVersion7)

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
 using System.Xml.Linq;
@@ -18,26 +19,36 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
     private const string PropertyAsStringName = "ValueAsString";
 
     internal const string GuidGenerationStrategyPropertyName = "GuidGenerationStrategy";
+    internal const string StronglyTypedIdAttributeName = "Meziantou.Framework.Annotations.StronglyTypedIdAttribute";
+    internal const string StronglyTypedIdGenericAttributeName = "Meziantou.Framework.Annotations.StronglyTypedIdAttribute`1";
+    internal const string StronglyTypedIdDefaultsAttributeName = "Meziantou.Framework.Annotations.StronglyTypedIdDefaultsAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var nonGenericTypes = context.SyntaxProvider
             .ForAttributeWithMetadataName(
-                "Meziantou.Framework.Annotations.StronglyTypedIdAttribute",
+                StronglyTypedIdAttributeName,
                 predicate: static (syntax, cancellationToken) => IsSyntaxTargetForGeneration(syntax),
                 transform: static (ctx, cancellationToken) => GetNonGenericSemanticTargetForGeneration(ctx, cancellationToken))
             .Where(static m => m is not null)
             .WithTrackingName("Syntax");
         var genericTypes = context.SyntaxProvider
             .ForAttributeWithMetadataName(
-                "Meziantou.Framework.Annotations.StronglyTypedIdAttribute`1",
+                StronglyTypedIdGenericAttributeName,
                 predicate: static (syntax, _) => IsSyntaxTargetForGeneration(syntax),
                 transform: static (ctx, cancellationToken) => GetGenericSemanticTargetForGeneration(ctx, cancellationToken))
             .Where(static m => m is not null)
             .WithTrackingName("Syntax");
+        var assemblyDefaults = context.SyntaxProvider
+            .ForAttributeWithMetadataName(
+                StronglyTypedIdDefaultsAttributeName,
+                predicate: static (_, _) => true,
+                transform: static (ctx, _) => GetAssemblyDefaults(ctx))
+            .Collect()
+            .Select(static (options, _) => options.FirstOrDefault() ?? StronglyTypedIdOptions.Empty);
 
-        context.RegisterSourceOutput(nonGenericTypes, (context, attribute) => Execute(context, attribute!));
-        context.RegisterSourceOutput(genericTypes, (context, attribute) => Execute(context, attribute!));
+        context.RegisterSourceOutput(nonGenericTypes.Combine(assemblyDefaults), (context, item) => Execute(context, item.Left!.ApplyDefaults(item.Right)));
+        context.RegisterSourceOutput(genericTypes.Combine(assemblyDefaults), (context, item) => Execute(context, item.Left!.ApplyDefaults(item.Right)));
 
         static bool IsSyntaxTargetForGeneration(SyntaxNode syntax)
         {
@@ -108,48 +119,6 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
             foreach (var attribute in ctx.Attributes)
             {
-                var converters = StronglyTypedIdConverters.None;
-                AddConverter(arguments[0], StronglyTypedIdConverters.System_Text_Json);
-                AddConverter(arguments[1], StronglyTypedIdConverters.Newtonsoft_Json);
-                AddConverter(arguments[2], StronglyTypedIdConverters.System_ComponentModel_TypeConverter);
-                AddConverter(arguments[3], StronglyTypedIdConverters.MongoDB_Bson_Serialization);
-                void AddConverter(TypedConstant value, StronglyTypedIdConverters converterValue)
-                {
-                    if (value.Value is bool argumentValue && argumentValue)
-                    {
-                        converters |= converterValue;
-                    }
-                }
-
-                var addCodeGeneratedAttribute = false;
-                if (arguments[4].Value is bool addCodeGeneratedAttributeValue)
-                {
-                    addCodeGeneratedAttribute = addCodeGeneratedAttributeValue;
-                }
-
-                T GetNamedProperty<T>(string name, T defaultValue)
-                {
-                    foreach (var arg in attribute.NamedArguments)
-                    {
-                        if (arg.Key == name)
-                        {
-                            if (arg.Value.Value is T result)
-                                return result;
-
-                            if (typeof(T).IsEnum && arg.Value.Value is int i && Enum.IsDefined(typeof(T), i))
-                                return (T)Enum.ToObject(typeof(T), i);
-
-                            break;
-                        }
-                    }
-
-                    return defaultValue;
-                }
-
-                var stringComparison = GetNamedProperty("StringComparison", defaultValue: StringComparison.Ordinal);
-                var generateToStringAsRecord = GetNamedProperty("GenerateToStringAsRecord", defaultValue: true);
-                var guidGenerationStrategy = GetNamedProperty(GuidGenerationStrategyPropertyName, defaultValue: GuidGenerationStrategy.Version4);
-
                 var attributeSyntax = attribute.ApplicationSyntaxReference!.GetSyntax(cancellationToken);
                 var idType = GetIdType(semanticModel.Compilation, type);
 
@@ -158,21 +127,108 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                     return null;
                 }
 
+                var explicitConstructorArguments = GetExplicitConstructorArguments(attribute, attributeSyntax);
+                var options = new StronglyTypedIdOptions(
+                    GetConstructorArgument("generateSystemTextJsonConverter", arguments[0]),
+                    GetConstructorArgument("generateNewtonsoftJsonConverter", arguments[1]),
+                    GetConstructorArgument("generateSystemComponentModelTypeConverter", arguments[2]),
+                    GetConstructorArgument("generateMongoDBBsonSerialization", arguments[3]),
+                    GetConstructorArgument("addCodeGeneratedAttribute", arguments[4]),
+                    GetNamedProperty<StringComparison>(attribute, "StringComparison"),
+                    GetNamedProperty<bool>(attribute, "GenerateToStringAsRecord"),
+                    GetNamedProperty<GuidGenerationStrategy>(attribute, GuidGenerationStrategyPropertyName));
+
+                bool? GetConstructorArgument(string parameterName, TypedConstant value)
+                {
+                    if (!explicitConstructorArguments.Contains(parameterName))
+                        return null;
+
+                    return value.Value is bool result ? result : null;
+                }
+
                 return new AttributeInfo(
                     semanticModel.Compilation,
                     attributeSyntax,
                     (INamedTypeSymbol)ctx.TargetSymbol,
                     idType,
                     type,
-                    converters,
-                    addCodeGeneratedAttribute,
-                    stringComparison,
-                    generateToStringAsRecord,
-                    guidGenerationStrategy);
+                    options);
             }
 
             return null;
         }
+
+        static StronglyTypedIdOptions GetAssemblyDefaults(GeneratorAttributeSyntaxContext ctx)
+        {
+            var options = StronglyTypedIdOptions.Empty;
+            foreach (var attribute in ctx.Attributes)
+            {
+                options = options.Merge(new StronglyTypedIdOptions(
+                    GetNamedProperty<bool>(attribute, "GenerateSystemTextJsonConverter"),
+                    GetNamedProperty<bool>(attribute, "GenerateNewtonsoftJsonConverter"),
+                    GetNamedProperty<bool>(attribute, "GenerateSystemComponentModelTypeConverter"),
+                    GetNamedProperty<bool>(attribute, "GenerateMongoDBBsonSerialization"),
+                    GetNamedProperty<bool>(attribute, "AddCodeGeneratedAttribute"),
+                    GetNamedProperty<StringComparison>(attribute, "StringComparison"),
+                    GetNamedProperty<bool>(attribute, "GenerateToStringAsRecord"),
+                    GetNamedProperty<GuidGenerationStrategy>(attribute, GuidGenerationStrategyPropertyName)));
+            }
+
+            return options;
+        }
+    }
+
+    private static T? GetNamedProperty<T>(AttributeData attribute, string name) where T : struct
+    {
+        foreach (var arg in attribute.NamedArguments)
+        {
+            if (arg.Key == name)
+            {
+                if (arg.Value.Value is T result)
+                    return result;
+
+                if (typeof(T).IsEnum && arg.Value.Value is int i && Enum.IsDefined(typeof(T), i))
+                    return (T)Enum.ToObject(typeof(T), i);
+
+                break;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets the names of the constructor parameters explicitly set in the source code, so optional parameters that are not set can fall back to the assembly-level defaults.
+    /// </summary>
+    private static HashSet<string> GetExplicitConstructorArguments(AttributeData attribute, SyntaxNode attributeSyntax)
+    {
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        if (attributeSyntax is not AttributeSyntax { ArgumentList: not null } syntax)
+            return result;
+
+        var parameters = attribute.AttributeConstructor?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
+        var index = 0;
+        foreach (var argument in syntax.ArgumentList.Arguments)
+        {
+            if (argument.NameEquals is not null)
+                continue;
+
+            if (argument.NameColon is not null)
+            {
+                result.Add(argument.NameColon.Name.Identifier.ValueText);
+            }
+            else
+            {
+                if (index < parameters.Length)
+                {
+                    result.Add(parameters[index].Name);
+                }
+
+                index++;
+            }
+        }
+
+        return result;
     }
 
     private static void Execute(SourceProductionContext context, AttributeInfo attribute)
@@ -383,17 +439,14 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
     private sealed class AttributeInfo : IEquatable<AttributeInfo>
     {
-        public AttributeInfo(Compilation compilation, SyntaxNode attributeSyntax, INamedTypeSymbol typeSymbol, IdType idType, ITypeSymbol idTypeSymbol, StronglyTypedIdConverters converters, bool addCodeGeneratedAttribute, StringComparison stringComparison, bool generateToStringAsRecord, GuidGenerationStrategy guidGenerationStrategy)
+        public AttributeInfo(Compilation compilation, SyntaxNode attributeSyntax, INamedTypeSymbol typeSymbol, IdType idType, ITypeSymbol idTypeSymbol, StronglyTypedIdOptions options)
         {
             Debug.Assert(idType != IdType.Unknown);
 
             AttributeSyntax = attributeSyntax;
             IdType = idType;
-            Converters = converters;
-            AddCodeGeneratedAttribute = addCodeGeneratedAttribute;
-            StringComparison = stringComparison;
-            GenerateToStringAsRecord = generateToStringAsRecord;
-            GuidGenerationStrategy = guidGenerationStrategy;
+            Options = options;
+            ApplyOptions();
             TypeName = typeSymbol.Name;
             IsSealed = typeSymbol.IsSealed;
             IsReferenceType = typeSymbol.IsReferenceType;
@@ -574,11 +627,49 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         // Info provided by the attribute
         public PartialTypeContext PartialTypeContext { get; }
         public IdType IdType { get; }
-        public StronglyTypedIdConverters Converters { get; }
-        public bool AddCodeGeneratedAttribute { get; }
-        public StringComparison StringComparison { get; }
-        public bool GenerateToStringAsRecord { get; }
-        public GuidGenerationStrategy GuidGenerationStrategy { get; }
+
+        /// <summary>Gets the options explicitly set on the attribute. Options that are not set fall back to the assembly-level defaults, then to the default values.</summary>
+        public StronglyTypedIdOptions Options { get; private set; }
+        public StronglyTypedIdConverters Converters { get; private set; }
+        public bool AddCodeGeneratedAttribute { get; private set; }
+        public StringComparison StringComparison { get; private set; }
+        public bool GenerateToStringAsRecord { get; private set; }
+        public GuidGenerationStrategy GuidGenerationStrategy { get; private set; }
+
+        /// <summary>Returns an instance where the options that are not explicitly set on the attribute use the assembly-level default values.</summary>
+        public AttributeInfo ApplyDefaults(StronglyTypedIdOptions defaults)
+        {
+            if (defaults == StronglyTypedIdOptions.Empty)
+                return this;
+
+            var result = (AttributeInfo)MemberwiseClone();
+            result.Options = Options.Merge(defaults);
+            result.ApplyOptions();
+            return result;
+        }
+
+        private void ApplyOptions()
+        {
+            var converters = StronglyTypedIdConverters.None;
+            AddConverter(Options.GenerateSystemTextJsonConverter, StronglyTypedIdConverters.System_Text_Json);
+            AddConverter(Options.GenerateNewtonsoftJsonConverter, StronglyTypedIdConverters.Newtonsoft_Json);
+            AddConverter(Options.GenerateSystemComponentModelTypeConverter, StronglyTypedIdConverters.System_ComponentModel_TypeConverter);
+            AddConverter(Options.GenerateMongoDBBsonSerialization, StronglyTypedIdConverters.MongoDB_Bson_Serialization);
+
+            Converters = converters;
+            AddCodeGeneratedAttribute = Options.AddCodeGeneratedAttribute ?? true;
+            StringComparison = Options.StringComparison ?? StringComparison.Ordinal;
+            GenerateToStringAsRecord = Options.GenerateToStringAsRecord ?? true;
+            GuidGenerationStrategy = Options.GuidGenerationStrategy ?? GuidGenerationStrategy.Version4;
+
+            void AddConverter(bool? value, StronglyTypedIdConverters converterValue)
+            {
+                if (value ?? true)
+                {
+                    converters |= converterValue;
+                }
+            }
+        }
 
         // Computed info
         public string TypeName { get; }
@@ -648,12 +739,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 && PartialTypeContext == other.PartialTypeContext
                 && IdType == other.IdType
                 && TypeName == other.TypeName
-                && StringComparison == other.StringComparison
-                && GenerateToStringAsRecord == other.GenerateToStringAsRecord
-                && GuidGenerationStrategy == other.GuidGenerationStrategy
+                && Options == other.Options
                 && SupportGuidCreateVersion7 == other.SupportGuidCreateVersion7
-                && Converters == other.Converters
-                && AddCodeGeneratedAttribute == other.AddCodeGeneratedAttribute
                 && IsSealed == other.IsSealed
                 && IsCtorDefined == other.IsCtorDefined
                 && IsNewDefined == other.IsNewDefined
@@ -699,12 +786,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             hashcode.Add(PartialTypeContext);
             hashcode.Add(IdType);
             hashcode.Add(TypeName, StringComparer.Ordinal);
-            hashcode.Add(Converters);
-            hashcode.Add(StringComparison);
-            hashcode.Add(GenerateToStringAsRecord);
-            hashcode.Add(GuidGenerationStrategy);
+            hashcode.Add(Options);
             hashcode.Add(SupportGuidCreateVersion7);
-            hashcode.Add(AddCodeGeneratedAttribute);
             hashcode.Add(IsSealed);
             hashcode.Add(IsCtorDefined);
             hashcode.Add(IsNewDefined);
@@ -835,6 +918,36 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 IdType.MongoDB_Bson_ObjectId => "ObjectId",
                 _ => throw new ArgumentException($"Type '{type}' not supported", nameof(type)),
             };
+        }
+    }
+
+    /// <summary>
+    /// Options set on an attribute. A <see langword="null"/> value means the option is not set.
+    /// </summary>
+    internal sealed record StronglyTypedIdOptions(
+        bool? GenerateSystemTextJsonConverter,
+        bool? GenerateNewtonsoftJsonConverter,
+        bool? GenerateSystemComponentModelTypeConverter,
+        bool? GenerateMongoDBBsonSerialization,
+        bool? AddCodeGeneratedAttribute,
+        StringComparison? StringComparison,
+        bool? GenerateToStringAsRecord,
+        GuidGenerationStrategy? GuidGenerationStrategy)
+    {
+        public static StronglyTypedIdOptions Empty { get; } = new(null, null, null, null, null, null, null, null);
+
+        /// <summary>Returns the current options where the options that are not set use the values from <paramref name="defaults"/>.</summary>
+        public StronglyTypedIdOptions Merge(StronglyTypedIdOptions defaults)
+        {
+            return new StronglyTypedIdOptions(
+                GenerateSystemTextJsonConverter ?? defaults.GenerateSystemTextJsonConverter,
+                GenerateNewtonsoftJsonConverter ?? defaults.GenerateNewtonsoftJsonConverter,
+                GenerateSystemComponentModelTypeConverter ?? defaults.GenerateSystemComponentModelTypeConverter,
+                GenerateMongoDBBsonSerialization ?? defaults.GenerateMongoDBBsonSerialization,
+                AddCodeGeneratedAttribute ?? defaults.AddCodeGeneratedAttribute,
+                StringComparison ?? defaults.StringComparison,
+                GenerateToStringAsRecord ?? defaults.GenerateToStringAsRecord,
+                GuidGenerationStrategy ?? defaults.GuidGenerationStrategy);
         }
     }
 

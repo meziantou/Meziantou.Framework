@@ -14,9 +14,9 @@
 
   <ItemGroup>
     <None Include="readme.md" Pack="true" PackagePath="" />
-    <Content Include="SymbolExtensions.cs"
+    <Content Include="*.cs"
              Pack="true"
-             PackagePath="contentFiles/cs/any/Meziantou.Framework.Roslyn/SymbolExtensions.cs">
+             PackagePath="contentFiles/cs/any/Meziantou.Framework.Roslyn/%(Filename)%(Extension)">
       <BuildAction>Compile</BuildAction>
       <PackageCopyToOutput>false</PackageCopyToOutput>
       <PackageFlatten>false</PackageFlatten>

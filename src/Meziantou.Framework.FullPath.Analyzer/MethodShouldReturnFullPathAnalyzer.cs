@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.FullPath;
 
@@ -48,7 +49,7 @@ public sealed class MethodShouldReturnFullPathAnalyzer : DiagnosticAnalyzer
         if (methodSymbol.ReturnType.SpecialType != SpecialType.System_String)
             return;
 
-        if (!FullPathAnalyzerCommon.CanChangeDeclaredType(methodSymbol))
+        if (!methodSymbol.CanChangeDeclaredType())
             return;
 
         var hasReturnValue = false;
@@ -91,7 +92,7 @@ public sealed class MethodShouldReturnFullPathAnalyzer : DiagnosticAnalyzer
 
     private static void ReportDiagnostic(Action<Diagnostic> reportDiagnostic, IMethodSymbol methodSymbol)
     {
-        var location = FullPathAnalyzerCommon.GetFirstSourceLocation(methodSymbol);
+        var location = methodSymbol.GetFirstSourceLocation();
         if (location is null)
             return;
 

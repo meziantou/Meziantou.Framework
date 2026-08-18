@@ -98,7 +98,7 @@ public sealed class ParameterShouldBeFullPathAnalyzer : DiagnosticAnalyzer
                     continue;
 
                 var parameter = method.Parameters[i];
-                var location = FullPathAnalyzerCommon.GetFirstSourceLocation(parameter);
+                var location = parameter.GetFirstSourceLocation();
                 if (location is null)
                     continue;
 
@@ -119,10 +119,10 @@ public sealed class ParameterShouldBeFullPathAnalyzer : DiagnosticAnalyzer
         if (!methodSymbol.ExplicitInterfaceImplementations.IsEmpty)
             return false;
 
-        if (!FullPathAnalyzerCommon.CanChangeDeclaredType(methodSymbol))
+        if (!methodSymbol.CanChangeDeclaredType())
             return false;
 
-        return FullPathAnalyzerCommon.GetFirstSourceLocation(methodSymbol) is not null;
+        return methodSymbol.GetFirstSourceLocation() is not null;
     }
 
     private static bool IsCandidate(IParameterSymbol parameterSymbol)

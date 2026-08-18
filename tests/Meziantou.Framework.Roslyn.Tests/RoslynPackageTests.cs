@@ -10,8 +10,10 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
     {
         using var package = ZipFile.OpenRead(fixture.PackagePath);
 
-        var source = ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/SymbolExtensions.cs"));
-        Assert.Contains("IsVisibleOutsideOfAssembly", source);
+        Assert.Contains("GetBestTypeByMetadataName", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/CompilationExtensions.cs")));
+        Assert.Contains("UnwrapImplicitConversion", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/OperationExtensions.cs")));
+        Assert.Contains("IsVisibleOutsideOfAssembly", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/SymbolExtensions.cs")));
+        Assert.Contains("IsAssignableTo", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/TypeSymbolExtensions.cs")));
         AssertEntry(package, "buildTransitive/Meziantou.Framework.Roslyn.targets");
         Assert.DoesNotContain(package.Entries, entry => entry.FullName.StartsWith("lib/", StringComparison.Ordinal));
     }
@@ -45,7 +47,10 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
 
         var projectAssets = await File.ReadAllTextAsync(projectDirectory / "obj" / "project.assets.json", XunitCancellationToken);
+        Assert.Contains("contentFiles/cs/any/Meziantou.Framework.Roslyn/CompilationExtensions.cs", projectAssets);
+        Assert.Contains("contentFiles/cs/any/Meziantou.Framework.Roslyn/OperationExtensions.cs", projectAssets);
         Assert.Contains("contentFiles/cs/any/Meziantou.Framework.Roslyn/SymbolExtensions.cs", projectAssets);
+        Assert.Contains("contentFiles/cs/any/Meziantou.Framework.Roslyn/TypeSymbolExtensions.cs", projectAssets);
     }
 
     [Fact]
@@ -145,6 +150,7 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
     {
         return $$"""
             using Microsoft.CodeAnalysis;
+            using Microsoft.CodeAnalysis.Operations;
             using Meziantou.Framework.Roslyn;
 
             {{CreateConstantChecks(expectedConstants)}}
@@ -153,7 +159,13 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
 
             internal static class Consumer
             {
+                public static INamedTypeSymbol? GetBestType(Compilation compilation, string fullyQualifiedMetadataName) => compilation.GetBestTypeByMetadataName(fullyQualifiedMetadataName);
+                public static bool CanChangeDeclaredType(ISymbol symbol) => symbol.CanChangeDeclaredType();
+                public static Location? GetLocation(ISymbol symbol) => symbol.GetFirstSourceLocation();
+                public static bool HasObsoleteAttribute(ISymbol symbol) => symbol.HasAttribute("System.ObsoleteAttribute");
                 public static bool IsVisible(ISymbol? symbol) => symbol.IsVisibleOutsideOfAssembly();
+                public static IOperation Unwrap(IOperation operation) => operation.UnwrapImplicitConversion();
+                public static bool IsAssignable(ITypeSymbol typeSymbol, ITypeSymbol baseType) => typeSymbol.IsAssignableTo(baseType);
             }
             """;
     }

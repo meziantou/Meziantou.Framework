@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.FullPath;
 
@@ -47,7 +48,7 @@ public sealed class PropertyShouldReturnFullPathAnalyzer : DiagnosticAnalyzer
         if (propertySymbol.IsIndexer)
             return;
 
-        if (!FullPathAnalyzerCommon.CanChangeDeclaredType(propertySymbol))
+        if (!propertySymbol.CanChangeDeclaredType())
             return;
 
         var hasReturnValue = false;
@@ -67,7 +68,7 @@ public sealed class PropertyShouldReturnFullPathAnalyzer : DiagnosticAnalyzer
         if (!hasReturnValue || !allReturnsAreFullPath)
             return;
 
-        var location = FullPathAnalyzerCommon.GetFirstSourceLocation(propertySymbol);
+        var location = propertySymbol.GetFirstSourceLocation();
         if (location is null)
             return;
 

@@ -69,38 +69,4 @@ internal static class FullPathAnalyzerCommon
         return SymbolEqualityComparer.Default.Equals(typeSymbol, fullPathType);
     }
 
-    /// <summary>
-    /// Determines whether the declared type of a member can be changed without breaking a base type or an interface.
-    /// </summary>
-    internal static bool CanChangeDeclaredType(ISymbol symbol)
-    {
-        if (symbol.IsOverride || symbol.IsVirtual || symbol.IsAbstract)
-            return false;
-
-        var containingType = symbol.ContainingType;
-        if (containingType is null)
-            return true;
-
-        foreach (var interfaceType in containingType.AllInterfaces)
-        {
-            foreach (var interfaceMember in interfaceType.GetMembers())
-            {
-                if (SymbolEqualityComparer.Default.Equals(containingType.FindImplementationForInterfaceMember(interfaceMember), symbol))
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    internal static Location? GetFirstSourceLocation(ISymbol symbol)
-    {
-        foreach (var candidateLocation in symbol.Locations)
-        {
-            if (candidateLocation.IsInSource)
-                return candidateLocation;
-        }
-
-        return null;
-    }
 }

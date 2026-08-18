@@ -19,4 +19,14 @@ Then import the helper namespace:
 using Meziantou.Framework.Roslyn;
 ````
 
+## Helpers
+
+- `Compilation.GetBestTypeByMetadataName`
+- `IOperation.UnwrapImplicitConversion`
+- `ISymbol.CanChangeDeclaredType`
+- `ISymbol.GetFirstSourceLocation`
+- `ISymbol.HasAttribute`
+- `ISymbol.IsVisibleOutsideOfAssembly`
+- `ITypeSymbol.IsAssignableTo`
+
 The package also defines Roslyn and C# feature constants before compilation based on the referenced `Microsoft.CodeAnalysis.*` package version, such as `ROSLYN_4_8_OR_GREATER` and `CSHARP12_OR_GREATER`.

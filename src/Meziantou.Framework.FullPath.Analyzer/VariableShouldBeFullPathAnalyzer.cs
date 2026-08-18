@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.FullPath;
 
@@ -97,7 +98,7 @@ public sealed class VariableShouldBeFullPathAnalyzer : DiagnosticAnalyzer
         if (operation.Syntax is not VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax { Type.IsVar: false } })
             return;
 
-        var state = new VariableState { Location = FullPathAnalyzerCommon.GetFirstSourceLocation(local) };
+        var state = new VariableState { Location = local.GetFirstSourceLocation() };
         var initializer = operation.Initializer ?? (operation.Parent as IVariableDeclarationOperation)?.Initializer;
         if (initializer is not null)
         {

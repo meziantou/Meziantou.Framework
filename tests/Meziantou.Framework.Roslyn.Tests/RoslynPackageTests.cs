@@ -24,6 +24,7 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         Assert.Contains("GetUnderlyingNullableTypeOrSelf", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/TypeSymbolExtensions.cs")));
         AssertEntry(package, "buildTransitive/Meziantou.Framework.Roslyn.targets");
         Assert.DoesNotContain(package.Entries, entry => entry.FullName.StartsWith("lib/", StringComparison.Ordinal));
+        Assert.DoesNotContain(package.Entries, entry => entry.FullName.StartsWith("_manifest/", StringComparison.Ordinal));
     }
 
     [Fact]

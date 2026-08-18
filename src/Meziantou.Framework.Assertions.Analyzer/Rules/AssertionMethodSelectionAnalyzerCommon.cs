@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
 
@@ -54,13 +55,13 @@ internal static class AssertionMethodSelectionAnalyzerCommon
 
         var actualArgument = invocationOperation.Arguments.FirstOrDefault(argument => argument.Parameter?.Name == "actual");
         if (actualArgument is null ||
-            !AssertionsAnalyzerHelpers.IsNonNullableValueType(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(actualArgument.Value).Type, unionAttributeType, unionInterfaceType))
+            !AssertionsAnalyzerHelpers.IsNonNullableValueType(actualArgument.Value.UnwrapImplicitConversions().Type, unionAttributeType, unionInterfaceType))
         {
             match = default;
             return false;
         }
 
-        var actualOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(actualArgument.Value);
+        var actualOperation = actualArgument.Value.UnwrapImplicitConversions();
         var valueType = actualOperation.Type;
         if (valueType is null)
         {
@@ -87,7 +88,7 @@ internal static class AssertionMethodSelectionAnalyzerCommon
             TryGetIsTypeOperationType(isTypeOperation, out var isTypeOperationType))
         {
             var assertionMethodName = conditionExpectedToBeFalse ? IsNotAssignableToAssertionMethodName : IsAssignableToAssertionMethodName;
-            match = new AssignableTypeCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(isTypeOperation.ValueOperand), isTypeOperationType, assertionMethodName);
+            match = new AssignableTypeCheckMatch(isTypeOperation.ValueOperand.UnwrapImplicitConversions(), isTypeOperationType, assertionMethodName);
             return true;
         }
 
@@ -99,7 +100,7 @@ internal static class AssertionMethodSelectionAnalyzerCommon
         }
 
         var patternAssertionMethodName = conditionExpectedToBeFalse == isNegated ? IsAssignableToAssertionMethodName : IsNotAssignableToAssertionMethodName;
-        match = new AssignableTypeCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(isPatternOperation.Value), type, patternAssertionMethodName);
+        match = new AssignableTypeCheckMatch(isPatternOperation.Value.UnwrapImplicitConversions(), type, patternAssertionMethodName);
         return true;
     }
 
@@ -132,8 +133,8 @@ internal static class AssertionMethodSelectionAnalyzerCommon
             return false;
         }
 
-        var expectedOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(expectedArgument.Value);
-        var actualOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(actualArgument.Value);
+        var expectedOperation = expectedArgument.Value.UnwrapImplicitConversions();
+        var actualOperation = actualArgument.Value.UnwrapImplicitConversions();
         if (!AssertionsAnalyzerHelpers.IsValueType(expectedOperation.Type) ||
             !AssertionsAnalyzerHelpers.IsValueType(actualOperation.Type))
         {
@@ -179,16 +180,16 @@ internal static class AssertionMethodSelectionAnalyzerCommon
             return false;
         }
 
-        conditionOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(conditionArgument.Value);
+        conditionOperation = conditionArgument.Value.UnwrapImplicitConversions();
         return true;
     }
 
     private static bool TryGetNullComparedValue(IOperation leftOperation, IOperation rightOperation, out IOperation actualOperation)
     {
-        leftOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(leftOperation);
+        leftOperation = leftOperation.UnwrapImplicitConversions();
         if (leftOperation.ConstantValue is { HasValue: true, Value: null })
         {
-            actualOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(rightOperation);
+            actualOperation = rightOperation.UnwrapImplicitConversions();
             return true;
         }
 
@@ -226,13 +227,13 @@ internal static class AssertionMethodSelectionAnalyzerCommon
 
         if (IsNullPattern(isPatternOperation.Pattern))
         {
-            match = new NullCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(isPatternOperation.Value), NullAssertionMethodName);
+            match = new NullCheckMatch(isPatternOperation.Value.UnwrapImplicitConversions(), NullAssertionMethodName);
             return true;
         }
 
         if (IsNotNullPattern(isPatternOperation.Pattern))
         {
-            match = new NullCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(isPatternOperation.Value), NotNullAssertionMethodName);
+            match = new NullCheckMatch(isPatternOperation.Value.UnwrapImplicitConversions(), NotNullAssertionMethodName);
             return true;
         }
 
@@ -245,7 +246,7 @@ internal static class AssertionMethodSelectionAnalyzerCommon
         if (conditionOperation is IPropertyReferenceOperation { Property.Name: "HasValue", Instance: { } instance } &&
             instance.Type?.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
         {
-            match = new NullCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(instance), NotNullAssertionMethodName);
+            match = new NullCheckMatch(instance.UnwrapImplicitConversions(), NotNullAssertionMethodName);
             return true;
         }
 

@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
 
@@ -120,8 +121,8 @@ internal static class ConditionRewriteAnalyzerCommon
             return false;
         }
 
-        var left = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(binaryOperation.LeftOperand);
-        var right = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(binaryOperation.RightOperand);
+        var left = binaryOperation.LeftOperand.UnwrapImplicitConversions();
+        var right = binaryOperation.RightOperand.UnwrapImplicitConversions();
 
         // Null comparisons belong to the null assertion rules
         if (IsNullConstant(left) || IsNullConstant(right))
@@ -172,8 +173,8 @@ internal static class ConditionRewriteAnalyzerCommon
                 return false;
             }
 
-            var expectedOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(invocation.Arguments[0].Value);
-            var actualOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(invocation.Arguments[1].Value);
+            var expectedOperand = invocation.Arguments[0].Value.UnwrapImplicitConversions();
+            var actualOperand = invocation.Arguments[1].Value.UnwrapImplicitConversions();
             if (invocation.Arguments.Length == 2)
             {
                 match = new ConditionRewriteMatch(invocation, assertionMethodName, [expectedOperand, actualOperand]);
@@ -193,8 +194,8 @@ internal static class ConditionRewriteAnalyzerCommon
         // object.Equals(a, b)
         if (SymbolEqualityComparer.Default.Equals(invocation.TargetMethod, symbols.ObjectStaticEqualsMethod) && invocation.Arguments.Length == 2)
         {
-            var expectedOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(invocation.Arguments[0].Value);
-            var actualOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(invocation.Arguments[1].Value);
+            var expectedOperand = invocation.Arguments[0].Value.UnwrapImplicitConversions();
+            var actualOperand = invocation.Arguments[1].Value.UnwrapImplicitConversions();
             if (MayBeComparedAsSequence(expectedOperand.Type, symbols) || MayBeComparedAsSequence(actualOperand.Type, symbols))
             {
                 match = default;
@@ -208,8 +209,8 @@ internal static class ConditionRewriteAnalyzerCommon
         // instance a.Equals(b) — the receiver is the actual value
         if (invocation is { Instance: { } instance, Arguments.Length: 1 } && !invocation.TargetMethod.IsStatic)
         {
-            var actualOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(instance);
-            var expectedOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(invocation.Arguments[0].Value);
+            var actualOperand = instance.UnwrapImplicitConversions();
+            var expectedOperand = invocation.Arguments[0].Value.UnwrapImplicitConversions();
 
             // Assert.Equal compares sequences element by element, which Equals does not
             if (MayBeComparedAsSequence(actualOperand.Type, symbols) || MayBeComparedAsSequence(expectedOperand.Type, symbols))
@@ -233,8 +234,8 @@ internal static class ConditionRewriteAnalyzerCommon
                 return false;
             }
 
-            var actualOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(stringInstance);
-            var expectedOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(invocation.Arguments[0].Value);
+            var actualOperand = stringInstance.UnwrapImplicitConversions();
+            var expectedOperand = invocation.Arguments[0].Value.UnwrapImplicitConversions();
             match = new ConditionRewriteMatch(invocation, assertionMethodName, [expectedOperand, actualOperand], IgnoreCaseValue: ignoreCase ? true : null);
             return true;
         }
@@ -266,8 +267,8 @@ internal static class ConditionRewriteAnalyzerCommon
         IOperation expectedOperand;
         if (invocation.Instance is not null)
         {
-            actualOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(invocation.Instance);
-            expectedOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(invocation.Arguments[0].Value);
+            actualOperand = invocation.Instance.UnwrapImplicitConversions();
+            expectedOperand = invocation.Arguments[0].Value.UnwrapImplicitConversions();
         }
         else
         {
@@ -279,8 +280,8 @@ internal static class ConditionRewriteAnalyzerCommon
                 return false;
             }
 
-            actualOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(firstArgument.Value);
-            expectedOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(secondArgument.Value);
+            actualOperand = firstArgument.Value.UnwrapImplicitConversions();
+            expectedOperand = secondArgument.Value.UnwrapImplicitConversions();
         }
 
         var assertionMethodName = conditionExpectedToBeFalse ? NotEqualAssertionMethodName : EqualAssertionMethodName;
@@ -302,8 +303,8 @@ internal static class ConditionRewriteAnalyzerCommon
             return false;
         }
 
-        var expectedOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(invocation.Arguments[0].Value);
-        var actualOperand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(invocation.Arguments[1].Value);
+        var expectedOperand = invocation.Arguments[0].Value.UnwrapImplicitConversions();
+        var actualOperand = invocation.Arguments[1].Value.UnwrapImplicitConversions();
 
         // Assert.Same reports an error for value types (MFAS0010/MFAS0011)
         if (AssertionsAnalyzerHelpers.IsValueType(expectedOperand.Type) || AssertionsAnalyzerHelpers.IsValueType(actualOperand.Type))
@@ -351,7 +352,7 @@ internal static class ConditionRewriteAnalyzerCommon
 
     private static bool TryGetComparison(IOperation operation, Symbols symbols, out Comparison comparison)
     {
-        operation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(operation);
+        operation = operation.UnwrapImplicitConversions();
 
         // Assert.InRange is inclusive on both ends, so strict comparisons are not equivalent
         if (operation is IBinaryOperation binaryOperation &&
@@ -359,8 +360,8 @@ internal static class ConditionRewriteAnalyzerCommon
             IsComparableWithDefaultComparer(binaryOperation, symbols))
         {
             comparison = new Comparison(
-                AssertionsAnalyzerHelpers.UnwrapImplicitConversion(binaryOperation.LeftOperand),
-                AssertionsAnalyzerHelpers.UnwrapImplicitConversion(binaryOperation.RightOperand),
+                binaryOperation.LeftOperand.UnwrapImplicitConversions(),
+                binaryOperation.RightOperand.UnwrapImplicitConversions(),
                 binaryOperation.OperatorKind);
             return true;
         }
@@ -419,7 +420,7 @@ internal static class ConditionRewriteAnalyzerCommon
         if (binaryOperation.OperatorMethod is null)
             return true;
 
-        var type = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(binaryOperation.LeftOperand).Type;
+        var type = binaryOperation.LeftOperand.UnwrapImplicitConversions().Type;
         if (type is null)
             return false;
 
@@ -476,7 +477,7 @@ internal static class ConditionRewriteAnalyzerCommon
         match = new ConditionRewriteMatch(
             invocation,
             assertionMethodName,
-            [AssertionsAnalyzerHelpers.UnwrapImplicitConversion(instance), AssertionsAnalyzerHelpers.UnwrapImplicitConversion(invocation.Arguments[0].Value)]);
+            [instance.UnwrapImplicitConversions(), invocation.Arguments[0].Value.UnwrapImplicitConversions()]);
         return true;
     }
 
@@ -514,7 +515,7 @@ internal static class ConditionRewriteAnalyzerCommon
             return false;
         }
 
-        var operand = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(unaryOperation.Operand);
+        var operand = unaryOperation.Operand.UnwrapImplicitConversions();
         if (operand.Type?.SpecialType != SpecialType.System_Boolean)
         {
             match = default;
@@ -539,8 +540,8 @@ internal static class ConditionRewriteAnalyzerCommon
             return false;
         }
 
-        var left = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(binaryOperation.LeftOperand);
-        var right = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(binaryOperation.RightOperand);
+        var left = binaryOperation.LeftOperand.UnwrapImplicitConversions();
+        var right = binaryOperation.RightOperand.UnwrapImplicitConversions();
 
         if (!TryGetGetTypeReceiverAndType(left, right, symbols, out var receiver, out var type) &&
             !TryGetGetTypeReceiverAndType(right, left, symbols, out receiver, out type))
@@ -561,7 +562,7 @@ internal static class ConditionRewriteAnalyzerCommon
             SymbolEqualityComparer.Default.Equals(getTypeInvocation.TargetMethod.OriginalDefinition, symbols.ObjectGetTypeMethod) &&
             typeOfCandidate is ITypeOfOperation { TypeOperand: { } typeOperand })
         {
-            receiver = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(instance);
+            receiver = instance.UnwrapImplicitConversions();
             type = typeOperand;
             return true;
         }
@@ -590,7 +591,7 @@ internal static class ConditionRewriteAnalyzerCommon
 
     private static bool TryGetIgnoreCase(IArgumentOperation argument, out bool ignoreCase)
     {
-        var operation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(argument.Value);
+        var operation = argument.Value.UnwrapImplicitConversions();
         if (argument.Parameter?.Type?.Name == "StringComparison" && operation.ConstantValue is { HasValue: true, Value: int comparisonValue })
         {
             if (comparisonValue == (int)StringComparison.Ordinal)

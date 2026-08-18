@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
 
@@ -19,7 +20,7 @@ internal static class UseFailAssertionAnalyzerCommon
 
         var conditionArgument = invocationOperation.Arguments.FirstOrDefault(argument => argument.Parameter?.Name == "condition");
         if (conditionArgument is null ||
-            AssertionsAnalyzerHelpers.UnwrapImplicitConversion(conditionArgument.Value).ConstantValue is not { HasValue: true, Value: bool conditionValue })
+            conditionArgument.Value.UnwrapImplicitConversions().ConstantValue is not { HasValue: true, Value: bool conditionValue })
         {
             match = default;
             return false;

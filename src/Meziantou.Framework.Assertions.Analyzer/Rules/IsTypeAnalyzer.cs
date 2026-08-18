@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
 
@@ -68,7 +69,7 @@ public sealed class IsTypeAnalyzer : DiagnosticAnalyzer
             if (argument.Parameter?.Ordinal is not 0)
                 continue;
 
-            var operation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(argument.Value);
+            var operation = argument.Value.UnwrapImplicitConversions();
             if (operation is ITypeOfOperation { TypeOperand: INamedTypeSymbol typeOfSymbol })
             {
                 expectedType = typeOfSymbol;

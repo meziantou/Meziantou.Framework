@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
 
@@ -159,7 +160,7 @@ internal static class CountAssertionAnalyzerCommon
         out BinaryOperatorKind comparisonOperator,
         out bool collectionOperationOnLeftSide)
     {
-        conditionOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(conditionOperation);
+        conditionOperation = conditionOperation.UnwrapImplicitConversions();
         if (conditionOperation is not IBinaryOperation binaryOperation ||
             binaryOperation.OperatorKind is not (BinaryOperatorKind.Equals or
                                                 BinaryOperatorKind.NotEquals or
@@ -202,7 +203,7 @@ internal static class CountAssertionAnalyzerCommon
 
     private static bool TryGetAssertionMethodForEquality(IOperation operation, bool negate, out IOperation expectedOperation, out string assertionMethodName)
     {
-        expectedOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(operation);
+        expectedOperation = operation.UnwrapImplicitConversions();
         if (NumericHelpers.IsZero(expectedOperation.ConstantValue))
         {
             assertionMethodName = negate ? NotEmptyAssertionMethodName : EmptyAssertionMethodName;
@@ -260,7 +261,7 @@ internal static class CountAssertionAnalyzerCommon
 
     private static bool TryGetIntExpectedOperation(IOperation operation, out IOperation expectedOperation)
     {
-        expectedOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(operation);
+        expectedOperation = operation.UnwrapImplicitConversions();
         if (expectedOperation.Type?.SpecialType != SpecialType.System_Int32)
         {
             expectedOperation = null!;
@@ -302,7 +303,7 @@ internal static class CountAssertionAnalyzerCommon
 
     private static bool TryGetCollectionOperation(IOperation operation, Symbols symbols, out IOperation collectionOperation, out IOperation countOperation)
     {
-        operation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(operation);
+        operation = operation.UnwrapImplicitConversions();
 
         switch (operation)
         {

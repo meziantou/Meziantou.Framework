@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
 
@@ -28,7 +29,7 @@ internal static class EmptinessAssertionAnalyzerCommon
             return false;
         }
 
-        var expectedCountOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(expectedCountArgument.Value);
+        var expectedCountOperation = expectedCountArgument.Value.UnwrapImplicitConversions();
         if (expectedCountOperation.ConstantValue is not { HasValue: true, Value: int expectedCount })
         {
             match = default;

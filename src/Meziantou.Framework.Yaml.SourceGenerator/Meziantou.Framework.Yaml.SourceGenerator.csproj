@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.6.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" PrivateAssets="all" />
+    <Compile Include="../Meziantou.Framework.Roslyn/TypeSymbolExtensions.cs" Link="Roslyn/TypeSymbolExtensions.cs" />
 
     <EmbeddedResource Include="../Meziantou.Framework.Yaml/Serialization/YamlThrowHelper.cs" LogicalName="Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.cs" />
   </ItemGroup>

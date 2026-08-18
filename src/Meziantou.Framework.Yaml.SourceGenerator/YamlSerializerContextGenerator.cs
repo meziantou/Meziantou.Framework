@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Yaml.SourceGeneration;
 
@@ -568,7 +569,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 continue;
             }
 
-            if (!DerivesFrom(named, yamlConverterSymbol))
+            if (!named.IsOrInheritFrom(yamlConverterSymbol))
             {
                 diagnostics.Add(Diagnostic.Create(
                     InvalidConverterType,
@@ -587,19 +588,6 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                     "Converter types must provide a public or internal parameterless constructor."));
             }
         }
-    }
-
-    private static bool DerivesFrom(INamedTypeSymbol symbol, INamedTypeSymbol baseType)
-    {
-        for (var current = symbol; current is not null; current = current.BaseType)
-        {
-            if (SymbolEqualityComparer.Default.Equals(current, baseType))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static ImmutableArray<ITypeSymbol> ExpandSerializableTypes(

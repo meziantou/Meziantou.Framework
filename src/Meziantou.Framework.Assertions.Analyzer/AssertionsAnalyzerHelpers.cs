@@ -22,16 +22,6 @@ internal static class AssertionsAnalyzerHelpers
             SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, assertType);
     }
 
-    public static IOperation UnwrapImplicitConversion(IOperation operation)
-    {
-        while (operation is IConversionOperation { IsImplicit: true } conversionOperation)
-        {
-            operation = conversionOperation.Operand;
-        }
-
-        return operation;
-    }
-
     public static bool IsValueType(ITypeSymbol? type)
     {
         return type?.IsValueType == true;

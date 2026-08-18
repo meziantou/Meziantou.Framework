@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
 
@@ -9,7 +10,7 @@ internal static class AssertionCodeFixHelpers
 {
     internal static bool TryGetExpressionSyntax(IOperation operation, out ExpressionSyntax expression)
     {
-        operation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(operation);
+        operation = operation.UnwrapImplicitConversions();
         if (operation.Syntax is ExpressionSyntax expressionSyntax)
         {
             expression = expressionSyntax;

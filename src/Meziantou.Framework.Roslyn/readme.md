@@ -38,3 +38,13 @@ using Meziantou.Framework.Roslyn;
 - `ITypeSymbol.GetUnderlyingNullableTypeOrSelf`
 
 The package also defines Roslyn and C# feature constants before compilation based on the referenced `Microsoft.CodeAnalysis.*` package version, such as `ROSLYN_4_8_OR_GREATER` and `CSHARP12_OR_GREATER`.
+
+## Compiler warnings
+
+The helper files suppress all compiler warnings so they don't pollute the consuming project's build. Define the `MEZIANTOU_FRAMEWORK_ROSLYN_ENABLE_WARNINGS` constant to report them:
+
+````xml
+<PropertyGroup>
+  <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_ROSLYN_ENABLE_WARNINGS</DefineConstants>
+</PropertyGroup>
+````

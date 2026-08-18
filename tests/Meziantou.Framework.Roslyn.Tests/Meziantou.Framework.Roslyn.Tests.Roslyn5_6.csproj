@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <RoslynVersion>5.6.0</RoslynVersion>
+
+    <!-- The sources are shipped as content files, so warnings are disabled by default. Enable them here to validate the sources. -->
+    <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_ROSLYN_ENABLE_WARNINGS</DefineConstants>
   </PropertyGroup>
 
   <Import Project="Meziantou.Framework.Roslyn.HelperTests.props" />

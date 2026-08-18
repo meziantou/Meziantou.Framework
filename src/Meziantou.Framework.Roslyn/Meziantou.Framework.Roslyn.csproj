@@ -8,7 +8,6 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <NoPackageAnalysis>true</NoPackageAnalysis>
-    <PackageReadmeFile>readme.md</PackageReadmeFile>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <NoWarn>$(NoWarn);MA0182</NoWarn>
   </PropertyGroup>
@@ -22,7 +21,6 @@
       <PackageCopyToOutput>false</PackageCopyToOutput>
       <PackageFlatten>false</PackageFlatten>
     </Content>
-    <None Include="**/*.tt" Pack="true" PackagePath="contentFiles/cs/any/Meziantou.Framework.Roslyn/%(Filename)%(Extension)" />
     <None Include="buildTransitive/**/*.targets" Pack="true" PackagePath="buildTransitive" />
   </ItemGroup>
 

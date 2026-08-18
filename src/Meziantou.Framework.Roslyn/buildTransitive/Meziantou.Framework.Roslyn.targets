@@ -1,0 +1,105 @@
+<Project>
+  <PropertyGroup>
+    <MeziantouFrameworkRoslynDefineConstants Condition="'$(MeziantouFrameworkRoslynDefineConstants)' == ''">true</MeziantouFrameworkRoslynDefineConstants>
+  </PropertyGroup>
+
+  <Target Name="_MeziantouFrameworkRoslynDefineConstants"
+          BeforeTargets="CoreCompile"
+          Condition="'$(MeziantouFrameworkRoslynDefineConstants)' == 'true'">
+    <ItemGroup>
+      <_MeziantouFrameworkRoslynPackageReferenceCSharp Include="@(PackageReference)" Condition="'%(PackageReference.Identity)' == 'Microsoft.CodeAnalysis.CSharp' and '%(PackageReference.Version)' != ''" />
+      <_MeziantouFrameworkRoslynPackageReferenceCommon Include="@(PackageReference)" Condition="'%(PackageReference.Identity)' == 'Microsoft.CodeAnalysis.Common' and '%(PackageReference.Version)' != ''" />
+      <_MeziantouFrameworkRoslynPackageReferenceWorkspacesCommon Include="@(PackageReference)" Condition="'%(PackageReference.Identity)' == 'Microsoft.CodeAnalysis.Workspaces.Common' and '%(PackageReference.Version)' != ''" />
+      <_MeziantouFrameworkRoslynPackageReferenceCSharpWorkspaces Include="@(PackageReference)" Condition="'%(PackageReference.Identity)' == 'Microsoft.CodeAnalysis.CSharp.Workspaces' and '%(PackageReference.Version)' != ''" />
+      <_MeziantouFrameworkRoslynPackageVersionCSharp Include="@(PackageVersion)" Condition="'%(PackageVersion.Identity)' == 'Microsoft.CodeAnalysis.CSharp' and '%(PackageVersion.Version)' != ''" />
+      <_MeziantouFrameworkRoslynPackageVersionCommon Include="@(PackageVersion)" Condition="'%(PackageVersion.Identity)' == 'Microsoft.CodeAnalysis.Common' and '%(PackageVersion.Version)' != ''" />
+      <_MeziantouFrameworkRoslynPackageVersionWorkspacesCommon Include="@(PackageVersion)" Condition="'%(PackageVersion.Identity)' == 'Microsoft.CodeAnalysis.Workspaces.Common' and '%(PackageVersion.Version)' != ''" />
+      <_MeziantouFrameworkRoslynPackageVersionCSharpWorkspaces Include="@(PackageVersion)" Condition="'%(PackageVersion.Identity)' == 'Microsoft.CodeAnalysis.CSharp.Workspaces' and '%(PackageVersion.Version)' != ''" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_MeziantouFrameworkRoslynVersion>@(_MeziantouFrameworkRoslynPackageReferenceCSharp->'%(Version)')</_MeziantouFrameworkRoslynVersion>
+      <_MeziantouFrameworkRoslynVersion Condition="'$(_MeziantouFrameworkRoslynVersion)' == ''">@(_MeziantouFrameworkRoslynPackageReferenceCommon->'%(Version)')</_MeziantouFrameworkRoslynVersion>
+      <_MeziantouFrameworkRoslynVersion Condition="'$(_MeziantouFrameworkRoslynVersion)' == ''">@(_MeziantouFrameworkRoslynPackageReferenceWorkspacesCommon->'%(Version)')</_MeziantouFrameworkRoslynVersion>
+      <_MeziantouFrameworkRoslynVersion Condition="'$(_MeziantouFrameworkRoslynVersion)' == ''">@(_MeziantouFrameworkRoslynPackageReferenceCSharpWorkspaces->'%(Version)')</_MeziantouFrameworkRoslynVersion>
+      <_MeziantouFrameworkRoslynVersion Condition="'$(_MeziantouFrameworkRoslynVersion)' == ''">@(_MeziantouFrameworkRoslynPackageVersionCSharp->'%(Version)')</_MeziantouFrameworkRoslynVersion>
+      <_MeziantouFrameworkRoslynVersion Condition="'$(_MeziantouFrameworkRoslynVersion)' == ''">@(_MeziantouFrameworkRoslynPackageVersionCommon->'%(Version)')</_MeziantouFrameworkRoslynVersion>
+      <_MeziantouFrameworkRoslynVersion Condition="'$(_MeziantouFrameworkRoslynVersion)' == ''">@(_MeziantouFrameworkRoslynPackageVersionWorkspacesCommon->'%(Version)')</_MeziantouFrameworkRoslynVersion>
+      <_MeziantouFrameworkRoslynVersion Condition="'$(_MeziantouFrameworkRoslynVersion)' == ''">@(_MeziantouFrameworkRoslynPackageVersionCSharpWorkspaces->'%(Version)')</_MeziantouFrameworkRoslynVersion>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(_MeziantouFrameworkRoslynVersion)' != ''">
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_1_0_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '1.0.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_1_0_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '1.0.1'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_1_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '1.1.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_1_1_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '1.1.1'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_1_2_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '1.2.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_1_2_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '1.2.1'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_1_2_2_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '1.2.2'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_1_3_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '1.3.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_1_3_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '1.3.1'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_1_3_2_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '1.3.2'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_0_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.0.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.1.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_2_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.2.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_3_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.3.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_3_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.3.1'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_3_2_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.3.2'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_4_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.4.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_6_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.6.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_6_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.6.1'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_7_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.7.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_8_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.8.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_8_2_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.8.2'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_9_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.9.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_2_10_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '2.10.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_0_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.0.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.1.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_2_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.2.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_2_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.2.1'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_3_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.3.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_3_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.3.1'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_4_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.4.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_5_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.5.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_6_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.6.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_7_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.7.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_8_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.8.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_9_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.9.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_10_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.10.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_3_11_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '3.11.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_0_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.0.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_0_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.0.1'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.1.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_2_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.2.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_3_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.3.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_3_1_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.3.1'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_4_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.4.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_5_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.5.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_6_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.6.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_7_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.7.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_8_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.8.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_9_2_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.9.2'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_10_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.10.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_11_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.11.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_12_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.12.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_13_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.13.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_4_14_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.14.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_5_0_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '5.0.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_5_3_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '5.3.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_5_6_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '5.6.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="ROSLYN_5_9_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '5.9.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="CSHARP9_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.2.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="CSHARP10_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.4.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="CSHARP11_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.6.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="CSHARP12_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.8.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="CSHARP13_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.14.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="CSHARP14_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '5.0.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="CSHARP15_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '5.6.0'))" />
+      <_MeziantouFrameworkRoslynConstant Include="CSHARP16_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '5.9.0'))" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <DefineConstants Condition="'@(_MeziantouFrameworkRoslynConstant)' != ''">$(DefineConstants);@(_MeziantouFrameworkRoslynConstant)</DefineConstants>
+    </PropertyGroup>
+  </Target>
+</Project>

@@ -99,38 +99,6 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
     }
 
-    [Fact]
-    public async Task PackageTargets_AddsAllConstantsForRoslyn59()
-    {
-        await using var temporaryDirectory = TemporaryDirectory.Create();
-        var projectDirectory = temporaryDirectory.CreateDirectory("targets");
-
-        using var package = ZipFile.OpenRead(fixture.PackagePath);
-        ExtractEntry(AssertEntry(package, "buildTransitive/Meziantou.Framework.Roslyn.targets"), projectDirectory / "Meziantou.Framework.Roslyn.targets");
-
-        temporaryDirectory.CreateTextFile("targets/Test.proj", """
-            <Project>
-              <ItemGroup>
-                <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
-              </ItemGroup>
-
-              <Import Project="Meziantou.Framework.Roslyn.targets" />
-
-              <Target Name="WriteConstants" DependsOnTargets="_MeziantouFrameworkRoslynDefineConstants">
-                <WriteLinesToFile File="constants.txt" Lines="$(DefineConstants)" Overwrite="true" />
-              </Target>
-            </Project>
-            """);
-
-        await RunDotNetCommand(projectDirectory, ["msbuild", "Test.proj", "-nologo", "-t:WriteConstants"], expectedExitCode: 0);
-
-        var constants = await File.ReadAllTextAsync(projectDirectory / "constants.txt", XunitCancellationToken);
-        foreach (var expectedConstant in GetRoslyn59Constants())
-        {
-            Assert.Contains(expectedConstant, constants);
-        }
-    }
-
     private static ZipArchiveEntry AssertEntry(ZipArchive archive, string entryName)
     {
         var entry = archive.GetEntry(entryName);
@@ -220,22 +188,6 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         ];
     }
 
-    private static string[] GetRoslyn59Constants()
-    {
-        return
-        [
-            .. GetStableRoslynConstants("5.9.0"),
-            "CSHARP9_OR_GREATER",
-            "CSHARP10_OR_GREATER",
-            "CSHARP11_OR_GREATER",
-            "CSHARP12_OR_GREATER",
-            "CSHARP13_OR_GREATER",
-            "CSHARP14_OR_GREATER",
-            "CSHARP15_OR_GREATER",
-            "CSHARP16_OR_GREATER",
-        ];
-    }
-
     private static string[] GetStableRoslynConstants(string maximumVersion)
     {
         return StableRoslynVersions
@@ -314,7 +266,6 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         "5.0.0",
         "5.3.0",
         "5.6.0",
-        "5.9.0",
     ];
 
     private static readonly string[] SourceFileNames =

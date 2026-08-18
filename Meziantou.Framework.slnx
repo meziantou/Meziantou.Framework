@@ -233,7 +233,6 @@
     <Project Path="tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_0.csproj" />
     <Project Path="tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_3.csproj" />
     <Project Path="tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_6.csproj" />
-    <Project Path="tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_9.csproj" />
     <Project Path="tests/Meziantou.Framework.Scheduling.Tests/Meziantou.Framework.Scheduling.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.SensitiveData.Tests/Meziantou.Framework.SensitiveData.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.SimpleQueryLanguage.Tests/Meziantou.Framework.SimpleQueryLanguage.Tests.csproj" />

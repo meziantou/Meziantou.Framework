@@ -148,6 +148,25 @@ public partial struct ProjectId
 public partial struct ProjectId { } // No New() method is generated
 ````
 
+You can configure the default value of the options for all the types of an assembly using the `[assembly: StronglyTypedIdDefaults]` attribute. Options set on `[StronglyTypedId]` take precedence over the assembly-level defaults:
+
+````c#
+[assembly: StronglyTypedIdDefaults(GuidGenerationStrategy = GuidGenerationStrategy.Version7,
+                                   GenerateNewtonsoftJsonConverter = false,
+                                   GenerateMongoDBBsonSerialization = false,
+                                   GenerateSystemComponentModelTypeConverter = false,
+                                   GenerateSystemTextJsonConverter = true,
+                                   AddCodeGeneratedAttribute = true,
+                                   StringComparison = StringComparison.Ordinal,
+                                   GenerateToStringAsRecord = true)]
+
+[StronglyTypedId<Guid>]
+public partial struct ProjectId { } // New() uses Guid.CreateVersion7()
+
+[StronglyTypedId<Guid>(GuidGenerationStrategy = GuidGenerationStrategy.Version4)]
+public partial struct CustomerId { } // New() uses Guid.NewGuid()
+````
+
 You can generate `IComparable`, `IComparable<T>` and comparison operators by adding one interface:
 
 ````c#

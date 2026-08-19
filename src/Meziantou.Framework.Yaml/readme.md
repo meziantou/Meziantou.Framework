@@ -73,6 +73,8 @@ var copy = YamlSerializer.Deserialize<Product>(yaml, AppYamlContext.Default);
 
 Source generation avoids reflection-based metadata discovery and is the preferred mode for NativeAOT and trimming-sensitive applications. The generated context can be configured with `YamlSourceGenerationOptionsAttribute` or by constructing the context with a `YamlSerializerOptions` instance.
 
+Non-public members annotated with `YamlIncludeAttribute` and non-public constructors annotated with `YamlConstructorAttribute` are supported: the generated context reaches them through `UnsafeAccessorAttribute`, which NativeAOT and trimming understand.
+
 ## Parse and emit YAML documents
 
 Use the DOM APIs when you need to inspect or transform YAML without binding to a CLR type.
@@ -116,6 +118,7 @@ Attributes can be used to configure individual types and members:
 - `YamlPropertyNameAttribute`
 - `YamlNamingPolicyAttribute`
 - `YamlIgnoreAttribute`
+- `YamlIncludeAttribute`
 - `YamlRequiredAttribute`
 - `YamlConstructorAttribute`
 - `YamlConverterAttribute`

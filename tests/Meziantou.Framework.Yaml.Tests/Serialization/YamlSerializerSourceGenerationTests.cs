@@ -712,6 +712,116 @@ internal sealed class GeneratedInternalJsonCtorModel
     public int Age { get; }
 }
 
+internal sealed class GeneratedPrivateMemberModel
+{
+    [YamlInclude]
+    private string _name = string.Empty;
+
+    [YamlInclude]
+    private int Age { get; set; }
+
+    public string GetName() => _name;
+
+    public int GetAge() => Age;
+
+    public void Initialize(string name, int age)
+    {
+        _name = name;
+        Age = age;
+    }
+}
+
+internal sealed class GeneratedPrivateSetterModel
+{
+    [YamlInclude]
+    public string Name { get; private set; } = string.Empty;
+}
+
+internal sealed class GeneratedPrivateInitOnlyModel
+{
+    [YamlInclude]
+    private string Secret { get; init; } = string.Empty;
+
+    public string GetSecret() => Secret;
+}
+
+internal struct GeneratedPrivateStructModel
+{
+#pragma warning disable IDE0044 // Add readonly modifier
+    [YamlInclude]
+    private int _value;
+#pragma warning restore IDE0044
+
+    [YamlInclude]
+    private string? Text { get; set; }
+
+    public readonly int GetValue() => _value;
+
+    public readonly string? GetText() => Text;
+}
+
+internal class GeneratedProtectedMemberBase
+{
+    [YamlInclude]
+    protected string Inherited { get; set; } = string.Empty;
+
+    public string GetInherited() => Inherited;
+}
+
+internal sealed class GeneratedProtectedMemberModel : GeneratedProtectedMemberBase
+{
+}
+
+internal sealed class GeneratedPrivateCtorModel
+{
+#pragma warning disable IDE0051 // Remove unused private member
+    [YamlConstructor]
+    private GeneratedPrivateCtorModel(string name, int age)
+    {
+        Name = name;
+        Age = age;
+    }
+#pragma warning restore IDE0051
+
+    public string Name { get; }
+
+    public int Age { get; }
+}
+
+internal sealed class GeneratedPrivateParameterlessCtorModel
+{
+    [YamlConstructor]
+    private GeneratedPrivateParameterlessCtorModel()
+    {
+    }
+
+    public string Name { get; set; } = string.Empty;
+}
+
+internal sealed class GeneratedPrivateCtorWithInitOnlyModel
+{
+#pragma warning disable IDE0051 // Remove unused private member
+    [YamlConstructor]
+    private GeneratedPrivateCtorWithInitOnlyModel(string name) => Name = name;
+#pragma warning restore IDE0051
+
+    public string Name { get; }
+
+    public int Age { get; init; }
+
+    public required string Tag { get; init; }
+}
+
+internal sealed class GeneratedPrivateExtensionDataModel
+{
+    public string Name { get; set; } = string.Empty;
+
+    [YamlExtensionData]
+    private Dictionary<string, object?> Extra { get; set; } = new(StringComparer.Ordinal);
+
+    public IReadOnlyDictionary<string, object?> GetExtra() => Extra;
+}
+
 internal sealed record GeneratedFunctionDto(string Name, string? Description, string Abbreviation);
 
 internal sealed class GeneratedPopulateChild
@@ -856,6 +966,15 @@ internal sealed class GeneratedYamlIgnoreConditions
 [YamlSerializable(typeof(GeneratedJsonCtorModel))]
 [YamlSerializable(typeof(GeneratedInternalYamlCtorModel))]
 [YamlSerializable(typeof(GeneratedInternalJsonCtorModel))]
+[YamlSerializable(typeof(GeneratedPrivateMemberModel))]
+[YamlSerializable(typeof(GeneratedPrivateSetterModel))]
+[YamlSerializable(typeof(GeneratedPrivateInitOnlyModel))]
+[YamlSerializable(typeof(GeneratedPrivateStructModel))]
+[YamlSerializable(typeof(GeneratedProtectedMemberModel))]
+[YamlSerializable(typeof(GeneratedPrivateCtorModel))]
+[YamlSerializable(typeof(GeneratedPrivateParameterlessCtorModel))]
+[YamlSerializable(typeof(GeneratedPrivateCtorWithInitOnlyModel))]
+[YamlSerializable(typeof(GeneratedPrivateExtensionDataModel))]
 [YamlSerializable(typeof(GeneratedPopulateChild))]
 [YamlSerializable(typeof(GeneratedPopulateContainer))]
 [YamlSerializable(typeof(GeneratedPopulateViaTypeAttributeContainer))]
@@ -2770,6 +2889,133 @@ extra_list:
         Assert.NotNull(value);
         Assert.Equal("Bob", value.Name);
         Assert.Equal(42, value.Age);
+    }
+
+    [Fact]
+    public void GeneratedContextReadsAndWritesPrivateMembers()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateMemberModel;
+
+        var value = YamlSerializer.Deserialize("_name: Bob\nAge: 42\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.GetName());
+        Assert.Equal(42, value.GetAge());
+
+        var roundtripped = new GeneratedPrivateMemberModel();
+        roundtripped.Initialize("Alice", 7);
+        var yaml = YamlSerializer.Serialize(roundtripped, typeInfo);
+
+        Assert.Contains("_name: Alice", yaml);
+        Assert.Contains("Age: 7", yaml);
+    }
+
+    [Fact]
+    public void GeneratedContextWritesPropertyWithPrivateSetter()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateSetterModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+    }
+
+    [Fact]
+    public void GeneratedContextWritesPrivateInitOnlyProperty()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateInitOnlyModel;
+
+        var value = YamlSerializer.Deserialize("Secret: hidden\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("hidden", value.GetSecret());
+    }
+
+    [Fact]
+    public void GeneratedContextReadsAndWritesPrivateStructMembers()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateStructModel;
+
+        var value = YamlSerializer.Deserialize("_value: 3\nText: hi\n", typeInfo);
+
+        Assert.Equal(3, value.GetValue());
+        Assert.Equal("hi", value.GetText());
+
+        var yaml = YamlSerializer.Serialize(value, typeInfo);
+
+        Assert.Contains("_value: 3", yaml);
+        Assert.Contains("Text: hi", yaml);
+    }
+
+    [Fact]
+    public void GeneratedContextReadsProtectedMemberDeclaredOnBaseType()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedProtectedMemberModel;
+
+        var value = YamlSerializer.Deserialize("Inherited: base\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("base", value.GetInherited());
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateYamlConstructor()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateCtorModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\nAge: 42\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+        Assert.Equal(42, value.Age);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateParameterlessYamlConstructor()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateParameterlessCtorModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateYamlConstructorWithInitOnlyMembers()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateCtorWithInitOnlyModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\nAge: 42\nTag: tag\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+        Assert.Equal(42, value.Age);
+        Assert.Equal("tag", value.Tag);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateExtensionDataMember()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateExtensionDataModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\nUnknown: 42\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+        var extra = value.GetExtra();
+        Assert.True(extra.TryGetValue("Unknown", out var unknown));
+        Assert.Equal("42", unknown?.ToString());
     }
 
     [Fact]

@@ -18,7 +18,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     private static readonly string GeneratedCodeVersion = typeof(YamlSerializerContextGenerator).Assembly.GetName().Version?.ToString() ?? "0.0.0.0";
 
     private static readonly string ThrowHelperContent = GetThrowHelperContent();
-    private static readonly SymbolDisplayFormat FullyQualifiedNullableFormat = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+    internal static readonly SymbolDisplayFormat FullyQualifiedNullableFormat = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
         SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
     private static readonly DiagnosticDescriptor ContextMustBePartial = new(
@@ -559,13 +559,14 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 continue;
             }
 
-            if (named.DeclaredAccessibility is Accessibility.Private or Accessibility.Protected or Accessibility.ProtectedAndInternal)
+            // The generated code lives in the context type, so a nested converter can be private and still usable.
+            if (!compilation.IsSymbolAccessibleWithin(named, model.ContextSymbol))
             {
                 diagnostics.Add(Diagnostic.Create(
                     InvalidConverterType,
                     location,
                     named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                    "Converter types must be accessible to the generated context (public or internal)."));
+                    "Converter types must be accessible from the generated context."));
                 continue;
             }
 
@@ -579,13 +580,13 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 continue;
             }
 
-            if (!named.InstanceConstructors.Any(static ctor => ctor.Parameters.Length == 0 && ctor.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal))
+            if (!named.InstanceConstructors.Any(ctor => ctor.Parameters.Length == 0 && compilation.IsSymbolAccessibleWithin(ctor, model.ContextSymbol)))
             {
                 diagnostics.Add(Diagnostic.Create(
                     InvalidConverterType,
                     location,
                     named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                    "Converter types must provide a public or internal parameterless constructor."));
+                    "Converter types must provide a parameterless constructor accessible from the generated context."));
             }
         }
     }
@@ -1429,9 +1430,6 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         return false;
     }
 
-    private static bool IsConstructorAccessibleFromGeneratedContext(IMethodSymbol constructor)
-        => constructor.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedOrInternal;
-
     private static string GetOptionalParameterDefaultValueExpression(IParameterSymbol parameter)
     {
         if (!parameter.HasExplicitDefaultValue)
@@ -1471,14 +1469,11 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         return Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "default";
     }
 
-    private static MemberModel CreateMemberModel(ISymbol member, INamedTypeSymbol declaringType, YamlNamingPolicy? propertyNamingPolicy)
+    private static MemberModel CreateMemberModel(ISymbol member, INamedTypeSymbol declaringType, YamlNamingPolicy? propertyNamingPolicy, UnsafeAccessorRegistry accessors)
     {
         var (nameForRead, nameForWrite) = GetSerializedMemberNameExpressions(member, declaringType, propertyNamingPolicy);
         var type = GetMemberType(member) ?? throw new InvalidOperationException("Member type could not be determined.");
-        var accessExpression = member is IPropertySymbol prop ? "value." + prop.Name : "value." + member.Name;
-        Func<string, string> assign = member is IPropertySymbol propAssign
-            ? rhs => "instance." + propAssign.Name + " = " + rhs
-            : rhs => "instance." + member.Name + " = " + rhs;
+        var (accessExpression, assign, usesAccessorForWrite) = CreateMemberAccessExpressions(member, declaringType, accessors);
         var memberIgnoreCondition = TryGetIgnoreCondition(member, out var rawCondition) ? rawCondition : GetDeclaredIgnoreCondition(declaringType);
         var converterTypeName = GetYamlConverterAttributeTypeName(member);
         var objectCreationHandling = GetObjectCreationHandling(member);
@@ -1494,7 +1489,67 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         var disallowNull = IsNonNullableReferenceType(type);
         var numberHandling = converterTypeName is null ? GetNumberHandlingValue(member, type) : null;
         var enumCustomNames = converterTypeName is null ? GetEnumCustomNames(type) : null;
-        return new MemberModel(member, type, nameForRead, nameForWrite, accessExpression, assign, memberIgnoreCondition, converterTypeName, objectCreationHandling, blockSequenceMappingStyle, blockSequenceSequenceStyle, isRequired, isIgnoredOnRead, isInitOnly, isRequiredKeyword, requiresIncludeFields, disallowNull, disallowNull, isReadOnlyProperty, isReadOnlyField, numberHandling, enumCustomNames);
+        var skipObjectInitializer = usesAccessorForWrite || RequiresConstructorAccessor(declaringType, accessors);
+        return new MemberModel(member, type, nameForRead, nameForWrite, accessExpression, assign, memberIgnoreCondition, converterTypeName, objectCreationHandling, blockSequenceMappingStyle, blockSequenceSequenceStyle, isRequired, isIgnoredOnRead, isInitOnly, isRequiredKeyword, requiresIncludeFields, disallowNull, disallowNull, isReadOnlyProperty, isReadOnlyField, skipObjectInitializer, numberHandling, enumCustomNames);
+    }
+
+    /// <summary>
+    /// Builds the read and write expressions for a member, falling back to <c>[UnsafeAccessor]</c> stubs when the
+    /// member cannot be referenced directly from the generated context.
+    /// </summary>
+    private static (Func<string, string> Access, Func<string, string> Assign, bool UsesAccessorForWrite) CreateMemberAccessExpressions(
+        ISymbol member,
+        INamedTypeSymbol declaringType,
+        UnsafeAccessorRegistry accessors)
+    {
+        if (member is IPropertySymbol property)
+        {
+            Func<string, string> access = property.GetMethod is { } getMethod && !accessors.IsAccessible(getMethod)
+                ? receiver => accessors.GetPropertyReadExpression(property, getMethod, receiver)
+                : receiver => receiver + "." + property.Name;
+
+            // An init-only setter can only be called from an object initializer, which is not available when the
+            // instance itself is created through an accessor.
+            if (property.SetMethod is { } setMethod &&
+                (!accessors.IsAccessible(setMethod) ||
+                 ((IsInitOnlyProperty(property) || property.IsRequired) && RequiresConstructorAccessor(declaringType, accessors))))
+            {
+                return (access, rhs => accessors.GetPropertyWriteExpression(property, setMethod, "instance", rhs), true);
+            }
+
+            return (access, rhs => "instance." + property.Name + " = " + rhs, false);
+        }
+
+        if (member is IFieldSymbol field && !accessors.IsAccessible(field))
+        {
+            return (receiver => accessors.GetFieldExpression(field, receiver), rhs => accessors.GetFieldExpression(field, "instance") + " = " + rhs, true);
+        }
+
+        return (receiver => receiver + "." + member.Name, rhs => "instance." + member.Name + " = " + rhs, false);
+    }
+
+    /// <summary>
+    /// Indicates the deserialization constructor of <paramref name="type"/> can only be invoked through an <c>[UnsafeAccessor]</c> stub.
+    /// </summary>
+    private static bool RequiresConstructorAccessor(INamedTypeSymbol type, UnsafeAccessorRegistry accessors)
+        => GetInaccessibleDeserializationConstructor(type, accessors) is not null;
+
+    /// <summary>
+    /// Gets the deserialization constructor of <paramref name="type"/> when the generated context cannot invoke it directly.
+    /// </summary>
+    private static IMethodSymbol? GetInaccessibleDeserializationConstructor(INamedTypeSymbol type, UnsafeAccessorRegistry accessors)
+    {
+        if (type.TypeKind != TypeKind.Class || type.IsAbstract)
+        {
+            return null;
+        }
+
+        if (!TrySelectDeserializationConstructor(type, out var constructor, out _) || constructor is null)
+        {
+            return null;
+        }
+
+        return accessors.IsAccessible(constructor) ? null : constructor;
     }
 
     private static (string ForRead, string ForWrite) GetSerializedMemberNameExpressions(ISymbol member, INamedTypeSymbol declaringType, YamlNamingPolicy? propertyNamingPolicy)
@@ -1999,7 +2054,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         return false;
     }
 
-    private static ExtensionDataMemberModel? TryCreateExtensionDataMemberModel(INamedTypeSymbol type)
+    private static ExtensionDataMemberModel? TryCreateExtensionDataMemberModel(INamedTypeSymbol type, UnsafeAccessorRegistry accessors)
     {
         var extensionDataMembers = GetExtensionDataMembers(type);
         if (extensionDataMembers.Length != 1)
@@ -2026,20 +2081,21 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             _ = TryGetDictionaryValueType(memberType, out dictionaryValueType);
         }
 
-        var accessExpression = "instance." + symbol.Name;
+        var (accessExpression, assign, usesAccessorForWrite) = CreateMemberAccessExpressions(symbol, type, accessors);
         Func<string, string>? assignExpression = null;
         var canAssign = false;
         var isInitOnly = false;
 
         if (symbol is IPropertySymbol property)
         {
-            isInitOnly = IsInitOnlyProperty(property);
+            // An init-only setter reached through an accessor behaves like a regular setter: it can be called after construction.
+            isInitOnly = IsInitOnlyProperty(property) && !usesAccessorForWrite;
             if (property.SetMethod is not null)
             {
                 canAssign = !isInitOnly;
                 if (canAssign)
                 {
-                    assignExpression = rhs => "instance." + property.Name + " = " + rhs;
+                    assignExpression = assign;
                 }
             }
         }
@@ -2048,7 +2104,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             canAssign = !field.IsConst && !field.IsReadOnly;
             if (canAssign)
             {
-                assignExpression = rhs => "instance." + field.Name + " = " + rhs;
+                assignExpression = assign;
             }
         }
 
@@ -2984,7 +3040,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         return null;
     }
 
-    private static string ToLiteral(string value)
+    internal static string ToLiteral(string value)
         => "@\"" + value.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
 
     private static int? GetDefaultIgnoreCondition(SourceGenerationOptionsModel options)

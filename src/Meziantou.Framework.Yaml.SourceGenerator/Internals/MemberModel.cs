@@ -9,7 +9,7 @@ internal sealed class MemberModel
         ITypeSymbol type,
         string serializedNameExpressionForRead,
         string serializedNameExpressionForWrite,
-        string accessExpression,
+        Func<string, string> accessExpression,
         Func<string, string> assignExpression,
         int? ignoreCondition,
         string? attributeConverterTypeName,
@@ -25,6 +25,7 @@ internal sealed class MemberModel
         bool disallowNullOnDeserialize,
         bool isReadOnlyProperty,
         bool isReadOnlyField,
+        bool skipObjectInitializer,
         int? numberHandling,
         List<(string Member, string Scalar)>? enumCustomNames)
     {
@@ -48,6 +49,7 @@ internal sealed class MemberModel
         DisallowNullOnDeserialize = disallowNullOnDeserialize;
         IsReadOnlyProperty = isReadOnlyProperty;
         IsReadOnlyField = isReadOnlyField;
+        SkipObjectInitializer = skipObjectInitializer;
         NumberHandling = numberHandling;
         EnumCustomNames = enumCustomNames;
     }
@@ -56,7 +58,11 @@ internal sealed class MemberModel
     public ITypeSymbol Type { get; }
     public string SerializedNameExpressionForRead { get; }
     public string SerializedNameExpressionForWrite { get; }
-    public string AccessExpression { get; }
+
+    /// <summary>
+    /// Builds the expression reading the member from the given receiver expression.
+    /// </summary>
+    public Func<string, string> AccessExpression { get; }
     public Func<string, string> AssignExpression { get; }
     public int? IgnoreCondition { get; }
     public string? AttributeConverterTypeName { get; }
@@ -72,7 +78,13 @@ internal sealed class MemberModel
     public bool DisallowNullOnDeserialize { get; }
     public bool IsReadOnlyProperty { get; }
     public bool IsReadOnlyField { get; }
+
+    /// <summary>
+    /// Indicates the member must be assigned after the instance is created instead of through an object initializer,
+    /// either because it is written through an <c>[UnsafeAccessor]</c> stub or because the instance itself is created by one.
+    /// </summary>
+    public bool SkipObjectInitializer { get; }
     public int? NumberHandling { get; }
     public List<(string Member, string Scalar)>? EnumCustomNames { get; }
-    public bool NeedsObjectInitializer => IsInitOnly || IsRequiredKeyword;
+    public bool NeedsObjectInitializer => (IsInitOnly || IsRequiredKeyword) && !SkipObjectInitializer;
 }

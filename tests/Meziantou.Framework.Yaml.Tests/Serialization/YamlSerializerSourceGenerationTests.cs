@@ -714,6 +714,180 @@ internal sealed class GeneratedInternalJsonCtorModel
     public int Age { get; }
 }
 
+internal sealed class GeneratedPrivateMemberModel
+{
+    [YamlInclude]
+    private string _name = string.Empty;
+
+    [YamlInclude]
+    private int Age { get; set; }
+
+    public string GetName() => _name;
+
+    public int GetAge() => Age;
+
+    public void Initialize(string name, int age)
+    {
+        _name = name;
+        Age = age;
+    }
+}
+
+internal sealed class GeneratedPrivateSetterModel
+{
+    [YamlInclude]
+    public string Name { get; private set; } = string.Empty;
+}
+
+internal sealed class GeneratedPrivateInitOnlyModel
+{
+    [YamlInclude]
+    private string Secret { get; init; } = string.Empty;
+
+    public string GetSecret() => Secret;
+}
+
+internal struct GeneratedPrivateStructModel
+{
+#pragma warning disable IDE0044 // Add readonly modifier
+    [YamlInclude]
+    private int _value;
+#pragma warning restore IDE0044
+
+    [YamlInclude]
+    private string? Text { get; set; }
+
+    public readonly int GetValue() => _value;
+
+    public readonly string? GetText() => Text;
+}
+
+internal class GeneratedProtectedMemberBase
+{
+    [YamlInclude]
+    protected string Inherited { get; set; } = string.Empty;
+
+    public string GetInherited() => Inherited;
+}
+
+internal sealed class GeneratedProtectedMemberModel : GeneratedProtectedMemberBase
+{
+}
+
+internal sealed class GeneratedPrivateCtorModel
+{
+#pragma warning disable IDE0051 // Remove unused private member
+    [YamlConstructor]
+    private GeneratedPrivateCtorModel(string name, int age)
+    {
+        Name = name;
+        Age = age;
+    }
+#pragma warning restore IDE0051
+
+    public string Name { get; }
+
+    public int Age { get; }
+}
+
+internal sealed class GeneratedPrivateParameterlessCtorModel
+{
+    [YamlConstructor]
+    private GeneratedPrivateParameterlessCtorModel()
+    {
+    }
+
+    public string Name { get; set; } = string.Empty;
+}
+
+internal sealed class GeneratedPrivateCtorWithInitOnlyModel
+{
+#pragma warning disable IDE0051 // Remove unused private member
+    [YamlConstructor]
+    private GeneratedPrivateCtorWithInitOnlyModel(string name) => Name = name;
+#pragma warning restore IDE0051
+
+    public string Name { get; }
+
+    public int Age { get; init; }
+
+    public required string Tag { get; init; }
+}
+
+internal sealed class GeneratedPrivateExtensionDataModel
+{
+    public string Name { get; set; } = string.Empty;
+
+    [YamlExtensionData]
+    private Dictionary<string, object?> Extra { get; set; } = new(StringComparer.Ordinal);
+
+    public IReadOnlyDictionary<string, object?> GetExtra() => Extra;
+}
+
+internal abstract class GeneratedGenericPayloadBase
+{
+    public int Id { get; set; }
+}
+
+internal sealed class GeneratedGenericPayload : GeneratedGenericPayloadBase
+{
+}
+
+internal sealed class GeneratedOtherGenericPayload : GeneratedGenericPayloadBase
+{
+}
+
+internal sealed class GeneratedConstrainedEnvelope<T>
+    where T : notnull, GeneratedGenericPayloadBase
+{
+#pragma warning disable IDE0051 // Remove unused private member
+    [YamlConstructor]
+    private GeneratedConstrainedEnvelope(T body) => Body = body;
+#pragma warning restore IDE0051
+
+#pragma warning disable IDE0044 // Add readonly modifier
+    [YamlInclude]
+    private string _tag = string.Empty;
+#pragma warning restore IDE0044
+
+    [YamlInclude]
+    private int Version { get; set; }
+
+    public T Body { get; }
+
+    public string GetTag() => _tag;
+
+    public int GetVersion() => Version;
+}
+
+internal struct GeneratedUnmanagedHolder<T>
+    where T : unmanaged
+{
+#pragma warning disable IDE0044 // Add readonly modifier
+    [YamlInclude]
+    private T _value;
+#pragma warning restore IDE0044
+
+    public readonly T GetValue() => _value;
+}
+
+internal static class GeneratedGenericOuter<TOuter>
+    where TOuter : class
+{
+    internal sealed class Inner<TInner>
+        where TInner : struct
+    {
+#pragma warning disable IDE0044 // Add readonly modifier
+#pragma warning disable CS0649 // Field is never assigned to
+        [YamlInclude]
+        private TInner _inner;
+#pragma warning restore CS0649
+#pragma warning restore IDE0044
+
+        public TInner GetInner() => _inner;
+    }
+}
+
 internal sealed record GeneratedFunctionDto(string Name, string? Description, string Abbreviation);
 
 internal sealed class GeneratedPopulateChild
@@ -859,6 +1033,21 @@ internal sealed class GeneratedYamlIgnoreConditions
 [YamlSerializable(typeof(GeneratedJsonCtorModel))]
 [YamlSerializable(typeof(GeneratedInternalYamlCtorModel))]
 [YamlSerializable(typeof(GeneratedInternalJsonCtorModel))]
+[YamlSerializable(typeof(GeneratedPrivateMemberModel))]
+[YamlSerializable(typeof(GeneratedPrivateSetterModel))]
+[YamlSerializable(typeof(GeneratedPrivateInitOnlyModel))]
+[YamlSerializable(typeof(GeneratedPrivateStructModel))]
+[YamlSerializable(typeof(GeneratedProtectedMemberModel))]
+[YamlSerializable(typeof(GeneratedPrivateCtorModel))]
+[YamlSerializable(typeof(GeneratedPrivateParameterlessCtorModel))]
+[YamlSerializable(typeof(GeneratedPrivateCtorWithInitOnlyModel))]
+[YamlSerializable(typeof(GeneratedPrivateExtensionDataModel))]
+[YamlSerializable(typeof(GeneratedGenericPayload))]
+[YamlSerializable(typeof(GeneratedOtherGenericPayload))]
+[YamlSerializable(typeof(GeneratedConstrainedEnvelope<GeneratedGenericPayload>))]
+[YamlSerializable(typeof(GeneratedConstrainedEnvelope<GeneratedOtherGenericPayload>))]
+[YamlSerializable(typeof(GeneratedUnmanagedHolder<double>))]
+[YamlSerializable(typeof(GeneratedGenericOuter<object>.Inner<int>))]
 [YamlSerializable(typeof(GeneratedPopulateChild))]
 [YamlSerializable(typeof(GeneratedPopulateContainer))]
 [YamlSerializable(typeof(GeneratedPopulateViaTypeAttributeContainer))]
@@ -2786,6 +2975,190 @@ extra_list:
         Assert.NotNull(value);
         Assert.Equal("Bob", value.Name);
         Assert.Equal(42, value.Age);
+    }
+
+    [Fact]
+    public void GeneratedContextReadsAndWritesPrivateMembers()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateMemberModel;
+
+        var value = YamlSerializer.Deserialize("_name: Bob\nAge: 42\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.GetName());
+        Assert.Equal(42, value.GetAge());
+
+        var roundtripped = new GeneratedPrivateMemberModel();
+        roundtripped.Initialize("Alice", 7);
+        var yaml = YamlSerializer.Serialize(roundtripped, typeInfo);
+
+        Assert.Contains("_name: Alice", yaml);
+        Assert.Contains("Age: 7", yaml);
+    }
+
+    [Fact]
+    public void GeneratedContextWritesPropertyWithPrivateSetter()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateSetterModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+    }
+
+    [Fact]
+    public void GeneratedContextWritesPrivateInitOnlyProperty()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateInitOnlyModel;
+
+        var value = YamlSerializer.Deserialize("Secret: hidden\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("hidden", value.GetSecret());
+    }
+
+    [Fact]
+    public void GeneratedContextReadsAndWritesPrivateStructMembers()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateStructModel;
+
+        var value = YamlSerializer.Deserialize("_value: 3\nText: hi\n", typeInfo);
+
+        Assert.Equal(3, value.GetValue());
+        Assert.Equal("hi", value.GetText());
+
+        var yaml = YamlSerializer.Serialize(value, typeInfo);
+
+        Assert.Contains("_value: 3", yaml);
+        Assert.Contains("Text: hi", yaml);
+    }
+
+    [Fact]
+    public void GeneratedContextReadsProtectedMemberDeclaredOnBaseType()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedProtectedMemberModel;
+
+        var value = YamlSerializer.Deserialize("Inherited: base\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("base", value.GetInherited());
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateYamlConstructor()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateCtorModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\nAge: 42\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+        Assert.Equal(42, value.Age);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateParameterlessYamlConstructor()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateParameterlessCtorModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateYamlConstructorWithInitOnlyMembers()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateCtorWithInitOnlyModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\nAge: 42\nTag: tag\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+        Assert.Equal(42, value.Age);
+        Assert.Equal("tag", value.Tag);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateExtensionDataMember()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrivateExtensionDataModel;
+
+        var value = YamlSerializer.Deserialize("Name: Bob\nUnknown: 42\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Bob", value.Name);
+        var extra = value.GetExtra();
+        Assert.True(extra.TryGetValue("Unknown", out var unknown));
+        Assert.Equal("42", unknown?.ToString());
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateMembersAndConstructorOfConstrainedGenericType()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedConstrainedEnvelopeGeneratedGenericPayload;
+
+        var value = YamlSerializer.Deserialize("_tag: envelope\nVersion: 3\nBody:\n  Id: 9\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("envelope", value.GetTag());
+        Assert.Equal(3, value.GetVersion());
+        Assert.Equal(9, value.Body.Id);
+
+        var yaml = YamlSerializer.Serialize(value, typeInfo);
+
+        Assert.Contains("_tag: envelope", yaml);
+        Assert.Contains("Version: 3", yaml);
+    }
+
+    [Fact]
+    public void GeneratedContextSupportsSeveralInstantiationsOfTheSameGenericType()
+    {
+        var context = new TestYamlSerializerContext();
+
+        var first = YamlSerializer.Deserialize("_tag: first\nBody:\n  Id: 1\n", context.GeneratedConstrainedEnvelopeGeneratedGenericPayload);
+        var second = YamlSerializer.Deserialize("_tag: second\nBody:\n  Id: 2\n", context.GeneratedConstrainedEnvelopeGeneratedOtherGenericPayload);
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Equal("first", first.GetTag());
+        Assert.Equal("second", second.GetTag());
+    }
+
+    [Fact]
+    public void GeneratedContextReadsPrivateMemberOfUnmanagedConstrainedGenericStruct()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedUnmanagedHolderDouble;
+
+        var value = YamlSerializer.Deserialize("_value: 1.5\n", typeInfo);
+
+        Assert.Equal(1.5, value.GetValue());
+        Assert.Contains("_value: 1.5", YamlSerializer.Serialize(value, typeInfo));
+    }
+
+    [Fact]
+    public void GeneratedContextReadsPrivateMemberOfGenericTypeNestedInGenericType()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedGenericOuterInnerInt32;
+
+        var value = YamlSerializer.Deserialize("_inner: 4\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal(4, value.GetInner());
     }
 
     [Fact]

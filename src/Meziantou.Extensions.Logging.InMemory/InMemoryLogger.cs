@@ -16,6 +16,9 @@ namespace Meziantou.Extensions.Logging.InMemory;
 /// </example>
 public class InMemoryLogger : IInMemoryLogger
 {
+    [ThreadStatic]
+    private static List<object?>? s_scopeBuffer;
+
     private readonly string? _category;
     private readonly IExternalScopeProvider _scopeProvider;
     private readonly TimeProvider _timeProvider;
@@ -69,8 +72,23 @@ public class InMemoryLogger : IInMemoryLogger
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
         var now = _timeProvider.GetUtcNow();
-        var scopes = new List<object?>();
-        _scopeProvider.ForEachScope((current, scopes) => scopes.Add(current), scopes);
+        var scopes = GetScopes();
         Logs.Add(new InMemoryLogEntry(now, _category, logLevel, eventId, scopes, state, exception, formatter(state, exception)));
+    }
+
+    private object?[] GetScopes()
+    {
+        // Collect the scopes in a thread-local buffer, so no allocation occurs when there is no scope,
+        // and a single right-sized array is allocated otherwise.
+        var buffer = s_scopeBuffer ??= [];
+        try
+        {
+            _scopeProvider.ForEachScope((current, scopes) => scopes.Add(current), buffer);
+            return buffer.Count is 0 ? [] : buffer.ToArray();
+        }
+        finally
+        {
+            buffer.Clear();
+        }
     }
 }

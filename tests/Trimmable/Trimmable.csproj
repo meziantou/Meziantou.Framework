@@ -15,6 +15,7 @@
     <ProjectReference Include="..\..\src\Meziantou.AspNetCore\Meziantou.AspNetCore.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Authentication.HttpBasic\Meziantou.AspNetCore.Authentication.HttpBasic.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Mvc\Meziantou.AspNetCore.Mvc.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Extensions.Logging.FileLogger\Meziantou.Extensions.Logging.FileLogger.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.AnsiFormatting\Meziantou.Framework.AnsiFormatting.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Avatar\Meziantou.Framework.Avatar.csproj" />
@@ -74,6 +75,7 @@
     <TrimmerRootAssembly Include="Meziantou.AspNetCore" />
     <TrimmerRootAssembly Include="Meziantou.AspNetCore.Authentication.HttpBasic" />
     <TrimmerRootAssembly Include="Meziantou.AspNetCore.Mvc" />
+    <TrimmerRootAssembly Include="Meziantou.Extensions.Logging.FileLogger" />
     <TrimmerRootAssembly Include="Meziantou.Framework" />
     <TrimmerRootAssembly Include="Meziantou.Framework.AnsiFormatting" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Avatar" />

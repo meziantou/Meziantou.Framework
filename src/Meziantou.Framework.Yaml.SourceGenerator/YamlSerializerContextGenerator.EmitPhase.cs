@@ -521,7 +521,7 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine();
             builder.AppendLine("        if (writer.TryWriteReference(value)) { return; }");
 
-            if (TryGetPolymorphismInfo(interfaceType, derivedTypeMappings, out var interfacePolymorphism) && interfacePolymorphism.DerivedTypes.Length != 0)
+            if (TryGetPolymorphismInfo(interfaceType, derivedTypeMappings, sourceGenerationOptions, out var interfacePolymorphism) && interfacePolymorphism.DerivedTypes.Length != 0)
             {
                 EmitWriteLifecycleCallbackHelpers(builder, typeName);
                 EmitWritePolymorphicDispatch(
@@ -598,7 +598,7 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.AppendLine("        InvokeOnSerializing();");
             }
 
-            if (named.TypeKind == TypeKind.Class && TryGetPolymorphismInfo(named, derivedTypeMappings, out var polymorphism) && polymorphism.DerivedTypes.Length != 0)
+            if (named.TypeKind == TypeKind.Class && TryGetPolymorphismInfo(named, derivedTypeMappings, sourceGenerationOptions, out var polymorphism) && polymorphism.DerivedTypes.Length != 0)
             {
                 builder.AppendLine();
 
@@ -3388,7 +3388,7 @@ public sealed partial class YamlSerializerContextGenerator
 
         if (typeSymbol is INamedTypeSymbol interfaceType
             && interfaceType.TypeKind == TypeKind.Interface
-            && TryGetPolymorphismInfo(interfaceType, derivedTypeMappings, out var interfacePolymorphism)
+            && TryGetPolymorphismInfo(interfaceType, derivedTypeMappings, sourceGenerationOptions, out var interfacePolymorphism)
             && interfacePolymorphism.DerivedTypes.Length != 0)
         {
             builder.AppendLine("        if (reader.TryReadAlias(out var rootAliasValue))");
@@ -3443,7 +3443,7 @@ public sealed partial class YamlSerializerContextGenerator
                 .Select(m => CreateMemberModel(m, named, propertyNamingPolicy, accessors))
                 .ToImmutableArray();
 
-            if (named.TypeKind == TypeKind.Class && TryGetPolymorphismInfo(named, derivedTypeMappings, out var polymorphism) && polymorphism.DerivedTypes.Length != 0)
+            if (named.TypeKind == TypeKind.Class && TryGetPolymorphismInfo(named, derivedTypeMappings, sourceGenerationOptions, out var polymorphism) && polymorphism.DerivedTypes.Length != 0)
             {
                 builder.AppendLine("        var rootTag = reader.Tag;");
 
@@ -6329,7 +6329,8 @@ public sealed partial class YamlSerializerContextGenerator
 
         if (!string.IsNullOrEmpty(options.DiscriminatorStyle) ||
             options.TypeDiscriminatorPropertyName is not null ||
-            !string.IsNullOrEmpty(options.UnknownDerivedTypeHandling))
+            !string.IsNullOrEmpty(options.UnknownDerivedTypeHandling) ||
+            options.InferClosedTypePolymorphism.HasValue)
         {
             builder.AppendLine("            PolymorphismOptions = new global::Meziantou.Framework.Yaml.YamlPolymorphismOptions");
             builder.AppendLine("            {");
@@ -6351,6 +6352,13 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.Append("                UnknownDerivedTypeHandling = global::Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling.")
                     .Append(options.UnknownDerivedTypeHandling)
+                    .AppendLine(",");
+            }
+
+            if (options.InferClosedTypePolymorphism.HasValue)
+            {
+                builder.Append("                InferClosedTypePolymorphism = ")
+                    .Append(options.InferClosedTypePolymorphism.Value ? "true" : "false")
                     .AppendLine(",");
             }
 

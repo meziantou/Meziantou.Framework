@@ -2130,12 +2130,35 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
             var hasRuntimeMappings = options.PolymorphismOptions.DerivedTypeMappings.TryGetValue(type, out var runtimeDerived)
                                      && runtimeDerived is { Count: > 0 };
 
-            if (yamlDerived.Length == 0 && !hasRuntimeMappings)
+            var yamlPolymorphic = type.GetCustomAttribute<YamlPolymorphicAttribute>(inherit: false);
+
+            // A value set on the declaration overrides the serializer-level setting; the serializer-level value applies when unset.
+            var inferOverride = yamlPolymorphic?.InferClosedTypePolymorphismOrNull;
+            var hasExplicitRegistrations = yamlDerived.Length != 0 || hasRuntimeMappings;
+            var infer = (inferOverride ?? options.PolymorphismOptions.InferClosedTypePolymorphism) && !hasExplicitRegistrations;
+
+            // The closed type metadata is only read when inference could apply, so ordinary type resolution does not
+            // pay for it: an explicit opt-in always needs the answer to be validated, while the serializer-level
+            // opt-in only matters when the declaration registers no derived type.
+            Type[]? inferredDerivedTypes = null;
+            if (inferOverride is true || infer)
+            {
+                var isClosedType = YamlClosedTypeHelper.IsClosedType(type, out var closedDerivedTypes);
+                if (inferOverride is true && !isClosedType)
+                {
+                    throw new InvalidOperationException($"Type '{type}' enables '{nameof(YamlPolymorphicAttribute)}.{nameof(YamlPolymorphicAttribute.InferClosedTypePolymorphism)}' but is not a closed type, so no derived type can be inferred. Declare the type 'closed' or register its derived types using '{nameof(YamlDerivedTypeAttribute)}'.");
+                }
+
+                if (infer)
+                {
+                    inferredDerivedTypes = closedDerivedTypes;
+                }
+            }
+
+            if (!hasExplicitRegistrations && inferredDerivedTypes is null)
             {
                 return null;
             }
-
-            var yamlPolymorphic = type.GetCustomAttribute<YamlPolymorphicAttribute>(inherit: false);
 
             var style = options.PolymorphismOptions.DiscriminatorStyle;
             if (yamlPolymorphic is not null && yamlPolymorphic.DiscriminatorStyle != YamlTypeDiscriminatorStyle.Unspecified)
@@ -2243,6 +2266,32 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
                             }
                         }
                     }
+                }
+            }
+
+            if (inferredDerivedTypes is not null)
+            {
+                foreach (var inferredDerivedType in inferredDerivedTypes)
+                {
+                    var derivedType = YamlDerivedTypeHelper.ResolveDerivedType(type, inferredDerivedType);
+                    if (!type.IsAssignableFrom(derivedType))
+                    {
+                        throw new InvalidOperationException($"Derived type '{derivedType}' is not assignable to '{type}'.");
+                    }
+
+                    if (!YamlClosedTypeHelper.IsAtLeastAsVisibleAs(derivedType, type))
+                    {
+                        throw new InvalidOperationException($"Derived type '{derivedType}' inferred for the closed type '{type}' is less visible than '{type}' and cannot be registered.");
+                    }
+
+                    var discriminator = YamlClosedTypeHelper.GetInferredDiscriminator(derivedType);
+                    if (discriminatorToType.ContainsKey(discriminator))
+                    {
+                        throw new InvalidOperationException($"Derived type '{derivedType}' inferred for the closed type '{type}' uses the discriminator '{discriminator}', which is already registered by another derived type.");
+                    }
+
+                    discriminatorToType.Add(discriminator, derivedType);
+                    typeToDerived[derivedType] = new DerivedTypeInfo(discriminator, tag: null);
                 }
             }
 

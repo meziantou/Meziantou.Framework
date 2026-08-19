@@ -109,6 +109,17 @@ public sealed class YamlSourceGenerationOptionsAttribute : YamlAttribute
     /// <summary>Gets or sets behavior when an unknown derived type discriminator is encountered.</summary>
     public YamlUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether derived type registrations are inferred from the compiler-provided
+    /// metadata of a <c>closed</c> type hierarchy.
+    /// </summary>
+    /// <remarks>
+    /// This is the source-generation counterpart of <see cref="YamlPolymorphismOptions.InferClosedTypePolymorphism"/>.
+    /// <see cref="YamlPolymorphicAttribute.InferClosedTypePolymorphism"/> overrides this value for the type it is
+    /// applied to.
+    /// </remarks>
+    public bool InferClosedTypePolymorphism { get; set; }
+
     /// <summary>Gets or sets converter types to be instantiated and registered on the generated options instance.</summary>
     /// <remarks>
     /// Each converter type must derive from <see cref="YamlConverter"/> and expose a public parameterless constructor.

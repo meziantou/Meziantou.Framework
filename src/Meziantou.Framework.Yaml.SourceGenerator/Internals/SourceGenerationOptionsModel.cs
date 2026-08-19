@@ -33,6 +33,7 @@ internal sealed class SourceGenerationOptionsModel
     public string? DiscriminatorStyle { get; set; }
     public string? TypeDiscriminatorPropertyName { get; set; }
     public string? UnknownDerivedTypeHandling { get; set; }
+    public bool? InferClosedTypePolymorphism { get; set; }
     public ImmutableArray<ITypeSymbol> ConverterTypes { get; set; } = ImmutableArray<ITypeSymbol>.Empty;
 
     public void ApplyFrom(SourceGenerationOptionsModel other)
@@ -65,6 +66,7 @@ internal sealed class SourceGenerationOptionsModel
         if (!string.IsNullOrEmpty(other.DiscriminatorStyle)) DiscriminatorStyle = other.DiscriminatorStyle;
         if (other.TypeDiscriminatorPropertyName is not null) TypeDiscriminatorPropertyName = other.TypeDiscriminatorPropertyName;
         if (!string.IsNullOrEmpty(other.UnknownDerivedTypeHandling)) UnknownDerivedTypeHandling = other.UnknownDerivedTypeHandling;
+        if (other.InferClosedTypePolymorphism.HasValue) InferClosedTypePolymorphism = other.InferClosedTypePolymorphism;
         if (!other.ConverterTypes.IsDefaultOrEmpty) ConverterTypes = other.ConverterTypes;
     }
 }

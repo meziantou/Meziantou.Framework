@@ -47,6 +47,46 @@ namespace Meziantou.Framework.Yaml.Tests.Serialization.CrossProject.AttributePlu
     }
 }
 
+
+namespace Meziantou.Framework.Yaml.Tests.Serialization.ClosedHierarchy
+{
+    internal closed class Shape
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    internal sealed class Circle : Shape
+    {
+        public double Radius { get; set; }
+    }
+
+    internal sealed class Square : Shape
+    {
+        public double Side { get; set; }
+    }
+
+    [YamlPolymorphic(InferClosedTypePolymorphism = true, TypeDiscriminatorPropertyName = "$kind")]
+    internal closed class OptInShape
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    internal sealed class OptInTriangle : OptInShape
+    {
+        public double Height { get; set; }
+    }
+
+    internal sealed class ShapeHolder
+    {
+        public Shape? Shape { get; set; }
+    }
+
+    internal sealed class OptInShapeHolder
+    {
+        public OptInShape? Shape { get; set; }
+    }
+}
+
 namespace Meziantou.Framework.Yaml.Tests.Serialization
 {
     internal sealed class CrossProjectZoo
@@ -75,8 +115,79 @@ namespace Meziantou.Framework.Yaml.Tests.Serialization
         {
         }
     }
+    [YamlSourceGenerationOptions(InferClosedTypePolymorphism = true)]
+    [YamlSerializable(typeof(ClosedHierarchy.ShapeHolder))]
+    internal sealed partial class InferredClosedTypeYamlContext : YamlSerializerContext
+    {
+    }
+
+    [YamlSerializable(typeof(ClosedHierarchy.OptInShapeHolder))]
+    internal sealed partial class OptInClosedTypeYamlContext : YamlSerializerContext
+    {
+    }
+
     public class YamlSourceGeneratedDerivedTypeMappingTests
     {
+        [Fact]
+        public void GeneratedContextInfersClosedHierarchyDerivedTypes()
+        {
+            var context = new InferredClosedTypeYamlContext();
+            var typeInfo = context.ShapeHolder;
+
+            var yaml = YamlSerializer.Serialize(
+                new ClosedHierarchy.ShapeHolder
+                {
+                    Shape = new ClosedHierarchy.Circle { Name = "circle", Radius = 3 },
+                },
+                typeInfo);
+
+            Assert.Contains("$type: Circle", yaml);
+            Assert.Contains("Radius: 3", yaml);
+
+            var roundtripped = YamlSerializer.Deserialize(yaml, typeInfo);
+            var circle = Assert.IsType<ClosedHierarchy.Circle>(roundtripped?.Shape);
+            Assert.Equal("circle", circle.Name);
+            Assert.Equal(3, circle.Radius);
+        }
+
+        [Fact]
+        public void GeneratedContextInfersEveryClosedHierarchyDerivedType()
+        {
+            var context = new InferredClosedTypeYamlContext();
+            var typeInfo = context.ShapeHolder;
+
+            var yaml = YamlSerializer.Serialize(
+                new ClosedHierarchy.ShapeHolder
+                {
+                    Shape = new ClosedHierarchy.Square { Name = "square", Side = 4 },
+                },
+                typeInfo);
+
+            Assert.Contains("$type: Square", yaml);
+            Assert.IsType<ClosedHierarchy.Square>(YamlSerializer.Deserialize(yaml, typeInfo)?.Shape);
+        }
+
+        [Fact]
+        public void GeneratedContextInfersClosedHierarchyFromTypeLevelOptIn()
+        {
+            var context = new OptInClosedTypeYamlContext();
+            var typeInfo = context.OptInShapeHolder;
+
+            var yaml = YamlSerializer.Serialize(
+                new ClosedHierarchy.OptInShapeHolder
+                {
+                    Shape = new ClosedHierarchy.OptInTriangle { Name = "triangle", Height = 5 },
+                },
+                typeInfo);
+
+            Assert.Contains("$kind: OptInTriangle", yaml);
+
+            var roundtripped = YamlSerializer.Deserialize(yaml, typeInfo);
+            var triangle = Assert.IsType<ClosedHierarchy.OptInTriangle>(roundtripped?.Shape);
+            Assert.Equal("triangle", triangle.Name);
+            Assert.Equal(5, triangle.Height);
+        }
+
         [Fact]
         public void GeneratedContextSupportsCrossProjectPropertyDiscriminatorMappings()
         {

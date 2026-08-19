@@ -1075,6 +1075,147 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         Assert.Empty(diagnostics);
     }
 
+    [Fact]
+    public void AnalyzerReportsErrorForClosedTypePolymorphismInferenceOnNonClosedType()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            [YamlPolymorphic(InferClosedTypePolymorphism = true)]
+            public abstract class Animal
+            {
+            }
+
+            public sealed class Dog : Animal
+            {
+            }
+
+            [YamlSerializable(typeof(Animal))]
+            internal partial class NonClosedContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostics = RunAnalyzer(Source)
+            .Where(static diagnostic => diagnostic.Id == "MFY023")
+            .ToArray();
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("Animal", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public void AnalyzerReportsWarningWhenClosedTypePolymorphismInferenceIsReplacedByExplicitDerivedTypes()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            [YamlPolymorphic(InferClosedTypePolymorphism = true)]
+            [YamlDerivedType(typeof(Dog), "dog")]
+            public closed class Animal
+            {
+            }
+
+            public sealed class Dog : Animal
+            {
+            }
+
+            public sealed class Cat : Animal
+            {
+            }
+
+            [YamlSerializable(typeof(Animal))]
+            internal partial class ExplicitDerivedTypesContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostics = RunAnalyzer(Source)
+            .Where(static diagnostic => diagnostic.Id == "MFY024")
+            .ToArray();
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("Animal", diagnostic.GetMessage());
+
+        var result = RunGenerator(Source);
+        Assert.Contains("\"dog\"", result.GeneratedSource);
+        AssertGeneratedSourceDoesNotContain(result.GeneratedSource, "\"Cat\"");
+    }
+
+    [Fact]
+    public void AnalyzerReportsWarningForInferredDerivedTypeLessVisibleThanBaseType()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            public closed class Animal
+            {
+            }
+
+            public sealed class Dog : Animal
+            {
+            }
+
+            internal sealed class Cat : Animal
+            {
+            }
+
+            [YamlSourceGenerationOptions(InferClosedTypePolymorphism = true)]
+            [YamlSerializable(typeof(Animal))]
+            internal partial class LessVisibleDerivedTypeContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostics = RunAnalyzer(Source)
+            .Where(static diagnostic => diagnostic.Id == "MFY025")
+            .ToArray();
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("Cat", diagnostic.GetMessage());
+        Assert.Contains("less visible", diagnostic.GetMessage());
+
+        var result = RunGenerator(Source);
+        Assert.Contains("\"Dog\"", result.GeneratedSource);
+        AssertGeneratedSourceDoesNotContain(result.GeneratedSource, "\"Cat\"");
+    }
+
+    [Fact]
+    public void GeneratorInfersDerivedTypesOfClosedHierarchy()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            public closed class Animal
+            {
+                public string Name { get; set; } = "";
+            }
+
+            public sealed class Dog : Animal
+            {
+            }
+
+            public sealed class Cat : Animal
+            {
+            }
+
+            [YamlSourceGenerationOptions(InferClosedTypePolymorphism = true)]
+            [YamlSerializable(typeof(Animal))]
+            internal partial class InferredClosedContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var result = RunGenerator(Source);
+
+        Assert.Empty(result.GeneratorDiagnostics);
+        Assert.Contains("\"Dog\"", result.GeneratedSource);
+        Assert.Contains("\"Cat\"", result.GeneratedSource);
+    }
+
     private static Diagnostic[] RunAnalyzer([StringSyntax("c#-test")] string source)
     {
         var compilation = CreateCompilation(source);

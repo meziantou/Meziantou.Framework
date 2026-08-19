@@ -655,4 +655,289 @@ public class YamlPolymorphismTests
 
         Assert.Contains("cannot be resolved", exception.Message);
     }
+
+    private static YamlSerializerOptions InferClosedTypePolymorphismOptions { get; } = new()
+    {
+        PolymorphismOptions = new YamlPolymorphismOptions { InferClosedTypePolymorphism = true },
+    };
+
+    private closed class ClosedShape
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private sealed class ClosedCircle : ClosedShape
+    {
+        public double Radius { get; set; }
+    }
+
+    private sealed class ClosedSquare : ClosedShape
+    {
+        public double Side { get; set; }
+    }
+
+    private closed class ClosedEmptyBase;
+
+    private abstract class PlainAbstractBase
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private sealed class PlainAbstractDerived : PlainAbstractBase;
+
+    [YamlPolymorphic(TypeDiscriminatorPropertyName = "$kind")]
+    private closed class ClosedCustomDiscriminatorBase
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private sealed class ClosedCustomDiscriminatorDerived : ClosedCustomDiscriminatorBase
+    {
+        public int Value { get; set; }
+    }
+
+    [YamlPolymorphic]
+    [YamlDerivedType(typeof(ClosedExplicitDerived), "custom")]
+    private closed class ClosedExplicitBase
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private sealed class ClosedExplicitDerived : ClosedExplicitBase
+    {
+        public int Value { get; set; }
+    }
+
+    [YamlPolymorphic(InferClosedTypePolymorphism = true)]
+    private closed class ClosedOptInBase
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private sealed class ClosedOptInDerived : ClosedOptInBase
+    {
+        public int Value { get; set; }
+    }
+
+    [YamlPolymorphic(InferClosedTypePolymorphism = false)]
+    private closed class ClosedOptOutBase
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private sealed class ClosedOptOutDerived : ClosedOptOutBase
+    {
+        public int Value { get; set; }
+    }
+
+    [YamlPolymorphic(InferClosedTypePolymorphism = true)]
+    private abstract class NonClosedOptInBase
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private sealed class NonClosedOptInDerived : NonClosedOptInBase
+    {
+    }
+
+    private closed class ClosedContainer<T>
+    {
+        public T? BaseValue { get; set; }
+    }
+
+    private sealed class ClosedBox<T> : ClosedContainer<T>
+    {
+        public T? Value { get; set; }
+    }
+
+    private sealed class ClosedIntBag : ClosedContainer<int>
+    {
+        public int Count { get; set; }
+    }
+
+    internal closed class ClosedLessVisibleBase
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private sealed class ClosedLessVisibleDerived : ClosedLessVisibleBase
+    {
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceEmitsAndReadsDiscriminatorFromTypeName()
+    {
+        ClosedShape value = new ClosedCircle { Name = "circle", Radius = 3 };
+        var yaml = YamlSerializer.Serialize(value, typeof(ClosedShape), InferClosedTypePolymorphismOptions);
+
+        Assert.Contains("$type: ClosedCircle", yaml);
+
+        var roundtripped = YamlSerializer.Deserialize<ClosedShape>(yaml, InferClosedTypePolymorphismOptions);
+        var circle = Assert.IsType<ClosedCircle>(roundtripped);
+        Assert.Equal("circle", circle.Name);
+        Assert.Equal(3, circle.Radius);
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceRegistersEveryDerivedType()
+    {
+        ClosedShape value = new ClosedSquare { Name = "square", Side = 4 };
+        var yaml = YamlSerializer.Serialize(value, typeof(ClosedShape), InferClosedTypePolymorphismOptions);
+
+        Assert.Contains("$type: ClosedSquare", yaml);
+        Assert.IsType<ClosedSquare>(YamlSerializer.Deserialize<ClosedShape>(yaml, InferClosedTypePolymorphismOptions));
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceIsDisabledByDefault()
+    {
+        ClosedShape value = new ClosedCircle { Name = "circle", Radius = 3 };
+        var yaml = YamlSerializer.Serialize(value, typeof(ClosedShape));
+
+        Assert.DoesNotContain("$type", yaml);
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceIgnoresClosedTypeWithoutDerivedType()
+    {
+        var yaml = YamlSerializer.Serialize<ClosedEmptyBase?>(null, InferClosedTypePolymorphismOptions);
+
+        Assert.DoesNotContain("$type", yaml);
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceIsNotAppliedToPlainAbstractClass()
+    {
+        PlainAbstractBase value = new PlainAbstractDerived { Name = "plain" };
+        var yaml = YamlSerializer.Serialize(value, typeof(PlainAbstractBase), InferClosedTypePolymorphismOptions);
+
+        Assert.DoesNotContain("$type", yaml);
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceHonorsCustomDiscriminatorPropertyName()
+    {
+        ClosedCustomDiscriminatorBase value = new ClosedCustomDiscriminatorDerived { Name = "custom", Value = 42 };
+        var yaml = YamlSerializer.Serialize(value, typeof(ClosedCustomDiscriminatorBase), InferClosedTypePolymorphismOptions);
+
+        Assert.Contains("$kind: ClosedCustomDiscriminatorDerived", yaml);
+        Assert.IsType<ClosedCustomDiscriminatorDerived>(YamlSerializer.Deserialize<ClosedCustomDiscriminatorBase>(yaml, InferClosedTypePolymorphismOptions));
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceIsSuppressedByExplicitDerivedTypes()
+    {
+        ClosedExplicitBase value = new ClosedExplicitDerived { Name = "explicit", Value = 42 };
+        var yaml = YamlSerializer.Serialize(value, typeof(ClosedExplicitBase), InferClosedTypePolymorphismOptions);
+
+        Assert.Contains("$type: custom", yaml);
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceIsSuppressedByRuntimeDerivedTypeMappings()
+    {
+        var options = new YamlSerializerOptions
+        {
+            PolymorphismOptions = new YamlPolymorphismOptions
+            {
+                InferClosedTypePolymorphism = true,
+                DerivedTypeMappings =
+                {
+                    [typeof(ClosedShape)] = [new YamlDerivedType(typeof(ClosedCircle), "runtime-circle")],
+                },
+            },
+        };
+
+        ClosedShape value = new ClosedCircle { Name = "circle", Radius = 3 };
+        var yaml = YamlSerializer.Serialize(value, typeof(ClosedShape), options);
+
+        Assert.Contains("$type: runtime-circle", yaml);
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceCanBeEnabledPerType()
+    {
+        ClosedOptInBase value = new ClosedOptInDerived { Name = "opt-in", Value = 42 };
+        var yaml = YamlSerializer.Serialize(value, typeof(ClosedOptInBase));
+
+        Assert.Contains("$type: ClosedOptInDerived", yaml);
+        Assert.IsType<ClosedOptInDerived>(YamlSerializer.Deserialize<ClosedOptInBase>(yaml));
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceCanBeDisabledPerType()
+    {
+        ClosedOptOutBase value = new ClosedOptOutDerived { Name = "opt-out", Value = 42 };
+        var yaml = YamlSerializer.Serialize(value, typeof(ClosedOptOutBase), InferClosedTypePolymorphismOptions);
+
+        Assert.DoesNotContain("$type", yaml);
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceThrowsWhenEnabledOnNonClosedType()
+    {
+        NonClosedOptInBase value = new NonClosedOptInDerived { Name = "plain" };
+        var exception = Assert.Throws<InvalidOperationException>(() => YamlSerializer.Serialize(value, typeof(NonClosedOptInBase)));
+
+        Assert.Contains("is not a closed type", exception.Message);
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceThrowsWhenDerivedTypeIsLessVisibleThanBaseType()
+    {
+        ClosedLessVisibleBase value = new ClosedLessVisibleDerived { Name = "hidden" };
+        var exception = Assert.Throws<InvalidOperationException>(() => YamlSerializer.Serialize(value, typeof(ClosedLessVisibleBase), InferClosedTypePolymorphismOptions));
+
+        Assert.Contains("less visible", exception.Message);
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceResolvesGenericDerivedTypes()
+    {
+        ClosedContainer<int> value = new ClosedBox<int> { BaseValue = 7, Value = 42 };
+        var yaml = YamlSerializer.Serialize(value, typeof(ClosedContainer<int>), InferClosedTypePolymorphismOptions);
+
+        Assert.Contains("$type: ClosedBox", yaml);
+        Assert.IsType<ClosedBox<int>>(YamlSerializer.Deserialize<ClosedContainer<int>>(yaml, InferClosedTypePolymorphismOptions));
+
+        ClosedContainer<int> bag = new ClosedIntBag { BaseValue = 3, Count = 2 };
+        var bagYaml = YamlSerializer.Serialize(bag, typeof(ClosedContainer<int>), InferClosedTypePolymorphismOptions);
+
+        Assert.Contains("$type: ClosedIntBag", bagYaml);
+        Assert.IsType<ClosedIntBag>(YamlSerializer.Deserialize<ClosedContainer<int>>(bagYaml, InferClosedTypePolymorphismOptions));
+    }
+
+    private closed class ClosedNestedRoot
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private closed class ClosedNestedMiddle : ClosedNestedRoot
+    {
+        public int Level { get; set; }
+    }
+
+    private sealed class ClosedNestedLeaf : ClosedNestedMiddle
+    {
+        public string Detail { get; set; } = string.Empty;
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceRegistersDirectDerivedTypesOnly()
+    {
+        ClosedNestedRoot value = new ClosedNestedLeaf { Name = "leaf", Level = 2, Detail = "detail" };
+
+        Assert.Throws<NotSupportedException>(() => YamlSerializer.Serialize(value, typeof(ClosedNestedRoot), InferClosedTypePolymorphismOptions));
+
+        ClosedNestedMiddle middleValue = new ClosedNestedLeaf { Name = "leaf", Level = 2, Detail = "detail" };
+        var yaml = YamlSerializer.Serialize(middleValue, typeof(ClosedNestedMiddle), InferClosedTypePolymorphismOptions);
+
+        Assert.Contains("$type: ClosedNestedLeaf", yaml);
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceFailsForUnknownDiscriminator()
+    {
+        Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<ClosedShape>("$type: Nonexistent\n", InferClosedTypePolymorphismOptions));
+    }
 }

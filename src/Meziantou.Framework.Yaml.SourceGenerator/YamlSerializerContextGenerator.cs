@@ -93,6 +93,30 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor InferClosedTypePolymorphismOnNonClosedType = new(
+        id: "MFY023",
+        title: "Closed type polymorphism inference requires a closed type",
+        messageFormat: "Type '{0}' enables [YamlPolymorphic(InferClosedTypePolymorphism = true)] but is not a closed type, so no derived type can be inferred. Declare the type 'closed' or register its derived types using [YamlDerivedType].",
+        category: "Meziantou.Framework.Yaml.SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor InferClosedTypePolymorphismWithExplicitDerivedTypes = new(
+        id: "MFY024",
+        title: "Closed type polymorphism inference is replaced by explicit derived types",
+        messageFormat: "Type '{0}' enables [YamlPolymorphic(InferClosedTypePolymorphism = true)] but also declares [YamlDerivedType]. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.",
+        category: "Meziantou.Framework.Yaml.SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor IgnoredInferredDerivedType = new(
+        id: "MFY025",
+        title: "Inferred derived type is ignored",
+        messageFormat: "Derived type '{0}' of the closed type '{1}' is ignored: {2}",
+        category: "Meziantou.Framework.Yaml.SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     internal static readonly ImmutableArray<DiagnosticDescriptor> SupportedDiagnosticDescriptors = ImmutableArray.Create(
         ContextMustBePartial,
         UnsupportedMemberType,
@@ -102,7 +126,10 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         InvalidConverterType,
         InvalidDerivedTypeMapping,
         MissingYamlPolymorphicOnDerivedTypeMappingBase,
-        UnresolvedOpenGenericDerivedType);
+        UnresolvedOpenGenericDerivedType,
+        InferClosedTypePolymorphismOnNonClosedType,
+        InferClosedTypePolymorphismWithExplicitDerivedTypes,
+        IgnoredInferredDerivedType);
 
     internal sealed class ContextValidationResult
     {
@@ -368,6 +395,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
             ValidateYamlConverterAttribute(diagnostics, named, named);
             ValidateDerivedTypeAttributes(diagnostics, named);
+            ValidateClosedTypePolymorphism(diagnostics, named, derivedTypeMappings, model.SourceGenerationOptions);
 
             if (IsYamlNodeType(named))
             {
@@ -556,6 +584,131 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         }
     }
 
+    /// <summary>
+    /// Reports the misuses of <c>[YamlPolymorphic(InferClosedTypePolymorphism = true)]</c>: a type that is not
+    /// declared <c>closed</c>, from which nothing can ever be inferred, and a type that also declares explicit
+    /// registrations, which replace inference. When inference does apply, reports each derived type it has to ignore.
+    /// </summary>
+    private static void ValidateClosedTypePolymorphism(
+        ImmutableArray<Diagnostic>.Builder diagnostics,
+        INamedTypeSymbol baseType,
+        ImmutableArray<DerivedTypeMappingModel> contextMappings,
+        SourceGenerationOptionsModel sourceGenerationOptions)
+    {
+        AttributeData? polymorphicAttribute = null;
+        var hasExplicitRegistrations = false;
+        foreach (var attribute in baseType.GetAttributes())
+        {
+            var attributeName = attribute.AttributeClass?.ToDisplayString();
+            if (string.Equals(attributeName, "Meziantou.Framework.Yaml.Serialization.YamlPolymorphicAttribute", StringComparison.Ordinal))
+            {
+                polymorphicAttribute = attribute;
+            }
+            else if (string.Equals(attributeName, "Meziantou.Framework.Yaml.Serialization.YamlDerivedTypeAttribute", StringComparison.Ordinal))
+            {
+                hasExplicitRegistrations = true;
+            }
+        }
+
+        for (var i = 0; i < contextMappings.Length && !hasExplicitRegistrations; i++)
+        {
+            hasExplicitRegistrations = SymbolEqualityComparer.Default.Equals(contextMappings[i].BaseType, baseType);
+        }
+
+        bool? inferOverride = null;
+        if (polymorphicAttribute is not null)
+        {
+            foreach (var pair in polymorphicAttribute.NamedArguments)
+            {
+                if (string.Equals(pair.Key, "InferClosedTypePolymorphism", StringComparison.Ordinal) && pair.Value.Value is bool inferValue)
+                {
+                    inferOverride = inferValue;
+                }
+            }
+        }
+
+        if (inferOverride is true)
+        {
+            var location = polymorphicAttribute!.ApplicationSyntaxReference?.GetSyntax().GetLocation() ?? baseType.Locations.FirstOrDefault();
+            if (!ClosedTypeSymbolHelper.IsClosedType(baseType))
+            {
+                diagnostics.Add(Diagnostic.Create(
+                    InferClosedTypePolymorphismOnNonClosedType,
+                    location,
+                    baseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)));
+                return;
+            }
+
+            if (hasExplicitRegistrations)
+            {
+                diagnostics.Add(Diagnostic.Create(
+                    InferClosedTypePolymorphismWithExplicitDerivedTypes,
+                    location,
+                    baseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)));
+                return;
+            }
+        }
+
+        if (!hasExplicitRegistrations && InfersClosedTypePolymorphism(baseType, inferOverride, sourceGenerationOptions))
+        {
+            InferClosedTypeDerivedTypes(baseType, diagnostics);
+        }
+    }
+
+    /// <summary>
+    /// Determines whether the derived types of <paramref name="baseType"/> are inferred from its closed hierarchy.
+    /// </summary>
+    private static bool InfersClosedTypePolymorphism(
+        INamedTypeSymbol baseType,
+        bool? declarationOverride,
+        SourceGenerationOptionsModel sourceGenerationOptions)
+        => (declarationOverride ?? sourceGenerationOptions.InferClosedTypePolymorphism ?? false) && ClosedTypeSymbolHelper.IsClosedType(baseType);
+
+    /// <summary>
+    /// Registers each direct derived type of a closed hierarchy, using its name, without the generic arity suffix, as
+    /// its discriminator. Derived types are ordered by discriminator so the generated metadata is deterministic.
+    /// </summary>
+    private static ImmutableArray<DerivedTypeInfoModel> InferClosedTypeDerivedTypes(
+        INamedTypeSymbol baseType,
+        ImmutableArray<Diagnostic>.Builder? diagnostics)
+    {
+        var derivedTypes = ImmutableArray.CreateBuilder<DerivedTypeInfoModel>();
+        var seenDiscriminators = new HashSet<string>(StringComparer.Ordinal);
+        var location = baseType.Locations.FirstOrDefault();
+
+        foreach (var closedDerivedType in ClosedTypeSymbolHelper.GetClosedDerivedTypes(baseType).OrderBy(static type => type.Name, StringComparer.Ordinal))
+        {
+            string? reason = null;
+            if (!TryResolveDerivedType(baseType, closedDerivedType, out var derivedType) || !IsAssignableTo(derivedType, baseType))
+            {
+                reason = $"it cannot be resolved for the base type '{baseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}'";
+            }
+            else if (!ClosedTypeSymbolHelper.IsAtLeastAsVisibleAs(derivedType, baseType))
+            {
+                reason = "it is less visible than the base type";
+            }
+            else if (!seenDiscriminators.Add(ClosedTypeSymbolHelper.GetInferredDiscriminator(derivedType)))
+            {
+                reason = $"another derived type already uses the discriminator '{ClosedTypeSymbolHelper.GetInferredDiscriminator(derivedType)}'";
+            }
+
+            if (reason is not null)
+            {
+                diagnostics?.Add(Diagnostic.Create(
+                    IgnoredInferredDerivedType,
+                    location,
+                    closedDerivedType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
+                    baseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
+                    reason));
+                continue;
+            }
+
+            derivedTypes.Add(new DerivedTypeInfoModel(derivedType!, ClosedTypeSymbolHelper.GetInferredDiscriminator(derivedType!), tag: null));
+        }
+
+        return derivedTypes.ToImmutable();
+    }
+
     private static void ValidateSourceGenerationOptions(ImmutableArray<Diagnostic>.Builder diagnostics, Compilation compilation, ContextModel model)
     {
         var location = model.ContextSymbol.Locations.FirstOrDefault();
@@ -722,7 +875,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 continue;
             }
 
-            foreach (var derived in GetPolymorphicDerivedTypes(named, contextMappings))
+            foreach (var derived in GetPolymorphicDerivedTypes(named, contextMappings, sourceGenerationOptions))
             {
                 if (seen.Add(derived))
                 {
@@ -891,7 +1044,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
         if (named.TypeKind == TypeKind.Interface)
         {
-            return TryGetPolymorphismInfo(named, contextMappings, out var polymorphism) &&
+            return TryGetPolymorphismInfo(named, contextMappings, sourceGenerationOptions, out var polymorphism) &&
                 polymorphism.DerivedTypes.Length != 0;
         }
 
@@ -2893,9 +3046,10 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
     private static IEnumerable<ITypeSymbol> GetPolymorphicDerivedTypes(
         INamedTypeSymbol baseType,
-        ImmutableArray<DerivedTypeMappingModel> contextMappings)
+        ImmutableArray<DerivedTypeMappingModel> contextMappings,
+        SourceGenerationOptionsModel sourceGenerationOptions)
     {
-        if (TryGetPolymorphismInfo(baseType, contextMappings, out var info))
+        if (TryGetPolymorphismInfo(baseType, contextMappings, sourceGenerationOptions, out var info))
         {
             for (var i = 0; i < info.DerivedTypes.Length; i++)
             {
@@ -2907,12 +3061,14 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     private static bool TryGetPolymorphismInfo(
         INamedTypeSymbol baseType,
         ImmutableArray<DerivedTypeMappingModel> contextMappings,
+        SourceGenerationOptionsModel sourceGenerationOptions,
         out PolymorphismInfoModel info)
     {
         string? discriminatorPropertyNameOverride = null;
         int? discriminatorStyleOverrideValue = null;
         int? unknownOverrideValue = null;
         int? yamlUnknownOverrideValue = null;
+        bool? inferClosedTypePolymorphismOverride = null;
 
         var derivedTypes = ImmutableArray.CreateBuilder<DerivedTypeInfoModel>();
         var seenDerived = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
@@ -2937,6 +3093,10 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                     else if (string.Equals(pair.Key, "UnknownDerivedTypeHandling", StringComparison.Ordinal) && pair.Value.Value is int unknownValue)
                     {
                         yamlUnknownOverrideValue = unknownValue;
+                    }
+                    else if (string.Equals(pair.Key, "InferClosedTypePolymorphism", StringComparison.Ordinal) && pair.Value.Value is bool inferValue)
+                    {
+                        inferClosedTypePolymorphismOverride = inferValue;
                     }
                 }
             }
@@ -3055,6 +3215,14 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             {
                 seenTags.Add(mapping.Tag);
             }
+        }
+
+        // A value set on the declaration overrides the source-generation option; the option applies when unset.
+        // Explicit registrations replace inference, so the closed hierarchy is only enumerated when none was declared.
+        if (derivedTypes.Count == 0 &&
+            InfersClosedTypePolymorphism(baseType, inferClosedTypePolymorphismOverride, sourceGenerationOptions))
+        {
+            derivedTypes.AddRange(InferClosedTypeDerivedTypes(baseType, diagnostics: null));
         }
 
         if (derivedTypes.Count == 0 && discriminatorPropertyNameOverride is null && discriminatorStyleOverrideValue is null)
@@ -3334,6 +3502,9 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                     break;
                 case "PreferQuotedForAmbiguousScalars":
                     model.PreferQuotedForAmbiguousScalars = argument.Value.Value as bool?;
+                    break;
+                case "InferClosedTypePolymorphism":
+                    model.InferClosedTypePolymorphism = argument.Value.Value as bool?;
                     break;
                 case "DiscriminatorStyle":
                     model.DiscriminatorStyle = NormalizeEnumName(argument.Value.ToCSharpString());

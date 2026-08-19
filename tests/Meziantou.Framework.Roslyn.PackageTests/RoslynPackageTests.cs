@@ -15,9 +15,9 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         Assert.Contains("SyntaxNodeAnalysisContext", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/ContextExtensions.g.cs")));
         Assert.Contains("DiagnosticReporter", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/DiagnosticReporter.cs")));
         Assert.Contains("IsInterfaceImplementation", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/MethodSymbolExtensions.cs")));
-        Assert.Contains("IsNamespace", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/NamespaceSymbolExtensions.cs")));
+        Assert.Contains("MatchesNamespace", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/NamespaceSymbolExtensions.cs")));
         Assert.Contains("UnwrapImplicitConversions", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/OperationExtensions.cs")));
-        Assert.Contains("TryFindNode", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/SuppressorHelpers.cs")));
+        Assert.Contains("FindNode(this Diagnostic", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/SuppressorHelpers.cs")));
         Assert.Contains("IsVisibleOutsideOfAssembly", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/SymbolExtensions.cs")));
         Assert.Contains("GetFirstAttribute", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/SymbolAttributeExtensions.cs")));
         Assert.Contains("GetUnderlyingNullableTypeOrSelf", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/TypeSymbolExtensions.cs")));
@@ -156,13 +156,13 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
                 public static bool HasAttribute(ISymbol symbol, ITypeSymbol attributeType) => symbol.HasAttribute(attributeType);
                 public static bool IsVisible(ISymbol? symbol) => symbol.IsVisibleOutsideOfAssembly();
                 public static bool IsInterfaceImplementation(IMethodSymbol symbol) => symbol.IsInterfaceImplementation();
-                public static bool IsNamespace(INamespaceSymbol namespaceSymbol) => namespaceSymbol.IsNamespace(["System"]);
+                public static bool MatchesNamespace(INamespaceSymbol namespaceSymbol) => namespaceSymbol.MatchesNamespace(["System"]);
                 public static IOperation Unwrap(IOperation operation) => operation.UnwrapImplicitConversions();
                 public static IOperation UnwrapOperations(IOperation operation) => operation.UnwrapConversions();
                 public static LanguageVersion GetOperationLanguageVersion(IOperation operation) => operation.GetCSharpLanguageVersion();
-                public static SyntaxNode? TryFindNode(Diagnostic diagnostic, CancellationToken cancellationToken) => diagnostic.TryFindNode(cancellationToken);
+                public static SyntaxNode? FindNode(Diagnostic diagnostic, CancellationToken cancellationToken) => diagnostic.FindNode(cancellationToken);
                 public static int? GetNodeLine(SyntaxNode node, CancellationToken cancellationToken) => node.GetLine(cancellationToken);
-                public static bool IsCSharp12(LanguageVersion languageVersion) => languageVersion.IsCSharp12OrAbove();
+                public static bool IsCSharp12(LanguageVersion languageVersion) => languageVersion.IsCSharp12OrGreater();
                 public static ITypeSymbol? GetFlowType(IOperation operation, CancellationToken cancellationToken) => LocalDataFlowAnalysis.GetActualType(operation, cancellationToken);
                 public static string ReporterName => typeof(DiagnosticReporter).Name;
                 public static DiagnosticInvocationReportOptions InvocationReportOptions => DiagnosticInvocationReportOptions.ReportOnMember | DiagnosticInvocationReportOptions.ReportOnArguments;

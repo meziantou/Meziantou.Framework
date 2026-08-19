@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Roslyn;
 // http://source.roslyn.io/#Microsoft.CodeAnalysis.Workspaces/Shared/Extensions/ITypeSymbolExtensions.cs,190b4ed0932458fd,references
 internal static partial class TypeSymbolExtensions
 {
-    public static IList<INamedTypeSymbol> GetAllInterfacesIncludingThis(this ITypeSymbol type)
+    public static IList<INamedTypeSymbol> GetAllInterfacesIncludingSelf(this ITypeSymbol type)
     {
         var allInterfaces = type.AllInterfaces;
         if (type is INamedTypeSymbol namedType && namedType.TypeKind == TypeKind.Interface && !allInterfaces.Contains(namedType))
@@ -140,12 +140,12 @@ internal static partial class TypeSymbolExtensions
         return SymbolEquals(symbol, interfaceType) || symbol.Implements(interfaceType);
     }
 
-    public static bool IsOrInheritFrom(this ITypeSymbol symbol, [NotNullWhen(true)] ITypeSymbol? expectedType)
+    public static bool IsOrInheritsFrom(this ITypeSymbol symbol, [NotNullWhen(true)] ITypeSymbol? expectedType)
     {
-        return IsOrInheritFrom(symbol, expectedType, visitedTypeParameters: null);
+        return IsOrInheritsFrom(symbol, expectedType, visitedTypeParameters: null);
     }
 
-    private static bool IsOrInheritFrom(this ITypeSymbol symbol, [NotNullWhen(true)] ITypeSymbol? expectedType, HashSet<ITypeParameterSymbol>? visitedTypeParameters)
+    private static bool IsOrInheritsFrom(this ITypeSymbol symbol, [NotNullWhen(true)] ITypeSymbol? expectedType, HashSet<ITypeParameterSymbol>? visitedTypeParameters)
     {
         if (expectedType is null)
             return false;
@@ -157,7 +157,7 @@ internal static partial class TypeSymbolExtensions
         {
             return AnyConstraintTypeMatches(typeParameter, visitedTypeParameters, (constraintType, visitedTypeParameters) =>
             {
-                return constraintType.IsOrInheritFrom(expectedType, visitedTypeParameters);
+                return constraintType.IsOrInheritsFrom(expectedType, visitedTypeParameters);
             });
         }
 
@@ -285,7 +285,7 @@ internal static partial class TypeSymbolExtensions
 
     public static bool IsEnum([NotNullWhen(returnValue: true)] this ITypeSymbol? symbol)
     {
-        return symbol is not null && GetEnumType(symbol) is not null;
+        return symbol is not null && GetEnumUnderlyingType(symbol) is not null;
     }
 
     private static bool SymbolEquals(ISymbol? symbol, ISymbol? expectedSymbol)
@@ -293,7 +293,7 @@ internal static partial class TypeSymbolExtensions
         return symbol is not null && expectedSymbol is not null && SymbolEqualityComparer.Default.Equals(symbol, expectedSymbol);
     }
 
-    public static INamedTypeSymbol? GetEnumType(this ITypeSymbol? symbol)
+    public static INamedTypeSymbol? GetEnumUnderlyingType(this ITypeSymbol? symbol)
     {
         return (symbol as INamedTypeSymbol)?.EnumUnderlyingType;
     }

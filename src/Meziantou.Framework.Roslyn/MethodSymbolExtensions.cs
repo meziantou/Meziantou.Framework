@@ -53,34 +53,34 @@ internal static partial class MethodSymbolExtensions
 
     private static bool IsInterfaceImplementation(this ISymbol symbol)
     {
-        return GetImplementingInterfaceSymbol(symbol) is not null;
+        return GetImplementedInterfaceMember(symbol) is not null;
     }
 
-    public static IPropertySymbol? GetImplementingInterfaceSymbol(this IPropertySymbol symbol)
+    public static IPropertySymbol? GetImplementedInterfaceMember(this IPropertySymbol symbol)
     {
         if (symbol.ExplicitInterfaceImplementations.Length > 0)
             return symbol.ExplicitInterfaceImplementations[0];
 
-        return (IPropertySymbol?)GetImplementingInterfaceSymbol((ISymbol)symbol);
+        return (IPropertySymbol?)GetImplementedInterfaceMember((ISymbol)symbol);
     }
 
-    public static IEventSymbol? GetImplementingInterfaceSymbol(this IEventSymbol symbol)
+    public static IEventSymbol? GetImplementedInterfaceMember(this IEventSymbol symbol)
     {
         if (symbol.ExplicitInterfaceImplementations.Length > 0)
             return symbol.ExplicitInterfaceImplementations[0];
 
-        return (IEventSymbol?)GetImplementingInterfaceSymbol((ISymbol)symbol);
+        return (IEventSymbol?)GetImplementedInterfaceMember((ISymbol)symbol);
     }
 
-    public static IMethodSymbol? GetImplementingInterfaceSymbol(this IMethodSymbol symbol)
+    public static IMethodSymbol? GetImplementedInterfaceMember(this IMethodSymbol symbol)
     {
         if (symbol.ExplicitInterfaceImplementations.Length > 0)
             return symbol.ExplicitInterfaceImplementations[0];
 
-        return (IMethodSymbol?)GetImplementingInterfaceSymbol((ISymbol)symbol);
+        return (IMethodSymbol?)GetImplementedInterfaceMember((ISymbol)symbol);
     }
 
-    private static ISymbol? GetImplementingInterfaceSymbol(this ISymbol symbol)
+    private static ISymbol? GetImplementedInterfaceMember(this ISymbol symbol)
     {
         if (symbol.ContainingType is null)
             return null;
@@ -90,7 +90,7 @@ internal static partial class MethodSymbolExtensions
             .FirstOrDefault(interfaceMember => SymbolEqualityComparer.Default.Equals(symbol, symbol.ContainingType.FindImplementationForInterfaceMember(interfaceMember)));
     }
 
-    public static bool IsOrOverrideMethod(this IMethodSymbol? symbol, IMethodSymbol? baseMethod)
+    public static bool IsOrOverrides(this IMethodSymbol? symbol, IMethodSymbol? baseMethod)
     {
         if (symbol is null || baseMethod is null)
             return false;
@@ -109,7 +109,7 @@ internal static partial class MethodSymbolExtensions
         return false;
     }
 
-    public static bool Override(this IMethodSymbol? symbol, ISymbol? baseSymbol)
+    public static bool Overrides(this IMethodSymbol? symbol, ISymbol? baseSymbol)
     {
         if (baseSymbol is null)
             return false;
@@ -141,7 +141,7 @@ internal static partial class MethodSymbolExtensions
 
             if (inherits)
             {
-                if (attribute.AttributeClass.IsOrInheritFrom(attributeType))
+                if (attribute.AttributeClass.IsOrInheritsFrom(attributeType))
                     return attribute;
             }
             else

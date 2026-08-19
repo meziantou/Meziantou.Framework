@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -44,13 +45,13 @@ public sealed class ConstantAssertionAnalyzer : DiagnosticAnalyzer
 
         if (TryGetConstantConditionMessage(invocationOperation, targetMethod.Name, out var conditionMessage))
         {
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), conditionMessage));
+            context.ReportDiagnostic(Descriptor, invocationOperation, conditionMessage);
             return;
         }
 
         if (TryGetSelfComparisonMessage(invocationOperation, targetMethod.Name, out var selfComparisonMessage))
         {
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), selfComparisonMessage));
+            context.ReportDiagnostic(Descriptor, invocationOperation, selfComparisonMessage);
         }
     }
 
@@ -64,7 +65,7 @@ public sealed class ConstantAssertionAnalyzer : DiagnosticAnalyzer
 
         var conditionArgument = invocationOperation.Arguments.FirstOrDefault(argument => argument.Parameter?.Name == "condition");
         if (conditionArgument is null ||
-            AssertionsAnalyzerHelpers.UnwrapImplicitConversion(conditionArgument.Value).ConstantValue is not { HasValue: true, Value: bool conditionValue })
+            conditionArgument.Value.UnwrapImplicitConversions().ConstantValue is not { HasValue: true, Value: bool conditionValue })
         {
             message = null!;
             return false;
@@ -114,8 +115,8 @@ public sealed class ConstantAssertionAnalyzer : DiagnosticAnalyzer
             return false;
         }
 
-        var expectedOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(expectedArgument.Value);
-        var actualOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(actualArgument.Value);
+        var expectedOperation = expectedArgument.Value.UnwrapImplicitConversions();
+        var actualOperation = actualArgument.Value.UnwrapImplicitConversions();
         if (!IsSideEffectFreeReference(expectedOperation) ||
             !IsSideEffectFreeReference(actualOperation) ||
             !SyntaxFactory.AreEquivalent(expectedOperation.Syntax, actualOperation.Syntax))

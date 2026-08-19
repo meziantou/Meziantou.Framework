@@ -1,0 +1,14 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)../../src/Meziantou.Framework.Roslyn/**/*.cs" LinkBase="RoslynSources" />
+  </ItemGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)../../src/Meziantou.Framework.Roslyn/buildTransitive/Meziantou.Framework.Roslyn.targets" />
+</Project>

@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
 
@@ -29,7 +30,7 @@ internal static class CollectionContainsPredicateAnalyzerCommon
             return false;
         }
 
-        var actualOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(actualArgument.Value);
+        var actualOperation = actualArgument.Value.UnwrapImplicitConversions();
 
         // Assert.Contains(expected, actual) has dedicated string overloads with a different meaning
         if (actualOperation.Type?.SpecialType == SpecialType.System_String)
@@ -53,7 +54,7 @@ internal static class CollectionContainsPredicateAnalyzerCommon
     {
         expectedOperation = null;
 
-        var operation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(predicateOperation);
+        var operation = predicateOperation.UnwrapImplicitConversions();
         if (operation is IDelegateCreationOperation delegateCreationOperation)
         {
             operation = delegateCreationOperation.Target;
@@ -65,7 +66,7 @@ internal static class CollectionContainsPredicateAnalyzerCommon
             return false;
         }
 
-        if (AssertionsAnalyzerHelpers.UnwrapImplicitConversion(returnedValue) is not IBinaryOperation { OperatorKind: BinaryOperatorKind.Equals, OperatorMethod: null } binaryOperation)
+        if (returnedValue.UnwrapImplicitConversions() is not IBinaryOperation { OperatorKind: BinaryOperatorKind.Equals, OperatorMethod: null } binaryOperation)
             return false;
 
         // The default equality comparer used by the assertion must behave like the == operator
@@ -98,7 +99,7 @@ internal static class CollectionContainsPredicateAnalyzerCommon
 
     private static bool IsParameterReference(IOperation operation, IParameterSymbol parameter)
     {
-        return AssertionsAnalyzerHelpers.UnwrapImplicitConversion(operation) is IParameterReferenceOperation parameterReferenceOperation &&
+        return operation.UnwrapImplicitConversions() is IParameterReferenceOperation parameterReferenceOperation &&
             SymbolEqualityComparer.Default.Equals(parameterReferenceOperation.Parameter, parameter) &&
             SymbolEqualityComparer.Default.Equals(operation.Type, parameter.Type);
     }

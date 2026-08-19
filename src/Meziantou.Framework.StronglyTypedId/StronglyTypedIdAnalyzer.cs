@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -91,7 +92,7 @@ public sealed class StronglyTypedIdAnalyzer : DiagnosticAnalyzer
                 var location = attribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation() ?? symbol.Locations.FirstOrDefault();
                 if (location is not null)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(UnsupportedType, location, typeSymbol.ToDisplayString()));
+                    context.ReportDiagnostic(UnsupportedType, location, typeSymbol.ToDisplayString());
                 }
 
                 continue;
@@ -117,7 +118,7 @@ public sealed class StronglyTypedIdAnalyzer : DiagnosticAnalyzer
                     ?? symbol.Locations.FirstOrDefault();
                 if (location is not null)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(descriptor, location, messageArgs));
+                    context.ReportDiagnostic(descriptor, location, messageArgs);
                 }
             }
         }

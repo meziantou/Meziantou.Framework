@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -48,6 +49,6 @@ public sealed class RedundantPathPredicateAnalyzer : DiagnosticAnalyzer
         if (invocationOperation.Arguments.Length != 1 || !analyzerContext.IsFullPathType(invocationOperation.Arguments[0].Value))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), targetMethod.Name));
+        context.ReportDiagnostic(Descriptor, invocationOperation, targetMethod.Name);
     }
 }

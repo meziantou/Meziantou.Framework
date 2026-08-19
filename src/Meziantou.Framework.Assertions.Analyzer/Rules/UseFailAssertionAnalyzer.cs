@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -38,6 +39,6 @@ public sealed class UseFailAssertionAnalyzer : DiagnosticAnalyzer
         if (!UseFailAssertionAnalyzerCommon.TryGetAssertionMatch(invocationOperation, assertType, out _))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation()));
+        context.ReportDiagnostic(Descriptor, invocationOperation);
     }
 }

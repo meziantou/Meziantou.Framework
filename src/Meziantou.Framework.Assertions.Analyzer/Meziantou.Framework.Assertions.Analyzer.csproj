@@ -14,6 +14,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Meziantou.Framework.Roslyn/**/*.cs" LinkBase="Roslyn" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
   </ItemGroup>
+
+  <Import Project="../Meziantou.Framework.Roslyn/buildTransitive/Meziantou.Framework.Roslyn.targets" />
+
 </Project>

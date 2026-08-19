@@ -1,0 +1,29 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <Description>Source helpers for Roslyn analyzers and source generators</Description>
+
+    <developmentDependency>true</developmentDependency>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <NoWarn>$(NoWarn);MA0182</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="**/*.cs"
+             Pack="true"
+             PackagePath="contentFiles/cs/any/Meziantou.Framework.Roslyn/%(Filename)%(Extension)">
+      <BuildAction>Compile</BuildAction>
+      <PackageCopyToOutput>false</PackageCopyToOutput>
+      <PackageFlatten>false</PackageFlatten>
+    </Content>
+    <None Include="buildTransitive/**/*.targets" Pack="true" PackagePath="buildTransitive" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

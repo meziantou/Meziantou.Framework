@@ -5,6 +5,7 @@ using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.StronglyTypedId;
 
@@ -556,7 +557,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             var icomparableCompareToMember = icomparableSymbol?.GetMembers("CompareTo").FirstOrDefault();
             if (icomparableSymbol is not null && icomparableCompareToMember is not null)
             {
-                ImplementsIComparable = Implements(typeSymbol, icomparableSymbol);
+                ImplementsIComparable = typeSymbol.Implements(icomparableSymbol);
                 ImplementsIComparable_CompareTo = typeSymbol.FindImplementationForInterfaceMember(icomparableCompareToMember) is not null;
             }
 
@@ -565,7 +566,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             var icomparableOfTCompareToMember = icomparableOfTypeSymbol?.GetMembers("CompareTo").FirstOrDefault();
             if (icomparableOfTSymbol is not null && icomparableOfTCompareToMember is not null)
             {
-                ImplementsIComparableOfT = Implements(typeSymbol, icomparableOfTypeSymbol);
+                ImplementsIComparableOfT = typeSymbol.Implements(icomparableOfTypeSymbol);
                 ImplementsIComparableOfT_CompareTo = typeSymbol.FindImplementationForInterfaceMember(icomparableOfTCompareToMember) is not null;
             }
 
@@ -573,20 +574,6 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             ValueTypeShortName = GetShortName(IdType);
             ValueTypeCSharpTypeName = GetCSharpTypeName(IdType);
             ValueTypeCSharpNullableTypeName = ValueTypeCSharpTypeName + (IsReferenceType ? "?" : "");
-
-            static bool Implements(ITypeSymbol symbol, ITypeSymbol? interfaceSymbol)
-            {
-                if (interfaceSymbol is null)
-                    return false;
-
-                foreach (var iface in symbol.AllInterfaces)
-                {
-                    if (SymbolEqual(iface, interfaceSymbol))
-                        return true;
-                }
-
-                return false;
-            }
 
             static bool SymbolEqual(ITypeSymbol? left, ITypeSymbol? right) => SymbolEqualityComparer.Default.Equals(left, right);
 

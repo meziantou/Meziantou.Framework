@@ -23,7 +23,11 @@
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/AssertionsAnalyzerHelpers.cs" Link="AssertionsAnalyzerHelpers.cs" />
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/AssertionCodeFixHelpers.cs" Link="AssertionCodeFixHelpers.cs" />
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/RuleIdentifiers.cs" Link="RuleIdentifiers.cs" />
+    <Compile Include="../Meziantou.Framework.Roslyn/**/*.cs" LinkBase="Roslyn" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" PrivateAssets="all" />
   </ItemGroup>
+
+  <Import Project="../Meziantou.Framework.Roslyn/buildTransitive/Meziantou.Framework.Roslyn.targets" />
+
 </Project>

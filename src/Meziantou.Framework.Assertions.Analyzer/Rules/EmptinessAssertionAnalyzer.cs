@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -38,6 +39,6 @@ public sealed class EmptinessAssertionAnalyzer : DiagnosticAnalyzer
         if (!EmptinessAssertionAnalyzerCommon.TryGetAssertionMatch(invocationOperation, assertType, out var match))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), match.AssertionMethodName));
+        context.ReportDiagnostic(Descriptor, invocationOperation, match.AssertionMethodName);
     }
 }

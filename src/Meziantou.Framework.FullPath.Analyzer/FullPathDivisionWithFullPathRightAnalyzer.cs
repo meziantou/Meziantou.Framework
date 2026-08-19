@@ -1,3 +1,4 @@
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -41,6 +42,6 @@ public sealed class FullPathDivisionWithFullPathRightAnalyzer : DiagnosticAnalyz
         if (!analyzerContext.IsFullPathType(binaryOperation.RightOperand))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Descriptor, binaryOperation.Syntax.GetLocation()));
+        context.ReportDiagnostic(Descriptor, binaryOperation);
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -52,6 +53,6 @@ public sealed class CollectionAllAnalyzer : DiagnosticAnalyzer
             return;
 
         var descriptor = conditionExpectedToBeFalse ? UseCollectionDoesNotAllDescriptor : UseCollectionAllDescriptor;
-        context.ReportDiagnostic(Diagnostic.Create(descriptor, match.InnerInvocation.Syntax.GetLocation()));
+        context.ReportDiagnostic(descriptor, match.InnerInvocation);
     }
 }

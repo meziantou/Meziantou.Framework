@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.FastEnumGenerator;
 
@@ -144,7 +145,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
     private static bool GetIsPublic(AttributeData attr, INamedTypeSymbol enumType)
     {
-        var isPublic = IsVisibleOutsideOfAssembly(enumType);
+        var isPublic = enumType.IsVisibleOutsideOfAssembly();
         foreach (var argument in attr.NamedArguments)
         {
             if (argument is { Key: "IsPublic", Value.Value: bool value })
@@ -942,20 +943,6 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             sb.Append(value);
             isFirst = false;
         }
-    }
-
-    private static bool IsVisibleOutsideOfAssembly(ISymbol? symbol)
-    {
-        if (symbol is null)
-            return false;
-
-        if (symbol.DeclaredAccessibility is not Accessibility.Public and not Accessibility.Protected and not Accessibility.ProtectedOrInternal)
-            return false;
-
-        if (symbol.ContainingType is null)
-            return true;
-
-        return IsVisibleOutsideOfAssembly(symbol.ContainingType);
     }
 
     private sealed record EnumToProcess(INamedTypeSymbol EnumSymbol, ImmutableArray<EnumMemberToProcess> Members, bool IsPublic, string? Namespace, bool IsFlags, bool IsZeroBasedConsecutive, string UnderlyingTypeName, bool IsUnderlyingTypeSigned)

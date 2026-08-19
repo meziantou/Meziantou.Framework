@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
 
@@ -79,7 +80,7 @@ internal static class CollectionWhereAssertionAnalyzerCommon
             return false;
         }
 
-        if (AssertionsAnalyzerHelpers.UnwrapImplicitConversion(actualArgument.Value) is not IInvocationOperation whereInvocation ||
+        if (actualArgument.Value.UnwrapImplicitConversions() is not IInvocationOperation whereInvocation ||
             !TryGetWhereArguments(whereInvocation, symbols, out var sourceOperation, out var predicateOperation))
         {
             match = default;
@@ -113,8 +114,8 @@ internal static class CollectionWhereAssertionAnalyzerCommon
 
         if (whereInvocation.Instance is not null)
         {
-            sourceOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(whereInvocation.Instance);
-            predicateOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(whereInvocation.Arguments[0].Value);
+            sourceOperation = whereInvocation.Instance.UnwrapImplicitConversions();
+            predicateOperation = whereInvocation.Arguments[0].Value.UnwrapImplicitConversions();
             return true;
         }
 
@@ -127,8 +128,8 @@ internal static class CollectionWhereAssertionAnalyzerCommon
             return false;
         }
 
-        sourceOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(sourceArgument.Value);
-        predicateOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(predicateArgument.Value);
+        sourceOperation = sourceArgument.Value.UnwrapImplicitConversions();
+        predicateOperation = predicateArgument.Value.UnwrapImplicitConversions();
         return true;
     }
 

@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
 
@@ -44,7 +45,7 @@ internal static class AssertionArgumentOrderAnalyzerCommon
 
     internal static bool IsConstantOrCollectionContainingConstant(IOperation operation)
     {
-        operation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(operation);
+        operation = operation.UnwrapImplicitConversions();
 
         if (operation.ConstantValue.HasValue)
             return true;

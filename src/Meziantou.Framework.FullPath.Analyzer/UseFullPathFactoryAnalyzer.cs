@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -42,6 +43,6 @@ public sealed class UseFullPathFactoryAnalyzer : DiagnosticAnalyzer
         if (analyzerContext.GetFullPathFactoryEquivalentTypeName(targetMethod) is not { } declaringTypeName)
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), targetMethod.Name, declaringTypeName));
+        context.ReportDiagnostic(Descriptor, invocationOperation, targetMethod.Name, declaringTypeName);
     }
 }

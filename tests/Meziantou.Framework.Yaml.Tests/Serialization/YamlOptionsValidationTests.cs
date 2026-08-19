@@ -76,6 +76,16 @@ public sealed class YamlOptionsValidationTests
     }
 
     [Fact]
+    public void NamingPolicy_PascalCase_ConvertsOnlyWhenLeadingLowercase()
+    {
+        Assert.Equal(string.Empty, YamlNamingPolicy.PascalCase.ConvertName(string.Empty));
+        Assert.Equal("Already", YamlNamingPolicy.PascalCase.ConvertName("Already"));
+        Assert.Equal("Hello", YamlNamingPolicy.PascalCase.ConvertName("hello"));
+        Assert.Equal("FirstValue", YamlNamingPolicy.PascalCase.ConvertName("firstValue"));
+        Assert.Equal("_value", YamlNamingPolicy.PascalCase.ConvertName("_value"));
+    }
+
+    [Fact]
     public void PolymorphismOptions_ValidateDiscriminatorStyle()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new YamlPolymorphismOptions

@@ -1580,6 +1580,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             "SnakeCaseUpper" => YamlNamingPolicy.SnakeCaseUpper,
             "KebabCaseLower" => YamlNamingPolicy.KebabCaseLower,
             "KebabCaseUpper" => YamlNamingPolicy.KebabCaseUpper,
+            "PascalCase" => YamlNamingPolicy.PascalCase,
             _ => null,
         };
     }

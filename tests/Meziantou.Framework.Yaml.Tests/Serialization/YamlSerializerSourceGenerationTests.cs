@@ -52,6 +52,13 @@ internal sealed class GeneratedWithDefaultOptions
     public string? Optional { get; set; }
 }
 
+internal sealed class GeneratedWithPascalCaseOptions
+{
+    public string displayName { get; set; } = string.Empty;
+
+    public Dictionary<string, int>? values { get; set; }
+}
+
 internal sealed class GeneratedOptionsPayload
 {
     public int Value;
@@ -933,6 +940,14 @@ internal sealed partial class TestYamlSerializerContextWithSchema : YamlSerializ
 }
 
 [YamlSourceGenerationOptions(
+    PropertyNamingPolicy = YamlKnownNamingPolicy.PascalCase,
+    DictionaryKeyPolicy = YamlKnownNamingPolicy.PascalCase)]
+[YamlSerializable(typeof(GeneratedWithPascalCaseOptions))]
+internal sealed partial class TestYamlSerializerContextWithPascalCase : YamlSerializerContext
+{
+}
+
+[YamlSourceGenerationOptions(
     UnmappedMemberHandling = YamlUnmappedMemberHandling.Disallow)]
 [YamlSerializable(typeof(GeneratedWithDefaultOptions))]
 internal sealed partial class TestYamlSerializerContextWithStrictUnmappedMembers : YamlSerializerContext
@@ -1533,6 +1548,29 @@ public class YamlSerializerSourceGenerationTests
 
         Assert.Contains("displayName: Ada", yaml);
         Assert.DoesNotContain("optional:", yaml);
+    }
+
+    [Fact]
+    public void GeneratedContextAppliesPascalCaseNamingPolicies()
+    {
+        var context = TestYamlSerializerContextWithPascalCase.Default;
+        var options = context.GeneratedWithPascalCaseOptions.Options;
+
+        Assert.Same(YamlNamingPolicy.PascalCase, options.DictionaryKeyPolicy);
+
+        var yaml = YamlSerializer.Serialize(
+            new GeneratedWithPascalCaseOptions
+            {
+                displayName = "Ada",
+                values = new Dictionary<string, int>(StringComparer.Ordinal) { ["firstKey"] = 1 },
+            },
+            context.GeneratedWithPascalCaseOptions);
+
+        Assert.Contains("DisplayName: Ada", yaml);
+        Assert.Contains("FirstKey: 1", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize(yaml, context.GeneratedWithPascalCaseOptions)!;
+        Assert.Equal("Ada", roundTrip.displayName);
     }
 
     [Fact]

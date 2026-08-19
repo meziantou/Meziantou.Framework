@@ -21,6 +21,7 @@
     <Compile Include="../Meziantou.Framework.Yaml/YamlCamelCaseNamingPolicy.cs" Link="YamlCamelCaseNamingPolicy.cs" />
     <Compile Include="../Meziantou.Framework.Yaml/YamlKebabCaseLowerNamingPolicy.cs" Link="YamlKebabCaseLowerNamingPolicy.cs" />
     <Compile Include="../Meziantou.Framework.Yaml/YamlKebabCaseUpperNamingPolicy.cs" Link="YamlKebabCaseUpperNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Yaml/YamlPascalCaseNamingPolicy.cs" Link="YamlPascalCaseNamingPolicy.cs" />
     <Compile Include="../Meziantou.Framework.Yaml/YamlSeparatorNamingPolicy.cs" Link="YamlSeparatorNamingPolicy.cs" />
     <Compile Include="../Meziantou.Framework.Yaml/YamlSnakeCaseLowerNamingPolicy.cs" Link="YamlSnakeCaseLowerNamingPolicy.cs" />
     <Compile Include="../Meziantou.Framework.Yaml/YamlSnakeCaseUpperNamingPolicy.cs" Link="YamlSnakeCaseUpperNamingPolicy.cs" />

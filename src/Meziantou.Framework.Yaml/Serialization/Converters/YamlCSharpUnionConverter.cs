@@ -429,7 +429,7 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
 
     private T? ReadClassifiedValue(YamlReader reader, UnionCaseKind kind)
     {
-        var classified = YamlUnionClassification.Classify(reader, GetClassifierContext(reader), out var bufferedNode);
+        var classified = YamlTypeClassification.Classify(reader, GetClassifierContext(reader), out var bufferedNode);
         if (classified is null)
         {
             throw new YamlException(reader.SourceName, reader.Start, reader.End, $"Cannot deserialize union type '{_unionType}' because multiple cases match YAML {GetKindDescription(kind)} values.");
@@ -478,7 +478,7 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
             cases[i] = new YamlUnionCaseInfo(unionCase.RuntimeType, GetShape(unionCase.Kind), properties, disallowUnmappedProperties);
         }
 
-        var context = new YamlTypeClassifierContext(_unionType, YamlTypeClassifierKind.Union, cases);
+        var context = YamlTypeClassifierContext.CreateForUnion(_unionType, cases);
         _classifierContextOptions = reader.Options;
         _classifierContext = context;
         return context;

@@ -1055,6 +1055,12 @@ namespace Meziantou.Framework.Yaml.Serialization
         Alias = 10
     }
 
+    public static class YamlTypeClassification
+    {
+        public static System.Type? Classify(Meziantou.Framework.Yaml.Serialization.YamlReader reader, Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext context, out string? bufferedNode) => throw null;
+        public static System.Type? ClassifyBufferedNode(Meziantou.Framework.Yaml.Serialization.YamlReader reader, string bufferedNode, Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext context) => throw null;
+    }
+
     public delegate System.Type? YamlTypeClassifier(Meziantou.Framework.Yaml.Serialization.YamlReader reader);
 
     public sealed class YamlTypeClassifierContext
@@ -1062,7 +1068,10 @@ namespace Meziantou.Framework.Yaml.Serialization
         public System.Type DeclaringType { get => throw null; }
         public Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierKind Kind { get => throw null; }
         public System.Collections.ObjectModel.ReadOnlyCollection<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseInfo> UnionCases { get => throw null; }
-        public YamlTypeClassifierContext(System.Type declaringType, Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierKind kind, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseInfo> unionCases) { }
+        public System.Collections.ObjectModel.ReadOnlyCollection<Meziantou.Framework.Yaml.YamlDerivedType> DerivedTypes { get => throw null; }
+        public string? TypeDiscriminatorPropertyName { get => throw null; }
+        public static Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext CreateForUnion(System.Type declaringType, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseInfo> unionCases) => throw null;
+        public static Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext CreateForPolymorphicType(System.Type declaringType, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.YamlDerivedType> derivedTypes, string? typeDiscriminatorPropertyName) => throw null;
     }
 
     public abstract class YamlTypeClassifierFactory
@@ -1074,7 +1083,8 @@ namespace Meziantou.Framework.Yaml.Serialization
     public enum YamlTypeClassifierKind
     {
         None = 0,
-        Union = 1
+        Union = 1,
+        PolymorphicType = 2
     }
 
     public sealed class YamlUnionCaseInfo
@@ -1102,11 +1112,6 @@ namespace Meziantou.Framework.Yaml.Serialization
         Sequence = 3,
         Mapping = 4,
         Any = 5
-    }
-
-    public static class YamlUnionClassification
-    {
-        public static System.Type? Classify(Meziantou.Framework.Yaml.Serialization.YamlReader reader, Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext context, out string? bufferedNode) => throw null;
     }
 
     public sealed class YamlUnionTypeStructuralClassifier : Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierFactory

@@ -8,4 +8,7 @@ public enum YamlTypeClassifierKind
 
     /// <summary>The type is a C# union type.</summary>
     Union = 1,
+
+    /// <summary>The type is a polymorphic type.</summary>
+    PolymorphicType = 2,
 }

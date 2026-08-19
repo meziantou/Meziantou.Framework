@@ -39,6 +39,7 @@ public sealed partial class YamlSerializerContextGenerator
         Dictionary<ITypeSymbol, int> indexByType)
     {
         var builder = new StringBuilder();
+        var pendingMembers = new StringBuilder();
         var accessors = new UnsafeAccessorRegistry(compilation, model.ContextSymbol);
         var propertyNamingPolicy = ResolveNamingPolicy(model.SourceGenerationOptions.PropertyNamingPolicy);
         var runtimeCustomConverterTypes = CollectRuntimeCustomConverterTypes(types);
@@ -185,10 +186,11 @@ public sealed partial class YamlSerializerContextGenerator
             var typeName = types[index].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             EmitWriteValue(builder, index, types[index], typeName, derivedTypeMappings, indexByType, propertyNamingPolicy, model.SourceGenerationOptions, accessors);
             builder.AppendLine();
-            EmitReadValue(builder, index, types[index], typeName, derivedTypeMappings, indexByType, propertyNamingPolicy, model.SourceGenerationOptions, accessors);
+            EmitReadValue(builder, index, types[index], typeName, derivedTypeMappings, indexByType, propertyNamingPolicy, model.SourceGenerationOptions, accessors, pendingMembers);
             builder.AppendLine();
         }
 
+        builder.Append(pendingMembers);
         accessors.Emit(builder);
         builder.AppendLine("}");
         return builder.ToString();
@@ -866,8 +868,97 @@ public sealed partial class YamlSerializerContextGenerator
         }
     }
 
+    /// <summary>
+    /// Emits the dispatch selecting a derived type through a registered <c>YamlTypeClassifierFactory</c>, along with the
+    /// classifier context it needs.
+    /// </summary>
+    /// <remarks>
+    /// A classifier never overrides an explicit discriminator or tag, so this runs only once those have failed to
+    /// resolve a type.
+    /// </remarks>
+    private static void EmitReadPolymorphicClassifierDispatch(
+        StringBuilder builder,
+        StringBuilder pendingMembers,
+        int index,
+        string typeName,
+        PolymorphismInfoModel polymorphism,
+        Dictionary<ITypeSymbol, int> indexByType)
+    {
+        var derivedIndexes = new List<(ITypeSymbol DerivedType, string? Discriminator, string? Tag, int Index)>();
+        for (var i = 0; i < polymorphism.DerivedTypes.Length; i++)
+        {
+            var derived = polymorphism.DerivedTypes[i];
+            if (indexByType.TryGetValue(derived.DerivedType, out var derivedIndex))
+            {
+                derivedIndexes.Add((derived.DerivedType, derived.Discriminator, derived.Tag, derivedIndex));
+            }
+        }
+
+        if (derivedIndexes.Count == 0)
+        {
+            return;
+        }
+
+        var contextMethodName = "GetPolymorphicClassifierContext" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var contextFieldName = "s_polymorphicClassifierContext" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        builder.Append("        var classifiedType = global::Meziantou.Framework.Yaml.Serialization.YamlTypeClassification.ClassifyBufferedNode(reader, buffered, ").Append(contextMethodName).AppendLine("(discriminatorPropertyName));");
+        builder.AppendLine("        if (classifiedType is not null)");
+        builder.AppendLine("        {");
+        foreach (var derived in derivedIndexes)
+        {
+            builder.Append("            if (classifiedType == typeof(").Append(derived.DerivedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).AppendLine("))");
+            builder.AppendLine("            {");
+            builder.Append("                return (").Append(typeName).Append(")ReadValue").Append(derived.Index).AppendLine("(bufferedReader, runtimeConverters)!;");
+            builder.AppendLine("            }");
+        }
+
+        builder.AppendLine("        }");
+        builder.AppendLine();
+
+        // The discriminator name can come from the options, so the cached context is reused only while it matches.
+        pendingMembers.Append("    private static global::Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext? ").Append(contextFieldName).AppendLine(";");
+        pendingMembers.AppendLine();
+        pendingMembers.Append("    private static global::Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext ").Append(contextMethodName).AppendLine("(string? discriminatorPropertyName)");
+        pendingMembers.AppendLine("    {");
+        pendingMembers.Append("        var context = ").Append(contextFieldName).AppendLine(";");
+        pendingMembers.AppendLine("        if (context is not null && global::System.String.Equals(context.TypeDiscriminatorPropertyName, discriminatorPropertyName, global::System.StringComparison.Ordinal))");
+        pendingMembers.AppendLine("        {");
+        pendingMembers.AppendLine("            return context;");
+        pendingMembers.AppendLine("        }");
+        pendingMembers.AppendLine();
+        pendingMembers.AppendLine("        context = global::Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext.CreateForPolymorphicType(");
+        pendingMembers.Append("            typeof(").Append(typeName).AppendLine("),");
+        pendingMembers.AppendLine("            new global::Meziantou.Framework.Yaml.YamlDerivedType[]");
+        pendingMembers.AppendLine("            {");
+        foreach (var derived in derivedIndexes)
+        {
+            pendingMembers.Append("                new(typeof(").Append(derived.DerivedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).Append(')');
+            if (derived.Discriminator is not null)
+            {
+                pendingMembers.Append(", ").Append(ToLiteral(derived.Discriminator));
+            }
+
+            pendingMembers.Append(')');
+            if (derived.Tag is not null)
+            {
+                pendingMembers.Append(" { Tag = ").Append(ToLiteral(derived.Tag)).Append(" }");
+            }
+
+            pendingMembers.AppendLine(",");
+        }
+
+        pendingMembers.AppendLine("            },");
+        pendingMembers.AppendLine("            discriminatorPropertyName);");
+        pendingMembers.Append("        ").Append(contextFieldName).AppendLine(" = context;");
+        pendingMembers.AppendLine("        return context;");
+        pendingMembers.AppendLine("    }");
+        pendingMembers.AppendLine();
+    }
+
     private static void EmitReadPolymorphicDispatch(
         StringBuilder builder,
+        StringBuilder pendingMembers,
         int index,
         string typeName,
         PolymorphismInfoModel polymorphism,
@@ -987,6 +1078,8 @@ public sealed partial class YamlSerializerContextGenerator
 
             builder.AppendLine("        }");
         }
+
+        EmitReadPolymorphicClassifierDispatch(builder, pendingMembers, index, typeName, polymorphism, indexByType);
 
         if (polymorphism.DefaultDerivedType is not null && indexByType.TryGetValue(polymorphism.DefaultDerivedType, out var defaultIndex))
         {
@@ -2719,7 +2812,8 @@ public sealed partial class YamlSerializerContextGenerator
         Dictionary<ITypeSymbol, int> indexByType,
         YamlNamingPolicy? propertyNamingPolicy,
         SourceGenerationOptionsModel sourceGenerationOptions,
-        UnsafeAccessorRegistry accessors)
+        UnsafeAccessorRegistry accessors,
+        StringBuilder pendingMembers)
     {
         var attributeConverterTypeName = GetYamlConverterAttributeTypeName(typeSymbol, typeSymbol);
 
@@ -3408,6 +3502,7 @@ public sealed partial class YamlSerializerContextGenerator
 
             EmitReadPolymorphicDispatch(
                 builder,
+                pendingMembers,
                 index,
                 typeName,
                 interfacePolymorphism,
@@ -3565,6 +3660,8 @@ public sealed partial class YamlSerializerContextGenerator
 
                     builder.AppendLine("        }");
                 }
+                EmitReadPolymorphicClassifierDispatch(builder, pendingMembers, index, typeName, polymorphism, indexByType);
+
                 // Fallback: use default derived type if available
                 if (polymorphism.DefaultDerivedType is not null && indexByType.TryGetValue(polymorphism.DefaultDerivedType, out var defaultIndex))
                 {
@@ -5989,7 +6086,7 @@ public sealed partial class YamlSerializerContextGenerator
         var contextFieldName = GetCSharpUnionClassifierContextFieldName(index);
         builder.Append(indent).AppendLine("{");
         var innerIndent = indent + "    ";
-        builder.Append(innerIndent).Append("var classifiedCase = global::Meziantou.Framework.Yaml.Serialization.YamlUnionClassification.Classify(reader, ").Append(contextFieldName).AppendLine(", out var classifiedNode);");
+        builder.Append(innerIndent).Append("var classifiedCase = global::Meziantou.Framework.Yaml.Serialization.YamlTypeClassification.Classify(reader, ").Append(contextFieldName).AppendLine(", out var classifiedNode);");
         builder.Append(innerIndent).AppendLine("if (classifiedCase is not null)");
         builder.Append(innerIndent).AppendLine("{");
         var caseIndent = innerIndent + "    ";
@@ -6476,7 +6573,7 @@ public sealed partial class YamlSerializerContextGenerator
 
             emitted = true;
             builder.Append("    private static readonly global::Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext ").Append(GetCSharpUnionClassifierContextFieldName(index)).AppendLine(" =");
-            builder.Append("        new(typeof(").Append(unionType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).AppendLine("), global::Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierKind.Union, new global::Meziantou.Framework.Yaml.Serialization.YamlUnionCaseInfo[]");
+            builder.Append("        global::Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext.CreateForUnion(typeof(").Append(unionType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).AppendLine("), new global::Meziantou.Framework.Yaml.Serialization.YamlUnionCaseInfo[]");
             builder.AppendLine("        {");
             foreach (var unionCase in readCases)
             {

@@ -1401,6 +1401,14 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         }
     }
 
+    private YamlTypeClassifierContext? _classifierContext;
+
+    private YamlTypeClassifierContext GetClassifierContext(PolymorphismModel polymorphism)
+        => _classifierContext ??= YamlTypeClassifierContext.CreateForPolymorphicType(
+            typeof(T),
+            polymorphism.DerivedTypes,
+            polymorphism.AcceptsPropertyDiscriminator ? polymorphism.DiscriminatorPropertyName : null);
+
     private T? ReadPolymorphic(YamlReader reader, Contract contract)
     {
         var polymorphism = contract.Polymorphism!;
@@ -1440,6 +1448,10 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 throw YamlThrowHelper.ThrowUnknownTypeTag(reader, rootTag, typeof(T));
             }
         }
+
+        // A registered classifier selects a derived type from the payload itself. It never overrides an explicit
+        // discriminator or tag, so it only runs once those have failed to resolve a type.
+        targetType ??= YamlTypeClassification.ClassifyBufferedNode(reader, buffered, GetClassifierContext(polymorphism));
 
         targetType ??= polymorphism.DefaultDerivedType ?? typeof(T);
 
@@ -2147,6 +2159,32 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         public bool TryGetDerivedTypeInfo(Type derivedType, out DerivedTypeInfo info)
             => _typeToDerived.TryGetValue(derivedType, out info);
+
+        private YamlDerivedType[]? _derivedTypes;
+
+        /// <summary>Gets the registered derived types, in the shape a <see cref="YamlTypeClassifierFactory"/> consumes.</summary>
+        public IReadOnlyList<YamlDerivedType> DerivedTypes
+        {
+            get
+            {
+                if (_derivedTypes is not null)
+                {
+                    return _derivedTypes;
+                }
+
+                var derivedTypes = new YamlDerivedType[_typeToDerived.Count];
+                var index = 0;
+                foreach (var entry in _typeToDerived)
+                {
+                    var info = entry.Value;
+                    derivedTypes[index++] = info.Discriminator is null
+                        ? new YamlDerivedType(entry.Key) { Tag = info.Tag }
+                        : new YamlDerivedType(entry.Key, info.Discriminator) { Tag = info.Tag };
+                }
+
+                return _derivedTypes = derivedTypes;
+            }
+        }
 
         public static PolymorphismModel? TryCreate(Type type, YamlSerializerOptions options)
         {

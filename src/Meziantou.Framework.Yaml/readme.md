@@ -277,6 +277,23 @@ The classifier starts with every mapping case as a candidate and eliminates the 
 
 Implement `YamlTypeClassifierFactory` to select cases with your own rules.
 
+## Classify polymorphic types
+
+A type classifier can also select a derived type from the payload itself, as an alternative to a discriminator. `CanClassify` receives a context whose `Kind` is `YamlTypeClassifierKind.PolymorphicType`, along with the registered derived types:
+
+```csharp
+internal sealed class ShapeClassifier : YamlTypeClassifierFactory
+{
+    public override bool CanClassify(YamlTypeClassifierContext context)
+        => context.Kind is YamlTypeClassifierKind.PolymorphicType && context.DeclaringType == typeof(Shape);
+
+    public override YamlTypeClassifier CreateYamlClassifier(YamlTypeClassifierContext context, YamlSerializerOptions options)
+        => reader => /* inspect the payload and return a type from context.DerivedTypes */;
+}
+```
+
+The classifier reads a private copy of the value, so it may consume the reader. It never overrides an explicit discriminator or tag: it runs only once those have failed to resolve a type, and returning `null` falls back to the default derived type or the usual failure.
+
 ## Feature switches
 
 Reflection-based serialization can be disabled for applications that only use source-generated metadata. Set the `MeziantouFrameworkYamlIsReflectionEnabledByDefault` MSBuild property to `false` in the project file:

@@ -5,21 +5,21 @@ internal sealed class AppendOnlyCollectionSegment<T>
     private volatile int _count;
     private volatile AppendOnlyCollectionSegment<T>? _next;
 
-    /// <summary>
-    /// The backing array of the segment. Only the first <see cref="Count"/> items are initialized.
-    /// </summary>
-    internal readonly T[] Items;
-
-    /// <summary>
-    /// Index of the first item of the segment in the owning collection.
-    /// </summary>
-    internal readonly int StartIndex;
-
     public AppendOnlyCollectionSegment(int capacity, int startIndex)
     {
         Items = GC.AllocateUninitializedArray<T>(capacity);
         StartIndex = startIndex;
     }
+
+    /// <summary>
+    /// The backing array of the segment. Only the first <see cref="Count"/> items are initialized.
+    /// </summary>
+    public T[] Items { get; }
+
+    /// <summary>
+    /// Index of the first item of the segment in the owning collection.
+    /// </summary>
+    public int StartIndex { get; }
 
     public int Count => _count;
 

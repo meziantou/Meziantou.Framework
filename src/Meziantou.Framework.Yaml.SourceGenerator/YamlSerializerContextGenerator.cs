@@ -884,7 +884,8 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             }
 
             if (string.Equals(constructed, "global::System.Collections.Generic.HashSet<T>", StringComparison.Ordinal) ||
-                string.Equals(constructed, "global::System.Collections.Generic.ISet<T>", StringComparison.Ordinal))
+                string.Equals(constructed, "global::System.Collections.Generic.ISet<T>", StringComparison.Ordinal) ||
+                string.Equals(constructed, "global::System.Collections.Generic.IReadOnlySet<T>", StringComparison.Ordinal))
             {
                 elementType = named.TypeArguments[0];
                 kind = SequenceKind.Set;

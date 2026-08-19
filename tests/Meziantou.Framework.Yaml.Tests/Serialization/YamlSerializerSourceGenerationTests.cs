@@ -192,6 +192,8 @@ internal sealed class GeneratedMoreCollections
 
     public ISet<string>? Tags { get; set; }
 
+    public IReadOnlySet<string>? ReadOnlyTags { get; set; }
+
     public Dictionary<int, string> IntKeyMap { get; set; } = new();
 
     public IReadOnlyDictionary<GeneratedColor, int>? EnumKeyMap { get; set; }
@@ -807,6 +809,7 @@ internal sealed class GeneratedYamlIgnoreConditions
 [YamlSerializable(typeof(Dictionary<int, string>))]
 [YamlSerializable(typeof(IReadOnlyList<int>))]
 [YamlSerializable(typeof(ISet<string>))]
+[YamlSerializable(typeof(IReadOnlySet<string>))]
 [YamlSerializable(typeof(HashSet<int>))]
 [YamlSerializable(typeof(IReadOnlyDictionary<GeneratedColor, int>))]
 [YamlSerializable(typeof(ImmutableArray<int>))]
@@ -2036,6 +2039,13 @@ public class YamlSerializerSourceGenerationTests
         Assert.NotNull(roundSet);
         Assert.HasCount(2, roundSet);
 
+        var readOnlySetTypeInfo = context.IReadOnlySetString;
+        var yamlReadOnlySet = YamlSerializer.Serialize((IReadOnlySet<string>)new HashSet<string>(StringComparer.Ordinal) { "a", "b", "a" }, readOnlySetTypeInfo);
+        var roundReadOnlySet = YamlSerializer.Deserialize(yamlReadOnlySet, readOnlySetTypeInfo);
+        Assert.NotNull(roundReadOnlySet);
+        Assert.HasCount(2, roundReadOnlySet);
+        Assert.Contains("a", roundReadOnlySet);
+
         var dictTypeInfo = context.DictionaryInt32Int32;
         var yamlDict = YamlSerializer.Serialize(new Dictionary<int, int> { [1] = 2 }, dictTypeInfo);
         Assert.Contains("1:", yamlDict);
@@ -2068,6 +2078,7 @@ public class YamlSerializerSourceGenerationTests
         {
             ReadOnlyNumbers = new List<int> { 1, 2 },
             Tags = new HashSet<string>(StringComparer.Ordinal) { "a", "b", "a" },
+            ReadOnlyTags = new HashSet<string>(StringComparer.Ordinal) { "c", "d" },
             IntKeyMap = new Dictionary<int, string> { [1] = "one", [2] = "two" },
             EnumKeyMap = new Dictionary<GeneratedColor, int> { [GeneratedColor.Green] = 2 },
             ImmutableNumbers = ImmutableArray.Create(10, 20),
@@ -2085,6 +2096,11 @@ public class YamlSerializerSourceGenerationTests
         Assert.NotNull(roundtripped.Tags);
         Assert.HasCount(2, roundtripped.Tags);
         Assert.Contains("a", roundtripped.Tags);
+
+        Assert.NotNull(roundtripped.ReadOnlyTags);
+        Assert.HasCount(2, roundtripped.ReadOnlyTags);
+        Assert.Contains("c", roundtripped.ReadOnlyTags);
+        Assert.Contains("d", roundtripped.ReadOnlyTags);
 
         Assert.Equal("one", roundtripped.IntKeyMap[1]);
         Assert.NotNull(roundtripped.EnumKeyMap);

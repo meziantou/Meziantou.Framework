@@ -9,11 +9,11 @@ namespace Meziantou.Framework.Yaml.Serialization;
 internal static class BufferWriterTextWriterCache
 {
     [ThreadStatic]
-    private static ThreadLocalState? t_threadLocalState;
+    private static ThreadLocalState? s_threadLocalState;
 
     public static BufferWriterTextWriter RentWriter(IBufferWriter<char> destination)
     {
-        var state = t_threadLocalState ??= new ThreadLocalState();
+        var state = s_threadLocalState ??= new ThreadLocalState();
         BufferWriterTextWriter writer;
 
         if (state.RentedWriters++ == 0)
@@ -33,7 +33,7 @@ internal static class BufferWriterTextWriterCache
 
     public static void ReturnWriter(BufferWriterTextWriter writer)
     {
-        var state = t_threadLocalState;
+        var state = s_threadLocalState;
         Debug.Assert(state is not null);
 
         writer.ResetAllStateForCacheReuse();

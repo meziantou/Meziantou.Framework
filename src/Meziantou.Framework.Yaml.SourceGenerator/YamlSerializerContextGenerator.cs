@@ -559,13 +559,14 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 continue;
             }
 
-            if (named.DeclaredAccessibility is Accessibility.Private or Accessibility.Protected or Accessibility.ProtectedAndInternal)
+            // The generated code lives in the context type, so a nested converter can be private and still usable.
+            if (!compilation.IsSymbolAccessibleWithin(named, model.ContextSymbol))
             {
                 diagnostics.Add(Diagnostic.Create(
                     InvalidConverterType,
                     location,
                     named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                    "Converter types must be accessible to the generated context (public or internal)."));
+                    "Converter types must be accessible from the generated context."));
                 continue;
             }
 
@@ -579,13 +580,13 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 continue;
             }
 
-            if (!named.InstanceConstructors.Any(static ctor => ctor.Parameters.Length == 0 && ctor.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal))
+            if (!named.InstanceConstructors.Any(ctor => ctor.Parameters.Length == 0 && compilation.IsSymbolAccessibleWithin(ctor, model.ContextSymbol)))
             {
                 diagnostics.Add(Diagnostic.Create(
                     InvalidConverterType,
                     location,
                     named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                    "Converter types must provide a public or internal parameterless constructor."));
+                    "Converter types must provide a parameterless constructor accessible from the generated context."));
             }
         }
     }

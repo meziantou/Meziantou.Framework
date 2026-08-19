@@ -705,6 +705,153 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         Assert.Contains("derive", diagnostic.GetMessage());
     }
 
+    [Fact]
+    public void MFY006_IsNotReported_WhenConverterIsPrivateNestedInsideContext()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            [YamlSerializable(typeof(int))]
+            [YamlSourceGenerationOptions(Converters = [typeof(TestContext.NestedConverter)])]
+            internal partial class TestContext : YamlSerializerContext
+            {
+                private sealed class NestedConverter : YamlConverter<int>
+                {
+                    public override int Read(YamlReader reader)
+                    {
+                        reader.Skip();
+                        return 123;
+                    }
+
+                    public override void Write(YamlWriter writer, int value)
+                        => writer.WriteScalar("123");
+                }
+            }
+            """;
+
+        var diagnostics = RunAnalyzer(Source)
+            .Where(static diagnostic => diagnostic.Id == "MFY006")
+            .ToArray();
+
+        Assert.Empty(diagnostics);
+
+        var result = RunGenerator(Source);
+        Assert.Contains("NestedConverter", result.GeneratedSource);
+    }
+
+    [Fact]
+    public void MFY006_IsNotReported_WhenConverterConstructorIsProtectedInternal()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            public class ProtectedInternalCtorConverter : YamlConverter<int>
+            {
+                protected internal ProtectedInternalCtorConverter()
+                {
+                }
+
+                public override int Read(YamlReader reader)
+                {
+                    reader.Skip();
+                    return 123;
+                }
+
+                public override void Write(YamlWriter writer, int value)
+                    => writer.WriteScalar("123");
+            }
+
+            [YamlSerializable(typeof(int))]
+            [YamlSourceGenerationOptions(Converters = [typeof(ProtectedInternalCtorConverter)])]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostics = RunAnalyzer(Source)
+            .Where(static diagnostic => diagnostic.Id == "MFY006")
+            .ToArray();
+
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void MFY006_StillFires_WhenNestedConverterConstructorIsPrivate()
+    {
+        // A private constructor of a nested type is not reachable from the enclosing type.
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            [YamlSerializable(typeof(int))]
+            [YamlSourceGenerationOptions(Converters = [typeof(TestContext.NestedConverter)])]
+            internal partial class TestContext : YamlSerializerContext
+            {
+                private sealed class NestedConverter : YamlConverter<int>
+                {
+                    private NestedConverter()
+                    {
+                    }
+
+                    public override int Read(YamlReader reader)
+                    {
+                        reader.Skip();
+                        return 123;
+                    }
+
+                    public override void Write(YamlWriter writer, int value)
+                        => writer.WriteScalar("123");
+                }
+            }
+            """;
+
+        var diagnostics = RunAnalyzer(Source)
+            .Where(static diagnostic => diagnostic.Id == "MFY006")
+            .ToArray();
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("parameterless constructor", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public void MFY006_StillFires_WhenConverterConstructorIsNotAccessibleFromContext()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            public sealed class PrivateCtorConverter : YamlConverter<int>
+            {
+                private PrivateCtorConverter()
+                {
+                }
+
+                public override int Read(YamlReader reader)
+                {
+                    reader.Skip();
+                    return 123;
+                }
+
+                public override void Write(YamlWriter writer, int value)
+                    => writer.WriteScalar("123");
+            }
+
+            [YamlSerializable(typeof(int))]
+            [YamlSourceGenerationOptions(Converters = [typeof(PrivateCtorConverter)])]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostics = RunAnalyzer(Source)
+            .Where(static diagnostic => diagnostic.Id == "MFY006")
+            .ToArray();
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("PrivateCtorConverter", diagnostic.GetMessage());
+        Assert.Contains("parameterless constructor", diagnostic.GetMessage());
+    }
+
     private static Diagnostic[] RunAnalyzer([StringSyntax("c#-test")] string source)
     {
         var compilation = CreateCompilation(source);

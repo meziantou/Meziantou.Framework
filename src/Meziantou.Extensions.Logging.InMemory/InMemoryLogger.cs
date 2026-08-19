@@ -16,6 +16,10 @@ namespace Meziantou.Extensions.Logging.InMemory;
 /// </example>
 public class InMemoryLogger : IInMemoryLogger
 {
+    // Beyond this capacity, the thread-local buffer is dropped instead of being reused,
+    // so an unusually deep scope stack doesn't keep a large array alive on the thread forever.
+    private const int MaxScopeBufferCapacity = 64;
+
     [ThreadStatic]
     private static List<object?>? s_scopeBuffer;
 
@@ -88,7 +92,14 @@ public class InMemoryLogger : IInMemoryLogger
         }
         finally
         {
-            buffer.Clear();
+            if (buffer.Capacity > MaxScopeBufferCapacity)
+            {
+                s_scopeBuffer = null;
+            }
+            else
+            {
+                buffer.Clear();
+            }
         }
     }
 }

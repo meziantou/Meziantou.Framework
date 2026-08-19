@@ -163,6 +163,45 @@ public sealed partial class InMemoryLoggerTests
         }
     }
 
+    [Fact]
+    public void WithDeepScopeStack_ThenShallowScope()
+    {
+        using var provider = new InMemoryLoggerProvider(new LoggerExternalScopeProvider());
+        var logger = provider.CreateLogger("my_category");
+
+        // Deep enough to grow the scope buffer past the capacity at which it is dropped instead of reused
+        var scopes = new List<IDisposable?>();
+        try
+        {
+            for (var i = 0; i < 200; i++)
+            {
+                scopes.Add(logger.BeginScope(new Dictionary<string, object?>(StringComparer.Ordinal) { ["Index"] = i }));
+            }
+
+            logger.LogInformation("Deep");
+        }
+        finally
+        {
+            for (var i = scopes.Count - 1; i >= 0; i--)
+            {
+                scopes[i]?.Dispose();
+            }
+        }
+
+        using (logger.BeginScope(new Dictionary<string, object?>(StringComparer.Ordinal) { ["Index"] = 42 }))
+        {
+            logger.LogInformation("Shallow");
+        }
+
+        var deep = provider.Logs.Informations.Single(log => log.Message is "Deep");
+        Assert.HasCount(200, deep.Scopes);
+        Assert.Equal(Enumerable.Range(0, 200).Cast<object?>(), deep.Scopes.Select(scope => Assert.IsType<Dictionary<string, object?>>(scope)["Index"]));
+
+        var shallow = provider.Logs.Informations.Single(log => log.Message is "Shallow");
+        var shallowScope = Assert.Single(shallow.Scopes);
+        Assert.Equal(42, Assert.IsType<Dictionary<string, object?>>(shallowScope)["Index"]);
+    }
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Value is {value}")]
     private static partial void Log(ILogger logger, int value);
 

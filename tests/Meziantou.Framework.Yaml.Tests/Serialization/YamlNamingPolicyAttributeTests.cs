@@ -222,12 +222,14 @@ internal sealed class UnspecifiedPolicyModel
     public int SecondValue { get; set; }
 }
 
+#pragma warning disable IDE1006 // Naming Styles - the members must start with a lowercase character for the PascalCase policy to have an effect
 [YamlNamingPolicy(YamlKnownNamingPolicy.PascalCase)]
 internal sealed class PascalCasePolicyModel
 {
     public int firstValue { get; set; }
     public int secondValue { get; set; }
 }
+#pragma warning restore IDE1006 // Naming Styles
 
 [YamlNamingPolicy(YamlKnownNamingPolicy.SnakeCaseLower)]
 internal class BasePolicyModel

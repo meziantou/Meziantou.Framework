@@ -52,12 +52,14 @@ internal sealed class GeneratedWithDefaultOptions
     public string? Optional { get; set; }
 }
 
+#pragma warning disable IDE1006 // Naming Styles - the members must start with a lowercase character for the PascalCase policy to have an effect
 internal sealed class GeneratedWithPascalCaseOptions
 {
     public string displayName { get; set; } = string.Empty;
 
     public Dictionary<string, int>? values { get; set; }
 }
+#pragma warning restore IDE1006 // Naming Styles
 
 internal sealed class GeneratedOptionsPayload
 {

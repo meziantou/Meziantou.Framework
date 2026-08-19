@@ -120,6 +120,49 @@ public sealed partial class InMemoryLoggerTests
         Assert.Equal(["test", "John"], log.GetAllParameterValues("Name"));
     }
 
+    [Fact]
+    public void TryGetParameterValue_DictionaryScope()
+    {
+        using var provider = new InMemoryLoggerProvider(new LoggerExternalScopeProvider());
+        var logger = provider.CreateLogger("my_category");
+        using (logger.BeginScope(new Dictionary<string, object?>(StringComparer.Ordinal) { ["Age"] = 52, ["Name"] = "John" }))
+        {
+            logger.LogInformation("Test {Number}", 1);
+        }
+
+        var log = provider.Logs.Informations.Single();
+        Assert.True(log.TryGetParameterValue("Number", out var number));
+        Assert.Equal(1, number);
+        Assert.True(log.TryGetParameterValue("Name", out var name));
+        Assert.Equal("John", name);
+        Assert.True(log.TryGetParameterValue("Age", out var age));
+        Assert.Equal(52, age);
+        Assert.False(log.TryGetParameterValue("Unknown", out var unknown));
+        Assert.Null(unknown);
+    }
+
+    [Fact]
+    public void WithScope_Parallel()
+    {
+        using var provider = new InMemoryLoggerProvider(new LoggerExternalScopeProvider());
+        var logger = provider.CreateLogger("my_category");
+        Parallel.For(0, 10_000, i =>
+        {
+            using (logger.BeginScope(new Dictionary<string, object?>(StringComparer.Ordinal) { ["Index"] = i }))
+            {
+                logger.LogInformation("Test {Number}", i);
+            }
+        });
+
+        Assert.HasCount(10_000, provider.Logs);
+        foreach (var log in provider.Logs)
+        {
+            var scope = Assert.Single(log.Scopes);
+            Assert.True(log.TryGetParameterValue("Number", out var number));
+            Assert.Equal(number, Assert.IsType<Dictionary<string, object?>>(scope)["Index"]);
+        }
+    }
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Value is {value}")]
     private static partial void Log(ILogger logger, int value);
 

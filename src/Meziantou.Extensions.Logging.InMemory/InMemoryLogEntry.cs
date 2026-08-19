@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
@@ -132,7 +133,20 @@ public sealed class InMemoryLogEntry
             return false;
         }
 
-        if (owner is IEnumerable<KeyValuePair<string, object?>> stateDictionary)
+        // Most states and scopes (such as FormattedLogValues) are indexable, so avoid allocating an enumerator
+        if (owner is IReadOnlyList<KeyValuePair<string, object?>> stateList)
+        {
+            for (var i = 0; i < stateList.Count; i++)
+            {
+                var item = stateList[i];
+                if (string.Equals(name, item.Key, StringComparison.Ordinal))
+                {
+                    result = item.Value;
+                    return true;
+                }
+            }
+        }
+        else if (owner is IEnumerable<KeyValuePair<string, object?>> stateDictionary)
         {
             foreach (var item in stateDictionary)
             {
@@ -144,7 +158,7 @@ public sealed class InMemoryLogEntry
             }
         }
 
-        var property = owner.GetType().GetProperty(name, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+        var property = owner.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
         if (property is not null)
         {
             result = property.GetValue(owner);

@@ -1073,7 +1073,8 @@ namespace Meziantou.Framework.Yaml.Serialization
 
     public enum YamlTypeClassifierKind
     {
-        Union = 0
+        None = 0,
+        Union = 1
     }
 
     public sealed class YamlUnionCaseInfo

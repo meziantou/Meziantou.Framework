@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -46,9 +47,13 @@ public sealed class CountAssertionAnalyzer : DiagnosticAnalyzer
         if (!CountAssertionAnalyzerCommon.TryGetAssertionMatch(invocationOperation, assertType, symbols, out var match))
             return;
 
-        var diagnostic = match.UseEmptyAssertion
-            ? Diagnostic.Create(UseEmptyDescriptor, match.CountOperation.Syntax.GetLocation(), match.AssertionMethodName)
-            : Diagnostic.Create(UseHasCountDescriptor, match.CountOperation.Syntax.GetLocation());
-        context.ReportDiagnostic(diagnostic);
+        if (match.UseEmptyAssertion)
+        {
+            context.ReportDiagnostic(UseEmptyDescriptor, match.CountOperation, match.AssertionMethodName);
+        }
+        else
+        {
+            context.ReportDiagnostic(UseHasCountDescriptor, match.CountOperation);
+        }
     }
 }

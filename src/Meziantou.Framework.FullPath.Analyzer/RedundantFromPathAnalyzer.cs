@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -49,7 +50,7 @@ public sealed class RedundantFromPathAnalyzer : DiagnosticAnalyzer
         // FullPath.FromPath(fullPath) round-trips through string
         if (analyzerContext.IsFullPathType(argument))
         {
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), "the FullPath value directly"));
+            context.ReportDiagnostic(Descriptor, invocationOperation, "the FullPath value directly");
             return;
         }
 
@@ -62,13 +63,13 @@ public sealed class RedundantFromPathAnalyzer : DiagnosticAnalyzer
         // FullPath.FromPath already calls Path.GetFullPath
         if (innerMethod.Name is "GetFullPath" && innerInvocation.Arguments.Length == 1)
         {
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), "FullPath.FromPath with the original path"));
+            context.ReportDiagnostic(Descriptor, invocationOperation, "FullPath.FromPath with the original path");
             return;
         }
 
         if (innerMethod.Name is "Combine" or "Join")
         {
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), "FullPath.Combine"));
+            context.ReportDiagnostic(Descriptor, invocationOperation, "FullPath.Combine");
         }
     }
 }

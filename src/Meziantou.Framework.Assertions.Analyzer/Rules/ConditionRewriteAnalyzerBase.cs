@@ -1,3 +1,4 @@
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -40,6 +41,6 @@ public abstract class ConditionRewriteAnalyzerBase : DiagnosticAnalyzer
         if (!Matcher(assertInvocation, assertType, symbols, out var match))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(GetDescriptor(match.AssertionMethodName), match.ReportOperation.Syntax.GetLocation(), match.AssertionMethodName));
+        context.ReportDiagnostic(GetDescriptor(match.AssertionMethodName), match.ReportOperation, match.AssertionMethodName);
     }
 }

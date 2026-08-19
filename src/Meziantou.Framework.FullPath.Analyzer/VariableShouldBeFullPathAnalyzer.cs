@@ -1,9 +1,9 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
-using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.FullPath;
 
@@ -48,7 +48,7 @@ public sealed class VariableShouldBeFullPathAnalyzer : DiagnosticAnalyzer
             if (!state.HasValue || !state.AllValuesAreFullPath || state.Location is null)
                 continue;
 
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, state.Location, candidate.Key.Name));
+            context.ReportDiagnostic(Descriptor, state.Location, candidate.Key.Name);
         }
     }
 

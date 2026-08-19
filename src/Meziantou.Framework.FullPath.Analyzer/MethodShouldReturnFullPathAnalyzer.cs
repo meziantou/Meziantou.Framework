@@ -68,7 +68,7 @@ public sealed class MethodShouldReturnFullPathAnalyzer : DiagnosticAnalyzer
         if (!hasReturnValue || !allReturnsAreFullPath)
             return;
 
-        ReportDiagnostic(context.ReportDiagnostic, methodSymbol);
+        ReportDiagnostic(context, methodSymbol);
     }
 
     private static void AnalyzeLocalFunction(OperationAnalysisContext context, FullPathContext analyzerContext)
@@ -87,15 +87,15 @@ public sealed class MethodShouldReturnFullPathAnalyzer : DiagnosticAnalyzer
         if (!hasReturnValue || !allReturnsAreFullPath)
             return;
 
-        ReportDiagnostic(context.ReportDiagnostic, localFunctionOperation.Symbol);
+        ReportDiagnostic(context, localFunctionOperation.Symbol);
     }
 
-    private static void ReportDiagnostic(Action<Diagnostic> reportDiagnostic, IMethodSymbol methodSymbol)
+    private static void ReportDiagnostic(DiagnosticReporter reporter, IMethodSymbol methodSymbol)
     {
         var location = methodSymbol.GetFirstSourceLocation();
         if (location is null)
             return;
 
-        reportDiagnostic(Diagnostic.Create(Descriptor, location, methodSymbol.Name));
+        reporter.ReportDiagnostic(Descriptor, location, [methodSymbol.Name]);
     }
 }

@@ -10,7 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../Meziantou.Framework.Roslyn/SymbolExtensions.cs" Link="SymbolExtensions.cs" />
+    <Compile Include="../Meziantou.Framework.Roslyn/**/*.cs" Exclude="../Meziantou.Framework.Roslyn/bin/**;../Meziantou.Framework.Roslyn/obj/**" LinkBase="Roslyn" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" PrivateAssets="all" />
   </ItemGroup>
+
+  <Import Project="../Meziantou.Framework.Roslyn/buildTransitive/Meziantou.Framework.Roslyn.targets" />
+
 </Project>

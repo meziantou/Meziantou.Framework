@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -49,6 +50,6 @@ public sealed class UseNullAssertionAnalyzer : DiagnosticAnalyzer
             return;
 
         var descriptor = nullCheckMatch.AssertionMethodName == "Null" ? UseNullDescriptor : UseNotNullDescriptor;
-        context.ReportDiagnostic(Diagnostic.Create(descriptor, nullCheckMatch.ActualOperation.Syntax.GetLocation()));
+        context.ReportDiagnostic(descriptor, nullCheckMatch.ActualOperation);
     }
 }

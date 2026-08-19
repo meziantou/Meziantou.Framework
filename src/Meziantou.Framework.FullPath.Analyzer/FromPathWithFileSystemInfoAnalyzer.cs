@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -50,6 +51,6 @@ public sealed class FromPathWithFileSystemInfoAnalyzer : DiagnosticAnalyzer
         if (!analyzerContext.IsFileSystemInfo(propertyReference.Instance.Type))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation()));
+        context.ReportDiagnostic(Descriptor, invocationOperation);
     }
 }

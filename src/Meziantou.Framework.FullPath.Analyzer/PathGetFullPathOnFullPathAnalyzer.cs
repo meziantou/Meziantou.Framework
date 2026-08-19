@@ -1,3 +1,4 @@
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -41,7 +42,7 @@ public sealed class PathGetFullPathOnFullPathAnalyzer : DiagnosticAnalyzer
         {
             if (analyzerContext.IsFullPathType(invocationOperation.Arguments[0].Value))
             {
-                context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation()));
+                context.ReportDiagnostic(Descriptor, invocationOperation);
                 return;
             }
         }

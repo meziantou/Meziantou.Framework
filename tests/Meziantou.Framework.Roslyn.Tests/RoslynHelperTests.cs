@@ -1161,7 +1161,7 @@ public sealed class RoslynHelperTests
         var trustedPlatformAssemblies = (string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES");
         Assert.NotNull(trustedPlatformAssemblies);
 
-        return trustedPlatformAssemblies!
+        return trustedPlatformAssemblies
             .Split(Path.PathSeparator)
             .Select(path => MetadataReference.CreateFromFile(path))
             .ToList<MetadataReference>();
@@ -1211,7 +1211,7 @@ public sealed class RoslynHelperTests
         var type = compilation.GetTypeByMetadataName(metadataName);
         Assert.NotNull(type);
 
-        return type!;
+        return type;
     }
 
     private static IMethodSymbol GetRequiredMethod(INamedTypeSymbol type, string name)
@@ -1235,7 +1235,7 @@ public sealed class RoslynHelperTests
         var symbol = semanticModel.GetDeclaredSymbol(variable);
         Assert.NotNull(symbol);
 
-        return (ILocalSymbol)symbol!;
+        return (ILocalSymbol)symbol;
     }
 
     private static IOperation GetInitializerOperation(SemanticModel semanticModel, string variableName)
@@ -1243,10 +1243,10 @@ public sealed class RoslynHelperTests
         var variable = semanticModel.SyntaxTree.GetRoot().DescendantNodes().OfType<VariableDeclaratorSyntax>().Single(node => node.Identifier.ValueText == variableName);
         var value = variable.Initializer?.Value;
         Assert.NotNull(value);
-        var operation = semanticModel.GetOperation(value!);
+        var operation = semanticModel.GetOperation(value);
         Assert.NotNull(operation);
 
-        return operation!;
+        return operation;
     }
 
     private static IOperation GetNameofArgumentOperation(SemanticModel semanticModel)
@@ -1262,7 +1262,7 @@ public sealed class RoslynHelperTests
         var operation = semanticModel.GetOperation(argument);
         Assert.NotNull(operation);
 
-        return operation!;
+        return operation;
     }
 
     private static TOperation GetRequiredOperation<TOperation>(SemanticModel semanticModel)
@@ -1275,7 +1275,7 @@ public sealed class RoslynHelperTests
             .FirstOrDefault();
         Assert.NotNull(operation);
 
-        return operation!;
+        return operation;
     }
 
     private static DiagnosticDescriptor CreateDescriptor()

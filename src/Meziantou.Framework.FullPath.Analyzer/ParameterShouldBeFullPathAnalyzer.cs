@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
-using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.FullPath;
 
@@ -102,7 +102,7 @@ public sealed class ParameterShouldBeFullPathAnalyzer : DiagnosticAnalyzer
                 if (location is null)
                     continue;
 
-                context.ReportDiagnostic(Diagnostic.Create(Descriptor, location, parameter.Name));
+                context.ReportDiagnostic(Descriptor, location, parameter.Name);
             }
         }
     }

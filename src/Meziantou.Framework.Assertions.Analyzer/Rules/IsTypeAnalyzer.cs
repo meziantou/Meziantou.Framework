@@ -1,10 +1,10 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
-using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
 
@@ -46,13 +46,13 @@ public sealed class IsTypeAnalyzer : DiagnosticAnalyzer
 
         if (IsStaticClass(expectedType))
         {
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), $"Type '{expectedType.ToDisplayString()}' is static and cannot be used with Assert.IsType"));
+            context.ReportDiagnostic(Descriptor, invocationOperation, $"Type '{expectedType.ToDisplayString()}' is static and cannot be used with Assert.IsType");
             return;
         }
 
         if (expectedType.IsAbstract)
         {
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), $"Type '{expectedType.ToDisplayString()}' is abstract and cannot be used with Assert.IsType. Use Assert.IsAssignableTo instead"));
+            context.ReportDiagnostic(Descriptor, invocationOperation, $"Type '{expectedType.ToDisplayString()}' is abstract and cannot be used with Assert.IsType. Use Assert.IsAssignableTo instead");
         }
     }
 

@@ -24,9 +24,10 @@
 
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
-    <Compile Include="../Meziantou.Framework.Roslyn/CompilationExtensions.cs" Link="Roslyn/CompilationExtensions.cs" />
-    <Compile Include="../Meziantou.Framework.Roslyn/TypeSymbolExtensions.cs" Link="Roslyn/TypeSymbolExtensions.cs" />
+    <Compile Include="../Meziantou.Framework.Roslyn/**/*.cs" Exclude="../Meziantou.Framework.Roslyn/bin/**;../Meziantou.Framework.Roslyn/obj/**" LinkBase="Roslyn" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="4.3.1" PrivateAssets="all" />
   </ItemGroup>
+
+  <Import Project="../Meziantou.Framework.Roslyn/buildTransitive/Meziantou.Framework.Roslyn.targets" />
 
 </Project>

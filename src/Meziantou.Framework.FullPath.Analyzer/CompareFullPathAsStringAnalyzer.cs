@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -59,7 +60,7 @@ public sealed class CompareFullPathAsStringAnalyzer : DiagnosticAnalyzer
         if (!analyzerContext.IsFullPathType(binaryOperation.LeftOperand) && !analyzerContext.IsFullPathType(binaryOperation.RightOperand))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Descriptor, binaryOperation.Syntax.GetLocation()));
+        context.ReportDiagnostic(Descriptor, binaryOperation);
     }
 
     private static void AnalyzeInvocation(OperationAnalysisContext context, FullPathContext analyzerContext)
@@ -91,7 +92,7 @@ public sealed class CompareFullPathAsStringAnalyzer : DiagnosticAnalyzer
         if (!comparesFullPath)
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation()));
+        context.ReportDiagnostic(Descriptor, invocationOperation);
     }
 
     private static bool IsString(IOperation operation)

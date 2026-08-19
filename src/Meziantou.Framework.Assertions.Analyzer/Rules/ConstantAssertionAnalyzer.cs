@@ -1,9 +1,9 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
-using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
 
@@ -45,13 +45,13 @@ public sealed class ConstantAssertionAnalyzer : DiagnosticAnalyzer
 
         if (TryGetConstantConditionMessage(invocationOperation, targetMethod.Name, out var conditionMessage))
         {
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), conditionMessage));
+            context.ReportDiagnostic(Descriptor, invocationOperation, conditionMessage);
             return;
         }
 
         if (TryGetSelfComparisonMessage(invocationOperation, targetMethod.Name, out var selfComparisonMessage))
         {
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), selfComparisonMessage));
+            context.ReportDiagnostic(Descriptor, invocationOperation, selfComparisonMessage);
         }
     }
 

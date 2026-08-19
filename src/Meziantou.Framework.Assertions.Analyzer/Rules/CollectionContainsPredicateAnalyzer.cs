@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -47,6 +48,6 @@ public sealed class CollectionContainsPredicateAnalyzer : DiagnosticAnalyzer
             return;
 
         var descriptor = match.AssertionMethodName == "Contains" ? UseContainsWithExpectedValueDescriptor : UseDoesNotContainWithExpectedValueDescriptor;
-        context.ReportDiagnostic(Diagnostic.Create(descriptor, invocationOperation.Syntax.GetLocation()));
+        context.ReportDiagnostic(descriptor, invocationOperation);
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -47,6 +48,6 @@ public sealed class PathGetFileNameWithFullPathAnalyzer : DiagnosticAnalyzer
         if (!analyzerContext.IsFullPathType(invocationOperation.Arguments[0].Value))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation()));
+        context.ReportDiagnostic(Descriptor, invocationOperation);
     }
 }

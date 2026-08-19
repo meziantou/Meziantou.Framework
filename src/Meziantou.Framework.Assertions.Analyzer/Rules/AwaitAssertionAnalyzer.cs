@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -38,6 +39,6 @@ public sealed class AwaitAssertionAnalyzer : DiagnosticAnalyzer
         if (!AwaitAssertionAnalyzerCommon.IsDiscardedTaskAssertion(invocationOperation, assertType, symbols))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(AwaitAssertionDescriptor, invocationOperation.Syntax.GetLocation()));
+        context.ReportDiagnostic(AwaitAssertionDescriptor, invocationOperation);
     }
 }

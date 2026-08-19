@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -118,14 +119,14 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
 
         if (argument.ConstantValue is { HasValue: true, Value: null })
         {
-            context.ReportDiagnostic(Diagnostic.Create(InvalidEnumType, location, "(null)"));
+            context.ReportDiagnostic(InvalidEnumType, location, "(null)");
             return;
         }
 
         if (argument is not ITypeOfOperation { TypeOperand.TypeKind: not TypeKind.Enum } typeOfOperation)
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(InvalidEnumType, location, typeOfOperation.TypeOperand.ToDisplayString()));
+        context.ReportDiagnostic(InvalidEnumType, location, typeOfOperation.TypeOperand.ToDisplayString());
     }
 
     private static void AnalyzeInvocationOperation(OperationAnalysisContext context, INamedTypeSymbol enumType, ImmutableHashSet<INamedTypeSymbol> fastEnumTypes)
@@ -134,8 +135,7 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
         if (!FastEnumAnalyzerCommon.TryGetFastEnumInvocationMatch(invocationOperation, enumType, fastEnumTypes, out var match))
             return;
 
-        var diagnostic = Diagnostic.Create(GetDiagnosticDescriptor(match.MethodKind), invocationOperation.Syntax.GetLocation(), match.EnumType.ToDisplayString());
-        context.ReportDiagnostic(diagnostic);
+        context.ReportDiagnostic(GetDiagnosticDescriptor(match.MethodKind), invocationOperation, match.EnumType.ToDisplayString());
     }
 
     private static DiagnosticDescriptor GetDiagnosticDescriptor(FastEnumMethodKind methodKind)

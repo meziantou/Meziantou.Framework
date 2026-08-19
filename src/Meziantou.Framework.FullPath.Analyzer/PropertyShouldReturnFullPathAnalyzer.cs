@@ -1,8 +1,8 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
-using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Analyzers.FullPath;
 
@@ -72,6 +72,6 @@ public sealed class PropertyShouldReturnFullPathAnalyzer : DiagnosticAnalyzer
         if (location is null)
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Descriptor, location, propertySymbol.Name));
+        context.ReportDiagnostic(Descriptor, location, propertySymbol.Name);
     }
 }

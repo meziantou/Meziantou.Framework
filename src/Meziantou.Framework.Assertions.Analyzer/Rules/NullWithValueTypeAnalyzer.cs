@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -52,6 +53,6 @@ public sealed class NullWithValueTypeAnalyzer : DiagnosticAnalyzer
             return;
 
         var descriptor = match.AssertionMethodName == "Equal" ? NullWithValueTypeDescriptor : NotNullWithValueTypeDescriptor;
-        context.ReportDiagnostic(Diagnostic.Create(descriptor, match.ActualOperation.Syntax.GetLocation(), match.ValueType.ToDisplayString()));
+        context.ReportDiagnostic(descriptor, match.ActualOperation, match.ValueType.ToDisplayString());
     }
 }

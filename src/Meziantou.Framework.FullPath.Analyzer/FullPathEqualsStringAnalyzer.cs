@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -56,6 +57,6 @@ public sealed class FullPathEqualsStringAnalyzer : DiagnosticAnalyzer
         if (analyzerContext.UnwrapToFullPath(invocationOperation.Arguments[0].Value).Type?.SpecialType != SpecialType.System_String)
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation()));
+        context.ReportDiagnostic(Descriptor, invocationOperation);
     }
 }

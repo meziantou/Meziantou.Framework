@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -55,6 +56,6 @@ public sealed class StringStartsWithAnalyzer : DiagnosticAnalyzer
             return;
 
         var descriptor = conditionExpectedToBeFalse ? UseStringDoesNotStartWithDescriptor : UseStringStartsWithDescriptor;
-        context.ReportDiagnostic(Diagnostic.Create(descriptor, match.InnerInvocation.Syntax.GetLocation()));
+        context.ReportDiagnostic(descriptor, match.InnerInvocation);
     }
 }

@@ -1,0 +1,164 @@
+using System.Buffers;
+using System.Diagnostics;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace Meziantou.Extensions.Logging;
+
+/// <summary>A <see cref="FileFormatter"/> that writes one JSON object per log entry.</summary>
+public sealed class JsonFileFormatter : FileFormatter
+{
+    /// <summary>Gets a shared instance of the <see cref="JsonFileFormatter"/> class.</summary>
+    public static JsonFileFormatter Instance { get; } = new();
+
+    /// <summary>Initializes a new instance of the <see cref="JsonFileFormatter"/> class.</summary>
+    public JsonFileFormatter()
+        : base(FileFormatterNames.Json)
+    {
+    }
+
+    /// <inheritdoc/>
+    public override void Write<TState>(in LogEntry<TState> logEntry, DateTimeOffset timestamp, FileLoggerOptions options, IExternalScopeProvider? scopeProvider, TextWriter textWriter)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(textWriter);
+
+        var message = logEntry.Formatter(logEntry.State, logEntry.Exception);
+        if (string.IsNullOrEmpty(message) && logEntry.Exception is null)
+            return;
+
+        var buffer = new ArrayBufferWriter<byte>(256);
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("Timestamp", timestamp.ToString(options.TimestampFormat ?? "o", CultureInfo.InvariantCulture));
+
+            if (options.IncludeLogLevel)
+            {
+                writer.WriteString("LogLevel", GetLogLevelString(logEntry.LogLevel));
+            }
+
+            if (options.IncludeCategory)
+            {
+                writer.WriteString("Category", logEntry.Category);
+            }
+
+            if (options.IncludeEventId)
+            {
+                writer.WriteNumber("EventId", logEntry.EventId.Id);
+                if (logEntry.EventId.Name is not null)
+                {
+                    writer.WriteString("EventName", logEntry.EventId.Name);
+                }
+            }
+
+            if (options.IncludeThreadId)
+            {
+                writer.WriteNumber("ThreadId", Environment.CurrentManagedThreadId);
+            }
+
+            if (options.IncludeActivityTracking && Activity.Current is { } activity)
+            {
+                writer.WriteString("TraceId", activity.TraceId.ToHexString());
+                writer.WriteString("SpanId", activity.SpanId.ToHexString());
+            }
+
+            writer.WriteString("Message", message);
+
+            if (logEntry.Exception is not null)
+            {
+                writer.WriteString("Exception", logEntry.Exception.ToString());
+            }
+
+            if (logEntry.State is IReadOnlyList<KeyValuePair<string, object?>> state)
+            {
+                writer.WriteStartObject("State");
+                foreach (var item in state)
+                {
+                    WriteProperty(writer, item.Key, item.Value);
+                }
+
+                writer.WriteEndObject();
+            }
+
+            if (scopeProvider is not null)
+            {
+                writer.WriteStartArray("Scopes");
+                scopeProvider.ForEachScope(
+                    (scope, jsonWriter) =>
+                    {
+                        if (scope is IEnumerable<KeyValuePair<string, object?>> scopeItems)
+                        {
+                            jsonWriter.WriteStartObject();
+                            jsonWriter.WriteString("Message", Convert.ToString(scope, CultureInfo.InvariantCulture));
+                            foreach (var item in scopeItems)
+                            {
+                                WriteProperty(jsonWriter, item.Key, item.Value);
+                            }
+
+                            jsonWriter.WriteEndObject();
+                        }
+                        else
+                        {
+                            jsonWriter.WriteStringValue(Convert.ToString(scope, CultureInfo.InvariantCulture));
+                        }
+                    }, writer);
+                writer.WriteEndArray();
+            }
+
+            writer.WriteEndObject();
+        }
+
+        textWriter.Write(Encoding.UTF8.GetString(buffer.WrittenSpan));
+    }
+
+    private static void WriteProperty(Utf8JsonWriter writer, string name, object? value)
+    {
+        switch (value)
+        {
+            case null:
+                writer.WriteNull(name);
+                break;
+            case string stringValue:
+                writer.WriteString(name, stringValue);
+                break;
+            case bool boolValue:
+                writer.WriteBoolean(name, boolValue);
+                break;
+            case byte or sbyte or short or ushort or int:
+                writer.WriteNumber(name, Convert.ToInt32(value, CultureInfo.InvariantCulture));
+                break;
+            case uint uintValue:
+                writer.WriteNumber(name, uintValue);
+                break;
+            case long longValue:
+                writer.WriteNumber(name, longValue);
+                break;
+            case ulong ulongValue:
+                writer.WriteNumber(name, ulongValue);
+                break;
+            case float floatValue:
+                writer.WriteNumber(name, floatValue);
+                break;
+            case double doubleValue:
+                writer.WriteNumber(name, doubleValue);
+                break;
+            case decimal decimalValue:
+                writer.WriteNumber(name, decimalValue);
+                break;
+            case DateTime dateTimeValue:
+                writer.WriteString(name, dateTimeValue);
+                break;
+            case DateTimeOffset dateTimeOffsetValue:
+                writer.WriteString(name, dateTimeOffsetValue);
+                break;
+            case Guid guidValue:
+                writer.WriteString(name, guidValue);
+                break;
+            default:
+                writer.WriteString(name, Convert.ToString(value, CultureInfo.InvariantCulture));
+                break;
+        }
+    }
+}

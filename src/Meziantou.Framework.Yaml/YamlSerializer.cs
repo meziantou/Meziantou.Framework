@@ -927,8 +927,15 @@ public static class YamlSerializer
     {
         ArgumentNullException.ThrowIfNull(destination);
 
-        var writer = new BufferWriterTextWriter(destination);
-        Serialize(writer, value, options);
+        var writer = BufferWriterTextWriterCache.RentWriter(destination);
+        try
+        {
+            Serialize(writer, value, options);
+        }
+        finally
+        {
+            BufferWriterTextWriterCache.ReturnWriter(writer);
+        }
     }
 
     /// <summary>
@@ -944,8 +951,15 @@ public static class YamlSerializer
         ArgumentNullException.ThrowIfNull(destination);
         ArgumentNullException.ThrowIfNull(context);
 
-        var writer = new BufferWriterTextWriter(destination);
-        Serialize(writer, value, context);
+        var writer = BufferWriterTextWriterCache.RentWriter(destination);
+        try
+        {
+            Serialize(writer, value, context);
+        }
+        finally
+        {
+            BufferWriterTextWriterCache.ReturnWriter(writer);
+        }
     }
 
     /// <summary>
@@ -961,8 +975,15 @@ public static class YamlSerializer
         ArgumentNullException.ThrowIfNull(destination);
         ArgumentNullException.ThrowIfNull(inputType);
 
-        var writer = new BufferWriterTextWriter(destination);
-        Serialize(writer, value, inputType, options);
+        var writer = BufferWriterTextWriterCache.RentWriter(destination);
+        try
+        {
+            Serialize(writer, value, inputType, options);
+        }
+        finally
+        {
+            BufferWriterTextWriterCache.ReturnWriter(writer);
+        }
     }
 
     /// <summary>
@@ -979,8 +1000,15 @@ public static class YamlSerializer
         ArgumentNullException.ThrowIfNull(inputType);
         ArgumentNullException.ThrowIfNull(context);
 
-        var writer = new BufferWriterTextWriter(destination);
-        Serialize(writer, value, inputType, context);
+        var writer = BufferWriterTextWriterCache.RentWriter(destination);
+        try
+        {
+            Serialize(writer, value, inputType, context);
+        }
+        finally
+        {
+            BufferWriterTextWriterCache.ReturnWriter(writer);
+        }
     }
 
     private static void SerializeCore(YamlTypeInfo typeInfo, object? value, TextWriter writer)

@@ -502,6 +502,51 @@ internal sealed class GeneratedExtensionDataMappingPayload
     public YamlMapping? Extra { get; set; }
 }
 
+internal sealed class GeneratedInterfaceExtensionDataDictionaryPayload
+{
+    public int Known { get; set; }
+
+    [YamlExtensionData]
+    public IDictionary<string, object?>? Extra { get; set; }
+}
+
+internal sealed class GeneratedReadOnlyExtensionDataDictionaryPayload
+{
+    public int Known { get; set; }
+
+    [YamlExtensionData]
+    public IReadOnlyDictionary<string, object?>? Extra { get; set; }
+}
+
+internal sealed class GeneratedPrePopulatedReadOnlyExtensionDataDictionaryPayload
+{
+    public int Known { get; set; }
+
+    [YamlExtensionData]
+    public IReadOnlyDictionary<string, object?> Extra { get; set; } = ImmutableDictionary<string, object?>.Empty.Add("existing", "kept");
+}
+
+internal sealed class GeneratedConstructorReadOnlyExtensionDataDictionaryPayload
+{
+    public GeneratedConstructorReadOnlyExtensionDataDictionaryPayload(int known)
+    {
+        Known = known;
+    }
+
+    public int Known { get; }
+
+    [YamlExtensionData]
+    public IReadOnlyDictionary<string, object?>? Extra { get; set; }
+}
+
+internal sealed class GeneratedInitOnlyReadOnlyExtensionDataDictionaryPayload
+{
+    public int Known { get; set; }
+
+    [YamlExtensionData]
+    public IReadOnlyDictionary<string, object?> Extra { get; init; } = ImmutableDictionary<string, object?>.Empty.Add("existing", "kept");
+}
+
 internal sealed class GeneratedInitOnlyExtensionDataDictionaryPayload
 {
     public int Known { get; set; }
@@ -1130,6 +1175,11 @@ internal sealed class GeneratedYamlIgnoreConditions
 [YamlSerializable(typeof(GeneratedNullableInitOnlyPayload))]
 [YamlSerializable(typeof(GeneratedExtensionDataDictionaryPayload))]
 [YamlSerializable(typeof(GeneratedExtensionDataMappingPayload))]
+[YamlSerializable(typeof(GeneratedInterfaceExtensionDataDictionaryPayload))]
+[YamlSerializable(typeof(GeneratedReadOnlyExtensionDataDictionaryPayload))]
+[YamlSerializable(typeof(GeneratedPrePopulatedReadOnlyExtensionDataDictionaryPayload))]
+[YamlSerializable(typeof(GeneratedConstructorReadOnlyExtensionDataDictionaryPayload))]
+[YamlSerializable(typeof(GeneratedInitOnlyReadOnlyExtensionDataDictionaryPayload))]
 [YamlSerializable(typeof(GeneratedInitOnlyExtensionDataDictionaryPayload))]
 [YamlSerializable(typeof(GeneratedInitOnlyExtensionDataMappingPayload))]
 [YamlSerializable(typeof(GeneratedAttributedUnmappedPayload))]
@@ -2944,6 +2994,100 @@ extra_list:
             typeInfo);
         Assert.Contains("Known: 3", serialized);
         Assert.Contains("x: 5", serialized);
+    }
+
+    [Fact]
+    public void GeneratedContextSupportsYamlExtensionDataInterfaceDictionary()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedInterfaceExtensionDataDictionaryPayload;
+
+        var roundtripped = YamlSerializer.Deserialize("Known: 2\nextra_int: 1\n", typeInfo);
+        Assert.NotNull(roundtripped);
+        Assert.Equal(2, roundtripped.Known);
+        Assert.NotNull(roundtripped.Extra);
+        Assert.Equal(1L, roundtripped.Extra["extra_int"]);
+
+        var serialized = YamlSerializer.Serialize(
+            new GeneratedInterfaceExtensionDataDictionaryPayload
+            {
+                Known = 3,
+                Extra = new Dictionary<string, object?>(StringComparer.Ordinal) { ["x"] = 5 },
+            },
+            typeInfo);
+        Assert.Contains("Known: 3", serialized);
+        Assert.Contains("x: 5", serialized);
+    }
+
+    [Fact]
+    public void GeneratedContextSupportsYamlExtensionDataReadOnlyDictionary()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedReadOnlyExtensionDataDictionaryPayload;
+
+        var roundtripped = YamlSerializer.Deserialize("Known: 2\nextra_int: 1\nextra_text: a\n", typeInfo);
+        Assert.NotNull(roundtripped);
+        Assert.Equal(2, roundtripped.Known);
+        Assert.NotNull(roundtripped.Extra);
+        Assert.Equal(1L, roundtripped.Extra["extra_int"]);
+        Assert.Equal("a", roundtripped.Extra["extra_text"]);
+
+        var withoutExtras = YamlSerializer.Deserialize("Known: 3\n", typeInfo);
+        Assert.NotNull(withoutExtras);
+        Assert.Null(withoutExtras.Extra);
+
+        var serialized = YamlSerializer.Serialize(
+            new GeneratedReadOnlyExtensionDataDictionaryPayload
+            {
+                Known = 3,
+                Extra = ImmutableDictionary<string, object?>.Empty.Add("x", 5),
+            },
+            typeInfo);
+        Assert.Contains("Known: 3", serialized);
+        Assert.Contains("x: 5", serialized);
+    }
+
+    [Fact]
+    public void GeneratedContextCopiesExistingEntriesIntoYamlExtensionDataReadOnlyDictionary()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedPrePopulatedReadOnlyExtensionDataDictionaryPayload;
+
+        var roundtripped = YamlSerializer.Deserialize("Known: 2\nextra_int: 1\n", typeInfo);
+        Assert.NotNull(roundtripped);
+        Assert.Equal("kept", roundtripped.Extra["existing"]);
+        Assert.Equal(1L, roundtripped.Extra["extra_int"]);
+    }
+
+    [Fact]
+    public void GeneratedContextSupportsConstructorYamlExtensionDataReadOnlyDictionary()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedConstructorReadOnlyExtensionDataDictionaryPayload;
+
+        var roundtripped = YamlSerializer.Deserialize("Known: 2\nextra_int: 1\nextra_text: a\n", typeInfo);
+        Assert.NotNull(roundtripped);
+        Assert.Equal(2, roundtripped.Known);
+        Assert.NotNull(roundtripped.Extra);
+        Assert.Equal(1L, roundtripped.Extra["extra_int"]);
+        Assert.Equal("a", roundtripped.Extra["extra_text"]);
+    }
+
+    [Fact]
+    public void GeneratedContextSupportsInitOnlyYamlExtensionDataReadOnlyDictionary()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedInitOnlyReadOnlyExtensionDataDictionaryPayload;
+
+        var roundtripped = YamlSerializer.Deserialize("Known: 2\nextra_int: 1\n", typeInfo);
+        Assert.NotNull(roundtripped);
+        Assert.Equal(2, roundtripped.Known);
+        Assert.Equal("kept", roundtripped.Extra["existing"]);
+        Assert.Equal(1L, roundtripped.Extra["extra_int"]);
+
+        var withoutExtras = YamlSerializer.Deserialize("Known: 3\n", typeInfo);
+        Assert.NotNull(withoutExtras);
+        Assert.Equal("kept", withoutExtras.Extra["existing"]);
     }
 
     [Fact]

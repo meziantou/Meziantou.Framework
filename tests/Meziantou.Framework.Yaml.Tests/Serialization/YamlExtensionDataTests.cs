@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Yaml.Model;
 using Meziantou.Framework.Yaml.Serialization;
 
@@ -109,6 +110,96 @@ public sealed class YamlExtensionDataTests
         Assert.Contains("2", yaml);
     }
 
+    [Fact]
+    public void Deserialize_CapturesUnknownKeysIntoReadOnlyDictionary()
+    {
+        var value = YamlSerializer.Deserialize<ReadOnlyDictionaryExtensionDataModel>("A: 1\nB: 2\nC: test\n")!;
+
+        Assert.Equal(1, value.A);
+        Assert.NotNull(value.Extra);
+        Assert.Equal(2L, value.Extra["B"]);
+        Assert.Equal("test", value.Extra["C"]);
+    }
+
+    [Fact]
+    public void Deserialize_LeavesReadOnlyDictionaryUntouchedWhenNoExtraKeys()
+    {
+        var value = YamlSerializer.Deserialize<ReadOnlyDictionaryExtensionDataModel>("A: 1\n")!;
+
+        Assert.Equal(1, value.A);
+        Assert.Null(value.Extra);
+    }
+
+    [Fact]
+    public void Deserialize_CopiesExistingEntriesIntoReadOnlyDictionary()
+    {
+        var value = YamlSerializer.Deserialize<PrePopulatedReadOnlyDictionaryExtensionDataModel>("A: 1\nB: 2\n")!;
+
+        Assert.Equal(1, value.A);
+        Assert.Equal("kept", value.Extra["Existing"]);
+        Assert.Equal(2L, value.Extra["B"]);
+    }
+
+    [Fact]
+    public void Serialize_EmitsReadOnlyDictionaryExtensionDataEntries()
+    {
+        var value = new ReadOnlyDictionaryExtensionDataModel
+        {
+            A = 1,
+            Extra = new Dictionary<string, object?>(StringComparer.Ordinal) { ["B"] = 2, ["C"] = "test" },
+        };
+
+        var yaml = YamlSerializer.Serialize(value);
+
+        Assert.Contains("A: 1", yaml);
+        Assert.Contains("B: 2", yaml);
+        Assert.Contains("C: test", yaml);
+    }
+
+    [Fact]
+    public void Serialize_EmitsReadOnlyDictionaryExtensionDataEntriesFromImmutableDictionary()
+    {
+        var value = new ReadOnlyDictionaryExtensionDataModel
+        {
+            A = 1,
+            Extra = ImmutableDictionary<string, object?>.Empty.Add("B", 2),
+        };
+
+        var yaml = YamlSerializer.Serialize(value);
+
+        Assert.Contains("A: 1", yaml);
+        Assert.Contains("B: 2", yaml);
+    }
+
+    [Fact]
+    public void Deserialize_CapturesUnknownKeysIntoReadOnlyDictionaryOfYamlNode()
+    {
+        var value = YamlSerializer.Deserialize<ReadOnlyNodeDictionaryExtensionDataModel>("A: 1\nB: 2\n")!;
+
+        Assert.Equal(1, value.A);
+        Assert.NotNull(value.Extra);
+        Assert.Equal("2", Assert.IsType<YamlValue>(value.Extra["B"]).Value);
+    }
+
+    [Fact]
+    public void Deserialize_SetsReadOnlyDictionaryOnInitOnlyMember()
+    {
+        var value = YamlSerializer.Deserialize<InitOnlyReadOnlyDictionaryExtensionDataModel>("A: 1\nB: 2\n")!;
+
+        Assert.Equal(1, value.A);
+        Assert.NotNull(value.Extra);
+        Assert.Equal(2L, value.Extra["B"]);
+    }
+
+    [Fact]
+    public void Deserialize_ThrowsWhenReadOnlyDictionaryMemberCannotBeAssigned()
+    {
+        var exception = Assert.ThrowsAny<Exception>(() => YamlSerializer.Deserialize<GetOnlyReadOnlyDictionaryExtensionDataModel>("A: 1\nB: 2\n"));
+
+        var message = exception.Message + exception.InnerException?.Message;
+        Assert.Contains("Extra", message);
+    }
+
     private sealed class DictionaryExtensionDataModel
     {
         public int A { get; set; }
@@ -139,5 +230,47 @@ public sealed class YamlExtensionDataTests
 
         [YamlExtensionData]
         public YamlMapping Extra { get; set; } = new();
+    }
+
+    private sealed class ReadOnlyDictionaryExtensionDataModel
+    {
+        public int A { get; set; }
+
+        [YamlExtensionData]
+        public IReadOnlyDictionary<string, object?>? Extra { get; set; }
+    }
+
+#pragma warning disable CA1859 // The declared type must stay 'IReadOnlyDictionary<,>' as this is what the test covers
+    private sealed class PrePopulatedReadOnlyDictionaryExtensionDataModel
+    {
+        public int A { get; set; }
+
+        [YamlExtensionData]
+        public IReadOnlyDictionary<string, object?> Extra { get; set; } = ImmutableDictionary<string, object?>.Empty.Add("Existing", "kept");
+    }
+#pragma warning restore CA1859
+
+    private sealed class ReadOnlyNodeDictionaryExtensionDataModel
+    {
+        public int A { get; set; }
+
+        [YamlExtensionData]
+        public IReadOnlyDictionary<string, YamlNode>? Extra { get; set; }
+    }
+
+    private sealed class InitOnlyReadOnlyDictionaryExtensionDataModel
+    {
+        public int A { get; init; }
+
+        [YamlExtensionData]
+        public IReadOnlyDictionary<string, object?>? Extra { get; init; }
+    }
+
+    private sealed class GetOnlyReadOnlyDictionaryExtensionDataModel
+    {
+        public int A { get; set; }
+
+        [YamlExtensionData]
+        public IReadOnlyDictionary<string, object?>? Extra { get; }
     }
 }

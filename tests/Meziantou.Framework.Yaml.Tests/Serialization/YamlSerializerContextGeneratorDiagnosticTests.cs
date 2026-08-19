@@ -625,6 +625,63 @@ public class YamlSerializerContextGeneratorDiagnosticTests
     }
 
     [Fact]
+    public void AnalyzerReportsErrorForUnsupportedReadOnlyDictionaryExtensionDataMember()
+    {
+        const string Source = """
+            using System.Collections.Generic;
+            using Meziantou.Framework.Yaml.Serialization;
+
+            public sealed class Model
+            {
+                [YamlExtensionData]
+                public IReadOnlyDictionary<string, int>? Extra { get; set; }
+            }
+
+            [YamlSerializable(typeof(Model))]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostics = RunAnalyzer(Source)
+            .Where(static diagnostic => diagnostic.Id == "MFY003")
+            .ToArray();
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("Extra", diagnostic.GetMessage());
+    }
+
+    [Theory]
+    [InlineData("IDictionary<string, object?>")]
+    [InlineData("IReadOnlyDictionary<string, object?>")]
+    [InlineData("IReadOnlyDictionary<string, Meziantou.Framework.Yaml.Model.YamlNode>")]
+    public void AnalyzerAcceptsDictionaryInterfaceExtensionDataMember(string memberType)
+    {
+        var source = """
+            using System.Collections.Generic;
+            using Meziantou.Framework.Yaml.Serialization;
+
+            public sealed class Model
+            {
+                [YamlExtensionData]
+                public MEMBER_TYPE? Extra { get; set; }
+            }
+
+            [YamlSerializable(typeof(Model))]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """.Replace("MEMBER_TYPE", memberType, StringComparison.Ordinal);
+
+        var diagnostics = RunAnalyzer(source)
+            .Where(static diagnostic => diagnostic.Id == "MFY003")
+            .ToArray();
+
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
     public void AnalyzerReportsErrorForMultipleExtensionDataMembers()
     {
         const string Source = """

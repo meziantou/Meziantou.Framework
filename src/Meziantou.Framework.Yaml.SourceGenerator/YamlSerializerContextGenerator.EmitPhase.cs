@@ -1001,6 +1001,61 @@ public sealed partial class YamlSerializerContextGenerator
         }
     }
 
+    /// <summary>
+    /// Emits the code acquiring the mutable <c>container</c> dictionary backing an extension data member.
+    /// </summary>
+    /// <remarks>
+    /// A read-only dictionary member cannot be mutated through its declared type, so a mutable dictionary is created,
+    /// the existing entries are copied into it, and it is assigned back to the member.
+    /// </remarks>
+    private static void EmitExtensionDataContainerAcquisition(
+        StringBuilder builder,
+        ExtensionDataMemberModel extensionData,
+        string indent,
+        string valueTypeName,
+        string propertyNameComparerExpression,
+        string readExpression,
+        Func<string, string>? assignExpression)
+    {
+        var dictionaryTypeName = "global::System.Collections.Generic.Dictionary<string, " + valueTypeName + ">";
+        var isReadOnly = extensionData.Kind == ExtensionDataKind.ReadOnlyDictionary;
+
+        builder.Append(indent).Append("var container = ").Append(readExpression);
+        if (isReadOnly)
+        {
+            builder.Append(" as ").Append(dictionaryTypeName);
+        }
+
+        builder.AppendLine(";");
+        builder.Append(indent).AppendLine("if (container is null)");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).Append("    container = new ").Append(dictionaryTypeName).Append('(').Append(propertyNameComparerExpression).AppendLine(");");
+
+        if (isReadOnly)
+        {
+            builder.Append(indent).Append("    var existingContainer = ").Append(readExpression).AppendLine(";");
+            builder.Append(indent).AppendLine("    if (existingContainer is not null)");
+            builder.Append(indent).AppendLine("    {");
+            builder.Append(indent).AppendLine("        foreach (var existingPair in existingContainer)");
+            builder.Append(indent).AppendLine("        {");
+            builder.Append(indent).AppendLine("            container[existingPair.Key] = existingPair.Value;");
+            builder.Append(indent).AppendLine("        }");
+            builder.Append(indent).AppendLine("    }");
+        }
+
+        if (assignExpression is not null)
+        {
+            builder.Append(indent).Append("    ").Append(assignExpression("container")).AppendLine(";");
+        }
+        else
+        {
+            builder.Append(indent).Append("    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowNotSupported(reader, \"Extension data member '")
+                .Append(extensionData.Symbol.Name).AppendLine("' could not be assigned.\");");
+        }
+
+        builder.Append(indent).AppendLine("}");
+    }
+
     private static void EmitWriteMembersMethod(StringBuilder builder, int index, string typeName, ImmutableArray<MemberModel> members, ExtensionDataMemberModel? extensionData, Dictionary<ITypeSymbol, int> indexByType, SourceGenerationOptionsModel sourceGenerationOptions)
     {
         builder.Append("    private static void WriteMembers").Append(index)
@@ -1032,7 +1087,7 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine("        if (extensionData is not null)");
             builder.AppendLine("        {");
 
-            if (extensionData.Kind == ExtensionDataKind.Dictionary)
+            if (extensionData.Kind is ExtensionDataKind.Dictionary or ExtensionDataKind.ReadOnlyDictionary)
             {
                 var dictionaryValueType = extensionData.DictionaryValueType ?? throw new InvalidOperationException("Extension data dictionary value type is missing.");
                 var valueTypeName = GetGeneratedTypeName(dictionaryValueType);
@@ -1468,28 +1523,21 @@ public sealed partial class YamlSerializerContextGenerator
 
         if (extensionData is not null)
         {
-            if (extensionData.Kind == ExtensionDataKind.Dictionary)
+            if (extensionData.Kind is ExtensionDataKind.Dictionary or ExtensionDataKind.ReadOnlyDictionary)
             {
                 var dictionaryValueType = extensionData.DictionaryValueType ?? throw new InvalidOperationException("Extension data dictionary value type is missing.");
                 var valueTypeName = GetGeneratedTypeName(dictionaryValueType);
                 var valueTypeOfName = dictionaryValueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 builder.AppendLine("        void ReadAndStoreExtensionData(string extensionKey)");
                 builder.AppendLine("        {");
-                builder.Append("            var container = ").Append(extensionData.AccessExpression("instance")).AppendLine(";");
-                builder.AppendLine("            if (container is null)");
-                builder.AppendLine("            {");
-                builder.Append("                container = new global::System.Collections.Generic.Dictionary<string, ").Append(valueTypeName)
-                    .Append(">(").Append(propertyNameComparerExpression).AppendLine(");");
-                if (extensionData.CanAssign)
-                {
-                    builder.Append("                ").Append(extensionData.AssignExpression!("container")).AppendLine(";");
-                }
-                else
-                {
-                    builder.Append("                throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowNotSupported(reader, \"Extension data member '")
-                        .Append(extensionData.Symbol.Name).Append("' could not be assigned.\");").AppendLine();
-                }
-                builder.AppendLine("            }");
+                EmitExtensionDataContainerAcquisition(
+                    builder,
+                    extensionData,
+                    "            ",
+                    valueTypeName,
+                    propertyNameComparerExpression,
+                    extensionData.AccessExpression("instance"),
+                    extensionData.CanAssign ? extensionData.AssignExpression : null);
                 builder.Append("            var converter = reader.GetConverter(typeof(").Append(valueTypeOfName).AppendLine("));");
                 builder.Append("            var extensionValue = (").Append(valueTypeName).Append(")converter.Read(reader, typeof(").Append(valueTypeOfName).AppendLine("));");
                 builder.AppendLine("            container[extensionKey] = extensionValue;");
@@ -1885,7 +1933,7 @@ public sealed partial class YamlSerializerContextGenerator
         {
             builder.AppendLine();
 
-            if (extensionData.Kind == ExtensionDataKind.Dictionary)
+            if (extensionData.Kind is ExtensionDataKind.Dictionary or ExtensionDataKind.ReadOnlyDictionary)
             {
                 var dictionaryValueType = extensionData.DictionaryValueType ?? throw new InvalidOperationException("Extension data dictionary value type is missing.");
                 var valueTypeName = GetGeneratedTypeName(dictionaryValueType);
@@ -2363,18 +2411,19 @@ public sealed partial class YamlSerializerContextGenerator
                     .Append(initOnlyExtensionData.AccessExpression("__defaults" + index.ToString(System.Globalization.CultureInfo.InvariantCulture) + (typeSymbol.IsReferenceType ? "!" : string.Empty))).AppendLine(";");
                 builder.AppendLine("        if (extensionEntries is not null && extensionEntries.Count != 0)");
                 builder.AppendLine("        {");
-                if (initOnlyExtensionData.Kind == ExtensionDataKind.Dictionary)
+                if (initOnlyExtensionData.Kind is ExtensionDataKind.Dictionary or ExtensionDataKind.ReadOnlyDictionary)
                 {
                     var dictionaryValueType = initOnlyExtensionData.DictionaryValueType ?? throw new InvalidOperationException("Extension data dictionary value type is missing.");
                     var valueTypeName = GetGeneratedTypeName(dictionaryValueType);
 
-                    builder.Append("            var container = ").Append(initOnlyExtensionDataValueVarName).AppendLine(";");
-                    builder.AppendLine("            if (container is null)");
-                    builder.AppendLine("            {");
-                    builder.Append("                container = new global::System.Collections.Generic.Dictionary<string, ").Append(valueTypeName)
-                        .Append(">(").Append(propertyNameComparerExpression).AppendLine(");");
-                    builder.Append("                ").Append(initOnlyExtensionDataValueVarName).AppendLine(" = container;");
-                    builder.AppendLine("            }");
+                    EmitExtensionDataContainerAcquisition(
+                        builder,
+                        initOnlyExtensionData,
+                        "            ",
+                        valueTypeName,
+                        propertyNameComparerExpression,
+                        initOnlyExtensionDataValueVarName!,
+                        container => initOnlyExtensionDataValueVarName + " = " + container);
                     builder.AppendLine("            for (var i = 0; i < extensionEntries.Count; i++)");
                     builder.AppendLine("            {");
                     builder.AppendLine("                var entry = extensionEntries[i];");
@@ -2505,26 +2554,19 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine();
             builder.AppendLine("        if (extensionEntries is not null)");
             builder.AppendLine("        {");
-            if (extensionData.Kind == ExtensionDataKind.Dictionary)
+            if (extensionData.Kind is ExtensionDataKind.Dictionary or ExtensionDataKind.ReadOnlyDictionary)
             {
                 var dictionaryValueType = extensionData.DictionaryValueType ?? throw new InvalidOperationException("Extension data dictionary value type is missing.");
                 var valueTypeName = GetGeneratedTypeName(dictionaryValueType);
 
-                builder.Append("            var container = ").Append(extensionData.AccessExpression("instance")).AppendLine(";");
-                builder.AppendLine("            if (container is null)");
-                builder.AppendLine("            {");
-                builder.Append("                container = new global::System.Collections.Generic.Dictionary<string, ").Append(valueTypeName)
-                    .Append(">(").Append(propertyNameComparerExpression).AppendLine(");");
-                if (extensionData.CanAssign)
-                {
-                    builder.Append("                ").Append(extensionData.AssignExpression!("container")).AppendLine(";");
-                }
-                else
-                {
-                    builder.Append("                throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowNotSupported(reader, \"Extension data member '")
-                        .Append(extensionData.Symbol.Name).Append("' could not be assigned.\");").AppendLine();
-                }
-                builder.AppendLine("            }");
+                EmitExtensionDataContainerAcquisition(
+                    builder,
+                    extensionData,
+                    "            ",
+                    valueTypeName,
+                    propertyNameComparerExpression,
+                    extensionData.AccessExpression("instance"),
+                    extensionData.CanAssign ? extensionData.AssignExpression : null);
                 builder.AppendLine("            for (var i = 0; i < extensionEntries.Count; i++)");
                 builder.AppendLine("            {");
                 builder.AppendLine("                var entry = extensionEntries[i];");

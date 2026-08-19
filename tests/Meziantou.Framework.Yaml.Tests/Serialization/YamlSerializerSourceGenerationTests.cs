@@ -558,6 +558,105 @@ internal sealed class GeneratedTypeConverter : YamlConverter<GeneratedTypeWithCo
         => writer.WriteScalar(value.Value);
 }
 
+[YamlConverter(typeof(GeneratedOpenGenericBoxConverter<>))]
+internal sealed class GeneratedOpenGenericBox<T>
+{
+    public GeneratedOpenGenericBox(T? value) => Value = value;
+
+    public T? Value { get; }
+}
+
+internal sealed class GeneratedOpenGenericBoxConverter<T> : YamlConverter<GeneratedOpenGenericBox<T>?>
+{
+    public override GeneratedOpenGenericBox<T>? Read(YamlReader reader)
+    {
+        if (reader.TokenType is YamlTokenType.Scalar && YamlScalar.IsNull(reader.ScalarValue.AsSpan()))
+        {
+            reader.Read();
+            return null;
+        }
+
+        var scalar = reader.GetScalarValue();
+        reader.Read();
+        return new GeneratedOpenGenericBox<T>((T)Convert.ChangeType(scalar, typeof(T), CultureInfo.InvariantCulture));
+    }
+
+    public override void Write(YamlWriter writer, GeneratedOpenGenericBox<T>? value)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
+        writer.WriteScalar(Convert.ToString(value.Value, CultureInfo.InvariantCulture));
+    }
+}
+
+internal sealed class GeneratedOpenGenericCell<T>
+{
+    public T? Value { get; set; }
+}
+
+internal sealed class GeneratedOpenGenericCellConverter<T> : YamlConverter<GeneratedOpenGenericCell<T>?>
+{
+    public override GeneratedOpenGenericCell<T>? Read(YamlReader reader)
+    {
+        if (reader.TokenType is YamlTokenType.Scalar && YamlScalar.IsNull(reader.ScalarValue.AsSpan()))
+        {
+            reader.Read();
+            return null;
+        }
+
+        var scalar = reader.GetScalarValue();
+        reader.Read();
+        return new GeneratedOpenGenericCell<T> { Value = (T)Convert.ChangeType(scalar, typeof(T), CultureInfo.InvariantCulture) };
+    }
+
+    public override void Write(YamlWriter writer, GeneratedOpenGenericCell<T>? value)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
+        writer.WriteScalar(Convert.ToString(value.Value, CultureInfo.InvariantCulture));
+    }
+}
+
+internal sealed class GeneratedOpenGenericConverterHolder
+{
+    public GeneratedOpenGenericBox<int>? Number { get; set; }
+
+    [YamlConverter(typeof(GeneratedOpenGenericCellConverter<>))]
+    public GeneratedOpenGenericCell<string>? Text { get; set; }
+}
+
+[YamlPolymorphic]
+[YamlDerivedType(typeof(GeneratedGenericDog<>), "dog")]
+internal abstract class GeneratedGenericAnimal<T>
+{
+    public T? Name { get; set; }
+}
+
+internal sealed class GeneratedGenericDog<T> : GeneratedGenericAnimal<T>
+{
+    public int BarkVolume { get; set; }
+}
+
+[YamlPolymorphic]
+[YamlDerivedType(typeof(GeneratedWrappedLeaf<>), "leaf")]
+internal abstract class GeneratedWrapperNode<T>
+{
+    public int Depth { get; set; }
+}
+
+internal sealed class GeneratedWrappedLeaf<T> : GeneratedWrapperNode<List<T>>
+{
+    public string Label { get; set; } = string.Empty;
+}
+
 internal sealed class GeneratedConvertedScalar
 {
     public GeneratedConvertedScalar(int value) => Value = value;
@@ -1037,6 +1136,10 @@ internal sealed class GeneratedYamlIgnoreConditions
 [YamlSerializable(typeof(GeneratedAttributedExtensionDataPayload))]
 [YamlSerializable(typeof(GeneratedMemberConverterPayload))]
 [YamlSerializable(typeof(GeneratedTypeWithConverter))]
+[YamlSerializable(typeof(GeneratedOpenGenericBox<int>))]
+[YamlSerializable(typeof(GeneratedOpenGenericConverterHolder))]
+[YamlSerializable(typeof(GeneratedGenericAnimal<string>))]
+[YamlSerializable(typeof(GeneratedWrapperNode<List<int>>))]
 [YamlSerializable(typeof(GeneratedRuntimeConverterHolder))]
 [YamlSerializable(typeof(GeneratedYamlCtorModel))]
 [YamlSerializable(typeof(GeneratedJsonCtorModel))]
@@ -3187,6 +3290,79 @@ extra_list:
 
         Assert.Equal(1.5, value.GetValue());
         Assert.Contains("_value: 1.5", YamlSerializer.Serialize(value, typeInfo));
+    }
+
+    [Fact]
+    public void GeneratedContextResolvesOpenGenericDerivedType()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedGenericAnimalString;
+        GeneratedGenericAnimal<string> animal = new GeneratedGenericDog<string> { Name = "Rex", BarkVolume = 3 };
+
+        var yaml = YamlSerializer.Serialize(animal, typeInfo);
+
+        Assert.Contains("$type: dog", yaml);
+        Assert.Contains("BarkVolume: 3", yaml);
+
+        var value = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.NotNull(value);
+        Assert.IsType<GeneratedGenericDog<string>>(value);
+        Assert.Equal("Rex", value.Name);
+    }
+
+    [Fact]
+    public void GeneratedContextResolvesOpenGenericDerivedTypeWithWrappedTypeArgument()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedWrapperNodeListInt32;
+        GeneratedWrapperNode<List<int>> node = new GeneratedWrappedLeaf<int> { Depth = 2, Label = "leaf" };
+
+        var yaml = YamlSerializer.Serialize(node, typeInfo);
+
+        Assert.Contains("$type: leaf", yaml);
+        Assert.Contains("Label: leaf", yaml);
+
+        var value = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.NotNull(value);
+        Assert.IsType<GeneratedWrappedLeaf<int>>(value);
+        Assert.Equal(2, value.Depth);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesOpenGenericConverterDeclaredOnGenericType()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedOpenGenericBoxInt32;
+
+        var yaml = YamlSerializer.Serialize(new GeneratedOpenGenericBox<int>(7), typeInfo);
+
+        Assert.Equal("7\n", yaml);
+        Assert.Equal(7, YamlSerializer.Deserialize(yaml, typeInfo)!.Value);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesOpenGenericConvertersOnMembers()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedOpenGenericConverterHolder;
+        var value = new GeneratedOpenGenericConverterHolder
+        {
+            Number = new GeneratedOpenGenericBox<int>(42),
+            Text = new GeneratedOpenGenericCell<string> { Value = "hello" },
+        };
+
+        var yaml = YamlSerializer.Serialize(value, typeInfo);
+
+        Assert.Contains("Number: 42", yaml);
+        Assert.Contains("Text: hello", yaml);
+
+        var deserialized = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.NotNull(deserialized);
+        Assert.Equal(42, deserialized.Number!.Value);
+        Assert.Equal("hello", deserialized.Text!.Value);
     }
 
     [Fact]

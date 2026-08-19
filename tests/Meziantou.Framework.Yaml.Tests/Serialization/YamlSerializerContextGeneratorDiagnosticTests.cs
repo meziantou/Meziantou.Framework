@@ -852,6 +852,172 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         Assert.Contains("parameterless constructor", diagnostic.GetMessage());
     }
 
+    [Fact]
+    public void MFY006_IsReported_WhenOpenGenericConverterArityDoesNotMatch()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            [YamlConverter(typeof(BoxConverter<,>))]
+            public sealed class Box<T>
+            {
+                public T? Value { get; set; }
+            }
+
+            public sealed class BoxConverter<TFirst, TSecond> : YamlConverter<Box<TFirst>>
+            {
+                public override Box<TFirst>? Read(YamlReader reader) => null;
+
+                public override void Write(YamlWriter writer, Box<TFirst> value) => writer.WriteNullValue();
+            }
+
+            [YamlSerializable(typeof(Box<int>))]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostics = RunAnalyzer(Source)
+            .Where(static diagnostic => diagnostic.Id == "MFY006")
+            .ToArray();
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("open generic converter type", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public void MFY006_IsReported_WhenOpenGenericConverterIsUsedOnNonGenericType()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            public sealed class Box<T>
+            {
+                public T? Value { get; set; }
+            }
+
+            public sealed class BoxConverter<T> : YamlConverter<Box<T>>
+            {
+                public override Box<T>? Read(YamlReader reader) => null;
+
+                public override void Write(YamlWriter writer, Box<T> value) => writer.WriteNullValue();
+            }
+
+            public sealed class Model
+            {
+                [YamlConverter(typeof(BoxConverter<>))]
+                public string? Value { get; set; }
+            }
+
+            [YamlSerializable(typeof(Model))]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostics = RunAnalyzer(Source)
+            .Where(static diagnostic => diagnostic.Id == "MFY006")
+            .ToArray();
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("open generic converter type", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public void OpenGenericConverterIsClosedOverTheTargetTypeArguments()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            [YamlConverter(typeof(BoxConverter<>))]
+            public sealed class Box<T>
+            {
+                public T? Value { get; set; }
+            }
+
+            public sealed class BoxConverter<T> : YamlConverter<Box<T>>
+            {
+                public override Box<T>? Read(YamlReader reader) => null;
+
+                public override void Write(YamlWriter writer, Box<T> value) => writer.WriteNullValue();
+            }
+
+            [YamlSerializable(typeof(Box<int>))]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var result = RunGenerator(Source);
+
+        Assert.Empty(result.GeneratorDiagnostics);
+        Assert.Contains("new global::BoxConverter<int>()", result.GeneratedSource);
+    }
+
+    [Fact]
+    public void MFY022_IsReported_WhenOpenGenericDerivedTypeCannotBeResolved()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            [YamlPolymorphic]
+            [YamlDerivedType(typeof(Derived<,>), "derived")]
+            public abstract class Base<T>
+            {
+                public T? Value { get; set; }
+            }
+
+            public sealed class Derived<TFirst, TSecond> : Base<TFirst>
+            {
+            }
+
+            [YamlSerializable(typeof(Base<int>))]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostics = RunAnalyzer(Source)
+            .Where(static diagnostic => diagnostic.Id == "MFY022")
+            .ToArray();
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("cannot be resolved", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public void MFY022_IsNotReported_WhenOpenGenericDerivedTypeIsResolved()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            [YamlPolymorphic]
+            [YamlDerivedType(typeof(Derived<>), "derived")]
+            public abstract class Base<T>
+            {
+                public T? Value { get; set; }
+            }
+
+            public sealed class Derived<T> : Base<T>
+            {
+            }
+
+            [YamlSerializable(typeof(Base<int>))]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostics = RunAnalyzer(Source)
+            .Where(static diagnostic => diagnostic.Id == "MFY022")
+            .ToArray();
+
+        Assert.Empty(diagnostics);
+    }
+
     private static Diagnostic[] RunAnalyzer([StringSyntax("c#-test")] string source)
     {
         var compilation = CreateCompilation(source);

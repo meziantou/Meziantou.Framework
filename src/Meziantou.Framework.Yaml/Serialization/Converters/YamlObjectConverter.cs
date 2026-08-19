@@ -2120,29 +2120,30 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
 
             foreach (YamlDerivedTypeAttribute attribute in yamlDerived)
             {
-                if (!type.IsAssignableFrom(attribute.DerivedType))
+                var derivedType = YamlDerivedTypeHelper.ResolveDerivedType(type, attribute.DerivedType);
+                if (!type.IsAssignableFrom(derivedType))
                 {
-                    throw new InvalidOperationException($"Derived type '{attribute.DerivedType}' is not assignable to '{type}'.");
+                    throw new InvalidOperationException($"Derived type '{derivedType}' is not assignable to '{type}'.");
                 }
 
                 if (attribute.Discriminator is null)
                 {
                     if (attribute.Tag is null)
                     {
-                        defaultDerivedType = attribute.DerivedType;
+                        defaultDerivedType = derivedType;
                     }
 
-                    typeToDerived[attribute.DerivedType] = new DerivedTypeInfo(null, attribute.Tag);
+                    typeToDerived[derivedType] = new DerivedTypeInfo(null, attribute.Tag);
                 }
                 else
                 {
-                    discriminatorToType.Add(attribute.Discriminator, attribute.DerivedType);
-                    typeToDerived[attribute.DerivedType] = new DerivedTypeInfo(attribute.Discriminator, attribute.Tag);
+                    discriminatorToType.Add(attribute.Discriminator, derivedType);
+                    typeToDerived[derivedType] = new DerivedTypeInfo(attribute.Discriminator, attribute.Tag);
                 }
 
                 if (attribute.Tag is not null)
                 {
-                    tagToType.Add(attribute.Tag, attribute.DerivedType);
+                    tagToType.Add(attribute.Tag, derivedType);
                 }
             }
 
@@ -2150,16 +2151,17 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
             {
                 foreach (var entry in runtimeDerived!)
                 {
-                    if (!type.IsAssignableFrom(entry.DerivedType))
+                    var derivedType = YamlDerivedTypeHelper.ResolveDerivedType(type, entry.DerivedType);
+                    if (!type.IsAssignableFrom(derivedType))
                     {
-                        throw new InvalidOperationException($"Derived type '{entry.DerivedType}' is not assignable to '{type}'.");
+                        throw new InvalidOperationException($"Derived type '{derivedType}' is not assignable to '{type}'.");
                     }
 
                     if (entry.Discriminator is null)
                     {
                         var isDefaultMapping = entry.Tag is null;
                         if (ShouldAddLowerPrecedenceMapping(
-                            entry.DerivedType,
+                            derivedType,
                             discriminator: null,
                             entry.Tag,
                             isDefaultMapping,
@@ -2170,20 +2172,20 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
                         {
                             if (isDefaultMapping)
                             {
-                                defaultDerivedType ??= entry.DerivedType;
+                                defaultDerivedType ??= derivedType;
                             }
 
-                            typeToDerived.Add(entry.DerivedType, new DerivedTypeInfo(null, entry.Tag));
+                            typeToDerived.Add(derivedType, new DerivedTypeInfo(null, entry.Tag));
                             if (entry.Tag is not null)
                             {
-                                tagToType.Add(entry.Tag, entry.DerivedType);
+                                tagToType.Add(entry.Tag, derivedType);
                             }
                         }
                     }
                     else
                     {
                         if (ShouldAddLowerPrecedenceMapping(
-                            entry.DerivedType,
+                            derivedType,
                             entry.Discriminator,
                             entry.Tag,
                             isDefaultMapping: false,
@@ -2192,11 +2194,11 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
                             tagToType,
                             typeToDerived))
                         {
-                            discriminatorToType.Add(entry.Discriminator, entry.DerivedType);
-                            typeToDerived.Add(entry.DerivedType, new DerivedTypeInfo(entry.Discriminator, entry.Tag));
+                            discriminatorToType.Add(entry.Discriminator, derivedType);
+                            typeToDerived.Add(derivedType, new DerivedTypeInfo(entry.Discriminator, entry.Tag));
                             if (entry.Tag is not null)
                             {
-                                tagToType.Add(entry.Tag, entry.DerivedType);
+                                tagToType.Add(entry.Tag, derivedType);
                             }
                         }
                     }
@@ -2863,12 +2865,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
             return null;
         }
 
-        var converterType = attribute.ConverterType;
-        if (converterType.IsGenericTypeDefinition)
-        {
-            throw new NotSupportedException($"Converter type '{converterType}' cannot be an open generic type.");
-        }
-
+        var converterType = YamlConverterAttributeHelper.ResolveConverterType(attribute.ConverterType, memberType);
         if (!typeof(YamlConverter).IsAssignableFrom(converterType))
         {
             throw new NotSupportedException($"Converter type '{converterType}' must derive from '{typeof(YamlConverter)}'.");

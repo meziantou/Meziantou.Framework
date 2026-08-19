@@ -204,7 +204,7 @@ public sealed partial class YamlSerializerContextGenerator
         SourceGenerationOptionsModel sourceGenerationOptions,
         UnsafeAccessorRegistry accessors)
     {
-        var attributeConverterTypeName = GetYamlConverterAttributeTypeName((ISymbol)typeSymbol);
+        var attributeConverterTypeName = GetYamlConverterAttributeTypeName(typeSymbol, typeSymbol);
 
         builder.Append("    private static void WriteValue").Append(index)
             .Append("(global::Meziantou.Framework.Yaml.Serialization.YamlWriter writer, ").Append(typeName).Append(typeSymbol.IsReferenceType ? "?" : string.Empty).AppendLine(" value, RuntimeCustomConverterCache runtimeConverters)");
@@ -2678,7 +2678,7 @@ public sealed partial class YamlSerializerContextGenerator
         SourceGenerationOptionsModel sourceGenerationOptions,
         UnsafeAccessorRegistry accessors)
     {
-        var attributeConverterTypeName = GetYamlConverterAttributeTypeName((ISymbol)typeSymbol);
+        var attributeConverterTypeName = GetYamlConverterAttributeTypeName(typeSymbol, typeSymbol);
 
         builder.Append("    private static ").Append(typeName).Append(typeSymbol.IsReferenceType ? "?" : string.Empty).Append(" ReadValue").Append(index)
             .AppendLine("(global::Meziantou.Framework.Yaml.Serialization.YamlReader reader, RuntimeCustomConverterCache runtimeConverters)");

@@ -8,6 +8,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.Roslyn;
 
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE
+[Microsoft.CodeAnalysis.Embedded]
+#endif
 internal static partial class SymbolAttributeExtensions
 {
     public static IEnumerable<AttributeData> GetAttributes(this ISymbol symbol, ITypeSymbol? attributeType, bool inherits = true)

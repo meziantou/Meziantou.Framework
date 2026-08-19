@@ -10,6 +10,9 @@ using Microsoft.CodeAnalysis;
 namespace Meziantou.Framework.Roslyn;
 
 // http://source.roslyn.io/#Microsoft.CodeAnalysis.Workspaces/Shared/Extensions/ITypeSymbolExtensions.cs,190b4ed0932458fd,references
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE
+[Microsoft.CodeAnalysis.Embedded]
+#endif
 internal static partial class TypeSymbolExtensions
 {
     public static IList<INamedTypeSymbol> GetAllInterfacesIncludingSelf(this ITypeSymbol type)

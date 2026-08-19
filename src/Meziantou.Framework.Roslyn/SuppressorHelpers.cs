@@ -7,6 +7,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.Roslyn;
 
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE
+[Microsoft.CodeAnalysis.Embedded]
+#endif
 internal static partial class SuppressorHelpers
 {
     public static SyntaxNode? FindNode(this Diagnostic diagnostic, CancellationToken cancellationToken)

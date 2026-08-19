@@ -9,6 +9,9 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace Meziantou.Framework.Roslyn;
 
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE
+[Microsoft.CodeAnalysis.Embedded]
+#endif
 internal static partial class LanguageVersionExtensions
 {
     public static LanguageVersion GetCSharpLanguageVersion(this IOperation operation)

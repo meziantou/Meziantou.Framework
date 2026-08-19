@@ -10,6 +10,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Meziantou.Framework.Roslyn;
 
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE
+[Microsoft.CodeAnalysis.Embedded]
+#endif
 internal static partial class MethodSymbolExtensions
 {
     public static bool IsPrimaryConstructor(this IMethodSymbol? methodSymbol, CancellationToken cancellationToken, bool includeRecordDeclarations = false)

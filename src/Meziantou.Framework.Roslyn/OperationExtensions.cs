@@ -10,6 +10,9 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace Meziantou.Framework.Roslyn;
 
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE
+[Microsoft.CodeAnalysis.Embedded]
+#endif
 internal static partial class OperationExtensions
 {
     public static IEnumerable<IOperation> Ancestors(this IOperation operation)

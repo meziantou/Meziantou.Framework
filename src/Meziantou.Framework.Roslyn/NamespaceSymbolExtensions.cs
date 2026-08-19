@@ -7,6 +7,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.Roslyn;
 
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE
+[Microsoft.CodeAnalysis.Embedded]
+#endif
 internal static partial class NamespaceSymbolExtensions
 {
     public static bool MatchesNamespace(this INamespaceSymbol namespaceSymbol, ReadOnlySpan<string> namespaceParts)

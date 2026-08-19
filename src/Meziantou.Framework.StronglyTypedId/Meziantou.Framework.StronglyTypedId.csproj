@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
-    <Compile Include="../Meziantou.Framework.Roslyn/**/*.cs" Exclude="../Meziantou.Framework.Roslyn/bin/**;../Meziantou.Framework.Roslyn/obj/**" LinkBase="Roslyn" />
+    <Compile Include="../Meziantou.Framework.Roslyn/**/*.cs" LinkBase="Roslyn" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="4.3.1" PrivateAssets="all" />
   </ItemGroup>
 

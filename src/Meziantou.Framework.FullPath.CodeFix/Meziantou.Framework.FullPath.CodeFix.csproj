@@ -12,7 +12,7 @@
   <ItemGroup>
     <Compile Include="../Meziantou.Framework.FullPath.Analyzer/FullPathAnalyzerCommon.cs" Link="FullPathAnalyzerCommon.cs" />
     <Compile Include="../Meziantou.Framework.FullPath.Analyzer/FullPathContext.cs" Link="FullPathContext.cs" />
-    <Compile Include="../Meziantou.Framework.Roslyn/**/*.cs" Exclude="../Meziantou.Framework.Roslyn/bin/**;../Meziantou.Framework.Roslyn/obj/**" LinkBase="Roslyn" />
+    <Compile Include="../Meziantou.Framework.Roslyn/**/*.cs" LinkBase="Roslyn" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.12.0" PrivateAssets="all" />
   </ItemGroup>

@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <Compile Remove="RoslynPackageFixture.cs;RoslynPackageTests.cs" />
-    <Compile Include="../../src/Meziantou.Framework.Roslyn/**/*.cs" Exclude="../../src/Meziantou.Framework.Roslyn/bin/**;../../src/Meziantou.Framework.Roslyn/obj/**" LinkBase="RoslynSources" />
+    <Compile Include="../../src/Meziantou.Framework.Roslyn/**/*.cs" LinkBase="RoslynSources" />
   </ItemGroup>
 
   <ItemGroup>

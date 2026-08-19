@@ -95,7 +95,6 @@
       <_MeziantouFrameworkRoslynConstant Include="CSHARP13_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '4.14.0'))" />
       <_MeziantouFrameworkRoslynConstant Include="CSHARP14_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '5.0.0'))" />
       <_MeziantouFrameworkRoslynConstant Include="CSHARP15_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '5.6.0'))" />
-      <_MeziantouFrameworkRoslynConstant Include="CSHARP16_OR_GREATER" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(_MeziantouFrameworkRoslynVersion)', '5.9.0'))" />
     </ItemGroup>
 
     <PropertyGroup>

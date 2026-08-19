@@ -266,6 +266,48 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void GetActualType_WithoutDataFlowAnalysis_OnlyUnwrapsConversions()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public void M()
+                {
+                    object value = 42;
+                    object boxed = value;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.Equal(SpecialType.System_Int32, boxed.GetActualType(useDataFlowAnalysis: true, default)?.SpecialType);
+        Assert.Equal(SpecialType.System_Object, boxed.GetActualType(useDataFlowAnalysis: false, default)?.SpecialType);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_WithoutDataFlowAnalysis_OnlyUsesTheUnwrappedOperationValue()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public void M()
+                {
+                    var value = 42;
+                    object boxed = value;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.True(boxed.TryGetConstantValue(useDataFlowAnalysis: true, out var flowValue, default));
+        Assert.Equal(42, flowValue);
+        Assert.False(boxed.TryGetConstantValue(useDataFlowAnalysis: false, out var unwrappedValue, default));
+        Assert.Null(unwrappedValue);
+    }
+
+    [Fact]
     public void IsPrimaryConstructor_ReturnsTrueForPrimaryClassConstructor()
     {
         var compilation = CreateCompilation("""

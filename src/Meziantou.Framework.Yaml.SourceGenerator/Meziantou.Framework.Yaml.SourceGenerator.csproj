@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Meziantou.Framework.Yaml/YamlKnownNamingPolicy.cs" Link="YamlKnownNamingPolicy.cs" />
     <Compile Include="../Meziantou.Framework.Yaml/YamlNamingPolicy.cs" Link="YamlNamingPolicy.cs" />
     <Compile Include="../Meziantou.Framework.Yaml/YamlCamelCaseNamingPolicy.cs" Link="YamlCamelCaseNamingPolicy.cs" />
     <Compile Include="../Meziantou.Framework.Yaml/YamlKebabCaseLowerNamingPolicy.cs" Link="YamlKebabCaseLowerNamingPolicy.cs" />

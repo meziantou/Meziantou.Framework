@@ -30,6 +30,22 @@ abstract class YamlNamingPolicy
     /// <summary>Gets the naming policy for KEBAB-CASE (uppercase).</summary>
     public static YamlNamingPolicy KebabCaseUpper { get; } = new YamlKebabCaseUpperNamingPolicy();
 
+    /// <summary>Gets the policy matching the specified <see cref="YamlKnownNamingPolicy"/> value.</summary>
+    /// <param name="namingPolicy">The naming policy to resolve.</param>
+    /// <returns>The matching policy, or <see langword="null"/> when no policy must be applied.</returns>
+    internal static YamlNamingPolicy? GetPolicy(YamlKnownNamingPolicy namingPolicy)
+    {
+        return namingPolicy switch
+        {
+            YamlKnownNamingPolicy.CamelCase => CamelCase,
+            YamlKnownNamingPolicy.SnakeCaseLower => SnakeCaseLower,
+            YamlKnownNamingPolicy.SnakeCaseUpper => SnakeCaseUpper,
+            YamlKnownNamingPolicy.KebabCaseLower => KebabCaseLower,
+            YamlKnownNamingPolicy.KebabCaseUpper => KebabCaseUpper,
+            _ => null,
+        };
+    }
+
     /// <summary>Converts the specified name according to the policy.</summary>
     /// <param name="name">The CLR member name.</param>
     /// <returns>The converted name.</returns>

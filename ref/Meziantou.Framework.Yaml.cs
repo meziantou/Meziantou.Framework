@@ -874,6 +874,13 @@ namespace Meziantou.Framework.Yaml.Serialization
     {
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Interface | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = false)]
+    public sealed class YamlNamingPolicyAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
+    {
+        public Meziantou.Framework.Yaml.YamlKnownNamingPolicy NamingPolicy { get => throw null; }
+        public YamlNamingPolicyAttribute(Meziantou.Framework.Yaml.YamlKnownNamingPolicy namingPolicy) { }
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = false)]
     public sealed class YamlNumberHandlingAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {

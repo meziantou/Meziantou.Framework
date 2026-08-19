@@ -694,7 +694,7 @@ public sealed partial class YamlSerializerContextGenerator
             var extensionData = TryCreateExtensionDataMemberModel(named);
             var members = GetSerializableMembers(named)
                 .Where(m => extensionData is null || !SymbolEqualityComparer.Default.Equals(m, extensionData.Symbol))
-                .Select(m => CreateMemberModel(m, propertyNamingPolicy))
+                .Select(m => CreateMemberModel(m, named, propertyNamingPolicy))
                 .ToImmutableArray();
             builder.Append("        WriteMembers").Append(index).AppendLine("(writer, value, discriminatorPropertyName: null, runtimeConverters);");
             builder.AppendLine("        writer.WriteEndMapping();");
@@ -1819,7 +1819,10 @@ public sealed partial class YamlSerializerContextGenerator
             }
             else
             {
-                parameterYamlNameExpressions[i] = ToLiteral(ApplyNamingPolicy(parameterName, propertyNamingPolicy));
+                var declaredPolicy = GetDeclaredNamingPolicy(typeSymbol);
+                parameterYamlNameExpressions[i] = ToLiteral(declaredPolicy is not null
+                    ? ApplyNamingPolicy(parameterName, YamlNamingPolicy.GetPolicy(declaredPolicy.Value))
+                    : ApplyNamingPolicy(parameterName, propertyNamingPolicy));
             }
 
             parameterValueVarNames[i] = $"__ctor{index}_{parameterName}";
@@ -3396,7 +3399,7 @@ public sealed partial class YamlSerializerContextGenerator
             var extensionData = TryCreateExtensionDataMemberModel(named);
             var members = GetSerializableMembers(named)
                 .Where(m => extensionData is null || !SymbolEqualityComparer.Default.Equals(m, extensionData.Symbol))
-                .Select(m => CreateMemberModel(m, propertyNamingPolicy))
+                .Select(m => CreateMemberModel(m, named, propertyNamingPolicy))
                 .ToImmutableArray();
 
             if (named.TypeKind == TypeKind.Class && TryGetPolymorphismInfo(named, derivedTypeMappings, out var polymorphism) && polymorphism.DerivedTypes.Length != 0)

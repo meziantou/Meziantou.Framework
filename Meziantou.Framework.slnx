@@ -228,7 +228,7 @@
     <Project Path="tests/Meziantou.Framework.RelativeDate.Tests/Meziantou.Framework.RelativeDate.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ResxSourceGenerator.Tests/Meziantou.Framework.ResxSourceGenerator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.RobotsTxt.Tests/Meziantou.Framework.RobotsTxt.Tests.csproj" />
-    <Project Path="tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Roslyn.PackageTests/Meziantou.Framework.Roslyn.PackageTests.csproj" />
     <Project Path="tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn4_8.csproj" />
     <Project Path="tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_0.csproj" />
     <Project Path="tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_3.csproj" />

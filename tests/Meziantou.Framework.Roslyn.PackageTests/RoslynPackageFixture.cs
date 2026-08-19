@@ -1,6 +1,6 @@
 using TestUtilities;
 
-namespace Meziantou.Framework.Roslyn.Tests;
+namespace Meziantou.Framework.Roslyn.PackageTests;
 
 public sealed class RoslynPackageFixture()
     : NuGetPackageFixture(PackageName)

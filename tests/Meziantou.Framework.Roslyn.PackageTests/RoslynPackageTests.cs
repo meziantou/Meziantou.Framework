@@ -1,7 +1,7 @@
 using System.IO.Compression;
 using Xunit.Sdk;
 
-namespace Meziantou.Framework.Roslyn.Tests;
+namespace Meziantou.Framework.Roslyn.PackageTests;
 
 public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFixture<RoslynPackageFixture>
 {

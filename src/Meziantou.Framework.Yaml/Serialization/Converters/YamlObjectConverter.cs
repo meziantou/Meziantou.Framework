@@ -1799,17 +1799,20 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
     private enum ExtensionDataKind
     {
         Dictionary,
+        ReadOnlyDictionary,
         Mapping,
     }
 
     private sealed class ExtensionDataInfo
     {
-        private ExtensionDataInfo(Member member, ExtensionDataKind kind, Type? dictionaryValueType, Func<object> createContainer)
+        private ExtensionDataInfo(Member member, ExtensionDataKind kind, Type? dictionaryValueType, Func<object> createContainer, Type? containerType = null, Func<object, IEnumerable<KeyValuePair<string, object?>>>? enumerateEntries = null)
         {
             Member = member;
             Kind = kind;
             DictionaryValueType = dictionaryValueType;
             CreateContainer = createContainer;
+            ContainerType = containerType;
+            EnumerateEntries = enumerateEntries;
         }
 
         public Member Member { get; }
@@ -1819,6 +1822,16 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
         public Type? DictionaryValueType { get; }
 
         public Func<object> CreateContainer { get; }
+
+        /// <summary>
+        /// Type of the mutable container created by <see cref="CreateContainer"/>. Only set for <see cref="ExtensionDataKind.ReadOnlyDictionary"/>.
+        /// </summary>
+        public Type? ContainerType { get; }
+
+        /// <summary>
+        /// Enumerates the entries of a read-only dictionary container. Only set for <see cref="ExtensionDataKind.ReadOnlyDictionary"/>.
+        /// </summary>
+        public Func<object, IEnumerable<KeyValuePair<string, object?>>>? EnumerateEntries { get; }
 
         [UnconditionalSuppressMessage(
             "AOT",
@@ -1855,9 +1868,15 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
                 return new ExtensionDataInfo(member, ExtensionDataKind.Mapping, dictionaryValueType: null, CreateMapping);
             }
 
-            if (!TryGetExtensionDataDictionaryValueType(memberType, out var valueType))
+            var kind = ExtensionDataKind.Dictionary;
+            if (!TryGetExtensionDataDictionaryValueType(memberType, typeof(IDictionary<,>), out var valueType))
             {
-                throw new NotSupportedException($"Extension data member '{member.Name}' on '{declaringType}' must be a '{typeof(YamlMapping)}' or implement 'IDictionary<string, object>' or 'IDictionary<string, YamlNode>'.");
+                if (!TryGetExtensionDataDictionaryValueType(memberType, typeof(IReadOnlyDictionary<,>), out valueType))
+                {
+                    throw new NotSupportedException($"Extension data member '{member.Name}' on '{declaringType}' must be a '{typeof(YamlMapping)}' or implement 'IDictionary<string, object>', 'IDictionary<string, YamlNode>', 'IReadOnlyDictionary<string, object>', or 'IReadOnlyDictionary<string, YamlNode>'.");
+                }
+
+                kind = ExtensionDataKind.ReadOnlyDictionary;
             }
 
             Type createType;
@@ -1885,14 +1904,36 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
                        ?? throw new NotSupportedException($"Extension data member '{member.Name}' on '{declaringType}' could not be instantiated.");
             }
 
-            return new ExtensionDataInfo(member, ExtensionDataKind.Dictionary, valueType, CreateDictionary);
+            if (kind == ExtensionDataKind.ReadOnlyDictionary)
+            {
+                return new ExtensionDataInfo(member, kind, valueType, CreateDictionary, createType, CreateReadOnlyDictionaryEnumerator(valueType));
+            }
+
+            return new ExtensionDataInfo(member, kind, valueType, CreateDictionary);
         }
 
-        private static bool TryGetExtensionDataDictionaryValueType(Type type, out Type valueType)
+        [UnconditionalSuppressMessage(
+            "AOT",
+            "IL3050",
+            Justification = "Extension-data enumeration uses reflection and is only exercised by reflection-based serialization. NativeAOT scenarios should use source-generated metadata.")]
+        [UnconditionalSuppressMessage(
+            "Trimming",
+            "IL2060",
+            Justification = "Extension-data enumeration uses reflection and is only exercised by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
+        private static Func<object, IEnumerable<KeyValuePair<string, object?>>> CreateReadOnlyDictionaryEnumerator(Type valueType)
+        {
+            var method = typeof(YamlObjectConverter<T>)
+                .GetMethod(nameof(EnumerateReadOnlyDictionary), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(valueType);
+
+            return method.CreateDelegate<Func<object, IEnumerable<KeyValuePair<string, object?>>>>();
+        }
+
+        private static bool TryGetExtensionDataDictionaryValueType(Type type, Type dictionaryDefinition, out Type valueType)
         {
             valueType = null!;
 
-            if (TryGetDictionaryInterface(type, out var dictionaryInterface))
+            if (TryGetDictionaryInterface(type, dictionaryDefinition, out var dictionaryInterface))
             {
                 valueType = dictionaryInterface.GetGenericArguments()[1];
                 if (valueType == typeof(object))
@@ -1913,14 +1954,14 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
             "Trimming",
             "IL2070",
             Justification = "Extension-data dictionary detection uses reflection and is only exercised by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
-        private static bool TryGetDictionaryInterface(Type type, out Type dictionaryInterface)
+        private static bool TryGetDictionaryInterface(Type type, Type dictionaryDefinition, out Type dictionaryInterface)
         {
             dictionaryInterface = null!;
 
             if (type.IsGenericType)
             {
                 var definition = type.GetGenericTypeDefinition();
-                if (definition == typeof(IDictionary<,>) && type.GetGenericArguments()[0] == typeof(string))
+                if (definition == dictionaryDefinition && type.GetGenericArguments()[0] == typeof(string))
                 {
                     dictionaryInterface = type;
                     return true;
@@ -1937,7 +1978,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
                 }
 
                 var definition = candidate.GetGenericTypeDefinition();
-                if (definition == typeof(IDictionary<,>) && candidate.GetGenericArguments()[0] == typeof(string))
+                if (definition == dictionaryDefinition && candidate.GetGenericArguments()[0] == typeof(string))
                 {
                     dictionaryInterface = candidate;
                     return true;
@@ -2497,6 +2538,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
         switch (extensionData.Kind)
         {
             case ExtensionDataKind.Dictionary:
+            case ExtensionDataKind.ReadOnlyDictionary:
             {
                 var valueType = extensionData.DictionaryValueType ?? typeof(object);
                 var converter = reader.GetConverter(valueType);
@@ -2522,22 +2564,34 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
 
         var member = extensionData.Member;
         var container = member.GetValue(instance);
-        if (container is null)
+
+        // A read-only dictionary member cannot be mutated through its declared type: create a mutable dictionary,
+        // copy the existing entries into it, and assign it back to the member.
+        if (extensionData.Kind == ExtensionDataKind.ReadOnlyDictionary && !extensionData.ContainerType!.IsInstanceOfType(container))
+        {
+            var mutableContainer = extensionData.CreateContainer();
+            if (container is not null)
+            {
+                var mutableDictionary = (IDictionary)mutableContainer;
+                foreach (var entry in extensionData.EnumerateEntries!(container))
+                {
+                    mutableDictionary[entry.Key] = entry.Value;
+                }
+            }
+
+            container = mutableContainer;
+            AssignExtensionDataContainer(instance, member, container);
+        }
+        else if (container is null)
         {
             container = extensionData.CreateContainer();
-            try
-            {
-                member.SetValue(instance, container);
-            }
-            catch (Exception exception)
-            {
-                throw new NotSupportedException($"Extension data member '{member.Name}' could not be assigned on '{instance.GetType()}'.", exception);
-            }
+            AssignExtensionDataContainer(instance, member, container);
         }
 
         switch (extensionData.Kind)
         {
             case ExtensionDataKind.Dictionary:
+            case ExtensionDataKind.ReadOnlyDictionary:
             {
                 if (container is not IDictionary dictionary)
                 {
@@ -2585,6 +2639,26 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
         }
     }
 
+    private static void AssignExtensionDataContainer(object instance, Member member, object container)
+    {
+        try
+        {
+            member.SetValue(instance, container);
+        }
+        catch (Exception exception)
+        {
+            throw new NotSupportedException($"Extension data member '{member.Name}' could not be assigned on '{instance.GetType()}'.", exception);
+        }
+    }
+
+    private static IEnumerable<KeyValuePair<string, object?>> EnumerateReadOnlyDictionary<TValue>(object container)
+    {
+        foreach (var pair in (IReadOnlyDictionary<string, TValue>)container)
+        {
+            yield return new KeyValuePair<string, object?>(pair.Key, pair.Value);
+        }
+    }
+
     private static void WriteExtensionData(YamlWriter writer, object instance, Contract contract)
     {
         ArgumentNullException.ThrowIfNull(writer);
@@ -2608,6 +2682,10 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
         {
             case ExtensionDataKind.Dictionary:
                 WriteExtensionDictionary(writer, container, extensionData.DictionaryValueType ?? typeof(object));
+                return;
+
+            case ExtensionDataKind.ReadOnlyDictionary:
+                WriteExtensionEntries(writer, extensionData.EnumerateEntries!(container), extensionData.DictionaryValueType ?? typeof(object));
                 return;
 
             case ExtensionDataKind.Mapping:
@@ -2661,6 +2739,26 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
             }
 
             WriteExtensionEntry(writer, key, entry.Value, valueType);
+        }
+    }
+
+    private static void WriteExtensionEntries(YamlWriter writer, IEnumerable<KeyValuePair<string, object?>> entries, Type valueType)
+    {
+        if (writer.Options.MappingOrder == YamlMappingOrderPolicy.Sorted)
+        {
+            var items = new List<KeyValuePair<string, object?>>(entries);
+            items.Sort(static (x, y) => string.CompareOrdinal(x.Key, y.Key));
+            for (var i = 0; i < items.Count; i++)
+            {
+                WriteExtensionEntry(writer, items[i].Key, items[i].Value, valueType);
+            }
+
+            return;
+        }
+
+        foreach (var entry in entries)
+        {
+            WriteExtensionEntry(writer, entry.Key, entry.Value, valueType);
         }
     }
 

@@ -159,6 +159,20 @@ internal sealed class Product
 }
 ```
 
+`YamlExtensionDataAttribute` collects the mapping keys that don't match any member. The annotated member must be a `YamlMapping`, or a dictionary whose keys are `string` and whose values are `object` or `YamlNode`:
+
+```csharp
+internal sealed class Product
+{
+    public int Id { get; set; }
+
+    [YamlExtensionData]
+    public IReadOnlyDictionary<string, object?>? Extra { get; set; }
+}
+```
+
+The supported dictionary types are `Dictionary<string, TValue>`, `IDictionary<string, TValue>`, and `IReadOnlyDictionary<string, TValue>`. A read-only dictionary cannot be mutated through its declared type, so the deserializer creates a `Dictionary<string, TValue>`, copies the entries of the current value into it, and assigns it to the member. The member must be settable, unless its value is already a `Dictionary<string, TValue>` which is then updated in place.
+
 Custom converters derive from `YamlConverter<T>` and can be registered through `YamlSerializerOptions.Converters` or `YamlSourceGenerationOptionsAttribute.Converters`.
 
 `YamlConverterAttribute` also accepts an open generic converter type when the annotated type, or the type of the annotated member, is a generic type with the same number of generic parameters. The converter is closed over the type arguments of the target type.

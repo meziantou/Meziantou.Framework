@@ -40,7 +40,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     private static readonly DiagnosticDescriptor UnsupportedExtensionDataMember = new(
         id: "MFY003",
         title: "Unsupported extension data member",
-        messageFormat: "Type '{0}' contains extension data member '{1}' of unsupported type '{2}'. Extension data members must be 'IDictionary<string, object>', 'IDictionary<string, Meziantou.Framework.Yaml.Model.YamlNode>', or 'Meziantou.Framework.Yaml.Model.YamlMapping'.",
+        messageFormat: "Type '{0}' contains extension data member '{1}' of unsupported type '{2}'. Extension data members must be 'Dictionary<string, TValue>', 'IDictionary<string, TValue>', 'IReadOnlyDictionary<string, TValue>' where TValue is 'object' or 'Meziantou.Framework.Yaml.Model.YamlNode', or 'Meziantou.Framework.Yaml.Model.YamlMapping'.",
         category: "Meziantou.Framework.Yaml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -1047,19 +1047,31 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         return true;
     }
 
-    private static bool TryGetDictionaryValueType(ITypeSymbol type, out ITypeSymbol valueType)
+    private static bool TryGetDictionaryValueType(ITypeSymbol type, out ITypeSymbol valueType, out bool isReadOnly)
     {
         if (type is INamedTypeSymbol named
             && named.IsGenericType
-            && string.Equals(named.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), "global::System.Collections.Generic.Dictionary<TKey, TValue>", StringComparison.Ordinal)
             && named.TypeArguments.Length == 2
             && named.TypeArguments[0].SpecialType == SpecialType.System_String)
         {
-            valueType = named.TypeArguments[1];
-            return true;
+            var definition = named.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            switch (definition)
+            {
+                case "global::System.Collections.Generic.Dictionary<TKey, TValue>":
+                case "global::System.Collections.Generic.IDictionary<TKey, TValue>":
+                    valueType = named.TypeArguments[1];
+                    isReadOnly = false;
+                    return true;
+
+                case "global::System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>":
+                    valueType = named.TypeArguments[1];
+                    isReadOnly = true;
+                    return true;
+            }
         }
 
         valueType = null!;
+        isReadOnly = false;
         return false;
     }
 
@@ -2455,7 +2467,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             return true;
         }
 
-        if (TryGetDictionaryValueType(type, out var valueType))
+        if (TryGetDictionaryValueType(type, out var valueType, out _))
         {
             if (valueType.SpecialType == SpecialType.System_Object)
             {
@@ -2507,8 +2519,8 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         }
         else
         {
-            kind = ExtensionDataKind.Dictionary;
-            _ = TryGetDictionaryValueType(memberType, out dictionaryValueType);
+            _ = TryGetDictionaryValueType(memberType, out dictionaryValueType, out var isReadOnly);
+            kind = isReadOnly ? ExtensionDataKind.ReadOnlyDictionary : ExtensionDataKind.Dictionary;
         }
 
         var (accessExpression, assign, usesAccessorForWrite) = CreateMemberAccessExpressions(symbol, type, accessors);

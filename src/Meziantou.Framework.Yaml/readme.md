@@ -161,6 +161,34 @@ internal sealed class Product
 
 Custom converters derive from `YamlConverter<T>` and can be registered through `YamlSerializerOptions.Converters` or `YamlSourceGenerationOptionsAttribute.Converters`.
 
+`YamlConverterAttribute` also accepts an open generic converter type when the annotated type, or the type of the annotated member, is a generic type with the same number of generic parameters. The converter is closed over the type arguments of the target type.
+
+```csharp
+[YamlConverter(typeof(BoxConverter<>))]
+internal sealed class Box<T>
+{
+    public T? Value { get; set; }
+}
+
+internal sealed class BoxConverter<T> : YamlConverter<Box<T>>  // used for Box<int>, Box<string>, ...
+{
+}
+```
+
+`YamlDerivedTypeAttribute` accepts an open generic derived type on a generic base type. The derived type is closed for each instantiation of the base type by matching the base type it declares, so a single attribute covers every instantiation.
+
+```csharp
+[YamlPolymorphic]
+[YamlDerivedType(typeof(Dog<>), "dog")]
+internal abstract class Animal<T>
+{
+}
+
+internal sealed class Dog<T> : Animal<T>  // Animal<string> uses Dog<string>, Animal<int> uses Dog<int>
+{
+}
+```
+
 ## Feature switches
 
 Reflection-based serialization can be disabled for applications that only use source-generated metadata. Set the `MeziantouFrameworkYamlIsReflectionEnabledByDefault` MSBuild property to `false` in the project file:

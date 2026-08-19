@@ -85,6 +85,14 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor UnresolvedOpenGenericDerivedType = new(
+        id: "MFY022",
+        title: "Open generic derived type cannot be resolved",
+        messageFormat: "Open generic derived type '{0}' cannot be resolved for base type '{1}' and is ignored. Ensure the type arguments of the derived type can be inferred from the base type.",
+        category: "Meziantou.Framework.Yaml.SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     internal static readonly ImmutableArray<DiagnosticDescriptor> SupportedDiagnosticDescriptors = ImmutableArray.Create(
         ContextMustBePartial,
         UnsupportedMemberType,
@@ -93,7 +101,8 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         InvalidSourceGenerationOption,
         InvalidConverterType,
         InvalidDerivedTypeMapping,
-        MissingYamlPolymorphicOnDerivedTypeMappingBase);
+        MissingYamlPolymorphicOnDerivedTypeMappingBase,
+        UnresolvedOpenGenericDerivedType);
 
     internal sealed class ContextValidationResult
     {
@@ -357,6 +366,9 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 continue;
             }
 
+            ValidateYamlConverterAttribute(diagnostics, named, named);
+            ValidateDerivedTypeAttributes(diagnostics, named);
+
             if (IsYamlNodeType(named))
             {
                 continue;
@@ -404,13 +416,15 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                     continue;
                 }
 
+                ValidateYamlConverterAttribute(diagnostics, member, memberType);
+
                 if (IsKnownScalar(memberType) || IsYamlNodeType(memberType) || IsUntypedObject(memberType))
                 {
                     continue;
                 }
 
                 // Skip if the member itself has [YamlConverter(typeof(...))] — the converter handles serialization.
-                if (GetYamlConverterAttributeTypeName(member) is not null)
+                if (HasYamlConverterAttribute(member))
                 {
                     continue;
                 }
@@ -480,6 +494,66 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         }
 
         return new ContextValidationResult(diagnostics.ToImmutable(), derivedTypeMappings, resolvedTypes, indexByType);
+    }
+
+    /// <summary>
+    /// Reports a diagnostic when <c>[YamlConverter]</c> declares an open generic converter type that cannot be closed
+    /// over the generic arguments of the annotated type or member type.
+    /// </summary>
+    private static void ValidateYamlConverterAttribute(ImmutableArray<Diagnostic>.Builder diagnostics, ISymbol symbol, ITypeSymbol typeToConvert)
+    {
+        var converterType = GetYamlConverterAttributeType(symbol);
+        if (converterType is not INamedTypeSymbol namedConverterType || !IsOpenGenericConverterType(namedConverterType))
+        {
+            return;
+        }
+
+        if (!TryConstructOpenGenericConverterType(namedConverterType, typeToConvert, out _))
+        {
+            diagnostics.Add(Diagnostic.Create(
+                InvalidConverterType,
+                symbol.Locations.FirstOrDefault(),
+                namedConverterType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                $"the open generic converter type is not compatible with type '{typeToConvert.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}'. Ensure that the total number of generic type parameters on the converter matches the number on the target type."));
+        }
+    }
+
+    /// <summary>
+    /// Reports a diagnostic for each <c>[YamlDerivedType]</c> declaring an open generic derived type that cannot be
+    /// closed over the type arguments of the base type.
+    /// </summary>
+    private static void ValidateDerivedTypeAttributes(ImmutableArray<Diagnostic>.Builder diagnostics, INamedTypeSymbol baseType)
+    {
+        foreach (var attribute in baseType.GetAttributes())
+        {
+            if (!string.Equals(attribute.AttributeClass?.ToDisplayString(), "Meziantou.Framework.Yaml.Serialization.YamlDerivedTypeAttribute", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (attribute.ConstructorArguments.Length < 1)
+            {
+                continue;
+            }
+
+            var derivedArgument = attribute.ConstructorArguments[0];
+            if (derivedArgument.Kind != TypedConstantKind.Type ||
+                derivedArgument.Value is not INamedTypeSymbol derivedType ||
+                GetAllTypeParameters(derivedType).Length == 0 ||
+                !IsOpenGenericType(derivedType))
+            {
+                continue;
+            }
+
+            if (!TryResolveDerivedType(baseType, derivedType, out _))
+            {
+                diagnostics.Add(Diagnostic.Create(
+                    UnresolvedOpenGenericDerivedType,
+                    attribute.ApplicationSyntaxReference?.GetSyntax().GetLocation() ?? baseType.Locations.FirstOrDefault(),
+                    derivedType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
+                    baseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)));
+            }
+        }
     }
 
     private static void ValidateSourceGenerationOptions(ImmutableArray<Diagnostic>.Builder diagnostics, Compilation compilation, ContextModel model)
@@ -730,7 +804,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 continue;
             }
 
-            if (GetYamlConverterAttributeTypeName(member) is not null)
+            if (HasYamlConverterAttribute(member))
             {
                 continue;
             }
@@ -1475,7 +1549,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         var type = GetMemberType(member) ?? throw new InvalidOperationException("Member type could not be determined.");
         var (accessExpression, assign, usesAccessorForWrite) = CreateMemberAccessExpressions(member, declaringType, accessors);
         var memberIgnoreCondition = TryGetIgnoreCondition(member, out var rawCondition) ? rawCondition : GetDeclaredIgnoreCondition(declaringType);
-        var converterTypeName = GetYamlConverterAttributeTypeName(member);
+        var converterTypeName = GetYamlConverterAttributeTypeName(member, type);
         var objectCreationHandling = GetObjectCreationHandling(member);
         var (blockSequenceMappingStyle, blockSequenceSequenceStyle) = GetBlockSequenceItemStyles(member);
         var isRequiredKeyword = member is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true };
@@ -1807,7 +1881,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         builder.Append(indent).AppendLine("}");
     }
 
-    private static string? GetYamlConverterAttributeTypeName(ISymbol member)
+    private static ITypeSymbol? GetYamlConverterAttributeType(ISymbol member)
     {
         foreach (var attribute in member.GetAttributes())
         {
@@ -1832,10 +1906,344 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 continue;
             }
 
-            return converterType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            return converterType;
         }
 
         return null;
+    }
+
+    private static bool HasYamlConverterAttribute(ISymbol member)
+        => GetYamlConverterAttributeType(member) is not null;
+
+    /// <summary>
+    /// Gets the fully qualified name of the converter declared by <c>[YamlConverter]</c> on <paramref name="member"/>.
+    /// An open generic converter type is closed over the generic arguments of <paramref name="typeToConvert"/>;
+    /// <see langword="null"/> is returned when the converter cannot be constructed for that type.
+    /// </summary>
+    private static string? GetYamlConverterAttributeTypeName(ISymbol member, ITypeSymbol typeToConvert)
+    {
+        var converterType = GetYamlConverterAttributeType(member);
+        if (converterType is null)
+        {
+            return null;
+        }
+
+        if (!IsOpenGenericConverterType(converterType))
+        {
+            return converterType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        }
+
+        return TryConstructOpenGenericConverterType((INamedTypeSymbol)converterType, typeToConvert, out var constructed)
+            ? constructed.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+            : null;
+    }
+
+    private static bool IsOpenGenericConverterType(ITypeSymbol converterType)
+        => converterType is INamedTypeSymbol named && GetAllTypeParameters(named).Length > 0 && IsOpenGenericType(named);
+
+    /// <summary>
+    /// Closes an open generic converter type over the generic arguments of <paramref name="typeToConvert"/>.
+    /// Both arities count the type parameters of the containing types, so nested converters such as
+    /// <c>Outer&lt;&gt;.Inner&lt;&gt;</c> are supported.
+    /// </summary>
+    private static bool TryConstructOpenGenericConverterType(INamedTypeSymbol converterType, ITypeSymbol typeToConvert, [NotNullWhen(true)] out INamedTypeSymbol? constructedConverterType)
+    {
+        constructedConverterType = null;
+        if (typeToConvert is not INamedTypeSymbol namedTypeToConvert)
+        {
+            return false;
+        }
+
+        var typeArguments = GetAllTypeArguments(namedTypeToConvert);
+        if (typeArguments.Length == 0 || typeArguments.Any(static argument => argument.TypeKind == TypeKind.TypeParameter))
+        {
+            return false;
+        }
+
+        if (GetAllTypeParameters(converterType).Length != typeArguments.Length)
+        {
+            return false;
+        }
+
+        return TryConstructGenericType(converterType, typeArguments, out constructedConverterType);
+    }
+
+    /// <summary>
+    /// Constructs a closed generic type from its definition and the type arguments of the whole nesting hierarchy,
+    /// outermost first.
+    /// </summary>
+    private static bool TryConstructGenericType(INamedTypeSymbol definition, IReadOnlyList<ITypeSymbol> typeArguments, [NotNullWhen(true)] out INamedTypeSymbol? constructedType)
+    {
+        constructedType = null;
+
+        var definitions = new List<INamedTypeSymbol>();
+        for (var current = definition.OriginalDefinition; current is not null; current = current.ContainingType)
+        {
+            definitions.Add(current);
+        }
+
+        definitions.Reverse();
+
+        INamedTypeSymbol? constructed = null;
+        var index = 0;
+        foreach (var currentDefinition in definitions)
+        {
+            var arity = currentDefinition.TypeParameters.Length;
+            var candidate = constructed is null
+                ? currentDefinition
+                : constructed.GetTypeMembers(currentDefinition.Name, arity).FirstOrDefault();
+            if (candidate is null)
+            {
+                return false;
+            }
+
+            if (arity > 0)
+            {
+                if (index + arity > typeArguments.Count)
+                {
+                    return false;
+                }
+
+                candidate = candidate.Construct(typeArguments.Skip(index).Take(arity).ToArray());
+                index += arity;
+            }
+
+            constructed = candidate;
+        }
+
+        if (constructed is null || index != typeArguments.Count)
+        {
+            return false;
+        }
+
+        constructedType = constructed;
+        return true;
+    }
+
+    /// <summary>Gets the type parameters of a type definition, including the ones of its containing types, outermost first.</summary>
+    private static ImmutableArray<ITypeParameterSymbol> GetAllTypeParameters(INamedTypeSymbol definition)
+    {
+        var builder = ImmutableArray.CreateBuilder<ITypeParameterSymbol>();
+        AppendTypeParameters(definition.OriginalDefinition, builder);
+        return builder.ToImmutable();
+
+        static void AppendTypeParameters(INamedTypeSymbol definition, ImmutableArray<ITypeParameterSymbol>.Builder builder)
+        {
+            if (definition.ContainingType is not null)
+            {
+                AppendTypeParameters(definition.ContainingType, builder);
+            }
+
+            builder.AddRange(definition.TypeParameters);
+        }
+    }
+
+    /// <summary>
+    /// Closes an open generic derived type over the type arguments of <paramref name="baseType"/> by unifying the base
+    /// type specification declared by the derived type with the closed base type. Types that are already closed are
+    /// returned unchanged.
+    /// </summary>
+    private static bool TryResolveDerivedType(ITypeSymbol baseType, ITypeSymbol derivedType, [NotNullWhen(true)] out ITypeSymbol? resolvedDerivedType)
+    {
+        if (derivedType is not INamedTypeSymbol namedDerivedType || GetAllTypeParameters(namedDerivedType).Length == 0 || !IsOpenGenericType(namedDerivedType))
+        {
+            resolvedDerivedType = derivedType;
+            return true;
+        }
+
+        var definition = namedDerivedType.OriginalDefinition;
+        var parameters = GetAllTypeParameters(definition);
+
+        INamedTypeSymbol? resolved = null;
+        foreach (var candidate in EnumerateBaseTypes(definition))
+        {
+            var substitution = new Dictionary<ITypeParameterSymbol, ITypeSymbol>(SymbolEqualityComparer.Default);
+            if (!TryUnify(candidate, baseType, substitution))
+            {
+                continue;
+            }
+
+            var arguments = new ITypeSymbol[parameters.Length];
+            var isComplete = true;
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                if (!substitution.TryGetValue(parameters[i], out var argument))
+                {
+                    isComplete = false;
+                    break;
+                }
+
+                arguments[i] = argument;
+            }
+
+            if (!isComplete || !SatisfiesConstraints(parameters, arguments) || !TryConstructGenericType(definition, arguments, out var constructed))
+            {
+                continue;
+            }
+
+            if (!IsAssignableTo(constructed, baseType))
+            {
+                continue;
+            }
+
+            if (resolved is null)
+            {
+                resolved = constructed;
+            }
+            else if (!SymbolEqualityComparer.Default.Equals(resolved, constructed))
+            {
+                // The derived type can be constructed in more than one way for that base type.
+                resolvedDerivedType = null;
+                return false;
+            }
+        }
+
+        resolvedDerivedType = resolved;
+        return resolved is not null;
+    }
+
+    private static bool IsOpenGenericType(INamedTypeSymbol type)
+        => type.IsUnboundGenericType || GetAllTypeArguments(type).Any(static argument => argument.TypeKind == TypeKind.TypeParameter);
+
+    private static IEnumerable<ITypeSymbol> EnumerateBaseTypes(INamedTypeSymbol type)
+    {
+        for (var current = type.BaseType; current is not null; current = current.BaseType)
+        {
+            yield return current;
+        }
+
+        foreach (var interfaceType in type.AllInterfaces)
+        {
+            yield return interfaceType;
+        }
+    }
+
+    /// <summary>
+    /// Matches a base type specification declared by an open generic derived type (such as <c>Base&lt;List&lt;T&gt;&gt;</c>)
+    /// against the closed base type, recording the type arguments bound to each type parameter.
+    /// </summary>
+    private static bool TryUnify(ITypeSymbol specification, ITypeSymbol actual, Dictionary<ITypeParameterSymbol, ITypeSymbol> substitution)
+    {
+        if (specification is ITypeParameterSymbol parameter)
+        {
+            if (substitution.TryGetValue(parameter, out var existing))
+            {
+                return SymbolEqualityComparer.Default.Equals(existing, actual);
+            }
+
+            substitution[parameter] = actual;
+            return true;
+        }
+
+        if (specification is IArrayTypeSymbol specificationArray)
+        {
+            return actual is IArrayTypeSymbol actualArray
+                && specificationArray.Rank == actualArray.Rank
+                && TryUnify(specificationArray.ElementType, actualArray.ElementType, substitution);
+        }
+
+        if (specification is INamedTypeSymbol { IsGenericType: true } specificationType)
+        {
+            if (actual is not INamedTypeSymbol { IsGenericType: true } actualType ||
+                !SymbolEqualityComparer.Default.Equals(specificationType.OriginalDefinition, actualType.OriginalDefinition))
+            {
+                return false;
+            }
+
+            var specificationArguments = GetAllTypeArguments(specificationType);
+            var actualArguments = GetAllTypeArguments(actualType);
+            if (specificationArguments.Length != actualArguments.Length)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < specificationArguments.Length; i++)
+            {
+                if (!TryUnify(specificationArguments[i], actualArguments[i], substitution))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return SymbolEqualityComparer.Default.Equals(specification, actual);
+    }
+
+    private static bool SatisfiesConstraints(ImmutableArray<ITypeParameterSymbol> parameters, ITypeSymbol[] arguments)
+    {
+        for (var i = 0; i < parameters.Length; i++)
+        {
+            var parameter = parameters[i];
+            var argument = arguments[i];
+
+            if (parameter.HasReferenceTypeConstraint && !argument.IsReferenceType)
+            {
+                return false;
+            }
+
+            if ((parameter.HasValueTypeConstraint || parameter.HasUnmanagedTypeConstraint) && !argument.IsValueType)
+            {
+                return false;
+            }
+
+            if (parameter.HasConstructorConstraint && argument is INamedTypeSymbol { TypeKind: TypeKind.Class } argumentClass &&
+                !argumentClass.InstanceConstructors.Any(static constructor => constructor.Parameters.Length == 0 && constructor.DeclaredAccessibility == Accessibility.Public))
+            {
+                return false;
+            }
+
+            foreach (var constraintType in parameter.ConstraintTypes)
+            {
+                var substituted = SubstituteTypeParameters(constraintType, parameters, arguments);
+                if (!IsAssignableTo(argument, substituted))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static ITypeSymbol SubstituteTypeParameters(ITypeSymbol type, ImmutableArray<ITypeParameterSymbol> parameters, ITypeSymbol[] arguments)
+    {
+        if (type is ITypeParameterSymbol parameter)
+        {
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                if (SymbolEqualityComparer.Default.Equals(parameters[i], parameter))
+                {
+                    return arguments[i];
+                }
+            }
+        }
+
+        return type;
+    }
+
+    /// <summary>Gets the type arguments of a type, including the ones of its containing types, outermost first.</summary>
+    private static ImmutableArray<ITypeSymbol> GetAllTypeArguments(INamedTypeSymbol type)
+    {
+        if (type.ContainingType is null)
+        {
+            return type.TypeArguments;
+        }
+
+        var builder = ImmutableArray.CreateBuilder<ITypeSymbol>();
+        AppendTypeArguments(type, builder);
+        return builder.ToImmutable();
+
+        static void AppendTypeArguments(INamedTypeSymbol type, ImmutableArray<ITypeSymbol>.Builder builder)
+        {
+            if (type.ContainingType is not null)
+            {
+                AppendTypeArguments(type.ContainingType, builder);
+            }
+
+            builder.AddRange(type.TypeArguments);
+        }
     }
 
     /// <summary>
@@ -1856,7 +2264,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         }
 
         // Check if the type itself has [YamlConverter(typeof(...))].
-        if (GetYamlConverterAttributeTypeName(unwrappedType) is not null)
+        if (HasYamlConverterAttribute(unwrappedType))
         {
             return true;
         }
@@ -2366,7 +2774,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             var baseType = mapping.BaseType;
             var derivedType = mapping.DerivedType;
 
-            if (!IsAssignableTo(derivedType, baseType))
+            if (!TryResolveDerivedType(baseType, derivedType, out var resolvedDerivedType) || !IsAssignableTo(resolvedDerivedType, baseType))
             {
                 diagnostics.Add(Diagnostic.Create(
                     InvalidDerivedTypeMapping,
@@ -2522,7 +2930,12 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             }
 
             var derivedArg = attribute.ConstructorArguments[0];
-            if (derivedArg.Kind != TypedConstantKind.Type || derivedArg.Value is not ITypeSymbol derivedType)
+            if (derivedArg.Kind != TypedConstantKind.Type || derivedArg.Value is not ITypeSymbol declaredDerivedType)
+            {
+                continue;
+            }
+
+            if (!TryResolveDerivedType(baseType, declaredDerivedType, out var derivedType))
             {
                 continue;
             }
@@ -2575,9 +2988,14 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 continue;
             }
 
+            if (!TryResolveDerivedType(baseType, mapping.DerivedType, out var mappedDerivedType))
+            {
+                continue;
+            }
+
             var isDefaultMapping = mapping.Discriminator is null && mapping.Tag is null;
             if (!CanAddLowerPrecedenceMapping(
-                mapping.DerivedType,
+                mappedDerivedType,
                 mapping.Discriminator,
                 mapping.Tag,
                 isDefaultMapping,
@@ -2591,10 +3009,10 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
             if (isDefaultMapping)
             {
-                defaultDerivedType ??= mapping.DerivedType;
+                defaultDerivedType ??= mappedDerivedType;
             }
 
-            derivedTypes.Add(new DerivedTypeInfoModel(mapping.DerivedType, mapping.Discriminator, mapping.Tag));
+            derivedTypes.Add(new DerivedTypeInfoModel(mappedDerivedType, mapping.Discriminator, mapping.Tag));
             if (mapping.Discriminator is not null)
             {
                 seenDiscriminators.Add(mapping.Discriminator);

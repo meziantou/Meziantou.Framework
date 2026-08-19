@@ -137,12 +137,7 @@ public abstract class YamlReaderWriterBase
             return null;
         }
 
-        var converterType = attribute.ConverterType;
-        if (converterType.IsGenericTypeDefinition)
-        {
-            throw new NotSupportedException($"Converter type '{converterType}' cannot be an open generic type.");
-        }
-
+        var converterType = YamlConverterAttributeHelper.ResolveConverterType(attribute.ConverterType, typeToConvert);
         if (!typeof(YamlConverter).IsAssignableFrom(converterType))
         {
             throw new NotSupportedException($"Converter type '{converterType}' must derive from '{typeof(YamlConverter)}'.");

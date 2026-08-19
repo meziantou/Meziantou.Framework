@@ -969,6 +969,9 @@ namespace Meziantou.Framework.Yaml.Serialization
         public static bool TryParseDecimal(System.ReadOnlySpan<char> value, out System.Decimal result) => throw null;
         public static bool TryParseInt64(System.ReadOnlySpan<char> value, out long result) => throw null;
         public static bool TryParseDouble(System.ReadOnlySpan<char> value, out double result) => throw null;
+        #if NET11_0
+        public static bool TryParseIeee754<T>(System.ReadOnlySpan<char> value, out T result) where T : struct, System.Numerics.IFloatingPointIeee754<T> => throw null;
+        #endif
         public static bool IsNull(Meziantou.Framework.Yaml.Serialization.YamlReader reader) => throw null;
         public static bool TryParseBool(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out bool result) => throw null;
         public static bool TryParseInt32(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out int result) => throw null;
@@ -977,6 +980,9 @@ namespace Meziantou.Framework.Yaml.Serialization
         public static bool TryParseInt64(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out long result) => throw null;
         public static bool TryParseDouble(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out double result) => throw null;
         public static bool TryParseDecimal(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out System.Decimal result) => throw null;
+        #if NET11_0
+        public static bool TryParseIeee754<T>(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out T result) where T : struct, System.Numerics.IFloatingPointIeee754<T> => throw null;
+        #endif
         public static object? ResolveObject(Meziantou.Framework.Yaml.Serialization.YamlReader reader) => throw null;
     }
 
@@ -1093,6 +1099,12 @@ namespace Meziantou.Framework.Yaml.Serialization
         public void WriteScalar(System.Half value) { }
         public void WriteScalar(System.Int128 value) { }
         public void WriteScalar(System.UInt128 value) { }
+        #if NET11_0
+        public void WriteScalar(System.Numerics.BFloat16 value) { }
+        public void WriteScalar(System.Numerics.Decimal32 value) { }
+        public void WriteScalar(System.Numerics.Decimal64 value) { }
+        public void WriteScalar(System.Numerics.Decimal128 value) { }
+        #endif
         public void WriteScalar<T>(T value) where T : System.IFormattable { }
         public void WriteNullValue() { }
         public readonly struct BlockSequenceItemStyleScope : System.IDisposable

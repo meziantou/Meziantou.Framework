@@ -141,6 +141,28 @@ internal static class YamlBuiltInTypeInfoResolver
             return YamlUInt128Converter.Instance;
         }
 
+#if NET11_0_OR_GREATER
+        if (type == typeof(BFloat16))
+        {
+            return YamlBFloat16Converter.Instance;
+        }
+
+        if (type == typeof(Decimal32))
+        {
+            return YamlDecimal32Converter.Instance;
+        }
+
+        if (type == typeof(Decimal64))
+        {
+            return YamlDecimal64Converter.Instance;
+        }
+
+        if (type == typeof(Decimal128))
+        {
+            return YamlDecimal128Converter.Instance;
+        }
+#endif
+
         if (type == typeof(object))
         {
             return YamlUntypedObjectConverter.Instance;
@@ -190,6 +212,12 @@ internal static class YamlBuiltInTypeInfoResolver
         if (type == typeof(Half?)) return YamlNullableConverter<Half>.Instance;
         if (type == typeof(Int128?)) return YamlNullableConverter<Int128>.Instance;
         if (type == typeof(UInt128?)) return YamlNullableConverter<UInt128>.Instance;
+#if NET11_0_OR_GREATER
+        if (type == typeof(BFloat16?)) return YamlNullableConverter<BFloat16>.Instance;
+        if (type == typeof(Decimal32?)) return YamlNullableConverter<Decimal32>.Instance;
+        if (type == typeof(Decimal64?)) return YamlNullableConverter<Decimal64>.Instance;
+        if (type == typeof(Decimal128?)) return YamlNullableConverter<Decimal128>.Instance;
+#endif
 
         return null;
     }

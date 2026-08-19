@@ -1,3 +1,7 @@
+#if NET11_0_OR_GREATER
+using System.Numerics;
+#endif
+
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlWellKnownScalarConverterTests
 {
@@ -17,6 +21,17 @@ public sealed class YamlWellKnownScalarConverterTests
         public Int128 Big { get; set; }
         public UInt128 UBig { get; set; }
     }
+
+#if NET11_0_OR_GREATER
+    private sealed class Ieee754Payload
+    {
+        public BFloat16 Brain { get; set; }
+        public Decimal32 Small { get; set; }
+        public Decimal64 Medium { get; set; }
+        public Decimal128 Large { get; set; }
+        public Decimal64? OptionalMedium { get; set; }
+    }
+#endif
 
     private sealed class NullablePayload
     {
@@ -86,6 +101,91 @@ public sealed class YamlWellKnownScalarConverterTests
         Assert.Contains("Lin:", ex.Message);
         Assert.Contains("Col:", ex.Message);
     }
+
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void RoundTrip_Ieee754ScalarTypes_ShouldSucceed()
+    {
+        var payload = new Ieee754Payload
+        {
+            Brain = (BFloat16)1.5f,
+            Small = Decimal32.Parse("-5.30", CultureInfo.InvariantCulture),
+            Medium = Decimal64.Parse("123.456", CultureInfo.InvariantCulture),
+            Large = Decimal128.Pi,
+            OptionalMedium = null,
+        };
+
+        var yaml = YamlSerializer.Serialize(payload);
+        var roundTrip = YamlSerializer.Deserialize<Ieee754Payload>(yaml);
+
+        Assert.Equal("""
+            Brain: 1.5
+            Small: -5.30
+            Medium: 123.456
+            Large: 3.141592653589793238462643383279503
+            OptionalMedium: null
+
+            """, yaml, ignoreLineEndingDifferences: true);
+
+        Assert.NotNull(roundTrip);
+        Assert.Equal(payload.Brain, roundTrip.Brain);
+        Assert.Equal(payload.Small, roundTrip.Small);
+        Assert.Equal(payload.Medium, roundTrip.Medium);
+        Assert.Equal(payload.Large, roundTrip.Large);
+        Assert.Null(roundTrip.OptionalMedium);
+    }
+
+    [Theory]
+    [InlineData(".inf")]
+    [InlineData("+.inf")]
+    [InlineData("-.inf")]
+    [InlineData(".nan")]
+    public void Deserialize_Ieee754NamedLiterals_ShouldSucceed(string scalar)
+    {
+        var expected = scalar switch
+        {
+            ".nan" => Decimal64.NaN,
+            "-.inf" => Decimal64.NegativeInfinity,
+            _ => Decimal64.PositiveInfinity,
+        };
+
+        var value = YamlSerializer.Deserialize<Decimal64>(scalar);
+
+        Assert.Equal(expected.ToString(null, CultureInfo.InvariantCulture), value.ToString(null, CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void Serialize_Ieee754NonFiniteValues_ShouldUseYamlLiterals()
+    {
+        Assert.Equal(".inf\n", YamlSerializer.Serialize(BFloat16.PositiveInfinity), ignoreLineEndingDifferences: true);
+        Assert.Equal("-.inf\n", YamlSerializer.Serialize(Decimal32.NegativeInfinity), ignoreLineEndingDifferences: true);
+        Assert.Equal(".nan\n", YamlSerializer.Serialize(Decimal128.NaN), ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public void Deserialize_Ieee754UnderscoreSeparators_ShouldSucceed()
+    {
+        var value = YamlSerializer.Deserialize<Decimal128>("1_000.5");
+
+        Assert.Equal(Decimal128.Parse("1000.5", CultureInfo.InvariantCulture), value);
+    }
+
+    [Fact]
+    public void Deserialize_InvalidDecimal64_ShouldThrowYamlExceptionWithContext()
+    {
+        var ex = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Decimal64>("not-a-decimal64"));
+        Assert.Contains("Decimal64", ex.Message);
+        Assert.Contains("Lin:", ex.Message);
+        Assert.Contains("Col:", ex.Message);
+    }
+
+    [Fact]
+    public void Deserialize_InvalidBFloat16_ShouldThrowYamlExceptionWithContext()
+    {
+        var ex = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<BFloat16>("not-a-bfloat16"));
+        Assert.Contains("BFloat16", ex.Message);
+    }
+#endif
 
     [Fact]
     public void Serialize_NullableDateTimeOffsetAndBoolean_ShouldRemainPlain()

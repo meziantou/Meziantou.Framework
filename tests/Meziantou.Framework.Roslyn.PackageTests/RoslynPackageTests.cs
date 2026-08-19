@@ -14,6 +14,7 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         Assert.Contains("ReportDiagnostic", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/ContextExtensions.cs")));
         Assert.Contains("SyntaxNodeAnalysisContext", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/ContextExtensions.g.cs")));
         Assert.Contains("DiagnosticReporter", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/DiagnosticReporter.cs")));
+        Assert.Contains("class EmbeddedAttribute", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/EmbeddedAttribute.cs")));
         Assert.Contains("IsInterfaceImplementation", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/MethodSymbolExtensions.cs")));
         Assert.Contains("MatchesNamespace", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/NamespaceSymbolExtensions.cs")));
         Assert.Contains("UnwrapImplicitConversions", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/OperationExtensions.cs")));
@@ -44,6 +45,21 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
             .ToArray();
 
         Assert.Empty(entriesWithoutGuard);
+    }
+
+    [Fact]
+    public void Package_SourceFilesMarkTypesAsEmbeddedUnlessOptedOut()
+    {
+        using var package = ZipFile.OpenRead(fixture.PackagePath);
+
+        var entriesWithoutEmbeddedAttribute = package.Entries
+            .Where(entry => entry.FullName.StartsWith(SourceEntryPrefix, StringComparison.Ordinal) && entry.FullName.EndsWith(".cs", StringComparison.Ordinal))
+            .Where(entry => !SourceFileNamesWithoutEmbeddedAttribute.Contains(entry.FullName[SourceEntryPrefix.Length..], StringComparer.Ordinal))
+            .Where(entry => !ReadEntryText(entry).ReplaceLineEndings("\n").Contains(EmbeddedAttributeGuard, StringComparison.Ordinal))
+            .Select(entry => entry.FullName)
+            .ToArray();
+
+        Assert.Empty(entriesWithoutEmbeddedAttribute);
     }
 
     [Fact]
@@ -117,6 +133,75 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
 
         await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
         await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+    }
+
+    [Fact]
+    public async Task Package_EmbedsTypesSoTheyDoNotConflictWithInternalsVisibleTo()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var rootDirectory = CreateInternalsVisibleToProjects(temporaryDirectory, "consumer-ivt", additionalProperties: "");
+
+        await RunDotNetCommand(rootDirectory / "Consumer", ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        var result = await RunDotNetCommand(rootDirectory / "Consumer", ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        var output = string.Join('\n', result.Output);
+        Assert.DoesNotContain("CS0436", output);
+    }
+
+    [Fact]
+    public async Task Package_DoesNotEmbedTypesWhenOptedOut()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var rootDirectory = CreateInternalsVisibleToProjects(temporaryDirectory, "consumer-ivt-optout", additionalProperties: "<DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE</DefineConstants>");
+
+        await RunDotNetCommand(rootDirectory / "Consumer", ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        var result = await RunDotNetCommand(rootDirectory / "Consumer", ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 1);
+
+        var output = string.Join('\n', result.Output);
+        Assert.Contains("CS0436", output);
+    }
+
+    private FullPath CreateInternalsVisibleToProjects(TemporaryDirectory temporaryDirectory, string directoryName, string additionalProperties)
+    {
+        var rootDirectory = temporaryDirectory.CreateDirectory(directoryName);
+        CreateGlobalJson(rootDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(rootDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile($"{directoryName}/Directory.Build.props", $$"""
+            <Project>
+              <PropertyGroup>
+                <TargetFramework>net10.0</TargetFramework>
+                <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+                <TreatsWarningsAsErrors>true</TreatsWarningsAsErrors>
+                <NoWarn>nullable</NoWarn>
+                {{additionalProperties}}
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="{{RoslynPackageFixture.PackageName}}" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
+                <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" PrivateAssets="all" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        temporaryDirectory.CreateTextFile($"{directoryName}/Library/Library.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk" />
+            """);
+        temporaryDirectory.CreateTextFile($"{directoryName}/Library/AssemblyInfo.cs", """
+            [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Consumer")]
+            """);
+        temporaryDirectory.CreateTextFile($"{directoryName}/Library/Library.cs", CreateConsumerSourceWithConstantChecks([]));
+
+        temporaryDirectory.CreateTextFile($"{directoryName}/Consumer/Consumer.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <ProjectReference Include="../Library/Library.csproj" />
+              </ItemGroup>
+            </Project>
+            """);
+        temporaryDirectory.CreateTextFile($"{directoryName}/Consumer/Consumer.cs", CreateConsumerSourceWithConstantChecks([]));
+
+        return rootDirectory;
     }
 
     private static ZipArchiveEntry AssertEntry(ZipArchive archive, string entryName)
@@ -291,6 +376,21 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
 
         """;
 
+    private const string EmbeddedAttributeGuard = """
+        #if !MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE
+        [Microsoft.CodeAnalysis.Embedded]
+        #endif
+        """;
+
+    /// <summary>
+    /// <c>EmbeddedAttribute.cs</c> declares the attribute itself, and <c>ContextExtensions.g.cs</c> is another part of a type already marked in <c>ContextExtensions.cs</c>.
+    /// </summary>
+    private static readonly string[] SourceFileNamesWithoutEmbeddedAttribute =
+    [
+        "ContextExtensions.g.cs",
+        "EmbeddedAttribute.cs",
+    ];
+
     private static readonly string[] SourceFileNames =
     [
         "CompilationExtensions.cs",
@@ -302,6 +402,7 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         "DiagnosticParameterReportOptions.cs",
         "DiagnosticPropertyReportOptions.cs",
         "DiagnosticReporter.cs",
+        "EmbeddedAttribute.cs",
         "LanguageVersionExtensions.cs",
         "LocalDataFlowAnalysis.cs",
         "LocationExtensions.cs",

@@ -13,6 +13,9 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace Meziantou.Framework.Roslyn;
 
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE
+[Microsoft.CodeAnalysis.Embedded]
+#endif
 internal static partial class LocalDataFlowAnalysis
 {
     public static ITypeSymbol? GetActualType(this IOperation operation, CancellationToken cancellationToken)

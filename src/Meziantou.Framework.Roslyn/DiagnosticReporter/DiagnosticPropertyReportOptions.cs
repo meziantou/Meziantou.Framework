@@ -6,6 +6,9 @@ using System;
 
 namespace Meziantou.Framework.Roslyn;
 
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE
+[Microsoft.CodeAnalysis.Embedded]
+#endif
 [Flags]
 internal enum DiagnosticPropertyReportOptions
 {

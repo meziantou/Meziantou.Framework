@@ -9,6 +9,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.Roslyn;
 
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE
+[Microsoft.CodeAnalysis.Embedded]
+#endif
 internal static partial class SymbolExtensions
 {
     public static bool IsVisibleOutsideOfAssembly([NotNullWhen(true)] this ISymbol? symbol)

@@ -39,6 +39,28 @@ using Meziantou.Framework.Roslyn;
 
 The package also defines Roslyn and C# feature constants before compilation based on the referenced `Microsoft.CodeAnalysis.*` package version, such as `ROSLYN_4_8_OR_GREATER` and `CSHARP12_OR_GREATER`.
 
+## Type embedding
+
+All types are decorated with `[Microsoft.CodeAnalysis.Embedded]`, so the compiler hides them from other assemblies. This means the helpers don't conflict when an assembly that uses this package exposes its internals with `[InternalsVisibleTo]` to another assembly that also uses it (`warning CS0436`).
+
+The package declares `Microsoft.CodeAnalysis.EmbeddedAttribute` as an `internal sealed partial class` without any attribute on it, so it can be merged with the declarations emitted by other source generators or packages.
+
+Define the `MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE` constant to opt out of both the attribute usages and the attribute declaration:
+
+````xml
+<PropertyGroup>
+  <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE</DefineConstants>
+</PropertyGroup>
+````
+
+If the attribute is already declared in the project in a way that conflicts with this declaration, define `MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE_DECLARATION` instead. The types are still marked as embedded, but the attribute must be provided by the project:
+
+````xml
+<PropertyGroup>
+  <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE_DECLARATION</DefineConstants>
+</PropertyGroup>
+````
+
 ## Compiler warnings
 
 The helper files suppress all compiler warnings so they don't pollute the consuming project's build. Define the `MEZIANTOU_FRAMEWORK_ROSLYN_ENABLE_WARNINGS` constant to report them:

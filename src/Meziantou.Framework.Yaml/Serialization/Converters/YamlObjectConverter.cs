@@ -1611,7 +1611,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
                     continue;
                 }
 
-                var name = GetMemberName(property, readerWriter);
+                var name = GetMemberName(property, type, readerWriter);
                 var order = GetMemberOrder(property);
                 var token = property.MetadataToken;
 
@@ -1677,7 +1677,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
                     continue;
                 }
 
-                var name = GetMemberName(field, readerWriter);
+                var name = GetMemberName(field, type, readerWriter);
                 var order = GetMemberOrder(field);
                 var token = field.MetadataToken;
 
@@ -1752,7 +1752,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
                 }
                 else
                 {
-                    constructorModel = new ConstructorModel(selectedConstructor, members, readerWriter, nullabilityContext);
+                    constructorModel = new ConstructorModel(selectedConstructor, type, members, readerWriter, nullabilityContext);
                     createInstance = () => throw new NotSupportedException($"Type '{type}' must be deserialized using a parameterized constructor.");
                 }
             }
@@ -1956,9 +1956,10 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
         private readonly bool[] _parametersDisallowNull;
         private readonly Dictionary<string, int> _parameterIndexByYamlName;
 
-        public ConstructorModel(ConstructorInfo constructor, IReadOnlyList<Member> members, YamlReaderWriterBase readerWriter, NullabilityInfoContext? nullabilityContext)
+        public ConstructorModel(ConstructorInfo constructor, Type declaringType, IReadOnlyList<Member> members, YamlReaderWriterBase readerWriter, NullabilityInfoContext? nullabilityContext)
         {
             ArgumentNullException.ThrowIfNull(constructor);
+            ArgumentNullException.ThrowIfNull(declaringType);
             ArgumentNullException.ThrowIfNull(members);
             ArgumentNullException.ThrowIfNull(readerWriter);
 
@@ -1977,6 +1978,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
                 }
             }
 
+            var declaredPolicy = GetDeclaredNamingPolicy(declaringType);
             _parameterIndexByYamlName = new Dictionary<string, int>(readerWriter.PropertyNameComparer);
             for (var i = 0; i < _parameters.Length; i++)
             {
@@ -1985,7 +1987,9 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
 
                 var yamlName = clrNameToSerialized.TryGetValue(parameterName, out var memberName)
                     ? memberName
-                    : readerWriter.ConvertName(parameterName);
+                    : declaredPolicy is not null
+                        ? ApplyNamingPolicy(parameterName, declaredPolicy.GetValueOrDefault())
+                        : readerWriter.ConvertName(parameterName);
 
                 if (_parameterIndexByYamlName.ContainsKey(yamlName))
                 {
@@ -2938,7 +2942,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
         throw new NotSupportedException($"Type '{type}' defines multiple public constructors. Use '{typeof(YamlConstructorAttribute)}' to select the constructor to use for deserialization.");
     }
 
-    private static string GetMemberName(MemberInfo member, YamlReaderWriterBase readerWriter)
+    private static string GetMemberName(MemberInfo member, Type declaringType, YamlReaderWriterBase readerWriter)
     {
         var yamlName = member.GetCustomAttribute<YamlPropertyNameAttribute>(inherit: true);
         if (yamlName is not null)
@@ -2947,7 +2951,25 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
         }
 
         var name = member.Name;
+        var declaredPolicy = member.GetCustomAttribute<YamlNamingPolicyAttribute>(inherit: true)?.NamingPolicy
+            ?? GetDeclaredNamingPolicy(declaringType);
+        if (declaredPolicy is not null)
+        {
+            return ApplyNamingPolicy(name, declaredPolicy.GetValueOrDefault());
+        }
+
         return readerWriter.ConvertName(name);
+    }
+
+    private static YamlKnownNamingPolicy? GetDeclaredNamingPolicy(Type type)
+    {
+        return type.GetCustomAttribute<YamlNamingPolicyAttribute>(inherit: true)?.NamingPolicy;
+    }
+
+    private static string ApplyNamingPolicy(string name, YamlKnownNamingPolicy namingPolicy)
+    {
+        var policy = YamlNamingPolicy.GetPolicy(namingPolicy);
+        return policy is null ? name : policy.ConvertName(name);
     }
 
     private static int GetMemberOrder(MemberInfo member)

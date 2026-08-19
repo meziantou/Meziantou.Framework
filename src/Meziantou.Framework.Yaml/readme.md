@@ -114,6 +114,7 @@ var options = new YamlSerializerOptions
 Attributes can be used to configure individual types and members:
 
 - `YamlPropertyNameAttribute`
+- `YamlNamingPolicyAttribute`
 - `YamlIgnoreAttribute`
 - `YamlRequiredAttribute`
 - `YamlConstructorAttribute`
@@ -123,6 +124,21 @@ Attributes can be used to configure individual types and members:
 - `YamlDerivedTypeAttribute`
 - `YamlNumberHandlingAttribute`
 - `YamlObjectCreationHandlingAttribute`
+
+`YamlNamingPolicyAttribute` overrides `YamlSerializerOptions.PropertyNamingPolicy`. When applied to a type, it sets the naming policy for all its members; when applied to a member, it only applies to that member. `YamlPropertyNameAttribute` takes precedence over both.
+
+```csharp
+[YamlNamingPolicy(YamlKnownNamingPolicy.SnakeCaseLower)]
+internal sealed class Product
+{
+    public int Id { get; set; }                       // id
+
+    [YamlNamingPolicy(YamlKnownNamingPolicy.CamelCase)]
+    public string? DisplayName { get; set; }          // displayName
+
+    public DateTime CreationDate { get; set; }        // creation_date
+}
+```
 
 Custom converters derive from `YamlConverter<T>` and can be registered through `YamlSerializerOptions.Converters` or `YamlSourceGenerationOptionsAttribute.Converters`.
 

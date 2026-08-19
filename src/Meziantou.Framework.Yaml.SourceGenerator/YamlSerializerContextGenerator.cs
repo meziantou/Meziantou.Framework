@@ -1482,9 +1482,9 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         return Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "default";
     }
 
-    private static MemberModel CreateMemberModel(ISymbol member, YamlNamingPolicy? propertyNamingPolicy)
+    private static MemberModel CreateMemberModel(ISymbol member, INamedTypeSymbol declaringType, YamlNamingPolicy? propertyNamingPolicy)
     {
-        var (nameForRead, nameForWrite) = GetSerializedMemberNameExpressions(member, propertyNamingPolicy);
+        var (nameForRead, nameForWrite) = GetSerializedMemberNameExpressions(member, declaringType, propertyNamingPolicy);
         var type = GetMemberType(member) ?? throw new InvalidOperationException("Member type could not be determined.");
         var accessExpression = member is IPropertySymbol prop ? "value." + prop.Name : "value." + member.Name;
         Func<string, string> assign = member is IPropertySymbol propAssign
@@ -1508,7 +1508,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         return new MemberModel(member, type, nameForRead, nameForWrite, accessExpression, assign, memberIgnoreCondition, converterTypeName, objectCreationHandling, blockSequenceMappingStyle, blockSequenceSequenceStyle, isRequired, isIgnoredOnRead, isInitOnly, isRequiredKeyword, requiresIncludeFields, disallowNull, disallowNull, isReadOnlyProperty, isReadOnlyField, numberHandling, enumCustomNames);
     }
 
-    private static (string ForRead, string ForWrite) GetSerializedMemberNameExpressions(ISymbol member, YamlNamingPolicy? propertyNamingPolicy)
+    private static (string ForRead, string ForWrite) GetSerializedMemberNameExpressions(ISymbol member, INamedTypeSymbol declaringType, YamlNamingPolicy? propertyNamingPolicy)
     {
         foreach (var attribute in member.GetAttributes())
         {
@@ -1527,7 +1527,10 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             }
         }
 
-        var name = ApplyNamingPolicy(member.Name, propertyNamingPolicy);
+        var declaredPolicy = TryGetDeclaredNamingPolicy(member.GetAttributes()) ?? GetDeclaredNamingPolicy(declaringType);
+        var name = declaredPolicy is not null
+            ? ApplyNamingPolicy(member.Name, YamlNamingPolicy.GetPolicy(declaredPolicy.Value))
+            : ApplyNamingPolicy(member.Name, propertyNamingPolicy);
         var resolvedLiteral = ToLiteral(name);
         return (resolvedLiteral, resolvedLiteral);
     }
@@ -1535,6 +1538,43 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     private static string ApplyNamingPolicy(string name, YamlNamingPolicy? policy)
     {
         return policy?.ConvertName(name) ?? name;
+    }
+
+    private static YamlKnownNamingPolicy? GetDeclaredNamingPolicy(INamedTypeSymbol? type)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            var policy = TryGetDeclaredNamingPolicy(current.GetAttributes());
+            if (policy is not null)
+            {
+                return policy;
+            }
+        }
+
+        return null;
+    }
+
+    private static YamlKnownNamingPolicy? TryGetDeclaredNamingPolicy(ImmutableArray<AttributeData> attributes)
+    {
+        foreach (var attribute in attributes)
+        {
+            if (attribute.AttributeClass is null)
+            {
+                continue;
+            }
+
+            if (!string.Equals(attribute.AttributeClass.ToDisplayString(), "Meziantou.Framework.Yaml.Serialization.YamlNamingPolicyAttribute", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (attribute.ConstructorArguments.Length == 1 && attribute.ConstructorArguments[0].Value is int value)
+            {
+                return (YamlKnownNamingPolicy)value;
+            }
+        }
+
+        return null;
     }
 
     private static YamlNamingPolicy? ResolveNamingPolicy(string? policyName)

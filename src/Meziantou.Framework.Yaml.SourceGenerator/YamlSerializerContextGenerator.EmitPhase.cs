@@ -60,6 +60,7 @@ public sealed partial class YamlSerializerContextGenerator
         builder.Append("partial class ").Append(model.TypeName).AppendLine();
         builder.AppendLine("{");
         EmitSourceGenerationConverterFields(builder, model.SourceGenerationOptions);
+        EmitCSharpUnionClassifierContextFields(builder, types, propertyNamingPolicy, accessors, model.SourceGenerationOptions);
         EmitRuntimeCustomConverterHelpers(builder, model.SourceGenerationOptions, runtimeCustomConverterTypes);
         builder.AppendLine();
         builder.Append("    public static ").Append(model.TypeName).AppendLine(" Default { get; } = new(CreateDefaultOptions(), isDefault: true);");
@@ -2758,7 +2759,7 @@ public sealed partial class YamlSerializerContextGenerator
 
         if (typeSymbol is INamedTypeSymbol unionType && TryGetCSharpUnionCases(unionType, out var unionCases))
         {
-            EmitReadCSharpUnionValue(builder, typeName, unionCases, indexByType, sourceGenerationOptions);
+            EmitReadCSharpUnionValue(builder, index, typeName, unionCases, indexByType, sourceGenerationOptions);
             builder.AppendLine("    }");
             return;
         }
@@ -5770,7 +5771,7 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("        }");
         builder.AppendLine();
 
-        var writeCases = SortCSharpUnionCasesForWriting(unionCases);
+        var writeCases = SortCSharpUnionCasesForWriting(CollapseCSharpUnionNullableOverloads(unionCases));
         for (var i = 0; i < writeCases.Length; i++)
         {
             var unionCase = writeCases[i];
@@ -5788,11 +5789,14 @@ public sealed partial class YamlSerializerContextGenerator
 
     private static void EmitReadCSharpUnionValue(
         StringBuilder builder,
+        int index,
         string unionTypeName,
         ImmutableArray<CSharpUnionCaseModel> unionCases,
         Dictionary<ITypeSymbol, int> indexByType,
         SourceGenerationOptionsModel sourceGenerationOptions)
     {
+        var readCases = CollapseCSharpUnionNullableOverloads(unionCases);
+
         builder.AppendLine("        if (reader.TryReadAlias(out var rootAliasValue))");
         builder.AppendLine("        {");
         builder.AppendLine("            if (rootAliasValue is null)");
@@ -5806,10 +5810,10 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("            }");
         builder.AppendLine();
 
-        var writeCases = SortCSharpUnionCasesForWriting(unionCases);
-        for (var i = 0; i < writeCases.Length; i++)
+        var aliasCases = SortCSharpUnionCasesForWriting(readCases);
+        for (var i = 0; i < aliasCases.Length; i++)
         {
-            var unionCase = writeCases[i];
+            var unionCase = aliasCases[i];
             var runtimeTypeName = unionCase.RuntimeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             builder.Append("            if (rootAliasValue is ").Append(runtimeTypeName).Append(" aliasCaseValue").Append(i).AppendLine(")");
             builder.AppendLine("            {");
@@ -5833,27 +5837,27 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("            var scalarValue = global::Meziantou.Framework.Yaml.Serialization.YamlScalar.ResolveObject(reader);");
         builder.AppendLine("            if (scalarValue is bool)");
         builder.AppendLine("            {");
-        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.Boolean, indexByType, "                ", sourceGenerationOptions);
+        EmitReadCSharpUnionKind(builder, index, unionTypeName, readCases, CSharpUnionCaseKind.Boolean, indexByType, "                ", sourceGenerationOptions);
         builder.AppendLine("            }");
         builder.AppendLine();
         builder.AppendLine("            if (scalarValue is sbyte or byte or short or ushort or int or uint or long or ulong or nint or nuint or float or double or decimal or global::System.Half or global::System.Int128 or global::System.UInt128)");
         builder.AppendLine("            {");
-        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.Number, indexByType, "                ", sourceGenerationOptions);
+        EmitReadCSharpUnionKind(builder, index, unionTypeName, readCases, CSharpUnionCaseKind.Number, indexByType, "                ", sourceGenerationOptions);
         builder.AppendLine("            }");
         builder.AppendLine();
-        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.String, indexByType, "            ", sourceGenerationOptions);
+        EmitReadCSharpUnionKind(builder, index, unionTypeName, readCases, CSharpUnionCaseKind.String, indexByType, "            ", sourceGenerationOptions);
         builder.AppendLine("        }");
         builder.AppendLine();
 
         builder.AppendLine("        if (reader.TokenType == global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.StartSequence)");
         builder.AppendLine("        {");
-        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.Sequence, indexByType, "            ", sourceGenerationOptions);
+        EmitReadCSharpUnionKind(builder, index, unionTypeName, readCases, CSharpUnionCaseKind.Sequence, indexByType, "            ", sourceGenerationOptions);
         builder.AppendLine("        }");
         builder.AppendLine();
 
         builder.AppendLine("        if (reader.TokenType == global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.StartMapping)");
         builder.AppendLine("        {");
-        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.Mapping, indexByType, "            ", sourceGenerationOptions);
+        EmitReadCSharpUnionKind(builder, index, unionTypeName, readCases, CSharpUnionCaseKind.Mapping, indexByType, "            ", sourceGenerationOptions);
         builder.AppendLine("        }");
         builder.AppendLine();
 
@@ -5868,15 +5872,18 @@ public sealed partial class YamlSerializerContextGenerator
         bool consumeReader)
     {
         var nullableCase = GetFirstNullableCSharpUnionCase(unionCases);
-        if (nullableCase is null)
-        {
-            builder.Append(indent).Append("throw new global::Meziantou.Framework.Yaml.YamlException(reader.SourceName, reader.Start, reader.End, \"Union type '").Append(unionTypeName).AppendLine("' does not define a nullable case.\");");
-            return;
-        }
 
         if (consumeReader)
         {
             builder.Append(indent).AppendLine("reader.Read();");
+        }
+
+        // A union with no nullable case still has a null state: 'default(TUnion)' selects no case and exposes a null
+        // value. Returning the default value makes 'default(TUnion)' round-trip through a null scalar.
+        if (nullableCase is null)
+        {
+            builder.Append(indent).Append("return default(").Append(unionTypeName).AppendLine(");");
+            return;
         }
 
         var caseTypeName = nullableCase.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
@@ -5885,6 +5892,7 @@ public sealed partial class YamlSerializerContextGenerator
 
     private static void EmitReadCSharpUnionKind(
         StringBuilder builder,
+        int index,
         string unionTypeName,
         ImmutableArray<CSharpUnionCaseModel> unionCases,
         CSharpUnionCaseKind kind,
@@ -5895,7 +5903,7 @@ public sealed partial class YamlSerializerContextGenerator
         var unionCase = GetSingleCSharpUnionCase(unionCases, kind, out var ambiguous);
         if (ambiguous)
         {
-            builder.Append(indent).Append("throw new global::Meziantou.Framework.Yaml.YamlException(reader.SourceName, reader.Start, reader.End, \"Cannot deserialize union type '").Append(unionTypeName).Append("' because multiple cases match YAML ").Append(GetCSharpUnionKindDescription(kind)).AppendLine(" values.\");");
+            EmitReadClassifiedCSharpUnionCase(builder, index, unionTypeName, unionCases, kind, indexByType, indent, sourceGenerationOptions);
             return;
         }
 
@@ -5906,8 +5914,8 @@ public sealed partial class YamlSerializerContextGenerator
         }
 
         builder.Append(indent).AppendLine("{");
-        EmitReadKnownType(builder, sourceGenerationOptions, unionCase.Type, indexByType, "unionCaseValue", indent + "    ");
-        builder.Append(indent).Append("    return new ").Append(unionTypeName).Append('(').Append(GetNonNullableValueExpression(unionCase.Type, "unionCaseValue")).AppendLine(");");
+        EmitReadKnownType(builder, sourceGenerationOptions, unionCase.RuntimeType, indexByType, "unionCaseValue", indent + "    ");
+        builder.Append(indent).Append("    return new ").Append(unionTypeName).Append('(').Append(GetNonNullableValueExpression(unionCase.RuntimeType, "unionCaseValue")).AppendLine(");");
         builder.Append(indent).AppendLine("}");
     }
 
@@ -5967,6 +5975,59 @@ public sealed partial class YamlSerializerContextGenerator
         builder.Append(innerIndent).AppendLine("}");
         builder.Append(indent).AppendLine("}");
     }
+
+    private static void EmitReadClassifiedCSharpUnionCase(
+        StringBuilder builder,
+        int index,
+        string unionTypeName,
+        ImmutableArray<CSharpUnionCaseModel> unionCases,
+        CSharpUnionCaseKind kind,
+        Dictionary<ITypeSymbol, int> indexByType,
+        string indent,
+        SourceGenerationOptionsModel sourceGenerationOptions)
+    {
+        var contextFieldName = GetCSharpUnionClassifierContextFieldName(index);
+        builder.Append(indent).AppendLine("{");
+        var innerIndent = indent + "    ";
+        builder.Append(innerIndent).Append("var classifiedCase = global::Meziantou.Framework.Yaml.Serialization.YamlUnionClassification.Classify(reader, ").Append(contextFieldName).AppendLine(", out var classifiedNode);");
+        builder.Append(innerIndent).AppendLine("if (classifiedCase is not null)");
+        builder.Append(innerIndent).AppendLine("{");
+        var caseIndent = innerIndent + "    ";
+
+        // Classification consumed the value, so the case is deserialized from the buffered copy.
+        builder.Append(caseIndent).AppendLine("reader = reader.CreateReader(classifiedNode!);");
+        builder.Append(caseIndent).AppendLine("if (!reader.Read())");
+        builder.Append(caseIndent).AppendLine("{");
+        builder.Append(caseIndent).AppendLine("    return default;");
+        builder.Append(caseIndent).AppendLine("}");
+        builder.AppendLine();
+
+        for (var i = 0; i < unionCases.Length; i++)
+        {
+            var unionCase = unionCases[i];
+            if (unionCase.Kind != kind && unionCase.Kind != CSharpUnionCaseKind.Any)
+            {
+                continue;
+            }
+
+            var runtimeTypeName = unionCase.RuntimeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            builder.Append(caseIndent).Append("if (classifiedCase == typeof(").Append(runtimeTypeName).AppendLine("))");
+            builder.Append(caseIndent).AppendLine("{");
+            EmitReadKnownType(builder, sourceGenerationOptions, unionCase.RuntimeType, indexByType, "classifiedValue" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), caseIndent + "    ");
+            builder.Append(caseIndent).Append("    return new ").Append(unionTypeName).Append("(classifiedValue").Append(i).AppendLine(");");
+            builder.Append(caseIndent).AppendLine("}");
+            builder.AppendLine();
+        }
+
+        builder.Append(caseIndent).Append("throw new global::Meziantou.Framework.Yaml.YamlException(reader.SourceName, reader.Start, reader.End, \"Union type '").Append(unionTypeName).Append("' does not define a case that matches YAML ").Append(GetCSharpUnionKindDescription(kind)).AppendLine(" values.\");");
+        builder.Append(innerIndent).AppendLine("}");
+        builder.AppendLine();
+        builder.Append(innerIndent).Append("throw new global::Meziantou.Framework.Yaml.YamlException(reader.SourceName, reader.Start, reader.End, \"Cannot deserialize union type '").Append(unionTypeName).Append("' because multiple cases match YAML ").Append(GetCSharpUnionKindDescription(kind)).AppendLine(" values.\");");
+        builder.Append(indent).AppendLine("}");
+    }
+
+    private static string GetCSharpUnionClassifierContextFieldName(int index)
+        => "s_unionClassifierContext" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     private static void EmitReadKnownType(StringBuilder builder, SourceGenerationOptionsModel sourceGenerationOptions, ITypeSymbol typeSymbol, Dictionary<ITypeSymbol, int> indexByType, string valueVarName, string indent)
     {
@@ -6376,6 +6437,109 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine("            },");
         }
     }
+
+    private static void EmitCSharpUnionClassifierContextFields(
+        StringBuilder builder,
+        ImmutableArray<ITypeSymbol> types,
+        YamlNamingPolicy? propertyNamingPolicy,
+        UnsafeAccessorRegistry accessors,
+        SourceGenerationOptionsModel sourceGenerationOptions)
+    {
+        var emitted = false;
+        for (var index = 0; index < types.Length; index++)
+        {
+            if (types[index] is not INamedTypeSymbol unionType ||
+                !TryGetCSharpUnionCases(unionType, out var unionCases))
+            {
+                continue;
+            }
+
+            var readCases = CollapseCSharpUnionNullableOverloads(unionCases);
+
+            // A classifier is only consulted when several cases share a YAML shape; every other union is resolved by
+            // shape alone and needs no metadata.
+            var hasAmbiguousKind = false;
+            foreach (var kind in new[] { CSharpUnionCaseKind.Boolean, CSharpUnionCaseKind.Number, CSharpUnionCaseKind.String, CSharpUnionCaseKind.Sequence, CSharpUnionCaseKind.Mapping })
+            {
+                GetSingleCSharpUnionCase(readCases, kind, out var ambiguous);
+                if (ambiguous)
+                {
+                    hasAmbiguousKind = true;
+                    break;
+                }
+            }
+
+            if (!hasAmbiguousKind)
+            {
+                continue;
+            }
+
+            emitted = true;
+            builder.Append("    private static readonly global::Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext ").Append(GetCSharpUnionClassifierContextFieldName(index)).AppendLine(" =");
+            builder.Append("        new(typeof(").Append(unionType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).AppendLine("), global::Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierKind.Union, new global::Meziantou.Framework.Yaml.Serialization.YamlUnionCaseInfo[]");
+            builder.AppendLine("        {");
+            foreach (var unionCase in readCases)
+            {
+                builder.Append("            new(typeof(").Append(unionCase.RuntimeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).Append("), global::Meziantou.Framework.Yaml.Serialization.YamlUnionCaseShape.").Append(GetCSharpUnionCaseShapeName(unionCase.Kind)).Append(", ");
+                AppendCSharpUnionCaseProperties(builder, unionCase, propertyNamingPolicy, accessors, sourceGenerationOptions);
+                builder.AppendLine("),");
+            }
+
+            builder.AppendLine("        });");
+        }
+
+        if (emitted)
+        {
+            builder.AppendLine();
+        }
+    }
+
+    private static void AppendCSharpUnionCaseProperties(
+        StringBuilder builder,
+        CSharpUnionCaseModel unionCase,
+        YamlNamingPolicy? propertyNamingPolicy,
+        UnsafeAccessorRegistry accessors,
+        SourceGenerationOptionsModel sourceGenerationOptions)
+    {
+        if (unionCase.Kind is not CSharpUnionCaseKind.Mapping ||
+            unionCase.RuntimeType is not INamedTypeSymbol named ||
+            named.TypeKind is TypeKind.Interface ||
+            TryGetDictionaryTypes(named, out _, out _, out _))
+        {
+            builder.Append("null, false");
+            return;
+        }
+
+        var extensionData = TryCreateExtensionDataMemberModel(named, accessors);
+        builder.Append("new global::Meziantou.Framework.Yaml.Serialization.YamlUnionCaseProperty[] { ");
+        foreach (var member in GetSerializableMembers(named))
+        {
+            if (extensionData is not null && SymbolEqualityComparer.Default.Equals(member, extensionData.Symbol))
+            {
+                continue;
+            }
+
+            var model = CreateMemberModel(member, named, propertyNamingPolicy, accessors);
+            builder.Append("new(").Append(model.SerializedNameExpressionForRead).Append(", ").Append(model.IsRequired ? "true" : "false").Append("), ");
+        }
+
+        builder.Append("}, ");
+
+        // An extension data member accepts any key, so the type never rejects unmapped keys.
+        var unmappedMemberHandling = TryGetUnmappedMemberHandlingOverride(named) ?? GetUnmappedMemberHandling(sourceGenerationOptions);
+        builder.Append(extensionData is null && string.Equals(unmappedMemberHandling, "Disallow", StringComparison.Ordinal) ? "true" : "false");
+    }
+
+    private static string GetCSharpUnionCaseShapeName(CSharpUnionCaseKind kind)
+        => kind switch
+        {
+            CSharpUnionCaseKind.Boolean => "Boolean",
+            CSharpUnionCaseKind.Number => "Number",
+            CSharpUnionCaseKind.String => "Text",
+            CSharpUnionCaseKind.Sequence => "Sequence",
+            CSharpUnionCaseKind.Mapping => "Mapping",
+            _ => "Any",
+        };
 
     private static void EmitSourceGenerationConverterFields(StringBuilder builder, SourceGenerationOptionsModel options)
     {

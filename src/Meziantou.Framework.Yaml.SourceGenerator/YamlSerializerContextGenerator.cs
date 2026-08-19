@@ -888,15 +888,17 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             {
                 foreach (var unionCase in unionCases)
                 {
-                    if (IsKnownScalar(unionCase.Type) || IsYamlNodeType(unionCase.Type))
+                    // A 'T?' case is read and written through the metadata of 'T': the union already carries its own
+                    // null state, so there is no separate contract to generate for the nullable wrapper.
+                    if (IsKnownScalar(unionCase.RuntimeType) || IsYamlNodeType(unionCase.RuntimeType) || IsUntypedObject(unionCase.RuntimeType))
                     {
                         continue;
                     }
 
-                    if (seen.Add(unionCase.Type))
+                    if (seen.Add(unionCase.RuntimeType))
                     {
-                        builder.Add(unionCase.Type);
-                        queue.Enqueue(unionCase.Type);
+                        builder.Add(unionCase.RuntimeType);
+                        queue.Enqueue(unionCase.RuntimeType);
                     }
                 }
             }
@@ -1496,6 +1498,40 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             string.Equals(systemType.Name, "TimeSpan", StringComparison.Ordinal) ||
             string.Equals(systemType.Name, "DateOnly", StringComparison.Ordinal) ||
             string.Equals(systemType.Name, "TimeOnly", StringComparison.Ordinal));
+
+    private static ImmutableArray<CSharpUnionCaseModel> CollapseCSharpUnionNullableOverloads(ImmutableArray<CSharpUnionCaseModel> cases)
+    {
+        var builder = ImmutableArray.CreateBuilder<CSharpUnionCaseModel>(cases.Length);
+        foreach (var unionCase in cases)
+        {
+            var replaced = false;
+            for (var i = 0; i < builder.Count; i++)
+            {
+                if (!SymbolEqualityComparer.Default.Equals(builder[i].RuntimeType, unionCase.RuntimeType))
+                {
+                    continue;
+                }
+
+                // 'union Foo(int, int?)' declares two cases for the same underlying type. They are indistinguishable
+                // when reading a non-null value, so keep the non-nullable overload as the canonical one. The nullable
+                // overload is still used when reading a null scalar.
+                if (builder[i].Type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T })
+                {
+                    builder[i] = unionCase;
+                }
+
+                replaced = true;
+                break;
+            }
+
+            if (!replaced)
+            {
+                builder.Add(unionCase);
+            }
+        }
+
+        return builder.ToImmutable();
+    }
 
     private static ImmutableArray<CSharpUnionCaseModel> SortCSharpUnionCasesForWriting(ImmutableArray<CSharpUnionCaseModel> cases)
     {

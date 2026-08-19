@@ -4,9 +4,34 @@ using Meziantou.Framework.Yaml.Model;
 
 namespace Meziantou.Framework.Yaml.Serialization.Converters;
 
-internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
+internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCaseShapeProvider
 {
     private Contract? _contract;
+
+    IReadOnlyList<YamlUnionCaseProperty>? IYamlUnionCaseShapeProvider.GetUnionCaseProperties(YamlReaderWriterBase readerWriter, out bool disallowUnmappedProperties)
+    {
+        disallowUnmappedProperties = false;
+
+        var contract = _contract ??= Contract.Create(typeof(T), readerWriter);
+
+        // A polymorphic type is deserialized through its discriminator, so its own members do not describe the payload.
+        if (contract.Polymorphism is not null)
+        {
+            return null;
+        }
+
+        // An extension data member accepts any key, so the type never rejects unmapped keys.
+        disallowUnmappedProperties = contract.ExtensionData is null && contract.UnmappedMemberHandling is YamlUnmappedMemberHandling.Disallow;
+
+        var members = contract.MembersDeclaration;
+        var properties = new YamlUnionCaseProperty[members.Length];
+        for (var i = 0; i < members.Length; i++)
+        {
+            properties[i] = new YamlUnionCaseProperty(members[i].Name, members[i].IsRequired);
+        }
+
+        return properties;
+    }
 
     public override bool CanPopulate(Type typeToConvert) => typeToConvert == typeof(T);
 

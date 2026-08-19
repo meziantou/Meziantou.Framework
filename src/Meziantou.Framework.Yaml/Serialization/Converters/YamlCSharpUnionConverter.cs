@@ -13,8 +13,11 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
     private readonly Type _unionType = typeof(T);
     private readonly PropertyInfo _valueProperty;
     private readonly ImmutableArray<UnionCase> _cases;
+    private readonly ImmutableArray<UnionCase> _readCases;
     private readonly ImmutableArray<UnionCase> _writeCases;
     private readonly UnionCase? _nullableCase;
+    private YamlSerializerOptions? _classifierContextOptions;
+    private YamlTypeClassifierContext? _classifierContext;
 
     [UnconditionalSuppressMessage(
         "Trimming",
@@ -31,6 +34,7 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
             throw new InvalidOperationException($"Type '{_unionType}' is not a supported C# union type.");
         }
 
+        _readCases = CollapseNullableOverloads(_cases);
         _writeCases = SortCasesForWriting(_cases);
         _nullableCase = FindNullableCase(_cases);
     }
@@ -81,10 +85,19 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
         }
 
         var kind = GetCurrentKind(reader);
-        var unionCase = GetCaseForKind(kind, reader);
-        var converter = reader.GetConverter(unionCase.Type);
-        var caseValue = converter.Read(reader, unionCase.Type);
-        return CreateValue(reader, unionCase, caseValue);
+        if (TryGetSingleCaseForKind(kind, out var unionCase, out var ambiguous))
+        {
+            var converter = reader.GetConverter(unionCase.Type);
+            var caseValue = converter.Read(reader, unionCase.Type);
+            return CreateValue(reader, unionCase, caseValue);
+        }
+
+        if (!ambiguous)
+        {
+            throw CreateNoMatchingCaseException(reader, kind);
+        }
+
+        return ReadClassifiedValue(reader, kind);
     }
 
     public override void Write(YamlWriter writer, T? value)
@@ -197,6 +210,40 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
 
         var nullabilityInfo = context.Create(parameter);
         return nullabilityInfo.ReadState != NullabilityState.NotNull;
+    }
+
+    private static ImmutableArray<UnionCase> CollapseNullableOverloads(ImmutableArray<UnionCase> cases)
+    {
+        var builder = ImmutableArray.CreateBuilder<UnionCase>(cases.Length);
+        foreach (var unionCase in cases)
+        {
+            var replaced = false;
+            for (var i = 0; i < builder.Count; i++)
+            {
+                if (builder[i].RuntimeType != unionCase.RuntimeType)
+                {
+                    continue;
+                }
+
+                // 'union Foo(int, int?)' declares two cases for the same underlying type. They are indistinguishable
+                // when reading a non-null value, so keep the non-nullable overload as the canonical one. The nullable
+                // overload is still used when reading a null scalar.
+                if (Nullable.GetUnderlyingType(builder[i].Type) is not null)
+                {
+                    builder[i] = unionCase;
+                }
+
+                replaced = true;
+                break;
+            }
+
+            if (!replaced)
+            {
+                builder.Add(unionCase);
+            }
+        }
+
+        return builder.ToImmutable();
     }
 
     private static ImmutableArray<UnionCase> SortCasesForWriting(ImmutableArray<UnionCase> cases)
@@ -361,38 +408,100 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
         return null;
     }
 
-    private UnionCase GetCaseForKind(UnionCaseKind kind, YamlReader reader)
+    private bool TryGetSingleCaseForKind(UnionCaseKind kind, out UnionCase unionCase, out bool ambiguous)
     {
         UnionCase? match = null;
         var matchCount = 0;
-        for (var i = 0; i < _cases.Length; i++)
+        for (var i = 0; i < _readCases.Length; i++)
         {
-            var unionCase = _cases[i];
-            if (unionCase.Kind == kind || unionCase.Kind == UnionCaseKind.Any)
+            var candidate = _readCases[i];
+            if (candidate.Kind == kind || candidate.Kind == UnionCaseKind.Any)
             {
-                match ??= unionCase;
+                match ??= candidate;
                 matchCount++;
             }
         }
 
-        if (matchCount == 1 && match is not null)
-        {
-            return match.Value;
-        }
+        ambiguous = matchCount > 1;
+        unionCase = match.GetValueOrDefault();
+        return matchCount == 1;
+    }
 
-        if (matchCount > 1)
+    private T? ReadClassifiedValue(YamlReader reader, UnionCaseKind kind)
+    {
+        var classified = YamlUnionClassification.Classify(reader, GetClassifierContext(reader), out var bufferedNode);
+        if (classified is null)
         {
             throw new YamlException(reader.SourceName, reader.Start, reader.End, $"Cannot deserialize union type '{_unionType}' because multiple cases match YAML {GetKindDescription(kind)} values.");
+        }
+
+        for (var i = 0; i < _readCases.Length; i++)
+        {
+            var unionCase = _readCases[i];
+            if (unionCase.RuntimeType != classified)
+            {
+                continue;
+            }
+
+            // Classification consumed the value, so the case is deserialized from the buffered copy.
+            var caseReader = reader.CreateReader(bufferedNode!);
+            if (!caseReader.Read())
+            {
+                return default;
+            }
+
+            var converter = caseReader.GetConverter(unionCase.Type);
+            return CreateValue(reader, unionCase, converter.Read(caseReader, unionCase.Type));
         }
 
         throw CreateNoMatchingCaseException(reader, kind);
     }
 
+    private YamlTypeClassifierContext GetClassifierContext(YamlReader reader)
+    {
+        if (_classifierContext is not null && ReferenceEquals(_classifierContextOptions, reader.Options))
+        {
+            return _classifierContext;
+        }
+
+        var cases = new YamlUnionCaseInfo[_readCases.Length];
+        for (var i = 0; i < _readCases.Length; i++)
+        {
+            var unionCase = _readCases[i];
+            IReadOnlyList<YamlUnionCaseProperty>? properties = null;
+            var disallowUnmappedProperties = false;
+            if (unionCase.Kind is UnionCaseKind.Mapping && reader.GetConverter(unionCase.RuntimeType) is IYamlUnionCaseShapeProvider provider)
+            {
+                properties = provider.GetUnionCaseProperties(reader, out disallowUnmappedProperties);
+            }
+
+            cases[i] = new YamlUnionCaseInfo(unionCase.RuntimeType, GetShape(unionCase.Kind), properties, disallowUnmappedProperties);
+        }
+
+        var context = new YamlTypeClassifierContext(_unionType, YamlTypeClassifierKind.Union, cases);
+        _classifierContextOptions = reader.Options;
+        _classifierContext = context;
+        return context;
+    }
+
+    private static YamlUnionCaseShape GetShape(UnionCaseKind kind)
+        => kind switch
+        {
+            UnionCaseKind.Boolean => YamlUnionCaseShape.Boolean,
+            UnionCaseKind.Number => YamlUnionCaseShape.Number,
+            UnionCaseKind.String => YamlUnionCaseShape.Text,
+            UnionCaseKind.Sequence => YamlUnionCaseShape.Sequence,
+            UnionCaseKind.Mapping => YamlUnionCaseShape.Mapping,
+            _ => YamlUnionCaseShape.Any,
+        };
+
     private T? CreateNullValue(YamlReader reader)
     {
+        // A union with no nullable case still has a null state: 'default(TUnion)' selects no case and exposes a null
+        // value. Returning the default value makes 'default(TUnion)' round-trip through a null scalar.
         if (_nullableCase is null)
         {
-            throw new YamlException(reader.SourceName, reader.Start, reader.End, $"Union type '{_unionType}' does not define a nullable case.");
+            return default;
         }
 
         return CreateValue(reader, _nullableCase.Value, null);

@@ -203,6 +203,51 @@ internal sealed class Dog<T> : Animal<T>  // Animal<string> uses Dog<string>, An
 }
 ```
 
+### Closed hierarchies
+
+A `closed` class hierarchy already lists its derived types in metadata, so they do not need to be repeated with `YamlDerivedTypeAttribute`. Set `InferClosedTypePolymorphism` to register every direct derived type of a closed base type automatically, using the derived type name, without the generic arity suffix, as its discriminator.
+
+```csharp
+public closed class Shape
+{
+    public string Name { get; set; } = "";
+}
+
+public sealed class Circle : Shape { public double Radius { get; set; } }
+public sealed class Square : Shape { public double Side { get; set; } }
+
+var options = new YamlSerializerOptions
+{
+    PolymorphismOptions = new YamlPolymorphismOptions { InferClosedTypePolymorphism = true },
+};
+
+Shape shape = new Circle { Name = "circle", Radius = 3 };
+var yaml = YamlSerializer.Serialize(shape, options); // $type: Circle
+```
+
+Inference is opt-in. It can also be enabled for a single type with `YamlPolymorphicAttribute`, which takes precedence over the serializer options, so `InferClosedTypePolymorphism = false` excludes a type from a global opt-in:
+
+```csharp
+[YamlPolymorphic(InferClosedTypePolymorphism = true)]
+public closed class Shape
+{
+}
+```
+
+Explicit registrations replace inference: a type declaring `YamlDerivedTypeAttribute` or a runtime mapping registers only those derived types. Enabling `YamlPolymorphicAttribute.InferClosedTypePolymorphism` on a type that is not declared `closed` throws an `InvalidOperationException` and reports the `MFY023` diagnostic. Only the direct derived types of the closed base type are registered, as with explicit registrations: when a derived type is itself `closed`, its own derived types are registered under it and not under the root of the hierarchy.
+
+A derived type must be at least as visible as the base type it is registered under, and two derived types cannot share a name. Reflection-based serialization throws an `InvalidOperationException` in those cases, and the source generator skips the derived type and reports the `MFY025` diagnostic.
+
+Source generation exposes the same setting on `YamlSourceGenerationOptionsAttribute`:
+
+```csharp
+[YamlSourceGenerationOptions(InferClosedTypePolymorphism = true)]
+[YamlSerializable(typeof(Shape))]
+internal sealed partial class ShapeYamlContext : YamlSerializerContext
+{
+}
+```
+
 ## Feature switches
 
 Reflection-based serialization can be disabled for applications that only use source-generated metadata. Set the `MeziantouFrameworkYamlIsReflectionEnabledByDefault` MSBuild property to `false` in the project file:

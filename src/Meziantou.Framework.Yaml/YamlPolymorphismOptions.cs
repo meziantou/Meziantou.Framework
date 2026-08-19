@@ -51,6 +51,23 @@ public sealed class YamlPolymorphismOptions
         }
     }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether derived type registrations are inferred from the compiler-provided
+    /// metadata of a <c>closed</c> type hierarchy.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each inferred derived type uses its name, without the generic arity suffix, as its discriminator.
+    /// Inference is skipped for a type that declares explicit registrations, either with
+    /// <see cref="Serialization.YamlDerivedTypeAttribute"/> or in <see cref="DerivedTypeMappings"/>.
+    /// </para>
+    /// <para>
+    /// <see cref="Serialization.YamlPolymorphicAttribute.InferClosedTypePolymorphism"/> overrides this value
+    /// for the type it is applied to.
+    /// </para>
+    /// </remarks>
+    public bool InferClosedTypePolymorphism { get; init; }
+
     private YamlTypeDiscriminatorStyle _discriminatorStyle = YamlTypeDiscriminatorStyle.Property;
     private string _typeDiscriminatorPropertyName = "$type";
     private YamlUnknownDerivedTypeHandling _unknownDerivedTypeHandling = YamlUnknownDerivedTypeHandling.Fail;

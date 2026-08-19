@@ -231,6 +231,7 @@ namespace Meziantou.Framework.Yaml
         public Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle DiscriminatorStyle { get => throw null; init { } }
         public string TypeDiscriminatorPropertyName { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get => throw null; init { } }
+        public bool InferClosedTypePolymorphism { get => throw null; init { } }
         public System.Collections.Generic.IDictionary<System.Type, System.Collections.Generic.IList<Meziantou.Framework.Yaml.YamlDerivedType>> DerivedTypeMappings { get => throw null; }
     }
 
@@ -905,6 +906,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public string? TypeDiscriminatorPropertyName { get => throw null; set { } }
         public Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle DiscriminatorStyle { get => throw null; set { } }
         public Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get => throw null; set { } }
+        public bool InferClosedTypePolymorphism { get => throw null; set { } }
     }
 
     [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]
@@ -1033,6 +1035,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle DiscriminatorStyle { get => throw null; set { } }
         public string? TypeDiscriminatorPropertyName { get => throw null; set { } }
         public Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get => throw null; set { } }
+        public bool InferClosedTypePolymorphism { get => throw null; set { } }
         public System.Type[]? Converters { get => throw null; set { } }
     }
 

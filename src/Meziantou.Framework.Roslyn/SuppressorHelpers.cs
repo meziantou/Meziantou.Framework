@@ -9,12 +9,12 @@ namespace Meziantou.Framework.Roslyn;
 
 internal static partial class SuppressorHelpers
 {
-    public static SyntaxNode? TryFindNode(this Diagnostic diagnostic, CancellationToken cancellationToken)
+    public static SyntaxNode? FindNode(this Diagnostic diagnostic, CancellationToken cancellationToken)
     {
-        return TryFindNode(diagnostic.Location, cancellationToken);
+        return FindNode(diagnostic.Location, cancellationToken);
     }
 
-    private static SyntaxNode? TryFindNode(Location? location, CancellationToken cancellationToken)
+    private static SyntaxNode? FindNode(Location? location, CancellationToken cancellationToken)
     {
         if (location is null)
             return null;

@@ -44,42 +44,42 @@ internal static partial class LanguageVersionExtensions
         return LanguageVersion.Default;
     }
 
-    public static bool IsCSharp8OrAbove(this LanguageVersion languageVersion)
+    public static bool IsCSharp8OrGreater(this LanguageVersion languageVersion)
     {
         return languageVersion >= (LanguageVersion)800;
     }
 
-    public static bool IsCSharp9OrAbove(this LanguageVersion languageVersion)
+    public static bool IsCSharp9OrGreater(this LanguageVersion languageVersion)
     {
         return languageVersion >= (LanguageVersion)900;
     }
 
-    public static bool IsCSharp10OrAbove(this LanguageVersion languageVersion)
+    public static bool IsCSharp10OrGreater(this LanguageVersion languageVersion)
     {
         return languageVersion >= (LanguageVersion)1000;
     }
 
-    public static bool IsCSharp11OrAbove(this LanguageVersion languageVersion)
+    public static bool IsCSharp11OrGreater(this LanguageVersion languageVersion)
     {
         return languageVersion >= (LanguageVersion)1100;
     }
 
-    public static bool IsCSharp12OrAbove(this LanguageVersion languageVersion)
+    public static bool IsCSharp12OrGreater(this LanguageVersion languageVersion)
     {
         return languageVersion >= (LanguageVersion)1200;
     }
 
-    public static bool IsCSharp13OrAbove(this LanguageVersion languageVersion)
+    public static bool IsCSharp13OrGreater(this LanguageVersion languageVersion)
     {
         return languageVersion >= (LanguageVersion)1300;
     }
 
-    public static bool IsCSharp14OrAbove(this LanguageVersion languageVersion)
+    public static bool IsCSharp14OrGreater(this LanguageVersion languageVersion)
     {
         return languageVersion >= (LanguageVersion)1400;
     }
 
-    public static bool IsCSharp15OrAbove(this LanguageVersion languageVersion)
+    public static bool IsCSharp15OrGreater(this LanguageVersion languageVersion)
     {
 #if ROSLYN_5_6_OR_GREATER
         return languageVersion >= (LanguageVersion)1500 || languageVersion is LanguageVersion.Preview;

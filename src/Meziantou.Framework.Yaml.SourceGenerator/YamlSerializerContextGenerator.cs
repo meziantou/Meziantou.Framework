@@ -569,7 +569,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 continue;
             }
 
-            if (!named.IsOrInheritFrom(yamlConverterSymbol))
+            if (!named.IsOrInheritsFrom(yamlConverterSymbol))
             {
                 diagnostics.Add(Diagnostic.Create(
                     InvalidConverterType,

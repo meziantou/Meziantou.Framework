@@ -27,7 +27,7 @@ internal static partial class SymbolAttributeExtensions
 
             if (inherits)
             {
-                if (attribute.AttributeClass.IsOrInheritFrom(attributeType))
+                if (attribute.AttributeClass.IsOrInheritsFrom(attributeType))
                     yield return attribute;
             }
             else
@@ -53,7 +53,7 @@ internal static partial class SymbolAttributeExtensions
 
             if (inherits)
             {
-                if (attribute.AttributeClass.IsOrInheritFrom(attributeType))
+                if (attribute.AttributeClass.IsOrInheritsFrom(attributeType))
                     return attribute;
             }
             else

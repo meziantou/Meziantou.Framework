@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Roslyn;
 
 internal static partial class NamespaceSymbolExtensions
 {
-    public static bool IsNamespace(this INamespaceSymbol namespaceSymbol, ReadOnlySpan<string> namespaceParts)
+    public static bool MatchesNamespace(this INamespaceSymbol namespaceSymbol, ReadOnlySpan<string> namespaceParts)
     {
         for (var i = namespaceParts.Length - 1; i >= 0; i--)
         {

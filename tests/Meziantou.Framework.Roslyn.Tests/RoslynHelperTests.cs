@@ -114,61 +114,61 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
-    public void IsCSharp8OrAbove_ReturnsTrueOnlyForCSharp8AndLater()
+    public void IsCSharp8OrGreater_ReturnsTrueOnlyForCSharp8AndLater()
     {
-        Assert.False(LanguageVersion.CSharp7_3.IsCSharp8OrAbove());
-        Assert.True(LanguageVersion.CSharp8.IsCSharp8OrAbove());
+        Assert.False(LanguageVersion.CSharp7_3.IsCSharp8OrGreater());
+        Assert.True(LanguageVersion.CSharp8.IsCSharp8OrGreater());
     }
 
     [Fact]
-    public void IsCSharp9OrAbove_ReturnsTrueOnlyForCSharp9AndLater()
+    public void IsCSharp9OrGreater_ReturnsTrueOnlyForCSharp9AndLater()
     {
-        Assert.False(LanguageVersion.CSharp8.IsCSharp9OrAbove());
-        Assert.True(LanguageVersion.CSharp9.IsCSharp9OrAbove());
+        Assert.False(LanguageVersion.CSharp8.IsCSharp9OrGreater());
+        Assert.True(LanguageVersion.CSharp9.IsCSharp9OrGreater());
     }
 
     [Fact]
-    public void IsCSharp10OrAbove_ReturnsTrueOnlyForCSharp10AndLater()
+    public void IsCSharp10OrGreater_ReturnsTrueOnlyForCSharp10AndLater()
     {
-        Assert.False(LanguageVersion.CSharp9.IsCSharp10OrAbove());
-        Assert.True(LanguageVersion.CSharp10.IsCSharp10OrAbove());
+        Assert.False(LanguageVersion.CSharp9.IsCSharp10OrGreater());
+        Assert.True(LanguageVersion.CSharp10.IsCSharp10OrGreater());
     }
 
     [Fact]
-    public void IsCSharp11OrAbove_ReturnsTrueOnlyForCSharp11AndLater()
+    public void IsCSharp11OrGreater_ReturnsTrueOnlyForCSharp11AndLater()
     {
-        Assert.False(LanguageVersion.CSharp10.IsCSharp11OrAbove());
-        Assert.True(LanguageVersion.CSharp11.IsCSharp11OrAbove());
+        Assert.False(LanguageVersion.CSharp10.IsCSharp11OrGreater());
+        Assert.True(LanguageVersion.CSharp11.IsCSharp11OrGreater());
     }
 
     [Fact]
-    public void IsCSharp12OrAbove_ReturnsTrueOnlyForCSharp12AndLater()
+    public void IsCSharp12OrGreater_ReturnsTrueOnlyForCSharp12AndLater()
     {
-        Assert.False(LanguageVersion.CSharp11.IsCSharp12OrAbove());
-        Assert.True(LanguageVersion.CSharp12.IsCSharp12OrAbove());
+        Assert.False(LanguageVersion.CSharp11.IsCSharp12OrGreater());
+        Assert.True(LanguageVersion.CSharp12.IsCSharp12OrGreater());
     }
 
     [Fact]
-    public void IsCSharp13OrAbove_ReturnsTrueOnlyForCSharp13AndLater()
+    public void IsCSharp13OrGreater_ReturnsTrueOnlyForCSharp13AndLater()
     {
-        Assert.False(LanguageVersion.CSharp12.IsCSharp13OrAbove());
-        Assert.True(((LanguageVersion)1300).IsCSharp13OrAbove());
+        Assert.False(LanguageVersion.CSharp12.IsCSharp13OrGreater());
+        Assert.True(((LanguageVersion)1300).IsCSharp13OrGreater());
     }
 
     [Fact]
-    public void IsCSharp14OrAbove_ReturnsTrueOnlyForCSharp14AndLater()
+    public void IsCSharp14OrGreater_ReturnsTrueOnlyForCSharp14AndLater()
     {
-        Assert.False(((LanguageVersion)1300).IsCSharp14OrAbove());
-        Assert.True(((LanguageVersion)1400).IsCSharp14OrAbove());
+        Assert.False(((LanguageVersion)1300).IsCSharp14OrGreater());
+        Assert.True(((LanguageVersion)1400).IsCSharp14OrGreater());
     }
 
     [Fact]
-    public void IsCSharp15OrAbove_ReturnsValueBasedOnAvailableRoslynConstants()
+    public void IsCSharp15OrGreater_ReturnsValueBasedOnAvailableRoslynConstants()
     {
 #if ROSLYN_5_6_OR_GREATER
-        Assert.True(LanguageVersion.Preview.IsCSharp15OrAbove());
+        Assert.True(LanguageVersion.Preview.IsCSharp15OrGreater());
 #else
-        Assert.False(LanguageVersion.Preview.IsCSharp15OrAbove());
+        Assert.False(LanguageVersion.Preview.IsCSharp15OrGreater());
 #endif
     }
 
@@ -182,8 +182,8 @@ public sealed class RoslynHelperTests
             """);
         var type = GetRequiredType(compilation, "Demo.Inner.Sample");
 
-        Assert.True(type.ContainingNamespace.IsNamespace(["Demo", "Inner"]));
-        Assert.False(type.ContainingNamespace.IsNamespace(["Inner"]));
+        Assert.True(type.ContainingNamespace.MatchesNamespace(["Demo", "Inner"]));
+        Assert.False(type.ContainingNamespace.MatchesNamespace(["Inner"]));
     }
 
     [Fact]
@@ -202,7 +202,7 @@ public sealed class RoslynHelperTests
         var descriptor = CreateDescriptor();
         var diagnostic = Diagnostic.Create(descriptor, parameter.GetLocation());
 
-        Assert.Same(parameter, diagnostic.TryFindNode(default));
+        Assert.Same(parameter, diagnostic.FindNode(default));
     }
 
     [Fact]
@@ -335,9 +335,9 @@ public sealed class RoslynHelperTests
         var property = type.GetMembers().OfType<IPropertySymbol>().Single(symbol => symbol.ExplicitInterfaceImplementations.Length == 1);
         var @event = type.GetMembers().OfType<IEventSymbol>().Single(symbol => symbol.ExplicitInterfaceImplementations.Length == 1);
 
-        Assert.Equal("M", method.GetImplementingInterfaceSymbol()?.Name);
-        Assert.Equal("Property", property.GetImplementingInterfaceSymbol()?.Name);
-        Assert.Equal("Changed", @event.GetImplementingInterfaceSymbol()?.Name);
+        Assert.Equal("M", method.GetImplementedInterfaceMember()?.Name);
+        Assert.Equal("Property", property.GetImplementedInterfaceMember()?.Name);
+        Assert.Equal("Changed", @event.GetImplementedInterfaceMember()?.Name);
     }
 
     [Fact]
@@ -361,9 +361,9 @@ public sealed class RoslynHelperTests
         var derivedMethod = GetRequiredMethod(derivedType, "M");
         var other = GetRequiredMethod(baseType, "Other");
 
-        Assert.True(derivedMethod.IsOrOverrideMethod(baseMethod));
-        Assert.True(baseMethod.IsOrOverrideMethod(baseMethod));
-        Assert.False(other.IsOrOverrideMethod(baseMethod));
+        Assert.True(derivedMethod.IsOrOverrides(baseMethod));
+        Assert.True(baseMethod.IsOrOverrides(baseMethod));
+        Assert.False(other.IsOrOverrides(baseMethod));
     }
 
     [Fact]
@@ -387,8 +387,8 @@ public sealed class RoslynHelperTests
         var derivedMethod = GetRequiredMethod(derivedType, "M");
         var other = GetRequiredMethod(baseType, "Other");
 
-        Assert.True(derivedMethod.Override(baseMethod));
-        Assert.False(other.Override(baseMethod));
+        Assert.True(derivedMethod.Overrides(baseMethod));
+        Assert.False(other.Overrides(baseMethod));
     }
 
     [Fact]
@@ -721,7 +721,7 @@ public sealed class RoslynHelperTests
             """);
         var type = GetRequiredType(compilation, "ISample");
 
-        Assert.Contains(type, type.GetAllInterfacesIncludingThis());
+        Assert.Contains(type, type.GetAllInterfacesIncludingSelf());
     }
 
     [Fact]
@@ -842,9 +842,9 @@ public sealed class RoslynHelperTests
         var baseType = GetRequiredType(compilation, "Base");
         var sampleType = GetRequiredType(compilation, "Sample");
 
-        Assert.True(baseType.IsOrInheritFrom(baseType));
-        Assert.True(sampleType.IsOrInheritFrom(baseType));
-        Assert.False(baseType.IsOrInheritFrom(sampleType));
+        Assert.True(baseType.IsOrInheritsFrom(baseType));
+        Assert.True(sampleType.IsOrInheritsFrom(baseType));
+        Assert.False(baseType.IsOrInheritsFrom(sampleType));
     }
 
     [Fact]
@@ -966,8 +966,8 @@ public sealed class RoslynHelperTests
         var enumType = GetRequiredType(compilation, "Sample");
         var otherType = GetRequiredType(compilation, "Other");
 
-        Assert.Equal(SpecialType.System_Int32, enumType.GetEnumType()?.SpecialType);
-        Assert.Null(otherType.GetEnumType());
+        Assert.Equal(SpecialType.System_Int32, enumType.GetEnumUnderlyingType()?.SpecialType);
+        Assert.Null(otherType.GetEnumUnderlyingType());
     }
 
     [Fact]

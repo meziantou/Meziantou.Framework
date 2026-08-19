@@ -1280,6 +1280,17 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         return CSharpUnionCaseKind.Mapping;
     }
 
+    /// <summary>
+    /// Gets the name of the IEEE 754 floating-point type introduced in .NET 11 (<c>System.Numerics.BFloat16</c>,
+    /// <c>Decimal32</c>, <c>Decimal64</c>, or <c>Decimal128</c>), or <see langword="null"/> when the type is not one of them.
+    /// </summary>
+    private static string? GetIeee754TypeName(ITypeSymbol type)
+        => type is INamedTypeSymbol namedType &&
+           string.Equals(namedType.ContainingNamespace?.ToDisplayString(), "System.Numerics", StringComparison.Ordinal) &&
+           namedType.Name is "BFloat16" or "Decimal32" or "Decimal64" or "Decimal128"
+            ? namedType.Name
+            : null;
+
     private static bool IsCSharpUnionNumericCase(ITypeSymbol type)
     {
         if (type.SpecialType is SpecialType.System_Byte
@@ -1295,6 +1306,11 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             or SpecialType.System_Single
             or SpecialType.System_Double
             or SpecialType.System_Decimal)
+        {
+            return true;
+        }
+
+        if (GetIeee754TypeName(type) is not null)
         {
             return true;
         }
@@ -1395,6 +1411,11 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         }
 
         if (type is INamedTypeSymbol named && named.TypeKind == TypeKind.Enum)
+        {
+            return true;
+        }
+
+        if (GetIeee754TypeName(type) is not null)
         {
             return true;
         }

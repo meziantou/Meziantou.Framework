@@ -311,6 +311,12 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
            type == typeof(decimal) ||
            type == typeof(Half) ||
            type == typeof(Int128) ||
+#if NET11_0_OR_GREATER
+           type == typeof(System.Numerics.BFloat16) ||
+           type == typeof(System.Numerics.Decimal32) ||
+           type == typeof(System.Numerics.Decimal64) ||
+           type == typeof(System.Numerics.Decimal128) ||
+#endif
            type == typeof(UInt128);
 
     [UnconditionalSuppressMessage(

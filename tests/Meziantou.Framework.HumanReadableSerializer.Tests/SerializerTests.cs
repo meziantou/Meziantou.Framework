@@ -937,6 +937,35 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void Half() => AssertSerialization((Half)0.5, "0.5");
 
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void BFloat16() => AssertSerialization((BFloat16)0.5, "0.5");
+
+    [Fact]
+    public void BFloat16_NaN() => AssertSerialization(System.Numerics.BFloat16.NaN, "NaN");
+
+    [Fact]
+    public void BFloat16_PositiveInfinity() => AssertSerialization(System.Numerics.BFloat16.PositiveInfinity, "Infinity");
+
+    [Fact]
+    public void BFloat16_NegativeInfinity() => AssertSerialization(System.Numerics.BFloat16.NegativeInfinity, "-Infinity");
+
+    [Fact]
+    public void Decimal32() => AssertSerialization(System.Numerics.Decimal32.Parse("-5.30", CultureInfo.InvariantCulture), "-5.30");
+
+    [Fact]
+    public void Decimal32_NaN() => AssertSerialization(System.Numerics.Decimal32.NaN, "NaN");
+
+    [Fact]
+    public void Decimal64() => AssertSerialization(System.Numerics.Decimal64.Parse("123.456", CultureInfo.InvariantCulture), "123.456");
+
+    [Fact]
+    public void Decimal128() => AssertSerialization(System.Numerics.Decimal128.Pi, "3.141592653589793238462643383279503");
+
+    [Fact]
+    public void Decimal128_NegativeInfinity() => AssertSerialization(System.Numerics.Decimal128.NegativeInfinity, "-Infinity");
+#endif
+
     [Fact]
     public void Single() => AssertSerialization(-5.30f, "-5.3");
 

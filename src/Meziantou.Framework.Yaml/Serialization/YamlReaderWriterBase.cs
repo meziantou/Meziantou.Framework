@@ -364,6 +364,28 @@ public abstract class YamlReaderWriterBase
                 return YamlUInt128Converter.Instance;
             }
 
+#if NET11_0_OR_GREATER
+            if (typeToConvert == typeof(BFloat16))
+            {
+                return YamlBFloat16Converter.Instance;
+            }
+
+            if (typeToConvert == typeof(Decimal32))
+            {
+                return YamlDecimal32Converter.Instance;
+            }
+
+            if (typeToConvert == typeof(Decimal64))
+            {
+                return YamlDecimal64Converter.Instance;
+            }
+
+            if (typeToConvert == typeof(Decimal128))
+            {
+                return YamlDecimal128Converter.Instance;
+            }
+#endif
+
             if (typeToConvert == typeof(nint))
             {
                 return YamlIntPtrConverter.Instance;

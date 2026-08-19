@@ -494,6 +494,62 @@ public sealed class YamlWriter : YamlReaderWriterBase
         WritePlainScalar(value.ToString(CultureInfo.InvariantCulture));
     }
 
+#if NET11_0_OR_GREATER
+    /// <summary>Writes a bfloat16 floating-point scalar value.</summary>
+    /// <param name="value">The value to write.</param>
+    public void WriteScalar(BFloat16 value)
+    {
+        WriteIeee754Scalar(value);
+    }
+
+    /// <summary>Writes a 32-bit IEEE 754 decimal floating-point scalar value.</summary>
+    /// <param name="value">The value to write.</param>
+    public void WriteScalar(Decimal32 value)
+    {
+        WriteIeee754Scalar(value);
+    }
+
+    /// <summary>Writes a 64-bit IEEE 754 decimal floating-point scalar value.</summary>
+    /// <param name="value">The value to write.</param>
+    public void WriteScalar(Decimal64 value)
+    {
+        WriteIeee754Scalar(value);
+    }
+
+    /// <summary>Writes a 128-bit IEEE 754 decimal floating-point scalar value.</summary>
+    /// <param name="value">The value to write.</param>
+    public void WriteScalar(Decimal128 value)
+    {
+        WriteIeee754Scalar(value);
+    }
+
+    // The decimal types can format to thousands of characters, so the fixed-size buffer used by
+    // WriteFormattableScalar is not usable here.
+    private void WriteIeee754Scalar<T>(T value)
+        where T : struct, IFloatingPointIeee754<T>
+    {
+        if (T.IsPositiveInfinity(value))
+        {
+            WritePlainScalar(".inf");
+            return;
+        }
+
+        if (T.IsNegativeInfinity(value))
+        {
+            WritePlainScalar("-.inf");
+            return;
+        }
+
+        if (T.IsNaN(value))
+        {
+            WritePlainScalar(".nan");
+            return;
+        }
+
+        WritePlainScalar(value.ToString(format: null, CultureInfo.InvariantCulture));
+    }
+#endif
+
     /// <summary>Writes a scalar value for a span-formattable type using invariant culture formatting.</summary>
     /// <typeparam name="T">The value type to write.</typeparam>
     /// <param name="value">The value to write.</param>

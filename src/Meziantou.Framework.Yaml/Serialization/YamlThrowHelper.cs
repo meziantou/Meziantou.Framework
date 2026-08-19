@@ -151,6 +151,24 @@ internal static class YamlThrowHelper
     public static YamlException ThrowInvalidUInt128Scalar(YamlReader reader)
         => ThrowInvalidScalar(reader, $"Invalid UInt128 scalar '{reader.ScalarValue}'.");
 
+#if NET11_0_OR_GREATER
+    /// <summary>Throws an exception for invalid <see cref="System.Numerics.BFloat16"/> Scalar.</summary>
+    public static YamlException ThrowInvalidBFloat16Scalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid BFloat16 scalar '{reader.ScalarValue}'.");
+
+    /// <summary>Throws an exception for invalid <see cref="System.Numerics.Decimal32"/> Scalar.</summary>
+    public static YamlException ThrowInvalidDecimal32Scalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid Decimal32 scalar '{reader.ScalarValue}'.");
+
+    /// <summary>Throws an exception for invalid <see cref="System.Numerics.Decimal64"/> Scalar.</summary>
+    public static YamlException ThrowInvalidDecimal64Scalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid Decimal64 scalar '{reader.ScalarValue}'.");
+
+    /// <summary>Throws an exception for invalid <see cref="System.Numerics.Decimal128"/> Scalar.</summary>
+    public static YamlException ThrowInvalidDecimal128Scalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid Decimal128 scalar '{reader.ScalarValue}'.");
+#endif
+
     /// <summary>Throws an exception for alias Missing Value.</summary>
     public static YamlException ThrowAliasMissingValue(YamlReader reader)
         => new(reader.SourceName, reader.Start, reader.End, "Alias token did not provide an alias value.");

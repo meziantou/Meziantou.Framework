@@ -479,6 +479,9 @@ public sealed record HumanReadableSerializerOptions
     {
         internal static readonly HumanReadableConverter[] DefaultConverters =
         [
+#if NET11_0_OR_GREATER
+            new BFloat16Converter(),
+#endif
             new BigIntegerConverter(),
             new BitArrayConverter(),
             new BitVector32Converter(),
@@ -494,6 +497,11 @@ public sealed record HumanReadableSerializerOptions
             new DateTimeOffsetConverter(),
             new DBNullConverter(),
             new DecimalConverter(),
+#if NET11_0_OR_GREATER
+            new Decimal32Converter(),
+            new Decimal64Converter(),
+            new Decimal128Converter(),
+#endif
             new DoubleConverter(),
             new ExpressionConverter(),
             new HalfConverter(),

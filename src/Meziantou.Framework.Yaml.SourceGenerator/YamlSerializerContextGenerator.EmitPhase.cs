@@ -4158,6 +4158,21 @@ public sealed partial class YamlSerializerContextGenerator
             return;
         }
 
+        if (GetIeee754TypeName(member.Type) is { } ieee754MemberType)
+        {
+            builder.AppendLine("                if (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.Scalar)");
+            builder.AppendLine("                {");
+            builder.AppendLine("                    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowExpectedScalar(reader);");
+            builder.AppendLine("                }");
+            builder.Append("                if (!global::Meziantou.Framework.Yaml.Serialization.YamlScalar.TryParseIeee754<global::System.Numerics.").Append(ieee754MemberType).Append(">(reader, out var parsed").Append(ieee754MemberType).AppendLine("))");
+            builder.AppendLine("                {");
+            builder.Append("                    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowInvalid").Append(ieee754MemberType).AppendLine("Scalar(reader);");
+            builder.AppendLine("                }");
+            builder.Append("                ").Append(member.AssignExpression("parsed" + ieee754MemberType)).AppendLine(";");
+            builder.AppendLine("                reader.Read();");
+            return;
+        }
+
         if (member.Type is INamedTypeSymbol systemType &&
             string.Equals(systemType.ContainingNamespace?.ToDisplayString(), "System", StringComparison.Ordinal))
         {
@@ -5062,6 +5077,12 @@ public sealed partial class YamlSerializerContextGenerator
             return true;
         }
 
+        if (GetIeee754TypeName(typeSymbol) is not null)
+        {
+            builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine(");");
+            return true;
+        }
+
         if (typeSymbol is INamedTypeSymbol systemType &&
             string.Equals(systemType.ContainingNamespace?.ToDisplayString(), "System", StringComparison.Ordinal))
         {
@@ -5265,6 +5286,16 @@ public sealed partial class YamlSerializerContextGenerator
             builder.Append(indent).Append("var textChar = ").Append(textExpression).AppendLine(" ?? string.Empty;");
             builder.Append(indent).AppendLine("if (textChar.Length != 1) { throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowInvalidCharScalar(reader, textChar); }");
             builder.Append(indent).Append("var ").Append(valueVarName).AppendLine(" = textChar[0];");
+            return;
+        }
+
+        if (GetIeee754TypeName(typeSymbol) is { } ieee754Type)
+        {
+            builder.Append(indent).Append("if (!global::Meziantou.Framework.Yaml.Serialization.YamlScalar.TryParseIeee754<global::System.Numerics.").Append(ieee754Type).Append(">(").Append(spanExpression).Append(", out var parsed").Append(ieee754Type).AppendLine("))");
+            builder.Append(indent).AppendLine("{");
+            builder.Append(indent).Append("    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowInvalid").Append(ieee754Type).AppendLine("Scalar(reader);");
+            builder.Append(indent).AppendLine("}");
+            builder.Append(indent).Append("var ").Append(valueVarName).Append(" = parsed").Append(ieee754Type).AppendLine(";");
             return;
         }
 
@@ -5541,6 +5572,16 @@ public sealed partial class YamlSerializerContextGenerator
             builder.Append(indent).Append("var textChar = ").Append(textExpression).AppendLine(" ?? string.Empty;");
             builder.Append(indent).AppendLine("if (textChar.Length != 1) { throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowInvalidCharScalar(reader, textChar); }");
             builder.Append(indent).Append(targetExpression).AppendLine(" = textChar[0];");
+            return;
+        }
+
+        if (GetIeee754TypeName(typeSymbol) is { } ieee754Type)
+        {
+            builder.Append(indent).Append("if (!global::Meziantou.Framework.Yaml.Serialization.YamlScalar.TryParseIeee754<global::System.Numerics.").Append(ieee754Type).Append(">(").Append(spanExpression).Append(", out var parsed").Append(ieee754Type).AppendLine("))");
+            builder.Append(indent).AppendLine("{");
+            builder.Append(indent).Append("    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowInvalid").Append(ieee754Type).AppendLine("Scalar(reader);");
+            builder.Append(indent).AppendLine("}");
+            builder.Append(indent).Append(targetExpression).Append(" = parsed").Append(ieee754Type).AppendLine(";");
             return;
         }
 

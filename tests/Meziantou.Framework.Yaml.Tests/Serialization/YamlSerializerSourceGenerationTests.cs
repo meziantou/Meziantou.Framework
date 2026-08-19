@@ -1,4 +1,7 @@
 #pragma warning disable MA0048 // File name must match type name
+#if NET11_0_OR_GREATER
+using System.Numerics;
+#endif
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
@@ -180,6 +183,13 @@ internal sealed class GeneratedModernScalars
     public Half Ratio { get; set; }
     public Int128 Big { get; set; }
     public UInt128 UBig { get; set; }
+#if NET11_0_OR_GREATER
+    public System.Numerics.BFloat16 Brain { get; set; }
+    public System.Numerics.Decimal32 Small { get; set; }
+    public System.Numerics.Decimal64 Medium { get; set; }
+    public System.Numerics.Decimal128 Large { get; set; }
+    public System.Numerics.Decimal64? OptionalMedium { get; set; }
+#endif
 }
 
 internal sealed class GeneratedCollections
@@ -1691,6 +1701,45 @@ public class YamlSerializerSourceGenerationTests
         Assert.Equal(payload.Big, roundTrip.Big);
         Assert.Equal(payload.UBig, roundTrip.UBig);
     }
+
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void GeneratedContext_Ieee754ScalarTypes_RoundTrip()
+    {
+        var payload = new GeneratedModernScalars
+        {
+            Date = new DateOnly(2026, 03, 01),
+            Time = new TimeOnly(12, 34, 56),
+            Ratio = (Half)1.5f,
+            Big = Int128.Parse("123456789012345678901234567890", CultureInfo.InvariantCulture),
+            UBig = UInt128.Parse("123456789012345678901234567891", CultureInfo.InvariantCulture),
+            Brain = (BFloat16)1.5f,
+            Small = Decimal32.Parse("-5.30", CultureInfo.InvariantCulture),
+            Medium = Decimal64.NaN,
+            Large = Decimal128.Pi,
+            OptionalMedium = Decimal64.PositiveInfinity,
+        };
+
+        var context = TestYamlSerializerContext.Default;
+        var typeInfo = context.GeneratedModernScalars;
+
+        var yaml = YamlSerializer.Serialize(payload, typeInfo);
+        var roundTrip = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.Contains("Brain: 1.5", yaml);
+        Assert.Contains("Small: -5.30", yaml);
+        Assert.Contains("Medium: .nan", yaml);
+        Assert.Contains("Large: 3.141592653589793238462643383279503", yaml);
+        Assert.Contains("OptionalMedium: .inf", yaml);
+
+        Assert.NotNull(roundTrip);
+        Assert.Equal(payload.Brain, roundTrip.Brain);
+        Assert.Equal(payload.Small, roundTrip.Small);
+        Assert.True(Decimal64.IsNaN(roundTrip.Medium));
+        Assert.Equal(payload.Large, roundTrip.Large);
+        Assert.Equal(payload.OptionalMedium, roundTrip.OptionalMedium);
+    }
+#endif
 
     [Fact]
     public void GeneratedContextExposesDefaultTypeInfoPropertyNames()

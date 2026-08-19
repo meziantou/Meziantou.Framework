@@ -326,6 +326,56 @@ public static class YamlScalar
         return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
     }
 
+#if NET11_0_OR_GREATER
+    /// <summary>
+    /// Parses a YAML floating-point scalar into an IEEE 754 floating-point type, including <c>.inf</c> and <c>.nan</c>.
+    /// </summary>
+    /// <typeparam name="T">The IEEE 754 floating-point type to parse.</typeparam>
+    /// <param name="value">The scalar text to parse.</param>
+    /// <param name="result">The parsed floating-point value.</param>
+    public static bool TryParseIeee754<T>(ReadOnlySpan<char> value, out T result)
+        where T : struct, IFloatingPointIeee754<T>
+    {
+        value = Trim(value);
+
+        if (value.Equals(".inf", StringComparison.OrdinalIgnoreCase) || value.Equals("+.inf", StringComparison.OrdinalIgnoreCase))
+        {
+            result = T.PositiveInfinity;
+            return true;
+        }
+
+        if (value.Equals("-.inf", StringComparison.OrdinalIgnoreCase))
+        {
+            result = T.NegativeInfinity;
+            return true;
+        }
+
+        if (value.Equals(".nan", StringComparison.OrdinalIgnoreCase))
+        {
+            result = T.NaN;
+            return true;
+        }
+
+        if (ContainsChar(value, '_'))
+        {
+            var buffer = new char[value.Length];
+            var written = 0;
+            for (var i = 0; i < value.Length; i++)
+            {
+                var c = value[i];
+                if (c != '_')
+                {
+                    buffer[written++] = c;
+                }
+            }
+
+            return T.TryParse(buffer.AsSpan(0, written), NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+        }
+
+        return T.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+    }
+#endif
+
     /// <summary>
     /// Determines whether the current scalar token represents YAML null while honoring scalar style and <see cref="YamlSerializerOptions.UseSchema"/>.
     /// </summary>
@@ -519,6 +569,35 @@ public static class YamlScalar
 
         return TryParseDecimal(reader.ScalarValue.AsSpan(), out result);
     }
+
+#if NET11_0_OR_GREATER
+    /// <summary>
+    /// Parses the current scalar token as an IEEE 754 floating-point value while honoring scalar style and <see cref="YamlSerializerOptions.UseSchema"/>.
+    /// </summary>
+    /// <typeparam name="T">The IEEE 754 floating-point type to parse.</typeparam>
+    /// <param name="reader">The reader positioned on a scalar token.</param>
+    /// <param name="result">The parsed floating-point value.</param>
+    public static bool TryParseIeee754<T>(YamlReader reader, out T result)
+        where T : struct, IFloatingPointIeee754<T>
+    {
+        if (reader.Options.UseSchema)
+        {
+            // The schema resolves scalars to double or decimal, which cannot represent every value of the
+            // wider IEEE 754 types. Only the resolved tag is used, the text is parsed by the target type.
+            if (TryResolveSchemaScalar(reader, out var defaultTag, out _) &&
+                (string.Equals(defaultTag, JsonSchema.FloatShortTag, StringComparison.Ordinal) ||
+                 string.Equals(defaultTag, JsonSchema.IntShortTag, StringComparison.Ordinal)))
+            {
+                return TryParseIeee754(reader.ScalarValue.AsSpan(), out result);
+            }
+
+            result = default;
+            return false;
+        }
+
+        return TryParseIeee754(reader.ScalarValue.AsSpan(), out result);
+    }
+#endif
 
     /// <summary>Resolves the current scalar token to the CLR value implied by the scalar style, tag, and schema options.</summary>
     /// <param name="reader">The reader positioned on a scalar token.</param>

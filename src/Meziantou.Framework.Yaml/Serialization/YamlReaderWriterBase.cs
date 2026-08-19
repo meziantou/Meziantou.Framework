@@ -499,6 +499,12 @@ public abstract class YamlReaderWriterBase
                     return (YamlConverter)Activator.CreateInstance(converterType)!;
                 }
 
+                if (definition == typeof(IReadOnlySet<>))
+                {
+                    var converterType = typeof(YamlIReadOnlySetConverter<>).MakeGenericType(args[0]);
+                    return (YamlConverter)Activator.CreateInstance(converterType)!;
+                }
+
                 if (definition == typeof(IList<>))
                 {
                     var converterType = typeof(YamlIListConverter<>).MakeGenericType(args[0]);

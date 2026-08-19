@@ -4,14 +4,26 @@ internal sealed class AppendOnlyCollectionSegment<T>
 {
     private volatile int _count;
     private volatile AppendOnlyCollectionSegment<T>? _next;
-    private readonly T[] _items;
 
-    public AppendOnlyCollectionSegment(int capacity)
+    public AppendOnlyCollectionSegment(int capacity, int startIndex)
     {
-        _items = GC.AllocateUninitializedArray<T>(capacity);
+        Items = GC.AllocateUninitializedArray<T>(capacity);
+        StartIndex = startIndex;
     }
 
+    /// <summary>
+    /// The backing array of the segment. Only the first <see cref="Count"/> items are initialized.
+    /// </summary>
+    public T[] Items { get; }
+
+    /// <summary>
+    /// Index of the first item of the segment in the owning collection.
+    /// </summary>
+    public int StartIndex { get; }
+
     public int Count => _count;
+
+    public int Capacity => Items.Length;
 
     public AppendOnlyCollectionSegment<T>? Next
     {
@@ -19,28 +31,19 @@ internal sealed class AppendOnlyCollectionSegment<T>
         set => _next = value;
     }
 
-    public bool IsFull => _count >= _items.Length;
+    public ReadOnlySpan<T> Span => new(Items, 0, _count);
 
-    public ReadOnlySpan<T> Items => _count is 0 ? [] : new ReadOnlySpan<T>(_items, 0, _count);
-
-    public bool TryGetItem(int index, out T value)
+    public bool TryAddItem(T value)
     {
-        if (index < 0 || index >= _count)
-        {
-            value = default!;
+        var count = _count;
+        if (count >= Items.Length)
             return false;
-        }
 
-        value = _items[index];
+        Items[count] = value;
+
+        // Volatile write: release-publishes the item store, so a lock-free reader that
+        // observes the new count also observes the item.
+        _count = count + 1;
         return true;
-    }
-
-    public void AddItem(T value)
-    {
-        if (_count >= _items.Length)
-            throw new InvalidOperationException("Cannot add more items to this segment, it is full.");
-
-        _items[_count] = value;
-        _count++;
     }
 }

@@ -14,6 +14,10 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
     private const int MaxSegmentSize = 8000;
     private readonly Lock _lock = new();
     private readonly AppendOnlyCollectionSegment<T> _firstSegment;
+
+    // Append-only lookup table of all segments, ordered by StartIndex. It is replaced by a new
+    // array every time a segment is created, so a reader can safely use the array it has read.
+    private volatile AppendOnlyCollectionSegment<T>[] _segments;
     private AppendOnlyCollectionSegment<T> _lastSegment;
     private volatile int _count;
 
@@ -27,7 +31,8 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
         if (capacity <= 0)
             throw new ArgumentException("Capacity must be greater than 0", nameof(capacity));
 
-        _firstSegment = _lastSegment = new AppendOnlyCollectionSegment<T>(capacity);
+        _firstSegment = _lastSegment = new AppendOnlyCollectionSegment<T>(capacity, startIndex: 0);
+        _segments = [_firstSegment];
     }
 
     public int Count => _count;
@@ -38,23 +43,31 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
     {
         lock (_lock)
         {
-            if (_lastSegment.IsFull)
+            var lastSegment = _lastSegment;
+            if (!lastSegment.TryAddItem(item))
             {
-                var newCapacity = Math.Min(MaxSegmentSize, _lastSegment.Items.Length * 2);
-                var newSegment = new AppendOnlyCollectionSegment<T>(newCapacity);
+                var newCapacity = Math.Min(MaxSegmentSize, lastSegment.Capacity * 2);
 
-                // Add the item before publishing the link. The volatile write to Next
-                // release-publishes the item store, so a lock-free reader that observes
-                // the new segment via Next always sees a segment with Count >= 1.
-                newSegment.AddItem(item);
-                _lastSegment.Next = newSegment;
+                // A segment is only replaced once it is full, so the next segment starts right after it.
+                var newSegment = new AppendOnlyCollectionSegment<T>(newCapacity, lastSegment.StartIndex + lastSegment.Capacity);
+
+                // Add the item before publishing the segment. The volatile writes to _segments and
+                // Next release-publish the item store, so a lock-free reader that observes the new
+                // segment always sees a segment with Count >= 1.
+                newSegment.TryAddItem(item);
+
+                var segments = _segments;
+                var newSegments = new AppendOnlyCollectionSegment<T>[segments.Length + 1];
+                Array.Copy(segments, newSegments, segments.Length);
+                newSegments[^1] = newSegment;
+                _segments = newSegments;
+
+                lastSegment.Next = newSegment;
                 _lastSegment = newSegment;
             }
-            else
-            {
-                _lastSegment.AddItem(item);
-            }
 
+            // Volatile write: readers that observe the new count also observe the item and the
+            // segment holding it, as both are published before this write.
             _count++;
         }
     }
@@ -66,25 +79,28 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
             ArgumentOutOfRangeException.ThrowIfNegative(index);
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
 
-            var segment = _firstSegment;
+            // The count is read before the segments, so the segment holding the item is present.
+            var segments = _segments;
 
-            // The first assertion ensures that we'll find the item.
-            // The collection is append-only, so items are never removed.
-            // So, there is no need to check if segment is null in the loop, or if index is negative.
-            while (true)
+            // Find the last segment whose StartIndex is lower than or equal to index.
+            var low = 0;
+            var high = segments.Length - 1;
+            while (low < high)
             {
-                var segmentCount = segment.Count;
-                if (segment.TryGetItem(index, out var item))
-                    return item;
-
-                Debug.Assert(segment.IsFull);
-                Debug.Assert(segment.Next is not null);
-
-                index -= segmentCount;
-                Debug.Assert(index >= 0);
-
-                segment = segment.Next;
+                var middle = (int)(((uint)low + (uint)high + 1) >> 1);
+                if (segments[middle].StartIndex <= index)
+                {
+                    low = middle;
+                }
+                else
+                {
+                    high = middle - 1;
+                }
             }
+
+            var segment = segments[low];
+            Debug.Assert(index - segment.StartIndex < segment.Count);
+            return segment.Items[index - segment.StartIndex];
         }
     }
 
@@ -107,10 +123,8 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
         var segment = _firstSegment;
         while (segment is not null)
         {
-            var items = segment.Items;
-            for (var i = 0; i < items.Length; i++)
+            foreach (var item in segment.Span)
             {
-                var item = items[i];
                 if (predicate(item))
                 {
                     result = item;
@@ -126,8 +140,26 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
     }
 
     void ICollection<T>.Clear() => throw new NotSupportedException();
-    bool ICollection<T>.Contains(T item) => Contains(x => EqualityComparer<T>.Default.Equals(x, item));
     bool ICollection<T>.Remove(T item) => throw new NotSupportedException();
+
+    bool ICollection<T>.Contains(T item)
+    {
+        var comparer = EqualityComparer<T>.Default;
+        var segment = _firstSegment;
+        while (segment is not null)
+        {
+            foreach (var value in segment.Span)
+            {
+                if (comparer.Equals(value, item))
+                    return true;
+            }
+
+            segment = segment.Next;
+        }
+
+        return false;
+    }
+
     void ICollection<T>.CopyTo(T[] array, int arrayIndex)
     {
         ArgumentNullException.ThrowIfNull(array);
@@ -141,13 +173,14 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
         if (array.Length - arrayIndex < count)
             throw new ArgumentException("The number of elements in the source collection is greater than the available space from arrayIndex to the end of the destination array.", nameof(array));
 
+        var destination = array.AsSpan(arrayIndex);
         var segment = _firstSegment;
         while (segment is not null && count > 0)
         {
-            var items = segment.Items;
+            var items = segment.Span;
             var copyCount = Math.Min(items.Length, count);
-            items[..copyCount].CopyTo(array.AsSpan(arrayIndex));
-            arrayIndex += copyCount;
+            items[..copyCount].CopyTo(destination);
+            destination = destination[copyCount..];
             count -= copyCount;
 
             segment = segment.Next;
@@ -157,19 +190,27 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
     public struct Enumerator : IEnumerator<T>
     {
         private AppendOnlyCollectionSegment<T>? _segment;
+        private T[]? _items;
+
+        // Number of items known to be initialized in _items. It can only grow, so it is safe to
+        // cache it and to only re-read the volatile count of the segment once it is reached.
+        private int _count;
         private int _index = -1;
 
         internal Enumerator(AppendOnlyCollection<T> collection)
         {
-            _segment = collection._firstSegment;
+            var segment = collection._firstSegment;
+            _segment = segment;
+            _count = segment.Count;
+            _items = segment.Items;
         }
 
         public readonly T Current
         {
             get
             {
-                Debug.Assert(_segment is not null);
-                return _segment.Items[_index];
+                Debug.Assert(_items is not null);
+                return _items[_index];
             }
         }
 
@@ -177,31 +218,55 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
 
         public bool MoveNext()
         {
-            if (_segment is null)
+            var index = _index + 1;
+            if (index < _count)
+            {
+                _index = index;
+                return true;
+            }
+
+            return MoveNextSlow(index);
+        }
+
+        private bool MoveNextSlow(int index)
+        {
+            var segment = _segment;
+            if (segment is null)
                 return false;
 
-            _index++;
             while (true)
             {
-                var segment = _segment;
-                Debug.Assert(segment is not null);
-
+                // The cached count may be stale as items can be appended while enumerating.
                 var count = segment.Count;
-                if (_index < count)
+                if (index < count)
+                {
+                    _count = count;
+                    _index = index;
                     return true;
+                }
 
                 // Segment.Next is volatile. If we can observe it, re-read Count so this
                 // transition decision is not made using a potentially stale count read.
                 var nextSegment = segment.Next;
                 if (nextSegment is null)
+                {
+                    _count = count;
+                    _index = index - 1;
                     return false;
+                }
 
                 count = segment.Count;
-                if (_index < count)
+                if (index < count)
+                {
+                    _count = count;
+                    _index = index;
                     return true;
+                }
 
+                segment = nextSegment;
                 _segment = nextSegment;
-                _index = 0;
+                _items = nextSegment.Items;
+                index = 0;
             }
         }
 

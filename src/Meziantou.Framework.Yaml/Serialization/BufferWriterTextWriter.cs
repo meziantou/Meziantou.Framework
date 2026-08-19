@@ -1,10 +1,11 @@
 using System.Buffers;
+using System.Diagnostics;
 
 namespace Meziantou.Framework.Yaml.Serialization;
 
 internal sealed class BufferWriterTextWriter : TextWriter
 {
-    private readonly IBufferWriter<char> _destination;
+    private IBufferWriter<char>? _destination;
 
     public BufferWriterTextWriter(IBufferWriter<char> destination)
     {
@@ -12,13 +13,52 @@ internal sealed class BufferWriterTextWriter : TextWriter
         _destination = destination;
     }
 
+    private BufferWriterTextWriter()
+    {
+    }
+
     public override Encoding Encoding => Encoding.UTF8;
+
+    private IBufferWriter<char> Destination
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(_destination is null, this);
+            return _destination;
+        }
+    }
+
+    /// <summary>
+    /// Resets the writer to write to a new destination, so the instance can be reused in pooling scenarios.
+    /// </summary>
+    /// <param name="destination">The new destination buffer writer.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="destination"/> is <see langword="null"/>.</exception>
+    public void Reset(IBufferWriter<char> destination)
+    {
+        ArgumentNullException.ThrowIfNull(destination);
+        _destination = destination;
+    }
+
+    internal static BufferWriterTextWriter CreateEmptyInstanceForCaching() => new();
+
+    internal void ConfigureForCacheReuse(IBufferWriter<char> destination)
+    {
+        Debug.Assert(_destination is null);
+        Reset(destination);
+    }
+
+    internal void ResetAllStateForCacheReuse()
+    {
+        // Release the reference to the caller's buffer writer so the cached instance doesn't keep it alive.
+        _destination = null;
+    }
 
     public override void Write(char value)
     {
-        var span = _destination.GetSpan(1);
+        var destination = Destination;
+        var span = destination.GetSpan(1);
         span[0] = value;
-        _destination.Advance(1);
+        destination.Advance(1);
     }
 
     public override void Write(char[] buffer, int index, int count)
@@ -52,7 +92,8 @@ internal sealed class BufferWriterTextWriter : TextWriter
             return;
         }
 
-        buffer.CopyTo(_destination.GetSpan(buffer.Length));
-        _destination.Advance(buffer.Length);
+        var destination = Destination;
+        buffer.CopyTo(destination.GetSpan(buffer.Length));
+        destination.Advance(buffer.Length);
     }
 }

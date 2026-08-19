@@ -140,6 +140,22 @@ internal sealed class Product
 }
 ```
 
+`YamlIgnoreAttribute` overrides `YamlSerializerOptions.DefaultIgnoreCondition`. When applied to a type, it sets the default ignore condition for all its properties and fields; when applied to a member, it only applies to that member.
+
+```csharp
+[YamlIgnore(Condition = YamlIgnoreCondition.WhenWritingNull)]
+internal sealed class Product
+{
+    public string? Name { get; set; }                 // omitted when null
+
+    [YamlIgnore(Condition = YamlIgnoreCondition.Never)]
+    public string? Description { get; set; }          // always written
+
+    [YamlIgnore]
+    public string? Secret { get; set; }               // never serialized nor deserialized
+}
+```
+
 Custom converters derive from `YamlConverter<T>` and can be registered through `YamlSerializerOptions.Converters` or `YamlSourceGenerationOptionsAttribute.Converters`.
 
 ## Feature switches

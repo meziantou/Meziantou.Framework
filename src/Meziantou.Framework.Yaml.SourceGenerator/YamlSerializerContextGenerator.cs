@@ -1490,7 +1490,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         Func<string, string> assign = member is IPropertySymbol propAssign
             ? rhs => "instance." + propAssign.Name + " = " + rhs
             : rhs => "instance." + member.Name + " = " + rhs;
-        var memberIgnoreCondition = TryGetIgnoreCondition(member, out var rawCondition) ? rawCondition : (int?)null;
+        var memberIgnoreCondition = TryGetIgnoreCondition(member, out var rawCondition) ? rawCondition : GetDeclaredIgnoreCondition(declaringType);
         var converterTypeName = GetYamlConverterAttributeTypeName(member);
         var objectCreationHandling = GetObjectCreationHandling(member);
         var (blockSequenceMappingStyle, blockSequenceSequenceStyle) = GetBlockSequenceItemStyles(member);
@@ -1857,6 +1857,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
         // Include base members for parity with reflection/STJ behavior, but prefer the most-derived
         // member when a derived type hides/overrides a base member with the same CLR name.
+        var declaredIgnoreCondition = GetDeclaredIgnoreCondition(type);
         var members = new List<ISymbol>();
         var indexByClrName = new Dictionary<string, int>(StringComparer.Ordinal);
 
@@ -1890,7 +1891,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                         continue;
                     }
 
-                    if (IsIgnoredAlways(property))
+                    if (IsIgnoredAlways(property, declaredIgnoreCondition))
                     {
                         continue;
                     }
@@ -1917,7 +1918,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                         continue;
                     }
 
-                    if (IsIgnoredAlways(field))
+                    if (IsIgnoredAlways(field, declaredIgnoreCondition))
                     {
                         continue;
                     }
@@ -2143,8 +2144,21 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     private const int UnknownDerivedTypeHandlingFail = 0;
     private const int UnknownDerivedTypeHandlingFallBackToBase = 1;
 
-    private static bool IsIgnoredAlways(ISymbol symbol)
-        => TryGetIgnoreCondition(symbol, out var condition) && condition == IgnoreAlways;
+    private static bool IsIgnoredAlways(ISymbol symbol, int? declaringTypeCondition)
+        => (TryGetIgnoreCondition(symbol, out var condition) ? condition : declaringTypeCondition) == IgnoreAlways;
+
+    private static int? GetDeclaredIgnoreCondition(INamedTypeSymbol? type)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            if (TryGetIgnoreCondition(current, out var condition))
+            {
+                return condition;
+            }
+        }
+
+        return null;
+    }
 
     private static bool TryGetIgnoreCondition(ISymbol symbol, out int condition)
     {

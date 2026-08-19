@@ -863,7 +863,7 @@ namespace Meziantou.Framework.Yaml.Serialization
     {
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false)]
+    [System.AttributeUsage(System.AttributeTargets.Interface | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = false)]
     public sealed class YamlIgnoreAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
         public Meziantou.Framework.Yaml.YamlIgnoreCondition Condition { get => throw null; set { } }

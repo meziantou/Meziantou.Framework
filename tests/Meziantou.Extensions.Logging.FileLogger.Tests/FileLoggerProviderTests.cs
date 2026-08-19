@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Text.Json;
 using Meziantou.Framework;
 using Microsoft.Extensions.Configuration;
@@ -270,7 +271,7 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
-    public async Task CompressRolledFiles()
+    public async Task CompressOnRoll()
     {
         using var tempDirectory = TemporaryDirectory.Create();
         var timeProvider = new FakeTimeProvider(StartDate);
@@ -278,7 +279,8 @@ public sealed class FileLoggerProviderTests
         {
             Directory = tempDirectory.FullPath,
             RollInterval = RollInterval.Daily,
-            CompressRolledFiles = true,
+            Compression = LogFileCompression.GZip,
+            CompressionMode = LogFileCompressionMode.OnRoll,
         }, timeProvider);
 
         var logger = provider.CreateLogger("Test");
@@ -293,10 +295,115 @@ public sealed class FileLoggerProviderTests
         var files = GetFileNames(tempDirectory);
         Assert.Equal([$"2024-01-02-{pid}.log.gz", $"2024-01-03-{pid}.log"], files);
 
-        await using var stream = File.OpenRead(Path.Combine(tempDirectory.FullPath, files[0]));
-        await using var gzip = new System.IO.Compression.GZipStream(stream, System.IO.Compression.CompressionMode.Decompress);
-        using var reader = new StreamReader(gzip);
-        Assert.Contains("First day", await reader.ReadToEndAsync(TestContext.Current.CancellationToken));
+        // The current file is not compressed
+        Assert.Contains("Second day", await ReadLogFileAsync(provider.LogFilePath));
+        Assert.Contains("First day", await ReadCompressedFileAsync(Path.Combine(tempDirectory.FullPath, files[0]), LogFileCompression.GZip));
+    }
+
+    [Theory]
+    [InlineData(LogFileCompression.GZip, ".gz")]
+    [InlineData(LogFileCompression.Brotli, ".br")]
+    public async Task CompressWhileWriting(LogFileCompression compression, string extension)
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
+
+        await using (var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            RollInterval = RollInterval.Daily,
+            Compression = compression,
+        }, timeProvider))
+        {
+            var logger = provider.CreateLogger("Test");
+            logger.LogInformation("First day");
+            await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+            timeProvider.Advance(TimeSpan.FromDays(1));
+            logger.LogInformation("Second day");
+        }
+
+        var files = GetFileNames(tempDirectory);
+        Assert.Equal([$"2024-01-02-{pid}.log{extension}", $"2024-01-03-{pid}.log{extension}"], files);
+        Assert.Contains("First day", await ReadCompressedFileAsync(Path.Combine(tempDirectory.FullPath, files[0]), compression));
+        Assert.Contains("Second day", await ReadCompressedFileAsync(Path.Combine(tempDirectory.FullPath, files[1]), compression));
+    }
+
+    [Fact]
+    public async Task CompressWhileWritingUsesTheCompressionLevel()
+    {
+        var uncompressedSize = await GetLogFileSizeAsync(CompressionLevel.NoCompression);
+        var compressedSize = await GetLogFileSizeAsync(CompressionLevel.SmallestSize);
+        Assert.True(compressedSize < uncompressedSize, $"The file compressed with SmallestSize ({compressedSize} bytes) is not smaller than the one written with NoCompression ({uncompressedSize} bytes)");
+
+        static async Task<long> GetLogFileSizeAsync(CompressionLevel level)
+        {
+            using var tempDirectory = TemporaryDirectory.Create();
+            await using (var provider = new FileLoggerProvider(new FileLoggerOptions
+            {
+                Directory = tempDirectory.FullPath,
+                Compression = LogFileCompression.GZip,
+                CompressionLevel = level,
+            }))
+            {
+                var logger = provider.CreateLogger("Test");
+                for (var i = 0; i < 200; i++)
+                {
+                    logger.LogInformation("A very repetitive message that should compress very well");
+                }
+            }
+
+            return new FileInfo(Directory.GetFiles(tempDirectory.FullPath).Single()).Length;
+        }
+    }
+
+    [Fact]
+    public async Task CompressWhileWritingIgnoresAppend()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+        var options = new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            RollInterval = RollInterval.Daily,
+            Append = true,
+            Compression = LogFileCompression.GZip,
+        };
+
+        for (var i = 0; i < 2; i++)
+        {
+            await using var provider = new FileLoggerProvider(options, timeProvider);
+            provider.CreateLogger("Test").LogInformation("Run {Index}", i);
+        }
+
+        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
+        Assert.Equal([$"2024-01-02-{pid}.log.gz", $"2024-01-02-{pid}_001.log.gz"], GetFileNames(tempDirectory));
+    }
+
+    [Fact]
+    public async Task CompressedFilesAreDeletedByTheRetentionPolicy()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            RollInterval = RollInterval.Daily,
+            Compression = LogFileCompression.GZip,
+            MaxRetainedFiles = 2,
+        }, timeProvider);
+
+        var logger = provider.CreateLogger("Test");
+        for (var i = 0; i < 5; i++)
+        {
+            logger.LogInformation("Day {Index}", i);
+            await provider.FlushAsync(TestContext.Current.CancellationToken);
+            timeProvider.Advance(TimeSpan.FromDays(1));
+        }
+
+        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
+        Assert.Equal([$"2024-01-05-{pid}.log.gz", $"2024-01-06-{pid}.log.gz"], GetFileNames(tempDirectory));
     }
 
     [Fact]
@@ -494,6 +601,20 @@ public sealed class FileLoggerProviderTests
     private static string[] GetFileNames(TemporaryDirectory directory)
     {
         return new DirectoryInfo(directory.FullPath).GetFiles().Select(file => file.Name).Order(StringComparer.Ordinal).ToArray();
+    }
+
+    private static async Task<string> ReadCompressedFileAsync(string path, LogFileCompression compression)
+    {
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        await using Stream decompressedStream = compression switch
+        {
+            LogFileCompression.GZip => new GZipStream(stream, CompressionMode.Decompress),
+            LogFileCompression.Brotli => new BrotliStream(stream, CompressionMode.Decompress),
+            _ => throw new ArgumentOutOfRangeException(nameof(compression)),
+        };
+
+        using var reader = new StreamReader(decompressedStream);
+        return await reader.ReadToEndAsync(TestContext.Current.CancellationToken);
     }
 
     private static async Task<string> ReadLogFileAsync(string? path)

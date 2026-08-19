@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Extensions.Logging;
@@ -80,8 +81,15 @@ public sealed class FileLoggerOptions
         }
     }
 
-    /// <summary>Gets or sets a value indicating whether log files are compressed using gzip once they are rolled. Defaults to <see langword="false" />.</summary>
-    public bool CompressRolledFiles { get; set; }
+    /// <summary>Gets or sets the algorithm used to compress the log files. Defaults to <see cref="LogFileCompression.None" />.</summary>
+    public LogFileCompression Compression { get; set; }
+
+    /// <summary>Gets or sets when the log files are compressed. Defaults to <see cref="LogFileCompressionMode.Continuous" />. This value is ignored when <see cref="Compression" /> is <see cref="LogFileCompression.None" />.</summary>
+    /// <remarks><see cref="Append" /> is ignored when the messages are compressed continuously, as appending to a compressed file would produce a file that most tools cannot read.</remarks>
+    public LogFileCompressionMode CompressionMode { get; set; }
+
+    /// <summary>Gets or sets the compression level. Defaults to <see cref="System.IO.Compression.CompressionLevel.Optimal" />. This value is ignored when <see cref="Compression" /> is <see cref="LogFileCompression.None" />.</summary>
+    public CompressionLevel CompressionLevel { get; set; } = CompressionLevel.Optimal;
 
     /// <summary>Gets or sets the minimum level of the messages written to the file. Defaults to <see cref="LogLevel.Trace" />.</summary>
     public LogLevel MinLevel { get; set; } = LogLevel.Trace;

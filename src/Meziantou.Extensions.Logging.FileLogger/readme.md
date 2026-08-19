@@ -63,10 +63,29 @@ Note that the options related to the log file itself (`Directory`, file name, `A
 | `RollInterval` | Creates a new file every hour / day / month |
 | `MaxFileSizeInBytes` | Creates a new file when the current one reaches the size limit |
 | `MaxRetainedFiles` | Deletes the oldest files when a new file is created |
-| `CompressRolledFiles` | Compresses the files using gzip once they are rolled |
+| `Compression` | Compresses the log files using gzip or Brotli |
 | `Append` | Reuses an existing file instead of creating a new one at startup |
 
 The log files are named `{FileNamePrefix}{timestamp}-{processId}{FileNameExtension}`, so they are ordered chronologically by name. When the name is already used, a suffix is added (`_001`, `_002`, …).
+
+## Compression
+
+```c#
+options.Compression = LogFileCompression.GZip;      // or LogFileCompression.Brotli
+options.CompressionLevel = CompressionLevel.SmallestSize;
+options.CompressionMode = LogFileCompressionMode.Continuous;
+```
+
+| `CompressionMode` | Description |
+| --- | --- |
+| `Continuous` (default) | The messages are compressed as they are written, so the file is never written uncompressed. The extension of the compression algorithm is part of the file name (`2024-01-02-1234.log.gz`). |
+| `OnRoll` | The current log file is a plain text file, and it is compressed once it is rolled. |
+
+`Continuous` doesn't need any extra disk space and doesn't pause the logging to compress a big file, but the compressed stream is only finalized when the file is rolled or when the provider is disposed, so the current log file may not be readable by all the tools while the application is running. Use `OnRoll` when you need to read the current log file with the usual text tools.
+
+`Append` is ignored when the messages are compressed continuously, as appending to a compressed file would produce a file that most tools cannot read entirely.
+
+`MaxFileSizeInBytes` is compared to the size of the file on disk, so it accounts for the compression. As the compressed size is only known once the data is flushed, the file may be rolled slightly before the limit.
 
 ## Formatters
 

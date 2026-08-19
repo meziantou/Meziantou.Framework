@@ -38,7 +38,9 @@ namespace Meziantou.Extensions.Logging
         public Meziantou.Extensions.Logging.RollInterval RollInterval { get => throw null; set { } }
         public long? MaxFileSizeInBytes { get => throw null; set { } }
         public int? MaxRetainedFiles { get => throw null; set { } }
-        public bool CompressRolledFiles { get => throw null; set { } }
+        public Meziantou.Extensions.Logging.LogFileCompression Compression { get => throw null; set { } }
+        public Meziantou.Extensions.Logging.LogFileCompressionMode CompressionMode { get => throw null; set { } }
+        public System.IO.Compression.CompressionLevel CompressionLevel { get => throw null; set { } }
         public Microsoft.Extensions.Logging.LogLevel MinLevel { get => throw null; set { } }
         public bool IncludeScopes { get => throw null; set { } }
         public bool IncludeCategory { get => throw null; set { } }
@@ -85,6 +87,19 @@ namespace Meziantou.Extensions.Logging
         public static Meziantou.Extensions.Logging.JsonFileFormatter Instance { get => throw null; }
         public JsonFileFormatter() : base(default(string)) { }
         public override void Write<TState>(in Microsoft.Extensions.Logging.Abstractions.LogEntry<TState> logEntry, System.DateTimeOffset timestamp, Meziantou.Extensions.Logging.FileLoggerOptions options, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider, System.IO.TextWriter textWriter) { }
+    }
+
+    public enum LogFileCompression
+    {
+        None = 0,
+        GZip = 1,
+        Brotli = 2
+    }
+
+    public enum LogFileCompressionMode
+    {
+        Continuous = 0,
+        OnRoll = 1
     }
 
     public enum RollInterval

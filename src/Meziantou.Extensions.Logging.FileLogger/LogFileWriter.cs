@@ -5,7 +5,6 @@ namespace Meziantou.Extensions.Logging;
 /// <summary>Writes the log messages to a file and handles the log file rolling and retention.</summary>
 internal sealed class LogFileWriter : IDisposable
 {
-    private const string GZipExtension = ".gz";
     private const int MaxFileNameAttempts = 1000;
 
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
@@ -15,6 +14,11 @@ internal sealed class LogFileWriter : IDisposable
     private readonly string _directory;
     private readonly int _newLineByteCount;
 
+    // When the messages are compressed as they are written, the compression extension is part of the file name
+    private readonly bool _compressWhileWriting;
+    private readonly string _fileNameSuffix;
+
+    private FileStream _fileStream;
     private StreamWriter _writer;
     private bool _canAppend;
     private string? _currentFilePath;
@@ -30,7 +34,11 @@ internal sealed class LogFileWriter : IDisposable
         _options = options;
         _timeProvider = timeProvider;
         _newLineByteCount = Environment.NewLine.Length;
-        _canAppend = options.Append;
+        _compressWhileWriting = options.Compression is not LogFileCompression.None && options.CompressionMode is LogFileCompressionMode.Continuous;
+        _fileNameSuffix = _compressWhileWriting ? GetCompressionExtension(options.Compression) : "";
+
+        // Appending to a compressed file would create a file that most tools cannot read entirely
+        _canAppend = options.Append && !_compressWhileWriting;
         Open(timeProvider.GetUtcNow());
     }
 
@@ -39,15 +47,23 @@ internal sealed class LogFileWriter : IDisposable
         var byteCount = Utf8NoBom.GetByteCount(message) + _newLineByteCount;
         RollIfNeeded(_timeProvider.GetUtcNow(), byteCount);
         _writer.WriteLine(message);
+
+        // When the messages are compressed, this is an upper bound of the size of the file. The exact size is known when the data is flushed
         _currentFileSize += byteCount;
     }
 
-    public void Flush() => _writer.Flush();
+    public void Flush()
+    {
+        _writer.Flush();
+        _currentFileSize = _fileStream.Position;
+    }
 
     public void Dispose()
     {
-        // Keep CurrentFilePath, so the path of the last log file can be read after the provider is disposed
+        // Keep CurrentFilePath, so the path of the last log file can be read after the provider is disposed.
+        // Disposing the writer also finalizes the compressed stream and disposes the file stream
         _writer.Dispose();
+        _fileStream.Dispose();
     }
 
     private void RollIfNeeded(DateTimeOffset now, int byteCount)
@@ -64,7 +80,7 @@ internal sealed class LogFileWriter : IDisposable
         _writer.Dispose();
         Open(now);
 
-        if (_options.CompressRolledFiles && previousFilePath is not null)
+        if (_options.Compression is not LogFileCompression.None && _options.CompressionMode is LogFileCompressionMode.OnRoll && previousFilePath is not null)
         {
             Compress(previousFilePath);
         }
@@ -72,7 +88,7 @@ internal sealed class LogFileWriter : IDisposable
         ApplyRetentionPolicy();
     }
 
-    [MemberNotNull(nameof(_writer))]
+    [MemberNotNull(nameof(_writer), nameof(_fileStream))]
     private void Open(DateTimeOffset now)
     {
         Directory.CreateDirectory(_directory);
@@ -87,13 +103,15 @@ internal sealed class LogFileWriter : IDisposable
             if (append && _options.MaxFileSizeInBytes is { } maxSize && File.Exists(path) && new FileInfo(path).Length >= maxSize)
                 continue;
 
+            FileStream? stream = null;
             try
             {
                 // Opening the file with FileShare.Read allows other processes to read the log file while it is being written,
                 // and prevents 2 providers from writing to the same file
-                var stream = new FileStream(path, append ? FileMode.Append : FileMode.CreateNew, FileAccess.Write, FileShare.Read | FileShare.Delete);
+                stream = new FileStream(path, append ? FileMode.Append : FileMode.CreateNew, FileAccess.Write, FileShare.Read | FileShare.Delete);
+                _writer = new StreamWriter(_compressWhileWriting ? CreateCompressionStream(stream) : stream, Utf8NoBom) { AutoFlush = false };
+                _fileStream = stream;
                 _currentFileSize = stream.Length;
-                _writer = new StreamWriter(stream, Utf8NoBom) { AutoFlush = false };
                 _currentPeriod = Truncate(now);
                 _canAppend = false;
                 Volatile.Write(ref _currentFilePath, path);
@@ -102,12 +120,27 @@ internal sealed class LogFileWriter : IDisposable
             catch (IOException ex)
             {
                 // The file already exists or is used by another process, try the next name
+                stream?.Dispose();
                 lastException = ex;
             }
         }
 
         throw lastException ?? new IOException("Cannot create a log file in " + _directory);
     }
+
+    private Stream CreateCompressionStream(Stream stream) => _options.Compression switch
+    {
+        LogFileCompression.GZip => new GZipStream(stream, _options.CompressionLevel),
+        LogFileCompression.Brotli => new BrotliStream(stream, _options.CompressionLevel),
+        _ => stream,
+    };
+
+    private static string GetCompressionExtension(LogFileCompression compression) => compression switch
+    {
+        LogFileCompression.GZip => ".gz",
+        LogFileCompression.Brotli => ".br",
+        _ => "",
+    };
 
     private string GetFileName(DateTimeOffset now, int index)
     {
@@ -129,6 +162,7 @@ internal sealed class LogFileWriter : IDisposable
         }
 
         builder.Append(_options.FileNameExtension);
+        builder.Append(_fileNameSuffix);
         return builder.ToString();
     }
 
@@ -152,15 +186,15 @@ internal sealed class LogFileWriter : IDisposable
         };
     }
 
-    private static void Compress(string path)
+    private void Compress(string path)
     {
         try
         {
             using (var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
-            using (var destination = new FileStream(path + GZipExtension, FileMode.Create, FileAccess.Write, FileShare.None))
-            using (var gzip = new GZipStream(destination, CompressionLevel.Optimal))
+            using (var destination = new FileStream(path + GetCompressionExtension(_options.Compression), FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var compressedStream = CreateCompressionStream(destination))
             {
-                source.CopyTo(gzip);
+                source.CopyTo(compressedStream);
             }
 
             File.Delete(path);
@@ -180,9 +214,12 @@ internal sealed class LogFileWriter : IDisposable
         {
             var directory = new DirectoryInfo(_directory);
             var pattern = _options.FileNamePrefix + "*" + _options.FileNameExtension;
-            // The file names start with the timestamp, so ordering them by name orders them chronologically
+
+            // The file names start with the timestamp, so ordering them by name orders them chronologically.
+            // The second pattern matches the compressed files, whatever the algorithm they were compressed with
             var files = directory.GetFiles(pattern)
-                .Concat(directory.GetFiles(pattern + GZipExtension))
+                .Concat(directory.GetFiles(pattern + ".*"))
+                .DistinctBy(file => file.FullName, StringComparer.Ordinal)
                 .OrderByDescending(file => file.Name, StringComparer.Ordinal)
                 .Skip(maxRetainedFiles);
 

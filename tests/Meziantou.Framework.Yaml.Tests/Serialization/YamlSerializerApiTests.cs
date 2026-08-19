@@ -386,6 +386,72 @@ public class YamlSerializerApiTests
     }
 
     [Fact]
+    public void GetTypeInfo_ReturnsGenericMetadataFromResolver()
+    {
+        var typeInfo = new StringTypeInfo(new YamlSerializerOptions());
+        var options = new YamlSerializerOptions
+        {
+            TypeInfoResolver = new StringTypeInfoResolver(typeInfo),
+        };
+
+        Assert.Same(typeInfo, options.GetTypeInfo<string>());
+        Assert.True(options.TryGetTypeInfo<string>(out var resolved));
+        Assert.Same(typeInfo, resolved);
+    }
+
+    [Fact]
+    public void GetTypeInfo_AdaptsNonGenericMetadata()
+    {
+        var options = new YamlSerializerOptions();
+
+        var typeInfo = options.GetTypeInfo<Person>();
+
+        Assert.Equal(typeof(Person), typeInfo.Type);
+        Assert.Same(options, typeInfo.Options);
+
+        var yaml = YamlSerializer.Serialize(new Person { FirstName = "Ada", Age = 37 }, typeInfo);
+        var value = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("Ada", value.FirstName);
+        Assert.Equal(37, value.Age);
+    }
+
+    [Fact]
+    public void GetTypeInfo_AdaptsNonGenericMetadataForValueTypes()
+    {
+        var typeInfo = YamlSerializerOptions.Default.GetTypeInfo<int>();
+
+        Assert.Equal(typeof(int), typeInfo.Type);
+        Assert.Equal(42, YamlSerializer.Deserialize("42", typeInfo));
+        Assert.Equal("42\n", YamlSerializer.Serialize(42, typeInfo));
+    }
+
+    [Fact]
+    public void TryGetTypeInfo_ReturnsFalseWhenContextHasNoMetadata()
+    {
+        var context = new EmptyContext();
+        var options = context.CreateOptions(o => o with { SourceName = "sample.yaml" });
+
+        Assert.False(options.TryGetTypeInfo<Person>(out var typeInfo));
+        Assert.Null(typeInfo);
+    }
+
+    [Fact]
+    public void GetTypeInfo_ThrowsWhenContextHasNoMetadata()
+    {
+        var context = new EmptyContext();
+        var options = context.CreateOptions(o => o with { SourceName = "sample.yaml" });
+
+        _ = Assert.Throws<InvalidOperationException>(() => options.GetTypeInfo<Person>());
+    }
+
+    private sealed class EmptyContext : YamlSerializerContext
+    {
+        public override YamlTypeInfo? GetTypeInfo(Type type, YamlSerializerOptions options) => null;
+    }
+
+    [Fact]
     public void JsonAttributesAreRespectedByReflectionSerializer()
     {
         var person = new JsonAnnotatedPerson

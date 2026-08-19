@@ -190,7 +190,8 @@ namespace Meziantou.Framework.Yaml
         SnakeCaseLower = 2,
         SnakeCaseUpper = 3,
         KebabCaseLower = 4,
-        KebabCaseUpper = 5
+        KebabCaseUpper = 5,
+        PascalCase = 6
     }
 
     public enum YamlMappingOrderPolicy
@@ -206,6 +207,7 @@ namespace Meziantou.Framework.Yaml
         public static Meziantou.Framework.Yaml.YamlNamingPolicy SnakeCaseUpper { get => throw null; }
         public static Meziantou.Framework.Yaml.YamlNamingPolicy KebabCaseLower { get => throw null; }
         public static Meziantou.Framework.Yaml.YamlNamingPolicy KebabCaseUpper { get => throw null; }
+        public static Meziantou.Framework.Yaml.YamlNamingPolicy PascalCase { get => throw null; }
         public abstract string ConvertName(string name);
     }
 

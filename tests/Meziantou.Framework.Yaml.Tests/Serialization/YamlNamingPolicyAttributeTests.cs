@@ -85,6 +85,30 @@ public sealed class YamlNamingPolicyAttributeTests
     }
 
     [Fact]
+    public void TypeLevel_PascalCase_UppercasesFirstCharacter()
+    {
+        var yaml = YamlSerializer.Serialize(new PascalCasePolicyModel { firstValue = 1, secondValue = 2 });
+        Assert.Contains("FirstValue: 1", yaml);
+        Assert.Contains("SecondValue: 2", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize<PascalCasePolicyModel>("FirstValue: 3\nSecondValue: 4\n")!;
+        Assert.Equal(3, roundTrip.firstValue);
+        Assert.Equal(4, roundTrip.secondValue);
+    }
+
+    [Fact]
+    public void SourceGenerated_TypeLevel_PascalCase_UppercasesFirstCharacter()
+    {
+        var yaml = YamlSerializer.Serialize(new PascalCasePolicyModel { firstValue = 1, secondValue = 2 }, NamingPolicyContext.Default);
+        Assert.Contains("FirstValue: 1", yaml);
+        Assert.Contains("SecondValue: 2", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize("FirstValue: 3\nSecondValue: 4\n", NamingPolicyContext.Default.PascalCasePolicyModel)!;
+        Assert.Equal(3, roundTrip.firstValue);
+        Assert.Equal(4, roundTrip.secondValue);
+    }
+
+    [Fact]
     public void SourceGenerated_MemberLevel_Unspecified_OptsOutOfTypeLevel()
     {
         var yaml = YamlSerializer.Serialize(new TypeLevelOptOutModel { FirstValue = 1, SecondValue = 2 }, NamingPolicyContext.Default);
@@ -198,6 +222,15 @@ internal sealed class UnspecifiedPolicyModel
     public int SecondValue { get; set; }
 }
 
+#pragma warning disable IDE1006 // Naming Styles - the members must start with a lowercase character for the PascalCase policy to have an effect
+[YamlNamingPolicy(YamlKnownNamingPolicy.PascalCase)]
+internal sealed class PascalCasePolicyModel
+{
+    public int firstValue { get; set; }
+    public int secondValue { get; set; }
+}
+#pragma warning restore IDE1006 // Naming Styles
+
 [YamlNamingPolicy(YamlKnownNamingPolicy.SnakeCaseLower)]
 internal class BasePolicyModel
 {
@@ -229,6 +262,7 @@ internal sealed class ConstructorPolicyModel
 [YamlSerializable(typeof(ExplicitNameModel))]
 [YamlSerializable(typeof(DerivedPolicyModel))]
 [YamlSerializable(typeof(ConstructorPolicyModel))]
+[YamlSerializable(typeof(PascalCasePolicyModel))]
 internal sealed partial class NamingPolicyContext : YamlSerializerContext
 {
     public NamingPolicyContext()

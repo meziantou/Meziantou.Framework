@@ -37,4 +37,9 @@ enum YamlKnownNamingPolicy
     /// KEBAB-CASE (uppercase). See <see cref="YamlNamingPolicy.KebabCaseUpper"/>.
     /// </summary>
     KebabCaseUpper = 5,
+
+    /// <summary>
+    /// PascalCase. See <see cref="YamlNamingPolicy.PascalCase"/>.
+    /// </summary>
+    PascalCase = 6,
 }

@@ -30,6 +30,9 @@ abstract class YamlNamingPolicy
     /// <summary>Gets the naming policy for KEBAB-CASE (uppercase).</summary>
     public static YamlNamingPolicy KebabCaseUpper { get; } = new YamlKebabCaseUpperNamingPolicy();
 
+    /// <summary>Gets the naming policy for PascalCase.</summary>
+    public static YamlNamingPolicy PascalCase { get; } = new YamlPascalCaseNamingPolicy();
+
     /// <summary>Gets the policy matching the specified <see cref="YamlKnownNamingPolicy"/> value.</summary>
     /// <param name="namingPolicy">The naming policy to resolve.</param>
     /// <returns>The matching policy, or <see langword="null"/> when no policy must be applied.</returns>
@@ -42,6 +45,7 @@ abstract class YamlNamingPolicy
             YamlKnownNamingPolicy.SnakeCaseUpper => SnakeCaseUpper,
             YamlKnownNamingPolicy.KebabCaseLower => KebabCaseLower,
             YamlKnownNamingPolicy.KebabCaseUpper => KebabCaseUpper,
+            YamlKnownNamingPolicy.PascalCase => PascalCase,
             _ => null,
         };
     }

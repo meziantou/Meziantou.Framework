@@ -49,6 +49,23 @@ public sealed class YamlCollectionConverterTests
     }
 
     [Fact]
+    public void DictionaryKeyPolicy_PascalCase_AppliesToSerializedKeys()
+    {
+        var options = new YamlSerializerOptions { DictionaryKeyPolicy = YamlNamingPolicy.PascalCase };
+        var yaml = YamlSerializer.Serialize(
+            new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                ["myKey"] = 1,
+                ["OtherKey"] = 2,
+            },
+            options);
+
+        Assert.Contains("MyKey: 1", yaml);
+        Assert.Contains("OtherKey: 2", yaml);
+        Assert.DoesNotContain("myKey:", yaml);
+    }
+
+    [Fact]
     public void Indentation_RespectsIndentSize()
     {
         var yaml = YamlSerializer.Serialize(

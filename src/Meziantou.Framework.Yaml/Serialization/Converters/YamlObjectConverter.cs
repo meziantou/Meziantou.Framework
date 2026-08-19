@@ -1605,7 +1605,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
                     continue;
                 }
 
-                var ignoreCondition = GetIgnoreCondition(property);
+                var ignoreCondition = GetIgnoreCondition(property, type);
                 if (ignoreCondition == YamlIgnoreCondition.Always)
                 {
                     continue;
@@ -1671,7 +1671,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
                     continue;
                 }
 
-                var ignoreCondition = GetIgnoreCondition(field);
+                var ignoreCondition = GetIgnoreCondition(field, type);
                 if (ignoreCondition == YamlIgnoreCondition.Always)
                 {
                     continue;
@@ -2722,6 +2722,12 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
 
         return null;
     }
+
+    private static YamlIgnoreCondition? GetIgnoreCondition(MemberInfo member, Type declaringType)
+        => GetIgnoreCondition(member) ?? GetDeclaredIgnoreCondition(declaringType);
+
+    private static YamlIgnoreCondition? GetDeclaredIgnoreCondition(Type type)
+        => type.GetCustomAttribute<YamlIgnoreAttribute>(inherit: true)?.Condition;
 
     private static bool IsRequired(MemberInfo member)
     {

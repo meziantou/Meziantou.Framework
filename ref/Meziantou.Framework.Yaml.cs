@@ -361,6 +361,8 @@ namespace Meziantou.Framework.Yaml
         public bool AllowAliases { get => throw null; init { } }
         public bool AllowMergeKeys { get => throw null; init { } }
         public Meziantou.Framework.Yaml.IYamlTypeInfoResolver? TypeInfoResolver { get => throw null; init { } }
+        public Meziantou.Framework.Yaml.YamlTypeInfo<T> GetTypeInfo<T>() => throw null;
+        public bool TryGetTypeInfo<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Yaml.YamlTypeInfo<T>? typeInfo) => throw null;
         public override string ToString() => throw null;
         public static bool operator !=(Meziantou.Framework.Yaml.YamlSerializerOptions? left, Meziantou.Framework.Yaml.YamlSerializerOptions? right) => throw null;
         public static bool operator ==(Meziantou.Framework.Yaml.YamlSerializerOptions? left, Meziantou.Framework.Yaml.YamlSerializerOptions? right) => throw null;

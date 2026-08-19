@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Yaml.Serialization;
 
 namespace Meziantou.Framework.Yaml;
@@ -241,6 +242,38 @@ public sealed record YamlSerializerOptions
     /// runtime converter set.
     /// </remarks>
     public IYamlTypeInfoResolver? TypeInfoResolver { get; init; }
+
+    /// <summary>Gets the <see cref="YamlTypeInfo{T}"/> contract metadata resolved by this options instance.</summary>
+    /// <typeparam name="T">The type to resolve metadata for.</typeparam>
+    /// <returns>The metadata resolved for <typeparamref name="T"/>.</returns>
+    /// <exception cref="InvalidOperationException">No metadata is available for <typeparamref name="T"/>.</exception>
+    public YamlTypeInfo<T> GetTypeInfo<T>()
+    {
+        var typeInfo = YamlSerializer.ResolveTypeInfo(this, typeof(T));
+        return AsGenericTypeInfo<T>(typeInfo);
+    }
+
+    /// <summary>Attempts to get the <see cref="YamlTypeInfo{T}"/> contract metadata resolved by this options instance.</summary>
+    /// <typeparam name="T">The type to resolve metadata for.</typeparam>
+    /// <param name="typeInfo">The metadata resolved for <typeparamref name="T"/>, when available.</param>
+    /// <returns><see langword="true"/> when metadata is available for <typeparamref name="T"/>; otherwise <see langword="false"/>.</returns>
+    public bool TryGetTypeInfo<T>([NotNullWhen(returnValue: true)] out YamlTypeInfo<T>? typeInfo)
+    {
+        var resolved = YamlSerializer.TryResolveTypeInfo(this, typeof(T));
+        if (resolved is null)
+        {
+            typeInfo = null;
+            return false;
+        }
+
+        typeInfo = AsGenericTypeInfo<T>(resolved);
+        return true;
+    }
+
+    private static YamlTypeInfo<T> AsGenericTypeInfo<T>(YamlTypeInfo typeInfo)
+    {
+        return typeInfo as YamlTypeInfo<T> ?? new DelegatingYamlTypeInfo<T>(typeInfo);
+    }
 
     internal int EffectiveMaxDepth => YamlDepthHelper.GetEffectiveMaxDepth(MaxDepth);
 

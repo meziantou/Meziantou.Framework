@@ -1170,19 +1170,36 @@ public static class YamlSerializer
         throw new InvalidOperationException($"No generated metadata is available for '{requestedType}' on context '{context.GetType()}'.");
     }
 
-    private static YamlTypeInfo ResolveTypeInfo(YamlSerializerOptions options, Type requestedType)
+    internal static YamlTypeInfo ResolveTypeInfo(YamlSerializerOptions options, Type requestedType)
+    {
+        var typeInfo = TryResolveTypeInfo(options, requestedType);
+        if (typeInfo is not null)
+        {
+            return typeInfo;
+        }
+
+        if (options.TypeInfoResolver is YamlSerializerContext context && !ReferenceEquals(options, context.Options))
+        {
+            throw new InvalidOperationException($"No generated metadata is available for '{requestedType}' on context '{context.GetType()}'.");
+        }
+
+        if (IsReflectionEnabledByDefault)
+        {
+            throw new InvalidOperationException($"No metadata is available for '{requestedType}'.");
+        }
+
+        throw new InvalidOperationException(
+            $"Reflection serialization is disabled and no metadata was found for '{requestedType}'. " +
+            $"Provide metadata via {nameof(YamlSerializerOptions)}.{nameof(YamlSerializerOptions.TypeInfoResolver)} or enable the '{ReflectionSwitchName}' AppContext switch.");
+    }
+
+    internal static YamlTypeInfo? TryResolveTypeInfo(YamlSerializerOptions options, Type requestedType)
     {
         if (options.TypeInfoResolver is YamlSerializerContext context && !ReferenceEquals(options, context.Options))
         {
             // Resolve type info from the context with the caller's options so generated contexts can
             // initialize any option-dependent metadata before serialization/deserialization starts.
-            var contextTypeInfo = context.GetTypeInfo(requestedType, options);
-            if (contextTypeInfo is not null)
-            {
-                return contextTypeInfo;
-            }
-
-            throw new InvalidOperationException($"No generated metadata is available for '{requestedType}' on context '{context.GetType()}'.");
+            return context.GetTypeInfo(requestedType, options);
         }
 
         var typeInfo = options.TypeInfoResolver?.GetTypeInfo(requestedType, options);
@@ -1199,17 +1216,9 @@ public static class YamlSerializer
 
         if (IsReflectionEnabledByDefault)
         {
-            typeInfo = ReflectionYamlTypeInfoResolver.Default.GetTypeInfo(requestedType, options);
-            if (typeInfo is null)
-            {
-                throw new InvalidOperationException($"No metadata is available for '{requestedType}'.");
-            }
-
-            return typeInfo;
+            return ReflectionYamlTypeInfoResolver.Default.GetTypeInfo(requestedType, options);
         }
 
-        throw new InvalidOperationException(
-            $"Reflection serialization is disabled and no metadata was found for '{requestedType}'. " +
-            $"Provide metadata via {nameof(YamlSerializerOptions)}.{nameof(YamlSerializerOptions.TypeInfoResolver)} or enable the '{ReflectionSwitchName}' AppContext switch.");
+        return null;
     }
 }

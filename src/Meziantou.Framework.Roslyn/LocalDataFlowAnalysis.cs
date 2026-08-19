@@ -17,16 +17,28 @@ internal static partial class LocalDataFlowAnalysis
 {
     public static ITypeSymbol? GetActualType(this IOperation operation, CancellationToken cancellationToken)
     {
+        return operation.GetActualType(useDataFlowAnalysis: true, cancellationToken);
+    }
+
+    public static ITypeSymbol? GetActualType(this IOperation operation, bool useDataFlowAnalysis, CancellationToken cancellationToken)
+    {
         operation = operation.UnwrapImplicitConversions();
+        if (!useDataFlowAnalysis)
+            return operation.Type;
 
         var value = GetFlowValue(operation, cancellationToken);
         if (value is not null && value != operation)
-            return GetActualType(value, cancellationToken);
+            return GetActualType(value, useDataFlowAnalysis, cancellationToken);
 
         return operation.Type;
     }
 
     public static bool TryGetConstantValue(this IOperation operation, out object? value, CancellationToken cancellationToken)
+    {
+        return operation.TryGetConstantValue(useDataFlowAnalysis: true, out value, cancellationToken);
+    }
+
+    public static bool TryGetConstantValue(this IOperation operation, bool useDataFlowAnalysis, out object? value, CancellationToken cancellationToken)
     {
         operation = operation.UnwrapImplicitConversions();
         if (operation.ConstantValue.HasValue)
@@ -35,9 +47,12 @@ internal static partial class LocalDataFlowAnalysis
             return true;
         }
 
-        var flowValue = GetFlowValue(operation, cancellationToken);
-        if (flowValue is not null && flowValue != operation)
-            return TryGetConstantValue(flowValue, out value, cancellationToken);
+        if (useDataFlowAnalysis)
+        {
+            var flowValue = GetFlowValue(operation, cancellationToken);
+            if (flowValue is not null && flowValue != operation)
+                return TryGetConstantValue(flowValue, useDataFlowAnalysis, out value, cancellationToken);
+        }
 
         value = null;
         return false;

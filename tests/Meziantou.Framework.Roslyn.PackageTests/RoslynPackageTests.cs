@@ -164,6 +164,7 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
                 public static int? GetNodeLine(SyntaxNode node, CancellationToken cancellationToken) => node.GetLine(cancellationToken);
                 public static bool IsCSharp12(LanguageVersion languageVersion) => languageVersion.IsCSharp12OrGreater();
                 public static ITypeSymbol? GetFlowType(IOperation operation, CancellationToken cancellationToken) => LocalDataFlowAnalysis.GetActualType(operation, cancellationToken);
+                public static ITypeSymbol? GetUnwrappedType(IOperation operation, CancellationToken cancellationToken) => LocalDataFlowAnalysis.GetActualType(operation, useDataFlowAnalysis: false, cancellationToken);
                 public static string ReporterName => typeof(DiagnosticReporter).Name;
                 public static DiagnosticInvocationReportOptions InvocationReportOptions => DiagnosticInvocationReportOptions.ReportOnMember | DiagnosticInvocationReportOptions.ReportOnArguments;
             }

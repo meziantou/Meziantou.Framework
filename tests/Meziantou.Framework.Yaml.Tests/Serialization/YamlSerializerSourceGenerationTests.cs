@@ -822,6 +822,70 @@ internal sealed class GeneratedPrivateExtensionDataModel
     public IReadOnlyDictionary<string, object?> GetExtra() => Extra;
 }
 
+internal abstract class GeneratedGenericPayloadBase
+{
+    public int Id { get; set; }
+}
+
+internal sealed class GeneratedGenericPayload : GeneratedGenericPayloadBase
+{
+}
+
+internal sealed class GeneratedOtherGenericPayload : GeneratedGenericPayloadBase
+{
+}
+
+internal sealed class GeneratedConstrainedEnvelope<T>
+    where T : notnull, GeneratedGenericPayloadBase
+{
+#pragma warning disable IDE0051 // Remove unused private member
+    [YamlConstructor]
+    private GeneratedConstrainedEnvelope(T body) => Body = body;
+#pragma warning restore IDE0051
+
+#pragma warning disable IDE0044 // Add readonly modifier
+    [YamlInclude]
+    private string _tag = string.Empty;
+#pragma warning restore IDE0044
+
+    [YamlInclude]
+    private int Version { get; set; }
+
+    public T Body { get; }
+
+    public string GetTag() => _tag;
+
+    public int GetVersion() => Version;
+}
+
+internal struct GeneratedUnmanagedHolder<T>
+    where T : unmanaged
+{
+#pragma warning disable IDE0044 // Add readonly modifier
+    [YamlInclude]
+    private T _value;
+#pragma warning restore IDE0044
+
+    public readonly T GetValue() => _value;
+}
+
+internal static class GeneratedGenericOuter<TOuter>
+    where TOuter : class
+{
+    internal sealed class Inner<TInner>
+        where TInner : struct
+    {
+#pragma warning disable IDE0044 // Add readonly modifier
+#pragma warning disable CS0649 // Field is never assigned to
+        [YamlInclude]
+        private TInner _inner;
+#pragma warning restore CS0649
+#pragma warning restore IDE0044
+
+        public TInner GetInner() => _inner;
+    }
+}
+
 internal sealed record GeneratedFunctionDto(string Name, string? Description, string Abbreviation);
 
 internal sealed class GeneratedPopulateChild
@@ -975,6 +1039,12 @@ internal sealed class GeneratedYamlIgnoreConditions
 [YamlSerializable(typeof(GeneratedPrivateParameterlessCtorModel))]
 [YamlSerializable(typeof(GeneratedPrivateCtorWithInitOnlyModel))]
 [YamlSerializable(typeof(GeneratedPrivateExtensionDataModel))]
+[YamlSerializable(typeof(GeneratedGenericPayload))]
+[YamlSerializable(typeof(GeneratedOtherGenericPayload))]
+[YamlSerializable(typeof(GeneratedConstrainedEnvelope<GeneratedGenericPayload>))]
+[YamlSerializable(typeof(GeneratedConstrainedEnvelope<GeneratedOtherGenericPayload>))]
+[YamlSerializable(typeof(GeneratedUnmanagedHolder<double>))]
+[YamlSerializable(typeof(GeneratedGenericOuter<object>.Inner<int>))]
 [YamlSerializable(typeof(GeneratedPopulateChild))]
 [YamlSerializable(typeof(GeneratedPopulateContainer))]
 [YamlSerializable(typeof(GeneratedPopulateViaTypeAttributeContainer))]
@@ -3016,6 +3086,63 @@ extra_list:
         var extra = value.GetExtra();
         Assert.True(extra.TryGetValue("Unknown", out var unknown));
         Assert.Equal("42", unknown?.ToString());
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateMembersAndConstructorOfConstrainedGenericType()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedConstrainedEnvelopeGeneratedGenericPayload;
+
+        var value = YamlSerializer.Deserialize("_tag: envelope\nVersion: 3\nBody:\n  Id: 9\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal("envelope", value.GetTag());
+        Assert.Equal(3, value.GetVersion());
+        Assert.Equal(9, value.Body.Id);
+
+        var yaml = YamlSerializer.Serialize(value, typeInfo);
+
+        Assert.Contains("_tag: envelope", yaml);
+        Assert.Contains("Version: 3", yaml);
+    }
+
+    [Fact]
+    public void GeneratedContextSupportsSeveralInstantiationsOfTheSameGenericType()
+    {
+        var context = new TestYamlSerializerContext();
+
+        var first = YamlSerializer.Deserialize("_tag: first\nBody:\n  Id: 1\n", context.GeneratedConstrainedEnvelopeGeneratedGenericPayload);
+        var second = YamlSerializer.Deserialize("_tag: second\nBody:\n  Id: 2\n", context.GeneratedConstrainedEnvelopeGeneratedOtherGenericPayload);
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Equal("first", first.GetTag());
+        Assert.Equal("second", second.GetTag());
+    }
+
+    [Fact]
+    public void GeneratedContextReadsPrivateMemberOfUnmanagedConstrainedGenericStruct()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedUnmanagedHolderDouble;
+
+        var value = YamlSerializer.Deserialize("_value: 1.5\n", typeInfo);
+
+        Assert.Equal(1.5, value.GetValue());
+        Assert.Contains("_value: 1.5", YamlSerializer.Serialize(value, typeInfo));
+    }
+
+    [Fact]
+    public void GeneratedContextReadsPrivateMemberOfGenericTypeNestedInGenericType()
+    {
+        var context = new TestYamlSerializerContext();
+        var typeInfo = context.GeneratedGenericOuterInnerInt32;
+
+        var value = YamlSerializer.Deserialize("_inner: 4\n", typeInfo);
+
+        Assert.NotNull(value);
+        Assert.Equal(4, value.GetInner());
     }
 
     [Fact]

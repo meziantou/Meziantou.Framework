@@ -11,4 +11,9 @@ public enum LogFileCompression
 
     /// <summary>The log files are compressed using Brotli, and the <c>.br</c> extension is added to their name.</summary>
     Brotli,
+
+#if NET11_0_OR_GREATER
+    /// <summary>The log files are compressed using Zstandard, and the <c>.zst</c> extension is added to their name.</summary>
+    Zstandard,
+#endif
 }

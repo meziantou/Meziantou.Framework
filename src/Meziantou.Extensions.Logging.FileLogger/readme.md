@@ -63,7 +63,7 @@ Note that the options related to the log file itself (`Directory`, file name, `A
 | `RollInterval` | Creates a new file every hour / day / month |
 | `MaxFileSizeInBytes` | Creates a new file when the current one reaches the size limit |
 | `MaxRetainedFiles` | Deletes the oldest files when a new file is created |
-| `Compression` | Compresses the log files using gzip or Brotli |
+| `Compression` | Compresses the log files using gzip, Brotli, or Zstandard (.NET 11+) |
 | `Append` | Reuses an existing file instead of creating a new one at startup |
 
 The log files are named `{FileNamePrefix}{timestamp}-{processId}{FileNameExtension}`, so they are ordered chronologically by name. When the name is already used, a suffix is added (`_001`, `_002`, …).
@@ -71,7 +71,7 @@ The log files are named `{FileNamePrefix}{timestamp}-{processId}{FileNameExtensi
 ## Compression
 
 ```c#
-options.Compression = LogFileCompression.GZip;      // or LogFileCompression.Brotli
+options.Compression = LogFileCompression.GZip;      // GZip, Brotli, or Zstandard (.NET 11+)
 options.CompressionLevel = CompressionLevel.SmallestSize;
 options.CompressionMode = LogFileCompressionMode.Continuous;
 ```

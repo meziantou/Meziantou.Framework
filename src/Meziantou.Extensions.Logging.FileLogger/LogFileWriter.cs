@@ -132,6 +132,9 @@ internal sealed class LogFileWriter : IDisposable
     {
         LogFileCompression.GZip => new GZipStream(stream, _options.CompressionLevel),
         LogFileCompression.Brotli => new BrotliStream(stream, _options.CompressionLevel),
+#if NET11_0_OR_GREATER
+        LogFileCompression.Zstandard => new ZstandardStream(stream, _options.CompressionLevel),
+#endif
         _ => stream,
     };
 
@@ -139,6 +142,9 @@ internal sealed class LogFileWriter : IDisposable
     {
         LogFileCompression.GZip => ".gz",
         LogFileCompression.Brotli => ".br",
+#if NET11_0_OR_GREATER
+        LogFileCompression.Zstandard => ".zst",
+#endif
         _ => "",
     };
 

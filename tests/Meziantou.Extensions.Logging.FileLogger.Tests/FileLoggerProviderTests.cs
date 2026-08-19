@@ -303,6 +303,9 @@ public sealed class FileLoggerProviderTests
     [Theory]
     [InlineData(LogFileCompression.GZip, ".gz")]
     [InlineData(LogFileCompression.Brotli, ".br")]
+#if NET11_0_OR_GREATER
+    [InlineData(LogFileCompression.Zstandard, ".zst")]
+#endif
     public async Task CompressWhileWriting(LogFileCompression compression, string extension)
     {
         using var tempDirectory = TemporaryDirectory.Create();
@@ -610,6 +613,9 @@ public sealed class FileLoggerProviderTests
         {
             LogFileCompression.GZip => new GZipStream(stream, CompressionMode.Decompress),
             LogFileCompression.Brotli => new BrotliStream(stream, CompressionMode.Decompress),
+#if NET11_0_OR_GREATER
+            LogFileCompression.Zstandard => new ZstandardStream(stream, CompressionMode.Decompress),
+#endif
             _ => throw new ArgumentOutOfRangeException(nameof(compression)),
         };
 

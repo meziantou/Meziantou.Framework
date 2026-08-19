@@ -91,9 +91,16 @@ namespace Meziantou.Extensions.Logging
 
     public enum LogFileCompression
     {
+        #if NET10_0
         None = 0,
         GZip = 1,
         Brotli = 2
+        #elif NET11_0
+        None = 0,
+        GZip = 1,
+        Brotli = 2,
+        Zstandard = 3
+        #endif
     }
 
     public enum LogFileCompressionMode

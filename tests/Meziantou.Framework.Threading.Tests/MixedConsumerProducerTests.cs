@@ -1,4 +1,6 @@
 ﻿#pragma warning disable CA1861 // Avoid constant arrays as arguments
+using System.Collections.Concurrent;
+
 namespace Meziantou.Framework.Threading.Tests;
 public sealed class MixedConsumerProducerTests
 {
@@ -113,5 +115,109 @@ public sealed class MixedConsumerProducerTests
         });
 
         Assert.Equal(1, processed);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(4)]
+    public async Task Process_NeverExceedsMaxDegreeOfParallelism(int maxDegreeOfParallelism)
+    {
+        var current = 0;
+        var observedConcurrency = new ConcurrentBag<int>();
+
+        await MixedConsumerProducer.Process(Enumerable.Range(0, 20), new ParallelOptions() { MaxDegreeOfParallelism = maxDegreeOfParallelism }, async (context, item, cancellationToken) =>
+        {
+            observedConcurrency.Add(Interlocked.Increment(ref current));
+            if (item < 100)
+            {
+                context.Enqueue(item + 20);
+            }
+
+            await Task.Yield();
+            Interlocked.Decrement(ref current);
+        });
+
+        Assert.HasCount(120, observedConcurrency);
+        Assert.True(observedConcurrency.Max() <= maxDegreeOfParallelism, $"Observed {observedConcurrency.Max()} concurrent actions for a max degree of parallelism of {maxDegreeOfParallelism}");
+    }
+
+    [Fact]
+    public async Task Process_CancellationDuringProcessing_WaitsForRunningActions()
+    {
+        using var cts = new CancellationTokenSource();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var running = 0;
+        var options = new ParallelOptions() { MaxDegreeOfParallelism = 4, CancellationToken = cts.Token };
+
+        var task = MixedConsumerProducer.Process(Enumerable.Range(0, 100), options, async (context, item, cancellationToken) =>
+        {
+            Interlocked.Increment(ref running);
+            try
+            {
+                started.TrySetResult();
+                await Task.Delay(TimeSpan.FromMilliseconds(50), CancellationToken.None);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref running);
+            }
+        });
+
+        await started.Task;
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
+        Assert.Equal(0, running);
+    }
+
+    [Fact]
+    public async Task Process_UsesTaskSchedulerFromOptions()
+    {
+        var scheduler = new CountingTaskScheduler();
+        var options = new ParallelOptions() { MaxDegreeOfParallelism = 2, TaskScheduler = scheduler };
+        var observedSchedulers = new ConcurrentBag<TaskScheduler>();
+
+        await MixedConsumerProducer.Process([1, 2, 3, 4], options, (context, item, cancellationToken) =>
+        {
+            observedSchedulers.Add(TaskScheduler.Current);
+            return ValueTask.CompletedTask;
+        });
+
+        Assert.HasCount(4, observedSchedulers);
+        Assert.All(observedSchedulers, current => Assert.Same(scheduler, current));
+        Assert.True(scheduler.QueuedTaskCount > 0);
+    }
+
+    [Fact]
+    public async Task Process_NullArguments()
+    {
+        var options = new ParallelOptions();
+
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => MixedConsumerProducer.Process<int>(initialItems: null!, options, (context, item, cancellationToken) => ValueTask.CompletedTask));
+        Assert.Equal("initialItems", exception.ParamName);
+
+        exception = await Assert.ThrowsAsync<ArgumentNullException>(() => MixedConsumerProducer.Process([1], options: null!, (context, item, cancellationToken) => ValueTask.CompletedTask));
+        Assert.Equal("options", exception.ParamName);
+
+        exception = await Assert.ThrowsAsync<ArgumentNullException>(() => MixedConsumerProducer.Process([1], options, action: null!));
+        Assert.Equal("action", exception.ParamName);
+    }
+
+    private sealed class CountingTaskScheduler : TaskScheduler
+    {
+        private int _queuedTaskCount;
+
+        public int QueuedTaskCount => Volatile.Read(ref _queuedTaskCount);
+
+        protected override IEnumerable<Task> GetScheduledTasks() => [];
+
+        protected override void QueueTask(Task task)
+        {
+            Interlocked.Increment(ref _queuedTaskCount);
+            _ = Task.Run(() => TryExecuteTask(task));
+        }
+
+        protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => false;
     }
 }

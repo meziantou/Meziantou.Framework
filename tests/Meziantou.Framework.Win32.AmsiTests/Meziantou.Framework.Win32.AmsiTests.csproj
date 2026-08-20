@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- All the tests are skipped when running on GitHub Actions -->
+    <MinimumExpectedTests>0</MinimumExpectedTests>
     <RootNamespace>Meziantou.Framework.Win32.Tests</RootNamespace>
   </PropertyGroup>
 

@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- All the tests are skipped on macOS when running on GitHub Actions -->
+    <MinimumExpectedTests>0</MinimumExpectedTests>
   </PropertyGroup>
 
   <ItemGroup>

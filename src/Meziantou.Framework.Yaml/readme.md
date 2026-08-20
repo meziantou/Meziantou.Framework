@@ -676,8 +676,7 @@ YamlSerializer.Deserialize<Section>("""
 
 Merge keys are only recognized under the `Core` and `Extended` schemas; the `Json` and `Failsafe` schemas treat `<<` as
 an ordinary key. A merge key whose value is an alias additionally requires `ReferenceHandling` to be `Preserve` or
-`PreserveMinimal`, and is currently supported when binding to dictionaries only. `AllowMergeKeys = false` rejects merge
-keys when binding to a dictionary.
+`PreserveMinimal`, and is currently supported when binding to dictionaries only.
 
 ## Schemas
 
@@ -886,7 +885,6 @@ Use `TryDeserialize` when a failure is expected and an exception is not wanted.
 | `MaxDepth` | `64` | Caps the nesting depth of mappings and sequences while reading and writing. `0` means the default. |
 | `AllowAnchors` | `true` | Rejects documents declaring anchors. |
 | `AllowAliases` | `true` | Rejects documents using aliases, which prevents alias-expansion amplification. |
-| `AllowMergeKeys` | `true` | Rejects merge keys. |
 | `DuplicateKeyHandling` | `Error` | Rejects mappings with duplicate keys. |
 | `UnsafeAllowDeserializeFromTagTypeName` | `false` | Allows a YAML tag to name a CLR type to instantiate. Enable it only for trusted input. |
 
@@ -896,7 +894,6 @@ var options = new YamlSerializerOptions
     MaxDepth = 32,
     AllowAnchors = false,
     AllowAliases = false,
-    AllowMergeKeys = false,
     UnmappedMemberHandling = YamlUnmappedMemberHandling.Disallow,
 };
 ```

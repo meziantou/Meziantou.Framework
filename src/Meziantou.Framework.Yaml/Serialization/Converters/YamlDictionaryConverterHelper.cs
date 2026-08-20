@@ -217,11 +217,6 @@ internal static class YamlDictionaryConverterHelper
 
             if (mergeEnabled && string.Equals(key, "<<", StringComparison.Ordinal))
             {
-                if (!options.AllowMergeKeys)
-                {
-                    throw new YamlException(reader.SourceName, reader.Start, reader.End, "YAML merge keys are not allowed.");
-                }
-
                 ReadAndApplyMerge<TDictionary, TValue>(reader, ref valueConverter, dictionary, explicitKeys, createDictionary, containerKind);
                 continue;
             }

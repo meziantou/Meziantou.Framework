@@ -363,7 +363,6 @@ namespace Meziantou.Framework.Yaml
         public int MaxDepth { get => throw null; init { } }
         public bool AllowAnchors { get => throw null; init { } }
         public bool AllowAliases { get => throw null; init { } }
-        public bool AllowMergeKeys { get => throw null; init { } }
         public Meziantou.Framework.Yaml.IYamlTypeInfoResolver? TypeInfoResolver { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlTypeInfo<T> GetTypeInfo<T>() => throw null;
         public bool TryGetTypeInfo<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Yaml.YamlTypeInfo<T>? typeInfo) => throw null;

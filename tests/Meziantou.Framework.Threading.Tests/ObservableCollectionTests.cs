@@ -1,20 +1,58 @@
 using System.Collections;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using Meziantou.Framework.WPF.Collections;
+using Meziantou.Framework.Collections.Concurrent;
 
-namespace Meziantou.Framework.Windows.Tests;
+namespace Meziantou.Framework.Tests.Collections.Concurrent;
 
-public sealed partial class ObservableCollectionTests
+public sealed partial class ObservableCollectionTests : IDisposable
 {
+    private readonly SynchronizationContext? _previousSynchronizationContext = SynchronizationContext.Current;
+    private readonly SynchronizationContext _synchronizationContext = new();
+
+    public ObservableCollectionTests()
+    {
+        // The collection raises its notifications synchronously when the current thread is the one
+        // associated with its synchronization context, which is what the assertions below rely on.
+        SynchronizationContext.SetSynchronizationContext(_synchronizationContext);
+    }
+
+    public void Dispose()
+    {
+        SynchronizationContext.SetSynchronizationContext(_previousSynchronizationContext);
+    }
+
+    public enum CollectionKind
+    {
+        Concurrent,
+        Observable,
+        BuiltIn,
+    }
+
     public static IEnumerable<object[]> GetCollections
     {
         get
         {
-            yield return new object[] { new ConcurrentObservableCollection<int>() };
-            yield return new object[] { new ConcurrentObservableCollection<int>().AsObservable };
-            yield return new object[] { new System.Collections.ObjectModel.ObservableCollection<int>() };
+            yield return new object[] { CollectionKind.Concurrent };
+            yield return new object[] { CollectionKind.Observable };
+            yield return new object[] { CollectionKind.BuiltIn };
         }
+    }
+
+    private ConcurrentObservableCollection<T> CreateCollection<T>()
+    {
+        return new ConcurrentObservableCollection<T>(_synchronizationContext);
+    }
+
+    private IList<int> CreateCollection(CollectionKind kind)
+    {
+        return kind switch
+        {
+            CollectionKind.Concurrent => CreateCollection<int>(),
+            CollectionKind.Observable => (IList<int>)CreateCollection<int>().AsObservable,
+            CollectionKind.BuiltIn => new System.Collections.ObjectModel.ObservableCollection<int>(),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+        };
     }
 
     private static object GetObservableCollection<T>(IList<T> collection)
@@ -30,12 +68,11 @@ public sealed partial class ObservableCollectionTests
 
     [Theory]
     [MemberData(nameof(GetCollections))]
-    public void Add(IList<int> collection)
+    public void Add(CollectionKind kind)
     {
-        // Arrange
+        var collection = CreateCollection(kind);
         using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
-        // Act
         collection.Add(1);
         Assert.Equal([1], collection.ToList());
         eventAssert.AssertPropertyChanged("Count", "Item[]");
@@ -44,14 +81,13 @@ public sealed partial class ObservableCollectionTests
 
     [Theory]
     [MemberData(nameof(GetCollections))]
-    public void Remove(IList<int> collection)
+    public void Remove(CollectionKind kind)
     {
-        // Arrange
+        var collection = CreateCollection(kind);
         collection.Add(1);
         collection.Add(2);
         using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
-        // Act
         collection.Remove(1);
         Assert.Equal([2], collection.ToList());
         eventAssert.AssertPropertyChanged("Count", "Item[]");
@@ -60,15 +96,14 @@ public sealed partial class ObservableCollectionTests
 
     [Theory]
     [MemberData(nameof(GetCollections))]
-    public void RemoveAt(IList<int> collection)
+    public void RemoveAt(CollectionKind kind)
     {
-        // Arrange
+        var collection = CreateCollection(kind);
         collection.Add(1);
         collection.Add(2);
         collection.Add(3);
         using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
-        // Act
         collection.RemoveAt(0);
         Assert.Equal([2, 3], collection.ToList());
         eventAssert.AssertPropertyChanged("Count", "Item[]");
@@ -77,12 +112,11 @@ public sealed partial class ObservableCollectionTests
 
     [Theory]
     [MemberData(nameof(GetCollections))]
-    public void Insert(IList<int> collection)
+    public void Insert(CollectionKind kind)
     {
-        // Arrange
+        var collection = CreateCollection(kind);
         using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
-        // Act
         collection.Insert(index: 0, item: 1);
         Assert.Equal([1], collection.ToList());
         eventAssert.AssertPropertyChanged("Count", "Item[]");
@@ -91,15 +125,14 @@ public sealed partial class ObservableCollectionTests
 
     [Theory]
     [MemberData(nameof(GetCollections))]
-    public void Clear(IList<int> collection)
+    public void Clear(CollectionKind kind)
     {
-        // Arrange
+        var collection = CreateCollection(kind);
         collection.Add(1);
         collection.Add(2);
         collection.Add(3);
         using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
-        // Act
         collection.Clear();
         Assert.Empty(collection.ToList());
         eventAssert.AssertPropertyChanged("Count", "Item[]");
@@ -108,13 +141,12 @@ public sealed partial class ObservableCollectionTests
 
     [Theory]
     [MemberData(nameof(GetCollections))]
-    public void Indexer_Set(IList<int> collection)
+    public void Indexer_Set(CollectionKind kind)
     {
-        // Arrange
+        var collection = CreateCollection(kind);
         collection.Add(1);
         using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
-        // Act
         collection[0] = 2;
         Assert.Equal([2], collection.ToList());
         eventAssert.AssertPropertyChanged("Item[]");
@@ -126,17 +158,13 @@ public sealed partial class ObservableCollectionTests
     [InlineData(true)]
     public void AddRange(bool supportRangeNotifications)
     {
-        // Arrange
-        var collection = new ConcurrentObservableCollection<int>()
-        {
-            SupportRangeNotifications = supportRangeNotifications,
-        };
+        var collection = CreateCollection<int>();
+        collection.SupportRangeNotifications = supportRangeNotifications;
 
         collection.AddRange(0, 1, 2);
 
         using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
-        // Act
         collection.AddRange(3, 4, 5);
         Assert.Equal([0, 1, 2, 3, 4, 5], collection.ToList());
         Assert.Equal([0, 1, 2, 3, 4, 5], collection.AsObservable.ToList());
@@ -160,17 +188,13 @@ public sealed partial class ObservableCollectionTests
     [InlineData(true)]
     public void InsertRange(bool supportRangeNotifications)
     {
-        // Arrange
-        var collection = new ConcurrentObservableCollection<int>()
-        {
-            SupportRangeNotifications = supportRangeNotifications,
-        };
+        var collection = CreateCollection<int>();
+        collection.SupportRangeNotifications = supportRangeNotifications;
 
         collection.AddRange(0, 1, 5);
 
         using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
-        // Act
         collection.InsertRange(2, new[] { 2, 3, 4 });
         Assert.Equal([0, 1, 2, 3, 4, 5], collection.ToList());
         Assert.Equal([0, 1, 2, 3, 4, 5], collection.AsObservable.ToList());
@@ -192,11 +216,10 @@ public sealed partial class ObservableCollectionTests
     [Fact]
     public void Sort()
     {
-        // Arrange
-        var collection = new ConcurrentObservableCollection<int> { 1, 0, 2 };
+        var collection = CreateCollection<int>();
+        collection.AddRange(1, 0, 2);
         using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
-        // Act
         collection.Sort();
         Assert.Equal([0, 1, 2], collection.ToList());
         Assert.Equal([0, 1, 2], collection.AsObservable.ToList());
@@ -207,11 +230,10 @@ public sealed partial class ObservableCollectionTests
     [Fact]
     public void StableSort()
     {
-        // Arrange
-        var collection = new ConcurrentObservableCollection<int> { 1, 0, 2 };
+        var collection = CreateCollection<int>();
+        collection.AddRange(1, 0, 2);
         using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
-        // Act
         collection.StableSort();
         Assert.Equal([0, 1, 2], collection.ToList());
         Assert.Equal([0, 1, 2], collection.AsObservable.ToList());
@@ -222,8 +244,7 @@ public sealed partial class ObservableCollectionTests
     [Fact]
     public void StableSort_PreserveOrder()
     {
-        // Arrange
-        var collection = new ConcurrentObservableCollection<Sample>();
+        var collection = CreateCollection<Sample>();
         for (var i = 0; i < 1000; i++)
         {
             collection.Add(new Sample(i * 2, "Value" + (i * 2).ToString("D5", CultureInfo.InvariantCulture)));
@@ -232,10 +253,8 @@ public sealed partial class ObservableCollectionTests
 
         using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
-        // Act
         collection.StableSort(new SampleComparer()); // Compare by value
 
-        // Assert
         Assert.Equal(collection, collection.OrderBy(item => item.Index));
         eventAssert.AssertPropertyChanged("Item[]");
         eventAssert.AssertCollectionChangedReset();
@@ -244,7 +263,7 @@ public sealed partial class ObservableCollectionTests
     [Fact]
     public void AddWrongItemType()
     {
-        var collection = (IList)new ConcurrentObservableCollection<string>();
+        var collection = (IList)CreateCollection<string>();
         collection.Add(null);
         collection.Add("");
 
@@ -253,9 +272,71 @@ public sealed partial class ObservableCollectionTests
 
     [Theory]
     [MemberData(nameof(GetCollections))]
-    public void Contains_Struct_Null(IList<int> collection)
+    public void Contains_Struct_Null(CollectionKind kind)
     {
+        var collection = CreateCollection(kind);
         Assert.False(((IList)collection).Contains(null));
+    }
+
+    [Fact]
+    public void ChangesFromAnotherThreadAreNotifiedOnTheSynchronizationContext()
+    {
+        var context = new QueuedSynchronizationContext();
+        var previousSynchronizationContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(context);
+        try
+        {
+            var collection = new ConcurrentObservableCollection<int>(context);
+            var observable = collection.AsObservable;
+            using var eventAssert = new EventAssert(observable);
+
+            var thread = new Thread(() => collection.AddRange(1, 2, 3));
+            thread.Start();
+            thread.Join();
+
+            Assert.Equal([1, 2, 3], collection.ToList());
+            Assert.Empty(observable);
+            Assert.Empty(eventAssert.CollectionChangedArgs);
+
+            Assert.Equal(1, context.Run());
+
+            Assert.Equal([1, 2, 3], observable.ToList());
+            Assert.HasCount(3, eventAssert.CollectionChangedArgs);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+        }
+    }
+
+    [Fact]
+    public void ObservableCollectionCannotBeAccessedFromAnotherThread()
+    {
+        var observable = CreateCollection<int>().AsObservable;
+
+        var thread = new Thread(() => Assert.Throws<InvalidOperationException>(() => observable.Count));
+        thread.Start();
+        thread.Join();
+    }
+
+    private sealed class QueuedSynchronizationContext : SynchronizationContext
+    {
+        private readonly System.Collections.Concurrent.ConcurrentQueue<(SendOrPostCallback Callback, object? State)> _callbacks = new();
+
+        public override void Post(SendOrPostCallback d, object? state) => _callbacks.Enqueue((d, state));
+
+        /// <summary>Runs the pending callbacks and returns how many were executed.</summary>
+        public int Run()
+        {
+            var count = 0;
+            while (_callbacks.TryDequeue(out var callback))
+            {
+                callback.Callback(callback.State);
+                count++;
+            }
+
+            return count;
+        }
     }
 
     private sealed record Sample(int Index, string Value);

@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
 
-namespace Meziantou.Framework.WPF.Collections;
+namespace Meziantou.Framework.Collections.Concurrent;
 
 internal static class PendingEvent
 {

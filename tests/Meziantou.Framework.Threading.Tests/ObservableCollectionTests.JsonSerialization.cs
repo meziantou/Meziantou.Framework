@@ -1,6 +1,6 @@
-using Meziantou.Framework.WPF.Collections;
+using Meziantou.Framework.Collections.Concurrent;
 
-namespace Meziantou.Framework.Windows.Tests;
+namespace Meziantou.Framework.Tests.Collections.Concurrent;
 
 public sealed partial class ObservableCollectionTests
 {

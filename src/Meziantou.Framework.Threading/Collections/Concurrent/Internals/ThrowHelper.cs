@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 
-namespace Meziantou.Framework.WPF.Collections;
+namespace Meziantou.Framework.Collections.Concurrent;
 
 internal static class ThrowHelper
 {

@@ -8,4 +8,8 @@
     <RootNamespace>Meziantou.Framework</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Threading.Tests" />
+  </ItemGroup>
+
 </Project>

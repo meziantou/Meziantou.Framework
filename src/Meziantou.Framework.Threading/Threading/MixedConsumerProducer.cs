@@ -8,9 +8,11 @@ public static class MixedConsumerProducer
     /// <summary>Processes items in parallel, where each processing action can enqueue additional items to be processed.</summary>
     /// <typeparam name="T">The type of items to process.</typeparam>
     /// <param name="initialItems">The initial collection of items to process.</param>
-    /// <param name="options">Options that configure the parallel processing.</param>
+    /// <param name="options">Options that configure the parallel processing. <see cref="ParallelOptions.MaxDegreeOfParallelism"/>, <see cref="ParallelOptions.CancellationToken"/>, and <see cref="ParallelOptions.TaskScheduler"/> are honored.</param>
     /// <param name="action">The action to perform on each item. The action receives a context to enqueue new items, the current item, and a cancellation token.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <exception cref="AggregateException">One or more invocations of <paramref name="action"/> threw an exception. Remaining items are still processed, and all exceptions are reported once processing completes.</exception>
+    /// <exception cref="OperationCanceledException"><see cref="ParallelOptions.CancellationToken"/> was canceled.</exception>
     /// <example>
     /// <code><![CDATA[
     /// var initialUrls = new[] { "https://example.com" };
@@ -29,7 +31,23 @@ public static class MixedConsumerProducer
     /// </example>
     public static async Task Process<T>(IEnumerable<T> initialItems, ParallelOptions options, Func<MixedConsumerProducerContext<T>, T, CancellationToken, ValueTask> action)
     {
+        ArgumentNullException.ThrowIfNull(initialItems);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(action);
+
         if (Enumerable.TryGetNonEnumeratedCount(initialItems, out var count) && count == 0)
+            return;
+
+        var pendingItems = Channel.CreateUnbounded<T>();
+        var context = new MixedConsumerProducerContext<T>(pendingItems.Writer);
+        var hasItem = false;
+        foreach (var item in initialItems)
+        {
+            context.Enqueue(item);
+            hasItem = true;
+        }
+
+        if (!hasItem)
             return;
 
         var degreeOfParallelism = options.MaxDegreeOfParallelism;
@@ -38,93 +56,57 @@ public static class MixedConsumerProducer
             degreeOfParallelism = Environment.ProcessorCount;
         }
 
-        var pendingItems = Channel.CreateUnbounded<T>();
-        var hasItem = false;
-        foreach (var item in initialItems)
-        {
-            _ = pendingItems.Writer.TryWrite(item);
-            hasItem = true;
-        }
+        var cancellationToken = options.CancellationToken;
+        // ParallelOptions treats a null scheduler as "the current one", so mirror that behavior.
+        var scheduler = options.TaskScheduler ?? TaskScheduler.Current;
 
-        if (!hasItem)
-            return;
-
-        var context = new MixedConsumerProducerContext<T>(pendingItems.Writer);
-        var tasks = new List<Task>(degreeOfParallelism);
-        var remainingConcurrency = degreeOfParallelism;
+        var exceptionsLock = new Lock();
         List<Exception>? exceptions = null;
-        while (await pendingItems.Reader.WaitToReadAsync(options.CancellationToken).ConfigureAwait(false))
+
+        // Consumers are long-lived: each one drains the channel until it is completed, which happens
+        // once no item is pending. This bounds the concurrency to degreeOfParallelism without having
+        // to throttle the loop that dispatches the items.
+        var consume = ConsumeAsync;
+        var consumers = new Task[degreeOfParallelism];
+        for (var i = 0; i < consumers.Length; i++)
         {
-            while (TryGetItem(out var item))
-            {
-                // If we reach the maximum number of concurrent tasks, wait for one to finish
-                while (Volatile.Read(ref remainingConcurrency) < 0)
-                {
-                    // The tasks collection can change while Task.WhenAny enumerates the collection
-                    // so, we need to clone the collection to avoid issues
-                    Task[]? clone = null;
-                    lock (tasks)
-                    {
-                        if (tasks.Count > 0)
-                            clone = tasks.ToArray();
-                    }
-
-                    if (clone is not null)
-                        await Task.WhenAny(clone).ConfigureAwait(false);
-                }
-
-                var task = Task.Run(async () => await action(context, item, options.CancellationToken).ConfigureAwait(false), options.CancellationToken);
-
-                lock (tasks)
-                {
-                    tasks.Add(task);
-                    _ = task.ContinueWith(task => OnTaskCompleted(task), options.CancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
-                }
-            }
-
-            bool TryGetItem([MaybeNullWhen(false)] out T result)
-            {
-                lock (tasks)
-                {
-                    if (pendingItems.Reader.TryRead(out var item))
-                    {
-                        remainingConcurrency--;
-                        result = item;
-                        return true;
-                    }
-
-                    result = default;
-                    return false;
-                }
-            }
-
-            void OnTaskCompleted(Task completedTask)
-            {
-                lock (tasks)
-                {
-                    if (!tasks.Remove(completedTask))
-                        throw new InvalidOperationException("An unexpected error occurred");
-
-                    // Observe the task's exception so it doesn't resurface as an UnobservedTaskException,
-                    // and record it so it can be reported to the caller once processing completes.
-                    if (completedTask.Exception is { } exception)
-                    {
-                        exceptions ??= [];
-                        exceptions.AddRange(exception.InnerExceptions);
-                    }
-
-                    remainingConcurrency++;
-
-                    // There is no active tasks, so we are sure we are at the end
-                    if (degreeOfParallelism == remainingConcurrency && !pendingItems.Reader.TryPeek(out _))
-                        pendingItems.Writer.Complete();
-                }
-            }
+            consumers[i] = Task.Factory.StartNew(consume, cancellationToken, TaskCreationOptions.DenyChildAttach, scheduler).Unwrap();
         }
 
-        // All work has completed (the writer is only completed once no task is running and the
-        // channel is empty), so no continuation can still be mutating the list at this point.
+        await Task.WhenAll(consumers).ConfigureAwait(false);
+
+        // All consumers have completed, so nothing can be mutating the list anymore.
         if (exceptions is not null)
             throw new AggregateException(exceptions);
+
+        async Task ConsumeAsync()
+        {
+            var reader = pendingItems.Reader;
+            while (await reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                while (!cancellationToken.IsCancellationRequested && reader.TryRead(out var item))
+                {
+                    try
+                    {
+                        await action(context, item, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Record the exception and keep processing the remaining items. Letting it
+                        // escape would take a consumer down and leave the item accounted for as
+                        // pending, which would prevent the channel from ever being completed.
+                        lock (exceptionsLock)
+                        {
+                            exceptions ??= [];
+                            exceptions.Add(ex);
+                        }
+                    }
+                    finally
+                    {
+                        context.OnItemProcessed();
+                    }
+                }
+            }
+        }
     }
 }

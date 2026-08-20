@@ -4,6 +4,12 @@ namespace Meziantou.Framework.Collections.Concurrent;
 
 /// <summary>Represents a thread-safe list that can be accessed by multiple threads concurrently.</summary>
 /// <typeparam name="T">The type of elements in the list.</typeparam>
+/// <remarks>
+/// Each member is individually atomic, but a sequence of members is not. For instance,
+/// <c>if (!list.Contains(item)) list.Add(item);</c> can add the same item twice, and <c>list[list.Count - 1]</c>
+/// can throw when another thread removes an element in between. Use <see cref="Execute(Action{List{T}})"/> or
+/// <see cref="Execute{TResult}(Func{List{T}, TResult})"/> to run several operations as a single atomic unit.
+/// </remarks>
 /// <example>
 /// <code><![CDATA[
 /// var list = new SynchronizedList<int>();
@@ -13,9 +19,18 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// {
 ///     Console.WriteLine(item);
 /// }
+///
+/// // Multiple operations as a single atomic unit
+/// list.Execute(items =>
+/// {
+///     if (!items.Contains(3))
+///     {
+///         items.Add(3);
+///     }
+/// });
 /// ]]></code>
 /// </example>
-public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
+public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>, ICollection
 {
     private readonly List<T> _list;
 
@@ -57,16 +72,11 @@ public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
         }
     }
 
-    bool ICollection<T>.IsReadOnly
-    {
-        get
-        {
-            lock (_list)
-            {
-                return ((ICollection<T>)_list).IsReadOnly;
-            }
-        }
-    }
+    bool ICollection<T>.IsReadOnly => false;
+
+    bool ICollection.IsSynchronized => true;
+
+    object ICollection.SyncRoot => throw new NotSupportedException("The SyncRoot property may not be used for the synchronization of concurrent collections. Use Execute to run several operations atomically.");
 
     public T this[int index]
     {
@@ -83,6 +93,34 @@ public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
             {
                 _list[index] = value;
             }
+        }
+    }
+
+    /// <summary>Runs the specified action on the underlying list while holding the lock, so the operations it performs are atomic with respect to other members.</summary>
+    /// <param name="action">The action to execute. The list passed to the action must not be used after the action returns.</param>
+    /// <remarks>Keep the action short and avoid calling code that may block or acquire other locks, because all other members block while it runs.</remarks>
+    public void Execute(Action<List<T>> action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        lock (_list)
+        {
+            action(_list);
+        }
+    }
+
+    /// <summary>Runs the specified function on the underlying list while holding the lock, so the operations it performs are atomic with respect to other members.</summary>
+    /// <typeparam name="TResult">The type of the value returned by <paramref name="func"/>.</typeparam>
+    /// <param name="func">The function to execute. The list passed to the function must not be used after the function returns.</param>
+    /// <returns>The value returned by <paramref name="func"/>.</returns>
+    /// <remarks>Keep the function short and avoid calling code that may block or acquire other locks, because all other members block while it runs.</remarks>
+    public TResult Execute<TResult>(Func<List<T>, TResult> func)
+    {
+        ArgumentNullException.ThrowIfNull(func);
+
+        lock (_list)
+        {
+            return func(_list);
         }
     }
 
@@ -176,7 +214,7 @@ public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
         }
     }
 
-    public void CopyTo(Array array, int index)
+    void ICollection.CopyTo(Array array, int index)
     {
         lock (_list)
         {

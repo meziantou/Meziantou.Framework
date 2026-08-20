@@ -1,3 +1,4 @@
+using System.Collections;
 using Meziantou.Framework.Collections.Concurrent;
 
 namespace Meziantou.Framework.Tests.Collections.Concurrent;
@@ -150,12 +151,64 @@ public sealed class SynchronizedListTests
     }
 
     [Fact]
-    public void CopyToArray_ShouldCopyItems()
+    public void ICollectionCopyTo_ShouldCopyItems()
     {
         var list = new SynchronizedList<int>([1, 2, 3]);
         var array = new int[3];
-        list.CopyTo(array, 0);
+        ((ICollection)list).CopyTo(array, 0);
         Assert.Equal([1, 2, 3], array);
+    }
+
+    [Fact]
+    public void IsSynchronized_ShouldBeTrue()
+    {
+        var list = new SynchronizedList<int>();
+        Assert.True(((ICollection)list).IsSynchronized);
+    }
+
+    [Fact]
+    public void SyncRoot_ShouldThrow()
+    {
+        var list = new SynchronizedList<int>();
+        Assert.Throws<NotSupportedException>(() => _ = ((ICollection)list).SyncRoot);
+    }
+
+    [Fact]
+    public void Execute_ShouldRunActionOnUnderlyingList()
+    {
+        var list = new SynchronizedList<int>([1, 2, 3]);
+        list.Execute(items => items.RemoveAll(item => item % 2 is 1));
+        Assert.Equal([2], list);
+    }
+
+    [Fact]
+    public void Execute_ShouldReturnFunctionResult()
+    {
+        var list = new SynchronizedList<int>([1, 2, 3]);
+        Assert.Equal(6, list.Execute(items => items.Sum()));
+    }
+
+    [Fact]
+    public void Execute_NullCallback_ShouldThrow()
+    {
+        var list = new SynchronizedList<int>();
+        Assert.Throws<ArgumentNullException>(() => list.Execute(action: null!));
+        Assert.Throws<ArgumentNullException>(() => _ = list.Execute<int>(func: null!));
+    }
+
+    [Fact]
+    public async Task Execute_ShouldMakeCompositeOperationsAtomic()
+    {
+        var list = new SynchronizedList<int>();
+        var tasks = new List<Task>();
+
+        for (var i = 0; i < 100; i++)
+        {
+            tasks.Add(Task.Run(() => list.Execute(items => items.Add(items.Count))));
+        }
+
+        await Task.WhenAll(tasks);
+        Assert.Equal(Enumerable.Range(0, 100), list.Order());
     }
 
     [Fact]

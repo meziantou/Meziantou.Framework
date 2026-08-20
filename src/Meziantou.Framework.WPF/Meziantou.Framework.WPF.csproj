@@ -4,8 +4,8 @@
     <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <UseWPF>true</UseWPF>
-    <Version>3.0.0</Version>
-    <Description>Collection of Commands, Markup extensions, DependencyProperty, and collections for WPF</Description>
+    <Version>4.0.0</Version>
+    <Description>Collection of Commands, Markup extensions, and DependencyProperty for WPF</Description>
   </PropertyGroup>
 
 </Project>

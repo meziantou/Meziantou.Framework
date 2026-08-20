@@ -38,6 +38,45 @@ namespace Meziantou.Framework.Collections.Concurrent
         }
     }
 
+    public class ConcurrentObservableCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
+    {
+        public bool SupportRangeNotifications { get => throw null; set { } }
+        public Meziantou.Framework.Collections.Concurrent.IReadOnlyObservableCollection<T> AsObservable { get => throw null; }
+        public int Count { get => throw null; }
+        public T this[int index] { get => throw null; set { } }
+        public ConcurrentObservableCollection(System.Threading.SynchronizationContext synchronizationContext) { }
+        protected internal virtual bool IsOnSynchronizationContextThread() => throw null;
+        public void Add(T item) { }
+        public void AddRange(params T[] items) { }
+        public void AddRange(System.Collections.Generic.IEnumerable<T> items) { }
+        public void InsertRange(int index, System.Collections.Generic.IEnumerable<T> items) { }
+        public void Clear() { }
+        public void Insert(int index, T item) { }
+        public bool Remove(T item) => throw null;
+        public void RemoveAt(int index) { }
+        public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public int IndexOf(T item) => throw null;
+        public bool Contains(T item) => throw null;
+        public void CopyTo(T[] array, int arrayIndex) { }
+        public void Sort() { }
+        public void Sort(System.Collections.Generic.IComparer<T>? comparer) { }
+        public void StableSort() { }
+        public void StableSort(System.Collections.Generic.IComparer<T>? comparer) { }
+        int System.Collections.IList.Add(object? value) => throw null;
+        bool System.Collections.IList.Contains(object? value) => throw null;
+        void System.Collections.IList.Clear() { }
+        int System.Collections.IList.IndexOf(object? value) => throw null;
+        void System.Collections.IList.Insert(int index, object? value) { }
+        void System.Collections.IList.Remove(object? value) { }
+        void System.Collections.IList.RemoveAt(int index) { }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+    }
+
+    public interface IReadOnlyObservableCollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged, System.ComponentModel.INotifyPropertyChanged
+    {
+    }
+
     public sealed class SynchronizedList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }

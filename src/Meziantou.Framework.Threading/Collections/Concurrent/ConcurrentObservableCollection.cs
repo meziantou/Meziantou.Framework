@@ -1,56 +1,73 @@
 using System.Collections;
 using System.Collections.Immutable;
-using System.Windows;
-using System.Windows.Threading;
 
-namespace Meziantou.Framework.WPF.Collections;
+namespace Meziantou.Framework.Collections.Concurrent;
 
 /// <summary>
-/// Thread-safe collection. You can safely bind it to a WPF control using the property <see cref="AsObservable"/>.
+/// Thread-safe collection. You can safely bind it to a UI control using the property <see cref="AsObservable"/>.
 /// </summary>
 /// <typeparam name="T">The type of elements in the collection.</typeparam>
+/// <remarks>
+/// The collection itself can be modified from any thread. The collection exposed by <see cref="AsObservable"/> raises
+/// its change notifications on the thread associated with the <see cref="SynchronizationContext"/> provided to the constructor.
+/// </remarks>
 /// <example>
 /// <code>
 /// var collection = new ConcurrentObservableCollection&lt;string&gt;();
 /// myListBox.ItemsSource = collection.AsObservable;
-/// 
+///
 /// // Safe to call from any thread
 /// await Task.Run(() => collection.Add("Item 1"));
 /// </code>
 /// </example>
-public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, IList
+public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, IList
 {
-    private readonly Dispatcher _dispatcher;
+    private readonly SynchronizationContext _synchronizationContext;
     private readonly Lock _lock = new();
 
     private ImmutableList<T> _items = ImmutableList<T>.Empty;
     private DispatchedObservableCollection<T>? _observableCollection;
 
-    /// <summary>Initializes a new instance of the <see cref="ConcurrentObservableCollection{T}"/> class using the current dispatcher.</summary>
+    /// <summary>Initializes a new instance of the <see cref="ConcurrentObservableCollection{T}"/> class using the synchronization context of the current thread.</summary>
+    /// <remarks>
+    /// When the current thread has no synchronization context, a default <see cref="SynchronizationContext"/> is used and the collection
+    /// returned by <see cref="AsObservable"/> raises its change notifications on the thread pool. Use the
+    /// <see cref="ConcurrentObservableCollection{T}(SynchronizationContext)"/> constructor to bind the collection to a specific thread.
+    /// </remarks>
     public ConcurrentObservableCollection()
-        : this(GetCurrentDispatcher())
+        : this(GetCurrentSynchronizationContext())
     {
     }
 
-    /// <summary>Initializes a new instance of the <see cref="ConcurrentObservableCollection{T}"/> class with the specified dispatcher.</summary>
-    /// <param name="dispatcher">The dispatcher to use for raising collection change notifications.</param>
-    public ConcurrentObservableCollection(Dispatcher dispatcher)
+    /// <summary>Initializes a new instance of the <see cref="ConcurrentObservableCollection{T}"/> class with the specified synchronization context.</summary>
+    /// <param name="synchronizationContext">The synchronization context used to raise collection change notifications.</param>
+    public ConcurrentObservableCollection(SynchronizationContext synchronizationContext)
     {
-        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        _synchronizationContext = synchronizationContext ?? throw new ArgumentNullException(nameof(synchronizationContext));
     }
 
-    private static Dispatcher GetCurrentDispatcher()
+    private static SynchronizationContext GetCurrentSynchronizationContext()
     {
-        return Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+        return SynchronizationContext.Current ?? new SynchronizationContext();
+    }
+
+    /// <summary>
+    /// Determines whether the current thread is the thread the collection returned by <see cref="AsObservable"/> is bound to.
+    /// When it is, change notifications are raised synchronously instead of being posted to <see cref="SynchronizationContext"/>.
+    /// </summary>
+    /// <returns><see langword="true"/> when the current thread can raise the notifications directly; otherwise, <see langword="false"/>.</returns>
+    protected internal virtual bool IsOnSynchronizationContextThread()
+    {
+        return SynchronizationContext.Current == _synchronizationContext;
     }
 
     /// <summary>
     /// When set to <see langword="true"/> AddRange and InsertRange methods raise NotifyCollectionChanged with all items instead of one event per item.
     /// </summary>
-    /// <remarks>Most WPF controls doesn't support batch modifications</remarks>
+    /// <remarks>Most UI controls, such as the WPF ones, don't support batch modifications</remarks>
     public bool SupportRangeNotifications { get; set; }
 
-    /// <summary>Gets an observable collection that can be bound to WPF controls.</summary>
+    /// <summary>Gets an observable collection that can be bound to UI controls.</summary>
     public IReadOnlyObservableCollection<T> AsObservable
     {
         get
@@ -59,7 +76,7 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
             {
                 lock (_lock)
                 {
-                    _observableCollection ??= new DispatchedObservableCollection<T>(this, _dispatcher);
+                    _observableCollection ??= new DispatchedObservableCollection<T>(this, _synchronizationContext);
                 }
             }
 

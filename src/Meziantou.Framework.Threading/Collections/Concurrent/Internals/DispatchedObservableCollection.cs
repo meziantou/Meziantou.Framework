@@ -1,30 +1,29 @@
 using System.Collections;
 using System.Collections.Concurrent;
-using System.Windows.Threading;
 
-namespace Meziantou.Framework.WPF.Collections;
+namespace Meziantou.Framework.Collections.Concurrent;
 
 internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBase<T>, IReadOnlyObservableCollection<T>, IList<T>, IList
 {
     private readonly ConcurrentQueue<PendingEvent<T>> _pendingEvents = new();
     private readonly ConcurrentObservableCollection<T> _collection;
-    private readonly Dispatcher _dispatcher;
+    private readonly SynchronizationContext _synchronizationContext;
 
-    private volatile bool _isDispatcherPending;
+    private volatile bool _isProcessingPending;
 
-    public DispatchedObservableCollection(ConcurrentObservableCollection<T> collection, Dispatcher dispatcher)
+    public DispatchedObservableCollection(ConcurrentObservableCollection<T> collection, SynchronizationContext synchronizationContext)
         : base(collection)
     {
         _collection = collection ?? throw new ArgumentNullException(nameof(collection));
-        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        _synchronizationContext = synchronizationContext ?? throw new ArgumentNullException(nameof(synchronizationContext));
     }
 
-    private void AssertIsOnDispatcherThread()
+    private void AssertIsOnSynchronizationContextThread()
     {
-        if (!IsOnDispatcherThread())
+        if (!_collection.IsOnSynchronizationContextThread())
         {
             var currentThreadId = Environment.CurrentManagedThreadId;
-            throw new InvalidOperationException("The collection must be accessed from the dispatcher thread only. Current thread ID: " + currentThreadId.ToString(CultureInfo.InvariantCulture));
+            throw new InvalidOperationException("The collection must be accessed from the synchronization context thread only. Current thread ID: " + currentThreadId.ToString(CultureInfo.InvariantCulture));
         }
     }
 
@@ -32,7 +31,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         get
         {
-            AssertIsOnDispatcherThread();
+            AssertIsOnSynchronizationContextThread();
             return Items.Count;
         }
     }
@@ -41,7 +40,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         get
         {
-            AssertIsOnDispatcherThread();
+            AssertIsOnSynchronizationContextThread();
             return ((ICollection<T>)Items).IsReadOnly;
         }
     }
@@ -50,7 +49,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         get
         {
-            AssertIsOnDispatcherThread();
+            AssertIsOnSynchronizationContextThread();
             return Count;
         }
     }
@@ -59,7 +58,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         get
         {
-            AssertIsOnDispatcherThread();
+            AssertIsOnSynchronizationContextThread();
             return ((ICollection)Items).SyncRoot;
         }
     }
@@ -68,7 +67,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         get
         {
-            AssertIsOnDispatcherThread();
+            AssertIsOnSynchronizationContextThread();
             return ((ICollection)Items).IsSynchronized;
         }
     }
@@ -77,7 +76,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         get
         {
-            AssertIsOnDispatcherThread();
+            AssertIsOnSynchronizationContextThread();
             return ((IList)Items).IsReadOnly;
         }
     }
@@ -86,7 +85,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         get
         {
-            AssertIsOnDispatcherThread();
+            AssertIsOnSynchronizationContextThread();
             return ((IList)Items).IsFixedSize;
         }
     }
@@ -95,14 +94,14 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         get
         {
-            AssertIsOnDispatcherThread();
+            AssertIsOnSynchronizationContextThread();
             return this[index];
         }
 
         set
         {
-            // it will immediately modify both collections as we are on the dispatcher thread
-            AssertIsOnDispatcherThread();
+            // it will immediately modify both collections as we are on the synchronization context thread
+            AssertIsOnSynchronizationContextThread();
             _collection[index] = (T)value!;
         }
     }
@@ -111,20 +110,20 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         get
         {
-            AssertIsOnDispatcherThread();
+            AssertIsOnSynchronizationContextThread();
             return this[index];
         }
         set
         {
-            // it will immediately modify both collections as we are on the dispatcher thread
-            AssertIsOnDispatcherThread();
+            // it will immediately modify both collections as we are on the synchronization context thread
+            AssertIsOnSynchronizationContextThread();
             _collection[index] = value;
         }
     }
 
     public IEnumerator<T> GetEnumerator()
     {
-        AssertIsOnDispatcherThread();
+        AssertIsOnSynchronizationContextThread();
         return Items.GetEnumerator();
     }
 
@@ -132,19 +131,19 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
     public void CopyTo(T[] array, int arrayIndex)
     {
-        AssertIsOnDispatcherThread();
+        AssertIsOnSynchronizationContextThread();
         Items.CopyTo(array, arrayIndex);
     }
 
     public int IndexOf(T item)
     {
-        AssertIsOnDispatcherThread();
+        AssertIsOnSynchronizationContextThread();
         return Items.IndexOf(item);
     }
 
     public bool Contains(T item)
     {
-        AssertIsOnDispatcherThread();
+        AssertIsOnSynchronizationContextThread();
         return Items.Contains(item);
     }
 
@@ -152,7 +151,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         get
         {
-            AssertIsOnDispatcherThread();
+            AssertIsOnSynchronizationContextThread();
             return Items[index];
         }
     }
@@ -206,17 +205,17 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     private void EnqueueEvent(PendingEvent<T> @event)
     {
         _pendingEvents.Enqueue(@event);
-        ProcessPendingEventsOrDispatch();
+        ProcessPendingEventsOrPost();
     }
 
-    private void ProcessPendingEventsOrDispatch()
+    private void ProcessPendingEventsOrPost()
     {
-        if (!IsOnDispatcherThread())
+        if (!_collection.IsOnSynchronizationContextThread())
         {
-            if (!_isDispatcherPending)
+            if (!_isProcessingPending)
             {
-                _isDispatcherPending = true;
-                _ = _dispatcher.BeginInvoke(ProcessPendingEvents);
+                _isProcessingPending = true;
+                _synchronizationContext.Post(static state => ((DispatchedObservableCollection<T>)state!).ProcessPendingEvents(), this);
             }
 
             return;
@@ -227,7 +226,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
     private void ProcessPendingEvents()
     {
-        _isDispatcherPending = false;
+        _isProcessingPending = false;
         while (_pendingEvents.TryDequeue(out var pendingEvent))
         {
             switch (pendingEvent.Type)
@@ -271,97 +270,92 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         }
     }
 
-    private bool IsOnDispatcherThread()
-    {
-        return _dispatcher.Thread == Thread.CurrentThread;
-    }
-
     void IList<T>.Insert(int index, T item)
     {
-        // it will immediately modify both collections as we are on the dispatcher thread
-        AssertIsOnDispatcherThread();
+        // it will immediately modify both collections as we are on the synchronization context thread
+        AssertIsOnSynchronizationContextThread();
         _collection.Insert(index, item);
     }
 
     void IList<T>.RemoveAt(int index)
     {
-        // it will immediately modify both collections as we are on the dispatcher thread
-        AssertIsOnDispatcherThread();
+        // it will immediately modify both collections as we are on the synchronization context thread
+        AssertIsOnSynchronizationContextThread();
         _collection.RemoveAt(index);
     }
 
     void ICollection<T>.Add(T item)
     {
-        // it will immediately modify both collections as we are on the dispatcher thread
-        AssertIsOnDispatcherThread();
+        // it will immediately modify both collections as we are on the synchronization context thread
+        AssertIsOnSynchronizationContextThread();
         _collection.Add(item);
     }
 
     void ICollection<T>.Clear()
     {
-        // it will immediately modify both collections as we are on the dispatcher thread
-        AssertIsOnDispatcherThread();
+        // it will immediately modify both collections as we are on the synchronization context thread
+        AssertIsOnSynchronizationContextThread();
         _collection.Clear();
     }
 
     bool ICollection<T>.Remove(T item)
     {
-        // it will immediately modify both collections as we are on the dispatcher thread
-        AssertIsOnDispatcherThread();
+        // it will immediately modify both collections as we are on the synchronization context thread
+        AssertIsOnSynchronizationContextThread();
         return _collection.Remove(item);
     }
 
     void ICollection.CopyTo(Array array, int index)
     {
-        AssertIsOnDispatcherThread();
+        AssertIsOnSynchronizationContextThread();
         ((ICollection)Items).CopyTo(array, index);
     }
 
     int IList.Add(object? value)
     {
-        // it will immediately modify both collections as we are on the dispatcher thread
-        AssertIsOnDispatcherThread();
+        // it will immediately modify both collections as we are on the synchronization context thread
+        AssertIsOnSynchronizationContextThread();
         return ((IList)_collection).Add(value);
     }
 
     bool IList.Contains(object? value)
     {
-        // it will immediately modify both collections as we are on the dispatcher thread
-        AssertIsOnDispatcherThread();
+        // it will immediately modify both collections as we are on the synchronization context thread
+        AssertIsOnSynchronizationContextThread();
         return ((IList)_collection).Contains(value);
     }
 
     void IList.Clear()
     {
-        // it will immediately modify both collections as we are on the dispatcher thread
-        AssertIsOnDispatcherThread();
+        // it will immediately modify both collections as we are on the synchronization context thread
+        AssertIsOnSynchronizationContextThread();
         ((IList)_collection).Clear();
     }
 
     int IList.IndexOf(object? value)
     {
-        AssertIsOnDispatcherThread();
+        AssertIsOnSynchronizationContextThread();
         return Items.IndexOf((T)value!);
     }
 
     void IList.Insert(int index, object? value)
     {
-        // it will immediately modify both collections as we are on the dispatcher thread
-        AssertIsOnDispatcherThread();
+        // it will immediately modify both collections as we are on the synchronization context thread
+        AssertIsOnSynchronizationContextThread();
         ((IList)_collection).Insert(index, value);
     }
 
     void IList.Remove(object? value)
     {
-        // it will immediately modify both collections as we are on the dispatcher thread
-        AssertIsOnDispatcherThread();
+        // it will immediately modify both collections as we are on the synchronization context thread
+        AssertIsOnSynchronizationContextThread();
         ((IList)_collection).Remove(value);
     }
 
     void IList.RemoveAt(int index)
     {
-        // it will immediately modify both collections as we are on the dispatcher thread
-        AssertIsOnDispatcherThread();
+        // it will immediately modify both collections as we are on the synchronization context thread
+        AssertIsOnSynchronizationContextThread();
         ((IList)_collection).RemoveAt(index);
     }
 }

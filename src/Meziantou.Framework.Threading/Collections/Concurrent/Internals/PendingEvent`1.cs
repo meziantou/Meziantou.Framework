@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.WPF.Collections;
+namespace Meziantou.Framework.Collections.Concurrent;
 
 [StructLayout(LayoutKind.Auto)]
 internal readonly struct PendingEvent<T>

@@ -334,6 +334,7 @@ namespace Meziantou.Framework.Yaml
     {
         public static Meziantou.Framework.Yaml.YamlSerializerOptions Default { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlConverter> Converters { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierFactory> TypeClassifiers { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlNamingPolicy? PropertyNamingPolicy { get => throw null; init { } }
         public string? SourceName { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlNamingPolicy? DictionaryKeyPolicy { get => throw null; init { } }
@@ -1052,6 +1053,71 @@ namespace Meziantou.Framework.Yaml.Serialization
         EndSequence = 8,
         Scalar = 9,
         Alias = 10
+    }
+
+    public static class YamlTypeClassification
+    {
+        public static System.Type? Classify(Meziantou.Framework.Yaml.Serialization.YamlReader reader, Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext context, out string? bufferedNode) => throw null;
+        public static System.Type? ClassifyBufferedNode(Meziantou.Framework.Yaml.Serialization.YamlReader reader, string bufferedNode, Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext context) => throw null;
+    }
+
+    public delegate System.Type? YamlTypeClassifier(Meziantou.Framework.Yaml.Serialization.YamlReader reader);
+
+    public sealed class YamlTypeClassifierContext
+    {
+        public System.Type DeclaringType { get => throw null; }
+        public Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierKind Kind { get => throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseInfo> UnionCases { get => throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<Meziantou.Framework.Yaml.YamlDerivedType> DerivedTypes { get => throw null; }
+        public string? TypeDiscriminatorPropertyName { get => throw null; }
+        public static Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext CreateForUnion(System.Type declaringType, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseInfo> unionCases) => throw null;
+        public static Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext CreateForPolymorphicType(System.Type declaringType, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.YamlDerivedType> derivedTypes, string? typeDiscriminatorPropertyName) => throw null;
+    }
+
+    public abstract class YamlTypeClassifierFactory
+    {
+        public abstract bool CanClassify(Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext context);
+        public abstract Meziantou.Framework.Yaml.Serialization.YamlTypeClassifier CreateYamlClassifier(Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext context, Meziantou.Framework.Yaml.YamlSerializerOptions options);
+    }
+
+    public enum YamlTypeClassifierKind
+    {
+        None = 0,
+        Union = 1,
+        PolymorphicType = 2
+    }
+
+    public sealed class YamlUnionCaseInfo
+    {
+        public System.Type CaseType { get => throw null; }
+        public Meziantou.Framework.Yaml.Serialization.YamlUnionCaseShape Shape { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseProperty> Properties { get => throw null; }
+        public bool HasObjectProperties { get => throw null; }
+        public bool DisallowUnmappedProperties { get => throw null; }
+        public YamlUnionCaseInfo(System.Type caseType, Meziantou.Framework.Yaml.Serialization.YamlUnionCaseShape shape, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yaml.Serialization.YamlUnionCaseProperty>? properties = null, bool disallowUnmappedProperties = false) { }
+    }
+
+    public sealed class YamlUnionCaseProperty
+    {
+        public string Name { get => throw null; }
+        public bool IsRequired { get => throw null; }
+        public YamlUnionCaseProperty(string name, bool isRequired) { }
+    }
+
+    public enum YamlUnionCaseShape
+    {
+        Boolean = 0,
+        Number = 1,
+        Text = 2,
+        Sequence = 3,
+        Mapping = 4,
+        Any = 5
+    }
+
+    public sealed class YamlUnionTypeStructuralClassifier : Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierFactory
+    {
+        public override bool CanClassify(Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext context) => throw null;
+        public override Meziantou.Framework.Yaml.Serialization.YamlTypeClassifier CreateYamlClassifier(Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext context, Meziantou.Framework.Yaml.YamlSerializerOptions options) => throw null;
     }
 
     [System.AttributeUsage(System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = false)]

@@ -11,11 +11,13 @@ public sealed record YamlSerializerOptions
 {
     private static readonly YamlConverter[] EmptyConverters = [];
     private static readonly ReadOnlyCollection<YamlConverter> EmptyConvertersReadOnly = Array.AsReadOnly(EmptyConverters);
+    private static readonly ReadOnlyCollection<YamlTypeClassifierFactory> EmptyTypeClassifiersReadOnly = Array.AsReadOnly(Array.Empty<YamlTypeClassifierFactory>());
 
     /// <summary>Gets a default options instance.</summary>
     public static YamlSerializerOptions Default { get; } = new();
 
     private readonly ReadOnlyCollection<YamlConverter> _convertersReadOnly = EmptyConvertersReadOnly;
+    private readonly ReadOnlyCollection<YamlTypeClassifierFactory> _typeClassifiersReadOnly = EmptyTypeClassifiersReadOnly;
 
     /// <summary>Gets the custom converters.</summary>
     /// <remarks>Converters are evaluated in order and take precedence over built-in converters.</remarks>
@@ -46,6 +48,36 @@ public sealed record YamlSerializerOptions
             }
 
             _convertersReadOnly = Array.AsReadOnly(copy);
+        }
+    }
+
+    /// <summary>Gets the type classifier factories used to select a C# union case from a YAML payload.</summary>
+    /// <remarks>
+    /// Factories are evaluated in order, and the first one accepting a type classifies it. Without a factory, union
+    /// cases are selected by YAML shape alone and a payload matching several cases fails to deserialize. Register
+    /// <see cref="YamlUnionTypeStructuralClassifier"/> to also tell mapping cases apart by their keys.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">Value is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A factory entry is <see langword="null"/>.</exception>
+    public IReadOnlyList<YamlTypeClassifierFactory> TypeClassifiers
+    {
+        get => _typeClassifiersReadOnly;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (value.Count == 0)
+            {
+                _typeClassifiersReadOnly = EmptyTypeClassifiersReadOnly;
+                return;
+            }
+
+            var copy = new YamlTypeClassifierFactory[value.Count];
+            for (var i = 0; i < value.Count; i++)
+            {
+                copy[i] = value[i] ?? throw new ArgumentException("Type classifiers cannot contain null entries.", nameof(value));
+            }
+
+            _typeClassifiersReadOnly = Array.AsReadOnly(copy);
         }
     }
 

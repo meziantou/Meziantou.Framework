@@ -130,6 +130,12 @@ public sealed record YamlSerializerOptions
     public YamlIgnoreCondition DefaultIgnoreCondition { get; init; }
 
     /// <summary>Gets or sets a value indicating whether output should be indented.</summary>
+    /// <remarks>
+    /// Block YAML expresses nesting through indentation, so nested collections are always indented enough to stay unambiguous.
+    /// When this property is <see langword="false"/>, the smallest valid indentation is used: a nested mapping is indented by
+    /// one column, and a block sequence is written at the indentation of the mapping that contains it.
+    /// <see cref="IndentSize"/> is only used when this property is <see langword="true"/>.
+    /// </remarks>
     public bool WriteIndented { get; init; } = true;
 
     /// <summary>

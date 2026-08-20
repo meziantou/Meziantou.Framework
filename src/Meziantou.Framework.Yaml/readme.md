@@ -152,7 +152,7 @@ exposes the default instance.
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `WriteIndented` | `true` | Indents nested block collections. |
+| `WriteIndented` | `true` | Indents nested block collections. When disabled, the smallest indentation that keeps the nesting unambiguous is used. |
 | `IndentSize` | `2` | Number of spaces per indentation level. |
 | `MappingOrder` | `Declaration` | `Declaration` or `Sorted`. |
 | `BlockSequenceMappingStyle` | `Compact` | How a mapping inside a block sequence is emitted. |
@@ -172,6 +172,22 @@ items:
   -
     id: 1
     name: first
+```
+
+Block YAML expresses nesting through indentation, so disabling `WriteIndented` does not remove all indentation: it uses the smallest indentation that keeps the nesting unambiguous. A nested mapping is indented by one column, and a block sequence is written at the indentation of the mapping that contains it:
+
+```yaml
+# WriteIndented = true, IndentSize = 2
+product:
+  name: Table
+  tags:
+    - new
+
+# WriteIndented = false
+product:
+ name: Table
+ tags:
+ - new
 ```
 
 `PreferQuotedForAmbiguousScalars` keeps a round-trip faithful when a string looks like another type:

@@ -228,7 +228,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
         if (!startedCompact)
         {
-            WriteIndent();
+            WriteIndent(frame.Indent);
         }
         WriteScalarCore(name, isKey: true);
         Write(':');
@@ -590,7 +590,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
         if (!startedCompact)
         {
-            WriteIndent();
+            WriteIndent(frame.Indent);
         }
         Write("- ");
         frame.HasContent = true;
@@ -624,7 +624,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
         if (!startedCompact)
         {
-            WriteIndent();
+            WriteIndent(frame.Indent);
         }
         Write("- ");
         frame.HasContent = true;
@@ -725,9 +725,11 @@ public sealed class YamlWriter : YamlReaderWriterBase
         }
 
         PendingStartKind pendingStart;
+        int indent;
 
         if (_depth == 0)
         {
+            indent = 0;
             if (_pendingAnchor is not null || _pendingTag is not null)
             {
                 // Root node properties must be followed by a newline before content.
@@ -752,6 +754,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
                 }
 
                 pendingStart = PendingStartKind.MappingValue;
+                indent = parent.Indent + GetIndentStep(kind);
                 if (_pendingAnchor is not null || _pendingTag is not null)
                 {
                     WriteNodeProperties(writeLeadingSpace: true, writeTrailingSpace: false);
@@ -766,17 +769,31 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
                 if (!parentStartedCompact)
                 {
-                    WriteIndent();
+                    WriteIndent(parent.Indent);
                 }
                 Write('-');
-                if (_pendingAnchor is not null || _pendingTag is not null)
+                var hasNodeProperties = _pendingAnchor is not null || _pendingTag is not null;
+                if (hasNodeProperties)
                 {
                     WriteNodeProperties(writeLeadingSpace: true, writeTrailingSpace: false);
                 }
                 parent.HasContent = true;
-                pendingStart = ShouldCompactSequenceItem(kind)
-                    ? PendingStartKind.SequenceItemCompact
-                    : PendingStartKind.SequenceItem;
+
+                // A node property between the "-" indicator and the collection rules out the compact form.
+                if (!hasNodeProperties && ShouldCompactSequenceItem(kind))
+                {
+                    pendingStart = PendingStartKind.SequenceItemCompact;
+
+                    // The content starts right after the "- " indicator, so the following lines must align with it.
+                    indent = parent.Indent + 2;
+                }
+                else
+                {
+                    pendingStart = PendingStartKind.SequenceItem;
+
+                    // The content starts on the next line and must be indented past the "-" indicator.
+                    indent = parent.Indent + Math.Max(1, GetIndentStep(kind));
+                }
             }
         }
 
@@ -785,7 +802,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
             Array.Resize(ref _frames, _frames.Length * 2);
         }
 
-        _frames[_depth++] = new ContainerFrame(kind, pendingStart);
+        _frames[_depth++] = new ContainerFrame(kind, pendingStart, indent);
     }
 
     private ContainerFrame PopFrame(ContainerKind expectedKind)
@@ -816,20 +833,13 @@ public sealed class YamlWriter : YamlReaderWriterBase
         Write(kind == ContainerKind.Mapping ? "{}" : "[]");
     }
 
-    private void WriteIndent()
+    private void WriteIndent(int spaces)
     {
-        if (!Options.WriteIndented)
+        if (spaces == 0)
         {
             return;
         }
 
-        var indentLevel = Math.Max(0, _depth - 1);
-        if (indentLevel == 0)
-        {
-            return;
-        }
-
-        var spaces = Options.IndentSize * indentLevel;
         if (_indentBuilder.Length != spaces)
         {
             _indentBuilder.Clear();
@@ -837,6 +847,24 @@ public sealed class YamlWriter : YamlReaderWriterBase
         }
 
         Write(_indentBuilder);
+    }
+
+    /// <summary>
+    /// Gets the number of columns a nested block collection is indented by, relative to the collection that contains it.
+    /// </summary>
+    /// <remarks>
+    /// Block YAML expresses nesting through indentation, so a nested block mapping always needs at least one column.
+    /// A block sequence that is the value of a mapping key can be written at the indentation of its parent mapping,
+    /// which is the compact form used when <see cref="YamlSerializerOptions.WriteIndented"/> is disabled.
+    /// </remarks>
+    private int GetIndentStep(ContainerKind kind)
+    {
+        if (Options.WriteIndented)
+        {
+            return Options.IndentSize;
+        }
+
+        return kind == ContainerKind.Sequence ? 0 : 1;
     }
 
     private void WriteNewLine()
@@ -1197,17 +1225,21 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
     private struct ContainerFrame
     {
-        public ContainerFrame(ContainerKind kind, PendingStartKind pendingStart)
+        public ContainerFrame(ContainerKind kind, PendingStartKind pendingStart, int indent)
         {
             Kind = kind;
             HasContent = false;
             ExpectingKey = kind == ContainerKind.Mapping;
             PendingStart = pendingStart;
+            Indent = indent;
         }
 
         public ContainerKind Kind;
         public bool HasContent;
         public bool ExpectingKey;
         public PendingStartKind PendingStart;
+
+        /// <summary>The number of columns each line of this collection's content is indented by.</summary>
+        public int Indent;
     }
 }

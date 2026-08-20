@@ -15,6 +15,7 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         Assert.Contains("SyntaxNodeAnalysisContext", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/ContextExtensions.g.cs")));
         Assert.Contains("DiagnosticReporter", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/DiagnosticReporter.cs")));
         Assert.Contains("class EmbeddedAttribute", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/EmbeddedAttribute.cs")));
+        Assert.Contains("IsGeneratedCodeFile", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/GeneratedCodeExtensions.cs")));
         Assert.Contains("IsInterfaceImplementation", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/MethodSymbolExtensions.cs")));
         Assert.Contains("MatchesNamespace", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/NamespaceSymbolExtensions.cs")));
         Assert.Contains("UnwrapImplicitConversions", ReadEntryText(AssertEntry(package, "contentFiles/cs/any/Meziantou.Framework.Roslyn/OperationExtensions.cs")));
@@ -403,6 +404,7 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         "DiagnosticPropertyReportOptions.cs",
         "DiagnosticReporter.cs",
         "EmbeddedAttribute.cs",
+        "GeneratedCodeExtensions.cs",
         "LanguageVersionExtensions.cs",
         "LocalDataFlowAnalysis.cs",
         "LocationExtensions.cs",

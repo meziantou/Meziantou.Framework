@@ -38,13 +38,15 @@ namespace Meziantou.Framework.Collections.Concurrent
         }
     }
 
-    public sealed class SynchronizedList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
+    public sealed class SynchronizedList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
         public T this[int index] { get => throw null; set { } }
         public SynchronizedList(int capacity) { }
         public SynchronizedList(System.Collections.Generic.IEnumerable<T>? items = null) { }
         public SynchronizedList(System.ReadOnlySpan<T> items) { }
+        public void Execute(System.Action<System.Collections.Generic.List<T>> action) { }
+        public TResult Execute<TResult>(System.Func<System.Collections.Generic.List<T>, TResult> func) => throw null;
         public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public int EnsureCapacity(int capacity) => throw null;
@@ -56,7 +58,7 @@ namespace Meziantou.Framework.Collections.Concurrent
         public int IndexOf(T item) => throw null;
         public void Insert(int index, T item) { }
         public void RemoveAt(int index) { }
-        public void CopyTo(System.Array array, int index) { }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
     }
 }
 namespace Meziantou.Framework.Threading

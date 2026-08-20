@@ -55,6 +55,8 @@ public sealed class AsyncAutoResetEvent
         if (cancellationToken.IsCancellationRequested)
             return Task.FromCanceled(cancellationToken);
 
+        WaiterCompletionSource waiter;
+        bool canceled;
         lock (_signalAwaiters)
         {
             if (_signaled)
@@ -62,22 +64,26 @@ public sealed class AsyncAutoResetEvent
                 _signaled = false;
                 return Task.CompletedTask;
             }
-            else
-            {
-                var waiter = new WaiterCompletionSource(this, _allowInliningAwaiters, cancellationToken);
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    waiter.TrySetCanceled(cancellationToken);
-                    waiter.Registration.Dispose();
-                }
-                else
-                {
-                    _signalAwaiters.Enqueue(waiter);
-                }
 
-                return waiter.Task;
+            waiter = new WaiterCompletionSource(this, _allowInliningAwaiters, cancellationToken);
+            canceled = cancellationToken.IsCancellationRequested;
+            if (!canceled)
+            {
+                _signalAwaiters.Enqueue(waiter);
             }
         }
+
+        // The token was canceled between the registration and this check, so the waiter was never
+        // queued and must be completed here. This has to happen outside the lock: TrySetCanceled can
+        // inline continuations, and Registration.Dispose blocks until a callback running on another
+        // thread completes. That callback is OnCancellationRequest, which takes this same lock.
+        if (canceled)
+        {
+            waiter.TrySetCanceled(cancellationToken);
+            waiter.Registration.Dispose();
+        }
+
+        return waiter.Task;
     }
 
     /// <summary>Sets the state of the event to signaled, allowing one waiting task to proceed.</summary>

@@ -110,6 +110,56 @@ public class AsyncLockTests
     }
 
     [Fact]
+    public async Task LockAsync_CancellationRacingWithAcquisition_DoesNotDeadlock()
+    {
+        // Regression test: LockAsync used to complete a canceled waiter while still holding the
+        // internal lock. CancellationTokenRegistration.Dispose blocks until a callback running on
+        // another thread completes, and that callback (OnCancellationRequest) takes the same lock,
+        // so the two threads deadlocked. LockAsync blocks synchronously in that case, hence the
+        // Task.Run: it lets the timeout fail the test instead of hanging the whole run.
+        await Task.Run(RaceCancellationAgainstLockAsync).WaitAsync(Timeout);
+
+        static async Task RaceCancellationAgainstLockAsync()
+        {
+            for (var i = 0; i < 20_000; i++)
+            {
+                var asyncLock = new AsyncLock();
+
+                // Hold the lock so the acquisition below has to go through the waiter queue.
+                var held = await asyncLock.LockAsync();
+
+                using var cts = new CancellationTokenSource();
+                using var barrier = new Barrier(2);
+
+                var canceling = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+
+                    // Sweep the cancellation across the window between the token registration and
+                    // the IsCancellationRequested check inside LockAsync.
+                    Thread.SpinWait(i % 64);
+                    cts.Cancel();
+                });
+
+                barrier.SignalAndWait();
+                var waiting = asyncLock.LockAsync(cts.Token);
+
+                await canceling;
+
+                // Whichever side won, the waiter must reach a terminal state.
+                held.Dispose();
+                try
+                {
+                    (await waiting).Dispose();
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void DefaultLease_DisposeIsNoop()
     {
         default(AsyncLock.AsyncLockLease).Dispose();

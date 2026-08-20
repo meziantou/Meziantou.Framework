@@ -248,6 +248,29 @@ internal sealed partial class ShapeYamlContext : YamlSerializerContext
 }
 ```
 
+## Merge keys
+
+A merge key (`<<`) copies the entries of another mapping into the current one. Its value can be an inline mapping, an alias to an anchored mapping, or a sequence mixing both. Keys written in the mapping itself always win over merged keys, and in a merge sequence the last entry wins:
+
+```yaml
+defaults: &defaults
+  timeout: 30
+  retries: 2
+
+prod:
+  <<: *defaults
+  timeout: 60   # wins over the merged value
+```
+
+Merge keys are part of the `Core` and `Extended` schemas; they are plain keys for `YamlSchemaKind.Json`. An alias as the merge value requires `ReferenceHandling = YamlReferenceHandling.Preserve`, as aliases are only resolved in that mode:
+
+```csharp
+var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.Preserve };
+var config = YamlSerializer.Deserialize<Config>(yaml, options);
+```
+
+An alias resolves to the value the anchored node was deserialized into. When that value is an object, every readable member takes part in the merge, including the members the anchored mapping left out. Source-generated deserialization does not support aliases as merge values.
+
 ## C# unions
 
 A C# union is serialized as its selected case, without a wrapper:

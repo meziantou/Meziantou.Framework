@@ -164,12 +164,12 @@ public sealed class YamlWriterTests
     }
 
     [Fact]
-    public void NestedMapping_WithoutIndentation_KeepsMinimalIndentAndRoundTrips()
+    public void NestedMapping_WithoutIndentation_UsesFlowStyleAndRoundTrips()
     {
         var options = new YamlSerializerOptions { WriteIndented = false };
         var yaml = YamlSerializer.Serialize(new Outer { Child = new Inner { Value = 1 }, Count = 2 }, options);
 
-        Assert.Equal("Child:\n Value: 1\nCount: 2\n", yaml);
+        Assert.Equal("{Child: {Value: 1}, Count: 2}\n", yaml);
 
         var roundTrip = YamlSerializer.Deserialize<Outer>(yaml, options);
         Assert.NotNull(roundTrip);
@@ -179,19 +179,19 @@ public sealed class YamlWriterTests
     }
 
     [Fact]
-    public void DeeplyNestedMappings_WithoutIndentation_RoundTrip()
+    public void DeeplyNestedMappings_WithoutIndentation_UseFlowStyleAndRoundTrip()
     {
         var options = new YamlSerializerOptions { WriteIndented = false };
         var yaml = YamlSerializer.Serialize(new Level1 { Level2 = new Level2 { Level3 = new Inner { Value = 42 } } }, options);
 
-        Assert.Equal("Level2:\n Level3:\n  Value: 42\n", yaml);
+        Assert.Equal("{Level2: {Level3: {Value: 42}}}\n", yaml);
 
         var roundTrip = YamlSerializer.Deserialize<Level1>(yaml, options);
         Assert.Equal(42, roundTrip?.Level2?.Level3?.Value);
     }
 
     [Fact]
-    public void SequenceOfMappings_WithoutIndentation_UsesIndentlessSequenceAndRoundTrips()
+    public void SequenceOfMappings_WithoutIndentation_UsesFlowStyleAndRoundTrips()
     {
         var options = new YamlSerializerOptions { WriteIndented = false };
         var yaml = YamlSerializer.Serialize(
@@ -201,7 +201,7 @@ public sealed class YamlWriterTests
             },
             options);
 
-        Assert.Equal("Items:\n- A: 1\n  B: 2\n- A: 3\n  B: 4\n", yaml);
+        Assert.Equal("{Items: [{A: 1, B: 2}, {A: 3, B: 4}]}\n", yaml);
 
         var roundTrip = YamlSerializer.Deserialize<ItemsContainer>(yaml, options);
         Assert.NotNull(roundTrip?.Items);
@@ -211,31 +211,81 @@ public sealed class YamlWriterTests
     }
 
     [Fact]
-    public void ExpandedSequenceOfMappings_WithoutIndentation_RoundTrips()
-    {
-        var options = new YamlSerializerOptions { WriteIndented = false, BlockSequenceMappingStyle = YamlSequenceItemStyle.Expanded };
-        var yaml = YamlSerializer.Serialize(new ItemsContainer { Items = [new Item { A = 1, B = 2 }] }, options);
-
-        Assert.Equal("Items:\n-\n A: 1\n B: 2\n", yaml);
-
-        var roundTrip = YamlSerializer.Deserialize<ItemsContainer>(yaml, options);
-        Assert.NotNull(roundTrip?.Items);
-        var item = Assert.Single(roundTrip.Items);
-        Assert.Equal((1, 2), (item.A, item.B));
-    }
-
-    [Fact]
-    public void SequenceOfSequences_WithoutIndentation_RoundTrips()
+    public void SequenceOfSequences_WithoutIndentation_UsesFlowStyleAndRoundTrips()
     {
         var options = new YamlSerializerOptions { WriteIndented = false };
         var yaml = YamlSerializer.Serialize(new RowsContainer { Rows = [[1, 2], [3, 4]] }, options);
 
-        Assert.Equal("Rows:\n-\n - 1\n - 2\n-\n - 3\n - 4\n", yaml);
+        Assert.Equal("{Rows: [[1, 2], [3, 4]]}\n", yaml);
 
         var roundTrip = YamlSerializer.Deserialize<RowsContainer>(yaml, options);
         Assert.NotNull(roundTrip?.Rows);
         Assert.Equal([1, 2], roundTrip.Rows[0]);
         Assert.Equal([3, 4], roundTrip.Rows[1]);
+    }
+
+    [Fact]
+    public void RootSequence_WithoutIndentation_UsesFlowStyleAndRoundTrips()
+    {
+        var options = new YamlSerializerOptions { WriteIndented = false };
+        var yaml = YamlSerializer.Serialize(new[] { 1, 2, 3 }, options);
+
+        Assert.Equal("[1, 2, 3]\n", yaml);
+        Assert.Equal([1, 2, 3], YamlSerializer.Deserialize<int[]>(yaml, options));
+    }
+
+    [Fact]
+    public void EmptyCollections_WithoutIndentation_UseFlowStyle()
+    {
+        var options = new YamlSerializerOptions { WriteIndented = false };
+        var yaml = YamlSerializer.Serialize(new MapsContainer { Map = [], List = [] }, options);
+
+        Assert.Equal("{Map: {}, List: []}\n", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize<MapsContainer>(yaml, options);
+        Assert.NotNull(roundTrip?.Map);
+        Assert.Empty(roundTrip.Map);
+        Assert.NotNull(roundTrip.List);
+        Assert.Empty(roundTrip.List);
+    }
+
+    [Fact]
+    public void ScalarsWithFlowIndicators_WithoutIndentation_AreQuotedAndRoundTrip()
+    {
+        var options = new YamlSerializerOptions { WriteIndented = false };
+        var value = new TextContainer { Text = "a, b", Other = "x: y" };
+        var yaml = YamlSerializer.Serialize(value, options);
+
+        Assert.Equal("{Text: \"a, b\", Other: \"x: y\"}\n", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize<TextContainer>(yaml, options);
+        Assert.Equal("a, b", roundTrip?.Text);
+        Assert.Equal("x: y", roundTrip?.Other);
+    }
+
+    [Fact]
+    public void BlockSequenceItemStyle_WithoutIndentation_IsIgnored()
+    {
+        var options = new YamlSerializerOptions { WriteIndented = false, BlockSequenceMappingStyle = YamlSequenceItemStyle.Expanded };
+        var yaml = YamlSerializer.Serialize(new ItemsContainer { Items = [new Item { A = 1, B = 2 }] }, options);
+
+        Assert.Equal("{Items: [{A: 1, B: 2}]}\n", yaml);
+    }
+
+    [Fact]
+    public void Anchors_WithoutIndentation_UseFlowStyleAndRoundTrip()
+    {
+        var options = new YamlSerializerOptions { WriteIndented = false, ReferenceHandling = YamlReferenceHandling.Preserve };
+        var shared = new Item { A = 1, B = 2 };
+        var yaml = YamlSerializer.Serialize(new ItemsContainer { Items = [shared, shared] }, options);
+
+        Assert.Matches(@"^&\w+ \{Items: &\w+ \[&\w+ \{A: 1, B: 2\}, \*\w+\]\}\n$", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize<ItemsContainer>(yaml, options);
+        Assert.NotNull(roundTrip?.Items);
+        Assert.HasCount(2, roundTrip.Items);
+        Assert.Same(roundTrip.Items[0], roundTrip.Items[1]);
+        Assert.Equal((1, 2), (roundTrip.Items[0].A, roundTrip.Items[0].B));
     }
 
     [Fact]
@@ -311,5 +361,19 @@ public sealed class YamlWriterTests
     private sealed class RowsContainer
     {
         public List<List<int>>? Rows { get; set; }
+    }
+
+    private sealed class MapsContainer
+    {
+        public Dictionary<string, int>? Map { get; set; }
+
+        public List<int>? List { get; set; }
+    }
+
+    private sealed class TextContainer
+    {
+        public string? Text { get; set; }
+
+        public string? Other { get; set; }
     }
 }

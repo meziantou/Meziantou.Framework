@@ -1,3 +1,5 @@
+using Meziantou.Framework.Yaml.Serialization;
+
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlMergeKeyTests
 {
@@ -60,11 +62,186 @@ public sealed class YamlMergeKeyTests
         Assert.Equal(3, result.B);
     }
 
+    [Fact]
+    public void Deserialize_Object_ShouldApplyMergeAlias()
+    {
+        var yaml =
+            "Defaults: &d\n" +
+            "  Timeout: 30\n" +
+            "  Retries: 2\n" +
+            "Prod:\n" +
+            "  <<: *d\n" +
+            "  Timeout: 60\n";
+
+        var result = YamlSerializer.Deserialize<Config>(yaml, PreserveOptions);
+
+        Assert.NotNull(result);
+        Assert.NotNull(result.Defaults);
+        Assert.Equal(30, result.Defaults.Timeout);
+        Assert.Equal(2, result.Defaults.Retries);
+        Assert.NotNull(result.Prod);
+        Assert.Equal(60, result.Prod.Timeout);
+        Assert.Equal(2, result.Prod.Retries);
+        Assert.NotSame(result.Defaults, result.Prod);
+    }
+
+    [Fact]
+    public void Deserialize_Object_ShouldApplyMergeAlias_WhenLocalKeyIsBeforeMergeKey()
+    {
+        var yaml =
+            "Defaults: &d\n" +
+            "  Timeout: 30\n" +
+            "  Retries: 2\n" +
+            "Prod:\n" +
+            "  Timeout: 60\n" +
+            "  <<: *d\n";
+
+        var result = YamlSerializer.Deserialize<Config>(yaml, PreserveOptions);
+
+        Assert.NotNull(result?.Prod);
+        Assert.Equal(60, result.Prod.Timeout);
+        Assert.Equal(2, result.Prod.Retries);
+    }
+
+    [Fact]
+    public void Deserialize_Object_ShouldApplyMergeSequenceMixingAliasesAndMappings()
+    {
+        var yaml =
+            "Defaults: &d\n" +
+            "  Timeout: 30\n" +
+            "  Retries: 2\n" +
+            "  Name: from-alias\n" +
+            "Prod:\n" +
+            "  <<:\n" +
+            "    - *d\n" +
+            "    - { Retries: 5 }\n" +
+            "  Timeout: 60\n";
+
+        var result = YamlSerializer.Deserialize<Config>(yaml, PreserveOptions);
+
+        Assert.NotNull(result?.Prod);
+        Assert.Equal(60, result.Prod.Timeout);
+        Assert.Equal(5, result.Prod.Retries);
+        Assert.Equal("from-alias", result.Prod.Name);
+    }
+
+    [Fact]
+    public void Deserialize_ObjectWithConstructor_ShouldApplyMergeAlias()
+    {
+        var yaml =
+            "Defaults: &d\n" +
+            "  Timeout: 30\n" +
+            "  Retries: 2\n" +
+            "Prod:\n" +
+            "  <<: *d\n" +
+            "  Timeout: 60\n";
+
+        var result = YamlSerializer.Deserialize<RecordConfig>(yaml, PreserveOptions);
+
+        Assert.NotNull(result?.Prod);
+        Assert.Equal(60, result.Prod.Timeout);
+        Assert.Equal(2, result.Prod.Retries);
+    }
+
+    [Fact]
+    public void Deserialize_Object_ShouldApplyMergeAliasFromDictionaryAnchor()
+    {
+        var yaml =
+            "Defaults: &d\n" +
+            "  Timeout: 30\n" +
+            "  Retries: 2\n" +
+            "Prod:\n" +
+            "  <<: *d\n" +
+            "  Timeout: 60\n";
+
+        var result = YamlSerializer.Deserialize<DictionaryDefaultsConfig>(yaml, PreserveOptions);
+
+        Assert.NotNull(result?.Prod);
+        Assert.Equal(60, result.Prod.Timeout);
+        Assert.Equal(2, result.Prod.Retries);
+    }
+
+    [Fact]
+    public void Deserialize_PopulatedObject_ShouldApplyMergeAlias()
+    {
+        var yaml =
+            "Defaults: &d\n" +
+            "  Timeout: 30\n" +
+            "  Retries: 2\n" +
+            "  Name: from-alias\n" +
+            "Prod:\n" +
+            "  <<: *d\n" +
+            "  Timeout: 60\n";
+
+        var result = YamlSerializer.Deserialize<PopulateConfig>(yaml, PreserveOptions);
+
+        Assert.NotNull(result);
+        Assert.Equal(60, result.Prod.Timeout);
+        Assert.Equal(2, result.Prod.Retries);
+        Assert.Equal("from-alias", result.Prod.Name);
+    }
+
+    [Fact]
+    public void Deserialize_Object_ShouldThrowForMergeAliasWhenReferenceHandlingIsNotPreserve()
+    {
+        var yaml =
+            "Defaults: &d\n" +
+            "  Timeout: 30\n" +
+            "Prod:\n" +
+            "  <<: *d\n";
+
+        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Config>(yaml));
+
+        Assert.Contains("ReferenceHandling", exception.Message);
+    }
+
+    private static YamlSerializerOptions PreserveOptions => new() { ReferenceHandling = YamlReferenceHandling.Preserve };
+
     private sealed class MergePayload
     {
         public int A { get; set; }
 
         public int B { get; set; }
+    }
+
+    private sealed class Config
+    {
+        public Section? Defaults { get; set; }
+
+        public Section? Prod { get; set; }
+    }
+
+    private sealed class Section
+    {
+        public int Timeout { get; set; }
+
+        public int Retries { get; set; }
+
+        public string? Name { get; set; }
+    }
+
+    private sealed class RecordConfig
+    {
+        public SectionRecord? Defaults { get; set; }
+
+        public SectionRecord? Prod { get; set; }
+    }
+
+    private sealed record SectionRecord(int Timeout, int Retries);
+
+    private sealed class PopulateConfig
+    {
+        public Section? Defaults { get; set; }
+
+        [YamlObjectCreationHandling(YamlObjectCreationHandling.Populate)]
+        public Section Prod { get; } = new() { Name = "initial" };
+    }
+
+    private sealed class DictionaryDefaultsConfig
+    {
+        public Dictionary<string, int>? Defaults { get; set; }
+
+        public Section? Prod { get; set; }
     }
 }
 

@@ -57,19 +57,20 @@ internal static partial class GeneratedCodeExtensions
         if (filePath is null || filePath.Length is 0)
             return false;
 
-        var fileName = GetFileName(filePath, includeExtension: true);
-        if (fileName.StartsWith("TemporaryGeneratedFile_", StringComparison.OrdinalIgnoreCase))
+        var fileName = GetFileName(filePath.AsSpan());
+        if (fileName.StartsWith("TemporaryGeneratedFile_".AsSpan(), StringComparison.OrdinalIgnoreCase))
             return true;
 
         // Only consider the suffixes when the file has an extension, so "Sample.g" is not considered as generated
-        if (IndexOfExtension(fileName) < 0)
+        var extensionIndex = IndexOfExtension(fileName);
+        if (extensionIndex < 0)
             return false;
 
-        var fileNameWithoutExtension = GetFileName(filePath, includeExtension: false);
-        return fileNameWithoutExtension.EndsWith(".designer", StringComparison.OrdinalIgnoreCase)
-            || fileNameWithoutExtension.EndsWith(".generated", StringComparison.OrdinalIgnoreCase)
-            || fileNameWithoutExtension.EndsWith(".g", StringComparison.OrdinalIgnoreCase)
-            || fileNameWithoutExtension.EndsWith(".g.i", StringComparison.OrdinalIgnoreCase);
+        var fileNameWithoutExtension = fileName.Slice(0, extensionIndex);
+        return fileNameWithoutExtension.EndsWith(".designer".AsSpan(), StringComparison.OrdinalIgnoreCase)
+            || fileNameWithoutExtension.EndsWith(".generated".AsSpan(), StringComparison.OrdinalIgnoreCase)
+            || fileNameWithoutExtension.EndsWith(".g".AsSpan(), StringComparison.OrdinalIgnoreCase)
+            || fileNameWithoutExtension.EndsWith(".g.i".AsSpan(), StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -100,32 +101,22 @@ internal static partial class GeneratedCodeExtensions
     }
 
     // Roslyn considers '\', '/' and ':' as separators on every platform, so the result doesn't depend on the current OS
-    private static string GetFileName(string path, bool includeExtension)
+    private static ReadOnlySpan<char> GetFileName(ReadOnlySpan<char> path)
     {
-        var fileNameStart = 0;
         for (var i = path.Length - 1; i >= 0; i--)
         {
-            var c = path[i];
-            if (c is '\\' or '/' or ':')
-            {
-                fileNameStart = i + 1;
-                break;
-            }
+            if (path[i] is '\\' or '/' or ':')
+                return path.Slice(i + 1);
         }
 
-        var fileName = fileNameStart is 0 ? path : path.Substring(fileNameStart);
-        if (includeExtension)
-            return fileName;
-
-        var extensionIndex = IndexOfExtension(fileName);
-        return extensionIndex < 0 ? fileName : fileName.Substring(0, extensionIndex);
+        return path;
     }
 
     /// <summary>
     /// Gets the index of the dot starting the extension of the file name, or <c>-1</c> when there is no extension.
     /// It returns <c>0</c> for ".sample" and <c>-1</c> for "sample.".
     /// </summary>
-    private static int IndexOfExtension(string fileName)
+    private static int IndexOfExtension(ReadOnlySpan<char> fileName)
     {
         for (var i = fileName.Length - 1; i >= 0; i--)
         {

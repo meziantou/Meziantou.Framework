@@ -774,6 +774,14 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
     private static bool IsMergeKeyEnabled(YamlSerializerOptions options)
         => options.Schema is YamlSchemaKind.Core or YamlSchemaKind.Extended;
 
+    private static void ThrowIfMergeKeysAreNotAllowed(YamlReader reader)
+    {
+        if (!reader.Options.AllowMergeKeys)
+        {
+            throw new YamlException(reader.SourceName, reader.Start, reader.End, "YAML merge keys are not allowed.");
+        }
+    }
+
     private static void SkipOrThrowUnmappedMember(YamlReader reader, Contract contract, string key)
     {
         if (contract.UnmappedMemberHandling == YamlUnmappedMemberHandling.Disallow)
@@ -791,6 +799,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             reader.Skip();
             return;
         }
+
+        ThrowIfMergeKeysAreNotAllowed(reader);
 
         if (reader.TokenType == YamlTokenType.Scalar && YamlScalar.IsNull(reader))
         {
@@ -904,6 +914,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             reader.Skip();
             return;
         }
+
+        ThrowIfMergeKeysAreNotAllowed(reader);
 
         if (reader.TokenType == YamlTokenType.Scalar && YamlScalar.IsNull(reader))
         {
@@ -1181,6 +1193,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             reader.Skip();
             return;
         }
+
+        ThrowIfMergeKeysAreNotAllowed(reader);
 
         if (reader.TokenType == YamlTokenType.Scalar && YamlScalar.IsNull(reader))
         {

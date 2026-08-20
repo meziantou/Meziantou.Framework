@@ -18,6 +18,10 @@ namespace Meziantou.Framework.Yaml.Serialization;
 public sealed class YamlSourceGenerationOptionsAttribute : YamlAttribute
 {
     /// <summary>Gets or sets a value indicating whether emitted YAML should be indented.</summary>
+    /// <remarks>
+    /// When disabled, collections are written using the flow style, which keeps the whole document on a single line.
+    /// See <see cref="YamlSerializerOptions.WriteIndented"/>.
+    /// </remarks>
     public bool WriteIndented { get; set; }
 
     /// <summary>

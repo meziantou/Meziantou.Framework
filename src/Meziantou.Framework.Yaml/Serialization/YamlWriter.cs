@@ -62,6 +62,11 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
     internal bool EndsWithNewLine => _hasWrittenChar && _lastWrittenChar == '\n';
 
+    /// <summary>
+    /// Gets a value indicating whether collections are written using the flow style, which keeps the document on a single line.
+    /// </summary>
+    private bool IsFlow => !Options.WriteIndented;
+
     /// <summary>Temporarily overrides how nested block collections are emitted when they appear as items in block sequences.</summary>
     /// <param name="mappingStyle">The mapping style override, or <see cref="YamlSequenceItemStyle.Default"/> to keep the current mapping style.</param>
     /// <param name="sequenceStyle">The sequence style override, or <see cref="YamlSequenceItemStyle.Default"/> to keep the current sequence style.</param>
@@ -175,7 +180,11 @@ public sealed class YamlWriter : YamlReaderWriterBase
     public void WriteEndMapping()
     {
         var frame = PopFrame(ContainerKind.Mapping);
-        if (!frame.HasContent)
+        if (IsFlow)
+        {
+            Write('}');
+        }
+        else if (!frame.HasContent)
         {
             WriteEmptyContainerInline(ContainerKind.Mapping, frame.PendingStart);
         }
@@ -194,7 +203,11 @@ public sealed class YamlWriter : YamlReaderWriterBase
     public void WriteEndSequence()
     {
         var frame = PopFrame(ContainerKind.Sequence);
-        if (!frame.HasContent)
+        if (IsFlow)
+        {
+            Write(']');
+        }
+        else if (!frame.HasContent)
         {
             WriteEmptyContainerInline(ContainerKind.Sequence, frame.PendingStart);
         }
@@ -219,6 +232,21 @@ public sealed class YamlWriter : YamlReaderWriterBase
             throw new InvalidOperationException("A property name cannot be written when a value is expected.");
         }
 
+        if (IsFlow)
+        {
+            if (frame.HasContent)
+            {
+                Write(", ");
+            }
+
+            WriteScalarCore(name, isKey: true);
+            Write(':');
+
+            frame.HasContent = true;
+            frame.ExpectingKey = false;
+            return;
+        }
+
         var startedCompact = EnsureContainerStarted(ref frame);
 
         if (frame.HasContent)
@@ -228,7 +256,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
         if (!startedCompact)
         {
-            WriteIndent();
+            WriteIndent(frame.Indent);
         }
         WriteScalarCore(name, isKey: true);
         Write(':');
@@ -570,6 +598,12 @@ public sealed class YamlWriter : YamlReaderWriterBase
         }
 
         ref var frame = ref _frames[_depth - 1];
+        if (IsFlow)
+        {
+            WriteFlowValuePrefix(ref frame, "A scalar value cannot be written when a key is expected.");
+            return;
+        }
+
         var startedCompact = EnsureContainerStarted(ref frame);
 
         if (frame.Kind == ContainerKind.Mapping)
@@ -590,7 +624,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
         if (!startedCompact)
         {
-            WriteIndent();
+            WriteIndent(frame.Indent);
         }
         Write("- ");
         frame.HasContent = true;
@@ -604,6 +638,12 @@ public sealed class YamlWriter : YamlReaderWriterBase
         }
 
         ref var frame = ref _frames[_depth - 1];
+        if (IsFlow)
+        {
+            WriteFlowValuePrefix(ref frame, "An alias value cannot be written when a key is expected.");
+            return;
+        }
+
         var startedCompact = EnsureContainerStarted(ref frame);
 
         if (frame.Kind == ContainerKind.Mapping)
@@ -624,9 +664,34 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
         if (!startedCompact)
         {
-            WriteIndent();
+            WriteIndent(frame.Indent);
         }
         Write("- ");
+        frame.HasContent = true;
+    }
+
+    /// <summary>Writes the separator that precedes a value in a flow collection.</summary>
+    /// <param name="frame">The collection the value belongs to.</param>
+    /// <param name="keyExpectedError">The error message used when the collection is a mapping that expects a key.</param>
+    /// <exception cref="InvalidOperationException">The collection is a mapping and a key is expected.</exception>
+    private void WriteFlowValuePrefix(ref ContainerFrame frame, string keyExpectedError)
+    {
+        if (frame.Kind == ContainerKind.Mapping)
+        {
+            if (frame.ExpectingKey)
+            {
+                throw new InvalidOperationException(keyExpectedError);
+            }
+
+            Write(' ');
+            return;
+        }
+
+        if (frame.HasContent)
+        {
+            Write(", ");
+        }
+
         frame.HasContent = true;
     }
 
@@ -724,10 +789,18 @@ public sealed class YamlWriter : YamlReaderWriterBase
             throw YamlDepthHelper.CreateMaxDepthExceededException(Options.EffectiveMaxDepth);
         }
 
+        if (IsFlow)
+        {
+            PushFlowContainer(kind);
+            return;
+        }
+
         PendingStartKind pendingStart;
+        int indent;
 
         if (_depth == 0)
         {
+            indent = 0;
             if (_pendingAnchor is not null || _pendingTag is not null)
             {
                 // Root node properties must be followed by a newline before content.
@@ -752,6 +825,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
                 }
 
                 pendingStart = PendingStartKind.MappingValue;
+                indent = parent.Indent + GetIndentStep(kind);
                 if (_pendingAnchor is not null || _pendingTag is not null)
                 {
                     WriteNodeProperties(writeLeadingSpace: true, writeTrailingSpace: false);
@@ -766,17 +840,31 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
                 if (!parentStartedCompact)
                 {
-                    WriteIndent();
+                    WriteIndent(parent.Indent);
                 }
                 Write('-');
-                if (_pendingAnchor is not null || _pendingTag is not null)
+                var hasNodeProperties = _pendingAnchor is not null || _pendingTag is not null;
+                if (hasNodeProperties)
                 {
                     WriteNodeProperties(writeLeadingSpace: true, writeTrailingSpace: false);
                 }
                 parent.HasContent = true;
-                pendingStart = ShouldCompactSequenceItem(kind)
-                    ? PendingStartKind.SequenceItemCompact
-                    : PendingStartKind.SequenceItem;
+
+                // A node property between the "-" indicator and the collection rules out the compact form.
+                if (!hasNodeProperties && ShouldCompactSequenceItem(kind))
+                {
+                    pendingStart = PendingStartKind.SequenceItemCompact;
+
+                    // The content starts right after the "- " indicator, so the following lines must align with it.
+                    indent = parent.Indent + 2;
+                }
+                else
+                {
+                    pendingStart = PendingStartKind.SequenceItem;
+
+                    // The content starts on the next line and must be indented past the "-" indicator.
+                    indent = parent.Indent + Math.Max(1, GetIndentStep(kind));
+                }
             }
         }
 
@@ -785,7 +873,28 @@ public sealed class YamlWriter : YamlReaderWriterBase
             Array.Resize(ref _frames, _frames.Length * 2);
         }
 
-        _frames[_depth++] = new ContainerFrame(kind, pendingStart);
+        _frames[_depth++] = new ContainerFrame(kind, pendingStart, indent);
+    }
+
+    /// <summary>Opens a collection written using the flow style.</summary>
+    /// <param name="kind">The kind of collection to open.</param>
+    private void PushFlowContainer(ContainerKind kind)
+    {
+        if (_depth > 0)
+        {
+            ref var parent = ref _frames[_depth - 1];
+            WriteFlowValuePrefix(ref parent, "A container value cannot be written when a key is expected.");
+        }
+
+        WriteNodeProperties(writeLeadingSpace: false, writeTrailingSpace: true);
+        Write(kind == ContainerKind.Mapping ? '{' : '[');
+
+        if (_depth == _frames.Length)
+        {
+            Array.Resize(ref _frames, _frames.Length * 2);
+        }
+
+        _frames[_depth++] = new ContainerFrame(kind, PendingStartKind.None, indent: 0);
     }
 
     private ContainerFrame PopFrame(ContainerKind expectedKind)
@@ -816,20 +925,13 @@ public sealed class YamlWriter : YamlReaderWriterBase
         Write(kind == ContainerKind.Mapping ? "{}" : "[]");
     }
 
-    private void WriteIndent()
+    private void WriteIndent(int spaces)
     {
-        if (!Options.WriteIndented)
+        if (spaces == 0)
         {
             return;
         }
 
-        var indentLevel = Math.Max(0, _depth - 1);
-        if (indentLevel == 0)
-        {
-            return;
-        }
-
-        var spaces = Options.IndentSize * indentLevel;
         if (_indentBuilder.Length != spaces)
         {
             _indentBuilder.Clear();
@@ -837,6 +939,24 @@ public sealed class YamlWriter : YamlReaderWriterBase
         }
 
         Write(_indentBuilder);
+    }
+
+    /// <summary>
+    /// Gets the number of columns a nested block collection is indented by, relative to the collection that contains it.
+    /// </summary>
+    /// <remarks>
+    /// Block YAML expresses nesting through indentation, so a nested block mapping always needs at least one column.
+    /// A block sequence that is the value of a mapping key can be written at the indentation of its parent mapping,
+    /// which is the compact form used when <see cref="YamlSerializerOptions.WriteIndented"/> is disabled.
+    /// </remarks>
+    private int GetIndentStep(ContainerKind kind)
+    {
+        if (Options.WriteIndented)
+        {
+            return Options.IndentSize;
+        }
+
+        return kind == ContainerKind.Sequence ? 0 : 1;
     }
 
     private void WriteNewLine()
@@ -1197,17 +1317,21 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
     private struct ContainerFrame
     {
-        public ContainerFrame(ContainerKind kind, PendingStartKind pendingStart)
+        public ContainerFrame(ContainerKind kind, PendingStartKind pendingStart, int indent)
         {
             Kind = kind;
             HasContent = false;
             ExpectingKey = kind == ContainerKind.Mapping;
             PendingStart = pendingStart;
+            Indent = indent;
         }
 
         public ContainerKind Kind;
         public bool HasContent;
         public bool ExpectingKey;
         public PendingStartKind PendingStart;
+
+        /// <summary>The number of columns each line of this collection's content is indented by.</summary>
+        public int Indent;
     }
 }

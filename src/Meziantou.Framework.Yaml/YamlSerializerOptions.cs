@@ -130,6 +130,18 @@ public sealed record YamlSerializerOptions
     public YamlIgnoreCondition DefaultIgnoreCondition { get; init; }
 
     /// <summary>Gets or sets a value indicating whether output should be indented.</summary>
+    /// <remarks>
+    /// <para>
+    /// When <see langword="true"/>, collections are written using the block style and nested collections are indented by
+    /// <see cref="IndentSize"/> columns.
+    /// </para>
+    /// <para>
+    /// When <see langword="false"/>, collections are written using the flow style, which keeps the whole document on a single
+    /// line: <c>{a: {b: 1}, c: [2, 3]}</c>. Block YAML expresses nesting through indentation, so the flow style is what makes
+    /// unindented output possible. <see cref="IndentSize"/>, <see cref="BlockSequenceMappingStyle"/>, and
+    /// <see cref="BlockSequenceSequenceStyle"/> only apply to the block style and are ignored.
+    /// </para>
+    /// </remarks>
     public bool WriteIndented { get; init; } = true;
 
     /// <summary>
@@ -156,7 +168,8 @@ public sealed record YamlSerializerOptions
     /// <summary>Gets or sets how mappings are emitted when they appear as items in block sequences.</summary>
     /// <remarks>
     /// The default is <see cref="YamlSequenceItemStyle.Compact"/>, which emits the first mapping key on the same
-    /// line as the sequence dash when possible.
+    /// line as the sequence dash when possible. This option is ignored when <see cref="WriteIndented"/> is disabled,
+    /// because the flow style has no sequence dash.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="YamlSequenceItemStyle"/>.</exception>
     public YamlSequenceItemStyle BlockSequenceMappingStyle
@@ -172,7 +185,8 @@ public sealed record YamlSerializerOptions
     /// <summary>Gets or sets how nested sequences are emitted when they appear as items in block sequences.</summary>
     /// <remarks>
     /// The default is <see cref="YamlSequenceItemStyle.Expanded"/>, which keeps nested sequence items on lines
-    /// following the parent sequence dash.
+    /// following the parent sequence dash. This option is ignored when <see cref="WriteIndented"/> is disabled,
+    /// because the flow style has no sequence dash.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="YamlSequenceItemStyle"/>.</exception>
     public YamlSequenceItemStyle BlockSequenceSequenceStyle

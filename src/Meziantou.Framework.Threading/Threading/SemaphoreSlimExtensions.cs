@@ -67,7 +67,8 @@ public static class SemaphoreSlimExtensions
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>")]
     public readonly struct SemaphoreDisposer : IDisposable
     {
-        private readonly SemaphoreSlim _semaphore;
+        // Nullable so the default instance, which never acquired a semaphore, disposes without throwing.
+        private readonly SemaphoreSlim? _semaphore;
 
         public SemaphoreDisposer(SemaphoreSlim semaphore)
         {
@@ -76,7 +77,7 @@ public static class SemaphoreSlimExtensions
 
         public void Dispose()
         {
-            _semaphore.Release();
+            _semaphore?.Release();
         }
     }
 }

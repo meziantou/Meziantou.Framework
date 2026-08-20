@@ -269,16 +269,6 @@ public sealed record YamlSerializerOptions
     public bool AllowAliases { get; init; } = true;
 
     /// <summary>
-    /// Gets or sets a value indicating whether YAML merge keys (<c>&lt;&lt;</c>) are allowed during deserialization.
-    /// </summary>
-    /// <remarks>
-    /// Merge keys are only recognized when <see cref="Schema"/> is <see cref="YamlSchemaKind.Core"/> or
-    /// <see cref="YamlSchemaKind.Extended"/>. When this option is <see langword="false"/> and a merge key would
-    /// otherwise be applied, a <see cref="YamlException"/> is thrown.
-    /// </remarks>
-    public bool AllowMergeKeys { get; init; } = true;
-
-    /// <summary>
     /// Gets or sets a metadata resolver used to retrieve <see cref="YamlTypeInfo"/> instances.
     /// </summary>
     /// <remarks>

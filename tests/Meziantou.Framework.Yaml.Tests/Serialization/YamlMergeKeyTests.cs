@@ -195,115 +195,6 @@ public sealed class YamlMergeKeyTests
         Assert.Contains("ReferenceHandling", exception.Message);
     }
 
-    [Fact]
-    public void Deserialize_Object_MergeKey_Disallowed_Throws()
-    {
-        var yaml =
-            "<<: { A: 1, B: 2 }\n" +
-            "B: 3\n";
-        var options = new YamlSerializerOptions { AllowMergeKeys = false };
-
-        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<MergePayload>(yaml, options));
-
-        Assert.Contains("merge keys are not allowed", exception.Message);
-    }
-
-    [Fact]
-    public void Deserialize_Object_MergeSequence_Disallowed_Throws()
-    {
-        var yaml =
-            "<<:\n" +
-            "  - { A: 1 }\n" +
-            "  - { A: 2, B: 3 }\n" +
-            "B: 4\n";
-        var options = new YamlSerializerOptions { AllowMergeKeys = false };
-
-        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<MergePayload>(yaml, options));
-
-        Assert.Contains("merge keys are not allowed", exception.Message);
-    }
-
-    [Fact]
-    public void Deserialize_ObjectWithConstructor_MergeKey_Disallowed_Throws()
-    {
-        var yaml =
-            "<<: { A: 1, B: 2 }\n" +
-            "B: 3\n";
-        var options = new YamlSerializerOptions { AllowMergeKeys = false };
-
-        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<MergeConstructorPayload>(yaml, options));
-
-        Assert.Contains("merge keys are not allowed", exception.Message);
-    }
-
-    [Fact]
-    public void Deserialize_PopulatedObject_MergeKey_Disallowed_Throws()
-    {
-        var yaml =
-            "Child:\n" +
-            "  <<: { A: 1, B: 2 }\n" +
-            "  B: 3\n";
-        var options = new YamlSerializerOptions
-        {
-            AllowMergeKeys = false,
-            PreferredObjectCreationHandling = YamlObjectCreationHandling.Populate,
-        };
-
-        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<MergePopulateHolder>(yaml, options));
-
-        Assert.Contains("merge keys are not allowed", exception.Message);
-    }
-
-    [Fact]
-    public void Deserialize_Object_NestedMergeKey_Disallowed_Throws()
-    {
-        var yaml =
-            "<<:\n" +
-            "  <<: { A: 1 }\n" +
-            "  B: 2\n";
-        var options = new YamlSerializerOptions { AllowMergeKeys = false };
-
-        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<MergePayload>(yaml, options));
-
-        Assert.Contains("merge keys are not allowed", exception.Message);
-    }
-
-    [Fact]
-    public void Deserialize_Object_MergeKey_Disallowed_ShouldBeIgnoredForJsonSchema()
-    {
-        var yaml =
-            "<<: { A: 1, B: 2 }\n" +
-            "B: 3\n";
-        var options = new YamlSerializerOptions { Schema = YamlSchemaKind.Json, AllowMergeKeys = false };
-
-        var result = YamlSerializer.Deserialize<MergePayload>(yaml, options);
-
-        Assert.NotNull(result);
-        Assert.Equal(0, result.A);
-        Assert.Equal(3, result.B);
-    }
-
-    [Fact]
-    public void Deserialize_Object_MergeAlias_Disallowed_Throws()
-    {
-        var yaml =
-            "Defaults: &d\n" +
-            "  Timeout: 30\n" +
-            "  Retries: 2\n" +
-            "Prod:\n" +
-            "  <<: *d\n" +
-            "  Timeout: 60\n";
-        var options = new YamlSerializerOptions
-        {
-            ReferenceHandling = YamlReferenceHandling.Preserve,
-            AllowMergeKeys = false,
-        };
-
-        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Config>(yaml, options));
-
-        Assert.Contains("merge keys are not allowed", exception.Message);
-    }
-
     private static YamlSerializerOptions PreserveOptions => new() { ReferenceHandling = YamlReferenceHandling.Preserve };
 
     private sealed class MergePayload
@@ -351,18 +242,6 @@ public sealed class YamlMergeKeyTests
         public Dictionary<string, int>? Defaults { get; set; }
 
         public Section? Prod { get; set; }
-    }
-
-    private sealed class MergeConstructorPayload(int a, int b)
-    {
-        public int A { get; } = a;
-
-        public int B { get; } = b;
-    }
-
-    private sealed class MergePopulateHolder
-    {
-        public MergePayload Child { get; } = new();
     }
 }
 

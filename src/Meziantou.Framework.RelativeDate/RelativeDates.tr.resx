@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AMinuteAgo" xml:space="preserve">
+    <value>bir dakika önce</value>
+  </data>
+  <data name="AnHourAgo" xml:space="preserve">
+    <value>bir saat önce</value>
+  </data>
+  <data name="InAMinute" xml:space="preserve">
+    <value>bir dakika sonra</value>
+  </data>
+  <data name="InAnHour" xml:space="preserve">
+    <value>bir saat sonra</value>
+  </data>
+  <data name="InManyDays" xml:space="preserve">
+    <value>{0} gün sonra</value>
+  </data>
+  <data name="InManyHours" xml:space="preserve">
+    <value>{0} saat sonra</value>
+  </data>
+  <data name="InManyMinutes" xml:space="preserve">
+    <value>{0} dakika sonra</value>
+  </data>
+  <data name="InManyMonths" xml:space="preserve">
+    <value>{0} ay sonra</value>
+  </data>
+  <data name="InManySeconds" xml:space="preserve">
+    <value>{0} saniye sonra</value>
+  </data>
+  <data name="InManyYears" xml:space="preserve">
+    <value>{0} yıl sonra</value>
+  </data>
+  <data name="InOneMonth" xml:space="preserve">
+    <value>bir ay sonra</value>
+  </data>
+  <data name="InOneSecond" xml:space="preserve">
+    <value>bir saniye sonra</value>
+  </data>
+  <data name="InOneYear" xml:space="preserve">
+    <value>bir yıl sonra</value>
+  </data>
+  <data name="ManyDaysAgo" xml:space="preserve">
+    <value>{0} gün önce</value>
+  </data>
+  <data name="ManyHoursAgo" xml:space="preserve">
+    <value>{0} saat önce</value>
+  </data>
+  <data name="ManyMinutesAgo" xml:space="preserve">
+    <value>{0} dakika önce</value>
+  </data>
+  <data name="ManyMonthsAgo" xml:space="preserve">
+    <value>{0} ay önce</value>
+  </data>
+  <data name="ManySecondsAgo" xml:space="preserve">
+    <value>{0} saniye önce</value>
+  </data>
+  <data name="ManyYearsAgo" xml:space="preserve">
+    <value>{0} yıl önce</value>
+  </data>
+  <data name="Now" xml:space="preserve">
+    <value>şimdi</value>
+  </data>
+  <data name="OneMonthAgo" xml:space="preserve">
+    <value>bir ay önce</value>
+  </data>
+  <data name="OneSecondAgo" xml:space="preserve">
+    <value>bir saniye önce</value>
+  </data>
+  <data name="OneYearAgo" xml:space="preserve">
+    <value>bir yıl önce</value>
+  </data>
+  <data name="Tomorrow" xml:space="preserve">
+    <value>yarın</value>
+  </data>
+  <data name="Yesterday" xml:space="preserve">
+    <value>dün</value>
+  </data>
+</root>

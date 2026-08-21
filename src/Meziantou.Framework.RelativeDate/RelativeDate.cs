@@ -25,7 +25,7 @@ namespace Meziantou.Framework;
 /// </code>
 /// </example>
 /// <remarks>
-/// This type provides localized relative date/time strings for multiple languages including English and French.
+/// This type provides localized relative date/time strings for multiple languages: Dutch, English, French, German, Italian, Japanese, Korean, Portuguese, Simplified Chinese, Spanish and Turkish.
 /// The default localization can be customized by setting <see cref="LocalizationProvider.Current"/>.
 /// </remarks>
 [StructLayout(LayoutKind.Auto)]

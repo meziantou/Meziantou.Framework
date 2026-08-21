@@ -92,15 +92,9 @@ internal static partial class Symlink
 
         private static partial class Interop
         {
-            internal static nint ReadLink(string path, byte[] buffer, nuint bufferSize)
-            {
-                var utf8Path = Encoding.UTF8.GetBytes(path + '\0');
-                return ReadLinkCore(utf8Path, buffer, bufferSize);
-            }
-
-            [LibraryImport("libc", EntryPoint = "readlink", SetLastError = true)]
+            [LibraryImport("libc", EntryPoint = "readlink", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-            private static partial nint ReadLinkCore(byte[] path, byte[] buffer, nuint bufferSize);
+            internal static partial nint ReadLink(string path, byte[] buffer, nuint bufferSize);
         }
     }
 

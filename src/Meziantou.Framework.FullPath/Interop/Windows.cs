@@ -51,23 +51,12 @@ namespace Meziantou.Framework
                     dwLowDateTime = (uint)fileTime;
                     dwHighDateTime = (uint)(fileTime >> 32);
                 }
-
-                internal readonly long ToTicks() => ((long)dwHighDateTime << 32) + dwLowDateTime;
-                internal readonly DateTime ToDateTimeUtc() => DateTime.FromFileTimeUtc(ToTicks());
-                internal readonly DateTimeOffset ToDateTimeOffset() => DateTimeOffset.FromFileTime(ToTicks());
             }
 
             internal static partial class FileOperations
             {
-                internal const int OPEN_EXISTING = 3;
-                internal const int COPY_FILE_FAIL_IF_EXISTS = 0x00000001;
-
                 internal const int FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;
                 internal const int FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000;
-                internal const int FILE_FLAG_FIRST_PIPE_INSTANCE = 0x00080000;
-                internal const int FILE_FLAG_OVERLAPPED = 0x40000000;
-
-                internal const int FILE_LIST_DIRECTORY = 0x0001;
             }
 
             [SupportedOSPlatform("windows5.1.2600")]

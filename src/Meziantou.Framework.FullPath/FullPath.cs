@@ -434,16 +434,11 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         }
 
         var fullPath = Path.GetFullPath(path);
-        var fullPathWithoutTrailingDirectorySeparator = TrimEndingDirectorySeparator(fullPath);
+        var fullPathWithoutTrailingDirectorySeparator = Path.TrimEndingDirectorySeparator(fullPath);
         if (string.IsNullOrEmpty(fullPathWithoutTrailingDirectorySeparator))
             return Empty;
 
         return new FullPath(fullPathWithoutTrailingDirectorySeparator);
-    }
-
-    private static string TrimEndingDirectorySeparator(string path)
-    {
-        return Path.TrimEndingDirectorySeparator(path);
     }
 
     /// <summary>Combines two path strings into a full path.</summary>

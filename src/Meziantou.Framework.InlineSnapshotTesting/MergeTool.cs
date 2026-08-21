@@ -55,7 +55,7 @@ public abstract class MergeTool
         return string.Equals(variable, "true", StringComparison.OrdinalIgnoreCase) ||
                BuildServerDetector.Detected ||
                ContinuousTestingDetector.Detected ||
-               LLMContextDetector.IsLLMContext();
+               LLMEnvironmentDetector.Detected;
     }
 
     internal static MergeToolResult? Launch(IEnumerable<MergeTool?>? mergeTools, string currentFilePath, string newFilePath)

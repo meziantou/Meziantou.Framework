@@ -123,6 +123,71 @@ public sealed class HstsDomainPolicyCollectionTests
     }
 
     [Fact]
+    public void HstsCollection_PreloadedPolicies_DoNotExpire()
+    {
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.Parse("2024-01-01T00:00:00Z", CultureInfo.InvariantCulture));
+        var hsts = new HstsDomainPolicyCollection(timeProvider, includePreloadDomains: true);
+
+        Assert.True(hsts.MustUpgradeRequest("github.com"));
+
+        // The preload list is compiled into the assembly; its entries stay valid until the package is updated
+        timeProvider.Advance(TimeSpan.FromDays(365 * 100));
+
+        Assert.True(hsts.MustUpgradeRequest("github.com"));
+    }
+
+    [Fact]
+    public void HstsCollection_Match_TrailingDot()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("example.com", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: true);
+        hsts.Add("other.com.", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+
+        // A fully-qualified domain name may end with a dot; it designates the same host
+        Assert.True(hsts.MustUpgradeRequest("example.com."));
+        Assert.True(hsts.MustUpgradeRequest("foo.example.com."));
+        Assert.True(hsts.MustUpgradeRequest("other.com"));
+        Assert.True(hsts.MustUpgradeRequest("other.com."));
+    }
+
+    [Fact]
+    public void HstsCollection_Remove()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("example.com", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: true);
+
+        Assert.True(hsts.Remove("example.com"));
+        Assert.False(hsts.MustUpgradeRequest("example.com"));
+
+        Assert.False(hsts.Remove("example.com"));
+        Assert.False(hsts.Remove("never-added.com"));
+
+        // The bucket for that segment count does not exist
+        Assert.False(hsts.Remove("a.b.c.d.e.f.example.com"));
+    }
+
+    [Fact]
+    public void HstsCollection_Remove_PreloadedPolicy()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);
+
+        // Remove is explicit, so it drops preloaded entries too
+        Assert.True(hsts.Remove("github.com"));
+        Assert.False(hsts.MustUpgradeRequest("github.com"));
+    }
+
+    [Fact]
+    public void HstsCollection_Add_KeepsThePreloadedFlag()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);
+        hsts.Add("github.com", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+
+        var policy = hsts.Single(entry => entry.Host == "github.com");
+        Assert.True(policy.IsPreloaded);
+        Assert.False(policy.IncludeSubdomains);
+    }
+
+    [Fact]
     public void HstsCollection_Match_UsePreloadDomains()
     {
         var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);

@@ -16,6 +16,7 @@ namespace Meziantou.Framework.Http
         public string Host { get => throw null; }
         public System.DateTimeOffset ExpiresAt { get => throw null; }
         public bool IncludeSubdomains { get => throw null; }
+        public bool IsPreloaded { get => throw null; }
         public override string ToString() => throw null;
     }
 
@@ -26,6 +27,7 @@ namespace Meziantou.Framework.Http
         public HstsDomainPolicyCollection(System.TimeProvider? timeProvider, bool includePreloadDomains = true) { }
         public void Add(string host, System.TimeSpan maxAge, bool includeSubdomains) { }
         public void Add(string host, System.DateTimeOffset expiresAt, bool includeSubdomains) { }
+        public bool Remove(string host) => throw null;
         public bool MustUpgradeRequest(string host) => throw null;
         public bool MustUpgradeRequest(System.ReadOnlySpan<char> host) => throw null;
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Http.HstsDomainPolicy> GetEnumerator() => throw null;

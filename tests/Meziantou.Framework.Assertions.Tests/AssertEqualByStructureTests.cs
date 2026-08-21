@@ -122,6 +122,52 @@ public sealed class AssertEqualByStructureTests
     }
 
     [Fact]
+    public void Equivalent_IgnoresCollectionOrderAfterRejectingCandidatesWithNestedDifferences()
+    {
+        // The first candidate for each expected item differs deep inside the graph. The path segments of those
+        // rejected attempts must not leak into the path reported for a later failure.
+        var expected = new[]
+        {
+            new GraphNode { Name = "a", Next = new GraphNode { Name = "a-next" } },
+            new GraphNode { Name = "b", Next = new GraphNode { Name = "b-next" } },
+        };
+
+        var actual = new[]
+        {
+            new GraphNode { Name = "b", Next = new GraphNode { Name = "b-next" } },
+            new GraphNode { Name = "a", Next = new GraphNode { Name = "a-next" } },
+        };
+
+        AssertionsAssert.Equivalent(expected, actual, new EquivalentOptions { IgnoreCollectionOrder = true });
+    }
+
+    [Fact]
+    public void Equivalent_FailsWithIgnoredCollectionOrderAfterRejectingCandidates()
+    {
+        var expected = new[]
+        {
+            new GraphNode { Name = "a", Next = new GraphNode { Name = "a-next" } },
+            new GraphNode { Name = "b", Next = new GraphNode { Name = "b-next" } },
+        };
+
+        var actual = new[]
+        {
+            new GraphNode { Name = "b", Next = new GraphNode { Name = "b-next" } },
+            new GraphNode { Name = "a", Next = new GraphNode { Name = "different" } },
+        };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual, new EquivalentOptions { IgnoreCollectionOrder = true }), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $[0]
+            Reason: Actual collection is missing an equivalent item.
+            Expected: Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+GraphNode
+            Actual:   <missing>
+            """);
+    }
+
+    [Fact]
     public void Equivalent_FailsWithIgnoredCollectionOrderAndSharedCyclicReferences()
     {
         var expectedShared = new GraphNode { Name = "shared" };

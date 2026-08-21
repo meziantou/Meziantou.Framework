@@ -109,11 +109,23 @@ public sealed class FullPathTests
     [InlineData("a/", "a")]
     [InlineData("a/../b", "b")]
     [InlineData(".", ".")]
+    [InlineData("..", "..")]
+    [InlineData("../..", "../..")]
+    [InlineData("../sibling", "../sibling")]
     public void MakeRelativeTo(string childPath, string expected)
     {
         var rootPath = FullPath.FromPath("test");
         var path1 = FullPath.Combine("test", childPath);
-        Assert.Equal(expected, path1.MakePathRelativeTo(rootPath));
+        Assert.Equal(expected.Replace('/', Path.DirectorySeparatorChar), path1.MakePathRelativeTo(rootPath));
+    }
+
+    [Fact]
+    public void MakeRelativeTo_RootDirectory()
+    {
+        var rootPath = GetRootDirectory();
+        var path = rootPath / "a";
+
+        Assert.Equal("a", path.MakePathRelativeTo(rootPath));
     }
 
     [Theory]
@@ -140,6 +152,25 @@ public sealed class FullPathTests
         var rootPath = FullPath.FromPath(root);
         var childPath = FullPath.FromPath(path);
         Assert.False(childPath.IsChildOf(rootPath));
+    }
+
+    [Fact]
+    public void IsChildOf_RootDirectory()
+    {
+        var rootPath = GetRootDirectory();
+
+        Assert.True((rootPath / "a").IsChildOf(rootPath));
+        Assert.True((rootPath / "a" / "b.txt").IsChildOf(rootPath));
+        Assert.False(rootPath.IsChildOf(rootPath));
+    }
+
+    [Fact]
+    public void IsChildOf_UsesTheSameCaseSensitivityAsTheDefaultComparer()
+    {
+        var rootPath = FullPath.FromPath("test");
+        var childPath = FullPath.FromPath("TEST") / "a.txt";
+
+        Assert.Equal(childPath.Parent == rootPath, childPath.IsChildOf(rootPath));
     }
 
     [Theory]
@@ -613,6 +644,11 @@ public sealed class FullPathTests
         var extended = path.ToWindowsExtendedPath();
         Assert.StartsWith(@"\\?\", extended);
         Assert.Contains(longSegment, extended);
+    }
+
+    private static FullPath GetRootDirectory()
+    {
+        return FullPath.FromPath(Path.GetPathRoot(FullPath.CurrentDirectory().Value)!);
     }
 
     private static void CreateSymlink(FullPath source, string target, bool isDirectory)

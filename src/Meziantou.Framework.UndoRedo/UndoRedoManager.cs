@@ -51,11 +51,18 @@ public sealed class UndoRedoManager
         if (_transactions.Count > 0)
         {
             var transaction = _transactions.Peek();
-            transaction.Add(action);
+
+            // An action that fails to execute must not become part of the transaction, otherwise it
+            // would be reverted on rollback and executed for the first time on redo.
             if (!transaction.IsDelayed)
             {
                 await ExecuteAsync(action, cancellationToken).ConfigureAwait(false);
+                transaction.Add(action);
                 transaction.MarkExecuted();
+            }
+            else
+            {
+                transaction.Add(action);
             }
 
             return;
@@ -161,7 +168,11 @@ public sealed class UndoRedoManager
     /// When <see langword="true"/> (the default), actions added to the transaction are executed only when the
     /// transaction is committed. When <see langword="false"/>, actions are executed as soon as they are recorded.
     /// </param>
-    /// <returns>A transaction that should be committed or rolled back. Disposing it commits the transaction unless it was rolled back.</returns>
+    /// <returns>
+    /// A transaction that should be committed or rolled back. Disposing it commits the transaction unless it was already
+    /// completed, including when the scope is left because of an exception. Nested transactions must be completed from
+    /// the innermost out.
+    /// </returns>
     public UndoRedoTransaction CreateTransaction(bool isDelayed = true)
     {
         var transaction = new UndoRedoTransaction(this, isDelayed);
@@ -171,11 +182,24 @@ public sealed class UndoRedoManager
 
     /// <summary>Commits the innermost open transaction, recording it as a single undo step (or merging it into its parent transaction).</summary>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    public async ValueTask CommitTransactionAsync(CancellationToken cancellationToken = default)
+    public ValueTask CommitTransactionAsync(CancellationToken cancellationToken = default)
     {
         if (_transactions.Count == 0)
             throw new InvalidOperationException("There is no transaction to commit.");
 
+        return CommitTransactionCoreAsync(cancellationToken);
+    }
+
+    /// <summary>Commits <paramref name="transaction"/>, which must be the innermost open transaction.</summary>
+    internal ValueTask CommitTransactionAsync(UndoRedoTransaction transaction, CancellationToken cancellationToken)
+    {
+        EnsureIsInnermostTransaction(transaction, "commit");
+
+        return CommitTransactionCoreAsync(cancellationToken);
+    }
+
+    private async ValueTask CommitTransactionCoreAsync(CancellationToken cancellationToken)
+    {
         var transaction = _transactions.Pop();
         transaction.MarkCompleted();
 
@@ -203,11 +227,24 @@ public sealed class UndoRedoManager
 
     /// <summary>Rolls back the innermost open transaction, reverting any actions that were already executed.</summary>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    public async ValueTask RollbackTransactionAsync(CancellationToken cancellationToken = default)
+    public ValueTask RollbackTransactionAsync(CancellationToken cancellationToken = default)
     {
         if (_transactions.Count == 0)
             throw new InvalidOperationException("There is no transaction to roll back.");
 
+        return RollbackTransactionCoreAsync(cancellationToken);
+    }
+
+    /// <summary>Rolls back <paramref name="transaction"/>, which must be the innermost open transaction.</summary>
+    internal ValueTask RollbackTransactionAsync(UndoRedoTransaction transaction, CancellationToken cancellationToken)
+    {
+        EnsureIsInnermostTransaction(transaction, "roll back");
+
+        return RollbackTransactionCoreAsync(cancellationToken);
+    }
+
+    private async ValueTask RollbackTransactionCoreAsync(CancellationToken cancellationToken)
+    {
         var transaction = _transactions.Pop();
         transaction.MarkCompleted();
 
@@ -222,18 +259,18 @@ public sealed class UndoRedoManager
         }
     }
 
+    private void EnsureIsInnermostTransaction(UndoRedoTransaction transaction, string operation)
+    {
+        if (_transactions.Count == 0 || _transactions.Peek() != transaction)
+            throw new InvalidOperationException($"Cannot {operation} this transaction because it is not the innermost open transaction. Complete the nested transactions first.");
+    }
+
     private async ValueTask RecordActionCoreAsync(IUndoRedoAction action, bool execute, CancellationToken cancellationToken)
     {
         if (execute)
             await ExecuteAsync(action, cancellationToken).ConfigureAwait(false);
 
-        if (action.AllowToMergeWithPrevious && _history.PeekUndo() is { } previous && await previous.TryToMergeAsync(action).ConfigureAwait(false))
-        {
-            OnCollectionChanged();
-            return;
-        }
-
-        _history.Record(action);
+        await _history.RecordAsync(action).ConfigureAwait(false);
         OnCollectionChanged();
     }
 

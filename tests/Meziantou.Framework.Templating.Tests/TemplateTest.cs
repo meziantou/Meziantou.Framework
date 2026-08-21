@@ -676,6 +676,89 @@ public class TemplateTest
         Assert.True(template.IsBuilt);
     }
 
+    [Fact]
+    public void Template_LoadFromTextReader_ProducesSameBlocksAsLoadFromString()
+    {
+        const string Source = "line1\r\n  <% var a = 0; %>  \r\ntext <%= a %>\ntail";
+
+        var fromString = new Template();
+        fromString.Load(Source);
+
+        var fromReader = new Template();
+        using (var reader = new StringReader(Source))
+        {
+            fromReader.Load(reader);
+        }
+
+        var expected = fromString.Blocks.Select(block => $"{block.GetType().Name}|{block.Text}|{block.Span}");
+        var actual = fromReader.Blocks.Select(block => $"{block.GetType().Name}|{block.Text}|{block.Span}");
+        Assert.Equal(expected, actual);
+    }
+
+    // The indentation in front of the block is kept; only the whitespace and the line break after it are swallowed.
+    [Theory]
+    [InlineData("a\n  <% var x = 0; %>  \nb", "a\n  b")]
+    [InlineData("a\r\n  <% var x = 0; %>  \r\nb", "a\r\n  b")]
+    [InlineData("a\r  <% var x = 0; %>  \rb", "a\r  b")]
+    [InlineData("a\n  <% var x = 0; %>  ", "a\n  ")]
+    [InlineData("a\n  <% var x = 0; %>", "a\n  ")]
+    [InlineData("a\n<%@ using System.Text %>\nb", "a\nb")]
+    [InlineData("a\n<%+ private int _f; %>\nb", "a\nb")]
+    public void Template_LineOnlyCodeBlock_SwallowsRestOfItsLine(string source, string expected)
+    {
+        var template = new Template();
+        template.Load(source);
+
+        Assert.Equal(expected, template.Run());
+    }
+
+    [Fact]
+    public void Template_LineOnlyCodeBlock_KeepsWhitespaceWhenTextFollowsOnTheSameLine()
+    {
+        var template = new Template();
+        template.Load("a\n  <% var x = 0; %>  b\n");
+
+        Assert.Equal("a\n    b\n", template.Run());
+    }
+
+    [Fact]
+    public void Template_ExpressionBlockAloneOnLine_DoesNotSwallowItsLine()
+    {
+        var template = new Template();
+        template.Load("a\n  <%= 1 %>  \nb");
+
+        Assert.Equal("a\n  1  \nb", template.Run());
+    }
+
+    [Fact]
+    public void Template_UnterminatedCodeBlock_IsParsedAsText()
+    {
+        var template = new Template();
+        template.Load("a<% var x = 0;");
+
+        Assert.Collection(
+            template.Blocks,
+            block => Assert.Equal("a", Assert.IsType<TextBlock>(block).Text),
+            block => Assert.Equal(" var x = 0;", Assert.IsType<TextBlock>(block).Text));
+    }
+
+    [Fact]
+    public void Template_SelfOverlappingDelimiter_IsMatched()
+    {
+        var template = new Template
+        {
+            StartCodeBlockDelimiter = "aab",
+            EndCodeBlockDelimiter = "zzy",
+        };
+        template.Load("Xaaab= 1 zzzy!");
+
+        Assert.Collection(
+            template.Blocks,
+            block => Assert.Equal("Xa", Assert.IsType<TextBlock>(block).Text),
+            block => Assert.Equal(" 1 z", Assert.IsType<CodeBlock>(block).Text),
+            block => Assert.Equal("!", Assert.IsType<TextBlock>(block).Text));
+    }
+
     private sealed class TemplateWithoutCompilation : Template
     {
         protected override void Compile(string source, CancellationToken cancellationToken)

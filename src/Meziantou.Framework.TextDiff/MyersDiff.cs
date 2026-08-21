@@ -72,21 +72,36 @@ internal static class MyersDiff
                 startPos++;
             }
 
-            var endPos = startPos;
-            while (endPos < modified.Length && modified[endPos])
-            {
-                endPos++;
-            }
+            if (startPos >= modified.Length)
+                break;
 
-            if (endPos < modified.Length && data[startPos] == data[endPos])
+            // Slide the run of modified chunks forward while the chunk following the run is identical
+            // to the first chunk of the run. endPos only ever moves forward, so sliding a run of length L
+            // over a uniform region of length S costs O(L + S) instead of O(L * S).
+            var endPos = startPos;
+            while (true)
             {
+                while (endPos < modified.Length && modified[endPos])
+                {
+                    endPos++;
+                }
+
+                if (endPos >= modified.Length || data[startPos] != data[endPos])
+                    break;
+
                 modified[startPos] = false;
                 modified[endPos] = true;
+                startPos++;
+                endPos++;
+
+                // Sliding over a single unmodified chunk merges the run with the one that follows it.
+                while (startPos < endPos && !modified[startPos])
+                {
+                    startPos++;
+                }
             }
-            else
-            {
-                startPos = endPos;
-            }
+
+            startPos = endPos;
         }
     }
 

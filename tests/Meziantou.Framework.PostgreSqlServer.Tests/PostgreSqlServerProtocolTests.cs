@@ -7,7 +7,7 @@ using Meziantou.Xunit;
 
 namespace Meziantou.Framework.PostgreSql.Tests;
 
-[RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+[RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
 public sealed class PostgreSqlServerProtocolTests
 {
     [Fact]

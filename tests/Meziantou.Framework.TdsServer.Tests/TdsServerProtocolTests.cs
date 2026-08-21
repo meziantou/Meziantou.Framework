@@ -14,7 +14,7 @@ using SqlParserParseResult = Microsoft.SqlServer.Management.SqlParser.Parser.Par
 
 namespace Meziantou.Framework.Tds.Tests;
 
-[RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+[RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
 public sealed class TdsServerProtocolTests
 {
     [Fact]

@@ -4,19 +4,19 @@ namespace Meziantou.Framework.Tests;
 
 public class CultureInfoUtilitiesTests
 {
-    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void NeutralEquals_fr()
     {
         Assert.True(CultureInfo.GetCultureInfo("fr-FR").NeutralEquals(CultureInfo.GetCultureInfo("fr-CA")));
     }
 
-    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void NeutralEquals_fr2()
     {
         Assert.True(CultureInfo.GetCultureInfo("fr").NeutralEquals(CultureInfo.GetCultureInfo("fr-CA")));
     }
 
-    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void NeutralEquals_en()
     {
         var fr = CultureInfo.GetCultureInfo("fr-FR");

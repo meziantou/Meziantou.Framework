@@ -15,7 +15,7 @@ public sealed class CountryTests
         Assert.Equal("\U0001F1EB\U0001F1F7", Country.GetUnicodeFlag(name));
     }
 
-    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void FrenchFlagFromRegion()
     {
         Assert.Equal("\U0001F1EB\U0001F1F7", Country.GetUnicodeFlag(new RegionInfo("FR")));

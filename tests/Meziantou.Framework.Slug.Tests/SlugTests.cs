@@ -159,7 +159,7 @@ public class SlugTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void Slug_Culture_IsUsedForCasing()
     {
         var options = new SlugOptions
@@ -203,7 +203,7 @@ public class SlugTests
     }
 
     [Theory]
-    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [InlineData(1, "")]
     [InlineData(2, "\u00E9")]
     [InlineData(3, "\u00E9\u00E9")]
@@ -232,7 +232,7 @@ public class SlugTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void Slug_MaximumLength_NeverStripsCombiningMarksFromTheLastCharacter()
     {
         var options = new SlugOptions { MaximumLength = 4 };

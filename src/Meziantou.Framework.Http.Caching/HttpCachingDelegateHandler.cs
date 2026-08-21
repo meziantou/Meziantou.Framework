@@ -214,7 +214,18 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
                     }
 
                     var validationRequestTime = _timeProvider.GetUtcNow();
-                    var conditionalResponse = await base.SendAsync(conditionalRequest, cancellationToken).ConfigureAwait(false);
+                    HttpResponseMessage conditionalResponse;
+                    try
+                    {
+                        conditionalResponse = await base.SendAsync(conditionalRequest, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception ex) when (IsOriginUnreachable(ex, cancellationToken) && CanServeStaleOnError(cacheResult, currentAge, freshnessLifetime))
+                    {
+                        // RFC 5861: the origin could not be reached at all, which is the case stale-if-error
+                        // exists for. RFC 7234 Section 5.5: Add Warning headers
+                        return CreateCachedResponse(request, cacheResult, currentAge, "110 - \"Response is Stale\", 111 - \"Revalidation Failed\"");
+                    }
+
                     var responseTime = _timeProvider.GetUtcNow();
 
                     // RFC 7234 Section 4.3.3: Handle 304 Not Modified
@@ -231,17 +242,13 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
                     }
 
                     // RFC 5861: Handle error responses with stale-if-error
-                    if (cacheResult.StaleIfError is not null && !conditionalResponse.IsSuccessStatusCode)
+                    if (!conditionalResponse.IsSuccessStatusCode && CanServeStaleOnError(cacheResult, currentAge, freshnessLifetime))
                     {
-                        var staleness = currentAge - freshnessLifetime;
-                        if (staleness <= cacheResult.StaleIfError.Value)
-                        {
-                            conditionalResponse.Dispose();
+                        conditionalResponse.Dispose();
 
-                            // RFC 7234 Section 5.5: Add Warning headers
-                            var warnings = "110 - \"Response is Stale\", 111 - \"Revalidation Failed\"";
-                            return CreateCachedResponse(request, cacheResult, currentAge, warnings);
-                        }
+                        // RFC 7234 Section 5.5: Add Warning headers
+                        var warnings = "110 - \"Response is Stale\", 111 - \"Revalidation Failed\"";
+                        return CreateCachedResponse(request, cacheResult, currentAge, warnings);
                     }
 
                     // Use fresh response and cache it. The timing of the validation request is used so the
@@ -270,7 +277,20 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         }
 
         // No suitable cached response, send request to origin
-        var freshResponse = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        HttpResponseMessage freshResponse;
+        try
+        {
+            freshResponse = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (cacheResult is not null &&
+                                   IsOriginUnreachable(ex, cancellationToken) &&
+                                   CanServeStaleOnError(cacheResult, cacheResult.CalculateCurrentAge(_timeProvider.GetUtcNow()), cacheResult.FreshnessLifetime))
+        {
+            // RFC 5861: serve the stale entry rather than propagating the transport failure.
+            var staleAge = cacheResult.CalculateCurrentAge(_timeProvider.GetUtcNow());
+            return CreateCachedResponse(request, cacheResult, staleAge, "110 - \"Response is Stale\", 111 - \"Revalidation Failed\"");
+        }
+
         var freshResponseTime = _timeProvider.GetUtcNow();
 
         await _cache.StoreAsync(request, freshResponse, requestTime, freshResponseTime, cancellationToken).ConfigureAwait(false);
@@ -463,6 +483,27 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         }
 
         return clone;
+    }
+
+    private static bool CanServeStaleOnError(CacheEntry entry, TimeSpan currentAge, TimeSpan freshnessLifetime)
+    {
+        // RFC 5861: stale-if-error allows a stale response to be served for the given amount of time past
+        // the point at which it became stale.
+        if (entry.StaleIfError is null)
+            return false;
+
+        var staleness = currentAge - freshnessLifetime;
+        return staleness <= entry.StaleIfError.Value;
+    }
+
+    private static bool IsOriginUnreachable(Exception exception, CancellationToken cancellationToken)
+    {
+        // A cancellation requested by the caller is not an origin failure and must propagate. A
+        // TaskCanceledException without a cancellation request is an HttpClient timeout.
+        if (cancellationToken.IsCancellationRequested)
+            return false;
+
+        return exception is HttpRequestException or TaskCanceledException;
     }
 
     private static bool HasConditionalHeaders(HttpRequestHeaders headers)

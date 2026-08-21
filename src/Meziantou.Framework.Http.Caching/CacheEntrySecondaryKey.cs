@@ -4,7 +4,10 @@ namespace Meziantou.Framework.Http.Caching;
 
 internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondaryKey>
 {
-    public static CacheEntrySecondaryKey MatchAll { get; } = new(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+    // A new instance is returned every time: the value is a struct wrapping a mutable dictionary, so a
+    // shared instance would let Add on any copy corrupt the key for the whole process. An empty
+    // Dictionary does not allocate its buckets, so this stays cheap.
+    public static CacheEntrySecondaryKey MatchAll => new();
     public static CacheEntrySecondaryKey MatchNone { get; }
 
     private readonly Dictionary<string, string>? _headers;

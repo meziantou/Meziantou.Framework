@@ -96,8 +96,7 @@ public class Template
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        using var reader = new StringReader(text);
-        Load(reader);
+        LoadCore(text);
     }
 
     /// <summary>Loads the template from a <see cref="TextReader"/>.</summary>
@@ -106,202 +105,173 @@ public class Template
     {
         ArgumentNullException.ThrowIfNull(reader);
 
-        using var r = new TextReaderWithPosition(reader);
-        Load(r);
+        ThrowIfBuilt();
+        LoadCore(reader.ReadToEnd());
     }
 
-    private void Load(TextReaderWithPosition reader)
+    private void ThrowIfBuilt()
     {
-        ArgumentNullException.ThrowIfNull(reader);
-
         if (IsBuilt)
             throw new InvalidOperationException("Template is already built.");
+    }
 
+    private void LoadCore(string text)
+    {
+        ThrowIfBuilt();
+
+        var startCodeBlockDelimiter = StartCodeBlockDelimiter;
+        var endCodeBlockDelimiter = EndCodeBlockDelimiter;
+        var span = text.AsSpan();
         var blocks = new List<TemplateBlock>();
-        var isInBlock = false;
-        var currentBlock = new StringBuilder();
-        var nextDelimiter = StartCodeBlockDelimiter;
-        var blockDelimiterIndex = 0;
+        var position = new TextPositionTracker();
         var blockIndex = 0;
-        var startLine = reader.Line;
-        var startColumn = reader.Column;
-        var startIndex = reader.Index;
-        var delimiterStartLine = 0;
-        var delimiterStartColumn = 0;
-        var delimiterStartIndex = 0;
-        var skipOptionalLfAfterCr = false;
-        var trimLineOnlyBlockTrailingNewline = false;
-        var trimPreviousTextBlockTrailingWhitespaceLength = 0;
-        var pendingPostBlockWhitespace = new StringBuilder();
-        var pendingPostBlockStartLine = 0;
-        var pendingPostBlockStartColumn = 0;
-        var pendingPostBlockStartIndex = 0;
 
-        int n;
-        while ((n = reader.Read()) >= 0)
+        while (true)
         {
-            var c = (char)n;
-            var line = reader.PreviousLine;
-            var column = reader.PreviousColumn;
-            var index = reader.PreviousIndex;
+            // Text up to the next start delimiter
+            var remaining = span[position.Index..];
+            var delimiterOffset = remaining.IndexOf(startCodeBlockDelimiter, StringComparison.Ordinal);
+            if (delimiterOffset < 0)
+                break;
 
-            if (skipOptionalLfAfterCr)
+            AddBlock(blocks, codeBlock: false, span, ref position, delimiterOffset, ref blockIndex);
+            position.Advance(startCodeBlockDelimiter);
+
+            // Code up to the next end delimiter. An unterminated block falls back to a text block.
+            remaining = span[position.Index..];
+            delimiterOffset = remaining.IndexOf(endCodeBlockDelimiter, StringComparison.Ordinal);
+            if (delimiterOffset < 0)
+                break;
+
+            var canTrimLeadingWhitespaceForLineOnlyBlock = TryGetTrailingLineWhitespaceLengthFromLastTextBlock(blocks, out var trailingWhitespaceLength);
+            var block = AddBlock(blocks, codeBlock: true, span, ref position, delimiterOffset, ref blockIndex);
+            position.Advance(endCodeBlockDelimiter);
+
+            // A directive, class member or statement block sitting alone on its line swallows that line
+            if (canTrimLeadingWhitespaceForLineOnlyBlock && block is not null && IsLineOnlyTrimmableBlock(block))
             {
-                skipOptionalLfAfterCr = false;
-                if (c == '\n')
+                var lineEndLength = GetLineOnlyBlockTrailingLength(span, position.Index);
+                if (lineEndLength >= 0)
                 {
-                    continue;
+                    position.Advance(span.Slice(position.Index, lineEndLength));
+                    TrimTrailingWhitespaceFromLastTextBlock(blocks, trailingWhitespaceLength);
                 }
             }
-
-            if (!isInBlock && trimLineOnlyBlockTrailingNewline)
-            {
-                if (c is ' ' or '\t')
-                {
-                    if (pendingPostBlockWhitespace.Length == 0)
-                    {
-                        pendingPostBlockStartLine = line;
-                        pendingPostBlockStartColumn = column;
-                        pendingPostBlockStartIndex = index;
-                    }
-
-                    pendingPostBlockWhitespace.Append(c);
-                    continue;
-                }
-
-                if (c is '\r' or '\n')
-                {
-                    TrimTrailingWhitespaceFromLastTextBlock(blocks, trimPreviousTextBlockTrailingWhitespaceLength);
-
-                    trimLineOnlyBlockTrailingNewline = false;
-                    trimPreviousTextBlockTrailingWhitespaceLength = 0;
-                    pendingPostBlockWhitespace.Clear();
-                    if (c == '\r')
-                    {
-                        skipOptionalLfAfterCr = true;
-                    }
-
-                    continue;
-                }
-
-                trimLineOnlyBlockTrailingNewline = false;
-                trimPreviousTextBlockTrailingWhitespaceLength = 0;
-                if (pendingPostBlockWhitespace.Length > 0)
-                {
-                    if (currentBlock.Length == 0)
-                    {
-                        startLine = pendingPostBlockStartLine;
-                        startColumn = pendingPostBlockStartColumn;
-                        startIndex = pendingPostBlockStartIndex;
-                    }
-
-                    currentBlock.Append(pendingPostBlockWhitespace);
-                    pendingPostBlockWhitespace.Clear();
-                }
-            }
-
-            if (blockDelimiterIndex < nextDelimiter.Length && c == nextDelimiter[blockDelimiterIndex])
-            {
-                if (blockDelimiterIndex == 0)
-                {
-                    delimiterStartLine = line;
-                    delimiterStartColumn = column;
-                    delimiterStartIndex = index;
-                }
-
-                blockDelimiterIndex++;
-                if (blockDelimiterIndex >= nextDelimiter.Length) // end of delimiter
-                {
-                    var canTrimLeadingWhitespaceForLineOnlyBlock = false;
-                    var trailingWhitespaceLength = 0;
-                    if (isInBlock)
-                    {
-                        canTrimLeadingWhitespaceForLineOnlyBlock = TryGetTrailingLineWhitespaceLengthFromLastTextBlock(blocks, out trailingWhitespaceLength);
-                    }
-
-                    var text = currentBlock.ToString(0, currentBlock.Length - (blockDelimiterIndex - 1));
-                    var start = new TextPosition(startLine, startColumn, startIndex);
-                    var end = new TextPosition(delimiterStartLine, delimiterStartColumn, delimiterStartIndex);
-                    var block = CreateBlock(isInBlock, text, blockIndex++, start, end);
-                    if (block is not null)
-                    {
-                        blocks.Add(block);
-
-                        if (isInBlock && canTrimLeadingWhitespaceForLineOnlyBlock && IsLineOnlyTrimmableBlock(block))
-                        {
-                            trimLineOnlyBlockTrailingNewline = true;
-                            trimPreviousTextBlockTrailingWhitespaceLength = trailingWhitespaceLength;
-                            pendingPostBlockWhitespace.Clear();
-                        }
-                        else if (isInBlock)
-                        {
-                            trimLineOnlyBlockTrailingNewline = false;
-                            trimPreviousTextBlockTrailingWhitespaceLength = 0;
-                            pendingPostBlockWhitespace.Clear();
-                        }
-                    }
-
-                    currentBlock.Clear();
-                    blockDelimiterIndex = 0;
-                    if (isInBlock)
-                    {
-                        nextDelimiter = StartCodeBlockDelimiter;
-                        isInBlock = false;
-                    }
-                    else
-                    {
-                        nextDelimiter = EndCodeBlockDelimiter;
-                        isInBlock = true;
-                    }
-
-                    continue;
-                }
-            }
-            else
-            {
-                if (c == nextDelimiter[0])
-                {
-                    delimiterStartLine = line;
-                    delimiterStartColumn = column;
-                    delimiterStartIndex = index;
-                    blockDelimiterIndex = 1;
-                }
-                else
-                {
-                    blockDelimiterIndex = 0;
-                }
-            }
-
-            if (currentBlock.Length == 0)
-            {
-                startLine = line;
-                startColumn = column;
-                startIndex = index;
-            }
-
-            currentBlock.Append(c);
-        }
-
-        if (trimLineOnlyBlockTrailingNewline)
-        {
-            TrimTrailingWhitespaceFromLastTextBlock(blocks, trimPreviousTextBlockTrailingWhitespaceLength);
         }
 
         // Create final parsed block if needed
-        if (currentBlock.Length > 0)
+        if (position.Index < span.Length)
         {
-            var start = new TextPosition(startLine, startColumn, startIndex);
-            var end = new TextPosition(reader.Line, reader.Column, reader.Index);
-            var block = CreateBlock(codeBlock: false, currentBlock.ToString(), blockIndex, start, end);
-            if (block is not null)
-            {
-                blocks.Add(block);
-            }
+            AddBlock(blocks, codeBlock: false, span, ref position, span.Length - position.Index, ref blockIndex);
         }
 
         blocks.Sort(TemplateBlockComparer.IndexComparer);
         Blocks.Clear();
         Blocks.AddRange(blocks);
+
+        TemplateBlock? AddBlock(List<TemplateBlock> blocks, bool codeBlock, ReadOnlySpan<char> span, ref TextPositionTracker position, int length, ref int blockIndex)
+        {
+            var start = position.Current;
+            var content = span.Slice(position.Index, length);
+            position.Advance(content);
+            var block = CreateBlock(codeBlock, content.ToString(), blockIndex++, start, position.Current);
+            if (block is not null)
+            {
+                blocks.Add(block);
+            }
+
+            return block;
+        }
+    }
+
+    /// <summary>
+    /// Gets the number of characters between <paramref name="index"/> and the end of the line (inclusive of the line
+    /// terminator), or -1 when anything other than spaces and tabs remains on the line.
+    /// </summary>
+    private static int GetLineOnlyBlockTrailingLength(ReadOnlySpan<char> span, int index)
+    {
+        var current = index;
+        while (current < span.Length && span[current] is ' ' or '\t')
+        {
+            current++;
+        }
+
+        if (current >= span.Length)
+            return current - index;
+
+        if (span[current] == '\r')
+        {
+            current++;
+            if (current < span.Length && span[current] == '\n')
+            {
+                current++;
+            }
+
+            return current - index;
+        }
+
+        if (span[current] == '\n')
+            return current - index + 1;
+
+        return -1;
+    }
+
+    /// <summary>Tracks line, column and index while walking through the template text.</summary>
+    private struct TextPositionTracker
+    {
+        private bool _previousIsCarriageReturn;
+
+        public TextPositionTracker()
+        {
+        }
+
+        public int Line { get; private set; } = 1;
+        public int Column { get; private set; } = 1;
+        public int Index { get; private set; }
+
+        public readonly TextPosition Current => new(Line, Column, Index);
+
+        public void Advance(ReadOnlySpan<char> text)
+        {
+            while (!text.IsEmpty)
+            {
+                var newLineIndex = text.IndexOfAny('\r', '\n');
+                if (newLineIndex < 0)
+                {
+                    Column += text.Length;
+                    Index += text.Length;
+                    _previousIsCarriageReturn = false;
+                    return;
+                }
+
+                if (newLineIndex > 0)
+                {
+                    Column += newLineIndex;
+                    Index += newLineIndex;
+                    _previousIsCarriageReturn = false;
+                }
+
+                Index++;
+                if (text[newLineIndex] == '\r')
+                {
+                    Line++;
+                    Column = 1;
+                    _previousIsCarriageReturn = true;
+                }
+                else
+                {
+                    if (!_previousIsCarriageReturn)
+                    {
+                        Line++;
+                        Column = 1;
+                    }
+
+                    _previousIsCarriageReturn = false;
+                }
+
+                text = text[(newLineIndex + 1)..];
+            }
+        }
     }
 
     private static bool IsLineOnlyTrimmableBlock(TemplateBlock block)

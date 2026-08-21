@@ -15,6 +15,7 @@ sealed class HtmlReader
     private bool _attIsScriptType; // only for <script type=""...> parsing
     private int _eatNext;
     private bool _eof;
+    private bool _pendingTagStart; // the '<' that ended a text token belongs to the next token
 
     internal char QuoteChar { get; set; }
     internal int Line { get; set; } = 1;
@@ -83,7 +84,59 @@ sealed class HtmlReader
         {
             _currentElement = tag;
             _typeAttribute = null;
+            _attIsScriptType = false;
         }
+    }
+
+    // Called when a new tag is opened. Unlike SetCurrentElement, this always resets the
+    // '<script type="">' tracking, even when the new tag has the same name as the previous one.
+    private void StartElement(string tag)
+    {
+        _currentElement = tag;
+        _typeAttribute = null;
+        _attIsScriptType = false;
+    }
+
+    // Sets the state to enter after the '>' of a start tag has been read.
+    private void SetStateAfterTagEnd()
+    {
+        var readOptions = Options.GetElementReadOptions(_currentElement ?? string.Empty);
+        ParserState = (readOptions & HtmlElementReadOptions.InnerRaw) == HtmlElementReadOptions.InnerRaw && !Options.ParseScriptType(_typeAttribute)
+            ? HtmlParserState.RawText
+            : HtmlParserState.Text;
+    }
+
+    private void AdvancePosition(char c, char peek)
+    {
+        // a line break is "\n", "\r\n" or a lone "\r"
+        if (c == '\n' || (c == '\r' && peek != '\n'))
+        {
+            Line++;
+            Column = 1;
+        }
+        else if (c != '\r')
+        {
+            Column++;
+        }
+    }
+
+    // Returns true when the quote just appended to <paramref name="value"/> closes it.
+    // A doubled quote ("" or '') is an escaped quote and does not close the value.
+    private static bool ClosesQuotedValue(StringBuilder value, char quoteChar)
+    {
+        var run = 0;
+        for (var i = value.Length - 1; i >= 0 && value[i] == quoteChar; i--)
+        {
+            run++;
+        }
+
+        // the opening quote is not part of the content
+        if (run == value.Length)
+        {
+            run--;
+        }
+
+        return (run % 2) != 0;
     }
 
     private bool OnParsing(ref char c, ref char prev, ref char peek, out bool cont)
@@ -197,11 +250,21 @@ sealed class HtmlReader
 
             case HtmlParserState.TagOpen:
             case HtmlParserState.CommentOpen:
-                PushCurrentState(HtmlParserState.Text, "<" + _rawValue);
+            case HtmlParserState.Atts:
+                // _rawValue already contains the leading '<'
+                PushCurrentState(HtmlParserState.Text, _rawValue.ToString());
                 break;
 
-            case HtmlParserState.Atts:
-                PushCurrentState(HtmlParserState.Text, _rawValue.ToString());
+            case HtmlParserState.RawText:
+                if (Value.Length > 0)
+                {
+                    PushCurrentState(HtmlParserState.Text, Value.ToString());
+                }
+
+                break;
+
+            case HtmlParserState.CData:
+                PushCurrentState(HtmlParserState.CDataText, Value.ToString());
                 break;
 
             case HtmlParserState.AttName:
@@ -217,7 +280,7 @@ sealed class HtmlReader
                 break;
 
             case HtmlParserState.TagStart:
-                PushCurrentState(HtmlParserState.Text, "<");
+                PushCurrentState(HtmlParserState.Text, _rawValue.ToString());
                 break;
         }
     }
@@ -225,31 +288,47 @@ sealed class HtmlReader
     private void DoRead()
     {
         _rawValue.Length = 0;
+        if (_pendingTagStart)
+        {
+            // the '<' was consumed while flushing the preceding text token: it belongs to this token
+            _rawValue.Append('<');
+            _pendingTagStart = false;
+        }
+
         Value.Length = 0;
 
         var c = char.MaxValue;
         while (true)
         {
             var prev = c;
-            c = (char)TextReader.Read();
+            var read = TextReader.Read();
+            var eof = read < 0;
+            c = eof ? char.MaxValue : (char)read;
+
+            var peekRead = TextReader.Peek();
+            var peek = peekRead < 0 ? char.MaxValue : (char)peekRead;
 
             if (_eatNext > 0)
             {
                 _eatNext--;
+                if (!eof)
+                {
+                    Offset++;
+                    AdvancePosition(c, peek);
+                }
+
                 continue;
             }
 
-            var peek = (char)TextReader.Peek();
-
+            _eof = eof;
             if (!OnParsing(ref c, ref prev, ref peek, out var cont))
                 return;
 
             if (cont)
                 continue;
 
-            if (c == char.MaxValue)
+            if (_eof)
             {
-                _eof = true;
                 PushEndOfFile();
                 return;
             }
@@ -263,18 +342,7 @@ sealed class HtmlReader
                 continue;
             }
 
-            if (c == '\n')
-            {
-                Line++;
-                Column = 1;
-            }
-            else
-            {
-                if (c != '\r')
-                {
-                    Column++;
-                }
-            }
+            AdvancePosition(c, peek);
 
             switch (ParserState)
             {
@@ -283,18 +351,13 @@ sealed class HtmlReader
                     {
                         if (Value.Length == 0)
                         {
-                            if (peek == '>')
-                            {
-                                PushCurrentState(HtmlParserState.Text, _rawValue.ToString());
-                                return;
-                            }
-
                             ParserState = HtmlParserState.TagStart;
                         }
                         else
                         {
                             PushCurrentState();
                             ParserState = HtmlParserState.TagStart;
+                            _pendingTagStart = true;
                             return;
                         }
                     }
@@ -314,13 +377,15 @@ sealed class HtmlReader
                     {
                         var rawText = Value.ToString(0, Value.Length - _currentElement.Length - 2);
                         PushCurrentState(HtmlParserState.Text, rawText);
+                        PushCurrentState(HtmlParserState.TagClose, _currentElement);
                         if (c == '>')
                         {
-                            PushCurrentState(HtmlParserState.TagClose, _currentElement);
                             ParserState = HtmlParserState.Text;
                             return;
                         }
 
+                        // '</script foo>': the end tag is already closed, parse and discard what remains
+                        StartElement("/" + _currentElement);
                         ParserState = HtmlParserState.Atts;
                         return;
                     }
@@ -349,7 +414,11 @@ sealed class HtmlReader
                         continue;
                     }
 
-                    if (IsWhiteSpace(c))
+                    // '<' is only the start of a tag when followed by a tag name, an end tag,
+                    // a markup declaration ('<!') or a processing instruction ('<?').
+                    // Anything else ('a < b', '1<2', '</ b') is text.
+                    if ((!char.IsAsciiLetter(c) && c is not '/' and not '!' and not '?') ||
+                        (c == '/' && !char.IsAsciiLetter(peek)))
                     {
                         Value = new StringBuilder(_rawValue.ToString());
                         ParserState = HtmlParserState.Text;
@@ -364,42 +433,40 @@ sealed class HtmlReader
                     if (c == '<')
                     {
                         AddError(HtmlErrorType.TagNotClosed);
-                        Value = new StringBuilder(c + _rawValue.ToString());
+                        Value = new StringBuilder(_rawValue.ToString());
                         ParserState = HtmlParserState.Text;
                         continue;
                     }
 
                     if (c == '>')
                     {
-                        SetCurrentElement(Value.ToString());
+                        StartElement(Value.ToString());
                         PushCurrentState();
                         PushCurrentState(HtmlParserState.TagEnd, _currentElement);
-                        if ((Options.GetElementReadOptions(_currentElement ?? string.Empty) & HtmlElementReadOptions.InnerRaw) == HtmlElementReadOptions.InnerRaw)
-                        {
-                            // no need to check for <script type='' ..> here
-                            ParserState = HtmlParserState.RawText;
-                        }
-                        else
-                        {
-                            ParserState = HtmlParserState.Text;
-                        }
-
+                        SetStateAfterTagEnd();
                         return;
                     }
 
-                    if (c == '/' && peek == '>')
+                    if (c == '/')
                     {
-                        SetCurrentElement(Value.ToString());
+                        StartElement(Value.ToString());
                         PushCurrentState();
-                        PushCurrentState(HtmlParserState.TagEndClose, _currentElement);
-                        ParserState = HtmlParserState.Text;
-                        _eatNext = 1;
+                        if (peek == '>')
+                        {
+                            PushCurrentState(HtmlParserState.TagEndClose, _currentElement);
+                            ParserState = HtmlParserState.Text;
+                            _eatNext = 1;
+                            return;
+                        }
+
+                        // '<br/ >': the solidus is not part of the tag name
+                        ParserState = HtmlParserState.Atts;
                         return;
                     }
 
                     if (IsWhiteSpace(c))
                     {
-                        SetCurrentElement(Value.ToString());
+                        StartElement(Value.ToString());
                         PushCurrentState();
                         ParserState = HtmlParserState.Atts;
                         return;
@@ -421,11 +488,33 @@ sealed class HtmlReader
                     break;
 
                 case HtmlParserState.CommentOpen:
-                    if (c == '>' && Value.Length > 2 && Value[^1] == '-' && Value[^2] == '-')
+                    if (c == '>')
                     {
-                        PushCurrentState(HtmlParserState.CommentClose, Value.Remove(Value.Length - 2, 2).ToString());
-                        ParserState = HtmlParserState.Text;
-                        return;
+                        // '<!-->' and '<!--->' are empty comments (abrupt closing)
+                        if (Value.Length == 0 || (Value.Length == 1 && Value[0] == '-'))
+                        {
+                            PushCurrentState(HtmlParserState.CommentClose, string.Empty);
+                            ParserState = HtmlParserState.Text;
+                            return;
+                        }
+
+                        // a comment ends with '-->' or with '--!>'
+                        var closingLength = 0;
+                        if (Value.Length >= 2 && Value[^1] == '-' && Value[^2] == '-')
+                        {
+                            closingLength = 2;
+                        }
+                        else if (Value.Length >= 3 && Value[^1] == '!' && Value[^2] == '-' && Value[^3] == '-')
+                        {
+                            closingLength = 3;
+                        }
+
+                        if (closingLength > 0)
+                        {
+                            PushCurrentState(HtmlParserState.CommentClose, Value.ToString(0, Value.Length - closingLength));
+                            ParserState = HtmlParserState.Text;
+                            return;
+                        }
                     }
 
                     Value.Append(c);
@@ -435,31 +524,22 @@ sealed class HtmlReader
                     if (c == '>')
                     {
                         PushCurrentState(HtmlParserState.TagEnd, _currentElement);
-                        if ((Options.GetElementReadOptions(_currentElement ?? string.Empty) & HtmlElementReadOptions.InnerRaw) == HtmlElementReadOptions.InnerRaw)
-                        {
-                            if (Options.ParseScriptType(_typeAttribute))
-                            {
-                                ParserState = HtmlParserState.Text;
-                            }
-                            else
-                            {
-                                ParserState = HtmlParserState.RawText;
-                            }
-                        }
-                        else
-                        {
-                            ParserState = HtmlParserState.Text;
-                        }
-
+                        SetStateAfterTagEnd();
                         return;
                     }
 
-                    if (c == '/' && peek == '>')
+                    if (c == '/')
                     {
-                        PushCurrentState(HtmlParserState.TagEndClose, _currentElement);
-                        ParserState = HtmlParserState.Text;
-                        _eatNext = 1;
-                        return;
+                        if (peek == '>')
+                        {
+                            PushCurrentState(HtmlParserState.TagEndClose, _currentElement);
+                            ParserState = HtmlParserState.Text;
+                            _eatNext = 1;
+                            return;
+                        }
+
+                        // a solidus that does not close the tag is not an attribute name
+                        break;
                     }
 
                     if (!IsWhiteSpace(c))
@@ -493,7 +573,7 @@ sealed class HtmlReader
                     {
                         Value.Append(c);
                         // check escaped quote
-                        if (c == QuoteChar && peek != QuoteChar && prev != QuoteChar)
+                        if (c == QuoteChar && peek != QuoteChar && ClosesQuotedValue(Value, QuoteChar))
                         {
                             PushCurrentState();
                             ParserState = HtmlParserState.Atts;
@@ -514,32 +594,24 @@ sealed class HtmlReader
                             PushCurrentState();
                             PushCurrentState(HtmlParserState.AttValue, value: null);
                             PushCurrentState(HtmlParserState.TagEnd, _currentElement);
-                            if ((Options.GetElementReadOptions(_currentElement ?? string.Empty) & HtmlElementReadOptions.InnerRaw) == HtmlElementReadOptions.InnerRaw)
-                            {
-                                if (Options.ParseScriptType(_typeAttribute))
-                                {
-                                    ParserState = HtmlParserState.Text;
-                                }
-                                else
-                                {
-                                    ParserState = HtmlParserState.RawText;
-                                }
-                            }
-                            else
-                            {
-                                ParserState = HtmlParserState.Text;
-                            }
-
+                            SetStateAfterTagEnd();
                             return;
                         }
 
-                        if (c == '/' && peek == '>')
+                        if (c == '/')
                         {
                             PushCurrentState();
                             PushCurrentState(HtmlParserState.AttValue, value: null);
-                            PushCurrentState(HtmlParserState.TagEndClose, _currentElement);
-                            ParserState = HtmlParserState.Text;
-                            _eatNext = 1;
+                            if (peek == '>')
+                            {
+                                PushCurrentState(HtmlParserState.TagEndClose, _currentElement);
+                                ParserState = HtmlParserState.Text;
+                                _eatNext = 1;
+                                return;
+                            }
+
+                            // a solidus that does not close the tag is not part of the attribute name
+                            ParserState = HtmlParserState.Atts;
                             return;
                         }
 
@@ -567,32 +639,23 @@ sealed class HtmlReader
                         PushCurrentState();
                         PushCurrentState(HtmlParserState.AttValue, value: null);
                         PushCurrentState(HtmlParserState.TagEnd, _currentElement);
-                        if ((Options.GetElementReadOptions(_currentElement ?? string.Empty) & HtmlElementReadOptions.InnerRaw) == HtmlElementReadOptions.InnerRaw)
-                        {
-                            if (Options.ParseScriptType(_typeAttribute))
-                            {
-                                ParserState = HtmlParserState.Text;
-                            }
-                            else
-                            {
-                                ParserState = HtmlParserState.RawText;
-                            }
-                        }
-                        else
-                        {
-                            ParserState = HtmlParserState.Text;
-                        }
-
+                        SetStateAfterTagEnd();
                         return;
                     }
 
-                    if (c == '/' && peek == '>')
+                    if (c == '/')
                     {
                         PushCurrentState();
                         PushCurrentState(HtmlParserState.AttValue, value: null);
-                        PushCurrentState(HtmlParserState.TagEndClose, _currentElement);
-                        ParserState = HtmlParserState.Text;
-                        _eatNext = 1;
+                        if (peek == '>')
+                        {
+                            PushCurrentState(HtmlParserState.TagEndClose, _currentElement);
+                            ParserState = HtmlParserState.Text;
+                            _eatNext = 1;
+                            return;
+                        }
+
+                        ParserState = HtmlParserState.Atts;
                         return;
                     }
 
@@ -611,19 +674,19 @@ sealed class HtmlReader
                 case HtmlParserState.AttValue:
                     if (Value.Length == 0) // first char?
                     {
+                        if (c == '>')
+                        {
+                            // '<a b=>' declares an empty value and ends the tag
+                            PushCurrentState();
+                            PushCurrentState(HtmlParserState.TagEnd, _currentElement);
+                            SetStateAfterTagEnd();
+                            return;
+                        }
+
                         if (!IsWhiteSpace(c))
                         {
-                            if (IsAnyQuote(c))
-                            {
-                                // quoted
-                                QuoteChar = c;
-                            }
-                            else
-                            {
-                                // not quoted
-                                QuoteChar = '\0';
-                            }
-
+                            // a quote as the first character starts a quoted value
+                            QuoteChar = IsAnyQuote(c) ? c : '\0';
                             Value.Append(c);
                         }
                         // else skip whitespaces
@@ -635,7 +698,7 @@ sealed class HtmlReader
                         {
                             Value.Append(c);
                             // check escaped quote
-                            if (c == QuoteChar && peek != QuoteChar && (prev != QuoteChar || Value.Length == 2)) // test "" or ''
+                            if (c == QuoteChar && peek != QuoteChar && ClosesQuotedValue(Value, QuoteChar))
                             {
                                 PushCurrentState();
                                 ParserState = HtmlParserState.Atts;
@@ -648,31 +711,7 @@ sealed class HtmlReader
                             {
                                 PushCurrentState();
                                 PushCurrentState(HtmlParserState.TagEnd, _currentElement);
-                                if ((Options.GetElementReadOptions(_currentElement ?? string.Empty) & HtmlElementReadOptions.InnerRaw) == HtmlElementReadOptions.InnerRaw)
-                                {
-                                    if (Options.ParseScriptType(_typeAttribute))
-                                    {
-                                        ParserState = HtmlParserState.Text;
-                                    }
-                                    else
-                                    {
-                                        ParserState = HtmlParserState.RawText;
-                                    }
-                                }
-                                else
-                                {
-                                    ParserState = HtmlParserState.Text;
-                                }
-
-                                return;
-                            }
-
-                            if (c == '/' && peek == '>')
-                            {
-                                PushCurrentState();
-                                PushCurrentState(HtmlParserState.TagEndClose, _currentElement);
-                                ParserState = HtmlParserState.Text;
-                                _eatNext = 1;
+                                SetStateAfterTagEnd();
                                 return;
                             }
 
@@ -683,6 +722,7 @@ sealed class HtmlReader
                                 return;
                             }
 
+                            // a solidus is part of an unquoted value ('<a href=foo/>' is href="foo/")
                             Value.Append(c);
                         }
                     }

@@ -13,6 +13,8 @@ sealed class HtmlOptions
     private readonly HashSet<string> _emptyNamespacesForXPath = new(StringComparer.Ordinal);
     private readonly HashSet<string> _emptyNamespaces = new(StringComparer.Ordinal);
     private readonly HashSet<string> _parsedScriptTypes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, HashSet<string>> _impliedEndTags = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _impliedEndTagScopes = new(StringComparer.OrdinalIgnoreCase);
 
     public HtmlOptions()
     {
@@ -42,7 +44,10 @@ sealed class HtmlOptions
         _readOptions["spacer"] = HtmlElementReadOptions.AutoClosed;
         _readOptions["source"] = HtmlElementReadOptions.AutoClosed | HtmlElementReadOptions.NoChild;
         _readOptions["style"] = HtmlElementReadOptions.InnerRaw;
-        _readOptions["wbr"] = HtmlElementReadOptions.AutoClosed;
+        _readOptions["textarea"] = HtmlElementReadOptions.InnerRaw;
+        _readOptions["title"] = HtmlElementReadOptions.InnerRaw;
+        _readOptions["track"] = HtmlElementReadOptions.AutoClosed | HtmlElementReadOptions.NoChild;
+        _readOptions["wbr"] = HtmlElementReadOptions.AutoClosed | HtmlElementReadOptions.NoChild;
 
         // NOTE: This "NOXHTML" element is not defined in specs and is specific to us
         // It may just be used by the caller if he wants to make sure what is inside will never be changed.
@@ -89,18 +94,17 @@ sealed class HtmlOptions
         _writeOptions["h5"] = HtmlElementWriteOptions.AlwaysClose;
         _writeOptions["h6"] = HtmlElementWriteOptions.AlwaysClose;
         _writeOptions["header"] = HtmlElementWriteOptions.AlwaysClose;
-        _writeOptions["header"] = HtmlElementWriteOptions.AlwaysClose;
+        _writeOptions["hgroup"] = HtmlElementWriteOptions.AlwaysClose;
         _writeOptions["hr"] = HtmlElementWriteOptions.NoChild;
         _writeOptions["i"] = HtmlElementWriteOptions.AlwaysClose;
         _writeOptions["iframe"] = HtmlElementWriteOptions.AlwaysClose;
-        _writeOptions["i"] = HtmlElementWriteOptions.AlwaysClose;
         _writeOptions["img"] = HtmlElementWriteOptions.NoChild;
         _writeOptions["input"] = HtmlElementWriteOptions.NoChild;
         _writeOptions["ins"] = HtmlElementWriteOptions.AlwaysClose;
         _writeOptions["kbd"] = HtmlElementWriteOptions.AlwaysClose;
         _writeOptions["label"] = HtmlElementWriteOptions.AlwaysClose;
         _writeOptions["legend"] = HtmlElementWriteOptions.AlwaysClose;
-        _writeOptions["ins"] = HtmlElementWriteOptions.AlwaysClose;
+        _writeOptions["li"] = HtmlElementWriteOptions.AlwaysClose;
         _writeOptions["link"] = HtmlElementWriteOptions.NoChild;
         _writeOptions["map"] = HtmlElementWriteOptions.AlwaysClose;
         _writeOptions["mark"] = HtmlElementWriteOptions.AlwaysClose;
@@ -137,8 +141,84 @@ sealed class HtmlOptions
         _writeOptions["ul"] = HtmlElementWriteOptions.AlwaysClose;
         _writeOptions["video"] = HtmlElementWriteOptions.AlwaysClose;
 
+        // Elements that are implicitly closed when another element is opened.
+        // check https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inbody
+        string[] closesParagraph =
+        [
+            "address", "article", "aside", "blockquote", "center", "details", "dialog", "dir", "div", "dl",
+            "fieldset", "figcaption", "figure", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "header",
+            "hgroup", "hr", "listing", "main", "menu", "nav", "ol", "p", "plaintext", "pre", "section", "summary",
+            "table", "ul", "xmp",
+        ];
+
+        foreach (var name in closesParagraph)
+        {
+            SetImpliedEndTags(name, "p");
+        }
+
+        SetImpliedEndTags("li", "li", "p");
+        SetImpliedEndTags("dd", "dd", "dt", "p");
+        SetImpliedEndTags("dt", "dd", "dt", "p");
+        SetImpliedEndTags("option", "option");
+        SetImpliedEndTags("optgroup", "optgroup", "option");
+        SetImpliedEndTags("rp", "rp", "rt");
+        SetImpliedEndTags("rt", "rp", "rt");
+        SetImpliedEndTags("td", "td", "th", "p");
+        SetImpliedEndTags("th", "td", "th", "p");
+        SetImpliedEndTags("tr", "tr", "td", "th", "p");
+
+        string[] tableSections = ["caption", "colgroup", "tbody", "tfoot", "thead"];
+        foreach (var name in tableSections)
+        {
+            SetImpliedEndTags(name, "caption", "colgroup", "tbody", "tfoot", "thead", "tr", "td", "th", "p");
+        }
+
+        // Elements that stop the search for an element to implicitly close.
+        foreach (var name in new[]
+        {
+            "html", "head", "body", "template", "table", "caption", "colgroup", "tbody", "tfoot", "thead", "tr",
+            "td", "th", "button", "object", "applet", "marquee", "select", "optgroup", "ol", "ul", "dl", "div",
+            "form", "fieldset", "blockquote", "section", "article", "aside", "nav", "main", "header", "footer",
+            "figure", "details", "dialog",
+        })
+        {
+            _impliedEndTagScopes.Add(name);
+        }
+
         // avoids using xhtml for all HTML xpath queries
         _emptyNamespacesForXPath.Add(HtmlNode.XhtmlNamespaceURI);
+    }
+
+    /// <summary>Gets the names of the open elements that are implicitly closed when <paramref name="name"/> is opened.</summary>
+    /// <param name="name">The name of the element being opened.</param>
+    /// <returns>The names of the elements to close, or an empty collection when <paramref name="name"/> closes nothing.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+    public IReadOnlyCollection<string> GetImpliedEndTags(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        return _impliedEndTags.TryGetValue(name, out var names) ? names : [];
+    }
+
+    /// <summary>Sets the names of the open elements that are implicitly closed when <paramref name="name"/> is opened.</summary>
+    /// <param name="name">The name of the element being opened.</param>
+    /// <param name="closedElementNames">The names of the elements to close. Pass an empty array to close nothing.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> or <paramref name="closedElementNames"/> is <see langword="null"/>.</exception>
+    public void SetImpliedEndTags(string name, params string[] closedElementNames)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(closedElementNames);
+
+        _impliedEndTags[name] = new HashSet<string>(closedElementNames, StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Gets the names of the elements that stop the search for an element to implicitly close.</summary>
+    /// <remarks>An open element is never implicitly closed through one of these elements.</remarks>
+    public ISet<string> ImpliedEndTagScopes => _impliedEndTagScopes;
+
+    internal bool IsImpliedEndTag(string name, string openElementName)
+    {
+        return _impliedEndTags.TryGetValue(name, out var names) && names.Contains(openElementName);
     }
 
     public HtmlElementWriteOptions GetElementWriteOptions(string name)

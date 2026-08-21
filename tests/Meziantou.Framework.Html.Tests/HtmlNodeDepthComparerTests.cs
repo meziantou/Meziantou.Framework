@@ -18,7 +18,7 @@ public class HtmlNodeDepthComparerTests
     public void Compare_DirectionAscending_LessThan()
     {
         var document = new HtmlDocument();
-        document.LoadHtml("<p><span id='id1'>1</span><p><span id='id2'>2</span></p></p>");
+        document.LoadHtml("<div><span id='id1'>1</span><div><span id='id2'>2</span></div></div>");
         var element1 = document.SelectSingleNode("//span[@id='id1']");
         var element2 = document.SelectSingleNode("//span[@id='id2']");
 
@@ -34,7 +34,7 @@ public class HtmlNodeDepthComparerTests
     public void Compare_DirectionDescending_LessThan()
     {
         var document = new HtmlDocument();
-        document.LoadHtml("<p><span id='id1'>1</span><p><span id='id2'>2</span></p></p>");
+        document.LoadHtml("<div><span id='id1'>1</span><div><span id='id2'>2</span></div></div>");
         var element1 = document.SelectSingleNode("//span[@id='id1']");
         var element2 = document.SelectSingleNode("//span[@id='id2']");
 

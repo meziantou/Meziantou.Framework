@@ -49,12 +49,14 @@ sealed class HtmlReaderState
             if (RawParserState == HtmlParserState.TagOpen && RawValue is not null && RawValue.StartsWith('/', StringComparison.Ordinal))
                 return RawValue[1..];
 
-            if (RawValue is not null && (RawParserState == HtmlParserState.AttValue || RawParserState == HtmlParserState.AttName) &&
-                ((RawValue.StartsWith('\'', StringComparison.Ordinal) && RawValue.EndsWith('\'', StringComparison.Ordinal)) ||
-                (RawValue.StartsWith('"', StringComparison.Ordinal) && RawValue.EndsWith('"', StringComparison.Ordinal))))
+            if (RawValue is not null && RawParserState is HtmlParserState.AttValue or HtmlParserState.AttName &&
+                RawValue.Length > 0 && HtmlReader.IsAnyQuote(RawValue[0]))
             {
                 var quote = RawValue[0];
-                return RawValue[1..^1].Replace(new string(quote, 2), new string(quote, 1), StringComparison.Ordinal);
+
+                // the closing quote is missing when the document ends in the middle of the value
+                var end = RawValue.Length > 1 && RawValue[^1] == quote ? RawValue.Length - 1 : RawValue.Length;
+                return RawValue[1..end].Replace(new string(quote, 2), new string(quote, 1), StringComparison.Ordinal);
             }
 
             return RawValue;

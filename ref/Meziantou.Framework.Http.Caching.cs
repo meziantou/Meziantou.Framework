@@ -26,7 +26,13 @@ namespace Meziantou.Framework.Http.Caching
         public string? ETag { get => throw null; set { } }
         public System.DateTimeOffset? LastModified { get => throw null; set { } }
         public System.ReadOnlyMemory<byte> SerializedResponse { get => throw null; set { } }
+        public bool IsUnusableWhenStale { get => throw null; }
         public Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry Clone() => throw null;
+        public System.TimeSpan GetFreshnessLifetime() => throw null;
+        public System.TimeSpan GetCurrentAge(System.DateTimeOffset now) => throw null;
+        public System.DateTimeOffset GetStaleTime() => throw null;
+        public bool IsObsolete(System.DateTimeOffset now) => throw null;
+        public string ComputeSecondaryKeyHash() => throw null;
         public static bool HasSameSecondaryKey(Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry left, Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry right) => throw null;
     }
 

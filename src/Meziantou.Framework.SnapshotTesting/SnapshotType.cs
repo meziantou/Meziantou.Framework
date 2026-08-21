@@ -33,12 +33,13 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
         Type = type;
         MimeType = mimeType;
         DisplayName = displayName;
+        FileExtension = string.IsNullOrEmpty(type) ? "" : "." + type;
     }
 
     public string Type { get; }
     public string? MimeType { get; }
     public string? DisplayName { get; }
-    public string FileExtension => string.IsNullOrEmpty(Type) ? string.Empty : $".{Type}";
+    public string FileExtension { get; }
 
     public static SnapshotType Create(string type, string? mimeType, string? displayName)
         => new(type, mimeType, displayName);

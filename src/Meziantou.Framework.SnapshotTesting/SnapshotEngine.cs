@@ -92,6 +92,19 @@ internal static class SnapshotEngine
 
     private static SnapshotComparisonResult Compare(SnapshotSettings settings, SnapshotType type, List<SnapshotFile> actualFiles, Dictionary<FullPath, SnapshotData> expectedFiles)
     {
+        // A single snapshot that matches its verified file is what every passing test does, and the
+        // bookkeeping below - two dictionaries, three sets and a couple of LINQ passes - is only needed to
+        // describe a difference.
+        if (actualFiles.Count == 1 && expectedFiles.Count == 1)
+        {
+            var actualFile = actualFiles[0];
+            if (expectedFiles.TryGetValue(actualFile.FilePath, out var expectedData) &&
+                settings.Comparers.Get(type).Equals(expectedData, actualFile.Data))
+            {
+                return SnapshotComparisonResult.NoDifference;
+            }
+        }
+
         var actualByPath = actualFiles.ToDictionary(item => item.FilePath, item => item.Data);
         var expectedPaths = new HashSet<FullPath>(expectedFiles.Keys);
         var actualPaths = new HashSet<FullPath>(actualByPath.Keys);

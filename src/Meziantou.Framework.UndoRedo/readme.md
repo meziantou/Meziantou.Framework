@@ -98,4 +98,16 @@ before the exception is propagated.
 
 When an action sets `AllowToMergeWithPrevious` and the previous action's `TryToMergeAsync` returns `true`, both collapse into a single undo step. This is useful for chains of similar operations such as typing or dragging.
 
-> Note: `UndoRedoManager` is not thread-safe; operate on it from a single logical flow.
+> Note: `UndoRedoManager` is not thread-safe; operate on it from a single logical flow. An action must not record,
+> undo, or redo anything while it is executing: those operations throw an `InvalidOperationException` as long as
+> `ActionIsExecuting` is `true`.
+
+## Migrating from 2.x
+
+| 2.x | 3.0 |
+| --- | --- |
+| `IUndoRedoAction.CanExecute()` / `CanUnExecute()` | Removed. `UndoRedoManager` never called them; use `CanUndo` / `CanRedo` to know whether an operation is available. |
+| `TryToMergeAsync(IUndoRedoAction)` | `TryToMergeAsync(IUndoRedoAction, CancellationToken)` |
+| `UndoRedoTransaction.ExecuteAsync` / `UnExecuteAsync` / `TryToMergeAsync` | Explicit interface implementations; cast to `IUndoRedoAction` to reach them. |
+| `UndoableActions` / `RedoableActions` returning `IEnumerable<IUndoRedoAction>` | `IReadOnlyList<IUndoRedoAction>`, a snapshot taken on each access. |
+| Recording, undoing or redoing from inside a running action | Throws `InvalidOperationException`. |

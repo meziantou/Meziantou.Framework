@@ -35,7 +35,7 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
     private readonly Lock _initializationLock = new();
     private readonly string _connectionString;
     private Task? _initializationTask;
-    private bool _initialized;
+    private volatile bool _initialized;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SqliteHttpCacheStore"/> class.
@@ -377,6 +377,36 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
         _initialized = true;
     }
 
+    // Columns added to databases created by an earlier version. The names are compile-time constants, so
+    // building the ALTER TABLE statement from them is not an injection point.
+    private static readonly (string Name, string Type)[] MigratedColumns =
+    [
+        ("SecondaryKeyMatchNone", "INTEGER"),
+        ("SecondaryKeyHeadersJson", "TEXT"),
+        ("RequestTimeUtcTicks", "INTEGER"),
+        ("ResponseTimeUtcTicks", "INTEGER"),
+        ("ResponseDateUtcTicks", "INTEGER"),
+        ("AgeValueTicks", "INTEGER"),
+        ("MaxAgeTicks", "INTEGER"),
+        ("SharedMaxAgeTicks", "INTEGER"),
+        ("ExpiresUtcTicks", "INTEGER"),
+        ("MustRevalidate", "INTEGER"),
+        ("ProxyRevalidate", "INTEGER"),
+        ("ResponseNoCache", "INTEGER"),
+        ("Public", "INTEGER"),
+        ("Private", "INTEGER"),
+        ("NoTransform", "INTEGER"),
+        ("Immutable", "INTEGER"),
+        ("StaleIfErrorTicks", "INTEGER"),
+        ("ETag", "TEXT"),
+        ("LastModifiedUtcTicks", "INTEGER"),
+        ("SerializedResponse", "BLOB"),
+        ("Payload", "BLOB"),
+        ("StaleAtUtcTicks", "INTEGER"),
+        ("DeleteWhenExpired", "INTEGER"),
+    ];
+
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The column names and types come from MigratedColumns, which holds compile-time constants")]
     private static async ValueTask EnsureSchemaColumnsAsync(SqliteConnection connection, CancellationToken cancellationToken)
     {
         var existingColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -392,164 +422,13 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
             }
         }
 
-        if (!existingColumns.Contains("SecondaryKeyMatchNone"))
+        foreach (var (name, type) in MigratedColumns)
         {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN SecondaryKeyMatchNone INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
+            if (existingColumns.Contains(name))
+                continue;
 
-        if (!existingColumns.Contains("SecondaryKeyHeadersJson"))
-        {
             await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN SecondaryKeyHeadersJson TEXT NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("RequestTimeUtcTicks"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN RequestTimeUtcTicks INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("ResponseTimeUtcTicks"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN ResponseTimeUtcTicks INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("ResponseDateUtcTicks"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN ResponseDateUtcTicks INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("AgeValueTicks"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN AgeValueTicks INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("MaxAgeTicks"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN MaxAgeTicks INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("SharedMaxAgeTicks"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN SharedMaxAgeTicks INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("ExpiresUtcTicks"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN ExpiresUtcTicks INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("MustRevalidate"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN MustRevalidate INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("ProxyRevalidate"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN ProxyRevalidate INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("ResponseNoCache"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN ResponseNoCache INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("Public"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN Public INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("Private"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN Private INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("NoTransform"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN NoTransform INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("Immutable"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN Immutable INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("StaleIfErrorTicks"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN StaleIfErrorTicks INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("ETag"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN ETag TEXT NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("LastModifiedUtcTicks"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN LastModifiedUtcTicks INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("SerializedResponse"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN SerializedResponse BLOB NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("Payload"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN Payload BLOB NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("StaleAtUtcTicks"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN StaleAtUtcTicks INTEGER NULL";
-            await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!existingColumns.Contains("DeleteWhenExpired"))
-        {
-            await using var addColumnCommand = connection.CreateCommand();
-            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN DeleteWhenExpired INTEGER NULL";
+            addColumnCommand.CommandText = "ALTER TABLE HttpCacheEntries ADD COLUMN " + name + " " + type + " NULL";
             await addColumnCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
     }

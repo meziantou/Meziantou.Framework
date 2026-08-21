@@ -8,6 +8,10 @@ namespace Meziantou.Framework.SnapshotTesting.Tool;
 internal static class Program
 {
     private const string ActualMarker = ".actual.";
+    private const string SnapshotDirectoryName = "__snapshots__";
+
+    /// <summary>Directories that never hold snapshots and can be expensive to walk.</summary>
+    private static readonly string[] SkippedDirectoryNames = ["bin", "obj", ".git", "node_modules"];
 
     public static Task<int> Main(string[] args)
     {
@@ -120,13 +124,13 @@ internal static class Program
 
     private static IEnumerable<FullPath> EnumerateSnapshotDirectories(FullPath rootPath, bool recurse)
     {
-        if (string.Equals(rootPath.Name, "__snapshots__", StringComparison.Ordinal))
+        if (string.Equals(rootPath.Name, SnapshotDirectoryName, StringComparison.Ordinal))
         {
             yield return rootPath;
         }
         else
         {
-            var localSnapshotDirectory = rootPath / "__snapshots__";
+            var localSnapshotDirectory = rootPath / SnapshotDirectoryName;
             if (Directory.Exists(localSnapshotDirectory))
             {
                 yield return localSnapshotDirectory;
@@ -136,10 +140,9 @@ internal static class Program
         if (!recurse)
             yield break;
 
-        var rootSnapshotDirectory = rootPath / "__snapshots__";
-        foreach (var directory in Directory.EnumerateDirectories(rootPath, "__snapshots__", SearchOption.AllDirectories))
+        var rootSnapshotDirectory = rootPath / SnapshotDirectoryName;
+        foreach (var snapshotDirectory in EnumerateSnapshotDirectoriesRecursively(rootPath))
         {
-            var snapshotDirectory = FullPath.FromPath(directory);
             if (string.Equals(snapshotDirectory.Value, rootSnapshotDirectory.Value, StringComparison.Ordinal))
             {
                 continue;
@@ -147,6 +150,63 @@ internal static class Program
 
             yield return snapshotDirectory;
         }
+    }
+
+    /// <summary>
+    /// Walks the tree looking for snapshot directories, skipping the ones that never hold source. On a large
+    /// repository, descending into every build output, package folder and the git database is what the run
+    /// spends its time on.
+    /// </summary>
+    private static IEnumerable<FullPath> EnumerateSnapshotDirectoriesRecursively(FullPath rootPath)
+    {
+        var pending = new Stack<FullPath>();
+        pending.Push(rootPath);
+
+        while (pending.Count > 0)
+        {
+            var current = pending.Pop();
+
+            string[] children;
+            try
+            {
+                children = Directory.GetDirectories(current);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                continue;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                continue;
+            }
+
+            foreach (var child in children)
+            {
+                var childPath = FullPath.FromPath(child);
+                var name = childPath.Name;
+                if (string.Equals(name, SnapshotDirectoryName, StringComparison.Ordinal))
+                {
+                    yield return childPath;
+                }
+                else if (IsSkippedDirectoryName(name))
+                {
+                    continue;
+                }
+
+                pending.Push(childPath);
+            }
+        }
+    }
+
+    private static bool IsSkippedDirectoryName(string name)
+    {
+        foreach (var skipped in SkippedDirectoryNames)
+        {
+            if (string.Equals(name, skipped, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     private static FullPath GetVerifiedPath(FullPath actualFile)

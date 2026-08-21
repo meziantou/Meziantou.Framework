@@ -45,6 +45,26 @@ public sealed class SnapshotTestingToolTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public async Task Approve_SkipsDirectoriesThatNeverHoldSnapshots()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var sourceActualPath = await temp.CreateTextFileAsync("src/__snapshots__/sample.actual.txt", "source-value", XunitCancellationToken);
+        var binActualPath = await temp.CreateTextFileAsync("bin/__snapshots__/sample.actual.txt", "bin-value", XunitCancellationToken);
+        var objActualPath = await temp.CreateTextFileAsync("obj/__snapshots__/sample.actual.txt", "obj-value", XunitCancellationToken);
+        var gitActualPath = await temp.CreateTextFileAsync(".git/__snapshots__/sample.actual.txt", "git-value", XunitCancellationToken);
+        var nodeModulesActualPath = await temp.CreateTextFileAsync("node_modules/__snapshots__/sample.actual.txt", "node-value", XunitCancellationToken);
+
+        var result = await RunTool(["approve", "--folder", temp.FullPath]);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.False(File.Exists(sourceActualPath));
+        Assert.True(File.Exists(binActualPath));
+        Assert.True(File.Exists(objActualPath));
+        Assert.True(File.Exists(gitActualPath));
+        Assert.True(File.Exists(nodeModulesActualPath));
+    }
+
+    [Fact]
     public async Task Approve_InteractiveMode_AllowsRejectingSnapshots()
     {
         await using var temp = TemporaryDirectory.Create();

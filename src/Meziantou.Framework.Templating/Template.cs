@@ -64,7 +64,7 @@ public class Template
     public BlockCollection Blocks { get; } = [];
 
     /// <summary>Gets a value indicating whether the template has been built.</summary>
-    public bool IsBuilt => _runMethodInfo != null;
+    public bool IsBuilt => Volatile.Read(ref _runMethodInfo) is not null;
 
     /// <summary>Gets the generated C# source code after building the template.</summary>
     public string? SourceCode { get; private set; }
@@ -783,11 +783,14 @@ public class Template
         pdbStream.Seek(0, SeekOrigin.Begin);
 
         var assembly = LoadAssembly(dllStream, pdbStream);
-        _runMethodInfo = FindMethod(assembly);
-        if (_runMethodInfo == null)
+        var runMethodInfo = FindMethod(assembly);
+        if (runMethodInfo is null)
         {
             throw new TemplateException("Run method not found in the generated assembly.");
         }
+
+        // Publish last: a thread observing IsBuilt must also observe everything written above.
+        Volatile.Write(ref _runMethodInfo, runMethodInfo);
     }
 
     /// <summary>Loads an assembly from memory streams.</summary>
@@ -900,7 +903,7 @@ public class Template
             Build(CancellationToken.None);
         }
 
-        var parameterInfos = _runMethodInfo!.GetParameters();
+        var parameterInfos = Volatile.Read(ref _runMethodInfo)!.GetParameters();
         var p = new object?[parameterInfos.Length];
         foreach (var pi in parameterInfos)
         {
@@ -929,6 +932,6 @@ public class Template
             Build(CancellationToken.None);
         }
 
-        _runMethodInfo!.Invoke(null, p);
+        Volatile.Read(ref _runMethodInfo)!.Invoke(null, p);
     }
 }

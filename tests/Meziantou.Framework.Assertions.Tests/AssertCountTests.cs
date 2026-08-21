@@ -188,4 +188,75 @@ public sealed class AssertCountTests
             Actual: [1, 2, 3]
             """);
     }
+
+    [Fact]
+    public void HasCountGreaterThan_DoesNotEnumerateInfiniteSequence()
+    {
+        AssertionsAssert.HasCountGreaterThan(3, InfiniteSequence());
+    }
+
+    [Fact]
+    public void HasCountGreaterThanOrEqual_StopsEnumeratingAtExpectedCount()
+    {
+        var enumerated = 0;
+
+        AssertionsAssert.HasCountGreaterThanOrEqual(3, CountingSequence(10, () => enumerated++));
+
+        AssertionsAssert.Equal(3, enumerated);
+    }
+
+    [Fact]
+    public void HasCount_UsesCountOfReadOnlyCollectionWithoutEnumerating()
+    {
+        var enumerated = 0;
+        var actual = new CountingCollection(3, () => enumerated++);
+
+        AssertionsAssert.HasCount(3, actual);
+
+        AssertionsAssert.Equal(0, enumerated);
+    }
+
+    [Fact]
+    public void HasCount_UsesCountOfCollectionWithoutEnumerating()
+    {
+        // A HashSet<T> is an ICollection<T> but not an IList<T>, so it used to be copied item by item.
+        IEnumerable<int> actual = new HashSet<int> { 1, 2, 3 };
+
+        AssertionsAssert.HasCount(3, actual);
+        AssertionsAssert.HasCountGreaterThan(2, actual);
+        AssertionsAssert.HasCountLessThan(4, actual);
+    }
+
+    private static IEnumerable<int> InfiniteSequence()
+    {
+        for (var i = 0; ; i++)
+        {
+            yield return i;
+        }
+    }
+
+    private static IEnumerable<int> CountingSequence(int count, Action onItem)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            onItem();
+            yield return i;
+        }
+    }
+
+    private sealed class CountingCollection(int count, Action onItem) : IReadOnlyCollection<int>
+    {
+        public int Count => count;
+
+        public IEnumerator<int> GetEnumerator()
+        {
+            for (var i = 0; i < count; i++)
+            {
+                onItem();
+                yield return i;
+            }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Meziantou.Framework.SnapshotTesting.Utils;
 
 namespace Meziantou.Framework.SnapshotTesting;
@@ -5,6 +6,7 @@ namespace Meziantou.Framework.SnapshotTesting;
 internal static class SnapshotEngine
 {
     private static readonly UTF8Encoding Utf8WithoutBomExceptionFallback = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    private static readonly ConcurrentDictionary<FullPath, VerifiedSnapshotFileCache> VerifiedSnapshotFiles = new();
 
     public static void Validate(SnapshotType? type, object? value, SnapshotSettings settings, string? filePath, int lineNumber, string? memberName, SnapshotTestContext? testContext)
     {
@@ -267,7 +269,11 @@ internal static class SnapshotEngine
             return actualPaths;
 
         var firstFile = actualFiles[0].FilePath;
-        if (!Directory.Exists(firstFile.Parent))
+        var directory = firstFile.Parent;
+
+        // Exists and LastWriteTimeUtc are served by a single stat of the directory.
+        var directoryInfo = new DirectoryInfo(directory);
+        if (!directoryInfo.Exists)
             return actualPaths.Where(path => File.Exists(path.Value)).ToArray();
 
         var firstName = GetVerifiedBaseName(firstFile);
@@ -277,27 +283,19 @@ internal static class SnapshotEngine
         var indexedPrefix = GetIndexedPrefix(firstName, actualFiles.Count);
 
         var expected = new HashSet<FullPath>();
-        foreach (var path in Directory.EnumerateFiles(firstFile.Parent))
+        foreach (var candidate in GetVerifiedSnapshotFiles(directory, directoryInfo.LastWriteTimeUtc))
         {
-            var candidate = FullPath.FromPath(path);
-            var name = GetVerifiedBaseName(candidate);
-            if (name is null)
-                continue;
-
-            if (name == firstName)
+            if (!string.Equals(candidate.BaseName, firstName, StringComparison.Ordinal))
             {
-                expected.Add(candidate);
-                continue;
+                if (!candidate.BaseName.StartsWith(indexedPrefix, StringComparison.Ordinal))
+                    continue;
+
+                var suffix = candidate.BaseName.AsSpan(indexedPrefix.Length);
+                if (!int.TryParse(suffix, NumberStyles.None, CultureInfo.InvariantCulture, out _))
+                    continue;
             }
 
-            if (!name.StartsWith(indexedPrefix, StringComparison.Ordinal))
-                continue;
-
-            var suffix = name[indexedPrefix.Length..];
-            if (!int.TryParse(suffix, NumberStyles.None, CultureInfo.InvariantCulture, out _))
-                continue;
-
-            expected.Add(candidate);
+            expected.Add(directory / candidate.FileName);
         }
 
         foreach (var path in actualPaths)
@@ -308,13 +306,49 @@ internal static class SnapshotEngine
         return expected;
     }
 
-    private static string? GetVerifiedBaseName(FullPath path)
+    /// <summary>
+    /// Lists the verified snapshot files of a directory. Enumerating the directory is the most expensive
+    /// part of an assertion that has nothing to compare yet, and its cost grows with the number of
+    /// snapshots stored next to each other, so the result is cached.
+    /// </summary>
+    /// <remarks>
+    /// The cache is dropped when the engine itself adds or removes a verified file, and the directory
+    /// timestamp is used as a backstop so a change made by anything else is picked up too. Adding or
+    /// removing a directory entry updates that timestamp; editing the content of a file does not, which
+    /// is what we want since only the set of file names is cached.
+    /// </remarks>
+    private static VerifiedSnapshotFile[] GetVerifiedSnapshotFiles(FullPath directory, DateTime lastWriteTimeUtc)
     {
-        var snapshotName = path.NameWithoutExtension;
+        if (VerifiedSnapshotFiles.TryGetValue(directory, out var cache) && cache.LastWriteTimeUtc == lastWriteTimeUtc)
+            return cache.Files;
+
+        var result = new List<VerifiedSnapshotFile>();
+        foreach (var path in Directory.EnumerateFiles(directory))
+        {
+            var fileName = Path.GetFileName(path.AsSpan());
+            var baseName = GetVerifiedBaseName(fileName);
+            if (baseName is null)
+                continue;
+
+            result.Add(new VerifiedSnapshotFile(fileName.ToString(), baseName));
+        }
+
+        VerifiedSnapshotFile[] files = [.. result];
+        VerifiedSnapshotFiles[directory] = new VerifiedSnapshotFileCache(lastWriteTimeUtc, files);
+        return files;
+    }
+
+    private static void InvalidateVerifiedSnapshotFiles(FullPath directory) => VerifiedSnapshotFiles.TryRemove(directory, out _);
+
+    private static string? GetVerifiedBaseName(FullPath path) => GetVerifiedBaseName(path.Name.AsSpan());
+
+    private static string? GetVerifiedBaseName(ReadOnlySpan<char> fileName)
+    {
+        var snapshotName = Path.GetFileNameWithoutExtension(fileName);
         if (!snapshotName.EndsWith(".verified", StringComparison.Ordinal))
             return null;
 
-        return snapshotName[..^".verified".Length];
+        return snapshotName[..^".verified".Length].ToString();
     }
 
     private static string GetIndexedPrefix(string snapshotName, int actualFileCount)
@@ -372,6 +406,16 @@ internal static class SnapshotEngine
             settings,
             [.. filesToUpdate.Select(item => new SnapshotUpdateFile(item.VerifiedPath, item.ActualPath))],
             [.. filesToDelete.Select(item => item.Value)]);
+
+        foreach (var fileToUpdate in filesToUpdate)
+        {
+            InvalidateVerifiedSnapshotFiles(fileToUpdate.VerifiedPath.Parent);
+        }
+
+        foreach (var fileToDelete in filesToDelete)
+        {
+            InvalidateVerifiedSnapshotFiles(fileToDelete.Parent);
+        }
     }
 
     private static void WriteActualSnapshots(IReadOnlyList<SnapshotFileToUpdate> filesToUpdate)
@@ -443,4 +487,8 @@ internal static class SnapshotEngine
     }
 
     private readonly record struct SnapshotFileToUpdate(FullPath VerifiedPath, FullPath ActualPath, byte[] ActualData);
+
+    private readonly record struct VerifiedSnapshotFile(string FileName, string BaseName);
+
+    private readonly record struct VerifiedSnapshotFileCache(DateTime LastWriteTimeUtc, VerifiedSnapshotFile[] Files);
 }

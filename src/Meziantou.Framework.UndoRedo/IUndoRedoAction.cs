@@ -12,19 +12,14 @@ public interface IUndoRedoAction
     /// <summary>Reverts the change previously applied by <see cref="ExecuteAsync"/>.</summary>
     ValueTask UnExecuteAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Gets a value indicating whether the action can currently be executed.</summary>
-    bool CanExecute();
-
-    /// <summary>Gets a value indicating whether the action can currently be reverted.</summary>
-    bool CanUnExecute();
-
     /// <summary>
     /// Attempts to merge a following action into this one instead of recording it as a separate
     /// step. Useful for long chains of consecutive operations of the same kind (e.g. dragging or typing).
     /// </summary>
     /// <param name="followingAction">The action recorded right after this one.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns><see langword="true"/> if <paramref name="followingAction"/> was merged into this action; otherwise <see langword="false"/>.</returns>
-    ValueTask<bool> TryToMergeAsync(IUndoRedoAction followingAction);
+    ValueTask<bool> TryToMergeAsync(IUndoRedoAction followingAction, CancellationToken cancellationToken = default);
 
     /// <summary>Gets a value indicating whether this action may be merged with the previous action in the undo buffer.</summary>
     bool AllowToMergeWithPrevious { get; }

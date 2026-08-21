@@ -6,6 +6,10 @@ This package provides an `HttpClientHandler` that automatically upgrades HTTP re
 var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
 using var client = new HttpClient(new HstsClientHandler(new SocketsHttpHandler(), policies), disposeHandler: true);
 
-// Automatically upgrade to HTTPS as google.com is in the HSTS preload list
-using var response = await client.GetAsync("http://google.com");
+// Automatically upgrade to HTTPS as github.com is in the HSTS preload list
+using var response = await client.GetAsync("http://github.com");
 ```
+
+The handler reads the `Strict-Transport-Security` header of HTTPS responses and adds the host to the collection, so later requests to that host are upgraded. A `max-age=0` header removes the policy, unless the host comes from the preload list. Policies learned this way are kept in memory only, and are not removed when they expire; use `Remove` to drop the ones you no longer need.
+
+The `HstsClientHandler` constructor that takes no collection uses `HstsDomainPolicyCollection.Default`, a shared instance for the whole process. Every handler using it observes the policies learned by the others. Create a dedicated `HstsDomainPolicyCollection` to isolate a client from the rest of the application.

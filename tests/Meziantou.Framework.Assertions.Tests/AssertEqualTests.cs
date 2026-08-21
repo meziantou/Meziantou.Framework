@@ -309,6 +309,24 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public void IgnoreLineEndingDifferencesWithoutCarriageReturn_Success()
+    {
+        var expected = "line1\nline2";
+        var actual = "line1\nline2";
+
+        AssertionsAssert.Equal(expected, actual, ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public void IgnoreLineEndingDifferencesWithoutCarriageReturn_Fails()
+    {
+        var expected = "line1\nline2";
+        var actual = "line1\nline3";
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal(expected, actual, ignoreLineEndingDifferences: true));
+    }
+
+    [Fact]
     public void String_IgnoreLineEndingDifferences_Success()
     {
         var expected = "line1\r\nline2\rline3";
@@ -411,6 +429,40 @@ public sealed class AssertEqualTests
         var actual = ImmutableArray.Create(1L, 2L, 3L);
 
         AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void SameImmutableArrayTypes_Success()
+    {
+        var expected = ImmutableArray.Create(1, 2, 3);
+        var actual = ImmutableArray.Create(1, 2, 3);
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void NestedSameImmutableArrayTypes_Success()
+    {
+        ImmutableArray<int>[] expected = [ImmutableArray.Create(1, 2), ImmutableArray.Create(3)];
+        ImmutableArray<int>[] actual = [ImmutableArray.Create(1, 2), ImmutableArray.Create(3)];
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void NestedSameImmutableArrayTypes_Fails()
+    {
+        ImmutableArray<int>[] expected = [ImmutableArray.Create(1, 2)];
+        ImmutableArray<int>[] actual = [ImmutableArray.Create(1, 3)];
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed: Item at index 0 differs.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 0
+            Expected item: [[̲1̲,̲ ̲2̲]̲]
+            Actual item:   [[̲1̲,̲ ̲3̲]̲]
+            """);
     }
 
     [Fact]
@@ -656,6 +708,67 @@ public sealed class AssertEqualTests
             Expected: [1, 2, 3]
             Actual:   <null>
             """);
+    }
+
+    [Fact]
+    public void ReadOnlySpanOfDoublesWithSignedZeroAndNaN_Success()
+    {
+        // Bitwise comparison would report these as different, but -0.0 equals +0.0 and NaN equals NaN.
+        ReadOnlySpan<double> expected = [1.0, -0.0, double.NaN];
+        ReadOnlySpan<double> actual = [1.0, 0.0, double.NaN];
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ReadOnlySpanOfEnums_Success()
+    {
+        ReadOnlySpan<DayOfWeek> expected = [DayOfWeek.Monday, DayOfWeek.Friday];
+        ReadOnlySpan<DayOfWeek> actual = [DayOfWeek.Monday, DayOfWeek.Friday];
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ReadOnlySpanOfEnums_Fails()
+    {
+        AssertionTestHelpers.Validate(Validate, """
+            Assert.Equal() assertion failed: Item at index 1 differs.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 1
+            Expected item: [Monday, F̲r̲i̲d̲a̲y̲]
+            Actual item:   [Monday, S̲u̲n̲d̲a̲y̲]
+            """);
+
+        static void Validate()
+        {
+            ReadOnlySpan<DayOfWeek> expected = [DayOfWeek.Monday, DayOfWeek.Friday];
+            ReadOnlySpan<DayOfWeek> actual = [DayOfWeek.Monday, DayOfWeek.Sunday];
+
+            AssertionsAssert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    public void ReadOnlySpanOfBytes_Fails()
+    {
+        AssertionTestHelpers.Validate(Validate, """
+            Assert.Equal() assertion failed: Item at index 2 differs.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 2
+            Expected item: [1, 2, 3̲, 4]
+            Actual item:   [1, 2, 4̲2̲, 4]
+            """);
+
+        static void Validate()
+        {
+            ReadOnlySpan<byte> expected = [1, 2, 3, 4];
+            ReadOnlySpan<byte> actual = [1, 2, 42, 4];
+
+            AssertionsAssert.Equal(expected, actual);
+        }
     }
 
     [Fact]

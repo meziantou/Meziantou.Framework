@@ -7,7 +7,7 @@
 FullPath rootPath = FullPath.FromPath("demo"); // It automatically calls Path.GetFullPath to resolve the path
 FullPath filePath = FullPath.Combine(rootPath, "temp", "meziantou.txt"); // Use Path.Combine to join paths (you can combine as many path as you needed)
 FullPath temp = FullPath.GetTempPath(); // equivalent of Path.GetTempPath()
-FullPath cwd = FullPath.GetCurrentDirectory(); // equivalent of Environment.CurrentDirectory
+FullPath cwd = FullPath.CurrentDirectory(); // equivalent of Environment.CurrentDirectory
 
 // Combine path: you can use the / operator to join path
 FullPath filePath1 = rootPath / "temp" / "meziantou.txt";
@@ -32,7 +32,7 @@ FullPath pathWithNewName = filePath.WithName("other.txt");
 FullPath pathWithNewNameWithoutExtension = filePath.WithNameWithoutExtension("other");
 
 // Make relative path
-string relativePath = filePath.MakeRelativeTo(rootPath); // temp\meziantou.txt
+string relativePath = filePath.MakePathRelativeTo(rootPath); // temp\meziantou.txt
 
 // Check if a path is under another path
 bool isChildOf = filePath.IsChildOf(rootPath);

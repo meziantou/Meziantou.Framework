@@ -109,11 +109,23 @@ public sealed class FullPathTests
     [InlineData("a/", "a")]
     [InlineData("a/../b", "b")]
     [InlineData(".", ".")]
+    [InlineData("..", "..")]
+    [InlineData("../..", "../..")]
+    [InlineData("../sibling", "../sibling")]
     public void MakeRelativeTo(string childPath, string expected)
     {
         var rootPath = FullPath.FromPath("test");
         var path1 = FullPath.Combine("test", childPath);
-        Assert.Equal(expected, path1.MakePathRelativeTo(rootPath));
+        Assert.Equal(expected.Replace('/', Path.DirectorySeparatorChar), path1.MakePathRelativeTo(rootPath));
+    }
+
+    [Fact]
+    public void MakeRelativeTo_RootDirectory()
+    {
+        var rootPath = GetRootDirectory();
+        var path = rootPath / "a";
+
+        Assert.Equal("a", path.MakePathRelativeTo(rootPath));
     }
 
     [Theory]
@@ -142,6 +154,25 @@ public sealed class FullPathTests
         Assert.False(childPath.IsChildOf(rootPath));
     }
 
+    [Fact]
+    public void IsChildOf_RootDirectory()
+    {
+        var rootPath = GetRootDirectory();
+
+        Assert.True((rootPath / "a").IsChildOf(rootPath));
+        Assert.True((rootPath / "a" / "b.txt").IsChildOf(rootPath));
+        Assert.False(rootPath.IsChildOf(rootPath));
+    }
+
+    [Fact]
+    public void IsChildOf_UsesTheSameCaseSensitivityAsTheDefaultComparer()
+    {
+        var rootPath = FullPath.FromPath("test");
+        var childPath = FullPath.FromPath("TEST") / "a.txt";
+
+        Assert.Equal(childPath.Parent == rootPath, childPath.IsChildOf(rootPath));
+    }
+
     [Theory]
     [InlineData("test", "abc")]
     [InlineData("test", "../test")]
@@ -165,6 +196,24 @@ public sealed class FullPathTests
         var rootPath = FullPath.FromPath(root);
         var childPath = FullPath.FromPath(path);
         Assert.Equal(childPath, rootPath);
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Windows)]
+    public void FromPath_ExtendedPrefixIsRemovedOnWindows()
+    {
+        Assert.Equal(@"C:\temp\a.txt", FullPath.FromPath(@"\\?\C:\temp\a.txt").RawValue);
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void FromPath_ExtendedPrefixIsAFileNameOnUnix()
+    {
+        // '\' is a regular file name character on Unix, so this is a relative file name, not a device path
+        var expected = FullPath.CurrentDirectory() / @"\\?\a";
+
+        Assert.Equal(expected, FullPath.FromPath(@"\\?\a"));
+        Assert.Equal(@"\\?\a", FullPath.FromPath(@"\\?\a").Name);
     }
 
     [Fact]
@@ -211,6 +260,17 @@ public sealed class FullPathTests
     public void JsonDeserialize_NonEmpty()
     {
         Assert.Equal(FullPath.FromPath(@"c:\test"), JsonSerializer.Deserialize<FullPath>(@"""c:\\test"""));
+    }
+
+    [Fact]
+    public void IComparable_CompareTo()
+    {
+        IComparable path = FullPath.FromPath("test") / "a";
+
+        Assert.Equal(0, path.CompareTo(FullPath.FromPath("test") / "a"));
+        Assert.True(path.CompareTo(FullPath.FromPath("test") / "b") < 0);
+        Assert.True(path.CompareTo(null) > 0);
+        Assert.Throws<ArgumentException>(() => path.CompareTo("test"));
     }
 
     [Fact]
@@ -282,6 +342,24 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public async Task ResolveSymlink_NonAsciiPath()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var path = temp.CreateEmptyFile("日本語.txt");
+
+        var symlink = temp.GetFullPath("リンク.txt");
+        CreateSymlink(symlink, "日本語.txt", isDirectory: false);
+
+        Assert.True(symlink.IsSymbolicLink());
+        Assert.True(symlink.TryGetSymbolicLinkTarget(out var target));
+        Assert.Equal(path, target);
+
+        Assert.True(path.TryGetCanonicalPath(out var expected));
+        Assert.True(symlink.TryGetCanonicalPath(out var actual));
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
     public async Task ResolveSymlink_Recursive()
     {
         await using var temp = TemporaryDirectory.Create();
@@ -294,6 +372,23 @@ public sealed class FullPathTests
         Assert.Equal(symlink, resolved1);
         Assert.True(symlink2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out var resolved2));
         Assert.EndsWith(Path.Combine("a", "b.txt"), resolved2.Value.Value); // On GitHub Actions, path starts with a symlink, so resolved2 != file
+    }
+
+    [Fact]
+    public async Task ResolveSymlink_Cycle()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var a = temp.GetFullPath("a");
+        var b = temp.GetFullPath("b");
+        CreateSymlink(a, "b", isDirectory: false);
+        CreateSymlink(b, "a", isDirectory: false);
+
+        Assert.True(a.IsSymbolicLink());
+        Assert.True(a.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.Immediate, out var immediate));
+        Assert.Equal(b, immediate);
+
+        Assert.Throws<IOException>(() => { a.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.FinalTarget, out _); });
+        Assert.Throws<IOException>(() => { a.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out _); });
     }
 
     [Fact]
@@ -613,6 +708,11 @@ public sealed class FullPathTests
         var extended = path.ToWindowsExtendedPath();
         Assert.StartsWith(@"\\?\", extended);
         Assert.Contains(longSegment, extended);
+    }
+
+    private static FullPath GetRootDirectory()
+    {
+        return FullPath.FromPath(Path.GetPathRoot(FullPath.CurrentDirectory().Value)!);
     }
 
     private static void CreateSymlink(FullPath source, string target, bool isDirectory)

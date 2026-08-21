@@ -12,9 +12,17 @@ internal sealed class ActionHistory
     public bool CanUndo => _undo.Count > 0;
     public bool CanRedo => _redo.Count > 0;
 
-    public void Record(IUndoRedoAction action)
+    /// <summary>
+    /// Records a new action. When the action allows merging and the most recent undoable action absorbs it,
+    /// no new entry is added. The redo buffer is cleared either way as the history moved forward.
+    /// </summary>
+    public async ValueTask RecordAsync(IUndoRedoAction action, CancellationToken cancellationToken)
     {
-        _undo.Push(action);
+        if (!action.AllowToMergeWithPrevious || PeekUndo() is not { } previous || !await previous.TryToMergeAsync(action, cancellationToken).ConfigureAwait(false))
+        {
+            _undo.Push(action);
+        }
+
         _redo.Clear();
     }
 
@@ -34,7 +42,7 @@ internal sealed class ActionHistory
         _redo.Clear();
     }
 
-    public IEnumerable<IUndoRedoAction> UndoableActions => _undo;
+    public IReadOnlyList<IUndoRedoAction> UndoableActions => _undo.ToArray();
 
-    public IEnumerable<IUndoRedoAction> RedoableActions => _redo;
+    public IReadOnlyList<IUndoRedoAction> RedoableActions => _redo.ToArray();
 }

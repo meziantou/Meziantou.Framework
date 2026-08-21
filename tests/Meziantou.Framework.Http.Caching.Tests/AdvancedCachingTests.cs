@@ -1,4 +1,5 @@
 using System.Net;
+using Meziantou.Framework.Http.Caching.InMemory;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
 
@@ -745,6 +746,54 @@ public sealed class AdvancedCachingTests
                 Content-Type: text/plain; charset=utf-8
               Value: {content}
             """);
+    }
+
+    [Fact]
+    public async Task WhenContentLengthExceedsLimitThenResponseIsNotBuffered()
+    {
+        // The body must not be read at all: the announced length is already over the limit.
+        var contentReadCount = 0;
+        using var innerHandler = new ContentReadCountingHandler(() => contentReadCount++);
+        var options = new HttpCachingOptions { MaximumResponseSize = 100 };
+        using var handler = new HttpCachingDelegateHandler(innerHandler, new InMemoryHttpCacheStore(), options);
+        using var client = new HttpClient(handler);
+
+        // ResponseHeadersRead so that HttpClient does not buffer the content itself.
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, CancellationToken.None);
+        Assert.Equal(0, contentReadCount);
+
+        // The caller still gets the untouched response.
+        Assert.Equal(new string('x', 500), await response.Content.ReadAsStringAsync(CancellationToken.None));
+        Assert.Equal(1, contentReadCount);
+    }
+
+    private sealed class ContentReadCountingHandler(Action onRead) : HttpMessageHandler
+    {
+        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership is transferred to the caller")]
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK);
+            response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=3600");
+            response.Content = new CountingContent(new string('x', 500), onRead);
+            return Task.FromResult(response);
+        }
+    }
+
+    private sealed class CountingContent(string content, Action onRead) : HttpContent
+    {
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+        {
+            onRead();
+            var bytes = Encoding.UTF8.GetBytes(content);
+            return stream.WriteAsync(bytes, 0, bytes.Length);
+        }
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = Encoding.UTF8.GetByteCount(content);
+            return true;
+        }
     }
 
     [Fact]

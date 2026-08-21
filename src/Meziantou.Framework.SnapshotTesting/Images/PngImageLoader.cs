@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
+using System.IO.Hashing;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
@@ -10,7 +11,6 @@ internal static class PngImageLoader
     private static readonly int[] Adam7YStarts = [0, 0, 4, 0, 2, 0, 1];
     private static readonly int[] Adam7XSteps = [8, 8, 4, 4, 2, 2, 1];
     private static readonly int[] Adam7YSteps = [8, 8, 8, 4, 4, 2, 2];
-    private static readonly uint[] PngCrc32Table = InitializePngCrc32Table();
 
     internal static bool IsPng(ReadOnlySpan<byte> data)
     {
@@ -213,11 +213,14 @@ internal static class PngImageLoader
             throw new InvalidDataException("The PNG data has trailing bytes.");
 
         var bitsPerPixel = checked(GetPngChannelCount(colorType) * bitDepth);
-        var decompressedData = DecompressPngIdatData(idatData.GetBuffer().AsSpan(0, checked((int)idatData.Length)));
         var expectedImageDataLength = GetExpectedPngImageDataLength(width, height, bitsPerPixel, interlaceMethod);
-        if (decompressedData.Length != expectedImageDataLength)
+
+        idatData.Position = 0;
+        using var decompressedStream = DecompressPngIdatData(idatData, expectedImageDataLength);
+        if (decompressedStream.Length != expectedImageDataLength)
             throw new InvalidDataException("The PNG decompressed image data size is invalid.");
 
+        var decompressedData = decompressedStream.GetBuffer().AsSpan(0, expectedImageDataLength);
         var pixels = new Argb[checked(width * height)];
         if (interlaceMethod == 0)
         {
@@ -261,14 +264,19 @@ internal static class PngImageLoader
         return Image.Create(width, height, pixels);
     }
 
-    private static byte[] DecompressPngIdatData(ReadOnlySpan<byte> compressedData)
+    /// <summary>Inflates the concatenated IDAT chunks.</summary>
+    /// <param name="compressedStream">The concatenated IDAT chunks, positioned at the first byte.</param>
+    /// <param name="expectedLength">
+    /// The image data size computed from the header, used to size the output buffer. A malformed image may
+    /// inflate to a different size, in which case the stream simply grows as usual.
+    /// </param>
+    private static MemoryStream DecompressPngIdatData(Stream compressedStream, int expectedLength)
     {
-        using var compressedStream = new MemoryStream(compressedData.ToArray());
-        using var zlibStream = new ZLibStream(compressedStream, CompressionMode.Decompress);
-        using var output = new MemoryStream();
+        using var zlibStream = new ZLibStream(compressedStream, CompressionMode.Decompress, leaveOpen: true);
+        var output = new MemoryStream(expectedLength);
         zlibStream.CopyTo(output);
 
-        return output.ToArray();
+        return output;
     }
 
     private static void DecodePngRows(
@@ -402,6 +410,54 @@ internal static class PngImageLoader
         bool hasTransparentRgb,
         Span<Argb> destinationPixels)
     {
+        // The color type and bit depth are fixed for the whole image, so the common 8-bit layouts get a
+        // loop of their own instead of re-deciding how to read a sample for every channel of every pixel.
+        if (bitDepth == 8)
+        {
+            switch (colorType)
+            {
+                case 0 when !hasTransparentGray:
+                    for (var x = 0; x < pixelCount; x++)
+                    {
+                        var gray = rowData[x];
+                        destinationPixels[x] = new Argb(255, gray, gray, gray);
+                    }
+
+                    return;
+
+                case 2 when !hasTransparentRgb:
+                    for (var x = 0; x < pixelCount; x++)
+                    {
+                        var sample = rowData.Slice(x * 3, 3);
+                        destinationPixels[x] = new Argb(255, sample[0], sample[1], sample[2]);
+                    }
+
+                    return;
+
+                case 3 when palette is not null:
+                    DecodePngIndexedScanline(rowData, pixelCount, palette, paletteAlpha, destinationPixels);
+                    return;
+
+                case 4:
+                    for (var x = 0; x < pixelCount; x++)
+                    {
+                        var sample = rowData.Slice(x * 2, 2);
+                        destinationPixels[x] = new Argb(sample[1], sample[0], sample[0], sample[0]);
+                    }
+
+                    return;
+
+                case 6:
+                    for (var x = 0; x < pixelCount; x++)
+                    {
+                        var sample = rowData.Slice(x * 4, 4);
+                        destinationPixels[x] = new Argb(sample[3], sample[0], sample[1], sample[2]);
+                    }
+
+                    return;
+            }
+        }
+
         for (var x = 0; x < pixelCount; x++)
         {
             destinationPixels[x] = DecodePngPixel(
@@ -417,6 +473,21 @@ internal static class PngImageLoader
                 transparentGreen,
                 transparentBlue,
                 hasTransparentRgb);
+        }
+    }
+
+    private static void DecodePngIndexedScanline(ReadOnlySpan<byte> rowData, int pixelCount, byte[] palette, byte[]? paletteAlpha, Span<Argb> destinationPixels)
+    {
+        var paletteEntryCount = palette.Length / 3;
+        for (var x = 0; x < pixelCount; x++)
+        {
+            int paletteIndex = rowData[x];
+            if (paletteIndex >= paletteEntryCount)
+                throw new InvalidDataException("The PNG palette index is out of range.");
+
+            var entry = palette.AsSpan(paletteIndex * 3, 3);
+            var alpha = paletteAlpha is not null && paletteIndex < paletteAlpha.Length ? paletteAlpha[paletteIndex] : (byte)255;
+            destinationPixels[x] = new Argb(alpha, entry[0], entry[1], entry[2]);
         }
     }
 
@@ -691,37 +762,11 @@ internal static class PngImageLoader
 
     private static uint ComputePngCrc32(ReadOnlySpan<byte> chunkType, ReadOnlySpan<byte> chunkData)
     {
-        var crc = uint.MaxValue;
-        crc = UpdatePngCrc32(crc, chunkType);
-        crc = UpdatePngCrc32(crc, chunkData);
-        return ~crc;
-    }
-
-    private static uint UpdatePngCrc32(uint crc, ReadOnlySpan<byte> data)
-    {
-        foreach (var value in data)
-        {
-            crc = PngCrc32Table[(int)((crc ^ value) & 0xFF)] ^ (crc >> 8);
-        }
-
-        return crc;
-    }
-
-    private static uint[] InitializePngCrc32Table()
-    {
-        var table = new uint[256];
-        for (uint index = 0; index < table.Length; index++)
-        {
-            var crc = index;
-            for (var bit = 0; bit < 8; bit++)
-            {
-                crc = (crc & 1) == 0 ? crc >> 1 : 0xEDB88320u ^ (crc >> 1);
-            }
-
-            table[index] = crc;
-        }
-
-        return table;
+        // PNG uses CRC-32/ISO-HDLC, which is what System.IO.Hashing.Crc32 computes.
+        var crc = new Crc32();
+        crc.Append(chunkType);
+        crc.Append(chunkData);
+        return crc.GetCurrentHashAsUInt32();
     }
 
     private static uint ReadUInt32BigEndian(ReadOnlySpan<byte> data, int offset)

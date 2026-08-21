@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
@@ -23,8 +24,7 @@ public partial class Assert
     private static bool TryGetMemoryItems<T>(T value, [NotNullWhen(true)] out System.Collections.IEnumerable? items)
     {
         items = null;
-        var declaredType = typeof(T);
-        if (declaredType != typeof(object) && !declaredType.IsInterface && !declaredType.IsAbstract && !IsMemoryType(declaredType))
+        if (!MemoryCandidate<T>.IsPossible)
             return false;
 
         if (value is null)
@@ -37,6 +37,19 @@ public partial class Assert
 
         items = (System.Collections.IEnumerable?)toArrayMethod.Invoke(value, parameters: null);
         return items is not null;
+    }
+
+    private static class MemoryCandidate<T>
+    {
+        /// <summary>
+        /// Gets a value indicating whether a value declared as <typeparamref name="T"/> can be a Memory or
+        /// ReadOnlyMemory at runtime. Reading the type flags once per instantiation keeps them off the hot path.
+        /// </summary>
+        public static readonly bool IsPossible =
+            typeof(T) == typeof(object)
+            || typeof(T).IsInterface
+            || typeof(T).IsAbstract
+            || IsMemoryType(typeof(T));
     }
 
     private static bool IsMemoryType(Type type)
@@ -58,8 +71,26 @@ public partial class Assert
         if (comparer is not null)
             return comparer.Equals(expected, actual);
 
-        if (object.Equals(expected, actual))
+        // object.Equals boxes both operands. When both have the same static type, EqualityComparer<T>.Default gives
+        // the same answer without allocating, and the JIT devirtualizes it for value types.
+        var sameType = typeof(TExpected) == typeof(TActual);
+        if (sameType)
+        {
+            if (EqualityComparer<TExpected>.Default.Equals(expected, Unsafe.As<TActual, TExpected>(ref actual)))
+                return true;
+
+            if (typeof(TExpected).IsValueType)
+            {
+                // Numeric widening and user-defined implicit conversions can only make values of different runtime
+                // types compare equal, and a value type has no derived types. Only the structural comparison is left,
+                // which still matters for collection-like structs such as ImmutableArray<T>.
+                return TryCompareEnumerableValues(expected, actual, out var valueTypeResult) && valueTypeResult;
+            }
+        }
+        else if (object.Equals(expected, actual))
+        {
             return true;
+        }
 
         return (TryCompareNumericValues(expected, actual, out var result) && result)
             || (TryCompareEnumerableValues(expected, actual, out result) && result)

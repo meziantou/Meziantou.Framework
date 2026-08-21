@@ -305,6 +305,75 @@ public sealed class TextDiffTests
         Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Equals("The door of all subtleties!", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void ComputeDiff_AllAlgorithms_RandomizedInputs_ReconstructsOldAndNewText(TextDiffAlgorithm algorithm)
+    {
+        var random = new Random(20250820);
+        var options = new TextDiffOptions { Algorithm = algorithm };
+
+        for (var iteration = 0; iteration < 200; iteration++)
+        {
+            var alphabet = random.Next(1, 6);
+            var oldText = JoinLines(CreateRandomLines(random, alphabet));
+            var newText = JoinLines(CreateRandomLines(random, alphabet));
+
+            var result = Diff.ComputeDiff(oldText, newText, options);
+
+            Assert.Equal(oldText, ReconstructOldText(result));
+            Assert.Equal(newText, ReconstructNewText(result));
+            Assert.Equal(!string.Equals(oldText, newText, StringComparison.Ordinal), result.HasDifferences);
+        }
+    }
+
+    [Fact]
+    public void ComputeDiff_Myers_ModifiedRunSlidingOverUniformRegion_ReconstructsOldAndNewText()
+    {
+        // A run of modified chunks sliding across a long uniform region used to be re-scanned from its
+        // start on every step, which made the post-processing pass quadratic in the size of the region.
+        const int Count = 20_000;
+        var oldText = JoinLines([.. Enumerable.Repeat("a", Count).Prepend("HEAD")]);
+        var newText = JoinLines([.. Enumerable.Repeat("a", Count + (Count / 2))]);
+
+        var result = Diff.ComputeDiff(oldText, newText, new TextDiffOptions { Algorithm = TextDiffAlgorithm.Myers });
+
+        Assert.True(result.HasDifferences);
+        Assert.Equal(oldText, ReconstructOldText(result));
+        Assert.Equal(newText, ReconstructNewText(result));
+    }
+
+    [Fact]
+    public void ComputeDiff_Histogram_ManyAnchors_DoesNotOverflowTheStack()
+    {
+        // Every second line differs, so each level of the histogram recursion consumes a single anchor.
+        // Recursing on both sides of the anchor made the depth proportional to the number of anchors.
+        const int Count = 3_000;
+        var oldLines = new string[Count];
+        var newLines = new string[Count];
+        for (var i = 0; i < Count; i++)
+        {
+            var suffix = i.ToString(CultureInfo.InvariantCulture);
+            oldLines[i] = "u" + suffix;
+            newLines[i] = (i % 2 is 0 ? "u" : "v") + suffix;
+        }
+
+        var oldText = JoinLines(oldLines);
+        var newText = JoinLines(newLines);
+
+        // A dedicated thread with an explicit stack size keeps the guard meaningful whatever the test host uses.
+        TextDiffResult? result = null;
+        var thread = new Thread(
+            () => result = Diff.ComputeDiff(oldText, newText, new TextDiffOptions { Algorithm = TextDiffAlgorithm.Histogram }),
+            maxStackSize: 512 * 1024);
+        thread.Start();
+        thread.Join();
+
+        Assert.NotNull(result);
+        Assert.Equal(oldText, ReconstructOldText(result));
+        Assert.Equal(newText, ReconstructNewText(result));
+    }
+
     [Fact]
     public void ComputeDiff_InsertLine()
     {
@@ -747,6 +816,18 @@ public sealed class TextDiffTests
     }
 
     private static string JoinLines(params string[] lines) => string.Join('\n', lines);
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    private static string[] CreateRandomLines(Random random, int alphabet)
+    {
+        var lines = new string[random.Next(0, 40)];
+        for (var i = 0; i < lines.Length; i++)
+        {
+            lines[i] = "line" + random.Next(alphabet).ToString(CultureInfo.InvariantCulture);
+        }
+
+        return lines;
+    }
 
     private sealed record DiffCorpusCase(string Name, string OldText, string NewText, bool HasDifferences);
     private sealed record AlgorithmCase(string Name, TextDiffAlgorithm Algorithm, string OldText, string NewText, TextDiffEntry[] ExpectedEntries);

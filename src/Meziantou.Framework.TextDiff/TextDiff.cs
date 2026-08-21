@@ -145,50 +145,56 @@ public static class TextDiff
 
             hasDifferences = true;
 
-            var deletedChunks = new List<string>();
+            // The deleted and inserted chunks of a block are contiguous, so track the ranges rather than
+            // copying the chunks into a list per block.
+            var deletedStart = left;
             while (left < leftLength && (right >= rightLength || leftModified[left]))
             {
-                deletedChunks.Add(oldChunks[left]);
                 left++;
             }
 
-            var insertedChunks = new List<string>();
+            var deletedCount = left - deletedStart;
+
+            var insertedStart = right;
             while (right < rightLength && (left >= leftLength || rightModified[right]))
             {
-                insertedChunks.Add(newChunks[right]);
                 right++;
             }
 
+            var insertedCount = right - insertedStart;
+
             if (!hasInnerLevel)
             {
-                for (var i = 0; i < deletedChunks.Count; i++)
+                for (var i = 0; i < deletedCount; i++)
                 {
-                    entries.Add(new TextDiffHierarchyEntry(TextDiffHierarchyOperation.Delete, deletedChunks[i], null));
+                    entries.Add(new TextDiffHierarchyEntry(TextDiffHierarchyOperation.Delete, oldChunks[deletedStart + i], null));
                 }
 
-                for (var i = 0; i < insertedChunks.Count; i++)
+                for (var i = 0; i < insertedCount; i++)
                 {
-                    entries.Add(new TextDiffHierarchyEntry(TextDiffHierarchyOperation.Insert, null, insertedChunks[i]));
+                    entries.Add(new TextDiffHierarchyEntry(TextDiffHierarchyOperation.Insert, null, newChunks[insertedStart + i]));
                 }
 
                 continue;
             }
 
-            var pairedCount = Math.Min(deletedChunks.Count, insertedChunks.Count);
+            var pairedCount = Math.Min(deletedCount, insertedCount);
             for (var i = 0; i < pairedCount; i++)
             {
-                var children = ComputeHierarchyDiffCore(deletedChunks[i], insertedChunks[i], chunkers, chunkerIndex + 1, options, comparer);
-                entries.Add(new TextDiffHierarchyEntry(TextDiffHierarchyOperation.Replace, deletedChunks[i], insertedChunks[i], children.Entries));
+                var deleted = oldChunks[deletedStart + i];
+                var inserted = newChunks[insertedStart + i];
+                var children = ComputeHierarchyDiffCore(deleted, inserted, chunkers, chunkerIndex + 1, options, comparer);
+                entries.Add(new TextDiffHierarchyEntry(TextDiffHierarchyOperation.Replace, deleted, inserted, children.Entries));
             }
 
-            for (var i = pairedCount; i < deletedChunks.Count; i++)
+            for (var i = pairedCount; i < deletedCount; i++)
             {
-                entries.Add(new TextDiffHierarchyEntry(TextDiffHierarchyOperation.Delete, deletedChunks[i], null));
+                entries.Add(new TextDiffHierarchyEntry(TextDiffHierarchyOperation.Delete, oldChunks[deletedStart + i], null));
             }
 
-            for (var i = pairedCount; i < insertedChunks.Count; i++)
+            for (var i = pairedCount; i < insertedCount; i++)
             {
-                entries.Add(new TextDiffHierarchyEntry(TextDiffHierarchyOperation.Insert, null, insertedChunks[i]));
+                entries.Add(new TextDiffHierarchyEntry(TextDiffHierarchyOperation.Insert, null, newChunks[insertedStart + i]));
             }
         }
 

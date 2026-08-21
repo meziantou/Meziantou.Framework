@@ -3,6 +3,7 @@ using System.Collections;
 using System.Runtime.InteropServices;
 using System.IO.Compression;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.Http;
 
@@ -24,12 +25,12 @@ namespace Meziantou.Framework.Http;
 /// </example>
 public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainPolicy>
 {
-    private readonly List<ConcurrentDictionary<string, HstsDomainPolicy>> _policies = new(capacity: 8);
+    private readonly Lock _lock = new();
     private readonly TimeProvider _timeProvider;
 
-    // Avoid recomputing the value during initialization
-    private readonly DateTimeOffset _expires18weeks;
-    private readonly DateTimeOffset _expires1year;
+    // Copy-on-write: the array is never mutated once published, so readers can take a
+    // snapshot and index into it without locking. Writers build a new array under _lock.
+    private volatile ConcurrentDictionary<string, HstsDomainPolicy>[] _policies = [];
 
     /// <summary>Gets the default HSTS policy collection that includes preloaded domains from the Chromium HSTS preload list.</summary>
     public static HstsDomainPolicyCollection Default { get; } = new();
@@ -49,13 +50,11 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
         _timeProvider = timeProvider ?? TimeProvider.System;
         if (includePreloadDomains)
         {
-            _expires18weeks = _timeProvider.GetUtcNow().Add(TimeSpan.FromDays(18 * 7));
-            _expires1year = _timeProvider.GetUtcNow().Add(TimeSpan.FromDays(365));
             LoadPreloadDomains();
         }
     }
 
-    private void Load(ConcurrentDictionary<string, HstsDomainPolicy> dictionary, int entryCount, string resourceName)
+    private static void Load(ConcurrentDictionary<string, HstsDomainPolicy> dictionary, int entryCount, string resourceName)
     {
         using var stream = typeof(HstsDomainPolicyCollection).Assembly.GetManifestResourceStream(resourceName);
         Debug.Assert(stream is not null);
@@ -65,14 +64,12 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
         {
             var name = reader.ReadString();
             var includeSubdomains = reader.ReadBoolean();
-            var expiresIn = reader.ReadInt32();
-            var expiresAt = expiresIn switch
-            {
-                18 * 7 * 24 * 60 * 60 => _expires18weeks,
-                365 * 24 * 60 * 60 => _expires1year,
-                _ => _timeProvider.GetUtcNow().AddSeconds(expiresIn),
-            };
-            dictionary.TryAdd(name, new(name, expiresAt, includeSubdomains));
+
+            // The duration in the source data is the max-age the domain must serve to qualify for the
+            // preload list, not a lifetime for the entry itself. The list is compiled into the assembly,
+            // so its entries stay valid until the package is updated.
+            _ = reader.ReadInt32();
+            dictionary.TryAdd(name, new(name, DateTimeOffset.MaxValue, includeSubdomains, isPreloaded: true));
         }
     }
 
@@ -93,22 +90,79 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     {
         ArgumentNullException.ThrowIfNull(host);
 
+        host = NormalizeHost(host);
         var partCount = CountSegments(host);
         ConcurrentDictionary<string, HstsDomainPolicy> dictionary;
-        lock (_policies)
+        lock (_lock)
         {
-            for (var i = _policies.Count; i < partCount; i++)
+            var policies = _policies;
+            if (policies.Length < partCount)
             {
-                _policies.Add(new ConcurrentDictionary<string, HstsDomainPolicy>(StringComparer.OrdinalIgnoreCase));
+                var newPolicies = new ConcurrentDictionary<string, HstsDomainPolicy>[partCount];
+                Array.Copy(policies, newPolicies, policies.Length);
+                for (var i = policies.Length; i < partCount; i++)
+                {
+                    newPolicies[i] = new ConcurrentDictionary<string, HstsDomainPolicy>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                // Publish the fully-initialized array; the volatile write makes the element stores visible first
+                _policies = policies = newPolicies;
             }
 
-            dictionary = _policies[partCount - 1];
+            dictionary = policies[partCount - 1];
         }
 
         dictionary.AddOrUpdate(host,
-            (key, arg) => new HstsDomainPolicy(key, arg.expiresAt, arg.includeSubdomains),
-            (key, value, arg) => new HstsDomainPolicy(key, arg.expiresAt, arg.includeSubdomains),
+            (key, arg) => new HstsDomainPolicy(key, arg.expiresAt, arg.includeSubdomains, isPreloaded: false),
+            // A host stays preloaded once it is on the built-in list, whatever policy replaces it
+            (key, value, arg) => new HstsDomainPolicy(key, arg.expiresAt, arg.includeSubdomains, value.IsPreloaded),
             factoryArgument: (expiresAt, includeSubdomains));
+    }
+
+    /// <summary>Removes the HSTS policy for the specified host, including a policy from the preload list.</summary>
+    /// <param name="host">The domain host name.</param>
+    /// <returns><see langword="true"/> if a policy was removed; otherwise, <see langword="false"/>.</returns>
+    public bool Remove(string host)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+
+        return TryGetDictionary(host, out var dictionary, out var key) && dictionary.TryRemove(key, out _);
+    }
+
+    // Removes a policy learned from a Strict-Transport-Security header. Preloaded entries are kept: like
+    // browsers, the built-in list cannot be turned off by a response header.
+    internal bool RemoveLearnedPolicy(string host)
+    {
+        if (!TryGetDictionary(host, out var dictionary, out var key))
+            return false;
+
+        if (!dictionary.TryGetValue(key, out var policy) || policy.IsPreloaded)
+            return false;
+
+        return dictionary.TryRemove(new KeyValuePair<string, HstsDomainPolicy>(key, policy));
+    }
+
+    private bool TryGetDictionary(string host, [NotNullWhen(true)] out ConcurrentDictionary<string, HstsDomainPolicy>? dictionary, [NotNullWhen(true)] out string? key)
+    {
+        key = NormalizeHost(host);
+        var partCount = CountSegments(key);
+        var policies = _policies;
+        if (partCount > policies.Length)
+        {
+            dictionary = null;
+            key = null;
+            return false;
+        }
+
+        dictionary = policies[partCount - 1];
+        return true;
+    }
+
+    // A fully-qualified domain name may end with a dot; it designates the same host
+    private static string NormalizeHost(string host)
+    {
+        var trimmed = host.AsSpan().TrimEnd('.');
+        return trimmed.Length == host.Length ? host : trimmed.ToString();
     }
 
     /// <summary>Determines whether an HTTP request to the specified host should be upgraded to HTTPS based on HSTS policies.</summary>
@@ -125,23 +179,29 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     /// <returns><see langword="true"/> if the request should be upgraded to HTTPS; otherwise, <see langword="false"/>.</returns>
     public bool MustUpgradeRequest(ReadOnlySpan<char> host)
     {
+        host = host.TrimEnd('.');
+        var policies = _policies;
+        var now = _timeProvider.GetUtcNow();
+
+        // Walk the suffixes from the least to the most specific. A suffix that does not apply does not
+        // rule out a match: a more specific entry (down to the host itself) may still require an upgrade.
         var enumerator = new DomainSplitReverseEnumerator(host);
-        for (var i = 0; i < _policies.Count && enumerator.MoveNext(); i++)
+        for (var i = 0; i < policies.Length && enumerator.MoveNext(); i++)
         {
-            var dictionary = _policies[i];
+            var dictionary = policies[i];
             var lastSegments = host[enumerator.Current..];
 
             var lookup = dictionary.GetAlternateLookup<ReadOnlySpan<char>>();
             if (lookup.TryGetValue(lastSegments, out var hsts))
             {
-                if (hsts.ExpiresAt < _timeProvider.GetUtcNow())
+                if (hsts.ExpiresAt < now)
                 {
-                    return false;
+                    continue;
                 }
 
                 if (!hsts.IncludeSubdomains && enumerator.Current != 0)
                 {
-                    return false;
+                    continue;
                 }
 
                 return true;
@@ -152,29 +212,18 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     }
 
     // internal for tests
-    internal static int CountSegments(string host)
+    internal static int CountSegments(ReadOnlySpan<char> host)
     {
         // foo.bar.com -> 3
-        var count = 1;
-
-        var index = -1;
-        while (host.IndexOf('.', index + 1, StringComparison.Ordinal) is >= 0 and var newIndex)
-        {
-            index = newIndex;
-            count++;
-        }
-
-        return count;
+        return host.Count('.') + 1;
     }
 
     public IEnumerator<HstsDomainPolicy> GetEnumerator()
     {
-        for (var i = 0; i < _policies.Count; i++)
+        var policies = _policies;
+        for (var i = 0; i < policies.Length; i++)
         {
-            var dictionary = _policies[i];
-            if (dictionary is null)
-                continue;
-
+            var dictionary = policies[i];
             foreach (var kvp in dictionary)
             {
                 yield return kvp.Value;

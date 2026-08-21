@@ -7,6 +7,12 @@ internal sealed class SkiaSharpSnapshotComparer(ImageComparisonSettings? setting
 {
     public bool Equals(SnapshotData expected, SnapshotData actual)
     {
+        // Identical bytes decode to identical pixels, so an exact comparison matches, SSIM is 1.0 and both
+        // hash distances are 0 - every configured threshold is satisfied. This is the case for every passing
+        // image snapshot test, and it avoids decoding both images.
+        if (expected.Data.AsSpan().SequenceEqual(actual.Data))
+            return true;
+
         using var expectedImage = Decode(expected.Data);
         using var actualImage = Decode(actual.Data);
         if (expectedImage is null || actualImage is null)

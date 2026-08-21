@@ -19,6 +19,7 @@ public sealed class KnownFolder
         FolderId = knownFolderId;
         DefaultPath = defaultPath;
     }
+
     /// <summary>Gets the display name of the known folder.</summary>
     public string Name { get; }
 

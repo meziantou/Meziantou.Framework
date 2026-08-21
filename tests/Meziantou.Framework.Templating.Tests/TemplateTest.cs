@@ -449,7 +449,7 @@ public class TemplateTest
 
         template.Build(CancellationToken.None);
 
-        Assert.Contains("#line (1, 4) - (1, 11) 32 \"template.cs\"", template.SourceCode);
+        Assert.Contains("#line (1, 4) - (1, 11) 25 \"template.cs\"", template.SourceCode);
         Assert.Contains("#line (1, 16) - (1, 36) 4 \"template.cs\"", template.SourceCode);
     }
 
@@ -639,10 +639,158 @@ public class TemplateTest
         Assert.Contains("public class Template : BaseClass, IFoo, IBar", template.SourceCode);
     }
 
+    [Fact]
+    public async Task Template_DifferentInstances_CanBuildConcurrently()
+    {
+        const int TemplateCount = 8;
+
+        var templates = new Template[TemplateCount];
+        for (var i = 0; i < templates.Length; i++)
+        {
+            var template = new Template();
+            template.Load($"value: <%= {i} %>");
+            templates[i] = template;
+        }
+
+        var results = await Task.WhenAll(templates.Select(template => Task.Run(() =>
+        {
+            template.Build(CancellationToken.None);
+            return template.Run();
+        })));
+
+        for (var i = 0; i < results.Length; i++)
+        {
+            Assert.Equal($"value: {i}", results[i]);
+        }
+    }
+
+    [Fact]
+    public async Task Template_SameInstance_BuiltOnceWhenRunConcurrently()
+    {
+        var template = new Template();
+        template.Load("Hello <%= 1 + 1 %>");
+
+        var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(() => template.Run())));
+
+        Assert.All(results, result => Assert.Equal("Hello 2", result));
+        Assert.True(template.IsBuilt);
+    }
+
+    [Fact]
+    public void Template_LoadFromTextReader_ProducesSameBlocksAsLoadFromString()
+    {
+        const string Source = "line1\r\n  <% var a = 0; %>  \r\ntext <%= a %>\ntail";
+
+        var fromString = new Template();
+        fromString.Load(Source);
+
+        var fromReader = new Template();
+        using (var reader = new StringReader(Source))
+        {
+            fromReader.Load(reader);
+        }
+
+        var expected = fromString.Blocks.Select(block => $"{block.GetType().Name}|{block.Text}|{block.Span}");
+        var actual = fromReader.Blocks.Select(block => $"{block.GetType().Name}|{block.Text}|{block.Span}");
+        Assert.Equal(expected, actual);
+    }
+
+    // The indentation in front of the block is kept; only the whitespace and the line break after it are swallowed.
+    [Theory]
+    [InlineData("a\n  <% var x = 0; %>  \nb", "a\n  b")]
+    [InlineData("a\r\n  <% var x = 0; %>  \r\nb", "a\r\n  b")]
+    [InlineData("a\r  <% var x = 0; %>  \rb", "a\r  b")]
+    [InlineData("a\n  <% var x = 0; %>  ", "a\n  ")]
+    [InlineData("a\n  <% var x = 0; %>", "a\n  ")]
+    [InlineData("a\n<%@ using System.Text %>\nb", "a\nb")]
+    [InlineData("a\n<%+ private int _f; %>\nb", "a\nb")]
+    public void Template_LineOnlyCodeBlock_SwallowsRestOfItsLine(string source, string expected)
+    {
+        var template = new Template();
+        template.Load(source);
+
+        Assert.Equal(expected, template.Run());
+    }
+
+    [Fact]
+    public void Template_LineOnlyCodeBlock_KeepsWhitespaceWhenTextFollowsOnTheSameLine()
+    {
+        var template = new Template();
+        template.Load("a\n  <% var x = 0; %>  b\n");
+
+        Assert.Equal("a\n    b\n", template.Run());
+    }
+
+    [Fact]
+    public void Template_ExpressionBlockAloneOnLine_DoesNotSwallowItsLine()
+    {
+        var template = new Template();
+        template.Load("a\n  <%= 1 %>  \nb");
+
+        Assert.Equal("a\n  1  \nb", template.Run());
+    }
+
+    [Fact]
+    public void Template_UnterminatedCodeBlock_IsParsedAsText()
+    {
+        var template = new Template();
+        template.Load("a<% var x = 0;");
+
+        Assert.Collection(
+            template.Blocks,
+            block => Assert.Equal("a", Assert.IsType<TextBlock>(block).Text),
+            block => Assert.Equal(" var x = 0;", Assert.IsType<TextBlock>(block).Text));
+    }
+
+    [Fact]
+    public void Template_SelfOverlappingDelimiter_IsMatched()
+    {
+        var template = new Template
+        {
+            StartCodeBlockDelimiter = "aab",
+            EndCodeBlockDelimiter = "zzy",
+        };
+        template.Load("Xaaab= 1 zzzy!");
+
+        Assert.Collection(
+            template.Blocks,
+            block => Assert.Equal("Xa", Assert.IsType<TextBlock>(block).Text),
+            block => Assert.Equal(" 1 z", Assert.IsType<CodeBlock>(block).Text),
+            block => Assert.Equal("!", Assert.IsType<TextBlock>(block).Text));
+    }
+
     private sealed class TemplateWithoutCompilation : Template
     {
         protected override void Compile(string source, CancellationToken cancellationToken)
         {
         }
     }
+    [Fact]
+    public void Template_ExpressionBlock_WritesNullAsEmptyString()
+    {
+        var template = new Template();
+        template.Load("a<%= null %>b");
+
+        Assert.Equal("ab", template.Run());
+    }
+
+    [Fact]
+    public void Template_ExpressionBlock_FormatsFormattableValueUsingWriterFormatProvider()
+    {
+        var template = new Template();
+        template.Load("<%= 1.5 %>|<%= 42 %>|<%= new DateTime(2020, 1, 2, 0, 0, 0, DateTimeKind.Utc) %>");
+
+        var expected = string.Create(CultureInfo.CurrentCulture, $"{1.5}|{42}|{new DateTime(2020, 1, 2, 0, 0, 0, DateTimeKind.Utc)}");
+        Assert.Equal(expected, template.Run());
+    }
+
+    [Fact]
+    public void Template_ExpressionBlock_WritesArrayValueWithoutTreatingItAsFormatArguments()
+    {
+        var template = new Template();
+        template.Load("<%= new object[] { 1, 2 } %>");
+
+        Assert.Equal(new object[] { 1, 2 }.ToString(), template.Run());
+    }
+
 }

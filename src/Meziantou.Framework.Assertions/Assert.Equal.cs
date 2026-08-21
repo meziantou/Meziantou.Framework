@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Assertions;
 
@@ -90,6 +91,12 @@ public partial class Assert
 
     public static void Equal<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        // Comparing the spans as raw bytes lets SequenceEqual use vectorized instructions. It can only conclude
+        // that the spans are equal; every other outcome falls through to the element-by-element comparison,
+        // which reports which index differs.
+        if (expected.Length == actual.Length && BitwiseEquatable<T>.IsSupported && BitwiseSequenceEqual(expected, actual))
+            return;
+
         EqualSpans<T, T>(expected, actual, message, actualExpression, expectedExpression);
     }
 
@@ -133,6 +140,44 @@ public partial class Assert
                 throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanEqualAssertionError<TExpected, TActual>(expected, actual, i, message, actualExpression, expectedExpression)));
             }
         }
+    }
+
+    private static bool BitwiseSequenceEqual<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual)
+    {
+        if (expected.IsEmpty)
+            return true;
+
+        var elementSize = Unsafe.SizeOf<T>();
+        if (expected.Length > int.MaxValue / elementSize)
+            return false;
+
+        var byteCount = expected.Length * elementSize;
+        var expectedBytes = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(expected)), byteCount);
+        var actualBytes = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(actual)), byteCount);
+
+        return expectedBytes.SequenceEqual(actualBytes);
+    }
+
+    private static class BitwiseEquatable<T>
+    {
+        /// <summary>
+        /// Gets a value indicating whether two values of <typeparamref name="T"/> are equal exactly when their bits are equal.
+        /// Floating-point types are excluded because <c>+0.0</c> and <c>-0.0</c> are equal but have different bits.
+        /// </summary>
+        public static readonly bool IsSupported =
+            typeof(T) == typeof(byte)
+            || typeof(T) == typeof(sbyte)
+            || typeof(T) == typeof(short)
+            || typeof(T) == typeof(ushort)
+            || typeof(T) == typeof(char)
+            || typeof(T) == typeof(int)
+            || typeof(T) == typeof(uint)
+            || typeof(T) == typeof(long)
+            || typeof(T) == typeof(ulong)
+            || typeof(T) == typeof(nint)
+            || typeof(T) == typeof(nuint)
+            || typeof(T) == typeof(bool)
+            || typeof(T).IsEnum;
     }
 
     public static void Equal<T>(IEnumerable<T> expected, [NotNullIfNotNull(nameof(expected))] IEnumerable<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -408,6 +453,15 @@ public partial class Assert
         return false;
     }
 
+    private static string NormalizeLineEndings(string value)
+    {
+        // The span overload always copies. Most strings contain no '\r' at all, so return the instance unchanged.
+        if (!value.AsSpan().Contains('\r'))
+            return value;
+
+        return NormalizeLineEndings(value.AsSpan());
+    }
+
     private static string NormalizeLineEndings(ReadOnlySpan<char> value)
     {
         if (!value.Contains('\r'))
@@ -452,10 +506,22 @@ public partial class Assert
             return null;
 
         var minLength = Math.Min(expected.Length, actual.Length);
-        for (var i = 0; i < minLength; i++)
+
+        // An ordinal comparison is character by character, so the common prefix can be found with a single
+        // vectorized scan instead of one span comparison per character.
+        if (comparison is StringComparison.Ordinal)
         {
-            if (!actual.AsSpan(i, 1).Equals(expected.AsSpan(i, 1), comparison))
-                return i;
+            var commonLength = expected.AsSpan().CommonPrefixLength(actual.AsSpan());
+            if (commonLength < minLength)
+                return commonLength;
+        }
+        else
+        {
+            for (var i = 0; i < minLength; i++)
+            {
+                if (!actual.AsSpan(i, 1).Equals(expected.AsSpan(i, 1), comparison))
+                    return i;
+            }
         }
 
         if (expected.Length == actual.Length)

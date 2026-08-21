@@ -9,10 +9,14 @@ internal sealed class CacheEntry
         SerializedResponse = serializedResponse;
     }
 
-    public static async Task<CacheEntry> CreateAsync(HttpRequestMessage request, HttpResponseMessage response,
-        DateTimeOffset requestTime, DateTimeOffset responseTime, CancellationToken cancellationToken)
+    /// <summary>Creates an entry, or returns <see langword="null"/> when the response exceeds <paramref name="maximumSize"/>.</summary>
+    public static async Task<CacheEntry?> CreateAsync(HttpRequestMessage request, HttpResponseMessage response,
+        DateTimeOffset requestTime, DateTimeOffset responseTime, long? maximumSize, CancellationToken cancellationToken)
     {
-        var serializedResponse = await ResponseSerializer.SerializeAsync(response, cancellationToken).ConfigureAwait(false);
+        var serializedResponse = await ResponseSerializer.SerializeAsync(response, maximumSize, cancellationToken).ConfigureAwait(false);
+        if (serializedResponse is null)
+            return null;
+
         var entry = new CacheEntry(serializedResponse)
         {
             RequestTime = requestTime,
@@ -104,7 +108,7 @@ internal sealed class CacheEntry
         return null;
     }
 
-    private static DateTimeOffset? ParseExpiresHeader(HttpResponseMessage response)
+    internal static DateTimeOffset? ParseExpiresHeader(HttpResponseMessage response)
     {
         if (!response.Content.Headers.TryGetValues("Expires", out var values))
         {
@@ -232,7 +236,10 @@ internal sealed class CacheEntry
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        var cacheEntry = new CacheEntry(entry.SerializedResponse.ToArray())
+        var serializedResponse = entry.SerializedResponse.ToArray();
+        ResponseSerializer.EnsureWellFormed(serializedResponse);
+
+        var cacheEntry = new CacheEntry(serializedResponse)
         {
             SecondaryKey = CacheEntrySecondaryKey.Create(entry.SecondaryKeyMatchNone, entry.SecondaryKeyHeaders),
             RequestTime = entry.RequestTime,
@@ -258,43 +265,7 @@ internal sealed class CacheEntry
     }
 
     /// <summary>Calculates the freshness lifetime per RFC 7234 Section 4.2.1.</summary>
-    public TimeSpan FreshnessLifetime
-    {
-        get
-        {
-            // 1. Use s-maxage if present (takes precedence for shared caches), otherwise max-age
-            if (SharedMaxAge.HasValue)
-                return SharedMaxAge.Value;
-
-            if (MaxAge.HasValue)
-                return MaxAge.Value;
-
-            // 2. Use Expires - Date if present
-            if (Expires.HasValue)
-            {
-                var expiresTime = Expires.Value;
-                if (expiresTime == DateTimeOffset.MinValue)
-                    return TimeSpan.Zero; // Already expired
-
-                var freshness = expiresTime - ResponseDate;
-                return freshness > TimeSpan.Zero ? freshness : TimeSpan.Zero;
-            }
-
-            // 3. Heuristic freshness (RFC 7234 Section 4.2.2)
-            // Use 10% of time since Last-Modified
-            if (LastModified.HasValue)
-            {
-                var age = ResponseDate - LastModified.Value;
-                if (age > TimeSpan.Zero)
-                {
-                    return TimeSpan.FromSeconds(age.TotalSeconds * 0.1);
-                }
-            }
-
-            // No explicit expiration and no heuristic available
-            return TimeSpan.Zero;
-        }
-    }
+    public TimeSpan FreshnessLifetime => CacheFreshness.GetFreshnessLifetime(SharedMaxAge, MaxAge, Expires, ResponseDate, LastModified);
 
     /// <summary>Gets whether heuristic expiration was used to calculate the freshness lifetime.</summary>
     public bool UsesHeuristicExpiration
@@ -310,25 +281,7 @@ internal sealed class CacheEntry
     /// <summary>Calculates the current age per RFC 7234 Section 4.2.3.</summary>
     public TimeSpan CalculateCurrentAge(DateTimeOffset now)
     {
-        // apparent_age = max(0, response_time - date_value)
-        var apparentAge = ResponseTime - ResponseDate;
-        if (apparentAge < TimeSpan.Zero)
-            apparentAge = TimeSpan.Zero;
-
-        // response_delay = response_time - request_time
-        var responseDelay = ResponseTime - RequestTime;
-
-        // corrected_age_value = age_value + response_delay
-        var correctedAgeValue = AgeValue + responseDelay;
-
-        // corrected_initial_age = max(apparent_age, corrected_age_value)
-        var correctedInitialAge = apparentAge > correctedAgeValue ? apparentAge : correctedAgeValue;
-
-        // resident_time = now - response_time
-        var residentTime = now - ResponseTime;
-
-        // current_age = corrected_initial_age + resident_time
-        return correctedInitialAge + residentTime;
+        return CacheFreshness.GetCurrentAge(RequestTime, ResponseTime, ResponseDate, AgeValue, now);
     }
 
     /// <summary>Updates this cache entry from a 304 Not Modified validation response.</summary>

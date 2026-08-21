@@ -4,11 +4,12 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>2.0.4</Version>
     <IsTrimmable>true</IsTrimmable>
+    <IsAotCompatible>true</IsAotCompatible>
     <Description>Provide Redis persistence provider for Meziantou.Framework.Http.Caching</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="StackExchange.Redis" Version="3.1.3" />
+    <PackageReference Include="StackExchange.Redis" Version="3.1.13" />
   </ItemGroup>
 
   <ItemGroup>

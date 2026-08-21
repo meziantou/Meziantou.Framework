@@ -5,7 +5,7 @@ namespace Meziantou.Framework;
 /// <summary>Provides localization using embedded resource files (.resx) for relative date formatting.</summary>
 /// <remarks>
 /// This is the default localization provider for <see cref="RelativeDate"/>.
-/// It includes translations for English, French and Spanish.
+/// It includes translations for Dutch, English, French, German, Italian, Japanese, Korean, Portuguese, Simplified Chinese, Spanish and Turkish.
 /// </remarks>
 internal sealed class ResxLocalizationProvider : ILocalizationProvider
 {

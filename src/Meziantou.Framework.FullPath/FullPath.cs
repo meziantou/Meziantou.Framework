@@ -22,7 +22,7 @@ namespace Meziantou.Framework;
 /// </code>
 /// </example>
 [JsonConverter(typeof(FullPathJsonConverter))]
-public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
+public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<FullPath>, IComparable
 {
     internal readonly string? _value;
 
@@ -45,7 +45,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
     /// <summary>Gets the string representation of the path, or an empty string if the path is empty.</summary>
     /// <remarks>
-    /// <para>If the path contains a reserved device name (CON, PRN, AUX, NUL, COM1-COM9, LPT1-LPT9),
+    /// <para>If the path contains a reserved device name (CON, PRN, AUX, NUL, COM0-COM9, COM¹-COM³, LPT0-LPT9, LPT¹-LPT³),
     /// the extended path format (<c>\\?\</c>) is returned to bypass Win32 namespace restrictions.</para>
     /// <para>Use <see cref="RawValue"/> if you need the unmodified path without device name protection.</para>
     /// </remarks>
@@ -120,6 +120,9 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                 !nameOnly[..3].Equals("LPT", StringComparison.OrdinalIgnoreCase))
                 return false;
 
+            // Windows documents COM1-COM9 and LPT1-LPT9, but COM0 and LPT0 are accepted here as well.
+            // Adding the extended prefix to a path that turns out not to be a device name is harmless,
+            // whereas omitting it for an actual device name is not.
             var lastChar = nameOnly[3];
             return lastChar is >= '0' and <= '9' or '\u00B9' or '\u00B2' or '\u00B3';
         }
@@ -171,6 +174,17 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <summary>Compares this path to another with optional case-insensitive comparison.</summary>
     public int CompareTo(FullPath other, bool ignoreCase) => FullPathComparer.GetComparer(ignoreCase).Compare(this, other);
 
+    int IComparable.CompareTo(object? obj)
+    {
+        if (obj is null)
+            return 1;
+
+        if (obj is FullPath other)
+            return CompareTo(other);
+
+        throw new ArgumentException($"Object must be of type {nameof(FullPath)}", nameof(obj));
+    }
+
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is FullPath path && Equals(path);
     public bool Equals(FullPath other) => FullPathComparer.Default.Equals(this, other);
 
@@ -186,7 +200,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
     /// <summary>Creates a relative path from this path to the specified root path.</summary>
     /// <param name="rootPath">The root path to make this path relative to.</param>
-    /// <returns>A relative path string.</returns>
+    /// <returns>A relative path string, or <c>"."</c> when both paths are equal.</returns>
     public string MakePathRelativeTo(FullPath rootPath)
     {
         if (IsEmpty)
@@ -195,56 +209,13 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (rootPath.IsEmpty)
             return _value;
 
-        if (rootPath == this)
-            return ".";
-
-        return PathDifference(rootPath._value, _value, compareCase: FullPathComparer.Default.IsCaseSensitive);
-    }
-
-    private static string PathDifference(string path1, string path2, bool compareCase)
-    {
-        var directorySeparator = Path.DirectorySeparatorChar;
-
-        int i;
-        var si = -1;
-        for (i = 0; (i <= path1.Length) && (i < path2.Length); ++i)
-        {
-            var c1 = i == path1.Length ? directorySeparator : path1[i];
-            var c2 = path2[i];
-
-            if ((c1 != c2) && (compareCase || (char.ToUpperInvariant(c1) != char.ToUpperInvariant(c2))))
-                break;
-
-            if (c1 == directorySeparator)
-            {
-                si = i;
-            }
-        }
-
-        if (i == 0)
-            return path2;
-
-        if ((i == path1.Length + 1) && (i == path2.Length))
-            return "";
-
-        var relPath = new StringBuilder();
-        // Walk down several dirs
-        for (; i <= path1.Length; ++i)
-        {
-            var c = i == path1.Length ? directorySeparator : path1[i];
-            if (c == directorySeparator)
-            {
-                relPath.Append("..");
-                relPath.Append(directorySeparator);
-            }
-        }
-
-        return relPath.Append(path2.AsSpan(si + 1)).ToString();
+        return Path.GetRelativePath(rootPath._value, _value);
     }
 
     /// <summary>Determines whether this path is a child of the specified root path.</summary>
     /// <param name="rootPath">The root path to check against.</param>
     /// <returns><see langword="true"/> if this path is a child of the root path; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>The comparison uses the same case sensitivity as <see cref="FullPathComparer.Default"/>.</remarks>
     public bool IsChildOf(FullPath rootPath)
     {
         if (IsEmpty)
@@ -252,20 +223,25 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (rootPath.IsEmpty)
             throw new ArgumentException("Root path is empty", nameof(rootPath));
 
-        if (_value.Length <= rootPath._value.Length)
+        var root = rootPath._value;
+        if (_value.Length <= root.Length)
             return false;
 
-        if (!_value.StartsWith(rootPath._value, StringComparison.Ordinal))
+        var comparison = FullPathComparer.Default.IsCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        if (!_value.StartsWith(root, comparison))
             return false;
+
+        // Root directories such as "/" or "C:\" keep their trailing separator, so the child does not have an extra one
+        // rootpath: /
+        // current:  /a    => true
+        if (root[^1] == Path.DirectorySeparatorChar)
+            return true;
 
         // rootpath: /a/b
         // current:  /a/b/c => true
         // current:  /a/b/  => false
         // current:  /a/bc  => false
-        if (_value[rootPath._value.Length] == Path.DirectorySeparatorChar && _value.Length > rootPath._value.Length + 1)
-            return true;
-
-        return false;
+        return _value[root.Length] == Path.DirectorySeparatorChar && _value.Length > root.Length + 1;
     }
 
     /// <summary>Creates the parent directory of this path if it doesn't exist.</summary>
@@ -292,7 +268,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        return new FullPath(Path.ChangeExtension(Value, extension));
+        return new FullPath(Path.ChangeExtension(_value, extension));
     }
 
     /// <summary>Returns a new path with the specified file extension, optionally replacing all trailing extensions.</summary>
@@ -319,7 +295,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        var current = Value;
+        var current = _value;
         var extensionsRemoved = 0;
         while (true)
         {
@@ -352,7 +328,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        var parent = Path.GetDirectoryName(Value);
+        var parent = Path.GetDirectoryName(_value);
         if (parent is null)
             return new FullPath(name);
 
@@ -368,8 +344,8 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        var parent = Path.GetDirectoryName(Value);
-        var extension = Path.GetExtension(Value);
+        var parent = Path.GetDirectoryName(_value);
+        var extension = Path.GetExtension(_value);
         var newName = nameWithoutExtension + extension;
         if (parent is null)
             return new FullPath(newName);
@@ -462,22 +438,18 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <param name="path">The path to convert. Can be relative or absolute.</param>
     public static FullPath FromPath(string path)
     {
-        if (PathInternal.IsExtended(path))
+        // '\' is a regular file name character on Unix, so a path such as @"\\?\a" is a relative file name there, not a device path
+        if (OperatingSystem.IsWindows() && PathInternal.IsExtended(path))
         {
-            path = path[4..];
+            path = path[PathInternal.DevicePrefixLength..];
         }
 
         var fullPath = Path.GetFullPath(path);
-        var fullPathWithoutTrailingDirectorySeparator = TrimEndingDirectorySeparator(fullPath);
+        var fullPathWithoutTrailingDirectorySeparator = Path.TrimEndingDirectorySeparator(fullPath);
         if (string.IsNullOrEmpty(fullPathWithoutTrailingDirectorySeparator))
             return Empty;
 
         return new FullPath(fullPathWithoutTrailingDirectorySeparator);
-    }
-
-    private static string TrimEndingDirectorySeparator(string path)
-    {
-        return Path.TrimEndingDirectorySeparator(path);
     }
 
     /// <summary>Combines two path strings into a full path.</summary>
@@ -547,6 +519,14 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
             return Empty;
 
         return FromPath(fsi.FullName);
+    }
+
+    // Matches the number of levels the operating systems themselves are willing to follow (MAXSYMLINKS on Linux)
+    private const int MaxSymbolicLinkDepth = 40;
+
+    private static IOException CreateTooManyLevelsOfSymbolicLinksException()
+    {
+        return new IOException($"Too many levels of symbolic links (more than {MaxSymbolicLinkDepth.ToString(CultureInfo.InvariantCulture)})");
     }
 
     /// <summary>Determines whether this path represents a symbolic link.</summary>
@@ -649,6 +629,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <param name="resolutionMode">The mode to use when resolving symbolic links.</param>
     /// <param name="result">The target path if this is a symbolic link; otherwise, <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if this is a symbolic link; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="IOException">A symbolic link chain is too deep to resolve, which usually means the links form a cycle.</exception>
     public bool TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode resolutionMode, [NotNullWhen(true)] out FullPath? result)
     {
         if (!IsEmpty)
@@ -666,8 +647,12 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
                 case SymbolicLinkResolutionMode.FinalTarget:
                     var value = _value;
+                    var depth = 0;
                     while (Symlink.TryGetSymLinkTarget(value, out path))
                     {
+                        if (++depth > MaxSymbolicLinkDepth)
+                            throw CreateTooManyLevelsOfSymbolicLinksException();
+
                         value = path;
                     }
 
@@ -683,16 +668,20 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                     string? resultPath = null;
                     var current = this;
                     var hasSymLink = false;
+                    var componentDepth = 0;
                     while (!current.IsEmpty)
                     {
                         if (Symlink.TryGetSymLinkTarget(current._value, out path))
                         {
+                            if (++componentDepth > MaxSymbolicLinkDepth)
+                                throw CreateTooManyLevelsOfSymbolicLinksException();
+
                             current = FromPath(path);
                             hasSymLink = true;
                         }
                         else
                         {
-                            var name = current.Name is "" ? current._value : current.Name!;
+                            var name = current.Name is "" ? current._value : current.Name;
                             if (resultPath is null)
                             {
                                 resultPath = name;
@@ -703,6 +692,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                             }
 
                             current = current.Parent;
+                            componentDepth = 0;
                         }
                     }
 

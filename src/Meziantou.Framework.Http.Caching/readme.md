@@ -1,6 +1,8 @@
 # Meziantou.Framework.Http.Caching
 
-An HTTP caching implementation for `HttpClient` that follows [RFC 7234 (HTTP Caching)](https://www.rfc-editor.org/rfc/rfc7234.html) and [RFC 8246 (Immutable directive)](https://www.rfc-editor.org/rfc/rfc8246.html) specifications.
+An HTTP caching implementation for `HttpClient` that follows [RFC 7234 (HTTP Caching)](https://www.rfc-editor.org/rfc/rfc7234.html), since obsoleted by [RFC 9111](https://www.rfc-editor.org/rfc/rfc9111.html), together with [RFC 8246 (Immutable directive)](https://www.rfc-editor.org/rfc/rfc8246.html) and [RFC 5861 (stale-if-error)](https://www.rfc-editor.org/rfc/rfc5861.html).
+
+This is a **private** cache: it is attached to a single `HttpClient` and its entries are not shared between users.
 
 ## What is it?
 
@@ -18,6 +20,7 @@ An HTTP caching implementation for `HttpClient` that follows [RFC 7234 (HTTP Cac
 - ✅ **Thread-Safe**: Designed for concurrent access across multiple threads
 - ✅ **Testable**: Supports custom `TimeProvider` for deterministic testing
 - ✅ **Pluggable Persistence**: Supports in-memory persistence and custom stores
+- ✅ **Bounded**: Responses whose `Content-Length` exceeds `MaximumResponseSize` are never buffered
 
 ## Installation
 
@@ -154,7 +157,9 @@ var response2 = await httpClient.GetAsync("https://api.example.com/data");
 
 The handler follows these rules when processing requests:
 
-1. **Only GET and HEAD requests are cached** (per RFC 7234 Section 4)
+1. **Only GET and HEAD requests are cached** (per RFC 7234 Section 4), each under its own cache key, so a stored `HEAD` response is never served for a `GET`
+1. **Requests that carry their own validators** (`If-None-Match`, `If-Modified-Since`, `If-Match`, `If-Unmodified-Since`, `If-Range`) are forwarded to the origin unchanged, so the caller receives the `304` or `200` it asked for
+1. **Range requests are forwarded to the origin** and `206 Partial Content` responses are never stored, since the cache cannot serve partial content
 2. **Checks request directives** like `no-store`, `no-cache`, `max-age`, `min-fresh`, `max-stale`, `only-if-cached`
 3. **Evaluates cache freshness** using `Cache-Control: max-age` and `Expires` headers
 4. **Validates stale entries** using conditional requests with `If-None-Match` (ETag) or `If-Modified-Since`
@@ -234,12 +239,15 @@ This is particularly useful for versioned resources (e.g., `/assets/script.v123.
 | `Expires` | `<date>` | Expiration date (fallback if `max-age` not present) |
 | `ETag` | `<value>` | Entity tag for conditional requests |
 | `Last-Modified` | `<date>` | Last modification date for conditional requests |
+| | `stale-if-error=<seconds>` | Serve the stale response when revalidation fails or the origin cannot be reached (RFC 5861) |
 | `Vary` | `<headers>` | Headers that affect response variant |
 | `Age` | `<seconds>` | Age of cached response (added when serving from cache) |
 
 ## Thread Safety
 
-The `HttpCachingDelegateHandler` is thread-safe and can be used concurrently across multiple threads. The internal cache implementation ensures that concurrent requests to the same URL are properly coordinated.
+The `HttpCachingDelegateHandler` is thread-safe and can be used concurrently across multiple threads.
+
+There is no request coalescing: concurrent misses for the same URL each result in a request to the origin, and each stores its own response. The last one written wins. If you need a single origin request per URL, coordinate that above the handler.
 
 ## Examples
 

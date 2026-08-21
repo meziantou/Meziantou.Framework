@@ -92,19 +92,28 @@ internal static class PatienceDiff
         var leftUnique = FindUniquePositions(left, leftStart, leftEnd, comparer);
         var rightUnique = FindUniquePositions(right, rightStart, rightEnd, comparer);
 
+        // Walking the range in order yields the anchors already sorted by left index, which is what the
+        // longest-increasing-subsequence pass needs. Enumerating the dictionary instead produced them in
+        // an arbitrary order and required a sort.
         var pairs = new List<Anchor>();
-        foreach (var entry in leftUnique)
+        for (var leftIndex = leftStart; leftIndex < leftEnd; leftIndex++)
         {
-            if (entry.Value >= 0 && rightUnique.TryGetValue(entry.Key, out var rightIndex) && rightIndex >= 0)
+            var chunk = left[leftIndex];
+
+            // FindUniquePositions stores the index of a chunk that appears once and -1 for a chunk that
+            // appears several times, so this only matches chunks that are unique in the range.
+            if (leftUnique[chunk] != leftIndex)
+                continue;
+
+            if (rightUnique.TryGetValue(chunk, out var rightIndex) && rightIndex >= 0)
             {
-                pairs.Add(new Anchor(entry.Value, rightIndex));
+                pairs.Add(new Anchor(leftIndex, rightIndex));
             }
         }
 
         if (pairs.Count == 0)
             return pairs;
 
-        pairs.Sort((a, b) => a.LeftIndex.CompareTo(b.LeftIndex));
         return LongestIncreasingSubsequenceByRight(pairs);
     }
 
@@ -134,9 +143,10 @@ internal static class PatienceDiff
         previous.Fill(-1);
         var length = 0;
 
+        var pairsSpan = CollectionsMarshal.AsSpan(pairs);
         for (var i = 0; i < count; i++)
         {
-            var position = LowerBoundByRight(pairs, tails, length, pairs[i].RightIndex);
+            var position = LowerBoundByRight(pairsSpan, tails, length, pairsSpan[i].RightIndex);
             if (position > 0)
             {
                 previous[i] = tails[position - 1];
@@ -153,7 +163,7 @@ internal static class PatienceDiff
         var index = tails[length - 1];
         while (index >= 0)
         {
-            result.Add(pairs[index]);
+            result.Add(pairsSpan[index]);
             index = previous[index];
         }
 
@@ -161,7 +171,7 @@ internal static class PatienceDiff
         return result;
     }
 
-    private static int LowerBoundByRight(List<Anchor> pairs, ReadOnlySpan<int> tails, int length, int rightIndex)
+    private static int LowerBoundByRight(ReadOnlySpan<Anchor> pairs, ReadOnlySpan<int> tails, int length, int rightIndex)
     {
         var low = 0;
         var high = length;

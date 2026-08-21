@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AMinuteAgo" xml:space="preserve">
+    <value>vor einer Minute</value>
+  </data>
+  <data name="AnHourAgo" xml:space="preserve">
+    <value>vor einer Stunde</value>
+  </data>
+  <data name="InAMinute" xml:space="preserve">
+    <value>in einer Minute</value>
+  </data>
+  <data name="InAnHour" xml:space="preserve">
+    <value>in einer Stunde</value>
+  </data>
+  <data name="InManyDays" xml:space="preserve">
+    <value>in {0} Tagen</value>
+  </data>
+  <data name="InManyHours" xml:space="preserve">
+    <value>in {0} Stunden</value>
+  </data>
+  <data name="InManyMinutes" xml:space="preserve">
+    <value>in {0} Minuten</value>
+  </data>
+  <data name="InManyMonths" xml:space="preserve">
+    <value>in {0} Monaten</value>
+  </data>
+  <data name="InManySeconds" xml:space="preserve">
+    <value>in {0} Sekunden</value>
+  </data>
+  <data name="InManyYears" xml:space="preserve">
+    <value>in {0} Jahren</value>
+  </data>
+  <data name="InOneMonth" xml:space="preserve">
+    <value>in einem Monat</value>
+  </data>
+  <data name="InOneSecond" xml:space="preserve">
+    <value>in einer Sekunde</value>
+  </data>
+  <data name="InOneYear" xml:space="preserve">
+    <value>in einem Jahr</value>
+  </data>
+  <data name="ManyDaysAgo" xml:space="preserve">
+    <value>vor {0} Tagen</value>
+  </data>
+  <data name="ManyHoursAgo" xml:space="preserve">
+    <value>vor {0} Stunden</value>
+  </data>
+  <data name="ManyMinutesAgo" xml:space="preserve">
+    <value>vor {0} Minuten</value>
+  </data>
+  <data name="ManyMonthsAgo" xml:space="preserve">
+    <value>vor {0} Monaten</value>
+  </data>
+  <data name="ManySecondsAgo" xml:space="preserve">
+    <value>vor {0} Sekunden</value>
+  </data>
+  <data name="ManyYearsAgo" xml:space="preserve">
+    <value>vor {0} Jahren</value>
+  </data>
+  <data name="Now" xml:space="preserve">
+    <value>jetzt</value>
+  </data>
+  <data name="OneMonthAgo" xml:space="preserve">
+    <value>vor einem Monat</value>
+  </data>
+  <data name="OneSecondAgo" xml:space="preserve">
+    <value>vor einer Sekunde</value>
+  </data>
+  <data name="OneYearAgo" xml:space="preserve">
+    <value>vor einem Jahr</value>
+  </data>
+  <data name="Tomorrow" xml:space="preserve">
+    <value>morgen</value>
+  </data>
+  <data name="Yesterday" xml:space="preserve">
+    <value>gestern</value>
+  </data>
+</root>

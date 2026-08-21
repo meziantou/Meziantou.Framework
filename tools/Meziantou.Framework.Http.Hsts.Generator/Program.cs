@@ -28,24 +28,19 @@ var entriesThreshold = 10;
 var maxSegments = entries.Max(e => e.SegmentCount);
 
 var sb = new StringBuilder();
-sb.Append($"        CollectionsMarshal.SetCount(_policies, {maxSegments.ToString(CultureInfo.InvariantCulture)});\n\n");
+sb.Append($"        var policies = new ConcurrentDictionary<string, HstsDomainPolicy>[{maxSegments.ToString(CultureInfo.InvariantCulture)}];\n\n");
 for (var i = 1; i <= maxSegments; i++)
 {
     var count = entries.Count(e => e.SegmentCount == i);
     sb.Append($"        var dict{i.ToString(CultureInfo.InvariantCulture)} = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: {(count + 10).ToString(CultureInfo.InvariantCulture)}, comparer: StringComparer.OrdinalIgnoreCase);\n");
-    sb.Append($"        _policies[{(i - 1).ToString(CultureInfo.InvariantCulture)}] = dict{i.ToString(CultureInfo.InvariantCulture)};\n");
+    sb.Append($"        policies[{(i - 1).ToString(CultureInfo.InvariantCulture)}] = dict{i.ToString(CultureInfo.InvariantCulture)};\n");
 
     if (count < entriesThreshold)
     {
         foreach (var entry in entries.Where(e => e.SegmentCount == i).OrderBy(e => e.Name, StringComparer.Ordinal))
         {
-            var expiresIn = entry.Policy switch
-            {
-                "bulk-18-weeks" => "_expires18weeks",
-                "bulk-1-year" => "_expires1year",
-                _ => "_expires1year",
-            };
-            sb.Append($"        dict{i.ToString(CultureInfo.InvariantCulture)}.TryAdd(\"{entry.Name}\", new HstsDomainPolicy(\"{entry.Name}\", {expiresIn}, {entry.IncludeSubdomains.ToString(CultureInfo.InvariantCulture).ToLowerInvariant()}));\n");
+            // Preloaded entries are compiled into the assembly and stay valid until the package is updated
+            sb.Append($"        dict{i.ToString(CultureInfo.InvariantCulture)}.TryAdd(\"{entry.Name}\", new HstsDomainPolicy(\"{entry.Name}\", DateTimeOffset.MaxValue, {entry.IncludeSubdomains.ToString(CultureInfo.InvariantCulture).ToLowerInvariant()}, isPreloaded: true));\n");
         }
     }
     else
@@ -54,6 +49,9 @@ for (var i = 1; i <= maxSegments; i++)
     }
     sb.Append('\n');
 }
+
+// Publish the fully-initialized array (see the copy-on-write comment on _policies)
+sb.Append("        _policies = policies;\n");
 
 void AddPreloadData()
 {
@@ -94,7 +92,6 @@ var result = $$"""
     #nullable enable
 
     using System.Collections.Concurrent;
-    using System.Runtime.InteropServices;
 
     namespace Meziantou.Framework.Http;
 

@@ -50,7 +50,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             // RFC 7234 Section 4.4: Invalidation on unsafe methods
-            if (!IsMethodSafe(request.Method) && IsSuccessStatusCode(response.StatusCode))
+            if (!IsMethodSafe(request.Method) && IsNonErrorStatusCode(response.StatusCode))
             {
                 await _cache.InvalidateAsync(request.RequestUri, cancellationToken).ConfigureAwait(false);
                 await InvalidateLocationHeadersAsync(response, cancellationToken).ConfigureAwait(false);
@@ -69,6 +69,17 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             var rangeResponse = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             rangeResponse.RequestMessage ??= request;
             return rangeResponse;
+        }
+
+        // RFC 9111 Section 4.3.2: the caller is performing its own validation. Evaluating the precondition
+        // against the stored response would turn a conditional request into an unconditional 200, and adding
+        // our own validators on top of the caller's would send conflicting preconditions. Forward to origin
+        // so the caller gets the 304 or 200 it asked for.
+        if (HasConditionalHeaders(request.Headers))
+        {
+            var conditionalPassthroughResponse = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            conditionalPassthroughResponse.RequestMessage ??= request;
+            return conditionalPassthroughResponse;
         }
 
         // Check request-level cache directives
@@ -103,7 +114,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
                                       (hasPragmaNoCache && requestCacheControl is null));
 
             // RFC 7234 Section 5.2.1.1: max-age request directive
-            if (requestCacheControl?.MaxAge != null)
+            if (requestCacheControl?.MaxAge is not null)
             {
                 var maxAgeSeconds = requestCacheControl.MaxAge.Value.TotalSeconds;
                 if (currentAge.TotalSeconds >= maxAgeSeconds)
@@ -113,7 +124,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             }
 
             // RFC 7234 Section 5.2.1.3: min-fresh request directive
-            if (requestCacheControl?.MinFresh != null && isFresh)
+            if (requestCacheControl?.MinFresh is not null && isFresh)
             {
                 var minFresh = requestCacheControl.MinFresh.Value;
                 var remainingFreshness = freshnessLifetime - currentAge;
@@ -141,7 +152,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             var allowStale = false;
             if ((requestCacheControl?.MaxStale) is true && !cacheResult.MustRevalidate && !cacheResult.ProxyRevalidate)
             {
-                if (requestCacheControl.MaxStaleLimit != null)
+                if (requestCacheControl.MaxStaleLimit is not null)
                 {
                     var staleness = currentAge - freshnessLifetime;
                     if (staleness <= requestCacheControl.MaxStaleLimit.Value)
@@ -185,44 +196,53 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             }
 
             // Attempt conditional validation
-            if (cacheResult.ETag is not null || cacheResult.LastModified != null)
+            if (cacheResult.ETag is not null || cacheResult.LastModified is not null)
             {
-                using var conditionalRequest = CloneRequest(request);
-
-                // RFC 7232 Section 3.2: If-None-Match
-                if (cacheResult.ETag is not null)
+                var conditionalRequest = CloneRequest(request);
+                try
                 {
-                    conditionalRequest.Headers.TryAddWithoutValidation("If-None-Match", cacheResult.ETag);
-                }
+                    // RFC 7232 Section 3.2: If-None-Match
+                    if (cacheResult.ETag is not null)
+                    {
+                        conditionalRequest.Headers.TryAddWithoutValidation("If-None-Match", cacheResult.ETag);
+                    }
 
-                // RFC 7232 Section 3.3: If-Modified-Since
-                if (cacheResult.LastModified != null)
-                {
-                    conditionalRequest.Headers.IfModifiedSince = cacheResult.LastModified;
-                }
+                    // RFC 7232 Section 3.3: If-Modified-Since
+                    if (cacheResult.LastModified is not null)
+                    {
+                        conditionalRequest.Headers.IfModifiedSince = cacheResult.LastModified;
+                    }
 
-                var validationRequestTime = _timeProvider.GetUtcNow();
-                var conditionalResponse = await base.SendAsync(conditionalRequest, cancellationToken).ConfigureAwait(false);
-                var responseTime = _timeProvider.GetUtcNow();
+                    var validationRequestTime = _timeProvider.GetUtcNow();
+                    HttpResponseMessage conditionalResponse;
+                    try
+                    {
+                        conditionalResponse = await base.SendAsync(conditionalRequest, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception ex) when (IsOriginUnreachable(ex, cancellationToken) && CanServeStaleOnError(cacheResult, currentAge, freshnessLifetime))
+                    {
+                        // RFC 5861: the origin could not be reached at all, which is the case stale-if-error
+                        // exists for. RFC 7234 Section 5.5: Add Warning headers
+                        return CreateCachedResponse(request, cacheResult, currentAge, "110 - \"Response is Stale\", 111 - \"Revalidation Failed\"");
+                    }
 
-                // RFC 7234 Section 4.3.3: Handle 304 Not Modified
-                if (conditionalResponse.StatusCode is HttpStatusCode.NotModified)
-                {
-                    // Update cached entry with new headers from 304 response
-                    await cacheResult.UpdateFromValidationResponse(conditionalResponse, validationRequestTime, responseTime, cancellationToken).ConfigureAwait(false);
-                    await _cache.PersistEntryAsync(request.RequestUri, cacheResult, cancellationToken).ConfigureAwait(false);
+                    var responseTime = _timeProvider.GetUtcNow();
 
-                    conditionalResponse.Dispose();
+                    // RFC 7234 Section 4.3.3: Handle 304 Not Modified
+                    if (conditionalResponse.StatusCode is HttpStatusCode.NotModified)
+                    {
+                        // Update cached entry with new headers from 304 response
+                        await cacheResult.UpdateFromValidationResponse(conditionalResponse, validationRequestTime, responseTime, cancellationToken).ConfigureAwait(false);
+                        await _cache.PersistEntryAsync(request.Method, request.RequestUri, cacheResult, cancellationToken).ConfigureAwait(false);
 
-                    var newAge = cacheResult.CalculateCurrentAge(_timeProvider.GetUtcNow());
-                    return CreateCachedResponse(request, cacheResult, newAge);
-                }
+                        conditionalResponse.Dispose();
 
-                // RFC 5861: Handle error responses with stale-if-error
-                if (cacheResult.StaleIfError is not null && !conditionalResponse.IsSuccessStatusCode)
-                {
-                    var staleness = currentAge - freshnessLifetime;
-                    if (staleness <= cacheResult.StaleIfError.Value)
+                        var newAge = cacheResult.CalculateCurrentAge(_timeProvider.GetUtcNow());
+                        return CreateCachedResponse(request, cacheResult, newAge);
+                    }
+
+                    // RFC 5861: Handle error responses with stale-if-error
+                    if (!conditionalResponse.IsSuccessStatusCode && CanServeStaleOnError(cacheResult, currentAge, freshnessLifetime))
                     {
                         conditionalResponse.Dispose();
 
@@ -230,12 +250,20 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
                         var warnings = "110 - \"Response is Stale\", 111 - \"Revalidation Failed\"";
                         return CreateCachedResponse(request, cacheResult, currentAge, warnings);
                     }
-                }
 
-                // Use fresh response and cache it
-                await _cache.StoreAsync(request, conditionalResponse, requestTime, responseTime, cancellationToken).ConfigureAwait(false);
-                conditionalResponse.RequestMessage ??= request;
-                return conditionalResponse;
+                    // Use fresh response and cache it. The timing of the validation request is used so the
+                    // stored entry is not aged by the time the previous entry spent in the cache.
+                    await _cache.StoreAsync(request, conditionalResponse, validationRequestTime, responseTime, cancellationToken).ConfigureAwait(false);
+                    conditionalResponse.RequestMessage ??= request;
+                    return conditionalResponse;
+                }
+                finally
+                {
+                    // The clone shares the caller's content. Detach it so disposing the clone does not
+                    // dispose content that the caller still owns.
+                    conditionalRequest.Content = null;
+                    conditionalRequest.Dispose();
+                }
             }
         }
 
@@ -249,7 +277,20 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         }
 
         // No suitable cached response, send request to origin
-        var freshResponse = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        HttpResponseMessage freshResponse;
+        try
+        {
+            freshResponse = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (cacheResult is not null &&
+                                   IsOriginUnreachable(ex, cancellationToken) &&
+                                   CanServeStaleOnError(cacheResult, cacheResult.CalculateCurrentAge(_timeProvider.GetUtcNow()), cacheResult.FreshnessLifetime))
+        {
+            // RFC 5861: serve the stale entry rather than propagating the transport failure.
+            var staleAge = cacheResult.CalculateCurrentAge(_timeProvider.GetUtcNow());
+            return CreateCachedResponse(request, cacheResult, staleAge, "110 - \"Response is Stale\", 111 - \"Revalidation Failed\"");
+        }
+
         var freshResponseTime = _timeProvider.GetUtcNow();
 
         await _cache.StoreAsync(request, freshResponse, requestTime, freshResponseTime, cancellationToken).ConfigureAwait(false);
@@ -267,8 +308,9 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
                method == HttpMethod.Trace;
     }
 
-    private static bool IsSuccessStatusCode(HttpStatusCode statusCode)
+    private static bool IsNonErrorStatusCode(HttpStatusCode statusCode)
     {
+        // RFC 9111 Section 4.4: invalidation happens on a non-error response, which includes redirections.
         var code = (int)statusCode;
         return code >= 200 && code < 400;
     }
@@ -290,19 +332,19 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
     private async ValueTask InvalidateLocationHeadersAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         // RFC 7234 Section 4.4: Invalidate Location and Content-Location URIs
-        if (response.Headers.Location != null)
+        if (response.Headers.Location is not null)
         {
             var locationUri = GetAbsoluteUri(response.RequestMessage?.RequestUri, response.Headers.Location);
-            if (locationUri != null && IsSameHost(response.RequestMessage?.RequestUri, locationUri))
+            if (locationUri is not null && IsSameHost(response.RequestMessage?.RequestUri, locationUri))
             {
                 await _cache.InvalidateAsync(locationUri, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        if (response.Content.Headers.ContentLocation != null)
+        if (response.Content.Headers.ContentLocation is not null)
         {
             var contentLocationUri = GetAbsoluteUri(response.RequestMessage?.RequestUri, response.Content.Headers.ContentLocation);
-            if (contentLocationUri != null && IsSameHost(response.RequestMessage?.RequestUri, contentLocationUri))
+            if (contentLocationUri is not null && IsSameHost(response.RequestMessage?.RequestUri, contentLocationUri))
             {
                 await _cache.InvalidateAsync(contentLocationUri, cancellationToken).ConfigureAwait(false);
             }
@@ -314,7 +356,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         if (relativeOrAbsolute.IsAbsoluteUri)
             return relativeOrAbsolute;
 
-        if (baseUri == null)
+        if (baseUri is null)
             return null;
 
         return new Uri(baseUri, relativeOrAbsolute);
@@ -322,7 +364,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
     private static bool IsSameHost(Uri? uri1, Uri? uri2)
     {
-        if (uri1 == null || uri2 == null)
+        if (uri1 is null || uri2 is null)
             return false;
 
         return string.Equals(uri1.Host, uri2.Host, StringComparison.OrdinalIgnoreCase);
@@ -419,18 +461,59 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
     private static HttpRequestMessage CloneRequest(HttpRequestMessage original)
     {
-        var clone = new HttpRequestMessage(original.Method, original.RequestUri);
+        var clone = new HttpRequestMessage(original.Method, original.RequestUri)
+        {
+            Version = original.Version,
+            VersionPolicy = original.VersionPolicy,
+            // The content is shared with the original request. The caller owns it, so the clone must be
+            // detached from it before it is disposed.
+            Content = original.Content,
+        };
 
         foreach (var header in original.Headers)
         {
             clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
 
-        if (original.Content is not null)
+        // Request options carry per-request state for the inner handlers (resilience policies,
+        // IHttpClientFactory metadata, ...) and must survive revalidation.
+        IDictionary<string, object?> cloneOptions = clone.Options;
+        foreach (var option in original.Options)
         {
-            clone.Content = original.Content;
+            cloneOptions[option.Key] = option.Value;
         }
 
         return clone;
+    }
+
+    private static bool CanServeStaleOnError(CacheEntry entry, TimeSpan currentAge, TimeSpan freshnessLifetime)
+    {
+        // RFC 5861: stale-if-error allows a stale response to be served for the given amount of time past
+        // the point at which it became stale.
+        if (entry.StaleIfError is null)
+            return false;
+
+        var staleness = currentAge - freshnessLifetime;
+        return staleness <= entry.StaleIfError.Value;
+    }
+
+    private static bool IsOriginUnreachable(Exception exception, CancellationToken cancellationToken)
+    {
+        // A cancellation requested by the caller is not an origin failure and must propagate. A
+        // TaskCanceledException without a cancellation request is an HttpClient timeout.
+        if (cancellationToken.IsCancellationRequested)
+            return false;
+
+        return exception is HttpRequestException or TaskCanceledException;
+    }
+
+    private static bool HasConditionalHeaders(HttpRequestHeaders headers)
+    {
+        // RFC 9110 Section 13.1: preconditions issued by the caller
+        return headers.IfNoneMatch.Count > 0 ||
+               headers.IfMatch.Count > 0 ||
+               headers.IfModifiedSince is not null ||
+               headers.IfUnmodifiedSince is not null ||
+               headers.IfRange is not null;
     }
 }

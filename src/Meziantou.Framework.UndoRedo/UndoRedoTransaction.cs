@@ -3,8 +3,14 @@ namespace Meziantou.Framework.UndoRedo;
 /// <summary>
 /// Groups several actions into a single undoable/redoable unit. Create one with
 /// <see cref="UndoRedoManager.CreateTransaction"/> and commit it (explicitly or by disposal) to
-/// record it as a single step.
+/// record it as a single step. Committing is all-or-nothing: if one of the actions fails, the
+/// actions that already ran are reverted before the exception is propagated.
 /// </summary>
+/// <remarks>
+/// Disposal commits the transaction, including when the scope is left because of an exception. Call
+/// <see cref="RollbackAsync"/> explicitly to discard the actions recorded so far. Nested transactions
+/// must be completed from the innermost out.
+/// </remarks>
 /// <example>
 /// <code>
 /// await using (manager.CreateTransaction())
@@ -42,56 +48,133 @@ public sealed class UndoRedoTransaction : IUndoRedoAction, IAsyncDisposable
     internal void MarkCompleted() => _completed = true;
 
     /// <inheritdoc />
-    public async ValueTask ExecuteAsync(CancellationToken cancellationToken = default)
+    ValueTask IUndoRedoAction.ExecuteAsync(CancellationToken cancellationToken) => ExecuteCoreAsync(cancellationToken);
+
+    /// <inheritdoc />
+    ValueTask IUndoRedoAction.UnExecuteAsync(CancellationToken cancellationToken) => UnExecuteCoreAsync(cancellationToken);
+
+    /// <inheritdoc />
+    ValueTask<bool> IUndoRedoAction.TryToMergeAsync(IUndoRedoAction followingAction, CancellationToken cancellationToken) => new(false);
+
+    /// <summary>
+    /// Applies every action of the transaction. All-or-nothing: when an action fails, the actions that already ran
+    /// are reverted before the failure is propagated. An <see cref="AggregateException"/> is thrown if reverting
+    /// them also fails.
+    /// </summary>
+    internal async ValueTask ExecuteCoreAsync(CancellationToken cancellationToken)
     {
         if (_executed)
             return;
 
-        foreach (var action in _actions)
+        for (var i = 0; i < _actions.Count; i++)
         {
-            await action.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await _actions[i].ExecuteAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                await CompensateAsync(exception, () => RevertRangeAsync(0, i - 1)).ConfigureAwait(false);
+                throw;
+            }
         }
 
         _executed = true;
     }
 
-    /// <inheritdoc />
-    public async ValueTask UnExecuteAsync(CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Reverts every action of the transaction. All-or-nothing: when an action fails to revert, the actions that
+    /// were already reverted are re-applied before the failure is propagated. An <see cref="AggregateException"/>
+    /// is thrown if re-applying them also fails.
+    /// </summary>
+    internal async ValueTask UnExecuteCoreAsync(CancellationToken cancellationToken)
     {
         if (!_executed)
             return;
 
         for (var i = _actions.Count - 1; i >= 0; i--)
         {
-            await _actions[i].UnExecuteAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await _actions[i].UnExecuteAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                await CompensateAsync(exception, () => ReapplyRangeAsync(i + 1, _actions.Count - 1)).ConfigureAwait(false);
+                throw;
+            }
         }
 
         _executed = false;
     }
 
-    /// <inheritdoc />
-    public bool CanExecute() => !_executed;
+    private static async ValueTask CompensateAsync(Exception exception, Func<ValueTask> compensate)
+    {
+        try
+        {
+            await compensate().ConfigureAwait(false);
+        }
+        catch (Exception compensationException)
+        {
+            throw new AggregateException(exception, compensationException);
+        }
+    }
 
-    /// <inheritdoc />
-    public bool CanUnExecute() => _executed;
+    /// <summary>Reverts the actions in <c>[firstIndex, lastIndex]</c>, most recent first.</summary>
+    private async ValueTask RevertRangeAsync(int firstIndex, int lastIndex)
+    {
+        for (var i = lastIndex; i >= firstIndex; i--)
+        {
+            // The compensation must run to completion even when the failure was a cancellation.
+            await _actions[i].UnExecuteAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+    }
 
-    /// <inheritdoc />
-    public ValueTask<bool> TryToMergeAsync(IUndoRedoAction followingAction) => new(false);
+    /// <summary>Re-applies the actions in <c>[firstIndex, lastIndex]</c>, oldest first.</summary>
+    private async ValueTask ReapplyRangeAsync(int firstIndex, int lastIndex)
+    {
+        for (var i = firstIndex; i <= lastIndex; i++)
+        {
+            await _actions[i].ExecuteAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+    }
 
     /// <summary>Commits the transaction, recording it as a single undo step.</summary>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    public ValueTask CommitAsync(CancellationToken cancellationToken = default) => _manager.CommitTransactionAsync(cancellationToken);
+    /// <exception cref="InvalidOperationException">The transaction is already completed, or it is not the innermost open transaction.</exception>
+    public ValueTask CommitAsync(CancellationToken cancellationToken = default)
+    {
+        EnsureNotCompleted();
+
+        return _manager.CommitTransactionAsync(this, cancellationToken);
+    }
 
     /// <summary>Rolls back the transaction, reverting any actions that were already executed.</summary>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    public ValueTask RollbackAsync(CancellationToken cancellationToken = default) => _manager.RollbackTransactionAsync(cancellationToken);
+    /// <exception cref="InvalidOperationException">The transaction is already completed, or it is not the innermost open transaction.</exception>
+    public ValueTask RollbackAsync(CancellationToken cancellationToken = default)
+    {
+        EnsureNotCompleted();
 
-    /// <summary>Commits the transaction if it has not already been committed or rolled back.</summary>
+        return _manager.RollbackTransactionAsync(this, cancellationToken);
+    }
+
+    /// <summary>
+    /// Commits the transaction if it has not already been committed or rolled back. Note that this commits even
+    /// when the scope is left because of an exception; call <see cref="RollbackAsync"/> explicitly to discard the
+    /// actions recorded so far.
+    /// </summary>
     public async ValueTask DisposeAsync()
     {
         if (_completed)
             return;
 
         await CommitAsync().ConfigureAwait(false);
+    }
+
+    private void EnsureNotCompleted()
+    {
+        if (_completed)
+            throw new InvalidOperationException("The transaction is already committed or rolled back.");
     }
 }

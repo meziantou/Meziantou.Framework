@@ -1,4 +1,6 @@
-#pragma warning disable MA0011 // IFormatProvider is missing
+﻿#pragma warning disable MA0011 // IFormatProvider is missing
+using System.Collections;
+using System.Resources;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.Tests;
@@ -28,8 +30,9 @@ public class RelativeDateTests
         Assert.NotEmpty(expectedValueFr);
 
 #if !INVARIANT_GLOBALIZATION_MODE_ENABLED
-        var resultDe = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("de"));
-        Assert.Equal(expectedValueEn, resultDe);
+        // Swedish is not translated, so it falls back to the neutral (English) resources
+        var resultSv = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("sv"));
+        Assert.Equal(expectedValueEn, resultSv);
 
         var resultFr = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("fr"));
         Assert.Equal(expectedValueFr, resultFr);
@@ -69,4 +72,85 @@ public class RelativeDateTests
             yield return new object[] { "2021/01/01 00:00:00Z", "2018/01/01 00:00:00Z", "in 3 years", "dans 3 ans" };
         }
     }
+
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    private static readonly string[] LocalizedCultures = ["de", "es", "fr", "it", "ja", "ko", "nl", "pt", "tr", "zh-Hans"];
+
+    /// <summary>Offsets from "now" reaching every branch of <see cref="RelativeDate.ToString(string, IFormatProvider)"/>, in both directions.</summary>
+    private static readonly TimeSpan[] AllBranchOffsets =
+    [
+        TimeSpan.Zero,
+        TimeSpan.FromSeconds(-1), TimeSpan.FromSeconds(-25), TimeSpan.FromSeconds(-90),
+        TimeSpan.FromMinutes(-10), TimeSpan.FromMinutes(-60), TimeSpan.FromHours(-2),
+        TimeSpan.FromHours(-30), TimeSpan.FromDays(-3), TimeSpan.FromDays(-31),
+        TimeSpan.FromDays(-90), TimeSpan.FromDays(-365), TimeSpan.FromDays(-1095),
+        TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(25), TimeSpan.FromSeconds(90),
+        TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(60), TimeSpan.FromHours(2),
+        TimeSpan.FromHours(30), TimeSpan.FromDays(3), TimeSpan.FromDays(31),
+        TimeSpan.FromDays(90), TimeSpan.FromDays(365), TimeSpan.FromDays(1095),
+    ];
+
+    public static TheoryData<string> LocalizedCulturesData => new(LocalizedCultures);
+
+    [Theory]
+    [MemberData(nameof(LocalizedCulturesData))]
+    public void RelativeDate_ToString_UsesLocalizedResources(string cultureName)
+    {
+        var culture = CultureInfo.GetCultureInfo(cultureName);
+        var now = new DateTimeOffset(2018, 1, 10, 0, 0, 0, TimeSpan.Zero);
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(now);
+
+        var seen = new Dictionary<string, TimeSpan>(StringComparer.Ordinal);
+        foreach (var offset in AllBranchOffsets)
+        {
+            var relativeDate = RelativeDate.Get(now + offset, timeProvider);
+            var neutral = relativeDate.ToString(format: null, CultureInfo.InvariantCulture);
+            var localized = relativeDate.ToString(format: null, culture);
+
+            Assert.NotEmpty(localized);
+
+            // A resource missing from the culture silently falls back to the neutral (English) value
+            Assert.NotEqual(neutral, localized);
+
+            // The count must survive the translation
+            var count = GetDigits(neutral);
+            if (count.Length > 0)
+                Assert.Contains(count, localized);
+
+            // Two branches producing the same text means a value was copied to the wrong key
+            // (e.g. "yesterday" translated with the word for "tomorrow")
+            Assert.False(seen.TryGetValue(localized, out var previousOffset), $"'{localized}' is produced by both {previousOffset} and {offset}");
+            seen.Add(localized, offset);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(LocalizedCulturesData))]
+    public void AllResourcesAreLocalized(string cultureName)
+    {
+        var resourceManager = new ResourceManager("Meziantou.Framework.RelativeDates", typeof(RelativeDate).Assembly);
+        var neutralResources = resourceManager.GetResourceSet(CultureInfo.InvariantCulture, createIfNotExists: true, tryParents: false);
+        Assert.NotNull(neutralResources);
+
+        var localizedResources = resourceManager.GetResourceSet(CultureInfo.GetCultureInfo(cultureName), createIfNotExists: true, tryParents: false);
+        Assert.NotNull(localizedResources);
+
+        foreach (DictionaryEntry entry in neutralResources)
+        {
+            var name = (string)entry.Key;
+            var neutralValue = (string?)entry.Value;
+            Assert.NotNull(neutralValue);
+
+            var localizedValue = localizedResources.GetString(name);
+            Assert.NotNull(localizedValue);
+            Assert.NotEmpty(localizedValue);
+
+            // A resource that formats a count must keep its placeholder
+            Assert.Equal(neutralValue.Contains("{0}", StringComparison.Ordinal), localizedValue.Contains("{0}", StringComparison.Ordinal));
+        }
+    }
+
+    private static string GetDigits(string value) => string.Concat(value.Where(char.IsAsciiDigit));
+#endif
 }

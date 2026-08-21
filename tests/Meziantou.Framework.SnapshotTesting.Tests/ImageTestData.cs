@@ -179,6 +179,74 @@ internal static class ImageTestData
         return stream.ToArray();
     }
 
+    /// <summary>Builds an uncompressed, non-interlaced PNG with an arbitrary color type and bit depth.</summary>
+    /// <param name="samples">The raw scanlines, without the per-row filter byte.</param>
+    public static byte[] CreatePng(int width, int height, byte bitDepth, byte colorType, byte[] samples, byte[]? palette = null, byte[]? transparency = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        ArgumentNullException.ThrowIfNull(samples);
+
+        var channelCount = colorType switch
+        {
+            0 or 3 => 1,
+            2 => 3,
+            4 => 2,
+            6 => 4,
+            _ => throw new ArgumentOutOfRangeException(nameof(colorType)),
+        };
+
+        var rowLength = (width * channelCount * bitDepth + 7) / 8;
+        if (samples.Length != checked(rowLength * height))
+            throw new ArgumentOutOfRangeException(nameof(samples));
+
+        var imageData = new byte[checked((rowLength + 1) * height)];
+        for (var y = 0; y < height; y++)
+        {
+            var rowOffset = y * (rowLength + 1);
+            imageData[rowOffset] = 0;
+            samples.AsSpan(y * rowLength, rowLength).CopyTo(imageData.AsSpan(rowOffset + 1));
+        }
+
+        byte[] compressedData;
+        using (var compressedStream = new MemoryStream())
+        {
+            using (var zlib = new ZLibStream(compressedStream, CompressionLevel.SmallestSize, leaveOpen: true))
+            {
+                zlib.Write(imageData);
+            }
+
+            compressedData = compressedStream.ToArray();
+        }
+
+        using var stream = new MemoryStream();
+        stream.Write([137, 80, 78, 71, 13, 10, 26, 10]);
+
+        Span<byte> ihdrData = stackalloc byte[13];
+        BinaryPrimitives.WriteUInt32BigEndian(ihdrData, (uint)width);
+        BinaryPrimitives.WriteUInt32BigEndian(ihdrData[4..], (uint)height);
+        ihdrData[8] = bitDepth;
+        ihdrData[9] = colorType;
+        ihdrData[10] = 0;
+        ihdrData[11] = 0;
+        ihdrData[12] = 0;
+        WritePngChunk(stream, "IHDR"u8, ihdrData);
+
+        if (palette is not null)
+        {
+            WritePngChunk(stream, "PLTE"u8, palette);
+        }
+
+        if (transparency is not null)
+        {
+            WritePngChunk(stream, "tRNS"u8, transparency);
+        }
+
+        WritePngChunk(stream, "IDAT"u8, compressedData);
+        WritePngChunk(stream, "IEND"u8, ReadOnlySpan<byte>.Empty);
+        return stream.ToArray();
+    }
+
     public static byte[] CreateIcoWithPngEntries(params byte[][] pngImages)
     {
         ArgumentNullException.ThrowIfNull(pngImages);

@@ -53,18 +53,18 @@ internal static class HuntSzymanskiDiff
             {
                 var rightIndex = matches[i];
                 var position = DiffAlgorithmHelpers.LowerBound(thresholds, rightIndex);
-                var previous = position > 0 ? links[position - 1] : null;
-                var node = new MatchNode(leftIndex, rightIndex, previous);
 
+                // The node is only allocated once the candidate is known to improve the threshold list.
+                // On input with many duplicate chunks half of the candidates were allocated and dropped.
                 if (position == thresholds.Count)
                 {
                     thresholds.Add(rightIndex);
-                    links.Add(node);
+                    links.Add(new MatchNode(leftIndex, rightIndex, position > 0 ? links[position - 1] : null));
                 }
                 else if (rightIndex < thresholds[position])
                 {
                     thresholds[position] = rightIndex;
-                    links[position] = node;
+                    links[position] = new MatchNode(leftIndex, rightIndex, position > 0 ? links[position - 1] : null);
                 }
             }
         }

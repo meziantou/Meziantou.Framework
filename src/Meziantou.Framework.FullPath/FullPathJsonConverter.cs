@@ -17,6 +17,6 @@ public sealed class FullPathJsonConverter : JsonConverter<FullPath>
 
     public override void Write(Utf8JsonWriter writer, FullPath value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue(value);
+        writer.WriteStringValue(value.Value);
     }
 }

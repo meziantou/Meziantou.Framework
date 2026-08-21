@@ -5,7 +5,7 @@
 namespace Meziantou.Framework
 {
     [System.Text.Json.Serialization.JsonConverter(typeof(Meziantou.Framework.FullPathJsonConverter))]
-    public readonly struct FullPath : System.IComparable<Meziantou.Framework.FullPath>, System.IEquatable<Meziantou.Framework.FullPath>
+    public readonly struct FullPath : System.IComparable, System.IComparable<Meziantou.Framework.FullPath>, System.IEquatable<Meziantou.Framework.FullPath>
     {
         public static Meziantou.Framework.FullPath Empty { get => throw null; }
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(false, "_value")]
@@ -27,6 +27,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.FullPath operator +(Meziantou.Framework.FullPath rootPath, string suffix) => throw null;
         public int CompareTo(Meziantou.Framework.FullPath other) => throw null;
         public int CompareTo(Meziantou.Framework.FullPath other, bool ignoreCase) => throw null;
+        int System.IComparable.CompareTo(object? obj) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public bool Equals(Meziantou.Framework.FullPath other) => throw null;
         public bool Equals(Meziantou.Framework.FullPath other, bool ignoreCase) => throw null;

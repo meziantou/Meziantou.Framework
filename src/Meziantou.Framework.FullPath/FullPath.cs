@@ -22,7 +22,7 @@ namespace Meziantou.Framework;
 /// </code>
 /// </example>
 [JsonConverter(typeof(FullPathJsonConverter))]
-public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
+public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<FullPath>, IComparable
 {
     internal readonly string? _value;
 
@@ -170,6 +170,17 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
     /// <summary>Compares this path to another with optional case-insensitive comparison.</summary>
     public int CompareTo(FullPath other, bool ignoreCase) => FullPathComparer.GetComparer(ignoreCase).Compare(this, other);
+
+    int IComparable.CompareTo(object? obj)
+    {
+        if (obj is null)
+            return 1;
+
+        if (obj is FullPath other)
+            return CompareTo(other);
+
+        throw new ArgumentException($"Object must be of type {nameof(FullPath)}", nameof(obj));
+    }
 
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is FullPath path && Equals(path);
     public bool Equals(FullPath other) => FullPathComparer.Default.Equals(this, other);

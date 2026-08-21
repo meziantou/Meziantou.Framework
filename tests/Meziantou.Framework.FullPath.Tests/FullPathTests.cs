@@ -214,6 +214,17 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public void IComparable_CompareTo()
+    {
+        IComparable path = FullPath.FromPath("test") / "a";
+
+        Assert.Equal(0, path.CompareTo(FullPath.FromPath("test") / "a"));
+        Assert.True(path.CompareTo(FullPath.FromPath("test") / "b") < 0);
+        Assert.True(path.CompareTo(null) > 0);
+        Assert.Throws<ArgumentException>(() => path.CompareTo("test"));
+    }
+
+    [Fact]
     public async Task ResolveSymlink_FileAbsolutePath()
     {
         await using var temp = TemporaryDirectory.Create();

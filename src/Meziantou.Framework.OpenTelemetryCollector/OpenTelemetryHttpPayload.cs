@@ -1,5 +1,4 @@
 using System.Buffers;
-using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Google.Protobuf;
@@ -13,10 +12,6 @@ internal static class OpenTelemetryHttpPayload
     public const string ProtobufContentType = "application/x-protobuf";
     public const string OctetStreamContentType = "application/octet-stream";
     public const string JsonContentType = "application/json";
-
-    private const string GzipContentEncoding = "gzip";
-    private const string IdentityContentEncoding = "identity";
-    private const int CopyBufferSize = 81920;
 
     private static readonly JsonParser OtlpJsonParser = new(JsonParser.Settings.Default.WithIgnoreUnknownFields(true));
 
@@ -50,92 +45,18 @@ internal static class OpenTelemetryHttpPayload
         return false;
     }
 
-    /// <summary>Determines whether the <c>Content-Encoding</c> of the request is supported.</summary>
-    public static bool TryGetContentEncoding(HttpRequest request, out bool decompressGzip)
+    /// <summary>Reads the request body.</summary>
+    /// <remarks>
+    /// Decompression and request size limits are handled by ASP.NET Core, through the request decompression
+    /// middleware and the server limits. Reading a body that could not be decompressed throws <see cref="InvalidDataException"/>.
+    /// </remarks>
+    public static async Task<byte[]> ReadPayloadAsync(HttpRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        decompressGzip = false;
-        foreach (var headerValue in request.Headers.ContentEncoding)
-        {
-            if (string.IsNullOrEmpty(headerValue))
-            {
-                continue;
-            }
-
-            foreach (var range in headerValue.AsSpan().Split(','))
-            {
-                var encoding = headerValue.AsSpan(range).Trim();
-                if (encoding.IsEmpty || encoding.Equals(IdentityContentEncoding, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                // Only a single gzip layer is supported. Anything else must be reported as an unsupported media type.
-                if (!encoding.Equals(GzipContentEncoding, StringComparison.OrdinalIgnoreCase) || decompressGzip)
-                {
-                    return false;
-                }
-
-                decompressGzip = true;
-            }
-        }
-
-        return true;
-    }
-
-    /// <summary>Reads the request body, optionally decompressing it, and enforces <paramref name="maxRequestBodySize"/> on the decompressed payload.</summary>
-    /// <returns>The payload, or an HTTP status code describing why the payload could not be read.</returns>
-    public static async Task<(byte[]? Payload, int ErrorStatusCode)> ReadPayloadAsync(HttpRequest request, bool decompressGzip, long? maxRequestBodySize, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        try
-        {
-            // The limit is enforced on the decompressed payload so a compressed request cannot expand beyond it.
-            if (decompressGzip)
-            {
-                await using var gzipStream = new GZipStream(request.Body, CompressionMode.Decompress, leaveOpen: true);
-                return await ReadPayloadCoreAsync(gzipStream, maxRequestBodySize, cancellationToken);
-            }
-
-            return await ReadPayloadCoreAsync(request.Body, maxRequestBodySize, cancellationToken);
-        }
-        catch (InvalidDataException)
-        {
-            // The body is not a valid gzip stream
-            return (null, StatusCodes.Status400BadRequest);
-        }
-    }
-
-    private static async Task<(byte[]? Payload, int ErrorStatusCode)> ReadPayloadCoreAsync(Stream stream, long? maxRequestBodySize, CancellationToken cancellationToken)
-    {
         using var buffer = new MemoryStream();
-        var rentedBuffer = ArrayPool<byte>.Shared.Rent(CopyBufferSize);
-        try
-        {
-            while (true)
-            {
-                var readCount = await stream.ReadAsync(rentedBuffer, cancellationToken);
-                if (readCount is 0)
-                {
-                    break;
-                }
-
-                if (maxRequestBodySize is { } maxSize && buffer.Length + readCount > maxSize)
-                {
-                    return (null, StatusCodes.Status413PayloadTooLarge);
-                }
-
-                buffer.Write(rentedBuffer, 0, readCount);
-            }
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(rentedBuffer);
-        }
-
-        return (buffer.ToArray(), 0);
+        await request.Body.CopyToAsync(buffer, cancellationToken);
+        return buffer.ToArray();
     }
 
     public static TRequest Parse<TRequest>(MessageParser<TRequest> parser, OpenTelemetryPayloadFormat format, byte[] payload)

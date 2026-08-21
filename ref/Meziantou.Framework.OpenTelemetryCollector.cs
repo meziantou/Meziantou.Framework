@@ -43,7 +43,6 @@ namespace Meziantou.Framework.OpenTelemetryCollector
         public string? HttpTracesEndpoint { get => throw null; set { } }
         public string? HttpMetricsEndpoint { get => throw null; set { } }
         public bool EnableGrpcEndpoints { get => throw null; set { } }
-        public long? MaxHttpRequestBodySize { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.OpenTelemetryCollector.OpenTelemetrySampler> Samplers { get => throw null; }
     }
 

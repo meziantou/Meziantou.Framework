@@ -5,7 +5,18 @@ This package provides OpenTelemetry OTLP receiver endpoints for:
 - HTTP (`/v1/logs`, `/v1/traces`, `/v1/metrics`), using either `application/x-protobuf` or `application/json` (OTLP/JSON)
 - gRPC (`LogsService`, `TraceService`, `MetricsService`)
 
-OTLP/HTTP requests compressed with `Content-Encoding: gzip` are supported, and responses use the same encoding as the request.
+Responses use the same encoding as the request.
+
+Compressed requests are handled by the ASP.NET Core request decompression middleware, so any encoding it supports
+(`gzip`, `br`, `deflate`, or a custom provider) works:
+
+```csharp
+builder.Services.AddRequestDecompression();
+
+var app = builder.Build();
+app.UseRequestDecompression();
+app.MapOpenTelemetryReceiverEndpoints();
+```
 
 The receiver API is abstract, so you can implement custom handling logic and register one or multiple receivers.
 
@@ -104,15 +115,3 @@ public sealed class DropOversizedLogsHandler : OpenTelemetryHandler
 ```
 
 Spans dropped by `OpenTelemetryTailSampler` because a buffer limit is reached are reported the same way.
-
-### Limiting the request size
-
-OTLP/HTTP payloads larger than `MaxHttpRequestBodySize` (20 MiB by default) are rejected with `413 Content Too Large`.
-The limit applies to the payload after decompression, so a compressed request cannot expand beyond it.
-
-```csharp
-builder.Services.AddOpenTelemetryReceiver<MyReceiver>(options =>
-{
-    options.MaxHttpRequestBodySize = 4 * 1024 * 1024;
-});
-```

@@ -405,9 +405,11 @@ public sealed class OpenTelemetryReceiverTests
     }
 
     [Fact]
-    public async Task Http_GzipEncodedPayload_IsSupported()
+    public async Task Http_CompressedPayload_IsSupportedThroughTheRequestDecompressionMiddleware()
     {
-        await using var app = await TestApplication.CreateAsync();
+        await using var app = await TestApplication.CreateAsync(
+            configureServices: static services => services.AddRequestDecompression(),
+            configureApp: static app => app.UseRequestDecompression());
 
         var payload = new ExportLogsServiceRequest();
         payload.ResourceLogs.Add(new global::OpenTelemetry.Proto.Logs.V1.ResourceLogs());
@@ -430,24 +432,11 @@ public sealed class OpenTelemetryReceiverTests
     }
 
     [Fact]
-    public async Task Http_UnsupportedContentEncoding_Returns415()
+    public async Task Http_InvalidCompressedPayload_Returns400()
     {
-        await using var app = await TestApplication.CreateAsync();
-
-        using var content = new ByteArrayContent(new ExportLogsServiceRequest().ToByteArray());
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-protobuf");
-        content.Headers.ContentEncoding.Add("br");
-
-        using var response = await app.HttpClient.PostAsync("/v1/logs", content, XunitCancellationToken);
-
-        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
-        Assert.Empty(app.Receiver.Logs);
-    }
-
-    [Fact]
-    public async Task Http_InvalidGzipPayload_Returns400()
-    {
-        await using var app = await TestApplication.CreateAsync();
+        await using var app = await TestApplication.CreateAsync(
+            configureServices: static services => services.AddRequestDecompression(),
+            configureApp: static app => app.UseRequestDecompression());
 
         using var content = new ByteArrayContent([0x00, 0xFF, 0xA5]);
         content.Headers.ContentType = new MediaTypeHeaderValue("application/x-protobuf");
@@ -456,23 +445,6 @@ public sealed class OpenTelemetryReceiverTests
         using var response = await app.HttpClient.PostAsync("/v1/logs", content, XunitCancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Empty(app.Receiver.Logs);
-    }
-
-    [Fact]
-    public async Task Http_PayloadExceedingTheConfiguredLimit_Returns413()
-    {
-        await using var app = await TestApplication.CreateAsync(configureServices: static services => services.Configure<OpenTelemetryReceiverOptions>(static options => options.MaxHttpRequestBodySize = 16));
-
-        var payload = new ExportLogsServiceRequest();
-        payload.ResourceLogs.Add(new global::OpenTelemetry.Proto.Logs.V1.ResourceLogs
-        {
-            SchemaUrl = new string('a', 512),
-        });
-
-        using var response = await PostAsync(app.HttpClient, "/v1/logs", payload);
-
-        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
         Assert.Empty(app.Receiver.Logs);
     }
 
@@ -781,7 +753,7 @@ public sealed class OpenTelemetryReceiverTests
 
         public InMemoryOpenTelemetryHandler Receiver { get; } = receiver;
 
-        public static async Task<TestApplication> CreateAsync(InMemoryOpenTelemetryHandlerOptions? options = null, Action<IServiceCollection>? configureServices = null)
+        public static async Task<TestApplication> CreateAsync(InMemoryOpenTelemetryHandlerOptions? options = null, Action<IServiceCollection>? configureServices = null, Action<WebApplication>? configureApp = null)
         {
             var builder = WebApplication.CreateBuilder();
             builder.WebHost.UseTestServer();
@@ -791,6 +763,7 @@ public sealed class OpenTelemetryReceiverTests
             configureServices?.Invoke(builder.Services);
 
             var app = builder.Build();
+            configureApp?.Invoke(app);
             app.MapOpenTelemetryReceiverEndpoints();
 
             await app.StartAsync(XunitCancellationToken);

@@ -19,7 +19,6 @@ public static class OpenTelemetryEndpointRouteBuilderExtensions
         ArgumentNullException.ThrowIfNull(endpoints);
 
         var options = endpoints.ServiceProvider.GetRequiredService<IOptions<OpenTelemetryReceiverOptions>>().Value;
-        var maxRequestBodySize = options.MaxHttpRequestBodySize;
 
         if (options.HttpLogsEndpoint is not null)
         {
@@ -29,7 +28,6 @@ public static class OpenTelemetryEndpointRouteBuilderExtensions
                     ExportLogsServiceRequest.Parser,
                     (context, payload, ct) => pipeline.HandleLogsAsync(context, payload, ct),
                     OpenTelemetryResponseFactory.CreateLogsResponse,
-                    maxRequestBodySize,
                     cancellationToken));
         }
 
@@ -41,7 +39,6 @@ public static class OpenTelemetryEndpointRouteBuilderExtensions
                     ExportTraceServiceRequest.Parser,
                     (context, payload, ct) => pipeline.HandleTracesAsync(context, payload, ct),
                     OpenTelemetryResponseFactory.CreateTracesResponse,
-                    maxRequestBodySize,
                     cancellationToken));
         }
 
@@ -53,7 +50,6 @@ public static class OpenTelemetryEndpointRouteBuilderExtensions
                     ExportMetricsServiceRequest.Parser,
                     (context, payload, ct) => pipeline.HandleMetricsAsync(context, payload, ct),
                     OpenTelemetryResponseFactory.CreateMetricsResponse,
-                    maxRequestBodySize,
                     cancellationToken));
         }
 
@@ -72,30 +68,24 @@ public static class OpenTelemetryEndpointRouteBuilderExtensions
         MessageParser<TRequest> parser,
         Func<OpenTelemetryHandlerContext, TRequest, CancellationToken, ValueTask> handler,
         Func<OpenTelemetryPartialSuccess, TResponse> responseFactory,
-        long? maxRequestBodySize,
         CancellationToken cancellationToken)
         where TRequest : class, IMessage<TRequest>, new()
         where TResponse : class, IMessage<TResponse>
     {
-        if (!OpenTelemetryHttpPayload.TryGetPayloadFormat(request.ContentType, out var format) ||
-            !OpenTelemetryHttpPayload.TryGetContentEncoding(request, out var decompressGzip))
+        if (!OpenTelemetryHttpPayload.TryGetPayloadFormat(request.ContentType, out var format))
         {
             return TypedResults.StatusCode(StatusCodes.Status415UnsupportedMediaType);
-        }
-
-        var (payload, errorStatusCode) = await OpenTelemetryHttpPayload.ReadPayloadAsync(request, decompressGzip, maxRequestBodySize, cancellationToken);
-        if (payload is null)
-        {
-            return TypedResults.StatusCode(errorStatusCode);
         }
 
         TRequest message;
         try
         {
+            var payload = await OpenTelemetryHttpPayload.ReadPayloadAsync(request, cancellationToken);
             message = OpenTelemetryHttpPayload.Parse(parser, format, payload);
         }
-        catch (Exception exception) when (exception is InvalidProtocolBufferException or InvalidJsonException or JsonException)
+        catch (Exception exception) when (exception is InvalidProtocolBufferException or InvalidJsonException or JsonException or InvalidDataException)
         {
+            // The payload is malformed, or the request decompression middleware could not decompress it
             return TypedResults.BadRequest();
         }
 

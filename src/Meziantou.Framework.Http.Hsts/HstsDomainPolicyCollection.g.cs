@@ -2,7 +2,6 @@
 #nullable enable
 
 using System.Collections.Concurrent;
-using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Http;
 
@@ -12,22 +11,24 @@ partial class HstsDomainPolicyCollection
     {
         // HSTS preload data source: https://raw.githubusercontent.com/chromium/chromium/7be0edc636b0e7b0143e2700ecf5c8af750d09ec/net/http/transport_security_state_static.json
         // Commit date: 2026-07-28T19:44:48.0000000+00:00
-        CollectionsMarshal.SetCount(_policies, 4);
+        var policies = new ConcurrentDictionary<string, HstsDomainPolicy>[4];
 
         var dict1 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 61, comparer: StringComparer.OrdinalIgnoreCase);
-        _policies[0] = dict1;
+        policies[0] = dict1;
         Load(dict1, 51, "preload_1.bin");
 
         var dict2 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 86296, comparer: StringComparer.OrdinalIgnoreCase);
-        _policies[1] = dict2;
+        policies[1] = dict2;
         Load(dict2, 86286, "preload_2.bin");
 
         var dict3 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 8152, comparer: StringComparer.OrdinalIgnoreCase);
-        _policies[2] = dict3;
+        policies[2] = dict3;
         Load(dict3, 8142, "preload_3.bin");
 
         var dict4 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 159, comparer: StringComparer.OrdinalIgnoreCase);
-        _policies[3] = dict4;
+        policies[3] = dict4;
         Load(dict4, 149, "preload_4.bin");
+
+        _policies = policies;
     }
 }

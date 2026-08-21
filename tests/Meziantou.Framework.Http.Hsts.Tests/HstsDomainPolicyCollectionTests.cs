@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Time.Testing;
+
 namespace Meziantou.Framework.Http.Hsts.Tests;
 public sealed class HstsDomainPolicyCollectionTests
 {
@@ -34,6 +36,90 @@ public sealed class HstsDomainPolicyCollectionTests
         Assert.True(hsts.MustUpgradeRequest("google.com"));
         Assert.False(hsts.MustUpgradeRequest("dummy.google.com"));
         Assert.False(hsts.MustUpgradeRequest("example.com"));
+    }
+
+    [Fact]
+    public void HstsCollection_Match_MoreSpecificPolicy_IsNotShadowedByParent()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("example.com", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+        hsts.Add("foo.example.com", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+
+        Assert.True(hsts.MustUpgradeRequest("foo.example.com"));
+        Assert.True(hsts.MustUpgradeRequest("example.com"));
+        Assert.False(hsts.MustUpgradeRequest("bar.example.com"));
+        Assert.False(hsts.MustUpgradeRequest("sub.foo.example.com"));
+    }
+
+    [Fact]
+    public void HstsCollection_Match_MoreSpecificPolicy_IsNotShadowedByExpiredParent()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("example.com", DateTimeOffset.UtcNow.AddYears(-1), includeSubdomains: true);
+        hsts.Add("foo.example.com", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: true);
+
+        Assert.True(hsts.MustUpgradeRequest("foo.example.com"));
+        Assert.True(hsts.MustUpgradeRequest("sub.foo.example.com"));
+        Assert.False(hsts.MustUpgradeRequest("example.com"));
+        Assert.False(hsts.MustUpgradeRequest("bar.example.com"));
+    }
+
+    [Fact]
+    public void HstsCollection_Match_ExpiredPolicy()
+    {
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.Parse("2024-01-01T00:00:00Z", CultureInfo.InvariantCulture));
+        var hsts = new HstsDomainPolicyCollection(timeProvider, includePreloadDomains: false);
+        hsts.Add("example.com", TimeSpan.FromDays(30), includeSubdomains: true);
+
+        Assert.True(hsts.MustUpgradeRequest("example.com"));
+        Assert.True(hsts.MustUpgradeRequest("foo.example.com"));
+
+        timeProvider.Advance(TimeSpan.FromDays(31));
+
+        Assert.False(hsts.MustUpgradeRequest("example.com"));
+        Assert.False(hsts.MustUpgradeRequest("foo.example.com"));
+    }
+
+    [Fact]
+    public void HstsCollection_Match_PreloadedInternationalizedDomain()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);
+
+        // The preload list stores internationalized domains in their Punycode form,
+        // which is what Uri.IdnHost returns (Uri.Host returns the Unicode form)
+        Assert.True(hsts.MustUpgradeRequest("xn--vt3a.jp"));
+        Assert.True(hsts.MustUpgradeRequest(new Uri("http://跳.jp").IdnHost));
+        Assert.True(hsts.MustUpgradeRequest(new Uri("http://sub.αβ.net").IdnHost));
+    }
+
+    [Fact]
+    public async Task HstsCollection_ConcurrentAddAndLookup()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        using var barrier = new Barrier(2);
+
+        // The writer grows the bucket list while the reader indexes into it
+        var writer = Task.Run(() =>
+        {
+            barrier.SignalAndWait();
+            for (var i = 1; i <= 64; i++)
+            {
+                hsts.Add(string.Join('.', Enumerable.Repeat("a", i)), DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+            }
+        });
+
+        var reader = Task.Run(() =>
+        {
+            var host = string.Join('.', Enumerable.Repeat("b", 64));
+            barrier.SignalAndWait();
+            for (var i = 0; i < 500_000; i++)
+            {
+                Assert.False(hsts.MustUpgradeRequest(host));
+            }
+        });
+
+        await Task.WhenAll(writer, reader);
+        Assert.True(hsts.MustUpgradeRequest(string.Join('.', Enumerable.Repeat("a", 64))));
     }
 
     [Fact]

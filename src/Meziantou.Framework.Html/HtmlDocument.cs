@@ -694,10 +694,49 @@ sealed class HtmlDocument : HtmlNode
         return new HtmlReader(reader, Options);
     }
 
+    // Closes the elements that '<name>' implicitly closes, such as the open '<li>' of '<li>a<li>b'.
+    private static HtmlNode? CloseImpliedElements(HtmlOptions options, HtmlNode? current, string name)
+    {
+        while (current is HtmlElement)
+        {
+            var target = FindElementToImplicitlyClose(options, current, name);
+            if (target?.ParentNode is null)
+                break;
+
+            for (var node = current; node is HtmlElement element; node = node.ParentNode)
+            {
+                element.IsClosed = true;
+                element.IsEmpty = false;
+                if (node == target)
+                    break;
+            }
+
+            current = target.ParentNode;
+        }
+
+        return current;
+    }
+
+    private static HtmlElement? FindElementToImplicitlyClose(HtmlOptions options, HtmlNode? current, string name)
+    {
+        for (var node = current; node is HtmlElement element; node = node.ParentNode)
+        {
+            if (options.IsImpliedEndTag(name, element.Name))
+                return element;
+
+            // an element is never implicitly closed through a scope boundary
+            if (options.ImpliedEndTagScopes.Contains(element.Name))
+                return null;
+        }
+
+        return null;
+    }
+
     private bool InternalLoad(TextReader reader, bool firstPass)
     {
         HtmlNode? current = this;
         HtmlAttribute? currentAtt = null;
+        var inEndTag = false;
         var htmlReader = CreateReader(reader);
         while (htmlReader.Read())
         {
@@ -721,6 +760,7 @@ sealed class HtmlDocument : HtmlNode
                     break;
 
                 case HtmlFragmentType.TagOpen:
+                    inEndTag = false;
                     var stateValue = htmlReader.State.Value ?? string.Empty;
                     string elementName;
                     bool processingInstruction;
@@ -759,11 +799,13 @@ sealed class HtmlDocument : HtmlNode
                         element.IsProcessingInstruction = processingInstruction;
                     }
 
+                    current = CloseImpliedElements(htmlReader.Options, current, elementName);
                     current?.ChildNodes.Add(element);
                     current = element;
                     break;
 
                 case HtmlFragmentType.TagEnd:
+                    inEndTag = false;
                     element = current as HtmlElement;
                     if (!DetectEncoding(htmlReader, element, firstPass))
                         return false;
@@ -796,6 +838,7 @@ sealed class HtmlDocument : HtmlNode
 
                 case HtmlFragmentType.TagEndClose:
                 case HtmlFragmentType.TagClose:
+                    inEndTag = true;
                     element = current as HtmlElement;
                     if (!DetectEncoding(htmlReader, element, firstPass))
                         return false;
@@ -852,8 +895,13 @@ sealed class HtmlDocument : HtmlNode
                     break;
 
                 case HtmlFragmentType.AttName:
-                    if (string.Equals(htmlReader.State.Value, "?", StringComparison.Ordinal))
+                    // '<?xml version="1.0"?>': the trailing '?' is part of the processing instruction, not an attribute
+                    // '</p class="x">': attributes of an end tag are ignored, they must not land on the parent element
+                    if (inEndTag || string.Equals(htmlReader.State.Value, "?", StringComparison.Ordinal))
+                    {
+                        currentAtt = null;
                         break;
+                    }
 
                     var att = CreateAttribute(htmlReader.State.Value ?? string.Empty);
                     att.StreamOrder = htmlReader.Offset;

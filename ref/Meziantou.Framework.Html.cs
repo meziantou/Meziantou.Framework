@@ -482,12 +482,15 @@ namespace Meziantou.Framework.Html
 
     public sealed class HtmlOptions
     {
+        public System.Collections.Generic.ISet<string> ImpliedEndTagScopes { get => throw null; }
         public System.Collections.Generic.ISet<string> ParsedScriptTypes { get => throw null; }
         public System.Collections.Generic.ISet<string> EmptyNamespaces { get => throw null; }
         public System.Collections.Generic.ISet<string> EmptyNamespacesForXPath { get => throw null; }
         public bool ReaderThrowsOnEncodingMismatch { get => throw null; set { } }
         public bool ReaderRestartsOnEncodingDetected { get => throw null; set { } }
         public bool ReaderThrowsOnUnknownDetectedEncoding { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyCollection<string> GetImpliedEndTags(string name) => throw null;
+        public void SetImpliedEndTags(string name, params string[] closedElementNames) { }
         public Meziantou.Framework.Html.HtmlElementWriteOptions GetElementWriteOptions(string name) => throw null;
         public void SetElementWriteOptions(string name, Meziantou.Framework.Html.HtmlElementWriteOptions options) { }
         public Meziantou.Framework.Html.HtmlElementReadOptions GetElementReadOptions(string name) => throw null;

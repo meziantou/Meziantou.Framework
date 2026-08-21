@@ -406,6 +406,46 @@ public sealed class UndoRedoManagerTests
         Assert.Equal(["undo:c", "undo:b", "undo:a"], log);
     }
 
+    [Fact]
+    public async Task RecordAction_FromInsideAnExecutingAction_Throws()
+    {
+        var manager = new UndoRedoManager();
+        var log = new List<string>();
+
+        var action = new UndoRedoDelegateAction(
+            execute: async ct =>
+            {
+                Assert.True(manager.ActionIsExecuting);
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await manager.RecordActionAsync(() => log.Add("do:inner"), () => log.Add("undo:inner"), ct));
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await manager.UndoAsync(ct));
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await manager.RedoAsync(ct));
+                Assert.Throws<InvalidOperationException>(manager.Clear);
+                Assert.Throws<InvalidOperationException>(() => manager.CreateTransaction());
+                log.Add("do:outer");
+            },
+            unexecute: () => log.Add("undo:outer"));
+
+        await manager.RecordActionAsync(action, CancellationToken);
+
+        Assert.Equal(["do:outer"], log);
+        Assert.False(manager.ActionIsExecuting);
+        Assert.Single(manager.UndoableActions);
+    }
+
+    [Fact]
+    public async Task ActionIsExecuting_IsResetAfterAFailedAction()
+    {
+        var manager = new UndoRedoManager();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await manager.RecordActionAsync(
+            () => throw new InvalidOperationException("boom"),
+            () => { },
+            CancellationToken));
+
+        Assert.False(manager.ActionIsExecuting);
+        Assert.False(manager.CanUndo);
+    }
+
     private sealed class AddAction(Action<int> add, Action<int> subtract, int value) : UndoRedoActionBase
     {
         // The total amount this action is responsible for; grows when following actions are merged in.

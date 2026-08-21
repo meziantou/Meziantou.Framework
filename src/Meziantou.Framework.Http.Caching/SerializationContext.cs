@@ -6,5 +6,4 @@ namespace Meziantou.Framework.Http.Caching;
 [JsonSourceGenerationOptions(WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault, PropertyNameCaseInsensitive = false)]
 internal sealed partial class SerializationContext : JsonSerializerContext
 {
-
 }

@@ -50,7 +50,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             // RFC 7234 Section 4.4: Invalidation on unsafe methods
-            if (!IsMethodSafe(request.Method) && IsSuccessStatusCode(response.StatusCode))
+            if (!IsMethodSafe(request.Method) && IsNonErrorStatusCode(response.StatusCode))
             {
                 await _cache.InvalidateAsync(request.RequestUri, cancellationToken).ConfigureAwait(false);
                 await InvalidateLocationHeadersAsync(response, cancellationToken).ConfigureAwait(false);
@@ -114,7 +114,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
                                       (hasPragmaNoCache && requestCacheControl is null));
 
             // RFC 7234 Section 5.2.1.1: max-age request directive
-            if (requestCacheControl?.MaxAge != null)
+            if (requestCacheControl?.MaxAge is not null)
             {
                 var maxAgeSeconds = requestCacheControl.MaxAge.Value.TotalSeconds;
                 if (currentAge.TotalSeconds >= maxAgeSeconds)
@@ -124,7 +124,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             }
 
             // RFC 7234 Section 5.2.1.3: min-fresh request directive
-            if (requestCacheControl?.MinFresh != null && isFresh)
+            if (requestCacheControl?.MinFresh is not null && isFresh)
             {
                 var minFresh = requestCacheControl.MinFresh.Value;
                 var remainingFreshness = freshnessLifetime - currentAge;
@@ -152,7 +152,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             var allowStale = false;
             if ((requestCacheControl?.MaxStale) is true && !cacheResult.MustRevalidate && !cacheResult.ProxyRevalidate)
             {
-                if (requestCacheControl.MaxStaleLimit != null)
+                if (requestCacheControl.MaxStaleLimit is not null)
                 {
                     var staleness = currentAge - freshnessLifetime;
                     if (staleness <= requestCacheControl.MaxStaleLimit.Value)
@@ -196,7 +196,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             }
 
             // Attempt conditional validation
-            if (cacheResult.ETag is not null || cacheResult.LastModified != null)
+            if (cacheResult.ETag is not null || cacheResult.LastModified is not null)
             {
                 var conditionalRequest = CloneRequest(request);
                 try
@@ -308,8 +308,9 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
                method == HttpMethod.Trace;
     }
 
-    private static bool IsSuccessStatusCode(HttpStatusCode statusCode)
+    private static bool IsNonErrorStatusCode(HttpStatusCode statusCode)
     {
+        // RFC 9111 Section 4.4: invalidation happens on a non-error response, which includes redirections.
         var code = (int)statusCode;
         return code >= 200 && code < 400;
     }
@@ -331,19 +332,19 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
     private async ValueTask InvalidateLocationHeadersAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         // RFC 7234 Section 4.4: Invalidate Location and Content-Location URIs
-        if (response.Headers.Location != null)
+        if (response.Headers.Location is not null)
         {
             var locationUri = GetAbsoluteUri(response.RequestMessage?.RequestUri, response.Headers.Location);
-            if (locationUri != null && IsSameHost(response.RequestMessage?.RequestUri, locationUri))
+            if (locationUri is not null && IsSameHost(response.RequestMessage?.RequestUri, locationUri))
             {
                 await _cache.InvalidateAsync(locationUri, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        if (response.Content.Headers.ContentLocation != null)
+        if (response.Content.Headers.ContentLocation is not null)
         {
             var contentLocationUri = GetAbsoluteUri(response.RequestMessage?.RequestUri, response.Content.Headers.ContentLocation);
-            if (contentLocationUri != null && IsSameHost(response.RequestMessage?.RequestUri, contentLocationUri))
+            if (contentLocationUri is not null && IsSameHost(response.RequestMessage?.RequestUri, contentLocationUri))
             {
                 await _cache.InvalidateAsync(contentLocationUri, cancellationToken).ConfigureAwait(false);
             }
@@ -355,7 +356,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         if (relativeOrAbsolute.IsAbsoluteUri)
             return relativeOrAbsolute;
 
-        if (baseUri == null)
+        if (baseUri is null)
             return null;
 
         return new Uri(baseUri, relativeOrAbsolute);
@@ -363,7 +364,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
     private static bool IsSameHost(Uri? uri1, Uri? uri2)
     {
-        if (uri1 == null || uri2 == null)
+        if (uri1 is null || uri2 is null)
             return false;
 
         return string.Equals(uri1.Host, uri2.Host, StringComparison.OrdinalIgnoreCase);

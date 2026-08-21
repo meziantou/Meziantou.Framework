@@ -27,7 +27,7 @@ internal sealed class HttpCache
 
     public async ValueTask<CacheEntry?> TryGetAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (request.RequestUri == null)
+        if (request.RequestUri is null)
             return null;
 
         var primaryKey = ComputePrimaryKey(request.Method, request.RequestUri);
@@ -71,7 +71,7 @@ internal sealed class HttpCache
 
     public async ValueTask StoreAsync(HttpRequestMessage request, HttpResponseMessage response, DateTimeOffset requestTime, DateTimeOffset responseTime, CancellationToken cancellationToken)
     {
-        if (request.RequestUri == null)
+        if (request.RequestUri is null)
             return;
 
         // RFC 7234 Section 3: Determine if response is cacheable
@@ -149,13 +149,13 @@ internal sealed class HttpCache
 
             if (!responseCacheControl.MustRevalidate &&
                 !responseCacheControl.Public &&
-                responseCacheControl.SharedMaxAge == null)
+                responseCacheControl.SharedMaxAge is null)
                 return false;
         }
 
         // Check if response has explicit freshness information or is cacheable by default
-        var hasExplicitFreshness = responseCacheControl?.MaxAge != null ||
-                                   responseCacheControl?.SharedMaxAge != null ||
+        var hasExplicitFreshness = responseCacheControl?.MaxAge is not null ||
+                                   responseCacheControl?.SharedMaxAge is not null ||
                                    responseCacheControl?.Public is true;
 
         // Validate Expires header if present and no Cache-Control freshness

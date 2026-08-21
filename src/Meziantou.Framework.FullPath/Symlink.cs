@@ -125,8 +125,10 @@ internal static partial class Symlink
             using var handle = Interop.Kernel32.FindFirstFile(path, ref findData);
             if (!handle.IsInvalid)
             {
+                // dwReserved0 holds the reparse tag, so it must be compared for equality.
+                // A bitwise test would also match other reparse points such as junctions (IO_REPARSE_TAG_MOUNT_POINT).
                 return ((FileAttributes)findData.dwFileAttributes).HasFlag(FileAttributes.ReparsePoint) &&
-                    (findData.dwReserved0 & 0xA000000C) != 0;  // IO_REPARSE_TAG_SYMLINK
+                    findData.dwReserved0 == Interop.Kernel32.IO_REPARSE_TAG_SYMLINK;
             }
 
             return false;
@@ -144,8 +146,6 @@ internal static partial class Symlink
                                                                                // https://docs.microsoft.com/en-us/windows-hardware/drivers/ifs/fsctl-get-reparse-point
 
             var sizeHeader = Marshal.SizeOf<Interop.Kernel32.REPARSE_DATA_BUFFER_SYMLINK>();
-            uint bytesRead = 0;
-            ReadOnlySpan<byte> validBuffer;
             var bufferSize = sizeHeader + Interop.Kernel32.MAX_PATH;
 
             while (true)
@@ -153,7 +153,7 @@ internal static partial class Symlink
                 var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
                 try
                 {
-                    var result = Interop.Kernel32.DeviceIoControl(handle, Interop.Kernel32.FSCTL_GET_REPARSE_POINT, inBuffer: null, cbInBuffer: 0, buffer, (uint)buffer.Length, out bytesRead, overlapped: IntPtr.Zero) ?
+                    var result = Interop.Kernel32.DeviceIoControl(handle, Interop.Kernel32.FSCTL_GET_REPARSE_POINT, inBuffer: null, cbInBuffer: 0, buffer, (uint)buffer.Length, out var bytesRead, overlapped: IntPtr.Zero) ?
                         0 : Marshal.GetLastWin32Error();
 
                     if (result is not Interop.Errors.ERROR_SUCCESS and not Interop.Errors.ERROR_INSUFFICIENT_BUFFER and not Interop.Errors.ERROR_MORE_DATA)
@@ -161,7 +161,7 @@ internal static partial class Symlink
                         throw new Win32Exception(result);
                     }
 
-                    validBuffer = buffer.AsSpan()[..(int)bytesRead];
+                    ReadOnlySpan<byte> validBuffer = buffer.AsSpan()[..(int)bytesRead];
 
                     if (!MemoryMarshal.TryRead<Interop.Kernel32.REPARSE_DATA_BUFFER_SYMLINK>(validBuffer, out var header))
                     {
@@ -172,7 +172,7 @@ internal static partial class Symlink
                         }
 
                         // can't read header, guess at buffer length
-                        buffer = new byte[buffer.Length + Interop.Kernel32.MAX_PATH];
+                        bufferSize = checked(buffer.Length + Interop.Kernel32.MAX_PATH);
                         continue;
                     }
 

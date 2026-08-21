@@ -84,6 +84,7 @@ namespace Meziantou.Framework
 
             internal const uint FSCTL_GET_REPARSE_POINT = 0x000900a8;
             internal const uint SYMLINK_FLAG_RELATIVE = 1;
+            internal const uint IO_REPARSE_TAG_SYMLINK = 0xA000000C;
 
             [StructLayout(LayoutKind.Sequential)]
             internal struct REPARSE_DATA_BUFFER_SYMLINK

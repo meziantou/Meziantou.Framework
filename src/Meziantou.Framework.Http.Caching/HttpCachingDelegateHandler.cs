@@ -71,6 +71,17 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             return rangeResponse;
         }
 
+        // RFC 9111 Section 4.3.2: the caller is performing its own validation. Evaluating the precondition
+        // against the stored response would turn a conditional request into an unconditional 200, and adding
+        // our own validators on top of the caller's would send conflicting preconditions. Forward to origin
+        // so the caller gets the 304 or 200 it asked for.
+        if (HasConditionalHeaders(request.Headers))
+        {
+            var conditionalPassthroughResponse = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            conditionalPassthroughResponse.RequestMessage ??= request;
+            return conditionalPassthroughResponse;
+        }
+
         // Check request-level cache directives
         var requestCacheControl = request.Headers.CacheControl;
         var hasPragmaNoCache = HasPragmaNoCache(request.Headers);
@@ -187,55 +198,65 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             // Attempt conditional validation
             if (cacheResult.ETag is not null || cacheResult.LastModified != null)
             {
-                using var conditionalRequest = CloneRequest(request);
-
-                // RFC 7232 Section 3.2: If-None-Match
-                if (cacheResult.ETag is not null)
+                var conditionalRequest = CloneRequest(request);
+                try
                 {
-                    conditionalRequest.Headers.TryAddWithoutValidation("If-None-Match", cacheResult.ETag);
-                }
-
-                // RFC 7232 Section 3.3: If-Modified-Since
-                if (cacheResult.LastModified != null)
-                {
-                    conditionalRequest.Headers.IfModifiedSince = cacheResult.LastModified;
-                }
-
-                var validationRequestTime = _timeProvider.GetUtcNow();
-                var conditionalResponse = await base.SendAsync(conditionalRequest, cancellationToken).ConfigureAwait(false);
-                var responseTime = _timeProvider.GetUtcNow();
-
-                // RFC 7234 Section 4.3.3: Handle 304 Not Modified
-                if (conditionalResponse.StatusCode is HttpStatusCode.NotModified)
-                {
-                    // Update cached entry with new headers from 304 response
-                    await cacheResult.UpdateFromValidationResponse(conditionalResponse, validationRequestTime, responseTime, cancellationToken).ConfigureAwait(false);
-                    await _cache.PersistEntryAsync(request.RequestUri, cacheResult, cancellationToken).ConfigureAwait(false);
-
-                    conditionalResponse.Dispose();
-
-                    var newAge = cacheResult.CalculateCurrentAge(_timeProvider.GetUtcNow());
-                    return CreateCachedResponse(request, cacheResult, newAge);
-                }
-
-                // RFC 5861: Handle error responses with stale-if-error
-                if (cacheResult.StaleIfError is not null && !conditionalResponse.IsSuccessStatusCode)
-                {
-                    var staleness = currentAge - freshnessLifetime;
-                    if (staleness <= cacheResult.StaleIfError.Value)
+                    // RFC 7232 Section 3.2: If-None-Match
+                    if (cacheResult.ETag is not null)
                     {
+                        conditionalRequest.Headers.TryAddWithoutValidation("If-None-Match", cacheResult.ETag);
+                    }
+
+                    // RFC 7232 Section 3.3: If-Modified-Since
+                    if (cacheResult.LastModified is not null)
+                    {
+                        conditionalRequest.Headers.IfModifiedSince = cacheResult.LastModified;
+                    }
+
+                    var validationRequestTime = _timeProvider.GetUtcNow();
+                    var conditionalResponse = await base.SendAsync(conditionalRequest, cancellationToken).ConfigureAwait(false);
+                    var responseTime = _timeProvider.GetUtcNow();
+
+                    // RFC 7234 Section 4.3.3: Handle 304 Not Modified
+                    if (conditionalResponse.StatusCode is HttpStatusCode.NotModified)
+                    {
+                        // Update cached entry with new headers from 304 response
+                        await cacheResult.UpdateFromValidationResponse(conditionalResponse, validationRequestTime, responseTime, cancellationToken).ConfigureAwait(false);
+                        await _cache.PersistEntryAsync(request.Method, request.RequestUri, cacheResult, cancellationToken).ConfigureAwait(false);
+
                         conditionalResponse.Dispose();
 
-                        // RFC 7234 Section 5.5: Add Warning headers
-                        var warnings = "110 - \"Response is Stale\", 111 - \"Revalidation Failed\"";
-                        return CreateCachedResponse(request, cacheResult, currentAge, warnings);
+                        var newAge = cacheResult.CalculateCurrentAge(_timeProvider.GetUtcNow());
+                        return CreateCachedResponse(request, cacheResult, newAge);
                     }
-                }
 
-                // Use fresh response and cache it
-                await _cache.StoreAsync(request, conditionalResponse, requestTime, responseTime, cancellationToken).ConfigureAwait(false);
-                conditionalResponse.RequestMessage ??= request;
-                return conditionalResponse;
+                    // RFC 5861: Handle error responses with stale-if-error
+                    if (cacheResult.StaleIfError is not null && !conditionalResponse.IsSuccessStatusCode)
+                    {
+                        var staleness = currentAge - freshnessLifetime;
+                        if (staleness <= cacheResult.StaleIfError.Value)
+                        {
+                            conditionalResponse.Dispose();
+
+                            // RFC 7234 Section 5.5: Add Warning headers
+                            var warnings = "110 - \"Response is Stale\", 111 - \"Revalidation Failed\"";
+                            return CreateCachedResponse(request, cacheResult, currentAge, warnings);
+                        }
+                    }
+
+                    // Use fresh response and cache it. The timing of the validation request is used so the
+                    // stored entry is not aged by the time the previous entry spent in the cache.
+                    await _cache.StoreAsync(request, conditionalResponse, validationRequestTime, responseTime, cancellationToken).ConfigureAwait(false);
+                    conditionalResponse.RequestMessage ??= request;
+                    return conditionalResponse;
+                }
+                finally
+                {
+                    // The clone shares the caller's content. Detach it so disposing the clone does not
+                    // dispose content that the caller still owns.
+                    conditionalRequest.Content = null;
+                    conditionalRequest.Dispose();
+                }
             }
         }
 
@@ -419,18 +440,38 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
     private static HttpRequestMessage CloneRequest(HttpRequestMessage original)
     {
-        var clone = new HttpRequestMessage(original.Method, original.RequestUri);
+        var clone = new HttpRequestMessage(original.Method, original.RequestUri)
+        {
+            Version = original.Version,
+            VersionPolicy = original.VersionPolicy,
+            // The content is shared with the original request. The caller owns it, so the clone must be
+            // detached from it before it is disposed.
+            Content = original.Content,
+        };
 
         foreach (var header in original.Headers)
         {
             clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
 
-        if (original.Content is not null)
+        // Request options carry per-request state for the inner handlers (resilience policies,
+        // IHttpClientFactory metadata, ...) and must survive revalidation.
+        IDictionary<string, object?> cloneOptions = clone.Options;
+        foreach (var option in original.Options)
         {
-            clone.Content = original.Content;
+            cloneOptions[option.Key] = option.Value;
         }
 
         return clone;
+    }
+
+    private static bool HasConditionalHeaders(HttpRequestHeaders headers)
+    {
+        // RFC 9110 Section 13.1: preconditions issued by the caller
+        return headers.IfNoneMatch.Count > 0 ||
+               headers.IfMatch.Count > 0 ||
+               headers.IfModifiedSince is not null ||
+               headers.IfUnmodifiedSince is not null ||
+               headers.IfRange is not null;
     }
 }

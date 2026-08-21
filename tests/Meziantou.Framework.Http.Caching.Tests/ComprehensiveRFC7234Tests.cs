@@ -69,6 +69,37 @@ public sealed class ComprehensiveRFC7234Tests
     }
 
     [Fact]
+    public async Task WhenHeadResponseIsCachedThenGetRequestIsNotServedFromIt()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, ("Cache-Control", "max-age=3600"), ("Content-Length", "14"));
+        context.AddResponse(HttpStatusCode.OK, "cached-content", ("Cache-Control", "max-age=3600"));
+
+        await context.SnapshotResponse(HttpMethod.Head, "http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 14
+              Value:
+            """);
+
+        // RFC 9111 Section 2: the method is part of the primary cache key, so the bodiless HEAD response
+        // must not be reused for a GET.
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
+              Value: cached-content
+            """);
+    }
+
+    [Fact]
     public async Task WhenPostRequestThenNotCached()
     {
         await using var context = new HttpTestContext();

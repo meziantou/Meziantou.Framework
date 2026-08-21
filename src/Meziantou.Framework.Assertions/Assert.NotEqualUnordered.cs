@@ -13,7 +13,7 @@ public partial class Assert
         using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
         actualSnapshot.EnsureComplete();
         expectedSnapshot.EnsureComplete();
-        if (!EqualUnorderedUsingDefaultComparer(expectedSnapshot.Items, actualSnapshot.Items))
+        if (!EqualUnorderedUsingComparer(expectedSnapshot.Items, actualSnapshot.Items, EqualityComparer<T>.Default))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NotEqualUnorderedAssertionError<IEnumerable<T>, IEnumerable<T>>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
@@ -30,13 +30,12 @@ public partial class Assert
         expectedSnapshot.EnsureComplete();
         if (comparer is null)
         {
-            if (!EqualUnorderedUsingDefaultComparer(expectedSnapshot.Items, actualSnapshot.Items))
+            if (!EqualUnorderedUsingComparer(expectedSnapshot.Items, actualSnapshot.Items, EqualityComparer<T>.Default))
                 return;
         }
         else
         {
-            var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer);
-            if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+            if (!EqualUnorderedUsingComparer(expectedSnapshot.Items, actualSnapshot.Items, comparer))
                 return;
         }
 
@@ -69,7 +68,7 @@ public partial class Assert
         await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
         await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
-        if (!EqualUnorderedUsingDefaultComparer(expectedSnapshot.Items, actualSnapshot.Items))
+        if (!EqualUnorderedUsingComparer(expectedSnapshot.Items, actualSnapshot.Items, EqualityComparer<T>.Default))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NotEqualUnorderedAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
@@ -86,13 +85,12 @@ public partial class Assert
         await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         if (comparer is null)
         {
-            if (!EqualUnorderedUsingDefaultComparer(expectedSnapshot.Items, actualSnapshot.Items))
+            if (!EqualUnorderedUsingComparer(expectedSnapshot.Items, actualSnapshot.Items, EqualityComparer<T>.Default))
                 return;
         }
         else
         {
-            var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer);
-            if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+            if (!EqualUnorderedUsingComparer(expectedSnapshot.Items, actualSnapshot.Items, comparer))
                 return;
         }
 

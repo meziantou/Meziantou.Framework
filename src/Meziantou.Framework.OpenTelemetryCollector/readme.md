@@ -2,8 +2,10 @@
 
 This package provides OpenTelemetry OTLP receiver endpoints for:
 
-- HTTP (`/v1/logs`, `/v1/traces`, `/v1/metrics`)
+- HTTP (`/v1/logs`, `/v1/traces`, `/v1/metrics`), using either `application/x-protobuf` or `application/json` (OTLP/JSON)
 - gRPC (`LogsService`, `TraceService`, `MetricsService`)
+
+OTLP/HTTP requests compressed with `Content-Encoding: gzip` are supported, and responses use the same encoding as the request.
 
 The receiver API is abstract, so you can implement custom handling logic and register one or multiple receivers.
 
@@ -64,8 +66,53 @@ builder.Services.AddOpenTelemetryReceiver<MyReceiver>(options =>
 });
 ```
 
+Traces that never receive their root span are evaluated by a background sweep, so they are released even when no other
+trace is received. The sweep runs every `SweepInterval`, which defaults to a quarter of `MaxTraceDuration`.
+
+Once spans left the buffer they are dispatched to the handlers without a cancellation token: the originating request has
+already been answered, so aborting the dispatch would silently discard buffered data belonging to other requests.
+
 Overflow behavior is configurable through `OpenTelemetryTailBufferOverflowPolicy`:
 
 - `DropWholeTrace`: drop the whole buffered trace
 - `DropOldestSpans`: keep newest spans
 - `DropNewestSpans`: keep oldest spans
+
+A trace that exceeds `MaxBufferedSpansPerTrace` while using `DropWholeTrace` is remembered, so the spans of the same
+trace received later are dropped too instead of being emitted as fragments. Exceeding the global `MaxBufferedSpans`
+limit is transient back pressure and does not mark the trace as dropped.
+
+### Reporting rejected records
+
+Samplers and handlers can report the records they could not accept. They are sent back to the client in the OTLP
+`partial_success` response field:
+
+```csharp
+public sealed class DropOversizedLogsHandler : OpenTelemetryHandler
+{
+    public override ValueTask HandleLogsAsync(OpenTelemetryHandlerContext context, ExportLogsServiceRequest request, CancellationToken cancellationToken)
+    {
+        var rejected = Store(request);
+        if (rejected > 0)
+        {
+            context.PartialSuccess.Reject(rejected, "The storage quota is exceeded");
+        }
+
+        return ValueTask.CompletedTask;
+    }
+}
+```
+
+Spans dropped by `OpenTelemetryTailSampler` because a buffer limit is reached are reported the same way.
+
+### Limiting the request size
+
+OTLP/HTTP payloads larger than `MaxHttpRequestBodySize` (20 MiB by default) are rejected with `413 Content Too Large`.
+The limit applies to the payload after decompression, so a compressed request cannot expand beyond it.
+
+```csharp
+builder.Services.AddOpenTelemetryReceiver<MyReceiver>(options =>
+{
+    options.MaxHttpRequestBodySize = 4 * 1024 * 1024;
+});
+```

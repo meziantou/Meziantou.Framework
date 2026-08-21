@@ -48,11 +48,20 @@ public sealed class UndoRedoTransaction : IUndoRedoAction, IAsyncDisposable
     internal void MarkCompleted() => _completed = true;
 
     /// <inheritdoc />
-    /// <remarks>
-    /// The transaction is all-or-nothing: when an action fails, the actions that already ran are reverted before
-    /// the failure is propagated. An <see cref="AggregateException"/> is thrown if reverting them also fails.
-    /// </remarks>
-    public async ValueTask ExecuteAsync(CancellationToken cancellationToken = default)
+    ValueTask IUndoRedoAction.ExecuteAsync(CancellationToken cancellationToken) => ExecuteCoreAsync(cancellationToken);
+
+    /// <inheritdoc />
+    ValueTask IUndoRedoAction.UnExecuteAsync(CancellationToken cancellationToken) => UnExecuteCoreAsync(cancellationToken);
+
+    /// <inheritdoc />
+    ValueTask<bool> IUndoRedoAction.TryToMergeAsync(IUndoRedoAction followingAction) => new(false);
+
+    /// <summary>
+    /// Applies every action of the transaction. All-or-nothing: when an action fails, the actions that already ran
+    /// are reverted before the failure is propagated. An <see cref="AggregateException"/> is thrown if reverting
+    /// them also fails.
+    /// </summary>
+    internal async ValueTask ExecuteCoreAsync(CancellationToken cancellationToken)
     {
         if (_executed)
             return;
@@ -73,13 +82,12 @@ public sealed class UndoRedoTransaction : IUndoRedoAction, IAsyncDisposable
         _executed = true;
     }
 
-    /// <inheritdoc />
-    /// <remarks>
-    /// The transaction is all-or-nothing: when an action fails to revert, the actions that were already reverted
-    /// are re-applied before the failure is propagated. An <see cref="AggregateException"/> is thrown if
-    /// re-applying them also fails.
-    /// </remarks>
-    public async ValueTask UnExecuteAsync(CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Reverts every action of the transaction. All-or-nothing: when an action fails to revert, the actions that
+    /// were already reverted are re-applied before the failure is propagated. An <see cref="AggregateException"/>
+    /// is thrown if re-applying them also fails.
+    /// </summary>
+    internal async ValueTask UnExecuteCoreAsync(CancellationToken cancellationToken)
     {
         if (!_executed)
             return;
@@ -130,9 +138,6 @@ public sealed class UndoRedoTransaction : IUndoRedoAction, IAsyncDisposable
             await _actions[i].ExecuteAsync(CancellationToken.None).ConfigureAwait(false);
         }
     }
-
-    /// <inheritdoc />
-    public ValueTask<bool> TryToMergeAsync(IUndoRedoAction followingAction) => new(false);
 
     /// <summary>Commits the transaction, recording it as a single undo step.</summary>
     /// <param name="cancellationToken">A token to cancel the operation.</param>

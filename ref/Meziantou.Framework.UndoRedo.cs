@@ -57,9 +57,9 @@ namespace Meziantou.Framework.UndoRedo
     public sealed class UndoRedoTransaction : Meziantou.Framework.UndoRedo.IUndoRedoAction, System.IAsyncDisposable
     {
         public bool AllowToMergeWithPrevious { get => throw null; set { } }
-        public System.Threading.Tasks.ValueTask ExecuteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.ValueTask UnExecuteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public System.Threading.Tasks.ValueTask<bool> TryToMergeAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction followingAction) => throw null;
+        System.Threading.Tasks.ValueTask Meziantou.Framework.UndoRedo.IUndoRedoAction.ExecuteAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        System.Threading.Tasks.ValueTask Meziantou.Framework.UndoRedo.IUndoRedoAction.UnExecuteAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        System.Threading.Tasks.ValueTask<bool> Meziantou.Framework.UndoRedo.IUndoRedoAction.TryToMergeAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction followingAction) => throw null;
         public System.Threading.Tasks.ValueTask CommitAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.ValueTask RollbackAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;

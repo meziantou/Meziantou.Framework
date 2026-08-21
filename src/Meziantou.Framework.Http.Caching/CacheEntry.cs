@@ -9,10 +9,14 @@ internal sealed class CacheEntry
         SerializedResponse = serializedResponse;
     }
 
-    public static async Task<CacheEntry> CreateAsync(HttpRequestMessage request, HttpResponseMessage response,
-        DateTimeOffset requestTime, DateTimeOffset responseTime, CancellationToken cancellationToken)
+    /// <summary>Creates an entry, or returns <see langword="null"/> when the response exceeds <paramref name="maximumSize"/>.</summary>
+    public static async Task<CacheEntry?> CreateAsync(HttpRequestMessage request, HttpResponseMessage response,
+        DateTimeOffset requestTime, DateTimeOffset responseTime, long? maximumSize, CancellationToken cancellationToken)
     {
-        var serializedResponse = await ResponseSerializer.SerializeAsync(response, cancellationToken).ConfigureAwait(false);
+        var serializedResponse = await ResponseSerializer.SerializeAsync(response, maximumSize, cancellationToken).ConfigureAwait(false);
+        if (serializedResponse is null)
+            return null;
+
         var entry = new CacheEntry(serializedResponse)
         {
             RequestTime = requestTime,

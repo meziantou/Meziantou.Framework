@@ -177,7 +177,7 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
 
                 foreach (var entry in bag)
                 {
-                    if (ShouldDelete(entry, now))
+                    if (entry.IsObsolete(now))
                     {
                         deletedEntriesForKey++;
                     }
@@ -209,74 +209,5 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
         }
 
         return ValueTask.CompletedTask;
-    }
-
-    private static bool ShouldDelete(HttpCachePersistenceEntry entry, DateTimeOffset now)
-    {
-        return IsExpired(entry, now) && ShouldDeleteWhenExpired(entry);
-    }
-
-    private static bool ShouldDeleteWhenExpired(HttpCachePersistenceEntry entry)
-    {
-        var cannotBeUsedStale = entry.MustRevalidate || entry.ProxyRevalidate || entry.ResponseNoCache;
-        if (!cannotBeUsedStale)
-            return false;
-
-        return string.IsNullOrEmpty(entry.ETag) && entry.LastModified is null;
-    }
-
-    private static bool IsExpired(HttpCachePersistenceEntry entry, DateTimeOffset now)
-    {
-        var freshnessLifetime = GetFreshnessLifetime(entry);
-        var currentAge = CalculateCurrentAge(entry, now);
-        return currentAge >= freshnessLifetime;
-    }
-
-    private static TimeSpan GetFreshnessLifetime(HttpCachePersistenceEntry entry)
-    {
-        if (entry.SharedMaxAge.HasValue)
-            return entry.SharedMaxAge.Value;
-
-        if (entry.MaxAge.HasValue)
-            return entry.MaxAge.Value;
-
-        if (entry.Expires.HasValue)
-        {
-            var expiresTime = entry.Expires.Value;
-            if (expiresTime == DateTimeOffset.MinValue)
-                return TimeSpan.Zero;
-
-            var freshness = expiresTime - entry.ResponseDate;
-            return freshness > TimeSpan.Zero ? freshness : TimeSpan.Zero;
-        }
-
-        if (entry.LastModified.HasValue)
-        {
-            var age = entry.ResponseDate - entry.LastModified.Value;
-            if (age > TimeSpan.Zero)
-            {
-                return TimeSpan.FromSeconds(age.TotalSeconds * 0.1);
-            }
-        }
-
-        return TimeSpan.Zero;
-    }
-
-    private static TimeSpan CalculateCurrentAge(HttpCachePersistenceEntry entry, DateTimeOffset now)
-    {
-        var correctedInitialAge = CalculateCorrectedInitialAge(entry);
-        var residentTime = now - entry.ResponseTime;
-        return correctedInitialAge + residentTime;
-    }
-
-    private static TimeSpan CalculateCorrectedInitialAge(HttpCachePersistenceEntry entry)
-    {
-        var apparentAge = entry.ResponseTime - entry.ResponseDate;
-        if (apparentAge < TimeSpan.Zero)
-            apparentAge = TimeSpan.Zero;
-
-        var responseDelay = entry.ResponseTime - entry.RequestTime;
-        var correctedAgeValue = entry.AgeValue + responseDelay;
-        return apparentAge > correctedAgeValue ? apparentAge : correctedAgeValue;
     }
 }

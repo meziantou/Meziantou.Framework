@@ -159,7 +159,7 @@ internal sealed class HttpCache
         // Validate Expires header if present and no Cache-Control freshness
         if (!hasExplicitFreshness && HasExpiresHeader(response))
         {
-            var expires = ParseExpiresHeaderForValidation(response);
+            var expires = CacheEntry.ParseExpiresHeader(response);
             var date = response.Headers.Date ?? DateTimeOffset.UtcNow;
 
             // If Expires is valid and in the future, it counts as explicit freshness
@@ -223,50 +223,5 @@ internal sealed class HttpCache
         // Expires can be on content headers or response headers depending on how it was added
         return response.Content.Headers.TryGetValues("Expires", out _) ||
                response.Headers.TryGetValues("Expires", out _);
-    }
-
-    private static DateTimeOffset? ParseExpiresHeaderForValidation(HttpResponseMessage response)
-    {
-        if (!response.Content.Headers.TryGetValues("Expires", out var values))
-        {
-            if (!response.Headers.TryGetValues("Expires", out values))
-                return null;
-        }
-
-        var expiresValue = values.FirstOrDefault();
-        if (string.IsNullOrEmpty(expiresValue))
-            return null;
-
-        // RFC 7234 Section 5.3: Invalid dates (including "0") are treated as past
-        if (expiresValue is "0" or "-1")
-            return DateTimeOffset.MinValue;
-
-        // RFC 7231 Section 7.1.1.1: Try RFC 1123 format first (preferred)
-        if (DateTimeOffset.TryParseExact(expiresValue, "R", CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
-            return result;
-
-        // RFC 7231: Try RFC 850 format (obsolete but still used)
-        // Format: Sunday, 06-Nov-94 08:49:37 GMT
-        if (DateTimeOffset.TryParseExact(expiresValue, "dddd, dd-MMM-yy HH:mm:ss 'GMT'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result))
-            return result;
-
-        // Try without GMT suffix in case it was already parsed
-        if (DateTimeOffset.TryParseExact(expiresValue, "dddd, dd-MMM-yy HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result))
-            return result;
-
-        // RFC 7231: Try asctime format (obsolete but still used)
-        // Format: Sun Nov  6 08:49:37 1994
-        if (DateTimeOffset.TryParseExact(expiresValue, "ddd MMM  d HH:mm:ss yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result))
-            return result;
-
-        // Also try single-digit day format for asctime
-        if (DateTimeOffset.TryParseExact(expiresValue, "ddd MMM d HH:mm:ss yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result))
-            return result;
-
-        // Try general parsing as fallback
-        if (DateTimeOffset.TryParse(expiresValue, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result))
-            return result;
-
-        return DateTimeOffset.MinValue; // Invalid date treated as expired
     }
 }

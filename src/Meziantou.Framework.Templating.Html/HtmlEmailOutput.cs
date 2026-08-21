@@ -25,6 +25,26 @@ public class HtmlEmailOutput(Template template, TextWriter writer) : Output(temp
     /// <summary>Gets the list of content identifiers (CIDs) referenced in the template.</summary>
     public IList<string> ContentIdentifiers { get; } = new List<string>();
 
+    public override void Write(string? value)
+    {
+        foreach (var currentSection in _currentSections)
+        {
+            currentSection.Writer.Write(value);
+        }
+
+        base.Write(value);
+    }
+
+    public override void Write(object? value)
+    {
+        foreach (var currentSection in _currentSections)
+        {
+            currentSection.Writer.Write(value);
+        }
+
+        base.Write(value);
+    }
+
     public override void Write(string format, params object?[] args)
     {
         foreach (var currentSection in _currentSections)

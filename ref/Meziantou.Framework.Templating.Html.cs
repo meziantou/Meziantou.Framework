@@ -28,6 +28,8 @@ namespace Meziantou.Framework.Templating
         public const string TitleSectionName = "title";
         public System.Collections.Generic.IList<string> ContentIdentifiers { get => throw null; }
         public HtmlEmailOutput(Meziantou.Framework.Templating.Template template, System.IO.TextWriter writer) { }
+        public override void Write(string? value) { }
+        public override void Write(object? value) { }
         public override void Write(string format, params object?[] args) { }
         public virtual void WriteHtmlEncode(object? value) { }
         public virtual void WriteHtmlEncode(string? value) { }

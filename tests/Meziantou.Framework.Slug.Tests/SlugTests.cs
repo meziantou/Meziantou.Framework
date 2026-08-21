@@ -1,3 +1,5 @@
+using Meziantou.Xunit;
+
 namespace Meziantou.Framework.Tests;
 
 public class SlugTests
@@ -157,6 +159,7 @@ public class SlugTests
     }
 
     [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void Slug_Culture_IsUsedForCasing()
     {
         var options = new SlugOptions
@@ -200,6 +203,7 @@ public class SlugTests
     }
 
     [Theory]
+    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     [InlineData(1, "")]
     [InlineData(2, "\u00E9")]
     [InlineData(3, "\u00E9\u00E9")]
@@ -228,6 +232,7 @@ public class SlugTests
     }
 
     [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void Slug_MaximumLength_NeverStripsCombiningMarksFromTheLastCharacter()
     {
         var options = new SlugOptions { MaximumLength = 4 };

@@ -24,8 +24,12 @@ namespace Meziantou.Framework.Http;
 /// </example>
 public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainPolicy>
 {
-    private readonly List<ConcurrentDictionary<string, HstsDomainPolicy>> _policies = new(capacity: 8);
+    private readonly Lock _lock = new();
     private readonly TimeProvider _timeProvider;
+
+    // Copy-on-write: the array is never mutated once published, so readers can take a
+    // snapshot and index into it without locking. Writers build a new array under _lock.
+    private volatile ConcurrentDictionary<string, HstsDomainPolicy>[] _policies = [];
 
     // Avoid recomputing the value during initialization
     private readonly DateTimeOffset _expires18weeks;
@@ -95,14 +99,23 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
 
         var partCount = CountSegments(host);
         ConcurrentDictionary<string, HstsDomainPolicy> dictionary;
-        lock (_policies)
+        lock (_lock)
         {
-            for (var i = _policies.Count; i < partCount; i++)
+            var policies = _policies;
+            if (policies.Length < partCount)
             {
-                _policies.Add(new ConcurrentDictionary<string, HstsDomainPolicy>(StringComparer.OrdinalIgnoreCase));
+                var newPolicies = new ConcurrentDictionary<string, HstsDomainPolicy>[partCount];
+                Array.Copy(policies, newPolicies, policies.Length);
+                for (var i = policies.Length; i < partCount; i++)
+                {
+                    newPolicies[i] = new ConcurrentDictionary<string, HstsDomainPolicy>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                // Publish the fully-initialized array; the volatile write makes the element stores visible first
+                _policies = policies = newPolicies;
             }
 
-            dictionary = _policies[partCount - 1];
+            dictionary = policies[partCount - 1];
         }
 
         dictionary.AddOrUpdate(host,
@@ -125,23 +138,28 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     /// <returns><see langword="true"/> if the request should be upgraded to HTTPS; otherwise, <see langword="false"/>.</returns>
     public bool MustUpgradeRequest(ReadOnlySpan<char> host)
     {
+        var policies = _policies;
+        var now = _timeProvider.GetUtcNow();
+
+        // Walk the suffixes from the least to the most specific. A suffix that does not apply does not
+        // rule out a match: a more specific entry (down to the host itself) may still require an upgrade.
         var enumerator = new DomainSplitReverseEnumerator(host);
-        for (var i = 0; i < _policies.Count && enumerator.MoveNext(); i++)
+        for (var i = 0; i < policies.Length && enumerator.MoveNext(); i++)
         {
-            var dictionary = _policies[i];
+            var dictionary = policies[i];
             var lastSegments = host[enumerator.Current..];
 
             var lookup = dictionary.GetAlternateLookup<ReadOnlySpan<char>>();
             if (lookup.TryGetValue(lastSegments, out var hsts))
             {
-                if (hsts.ExpiresAt < _timeProvider.GetUtcNow())
+                if (hsts.ExpiresAt < now)
                 {
-                    return false;
+                    continue;
                 }
 
                 if (!hsts.IncludeSubdomains && enumerator.Current != 0)
                 {
-                    return false;
+                    continue;
                 }
 
                 return true;
@@ -169,12 +187,10 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
 
     public IEnumerator<HstsDomainPolicy> GetEnumerator()
     {
-        for (var i = 0; i < _policies.Count; i++)
+        var policies = _policies;
+        for (var i = 0; i < policies.Length; i++)
         {
-            var dictionary = _policies[i];
-            if (dictionary is null)
-                continue;
-
+            var dictionary = policies[i];
             foreach (var kvp in dictionary)
             {
                 yield return kvp.Value;

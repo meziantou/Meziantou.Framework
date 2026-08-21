@@ -38,6 +38,55 @@ public sealed class HstsClientHandlerTests
         Assert.Equal(Uri.UriSchemeHttps, response2.RequestMessage!.RequestUri!.Scheme);
     }
 
+    [Fact]
+    public async Task UpgradeRequest_InternationalizedDomain()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);
+        using var client = new HttpClient(new HstsClientHandler(new MockHttpMessageHandler(headerResponse: null), hsts), disposeHandler: true);
+
+        // 跳.jp (xn--vt3a.jp) is in the HSTS preload list, which stores Punycode names
+        using var response = await client.GetAsync("http://跳.jp", XunitCancellationToken);
+        Assert.Equal(Uri.UriSchemeHttps, response.RequestMessage!.RequestUri!.Scheme);
+    }
+
+    [Theory]
+    [InlineData("max-age=abc")]
+    [InlineData("max-age=")]
+    [InlineData("max-age=-1")]
+    [InlineData("max-age=99999999999999999999999")]
+    [InlineData("includeSubDomains")]
+    [InlineData("")]
+    public async Task MalformedHeader_IsIgnored(string headerResponse)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        using var client = new HttpClient(new HstsClientHandler(new MockHttpMessageHandler(headerResponse), hsts), disposeHandler: true);
+
+        using var response = await client.GetAsync("https://example.com", XunitCancellationToken);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.False(hsts.MustUpgradeRequest("example.com"));
+    }
+
+    [Fact]
+    public async Task QuotedMaxAge_IsSupported()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        using var client = new HttpClient(new HstsClientHandler(new MockHttpMessageHandler("max-age=\"31536000\"; includeSubDomains"), hsts), disposeHandler: true);
+
+        using var response = await client.GetAsync("https://example.com", XunitCancellationToken);
+        Assert.True(hsts.MustUpgradeRequest("example.com"));
+        Assert.True(hsts.MustUpgradeRequest("foo.example.com"));
+    }
+
+    [Fact]
+    public async Task VeryLargeMaxAge_IsClamped()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        using var client = new HttpClient(new HstsClientHandler(new MockHttpMessageHandler("max-age=9999999999"), hsts), disposeHandler: true);
+
+        using var response = await client.GetAsync("https://example.com", XunitCancellationToken);
+        Assert.True(hsts.MustUpgradeRequest("example.com"));
+    }
+
     private sealed class MockHttpMessageHandler(string? headerResponse) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -49,7 +98,7 @@ public sealed class HstsClientHandlerTests
 
             if (headerResponse is not null)
             {
-                response.Headers.Add("Strict-Transport-Security", headerResponse);
+                response.Headers.TryAddWithoutValidation("Strict-Transport-Security", headerResponse);
             }
 
             return Task.FromResult(response);

@@ -693,6 +693,67 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public void ReadOnlySpanOfDoublesWithSignedZeroAndNaN_Success()
+    {
+        // Bitwise comparison would report these as different, but -0.0 equals +0.0 and NaN equals NaN.
+        ReadOnlySpan<double> expected = [1.0, -0.0, double.NaN];
+        ReadOnlySpan<double> actual = [1.0, 0.0, double.NaN];
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ReadOnlySpanOfEnums_Success()
+    {
+        ReadOnlySpan<DayOfWeek> expected = [DayOfWeek.Monday, DayOfWeek.Friday];
+        ReadOnlySpan<DayOfWeek> actual = [DayOfWeek.Monday, DayOfWeek.Friday];
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ReadOnlySpanOfEnums_Fails()
+    {
+        AssertionTestHelpers.Validate(Validate, """
+            Assert.Equal() assertion failed: Item at index 1 differs.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 1
+            Expected item: [Monday, F̲r̲i̲d̲a̲y̲]
+            Actual item:   [Monday, S̲u̲n̲d̲a̲y̲]
+            """);
+
+        static void Validate()
+        {
+            ReadOnlySpan<DayOfWeek> expected = [DayOfWeek.Monday, DayOfWeek.Friday];
+            ReadOnlySpan<DayOfWeek> actual = [DayOfWeek.Monday, DayOfWeek.Sunday];
+
+            AssertionsAssert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    public void ReadOnlySpanOfBytes_Fails()
+    {
+        AssertionTestHelpers.Validate(Validate, """
+            Assert.Equal() assertion failed: Item at index 2 differs.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 2
+            Expected item: [1, 2, 3̲, 4]
+            Actual item:   [1, 2, 4̲2̲, 4]
+            """);
+
+        static void Validate()
+        {
+            ReadOnlySpan<byte> expected = [1, 2, 3, 4];
+            ReadOnlySpan<byte> actual = [1, 2, 42, 4];
+
+            AssertionsAssert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
     public void HighlightsReadOnlySpanDifference()
     {
         AssertionTestHelpers.Validate(Validate, """

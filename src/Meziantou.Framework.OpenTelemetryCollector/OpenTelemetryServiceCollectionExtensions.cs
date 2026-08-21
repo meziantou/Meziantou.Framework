@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace Meziantou.Framework.OpenTelemetryCollector;
 
@@ -11,6 +12,7 @@ public static class OpenTelemetryServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         AddOpenTelemetryInfrastructure(services, configure);
+        services.TryAddSingleton<TReceiver>();
         services.AddSingleton<OpenTelemetryHandlerRegistration>(static serviceProvider => new OpenTelemetryHandlerRegistration(serviceProvider.GetRequiredService<TReceiver>()));
         return services;
     }
@@ -36,7 +38,9 @@ public static class OpenTelemetryServiceCollectionExtensions
             services.Configure(configure);
         }
 
+        services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<OpenTelemetryTraceTailSamplerHandler>();
         services.TryAddSingleton<OpenTelemetryRequestPipeline>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, OpenTelemetryTailSamplerBackgroundService>());
     }
 }

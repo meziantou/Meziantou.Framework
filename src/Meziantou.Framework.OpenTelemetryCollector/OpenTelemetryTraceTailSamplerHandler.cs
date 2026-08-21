@@ -5,11 +5,18 @@ using OpenTelemetry.Proto.Trace.V1;
 
 namespace Meziantou.Framework.OpenTelemetryCollector;
 
-internal sealed class OpenTelemetryTraceTailSamplerHandler
+internal sealed class OpenTelemetryTraceTailSamplerHandler(TimeProvider timeProvider)
 {
+    private readonly TimeProvider _timeProvider = timeProvider;
     private readonly System.Threading.Lock _gate = new();
 
     private readonly Dictionary<string, BufferedTraceState> _traces = new(StringComparer.Ordinal);
+
+    // Traces that exceeded their own span limit while using OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace.
+    // The decision must be remembered, otherwise the next batch of the same trace starts buffering again and the
+    // trace is emitted as a set of fragments instead of being dropped. The value is the last time a span was seen.
+    private readonly Dictionary<string, DateTimeOffset> _droppedTraces = new(StringComparer.Ordinal);
+
     private int _bufferedSpanCount;
 
     public async ValueTask HandleAsync(
@@ -31,14 +38,23 @@ internal sealed class OpenTelemetryTraceTailSamplerHandler
             return;
         }
 
-        var now = DateTimeOffset.UtcNow;
+        var now = _timeProvider.GetUtcNow();
         var evaluations = new List<BufferedTraceEvaluation>();
+        var rejectedSpanCount = 0;
         lock (_gate)
         {
+            PurgeDroppedTraces(tailSampling, now);
             CollectTimedOutTraces(tailSampling, now, evaluations);
 
             foreach (var (traceId, entries) in incomingByTrace)
             {
+                if (_droppedTraces.ContainsKey(traceId))
+                {
+                    _droppedTraces[traceId] = now;
+                    rejectedSpanCount += entries.Count;
+                    continue;
+                }
+
                 if (!_traces.TryGetValue(traceId, out var state))
                 {
                     state = new BufferedTraceState(traceId, now);
@@ -48,7 +64,16 @@ internal sealed class OpenTelemetryTraceTailSamplerHandler
                 state.LastContext = context;
 
                 AppendEntries(state, entries);
-                ApplyCapacityPolicy(tailSampling, state);
+
+                var (removedSpanCount, exceededPerTraceLimit) = ApplyCapacityPolicy(tailSampling, state);
+                if (removedSpanCount > 0)
+                {
+                    rejectedSpanCount += removedSpanCount;
+                    if (exceededPerTraceLimit && tailSampling.OverflowPolicy is OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace)
+                    {
+                        _droppedTraces[traceId] = now;
+                    }
+                }
 
                 if (state.SpanCount is 0)
                 {
@@ -64,23 +89,113 @@ internal sealed class OpenTelemetryTraceTailSamplerHandler
             }
         }
 
+        if (rejectedSpanCount > 0)
+        {
+            context.PartialSuccess.Reject(rejectedSpanCount, "Spans were dropped because the tail sampling buffer is full");
+        }
+
+        await EvaluateAsync(evaluations, tailSampling, acceptedTraceHandler);
+    }
+
+    /// <summary>Evaluates the traces that reached <see cref="OpenTelemetryTailSampler.MaxTraceDuration"/> without having received their root span.</summary>
+    /// <remarks>
+    /// This is called by a background sweep. Without it, a buffered trace whose root span never arrives would only be
+    /// released when another trace happens to be received, and would be kept in memory forever if traffic stops.
+    /// </remarks>
+    public async ValueTask FlushTimedOutTracesAsync(
+        OpenTelemetryTailSampler tailSampling,
+        Func<OpenTelemetryHandlerContext, ExportTraceServiceRequest, CancellationToken, ValueTask> acceptedTraceHandler,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(tailSampling);
+        ArgumentNullException.ThrowIfNull(acceptedTraceHandler);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var now = _timeProvider.GetUtcNow();
+        var evaluations = new List<BufferedTraceEvaluation>();
+        lock (_gate)
+        {
+            PurgeDroppedTraces(tailSampling, now);
+            CollectTimedOutTraces(tailSampling, now, evaluations);
+        }
+
+        if (evaluations.Count is 0)
+        {
+            return;
+        }
+
+        await EvaluateAsync(evaluations, tailSampling, acceptedTraceHandler);
+    }
+
+    private static async ValueTask EvaluateAsync(
+        List<BufferedTraceEvaluation> evaluations,
+        OpenTelemetryTailSampler tailSampling,
+        Func<OpenTelemetryHandlerContext, ExportTraceServiceRequest, CancellationToken, ValueTask> acceptedTraceHandler)
+    {
+        // The spans of these traces were already removed from the buffer, so they are dispatched without a cancellation
+        // token: aborting here would silently discard buffered data that belongs to other requests. For the same reason
+        // a failing trace must not prevent the remaining ones from being dispatched.
+        List<Exception>? errors = null;
         foreach (var evaluation in evaluations)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var accepted = true;
-            if (tailSampling.ShouldSample is not null)
+            try
             {
-                accepted = await tailSampling.ShouldSample(evaluation.Context, cancellationToken);
-            }
+                var accepted = true;
+                if (tailSampling.ShouldSample is not null)
+                {
+                    accepted = await tailSampling.ShouldSample(evaluation.Context, CancellationToken.None);
+                }
 
-            if (!accepted)
+                if (!accepted)
+                {
+                    continue;
+                }
+
+                var acceptedRequest = CreateTraceRequest(evaluation.Entries);
+                await acceptedTraceHandler(evaluation.Context.HandlerContext, acceptedRequest, CancellationToken.None);
+            }
+            catch (Exception ex)
             {
-                continue;
+                errors ??= [];
+                errors.Add(ex);
             }
+        }
 
-            var acceptedRequest = CreateTraceRequest(evaluation.Entries);
-            await acceptedTraceHandler(evaluation.Context.HandlerContext, acceptedRequest, cancellationToken);
+        if (errors is not null)
+        {
+            throw new AggregateException("One or more buffered traces could not be dispatched.", errors);
+        }
+    }
+
+    private void PurgeDroppedTraces(OpenTelemetryTailSampler tailSampling, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(tailSampling);
+
+        if (_droppedTraces.Count is 0)
+        {
+            return;
+        }
+
+        var maxTraceDuration = tailSampling.MaxTraceDuration;
+        List<string>? expiredTraceIds = null;
+        foreach (var (traceId, lastSpanReceivedAt) in _droppedTraces)
+        {
+            if (now - lastSpanReceivedAt >= maxTraceDuration)
+            {
+                expiredTraceIds ??= [];
+                expiredTraceIds.Add(traceId);
+            }
+        }
+
+        if (expiredTraceIds is null)
+        {
+            return;
+        }
+
+        foreach (var traceId in expiredTraceIds)
+        {
+            _droppedTraces.Remove(traceId);
         }
     }
 
@@ -120,7 +235,7 @@ internal sealed class OpenTelemetryTraceTailSamplerHandler
         state.HasRootSpan = ContainsRootSpan(state.Entries);
     }
 
-    private void ApplyCapacityPolicy(OpenTelemetryTailSampler tailSampling, BufferedTraceState state)
+    private (int RemovedSpanCount, bool ExceededPerTraceLimit) ApplyCapacityPolicy(OpenTelemetryTailSampler tailSampling, BufferedTraceState state)
     {
         ArgumentNullException.ThrowIfNull(tailSampling);
         ArgumentNullException.ThrowIfNull(state);
@@ -133,9 +248,13 @@ internal sealed class OpenTelemetryTraceTailSamplerHandler
         var allowedSpansInTrace = Math.Min(maxBufferedSpansPerTrace, allowedByGlobalCapacity);
         if (state.SpanCount <= allowedSpansInTrace)
         {
-            return;
+            return (0, false);
         }
 
+        // Only a trace larger than its own limit is oversized. Running out of global capacity is transient back
+        // pressure caused by other traces, so it must not mark this trace as permanently dropped.
+        var exceededPerTraceLimit = state.SpanCount > maxBufferedSpansPerTrace;
+        var initialSpanCount = state.SpanCount;
         var spansToRemove = state.SpanCount - allowedSpansInTrace;
         switch (tailSampling.OverflowPolicy)
         {
@@ -153,6 +272,7 @@ internal sealed class OpenTelemetryTraceTailSamplerHandler
         }
 
         state.HasRootSpan = ContainsRootSpan(state.Entries);
+        return (initialSpanCount - state.SpanCount, exceededPerTraceLimit);
     }
 
     private void TrimFromStart(BufferedTraceState state, int spanCount)

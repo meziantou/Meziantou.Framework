@@ -20,6 +20,7 @@ namespace Meziantou.Framework.OpenTelemetryCollector
     {
         public string Method { get => throw null; }
         public Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTransport Transport { get => throw null; }
+        public Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryPartialSuccess PartialSuccess { get => throw null; }
     }
 
     public enum OpenTelemetryItemType
@@ -27,6 +28,13 @@ namespace Meziantou.Framework.OpenTelemetryCollector
         Logs = 0,
         Traces = 1,
         Metrics = 2
+    }
+
+    public sealed class OpenTelemetryPartialSuccess
+    {
+        public long RejectedCount { get => throw null; }
+        public string? ErrorMessage { get => throw null; }
+        public void Reject(long count, string? errorMessage = null) { }
     }
 
     public sealed class OpenTelemetryReceiverOptions
@@ -65,6 +73,7 @@ namespace Meziantou.Framework.OpenTelemetryCollector
         public int MaxBufferedSpans { get => throw null; set { } }
         public Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailBufferOverflowPolicy OverflowPolicy { get => throw null; set { } }
         public Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTraceTailSampling? ShouldSample { get => throw null; set { } }
+        public System.TimeSpan? SweepInterval { get => throw null; set { } }
     }
 
     public sealed class OpenTelemetryTailTraceContext

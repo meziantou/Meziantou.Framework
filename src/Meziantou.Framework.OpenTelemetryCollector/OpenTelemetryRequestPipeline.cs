@@ -84,6 +84,19 @@ internal sealed class OpenTelemetryRequestPipeline
         await _tailSamplerHandler.HandleAsync(context, request, _tailSampler, DispatchTracesAsync, cancellationToken);
     }
 
+    /// <summary>Gets the interval at which buffered traces must be swept, or <see langword="null"/> when no tail sampler is configured.</summary>
+    public TimeSpan? TailSamplerSweepInterval => _tailSampler?.GetSweepInterval();
+
+    public ValueTask FlushTimedOutTracesAsync(CancellationToken cancellationToken)
+    {
+        if (_tailSampler is null)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        return _tailSamplerHandler.FlushTimedOutTracesAsync(_tailSampler, DispatchTracesAsync, cancellationToken);
+    }
+
     private async ValueTask DispatchTracesAsync(OpenTelemetryHandlerContext context, ExportTraceServiceRequest request, CancellationToken cancellationToken)
     {
         foreach (var receiver in _receivers)

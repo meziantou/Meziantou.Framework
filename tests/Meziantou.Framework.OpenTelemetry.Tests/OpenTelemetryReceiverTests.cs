@@ -1,11 +1,14 @@
+using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text;
 using Google.Protobuf;
 using Grpc.Net.Client;
 using Meziantou.Framework.OpenTelemetryCollector.InMemory;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using OpenTelemetry.Proto.Collector.Logs.V1;
 using OpenTelemetry.Proto.Collector.Metrics.V1;
 using OpenTelemetry.Proto.Collector.Trace.V1;
@@ -42,8 +45,8 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync();
 
-        using var content = new StringContent("{}");
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        using var content = new StringContent("hello");
+        content.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
         using var response = await app.HttpClient.PostAsync("/v1/logs", content, XunitCancellationToken);
 
         Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
@@ -335,6 +338,259 @@ public sealed class OpenTelemetryReceiverTests
         Assert.HasCount(3, app.Receiver.Logs);
     }
 
+    [Fact]
+    public async Task Http_Response_IsProtobufEncoded()
+    {
+        await using var app = await TestApplication.CreateAsync();
+
+        using var response = await PostAsync(app.HttpClient, "/v1/logs", new ExportLogsServiceRequest());
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/x-protobuf", response.Content.Headers.ContentType?.MediaType);
+
+        var body = await response.Content.ReadAsByteArrayAsync(XunitCancellationToken);
+        var parsed = ExportLogsServiceResponse.Parser.ParseFrom(body);
+        Assert.Null(parsed.PartialSuccess);
+    }
+
+    [Fact]
+    public async Task AddOpenTelemetryReceiver_RegistersTheReceiverInDependencyInjection()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddOpenTelemetryReceiver<TestReceiver>();
+
+        await using var app = builder.Build();
+        app.MapOpenTelemetryReceiverEndpoints();
+        await app.StartAsync(XunitCancellationToken);
+
+        using var httpClient = app.GetTestClient();
+        await SendLogsAsync(httpClient, "from-http");
+
+        Assert.Equal(1, app.Services.GetRequiredService<TestReceiver>().ReceivedLogsCount);
+    }
+
+    [Fact]
+    public async Task Http_JsonPayload_IsSupported()
+    {
+        await using var app = await TestApplication.CreateAsync();
+
+        const string Payload = """{"resourceLogs":[{"scopeLogs":[{"logRecords":[{"body":{"stringValue":"from-json"}}]}]}]}""";
+        using var response = await PostJsonAsync(app.HttpClient, "/v1/logs", Payload);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+
+        var item = Assert.IsType<OpenTelemetryLogsItem>(Assert.Single(app.Receiver.Logs));
+        Assert.Equal("from-json", item.Request.ResourceLogs[0].ScopeLogs[0].LogRecords[0].Body.StringValue);
+    }
+
+    [Fact]
+    public async Task Http_JsonPayload_DecodesHexEncodedIdentifiers()
+    {
+        await using var app = await TestApplication.CreateAsync();
+
+        // OTLP/JSON hex-encodes trace and span ids instead of using the base64 encoding of the Protobuf JSON mapping.
+        const string Payload = """
+            {"resourceSpans":[{"scopeSpans":[{"spans":[{"traceId":"000102030405060708090a0b0c0d0e0f","spanId":"1011121314151617","parentSpanId":"18191a1b1c1d1e1f","name":"json-span"}]}]}]}
+            """;
+        using var response = await PostJsonAsync(app.HttpClient, "/v1/traces", Payload);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var span = Assert.Single(GetTraceSpans(app.Receiver));
+        Assert.Equal("json-span", span.Name);
+        Assert.Equal("000102030405060708090A0B0C0D0E0F", Convert.ToHexString(span.TraceId.ToByteArray()));
+        Assert.Equal("1011121314151617", Convert.ToHexString(span.SpanId.ToByteArray()));
+        Assert.Equal("18191A1B1C1D1E1F", Convert.ToHexString(span.ParentSpanId.ToByteArray()));
+    }
+
+    [Fact]
+    public async Task Http_CompressedPayload_IsSupportedThroughTheRequestDecompressionMiddleware()
+    {
+        await using var app = await TestApplication.CreateAsync(
+            configureServices: static services => services.AddRequestDecompression(),
+            configureApp: static app => app.UseRequestDecompression());
+
+        var payload = new ExportLogsServiceRequest();
+        payload.ResourceLogs.Add(new global::OpenTelemetry.Proto.Logs.V1.ResourceLogs());
+
+        using var buffer = new MemoryStream();
+        await using (var gzipStream = new GZipStream(buffer, CompressionMode.Compress, leaveOpen: true))
+        {
+            await gzipStream.WriteAsync(payload.ToByteArray(), XunitCancellationToken);
+        }
+
+        using var content = new ByteArrayContent(buffer.ToArray());
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-protobuf");
+        content.Headers.ContentEncoding.Add("gzip");
+
+        using var response = await app.HttpClient.PostAsync("/v1/logs", content, XunitCancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var item = Assert.IsType<OpenTelemetryLogsItem>(Assert.Single(app.Receiver.Logs));
+        _ = Assert.Single(item.Request.ResourceLogs);
+    }
+
+    [Fact]
+    public async Task Http_InvalidCompressedPayload_Returns400()
+    {
+        await using var app = await TestApplication.CreateAsync(
+            configureServices: static services => services.AddRequestDecompression(),
+            configureApp: static app => app.UseRequestDecompression());
+
+        using var content = new ByteArrayContent([0x00, 0xFF, 0xA5]);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-protobuf");
+        content.Headers.ContentEncoding.Add("gzip");
+
+        using var response = await app.HttpClient.PostAsync("/v1/logs", content, XunitCancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Empty(app.Receiver.Logs);
+    }
+
+    [Fact]
+    public async Task Grpc_PartialSuccess_IsReportedToTheClient()
+    {
+        await using var app = await TestApplication.CreateAsync(configureServices: static services => services.AddOpenTelemetryReceiver(static _ => new RejectingHandler()));
+
+        var client = new LogsService.LogsServiceClient(app.GrpcChannel);
+        var response = await client.ExportAsync(new ExportLogsServiceRequest(), cancellationToken: XunitCancellationToken).ResponseAsync;
+
+        Assert.Equal(2, response.PartialSuccess.RejectedLogRecords);
+        Assert.Equal("rejected", response.PartialSuccess.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Http_PartialSuccess_IsReportedToTheClient()
+    {
+        await using var app = await TestApplication.CreateAsync(configureServices: static services => services.AddOpenTelemetryReceiver(static _ => new RejectingHandler()));
+
+        using var response = await PostAsync(app.HttpClient, "/v1/logs", new ExportLogsServiceRequest());
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsByteArrayAsync(XunitCancellationToken);
+        var parsed = ExportLogsServiceResponse.Parser.ParseFrom(body);
+        Assert.Equal(2, parsed.PartialSuccess.RejectedLogRecords);
+        Assert.Equal("rejected", parsed.PartialSuccess.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Http_TailFilter_FlushesTimedOutTracesWithoutFurtherTraffic()
+    {
+        var timeProvider = new FakeTimeProvider();
+        await using var app = await TestApplication.CreateAsync(configureServices: services =>
+        {
+            services.AddSingleton<TimeProvider>(timeProvider);
+            services.Configure<OpenTelemetryReceiverOptions>(static options => options.Samplers.Add(new OpenTelemetryTailSampler
+            {
+                MaxTraceDuration = TimeSpan.FromMinutes(1),
+                ShouldSample = static (context, _) => ValueTask.FromResult(context.TimedOut),
+            }));
+        });
+
+        await SendTracesAsync(app.HttpClient, CreateTraceRequest("00000000000000000000000000000061", ("0000000000000062", "0000000000000061", "orphan-child")));
+        Assert.Empty(GetTraceSpans(app.Receiver));
+
+        timeProvider.Advance(TimeSpan.FromMinutes(2));
+
+        // No other trace is received: only the background sweep can release the buffered trace.
+        await WaitForAsync(() => GetTraceSpans(app.Receiver).Count > 0);
+
+        var span = Assert.Single(GetTraceSpans(app.Receiver));
+        Assert.Equal("orphan-child", span.Name);
+    }
+
+    [Fact]
+    public async Task Http_TailFilter_DispatchesBufferedTracesWithoutTheRequestCancellationToken()
+    {
+        var recordingHandler = new CancellationRecordingHandler();
+        await using var app = await TestApplication.CreateAsync(configureServices: services => services.AddOpenTelemetryReceiver(_ => recordingHandler, static options => options.Samplers.Add(new OpenTelemetryTailSampler
+        {
+            MaxTraceDuration = TimeSpan.FromMinutes(1),
+        })));
+
+        await SendTracesAsync(app.HttpClient, CreateTraceRequest(
+            "00000000000000000000000000000071",
+            ("0000000000000072", "0000000000000071", "child"),
+            ("0000000000000071", null, "root")));
+
+        // The spans left the buffer, so aborting the request must not discard them.
+        Assert.Equal(1, recordingHandler.TracesCallCount);
+        Assert.False(recordingHandler.LastTracesTokenCanBeCanceled);
+    }
+
+    [Fact]
+    public async Task Http_TailFilter_DropWholeTrace_KeepsDroppingLaterBatchesOfTheSameTrace()
+    {
+        await using var app = await TestApplication.CreateAsync(configureServices: static services => services.Configure<OpenTelemetryReceiverOptions>(static options => options.Samplers.Add(new OpenTelemetryTailSampler
+        {
+            MaxTraceDuration = TimeSpan.FromMinutes(1),
+            MaxBufferedSpansPerTrace = 2,
+            OverflowPolicy = OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace,
+        })));
+
+        const string TraceId = "00000000000000000000000000000081";
+        await SendTracesAsync(app.HttpClient, CreateTraceRequest(
+            TraceId,
+            ("0000000000000082", "0000000000000081", "child-1"),
+            ("0000000000000083", "0000000000000081", "child-2"),
+            ("0000000000000084", "0000000000000081", "child-3")));
+
+        // The trace exceeded its own limit, so the later batch carrying the root span must be dropped too.
+        await SendTracesAsync(app.HttpClient, CreateTraceRequest(TraceId, ("0000000000000081", null, "root")));
+
+        Assert.Empty(GetTraceSpans(app.Receiver));
+    }
+
+    [Fact]
+    public async Task Http_TailFilter_ReportsDroppedSpansAsPartialSuccess()
+    {
+        await using var app = await TestApplication.CreateAsync(configureServices: static services => services.Configure<OpenTelemetryReceiverOptions>(static options => options.Samplers.Add(new OpenTelemetryTailSampler
+        {
+            MaxTraceDuration = TimeSpan.FromMinutes(1),
+            MaxBufferedSpansPerTrace = 2,
+            OverflowPolicy = OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace,
+        })));
+
+        using var response = await PostAsync(app.HttpClient, "/v1/traces", CreateTraceRequest(
+            "00000000000000000000000000000091",
+            ("0000000000000092", "0000000000000091", "child-1"),
+            ("0000000000000093", "0000000000000091", "child-2"),
+            ("0000000000000094", "0000000000000091", "child-3")));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsByteArrayAsync(XunitCancellationToken);
+        var parsed = ExportTraceServiceResponse.Parser.ParseFrom(body);
+        Assert.Equal(3, parsed.PartialSuccess.RejectedSpans);
+    }
+
+    private static async Task WaitForAsync(Func<bool> condition)
+    {
+        for (var i = 0; i < 200; i++)
+        {
+            if (condition())
+                return;
+
+            await Task.Delay(25, XunitCancellationToken);
+        }
+
+        Assert.Fail("The condition was not met before the timeout");
+    }
+
+    private static async Task<HttpResponseMessage> PostAsync(HttpClient httpClient, string endpoint, IMessage payload)
+    {
+        using var content = new ByteArrayContent(payload.ToByteArray());
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-protobuf");
+        return await httpClient.PostAsync(endpoint, content, XunitCancellationToken);
+    }
+
+    private static async Task<HttpResponseMessage> PostJsonAsync(HttpClient httpClient, string endpoint, string payload)
+    {
+        using var content = new ByteArrayContent(Encoding.UTF8.GetBytes(payload));
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        return await httpClient.PostAsync(endpoint, content, XunitCancellationToken);
+    }
+
     private static async Task SendLogsAsync(HttpClient httpClient, string body, string endpoint = "/v1/logs")
     {
         var payload = new ExportLogsServiceRequest();
@@ -448,6 +704,45 @@ public sealed class OpenTelemetryReceiverTests
         }
     }
 
+    private sealed class RejectingHandler : OpenTelemetryHandler
+    {
+        public override ValueTask HandleLogsAsync(OpenTelemetryHandlerContext context, ExportLogsServiceRequest request, CancellationToken cancellationToken)
+        {
+            context.PartialSuccess.Reject(2, "rejected");
+            return ValueTask.CompletedTask;
+        }
+
+        public override ValueTask HandleTracesAsync(OpenTelemetryHandlerContext context, ExportTraceServiceRequest request, CancellationToken cancellationToken)
+        {
+            context.PartialSuccess.Reject(2, "rejected");
+            return ValueTask.CompletedTask;
+        }
+
+        public override ValueTask HandleMetricsAsync(OpenTelemetryHandlerContext context, ExportMetricsServiceRequest request, CancellationToken cancellationToken)
+        {
+            context.PartialSuccess.Reject(2, "rejected");
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class CancellationRecordingHandler : OpenTelemetryHandler
+    {
+        public int TracesCallCount { get; private set; }
+
+        public bool? LastTracesTokenCanBeCanceled { get; private set; }
+
+        public override ValueTask HandleLogsAsync(OpenTelemetryHandlerContext context, ExportLogsServiceRequest request, CancellationToken cancellationToken) => ValueTask.CompletedTask;
+
+        public override ValueTask HandleTracesAsync(OpenTelemetryHandlerContext context, ExportTraceServiceRequest request, CancellationToken cancellationToken)
+        {
+            TracesCallCount++;
+            LastTracesTokenCanBeCanceled = cancellationToken.CanBeCanceled;
+            return ValueTask.CompletedTask;
+        }
+
+        public override ValueTask HandleMetricsAsync(OpenTelemetryHandlerContext context, ExportMetricsServiceRequest request, CancellationToken cancellationToken) => ValueTask.CompletedTask;
+    }
+
     private sealed class TestApplication(WebApplication app, HttpClient httpClient, GrpcChannel grpcChannel, InMemoryOpenTelemetryHandler receiver) : IAsyncDisposable
     {
         public WebApplication App { get; } = app;
@@ -458,7 +753,7 @@ public sealed class OpenTelemetryReceiverTests
 
         public InMemoryOpenTelemetryHandler Receiver { get; } = receiver;
 
-        public static async Task<TestApplication> CreateAsync(InMemoryOpenTelemetryHandlerOptions? options = null, Action<IServiceCollection>? configureServices = null)
+        public static async Task<TestApplication> CreateAsync(InMemoryOpenTelemetryHandlerOptions? options = null, Action<IServiceCollection>? configureServices = null, Action<WebApplication>? configureApp = null)
         {
             var builder = WebApplication.CreateBuilder();
             builder.WebHost.UseTestServer();
@@ -468,6 +763,7 @@ public sealed class OpenTelemetryReceiverTests
             configureServices?.Invoke(builder.Services);
 
             var app = builder.Build();
+            configureApp?.Invoke(app);
             app.MapOpenTelemetryReceiverEndpoints();
 
             await app.StartAsync(XunitCancellationToken);

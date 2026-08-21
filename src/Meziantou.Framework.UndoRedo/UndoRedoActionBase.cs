@@ -40,5 +40,5 @@ public abstract class UndoRedoActionBase : IUndoRedoAction
     protected abstract ValueTask UnExecuteCoreAsync(CancellationToken cancellationToken);
 
     /// <inheritdoc />
-    public virtual ValueTask<bool> TryToMergeAsync(IUndoRedoAction followingAction) => new(false);
+    public virtual ValueTask<bool> TryToMergeAsync(IUndoRedoAction followingAction, CancellationToken cancellationToken = default) => new(false);
 }

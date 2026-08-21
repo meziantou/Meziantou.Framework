@@ -94,4 +94,28 @@ public class EmailTemplateTest
              item => Assert.Equal("test1.png", item),
              item => Assert.Equal("test2.png", item));
     }
+    [Fact]
+    public void EmailTemplate_Section_CapturesPlainText()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("Hello {{@begin_section title}}Plain text{{@end_section}}!");
+
+        var result = template.Run(out var metadata);
+        Assert.Equal("Hello Plain text!", result);
+        Assert.NotNull(metadata);
+        Assert.Equal("Plain text", metadata.Title);
+    }
+
+    [Fact]
+    public void EmailTemplate_Section_CapturesExpressionValue()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("Hello {{@begin_section title}}{{= 42 }}{{@end_section}}!");
+
+        var result = template.Run(out var metadata);
+        Assert.Equal("Hello 42!", result);
+        Assert.NotNull(metadata);
+        Assert.Equal("42", metadata.Title);
+    }
+
 }

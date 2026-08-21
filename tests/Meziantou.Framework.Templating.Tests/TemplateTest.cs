@@ -449,7 +449,7 @@ public class TemplateTest
 
         template.Build(CancellationToken.None);
 
-        Assert.Contains("#line (1, 4) - (1, 11) 32 \"template.cs\"", template.SourceCode);
+        Assert.Contains("#line (1, 4) - (1, 11) 25 \"template.cs\"", template.SourceCode);
         Assert.Contains("#line (1, 16) - (1, 36) 4 \"template.cs\"", template.SourceCode);
     }
 
@@ -645,4 +645,32 @@ public class TemplateTest
         {
         }
     }
+    [Fact]
+    public void Template_ExpressionBlock_WritesNullAsEmptyString()
+    {
+        var template = new Template();
+        template.Load("a<%= null %>b");
+
+        Assert.Equal("ab", template.Run());
+    }
+
+    [Fact]
+    public void Template_ExpressionBlock_FormatsFormattableValueUsingWriterFormatProvider()
+    {
+        var template = new Template();
+        template.Load("<%= 1.5 %>|<%= 42 %>|<%= new DateTime(2020, 1, 2, 0, 0, 0, DateTimeKind.Utc) %>");
+
+        var expected = string.Create(CultureInfo.CurrentCulture, $"{1.5}|{42}|{new DateTime(2020, 1, 2, 0, 0, 0, DateTimeKind.Utc)}");
+        Assert.Equal(expected, template.Run());
+    }
+
+    [Fact]
+    public void Template_ExpressionBlock_WritesArrayValueWithoutTreatingItAsFormatArguments()
+    {
+        var template = new Template();
+        template.Load("<%= new object[] { 1, 2 } %>");
+
+        Assert.Equal(new object[] { 1, 2 }.ToString(), template.Run());
+    }
+
 }

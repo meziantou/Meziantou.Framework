@@ -13,7 +13,7 @@ public class CodeBlock(Template template, string text, int index, bool isExpress
     {
         if (IsExpression)
         {
-            return Template.OutputParameterName + ".Write(\"{0}\", " + Text + ");";
+            return Template.OutputParameterName + ".Write(" + Text + ");";
         }
 
         return Text;

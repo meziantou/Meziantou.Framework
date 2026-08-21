@@ -133,7 +133,7 @@ public sealed record SnapshotSettings
         MergeTools = options.MergeTools is null ? null : [.. options.MergeTools];
     }
 
-    internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected || LLMContextDetector.IsLLMContext();
+    internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected || LLMEnvironmentDetector.Detected;
 
     private static FullPath DefaultSnapshotPath(SnapshotPathContext context)
     {

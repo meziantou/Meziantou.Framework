@@ -13,6 +13,7 @@
     <Compile Include="../Meziantou.Framework/ExecutableFinder.cs" Link="Utils/ExecutableFinder.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/BuildServerDetector.cs" Link="Utils/BuildServerDetector.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/ContinuousTestingDetector.cs" Link="Utils/ContinuousTestingDetector.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/LLMEnvironmentDetector.cs" Link="Utils/LLMEnvironmentDetector.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/CallerContextUtilities.cs" Link="Utils/CallerContextUtilities.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/MergeTools/GitTool.cs" Link="MergeTools/GitTool.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/Utils/FileInfoExtensions.cs" Link="Utils/FileInfoExtensions.cs" />

@@ -145,7 +145,7 @@ public sealed record InlineSnapshotSettings
         IsRunningOnContinuousIntegration = {IsRunningOnContinuousIntegration()}
         BuildServerDetector = {BuildServerDetector.Detected}
         ContinuousTestingDetector = {ContinuousTestingDetector.Detected}
-        LLMContextDetector = {LLMContextDetector.IsLLMContext()}
+        LLMContextDetector = {LLMEnvironmentDetector.Detected}
         """;
 
     public InlineSnapshotSettings()
@@ -177,7 +177,7 @@ public sealed record InlineSnapshotSettings
         }
     }
 
-    internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected || LLMContextDetector.IsLLMContext();
+    internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected || LLMEnvironmentDetector.Detected;
 
     [DoesNotReturn]
     internal void AssertSnapshot(string? expected, string? actual)

@@ -56,9 +56,7 @@ namespace Meziantou.Xunit
     {
         Any = 0,
         Invariant = 1,
-        NotInvariant = 2,
-        Enabled = 1,
-        Disabled = 2
+        NotInvariant = 2
     }
 
     [System.Flags]

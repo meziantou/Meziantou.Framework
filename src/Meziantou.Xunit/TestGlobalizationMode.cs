@@ -24,16 +24,4 @@ public enum TestGlobalizationMode
     /// The application does not run in invariant globalization mode, so the culture data of the operating system is available.
     /// </summary>
     NotInvariant = 2,
-
-    /// <summary>
-    /// The application runs in invariant globalization mode.
-    /// </summary>
-    [Obsolete($"Use {nameof(Invariant)} instead. The name was ambiguous: it means invariant globalization is enabled, i.e. culture data is not available.")]
-    Enabled = Invariant,
-
-    /// <summary>
-    /// The application does not run in invariant globalization mode, so the culture data of the operating system is available.
-    /// </summary>
-    [Obsolete($"Use {nameof(NotInvariant)} instead. The name was ambiguous: it means invariant globalization is disabled, i.e. culture data is available.")]
-    Disabled = NotInvariant,
 }

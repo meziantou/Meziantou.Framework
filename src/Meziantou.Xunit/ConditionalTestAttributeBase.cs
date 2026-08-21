@@ -95,22 +95,14 @@ public abstract class ConditionalTestAttributeBase : BeforeAfterTestAttribute
                                  WindowsGroup is not WindowsGroups.Any;
 
     /// <summary>
-    /// Evaluates the condition and skips the test when it is not satisfied.
+    /// Evaluates the condition and skips the test when it is not satisfied. Does nothing when the attribute defines no condition.
     /// </summary>
     /// <param name="methodUnderTest">The method under test.</param>
     /// <param name="test">The test that is about to run.</param>
-    /// <exception cref="InvalidOperationException">The attribute does not define any condition.</exception>
     public override void Before(MethodInfo methodUnderTest, IXunitTest test)
     {
         if (!HasCondition)
-        {
-            var typeName = GetType().Name;
-            var attributeName = typeName.EndsWith("Attribute", StringComparison.Ordinal)
-                ? typeName[..^"Attribute".Length]
-                : typeName;
-
-            throw new InvalidOperationException($"[{attributeName}] does not define any condition, so it has no effect. Set at least one of {nameof(OperatingSystem)}, {nameof(GlobalizationMode)}, {nameof(ContinuousIntegration)} or {nameof(WindowsGroup)}.");
-        }
+            return;
 
         var evaluation = EvaluateConditions();
         var shouldSkip = InvertCondition ? evaluation.IsMatch : !evaluation.IsMatch;

@@ -102,15 +102,26 @@ public class SlugOptions
     /// <returns>The transformed string representation of the rune.</returns>
     public virtual string Replace(Rune rune)
     {
-        if (CasingTransformation == CasingTransformation.ToLowerCase)
-        {
-            rune = Culture is null ? Rune.ToLowerInvariant(rune) : Rune.ToLower(rune, Culture);
-        }
-        else if (CasingTransformation == CasingTransformation.ToUpperCase)
-        {
-            rune = Culture is null ? Rune.ToUpperInvariant(rune) : Rune.ToUpper(rune, Culture);
-        }
-
-        return rune.ToString();
+        return Transform(rune).ToString();
     }
+
+    /// <summary>
+    /// Applies <see cref="CasingTransformation"/> to a rune without allocating the string <see cref="Replace(Rune)"/> returns.
+    /// Only used when <see cref="Replace(Rune)"/> is known not to be overridden.
+    /// </summary>
+    internal Rune Transform(Rune rune)
+    {
+        return CasingTransformation switch
+        {
+            CasingTransformation.ToLowerCase => Culture is null ? Rune.ToLowerInvariant(rune) : Rune.ToLower(rune, Culture),
+            CasingTransformation.ToUpperCase => Culture is null ? Rune.ToUpperInvariant(rune) : Rune.ToUpper(rune, Culture),
+            _ => rune,
+        };
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether <see cref="Replace(Rune)"/> still has its default implementation, in which case
+    /// <see cref="Transform(Rune)"/> produces the same result without allocating a string for every rune.
+    /// </summary>
+    internal bool UsesDefaultReplace => GetType() == typeof(SlugOptions);
 }

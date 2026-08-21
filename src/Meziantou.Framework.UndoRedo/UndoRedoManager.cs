@@ -168,11 +168,13 @@ public sealed class UndoRedoManager
         OnCollectionChanged();
     }
 
-    /// <summary>Gets the actions that can be undone, most recent first.</summary>
-    public IEnumerable<IUndoRedoAction> UndoableActions => _history.UndoableActions;
+    /// <summary>Gets a snapshot of the actions that can be undone, most recent first.</summary>
+    /// <remarks>Each access allocates a new snapshot, so it stays stable while the history changes.</remarks>
+    public IReadOnlyList<IUndoRedoAction> UndoableActions => _history.UndoableActions;
 
-    /// <summary>Gets the actions that can be redone, most recent first.</summary>
-    public IEnumerable<IUndoRedoAction> RedoableActions => _history.RedoableActions;
+    /// <summary>Gets a snapshot of the actions that can be redone, most recent first.</summary>
+    /// <remarks>Each access allocates a new snapshot, so it stays stable while the history changes.</remarks>
+    public IReadOnlyList<IUndoRedoAction> RedoableActions => _history.RedoableActions;
 
     /// <summary>Begins a transaction that groups subsequent recorded actions into a single undo step.</summary>
     /// <param name="isDelayed">

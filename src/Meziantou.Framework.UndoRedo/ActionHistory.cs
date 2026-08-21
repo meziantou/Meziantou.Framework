@@ -42,7 +42,7 @@ internal sealed class ActionHistory
         _redo.Clear();
     }
 
-    public IEnumerable<IUndoRedoAction> UndoableActions => _undo;
+    public IReadOnlyList<IUndoRedoAction> UndoableActions => _undo.ToArray();
 
-    public IEnumerable<IUndoRedoAction> RedoableActions => _redo;
+    public IReadOnlyList<IUndoRedoAction> RedoableActions => _redo.ToArray();
 }

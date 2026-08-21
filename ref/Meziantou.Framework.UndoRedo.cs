@@ -38,8 +38,8 @@ namespace Meziantou.Framework.UndoRedo
         public bool ActionIsExecuting { get => throw null; }
         public bool CanUndo { get => throw null; }
         public bool CanRedo { get => throw null; }
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.UndoRedo.IUndoRedoAction> UndoableActions { get => throw null; }
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.UndoRedo.IUndoRedoAction> RedoableActions { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.UndoRedo.IUndoRedoAction> UndoableActions { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.UndoRedo.IUndoRedoAction> RedoableActions { get => throw null; }
         public event System.EventHandler? CollectionChanged;
         public System.Threading.Tasks.ValueTask RecordActionAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction action, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.ValueTask RecordActionAsync(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> execute, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> unexecute, System.Threading.CancellationToken cancellationToken = null) => throw null;

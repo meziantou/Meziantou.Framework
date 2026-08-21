@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
+using System.IO.Hashing;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
@@ -74,23 +75,10 @@ internal static class PngImageEncoder
 
     private static uint ComputeCrc32(ReadOnlySpan<byte> type, ReadOnlySpan<byte> data)
     {
-        var crc = uint.MaxValue;
-        crc = UpdateCrc32(crc, type);
-        crc = UpdateCrc32(crc, data);
-        return ~crc;
-    }
-
-    private static uint UpdateCrc32(uint crc, ReadOnlySpan<byte> data)
-    {
-        foreach (var value in data)
-        {
-            crc ^= value;
-            for (var bit = 0; bit < 8; bit++)
-            {
-                crc = (crc & 1) == 0 ? crc >> 1 : 0xEDB88320u ^ (crc >> 1);
-            }
-        }
-
-        return crc;
+        // PNG uses CRC-32/ISO-HDLC, which is what System.IO.Hashing.Crc32 computes.
+        var crc = new Crc32();
+        crc.Append(type);
+        crc.Append(data);
+        return crc.GetCurrentHashAsUInt32();
     }
 }

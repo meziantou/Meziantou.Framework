@@ -33,35 +33,43 @@ public static class Slug
         options ??= SlugOptions.Default;
         text = text.Normalize(NormalizationForm.FormD);
 
-        var sb = new StringBuilder(options.MaximumLength > 0 ? Math.Min(text.Length, options.MaximumLength) : text.Length);
+        var separator = options.Separator;
+        var maximumLength = options.MaximumLength > 0 ? options.MaximumLength : int.MaxValue;
+
+        var sb = new StringBuilder(Math.Min(text.Length, maximumLength));
         foreach (var rune in text.EnumerateRunes())
         {
-            var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(rune.Value);
             if (options.IsAllowed(rune))
             {
-                sb.Append(options.Replace(rune));
+                // Append the replacement atomically, so the maximum length can never split a
+                // surrogate pair or a multi-character replacement.
+                var replacement = options.Replace(rune);
+                if (sb.Length + replacement.Length > maximumLength)
+                    break;
+
+                sb.Append(replacement);
             }
-            else if (unicodeCategory != UnicodeCategory.NonSpacingMark && options.Separator is not null && !EndsWith(sb, options.Separator))
+            else if (Rune.GetUnicodeCategory(rune) is not (UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark))
             {
-                sb.Append(options.Separator);
+                // Combining marks attached to a disallowed character are dropped silently instead of
+                // producing a separator. A slug never starts with a separator, and separators are never repeated.
+                if (sb.Length == 0 || EndsWith(sb, separator))
+                    continue;
+
+                if (sb.Length + separator.Length > maximumLength)
+                    break;
+
+                sb.Append(separator);
             }
-
-            if (options.MaximumLength > 0 && sb.Length >= options.MaximumLength)
-                break;
         }
 
-        text = sb.ToString();
-        if (options.MaximumLength > 0 && text.Length > options.MaximumLength)
+        var slug = sb.ToString();
+        if (!options.CanEndWithSeparator && separator.Length > 0 && slug.EndsWith(separator, StringComparison.Ordinal))
         {
-            text = text[..options.MaximumLength];
+            slug = slug[..^separator.Length];
         }
 
-        if (!options.CanEndWithSeparator && options.Separator is not null && text.EndsWith(options.Separator, StringComparison.Ordinal))
-        {
-            text = text[..^options.Separator.Length];
-        }
-
-        return text.Normalize(NormalizationForm.FormC);
+        return slug.Normalize(NormalizationForm.FormC);
     }
 
     private static bool EndsWith(StringBuilder stringBuilder, string suffix)

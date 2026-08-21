@@ -15,6 +15,14 @@ public class SlugTests
     [InlineData("TeSt test", "TeSt-test")]
     [InlineData("TeSt test ", "TeSt-test")]
     [InlineData("TeSt:test ", "TeSt-test")]
+    [InlineData(" test", "test")]
+    [InlineData(":test", "test")]
+    [InlineData("  ::  a b", "a-b")]
+    [InlineData("a\u093Eb", "ab")]
+    [InlineData("a\u20DDb", "ab")]
+    [InlineData("", "")]
+    [InlineData("   ", "")]
+    [InlineData("!!!", "")]
     public void Slug_WithDefaultOptions(string text, string expected)
     {
         var slug = Slug.Create(text);
@@ -32,5 +40,95 @@ public class SlugTests
         };
         var slug = Slug.Create(text, options);
         Assert.Equal(expected, slug);
+    }
+
+    [Theory]
+    [InlineData(1, "a")]
+    [InlineData(2, "a")]
+    [InlineData(3, "a\U0001F600")]
+    [InlineData(4, "a\U0001F600b")]
+    public void Slug_MaximumLength_DoesNotSplitSurrogatePairs(int maximumLength, string expected)
+    {
+        var options = new SlugOptions { MaximumLength = maximumLength };
+        options.AllowedRanges.Clear();
+
+        var slug = Slug.Create("a\U0001F600b", options);
+
+        Assert.Equal(expected, slug);
+    }
+
+    [Theory]
+    [InlineData(2, "ab")]
+    [InlineData(3, "ab")]
+    [InlineData(4, "ab")]
+    [InlineData(5, "ab__c")]
+    [InlineData(6, "ab__cd")]
+    public void Slug_MaximumLength_DoesNotSplitMultiCharacterSeparator(int maximumLength, string expected)
+    {
+        var options = new SlugOptions { Separator = "__", MaximumLength = maximumLength };
+        var slug = Slug.Create("ab cdef", options);
+        Assert.Equal(expected, slug);
+    }
+
+    [Fact]
+    public void Slug_MaximumLength_IsNeverExceeded()
+    {
+        var options = new SlugOptions { MaximumLength = 5 };
+        var slug = Slug.Create("hello world this is long", options);
+        Assert.Equal("hello", slug);
+    }
+
+    [Fact]
+    public void Slug_MaximumLength_ZeroMeansUnlimited()
+    {
+        var options = new SlugOptions { MaximumLength = 0 };
+        var slug = Slug.Create("hello world this is long", options);
+        Assert.Equal("hello-world-this-is-long", slug);
+    }
+
+    [Fact]
+    public void Slug_Separator_CannotBeSetToNull()
+    {
+        var options = new SlugOptions();
+        Assert.Throws<ArgumentNullException>(() => options.Separator = null!);
+    }
+
+    [Fact]
+    public void Slug_EmptySeparator_JoinsWords()
+    {
+        var options = new SlugOptions { Separator = "" };
+        var slug = Slug.Create("a b", options);
+        Assert.Equal("ab", slug);
+    }
+
+    [Fact]
+    public void Slug_CanEndWithSeparator_KeepsTrailingSeparator()
+    {
+        var options = new SlugOptions { CanEndWithSeparator = true };
+        var slug = Slug.Create("a b ", options);
+        Assert.Equal("a-b-", slug);
+    }
+
+    [Fact]
+    public void Slug_Uppercase()
+    {
+        var options = new SlugOptions { CasingTransformation = CasingTransformation.ToUpperCase };
+        var slug = Slug.Create("Hello World", options);
+        Assert.Equal("HELLO-WORLD", slug);
+    }
+
+    [Fact]
+    public void Slug_EmptyAllowedRanges_AllowsEveryCharacter()
+    {
+        var options = new SlugOptions();
+        options.AllowedRanges.Clear();
+        var slug = Slug.Create("a b", options);
+        Assert.Equal("a b", slug);
+    }
+
+    [Fact]
+    public void Slug_NullText_ReturnsNull()
+    {
+        Assert.Null(Slug.Create(text: null));
     }
 }

@@ -28,11 +28,28 @@ public class SlugOptions
     /// <summary>Gets the list of allowed Unicode character ranges in the generated slug.</summary>
     public IList<UnicodeRange> AllowedRanges { get; }
 
-    /// <summary>Gets or sets the maximum length of the generated slug. Default is 80.</summary>
+    /// <summary>
+    /// Gets or sets the maximum length of the generated slug. Default is 80. A value less than or equal to zero means the slug is not truncated.
+    /// </summary>
+    /// <remarks>
+    /// The limit is never exceeded, and the slug is only cut between characters, so a truncated slug never ends with an
+    /// incomplete surrogate pair or a partial <see cref="Separator"/>. The limit is applied to the decomposed form of the
+    /// text; when <see cref="AllowedRanges"/> allows combining marks, those marks are recomposed with the character they
+    /// follow, so the returned slug can be shorter than <see cref="MaximumLength"/>.
+    /// </remarks>
     public int MaximumLength { get; set; }
 
     /// <summary>Gets or sets the separator string used between words. Default is "-".</summary>
-    public string Separator { get; set; }
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
+    public string Separator
+    {
+        get => field;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            field = value;
+        }
+    }
 
     /// <summary>Gets or sets the culture to use for case transformations. When null, uses invariant culture.</summary>
     public CultureInfo? Culture { get; set; }
@@ -61,7 +78,18 @@ public class SlugOptions
     /// <returns><see langword="true"/> if the character is allowed; otherwise, <see langword="false"/>.</returns>
     public virtual bool IsAllowed(Rune character)
     {
-        return AllowedRanges.Count == 0 || AllowedRanges.Any(range => IsInRange(range, character));
+        var ranges = AllowedRanges;
+        if (ranges.Count == 0)
+            return true;
+
+        // Avoid the closure allocated by LINQ: this runs for every rune of the input.
+        for (var i = 0; i < ranges.Count; i++)
+        {
+            if (IsInRange(ranges[i], character))
+                return true;
+        }
+
+        return false;
     }
 
     private static bool IsInRange(UnicodeRange range, Rune rune)

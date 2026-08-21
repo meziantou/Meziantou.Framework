@@ -45,7 +45,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
     /// <summary>Gets the string representation of the path, or an empty string if the path is empty.</summary>
     /// <remarks>
-    /// <para>If the path contains a reserved device name (CON, PRN, AUX, NUL, COM1-COM9, LPT1-LPT9),
+    /// <para>If the path contains a reserved device name (CON, PRN, AUX, NUL, COM0-COM9, COM¹-COM³, LPT0-LPT9, LPT¹-LPT³),
     /// the extended path format (<c>\\?\</c>) is returned to bypass Win32 namespace restrictions.</para>
     /// <para>Use <see cref="RawValue"/> if you need the unmodified path without device name protection.</para>
     /// </remarks>
@@ -120,6 +120,9 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                 !nameOnly[..3].Equals("LPT", StringComparison.OrdinalIgnoreCase))
                 return false;
 
+            // Windows documents COM1-COM9 and LPT1-LPT9, but COM0 and LPT0 are accepted here as well.
+            // Adding the extended prefix to a path that turns out not to be a device name is harmless,
+            // whereas omitting it for an actual device name is not.
             var lastChar = nameOnly[3];
             return lastChar is >= '0' and <= '9' or '\u00B9' or '\u00B2' or '\u00B3';
         }
@@ -292,7 +295,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        return new FullPath(Path.ChangeExtension(Value, extension));
+        return new FullPath(Path.ChangeExtension(_value, extension));
     }
 
     /// <summary>Returns a new path with the specified file extension, optionally replacing all trailing extensions.</summary>
@@ -319,7 +322,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        var current = Value;
+        var current = _value;
         var extensionsRemoved = 0;
         while (true)
         {
@@ -352,7 +355,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        var parent = Path.GetDirectoryName(Value);
+        var parent = Path.GetDirectoryName(_value);
         if (parent is null)
             return new FullPath(name);
 
@@ -368,8 +371,8 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        var parent = Path.GetDirectoryName(Value);
-        var extension = Path.GetExtension(Value);
+        var parent = Path.GetDirectoryName(_value);
+        var extension = Path.GetExtension(_value);
         var newName = nameWithoutExtension + extension;
         if (parent is null)
             return new FullPath(newName);
@@ -462,9 +465,10 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <param name="path">The path to convert. Can be relative or absolute.</param>
     public static FullPath FromPath(string path)
     {
-        if (PathInternal.IsExtended(path))
+        // '\' is a regular file name character on Unix, so a path such as @"\\?\a" is a relative file name there, not a device path
+        if (OperatingSystem.IsWindows() && PathInternal.IsExtended(path))
         {
-            path = path[4..];
+            path = path[PathInternal.DevicePrefixLength..];
         }
 
         var fullPath = Path.GetFullPath(path);

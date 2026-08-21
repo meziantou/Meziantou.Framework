@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
+using System.IO.Hashing;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
@@ -10,7 +11,6 @@ internal static class PngImageLoader
     private static readonly int[] Adam7YStarts = [0, 0, 4, 0, 2, 0, 1];
     private static readonly int[] Adam7XSteps = [8, 8, 4, 4, 2, 2, 1];
     private static readonly int[] Adam7YSteps = [8, 8, 8, 4, 4, 2, 2];
-    private static readonly uint[] PngCrc32Table = InitializePngCrc32Table();
 
     internal static bool IsPng(ReadOnlySpan<byte> data)
     {
@@ -699,37 +699,11 @@ internal static class PngImageLoader
 
     private static uint ComputePngCrc32(ReadOnlySpan<byte> chunkType, ReadOnlySpan<byte> chunkData)
     {
-        var crc = uint.MaxValue;
-        crc = UpdatePngCrc32(crc, chunkType);
-        crc = UpdatePngCrc32(crc, chunkData);
-        return ~crc;
-    }
-
-    private static uint UpdatePngCrc32(uint crc, ReadOnlySpan<byte> data)
-    {
-        foreach (var value in data)
-        {
-            crc = PngCrc32Table[(int)((crc ^ value) & 0xFF)] ^ (crc >> 8);
-        }
-
-        return crc;
-    }
-
-    private static uint[] InitializePngCrc32Table()
-    {
-        var table = new uint[256];
-        for (uint index = 0; index < table.Length; index++)
-        {
-            var crc = index;
-            for (var bit = 0; bit < 8; bit++)
-            {
-                crc = (crc & 1) == 0 ? crc >> 1 : 0xEDB88320u ^ (crc >> 1);
-            }
-
-            table[index] = crc;
-        }
-
-        return table;
+        // PNG uses CRC-32/ISO-HDLC, which is what System.IO.Hashing.Crc32 computes.
+        var crc = new Crc32();
+        crc.Append(chunkType);
+        crc.Append(chunkData);
+        return crc.GetCurrentHashAsUInt32();
     }
 
     private static uint ReadUInt32BigEndian(ReadOnlySpan<byte> data, int offset)

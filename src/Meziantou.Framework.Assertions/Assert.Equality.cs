@@ -24,8 +24,7 @@ public partial class Assert
     private static bool TryGetMemoryItems<T>(T value, [NotNullWhen(true)] out System.Collections.IEnumerable? items)
     {
         items = null;
-        var declaredType = typeof(T);
-        if (declaredType != typeof(object) && !declaredType.IsInterface && !declaredType.IsAbstract && !IsMemoryType(declaredType))
+        if (!MemoryCandidate<T>.IsPossible)
             return false;
 
         if (value is null)
@@ -38,6 +37,19 @@ public partial class Assert
 
         items = (System.Collections.IEnumerable?)toArrayMethod.Invoke(value, parameters: null);
         return items is not null;
+    }
+
+    private static class MemoryCandidate<T>
+    {
+        /// <summary>
+        /// Gets a value indicating whether a value declared as <typeparamref name="T"/> can be a Memory or
+        /// ReadOnlyMemory at runtime. Reading the type flags once per instantiation keeps them off the hot path.
+        /// </summary>
+        public static readonly bool IsPossible =
+            typeof(T) == typeof(object)
+            || typeof(T).IsInterface
+            || typeof(T).IsAbstract
+            || IsMemoryType(typeof(T));
     }
 
     private static bool IsMemoryType(Type type)

@@ -309,6 +309,24 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public void IgnoreLineEndingDifferencesWithoutCarriageReturn_Success()
+    {
+        var expected = "line1\nline2";
+        var actual = "line1\nline2";
+
+        AssertionsAssert.Equal(expected, actual, ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public void IgnoreLineEndingDifferencesWithoutCarriageReturn_Fails()
+    {
+        var expected = "line1\nline2";
+        var actual = "line1\nline3";
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal(expected, actual, ignoreLineEndingDifferences: true));
+    }
+
+    [Fact]
     public void String_IgnoreLineEndingDifferences_Success()
     {
         var expected = "line1\r\nline2\rline3";

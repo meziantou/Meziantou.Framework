@@ -282,6 +282,24 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public async Task ResolveSymlink_NonAsciiPath()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var path = temp.CreateEmptyFile("日本語.txt");
+
+        var symlink = temp.GetFullPath("リンク.txt");
+        CreateSymlink(symlink, "日本語.txt", isDirectory: false);
+
+        Assert.True(symlink.IsSymbolicLink());
+        Assert.True(symlink.TryGetSymbolicLinkTarget(out var target));
+        Assert.Equal(path, target);
+
+        Assert.True(path.TryGetCanonicalPath(out var expected));
+        Assert.True(symlink.TryGetCanonicalPath(out var actual));
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
     public async Task ResolveSymlink_Recursive()
     {
         await using var temp = TemporaryDirectory.Create();

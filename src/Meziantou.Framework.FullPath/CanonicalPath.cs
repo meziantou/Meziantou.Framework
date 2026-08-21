@@ -74,8 +74,7 @@ internal static partial class CanonicalPath
     {
         public static bool TryGetCanonicalPath(string path, [NotNullWhen(true)] out string? canonicalPath)
         {
-            var utf8Path = Encoding.UTF8.GetBytes(path + '\0');
-            var pointer = Interop.RealPath(utf8Path, IntPtr.Zero);
+            var pointer = Interop.RealPath(path, IntPtr.Zero);
             if (pointer == IntPtr.Zero)
             {
                 canonicalPath = null;
@@ -95,23 +94,13 @@ internal static partial class CanonicalPath
 
         private static partial class Interop
         {
-            [LibraryImport("libc", EntryPoint = "realpath", SetLastError = true)]
+            [LibraryImport("libc", EntryPoint = "realpath", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-            private static partial IntPtr RealPathCore(byte[] path, IntPtr resolvedPath);
+            internal static partial IntPtr RealPath(string path, IntPtr resolvedPath);
 
             [LibraryImport("libc", EntryPoint = "free", SetLastError = false)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-            private static partial void FreeCore(IntPtr pointer);
-
-            internal static IntPtr RealPath(byte[] path, IntPtr resolvedPath)
-            {
-                return RealPathCore(path, resolvedPath);
-            }
-
-            internal static void Free(IntPtr pointer)
-            {
-                FreeCore(pointer);
-            }
+            internal static partial void Free(IntPtr pointer);
         }
     }
 }

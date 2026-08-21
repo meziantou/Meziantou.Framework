@@ -461,6 +461,29 @@ public sealed class UndoRedoManagerTests
         await Assert.ThrowsAsync<OperationCanceledException>(async () => await manager.RecordActionAsync(second, cts.Token));
     }
 
+    [Fact]
+    public async Task UndoableActions_IsASnapshotOrderedFromMostRecent()
+    {
+        var manager = new UndoRedoManager();
+        var (first, _) = CreateLoggingAction("a");
+        var (second, _) = CreateLoggingAction("b");
+
+        await manager.RecordActionAsync(first, CancellationToken);
+        await manager.RecordActionAsync(second, CancellationToken);
+
+        var snapshot = manager.UndoableActions;
+        Assert.Equal([second, first], snapshot);
+
+        // Recording more actions must not change a snapshot taken earlier.
+        await manager.RecordActionAsync(CreateLoggingAction("c").Action, CancellationToken);
+        Assert.Equal([second, first], snapshot);
+        Assert.Equal(3, manager.UndoableActions.Count);
+
+        await manager.UndoAsync(CancellationToken);
+        Assert.Equal(2, manager.UndoableActions.Count);
+        Assert.Single(manager.RedoableActions);
+    }
+
     private sealed class AddAction(Action<int> add, Action<int> subtract, int value) : UndoRedoActionBase
     {
         // The total amount this action is responsible for; grows when following actions are merged in.

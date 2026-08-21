@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
@@ -58,8 +59,26 @@ public partial class Assert
         if (comparer is not null)
             return comparer.Equals(expected, actual);
 
-        if (object.Equals(expected, actual))
+        // object.Equals boxes both operands. When both have the same static type, EqualityComparer<T>.Default gives
+        // the same answer without allocating, and the JIT devirtualizes it for value types.
+        var sameType = typeof(TExpected) == typeof(TActual);
+        if (sameType)
+        {
+            if (EqualityComparer<TExpected>.Default.Equals(expected, Unsafe.As<TActual, TExpected>(ref actual)))
+                return true;
+
+            if (typeof(TExpected).IsValueType)
+            {
+                // Numeric widening and user-defined implicit conversions can only make values of different runtime
+                // types compare equal, and a value type has no derived types. Only the structural comparison is left,
+                // which still matters for collection-like structs such as ImmutableArray<T>.
+                return TryCompareEnumerableValues(expected, actual, out var valueTypeResult) && valueTypeResult;
+            }
+        }
+        else if (object.Equals(expected, actual))
+        {
             return true;
+        }
 
         return (TryCompareNumericValues(expected, actual, out var result) && result)
             || (TryCompareEnumerableValues(expected, actual, out result) && result)

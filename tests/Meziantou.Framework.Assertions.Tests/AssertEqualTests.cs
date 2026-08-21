@@ -414,6 +414,40 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public void SameImmutableArrayTypes_Success()
+    {
+        var expected = ImmutableArray.Create(1, 2, 3);
+        var actual = ImmutableArray.Create(1, 2, 3);
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void NestedSameImmutableArrayTypes_Success()
+    {
+        ImmutableArray<int>[] expected = [ImmutableArray.Create(1, 2), ImmutableArray.Create(3)];
+        ImmutableArray<int>[] actual = [ImmutableArray.Create(1, 2), ImmutableArray.Create(3)];
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void NestedSameImmutableArrayTypes_Fails()
+    {
+        ImmutableArray<int>[] expected = [ImmutableArray.Create(1, 2)];
+        ImmutableArray<int>[] actual = [ImmutableArray.Create(1, 3)];
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed: Item at index 0 differs.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 0
+            Expected item: [[̲1̲,̲ ̲2̲]̲]
+            Actual item:   [[̲1̲,̲ ̲3̲]̲]
+            """);
+    }
+
+    [Fact]
     public void DifferentListTypes_Success()
     {
         var expected = new List<int> { 1, 2, 3 };

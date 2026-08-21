@@ -198,4 +198,90 @@ public class SlugTests
             return base.IsAllowed(character) && !"aeiou".Contains(character.ToString(), StringComparison.Ordinal);
         }
     }
+
+    [Theory]
+    [InlineData(1, "")]
+    [InlineData(2, "\u00E9")]
+    [InlineData(3, "\u00E9\u00E9")]
+    [InlineData(5, "\u00E9\u00E9\u00E9\u00E9")]
+    [InlineData(9, "\u00E9\u00E9\u00E9\u00E9")]
+    public void Slug_MaximumLength_AppliesToTheComposedSlug(int maximumLength, string expected)
+    {
+        var options = new SlugOptions { MaximumLength = maximumLength };
+        options.AllowedRanges.Clear();
+
+        var slug = Slug.Create("\u00E9\u00E9\u00E9\u00E9", options);
+
+        Assert.Equal(expected, slug);
+    }
+
+    [Fact]
+    public void Slug_MaximumLength_FillsTheLimitWhenComposingFreesRoom()
+    {
+        var options = new SlugOptions { MaximumLength = 17 };
+        options.AllowedRanges.Clear();
+
+        var slug = Slug.Create("caf\u00E9 cr\u00E8me br\u00FBl\u00E9e", options);
+
+        Assert.Equal("caf\u00E9 cr\u00E8me br\u00FBl\u00E9e", slug);
+        Assert.HasCount(17, slug);
+    }
+
+    [Fact]
+    public void Slug_MaximumLength_NeverStripsCombiningMarksFromTheLastCharacter()
+    {
+        var options = new SlugOptions { MaximumLength = 4 };
+        options.AllowedRanges.Clear();
+
+        var slug = Slug.Create("\u00E9\u00E9\u00E9\u00E9", options);
+
+        Assert.DoesNotContain('e', slug);
+        Assert.Equal("\u00E9\u00E9\u00E9", slug);
+    }
+
+    [Fact]
+    public void Slug_MaximumLength_IsNeverExceededOnComposingInput()
+    {
+        string[] inputs =
+        [
+            "\u00E9\u00E9\u00E9\u00E9",
+            "caf\u00E9 cr\u00E8me br\u00FBl\u00E9e",
+            "\uAC00\uAC01\uAC02",
+            "  \u00E9 \u00E9  ",
+            "\U0001F600\u00E9\U0001F600",
+        ];
+
+        foreach (var input in inputs)
+        {
+            for (var maximumLength = 1; maximumLength <= 24; maximumLength++)
+            {
+                foreach (var separator in new[] { "-", "__", "" })
+                {
+                    var options = new SlugOptions { MaximumLength = maximumLength, Separator = separator };
+                    options.AllowedRanges.Clear();
+
+                    var slug = Slug.Create(input, options);
+
+                    Assert.HasCountLessThanOrEqual(maximumLength, slug, $"[{input}] with limit {maximumLength} and separator '{separator}'");
+                    Assert.Equal(slug, slug.Normalize(NormalizationForm.FormC));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void Slug_MaximumLength_RaisingTheLimitNeverShortensTheSlug()
+    {
+        var previousLength = 0;
+        for (var maximumLength = 1; maximumLength <= 24; maximumLength++)
+        {
+            var options = new SlugOptions { MaximumLength = maximumLength };
+            options.AllowedRanges.Clear();
+
+            var slug = Slug.Create("caf\u00E9 cr\u00E8me br\u00FBl\u00E9e", options);
+
+            Assert.HasCountGreaterThanOrEqual(previousLength, slug, $"limit {maximumLength} produced fewer characters than limit {maximumLength - 1}");
+            previousLength = slug.Length;
+        }
+    }
 }

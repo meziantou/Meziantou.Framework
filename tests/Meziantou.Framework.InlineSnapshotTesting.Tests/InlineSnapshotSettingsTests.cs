@@ -1,6 +1,10 @@
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
+
+// Some tests set the INLINESNAPSHOTTESTING_STRATEGY environment variable, which is process-wide and is inherited by the
+// processes started by the other tests, so this class does not run in parallel.
+[TestClass(DisableParallelization = true)]
 public sealed class InlineSnapshotSettingsTests
 {
     private const string SnapshotUpdateStrategyEnvironmentVariableName = "INLINESNAPSHOTTESTING_STRATEGY";
@@ -115,6 +119,10 @@ public sealed class InlineSnapshotSettingsTests
 
         public EnvironmentVariableScope(string name, string? value)
         {
+            // InlineSnapshotSettings.Default is created by the type initializer, which reads the environment variable.
+            // Force it to run now, so the other tests of the assembly never observe the value set by this scope.
+            _ = InlineSnapshotSettings.Default;
+
             _name = name;
             _previousValue = Environment.GetEnvironmentVariable(name);
             Environment.SetEnvironmentVariable(name, value);

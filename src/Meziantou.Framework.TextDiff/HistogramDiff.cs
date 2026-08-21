@@ -26,36 +26,44 @@ internal static class HistogramDiff
         bool[] leftModified,
         bool[] rightModified)
     {
-        while (leftStart < leftEnd && rightStart < rightEnd && comparer.Equals(left[leftStart], right[rightStart]))
+        // Each level consumes a single anchor, so recursing on both sides of it made the recursion
+        // depth proportional to the number of anchors. The region after the anchor is a tail call:
+        // iterate on it instead of recursing, which leaves only the region before the anchor on the
+        // stack. Recursing on both sides overflowed the stack on a few thousand changed chunks.
+        while (true)
         {
-            leftModified[leftStart] = false;
-            rightModified[rightStart] = false;
-            leftStart++;
-            rightStart++;
+            while (leftStart < leftEnd && rightStart < rightEnd && comparer.Equals(left[leftStart], right[rightStart]))
+            {
+                leftModified[leftStart] = false;
+                rightModified[rightStart] = false;
+                leftStart++;
+                rightStart++;
+            }
+
+            while (leftStart < leftEnd && rightStart < rightEnd && comparer.Equals(left[leftEnd - 1], right[rightEnd - 1]))
+            {
+                leftEnd--;
+                rightEnd--;
+                leftModified[leftEnd] = false;
+                rightModified[rightEnd] = false;
+            }
+
+            if (leftStart >= leftEnd || rightStart >= rightEnd)
+                return;
+
+            var anchor = FindBestAnchor(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer);
+            if (anchor is null)
+            {
+                ApplyMyers(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer, leftModified, rightModified);
+                return;
+            }
+
+            ComputeRange(left, leftStart, anchor.Value.LeftIndex, right, rightStart, anchor.Value.RightIndex, comparer, leftModified, rightModified);
+            leftModified[anchor.Value.LeftIndex] = false;
+            rightModified[anchor.Value.RightIndex] = false;
+            leftStart = anchor.Value.LeftIndex + 1;
+            rightStart = anchor.Value.RightIndex + 1;
         }
-
-        while (leftStart < leftEnd && rightStart < rightEnd && comparer.Equals(left[leftEnd - 1], right[rightEnd - 1]))
-        {
-            leftEnd--;
-            rightEnd--;
-            leftModified[leftEnd] = false;
-            rightModified[rightEnd] = false;
-        }
-
-        if (leftStart >= leftEnd || rightStart >= rightEnd)
-            return;
-
-        var anchor = FindBestAnchor(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer);
-        if (anchor is null)
-        {
-            ApplyMyers(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer, leftModified, rightModified);
-            return;
-        }
-
-        ComputeRange(left, leftStart, anchor.Value.LeftIndex, right, rightStart, anchor.Value.RightIndex, comparer, leftModified, rightModified);
-        leftModified[anchor.Value.LeftIndex] = false;
-        rightModified[anchor.Value.RightIndex] = false;
-        ComputeRange(left, anchor.Value.LeftIndex + 1, leftEnd, right, anchor.Value.RightIndex + 1, rightEnd, comparer, leftModified, rightModified);
     }
 
     private static void ApplyMyers(

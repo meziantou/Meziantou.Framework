@@ -69,7 +69,19 @@ public partial class Assert
     /// <param name="assertionExpression">The expression that produced the assertion.</param>
     public static void All<T>(IEnumerable<T> actual, Action<T> assertion, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(assertion))] string? assertionExpression = null)
     {
-        All(actual, (item, _) => assertion(item), message, actualExpression, assertionExpression);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+
+        for (var index = 0; actualSnapshot.TryGetItem(index, out var item); index++)
+        {
+            try
+            {
+                assertion(item);
+            }
+            catch (Exception exception)
+            {
+                throw new AssertionException(ErrorFormatter.Format(new CollectionAllAssertionError<T>(actualSnapshot, index, exception, actualExpression, assertionExpression, message)), exception);
+            }
+        }
     }
 
     /// <summary>Asserts that all items in an enumerable satisfy the specified assertion.</summary>

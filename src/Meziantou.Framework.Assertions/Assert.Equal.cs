@@ -453,6 +453,15 @@ public partial class Assert
         return false;
     }
 
+    private static string NormalizeLineEndings(string value)
+    {
+        // The span overload always copies. Most strings contain no '\r' at all, so return the instance unchanged.
+        if (!value.AsSpan().Contains('\r'))
+            return value;
+
+        return NormalizeLineEndings(value.AsSpan());
+    }
+
     private static string NormalizeLineEndings(ReadOnlySpan<char> value)
     {
         if (!value.Contains('\r'))
@@ -497,10 +506,22 @@ public partial class Assert
             return null;
 
         var minLength = Math.Min(expected.Length, actual.Length);
-        for (var i = 0; i < minLength; i++)
+
+        // An ordinal comparison is character by character, so the common prefix can be found with a single
+        // vectorized scan instead of one span comparison per character.
+        if (comparison is StringComparison.Ordinal)
         {
-            if (!actual.AsSpan(i, 1).Equals(expected.AsSpan(i, 1), comparison))
-                return i;
+            var commonLength = expected.AsSpan().CommonPrefixLength(actual.AsSpan());
+            if (commonLength < minLength)
+                return commonLength;
+        }
+        else
+        {
+            for (var i = 0; i < minLength; i++)
+            {
+                if (!actual.AsSpan(i, 1).Equals(expected.AsSpan(i, 1), comparison))
+                    return i;
+            }
         }
 
         if (expected.Length == actual.Length)

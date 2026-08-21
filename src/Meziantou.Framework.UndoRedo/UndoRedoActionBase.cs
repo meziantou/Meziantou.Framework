@@ -16,34 +16,28 @@ public abstract class UndoRedoActionBase : IUndoRedoAction
     /// <inheritdoc />
     public async ValueTask ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        if (!CanExecute())
+        if (ExecuteCount > 0)
             return;
 
         await ExecuteCoreAsync(cancellationToken).ConfigureAwait(false);
         ExecuteCount++;
     }
 
-    /// <summary>Contains the logic that applies the change. Called by <see cref="ExecuteAsync"/> when <see cref="CanExecute"/> is <see langword="true"/>.</summary>
+    /// <summary>Contains the logic that applies the change. Called by <see cref="ExecuteAsync"/> unless the action is already executed.</summary>
     protected abstract ValueTask ExecuteCoreAsync(CancellationToken cancellationToken);
 
     /// <inheritdoc />
     public async ValueTask UnExecuteAsync(CancellationToken cancellationToken = default)
     {
-        if (!CanUnExecute())
+        if (ExecuteCount == 0)
             return;
 
         await UnExecuteCoreAsync(cancellationToken).ConfigureAwait(false);
         ExecuteCount--;
     }
 
-    /// <summary>Contains the logic that reverts the change. Called by <see cref="UnExecuteAsync"/> when <see cref="CanUnExecute"/> is <see langword="true"/>.</summary>
+    /// <summary>Contains the logic that reverts the change. Called by <see cref="UnExecuteAsync"/> unless the action is not currently executed.</summary>
     protected abstract ValueTask UnExecuteCoreAsync(CancellationToken cancellationToken);
-
-    /// <inheritdoc />
-    public bool CanExecute() => ExecuteCount == 0;
-
-    /// <inheritdoc />
-    public bool CanUnExecute() => !CanExecute();
 
     /// <inheritdoc />
     public virtual ValueTask<bool> TryToMergeAsync(IUndoRedoAction followingAction) => new(false);

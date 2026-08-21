@@ -132,12 +132,6 @@ public sealed class UndoRedoTransaction : IUndoRedoAction, IAsyncDisposable
     }
 
     /// <inheritdoc />
-    public bool CanExecute() => !_executed;
-
-    /// <inheritdoc />
-    public bool CanUnExecute() => _executed;
-
-    /// <inheritdoc />
     public ValueTask<bool> TryToMergeAsync(IUndoRedoAction followingAction) => new(false);
 
     /// <summary>Commits the transaction, recording it as a single undo step.</summary>

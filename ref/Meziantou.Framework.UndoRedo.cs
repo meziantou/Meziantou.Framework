@@ -9,8 +9,6 @@ namespace Meziantou.Framework.UndoRedo
         bool AllowToMergeWithPrevious { get; }
         System.Threading.Tasks.ValueTask ExecuteAsync(System.Threading.CancellationToken cancellationToken = null);
         System.Threading.Tasks.ValueTask UnExecuteAsync(System.Threading.CancellationToken cancellationToken = null);
-        bool CanExecute();
-        bool CanUnExecute();
         System.Threading.Tasks.ValueTask<bool> TryToMergeAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction followingAction);
     }
 
@@ -22,8 +20,6 @@ namespace Meziantou.Framework.UndoRedo
         protected abstract System.Threading.Tasks.ValueTask ExecuteCoreAsync(System.Threading.CancellationToken cancellationToken);
         public System.Threading.Tasks.ValueTask UnExecuteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         protected abstract System.Threading.Tasks.ValueTask UnExecuteCoreAsync(System.Threading.CancellationToken cancellationToken);
-        public bool CanExecute() => throw null;
-        public bool CanUnExecute() => throw null;
         public virtual System.Threading.Tasks.ValueTask<bool> TryToMergeAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction followingAction) => throw null;
     }
 
@@ -63,8 +59,6 @@ namespace Meziantou.Framework.UndoRedo
         public bool AllowToMergeWithPrevious { get => throw null; set { } }
         public System.Threading.Tasks.ValueTask ExecuteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.ValueTask UnExecuteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public bool CanExecute() => throw null;
-        public bool CanUnExecute() => throw null;
         public System.Threading.Tasks.ValueTask<bool> TryToMergeAsync(Meziantou.Framework.UndoRedo.IUndoRedoAction followingAction) => throw null;
         public System.Threading.Tasks.ValueTask CommitAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.ValueTask RollbackAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;

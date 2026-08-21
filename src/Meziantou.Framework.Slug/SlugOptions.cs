@@ -32,10 +32,9 @@ public class SlugOptions
     /// Gets or sets the maximum length of the generated slug. Default is 80. A value less than or equal to zero means the slug is not truncated.
     /// </summary>
     /// <remarks>
-    /// The limit is never exceeded, and the slug is only cut between characters, so a truncated slug never ends with an
-    /// incomplete surrogate pair or a partial <see cref="Separator"/>. The limit is applied to the decomposed form of the
-    /// text; when <see cref="AllowedRanges"/> allows combining marks, those marks are recomposed with the character they
-    /// follow, so the returned slug can be shorter than <see cref="MaximumLength"/>.
+    /// The limit applies to the returned slug and is never exceeded. A slug is only cut between characters, so it never
+    /// ends with an incomplete surrogate pair, a partial <see cref="Separator"/>, or a character stripped of the combining
+    /// marks that follow it. Because those units are kept whole, a slug can end up slightly shorter than the limit.
     /// </remarks>
     public int MaximumLength { get; set; }
 

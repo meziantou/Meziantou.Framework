@@ -40,11 +40,52 @@ public static class Slug
         var maximumLength = options.MaximumLength > 0 ? options.MaximumLength : int.MaxValue;
 
         var sb = new StringBuilder(Math.Min(text.Length, maximumLength));
+        var budget = maximumLength;
+        string slug;
+        while (true)
+        {
+            var completed = AppendSlug(sb, text, options, separator, budget);
+            slug = sb.ToString().Normalize(NormalizationForm.FormC);
+            if (completed)
+                break;
+
+            // The slug is built decomposed but returned composed, and composing it merges each combining
+            // mark back into the character it follows. The buffer can therefore be full while the composed
+            // slug is still under the limit. Grant back exactly the characters composition recovered and
+            // rebuild: the limit stays an upper bound on the composed slug, but it is actually filled.
+            var recovered = sb.Length - slug.Length;
+            if (recovered == 0 || maximumLength > int.MaxValue - recovered)
+                break;
+
+            var extendedBudget = maximumLength + recovered;
+            if (extendedBudget <= budget)
+                break;
+
+            budget = extendedBudget;
+        }
+
+        // Trimmed on the decomposed buffer, so a separator that is itself decomposed is still recognized.
+        if (!options.CanEndWithSeparator && separator.Length > 0 && EndsWith(sb, separator))
+        {
+            sb.Length -= separator.Length;
+            slug = sb.ToString().Normalize(NormalizationForm.FormC);
+        }
+
+        return slug;
+    }
+
+    /// <summary>Rebuilds the slug into <paramref name="sb"/>, using at most <paramref name="budget"/> characters.</summary>
+    /// <returns><see langword="true"/> if the whole text was consumed; otherwise, <see langword="false"/>.</returns>
+    private static bool AppendSlug(StringBuilder sb, string text, SlugOptions options, string separator, int budget)
+    {
+        sb.Clear();
         var usesDefaultReplace = options.UsesDefaultReplace;
         Span<char> transformed = stackalloc char[MaxUtf16CharsPerRune];
+        var characterStart = 0;
 
         foreach (var rune in text.EnumerateRunes())
         {
+            var isCombiningMark = Rune.GetUnicodeCategory(rune) is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark;
             if (options.IsAllowed(rune))
             {
                 // Append the replacement atomically, so the maximum length can never split a
@@ -61,32 +102,39 @@ public static class Slug
                     replacement = options.Replace(rune);
                 }
 
-                if (sb.Length + replacement.Length > maximumLength)
-                    break;
+                // A combining mark belongs to the character before it, so only a rune that is not one
+                // starts a new character.
+                if (!isCombiningMark)
+                    characterStart = sb.Length;
+
+                if (sb.Length + replacement.Length > budget)
+                {
+                    // Keeping a base character while dropping the mark that follows it would silently
+                    // strip the accent off the last character of the slug. Drop the character instead.
+                    if (isCombiningMark)
+                        sb.Length = characterStart;
+
+                    return false;
+                }
 
                 sb.Append(replacement);
             }
-            else if (Rune.GetUnicodeCategory(rune) is not (UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark))
+            else if (!isCombiningMark)
             {
                 // Combining marks attached to a disallowed character are dropped silently instead of
                 // producing a separator. A slug never starts with a separator, and separators are never repeated.
                 if (sb.Length == 0 || EndsWith(sb, separator))
                     continue;
 
-                if (sb.Length + separator.Length > maximumLength)
-                    break;
+                if (sb.Length + separator.Length > budget)
+                    return false;
 
                 sb.Append(separator);
+                characterStart = sb.Length;
             }
         }
 
-        var slug = sb.ToString();
-        if (!options.CanEndWithSeparator && separator.Length > 0 && slug.EndsWith(separator, StringComparison.Ordinal))
-        {
-            slug = slug[..^separator.Length];
-        }
-
-        return slug.Normalize(NormalizationForm.FormC);
+        return true;
     }
 
     private static bool EndsWith(StringBuilder stringBuilder, string suffix)

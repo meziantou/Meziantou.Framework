@@ -3,7 +3,7 @@ namespace Meziantou.Framework;
 /// <summary>Provides an interface for retrieving localized strings for relative date formatting.</summary>
 /// <remarks>
 /// Implement this interface to provide custom localization for <see cref="RelativeDate"/>.
-/// The default implementation uses embedded resource files for English and French translations.
+/// The default implementation uses embedded resource files for Dutch, English, French, German, Italian, Japanese, Korean, Portuguese, Simplified Chinese, Spanish and Turkish translations.
 /// </remarks>
 public interface ILocalizationProvider
 {

@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AMinuteAgo" xml:space="preserve">
+    <value>een minuut geleden</value>
+  </data>
+  <data name="AnHourAgo" xml:space="preserve">
+    <value>een uur geleden</value>
+  </data>
+  <data name="InAMinute" xml:space="preserve">
+    <value>over een minuut</value>
+  </data>
+  <data name="InAnHour" xml:space="preserve">
+    <value>over een uur</value>
+  </data>
+  <data name="InManyDays" xml:space="preserve">
+    <value>over {0} dagen</value>
+  </data>
+  <data name="InManyHours" xml:space="preserve">
+    <value>over {0} uur</value>
+  </data>
+  <data name="InManyMinutes" xml:space="preserve">
+    <value>over {0} minuten</value>
+  </data>
+  <data name="InManyMonths" xml:space="preserve">
+    <value>over {0} maanden</value>
+  </data>
+  <data name="InManySeconds" xml:space="preserve">
+    <value>over {0} seconden</value>
+  </data>
+  <data name="InManyYears" xml:space="preserve">
+    <value>over {0} jaar</value>
+  </data>
+  <data name="InOneMonth" xml:space="preserve">
+    <value>over een maand</value>
+  </data>
+  <data name="InOneSecond" xml:space="preserve">
+    <value>over een seconde</value>
+  </data>
+  <data name="InOneYear" xml:space="preserve">
+    <value>over een jaar</value>
+  </data>
+  <data name="ManyDaysAgo" xml:space="preserve">
+    <value>{0} dagen geleden</value>
+  </data>
+  <data name="ManyHoursAgo" xml:space="preserve">
+    <value>{0} uur geleden</value>
+  </data>
+  <data name="ManyMinutesAgo" xml:space="preserve">
+    <value>{0} minuten geleden</value>
+  </data>
+  <data name="ManyMonthsAgo" xml:space="preserve">
+    <value>{0} maanden geleden</value>
+  </data>
+  <data name="ManySecondsAgo" xml:space="preserve">
+    <value>{0} seconden geleden</value>
+  </data>
+  <data name="ManyYearsAgo" xml:space="preserve">
+    <value>{0} jaar geleden</value>
+  </data>
+  <data name="Now" xml:space="preserve">
+    <value>nu</value>
+  </data>
+  <data name="OneMonthAgo" xml:space="preserve">
+    <value>een maand geleden</value>
+  </data>
+  <data name="OneSecondAgo" xml:space="preserve">
+    <value>een seconde geleden</value>
+  </data>
+  <data name="OneYearAgo" xml:space="preserve">
+    <value>een jaar geleden</value>
+  </data>
+  <data name="Tomorrow" xml:space="preserve">
+    <value>morgen</value>
+  </data>
+  <data name="Yesterday" xml:space="preserve">
+    <value>gisteren</value>
+  </data>
+</root>

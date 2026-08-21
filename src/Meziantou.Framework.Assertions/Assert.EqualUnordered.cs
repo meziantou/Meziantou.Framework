@@ -49,9 +49,10 @@ public partial class Assert
         expectedSnapshot.EnsureComplete();
         comparer ??= EqualityComparer<T>.Default;
 
-        if (comparer == EqualityComparer<T>.Default && EqualUnorderedUsingDefaultComparer(expectedSnapshot.Items, actualSnapshot.Items))
+        if (EqualUnorderedUsingComparer(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 
+        // Only the failure path pays for the quadratic scan, which locates the indexes shown in the message.
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer);
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
         {
@@ -124,9 +125,10 @@ public partial class Assert
         await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         comparer ??= EqualityComparer<T>.Default;
 
-        if (comparer == EqualityComparer<T>.Default && EqualUnorderedUsingDefaultComparer(expectedSnapshot.Items, actualSnapshot.Items))
+        if (EqualUnorderedUsingComparer(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 
+        // Only the failure path pays for the quadratic scan, which locates the indexes shown in the message.
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer);
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
         {
@@ -168,22 +170,25 @@ public partial class Assert
         EqualUnorderedCollections(EnumerateObjects(expected), EnumerateObjects(actual), comparer, message, actualExpression, expectedExpression);
     }
 
-    private static bool EqualUnorderedUsingDefaultComparer<T>(IReadOnlyList<T> expected, IReadOnlyList<T> actual)
+    /// <summary>
+    /// Compares two collections as multisets in O(n) using <paramref name="comparer"/> for both hashing and equality.
+    /// </summary>
+    private static bool EqualUnorderedUsingComparer<T>(IReadOnlyList<T> expected, IReadOnlyList<T> actual, IEqualityComparer<T> comparer)
     {
         if (expected.Count != actual.Count)
             return false;
 
-        var counts = new Dictionary<DefaultComparerKey<T>, int>(expected.Count);
+        var counts = new Dictionary<NullableKey<T>, int>(expected.Count, NullableKeyComparer<T>.Create(comparer));
         for (var index = 0; index < expected.Count; index++)
         {
-            var key = new DefaultComparerKey<T>(expected[index]);
+            var key = new NullableKey<T>(expected[index]);
             counts.TryGetValue(key, out var count);
             counts[key] = count + 1;
         }
 
         for (var index = 0; index < actual.Count; index++)
         {
-            var key = new DefaultComparerKey<T>(actual[index]);
+            var key = new NullableKey<T>(actual[index]);
             if (!counts.TryGetValue(key, out var count))
                 return false;
 
@@ -238,26 +243,6 @@ public partial class Assert
         }
 
         return (missingExpectedIndex, unexpectedActualIndex);
-    }
-
-    private readonly struct DefaultComparerKey<T>(T value) : IEquatable<DefaultComparerKey<T>>
-    {
-        private T Value { get; } = value;
-
-        public bool Equals(DefaultComparerKey<T> other)
-        {
-            return EqualityComparer<T>.Default.Equals(Value, other.Value);
-        }
-
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            return obj is DefaultComparerKey<T> other && Equals(other);
-        }
-
-        public override int GetHashCode()
-        {
-            return Value is null ? 0 : EqualityComparer<T>.Default.GetHashCode(Value);
-        }
     }
 
     private static (int? MissingExpectedIndex, int? UnexpectedActualIndex) GetEqualUnorderedMismatch<TExpected, TActual>(IReadOnlyList<TExpected> expected, IReadOnlyList<TActual> actual, System.Collections.IEqualityComparer? comparer)

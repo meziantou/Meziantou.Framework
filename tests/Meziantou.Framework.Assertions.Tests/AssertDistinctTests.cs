@@ -111,6 +111,75 @@ public sealed class AssertDistinctTests
     }
 
     [Fact]
+    public void LargeSpan_Success()
+    {
+        AssertionsAssert.Distinct<int>(Enumerable.Range(0, 100).ToArray());
+    }
+
+    [Fact]
+    public void LargeEnumerable_Success()
+    {
+        AssertionsAssert.Distinct(Enumerable.Range(0, 100));
+    }
+
+    [Fact]
+    public void LargeEnumerableWithNulls_Success()
+    {
+        var actual = new string?[100];
+        for (var i = 0; i < actual.Length; i++)
+        {
+            actual[i] = i.ToString(CultureInfo.InvariantCulture);
+        }
+
+        actual[50] = null;
+
+        AssertionsAssert.Distinct<string?>(actual);
+    }
+
+    [Fact]
+    public void LargeEnumerableWithDuplicateBeyondThreshold_Fails()
+    {
+        // Beyond the linear-search threshold the duplicate is found through the hash lookup.
+        var actual = Enumerable.Range(0, 100).ToList();
+        actual[99] = 20;
+
+        var exception = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Distinct(actual));
+
+        AssertionsAssert.Contains("Duplicate item found at index 99", exception.Message);
+        AssertionsAssert.Contains("First index:     20", exception.Message);
+    }
+
+    [Fact]
+    public void LargeEnumerableWithDuplicateNullBeyondThreshold_Fails()
+    {
+        var actual = new string?[100];
+        for (var i = 0; i < actual.Length; i++)
+        {
+            actual[i] = i.ToString(CultureInfo.InvariantCulture);
+        }
+
+        actual[5] = null;
+        actual[99] = null;
+
+        var exception = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Distinct<string?>(actual));
+
+        AssertionsAssert.Contains("Duplicate item found at index 99", exception.Message);
+        AssertionsAssert.Contains("First index:     5", exception.Message);
+    }
+
+    [Fact]
+    public void LargeEnumerableComparer_Fails()
+    {
+        var actual = Enumerable.Range(0, 100).Select(i => i.ToString(CultureInfo.InvariantCulture)).ToList();
+        actual[99] = "20";
+
+        var exception = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Distinct(actual, StringComparer.OrdinalIgnoreCase));
+
+        AssertionsAssert.Contains("Duplicate item found at index 99", exception.Message);
+        AssertionsAssert.Contains("First index:     20", exception.Message);
+    }
+
+    [Fact]
     public void NonGenericEnumerable_Fails()
     {
         System.Collections.IEnumerable actual = new object?[] { 1, 2, 1 };

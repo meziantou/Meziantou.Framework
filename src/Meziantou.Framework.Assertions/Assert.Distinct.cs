@@ -12,9 +12,24 @@ public partial class Assert
     {
         comparer ??= EqualityComparer<T>.Default;
 
-        for (var duplicateIndex = 1; duplicateIndex < actual.Length; duplicateIndex++)
+        if (actual.Length <= LinearDuplicateSearchThreshold)
         {
-            var firstIndex = IndexOf(actual[..duplicateIndex], actual[duplicateIndex], comparer);
+            for (var duplicateIndex = 1; duplicateIndex < actual.Length; duplicateIndex++)
+            {
+                var firstIndex = IndexOf(actual[..duplicateIndex], actual[duplicateIndex], comparer);
+                if (firstIndex >= 0)
+                {
+                    throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanDistinctAssertionError<T>(actual, duplicateIndex, firstIndex, actualExpression, message)));
+                }
+            }
+
+            return;
+        }
+
+        var firstIndexes = new FirstIndexLookup<T>(comparer, actual.Length);
+        for (var duplicateIndex = 0; duplicateIndex < actual.Length; duplicateIndex++)
+        {
+            var firstIndex = firstIndexes.Add(actual[duplicateIndex], duplicateIndex);
             if (firstIndex >= 0)
             {
                 throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanDistinctAssertionError<T>(actual, duplicateIndex, firstIndex, actualExpression, message)));
@@ -39,9 +54,20 @@ public partial class Assert
         comparer ??= EqualityComparer<T>.Default;
         using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
+        FirstIndexLookup<T>? firstIndexes = null;
         for (var duplicateIndex = 0; actualSnapshot.TryGetItem(duplicateIndex, out var item); duplicateIndex++)
         {
-            var firstIndex = IndexOf(actualSnapshot.Items, duplicateIndex, item, comparer);
+            int firstIndex;
+            if (duplicateIndex < LinearDuplicateSearchThreshold)
+            {
+                firstIndex = IndexOf(actualSnapshot.Items, duplicateIndex, item, comparer);
+            }
+            else
+            {
+                firstIndexes ??= FirstIndexLookup<T>.Create(actualSnapshot.Items, duplicateIndex, comparer);
+                firstIndex = firstIndexes.Add(item, duplicateIndex);
+            }
+
             if (firstIndex >= 0)
             {
                 throw new AssertionException(ErrorFormatter.Format(new CollectionDistinctAssertionError<T>(actualSnapshot, duplicateIndex, firstIndex, actualExpression, message)));
@@ -76,9 +102,20 @@ public partial class Assert
         comparer ??= EqualityComparer<T>.Default;
         await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
+        FirstIndexLookup<T>? firstIndexes = null;
         for (var duplicateIndex = 0; await actualSnapshot.TryGetItem(duplicateIndex).ConfigureAwait(false) is (true, var item); duplicateIndex++)
         {
-            var firstIndex = IndexOf(actualSnapshot.Items, duplicateIndex, item, comparer);
+            int firstIndex;
+            if (duplicateIndex < LinearDuplicateSearchThreshold)
+            {
+                firstIndex = IndexOf(actualSnapshot.Items, duplicateIndex, item, comparer);
+            }
+            else
+            {
+                firstIndexes ??= FirstIndexLookup<T>.Create(actualSnapshot.Items, duplicateIndex, comparer);
+                firstIndex = firstIndexes.Add(item, duplicateIndex);
+            }
+
             if (firstIndex >= 0)
             {
                 throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionDistinctAssertionError<T>(actualSnapshot, duplicateIndex, firstIndex, actualExpression, message)).ConfigureAwait(false));
@@ -117,5 +154,44 @@ public partial class Assert
         }
 
         return -1;
+    }
+
+    /// <summary>
+    /// Number of leading items compared with a linear scan before switching to a hash lookup. Small collections are
+    /// the common case in assertions and the scan allocates nothing for them; the quadratic work stays bounded by
+    /// the square of this value. Around this size the hash lookup starts winning despite the dictionary it allocates.
+    /// </summary>
+    private const int LinearDuplicateSearchThreshold = 64;
+
+    /// <summary>Maps each item to the index where it was first seen.</summary>
+    private sealed class FirstIndexLookup<T>
+    {
+        private readonly Dictionary<NullableKey<T>, int> _indexes;
+
+        public FirstIndexLookup(IEqualityComparer<T> comparer, int capacity)
+        {
+            _indexes = new Dictionary<NullableKey<T>, int>(capacity, NullableKeyComparer<T>.Create(comparer));
+        }
+
+        public static FirstIndexLookup<T> Create(IReadOnlyList<T> items, int count, IEqualityComparer<T> comparer)
+        {
+            var lookup = new FirstIndexLookup<T>(comparer, count);
+            for (var index = 0; index < count; index++)
+            {
+                lookup.Add(items[index], index);
+            }
+
+            return lookup;
+        }
+
+        /// <summary>Records <paramref name="item"/> and returns -1, or returns the index where it was first seen.</summary>
+        public int Add(T item, int index)
+        {
+            var key = new NullableKey<T>(item);
+            if (_indexes.TryAdd(key, index))
+                return -1;
+
+            return _indexes[key];
+        }
     }
 }

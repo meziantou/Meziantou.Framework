@@ -186,7 +186,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
     /// <summary>Creates a relative path from this path to the specified root path.</summary>
     /// <param name="rootPath">The root path to make this path relative to.</param>
-    /// <returns>A relative path string.</returns>
+    /// <returns>A relative path string, or <c>"."</c> when both paths are equal.</returns>
     public string MakePathRelativeTo(FullPath rootPath)
     {
         if (IsEmpty)
@@ -195,56 +195,13 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (rootPath.IsEmpty)
             return _value;
 
-        if (rootPath == this)
-            return ".";
-
-        return PathDifference(rootPath._value, _value, compareCase: FullPathComparer.Default.IsCaseSensitive);
-    }
-
-    private static string PathDifference(string path1, string path2, bool compareCase)
-    {
-        var directorySeparator = Path.DirectorySeparatorChar;
-
-        int i;
-        var si = -1;
-        for (i = 0; (i <= path1.Length) && (i < path2.Length); ++i)
-        {
-            var c1 = i == path1.Length ? directorySeparator : path1[i];
-            var c2 = path2[i];
-
-            if ((c1 != c2) && (compareCase || (char.ToUpperInvariant(c1) != char.ToUpperInvariant(c2))))
-                break;
-
-            if (c1 == directorySeparator)
-            {
-                si = i;
-            }
-        }
-
-        if (i == 0)
-            return path2;
-
-        if ((i == path1.Length + 1) && (i == path2.Length))
-            return "";
-
-        var relPath = new StringBuilder();
-        // Walk down several dirs
-        for (; i <= path1.Length; ++i)
-        {
-            var c = i == path1.Length ? directorySeparator : path1[i];
-            if (c == directorySeparator)
-            {
-                relPath.Append("..");
-                relPath.Append(directorySeparator);
-            }
-        }
-
-        return relPath.Append(path2.AsSpan(si + 1)).ToString();
+        return Path.GetRelativePath(rootPath._value, _value);
     }
 
     /// <summary>Determines whether this path is a child of the specified root path.</summary>
     /// <param name="rootPath">The root path to check against.</param>
     /// <returns><see langword="true"/> if this path is a child of the root path; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>The comparison uses the same case sensitivity as <see cref="FullPathComparer.Default"/>.</remarks>
     public bool IsChildOf(FullPath rootPath)
     {
         if (IsEmpty)
@@ -252,20 +209,25 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (rootPath.IsEmpty)
             throw new ArgumentException("Root path is empty", nameof(rootPath));
 
-        if (_value.Length <= rootPath._value.Length)
+        var root = rootPath._value;
+        if (_value.Length <= root.Length)
             return false;
 
-        if (!_value.StartsWith(rootPath._value, StringComparison.Ordinal))
+        var comparison = FullPathComparer.Default.IsCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        if (!_value.StartsWith(root, comparison))
             return false;
+
+        // Root directories such as "/" or "C:\" keep their trailing separator, so the child does not have an extra one
+        // rootpath: /
+        // current:  /a    => true
+        if (root[^1] == Path.DirectorySeparatorChar)
+            return true;
 
         // rootpath: /a/b
         // current:  /a/b/c => true
         // current:  /a/b/  => false
         // current:  /a/bc  => false
-        if (_value[rootPath._value.Length] == Path.DirectorySeparatorChar && _value.Length > rootPath._value.Length + 1)
-            return true;
-
-        return false;
+        return _value[root.Length] == Path.DirectorySeparatorChar && _value.Length > root.Length + 1;
     }
 
     /// <summary>Creates the parent directory of this path if it doesn't exist.</summary>

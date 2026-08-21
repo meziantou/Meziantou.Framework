@@ -410,6 +410,54 @@ internal static class PngImageLoader
         bool hasTransparentRgb,
         Span<Argb> destinationPixels)
     {
+        // The color type and bit depth are fixed for the whole image, so the common 8-bit layouts get a
+        // loop of their own instead of re-deciding how to read a sample for every channel of every pixel.
+        if (bitDepth == 8)
+        {
+            switch (colorType)
+            {
+                case 0 when !hasTransparentGray:
+                    for (var x = 0; x < pixelCount; x++)
+                    {
+                        var gray = rowData[x];
+                        destinationPixels[x] = new Argb(255, gray, gray, gray);
+                    }
+
+                    return;
+
+                case 2 when !hasTransparentRgb:
+                    for (var x = 0; x < pixelCount; x++)
+                    {
+                        var sample = rowData.Slice(x * 3, 3);
+                        destinationPixels[x] = new Argb(255, sample[0], sample[1], sample[2]);
+                    }
+
+                    return;
+
+                case 3 when palette is not null:
+                    DecodePngIndexedScanline(rowData, pixelCount, palette, paletteAlpha, destinationPixels);
+                    return;
+
+                case 4:
+                    for (var x = 0; x < pixelCount; x++)
+                    {
+                        var sample = rowData.Slice(x * 2, 2);
+                        destinationPixels[x] = new Argb(sample[1], sample[0], sample[0], sample[0]);
+                    }
+
+                    return;
+
+                case 6:
+                    for (var x = 0; x < pixelCount; x++)
+                    {
+                        var sample = rowData.Slice(x * 4, 4);
+                        destinationPixels[x] = new Argb(sample[3], sample[0], sample[1], sample[2]);
+                    }
+
+                    return;
+            }
+        }
+
         for (var x = 0; x < pixelCount; x++)
         {
             destinationPixels[x] = DecodePngPixel(
@@ -425,6 +473,21 @@ internal static class PngImageLoader
                 transparentGreen,
                 transparentBlue,
                 hasTransparentRgb);
+        }
+    }
+
+    private static void DecodePngIndexedScanline(ReadOnlySpan<byte> rowData, int pixelCount, byte[] palette, byte[]? paletteAlpha, Span<Argb> destinationPixels)
+    {
+        var paletteEntryCount = palette.Length / 3;
+        for (var x = 0; x < pixelCount; x++)
+        {
+            int paletteIndex = rowData[x];
+            if (paletteIndex >= paletteEntryCount)
+                throw new InvalidDataException("The PNG palette index is out of range.");
+
+            var entry = palette.AsSpan(paletteIndex * 3, 3);
+            var alpha = paletteAlpha is not null && paletteIndex < paletteAlpha.Length ? paletteAlpha[paletteIndex] : (byte)255;
+            destinationPixels[x] = new Argb(alpha, entry[0], entry[1], entry[2]);
         }
     }
 

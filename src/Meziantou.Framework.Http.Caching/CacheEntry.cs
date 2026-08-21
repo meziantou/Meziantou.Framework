@@ -232,7 +232,10 @@ internal sealed class CacheEntry
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        var cacheEntry = new CacheEntry(entry.SerializedResponse.ToArray())
+        var serializedResponse = entry.SerializedResponse.ToArray();
+        ResponseSerializer.EnsureWellFormed(serializedResponse);
+
+        var cacheEntry = new CacheEntry(serializedResponse)
         {
             SecondaryKey = CacheEntrySecondaryKey.Create(entry.SecondaryKeyMatchNone, entry.SecondaryKeyHeaders),
             RequestTime = entry.RequestTime,

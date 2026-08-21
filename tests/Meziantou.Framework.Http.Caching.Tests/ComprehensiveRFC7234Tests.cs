@@ -271,9 +271,12 @@ public sealed class ComprehensiveRFC7234Tests
     }
 
     [Fact]
-    public async Task When206PartialContentThenCacheable()
+    public async Task When206PartialContentThenNotCached()
     {
         await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.PartialContent, "partial",
+            ("Cache-Control", "max-age=60"),
+            ("Content-Range", "bytes 0-6/100"));
         context.AddResponse(HttpStatusCode.PartialContent, "partial",
             ("Cache-Control", "max-age=60"),
             ("Content-Range", "bytes 0-6/100"));
@@ -290,10 +293,11 @@ public sealed class ComprehensiveRFC7234Tests
               Value: partial
             """);
 
+        // Range requests bypass the cache, so a stored 206 could only ever be replayed to a request that
+        // asked for the full representation. The second request must reach the origin.
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 206 (PartialContent)
             Headers:
-              Age: 0
               Cache-Control: max-age=60
             Content:
               Headers:

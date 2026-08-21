@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 
 namespace Meziantou.Framework.Http.Caching;
 
@@ -47,8 +48,9 @@ internal sealed class HttpCache
             {
                 entry = CacheEntry.FromPersistenceEntry(persistedEntry);
             }
-            catch
+            catch (JsonException)
             {
+                // The stored payload is corrupted: ignore the entry and treat it as a miss.
                 continue;
             }
 
@@ -180,12 +182,13 @@ internal sealed class HttpCache
     {
         // RFC 7234 Section 3: Cacheable status codes
         // RFC 7231 Section 6.1: These can be cached with explicit caching directives
+        // 206 is excluded: Range requests bypass the cache, so a stored partial response could only ever
+        // be replayed to a request that asked for the full representation.
         return status switch
         {
             HttpStatusCode.OK => true,
             HttpStatusCode.NonAuthoritativeInformation => true,
             HttpStatusCode.NoContent => true,
-            HttpStatusCode.PartialContent => true,
             HttpStatusCode.MultipleChoices => true,
             HttpStatusCode.MovedPermanently => true,
             HttpStatusCode.NotFound => true,
@@ -206,7 +209,6 @@ internal sealed class HttpCache
             HttpStatusCode.OK => true,
             HttpStatusCode.NonAuthoritativeInformation => true,
             HttpStatusCode.NoContent => true,
-            HttpStatusCode.PartialContent => true,
             HttpStatusCode.MultipleChoices => true,
             HttpStatusCode.MovedPermanently => true,
             HttpStatusCode.NotFound => true,

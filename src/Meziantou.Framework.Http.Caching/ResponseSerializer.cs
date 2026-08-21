@@ -21,6 +21,23 @@ internal static class ResponseSerializer
         return JsonSerializer.SerializeToUtf8Bytes(serialized, SerializationContext.Default.SerializedResponseMessage);
     }
 
+    /// <summary>Throws when the payload is not well-formed JSON.</summary>
+    /// <remarks>
+    /// Entries come from an external store and can be truncated or corrupted. Validating on read keeps the
+    /// failure inside the cache lookup, where it is turned into a cache miss, instead of letting it escape
+    /// from the message handler once the response is being built.
+    /// </remarks>
+    public static void EnsureWellFormed(ReadOnlySpan<byte> data)
+    {
+        if (data.IsEmpty)
+            throw new JsonException("The serialized response is empty");
+
+        var reader = new Utf8JsonReader(data);
+        while (reader.Read())
+        {
+        }
+    }
+
     public static HttpResponseMessage Deserialize(byte[] data)
     {
         var serialized = JsonSerializer.Deserialize(data, SerializationContext.Default.SerializedResponseMessage);

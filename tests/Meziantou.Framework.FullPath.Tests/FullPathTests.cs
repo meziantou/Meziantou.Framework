@@ -199,6 +199,24 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    [RunIf(TestOperatingSystems.Windows)]
+    public void FromPath_ExtendedPrefixIsRemovedOnWindows()
+    {
+        Assert.Equal(@"C:\temp\a.txt", FullPath.FromPath(@"\\?\C:\temp\a.txt").RawValue);
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void FromPath_ExtendedPrefixIsAFileNameOnUnix()
+    {
+        // '\' is a regular file name character on Unix, so this is a relative file name, not a device path
+        var expected = FullPath.CurrentDirectory() / @"\\?\a";
+
+        Assert.Equal(expected, FullPath.FromPath(@"\\?\a"));
+        Assert.Equal(@"\\?\a", FullPath.FromPath(@"\\?\a").Name);
+    }
+
+    [Fact]
     public void JsonSerialize_RoundTripEmpty()
     {
         var value = FullPath.Empty;

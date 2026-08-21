@@ -11,6 +11,9 @@ namespace Meziantou.Framework;
 /// </summary>
 public static class Slug
 {
+    /// <summary>The number of UTF-16 characters needed to encode any single rune.</summary>
+    private const int MaxUtf16CharsPerRune = 2;
+
     /// <summary>Creates a slug from the specified text using default options.</summary>
     /// <param name="text">The text to convert to a slug.</param>
     /// <returns>A slug generated from the input text, or <see langword="null"/> if <paramref name="text"/> is <see langword="null"/>.</returns>
@@ -37,13 +40,27 @@ public static class Slug
         var maximumLength = options.MaximumLength > 0 ? options.MaximumLength : int.MaxValue;
 
         var sb = new StringBuilder(Math.Min(text.Length, maximumLength));
+        var usesDefaultReplace = options.UsesDefaultReplace;
+        Span<char> transformed = stackalloc char[MaxUtf16CharsPerRune];
+
         foreach (var rune in text.EnumerateRunes())
         {
             if (options.IsAllowed(rune))
             {
                 // Append the replacement atomically, so the maximum length can never split a
                 // surrogate pair or a multi-character replacement.
-                var replacement = options.Replace(rune);
+                scoped ReadOnlySpan<char> replacement;
+                if (usesDefaultReplace)
+                {
+                    // Replace allocates a string for every rune of the input. Its default implementation
+                    // is just a casing transformation, so write the result straight into the buffer instead.
+                    replacement = transformed[..options.Transform(rune).EncodeToUtf16(transformed)];
+                }
+                else
+                {
+                    replacement = options.Replace(rune);
+                }
+
                 if (sb.Length + replacement.Length > maximumLength)
                     break;
 

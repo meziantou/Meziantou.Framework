@@ -131,4 +131,71 @@ public class SlugTests
     {
         Assert.Null(Slug.Create(text: null));
     }
+
+    [Fact]
+    public void Slug_OverriddenReplace_IsUsed()
+    {
+        var options = new UpperCaseVowelSlugOptions();
+        var slug = Slug.Create("hello world", options);
+        Assert.Equal("hEllO-wOrld", slug);
+    }
+
+    [Fact]
+    public void Slug_OverriddenReplace_IsUsedWhenItReturnsMultipleCharacters()
+    {
+        var options = new ExpandingSlugOptions();
+        var slug = Slug.Create("ab c", options);
+        Assert.Equal("aabb-cc", slug);
+    }
+
+    [Fact]
+    public void Slug_OverriddenIsAllowed_IsUsed()
+    {
+        var options = new NoVowelSlugOptions();
+        var slug = Slug.Create("hello world", options);
+        Assert.Equal("h-ll-w-rld", slug);
+    }
+
+    [Fact]
+    public void Slug_Culture_IsUsedForCasing()
+    {
+        var options = new SlugOptions
+        {
+            CasingTransformation = CasingTransformation.ToLowerCase,
+            Culture = CultureInfo.GetCultureInfo("tr-TR"),
+        };
+        var slug = Slug.Create("II", options);
+        Assert.Equal("\u0131\u0131", slug);
+    }
+
+    [Fact]
+    public void Slug_Replace_DefaultImplementationAppliesCasing()
+    {
+        var options = new SlugOptions { CasingTransformation = CasingTransformation.ToUpperCase };
+        Assert.Equal("A", options.Replace(new Rune('a')));
+    }
+
+    private sealed class UpperCaseVowelSlugOptions : SlugOptions
+    {
+        public override string Replace(Rune rune)
+        {
+            return "aeiou".Contains(rune.ToString(), StringComparison.Ordinal) ? rune.ToString().ToUpperInvariant() : base.Replace(rune);
+        }
+    }
+
+    private sealed class ExpandingSlugOptions : SlugOptions
+    {
+        public override string Replace(Rune rune)
+        {
+            return new string((char)rune.Value, count: 2);
+        }
+    }
+
+    private sealed class NoVowelSlugOptions : SlugOptions
+    {
+        public override bool IsAllowed(Rune character)
+        {
+            return base.IsAllowed(character) && !"aeiou".Contains(character.ToString(), StringComparison.Ordinal);
+        }
+    }
 }

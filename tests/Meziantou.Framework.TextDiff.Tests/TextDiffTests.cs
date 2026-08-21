@@ -344,6 +344,37 @@ public sealed class TextDiffTests
     }
 
     [Fact]
+    public void ComputeDiff_Histogram_ManyAnchors_DoesNotOverflowTheStack()
+    {
+        // Every second line differs, so each level of the histogram recursion consumes a single anchor.
+        // Recursing on both sides of the anchor made the depth proportional to the number of anchors.
+        const int Count = 3_000;
+        var oldLines = new string[Count];
+        var newLines = new string[Count];
+        for (var i = 0; i < Count; i++)
+        {
+            var suffix = i.ToString(CultureInfo.InvariantCulture);
+            oldLines[i] = "u" + suffix;
+            newLines[i] = (i % 2 is 0 ? "u" : "v") + suffix;
+        }
+
+        var oldText = JoinLines(oldLines);
+        var newText = JoinLines(newLines);
+
+        // A dedicated thread with an explicit stack size keeps the guard meaningful whatever the test host uses.
+        TextDiffResult? result = null;
+        var thread = new Thread(
+            () => result = Diff.ComputeDiff(oldText, newText, new TextDiffOptions { Algorithm = TextDiffAlgorithm.Histogram }),
+            maxStackSize: 512 * 1024);
+        thread.Start();
+        thread.Join();
+
+        Assert.NotNull(result);
+        Assert.Equal(oldText, ReconstructOldText(result));
+        Assert.Equal(newText, ReconstructNewText(result));
+    }
+
+    [Fact]
     public void ComputeDiff_InsertLine()
     {
         var result = Diff.ComputeDiff("line1\nline3", "line1\nline2\nline3");

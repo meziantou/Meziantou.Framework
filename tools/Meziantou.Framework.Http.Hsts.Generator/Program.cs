@@ -39,13 +39,8 @@ for (var i = 1; i <= maxSegments; i++)
     {
         foreach (var entry in entries.Where(e => e.SegmentCount == i).OrderBy(e => e.Name, StringComparer.Ordinal))
         {
-            var expiresIn = entry.Policy switch
-            {
-                "bulk-18-weeks" => "_expires18weeks",
-                "bulk-1-year" => "_expires1year",
-                _ => "_expires1year",
-            };
-            sb.Append($"        dict{i.ToString(CultureInfo.InvariantCulture)}.TryAdd(\"{entry.Name}\", new HstsDomainPolicy(\"{entry.Name}\", {expiresIn}, {entry.IncludeSubdomains.ToString(CultureInfo.InvariantCulture).ToLowerInvariant()}));\n");
+            // Preloaded entries are compiled into the assembly and stay valid until the package is updated
+            sb.Append($"        dict{i.ToString(CultureInfo.InvariantCulture)}.TryAdd(\"{entry.Name}\", new HstsDomainPolicy(\"{entry.Name}\", DateTimeOffset.MaxValue, {entry.IncludeSubdomains.ToString(CultureInfo.InvariantCulture).ToLowerInvariant()}, isPreloaded: true));\n");
         }
     }
     else

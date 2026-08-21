@@ -6,8 +6,8 @@ namespace Meziantou.Framework.Http;
 /// var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
 /// using var client = new HttpClient(new HstsClientHandler(new SocketsHttpHandler(), policies), disposeHandler: true);
 ///
-/// // Automatically upgrade to HTTPS as google.com is in the HSTS preload list
-/// using var response = await client.GetAsync("http://google.com");
+/// // Automatically upgrade to HTTPS as github.com is in the HSTS preload list
+/// using var response = await client.GetAsync("http://github.com");
 /// </code>
 /// </example>
 public sealed class HstsClientHandler : DelegatingHandler
@@ -29,6 +29,8 @@ public sealed class HstsClientHandler : DelegatingHandler
     public HstsClientHandler(HttpMessageHandler innerHandler, HstsDomainPolicyCollection configuration)
         : base(innerHandler)
     {
+        ArgumentNullException.ThrowIfNull(configuration);
+
         _configuration = configuration;
     }
 
@@ -38,16 +40,18 @@ public sealed class HstsClientHandler : DelegatingHandler
     /// <returns>The HTTP response message.</returns>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (request.RequestUri?.Scheme == Uri.UriSchemeHttp && request.RequestUri.Port == 80)
+        // Use IdnHost: the preload list stores internationalized domains in their Punycode form
+        if (request.RequestUri?.Scheme == Uri.UriSchemeHttp && _configuration.MustUpgradeRequest(request.RequestUri.IdnHost))
         {
-            // Use IdnHost: the preload list stores internationalized domains in their Punycode form
-            if (_configuration.MustUpgradeRequest(request.RequestUri.IdnHost))
+            // https://datatracker.ietf.org/doc/html/rfc6797#section-8.3
+            // The default port becomes 443; an explicit port is kept as is.
+            var builder = new UriBuilder(request.RequestUri)
             {
-                var builder = new UriBuilder(request.RequestUri) { Scheme = Uri.UriSchemeHttps };
-                builder.Port = 443;
-                builder.Scheme = Uri.UriSchemeHttps;
-                request.RequestUri = builder.Uri;
-            }
+                Scheme = Uri.UriSchemeHttps,
+                Port = request.RequestUri.IsDefaultPort ? 443 : request.RequestUri.Port,
+            };
+
+            request.RequestUri = builder.Uri;
         }
 
         var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -56,27 +60,32 @@ public sealed class HstsClientHandler : DelegatingHandler
         // Note: The Strict-Transport-Security header is ignored by the browser when your site has only been accessed using HTTP.
         // Once your site is accessed over HTTPS with no certificate errors, the browser knows your site is HTTPS-capable and
         // will honor the Strict-Transport-Security header.
-        if (response.RequestMessage?.RequestUri?.Scheme == Uri.UriSchemeHttps && response.Headers.TryGetValues("Strict-Transport-Security", out var headers))
+        var responseUri = response.RequestMessage?.RequestUri;
+        if (responseUri?.Scheme == Uri.UriSchemeHttps && !IsIPAddress(responseUri) && response.Headers.TryGetValues("Strict-Transport-Security", out var headers))
         {
-            TimeSpan maxAge = default;
-            var includeSubdomains = false;
-            foreach (var header in headers)
+            // https://datatracker.ietf.org/doc/html/rfc6797#section-8.1
+            // Only the first header field is processed when the response contains more than one
+            var header = headers.FirstOrDefault();
+            if (header is not null && TryParsePolicy(header, out var maxAge, out var includeSubdomains))
             {
-                if (TryParsePolicy(header, out var headerMaxAge, out var headerIncludeSubdomains))
+                if (maxAge > TimeSpan.Zero)
                 {
-                    maxAge = headerMaxAge;
-                    includeSubdomains = headerIncludeSubdomains;
+                    _configuration.Add(responseUri.IdnHost, maxAge, includeSubdomains);
                 }
-            }
-
-            if (maxAge > TimeSpan.Zero)
-            {
-                _configuration.Add(response.RequestMessage.RequestUri.IdnHost, maxAge, includeSubdomains);
+                else
+                {
+                    // max-age=0 signals the host is no longer a Known HSTS Host
+                    _configuration.RemoveLearnedPolicy(responseUri.IdnHost);
+                }
             }
         }
 
         return response;
     }
+
+    // https://datatracker.ietf.org/doc/html/rfc6797#section-8.1
+    // An IP address must not be noted as a Known HSTS Host
+    private static bool IsIPAddress(Uri uri) => uri.HostNameType is UriHostNameType.IPv4 or UriHostNameType.IPv6;
 
     // https://datatracker.ietf.org/doc/html/rfc6797#section-6.1
     // A malformed header must be ignored instead of failing the request, as the response is otherwise valid.

@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework;
 
 internal static class DiffAlgorithmHelpers
@@ -10,12 +12,13 @@ internal static class DiffAlgorithmHelpers
 
     internal static int LowerBound(List<int> values, int value)
     {
+        var span = CollectionsMarshal.AsSpan(values);
         var low = 0;
-        var high = values.Count;
+        var high = span.Length;
         while (low < high)
         {
             var middle = low + ((high - low) / 2);
-            if (values[middle] < value)
+            if (span[middle] < value)
             {
                 low = middle + 1;
             }

@@ -143,9 +143,10 @@ internal static class PatienceDiff
         previous.Fill(-1);
         var length = 0;
 
+        var pairsSpan = CollectionsMarshal.AsSpan(pairs);
         for (var i = 0; i < count; i++)
         {
-            var position = LowerBoundByRight(pairs, tails, length, pairs[i].RightIndex);
+            var position = LowerBoundByRight(pairsSpan, tails, length, pairsSpan[i].RightIndex);
             if (position > 0)
             {
                 previous[i] = tails[position - 1];
@@ -162,7 +163,7 @@ internal static class PatienceDiff
         var index = tails[length - 1];
         while (index >= 0)
         {
-            result.Add(pairs[index]);
+            result.Add(pairsSpan[index]);
             index = previous[index];
         }
 
@@ -170,7 +171,7 @@ internal static class PatienceDiff
         return result;
     }
 
-    private static int LowerBoundByRight(List<Anchor> pairs, ReadOnlySpan<int> tails, int length, int rightIndex)
+    private static int LowerBoundByRight(ReadOnlySpan<Anchor> pairs, ReadOnlySpan<int> tails, int length, int rightIndex)
     {
         var low = 0;
         var high = length;

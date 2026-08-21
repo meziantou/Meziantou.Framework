@@ -18,9 +18,8 @@ internal static class MyersDiff
         var rightCodesBuffer = right.Length <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[right.Length];
         var leftCodes = leftCodesBuffer[..left.Length];
         var rightCodes = rightCodesBuffer[..right.Length];
-        leftCodes.Clear();
-        rightCodes.Clear();
 
+        // No need to clear the code buffers: DiffCodes assigns every element.
         DiffCodes(left, h, leftCodes);
         DiffCodes(right, h, rightCodes);
 

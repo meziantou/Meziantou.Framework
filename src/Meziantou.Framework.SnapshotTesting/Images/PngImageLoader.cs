@@ -213,11 +213,14 @@ internal static class PngImageLoader
             throw new InvalidDataException("The PNG data has trailing bytes.");
 
         var bitsPerPixel = checked(GetPngChannelCount(colorType) * bitDepth);
-        var decompressedData = DecompressPngIdatData(idatData.GetBuffer().AsSpan(0, checked((int)idatData.Length)));
         var expectedImageDataLength = GetExpectedPngImageDataLength(width, height, bitsPerPixel, interlaceMethod);
-        if (decompressedData.Length != expectedImageDataLength)
+
+        idatData.Position = 0;
+        using var decompressedStream = DecompressPngIdatData(idatData, expectedImageDataLength);
+        if (decompressedStream.Length != expectedImageDataLength)
             throw new InvalidDataException("The PNG decompressed image data size is invalid.");
 
+        var decompressedData = decompressedStream.GetBuffer().AsSpan(0, expectedImageDataLength);
         var pixels = new Argb[checked(width * height)];
         if (interlaceMethod == 0)
         {
@@ -261,14 +264,19 @@ internal static class PngImageLoader
         return Image.Create(width, height, pixels);
     }
 
-    private static byte[] DecompressPngIdatData(ReadOnlySpan<byte> compressedData)
+    /// <summary>Inflates the concatenated IDAT chunks.</summary>
+    /// <param name="compressedStream">The concatenated IDAT chunks, positioned at the first byte.</param>
+    /// <param name="expectedLength">
+    /// The image data size computed from the header, used to size the output buffer. A malformed image may
+    /// inflate to a different size, in which case the stream simply grows as usual.
+    /// </param>
+    private static MemoryStream DecompressPngIdatData(Stream compressedStream, int expectedLength)
     {
-        using var compressedStream = new MemoryStream(compressedData.ToArray());
-        using var zlibStream = new ZLibStream(compressedStream, CompressionMode.Decompress);
-        using var output = new MemoryStream();
+        using var zlibStream = new ZLibStream(compressedStream, CompressionMode.Decompress, leaveOpen: true);
+        var output = new MemoryStream(expectedLength);
         zlibStream.CopyTo(output);
 
-        return output.ToArray();
+        return output;
     }
 
     private static void DecodePngRows(

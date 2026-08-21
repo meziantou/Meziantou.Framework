@@ -639,6 +639,43 @@ public class TemplateTest
         Assert.Contains("public class Template : BaseClass, IFoo, IBar", template.SourceCode);
     }
 
+    [Fact]
+    public async Task Template_DifferentInstances_CanBuildConcurrently()
+    {
+        const int TemplateCount = 8;
+
+        var templates = new Template[TemplateCount];
+        for (var i = 0; i < templates.Length; i++)
+        {
+            var template = new Template();
+            template.Load($"value: <%= {i} %>");
+            templates[i] = template;
+        }
+
+        var results = await Task.WhenAll(templates.Select(template => Task.Run(() =>
+        {
+            template.Build(CancellationToken.None);
+            return template.Run();
+        })));
+
+        for (var i = 0; i < results.Length; i++)
+        {
+            Assert.Equal($"value: {i}", results[i]);
+        }
+    }
+
+    [Fact]
+    public async Task Template_SameInstance_BuiltOnceWhenRunConcurrently()
+    {
+        var template = new Template();
+        template.Load("Hello <%= 1 + 1 %>");
+
+        var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(() => template.Run())));
+
+        Assert.All(results, result => Assert.Equal("Hello 2", result));
+        Assert.True(template.IsBuilt);
+    }
+
     private sealed class TemplateWithoutCompilation : Template
     {
         protected override void Compile(string source, CancellationToken cancellationToken)

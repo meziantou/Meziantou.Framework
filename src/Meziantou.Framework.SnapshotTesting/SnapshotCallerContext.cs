@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -17,9 +18,18 @@ internal sealed partial record SnapshotCallerContext(FullPath SourceFilePath, st
         "TestMethodAttribute",
     };
 
+    /// <summary>
+    /// Caches everything the stack walk needs to know about a method. Resolving the state machine,
+    /// reading the attributes and normalizing the names are pure functions of the method, and the same
+    /// methods show up on the stack of every single assertion.
+    /// </summary>
+    private static readonly ConcurrentDictionary<MethodBase, StackFrameMethod> StackFrameMethods = new();
+
     public static SnapshotCallerContext Create(string? filePath, int lineNumber, string? memberName)
     {
-        var stackTrace = new StackTrace(fNeedFileInfo: true);
+        // Resolving the file name of every frame forces the PDBs to be loaded and the sequence points to
+        // be decoded. It is only needed when the caller did not provide a file path.
+        var stackTrace = new StackTrace(fNeedFileInfo: filePath is null);
         var stackAnalysisStartIndex = GetStackAnalysisStartIndex(stackTrace);
         string? discoveredMethodName = null;
         string? discoveredContainingTypeName = null;
@@ -31,17 +41,17 @@ internal sealed partial record SnapshotCallerContext(FullPath SourceFilePath, st
             if (method is null)
                 continue;
 
-            method = CallerContextUtilities.ResolveActualMethod(method);
+            var stackFrameMethod = GetStackFrameMethod(method);
 
-            if (HasTestAttribute(method))
+            if (stackFrameMethod.IsTestMethod)
             {
-                discoveredMethodName = NormalizeMethodName(method.Name);
-                discoveredContainingTypeName = NormalizeTypeName(method.DeclaringType);
+                discoveredMethodName = stackFrameMethod.NormalizedMethodName;
+                discoveredContainingTypeName = stackFrameMethod.NormalizedTypeName;
                 break;
             }
 
-            discoveredMethodName ??= NormalizeMethodName(method.Name);
-            discoveredContainingTypeName ??= NormalizeTypeName(method.DeclaringType);
+            discoveredMethodName ??= stackFrameMethod.NormalizedMethodName;
+            discoveredContainingTypeName ??= stackFrameMethod.NormalizedTypeName;
         }
 
         var sourceFilePath = filePath;
@@ -68,19 +78,29 @@ internal sealed partial record SnapshotCallerContext(FullPath SourceFilePath, st
 
     private static int GetStackAnalysisStartIndex(StackTrace stackTrace)
     {
-        for (var i = stackTrace.FrameCount - 1; i >= 0; i--)
+        // The methods decorated with [SnapshotAssertion] form a contiguous run at the innermost end of the
+        // stack: the attribute is internal and is only applied to the Snapshot.Validate overloads, which
+        // forward to each other. Walking outwards and stopping right after that run avoids reflecting over
+        // the whole stack, which is mostly test framework frames.
+        var startIndex = 0;
+        for (var i = 0; i < stackTrace.FrameCount; i++)
         {
             var frame = stackTrace.GetFrame(i);
             var method = frame?.GetMethod();
             if (method is null)
                 continue;
 
-            method = CallerContextUtilities.ResolveActualMethod(method);
-            if (method.GetCustomAttribute<SnapshotAssertionAttribute>(inherit: false) is not null)
-                return i + 1;
+            if (GetStackFrameMethod(method).IsSnapshotAssertion)
+            {
+                startIndex = i + 1;
+            }
+            else if (startIndex > 0)
+            {
+                break;
+            }
         }
 
-        return 0;
+        return startIndex;
     }
 
     internal static FullPath ResolveSourceFilePath(string sourceFilePath)
@@ -91,6 +111,19 @@ internal sealed partial record SnapshotCallerContext(FullPath SourceFilePath, st
             return resolvedSourceFilePath;
 
         throw new SnapshotException($"Cannot find source file path '{sourceFilePath}'.");
+    }
+
+    private static StackFrameMethod GetStackFrameMethod(MethodBase method)
+    {
+        return StackFrameMethods.GetOrAdd(method, static method =>
+        {
+            var resolvedMethod = CallerContextUtilities.ResolveActualMethod(method);
+            return new StackFrameMethod(
+                IsSnapshotAssertion: resolvedMethod.GetCustomAttribute<SnapshotAssertionAttribute>(inherit: false) is not null,
+                IsTestMethod: HasTestAttribute(resolvedMethod),
+                NormalizedMethodName: NormalizeMethodName(resolvedMethod.Name),
+                NormalizedTypeName: NormalizeTypeName(resolvedMethod.DeclaringType));
+        });
     }
 
     private static bool HasTestAttribute(MethodBase method)
@@ -170,4 +203,6 @@ internal sealed partial record SnapshotCallerContext(FullPath SourceFilePath, st
     {
         return typeName.StartsWith("<", StringComparison.Ordinal);
     }
+
+    private sealed record StackFrameMethod(bool IsSnapshotAssertion, bool IsTestMethod, string NormalizedMethodName, string? NormalizedTypeName);
 }

@@ -511,6 +511,14 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         return FromPath(fsi.FullName);
     }
 
+    // Matches the number of levels the operating systems themselves are willing to follow (MAXSYMLINKS on Linux)
+    private const int MaxSymbolicLinkDepth = 40;
+
+    private static IOException CreateTooManyLevelsOfSymbolicLinksException()
+    {
+        return new IOException($"Too many levels of symbolic links (more than {MaxSymbolicLinkDepth.ToString(CultureInfo.InvariantCulture)})");
+    }
+
     /// <summary>Determines whether this path represents a symbolic link.</summary>
     public bool IsSymbolicLink()
     {
@@ -611,6 +619,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <param name="resolutionMode">The mode to use when resolving symbolic links.</param>
     /// <param name="result">The target path if this is a symbolic link; otherwise, <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if this is a symbolic link; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="IOException">A symbolic link chain is too deep to resolve, which usually means the links form a cycle.</exception>
     public bool TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode resolutionMode, [NotNullWhen(true)] out FullPath? result)
     {
         if (!IsEmpty)
@@ -628,8 +637,12 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
                 case SymbolicLinkResolutionMode.FinalTarget:
                     var value = _value;
+                    var depth = 0;
                     while (Symlink.TryGetSymLinkTarget(value, out path))
                     {
+                        if (++depth > MaxSymbolicLinkDepth)
+                            throw CreateTooManyLevelsOfSymbolicLinksException();
+
                         value = path;
                     }
 
@@ -645,16 +658,20 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                     string? resultPath = null;
                     var current = this;
                     var hasSymLink = false;
+                    var componentDepth = 0;
                     while (!current.IsEmpty)
                     {
                         if (Symlink.TryGetSymLinkTarget(current._value, out path))
                         {
+                            if (++componentDepth > MaxSymbolicLinkDepth)
+                                throw CreateTooManyLevelsOfSymbolicLinksException();
+
                             current = FromPath(path);
                             hasSymLink = true;
                         }
                         else
                         {
-                            var name = current.Name is "" ? current._value : current.Name!;
+                            var name = current.Name is "" ? current._value : current.Name;
                             if (resultPath is null)
                             {
                                 resultPath = name;
@@ -665,6 +682,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                             }
 
                             current = current.Parent;
+                            componentDepth = 0;
                         }
                     }
 

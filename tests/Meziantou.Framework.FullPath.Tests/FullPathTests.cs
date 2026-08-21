@@ -328,6 +328,23 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public async Task ResolveSymlink_Cycle()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var a = temp.GetFullPath("a");
+        var b = temp.GetFullPath("b");
+        CreateSymlink(a, "b", isDirectory: false);
+        CreateSymlink(b, "a", isDirectory: false);
+
+        Assert.True(a.IsSymbolicLink());
+        Assert.True(a.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.Immediate, out var immediate));
+        Assert.Equal(b, immediate);
+
+        Assert.Throws<IOException>(() => { a.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.FinalTarget, out _); });
+        Assert.Throws<IOException>(() => { a.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out _); });
+    }
+
+    [Fact]
     public async Task ResolveSymlink_ResolveAllSymbolicLinks()
     {
         await using var temp = TemporaryDirectory.Create();

@@ -54,7 +54,7 @@ public sealed class UndoRedoTransaction : IUndoRedoAction, IAsyncDisposable
     ValueTask IUndoRedoAction.UnExecuteAsync(CancellationToken cancellationToken) => UnExecuteCoreAsync(cancellationToken);
 
     /// <inheritdoc />
-    ValueTask<bool> IUndoRedoAction.TryToMergeAsync(IUndoRedoAction followingAction) => new(false);
+    ValueTask<bool> IUndoRedoAction.TryToMergeAsync(IUndoRedoAction followingAction, CancellationToken cancellationToken) => new(false);
 
     /// <summary>
     /// Applies every action of the transaction. All-or-nothing: when an action fails, the actions that already ran

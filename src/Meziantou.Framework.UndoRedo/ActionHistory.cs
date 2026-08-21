@@ -16,9 +16,9 @@ internal sealed class ActionHistory
     /// Records a new action. When the action allows merging and the most recent undoable action absorbs it,
     /// no new entry is added. The redo buffer is cleared either way as the history moved forward.
     /// </summary>
-    public async ValueTask RecordAsync(IUndoRedoAction action)
+    public async ValueTask RecordAsync(IUndoRedoAction action, CancellationToken cancellationToken)
     {
-        if (!action.AllowToMergeWithPrevious || PeekUndo() is not { } previous || !await previous.TryToMergeAsync(action).ConfigureAwait(false))
+        if (!action.AllowToMergeWithPrevious || PeekUndo() is not { } previous || !await previous.TryToMergeAsync(action, cancellationToken).ConfigureAwait(false))
         {
             _undo.Push(action);
         }

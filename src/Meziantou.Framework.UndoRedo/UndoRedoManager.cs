@@ -297,7 +297,7 @@ public sealed class UndoRedoManager
         if (execute)
             await ExecuteAsync(action, cancellationToken).ConfigureAwait(false);
 
-        await _history.RecordAsync(action).ConfigureAwait(false);
+        await _history.RecordAsync(action, cancellationToken).ConfigureAwait(false);
         OnCollectionChanged();
     }
 

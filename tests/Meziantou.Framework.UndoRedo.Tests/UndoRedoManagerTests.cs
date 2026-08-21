@@ -446,6 +446,21 @@ public sealed class UndoRedoManagerTests
         Assert.False(manager.CanUndo);
     }
 
+    [Fact]
+    public async Task Merge_ForwardsCancellationToken()
+    {
+        var manager = new UndoRedoManager();
+        var sum = 0;
+        using var cts = new CancellationTokenSource();
+
+        await manager.RecordActionAsync(new AddAction(v => sum += v, v => sum -= v, value: 1), cts.Token);
+
+        await cts.CancelAsync();
+        var second = new AddAction(v => sum += v, v => sum -= v, value: 2) { AllowToMergeWithPrevious = true };
+
+        await Assert.ThrowsAsync<OperationCanceledException>(async () => await manager.RecordActionAsync(second, cts.Token));
+    }
+
     private sealed class AddAction(Action<int> add, Action<int> subtract, int value) : UndoRedoActionBase
     {
         // The total amount this action is responsible for; grows when following actions are merged in.
@@ -463,8 +478,10 @@ public sealed class UndoRedoManagerTests
             return ValueTask.CompletedTask;
         }
 
-        public override ValueTask<bool> TryToMergeAsync(IUndoRedoAction followingAction)
+        public override ValueTask<bool> TryToMergeAsync(IUndoRedoAction followingAction, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             // The following action already executed its own effect; absorb its value so a single
             // UnExecute reverts both actions.
             if (followingAction is AddAction other)

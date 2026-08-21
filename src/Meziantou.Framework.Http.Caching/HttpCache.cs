@@ -82,18 +82,18 @@ internal sealed class HttpCache
         if (_options.ShouldCacheResponse is not null && !_options.ShouldCacheResponse(response))
             return;
 
-        var primaryKey = ComputePrimaryKey(request.Method, request.RequestUri);
-        var entry = await CacheEntry.CreateAsync(request, response, requestTime, responseTime, cancellationToken).ConfigureAwait(false);
+        // Check the announced size before reading anything. Buffering a multi-gigabyte response only to
+        // discard it is a needless allocation, and serialization would grow it further.
+        var maximumResponseSize = _options.MaximumResponseSize;
+        if (maximumResponseSize is not null && response.Content?.Headers.ContentLength > maximumResponseSize.GetValueOrDefault())
+            return;
 
-        // Check response size limit if configured
-        // We check the serialized size which includes headers and metadata
-        if (_options.MaximumResponseSize is not null)
-        {
-            if (entry.SerializedResponse.Length > _options.MaximumResponseSize.Value)
-            {
-                return;
-            }
-        }
+        var primaryKey = ComputePrimaryKey(request.Method, request.RequestUri);
+
+        // The size limit applies to the serialized entry, which includes headers and metadata.
+        var entry = await CacheEntry.CreateAsync(request, response, requestTime, responseTime, maximumResponseSize, cancellationToken).ConfigureAwait(false);
+        if (entry is null)
+            return;
 
         await _persistenceProvider.SetEntryAsync(primaryKey, entry.ToPersistenceEntry(), cancellationToken).ConfigureAwait(false);
     }

@@ -7,7 +7,22 @@ internal static class ResponseSerializer
 {
     public static async Task<byte[]> SerializeAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
+        var serialized = await SerializeAsync(response, maximumSize: null, cancellationToken).ConfigureAwait(false);
+        return serialized!;
+    }
+
+    /// <summary>Serializes the response, or returns <see langword="null"/> when it exceeds <paramref name="maximumSize"/>.</summary>
+    /// <remarks>
+    /// The body is checked before it is serialized. JSON encoding only grows the payload, since the body is
+    /// Base64-encoded and the headers are added, so a body already over the limit can never fit and the
+    /// serialization is skipped entirely.
+    /// </remarks>
+    public static async Task<byte[]?> SerializeAsync(HttpResponseMessage response, long? maximumSize, CancellationToken cancellationToken)
+    {
         var content = response.Content is null ? null : await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+        if (maximumSize is not null && content is not null && content.Length > maximumSize.GetValueOrDefault())
+            return null;
+
         var serialized = new SerializedResponseMessage
         {
             HttpStatusCode = response.StatusCode,
@@ -18,7 +33,11 @@ internal static class ResponseSerializer
             Content = content,
         };
 
-        return JsonSerializer.SerializeToUtf8Bytes(serialized, SerializationContext.Default.SerializedResponseMessage);
+        var payload = JsonSerializer.SerializeToUtf8Bytes(serialized, SerializationContext.Default.SerializedResponseMessage);
+        if (maximumSize is not null && payload.Length > maximumSize.GetValueOrDefault())
+            return null;
+
+        return payload;
     }
 
     /// <summary>Throws when the payload is not well-formed JSON.</summary>

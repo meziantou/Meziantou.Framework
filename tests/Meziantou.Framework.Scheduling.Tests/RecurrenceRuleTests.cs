@@ -522,7 +522,7 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void Secondly_GetHumanText_en_us()
     {
         TestGetHumanText("FREQ=SECONDLY", "en-US", "every second");
@@ -531,7 +531,7 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void Secondly_GetHumanText_fr_fr()
     {
         TestGetHumanText("FREQ=SECONDLY", "fr-FR", "toutes les secondes");
@@ -540,7 +540,7 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void Minutely_GetHumanText_en_us()
     {
         TestGetHumanText("FREQ=MINUTELY", "en-US", "every minute");
@@ -549,7 +549,7 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void Minutely_GetHumanText_fr_fr()
     {
         TestGetHumanText("FREQ=MINUTELY", "fr-FR", "toutes les minutes");
@@ -558,7 +558,7 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void Hourly_GetHumanText_en_us()
     {
         TestGetHumanText("FREQ=HOURLY", "en-US", "every hour");
@@ -568,7 +568,7 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void Hourly_GetHumanText_fr_fr()
     {
         TestGetHumanText("FREQ=HOURLY", "fr-FR", "toutes les heures");

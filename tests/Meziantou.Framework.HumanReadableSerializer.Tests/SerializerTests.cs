@@ -74,7 +74,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void CultureInfo_Invariant()
         => AssertSerialization(CultureInfo.InvariantCulture, "Invariant Language (Invariant Country)");
 
-    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void CultureInfo_EnUs()
         => AssertSerialization(CultureInfo.GetCultureInfo("en-US"), "en-US");
 

@@ -6,7 +6,7 @@ namespace Meziantou.Framework.ResxSourceGenerator.GeneratorTests;
 
 public class ResxGeneratorTests
 {
-    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void FormatString()
     {
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
@@ -16,14 +16,14 @@ public class ResxGeneratorTests
         Assert.Equal("Bonjour le monde!", Resource1.FormatHello("le monde"));
     }
 
-    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void ResxWithCustomParameterElementsCanBeReadByResourceManager()
     {
         Assert.Equal("Hello {0}!", Resource1.ResourceManager.GetString("Hello", CultureInfo.GetCultureInfo("en-US")));
         Assert.Equal("Bonjour {0}!", Resource1.ResourceManager.GetString("Hello", CultureInfo.GetCultureInfo("fr")));
     }
 
-    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void StringValue()
     {
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");

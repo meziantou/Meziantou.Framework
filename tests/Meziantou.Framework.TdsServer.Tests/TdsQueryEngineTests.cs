@@ -9,7 +9,7 @@ using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Tds.Tests;
 
-[RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+[RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
 public sealed class TdsQueryEngineTests
 {
     [Fact]

@@ -25,6 +25,7 @@ namespace Meziantou.Xunit
         GitHubActions = 1
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Method | System.AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public sealed class RunIfAttribute : Meziantou.Xunit.ConditionalTestAttributeBase
     {
         protected bool InvertCondition { get => throw null; }
@@ -34,6 +35,7 @@ namespace Meziantou.Xunit
         public RunIfAttribute(Meziantou.Xunit.TestOperatingSystems operatingSystem, Meziantou.Xunit.TestGlobalizationMode globalizationMode) { }
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Method | System.AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public sealed class SkipIfAttribute : Meziantou.Xunit.ConditionalTestAttributeBase
     {
         protected bool InvertCondition { get => throw null; }
@@ -53,6 +55,8 @@ namespace Meziantou.Xunit
     public enum TestGlobalizationMode
     {
         Any = 0,
+        Invariant = 1,
+        NotInvariant = 2,
         Enabled = 1,
         Disabled = 2
     }

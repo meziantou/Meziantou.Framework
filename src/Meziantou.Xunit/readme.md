@@ -23,7 +23,7 @@ public sealed class SampleTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void Runs_only_when_invariant_globalization_is_disabled()
     {
     }
@@ -44,11 +44,21 @@ public sealed class SampleTests
 
 `RunIf` executes the test only when all specified conditions match. `SkipIf` skips the test when all specified conditions match.
 
+Both attributes can be applied to a test method and to its test class, but only once per target. An attribute that specifies no condition would have no effect, so it fails the test instead of being silently ignored.
+
+Conditions are evaluated once the test class instance has been created. Class fixtures, the test class constructor and `IAsyncLifetime.InitializeAsync` therefore run even when the test ends up being skipped.
+
 ## Supported conditions
 
 | Condition | Type | Values |
 | :--- | :--- | :--- |
 | `OperatingSystem` | `TestOperatingSystems` | `Windows`, `Linux`, `MacOS` (`Flags`) |
-| `GlobalizationMode` | `TestGlobalizationMode` | `Any`, `Enabled` (invariant mode), `Disabled` (non-invariant mode) |
+| `GlobalizationMode` | `TestGlobalizationMode` | `Any`, `Invariant`, `NotInvariant` |
 | `ContinuousIntegration` | `ContinuousIntegrationEnvironments` | `GitHubActions` |
 | `WindowsGroup` | `WindowsGroups` | `Any`, `User`, `Administrator` |
+
+`GlobalizationMode` reflects [invariant globalization mode](https://learn.microsoft.com/en-us/dotnet/core/runtime-config/globalization), which is enabled by the `InvariantGlobalization` MSBuild property or the `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT` environment variable. `Invariant` means culture data is **not** available; `NotInvariant` means it is.
+
+`WindowsGroups.User` means the current user is a member of the built-in `Users` group and is **not** elevated as an administrator. Any value other than `Any` also requires Windows.
+
+> `TestGlobalizationMode.Enabled` and `TestGlobalizationMode.Disabled` are obsolete aliases for `Invariant` and `NotInvariant`.

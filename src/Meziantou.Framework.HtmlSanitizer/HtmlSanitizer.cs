@@ -83,6 +83,7 @@ public sealed class HtmlSanitizer
     /// <summary>Sanitizes an HTML fragment by removing dangerous elements, attributes, and URLs while preserving safe HTML structure.</summary>
     /// <param name="html">The HTML fragment to sanitize.</param>
     /// <returns>A sanitized HTML fragment safe for rendering.</returns>
+    /// <remarks>Comments and CDATA sections are always removed, and markup characters in text are escaped.</remarks>
     [return: NotNullIfNotNull(nameof(html))]
     public string? SanitizeHtmlFragment(string? html)
     {
@@ -100,45 +101,82 @@ public sealed class HtmlSanitizer
 
     private void Sanitize(HtmlNode node)
     {
-        if (node is HtmlElement htmlElement)
+        if (node is not HtmlElement htmlElement)
         {
-            if (!IsValidNode(htmlElement.Name))
+            // Only plain text nodes are kept. Comments and CDATA sections are written back to the
+            // output verbatim, and browsers close them earlier than the parser does (a comment also
+            // ends at "--!>", "<!-->" is already a complete comment, and "<![CDATA[" is a bogus
+            // comment ending at the first ">"), so any markup they contain would become live
+            // content in the sanitized output.
+            if (node is not HtmlText { IsCData: false } text)
             {
-                htmlElement.Remove();
+                node.Remove();
                 return;
             }
 
-            for (var i = htmlElement.Attributes.Count - 1; i >= 0; i--)
-            {
-                var attribute = htmlElement.Attributes[i];
-                if (attribute is null)
-                    continue;
+            // Text values are also written verbatim. The parser leaves markup characters in text
+            // nodes when it recovers from malformed input (an unterminated comment, for instance, is
+            // re-emitted as text), so they must be escaped to stay text once re-parsed.
+            text.Value = EscapeMarkupCharacters(text.Value);
+            return;
+        }
 
-                if (!IsValidAttribute(attribute.Name))
+        if (!IsValidNode(htmlElement.Name))
+        {
+            htmlElement.Remove();
+            return;
+        }
+
+        SanitizeAttributes(htmlElement);
+
+        for (var i = htmlElement.ChildNodes.Count - 1; i >= 0; i--)
+        {
+            Sanitize(htmlElement.ChildNodes[i]);
+        }
+    }
+
+    private void SanitizeAttributes(HtmlElement htmlElement)
+    {
+        if (!htmlElement.HasAttributes)
+            return;
+
+        for (var i = htmlElement.Attributes.Count - 1; i >= 0; i--)
+        {
+            var attribute = htmlElement.Attributes[i];
+            if (!IsValidAttribute(attribute.Name))
+            {
+                // Remove by index. RemoveAttribute(name, namespaceURI) looks the attribute up by
+                // local name, so it silently fails to remove prefixed attributes such as "v-on:click".
+                htmlElement.Attributes.RemoveAt(i);
+            }
+            else if (UriAttributes.Contains(attribute.Name))
+            {
+                if (!UrlSanitizer.IsSafeUrl(attribute.Value))
                 {
-                    htmlElement.RemoveAttribute(attribute.Name, attribute.NamespaceURI);
+                    attribute.Value = "";
                 }
-                else if (UriAttributes.Contains(attribute.Name))
+            }
+            else if (SrcsetAttributes.Contains(attribute.Name))
+            {
+                if (!UrlSanitizer.IsSafeSrcset(attribute.Value))
                 {
-                    if (!UrlSanitizer.IsSafeUrl(attribute.Value))
-                    {
-                        attribute.Value = "";
-                    }
-                }
-                else if (SrcsetAttributes.Contains(attribute.Name))
-                {
-                    if (!UrlSanitizer.IsSafeSrcset(attribute.Value))
-                    {
-                        attribute.Value = "";
-                    }
+                    attribute.Value = "";
                 }
             }
         }
+    }
 
-        for (var i = node.ChildNodes.Count - 1; i >= 0; i--)
-        {
-            Sanitize(node.ChildNodes[i]);
-        }
+    /// <remarks>
+    /// Entities are left untouched: the parser does not decode them, so escaping '&amp;' would double-encode
+    /// text such as "&amp;amp;". Only '&lt;' and '&gt;' need to be neutralized.
+    /// </remarks>
+    [return: NotNullIfNotNull(nameof(value))]
+    private static string? EscapeMarkupCharacters(string? value)
+    {
+        if (value is null || value.AsSpan().IndexOfAny('<', '>') < 0)
+            return value;
+
+        return value.Replace("<", "&lt;", StringComparison.Ordinal).Replace(">", "&gt;", StringComparison.Ordinal);
     }
 
     private static HtmlDocument ParseHtmlFragment(string content)

@@ -32,6 +32,20 @@ var result = sanitizer.SanitizeHtmlFragment("<p id='test'>test</p>");
 // Result: "<p>test</p>"
 ```
 
+### Remove Comments and CDATA Sections
+
+Comments and CDATA sections are always removed, and markup characters left in text are escaped. Browsers end a comment at `--!>` and treat `<!-->` as a complete comment, and they parse `<![CDATA[` as a comment ending at the first `>`. Keeping either of them would let an attacker smuggle live markup through the sanitizer:
+
+```csharp
+var sanitizer = new HtmlSanitizer();
+
+var result = sanitizer.SanitizeHtmlFragment("<p>a<!-- comment -->b</p>");
+// Result: "<p>ab</p>"
+
+var result = sanitizer.SanitizeHtmlFragment("<![CDATA[> <img src=x onerror=alert(1)>]]>");
+// Result: ""
+```
+
 ### Sanitize URLs
 
 The sanitizer validates URLs in attributes like `href` and `src` to prevent javascript: and other dangerous protocols:
@@ -152,10 +166,9 @@ This library is inspired by:
 - [Angular's HTML sanitizer](https://github.com/angular/angular/blob/main/packages/core/src/sanitization/html_sanitizer.ts)
 - [Sanitizer API specification](https://wicg.github.io/sanitizer-api/#default-configuration-dictionary)
 
-The library uses [AngleSharp](https://anglesharp.github.io/) for HTML parsing.
+The library uses the HTML parser from `Meziantou.Framework.Html`.
 
 ## Additional Resources
 
 - [Angular HTML Sanitizer](https://github.com/angular/angular/blob/main/packages/core/src/sanitization/html_sanitizer.ts)
 - [W3C Sanitizer API](https://wicg.github.io/sanitizer-api/)
-- [AngleSharp](https://anglesharp.github.io/)

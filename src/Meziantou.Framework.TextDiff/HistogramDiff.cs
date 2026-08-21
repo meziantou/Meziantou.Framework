@@ -87,64 +87,56 @@ internal static class HistogramDiff
 
     private static Anchor? FindBestAnchor(string[] left, int leftStart, int leftEnd, string[] right, int rightStart, int rightEnd, IEqualityComparer<string> comparer)
     {
-        var leftFrequency = CountOccurrences(left, leftStart, leftEnd, comparer);
-        var rightPositions = BuildPositions(right, rightStart, rightEnd, comparer);
+        // A single map holds the occurrence counts on both sides and the first right-hand position of
+        // each token. This replaces a second dictionary and the List<int> that used to be allocated per
+        // distinct token, which dominated the allocations of this pass.
+        var stats = new Dictionary<string, TokenStats>(comparer);
+        for (var i = leftStart; i < leftEnd; i++)
+        {
+            ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(stats, left[i], out _);
+            entry.LeftCount++;
+        }
+
+        // Walking backwards leaves the smallest index of each token in FirstRightIndex.
+        for (var i = rightEnd - 1; i >= rightStart; i--)
+        {
+            ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(stats, right[i], out _);
+            entry.RightCount++;
+            entry.FirstRightIndex = i;
+        }
 
         Anchor? best = null;
         var bestScore = int.MaxValue;
         for (var leftIndex = leftStart; leftIndex < leftEnd; leftIndex++)
         {
-            var token = left[leftIndex];
-            if (!rightPositions.TryGetValue(token, out var positions))
+            var entry = stats[left[leftIndex]];
+            if (entry.RightCount is 0)
                 continue;
 
-            // positions is sorted ascending, so positions[0] is the only candidate that can win the
-            // tie-break for this leftIndex (smaller rightIndex wins). The right occurrence count equals
-            // positions.Count, so there is no need for a separate frequency dictionary.
-            var score = leftFrequency[token] + positions.Count;
-            var rightIndex = positions[0];
-            if (best is null || score < bestScore || (score == bestScore && IsBetterTieBreak(leftIndex, rightIndex, best.Value)))
-            {
-                best = new Anchor(leftIndex, rightIndex);
-                bestScore = score;
-            }
+            // leftIndex only increases and ties are won by the smallest leftIndex, so an anchor found
+            // later can only replace the current best with a strictly lower score.
+            var score = entry.LeftCount + entry.RightCount;
+            if (score >= bestScore)
+                continue;
+
+            best = new Anchor(leftIndex, entry.FirstRightIndex);
+            bestScore = score;
+
+            // 2 is the lowest reachable score: the token occurs exactly once on each side. Nothing
+            // later in the range can beat it, so stop scanning.
+            if (score is 2)
+                break;
         }
 
         return best;
     }
 
-    private static bool IsBetterTieBreak(int leftIndex, int rightIndex, Anchor current)
+    [StructLayout(LayoutKind.Auto)]
+    private struct TokenStats
     {
-        if (leftIndex != current.LeftIndex)
-            return leftIndex < current.LeftIndex;
-
-        return rightIndex < current.RightIndex;
-    }
-
-    private static Dictionary<string, int> CountOccurrences(string[] values, int start, int end, IEqualityComparer<string> comparer)
-    {
-        var result = new Dictionary<string, int>(comparer);
-        for (var i = start; i < end; i++)
-        {
-            ref var count = ref CollectionsMarshal.GetValueRefOrAddDefault(result, values[i], out var exists);
-            count = exists ? count + 1 : 1;
-        }
-
-        return result;
-    }
-
-    private static Dictionary<string, List<int>> BuildPositions(string[] values, int start, int end, IEqualityComparer<string> comparer)
-    {
-        var result = new Dictionary<string, List<int>>(comparer);
-        for (var i = start; i < end; i++)
-        {
-            ref var positions = ref CollectionsMarshal.GetValueRefOrAddDefault(result, values[i], out _);
-            positions ??= new List<int>();
-
-            positions.Add(i);
-        }
-
-        return result;
+        public int LeftCount;
+        public int RightCount;
+        public int FirstRightIndex;
     }
 
     [StructLayout(LayoutKind.Auto)]

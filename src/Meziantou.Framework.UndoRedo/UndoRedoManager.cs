@@ -270,7 +270,7 @@ public sealed class UndoRedoManager
         ActionIsExecuting = true;
         try
         {
-            await transaction.UnExecuteAsync(cancellationToken).ConfigureAwait(false);
+            await transaction.UnExecuteCoreAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {

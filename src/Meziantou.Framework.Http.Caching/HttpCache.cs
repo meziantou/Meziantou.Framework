@@ -16,9 +16,12 @@ internal sealed class HttpCache
         _options = options;
     }
 
-    private static string ComputePrimaryKey(Uri? uri)
+    // RFC 9111 Section 2: the primary cache key is composed of the request method and the target URI.
+    // GET and HEAD must not share a key, otherwise a stored HEAD response (which has no body) could be
+    // served for a subsequent GET.
+    private static string ComputePrimaryKey(HttpMethod method, Uri? uri)
     {
-        return uri?.GetLeftPart(UriPartial.Query) ?? string.Empty;
+        return method.Method + " " + (uri?.GetLeftPart(UriPartial.Query) ?? string.Empty);
     }
 
     public async ValueTask<CacheEntry?> TryGetAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -26,7 +29,7 @@ internal sealed class HttpCache
         if (request.RequestUri == null)
             return null;
 
-        var primaryKey = ComputePrimaryKey(request.RequestUri);
+        var primaryKey = ComputePrimaryKey(request.Method, request.RequestUri);
         var persistedEntries = await _persistenceProvider.GetEntriesAsync(primaryKey, cancellationToken).ConfigureAwait(false);
         if (persistedEntries.Count is 0)
             return null;
@@ -77,7 +80,7 @@ internal sealed class HttpCache
         if (_options.ShouldCacheResponse is not null && !_options.ShouldCacheResponse(response))
             return;
 
-        var primaryKey = ComputePrimaryKey(request.RequestUri);
+        var primaryKey = ComputePrimaryKey(request.Method, request.RequestUri);
         var entry = await CacheEntry.CreateAsync(request, response, requestTime, responseTime, cancellationToken).ConfigureAwait(false);
 
         // Check response size limit if configured
@@ -93,22 +96,23 @@ internal sealed class HttpCache
         await _persistenceProvider.SetEntryAsync(primaryKey, entry.ToPersistenceEntry(), cancellationToken).ConfigureAwait(false);
     }
 
-    public ValueTask PersistEntryAsync(Uri? uri, CacheEntry entry, CancellationToken cancellationToken)
+    public ValueTask PersistEntryAsync(HttpMethod method, Uri? uri, CacheEntry entry, CancellationToken cancellationToken)
     {
-        if (uri == null)
+        if (uri is null)
             return ValueTask.CompletedTask;
 
-        var primaryKey = ComputePrimaryKey(uri);
+        var primaryKey = ComputePrimaryKey(method, uri);
         return _persistenceProvider.SetEntryAsync(primaryKey, entry.ToPersistenceEntry(), cancellationToken);
     }
 
-    public ValueTask InvalidateAsync(Uri? uri, CancellationToken cancellationToken)
+    public async ValueTask InvalidateAsync(Uri? uri, CancellationToken cancellationToken)
     {
-        if (uri == null)
-            return ValueTask.CompletedTask;
+        if (uri is null)
+            return;
 
-        var primaryKey = ComputePrimaryKey(uri);
-        return _persistenceProvider.RemoveEntriesAsync(primaryKey, cancellationToken);
+        // The primary key includes the request method, so every cacheable method must be invalidated.
+        await _persistenceProvider.RemoveEntriesAsync(ComputePrimaryKey(HttpMethod.Get, uri), cancellationToken).ConfigureAwait(false);
+        await _persistenceProvider.RemoveEntriesAsync(ComputePrimaryKey(HttpMethod.Head, uri), cancellationToken).ConfigureAwait(false);
     }
 
     private static bool IsCacheable(HttpRequestMessage request, HttpResponseMessage response)

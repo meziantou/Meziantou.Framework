@@ -1,4 +1,5 @@
 using System.Net;
+using Meziantou.Framework.Http.Caching.InMemory;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
 
@@ -552,6 +553,124 @@ public sealed class ConditionalRequestsAndRevalidationTests
                 Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
+    }
+
+    #endregion
+
+    #region Caller-issued conditional requests
+
+    [Fact]
+    public async Task WhenRequestAlreadyHasConditionalHeadersThenTheCacheIsBypassed()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "original", ("Cache-Control", "max-age=3600"), ("ETag", "\"v1\""));
+        context.AddResponse(HttpStatusCode.NotModified);
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+              ETag: "v1"
+            Content:
+              Headers:
+                Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
+              Value: original
+            """);
+
+        // The caller performs its own validation. Even though a fresh entry is stored, the request must
+        // reach the origin so the caller receives the 304 it asked for instead of a cached 200.
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request.Headers.TryAddWithoutValidation("If-None-Match", "\"v1\"");
+        await context.SnapshotResponse(request, """
+            StatusCode: 304 (NotModified)
+            Content:
+            """);
+    }
+
+    [Fact]
+    public async Task WhenRevalidatingThenRequestOptionsAndVersionArePreserved()
+    {
+        using var innerHandler = new RecordingHandler();
+        innerHandler.AddResponse(static () => CreateResponse(HttpStatusCode.OK, "original", ("Cache-Control", "max-age=0"), ("ETag", "\"v1\"")));
+        innerHandler.AddResponse(static () => CreateResponse(HttpStatusCode.NotModified));
+
+        using var handler = new HttpCachingDelegateHandler(innerHandler, new InMemoryHttpCacheStore());
+        using var client = new HttpClient(handler);
+
+        using var firstRequest = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        using var firstResponse = await client.SendAsync(firstRequest, CancellationToken.None);
+
+        var optionKey = new HttpRequestOptionsKey<string>("test-option");
+        using var secondRequest = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource")
+        {
+            Version = HttpVersion.Version20,
+            VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+        };
+        secondRequest.Options.Set(optionKey, "option-value");
+        using var secondResponse = await client.SendAsync(secondRequest, CancellationToken.None);
+
+        var revalidationRequest = innerHandler.Requests[^1];
+        Assert.True(revalidationRequest.Options.TryGetValue(optionKey, out var optionValue));
+        Assert.Equal("option-value", optionValue);
+        Assert.Equal(HttpVersion.Version20, revalidationRequest.Version);
+        Assert.Equal(HttpVersionPolicy.RequestVersionExact, revalidationRequest.VersionPolicy);
+    }
+
+    [Fact]
+    public async Task WhenRevalidatingThenTheCallerRequestContentIsNotDisposed()
+    {
+        using var innerHandler = new RecordingHandler();
+        innerHandler.AddResponse(static () => CreateResponse(HttpStatusCode.OK, "original", ("Cache-Control", "max-age=0"), ("ETag", "\"v1\"")));
+        innerHandler.AddResponse(static () => CreateResponse(HttpStatusCode.NotModified));
+
+        using var handler = new HttpCachingDelegateHandler(innerHandler, new InMemoryHttpCacheStore());
+        using var client = new HttpClient(handler);
+
+        using var firstRequest = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        using var firstResponse = await client.SendAsync(firstRequest, CancellationToken.None);
+
+        using var content = new StringContent("payload");
+        using var secondRequest = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource") { Content = content };
+        using var secondResponse = await client.SendAsync(secondRequest, CancellationToken.None);
+
+        // The revalidation request shares the content of the caller request, so it must not dispose it.
+        Assert.Equal("payload", await content.ReadAsStringAsync(CancellationToken.None));
+    }
+
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership is transferred to the caller")]
+    private static HttpResponseMessage CreateResponse(HttpStatusCode statusCode, string? content = null, params (string Name, string Value)[] headers)
+    {
+        var response = new HttpResponseMessage(statusCode);
+        foreach (var (name, value) in headers)
+        {
+            response.Headers.TryAddWithoutValidation(name, value);
+        }
+
+        if (content is not null)
+        {
+            response.Content = new StringContent(content);
+        }
+
+        return response;
+    }
+
+    private sealed class RecordingHandler : HttpMessageHandler
+    {
+        private readonly Queue<Func<HttpResponseMessage>> _responses = new();
+
+        public List<HttpRequestMessage> Requests { get; } = [];
+
+        public void AddResponse(Func<HttpResponseMessage> responseFactory)
+        {
+            _responses.Enqueue(responseFactory);
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Requests.Add(request);
+            return Task.FromResult(_responses.Dequeue()());
+        }
     }
 
     #endregion

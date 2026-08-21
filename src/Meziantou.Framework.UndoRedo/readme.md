@@ -70,6 +70,30 @@ await using (manager.CreateTransaction())
 await manager.UndoAsync();
 ````
 
+> **Disposing always commits**, including when the scope is left because of an exception. To discard the actions
+> recorded so far, call `RollbackAsync` explicitly:
+>
+> ````c#
+> var transaction = manager.CreateTransaction();
+> try
+> {
+>     await manager.RecordActionAsync(addFirst, removeFirst);
+>     await manager.RecordActionAsync(addSecond, removeSecond);
+>     await transaction.CommitAsync();
+> }
+> catch
+> {
+>     await transaction.RollbackAsync();
+>     throw;
+> }
+> ````
+
+Nested transactions must be completed from the innermost out; committing or rolling back a transaction while one of
+its nested transactions is still open throws an `InvalidOperationException`.
+
+Committing a transaction is all-or-nothing: if one of its actions fails, the actions that already ran are reverted
+before the exception is propagated.
+
 ## Merge consecutive actions
 
 When an action sets `AllowToMergeWithPrevious` and the previous action's `TryToMergeAsync` returns `true`, both collapse into a single undo step. This is useful for chains of similar operations such as typing or dragging.

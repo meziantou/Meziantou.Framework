@@ -44,7 +44,7 @@ public sealed class HtmlSanitizer
 
     private static readonly string[] DefaulValidAttrs = [.. DefaulUriAttrs, .. DefaulSrcsetAttrs, .. DefaultHtmlAttrs];
 
-    /// <summary>Gets the set of HTML elements that are allowed in sanitized output. Elements not in this set will be removed unless they are in the BlockedElements set.</summary>
+    /// <summary>Gets the set of HTML elements that are allowed in sanitized output. Elements not in this set are unwrapped: the tag is dropped but its content is kept, unless the element is in the BlockedElements set.</summary>
     public ISet<string> ValidElements { get; } = ToHashSet(DefaulValidElements);
 
     /// <summary>Gets the set of HTML attributes that are allowed in sanitized output. Attributes not in this set will be removed from elements.</summary>
@@ -58,6 +58,9 @@ public sealed class HtmlSanitizer
 
     /// <summary>Gets the set of attribute names that contain srcset values (responsive image sources) and should be validated for safety.</summary>
     public ISet<string> SrcsetAttributes { get; } = ToHashSet(DefaulSrcsetAttrs);
+
+    /// <summary>Gets or sets a value indicating whether HTML comments are kept in the sanitized output. Comments are removed by default because downlevel-hidden conditional comments (<c>&lt;!--[if IE]&gt;&lt;script&gt;…&lt;/script&gt;&lt;![endif]--&gt;</c>) are executed by legacy browsers.</summary>
+    public bool AllowComments { get; set; }
 
     private static HashSet<string> ToHashSet(string[] values) => new(values, StringComparer.OrdinalIgnoreCase);
 
@@ -89,56 +92,109 @@ public sealed class HtmlSanitizer
         if (html is null)
             return null;
 
-        var element = ParseHtmlFragment(html);
-        for (var i = element.ChildNodes.Count - 1; i >= 0; i--)
-        {
-            Sanitize(element.ChildNodes[i]);
-        }
-
-        return element.InnerHtml;
+        var document = ParseHtmlFragment(html);
+        Sanitize(document);
+        return document.InnerHtml;
     }
 
-    private void Sanitize(HtmlNode node)
+    // The traversal is iterative on purpose: a hostile fragment can nest elements thousands of levels deep
+    // and a recursive walk would overflow the stack.
+    private void Sanitize(HtmlNode root)
     {
-        if (node is HtmlElement htmlElement)
+        var pendingNodes = new Stack<HtmlNode>();
+        pendingNodes.Push(root);
+
+        while (pendingNodes.Count > 0)
         {
-            if (!IsValidNode(htmlElement.Name))
+            var parent = pendingNodes.Pop();
+            for (var i = parent.ChildNodes.Count - 1; i >= 0; i--)
             {
-                htmlElement.Remove();
-                return;
-            }
-
-            for (var i = htmlElement.Attributes.Count - 1; i >= 0; i--)
-            {
-                var attribute = htmlElement.Attributes[i];
-                if (attribute is null)
-                    continue;
-
-                if (!IsValidAttribute(attribute.Name))
+                switch (parent.ChildNodes[i])
                 {
-                    htmlElement.RemoveAttribute(attribute.Name, attribute.NamespaceURI);
-                }
-                else if (UriAttributes.Contains(attribute.Name))
-                {
-                    if (!UrlSanitizer.IsSafeUrl(attribute.Value))
+                    case HtmlElement element when !IsValidNode(element.Name):
                     {
-                        attribute.Value = "";
+                        // Blocked elements, and elements whose content is raw text rather than markup, are removed
+                        // with their content. The content of a raw text element (script, style, title, textarea, …)
+                        // is written back verbatim, so promoting it to the parent would re-inject markup.
+                        if (BlockedElements.Contains(element.Name) || HasRawTextContent(element))
+                        {
+                            element.Remove();
+                            break;
+                        }
+
+                        // The element is not allowed but its content is, so only the tag is dropped.
+                        var promotedCount = element.ChildNodes.Count;
+                        element.Remove(keepChildren: true);
+
+                        // The promoted children take the place of the element, so they must be sanitized too.
+                        i += promotedCount;
+                        break;
                     }
-                }
-                else if (SrcsetAttributes.Contains(attribute.Name))
-                {
-                    if (!UrlSanitizer.IsSafeSrcset(attribute.Value))
-                    {
-                        attribute.Value = "";
-                    }
+
+                    case HtmlElement element:
+                        SanitizeAttributes(element);
+                        pendingNodes.Push(element);
+                        break;
+
+                    case HtmlComment comment when !AllowComments:
+                        comment.Remove();
+                        break;
+
+                    case HtmlText { IsCData: true } text:
+                        // "<![CDATA[…]]>" is not a CDATA section in an HTML document: it is a bogus comment that ends
+                        // at the first ">". Writing the section back as-is would let everything after that ">" escape
+                        // the comment and be parsed as markup, so the content is turned into escaped text instead.
+                        text.IsCData = false;
+                        text.Value = EscapeText(text.Value);
+                        break;
                 }
             }
         }
+    }
 
-        for (var i = node.ChildNodes.Count - 1; i >= 0; i--)
+    private void SanitizeAttributes(HtmlElement element)
+    {
+        for (var i = element.Attributes.Count - 1; i >= 0; i--)
         {
-            Sanitize(node.ChildNodes[i]);
+            var attribute = element.Attributes[i];
+            if (!IsValidAttribute(attribute.Name))
+            {
+                // Removing by index instead of by name: HtmlNode.RemoveAttribute expects a local name, so a
+                // namespace-qualified attribute such as "xxx:onclick" would never be found and would survive.
+                element.Attributes.RemoveAt(i);
+            }
+            else if (UriAttributes.Contains(attribute.Name))
+            {
+                if (!UrlSanitizer.IsSafeUrl(attribute.Value))
+                {
+                    attribute.Value = "";
+                }
+            }
+            else if (SrcsetAttributes.Contains(attribute.Name))
+            {
+                if (!UrlSanitizer.IsSafeSrcset(attribute.Value))
+                {
+                    attribute.Value = "";
+                }
+            }
         }
+    }
+
+    private static bool HasRawTextContent(HtmlElement element)
+    {
+        var options = element.OwnerDocument?.Options.GetElementReadOptions(element.Name) ?? HtmlElementReadOptions.None;
+        return (options & HtmlElementReadOptions.InnerRaw) == HtmlElementReadOptions.InnerRaw;
+    }
+
+    private static string EscapeText(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return "";
+
+        return text
+            .Replace("&", "&amp;", StringComparison.Ordinal)
+            .Replace("<", "&lt;", StringComparison.Ordinal)
+            .Replace(">", "&gt;", StringComparison.Ordinal);
     }
 
     private static HtmlDocument ParseHtmlFragment(string content)

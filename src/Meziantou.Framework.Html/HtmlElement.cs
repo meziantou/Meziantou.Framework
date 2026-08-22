@@ -212,6 +212,19 @@ sealed class HtmlElement : HtmlNode
 
     public override void WriteTo(TextWriter writer)
     {
+        ArgumentNullException.ThrowIfNull(writer);
+
+        if (!WriteStartTagTo(writer))
+            return;
+
+        WriteChildNodesTo(this, writer);
+        WriteEndTagTo(writer);
+    }
+
+    /// <summary>Writes the tag of the element, up to and including its closing '&gt;'.</summary>
+    /// <returns><see langword="false"/> when nothing else has to be written for this element, either because the tag is self-closed or because the element is intentionally left open.</returns>
+    internal bool WriteStartTagTo(TextWriter writer)
+    {
         writer.Write('<');
         if (IsProcessingInstruction)
         {
@@ -266,39 +279,32 @@ sealed class HtmlElement : HtmlNode
                 writer.Write(CloseChar);
                 writer.Write('>');
             }
+
+            return false;
         }
-        else
+
+        writer.Write('>');
+        return !((!HasChildNodes || NoChild) && dontCloseIfEmpty);
+    }
+
+    /// <summary>Writes the end tag of the element, when it needs one.</summary>
+    internal void WriteEndTagTo(TextWriter writer)
+    {
+        if (_closed || AlwaysClose || (OwnerDocument?.IsXhtml == true))
         {
+            writer.Write("</");
+            writer.Write(Name);
             writer.Write('>');
-
-            if ((!HasChildNodes || NoChild) && dontCloseIfEmpty)
-                return;
-
-            WriteContentTo(writer);
-
-            if (_closed || alwaysClose || (OwnerDocument?.IsXhtml == true))
-            {
-                writer.Write("</");
-                writer.Write(Name);
-                writer.Write('>');
-            }
         }
     }
+
+    internal override bool HasContentToWrite => !NoChild && HasChildNodes;
 
     public override void WriteContentTo(TextWriter writer)
     {
         ArgumentNullException.ThrowIfNull(writer);
 
-        if (!NoChild)
-        {
-            if (HasChildNodes)
-            {
-                foreach (var node in ChildNodes)
-                {
-                    node.WriteTo(writer);
-                }
-            }
-        }
+        WriteChildNodesTo(this, writer);
     }
 
     public override void WriteTo(XmlWriter writer)

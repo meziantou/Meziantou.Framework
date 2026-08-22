@@ -349,6 +349,69 @@ public class HtmlParserTests
     }
 
     [Theory]
+    // https://html.spec.whatwg.org/multipage/parsing.html#rawtext-state
+    [InlineData("iframe")]
+    [InlineData("noembed")]
+    [InlineData("noframes")]
+    [InlineData("noscript")]
+    [InlineData("xmp")]
+    public void HtmlParser_RawTextElementContainsRawText(string tagName)
+    {
+        var document = new HtmlDocument();
+        document.LoadHtml($"<{tagName}><p>hello</{tagName}>x");
+
+        var element = document.SelectSingleNode($"//{tagName}");
+        Assert.NotNull(element);
+        Assert.Equal("<p>hello", element!.InnerText);
+        Assert.Empty(document.SelectNodes("//p"));
+    }
+
+    [Fact]
+    public void HtmlParser_PlainTextElementContainsRawTextUntilTheEndOfTheDocument()
+    {
+        var document = new HtmlDocument();
+        document.LoadHtml("<plaintext>a<p>b");
+
+        var element = document.SelectSingleNode("//plaintext");
+        Assert.NotNull(element);
+        Assert.Equal("a<p>b", element!.InnerText);
+        Assert.Empty(document.SelectNodes("//p"));
+    }
+
+    [Fact]
+    public void HtmlParser_DeeplyNestedDocument()
+    {
+        const int Depth = 10_000;
+        var html = string.Concat(Enumerable.Repeat("<div>", Depth)) + "test" + string.Concat(Enumerable.Repeat("</div>", Depth));
+
+        string? actual = null;
+        Exception? exception = null;
+
+        // Parsing and writing a document must not recurse once per level. The work runs on a thread with the
+        // stack size Windows uses by default, which is much smaller than the main thread of the other platforms,
+        // so a recursive implementation fails here instead of only on Windows.
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var document = new HtmlDocument();
+                document.LoadHtml(html);
+                actual = document.InnerHtml;
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+        }, maxStackSize: 1024 * 1024);
+
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(exception);
+        Assert.Equal(html, actual);
+    }
+
+    [Theory]
     // a solidus is part of an unquoted attribute value
     [InlineData("<a href=foo/>", "href", "foo/")]
     [InlineData("<a href=/>", "href", "/")]

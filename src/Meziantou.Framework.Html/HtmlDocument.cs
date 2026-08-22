@@ -1151,10 +1151,7 @@ sealed class HtmlDocument : HtmlNode
     {
         ArgumentNullException.ThrowIfNull(writer);
 
-        foreach (var node in ChildNodes)
-        {
-            node.WriteTo(writer);
-        }
+        WriteChildNodesTo(this, writer);
     }
 
     public override void WriteTo(XmlWriter writer)

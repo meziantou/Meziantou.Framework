@@ -13,8 +13,6 @@ internal
 #endif
 abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
 {
-    private const int MaxRecursion = 300;
-
     public const string XmlnsPrefix = "xmlns";
     public const string XmlnsNamespaceURI = "http://www.w3.org/2000/xmlns/";
 
@@ -74,24 +72,69 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         return Utilities.GetValidXmlName(name);
     }
 
-    protected internal virtual void ClearCaches()
+    /// <summary>Gets a value indicating whether the child nodes of this node have to be written by <see cref="WriteChildNodesTo"/>.</summary>
+    internal virtual bool HasContentToWrite => HasChildNodes;
+
+    // The tree is walked iteratively: a document can be nested thousands of levels deep and recursing once per
+    // level would overflow the stack, which cannot be caught and takes the whole process down.
+    private protected static void WriteChildNodesTo(HtmlNode parent, TextWriter writer)
     {
-        ClearCaches(0);
+        if (!parent.HasContentToWrite)
+            return;
+
+        var pendingNodes = new Stack<PendingWrite>();
+        PushChildNodes(pendingNodes, parent);
+
+        while (pendingNodes.Count > 0)
+        {
+            var pending = pendingNodes.Pop();
+            if (pending.IsEndTag)
+            {
+                ((HtmlElement)pending.Node).WriteEndTagTo(writer);
+            }
+            else if (pending.Node is HtmlElement element)
+            {
+                if (!element.WriteStartTagTo(writer))
+                    continue;
+
+                pendingNodes.Push(new PendingWrite(element, IsEndTag: true));
+                PushChildNodes(pendingNodes, element);
+            }
+            else
+            {
+                // Any other node is a leaf: it writes itself entirely
+                pending.Node.WriteTo(writer);
+            }
+        }
     }
 
-    private void ClearCaches(int index)
+    private static void PushChildNodes(Stack<PendingWrite> pendingNodes, HtmlNode parent)
     {
-        // deep recursion testing. incurred because of xslt in general
-        if (index > MaxRecursion)
-            throw new HtmlException($"HTML0005: Maximum recursion depth ({MaxRecursion.ToString(CultureInfo.InvariantCulture)}) exceeded. This may be caused by a recursive XSLT.");
+        if (!parent.HasContentToWrite)
+            return;
 
-        _innerHtml = null;
-        _innerText = null;
-        _innerXml = null;
-        _outerHtml = null;
-        _outerXml = null;
+        // The children are pushed in reverse so that they are popped in document order
+        var childNodes = parent.ChildNodes;
+        for (var i = childNodes.Count - 1; i >= 0; i--)
+        {
+            pendingNodes.Push(new PendingWrite(childNodes[i], IsEndTag: false));
+        }
+    }
 
-        _parentNode?.ClearCaches(index + 1);
+    private readonly record struct PendingWrite(HtmlNode Node, bool IsEndTag);
+
+    protected internal virtual void ClearCaches()
+    {
+        // Walking the ancestors iteratively instead of recursively: a document can legitimately be nested
+        // thousands of levels deep and a recursive walk would overflow the stack.
+        for (var node = this; node is not null; node = node._parentNode)
+        {
+            node._innerHtml = null;
+            node._innerText = null;
+            node._innerXml = null;
+            node._outerHtml = null;
+            node._outerXml = null;
+        }
     }
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)

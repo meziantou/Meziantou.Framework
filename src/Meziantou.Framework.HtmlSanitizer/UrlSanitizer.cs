@@ -47,6 +47,7 @@ public static partial class UrlSanitizer
     private static partial Regex DataUrlPattern();
 
     private static readonly char[] Whitespaces = ['\t', '\r', '\n', ' ', '\f'];
+    private static readonly char[] SrcsetCandidateSeparators = ['\t', '\r', '\n', ' ', '\f', ','];
 
     /// <summary>Determines whether a URL is safe by checking if it uses an allowed protocol (http, https, mailto, ftp, tel, file) or is a relative URL, or a safe data URL.</summary>
     /// <param name="url">The URL to validate.</param>
@@ -69,25 +70,35 @@ public static partial class UrlSanitizer
         if (url is null)
             return true;
 
+        // https://html.spec.whatwg.org/multipage/images.html#parsing-a-srcset-attribute
+        // A candidate is a run of non-whitespace characters (the URL) optionally followed by descriptors.
+        // The URL itself may contain commas, so the value cannot simply be split on ','.
         var remaining = url.AsSpan();
         while (true)
         {
-            var separatorIndex = remaining.IndexOf(',');
-            var segment = separatorIndex < 0 ? remaining : remaining[..separatorIndex];
-            segment = segment.Trim(Whitespaces);
-
-            if (!segment.IsEmpty)
-            {
-                var valueSeparator = segment.IndexOfAny(Whitespaces);
-                var value = valueSeparator < 0 ? segment : segment[..valueSeparator];
-                if (!IsSafeUrl(value))
-                    return false;
-            }
-
-            if (separatorIndex < 0)
+            // A candidate starts after any leading whitespace and separating commas
+            remaining = remaining.TrimStart(SrcsetCandidateSeparators);
+            if (remaining.IsEmpty)
                 return true;
 
-            remaining = remaining[(separatorIndex + 1)..];
+            var whitespaceIndex = remaining.IndexOfAny(Whitespaces);
+            var candidateUrl = whitespaceIndex < 0 ? remaining : remaining[..whitespaceIndex];
+            remaining = whitespaceIndex < 0 ? [] : remaining[whitespaceIndex..];
+
+            if (candidateUrl[^1] is ',')
+            {
+                // The candidate has no descriptor, the next one starts right after the trailing commas
+                candidateUrl = candidateUrl.TrimEnd(',');
+            }
+            else
+            {
+                // Skip the descriptors of the candidate, they end at the next comma
+                var descriptorSeparatorIndex = remaining.IndexOf(',');
+                remaining = descriptorSeparatorIndex < 0 ? [] : remaining[(descriptorSeparatorIndex + 1)..];
+            }
+
+            if (!candidateUrl.IsEmpty && !IsSafeUrl(candidateUrl))
+                return false;
         }
     }
 

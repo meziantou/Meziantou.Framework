@@ -1,6 +1,60 @@
-﻿using Meziantou.Framework.Yaml.Serialization;
+﻿#pragma warning disable MA0048 // File name must match type name
+
+using Meziantou.Framework.Yaml.Serialization;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
+
+[YamlPolymorphic]
+[YamlDerivedType(typeof(SubclassDog), "dog")]
+internal abstract class SubclassPet
+{
+    public string Name { get; set; } = string.Empty;
+}
+
+internal class SubclassDog : SubclassPet
+{
+    public int BarkVolume { get; set; }
+}
+
+/// <summary>A subclass of a registered derived type that is not registered itself.</summary>
+internal sealed class SubclassLabrador : SubclassDog
+{
+    public string Coat { get; set; } = string.Empty;
+}
+
+/// <summary>Registers the base of a hierarchy before its more derived type, so write dispatch order matters.</summary>
+[YamlPolymorphic]
+[YamlDerivedType(typeof(NestedDog), "dog")]
+[YamlDerivedType(typeof(NestedLabrador), "labrador")]
+internal abstract class NestedPet
+{
+    public string Name { get; set; } = string.Empty;
+}
+
+internal class NestedDog : NestedPet
+{
+    public int BarkVolume { get; set; }
+}
+
+internal sealed class NestedLabrador : NestedDog
+{
+    public string Coat { get; set; } = string.Empty;
+}
+
+[YamlSerializable(typeof(SubclassPet))]
+[YamlSerializable(typeof(NestedPet))]
+internal sealed partial class SubclassPetYamlContext : YamlSerializerContext
+{
+    public SubclassPetYamlContext()
+    {
+    }
+
+    public SubclassPetYamlContext(YamlSerializerOptions options)
+        : base(options)
+    {
+    }
+}
+
 public class YamlPolymorphismTests
 {
     [YamlPolymorphic]
@@ -940,4 +994,57 @@ public class YamlPolymorphismTests
     {
         Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<ClosedShape>("$type: Nonexistent\n", InferClosedTypePolymorphismOptions));
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WritingAnUnregisteredSubclassOfARegisteredDerivedTypeThrows(bool useSourceGeneration)
+    {
+        SubclassPet value = new SubclassLabrador { Name = "Rex", BarkVolume = 3, Coat = "yellow" };
+
+        var exception = Assert.Throws<NotSupportedException>(() => Serialize(value, useSourceGeneration));
+
+        Assert.Contains(typeof(SubclassLabrador).ToString(), exception.Message);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WritingARegisteredDerivedTypeUsesItsOwnDiscriminator(bool useSourceGeneration)
+    {
+        SubclassPet value = new SubclassDog { Name = "Rex", BarkVolume = 3 };
+
+        var yaml = Serialize(value, useSourceGeneration);
+
+        Assert.Contains("$type: dog", yaml);
+        Assert.Contains("BarkVolume: 3", yaml);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WritingARegisteredDerivedTypeIsNotShadowedByItsRegisteredBase(bool useSourceGeneration)
+    {
+        NestedPet value = new NestedLabrador { Name = "Rex", BarkVolume = 3, Coat = "yellow" };
+
+        var yaml = useSourceGeneration
+            ? YamlSerializer.Serialize(value, typeof(NestedPet), new SubclassPetYamlContext())
+            : YamlSerializer.Serialize(value, typeof(NestedPet));
+
+        Assert.Contains("$type: labrador", yaml);
+        Assert.Contains("Coat: yellow", yaml);
+
+        var roundtripped = useSourceGeneration
+            ? YamlSerializer.Deserialize(yaml, typeof(NestedPet), new SubclassPetYamlContext())
+            : YamlSerializer.Deserialize<NestedPet>(yaml);
+        var labrador = Assert.IsType<NestedLabrador>(roundtripped);
+        Assert.Equal("Rex", labrador.Name);
+        Assert.Equal(3, labrador.BarkVolume);
+        Assert.Equal("yellow", labrador.Coat);
+    }
+
+    private static string Serialize(SubclassPet value, bool useSourceGeneration)
+        => useSourceGeneration
+            ? YamlSerializer.Serialize(value, typeof(SubclassPet), new SubclassPetYamlContext())
+            : YamlSerializer.Serialize(value, typeof(SubclassPet));
 }

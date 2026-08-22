@@ -115,7 +115,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
 
         var result = RunGenerator(Source);
         Assert.Empty(result.GeneratorDiagnostics);
-        Assert.Contains("value is global::Dog", result.GeneratedSource);
+        Assert.Contains("runtimeType == typeof(global::Dog)", result.GeneratedSource);
     }
 
     [Fact]

@@ -628,6 +628,11 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.AppendLine("        var discriminatorStyle = options.PolymorphismOptions.DiscriminatorStyle;");
                 }
 
+                // The dispatch matches the runtime type exactly, like the reflection-based writer. A subclass of a
+                // registered derived type is not itself registered, so it must fail instead of silently being written
+                // under its base type's discriminator, which would drop the members it declares.
+                builder.AppendLine("        var runtimeType = value.GetType();");
+
                 for (var i = 0; i < polymorphism.DerivedTypes.Length; i++)
                 {
                     var derived = polymorphism.DerivedTypes[i];
@@ -637,8 +642,8 @@ public sealed partial class YamlSerializerContextGenerator
                         continue;
                     }
 
-                    var derivedLocal = $"derived{derivedIndex}";
-                    builder.Append("        if (value is ").Append(derivedTypeName).Append(' ').Append(derivedLocal).AppendLine(")");
+                    var derivedValue = $"(({derivedTypeName})value)";
+                    builder.Append("        if (runtimeType == typeof(").Append(derivedTypeName).AppendLine("))");
                     builder.AppendLine("        {");
 
                     if (derived.Tag is not null)
@@ -677,7 +682,7 @@ public sealed partial class YamlSerializerContextGenerator
                             builder.AppendLine("            }");
                         }
                     }
-                    builder.Append("            WriteMembers").Append(derivedIndex).Append("(writer, ").Append(derivedLocal).Append(", ")
+                    builder.Append("            WriteMembers").Append(derivedIndex).Append("(writer, ").Append(derivedValue).Append(", ")
                         .Append(mayWriteDiscriminatorProperty ? "discriminatorPropertyName" : "null").AppendLine(", runtimeConverters);");
                     builder.AppendLine("            writer.WriteEndMapping();");
                     if (emitLifecycleCallbacks)
@@ -688,9 +693,9 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.AppendLine("        }");
                 }
 
-                builder.Append("        if (value.GetType() != typeof(").Append(typeName).AppendLine("))");
+                builder.Append("        if (runtimeType != typeof(").Append(typeName).AppendLine("))");
                 builder.AppendLine("        {");
-                builder.Append("            throw new global::System.NotSupportedException($\"Type '{value.GetType()}' is not a registered derived type of '{typeof(")
+                builder.Append("            throw new global::System.NotSupportedException($\"Type '{runtimeType}' is not a registered derived type of '{typeof(")
                     .Append(typeName).AppendLine(")}'.\");");
                 builder.AppendLine("        }");
                 builder.AppendLine();
@@ -790,6 +795,11 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine("        var discriminatorStyle = options.PolymorphismOptions.DiscriminatorStyle;");
         }
 
+        // The dispatch matches the runtime type exactly, like the reflection-based writer. A subclass of a registered
+        // derived type is not itself registered, so it must fail instead of silently being written under its base
+        // type's discriminator, which would drop the members it declares.
+        builder.AppendLine("        var runtimeType = value.GetType();");
+
         for (var i = 0; i < polymorphism.DerivedTypes.Length; i++)
         {
             var derived = polymorphism.DerivedTypes[i];
@@ -799,8 +809,8 @@ public sealed partial class YamlSerializerContextGenerator
                 continue;
             }
 
-            var derivedLocal = $"derived{derivedIndex}";
-            builder.Append("        if (value is ").Append(derivedTypeName).Append(' ').Append(derivedLocal).AppendLine(")");
+            var derivedValue = $"(({derivedTypeName})value)";
+            builder.Append("        if (runtimeType == typeof(").Append(derivedTypeName).AppendLine("))");
             builder.AppendLine("        {");
 
             if (derived.Tag is not null)
@@ -840,7 +850,7 @@ public sealed partial class YamlSerializerContextGenerator
                 }
             }
 
-            builder.Append("            WriteMembers").Append(derivedIndex).Append("(writer, ").Append(derivedLocal).Append(", ")
+            builder.Append("            WriteMembers").Append(derivedIndex).Append("(writer, ").Append(derivedValue).Append(", ")
                 .Append(mayWriteDiscriminatorProperty ? "discriminatorPropertyName" : "null").AppendLine(", runtimeConverters);");
             builder.AppendLine("            writer.WriteEndMapping();");
             if (emitLifecycleCallbacks)
@@ -854,16 +864,16 @@ public sealed partial class YamlSerializerContextGenerator
 
         if (canWriteBaseObject)
         {
-            builder.Append("        if (value.GetType() != typeof(").Append(typeName).AppendLine("))");
+            builder.Append("        if (runtimeType != typeof(").Append(typeName).AppendLine("))");
             builder.AppendLine("        {");
-            builder.Append("            throw new global::System.NotSupportedException($\"Type '{value.GetType()}' is not a registered derived type of '{typeof(")
+            builder.Append("            throw new global::System.NotSupportedException($\"Type '{runtimeType}' is not a registered derived type of '{typeof(")
                 .Append(typeName).AppendLine(")}'.\");");
             builder.AppendLine("        }");
             builder.AppendLine();
         }
         else
         {
-            builder.Append("        throw new global::System.NotSupportedException($\"Type '{value.GetType()}' is not a registered derived type of '{typeof(")
+            builder.Append("        throw new global::System.NotSupportedException($\"Type '{runtimeType}' is not a registered derived type of '{typeof(")
                 .Append(typeName).AppendLine(")}'.\");");
         }
     }

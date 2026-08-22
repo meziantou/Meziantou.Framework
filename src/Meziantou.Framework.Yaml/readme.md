@@ -449,6 +449,11 @@ Name: Rex
 
 The same settings are available on `YamlSerializerOptions.PolymorphismOptions` for the whole serializer.
 
+`UnknownDerivedTypeHandling` applies while reading. While writing, the runtime type must match a registration exactly:
+serializing a subclass of a registered derived type that is not registered itself throws `NotSupportedException` rather
+than writing it under the discriminator of its closest registered base, which would silently drop the members it
+declares. This holds for both the reflection-based serializer and a source-generated `YamlSerializerContext`.
+
 ### Registering derived types at runtime
 
 `PolymorphismOptions.DerivedTypeMappings` registers derived types without touching the base type, which enables

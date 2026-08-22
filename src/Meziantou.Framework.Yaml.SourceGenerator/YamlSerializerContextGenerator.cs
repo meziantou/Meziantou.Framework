@@ -665,8 +665,10 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         => (declarationOverride ?? sourceGenerationOptions.InferClosedTypePolymorphism ?? false) && ClosedTypeSymbolHelper.IsClosedType(baseType);
 
     /// <summary>
-    /// Registers each direct derived type of a closed hierarchy, using its name, without the generic arity suffix, as
-    /// its discriminator. Derived types are ordered by discriminator so the generated metadata is deterministic.
+    /// Registers every descendant of a closed hierarchy, using its name, without the generic arity suffix, as its
+    /// discriminator. A derived type that is itself closed brings its own hierarchy along, since it is known at
+    /// compile time as well. Derived types are ordered by discriminator, base types first, so the generated metadata
+    /// is deterministic.
     /// </summary>
     private static ImmutableArray<DerivedTypeInfoModel> InferClosedTypeDerivedTypes(
         INamedTypeSymbol baseType,
@@ -676,34 +678,49 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         var seenDiscriminators = new HashSet<string>(StringComparer.Ordinal);
         var location = baseType.Locations.FirstOrDefault();
 
-        foreach (var closedDerivedType in ClosedTypeSymbolHelper.GetClosedDerivedTypes(baseType).OrderBy(static type => type.Name, StringComparer.Ordinal))
+        // Each level is resolved against the type declaring it so an open generic derived type unifies with its own
+        // base type. Only a newly registered type is expanded, and a type can only be registered once, so the
+        // traversal always terminates.
+        var pendingHierarchies = new Queue<INamedTypeSymbol>();
+        pendingHierarchies.Enqueue(baseType);
+
+        while (pendingHierarchies.Count > 0)
         {
-            string? reason = null;
-            if (!TryResolveDerivedType(baseType, closedDerivedType, out var derivedType) || !IsAssignableTo(derivedType, baseType))
+            var declaringType = pendingHierarchies.Dequeue();
+            foreach (var closedDerivedType in ClosedTypeSymbolHelper.GetClosedDerivedTypes(declaringType).OrderBy(static type => type.Name, StringComparer.Ordinal))
             {
-                reason = $"it cannot be resolved for the base type '{baseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}'";
-            }
-            else if (!ClosedTypeSymbolHelper.IsAtLeastAsVisibleAs(derivedType, baseType))
-            {
-                reason = "it is less visible than the base type";
-            }
-            else if (!seenDiscriminators.Add(ClosedTypeSymbolHelper.GetInferredDiscriminator(derivedType)))
-            {
-                reason = $"another derived type already uses the discriminator '{ClosedTypeSymbolHelper.GetInferredDiscriminator(derivedType)}'";
-            }
+                string? reason = null;
+                if (!TryResolveDerivedType(declaringType, closedDerivedType, out var derivedType) || !IsAssignableTo(derivedType, baseType))
+                {
+                    reason = $"it cannot be resolved for the base type '{baseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}'";
+                }
+                else if (!ClosedTypeSymbolHelper.IsAtLeastAsVisibleAs(derivedType, baseType))
+                {
+                    reason = "it is less visible than the base type";
+                }
+                else if (!seenDiscriminators.Add(ClosedTypeSymbolHelper.GetInferredDiscriminator(derivedType)))
+                {
+                    reason = $"another derived type already uses the discriminator '{ClosedTypeSymbolHelper.GetInferredDiscriminator(derivedType)}'";
+                }
 
-            if (reason is not null)
-            {
-                diagnostics?.Add(Diagnostic.Create(
-                    IgnoredInferredDerivedType,
-                    location,
-                    closedDerivedType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
-                    baseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
-                    reason));
-                continue;
-            }
+                if (reason is not null)
+                {
+                    diagnostics?.Add(Diagnostic.Create(
+                        IgnoredInferredDerivedType,
+                        location,
+                        closedDerivedType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
+                        baseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
+                        reason));
+                    continue;
+                }
 
-            derivedTypes.Add(new DerivedTypeInfoModel(derivedType!, ClosedTypeSymbolHelper.GetInferredDiscriminator(derivedType!), tag: null));
+                derivedTypes.Add(new DerivedTypeInfoModel(derivedType!, ClosedTypeSymbolHelper.GetInferredDiscriminator(derivedType!), tag: null));
+
+                if (derivedType is INamedTypeSymbol namedDerivedType && ClosedTypeSymbolHelper.IsClosedType(namedDerivedType))
+                {
+                    pendingHierarchies.Enqueue(namedDerivedType);
+                }
+            }
         }
 
         return derivedTypes.ToImmutable();

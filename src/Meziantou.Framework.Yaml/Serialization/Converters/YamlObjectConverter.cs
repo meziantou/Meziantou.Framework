@@ -2596,27 +2596,44 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             if (inferredDerivedTypes is not null)
             {
-                foreach (var inferredDerivedType in inferredDerivedTypes)
+                // A derived type that is itself closed brings its own hierarchy along: the whole hierarchy is known at
+                // compile time, so every descendant is registered instead of only the direct derived types. Each level
+                // is resolved against the type declaring it so an open generic derived type unifies with its own base.
+                var pendingHierarchies = new Queue<(Type BaseType, Type[] DerivedTypes)>();
+                pendingHierarchies.Enqueue((type, inferredDerivedTypes));
+
+                while (pendingHierarchies.Count > 0)
                 {
-                    var derivedType = YamlDerivedTypeHelper.ResolveDerivedType(type, inferredDerivedType);
-                    if (!type.IsAssignableFrom(derivedType))
+                    var (declaringType, declaredDerivedTypes) = pendingHierarchies.Dequeue();
+                    foreach (var inferredDerivedType in declaredDerivedTypes)
                     {
-                        throw new InvalidOperationException($"Derived type '{derivedType}' is not assignable to '{type}'.");
-                    }
+                        var derivedType = YamlDerivedTypeHelper.ResolveDerivedType(declaringType, inferredDerivedType);
+                        if (!type.IsAssignableFrom(derivedType))
+                        {
+                            throw new InvalidOperationException($"Derived type '{derivedType}' is not assignable to '{type}'.");
+                        }
 
-                    if (!YamlClosedTypeHelper.IsAtLeastAsVisibleAs(derivedType, type))
-                    {
-                        throw new InvalidOperationException($"Derived type '{derivedType}' inferred for the closed type '{type}' is less visible than '{type}' and cannot be registered.");
-                    }
+                        if (!YamlClosedTypeHelper.IsAtLeastAsVisibleAs(derivedType, type))
+                        {
+                            throw new InvalidOperationException($"Derived type '{derivedType}' inferred for the closed type '{type}' is less visible than '{type}' and cannot be registered.");
+                        }
 
-                    var discriminator = YamlClosedTypeHelper.GetInferredDiscriminator(derivedType);
-                    if (discriminatorToType.ContainsKey(discriminator))
-                    {
-                        throw new InvalidOperationException($"Derived type '{derivedType}' inferred for the closed type '{type}' uses the discriminator '{discriminator}', which is already registered by another derived type.");
-                    }
+                        var discriminator = YamlClosedTypeHelper.GetInferredDiscriminator(derivedType);
+                        if (discriminatorToType.ContainsKey(discriminator))
+                        {
+                            throw new InvalidOperationException($"Derived type '{derivedType}' inferred for the closed type '{type}' uses the discriminator '{discriminator}', which is already registered by another derived type.");
+                        }
 
-                    discriminatorToType.Add(discriminator, derivedType);
-                    typeToDerived[derivedType] = new DerivedTypeInfo(discriminator, tag: null);
+                        discriminatorToType.Add(discriminator, derivedType);
+                        typeToDerived[derivedType] = new DerivedTypeInfo(discriminator, tag: null);
+
+                        // Only a newly registered type is expanded, and a type can only be registered once, so the
+                        // traversal always terminates.
+                        if (YamlClosedTypeHelper.IsClosedType(derivedType, out var nestedDerivedTypes) && nestedDerivedTypes is not null)
+                        {
+                            pendingHierarchies.Enqueue((derivedType, nestedDerivedTypes));
+                        }
+                    }
                 }
             }
 

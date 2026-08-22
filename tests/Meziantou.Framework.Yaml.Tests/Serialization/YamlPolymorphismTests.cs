@@ -977,11 +977,16 @@ public class YamlPolymorphismTests
     }
 
     [Fact]
-    public void ClosedTypeInferenceRegistersDirectDerivedTypesOnly()
+    public void ClosedTypeInferenceRegistersTransitiveDerivedTypes()
     {
         ClosedNestedRoot value = new ClosedNestedLeaf { Name = "leaf", Level = 2, Detail = "detail" };
+        var rootYaml = YamlSerializer.Serialize(value, typeof(ClosedNestedRoot), InferClosedTypePolymorphismOptions);
 
-        Assert.Throws<NotSupportedException>(() => YamlSerializer.Serialize(value, typeof(ClosedNestedRoot), InferClosedTypePolymorphismOptions));
+        Assert.Contains("$type: ClosedNestedLeaf", rootYaml);
+        var leaf = Assert.IsType<ClosedNestedLeaf>(YamlSerializer.Deserialize<ClosedNestedRoot>(rootYaml, InferClosedTypePolymorphismOptions));
+        Assert.Equal("leaf", leaf.Name);
+        Assert.Equal(2, leaf.Level);
+        Assert.Equal("detail", leaf.Detail);
 
         ClosedNestedMiddle middleValue = new ClosedNestedLeaf { Name = "leaf", Level = 2, Detail = "detail" };
         var yaml = YamlSerializer.Serialize(middleValue, typeof(ClosedNestedMiddle), InferClosedTypePolymorphismOptions);
@@ -993,6 +998,58 @@ public class YamlPolymorphismTests
     public void ClosedTypeInferenceFailsForUnknownDiscriminator()
     {
         Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<ClosedShape>("$type: Nonexistent\n", InferClosedTypePolymorphismOptions));
+    }
+
+    private closed class ClosedPet
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private sealed class ClosedCat : ClosedPet
+    {
+        public bool Indoor { get; set; }
+    }
+
+    private closed class ClosedDog : ClosedPet
+    {
+        public bool GoodBoy { get; set; }
+    }
+
+    private sealed class ClosedLabrador : ClosedDog
+    {
+        public string Color { get; set; } = string.Empty;
+    }
+
+    private sealed class ClosedCollie : ClosedDog
+    {
+        public bool Herding { get; set; }
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceRegistersDescendantsOfNestedClosedTypes()
+    {
+        ClosedPet value = new ClosedLabrador { Name = "Rex", GoodBoy = true, Color = "chocolate" };
+        var yaml = YamlSerializer.Serialize(value, typeof(ClosedPet), InferClosedTypePolymorphismOptions);
+
+        Assert.Contains("$type: ClosedLabrador", yaml);
+
+        var labrador = Assert.IsType<ClosedLabrador>(YamlSerializer.Deserialize<ClosedPet>(yaml, InferClosedTypePolymorphismOptions));
+        Assert.Equal("Rex", labrador.Name);
+        Assert.True(labrador.GoodBoy);
+        Assert.Equal("chocolate", labrador.Color);
+    }
+
+    [Fact]
+    public void ClosedTypeInferenceRegistersEveryDescendantOfANestedClosedHierarchy()
+    {
+        ClosedPet collie = new ClosedCollie { Name = "Lassie", GoodBoy = true, Herding = true };
+        Assert.Contains("$type: ClosedCollie", YamlSerializer.Serialize(collie, typeof(ClosedPet), InferClosedTypePolymorphismOptions));
+
+        ClosedPet cat = new ClosedCat { Name = "Mittens", Indoor = true };
+        Assert.Contains("$type: ClosedCat", YamlSerializer.Serialize(cat, typeof(ClosedPet), InferClosedTypePolymorphismOptions));
+
+        ClosedDog dog = new ClosedLabrador { Name = "Rex", Color = "black" };
+        Assert.Contains("$type: ClosedLabrador", YamlSerializer.Serialize(dog, typeof(ClosedDog), InferClosedTypePolymorphismOptions));
     }
 
     [Theory]

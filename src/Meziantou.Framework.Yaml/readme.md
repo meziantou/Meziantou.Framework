@@ -496,8 +496,8 @@ internal sealed class Dog<T> : Animal<T>  // Animal<string> uses Dog<string>, An
 ### Closed hierarchies
 
 A `closed` class hierarchy already lists its derived types in metadata, so they do not need to be repeated with
-`YamlDerivedTypeAttribute`. Set `InferClosedTypePolymorphism` to register every direct derived type of a closed base
-type automatically, using the derived type name, without the generic arity suffix, as its discriminator.
+`YamlDerivedTypeAttribute`. Set `InferClosedTypePolymorphism` to register every derived type of a closed base type
+automatically, using the derived type name, without the generic arity suffix, as its discriminator.
 
 ```csharp
 public closed class Shape
@@ -529,9 +529,10 @@ public closed class Shape
 
 Explicit registrations replace inference: a type declaring `YamlDerivedTypeAttribute` or a runtime mapping registers
 only those derived types. Enabling `YamlPolymorphicAttribute.InferClosedTypePolymorphism` on a type that is not declared
-`closed` throws an `InvalidOperationException` and reports the `MFY023` diagnostic. Only the direct derived types of the
-closed base type are registered, as with explicit registrations: when a derived type is itself `closed`, its own derived
-types are registered under it and not under the root of the hierarchy.
+`closed` throws an `InvalidOperationException` and reports the `MFY023` diagnostic. A derived type that is itself
+`closed` brings its own hierarchy along: its derived types are registered under the root of the hierarchy too, so the
+most derived type of a fully closed hierarchy is the one written and read back. A derived type that is not `closed` ends
+the inference, as its own derived types are not known.
 
 A derived type must be at least as visible as the base type it is registered under, and two derived types cannot share a
 name. Reflection-based serialization throws an `InvalidOperationException` in those cases, and the source generator skips

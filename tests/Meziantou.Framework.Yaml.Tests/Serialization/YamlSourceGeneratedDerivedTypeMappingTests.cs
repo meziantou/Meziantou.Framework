@@ -76,6 +76,36 @@ namespace Meziantou.Framework.Yaml.Tests.Serialization.ClosedHierarchy
         public double Height { get; set; }
     }
 
+    internal closed class Pet
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    internal sealed class Cat : Pet
+    {
+        public bool Indoor { get; set; }
+    }
+
+    internal closed class Dog : Pet
+    {
+        public bool GoodBoy { get; set; }
+    }
+
+    internal sealed class Labrador : Dog
+    {
+        public string Color { get; set; } = string.Empty;
+    }
+
+    internal sealed class Collie : Dog
+    {
+        public bool Herding { get; set; }
+    }
+
+    internal sealed class PetHolder
+    {
+        public Pet? Pet { get; set; }
+    }
+
     internal sealed class ShapeHolder
     {
         public Shape? Shape { get; set; }
@@ -117,6 +147,7 @@ namespace Meziantou.Framework.Yaml.Tests.Serialization
     }
     [YamlSourceGenerationOptions(InferClosedTypePolymorphism = true)]
     [YamlSerializable(typeof(ClosedHierarchy.ShapeHolder))]
+    [YamlSerializable(typeof(ClosedHierarchy.PetHolder))]
     internal sealed partial class InferredClosedTypeYamlContext : YamlSerializerContext
     {
     }
@@ -165,6 +196,55 @@ namespace Meziantou.Framework.Yaml.Tests.Serialization
 
             Assert.Contains("$type: Square", yaml);
             Assert.IsType<ClosedHierarchy.Square>(YamlSerializer.Deserialize(yaml, typeInfo)?.Shape);
+        }
+
+        [Fact]
+        public void GeneratedContextInfersDescendantsOfNestedClosedTypes()
+        {
+            var context = new InferredClosedTypeYamlContext();
+            var typeInfo = context.PetHolder;
+
+            var yaml = YamlSerializer.Serialize(
+                new ClosedHierarchy.PetHolder
+                {
+                    Pet = new ClosedHierarchy.Labrador { Name = "Rex", GoodBoy = true, Color = "chocolate" },
+                },
+                typeInfo);
+
+            Assert.Contains("$type: Labrador", yaml);
+
+            var roundtripped = YamlSerializer.Deserialize(yaml, typeInfo);
+            var labrador = Assert.IsType<ClosedHierarchy.Labrador>(roundtripped?.Pet);
+            Assert.Equal("Rex", labrador.Name);
+            Assert.True(labrador.GoodBoy);
+            Assert.Equal("chocolate", labrador.Color);
+        }
+
+        [Fact]
+        public void GeneratedContextInfersEveryDescendantOfANestedClosedHierarchy()
+        {
+            var context = new InferredClosedTypeYamlContext();
+            var typeInfo = context.PetHolder;
+
+            var collieYaml = YamlSerializer.Serialize(
+                new ClosedHierarchy.PetHolder
+                {
+                    Pet = new ClosedHierarchy.Collie { Name = "Lassie", Herding = true },
+                },
+                typeInfo);
+
+            Assert.Contains("$type: Collie", collieYaml);
+            Assert.IsType<ClosedHierarchy.Collie>(YamlSerializer.Deserialize(collieYaml, typeInfo)?.Pet);
+
+            var catYaml = YamlSerializer.Serialize(
+                new ClosedHierarchy.PetHolder
+                {
+                    Pet = new ClosedHierarchy.Cat { Name = "Mittens", Indoor = true },
+                },
+                typeInfo);
+
+            Assert.Contains("$type: Cat", catYaml);
+            Assert.IsType<ClosedHierarchy.Cat>(YamlSerializer.Deserialize(catYaml, typeInfo)?.Pet);
         }
 
         [Fact]

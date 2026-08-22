@@ -13,8 +13,6 @@ internal
 #endif
 abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
 {
-    private const int MaxRecursion = 300;
-
     public const string XmlnsPrefix = "xmlns";
     public const string XmlnsNamespaceURI = "http://www.w3.org/2000/xmlns/";
 
@@ -76,22 +74,16 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
 
     protected internal virtual void ClearCaches()
     {
-        ClearCaches(0);
-    }
-
-    private void ClearCaches(int index)
-    {
-        // deep recursion testing. incurred because of xslt in general
-        if (index > MaxRecursion)
-            throw new HtmlException($"HTML0005: Maximum recursion depth ({MaxRecursion.ToString(CultureInfo.InvariantCulture)}) exceeded. This may be caused by a recursive XSLT.");
-
-        _innerHtml = null;
-        _innerText = null;
-        _innerXml = null;
-        _outerHtml = null;
-        _outerXml = null;
-
-        _parentNode?.ClearCaches(index + 1);
+        // Walking the ancestors iteratively instead of recursively: a document can legitimately be nested
+        // thousands of levels deep and a recursive walk would overflow the stack.
+        for (var node = this; node is not null; node = node._parentNode)
+        {
+            node._innerHtml = null;
+            node._innerText = null;
+            node._innerXml = null;
+            node._outerHtml = null;
+            node._outerXml = null;
+        }
     }
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)

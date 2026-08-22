@@ -32,14 +32,19 @@ sealed class HtmlOptions
         _readOptions["embed"] = HtmlElementReadOptions.AutoClosed | HtmlElementReadOptions.NoChild;
         _readOptions["frame"] = HtmlElementReadOptions.AutoClosed;
         _readOptions["hr"] = HtmlElementReadOptions.AutoClosed | HtmlElementReadOptions.NoChild;
+        _readOptions["iframe"] = HtmlElementReadOptions.InnerRaw;
         _readOptions["img"] = HtmlElementReadOptions.AutoClosed | HtmlElementReadOptions.NoChild;
         _readOptions["input"] = HtmlElementReadOptions.AutoClosed | HtmlElementReadOptions.NoChild;
         _readOptions["isindex"] = HtmlElementReadOptions.AutoClosed;
         _readOptions["keygen"] = HtmlElementReadOptions.AutoClosed;
         _readOptions["link"] = HtmlElementReadOptions.AutoClosed | HtmlElementReadOptions.NoChild;
         _readOptions["meta"] = HtmlElementReadOptions.AutoClosed | HtmlElementReadOptions.NoChild;
+        _readOptions["noembed"] = HtmlElementReadOptions.InnerRaw;
+        _readOptions["noframes"] = HtmlElementReadOptions.InnerRaw;
+        _readOptions["noscript"] = HtmlElementReadOptions.InnerRaw;
         _readOptions["p"] = HtmlElementReadOptions.AutoClosed;
         _readOptions["param"] = HtmlElementReadOptions.AutoClosed | HtmlElementReadOptions.NoChild;
+        _readOptions["plaintext"] = HtmlElementReadOptions.InnerRaw;
         _readOptions["script"] = HtmlElementReadOptions.InnerRaw;
         _readOptions["spacer"] = HtmlElementReadOptions.AutoClosed;
         _readOptions["source"] = HtmlElementReadOptions.AutoClosed | HtmlElementReadOptions.NoChild;
@@ -48,6 +53,7 @@ sealed class HtmlOptions
         _readOptions["title"] = HtmlElementReadOptions.InnerRaw;
         _readOptions["track"] = HtmlElementReadOptions.AutoClosed | HtmlElementReadOptions.NoChild;
         _readOptions["wbr"] = HtmlElementReadOptions.AutoClosed | HtmlElementReadOptions.NoChild;
+        _readOptions["xmp"] = HtmlElementReadOptions.InnerRaw;
 
         // NOTE: This "NOXHTML" element is not defined in specs and is specific to us
         // It may just be used by the caller if he wants to make sure what is inside will never be changed.

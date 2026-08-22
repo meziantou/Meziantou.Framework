@@ -64,6 +64,17 @@ var result = sanitizer.SanitizeHtmlFragment("<img srcset='https://example.com/im
 // Result: "<img srcset='https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w'>"
 ```
 
+### Keeping Comments
+
+Comments are removed by default: downlevel-hidden conditional comments (`<!--[if IE]><script>...</script><![endif]-->`)
+are executed by legacy browsers. Set `AllowComments` to keep them:
+
+```csharp
+var sanitizer = new HtmlSanitizer { AllowComments = true };
+var result = sanitizer.SanitizeHtmlFragment("<p>a<!-- comment -->b</p>");
+// Result: "<p>a<!-- comment -->b</p>"
+```
+
 ### Customizing Allowed Elements
 
 You can customize which elements are allowed:
@@ -106,6 +117,26 @@ By default, the sanitizer allows:
 - **Block elements**: `address`, `article`, `aside`, `blockquote`, `caption`, `center`, `col`, `colgroup`, `dd`, `div`, `dl`, `dt`, `figure`, `figcaption`, `footer`, `h1`-`h6`, `header`, `hgroup`, `hr`, `li`, `nav`, `ol`, `p`, `pre`, `section`, `table`, `tbody`, `td`, `tfoot`, `th`, `thead`, `tr`, `ul`, and more
 - **Inline elements**: `a`, `abbr`, `acronym`, `b`, `bdi`, `bdo`, `big`, `br`, `cite`, `code`, `del`, `dfn`, `em`, `font`, `i`, `img`, `ins`, `kbd`, `label`, `map`, `mark`, `q`, `ruby`, `rp`, `rt`, `s`, `samp`, `small`, `span`, `strike`, `strong`, `sub`, `sup`, `time`, `tt`, `u`, `var`
 - **Void elements**: `area`, `br`, `col`, `hr`, `img`, `wbr`
+
+### Element Handling
+
+An element is handled in one of three ways:
+
+- It is in `ValidElements` (and not in `BlockedElements`): the element and its content are kept, and its attributes are sanitized.
+- It is in `BlockedElements`, or its content is raw text rather than markup (`script`, `style`, `title`, `textarea`, `iframe`, `noscript`, `noembed`, `noframes`, `plaintext`, `xmp`): the element is removed **with its content**.
+- Otherwise the element is unwrapped: the tag is dropped but its content is kept and sanitized.
+
+```csharp
+var sanitizer = new HtmlSanitizer();
+
+// script is blocked, so its content is removed too
+sanitizer.SanitizeHtmlFragment("<p>Hello <script>alert('xss')</script>World</p>");
+// Result: "<p>Hello World</p>"
+
+// form is not allowed, but its content is kept
+sanitizer.SanitizeHtmlFragment("<form><p>Hello</p></form>");
+// Result: "<p>Hello</p>"
+```
 
 ### Blocked Elements
 
@@ -152,10 +183,9 @@ This library is inspired by:
 - [Angular's HTML sanitizer](https://github.com/angular/angular/blob/main/packages/core/src/sanitization/html_sanitizer.ts)
 - [Sanitizer API specification](https://wicg.github.io/sanitizer-api/#default-configuration-dictionary)
 
-The library uses [AngleSharp](https://anglesharp.github.io/) for HTML parsing.
+The library uses [Meziantou.Framework.Html](../Meziantou.Framework.Html) for HTML parsing.
 
 ## Additional Resources
 
 - [Angular HTML Sanitizer](https://github.com/angular/angular/blob/main/packages/core/src/sanitization/html_sanitizer.ts)
 - [W3C Sanitizer API](https://wicg.github.io/sanitizer-api/)
-- [AngleSharp](https://anglesharp.github.io/)

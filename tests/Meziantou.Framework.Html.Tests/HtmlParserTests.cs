@@ -349,6 +349,48 @@ public class HtmlParserTests
     }
 
     [Theory]
+    // https://html.spec.whatwg.org/multipage/parsing.html#rawtext-state
+    [InlineData("iframe")]
+    [InlineData("noembed")]
+    [InlineData("noframes")]
+    [InlineData("noscript")]
+    [InlineData("xmp")]
+    public void HtmlParser_RawTextElementContainsRawText(string tagName)
+    {
+        var document = new HtmlDocument();
+        document.LoadHtml($"<{tagName}><p>hello</{tagName}>x");
+
+        var element = document.SelectSingleNode($"//{tagName}");
+        Assert.NotNull(element);
+        Assert.Equal("<p>hello", element!.InnerText);
+        Assert.Empty(document.SelectNodes("//p"));
+    }
+
+    [Fact]
+    public void HtmlParser_PlainTextElementContainsRawTextUntilTheEndOfTheDocument()
+    {
+        var document = new HtmlDocument();
+        document.LoadHtml("<plaintext>a<p>b");
+
+        var element = document.SelectSingleNode("//plaintext");
+        Assert.NotNull(element);
+        Assert.Equal("a<p>b", element!.InnerText);
+        Assert.Empty(document.SelectNodes("//p"));
+    }
+
+    [Fact]
+    public void HtmlParser_DeeplyNestedDocument()
+    {
+        const int Depth = 2_000;
+        var html = string.Concat(Enumerable.Repeat("<div>", Depth)) + "test" + string.Concat(Enumerable.Repeat("</div>", Depth));
+
+        var document = new HtmlDocument();
+        document.LoadHtml(html);
+
+        Assert.Equal(html, document.InnerHtml);
+    }
+
+    [Theory]
     // a solidus is part of an unquoted attribute value
     [InlineData("<a href=foo/>", "href", "foo/")]
     [InlineData("<a href=/>", "href", "/")]

@@ -72,6 +72,57 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         return Utilities.GetValidXmlName(name);
     }
 
+    /// <summary>Gets a value indicating whether the child nodes of this node have to be written by <see cref="WriteChildNodesTo"/>.</summary>
+    internal virtual bool HasContentToWrite => HasChildNodes;
+
+    // The tree is walked iteratively: a document can be nested thousands of levels deep and recursing once per
+    // level would overflow the stack, which cannot be caught and takes the whole process down.
+    private protected static void WriteChildNodesTo(HtmlNode parent, TextWriter writer)
+    {
+        if (!parent.HasContentToWrite)
+            return;
+
+        var pendingNodes = new Stack<PendingWrite>();
+        PushChildNodes(pendingNodes, parent);
+
+        while (pendingNodes.Count > 0)
+        {
+            var pending = pendingNodes.Pop();
+            if (pending.IsEndTag)
+            {
+                ((HtmlElement)pending.Node).WriteEndTagTo(writer);
+            }
+            else if (pending.Node is HtmlElement element)
+            {
+                if (!element.WriteStartTagTo(writer))
+                    continue;
+
+                pendingNodes.Push(new PendingWrite(element, IsEndTag: true));
+                PushChildNodes(pendingNodes, element);
+            }
+            else
+            {
+                // Any other node is a leaf: it writes itself entirely
+                pending.Node.WriteTo(writer);
+            }
+        }
+    }
+
+    private static void PushChildNodes(Stack<PendingWrite> pendingNodes, HtmlNode parent)
+    {
+        if (!parent.HasContentToWrite)
+            return;
+
+        // The children are pushed in reverse so that they are popped in document order
+        var childNodes = parent.ChildNodes;
+        for (var i = childNodes.Count - 1; i >= 0; i--)
+        {
+            pendingNodes.Push(new PendingWrite(childNodes[i], IsEndTag: false));
+        }
+    }
+
+    private readonly record struct PendingWrite(HtmlNode Node, bool IsEndTag);
+
     protected internal virtual void ClearCaches()
     {
         // Walking the ancestors iteratively instead of recursively: a document can legitimately be nested

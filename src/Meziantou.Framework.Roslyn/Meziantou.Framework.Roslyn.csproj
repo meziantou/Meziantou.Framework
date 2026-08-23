@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
     <Description>Source helpers for Roslyn analyzers and source generators</Description>
 
     <developmentDependency>true</developmentDependency>
@@ -13,9 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="**/*.cs"
-             Pack="true"
-             PackagePath="contentFiles/cs/any/Meziantou.Framework.Roslyn/%(Filename)%(Extension)">
+    <Content Include="**/*.cs" Pack="true" PackagePath="contentFiles/cs/any/Meziantou.Framework.Roslyn/%(Filename)%(Extension)">
       <BuildAction>Compile</BuildAction>
       <PackageCopyToOutput>false</PackageCopyToOutput>
       <PackageFlatten>false</PackageFlatten>

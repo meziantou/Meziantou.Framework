@@ -261,11 +261,9 @@ foreach (var (csproj, info) in projectsToUpdate.OrderBy(kv => kv.Key, StringComp
         {
             foreach (var commit in info.Commits.Distinct(StringComparer.Ordinal))
             {
-                var message = RunAndCapture("git", ["log", "--format=%B", "-n", "1", commit]);
-                message = Regex.Replace(message, @"\r?\n", "\n", RegexOptions.NonBacktracking);
-                message = Regex.Replace(message, @"\s+", " ", RegexOptions.NonBacktracking);
-                message = message.Replace("Co-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>", "", StringComparison.OrdinalIgnoreCase);
-                message = message.Trim();
+                // Only the subject: commit bodies are long enough that including them blows past the pull request body limit
+                var message = RunAndCapture("git", ["log", "--format=%s", "-n", "1", commit]);
+                message = Regex.Replace(message, @"\s+", " ", RegexOptions.NonBacktracking).Trim();
                 prMessage.Append($"- {commit}: {message}\n");
             }
         }
@@ -274,7 +272,7 @@ foreach (var (csproj, info) in projectsToUpdate.OrderBy(kv => kv.Key, StringComp
 
 if (updated)
 {
-    var prBody = prMessage.ToString();
+    var prBody = TruncatePullRequestBody(prMessage.ToString());
     Console.WriteLine(prBody);
 
     if (createPullRequest)
@@ -500,6 +498,22 @@ static void RunProcess(string fileName, string[] arguments)
 }
 
 static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();
+
+static string TruncatePullRequestBody(string body)
+{
+    // GitHub rejects a pull request body longer than 65536 characters
+    const int MaximumLength = 65536;
+    const string TruncationNotice = "\n_The list of commits is truncated because the pull request body exceeds the maximum length allowed by GitHub._\n";
+
+    if (body.Length <= MaximumLength)
+        return body;
+
+    var length = MaximumLength - TruncationNotice.Length;
+    var lastLineBreak = body.AsSpan(0, length).LastIndexOf('\n');
+    length = lastLineBreak > 0 ? lastLineBreak + 1 : char.IsHighSurrogate(body[length - 1]) ? length - 1 : length;
+
+    return string.Concat(body[..length], TruncationNotice);
+}
 
 internal sealed class CsprojInfo
 {

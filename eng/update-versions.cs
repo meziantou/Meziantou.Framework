@@ -10,18 +10,20 @@ using Meziantou.Framework;
 var createPullRequest = false;
 var forceBumpAll = false;
 var numberOfCommits = 50;
+var since = "2 weeks ago";
 
 for (var i = 0; i < args.Length; i++)
 {
     switch (args[i])
     {
         case "--help" or "-h":
-            Console.WriteLine("Usage: dotnet run update-versions.cs [-- --create-pull-request --force-bump-all --number-of-commits <N>]");
+            Console.WriteLine("Usage: dotnet run update-versions.cs [-- --create-pull-request --force-bump-all --number-of-commits <N> --since <date>]");
             Console.WriteLine("Bumps package versions based on git commit history.");
             Console.WriteLine("Options:");
             Console.WriteLine("  --create-pull-request      Create or update a GitHub pull request");
             Console.WriteLine("  --force-bump-all           Bump all packable package versions");
-            Console.WriteLine("  --number-of-commits <N>    Number of commits to analyze (default: 50)");
+            Console.WriteLine("  --number-of-commits <N>    Minimum number of commits to analyze (default: 50)");
+            Console.WriteLine("  --since <date>             Also analyze every commit newer than <date> (default: 2 weeks ago)");
             return 0;
         case "--create-pull-request":
             createPullRequest = true;
@@ -31,6 +33,9 @@ for (var i = 0; i < args.Length; i++)
             break;
         case "--number-of-commits" when i + 1 < args.Length:
             numberOfCommits = int.Parse(args[++i], CultureInfo.InvariantCulture);
+            break;
+        case "--since" when i + 1 < args.Length:
+            since = args[++i];
             break;
     }
 }
@@ -44,10 +49,12 @@ var skippedCommits = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 var rootPath = GetRepositoryRoot();
 var srcPath = rootPath / "src";
 
-// Get recent commits
-var commits = RunAndCapture("git", ["log", $"--pretty=format:%H", "-n", numberOfCommits.ToString(CultureInfo.InvariantCulture)])
-    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-    .Select(c => c.Trim().Trim('\''))
+// Get recent commits: the last N commits, plus every commit made in the time window.
+// Both lists are ordered from the newest commit to the oldest, and the second one is a prefix of the first
+// or an extension of it, so removing the duplicates keeps that order.
+var commits = GetCommitHashes(["-n", numberOfCommits.ToString(CultureInfo.InvariantCulture)])
+    .Concat(GetCommitHashes([$"--since={since}"]))
+    .Distinct(StringComparer.Ordinal)
     .ToArray();
 Console.WriteLine($"Commits loaded ({commits.Length} commits)");
 
@@ -498,6 +505,14 @@ static void RunProcess(string fileName, string[] arguments)
 }
 
 static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();
+
+static string[] GetCommitHashes(string[] arguments)
+{
+    return RunAndCapture("git", ["log", "--pretty=format:%H", .. arguments])
+        .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+        .Select(c => c.Trim().Trim('\''))
+        .ToArray();
+}
 
 static string TruncatePullRequestBody(string body)
 {

@@ -1,0 +1,17 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Description>Enables verification of Roslyn source generator results using file-based snapshots</Description>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Lowest supported Roslyn version. NuGet lifts it to the version used by the test project referencing this package. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0" />
+  </ItemGroup>
+
+</Project>

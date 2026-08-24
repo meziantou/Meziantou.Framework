@@ -97,7 +97,7 @@ public sealed class RoslynSnapshotSerializerTests
     [Fact]
     public void Serialize_SyntaxTreeKeepsTheOriginalText()
     {
-        var tree = CSharpSyntaxTree.ParseText("class Sample\r\n{\r\n    // comment\r\n}\r\n");
+        var tree = CSharpSyntaxTree.ParseText("class Sample\r\n{\r    // comment\r\n}\r\n");
         var data = CreateSettings().Serializers.Serialize(SnapshotType.Default, tree).Data;
 
         var snapshot = Assert.Single(data);

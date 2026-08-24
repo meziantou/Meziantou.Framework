@@ -23,7 +23,7 @@ internal sealed class SyntaxSnapshotSerializer : ISnapshotSerializer
             return false;
         }
 
-        result = new SerializedSnapshot([new SnapshotData(GetExtension(language), Encoding.UTF8.GetBytes(source.Replace("\r\n", "\n", StringComparison.Ordinal)))]);
+        result = new SerializedSnapshot([new SnapshotData(GetExtension(language), Encoding.UTF8.GetBytes(source.ReplaceLineEndings("\n")))]);
         return true;
     }
 

@@ -60,4 +60,4 @@ The node or tree is stored as a single `.cs` file (`.vb` for Visual Basic) conta
 
 ## Line endings
 
-`\r\n` is normalized to `\n` in every file, so snapshots do not depend on the platform the tests run on.
+Line endings are normalized to `\n` in every file, so snapshots do not depend on the platform the tests run on, nor on the line endings used by the source they were produced from.

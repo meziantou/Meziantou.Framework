@@ -26,7 +26,7 @@ internal sealed class GeneratedSourcesSnapshotSerializer : ISnapshotSerializer
             // EmitCompilerGeneratedFiles turned on, so a rename has to show up as a diff somewhere.
             var source =
                 "// HintName: " + generated.HintName + "\n"
-                + generated.SourceText.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
+                + generated.SourceText.ToString().ReplaceLineEndings("\n");
 
             files.Add(new SnapshotData("cs", Encoding.UTF8.GetBytes(source)));
         }

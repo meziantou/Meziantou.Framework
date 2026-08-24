@@ -1,8 +1,3 @@
 <Project>
-  <!--
-    NuGet resolves the build assets of a PackageReference to the 'buildTransitive' folder when it contains a file with
-    this name, for both direct and transitive references, so this file is only used by packages.config projects.
-    Everything lives in the 'buildTransitive' file so both entry points behave the same way.
-  -->
-  <Import Project="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'buildTransitive', 'Meziantou.Framework.SnapshotTesting.targets'))" />
+  <Import Project="$(MSBuildThisFileDirectory)../buildTransitive/Meziantou.Framework.SnapshotTesting.targets" />
 </Project>

@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <_MeziantouSnapshotTestingSharedDirectory>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', 'common'))</_MeziantouSnapshotTestingSharedDirectory>
+    <_MeziantouSnapshotTestingSharedDirectory>$(MSBuildThisFileDirectory)../common/</_MeziantouSnapshotTestingSharedDirectory>
     <_MeziantouSourceRootGeneratedFileName>SnapshotTestingSourceRoot.g.cs</_MeziantouSourceRootGeneratedFileName>
     <_MeziantouSourceRootRegistrationMethod>global::Meziantou.Framework.SnapshotTesting.Snapshot.RegisterSourceRootMapping</_MeziantouSourceRootRegistrationMethod>
     <_MeziantouSourceRootAssemblyMetadataName>SnapshotTestingSourceRootMappings</_MeziantouSourceRootAssemblyMetadataName>

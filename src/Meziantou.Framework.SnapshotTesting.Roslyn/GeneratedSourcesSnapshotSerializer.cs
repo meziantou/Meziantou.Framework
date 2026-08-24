@@ -36,7 +36,8 @@ internal sealed class GeneratedSourcesSnapshotSerializer : ISnapshotSerializer
             .OrderBy(diagnostic => diagnostic.Id, StringComparer.Ordinal)
             .ThenBy(diagnostic => diagnostic.ToString(), StringComparer.Ordinal))
         {
-            report.Append(diagnostic.Id).Append(": ").Append(diagnostic.GetMessage(CultureInfo.InvariantCulture)).Append('\n');
+            RoslynFormatter.AppendDiagnostic(report, diagnostic);
+            report.Append('\n');
         }
 
         // A generator that throws reports no diagnostic and produces no source, so without this the

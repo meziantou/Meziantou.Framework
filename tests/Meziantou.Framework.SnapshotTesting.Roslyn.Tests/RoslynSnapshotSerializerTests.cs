@@ -36,7 +36,7 @@ public sealed class RoslynSnapshotSerializerTests
         Assert.HasCount(2, data);
         Assert.Equal("cs", data[0].Extension);
         Assert.Equal("txt", data[1].Extension);
-        Assert.Equal("SG0001: Sample message 'first'\nSG0001: Sample message 'second'\n", GetText(data[1]));
+        Assert.Equal("warning SG0001: Sample message 'first'\nwarning SG0001: Sample message 'second'\n", GetText(data[1]));
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public sealed class RoslynSnapshotSerializerTests
         settings.AddRoslyn();
         settings.AddRoslyn();
 
-        Assert.Equal(count + 2, settings.Serializers.Count);
+        Assert.Equal(count + 3, settings.Serializers.Count);
     }
 
     [Fact]
@@ -154,6 +154,94 @@ public sealed class RoslynSnapshotSerializerTests
         Assert.True(File.Exists(directory / "snapshot_1.verified.cs"));
         Assert.True(File.Exists(directory / "snapshot_2.verified.txt"));
         Assert.HasCount(3, Directory.GetFiles(directory.FullPath));
+    }
+
+    [Fact]
+    public void Serialize_DiagnosticKeepsItsLocation()
+    {
+        var tree = CSharpSyntaxTree.ParseText("class Sample;", path: "Sample.cs");
+        var diagnostic = Diagnostic.Create(SampleDescriptor, tree.GetRoot().GetLocation(), "here");
+        var data = CreateSettings().Serializers.Serialize(SnapshotType.Default, diagnostic).Data;
+
+        var snapshot = Assert.Single(data);
+        Assert.Equal("Sample.cs(1,1): warning SG0001: Sample message 'here'\n", GetText(snapshot));
+    }
+
+    [Fact]
+    public void Serialize_DiagnosticCollectionKeepsTheCallerOrder()
+    {
+        var data = CreateSettings().Serializers.Serialize(SnapshotType.Default, ImmutableArray.Create(
+            Diagnostic.Create(SampleDescriptor, Location.None, "second"),
+            Diagnostic.Create(SampleDescriptor, Location.None, "first"))).Data;
+
+        var snapshot = Assert.Single(data);
+        Assert.Equal("warning SG0001: Sample message 'second'\nwarning SG0001: Sample message 'first'\n", GetText(snapshot));
+    }
+
+    [Fact]
+    public void Serialize_EmptyDiagnosticCollectionIsAnEmptyFile()
+    {
+        var data = CreateSettings().Serializers.Serialize(SnapshotType.Default, ImmutableArray<Diagnostic>.Empty).Data;
+
+        var snapshot = Assert.Single(data);
+        Assert.Empty(snapshot.Data);
+    }
+
+    [Fact]
+    public void Serialize_SourceTextLeavesTheExtensionToTheRequestedSnapshotType()
+    {
+        var data = CreateSettings().Serializers.Serialize(SnapshotType.Default, SourceText.From("class Sample;\r\n")).Data;
+
+        var snapshot = Assert.Single(data);
+        Assert.Null(snapshot.Extension);
+        Assert.Equal("class Sample;\n", GetText(snapshot));
+    }
+
+    [Fact]
+    public void Validate_WritesSourceTextWithTheRequestedSnapshotType()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateSettings();
+        settings.AutoDetectContinuousEnvironment = false;
+        settings.SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure;
+        settings.SnapshotPathStrategy = context => directory / ("snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + context.Extension);
+
+        Snapshot.Validate(SourceText.From("class Sample;"), SnapshotType.Create("cs"), settings);
+
+        var file = Assert.Single(Directory.GetFiles(directory.FullPath));
+        Assert.EndsWith(".verified.cs", file);
+    }
+
+    [Fact]
+    public void Serialize_TokensAndTrivia()
+    {
+        var root = CSharpSyntaxTree.ParseText("class Sample\n{\n    // comment\n    void Method() { }\n}\n").GetRoot();
+        var method = root.DescendantNodes().OfType<MethodDeclarationSyntax>().Single();
+        var settings = CreateSettings();
+
+        Assert.Equal("    // comment\n    void ", GetText(Assert.Single(settings.Serializers.Serialize(SnapshotType.Default, method.ReturnType.GetFirstToken()).Data)));
+        Assert.Equal("    // comment\n    ", GetText(Assert.Single(settings.Serializers.Serialize(SnapshotType.Default, method.GetLeadingTrivia()).Data)));
+        Assert.Equal("Method", GetText(Assert.Single(settings.Serializers.Serialize(SnapshotType.Default, (SyntaxNodeOrToken)method.Identifier).Data)));
+    }
+
+    [Fact]
+    public void Serialize_ConvertersFormatNestedRoslynValues()
+    {
+        var tree = CSharpSyntaxTree.ParseText("class Sample;", path: "Sample.cs");
+        var value = new
+        {
+            Diagnostic = Diagnostic.Create(SampleDescriptor, tree.GetRoot().GetLocation(), "here"),
+            Location = tree.GetRoot().GetLocation(),
+            tree.GetRoot().Span,
+            LinePosition = new LinePosition(3, 5),
+        };
+
+        var text = GetText(Assert.Single(CreateSettings().Serializers.Serialize(SnapshotType.Default, value).Data));
+
+        Assert.Contains("Diagnostic: Sample.cs(1,1): warning SG0001: Sample message 'here'", text);
+        Assert.Contains("Location: Sample.cs(0,0)-(0,13)", text);
+        Assert.Contains("Span: [0..13)", text);
+        Assert.Contains("LinePosition: 3,5", text);
     }
 
     private static SnapshotSettings CreateSettings()

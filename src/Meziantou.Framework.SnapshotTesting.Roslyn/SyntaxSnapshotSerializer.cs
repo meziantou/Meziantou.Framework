@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.SnapshotTesting.Roslyn;
 
@@ -14,6 +15,12 @@ internal sealed class SyntaxSnapshotSerializer : ISnapshotSerializer
         {
             SyntaxTree tree => (tree.GetText().ToString(), tree.Options.Language),
             SyntaxNode node => (node.ToFullString(), node.Language),
+            SyntaxToken token => (token.ToFullString(), token.Language),
+            SyntaxNodeOrToken nodeOrToken => (nodeOrToken.ToFullString(), nodeOrToken.Language),
+            SyntaxTrivia trivia => (trivia.ToFullString(), trivia.Language),
+            SyntaxTokenList tokens => (tokens.ToFullString(), tokens.Count > 0 ? tokens[0].Language : null),
+            SyntaxTriviaList trivias => (trivias.ToFullString(), trivias.Count > 0 ? trivias[0].Language : null),
+            SourceText text => (text.ToString(), null),
             _ => (null, null),
         };
 
@@ -27,10 +34,11 @@ internal sealed class SyntaxSnapshotSerializer : ISnapshotSerializer
         return true;
     }
 
-    private static string GetExtension(string? language) => language switch
+    // An unknown language leaves the extension to the requested snapshot type, which defaults to txt.
+    private static string? GetExtension(string? language) => language switch
     {
         LanguageNames.CSharp => "cs",
         LanguageNames.VisualBasic => "vb",
-        _ => "txt",
+        _ => null,
     };
 }

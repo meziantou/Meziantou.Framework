@@ -1,28 +1,8 @@
 <Project>
-  <PropertyGroup>
-    <_MeziantouSharedSourceRootTargetsPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'common', 'Meziantou.Framework.SourceRootRegistration.targets'))</_MeziantouSharedSourceRootTargetsPath>
-    <_MeziantouSourceRootGeneratedFileName>SnapshotTestingSourceRoot.g.cs</_MeziantouSourceRootGeneratedFileName>
-    <_MeziantouSourceRootRegistrationMethod>global::Meziantou.Framework.SnapshotTesting.Snapshot.RegisterSourceRootMapping</_MeziantouSourceRootRegistrationMethod>
-    <_MeziantouSourceRootAssemblyMetadataName>SnapshotTestingSourceRootMappings</_MeziantouSourceRootAssemblyMetadataName>
-    <_MeziantouSourceRootInitializerClassName>SnapshotTestingSourceRootInitializer</_MeziantouSourceRootInitializerClassName>
-  </PropertyGroup>
-
-  <Import Project="$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets"
-          Condition="Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets')" />
-  <Import Project="$(_MeziantouSharedSourceRootTargetsPath)"
-          Condition="!Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets') and Exists('$(_MeziantouSharedSourceRootTargetsPath)')" />
-
-  <Target Name="GenerateSnapshotTestingSourceRoots"
-          DependsOnTargets="InitializeSourceRootMappedPaths;_MeziantouGenerateSourceRootsCore"
-          BeforeTargets="CoreCompile"
-          Condition="'$(SnapshotTestingGenerateSourceRoot)' != 'false' and '$(DeterministicSourcePaths)' == 'true'" />
-
-  <PropertyGroup>
-    <_MeziantouSharedSnapshotFilesTargetsPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'common', 'Meziantou.Framework.SnapshotFiles.targets'))</_MeziantouSharedSnapshotFilesTargetsPath>
-  </PropertyGroup>
-
-  <Import Project="$(MSBuildThisFileDirectory)Meziantou.Framework.SnapshotFiles.targets"
-          Condition="Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SnapshotFiles.targets')" />
-  <Import Project="$(_MeziantouSharedSnapshotFilesTargetsPath)"
-          Condition="!Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SnapshotFiles.targets') and Exists('$(_MeziantouSharedSnapshotFilesTargetsPath)')" />
+  <!--
+    NuGet resolves the build assets of a PackageReference to the 'buildTransitive' folder when it contains a file with
+    this name, for both direct and transitive references, so this file is only used by packages.config projects.
+    Everything lives in the 'buildTransitive' file so both entry points behave the same way.
+  -->
+  <Import Project="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'buildTransitive', 'Meziantou.Framework.SnapshotTesting.targets'))" />
 </Project>

@@ -80,7 +80,32 @@ public sealed partial class SnapshotEndToEndTests
                 }
             }
             """,
-            assertGeneratedSourceRootFileIsEmbeddedInBinlog: true);
+            assertGeneratedSourceRootFile: true);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_EmbedsGeneratedSourceRootFileInBinlog_WhenImportingBuildTransitiveTargets()
+    {
+        // NuGet imports the 'buildTransitive' targets for both direct and transitive package references,
+        // so everything the 'build' targets provide must also be available there
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """,
+            assertGeneratedSourceRootFile: true,
+            importBuildTransitiveTargets: true);
 
         AssertSnapshotContent(snapshotFiles,
         [
@@ -1208,7 +1233,8 @@ public sealed partial class SnapshotEndToEndTests
         string? testFilter = null,
         string? directoryBuildPropsContent = null,
         int buildRetryCount = 0,
-        bool assertGeneratedSourceRootFileIsEmbeddedInBinlog = false)
+        bool assertGeneratedSourceRootFile = false,
+        bool importBuildTransitiveTargets = false)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(buildRetryCount);
         await using var directory = TemporaryDirectory.Create();
@@ -1216,7 +1242,8 @@ public sealed partial class SnapshotEndToEndTests
         Assert.NotNull(dotnetPath);
 
         var snapshotProjectPath = GetRepositoryRoot() / "src" / "Meziantou.Framework.SnapshotTesting" / "Meziantou.Framework.SnapshotTesting.csproj";
-        var snapshotTargetsPath = GetRepositoryRoot() / "src" / "Meziantou.Framework.SnapshotTesting" / "build" / "Meziantou.Framework.SnapshotTesting.targets";
+        var targetsFolder = importBuildTransitiveTargets ? "buildTransitive" : "build";
+        var snapshotTargetsPath = GetRepositoryRoot() / "src" / "Meziantou.Framework.SnapshotTesting" / targetsFolder / "Meziantou.Framework.SnapshotTesting.targets";
         CreateTextFile("Project.csproj", $$"""
             <Project Sdk="Microsoft.NET.Sdk">
               <Import Project="{{snapshotTargetsPath}}" />
@@ -1224,7 +1251,7 @@ public sealed partial class SnapshotEndToEndTests
                 <TargetFramework>{{targetFramework ?? TargetFrameworkHelper.GetTargetFrameworkMoniker()}}</TargetFramework>
                 <Nullable>disable</Nullable>
                 <IsPackable>false</IsPackable>
-                {{(assertGeneratedSourceRootFileIsEmbeddedInBinlog ? "<DeterministicSourcePaths>true</DeterministicSourcePaths>" : "")}}
+                {{(assertGeneratedSourceRootFile ? "<DeterministicSourcePaths>true</DeterministicSourcePaths>" : "")}}
                 {{GetAdditionalProjectProperties(testFramework)}}
               </PropertyGroup>
               <ItemGroup>
@@ -1271,14 +1298,15 @@ public sealed partial class SnapshotEndToEndTests
         };
 
         var binlogPath = directory.GetFullPath("build.binlog");
-        if (assertGeneratedSourceRootFileIsEmbeddedInBinlog)
+        if (assertGeneratedSourceRootFile)
         {
             buildArguments.Add("/bl:" + binlogPath);
         }
 
         await ExecuteDotNetWithRetry(directory.FullPath, dotnetPath, buildArguments, expectedExitCode: 0);
-        if (assertGeneratedSourceRootFileIsEmbeddedInBinlog)
+        if (assertGeneratedSourceRootFile)
         {
+            AssertGeneratedSourceRootFileExists(directory.FullPath);
             AssertBinlogContains(binlogPath, "SnapshotTestingSourceRoot.g.cs");
         }
 
@@ -1355,6 +1383,16 @@ public sealed partial class SnapshotEndToEndTests
             .OrderBy(path => path.RelativePath, StringComparer.Ordinal)
             .Select(file => new SnapshotFile(file.RelativePath, File.ReadAllBytes(file.AbsolutePath)))
             .ToArray();
+    }
+
+    private static void AssertGeneratedSourceRootFileExists(FullPath rootPath)
+    {
+        var intermediateDirectory = Path.Combine(rootPath, "obj");
+        var files = Directory.Exists(intermediateDirectory)
+            ? Directory.GetFiles(intermediateDirectory, "SnapshotTestingSourceRoot.g.cs", SearchOption.AllDirectories)
+            : [];
+
+        Assert.NotEmpty(files, $"No source root file was generated in '{intermediateDirectory}'.");
     }
 
     private static void AssertBinlogContains(FullPath binlogPath, string value)

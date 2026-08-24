@@ -39,32 +39,20 @@ internal sealed class ContainerCli
 
     public async Task RunToStreamAsync(IReadOnlyList<string> args, Stream standardOutput, CancellationToken cancellationToken)
     {
+        // The target synchronizes its own writes and flushes the decoder when the process completes, and the process
+        // wrapper awaits the output pumps before returning, so the text is complete once the call below returns.
         var standardError = new StringBuilder();
         var result = await ProcessWrapper.Create(_executable)
             .WithArguments(args)
             .WithValidation(ProcessValidationMode.None)
             .WithOutputStream(OutputTarget.ToStream(standardOutput))
-            .WithErrorStream(OutputTarget.ToTextDelegate(text =>
-            {
-                lock (standardError)
-                {
-                    standardError.AppendLine(text);
-                }
-            }))
+            .WithErrorStream(OutputTarget.ToStringBuilder(standardError))
             .ExecuteAsync(cancellationToken)
             .ConfigureAwait(false);
 
         var exitCode = result.ExitCode.Value;
         if (exitCode != 0)
-        {
-            string error;
-            lock (standardError)
-            {
-                error = standardError.ToString();
-            }
-
-            throw CreateFailure(args, exitCode, standardOutput: "", error.TrimEnd('\n', '\r'));
-        }
+            throw CreateFailure(args, exitCode, standardOutput: "", standardError.ToString());
     }
 
     public ProcessInstance ExecuteStreaming(IReadOnlyList<string> args, Action<string> onStandardOutput, Action<string> onStandardError, CancellationToken cancellationToken)
@@ -98,20 +86,18 @@ internal sealed class ContainerCli
     internal static string FormatCommand(string executable, IReadOnlyList<string> args)
     {
         var result = new StringBuilder();
-        result.Append(Quote(executable));
+        result.Append(CommandLineBuilder.WindowsQuotedArgument(executable));
 
         var redactNextValue = false;
         foreach (var arg in args)
         {
-            result.Append(' ').Append(Quote(redactNextValue ? Redact(arg) : arg));
+            result.Append(' ').Append(CommandLineBuilder.WindowsQuotedArgument(redactNextValue ? Redact(arg) : arg));
 
             // Environment variables are the one place where the caller routinely passes secrets to the runtime.
             redactNextValue = arg is "--env" or "-e";
         }
 
         return result.ToString();
-
-        static string Quote(string value) => value.Contains(' ', StringComparison.Ordinal) ? '"' + value + '"' : value;
 
         static string Redact(string value)
         {

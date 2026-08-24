@@ -450,9 +450,12 @@ public abstract class ContainerRuntimeTestsBase
     {
         await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
 
-        var destination = Path.Combine(Path.GetTempPath(), "MezTC-missing-" + Guid.NewGuid().ToString("N"));
+        // The source is missing on the host, so every runtime rejects the copy before it touches the container.
+        // Asking for a missing path *inside* the container is not equivalent: 'container copy' never returns for
+        // apple/container, which hangs the test host rather than failing.
+        var missingSource = Path.Combine(Path.GetTempPath(), "MezTC-missing-" + Guid.NewGuid().ToString("N"));
         var exception = await Assert.ThrowsAsync<ContainerRuntimeException>(async () =>
-            await container.CopyFromContainerAsync(TempDirectory + "/meziantou-tc-does-not-exist", destination, XunitCancellationToken));
+            await container.CopyToContainerAsync(missingSource, TempDirectory + "/copied.txt", XunitCancellationToken));
 
         Assert.Equal(Runtime, exception.Runtime);
         Assert.NotEqual(0, exception.ExitCode);

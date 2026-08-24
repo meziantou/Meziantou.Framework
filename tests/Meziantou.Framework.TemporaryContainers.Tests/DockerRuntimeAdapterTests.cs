@@ -13,6 +13,14 @@ public sealed class DockerRuntimeAdapterTests
     }
 
     [Fact]
+    public void FormatCommand_EscapesQuotesInsideArguments()
+    {
+        var command = ContainerCli.FormatCommand("docker", ["exec", "-c", "echo \"hi\"", "busybox"]);
+
+        Assert.Equal("""docker exec -c "echo \"hi\"" busybox""", command);
+    }
+
+    [Fact]
     public void FormatCommand_RedactsEnvironmentVariableValues()
     {
         var command = ContainerCli.FormatCommand("docker", ["create", "--env", "POSTGRES_PASSWORD=hunter2", "-e", "TOKEN=abc", "postgres:16"]);

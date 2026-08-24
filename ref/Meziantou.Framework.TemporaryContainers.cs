@@ -189,6 +189,17 @@ namespace Meziantou.Framework.TemporaryContainers
         public override string ToString() => throw null;
     }
 
+    public sealed class ContainerRuntimeException : System.Exception
+    {
+        public Meziantou.Framework.TemporaryContainers.ContainerRuntime? Runtime { get => throw null; }
+        public string? Command { get => throw null; }
+        public int ExitCode { get => throw null; }
+        public string? StandardOutput { get => throw null; }
+        public string? StandardError { get => throw null; }
+        public ContainerRuntimeException(string message) { }
+        public ContainerRuntimeException(string message, System.Exception innerException) { }
+    }
+
     public enum ContainerState
     {
         Unknown = 0,

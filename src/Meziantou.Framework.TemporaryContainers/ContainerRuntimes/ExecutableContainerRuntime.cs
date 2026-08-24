@@ -223,7 +223,7 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
         {
             return await OpenReadUsingExecAsync(id, ["cat", path], cancellationToken).ConfigureAwait(false);
         }
-        catch (ProcessExecutionException)
+        catch (ContainerRuntimeException)
         {
             try
             {
@@ -235,7 +235,7 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
                     "$bytes=[System.IO.File]::ReadAllBytes('" + EscapePowerShellSingleQuotedString(path) + "'); [Console]::OpenStandardOutput().Write($bytes, 0, $bytes.Length)",
                 ], cancellationToken).ConfigureAwait(false);
             }
-            catch (ProcessExecutionException)
+            catch (ContainerRuntimeException)
             {
                 return await OpenReadUsingCopyAsync(id, path, cancellationToken).ConfigureAwait(false);
             }

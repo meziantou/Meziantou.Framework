@@ -445,6 +445,27 @@ public abstract class ContainerRuntimeTestsBase
         }
     }
 
+    [Fact]
+    public async Task FailedCommand_ReportsWhatTheRuntimeComplainedAbout()
+    {
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        var destination = Path.Combine(Path.GetTempPath(), "MezTC-missing-" + Guid.NewGuid().ToString("N"));
+        var exception = await Assert.ThrowsAsync<ContainerRuntimeException>(async () =>
+            await container.CopyFromContainerAsync(TempDirectory + "/meziantou-tc-does-not-exist", destination, XunitCancellationToken));
+
+        Assert.Equal(Runtime, exception.Runtime);
+        Assert.NotEqual(0, exception.ExitCode);
+        Assert.NotNull(exception.Command);
+
+        // The point of the exception: whatever the runtime printed has to reach the message, otherwise a CI failure
+        // is nothing but an exit code.
+        var reported = string.IsNullOrWhiteSpace(exception.StandardError) ? exception.StandardOutput : exception.StandardError;
+        Assert.False(string.IsNullOrWhiteSpace(reported), "The runtime reported neither a standard error nor a standard output.");
+        Assert.Contains(reported.Trim(), exception.Message);
+        Assert.Contains(exception.Command, exception.Message);
+    }
+
     /// <summary>Shared pause/unpause assertion for runtimes that support it (called from the relevant subclasses).</summary>
     protected async Task AssertPauseUnpauseAsync()
     {

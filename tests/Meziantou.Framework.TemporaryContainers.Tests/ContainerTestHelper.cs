@@ -32,6 +32,7 @@ internal static class ContainerTestHelper
 
     private static bool IsRuntimeFailure(Exception exception) => exception switch
     {
+        ContainerRuntimeException => true,
         ProcessExecutionException => true,
         AggregateException aggregate => aggregate.InnerExceptions.Any(IsRuntimeFailure),
         _ => false,

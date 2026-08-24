@@ -5,6 +5,40 @@ namespace Meziantou.Framework.TemporaryContainers.Tests;
 public sealed class DockerRuntimeAdapterTests
 {
     [Fact]
+    public void FormatCommand_QuotesArgumentsContainingSpaces()
+    {
+        var command = ContainerCli.FormatCommand("docker", ["create", "--name", "my container", "busybox:1.37"]);
+
+        Assert.Equal("""docker create --name "my container" busybox:1.37""", command);
+    }
+
+    [Fact]
+    public void FormatCommand_RedactsEnvironmentVariableValues()
+    {
+        var command = ContainerCli.FormatCommand("docker", ["create", "--env", "POSTGRES_PASSWORD=hunter2", "-e", "TOKEN=abc", "postgres:16"]);
+
+        Assert.Equal("docker create --env POSTGRES_PASSWORD=*** -e TOKEN=*** postgres:16", command);
+        Assert.DoesNotContain("hunter2", command);
+        Assert.DoesNotContain("abc", command);
+    }
+
+    [Fact]
+    public void FormatCommand_RedactsEnvironmentVariableWithoutValue()
+    {
+        var command = ContainerCli.FormatCommand("docker", ["create", "--env", "PATH_FROM_HOST", "busybox:1.37"]);
+
+        Assert.Equal("docker create --env *** busybox:1.37", command);
+    }
+
+    [Fact]
+    public void FormatCommand_KeepsArgumentsThatOnlyLookLikeEnvironmentVariables()
+    {
+        var command = ContainerCli.FormatCommand("docker", ["create", "--label", "owner=meziantou", "busybox:1.37"]);
+
+        Assert.Equal("docker create --label owner=meziantou busybox:1.37", command);
+    }
+
+    [Fact]
     public void DockerUsesDockerDialect()
     {
         var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);

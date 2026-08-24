@@ -1,6 +1,6 @@
 using Microsoft.CodeAnalysis;
 
-namespace Meziantou.Framework.SnapshotTesting.SourceGenerator;
+namespace Meziantou.Framework.SnapshotTesting.Roslyn;
 
 internal sealed class GeneratedSourcesSnapshotSerializer : ISnapshotSerializer
 {
@@ -54,8 +54,9 @@ internal sealed class GeneratedSourcesSnapshotSerializer : ISnapshotSerializer
                 .Append('\n');
         }
 
-        // The engine rejects an empty snapshot, so a run that generated nothing still needs a file to compare.
-        if (report.Length > 0 || files.Count == 0)
+        // Nothing to report means no file at all: an empty file would be one more snapshot to approve
+        // for every test of a generator that reports no diagnostic.
+        if (report.Length > 0)
         {
             files.Add(new SnapshotData("txt", Encoding.UTF8.GetBytes(report.ToString())));
         }

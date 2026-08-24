@@ -1,11 +1,12 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Meziantou.Framework.SnapshotTesting.SourceGenerator.Tests;
+namespace Meziantou.Framework.SnapshotTesting.Roslyn.Tests;
 
-public sealed class GeneratedSourcesSnapshotSerializerTests
+public sealed class RoslynSnapshotSerializerTests
 {
     private static readonly DiagnosticDescriptor SampleDescriptor = new("SG0001", "Sample", "Sample message '{0}'", "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true);
 
@@ -58,13 +59,18 @@ public sealed class GeneratedSourcesSnapshotSerializerTests
     }
 
     [Fact]
-    public void Serialize_EmptyRunProducesASingleEmptySnapshot()
+    public void Serialize_EmptyRunProducesNoSnapshotAtAll()
     {
-        var data = Serialize(new TestGenerator());
+        Assert.Empty(Serialize(new TestGenerator()));
+    }
 
-        var report = Assert.Single(data);
-        Assert.Equal("txt", report.Extension);
-        Assert.Empty(report.Data);
+    [Fact]
+    public void Validate_ThrowsWhenTheRunProducedNothing()
+    {
+        var settings = CreateSettings();
+        settings.AutoDetectContinuousEnvironment = false;
+
+        Assert.Throws<SnapshotException>(() => Snapshot.Validate(Run(new TestGenerator()), settings));
     }
 
     [Fact]
@@ -78,14 +84,53 @@ public sealed class GeneratedSourcesSnapshotSerializerTests
     }
 
     [Fact]
-    public void AddSourceGenerator_IsIdempotent()
+    public void AddRoslyn_IsIdempotent()
     {
         var settings = new SnapshotSettings();
         var count = settings.Serializers.Count;
-        settings.AddSourceGenerator();
-        settings.AddSourceGenerator();
+        settings.AddRoslyn();
+        settings.AddRoslyn();
 
-        Assert.Equal(count + 1, settings.Serializers.Count);
+        Assert.Equal(count + 2, settings.Serializers.Count);
+    }
+
+    [Fact]
+    public void Serialize_SyntaxTreeKeepsTheOriginalText()
+    {
+        var tree = CSharpSyntaxTree.ParseText("class Sample\r\n{\r\n    // comment\r\n}\r\n");
+        var data = CreateSettings().Serializers.Serialize(SnapshotType.Default, tree).Data;
+
+        var snapshot = Assert.Single(data);
+        Assert.Equal("cs", snapshot.Extension);
+        Assert.Equal("class Sample\n{\n    // comment\n}\n", GetText(snapshot));
+    }
+
+    [Fact]
+    public void Serialize_SyntaxNodeKeepsItsTrivia()
+    {
+        var tree = CSharpSyntaxTree.ParseText("class Sample\n{\n    // comment\n    void Method() { }\n}\n");
+        var node = tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().Single();
+        var data = CreateSettings().Serializers.Serialize(SnapshotType.Default, node).Data;
+
+        var snapshot = Assert.Single(data);
+        Assert.Equal("cs", snapshot.Extension);
+        Assert.Equal("    // comment\n    void Method() { }\n", GetText(snapshot));
+    }
+
+    [Fact]
+    public void Validate_WritesSyntaxTreeAsACSharpFile()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateSettings();
+        settings.AutoDetectContinuousEnvironment = false;
+        settings.SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure;
+        settings.SnapshotPathStrategy = context => directory / ("snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + context.Extension);
+
+        Snapshot.Validate(CSharpSyntaxTree.ParseText("class Sample;"), settings);
+
+        var file = Assert.Single(Directory.GetFiles(directory.FullPath));
+        Assert.EndsWith(".verified.cs", file);
+        Assert.Equal("class Sample;", File.ReadAllText(file));
     }
 
     [Fact]
@@ -114,7 +159,7 @@ public sealed class GeneratedSourcesSnapshotSerializerTests
     private static SnapshotSettings CreateSettings()
     {
         var settings = new SnapshotSettings();
-        settings.AddSourceGenerator();
+        settings.AddRoslyn();
         return settings;
     }
 

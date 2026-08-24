@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting.SourceGenerator/Meziantou.Framework.SnapshotTesting.SourceGenerator.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting.Roslyn/Meziantou.Framework.SnapshotTesting.Roslyn.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
   </ItemGroup>
 

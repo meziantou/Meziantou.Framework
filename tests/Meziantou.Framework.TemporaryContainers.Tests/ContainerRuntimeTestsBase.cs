@@ -445,6 +445,30 @@ public abstract class ContainerRuntimeTestsBase
         }
     }
 
+    [Fact]
+    public async Task FailedCommand_ReportsWhatTheRuntimeComplainedAbout()
+    {
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        // The source is missing on the host, so every runtime rejects the copy before it touches the container.
+        // Asking for a missing path *inside* the container is not equivalent: 'container copy' never returns for
+        // apple/container, which hangs the test host rather than failing.
+        var missingSource = Path.Combine(Path.GetTempPath(), "MezTC-missing-" + Guid.NewGuid().ToString("N"));
+        var exception = await Assert.ThrowsAsync<ContainerRuntimeException>(async () =>
+            await container.CopyToContainerAsync(missingSource, TempDirectory + "/copied.txt", XunitCancellationToken));
+
+        Assert.Equal(Runtime, exception.Runtime);
+        Assert.NotEqual(0, exception.ExitCode);
+        Assert.NotNull(exception.Command);
+
+        // The point of the exception: whatever the runtime printed has to reach the message, otherwise a CI failure
+        // is nothing but an exit code.
+        var reported = string.IsNullOrWhiteSpace(exception.StandardError) ? exception.StandardOutput : exception.StandardError;
+        Assert.False(string.IsNullOrWhiteSpace(reported), "The runtime reported neither a standard error nor a standard output.");
+        Assert.Contains(reported.Trim(), exception.Message);
+        Assert.Contains(exception.Command, exception.Message);
+    }
+
     /// <summary>Shared pause/unpause assertion for runtimes that support it (called from the relevant subclasses).</summary>
     protected async Task AssertPauseUnpauseAsync()
     {

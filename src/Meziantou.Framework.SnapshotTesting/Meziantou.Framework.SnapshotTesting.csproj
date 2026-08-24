@@ -17,6 +17,8 @@
     <None Include="common/Meziantou.Framework.SourceRootRegistration.targets" Pack="true" PackagePath="build/Meziantou.Framework.SourceRootRegistration.targets" />
     <None Include="common/Meziantou.Framework.SourceRootRegistration.targets" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.SourceRootRegistration.targets" />
     <None Include="common/Meziantou.Framework.SourceRootRegistration.targets" Pack="true" PackagePath="buildMultiTargeting/Meziantou.Framework.SourceRootRegistration.targets" />
+    <None Include="common/Meziantou.Framework.SnapshotFiles.targets" Pack="true" PackagePath="build/Meziantou.Framework.SnapshotFiles.targets" />
+    <None Include="common/Meziantou.Framework.SnapshotFiles.targets" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.SnapshotFiles.targets" />
   </ItemGroup>
 
   <ItemGroup>

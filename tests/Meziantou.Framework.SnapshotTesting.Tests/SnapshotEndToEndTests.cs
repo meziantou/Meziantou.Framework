@@ -834,6 +834,65 @@ public sealed partial class SnapshotEndToEndTests
         ]);
     }
 
+    [Fact]
+    public async Task Validate_EndToEnd_ExcludesCSharpSnapshotFilesFromCompilation()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    Snapshot.Validate("class GeneratedSnapshotTests { }", SnapshotType.Create("cs"), SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """,
+            existingFiles:
+            [
+                // Compiling those files would report CS0101 as GeneratedSnapshotTests is already defined
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.cs", "class GeneratedSnapshotTests { }"u8.ToArray()),
+                new SnapshotFile("Nested/__snapshots__/NestedSnapshot.verified.cs", "class GeneratedSnapshotTests { }"u8.ToArray()),
+            ]);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.cs", "class GeneratedSnapshotTests { }"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Build_EndToEnd_ExcludesVisualBasicSnapshotFilesFromCompilation()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
+        Assert.NotNull(dotnetPath);
+
+        var snapshotTargetsPath = GetRepositoryRoot() / "src" / "Meziantou.Framework.SnapshotTesting" / "build" / "Meziantou.Framework.SnapshotTesting.targets";
+        File.WriteAllText(directory.GetFullPath("Project.vbproj"), $"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <Import Project="{snapshotTargetsPath}" />
+              <PropertyGroup>
+                <TargetFramework>{TargetFrameworkHelper.GetTargetFrameworkMoniker()}</TargetFramework>
+                <IsPackable>false</IsPackable>
+                <SnapshotTestingGenerateSourceRoot>false</SnapshotTestingGenerateSourceRoot>
+              </PropertyGroup>
+            </Project>
+            """);
+
+        File.WriteAllText(directory.GetFullPath("Sample.vb"), """
+            Public Class Sample
+            End Class
+            """);
+
+        // Compiling this file would report BC30203 as it is not valid Visual Basic
+        var snapshotPath = directory.GetFullPath("Nested/__snapshots__/Sample_SampleTest.verified.vb");
+        snapshotPath.CreateParentDirectory();
+        File.WriteAllText(snapshotPath, "-- not valid Visual Basic --");
+
+        await ExecuteDotNetWithRetry(directory.FullPath, dotnetPath, ["build", "--disable-build-servers"], expectedExitCode: 0);
+    }
+
     private static string GetFrameworkSmokeSource(SnapshotTestFramework framework)
     {
         return framework switch

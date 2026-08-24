@@ -1,4 +1,13 @@
 <Project>
   <Import Project="$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets"
           Condition="Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets')" />
+
+  <PropertyGroup>
+    <_MeziantouSharedSnapshotFilesTargetsPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'common', 'Meziantou.Framework.SnapshotFiles.targets'))</_MeziantouSharedSnapshotFilesTargetsPath>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)Meziantou.Framework.SnapshotFiles.targets"
+          Condition="Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SnapshotFiles.targets')" />
+  <Import Project="$(_MeziantouSharedSnapshotFilesTargetsPath)"
+          Condition="!Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SnapshotFiles.targets') and Exists('$(_MeziantouSharedSnapshotFilesTargetsPath)')" />
 </Project>

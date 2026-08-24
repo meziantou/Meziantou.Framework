@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <SnapshotTestingExcludeSnapshotFilesFromCompilation Condition="'$(SnapshotTestingExcludeSnapshotFilesFromCompilation)' == ''">true</SnapshotTestingExcludeSnapshotFilesFromCompilation>
+  </PropertyGroup>
+
+  <!--
+    Snapshots stored as source files (.cs / .vb) live next to the test source files and must not be compiled with the project.
+    The removal/inclusion pair is idempotent, so importing this file more than once is harmless.
+  -->
+  <ItemGroup Condition="'$(SnapshotTestingExcludeSnapshotFilesFromCompilation)' == 'true' and '$(EnableDefaultItems)' != 'false' and '$(EnableDefaultCompileItems)' != 'false'">
+    <Compile Remove="**/__snapshots__/**/*.cs" />
+    <Compile Remove="**/__snapshots__/**/*.vb" />
+    <None Remove="**/__snapshots__/**/*.cs" />
+    <None Remove="**/__snapshots__/**/*.vb" />
+    <None Include="**/__snapshots__/**/*.cs" />
+    <None Include="**/__snapshots__/**/*.vb" />
+  </ItemGroup>
+</Project>

@@ -5,7 +5,7 @@ using Xunit.Sdk;
 
 namespace TestUtilities;
 
-public abstract class NuGetPackageFixture(string packageProjectName) : IAsyncLifetime
+public abstract class NuGetPackageFixture(string packageProjectName, params string[] dependencyProjectNames) : IAsyncLifetime
 {
     private const string PackageVersionValue = "999.0.0-local";
     private const string ConfigurationValue = "Debug";
@@ -25,12 +25,9 @@ public abstract class NuGetPackageFixture(string packageProjectName) : IAsyncLif
 
         var repositoryRoot = GetRepositoryRoot();
         DotnetSdkVersion = ReadDotnetSdkVersion(repositoryRoot / "global.json");
-        var packageProjectPath = repositoryRoot / "src" / packageProjectName / (packageProjectName + ".csproj");
 
-        await RunDotNetCommand(repositoryRoot,
+        string[] commonArguments =
         [
-            "build",
-            packageProjectPath,
             "--configuration",
             ConfigurationValue,
             "--disable-build-servers",
@@ -41,25 +38,17 @@ public abstract class NuGetPackageFixture(string packageProjectName) : IAsyncLif
             "/p:RunAnalyzers=false",
             "/p:PublicApiGeneratorGenerateOnBuild=false",
             "/p:PublicApiGeneratorVerifyNoChangeOnBuild=false",
-        ], expectedExitCode: 0);
-        await RunDotNetCommand(repositoryRoot,
-        [
-            "pack",
-            packageProjectPath,
-            "--configuration",
-            ConfigurationValue,
-            "--no-build",
-            "--disable-build-servers",
-            "-nologo",
-            "--output",
-            PackagesDirectory,
-            "/p:ArtifactsPath=" + artifactsPath,
-            "/p:Version=" + PackageVersionValue,
-            "/p:GenerateSBOM=false",
-            "/p:RunAnalyzers=false",
-            "/p:PublicApiGeneratorGenerateOnBuild=false",
-            "/p:PublicApiGeneratorVerifyNoChangeOnBuild=false",
-        ], expectedExitCode: 0);
+        ];
+
+        // Building the main project also builds the projects it references, so they can all be packed without rebuilding.
+        // The Version property applies to them too, so the packages they produce must be available to restore the main one.
+        var packageProjectPath = GetProjectPath(repositoryRoot, packageProjectName);
+        await RunDotNetCommand(repositoryRoot, ["build", packageProjectPath, .. commonArguments], expectedExitCode: 0);
+
+        foreach (var projectName in new[] { packageProjectName }.Concat(dependencyProjectNames))
+        {
+            await RunDotNetCommand(repositoryRoot, ["pack", GetProjectPath(repositoryRoot, projectName), "--no-build", .. commonArguments, "--output", PackagesDirectory], expectedExitCode: 0);
+        }
 
         PackagePath = PackagesDirectory / $"{packageProjectName}.{PackageVersionValue}.nupkg";
         if (!File.Exists(PackagePath))
@@ -69,6 +58,11 @@ public abstract class NuGetPackageFixture(string packageProjectName) : IAsyncLif
     public async ValueTask DisposeAsync()
     {
         await _temporaryDirectory.DisposeAsync();
+    }
+
+    private static FullPath GetProjectPath(FullPath repositoryRoot, string projectName)
+    {
+        return repositoryRoot / "src" / projectName / (projectName + ".csproj");
     }
 
     private static string ReadDotnetSdkVersion(FullPath globalJsonPath)

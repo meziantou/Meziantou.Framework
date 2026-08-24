@@ -58,6 +58,7 @@
     <Project Path="../tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Roslyn.PackageTests/Meziantou.Framework.Roslyn.PackageTests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.SnapshotTesting.PackageTests/Meziantou.Framework.SnapshotTesting.PackageTests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tool.Tests/Meziantou.Framework.SnapshotTesting.Tool.Tests.csproj" />

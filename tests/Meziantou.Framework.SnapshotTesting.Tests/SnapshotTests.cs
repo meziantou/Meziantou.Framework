@@ -318,7 +318,7 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
-    public void Validate_UsesSnapshotTypeExtension()
+    public void Validate_UsesSnapshotTypeExtensionWhenSerializerDoesNotProvideOne()
     {
         using var directory = TemporaryDirectory.Create();
         var snapshotType = SnapshotType.Png;
@@ -330,10 +330,31 @@ public sealed partial class SnapshotTests
             SnapshotPathStrategy = context => directory / (context.Type.Type + "_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + context.Extension),
         };
 
-        settings.Serializers.Add(new SnapshotTypeSerializer());
+        settings.Serializers.Add(new SnapshotTypeSerializer(extension: null));
         Snapshot.Validate("sample", snapshotType, settings);
 
         var filePath = directory / "png_0.verified.png";
+        Assert.True(File.Exists(filePath));
+        Assert.Equal("png", File.ReadAllText(filePath));
+    }
+
+    [Fact]
+    public void Validate_UsesSerializerExtensionWhenProvided()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var snapshotType = SnapshotType.Png;
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
+            SnapshotPathStrategy = context => directory / (context.Type.Type + "_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + context.Extension),
+        };
+
+        settings.Serializers.Add(new SnapshotTypeSerializer(extension: "cs"));
+        Snapshot.Validate("sample", snapshotType, settings);
+
+        var filePath = directory / "png_0.verified.cs";
         Assert.True(File.Exists(filePath));
         Assert.Equal("png", File.ReadAllText(filePath));
     }
@@ -1246,7 +1267,7 @@ public sealed partial class SnapshotTests
         return ImageTestData.CreateIcoWithPngEntries(CreateSingleFramePng(), CreateSingleFramePng(color: 0xFF000000u));
     }
 
-    private sealed class SnapshotTypeSerializer : ISnapshotSerializer
+    private sealed class SnapshotTypeSerializer(string? extension) : ISnapshotSerializer
     {
         public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
         {
@@ -1256,7 +1277,7 @@ public sealed partial class SnapshotTests
                 return false;
             }
 
-            result = new SerializedSnapshot([new SnapshotData("txt", Encoding.UTF8.GetBytes(type.Type))]);
+            result = new SerializedSnapshot([new SnapshotData(extension, Encoding.UTF8.GetBytes(type.Type))]);
             return true;
         }
     }

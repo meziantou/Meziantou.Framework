@@ -1,0 +1,68 @@
+using Microsoft.CodeAnalysis;
+
+namespace Meziantou.Framework.SnapshotTesting.Roslyn;
+
+internal sealed class GeneratedSourcesSnapshotSerializer : ISnapshotSerializer
+{
+    public static ISnapshotSerializer Instance { get; } = new GeneratedSourcesSnapshotSerializer();
+
+    public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
+    {
+        if (value is not GeneratorDriverRunResult run)
+        {
+            result = null;
+            return false;
+        }
+
+        var files = new List<SnapshotData>();
+
+        // Hint names are the stable order: generators run in whatever order the driver picked,
+        // and that order is not a contract.
+        foreach (var generated in run.Results
+            .SelectMany(generatorResult => generatorResult.GeneratedSources)
+            .OrderBy(generatedSource => generatedSource.HintName, StringComparer.Ordinal))
+        {
+            // The hint name goes *inside* the file too: it names what the consumer sees with
+            // EmitCompilerGeneratedFiles turned on, so a rename has to show up as a diff somewhere.
+            var source =
+                "// HintName: " + generated.HintName + "\n"
+                + generated.SourceText.ToString().ReplaceLineEndings("\n");
+
+            files.Add(new SnapshotData("cs", Encoding.UTF8.GetBytes(source)));
+        }
+
+        var report = new StringBuilder();
+        foreach (var diagnostic in run.Diagnostics
+            .OrderBy(diagnostic => diagnostic.Id, StringComparer.Ordinal)
+            .ThenBy(diagnostic => diagnostic.ToString(), StringComparer.Ordinal))
+        {
+            RoslynFormatter.AppendDiagnostic(report, diagnostic);
+            report.Append('\n');
+        }
+
+        // A generator that throws reports no diagnostic and produces no source, so without this the
+        // snapshot would be indistinguishable from a generator that decided to generate nothing.
+        foreach (var generatorResult in run.Results.OrderBy(generatorResult => generatorResult.Generator.GetGeneratorType().FullName, StringComparer.Ordinal))
+        {
+            if (generatorResult.Exception is not { } exception)
+                continue;
+
+            report.Append(generatorResult.Generator.GetGeneratorType().FullName)
+                .Append(": ")
+                .Append(exception.GetType().FullName)
+                .Append(": ")
+                .Append(exception.Message)
+                .Append('\n');
+        }
+
+        // Nothing to report means no file at all: an empty file would be one more snapshot to approve
+        // for every test of a generator that reports no diagnostic.
+        if (report.Length > 0)
+        {
+            files.Add(new SnapshotData("txt", Encoding.UTF8.GetBytes(report.ToString())));
+        }
+
+        result = new SerializedSnapshot(files);
+        return true;
+    }
+}

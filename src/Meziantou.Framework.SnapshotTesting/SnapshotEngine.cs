@@ -262,16 +262,9 @@ internal static class SnapshotEngine
 
     private static string? ResolveSnapshotExtension(SnapshotType type, SnapshotData snapshotData)
     {
-        string? extension;
-        if (type == SnapshotType.Gif || type == SnapshotType.Ico)
-        {
-            extension = string.IsNullOrWhiteSpace(snapshotData.Extension) ? type.Type : snapshotData.Extension;
-        }
-        else
-        {
-            extension = string.IsNullOrEmpty(type.Type) ? snapshotData.Extension : type.Type;
-        }
-
+        // A serializer knows the format it actually produced, which may differ from the requested type:
+        // an animated GIF is stored as PNG frames, and a source generator result as C# files.
+        var extension = string.IsNullOrWhiteSpace(snapshotData.Extension) ? type.Type : snapshotData.Extension;
         return extension?.TrimStart('.');
     }
 

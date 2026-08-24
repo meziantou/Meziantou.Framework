@@ -1,11 +1,13 @@
+using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Xml.Linq;
 using Meziantou.Framework;
 using Xunit.Sdk;
 
 namespace TestUtilities;
 
-public abstract class NuGetPackageFixture(string packageProjectName, params string[] dependencyProjectNames) : IAsyncLifetime
+public abstract class NuGetPackageFixture(string packageProjectName) : IAsyncLifetime
 {
     private const string PackageVersionValue = "999.0.0-local";
     private const string ConfigurationValue = "Debug";
@@ -41,13 +43,26 @@ public abstract class NuGetPackageFixture(string packageProjectName, params stri
         ];
 
         // Building the main project also builds the projects it references, so they can all be packed without rebuilding.
-        // The Version property applies to them too, so the packages they produce must be available to restore the main one.
-        var packageProjectPath = GetProjectPath(repositoryRoot, packageProjectName);
-        await RunDotNetCommand(repositoryRoot, ["build", packageProjectPath, .. commonArguments], expectedExitCode: 0);
+        // The Version property applies to them too, so a dependency using that version must be packed to restore the package.
+        await RunDotNetCommand(repositoryRoot, ["build", GetProjectPath(repositoryRoot, packageProjectName), .. commonArguments], expectedExitCode: 0);
 
-        foreach (var projectName in new[] { packageProjectName }.Concat(dependencyProjectNames))
+        var pendingProjectNames = new Queue<string>([packageProjectName]);
+        var packedProjectNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        while (pendingProjectNames.TryDequeue(out var projectName))
         {
-            await RunDotNetCommand(repositoryRoot, ["pack", GetProjectPath(repositoryRoot, projectName), "--no-build", .. commonArguments, "--output", PackagesDirectory], expectedExitCode: 0);
+            if (!packedProjectNames.Add(projectName))
+                continue;
+
+            var projectPath = GetProjectPath(repositoryRoot, projectName);
+            if (!File.Exists(projectPath))
+                throw new XunitException($"The package '{projectName}' is a dependency built by this repository, but '{projectPath}' does not exist.");
+
+            await RunDotNetCommand(repositoryRoot, ["pack", projectPath, "--no-build", .. commonArguments, "--output", PackagesDirectory], expectedExitCode: 0);
+
+            foreach (var dependency in GetDependenciesBuiltByThisRepository(PackagesDirectory / $"{projectName}.{PackageVersionValue}.nupkg"))
+            {
+                pendingProjectNames.Enqueue(dependency);
+            }
         }
 
         PackagePath = PackagesDirectory / $"{packageProjectName}.{PackageVersionValue}.nupkg";
@@ -58,6 +73,27 @@ public abstract class NuGetPackageFixture(string packageProjectName, params stri
     public async ValueTask DisposeAsync()
     {
         await _temporaryDirectory.DisposeAsync();
+    }
+
+    private static string[] GetDependenciesBuiltByThisRepository(FullPath packagePath)
+    {
+        using var package = ZipFile.OpenRead(packagePath);
+        var nuspecEntry = package.Entries.FirstOrDefault(entry => !entry.FullName.Contains('/', StringComparison.Ordinal) && entry.FullName.EndsWith(".nuspec", StringComparison.OrdinalIgnoreCase));
+        if (nuspecEntry is null)
+            throw new XunitException($"The package '{packagePath}' does not contain a nuspec file.");
+
+        using var stream = nuspecEntry.Open();
+        var nuspec = XDocument.Load(stream);
+
+        // Projects referenced by the packed project use the same version, so they are not available on NuGet.org
+        return nuspec.Descendants()
+            .Where(element => element.Name.LocalName is "dependency")
+            .Where(element => string.Equals((string?)element.Attribute("version"), PackageVersionValue, StringComparison.OrdinalIgnoreCase))
+            .Select(element => element.Attribute("id")?.Value)
+            .OfType<string>()
+            .Where(id => id.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     private static FullPath GetProjectPath(FullPath repositoryRoot, string projectName)

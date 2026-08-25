@@ -232,6 +232,14 @@ internal sealed partial class PowerShellParser
     {
         AccumulateStatementTrivia();
 
+        // The unary comma wraps its operand in a one-element array: `,1`.
+        if (_lexer.Current == ',')
+        {
+            var commaToken = ReadOperatorToken(ShellSyntaxKind.CommaToken, length: 1);
+
+            return new PowerShellUnaryExpressionSyntax(ShellSyntaxKind.PowerShellPrefixUnaryExpression, commaToken, ParseUnaryExpression(), postfixOperatorToken: null);
+        }
+
         if (_lexer.Current is '+' or '-' && _lexer.Peek(1) == _lexer.Current)
         {
             var incrementToken = ReadOperatorToken(ShellSyntaxKind.OperatorToken, length: 2);
@@ -277,11 +285,21 @@ internal sealed partial class PowerShellParser
 
     private ShellExpressionSyntax ParsePostfixOperators(ShellExpressionSyntax expression)
     {
+        var nullConditional = _options.Dialect.HasFeature(ShellDialectFeatures.NullCoalescing);
         while (true)
         {
-            if (_lexer.Current is '.' && (PowerShellLexer.IsNameStart(_lexer.Peek(1)) || _lexer.Peek(1) == '$'))
+            if (_lexer.Current is '.' && (PowerShellLexer.IsNameStart(_lexer.Peek(1)) || _lexer.Peek(1) is '$' or '\'' or '"'))
             {
                 var operatorToken = ReadOperatorToken(ShellSyntaxKind.DotToken, length: 1);
+                expression = ContinueMemberAccess(expression, operatorToken);
+                continue;
+            }
+
+            // `$x?.y` and `$x?[0]` only null-conditional when the `?` touches the accessor; `$x ?.y` is an error in
+            // PowerShell, and a detached `?` belongs to the ternary operator.
+            if (nullConditional && _lexer.Current == '?' && _lexer.Peek(1) == '.' && (PowerShellLexer.IsNameStart(_lexer.Peek(2)) || _lexer.Peek(2) == '$'))
+            {
+                var operatorToken = ReadOperatorToken(ShellSyntaxKind.DotToken, length: 2);
                 expression = ContinueMemberAccess(expression, operatorToken);
                 continue;
             }
@@ -293,17 +311,19 @@ internal sealed partial class PowerShellParser
                 continue;
             }
 
-            if (_lexer.Current == '[')
+            if (_lexer.Current == '[' || (nullConditional && _lexer.Current == '?' && _lexer.Peek(1) == '['))
             {
-                var openBracket = ReadOperatorToken(ShellSyntaxKind.OpenBracketToken, length: 1);
+                var openBracket = ReadOperatorToken(ShellSyntaxKind.OpenBracketToken, _lexer.Current == '?' ? 2 : 1);
                 AccumulateStatementTrivia();
                 var index = ParseArrayLiteralExpression();
                 expression = new PowerShellIndexExpressionSyntax(expression, openBracket, index, ExpectCharacter(']', ShellSyntaxKind.CloseBracketToken));
                 continue;
             }
 
-            if (_lexer.Current is '+' or '-' && _lexer.Peek(1) == _lexer.Current)
+            // `$x++` and `$x ++` are both postfix increments; the whitespace becomes the operator's leading trivia.
+            if (IsAtPostfixIncrement())
             {
+                AccumulateInlineTrivia();
                 var operatorToken = ReadOperatorToken(ShellSyntaxKind.OperatorToken, length: 2);
                 expression = new PowerShellUnaryExpressionSyntax(ShellSyntaxKind.PowerShellPostfixUnaryExpression, prefixOperatorToken: null, expression, operatorToken);
                 continue;
@@ -311,6 +331,19 @@ internal sealed partial class PowerShellParser
 
             return expression;
         }
+    }
+
+    /// <summary>Returns whether a <c>++</c> or <c>--</c> follows, possibly after inline whitespace.</summary>
+    private bool IsAtPostfixIncrement()
+    {
+        var text = _lexer.Text;
+        var scan = _lexer.Position;
+        while (scan < text.Length && text[scan] is ' ' or '\t')
+        {
+            scan++;
+        }
+
+        return scan + 1 < text.Length && text[scan] is '+' or '-' && text[scan + 1] == text[scan];
     }
 
     private ShellExpressionSyntax ContinueMemberAccess(ShellExpressionSyntax target, ShellSyntaxToken operatorToken)
@@ -355,12 +388,33 @@ internal sealed partial class PowerShellParser
         var text = _lexer.Text;
         var start = _lexer.Position;
         var scan = start;
-        if (scan < text.Length && text[scan] == '$')
+
+        // A member name may be quoted when it is not a valid identifier, as in `$xml.results.'test-case'`.
+        if (scan < text.Length && text[scan] is '\'' or '"')
+        {
+            var quote = text[scan];
+            scan++;
+            while (scan < text.Length && text[scan] != quote)
+            {
+                scan++;
+            }
+
+            if (scan < text.Length)
+            {
+                scan++;
+            }
+
+            return ReadOperatorToken(ShellSyntaxKind.GenericToken, scan - start);
+        }
+
+        // A member name given by a variable keeps its scope prefix, as in `$info.$script:Version`.
+        var variable = scan < text.Length && text[scan] == '$';
+        if (variable)
         {
             scan++;
         }
 
-        while (scan < text.Length && PowerShellLexer.IsNameCharacter(text[scan]))
+        while (scan < text.Length && (variable ? PowerShellLexer.IsVariableNameCharacter(text[scan]) : PowerShellLexer.IsNameCharacter(text[scan])))
         {
             scan++;
         }
@@ -449,10 +503,13 @@ internal sealed partial class PowerShellParser
             }
 
             var positionBefore = _lexer.Position;
-            var key = ParsePrimaryExpression();
+
+            // A key may be any simple expression, as in `@{ $parameter.Name = $parameter.Value }`, and a value may be
+            // an array or a whole pipeline, as in `@{ Names = $items | Sort-Object }`.
+            var key = ParsePostfixExpression();
             var equalsToken = ExpectCharacter('=', ShellSyntaxKind.EqualsToken);
             AccumulateStatementTrivia();
-            ShellSyntaxNode value = IsExpressionStart() ? ParseTernaryExpression() : ParseCommand();
+            var value = ParseClause(ParseArrayLiteralExpression);
 
             AccumulateInlineTrivia();
             var separator = _lexer.Current == ';' ? ReadOperatorToken(ShellSyntaxKind.SemicolonToken, length: 1) : null;
@@ -497,6 +554,12 @@ internal sealed partial class PowerShellParser
             {
                 _lexer.Position++;
             }
+
+            // An automatic variable keeps its scope prefix, as in `$global:?`.
+            if (!_lexer.IsAtEnd && _lexer.Current is '?' or '^' && _lexer.Peek(-1) == ':')
+            {
+                _lexer.Position++;
+            }
         }
         else if (!_lexer.IsAtEnd && _lexer.Current is '?' or '^' or '$' or '_')
         {
@@ -512,7 +575,7 @@ internal sealed partial class PowerShellParser
     private PowerShellTypeLiteralSyntax ParseTypeLiteral()
     {
         var openBracket = ExpectCharacter('[', ShellSyntaxKind.OpenBracketToken);
-        var nameToken = ReadTypeNameToken();
+        var nameToken = ReadTypeNameToken(includeArgumentList: true, insideBrackets: true);
 
         return new PowerShellTypeLiteralSyntax(openBracket, nameToken, ExpectCharacter(']', ShellSyntaxKind.CloseBracketToken));
     }
@@ -670,17 +733,8 @@ internal sealed partial class PowerShellParser
         var openToken = _lexer.CreateToken(ShellSyntaxKind.HereStringStartToken, start, trivia, fullStart);
 
         var bodyStart = _lexer.Position;
-        var closeStart = -1;
-        while (!_lexer.IsAtEnd)
-        {
-            if (_lexer.Current == quote && _lexer.Peek(1) == '@' && IsAtLineStart(_lexer.Position))
-            {
-                closeStart = _lexer.Position;
-                break;
-            }
-
-            _lexer.Position++;
-        }
+        var closeStart = FindHereStringTerminator(bodyStart, quote, depth: 0);
+        _lexer.Position = closeStart < 0 ? _lexer.Text.Length : closeStart;
 
         if (closeStart < 0)
         {
@@ -745,6 +799,120 @@ internal sealed partial class PowerShellParser
         var previous = _lexer.Text[position - 1];
 
         return previous is '\n' or '\r';
+    }
+
+    /// <summary>
+    /// Returns the index of the <c>"@</c> that ends a here-string body, or <c>-1</c> when there is none. An expandable
+    /// here-string may embed a <c>$( … )</c> that itself contains a here-string, and the inner terminator must not be
+    /// mistaken for the outer one.
+    /// </summary>
+    private int FindHereStringTerminator(int index, char quote, int depth)
+    {
+        var text = _lexer.Text;
+        var expandable = quote == '"';
+        while (index < text.Length)
+        {
+            if (text[index] == quote && index + 1 < text.Length && text[index + 1] == '@' && IsAtLineStart(index))
+                return index;
+
+            if (expandable && depth < _options.MaxRecursionDepth && text[index] == '$' && index + 1 < text.Length && text[index + 1] == '(')
+            {
+                index = SkipSubexpression(index + 1, depth + 1);
+                continue;
+            }
+
+            index++;
+        }
+
+        return -1;
+    }
+
+    /// <summary>Returns the index just past the <c>( … )</c> that starts at <paramref name="index"/>.</summary>
+    private int SkipSubexpression(int index, int depth)
+    {
+        var text = _lexer.Text;
+        var parenDepth = 0;
+        while (index < text.Length)
+        {
+            var current = text[index];
+            if (current == '`')
+            {
+                index += 2;
+                continue;
+            }
+
+            if (current == '(')
+            {
+                parenDepth++;
+            }
+            else if (current == ')')
+            {
+                parenDepth--;
+                if (parenDepth == 0)
+                    return index + 1;
+            }
+            else if (current == '@' && index + 1 < text.Length && text[index + 1] is '"' or '\'' && IsHereStringOpenAt(index))
+            {
+                var innerQuote = text[index + 1];
+                var terminator = depth < _options.MaxRecursionDepth ? FindHereStringTerminator(index + 2, innerQuote, depth + 1) : -1;
+                index = terminator < 0 ? text.Length : terminator + 2;
+                continue;
+            }
+            else if (current is '\'' or '"')
+            {
+                index = SkipQuotedString(index);
+                continue;
+            }
+
+            index++;
+        }
+
+        return index;
+    }
+
+    /// <summary>Returns the index just past the single-line quoted string that starts at <paramref name="index"/>.</summary>
+    private int SkipQuotedString(int index)
+    {
+        var text = _lexer.Text;
+        var quote = text[index];
+        index++;
+        while (index < text.Length)
+        {
+            if (quote == '"' && text[index] == '`')
+            {
+                index += 2;
+                continue;
+            }
+
+            if (text[index] == quote)
+            {
+                // A doubled quote is an escaped quote, not the end of the string.
+                if (index + 1 < text.Length && text[index + 1] == quote)
+                {
+                    index += 2;
+                    continue;
+                }
+
+                return index + 1;
+            }
+
+            index++;
+        }
+
+        return index;
+    }
+
+    /// <summary>Returns whether the <c>@"</c> at <paramref name="index"/> opens a here-string rather than a splat.</summary>
+    private bool IsHereStringOpenAt(int index)
+    {
+        var text = _lexer.Text;
+        var scan = index + 2;
+        while (scan < text.Length && text[scan] is ' ' or '\t')
+        {
+            scan++;
+        }
+
+        return scan >= text.Length || SourceText.GetLineBreakLength(text, scan) > 0;
     }
 
     private ShellSyntaxToken ConsumeRestAsToken()

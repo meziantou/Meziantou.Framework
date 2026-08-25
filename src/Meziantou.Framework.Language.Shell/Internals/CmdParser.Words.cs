@@ -38,7 +38,8 @@ internal sealed partial class CmdParser
 
         while (!IsAtEnd && GetLineBreakLength(_position) == 0)
         {
-            if (!inQuotes && Current is '&' or '|')
+            // `if 1==1 (set N=5)` assigns `5`; at the top level `set N=5)` assigns `5)`, parenthesis included.
+            if (!inQuotes && (Current is '&' or '|' || (Current == ')' && _stopAtCloseParen)))
                 break;
 
             var (trivia, fullStart) = isFirst ? TakeTrivia() : ([], _position);
@@ -76,7 +77,7 @@ internal sealed partial class CmdParser
         while (!IsAtEnd
             && GetLineBreakLength(_position) == 0
             && Current is not '"' and not '^' and not '%' and not '!'
-            && (inQuotes || Current is not ('&' or '|')))
+            && (inQuotes || (Current is not ('&' or '|') && !(Current == ')' && _stopAtCloseParen))))
         {
             _position++;
         }
@@ -146,6 +147,12 @@ internal sealed partial class CmdParser
         if (IsAtEnd)
         {
             value = "^";
+        }
+        else if (GetLineBreakLength(_position) is var lineBreakLength && lineBreakLength > 0)
+        {
+            // A caret escaping a line break joins the two lines, so `echo a^` followed by `b` echoes `ab`.
+            _position += lineBreakLength;
+            value = string.Empty;
         }
         else
         {
@@ -395,19 +402,32 @@ internal sealed partial class CmdParser
         }
     }
 
-    /// <summary>A <c>REM</c> comment runs to the end of the line and must be followed by a separator.</summary>
+    /// <summary>
+    /// A <c>REM</c> comment runs to the end of the line and must be followed by a separator. A leading <c>@</c> only
+    /// suppresses echoing, so <c>@rem</c> is a comment too.
+    /// </summary>
     private bool IsRemComment()
     {
         if (!IsAtStatementStart(_position))
             return false;
 
-        if (_position + 3 > _text.Length)
+        var scan = _position;
+        if (scan < _text.Length && _text[scan] == '@')
+        {
+            scan++;
+            while (scan < _text.Length && _text[scan] is ' ' or '\t')
+            {
+                scan++;
+            }
+        }
+
+        if (scan + 3 > _text.Length)
             return false;
 
-        if (!_text.AsSpan(_position, 3).Equals("rem", StringComparison.OrdinalIgnoreCase))
+        if (!_text.AsSpan(scan, 3).Equals("rem", StringComparison.OrdinalIgnoreCase))
             return false;
 
-        var next = Peek(3);
+        var next = scan + 3 < _text.Length ? _text[scan + 3] : '\0';
 
         return next is '\0' or ' ' or '\t' or '\r' or '\n';
     }
@@ -579,8 +599,13 @@ internal sealed partial class CmdParser
 
     private int GetLineBreakLength(int position) => position < _text.Length ? SourceText.GetLineBreakLength(_text, position) : 0;
 
-    private static bool IsWordBoundary(char value) =>
-        value is '\0' or ' ' or '\t' or '\r' or '\n' or '&' or '|' or '<' or '>' or '(' or ')';
+    /// <summary>
+    /// Characters that end a word. <c>(</c> is not among them: it only opens a block at the start of a command, so
+    /// <c>echo a(b</c> is a single word. <c>)</c> ends a word only inside a block or a <c>for</c> item list.
+    /// </summary>
+    private bool IsWordBoundary(char value) =>
+        value is '\0' or ' ' or '\t' or '\r' or '\n' or '&' or '|' or '<' or '>'
+        || (value == ')' && _stopAtCloseParen);
 
     private static bool IsNameCharacter(char value) => char.IsLetterOrDigit(value) || value == '_';
 }

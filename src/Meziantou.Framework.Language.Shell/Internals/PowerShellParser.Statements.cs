@@ -60,13 +60,32 @@ internal sealed partial class PowerShellParser
     }
 
     /// <summary>Reads one clause of a <c>for</c> header, which may be empty.</summary>
-    private ShellExpressionSyntax? ParseOptionalClauseExpression()
+    private ShellSyntaxNode? ParseOptionalClauseExpression()
     {
         AccumulateStatementTrivia();
         if (_lexer.IsAtEnd || _lexer.Current is ';' or ')')
             return null;
 
-        return ParseExpression();
+        return ParseClause();
+    }
+
+    /// <summary>
+    /// Reads one loop clause. A clause is usually an expression, but PowerShell also accepts a pipeline there, as in
+    /// <c>for ($i = 0; Test-Path $p; $i++)</c> or <c>foreach ($x in Get-ChildItem -Directory)</c>.
+    /// </summary>
+    private ShellSyntaxNode ParseClause() => ParseClause(ParseExpression);
+
+    private ShellSyntaxNode ParseClause(Func<ShellExpressionSyntax> parseExpression)
+    {
+        if (!IsExpressionStart())
+            return ParsePipeline();
+
+        var expression = parseExpression();
+        AccumulateInlineTrivia();
+
+        return _lexer.Current == '|' && _lexer.Peek(1) != '|'
+            ? ContinuePipeline(new PowerShellExpressionStatementSyntax(expression, []))
+            : expression;
     }
 
     private PowerShellForEachStatementSyntax ParseForEachStatement()
@@ -77,7 +96,7 @@ internal sealed partial class PowerShellParser
         var variable = ParseVariableExpression();
         var inKeyword = ExpectKeyword("in");
         AccumulateStatementTrivia();
-        var collection = ParseExpression();
+        var collection = ParseClause();
         var closeParen = ExpectCharacter(')', ShellSyntaxKind.CloseParenToken);
 
         return new PowerShellForEachStatementSyntax(forEachKeyword, openParen, variable, inKeyword, collection, closeParen, ParseScriptBlock());
@@ -289,7 +308,7 @@ internal sealed partial class PowerShellParser
     private PowerShellAttributeSyntax ParseAttribute()
     {
         var openBracket = ReadOperatorToken(ShellSyntaxKind.OpenBracketToken, length: 1);
-        var nameToken = ReadTypeNameToken();
+        var nameToken = ReadTypeNameToken(insideBrackets: true);
 
         ShellSyntaxToken? openParen = null;
         ShellSyntaxToken? closeParen = null;
@@ -409,7 +428,24 @@ internal sealed partial class PowerShellParser
             && SourceText.GetLineBreakLength(_lexer.Text, _lexer.Position) == 0
             && _lexer.Current is not ';' and not '}' and not ')' and not '|')
         {
-            value = IsExpressionStart() ? ParseExpression() : ParseCommandWord();
+            // `break` and `continue` take a label, but `return`, `throw`, and `exit` take a whole pipeline, which is
+            // why `return $x | Where-Object { $_ }` returns the piped result rather than piping the return statement.
+            if (kind is ShellSyntaxKind.PowerShellBreakStatement or ShellSyntaxKind.PowerShellContinueStatement)
+            {
+                value = IsExpressionStart() ? ParseExpression() : ParseCommandWord();
+            }
+            else if (IsExpressionStart())
+            {
+                var expression = ParseExpression();
+                AccumulateInlineTrivia();
+                value = _lexer.Current == '|' && _lexer.Peek(1) != '|'
+                    ? ContinuePipeline(new PowerShellExpressionStatementSyntax(expression, []))
+                    : expression;
+            }
+            else
+            {
+                value = ParsePipeline();
+            }
         }
 
         return new PowerShellFlowStatementSyntax(kind, keyword, value);
@@ -623,7 +659,16 @@ internal sealed partial class PowerShellParser
     }
 
     /// <summary>Reads a type name, which may contain dots, generics, and array suffixes.</summary>
-    private ShellSyntaxToken ReadTypeNameToken()
+    /// <param name="includeArgumentList">
+    /// When set, an attribute argument list is read as part of the name, so that <c>[ValidateRange(1, 5)]$x</c> is one
+    /// type literal instead of an unterminated one. Attribute positions parse the argument list separately instead.
+    /// </param>
+    /// <param name="insideBrackets">
+    /// When set, the name runs to the closing bracket, so an assembly-qualified name such as
+    /// <c>[Some.Type, Some.Assembly]</c> is not cut short at the comma. A line break still ends it, so an unterminated
+    /// bracket cannot swallow the rest of the file.
+    /// </param>
+    private ShellSyntaxToken ReadTypeNameToken(bool includeArgumentList = false, bool insideBrackets = false)
     {
         AccumulateInlineTrivia();
         var text = _lexer.Text;
@@ -644,12 +689,33 @@ internal sealed partial class PowerShellParser
 
                 depth--;
             }
-            else if (depth == 0 && (current is '(' or ',' || char.IsWhiteSpace(current)))
+            else if (depth == 0 && current == '(')
+            {
+                if (!includeArgumentList)
+                    break;
+
+                scan = SkipBalancedParentheses(text, scan);
+                continue;
+            }
+            else if (depth == 0 && SourceText.GetLineBreakLength(text, scan) > 0)
+            {
+                break;
+            }
+            else if (depth == 0 && !insideBrackets && (current is ',' || char.IsWhiteSpace(current)))
             {
                 break;
             }
 
             scan++;
+        }
+
+        if (insideBrackets)
+        {
+            // Trailing whitespace belongs to the following token, not to the name.
+            while (scan > start && char.IsWhiteSpace(text[scan - 1]))
+            {
+                scan--;
+            }
         }
 
         if (scan == start)
@@ -660,6 +726,42 @@ internal sealed partial class PowerShellParser
         }
 
         return ReadOperatorToken(ShellSyntaxKind.GenericToken, scan - start);
+    }
+
+    /// <summary>Returns the index just past the parenthesized group that starts at <paramref name="index"/>.</summary>
+    private static int SkipBalancedParentheses(string text, int index)
+    {
+        var depth = 0;
+        var quote = '\0';
+        while (index < text.Length)
+        {
+            var current = text[index];
+            if (quote != '\0')
+            {
+                if (current == quote)
+                {
+                    quote = '\0';
+                }
+            }
+            else if (current is '\'' or '"')
+            {
+                quote = current;
+            }
+            else if (current == '(')
+            {
+                depth++;
+            }
+            else if (current == ')')
+            {
+                depth--;
+                if (depth == 0)
+                    return index + 1;
+            }
+
+            index++;
+        }
+
+        return index;
     }
 
     private ShellSyntaxToken ReadParameterToken()

@@ -255,6 +255,9 @@ public sealed class ShellRoundTripFuzzTests
 
             Assert.Equal(prefix, ShellSyntaxTree.ParseText(prefix, ShellDialect.PowerShellCore).Root.ToFullString());
         }
+
+        // pwsh 7 parses the whole script without an error, so neither should this parser.
+        Assert.Empty(ShellSyntaxTree.ParseText(Script, ShellDialect.PowerShellCore).Diagnostics);
     }
 
     private static readonly string[] CmdFragments =
@@ -349,6 +352,9 @@ public sealed class ShellRoundTripFuzzTests
 
             Assert.Equal(prefix, ShellSyntaxTree.ParseText(prefix, ShellDialect.Cmd).Root.ToFullString());
         }
+
+        // cmd.exe runs this script, so a diagnostic on the whole text would be a false positive.
+        Assert.Empty(ShellSyntaxTree.ParseText(Script, ShellDialect.Cmd).Diagnostics);
     }
 
     /// <summary>

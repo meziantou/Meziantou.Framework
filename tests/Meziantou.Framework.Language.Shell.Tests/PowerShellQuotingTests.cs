@@ -420,4 +420,133 @@ public sealed class PowerShellQuotingTests
         Assert.Empty(tree.Diagnostics);
         Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellIndexExpressionSyntax>());
     }
+
+    // The expectations below were produced by passing the same argument text to a pwsh 7 function and comparing the
+    // UTF-8 bytes of `$args[0]`, so they record what PowerShell actually hands to a command.
+
+    [Theory]
+    // Backtick escapes recognized by name.
+    [InlineData("\"a`ab\"", "a\ab")]
+    [InlineData("\"a`bb\"", "a\bb")]
+    [InlineData("\"a`fb\"", "a\fb")]
+    [InlineData("\"a`vb\"", "a\vb")]
+    [InlineData("\"a`eb\"", "a\u001bb")]
+    // An unrecognized escape drops the backtick and keeps the character.
+    [InlineData("\"a`zb\"", "azb")]
+    [InlineData("\"a`_b\"", "a_b")]
+    [InlineData("\"a` b\"", "a b")]
+    [InlineData("\"a`'b\"", "a'b")]
+    [InlineData("\"a`#b\"", "a#b")]
+    [InlineData("\"a`(b\"", "a(b")]
+    // Characters that are only special outside a string.
+    [InlineData("\"a#b\"", "a#b")]
+    [InlineData("\"100%\"", "100%")]
+    [InlineData("\"[a]\"", "[a]")]
+    [InlineData("\"{a}\"", "{a}")]
+    [InlineData("\"a@b\"", "a@b")]
+    public void ExpandableString_MatchesPwshByteForByte(string argumentText, string expected)
+    {
+        Assert.Equal(expected, FirstArgument(argumentText).Value);
+    }
+
+    [Theory]
+    // A bare argument keeps characters that other shells would treat as syntax.
+    [InlineData("a-b", "a-b")]
+    [InlineData("a.b", "a.b")]
+    [InlineData("a/b", "a/b")]
+    [InlineData("a\\b", "a\\b")]
+    [InlineData("C:\\path\\to\\file", "C:\\path\\to\\file")]
+    [InlineData("--flag", "--flag")]
+    [InlineData("/flag", "/flag")]
+    [InlineData("a=b", "a=b")]
+    [InlineData("a:b", "a:b")]
+    [InlineData("a+b", "a+b")]
+    [InlineData("a*b", "a*b")]
+    [InlineData("a?b", "a?b")]
+    [InlineData("a[0]", "a[0]")]
+    [InlineData("a#b", "a#b")]
+    [InlineData("a%b", "a%b")]
+    [InlineData("a!b", "a!b")]
+    [InlineData("a~b", "a~b")]
+    [InlineData("a^b", "a^b")]
+    [InlineData("0x10", "0x10")]
+    // A quote that is not the first character keeps the argument going.
+    [InlineData("a'b'c", "abc")]
+    [InlineData("a\"b\"c", "abc")]
+    [InlineData("prefix\"post\"", "prefixpost")]
+    [InlineData("a'b'", "ab")]
+    // A backtick escapes inside a bare argument too.
+    [InlineData("a`nb", "a\nb")]
+    [InlineData("a``b", "a`b")]
+    [InlineData("a` b", "a b")]
+    [InlineData("a`$b", "a$b")]
+    public void BareArgument_MatchesPwshByteForByte(string argumentText, string expected)
+    {
+        Assert.Equal(expected, FirstArgument(argumentText).Value);
+    }
+
+    [Theory]
+    [InlineData("Write-Output 'a'b", "a", "b")]
+    [InlineData("Write-Output \"a\"b", "a", "b")]
+    [InlineData("Write-Output 'a b'c", "a b", "c")]
+    [InlineData("Write-Output \"pre\"suffix", "pre", "suffix")]
+    [InlineData("Write-Output 'a'\"b\"", "a", "b")]
+    [InlineData("Write-Output \"a\"'b'", "a", "b")]
+    public void AQuoteThatOpensAnArgumentAlsoClosesIt(string text, string first, string second)
+    {
+        // PowerShell ends a quoted argument at its closing quote, so what follows starts a new argument. A quote in
+        // the middle of a bare argument does not, which is why `a'b'c` is the single argument `abc`.
+        var command = Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand(text, ShellDialect.PowerShellCore));
+
+        Assert.Equal([first, second], command.Arguments.Select(argument => argument.Value));
+    }
+
+    [Theory]
+    [InlineData("Write-Output a,b", "a,b")]
+    [InlineData("Write-Output 'a','b'", "'a','b'")]
+    [InlineData("Write-Output $a,$b", "$a,$b")]
+    public void ACommaKeepsTheArgumentGoing(string text, string expectedArgumentText)
+    {
+        // `a,b` is one command element in PowerShell: an array built from the two values around the comma.
+        var command = Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand(text, ShellDialect.PowerShellCore));
+        var argument = Assert.Single(command.Arguments);
+
+        Assert.Equal(expectedArgumentText, argument.ToFullString().TrimStart());
+    }
+
+    [Fact]
+    public void ALoneDollarIsLiteralText()
+    {
+        // `$` only starts a variable when a name follows it.
+        Assert.Equal("$", FirstArgument("$").Value);
+        Assert.Equal("a$", FirstArgument("a$").Value);
+        Assert.Empty(FirstArgument("$").DescendantNodes().OfType<PowerShellVariableExpressionSyntax>());
+    }
+
+    [Theory]
+    [InlineData("$x")]
+    [InlineData("$_")]
+    [InlineData("$?")]
+    [InlineData("$$")]
+    [InlineData("${name}")]
+    [InlineData("$env:PATH")]
+    public void ADollarFollowedByANameIsAVariable(string argumentText)
+    {
+        var word = FirstArgument(argumentText);
+
+        Assert.Null(word.Value);
+        Assert.Single(word.DescendantNodes().OfType<PowerShellVariableExpressionSyntax>());
+    }
+
+    [Theory]
+    [InlineData("'plain'", "plain")]
+    [InlineData("'  spaced  '", "  spaced  ")]
+    [InlineData("'a`u{41}b'", "a`u{41}b")]
+    [InlineData("'#not a comment'", "#not a comment")]
+    [InlineData("'a;b'", "a;b")]
+    [InlineData("'-notAnOperator'", "-notAnOperator")]
+    public void VerbatimString_KeepsEverything(string argumentText, string expected)
+    {
+        Assert.Equal(expected, FirstArgument(argumentText).Value);
+    }
 }

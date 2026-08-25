@@ -92,6 +92,23 @@ public sealed class PowerShellParserTests
         "}",
         ")",
         ";;",
+        // Shapes taken from scripts shipped with Windows and with the modules installed alongside it.
+        "foreach ($d in Get-ChildItem -Path $p -Directory) { $d }",
+        "foreach ($d in Get-ChildItem | Sort-Object) { $d }",
+        "for ($i = 0; Test-Path $p; $i++) { $i }",
+        "return $x | Where-Object { $_ }",
+        "return Get-Item -Path x",
+        "throw New-Object System.Exception",
+        "$count ++",
+        "$x = ,1",
+        "$x = @{ $parameter.Name = $parameter.Value }",
+        "$x = @{ Names = $items | Sort-Object }",
+        "$x = @{ ids = $a, $b, $c }",
+        "$x = $xml.results.'test-case'",
+        "$x = $info.$script:Version",
+        "$x = [int]!$global:?",
+        "[Type, Assembly]$x = $y",
+        "$x = @\"\nouter $(if ($true)\n{\n@\"\ninner\n\"@\n})\n\"@\n",
     ];
 
     public static TheoryData<string> CoreOnlySamples =>
@@ -373,5 +390,327 @@ public sealed class PowerShellParserTests
 
         Assert.NotEmpty(tree.Diagnostics);
         Assert.Equal("if ($a) {", tree.Root.ToFullString());
+    }
+
+    // Every input below was run through `[System.Management.Automation.Language.Parser]::ParseInput` on pwsh 7 and
+    // reported no error, so a diagnostic here would be a false positive.
+
+    [Theory]
+    // Loop clauses accept a command or a pipeline where an expression would also fit.
+    [InlineData("foreach ($d in Get-ChildItem -Path $p -Directory) { $d }")]
+    [InlineData("foreach ($d in Get-ChildItem | Sort-Object) { $d }")]
+    [InlineData("foreach ($d in (Get-ChildItem)) { $d }")]
+    [InlineData("for ($i = 0; Test-Path $p; $i++) { $i }")]
+    [InlineData("while (Test-Path $p) { break }")]
+    // `return`, `throw`, and `exit` take a whole pipeline.
+    [InlineData("return $x | Where-Object { $_ }")]
+    [InlineData("return Get-Item -Path x")]
+    [InlineData("throw New-Object System.Exception")]
+    [InlineData("exit $LASTEXITCODE")]
+    // Increment and decrement may be separated from their operand by spaces.
+    [InlineData("$count ++")]
+    [InlineData("$count --")]
+    [InlineData("$a.b ++")]
+    [InlineData("$a[0] ++")]
+    // Null-conditional access, added in PowerShell 7.
+    [InlineData("$x = $y?.z")]
+    [InlineData("$x = $y?.z()")]
+    [InlineData("$x = $y?[0]")]
+    // Attributes carrying arguments in front of an assignment.
+    [InlineData("[ValidateNotNull()]$x = 1")]
+    [InlineData("[ValidateRange(1, 5)][int]$x = 1")]
+    [InlineData("[Parameter()][string]$x = 'a'")]
+    [InlineData("[ValidateSet('a', 'b')][string]$x = 'a'")]
+    // Assembly-qualified type names keep the comma that separates type from assembly.
+    [InlineData("[Some.Name.Space.Type, Some.Assembly]$x = $y")]
+    [InlineData("function f { param([Some.Type, Some.Assembly]$x) }")]
+    // Hash literals take expression keys, array values, and pipeline values.
+    [InlineData("$x = @{ $parameter.Name = $parameter.Value }")]
+    [InlineData("$x = @{ $global:state.Id = $global:state }")]
+    [InlineData("$x = @{ Names = $items | Sort-Object }")]
+    [InlineData("$x = @{ ids = $a, $b, $c }")]
+    [InlineData("$x = @{ a = 1; b = 2 }")]
+    // Member names may be quoted or given by a scoped variable.
+    [InlineData("$x = $xml.results.'test-case'")]
+    [InlineData("$x = $xml.results.\"test-case\"")]
+    [InlineData("$x = $info.$script:Version")]
+    [InlineData("$x = $info.$name")]
+    // Automatic variables keep their scope prefix.
+    [InlineData("$x = [int]!$global:?")]
+    [InlineData("$x = $global:^")]
+    // The unary comma builds a one-element array.
+    [InlineData("$x = ,1")]
+    [InlineData(",1")]
+    [InlineData("$x = ,$y")]
+    public void ConstructsAcceptedByPowerShell_ParseWithoutDiagnostics(string text)
+    {
+        var tree = ShellSyntaxTree.ParseText(text, ShellDialect.PowerShellCore);
+
+        Assert.Empty(tree.Diagnostics);
+        Assert.Equal(text, tree.Root.ToFullString());
+    }
+
+    [Fact]
+    public void ForEachOverACommand_KeepsTheCommandAsTheCollection()
+    {
+        var statement = Assert.IsType<PowerShellForEachStatementSyntax>(
+            ShellSyntaxTree.ParseCommand("foreach ($d in Get-ChildItem -Directory) { $d }", ShellDialect.PowerShellCore));
+
+        var command = Assert.IsType<ShellCommandSyntax>(statement.Collection);
+        Assert.Equal("Get-ChildItem", command.NameValue);
+    }
+
+    [Fact]
+    public void ForEachOverAPipeline_KeepsThePipelineAsTheCollection()
+    {
+        var statement = Assert.IsType<PowerShellForEachStatementSyntax>(
+            ShellSyntaxTree.ParseCommand("foreach ($d in Get-ChildItem | Sort-Object) { $d }", ShellDialect.PowerShellCore));
+
+        Assert.HasCount(2, Assert.IsType<ShellPipelineSyntax>(statement.Collection).Commands);
+    }
+
+    [Fact]
+    public void ForConditionMayBeACommand()
+    {
+        var statement = Assert.IsType<PowerShellForStatementSyntax>(
+            ShellSyntaxTree.ParseCommand("for ($i = 0; Test-Path $p; $i++) { $i }", ShellDialect.PowerShellCore));
+
+        Assert.Equal("Test-Path", Assert.IsType<ShellCommandSyntax>(statement.Condition).NameValue);
+        Assert.IsType<PowerShellAssignmentExpressionSyntax>(statement.Initializer);
+    }
+
+    [Fact]
+    public void ReturnTakesTheWholeCommand()
+    {
+        var tree = ShellSyntaxTree.ParseText("return Get-Item -Path x", ShellDialect.PowerShellCore);
+        var statement = Assert.IsType<PowerShellFlowStatementSyntax>(Assert.Single(tree.Root.Statements.Statements));
+
+        var command = Assert.IsType<ShellCommandSyntax>(statement.Value);
+        Assert.Equal("Get-Item", command.NameValue);
+        Assert.HasCount(2, command.Arguments);
+    }
+
+    [Fact]
+    public void ReturnTakesTheWholePipeline()
+    {
+        var tree = ShellSyntaxTree.ParseText("return $x | Where-Object { $_ }", ShellDialect.PowerShellCore);
+        var statement = Assert.IsType<PowerShellFlowStatementSyntax>(Assert.Single(tree.Root.Statements.Statements));
+
+        Assert.HasCount(2, Assert.IsType<ShellPipelineSyntax>(statement.Value).Commands);
+    }
+
+    [Fact]
+    public void ReturnWithAPlainExpression_KeepsTheExpressionUnwrapped()
+    {
+        var tree = ShellSyntaxTree.ParseText("return $x", ShellDialect.PowerShellCore);
+        var statement = Assert.IsType<PowerShellFlowStatementSyntax>(Assert.Single(tree.Root.Statements.Statements));
+
+        Assert.IsType<PowerShellVariableExpressionSyntax>(statement.Value);
+    }
+
+    [Theory]
+    [InlineData("break outer")]
+    [InlineData("continue outer")]
+    public void BreakAndContinueTakeALabelRatherThanACommand(string text)
+    {
+        var statement = Assert.IsType<PowerShellFlowStatementSyntax>(ShellSyntaxTree.ParseCommand(text, ShellDialect.PowerShellCore));
+
+        Assert.Equal("outer", Assert.IsType<ShellWordSyntax>(statement.Value).Value);
+    }
+
+    [Theory]
+    [InlineData("$count++")]
+    [InlineData("$count ++")]
+    [InlineData("$count\t++")]
+    public void PostfixIncrement_AllowsWhitespaceBeforeTheOperator(string text)
+    {
+        var tree = ShellSyntaxTree.ParseText(text, ShellDialect.PowerShellCore);
+        var unary = Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellUnaryExpressionSyntax>());
+
+        Assert.Equal(ShellSyntaxKind.PowerShellPostfixUnaryExpression, unary.Kind);
+        Assert.Equal("++", unary.PostfixOperatorToken?.Text);
+        Assert.Equal(text, tree.Root.ToFullString());
+    }
+
+    [Fact]
+    public void IncrementOnTheNextLine_IsNotAPostfixOperator()
+    {
+        var tree = ShellSyntaxTree.ParseText("$count\n++$other", ShellDialect.PowerShellCore);
+
+        Assert.HasCount(2, tree.Root.Statements.Statements);
+    }
+
+    [Theory]
+    [InlineData("$x = $y?.z", "?.")]
+    [InlineData("$x = $y.z", ".")]
+    public void NullConditionalMemberAccess_KeepsItsOperatorText(string text, string expectedOperator)
+    {
+        var tree = ShellSyntaxTree.ParseText(text, ShellDialect.PowerShellCore);
+        var access = Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellMemberAccessExpressionSyntax>());
+
+        Assert.Equal(expectedOperator, access.OperatorToken.Text);
+        Assert.Empty(tree.Diagnostics);
+    }
+
+    [Fact]
+    public void NullConditionalIndex_IsAnIndexExpression()
+    {
+        var tree = ShellSyntaxTree.ParseText("$x = $y?[0]", ShellDialect.PowerShellCore);
+        var index = Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellIndexExpressionSyntax>());
+
+        Assert.Equal("?[", index.OpenBracketToken.Text);
+        Assert.Empty(tree.Diagnostics);
+    }
+
+    [Fact]
+    public void NullConditionalIsNotConfusedWithTheTernaryOperator()
+    {
+        var tree = ShellSyntaxTree.ParseText("$x = $a ? $b.c : $d", ShellDialect.PowerShellCore);
+
+        Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellTernaryExpressionSyntax>());
+        Assert.Empty(tree.Diagnostics);
+    }
+
+    [Fact]
+    public void WindowsPowerShellDoesNotHaveNullConditionalAccess()
+    {
+        // `?.` arrived with PowerShell 7, so in Windows PowerShell the `?` cannot bind to the member access.
+        var tree = ShellSyntaxTree.ParseText("$x = $y?.z", ShellDialect.PowerShell);
+
+        Assert.Equal("$x = $y?.z", tree.Root.ToFullString());
+        Assert.Empty(tree.Root.DescendantNodes().OfType<PowerShellMemberAccessExpressionSyntax>());
+    }
+
+    [Fact]
+    public void AttributeWithArguments_IsOneTypeLiteral()
+    {
+        var tree = ShellSyntaxTree.ParseText("[ValidateRange(1, 5)][int]$x = 1", ShellDialect.PowerShellCore);
+        var types = tree.Root.DescendantNodes().OfType<PowerShellTypeLiteralSyntax>().ToArray();
+
+        Assert.Equal(["ValidateRange(1, 5)", "int"], types.Select(type => type.Name));
+        Assert.Empty(tree.Diagnostics);
+    }
+
+    [Fact]
+    public void AssemblyQualifiedTypeName_KeepsItsComma()
+    {
+        var tree = ShellSyntaxTree.ParseText("[Some.Type, Some.Assembly]$x = $y", ShellDialect.PowerShellCore);
+        var type = Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellTypeLiteralSyntax>());
+
+        Assert.Equal("Some.Type, Some.Assembly", type.Name);
+    }
+
+    [Fact]
+    public void TypeNameDoesNotRunPastItsLine()
+    {
+        // An unterminated bracket must not swallow the rest of the file.
+        var tree = ShellSyntaxTree.ParseText("[Some.Type\nGet-Date\n", ShellDialect.PowerShellCore);
+
+        Assert.Equal("[Some.Type\nGet-Date\n", tree.Root.ToFullString());
+        Assert.Contains(tree.Root.DescendantNodes().OfType<ShellCommandSyntax>(), command => command.NameValue == "Get-Date");
+    }
+
+    [Fact]
+    public void HashEntry_AcceptsAnExpressionKey()
+    {
+        var tree = ShellSyntaxTree.ParseText("$x = @{ $parameter.Name = $parameter.Value }", ShellDialect.PowerShellCore);
+        var entry = Assert.Single(Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellHashLiteralSyntax>()).Entries);
+
+        Assert.IsType<PowerShellMemberAccessExpressionSyntax>(entry.Key);
+        Assert.IsType<PowerShellMemberAccessExpressionSyntax>(entry.Value);
+    }
+
+    [Fact]
+    public void HashEntry_AcceptsAPipelineValue()
+    {
+        var tree = ShellSyntaxTree.ParseText("$x = @{ Names = $items | Sort-Object }", ShellDialect.PowerShellCore);
+        var entry = Assert.Single(Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellHashLiteralSyntax>()).Entries);
+
+        Assert.HasCount(2, Assert.IsType<ShellPipelineSyntax>(entry.Value).Commands);
+    }
+
+    [Fact]
+    public void HashEntry_AcceptsAnArrayValue()
+    {
+        var tree = ShellSyntaxTree.ParseText("$x = @{ ids = $a, $b, $c }", ShellDialect.PowerShellCore);
+        var entry = Assert.Single(Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellHashLiteralSyntax>()).Entries);
+
+        Assert.HasCount(3, Assert.IsType<PowerShellArrayLiteralSyntax>(entry.Value).Elements);
+    }
+
+    [Theory]
+    [InlineData("$x = $xml.results.'test-case'", "'test-case'")]
+    [InlineData("$x = $xml.results.\"test-case\"", "\"test-case\"")]
+    [InlineData("$x = $xml.results.$name", "$name")]
+    [InlineData("$x = $xml.results.$script:name", "$script:name")]
+    public void MemberName_MayBeQuotedOrAVariable(string text, string expectedName)
+    {
+        var tree = ShellSyntaxTree.ParseText(text, ShellDialect.PowerShellCore);
+        // Member access nests to the left, so the outermost node in source order carries the last member name.
+        var access = tree.Root.DescendantNodes().OfType<PowerShellMemberAccessExpressionSyntax>().First();
+
+        Assert.Equal(expectedName, access.MemberNameToken.Text);
+        Assert.Empty(tree.Diagnostics);
+    }
+
+    [Theory]
+    [InlineData("$?", "?")]
+    [InlineData("$^", "^")]
+    [InlineData("$global:?", "global:?")]
+    [InlineData("$script:^", "script:^")]
+    public void AutomaticVariables_KeepTheirScopePrefix(string text, string expectedName)
+    {
+        var tree = ShellSyntaxTree.ParseText(text, ShellDialect.PowerShellCore);
+        var variable = Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellVariableExpressionSyntax>());
+
+        Assert.Equal(expectedName, variable.Name);
+        Assert.Equal(text, tree.Root.ToFullString());
+    }
+
+    [Fact]
+    public void HereStringNestedInASubexpression_DoesNotEndTheOuterHereString()
+    {
+        const string Text = "$a = @\"\nouter $(if ($true)\n{\n@\"\ninner\n\"@\n})\ntail\n\"@\nGet-Date\n";
+        var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.PowerShellCore);
+
+        Assert.Empty(tree.Diagnostics);
+        Assert.Equal(Text, tree.Root.ToFullString());
+
+        // The outer here-string ends at the last `"@`, so `Get-Date` is still a command of its own.
+        var hereString = Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellExpandableStringSyntax>());
+        Assert.Equal("@\"\nouter $(if ($true)\n{\n@\"\ninner\n\"@\n})\ntail\n\"@", tree.Text[hereString.Span.Start..hereString.Span.End]);
+        Assert.Contains(tree.Root.DescendantNodes().OfType<ShellCommandSyntax>(), command => command.NameValue == "Get-Date");
+    }
+
+    [Fact]
+    public void VerbatimHereStringDoesNotExpandASubexpression()
+    {
+        // `@'` keeps everything verbatim, so the `$(` inside it is plain text and the first `'@` ends it.
+        const string Text = "$a = @'\n$(1)\n'@\nGet-Date\n";
+        var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.PowerShellCore);
+
+        Assert.Empty(tree.Diagnostics);
+        Assert.Equal(Text, tree.Root.ToFullString());
+        Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellExpandableStringSyntax>());
+    }
+
+    [Fact]
+    public void UnaryComma_BuildsAOneElementArray()
+    {
+        var tree = ShellSyntaxTree.ParseText("$x = ,1", ShellDialect.PowerShellCore);
+        var assignment = Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellAssignmentExpressionSyntax>());
+        var unary = Assert.IsType<PowerShellUnaryExpressionSyntax>(assignment.Value);
+
+        Assert.Equal(",", unary.PrefixOperatorToken?.Text);
+        Assert.Empty(tree.Diagnostics);
+    }
+
+    [Fact]
+    public void CommaIsNotAStatementSeparator()
+    {
+        var tree = ShellSyntaxTree.ParseText("Write-Output a,b", ShellDialect.PowerShellCore);
+
+        Assert.Single(tree.Root.Statements.Statements);
+        Assert.Empty(tree.Diagnostics);
     }
 }

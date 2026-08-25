@@ -42,7 +42,8 @@ internal sealed partial class PowerShellParser
 
             var positionBefore = _lexer.Position;
 
-            if (_lexer.Current is ';' or ',')
+            // Only `;` separates statements. A leading `,` is the unary array operator, as in `$a = ,1`.
+            if (_lexer.Current == ';')
             {
                 var separator = ReadOperatorToken(ShellSyntaxKind.SemicolonToken, length: 1);
                 if (separators.Count == statements.Count)
@@ -227,9 +228,11 @@ internal sealed partial class PowerShellParser
         return pipelines is null ? first : new ShellCommandListSyntax(pipelines, operators);
     }
 
-    private ShellStatementSyntax ParsePipeline()
+    private ShellStatementSyntax ParsePipeline() => ContinuePipeline(ParsePipelineElement());
+
+    /// <summary>Continues a pipeline whose first element has already been read.</summary>
+    private ShellStatementSyntax ContinuePipeline(ShellStatementSyntax first)
     {
-        var first = ParsePipelineElement();
         List<ShellStatementSyntax>? elements = null;
         List<ShellSyntaxToken>? operators = null;
 
@@ -267,6 +270,10 @@ internal sealed partial class PowerShellParser
     {
         var current = _lexer.Current;
         if (current is '$' or '(' or '@' or '[' or '\'' or '"')
+            return true;
+
+        // A leading comma builds a one-element array: `,1` and `$a = ,$b`.
+        if (current == ',')
             return true;
 
         if (char.IsAsciiDigit(current))
@@ -448,11 +455,17 @@ internal sealed partial class PowerShellParser
     {
         var parts = new List<ShellWordPartSyntax>();
         var isFirst = true;
+        var atElementStart = true;
 
         while (!_lexer.IsAtEnd && !PowerShellLexer.IsArgumentBoundary(_lexer.Current))
         {
+            // A quote that opens an argument closes it too: `Write-Output 'a'b` passes two arguments, while
+            // `Write-Output a'b'c` passes the single argument `abc`. A here-string opens with `@`, not a quote.
+            var endsAtClosingQuote = atElementStart && _lexer.Current is '\'' or '"';
+
             var (trivia, fullStart) = isFirst ? TakeTrivia() : ([], _lexer.Position);
             isFirst = false;
+            atElementStart = false;
 
             var positionBefore = _lexer.Position;
             parts.Add(ParseCommandWordPart(trivia, fullStart));
@@ -460,6 +473,19 @@ internal sealed partial class PowerShellParser
             {
                 _lexer.Position++;
             }
+
+            // A comma keeps the argument going, which is how `a,b` and `'a','b'` stay one array argument.
+            if (!_lexer.IsAtEnd && _lexer.Current == ',')
+            {
+                var commaStart = _lexer.Position;
+                _lexer.Position++;
+                parts.Add(new ShellLiteralWordPartSyntax(_lexer.CreateToken(ShellSyntaxKind.CommaToken, commaStart, [], commaStart)));
+                atElementStart = true;
+                continue;
+            }
+
+            if (endsAtClosingQuote)
+                break;
         }
 
         return new ShellWordSyntax(parts);
@@ -483,6 +509,9 @@ internal sealed partial class PowerShellParser
             case '@' when _lexer.Peek(1) is '(' or '{':
             case '@' when IsAtHereStringStart():
                 return WrapExpression(leadingTrivia, fullStart, ParsePrimaryExpression);
+            // A `$` that names nothing is literal text: `Write-Output $` passes a single dollar sign.
+            case '$' when !IsVariableNameStart(_lexer.Peek(1)):
+                return ParseBareWordRun(leadingTrivia, fullStart);
             case '$':
             case '@':
                 return WrapExpression(leadingTrivia, fullStart, ParseVariableExpression);
@@ -490,6 +519,10 @@ internal sealed partial class PowerShellParser
                 return ParseBareWordRun(leadingTrivia, fullStart);
         }
     }
+
+    /// <summary>Returns whether <paramref name="value"/> can follow a <c>$</c> and still name a variable.</summary>
+    private static bool IsVariableNameStart(char value) =>
+        PowerShellLexer.IsNameCharacter(value) || value is '{' or '(' or '$' or '?' or '^' or '_' or ':';
 
     /// <summary>
     /// Returns <see langword="true"/> at the start of a here-string. The opening <c>@"</c> has to be the last thing

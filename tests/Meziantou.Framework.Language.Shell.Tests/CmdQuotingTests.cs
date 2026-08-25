@@ -21,11 +21,131 @@ public sealed class CmdQuotingTests
     [InlineData("a^ b", "a b")]
     // A doubled percent is a literal percent in a batch file.
     [InlineData("100%%", "100%")]
-    // A percent that closes nothing stays literal.
+    // A percent that closes nothing is kept as text. cmd itself deletes it when running a batch file, so `echo 50%`
+    // prints `50`; the tree keeps the character because the text is what round-trips.
     [InlineData("50%", "50%")]
     public void Value_MatchesCmdSemantics(string argumentText, string expected)
     {
         Assert.Equal(expected, FirstArgument(argumentText).Value);
+    }
+
+    // The expectations below were produced by passing the same argument text through cmd.exe on Windows and reading
+    // back what the launched process received.
+
+    [Theory]
+    [InlineData("a^&b", "a&b")]
+    [InlineData("a^|b", "a|b")]
+    [InlineData("a^^b", "a^b")]
+    [InlineData("a^<b", "a<b")]
+    [InlineData("a^>b", "a>b")]
+    [InlineData("a^ b", "a b")]
+    [InlineData("a^ab", "aab")]
+    [InlineData("^plain", "plain")]
+    public void CaretEscapesTheNextCharacter(string argumentText, string expected)
+    {
+        Assert.Equal(expected, FirstArgument(argumentText).Value);
+    }
+
+    [Theory]
+    // Characters that other shells treat as syntax are ordinary text to cmd.
+    [InlineData("a=b", "a=b")]
+    [InlineData("a;b", "a;b")]
+    [InlineData("a,b", "a,b")]
+    [InlineData("a[b", "a[b")]
+    [InlineData("a]b", "a]b")]
+    [InlineData("a{b", "a{b")]
+    [InlineData("a}b", "a}b")]
+    [InlineData("a#b", "a#b")]
+    [InlineData("a'b", "a'b")]
+    [InlineData("a`b", "a`b")]
+    [InlineData("a~b", "a~b")]
+    [InlineData("a+b", "a+b")]
+    [InlineData("a@b", "a@b")]
+    [InlineData("a$b", "a$b")]
+    [InlineData("a!b", "a!b")]
+    [InlineData("a(b", "a(b")]
+    [InlineData("a)b", "a)b")]
+    [InlineData("C:\\path\\to\\file", "C:\\path\\to\\file")]
+    [InlineData(".\\rel\\path", ".\\rel\\path")]
+    [InlineData("--flag", "--flag")]
+    [InlineData("/flag", "/flag")]
+    // Quotes only group; they are removed from the value.
+    [InlineData("\"C:\\Program Files\\app.exe\"", "C:\\Program Files\\app.exe")]
+    [InlineData("a\"b\"c", "abc")]
+    [InlineData("\"a b\"c", "a bc")]
+    [InlineData("c\"a b\"", "ca b")]
+    public void BareArgument_MatchesCmdSemantics(string argumentText, string expected)
+    {
+        Assert.Equal(expected, FirstArgument(argumentText).Value);
+    }
+
+    [Theory]
+    [InlineData("%%i")]
+    [InlineData("%%A")]
+    public void DoubledPercentBeforeANameIsAForLoopVariable(string argumentText)
+    {
+        // A batch file writes `for %%i in (...) do echo %%i`, so `%%name` is modelled as a loop variable and its value
+        // is unknown. Outside a `for` body cmd would resolve the same text to a literal `%` followed by the name.
+        var word = FirstArgument(argumentText);
+        var reference = Assert.Single(word.Parts.OfType<CmdVariableReferenceSyntax>());
+
+        Assert.Null(word.Value);
+        Assert.Null(reference.CloseToken);
+    }
+
+    [Fact]
+    public void DoubledPercentBeforeANonNameIsAnEscapedPercent()
+    {
+        var word = FirstArgument("100%%");
+
+        Assert.Equal("100%", word.Value);
+        Assert.Single(word.Parts.OfType<ShellEscapeSequenceSyntax>());
+    }
+
+    [Theory]
+    [InlineData("echo a&b", 2)]
+    [InlineData("echo a\r\necho b", 2)]
+    [InlineData("echo a\r\n\r\necho b", 2)]
+    // `&&` and `||` build one command list rather than two statements.
+    [InlineData("echo a&&b", 1)]
+    [InlineData("echo a||b", 1)]
+    public void SeparatorsSplitTheStatementList(string text, int expectedStatements)
+    {
+        var tree = ShellSyntaxTree.ParseText(text, ShellDialect.Cmd);
+
+        Assert.Equal(expectedStatements, tree.Root.Statements.Statements.Count);
+        Assert.Equal(text, tree.Root.ToFullString());
+    }
+
+    [Fact]
+    public void PipeBuildsAPipeline()
+    {
+        var pipeline = Assert.IsType<ShellPipelineSyntax>(ShellSyntaxTree.ParseCommand("dir | findstr foo", ShellDialect.Cmd));
+
+        Assert.Equal(2, pipeline.Commands.Count);
+    }
+
+    [Fact]
+    public void TrailingCaretJoinsTwoLinesAfterWhitespace()
+    {
+        const string Text = "echo x ^\r\ny\r\n";
+        var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Cmd);
+
+        Assert.Equal(Text, tree.Root.ToFullString());
+        Assert.Single(tree.Root.Statements.Statements);
+        Assert.Contains(tree.Root.DescendantTrivia(), trivia => trivia.Kind == ShellSyntaxKind.LineContinuationTrivia);
+    }
+
+    [Fact]
+    public void TrailingCaretJoinsTwoLinesInsideAWord()
+    {
+        // `echo a^` followed by `b` on the next line echoes `ab`: the caret escapes the line break.
+        const string Text = "echo a^\r\nb\r\n";
+        var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Cmd);
+
+        Assert.Equal(Text, tree.Root.ToFullString());
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        Assert.Equal("ab", Assert.Single(command.Arguments).Value);
     }
 
     [Fact]

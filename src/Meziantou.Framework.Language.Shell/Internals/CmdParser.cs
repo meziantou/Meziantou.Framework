@@ -11,6 +11,12 @@ internal sealed partial class CmdParser
     private int _pendingTriviaStart;
     private int _depth;
 
+    /// <summary>
+    /// Whether a <c>)</c> ends the text being read. Outside a block cmd treats parentheses as ordinary characters, so
+    /// <c>echo a)b</c> prints <c>a)b</c>, while inside one the same <c>)</c> closes the block.
+    /// </summary>
+    private bool _stopAtCloseParen;
+
     public CmdParser(string text, ShellParseOptions options)
     {
         _text = text;
@@ -145,12 +151,15 @@ internal sealed partial class CmdParser
         if (!TryEnterRecursion(new TextSpan(_position, 0)))
             return ConsumeRestAsSkippedText();
 
+        var previousStopAtCloseParen = _stopAtCloseParen;
+        _stopAtCloseParen = stopAtCloseParen;
         try
         {
             return ParseStatementCore(stopAtCloseParen);
         }
         finally
         {
+            _stopAtCloseParen = previousStopAtCloseParen;
             _depth--;
         }
     }
@@ -198,7 +207,10 @@ internal sealed partial class CmdParser
     {
         var colonToken = ReadToken(ShellSyntaxKind.ColonToken, length: 1);
         var start = _position;
-        while (!IsAtEnd && GetLineBreakLength(_position) == 0)
+
+        // A label takes the rest of its line, except that inside a block the `)` still closes the block, which is what
+        // makes `(call :VARDEL X)` a call inside a block rather than a label named `VARDEL X)`.
+        while (!IsAtEnd && GetLineBreakLength(_position) == 0 && !(Current == ')' && _stopAtCloseParen))
         {
             _position++;
         }
@@ -254,7 +266,7 @@ internal sealed partial class CmdParser
             {
                 inQuotes = !inQuotes;
             }
-            else if (!inQuotes && _text[scan] is '&' or '|' or ')')
+            else if (!inQuotes && (_text[scan] is '&' or '|' || (_text[scan] == ')' && _stopAtCloseParen)))
             {
                 break;
             }
@@ -325,7 +337,9 @@ internal sealed partial class CmdParser
         {
             SkipWord();
             SkipBlanks();
-            SkipWord();
+
+            // The operand may be quoted and contain spaces, as in `if exist "C:\Program Files\app.exe"`.
+            SkipComparisonOperand();
         }
         else
         {
@@ -413,6 +427,8 @@ internal sealed partial class CmdParser
         var openParen = ExpectCharacter('(', ShellSyntaxKind.OpenParenToken);
 
         var items = new List<ShellWordSyntax>();
+        var previousStopAtCloseParen = _stopAtCloseParen;
+        _stopAtCloseParen = true;
         while (true)
         {
             AccumulateStatementTrivia();
@@ -427,6 +443,7 @@ internal sealed partial class CmdParser
             }
         }
 
+        _stopAtCloseParen = previousStopAtCloseParen;
         var closeParen = ExpectCharacter(')', ShellSyntaxKind.CloseParenToken);
         var doKeyword = ExpectKeyword("do");
 
@@ -443,7 +460,7 @@ internal sealed partial class CmdParser
             if (IsAtEnd || GetLineBreakLength(_position) > 0)
                 break;
 
-            if (Current is '&' or '|' or ')')
+            if (Current is '&' or '|' || (Current == ')' && _stopAtCloseParen))
                 break;
 
             if (TryParseRedirection(out var redirection))

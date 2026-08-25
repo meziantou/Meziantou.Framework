@@ -4,6 +4,46 @@
 
 namespace Meziantou.Framework
 {
+    public readonly struct DomainInfo : System.IEquatable<Meziantou.Framework.DomainInfo>
+    {
+        public string Domain { get => throw null; }
+        public string PublicSuffix { get => throw null; }
+        public string? RegistrableDomain { get => throw null; }
+        public string? Subdomain { get => throw null; }
+        public Meziantou.Framework.PublicSuffixRuleSources Source { get => throw null; }
+        public bool IsKnownPublicSuffix { get => throw null; }
+        public override string ToString() => throw null;
+        public static bool operator !=(Meziantou.Framework.DomainInfo left, Meziantou.Framework.DomainInfo right) => throw null;
+        public static bool operator ==(Meziantou.Framework.DomainInfo left, Meziantou.Framework.DomainInfo right) => throw null;
+        public override int GetHashCode() => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public bool Equals(Meziantou.Framework.DomainInfo other) => throw null;
+    }
+
+    public static class PublicSuffixList
+    {
+        public static int RuleCount { get => throw null; }
+        public static System.DateTimeOffset LastUpdated { get => throw null; }
+        public static bool IsPublicSuffix(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
+        public static bool IsPublicSuffix(System.ReadOnlySpan<char> domain, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
+        public static string? GetPublicSuffix(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
+        public static string? GetPublicSuffix(System.ReadOnlySpan<char> domain, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
+        public static string? GetRegistrableDomain(string? domain, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
+        public static string? GetRegistrableDomain(System.ReadOnlySpan<char> domain, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
+        public static bool TryGetDomainInfo(string? domain, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
+        public static bool TryGetDomainInfo(System.Uri uri, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
+        public static bool TryGetDomainInfo(System.ReadOnlySpan<char> domain, out Meziantou.Framework.DomainInfo domainInfo, Meziantou.Framework.PublicSuffixRuleSources sources = 3) => throw null;
+    }
+
+    [System.Flags]
+    public enum PublicSuffixRuleSources
+    {
+        None = 0,
+        Icann = 1,
+        Private = 2,
+        All = 3
+    }
+
     public sealed class QueryStringParameterCollection : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>>, System.Collections.IEnumerable
     {
         public Microsoft.Extensions.Primitives.StringValues this[string name] { get => throw null; set { } }

@@ -367,6 +367,7 @@ void RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
         ["Meziantou.Framework.HtmlToMarkdown"] = "Meziantou.Framework.HtmlToMarkdown.Emoji.Generator",
         ["Meziantou.Framework.Http.Hsts"] = "Meziantou.Framework.Http.Hsts.Generator",
         ["Meziantou.Framework.Unicode"] = "Meziantou.Framework.Unicode.Generator",
+        ["Meziantou.Framework.Uri"] = "Meziantou.Framework.Uri.PublicSuffix.Generator",
     };
 
     var srcProjectByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

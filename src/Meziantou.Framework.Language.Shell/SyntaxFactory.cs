@@ -33,11 +33,11 @@ public static class SyntaxFactory
     }
 
     /// <summary>Creates an unquoted literal word part. The text is used verbatim.</summary>
-    public static ShellLiteralWordPartSyntax Literal(string text)
+    public static ShellLiteralWordPartSyntax Literal(string text, IReadOnlyList<ShellSyntaxTrivia>? leadingTrivia = null)
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        return new ShellLiteralWordPartSyntax(new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, text, text));
+        return new ShellLiteralWordPartSyntax(new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, text, text, leadingTrivia: leadingTrivia));
     }
 
     /// <summary>Creates a word from parts.</summary>
@@ -306,17 +306,35 @@ public static class SyntaxFactory
         if (word.Parts.Count == 0 || word.StartsWithTrivia)
             return word;
 
-        var first = word.Parts[0];
-        var updated = first switch
+        var rebuilt = WithLeadingSpace(word.Parts[0]);
+
+        // A part type this does not know how to rebuild, which includes any defined outside this assembly, carries
+        // the space in a part of its own. Less tidy than putting it on the first token, but never glued.
+        return rebuilt is null
+            ? new ShellWordSyntax([Literal(string.Empty, [Whitespace()]), .. word.Parts])
+            : new ShellWordSyntax([rebuilt, .. word.Parts.Skip(1)]);
+    }
+
+    /// <summary>
+    /// Rebuilds <paramref name="part"/> with a space on its first token, the way the parser holds the whitespace in
+    /// front of a word. Returns <see langword="null"/> for a part whose first token this cannot reach.
+    /// </summary>
+    private static ShellWordPartSyntax? WithLeadingSpace(ShellWordPartSyntax part)
+    {
+        return part switch
         {
-            ShellLiteralWordPartSyntax literal => new ShellLiteralWordPartSyntax(literal.TextToken.WithLeadingTrivia([Whitespace()])),
-            ShellQuotedStringSyntax quoted => new ShellQuotedStringSyntax(quoted.OpenQuoteToken.WithLeadingTrivia([Whitespace()]), quoted.Parts, quoted.CloseQuoteToken),
-            _ => (ShellWordPartSyntax?)null,
+            ShellLiteralWordPartSyntax literal => new ShellLiteralWordPartSyntax(Spaced(literal.TextToken)),
+            ShellQuotedStringSyntax quoted => new ShellQuotedStringSyntax(Spaced(quoted.OpenQuoteToken), quoted.Parts, quoted.CloseQuoteToken),
+            ShellGlobSyntax glob => new ShellGlobSyntax(Spaced(glob.GlobToken)),
+            ShellEscapeSequenceSyntax escape => new ShellEscapeSequenceSyntax(Spaced(escape.EscapeToken)),
+            ShellVariableReferenceSyntax reference => new ShellVariableReferenceSyntax(Spaced(reference.IntroducerToken), reference.OpenBraceToken, reference.NameToken, reference.CloseBraceToken),
+            CmdVariableReferenceSyntax reference => new CmdVariableReferenceSyntax(Spaced(reference.OpenToken), reference.NameToken, reference.CloseToken),
+            ShellCommandSubstitutionSyntax substitution => new ShellCommandSubstitutionSyntax(Spaced(substitution.OpenToken), substitution.Statements, substitution.CloseToken),
+            PosixProcessSubstitutionSyntax substitution => new PosixProcessSubstitutionSyntax(Spaced(substitution.OpenToken), substitution.Statements, substitution.CloseToken),
+            PosixArithmeticExpansionSyntax expansion => new PosixArithmeticExpansionSyntax(Spaced(expansion.OpenToken), expansion.Expression, expansion.CloseToken),
+            _ => null,
         };
 
-        if (updated is null)
-            return word;
-
-        return new ShellWordSyntax([updated, .. word.Parts.Skip(1)]);
+        static ShellSyntaxToken Spaced(ShellSyntaxToken token) => token.WithLeadingTrivia([Whitespace()]);
     }
 }

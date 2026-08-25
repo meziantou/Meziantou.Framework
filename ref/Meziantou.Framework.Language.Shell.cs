@@ -1734,7 +1734,7 @@ namespace Meziantou.Framework.Language.Shell
         public static Meziantou.Framework.Language.Shell.ShellSyntaxTrivia EndOfLine(string text = "
     ") => throw null;
         public static Meziantou.Framework.Language.Shell.ShellSyntaxTrivia Comment(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
-        public static Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax Literal(string text) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax Literal(string text, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia>? leadingTrivia = null) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellWordSyntax Word(params Meziantou.Framework.Language.Shell.ShellWordPartSyntax[] parts) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellWordSyntax Word(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax QuotedString(string value, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;

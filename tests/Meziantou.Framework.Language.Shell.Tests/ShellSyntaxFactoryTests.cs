@@ -115,4 +115,56 @@ public sealed class ShellSyntaxFactoryTests
     {
         Assert.Equal(expected, SyntaxFactory.RequiresQuoting(text, ShellDialect.Bash));
     }
+
+    public static TheoryData<string> WordPartKinds()
+    {
+        var data = new TheoryData<string>();
+        foreach (var type in typeof(ShellWordPartSyntax).Assembly.GetTypes())
+        {
+            if (type.IsSubclassOf(typeof(ShellWordPartSyntax)) && !type.IsAbstract)
+            {
+                data.Add(type.Name);
+            }
+        }
+
+        return data;
+    }
+
+    /// <summary>
+    /// Every word-part type has to be separated from what precedes it. Driving the theory off the types in the
+    /// assembly means a part type added later shows up here instead of silently gluing itself to the command name.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(WordPartKinds))]
+    public void Command_And_WithArguments_SeparateEveryWordPartKind(string typeName)
+    {
+        var word = SyntaxFactory.Word(BuildPart(typeName));
+
+        var built = SyntaxFactory.Command(SyntaxFactory.Word("echo", ShellDialect.Bash), word).ToFullString();
+        Assert.Equal("echo ", built[.."echo ".Length]);
+
+        var parsed = Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand("echo old", ShellDialect.Bash));
+        var edited = parsed.WithArguments([word]).ToFullString();
+        Assert.Equal("echo ", edited[.."echo ".Length]);
+    }
+
+    private static ShellWordPartSyntax BuildPart(string typeName)
+    {
+        var statements = SyntaxFactory.StatementList(SyntaxFactory.Command(ShellDialect.Bash, "ls"));
+
+        return typeName switch
+        {
+            nameof(ShellLiteralWordPartSyntax) => SyntaxFactory.Literal("plain"),
+            nameof(ShellQuotedStringSyntax) => SyntaxFactory.QuotedString("a b", ShellDialect.Bash),
+            nameof(ShellVariableReferenceSyntax) => SyntaxFactory.VariableReference("value", ShellDialect.Bash),
+            nameof(CmdVariableReferenceSyntax) => (ShellWordPartSyntax)SyntaxFactory.VariableReference("value", ShellDialect.Cmd),
+            nameof(ShellGlobSyntax) => new ShellGlobSyntax(SyntaxFactory.Token(ShellSyntaxKind.BareTextToken, "*")),
+            nameof(ShellEscapeSequenceSyntax) => new ShellEscapeSequenceSyntax(SyntaxFactory.Token(ShellSyntaxKind.EscapeToken, @"\$", "$")),
+            nameof(ShellCommandSubstitutionSyntax) => new ShellCommandSubstitutionSyntax(SyntaxFactory.Token(ShellSyntaxKind.DollarOpenParenToken, "$("), statements, SyntaxFactory.Token(ShellSyntaxKind.CloseParenToken, ")")),
+            nameof(PosixProcessSubstitutionSyntax) => new PosixProcessSubstitutionSyntax(SyntaxFactory.Token(ShellSyntaxKind.OpenParenToken, "<("), statements, SyntaxFactory.Token(ShellSyntaxKind.CloseParenToken, ")")),
+            nameof(PosixArithmeticExpansionSyntax) => new PosixArithmeticExpansionSyntax(SyntaxFactory.Token(ShellSyntaxKind.DollarOpenParenToken, "$(("), SyntaxFactory.RawExpression("1+2"), SyntaxFactory.Token(ShellSyntaxKind.CloseParenToken, "))")),
+            nameof(ShellEmbeddedExpressionSyntax) => new ShellEmbeddedExpressionSyntax(SyntaxFactory.RawExpression("1+2")),
+            _ => throw new ArgumentException($"No sample for {typeName}", nameof(typeName)),
+        };
+    }
 }

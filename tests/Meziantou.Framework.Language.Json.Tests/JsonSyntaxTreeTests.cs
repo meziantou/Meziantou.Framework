@@ -415,6 +415,14 @@ public sealed class JsonSyntaxTreeTests
         }
     }
 
+    [Fact]
+    public void SourceText_ToStringReturnsTheText()
+    {
+        const string Text = "{\n  \"a\": 1\n}";
+
+        Assert.Equal(Text, JsonSyntaxTree.ParseText(Text).SourceText.ToString());
+    }
+
     private sealed class ReplaceMemberValueRewriter : JsonSyntaxRewriter
     {
         private readonly string _name;

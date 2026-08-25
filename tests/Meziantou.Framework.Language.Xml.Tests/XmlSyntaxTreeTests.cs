@@ -191,6 +191,14 @@ public sealed class XmlSyntaxTreeTests
     }
 
     [Fact]
+    public void SourceText_ToStringReturnsTheText()
+    {
+        const string Text = "<root>\n  <a />\n</root>";
+
+        Assert.Equal(Text, XmlSyntaxTree.ParseText(Text).SourceText.ToString());
+    }
+
+    [Fact]
     public void SourceText_ExposesLines()
     {
         var tree = XmlSyntaxTree.ParseText("<root>\n  <a />\n</root>");

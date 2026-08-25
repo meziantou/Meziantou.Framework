@@ -19,6 +19,7 @@ namespace Meziantou.Framework.Language.Xml
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.TextLine> Lines { get => throw null; }
         public static Meziantou.Framework.Language.Xml.SourceText From(string text) => throw null;
         public Meziantou.Framework.Language.Xml.SourceText WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Xml.XmlTextChange> changes) => throw null;
+        public override string ToString() => throw null;
     }
 
     public static class SyntaxFactory

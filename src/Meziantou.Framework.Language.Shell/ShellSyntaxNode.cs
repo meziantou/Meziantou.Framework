@@ -1,0 +1,365 @@
+namespace Meziantou.Framework.Language.Shell;
+
+/// <summary>Base type for all shell syntax nodes in the immutable syntax tree.</summary>
+public abstract class ShellSyntaxNode
+{
+    protected ShellSyntaxNode(ShellSyntaxKind kind, string fullText, int fullStart = 0, IReadOnlyList<ShellSyntaxToken>? tokens = null)
+    {
+        Kind = kind;
+        FullText = fullText ?? string.Empty;
+        FullSpan = new TextSpan(fullStart, FullText.Length);
+        Tokens = tokens ?? [];
+        foreach (var token in Tokens)
+        {
+            token.Parent = this;
+        }
+    }
+
+    /// <summary>The exact source text covered by this node, including the trivia of its tokens.</summary>
+    protected string FullText { get; }
+
+    public ShellSyntaxKind Kind { get; }
+
+    /// <summary>The child nodes of this node, in source order.</summary>
+    public virtual IReadOnlyList<ShellSyntaxNode> ChildNodes => [];
+
+    /// <summary>The tokens owned directly by this node. Tokens of child nodes are not included.</summary>
+    public IReadOnlyList<ShellSyntaxToken> Tokens { get; }
+
+    public ShellSyntaxTree? SyntaxTree { get; internal set; }
+
+    public ShellSyntaxNode? Parent => ParentNode;
+
+    /// <summary>The dialect the node was parsed as, or <see langword="null"/> when the node is not attached to a tree.</summary>
+    public ShellDialect? Dialect => SyntaxTree?.Dialect ?? Ancestors().Select(node => node.SyntaxTree?.Dialect).FirstOrDefault(dialect => dialect is not null);
+
+    /// <summary>The span of this node excluding leading and trailing trivia.</summary>
+    /// <summary>Returns whether the node's text begins with trivia.</summary>
+    /// <remarks>
+    /// Reading the leading trivia off the first token is not enough. An incomplete construct can begin with a missing
+    /// token of no width, as <c>l l ()</c> does with its absent function name, and that token carries no trivia even
+    /// though the node does: the trivia sits on the first token that has text.
+    /// </remarks>
+    internal bool StartsWithTrivia => Span.Start > FullSpan.Start;
+
+    /// <summary>
+    /// The span to overwrite when a replacement keeps the trivia in front of the node: everything the node owns except
+    /// that leading trivia.
+    /// </summary>
+    /// <remarks>
+    /// This is not <see cref="Span"/>. That span stops at the last token with text, so trivia held by a missing token
+    /// at the end of an incomplete construct falls outside it while still being part of the node's text. Overwriting
+    /// only <see cref="Span"/> would leave that trivia in place and duplicate it.
+    /// </remarks>
+    internal TextSpan SpanWithoutLeadingTrivia => TextSpan.FromBounds(Span.Start, Math.Max(Span.Start, FullSpan.End));
+
+    public TextSpan Span
+    {
+        get
+        {
+            var start = int.MaxValue;
+            var end = -1;
+            foreach (var token in DescendantTokens())
+            {
+                if (token.IsMissing && token.Span.Length == 0)
+                    continue;
+
+                start = Math.Min(start, token.Span.Start);
+                end = Math.Max(end, token.Span.End);
+            }
+
+            if (end < 0)
+                return FullSpan;
+
+            return TextSpan.FromBounds(start, end);
+        }
+    }
+
+    /// <summary>The span of this node including the trivia of its tokens.</summary>
+    public TextSpan FullSpan { get; }
+
+    public bool ContainsDiagnostics => SyntaxTree is not null && SyntaxTree.Diagnostics.Count > 0;
+
+    public bool ContainsSkippedText => Kind == ShellSyntaxKind.SkippedText || DescendantNodes().Any(node => node.Kind == ShellSyntaxKind.SkippedText);
+
+    internal ShellSyntaxNode? ParentNode { get; set; }
+
+    /// <summary>Returns the exact source text of this node, including comments and all other trivia.</summary>
+    public virtual string ToFullString() => FullText;
+
+    /// <summary>Returns the child nodes and the tokens owned by this node, in source order.</summary>
+    public IEnumerable<ShellSyntaxNodeOrToken> ChildNodesAndTokens()
+    {
+        if (Tokens.Count == 0)
+            return ChildNodes.Select(child => new ShellSyntaxNodeOrToken(child));
+
+        if (ChildNodes.Count == 0)
+            return Tokens.Select(token => new ShellSyntaxNodeOrToken(token));
+
+        // A node interleaves its own tokens with its children (`$(`, the inner statements, then `)`), so the two
+        // lists have to be merged by position rather than concatenated.
+        var merged = new List<ShellSyntaxNodeOrToken>(ChildNodes.Count + Tokens.Count);
+        merged.AddRange(ChildNodes.Select(child => new ShellSyntaxNodeOrToken(child)));
+        merged.AddRange(Tokens.Select(token => new ShellSyntaxNodeOrToken(token)));
+
+        return merged.OrderBy(item => item.FullSpan.Start);
+    }
+
+    /// <summary>Returns every descendant node, in source order.</summary>
+    /// <remarks>
+    /// Walked with an explicit stack rather than by recursion: a long operator or member chain builds a deeply
+    /// left-nested tree, and recursing over one would run the stack out on input that parsed perfectly well.
+    /// </remarks>
+    public IEnumerable<ShellSyntaxNode> DescendantNodes()
+    {
+        var stack = new Stack<ShellSyntaxNode>();
+        PushInReverse(stack, ChildNodes);
+
+        while (stack.Count > 0)
+        {
+            var node = stack.Pop();
+            yield return node;
+            PushInReverse(stack, node.ChildNodes);
+        }
+    }
+
+    private static void PushInReverse(Stack<ShellSyntaxNode> stack, IReadOnlyList<ShellSyntaxNode> nodes)
+    {
+        for (var index = nodes.Count - 1; index >= 0; index--)
+        {
+            stack.Push(nodes[index]);
+        }
+    }
+
+    public IEnumerable<ShellSyntaxNode> DescendantNodesAndSelf()
+    {
+        yield return this;
+        foreach (var descendant in DescendantNodes())
+        {
+            yield return descendant;
+        }
+    }
+
+    /// <summary>Returns every descendant node and token, in source order.</summary>
+    public IEnumerable<ShellSyntaxNodeOrToken> DescendantNodesAndTokens()
+    {
+        var stack = new Stack<ShellSyntaxNodeOrToken>();
+        PushInReverse(stack, ChildNodesAndTokens());
+
+        while (stack.Count > 0)
+        {
+            var item = stack.Pop();
+            yield return item;
+            if (item.IsNode)
+            {
+                PushInReverse(stack, item.Node.ChildNodesAndTokens());
+            }
+        }
+    }
+
+    private static void PushInReverse(Stack<ShellSyntaxNodeOrToken> stack, IEnumerable<ShellSyntaxNodeOrToken> items)
+    {
+        var buffer = items as IList<ShellSyntaxNodeOrToken> ?? [.. items];
+        for (var index = buffer.Count - 1; index >= 0; index--)
+        {
+            stack.Push(buffer[index]);
+        }
+    }
+
+    public IEnumerable<ShellSyntaxNode> Ancestors()
+    {
+        var parent = ParentNode;
+        while (parent is not null)
+        {
+            yield return parent;
+            parent = parent.ParentNode;
+        }
+    }
+
+    public IEnumerable<ShellSyntaxNode> AncestorsAndSelf()
+    {
+        ShellSyntaxNode? node = this;
+        while (node is not null)
+        {
+            yield return node;
+            node = node.ParentNode;
+        }
+    }
+
+    /// <summary>Returns every token in this subtree, in source order.</summary>
+    public IEnumerable<ShellSyntaxToken> DescendantTokens()
+    {
+        foreach (var item in DescendantNodesAndTokens())
+        {
+            if (item.IsToken)
+            {
+                yield return item.Token;
+            }
+        }
+    }
+
+    public IEnumerable<ShellSyntaxTrivia> DescendantTrivia()
+    {
+        foreach (var token in DescendantTokens())
+        {
+            foreach (var trivia in token.LeadingTrivia)
+            {
+                yield return trivia;
+            }
+
+            foreach (var trivia in token.TrailingTrivia)
+            {
+                yield return trivia;
+            }
+        }
+    }
+
+    /// <summary>Returns every comment in this node, in source order.</summary>
+    public IEnumerable<ShellSyntaxTrivia> DescendantComments() => DescendantTrivia().Where(trivia => trivia.IsComment);
+
+    public virtual ShellScriptSyntax ReplaceNode(ShellSyntaxNode oldNode, ShellSyntaxNode newNode) => GetScript().ReplaceNode(oldNode, newNode);
+    public virtual ShellScriptSyntax ReplaceToken(ShellSyntaxToken oldToken, ShellSyntaxToken newToken) => GetScript().ReplaceToken(oldToken, newToken);
+    public virtual ShellScriptSyntax ReplaceTrivia(ShellSyntaxTrivia oldTrivia, ShellSyntaxTrivia newTrivia) => GetScript().ReplaceTrivia(oldTrivia, newTrivia);
+
+    /// <summary>
+    /// Compares this subtree with <paramref name="other"/> structurally, ignoring trivia. Node kinds, child order,
+    /// and token text must match; whitespace, line breaks, and comments are not considered.
+    /// </summary>
+    public bool IsEquivalentTo(ShellSyntaxNode? other)
+    {
+        if (ReferenceEquals(this, other))
+            return true;
+
+        if (other is null || other.Kind != Kind)
+            return false;
+
+        var stack = new Stack<(ShellSyntaxNode Left, ShellSyntaxNode Right)>();
+        stack.Push((this, other));
+
+        while (stack.Count > 0)
+        {
+            var (left, right) = stack.Pop();
+            if (left.Kind != right.Kind || !TokensAreEquivalent(left.Tokens, right.Tokens))
+                return false;
+
+            if (left.ChildNodes.Count != right.ChildNodes.Count)
+                return false;
+
+            for (var index = 0; index < left.ChildNodes.Count; index++)
+            {
+                stack.Push((left.ChildNodes[index], right.ChildNodes[index]));
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TokensAreEquivalent(IReadOnlyList<ShellSyntaxToken> left, IReadOnlyList<ShellSyntaxToken> right)
+    {
+        if (left.Count != right.Count)
+            return false;
+
+        for (var index = 0; index < left.Count; index++)
+        {
+            // Only the token itself matters; its trivia is formatting.
+            if (left[index].Kind != right[index].Kind || !string.Equals(left[index].Text, right[index].Text, StringComparison.Ordinal))
+                return false;
+        }
+
+        return true;
+    }
+
+    public override string ToString() => ToFullString();
+
+    internal void SetParentAndTree(ShellSyntaxNode? parent, ShellSyntaxTree tree)
+    {
+        var stack = new Stack<(ShellSyntaxNode Node, ShellSyntaxNode? Parent)>();
+        stack.Push((this, parent));
+
+        while (stack.Count > 0)
+        {
+            var (node, nodeParent) = stack.Pop();
+            node.ParentNode = nodeParent;
+            node.SyntaxTree = tree;
+
+            foreach (var token in node.Tokens)
+            {
+                token.Parent = node;
+            }
+
+            foreach (var child in node.ChildNodes)
+            {
+                stack.Push((child, node));
+            }
+        }
+    }
+
+    private ShellScriptSyntax GetScript()
+    {
+        if (this is ShellScriptSyntax script)
+            return script;
+
+        if (SyntaxTree is not null)
+            return SyntaxTree.Root;
+
+        var parent = ParentNode;
+        while (parent is not null)
+        {
+            if (parent is ShellScriptSyntax parentScript)
+                return parentScript;
+
+            parent = parent.ParentNode;
+        }
+
+        return ShellSyntaxTree.ParseText(ToFullString(), Dialect ?? ShellDialect.Bash).Root;
+    }
+
+    /// <summary>Wraps a required child so a node can build its child list with a collection expression.</summary>
+    private protected static ShellSyntaxNode[] SingleNode(ShellSyntaxNode node) => [node];
+
+    /// <summary>Wraps an optional child, yielding nothing when it is absent.</summary>
+    private protected static ShellSyntaxNode[] OptionalNode(ShellSyntaxNode? node) => node is null ? [] : [node];
+
+    internal static string BuildFullText(IEnumerable<ShellSyntaxNode> nodes)
+    {
+        var builder = new StringBuilder();
+        foreach (var node in nodes)
+        {
+            builder.Append(node.ToFullString());
+        }
+
+        return builder.ToString();
+    }
+
+    internal static string BuildFullText(IEnumerable<ShellSyntaxToken> tokens)
+    {
+        var builder = new StringBuilder();
+        foreach (var token in tokens)
+        {
+            builder.Append(token.ToFullString());
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>Returns the start of the first non-empty token or node in <paramref name="parts"/>, or 0 when there is none.</summary>
+    internal static int GetFullStart(params ReadOnlySpan<ShellSyntaxNodeOrToken?> parts)
+    {
+        foreach (var part in parts)
+        {
+            if (part is { } value && value.FullSpan.Length > 0)
+                return value.FullSpan.Start;
+        }
+
+        foreach (var part in parts)
+        {
+            if (part is { } value)
+                return value.FullSpan.Start;
+        }
+
+        return 0;
+    }
+
+    public abstract void Accept(ShellSyntaxVisitor visitor);
+    public abstract TResult Accept<TResult>(ShellSyntaxVisitor<TResult> visitor);
+}

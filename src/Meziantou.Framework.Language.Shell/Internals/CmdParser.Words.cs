@@ -10,7 +10,7 @@ internal sealed partial class CmdParser
         var parts = new List<ShellWordPartSyntax>();
         var isFirst = true;
 
-        while (!IsAtEnd && !IsWordBoundary(Current))
+        while (!IsAtEnd && !IsWordBoundary(Current) && !IsAtEqualityOperator())
         {
             var (trivia, fullStart) = isFirst ? TakeTrivia() : ([], _position);
             isFirst = false;
@@ -117,7 +117,7 @@ internal sealed partial class CmdParser
     private ShellLiteralWordPartSyntax ParseLiteralRun(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
     {
         var start = _position;
-        while (!IsAtEnd && !IsWordBoundary(Current) && Current is not '"' and not '^' and not '%' and not '!' and not '*' and not '?')
+        while (!IsAtEnd && !IsWordBoundary(Current) && !IsAtEqualityOperator() && Current is not '"' and not '^' and not '%' and not '!' and not '*' and not '?')
         {
             _position++;
         }
@@ -549,22 +549,6 @@ internal sealed partial class CmdParser
         return MissingToken(kind, fullStart, trivia);
     }
 
-    private void SkipWord()
-    {
-        while (!IsAtEnd && !IsWordBoundary(Current))
-        {
-            _position++;
-        }
-    }
-
-    private void SkipBlanks()
-    {
-        while (!IsAtEnd && Current is ' ' or '\t')
-        {
-            _position++;
-        }
-    }
-
     private bool TryEnterRecursion(TextSpan span)
     {
         if (_depth >= _options.MaxRecursionDepth)
@@ -617,6 +601,13 @@ internal sealed partial class CmdParser
     /// Characters that end a word. <c>(</c> is not among them: it only opens a block at the start of a command, so
     /// <c>echo a(b</c> is a single word. <c>)</c> ends a word only inside a block or a <c>for</c> item list.
     /// </summary>
+    /// <summary>
+    /// Returns <see langword="true"/> when a <c>==</c> starts here and the caller asked to stop at one. Only the left
+    /// operand of a cmd comparison does: <c>=</c> is an ordinary word character everywhere else, so <c>if a==b</c>
+    /// would otherwise read as the single word <c>a==b</c>.
+    /// </summary>
+    private bool IsAtEqualityOperator() => _stopAtEquality && Current == '=' && Peek(1) == '=';
+
     private bool IsWordBoundary(char value) =>
         value is '\0' or ' ' or '\t' or '\r' or '\n' or '&' or '|' or '<' or '>'
         || (value == ')' && _stopAtCloseParen);

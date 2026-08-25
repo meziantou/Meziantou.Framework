@@ -16,6 +16,7 @@ internal sealed partial class CmdParser
     /// <c>echo a)b</c> prints <c>a)b</c>, while inside one the same <c>)</c> closes the block.
     /// </summary>
     private bool _stopAtCloseParen;
+    private bool _stopAtEquality;
 
     public CmdParser(string text, ShellParseOptions options)
     {
@@ -339,67 +340,67 @@ internal sealed partial class CmdParser
     }
 
     /// <summary>
-    /// Reads the condition of an <c>if</c>. The four forms differ enough that the text is kept verbatim; the scan
-    /// stops before the statement that follows.
+    /// Reads the condition of an <c>if</c>. The <c>errorlevel</c>, <c>defined</c>, <c>exist</c>, and
+    /// <c>cmdextversion</c> forms become a unary expression and the <c>==</c> and <c>EQU</c> forms a binary one, so
+    /// each operand is an ordinary word with its quoting and variable references exposed. Text matching none of the
+    /// forms is left as a lone operand rather than reported as an error, as cmd only diagnoses it when the line runs.
     /// </summary>
-    private ShellRawExpressionSyntax ParseIfCondition()
+    private ShellExpressionSyntax ParseIfCondition()
     {
         AccumulateInlineTrivia();
-        var (trivia, fullStart) = TakeTrivia();
-        var start = _position;
 
         var keyword = PeekKeyword();
         if (keyword is "errorlevel" or "defined" or "exist" or "cmdextversion")
         {
-            SkipWord();
-            SkipBlanks();
+            var unaryToken = ReadToken(ShellSyntaxKind.OperatorToken, keyword.Length);
 
-            // The operand may be quoted and contain spaces, as in `if exist "C:\Program Files\app.exe"`.
-            SkipComparisonOperand();
+            return new ShellUnaryExpressionSyntax(ShellSyntaxKind.PrefixUnaryExpression, unaryToken, ParseIfConditionOperand(), postfixOperatorToken: null);
         }
-        else
+
+        var previousStopAtEquality = _stopAtEquality;
+        _stopAtEquality = true;
+        ShellOperandExpressionSyntax left;
+        try
         {
-            // Comparison form: `a==b` or `a EQU b`.
-            SkipComparisonOperand();
-            SkipBlanks();
-            if (Current == '=' && Peek(1) == '=')
-            {
-                _position += 2;
-                SkipComparisonOperand();
-            }
-            else if (PeekKeyword() is "equ" or "neq" or "lss" or "leq" or "gtr" or "geq")
-            {
-                SkipWord();
-                SkipBlanks();
-                SkipComparisonOperand();
-            }
+            left = ParseIfConditionOperand();
+        }
+        finally
+        {
+            _stopAtEquality = previousStopAtEquality;
         }
 
-        return new ShellRawExpressionSyntax(CreateToken(ShellSyntaxKind.BareTextToken, start, trivia, fullStart));
+        AccumulateInlineTrivia();
+        if (Current == '=' && Peek(1) == '=')
+        {
+            var equalsToken = ReadToken(ShellSyntaxKind.OperatorToken, length: 2);
+
+            return new ShellBinaryExpressionSyntax(left, equalsToken, ParseIfConditionOperand());
+        }
+
+        var comparison = PeekKeyword();
+        if (comparison is "equ" or "neq" or "lss" or "leq" or "gtr" or "geq")
+        {
+            var comparisonToken = ReadToken(ShellSyntaxKind.OperatorToken, comparison.Length);
+
+            return new ShellBinaryExpressionSyntax(left, comparisonToken, ParseIfConditionOperand());
+        }
+
+        return left;
     }
 
-    private void SkipComparisonOperand()
+    private ShellOperandExpressionSyntax ParseIfConditionOperand()
     {
-        if (Current == '"')
+        AccumulateInlineTrivia();
+
+        var word = ParseWord();
+        if (word.Parts.Count == 0)
         {
-            _position++;
-            while (!IsAtEnd && Current != '"' && GetLineBreakLength(_position) == 0)
-            {
-                _position++;
-            }
-
-            if (!IsAtEnd && Current == '"')
-            {
-                _position++;
-            }
-
-            return;
+            // A word with no parts reports no position of its own, which would leave every span around it wrong. An
+            // empty token keeps the position and, with it, the trivia that has piled up in front of the missing operand.
+            word = new ShellWordSyntax([new ShellLiteralWordPartSyntax(ReadToken(ShellSyntaxKind.BareTextToken, length: 0))]);
         }
 
-        while (!IsAtEnd && !IsWordBoundary(Current) && !(Current == '=' && Peek(1) == '='))
-        {
-            _position++;
-        }
+        return new ShellOperandExpressionSyntax(word);
     }
 
     private CmdForStatementSyntax ParseForStatement()

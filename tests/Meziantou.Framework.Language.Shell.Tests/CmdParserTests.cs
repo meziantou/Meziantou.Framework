@@ -170,6 +170,61 @@ public sealed class CmdParserTests
         Assert.IsType<CmdParenthesizedBlockSyntax>(statement.ElseClause.Body);
     }
 
+    [Theory]
+    [InlineData("if exist file.txt echo yes", "exist", "file.txt")]
+    [InlineData("if not exist \"C:\\Program Files\\app.exe\" echo no", "exist", "\"C:\\Program Files\\app.exe\"")]
+    [InlineData("if defined FOO echo set", "defined", "FOO")]
+    [InlineData("if errorlevel 1 echo failed", "errorlevel", "1")]
+    [InlineData("if cmdextversion 2 echo ok", "cmdextversion", "2")]
+    public void IfCondition_UnaryForm_ExposesTheOperatorAndOperand(string text, string expectedOperator, string expectedOperand)
+    {
+        var statement = Assert.IsType<CmdIfStatementSyntax>(ShellSyntaxTree.ParseCommand(text, ShellDialect.Cmd));
+        var condition = Assert.IsType<ShellUnaryExpressionSyntax>(statement.Condition);
+
+        Assert.Equal(expectedOperator, condition.OperatorText);
+        Assert.Equal(expectedOperand, Assert.IsType<ShellOperandExpressionSyntax>(condition.Operand).Word.ToFullString().Trim());
+    }
+
+    [Theory]
+    [InlineData("if a==b echo eq", "a", "==", "b")]
+    [InlineData("if \"%a%\"==\"b\" echo eq", "\"%a%\"", "==", "\"b\"")]
+    [InlineData("if /i \"%OS%\"==\"Windows_NT\" echo nt", "\"%OS%\"", "==", "\"Windows_NT\"")]
+    [InlineData("if %n% GEQ 5 echo big", "%n%", "GEQ", "5")]
+    [InlineData("if %n% equ 5 echo five", "%n%", "equ", "5")]
+    [InlineData("if !x! neq !y! echo differ", "!x!", "neq", "!y!")]
+    public void IfCondition_ComparisonForm_ExposesBothOperands(string text, string expectedLeft, string expectedOperator, string expectedRight)
+    {
+        var statement = Assert.IsType<CmdIfStatementSyntax>(ShellSyntaxTree.ParseCommand(text, ShellDialect.Cmd));
+        var condition = Assert.IsType<ShellBinaryExpressionSyntax>(statement.Condition);
+
+        Assert.Equal(expectedLeft, Assert.IsType<ShellOperandExpressionSyntax>(condition.Left).Word.ToFullString().Trim());
+        Assert.Equal(expectedOperator, condition.OperatorText);
+        Assert.Equal(expectedRight, Assert.IsType<ShellOperandExpressionSyntax>(condition.Right).Word.ToFullString().Trim());
+    }
+
+    [Fact]
+    public void IfCondition_OperandExposesVariableReferences()
+    {
+        var statement = Assert.IsType<CmdIfStatementSyntax>(ShellSyntaxTree.ParseCommand("if %n% equ 5 echo five", ShellDialect.Cmd));
+        var condition = Assert.IsType<ShellBinaryExpressionSyntax>(statement.Condition);
+        var word = Assert.IsType<ShellOperandExpressionSyntax>(condition.Left).Word;
+
+        var reference = Assert.IsType<CmdVariableReferenceSyntax>(Assert.Single(word.Parts));
+        Assert.Equal("n", reference.Name);
+    }
+
+    [Theory]
+    // Text matching none of the four forms stays a lone operand rather than becoming an error.
+    [InlineData("if %x% echo hi")]
+    [InlineData("if exist")]
+    public void IfCondition_UnrecognizedForm_IsALoneOperand(string text)
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+        var statement = Assert.IsType<CmdIfStatementSyntax>(Assert.Single(tree.Root.Statements.Statements));
+
+        Assert.IsNotType<ShellRawExpressionSyntax>(statement.Condition);
+    }
+
     [Fact]
     public void For_ExposesVariableItemsAndSwitch()
     {

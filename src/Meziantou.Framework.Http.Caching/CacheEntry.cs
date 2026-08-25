@@ -70,7 +70,23 @@ internal sealed class CacheEntry
         // Handle Vary header for secondary key
         entry.SecondaryKey = BuildSecondaryKey(request, response);
 
+        // draft-ietf-httpbis-no-vary-search Section 5.2
+        entry.VariationConfig = ParseVariationConfig(response);
+        if (!entry.VariationConfig.IsDefault)
+        {
+            entry.NormalizedQuery = entry.VariationConfig.NormalizeQuery(request.RequestUri?.Query ?? string.Empty);
+        }
+
         return entry;
+    }
+
+    private static UrlVariationConfig ParseVariationConfig(HttpResponseMessage response)
+    {
+        if (!response.Headers.TryGetValues("No-Vary-Search", out var values))
+            return UrlVariationConfig.Default;
+
+        // RFC 8941 Section 4.2: the field lines of a dictionary field combine into a single value
+        return UrlVariationConfig.Parse(string.Join(", ", values));
     }
 
     private static bool HasImmutableDirective(CacheControlHeaderValue cacheControl)
@@ -181,6 +197,18 @@ internal sealed class CacheEntry
     }
 
     public CacheEntrySecondaryKey SecondaryKey { get; private set; }
+
+    /// <summary>Gets the <c>No-Vary-Search</c> config declared by the stored response.</summary>
+    /// <remarks>
+    /// The config decides the storage key, which cannot be rewritten afterwards, so it is captured when the
+    /// response is stored and is not updated from a later 304 response.
+    /// </remarks>
+    public UrlVariationConfig VariationConfig { get; private set; } = UrlVariationConfig.Default;
+
+    /// <summary>Gets the query of the request the response was stored for, canonicalized with <see cref="VariationConfig"/>.</summary>
+    /// <remarks>Only set for a non-default config: otherwise the query is already part of the primary key.</remarks>
+    public string? NormalizedQuery { get; private set; }
+
     public DateTimeOffset RequestTime { get; private set; }
     public DateTimeOffset ResponseTime { get; private set; }
     public DateTimeOffset ResponseDate { get; private set; }
@@ -211,6 +239,8 @@ internal sealed class CacheEntry
         {
             SecondaryKeyMatchNone = SecondaryKey.IsMatchNone,
             SecondaryKeyHeaders = SecondaryKey.Headers is null ? null : new Dictionary<string, string>(SecondaryKey.Headers, StringComparer.OrdinalIgnoreCase),
+            NoVarySearch = VariationConfig.IsDefault ? null : VariationConfig.ToHeaderValue(),
+            NormalizedQuery = NormalizedQuery,
             RequestTime = RequestTime,
             ResponseTime = ResponseTime,
             ResponseDate = ResponseDate,
@@ -242,6 +272,8 @@ internal sealed class CacheEntry
         var cacheEntry = new CacheEntry(serializedResponse)
         {
             SecondaryKey = CacheEntrySecondaryKey.Create(entry.SecondaryKeyMatchNone, entry.SecondaryKeyHeaders),
+            VariationConfig = UrlVariationConfig.Parse(entry.NoVarySearch),
+            NormalizedQuery = entry.NormalizedQuery,
             RequestTime = entry.RequestTime,
             ResponseTime = entry.ResponseTime,
             ResponseDate = entry.ResponseDate,
@@ -262,6 +294,20 @@ internal sealed class CacheEntry
         };
 
         return cacheEntry;
+    }
+
+    /// <summary>Indicates whether an entry stored under a query-independent key can answer a request for <paramref name="uri"/>.</summary>
+    /// <remarks>
+    /// draft-ietf-httpbis-no-vary-search Section 6: the scheme, host, port, and path are already part of the
+    /// storage key, so only the queries remain to be compared. An entry whose config is the default one does
+    /// not belong to that key, and never matches.
+    /// </remarks>
+    public bool MatchesQuery(Uri uri)
+    {
+        if (VariationConfig.IsDefault)
+            return false;
+
+        return string.Equals(VariationConfig.NormalizeQuery(uri.Query), NormalizedQuery, StringComparison.Ordinal);
     }
 
     /// <summary>Calculates the freshness lifetime per RFC 7234 Section 4.2.1.</summary>

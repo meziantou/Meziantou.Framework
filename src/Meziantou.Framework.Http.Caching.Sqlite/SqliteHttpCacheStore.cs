@@ -12,6 +12,8 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
     private const string SplitColumnsSql =
         "SecondaryKeyMatchNone, " +
         "SecondaryKeyHeadersJson, " +
+        "NoVarySearch, " +
+        "NormalizedQuery, " +
         "RequestTimeUtcTicks, " +
         "ResponseTimeUtcTicks, " +
         "ResponseDateUtcTicks, " +
@@ -97,7 +99,7 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
         command.CommandText =
             "INSERT INTO HttpCacheEntries(" +
             "PrimaryKey, SecondaryKey, " +
-            "SecondaryKeyMatchNone, SecondaryKeyHeadersJson, " +
+            "SecondaryKeyMatchNone, SecondaryKeyHeadersJson, NoVarySearch, NormalizedQuery, " +
             "RequestTimeUtcTicks, ResponseTimeUtcTicks, ResponseDateUtcTicks, " +
             "AgeValueTicks, MaxAgeTicks, SharedMaxAgeTicks, ExpiresUtcTicks, " +
             "MustRevalidate, ProxyRevalidate, ResponseNoCache, Public, Private, NoTransform, Immutable, " +
@@ -105,7 +107,7 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
             "StaleAtUtcTicks, DeleteWhenExpired, Payload) " +
             "VALUES (" +
             "$primaryKey, $secondaryKey, " +
-            "$secondaryKeyMatchNone, $secondaryKeyHeadersJson, " +
+            "$secondaryKeyMatchNone, $secondaryKeyHeadersJson, $noVarySearch, $normalizedQuery, " +
             "$requestTimeUtcTicks, $responseTimeUtcTicks, $responseDateUtcTicks, " +
             "$ageValueTicks, $maxAgeTicks, $sharedMaxAgeTicks, $expiresUtcTicks, " +
             "$mustRevalidate, $proxyRevalidate, $responseNoCache, $public, $private, $noTransform, $immutable, " +
@@ -114,6 +116,8 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
             "ON CONFLICT(PrimaryKey, SecondaryKey) DO UPDATE SET " +
             "SecondaryKeyMatchNone = excluded.SecondaryKeyMatchNone, " +
             "SecondaryKeyHeadersJson = excluded.SecondaryKeyHeadersJson, " +
+            "NoVarySearch = excluded.NoVarySearch, " +
+            "NormalizedQuery = excluded.NormalizedQuery, " +
             "RequestTimeUtcTicks = excluded.RequestTimeUtcTicks, " +
             "ResponseTimeUtcTicks = excluded.ResponseTimeUtcTicks, " +
             "ResponseDateUtcTicks = excluded.ResponseDateUtcTicks, " +
@@ -139,6 +143,8 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
         command.Parameters.AddWithValue("$secondaryKey", secondaryKey);
         command.Parameters.AddWithValue("$secondaryKeyMatchNone", entry.SecondaryKeyMatchNone ? 1 : 0);
         command.Parameters.AddWithValue("$secondaryKeyHeadersJson", (object?)secondaryKeyHeadersJson ?? DBNull.Value);
+        command.Parameters.AddWithValue("$noVarySearch", (object?)entry.NoVarySearch ?? DBNull.Value);
+        command.Parameters.AddWithValue("$normalizedQuery", (object?)entry.NormalizedQuery ?? DBNull.Value);
         command.Parameters.AddWithValue("$requestTimeUtcTicks", entry.RequestTime.UtcDateTime.Ticks);
         command.Parameters.AddWithValue("$responseTimeUtcTicks", entry.ResponseTime.UtcDateTime.Ticks);
         command.Parameters.AddWithValue("$responseDateUtcTicks", entry.ResponseDate.UtcDateTime.Ticks);
@@ -342,6 +348,8 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
             "SecondaryKey TEXT NOT NULL, " +
             "SecondaryKeyMatchNone INTEGER NOT NULL, " +
             "SecondaryKeyHeadersJson TEXT NULL, " +
+            "NoVarySearch TEXT NULL, " +
+            "NormalizedQuery TEXT NULL, " +
             "RequestTimeUtcTicks INTEGER NOT NULL, " +
             "ResponseTimeUtcTicks INTEGER NOT NULL, " +
             "ResponseDateUtcTicks INTEGER NOT NULL, " +
@@ -383,6 +391,8 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
     [
         ("SecondaryKeyMatchNone", "INTEGER"),
         ("SecondaryKeyHeadersJson", "TEXT"),
+        ("NoVarySearch", "TEXT"),
+        ("NormalizedQuery", "TEXT"),
         ("RequestTimeUtcTicks", "INTEGER"),
         ("ResponseTimeUtcTicks", "INTEGER"),
         ("ResponseDateUtcTicks", "INTEGER"),
@@ -492,6 +502,8 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
             {
                 SecondaryKeyMatchNone = ReadBoolean(reader, ordinals.SecondaryKeyMatchNone),
                 SecondaryKeyHeaders = DeserializeSecondaryKeyHeaders(headersJson),
+                NoVarySearch = ReadNullableString(reader, ordinals.NoVarySearch),
+                NormalizedQuery = ReadNullableString(reader, ordinals.NormalizedQuery),
                 RequestTime = FromUtcTicks(reader.GetInt64(ordinals.RequestTimeUtcTicks)),
                 ResponseTime = FromUtcTicks(reader.GetInt64(ordinals.ResponseTimeUtcTicks)),
                 ResponseDate = FromUtcTicks(reader.GetInt64(ordinals.ResponseDateUtcTicks)),
@@ -516,6 +528,14 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
         {
             return null;
         }
+    }
+
+    private static string? ReadNullableString(SqliteDataReader reader, int ordinal)
+    {
+        if (ordinal < 0 || reader.IsDBNull(ordinal))
+            return null;
+
+        return reader.GetString(ordinal);
     }
 
     private static bool ReadBoolean(SqliteDataReader reader, int ordinal)
@@ -562,6 +582,8 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
     {
         public int SecondaryKeyMatchNone { get; init; }
         public int SecondaryKeyHeadersJson { get; init; }
+        public int NoVarySearch { get; init; }
+        public int NormalizedQuery { get; init; }
         public int RequestTimeUtcTicks { get; init; }
         public int ResponseTimeUtcTicks { get; init; }
         public int ResponseDateUtcTicks { get; init; }
@@ -588,6 +610,8 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
             {
                 SecondaryKeyMatchNone = GetOrdinal(reader, "SecondaryKeyMatchNone"),
                 SecondaryKeyHeadersJson = GetOrdinal(reader, "SecondaryKeyHeadersJson"),
+                NoVarySearch = GetOrdinal(reader, "NoVarySearch"),
+                NormalizedQuery = GetOrdinal(reader, "NormalizedQuery"),
                 RequestTimeUtcTicks = GetOrdinal(reader, "RequestTimeUtcTicks"),
                 ResponseTimeUtcTicks = GetOrdinal(reader, "ResponseTimeUtcTicks"),
                 ResponseDateUtcTicks = GetOrdinal(reader, "ResponseDateUtcTicks"),

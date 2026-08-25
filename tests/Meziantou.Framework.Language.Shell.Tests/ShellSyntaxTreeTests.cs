@@ -391,6 +391,14 @@ public sealed class ShellSyntaxTreeTests
     }
 
     [Fact]
+    public void SourceText_ToStringReturnsTheText()
+    {
+        const string Text = "a\nb\nc";
+
+        Assert.Equal(Text, ShellSyntaxTree.ParseText(Text, ShellDialect.Bash).SourceText.ToString());
+    }
+
+    [Fact]
     public void SourceText_ReportsLines()
     {
         var tree = ShellSyntaxTree.ParseText("a\nb\nc", ShellDialect.Bash);

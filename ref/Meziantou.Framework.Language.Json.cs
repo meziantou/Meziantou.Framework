@@ -333,6 +333,7 @@ namespace Meziantou.Framework.Language.Json
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.TextLine> Lines { get => throw null; }
         public static Meziantou.Framework.Language.Json.SourceText From(string text) => throw null;
         public Meziantou.Framework.Language.Json.SourceText WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Json.JsonTextChange> changes) => throw null;
+        public override string ToString() => throw null;
     }
 
     public static class SyntaxFactory

@@ -38,6 +38,9 @@ public sealed class SourceText
         return new SourceText(updatedText);
     }
 
+    /// <summary>Returns the source text.</summary>
+    public override string ToString() => Text;
+
     private static ReadOnlyCollection<TextLine> BuildLines(string text)
     {
         if (text.Length == 0)

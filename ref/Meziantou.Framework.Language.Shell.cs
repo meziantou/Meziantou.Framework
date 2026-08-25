@@ -1721,6 +1721,7 @@ namespace Meziantou.Framework.Language.Shell
         public static Meziantou.Framework.Language.Shell.SourceText From(string text) => throw null;
         public Meziantou.Framework.Language.Shell.SourceText WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellTextChange> changes) => throw null;
         public Meziantou.Framework.Language.Shell.TextLine GetLine(int position) => throw null;
+        public override string ToString() => throw null;
     }
 
     public static class SyntaxFactory

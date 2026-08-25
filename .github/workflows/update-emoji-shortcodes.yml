@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - 'tools/Meziantou.Framework.Unicode.Generator/**'
+      - 'tools/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator/**'
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
@@ -27,21 +27,21 @@ jobs:
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
       - run: |
-          dotnet run --project tools/Meziantou.Framework.Unicode.Generator
+          dotnet run --project tools/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator
           if ($LASTEXITCODE -ne 0) {
             git config --global user.email "git@meziantou.net"
             git config --global user.name "meziantou"
-            git checkout -b update-unicode-confusables
+            git checkout -b update-emoji-shortcodes
             git add .
-            git commit -m "Update Unicode confusables data"
-            git push origin update-unicode-confusables --force
+            git commit -m "Update emoji shortcode mappings"
+            git push origin update-emoji-shortcodes --force
             $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            $body = "Update Unicode confusables data`n`nCreated by: $runUrl"
-            $openPr = gh pr list --head update-unicode-confusables --state open --json number --jq '.[0].number // empty'
+            $body = "Update emoji shortcode mappings`n`nCreated by: $runUrl"
+            $openPr = gh pr list --head update-emoji-shortcodes --state open --json number --jq '.[0].number // empty'
             if ($openPr) {
-              gh pr edit $openPr --title "Update Unicode confusables data" --body $body
+              gh pr edit $openPr --title "Update emoji shortcode mappings" --body $body
             } else {
-              gh pr create --title "Update Unicode confusables data" --body $body --base main --head update-unicode-confusables
+              gh pr create --title "Update emoji shortcode mappings" --body $body --base main --head update-emoji-shortcodes
             }
           }
         env:

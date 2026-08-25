@@ -37,7 +37,12 @@ jobs:
             git push origin update-hsts-preload --force
             $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             $body = "Update HSTS preload list`n`nCreated by: $runUrl"
-            gh pr create --title "Update HSTS preload list" --body $body --base main
+            $openPr = gh pr list --head update-hsts-preload --state open --json number --jq '.[0].number // empty'
+            if ($openPr) {
+              gh pr edit $openPr --title "Update HSTS preload list" --body $body
+            } else {
+              gh pr create --title "Update HSTS preload list" --body $body --base main --head update-hsts-preload
+            }
           }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

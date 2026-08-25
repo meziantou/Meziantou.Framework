@@ -787,7 +787,7 @@ namespace Meziantou.Framework.Yaml.Serialization
     {
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false)]
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
     public sealed class YamlBlockSequenceItemStyleAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
         public Meziantou.Framework.Yaml.YamlSequenceItemStyle MappingStyle { get => throw null; set { } }
@@ -809,7 +809,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public abstract void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, object? value);
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Interface | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Enum | System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = false)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Enum | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Interface, AllowMultiple = false)]
     public sealed class YamlConverterAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
@@ -833,7 +833,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public abstract void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, T value);
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Interface | System.AttributeTargets.Class, AllowMultiple = true)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple = true)]
     public sealed class YamlDerivedTypeAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
         public System.Type DerivedType { get => throw null; }
@@ -863,44 +863,44 @@ namespace Meziantou.Framework.Yaml.Serialization
         public YamlEnumMemberNameAttribute(string name) { }
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
     public sealed class YamlExtensionDataAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Interface | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = false)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Interface, AllowMultiple = false)]
     public sealed class YamlIgnoreAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
         public Meziantou.Framework.Yaml.YamlIgnoreCondition Condition { get => throw null; set { } }
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
     public sealed class YamlIncludeAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Interface | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = false)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Interface, AllowMultiple = false)]
     public sealed class YamlNamingPolicyAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
         public Meziantou.Framework.Yaml.YamlKnownNamingPolicy NamingPolicy { get => throw null; }
         public YamlNamingPolicyAttribute(Meziantou.Framework.Yaml.YamlKnownNamingPolicy namingPolicy) { }
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = false)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
     public sealed class YamlNumberHandlingAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
         public Meziantou.Framework.Yaml.YamlNumberHandling Handling { get => throw null; }
         public YamlNumberHandlingAttribute(Meziantou.Framework.Yaml.YamlNumberHandling handling) { }
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = false)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
     public sealed class YamlObjectCreationHandlingAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
         public Meziantou.Framework.Yaml.YamlObjectCreationHandling Handling { get => throw null; }
         public YamlObjectCreationHandlingAttribute(Meziantou.Framework.Yaml.YamlObjectCreationHandling handling) { }
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Interface | System.AttributeTargets.Class)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Interface)]
     public sealed class YamlPolymorphicAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
         public string? TypeDiscriminatorPropertyName { get => throw null; set { } }
@@ -909,14 +909,14 @@ namespace Meziantou.Framework.Yaml.Serialization
         public bool InferClosedTypePolymorphism { get => throw null; set { } }
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
     public sealed class YamlPropertyNameAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
         public string Name { get => throw null; }
         public YamlPropertyNameAttribute(string name) { }
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
     public sealed class YamlPropertyOrderAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
         public int Order { get => throw null; }
@@ -956,7 +956,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public bool TryGetCustomConverter(System.Type typeToConvert, out Meziantou.Framework.Yaml.Serialization.YamlConverter? converter) => throw null;
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
     public sealed class YamlRequiredAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
     }
@@ -1119,7 +1119,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public override Meziantou.Framework.Yaml.Serialization.YamlTypeClassifier CreateYamlClassifier(Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext context, Meziantou.Framework.Yaml.YamlSerializerOptions options) => throw null;
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = false)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false)]
     public sealed class YamlUnmappedMemberHandlingAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
         public Meziantou.Framework.Yaml.YamlUnmappedMemberHandling Handling { get => throw null; }

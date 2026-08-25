@@ -32,7 +32,7 @@ namespace Meziantou.Framework.Yamlish
         public sealed override Meziantou.Framework.Yamlish.Nodes.YamlishNode Write(object value, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Interface | System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]
     public sealed class YamlishDerivedTypeAttribute : Meziantou.Framework.Yamlish.YamlishAttribute
     {
         public System.Type DerivedType { get => throw null; }
@@ -42,7 +42,7 @@ namespace Meziantou.Framework.Yamlish
         public YamlishDerivedTypeAttribute(System.Type derivedType, int typeDiscriminator) { }
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
     public sealed class YamlishIgnoreAttribute : Meziantou.Framework.Yamlish.YamlishAttribute
     {
         public Meziantou.Framework.Yamlish.YamlishIgnoreCondition Condition { get => throw null; set { } }
@@ -73,13 +73,13 @@ namespace Meziantou.Framework.Yamlish
         Populate = 1
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Interface | System.AttributeTargets.Struct | System.AttributeTargets.Class, Inherited = false)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Interface, Inherited = false)]
     public sealed class YamlishPolymorphicAttribute : Meziantou.Framework.Yamlish.YamlishAttribute
     {
         public string TypeDiscriminatorPropertyName { get => throw null; set { } }
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
     public sealed class YamlishPropertyNameAttribute : Meziantou.Framework.Yamlish.YamlishAttribute
     {
         public string Name { get => throw null; }
@@ -103,7 +103,7 @@ namespace Meziantou.Framework.Yamlish
         Folded = 5
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
     public sealed class YamlishScalarStyleAttribute : Meziantou.Framework.Yamlish.YamlishAttribute
     {
         public Meziantou.Framework.Yamlish.YamlishScalarStyle Style { get => throw null; }
@@ -118,7 +118,7 @@ namespace Meziantou.Framework.Yamlish
         Flow = 2
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
     public sealed class YamlishSequenceStyleAttribute : Meziantou.Framework.Yamlish.YamlishAttribute
     {
         public Meziantou.Framework.Yamlish.YamlishSequenceStyle Style { get => throw null; }

@@ -12,6 +12,7 @@ public sealed class PublicApiGeneratorTests
 {
     private const string CompilationCacheVersion = "v1";
     private const string CompilationCacheDirectoryEnvironmentVariable = "MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY";
+    private static readonly Lazy<Task<string>> DotNetSdkVersion = new(GetDotNetSdkVersionAsync);
 
     [Fact]
     public async Task EmptyClass()
@@ -272,6 +273,29 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Delegate_FollowedByClass()
+    {
+        await Validate("""
+            public delegate int SimpleDelegate(int value);
+
+            public class Sample
+            {
+                public int Method(int value) => value;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public int Method(int value) => throw null;
+            }
+
+
+            public delegate int SimpleDelegate(int value);
+            """);
+    }
+
+    [Fact]
     public async Task Method_Pointer()
     {
         await Validate("""
@@ -287,6 +311,87 @@ public sealed class PublicApiGeneratorTests
                 public unsafe int* M(int* value) => throw null;
             }
             """);
+    }
+
+    [Fact]
+    public async Task MemorySafetyRules_UnsafeMembers()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public unsafe int Field;
+
+                public unsafe Sample() { }
+
+                public unsafe void Method() { }
+
+                public unsafe int Property { get => 0; set { } }
+
+                public int PropertyWithUnsafeGetter { unsafe get => 0; set { } }
+
+                public unsafe event System.Action? Event;
+
+                public static unsafe int operator +(Sample left, Sample right) => 0;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public unsafe int Field;
+                public unsafe int Property { get => throw null; set { } }
+                public int PropertyWithUnsafeGetter { unsafe get => throw null; set { } }
+                public unsafe event System.Action? Event;
+                public unsafe Sample() { }
+                public unsafe void Method() { }
+                public static unsafe int operator +(Sample left, Sample right) => throw null;
+            }
+            """, compilerOptions: new CompilerOptions
+        {
+            UpdatedMemorySafetyRules = true,
+        });
+    }
+
+    [Fact]
+    public async Task MemorySafetyRules_SafeMembersWithPointers()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public int* Field;
+
+                public int* Property { get => null; set { } }
+
+                public int* Method(int* value) => value;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public int* Field;
+                public int* Property { get => throw null; set { } }
+                public int* Method(int* value) => throw null;
+            }
+            """, compilerOptions: new CompilerOptions
+        {
+            UpdatedMemorySafetyRules = true,
+        });
+    }
+
+    [Fact]
+    public async Task MemorySafetyRules_Delegate_Pointer()
+    {
+        await Validate("""
+            public delegate int* PointerDelegate(int* value);
+            """, """
+            #nullable enable
+
+            public delegate int* PointerDelegate(int* value);
+            """, compilerOptions: new CompilerOptions
+        {
+            UpdatedMemorySafetyRules = true,
+        });
     }
 
     [Fact]
@@ -1994,6 +2099,62 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Attribute_FlagsEnumArgument_UsesAscendingValueOrder()
+    {
+        await Validate("""
+            namespace System.Diagnostics
+            {
+                [System.Flags]
+                public enum SampleFlags
+                {
+                    None = 0,
+                    First = 1,
+                    Second = 2,
+                    Third = 4,
+                    All = 7,
+                }
+
+                [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
+                public sealed class SampleAttribute : System.Attribute
+                {
+                    public SampleAttribute(SampleFlags flags) { }
+                }
+            }
+
+            [System.Diagnostics.Sample(System.Diagnostics.SampleFlags.First | System.Diagnostics.SampleFlags.Second)]
+            public class Sample
+            {
+            }
+            """, """
+            #nullable enable
+
+            [System.Diagnostics.Sample(System.Diagnostics.SampleFlags.First | System.Diagnostics.SampleFlags.Second)]
+            public class Sample
+            {
+            }
+
+            namespace System.Diagnostics
+            {
+                [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
+                public sealed class SampleAttribute : System.Attribute
+                {
+                    public SampleAttribute(System.Diagnostics.SampleFlags flags) { }
+                }
+
+                [System.Flags]
+                public enum SampleFlags
+                {
+                    None = 0,
+                    First = 1,
+                    Second = 2,
+                    Third = 4,
+                    All = 7
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task AttributeTypeArgument_UsesCSharpGenericTypeSyntax()
     {
         var files = await BuildFiles(
@@ -2399,6 +2560,10 @@ public sealed class PublicApiGeneratorTests
                 public sealed class ClosedAttribute : System.Attribute
                 {
                 }
+
+                public sealed class IsClosedTypeAttribute : System.Attribute
+                {
+                }
             }
 
             public closed class Sample
@@ -2415,6 +2580,10 @@ public sealed class PublicApiGeneratorTests
             {
                 [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
                 public sealed class ClosedAttribute : System.Attribute
+                {
+                }
+
+                public sealed class IsClosedTypeAttribute : System.Attribute
                 {
                 }
             }
@@ -2494,6 +2663,8 @@ public sealed class PublicApiGeneratorTests
             IncludeAutoGeneratedComment = false,
         };
 
+        var features = compilerOptions.UpdatedMemorySafetyRules ? "\n    <Features>$(Features);updated-memory-safety-rules</Features>" : "";
+
         // Build the project
         var sourceProjectDirectory = temporaryDirectory / "source";
         temporaryDirectory.CreateTextFile(sourceProjectDirectory / "project.csproj", $$"""
@@ -2503,7 +2674,7 @@ public sealed class PublicApiGeneratorTests
                 <LangVersion>preview</LangVersion>
                 <Nullable>{{(compilerOptions.Nullable ? "enable" : "disable")}}</Nullable>
                 <ImplicitUsings>enable</ImplicitUsings>
-                <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+                <AllowUnsafeBlocks>true</AllowUnsafeBlocks>{{features}}
               </PropertyGroup>
             </Project>
             """);
@@ -2534,7 +2705,7 @@ public sealed class PublicApiGeneratorTests
                 <LangVersion>preview</LangVersion>
                 <Nullable>{{(compilerOptions.Nullable ? "enable" : "disable")}}</Nullable>
                 <ImplicitUsings>enable</ImplicitUsings>
-                <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+                <AllowUnsafeBlocks>true</AllowUnsafeBlocks>{{features}}
               </PropertyGroup>
             </Project>
             """);
@@ -2559,6 +2730,7 @@ public sealed class PublicApiGeneratorTests
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
         compilerOptions ??= new CompilerOptions();
+        var features = compilerOptions.UpdatedMemorySafetyRules ? "\n    <Features>$(Features);updated-memory-safety-rules</Features>" : "";
 
         var sourceProjectDirectory = temporaryDirectory / "source";
         temporaryDirectory.CreateTextFile(sourceProjectDirectory / "project.csproj", $$"""
@@ -2568,7 +2740,7 @@ public sealed class PublicApiGeneratorTests
                 <LangVersion>preview</LangVersion>
                 <Nullable>{{(compilerOptions.Nullable ? "enable" : "disable")}}</Nullable>
                 <ImplicitUsings>enable</ImplicitUsings>
-                <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+                <AllowUnsafeBlocks>true</AllowUnsafeBlocks>{{features}}
               </PropertyGroup>
             </Project>
             """);
@@ -2674,7 +2846,7 @@ public sealed class PublicApiGeneratorTests
     {
         var projectPath = FullPath.FromPath(Assert.Single(Directory.EnumerateFiles(temporaryDirectory, "*.csproj", SearchOption.TopDirectoryOnly)));
         var cacheDirectory = GetCompilationCacheDirectory();
-        var cacheKey = ComputeCompilationCacheKey(temporaryDirectory);
+        var cacheKey = ComputeCompilationCacheKey(temporaryDirectory, await DotNetSdkVersion.Value);
         var cachedAssemblyPath = cacheDirectory / cacheKey / "Source.dll";
         if (File.Exists(cachedAssemblyPath))
             return cachedAssemblyPath;
@@ -2745,10 +2917,28 @@ public sealed class PublicApiGeneratorTests
         return FullPath.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) / "Meziantou.Framework" / "PublicApiGeneratorTests" / "CompilationCache";
     }
 
-    private static string ComputeCompilationCacheKey(FullPath sourceProjectDirectory)
+    private static async Task<string> GetDotNetSdkVersionAsync()
+    {
+        // The compiler ships with the SDK, so the cached assemblies must not be reused after an SDK update.
+        // The sample projects are built in the temporary directory, so resolve the SDK from there to ignore the global.json of the repository.
+        var processResult = await ProcessWrapper.Create("dotnet")
+            .WithArguments(["--version"])
+            .WithWorkingDirectory(FullPath.FromPath(Path.GetTempPath()))
+            .WithEnvironmentVariables(env => env.Set("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1"))
+            .WithValidation(ProcessValidationMode.None)
+            .ExecuteBufferedAsync(XunitCancellationToken);
+
+        if (!processResult.ExitCode.IsSuccess)
+            throw new XunitException($"Command failed: dotnet --version\nstderr:\n{string.Join('\n', processResult.Output.StandardError.Select(line => line.Text))}");
+
+        return string.Join('\n', processResult.Output.StandardOutput.Select(line => line.Text)).Trim();
+    }
+
+    private static string ComputeCompilationCacheKey(FullPath sourceProjectDirectory, string sdkVersion)
     {
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         AddHashData(hash, CompilationCacheVersion);
+        AddHashData(hash, sdkVersion);
 
         var files = Directory
             .EnumerateFiles(sourceProjectDirectory, "*", SearchOption.AllDirectories)
@@ -2800,5 +2990,6 @@ public sealed class PublicApiGeneratorTests
     {
         public bool Nullable { get; set; } = true;
         public string TargetFramework { get; set; } = "net8.0";
+        public bool UpdatedMemorySafetyRules { get; set; }
     }
 }

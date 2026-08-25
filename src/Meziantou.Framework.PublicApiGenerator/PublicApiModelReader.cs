@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.PublicApiGenerator;
 
@@ -15,9 +16,12 @@ internal static class PublicApiModelReader
     private const string IsClosedTypeAttributeFullName = "System.Runtime.CompilerServices.IsClosedTypeAttribute";
     private const string UnionAttributeFullName = "System.Runtime.CompilerServices.UnionAttribute";
     private const string IUnionInterfaceFullName = "System.Runtime.CompilerServices.IUnion";
+    private const string MemorySafetyRulesAttributeFullName = "System.Runtime.CompilerServices.MemorySafetyRulesAttribute";
+    private const string RequiresUnsafeAttributeFullName = "System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
     private static readonly Lock EnumMetadataCacheLock = new();
     private static readonly Dictionary<string, EnumMetadata?> EnumMetadataCache = new(StringComparer.Ordinal);
+    private static readonly ConditionalWeakTable<MetadataReader, StrongBox<bool>> UpdatedMemorySafetyRulesCache = new();
 
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
     {
@@ -51,6 +55,8 @@ internal static class PublicApiModelReader
         "System.Runtime.CompilerServices.ScopedRefAttribute",
         "System.Runtime.CompilerServices.ClosedAttribute",
         "System.Runtime.CompilerServices.IsClosedTypeAttribute",
+        MemorySafetyRulesAttributeFullName,
+        RequiresUnsafeAttributeFullName,
         "System.Reflection.AssemblyCompanyAttribute",
         "System.Reflection.AssemblyConfigurationAttribute",
         "System.Reflection.AssemblyCopyrightAttribute",
@@ -145,7 +151,10 @@ internal static class PublicApiModelReader
                 invokeSignature.Signature.ReturnType,
                 GetNullableMetadataInfo(metadataReader, typeDefinitionHandle, GetParameterCustomAttributes(metadataReader, invokeMethod, sequenceNumber: 0), invokeMethodHandle));
             var parameters = BuildParameterDeclarations(metadataReader, typeDefinitionHandle, invokeMethodHandle, invokeMethod, invokeSignature.Signature.ParameterTypes, invokeSignature.Signature.ReturnType, isExtensionMethod: false);
-            var unsafeModifier = RequiresUnsafeContext(invokeSignature.Signature.ReturnType, invokeSignature.Signature.ParameterTypes) ? " unsafe" : string.Empty;
+            // The unsafe modifier is not allowed on type declarations under the updated memory safety rules
+            var unsafeModifier = !HasUpdatedMemorySafetyRules(metadataReader) && RequiresUnsafeContext(invokeSignature.Signature.ReturnType, invokeSignature.Signature.ParameterTypes)
+                ? " unsafe"
+                : string.Empty;
 
             var delegateBuilder = new StringBuilder();
             foreach (var attribute in typeAttributes)
@@ -153,7 +162,7 @@ internal static class PublicApiModelReader
                 delegateBuilder.AppendLine(attribute);
             }
 
-            delegateBuilder.Append($"{accessibility}{unsafeModifier} delegate {returnType} {escapedTypeName}{genericArguments}({string.Join(", ", parameters.Select(static parameter => parameter.Text))}){FormatConstraintsInline(constraints)};");
+            delegateBuilder.AppendLine($"{accessibility}{unsafeModifier} delegate {returnType} {escapedTypeName}{genericArguments}({string.Join(", ", parameters.Select(static parameter => parameter.Text))}){FormatConstraintsInline(constraints)};");
             return delegateBuilder.ToString();
         }
 
@@ -508,6 +517,11 @@ internal static class PublicApiModelReader
             modifiers.Add("const");
         }
 
+        if (IsRequiresUnsafeMember(metadataReader, field.GetCustomAttributes()))
+        {
+            modifiers.Add("unsafe");
+        }
+
         var declaration = $"{string.Join(' ', modifiers)} {typeName} {EscapeIdentifier(metadataReader.GetString(field.Name))}";
         if (field.Attributes.HasFlag(FieldAttributes.Literal) && !field.GetDefaultValue().IsNil)
         {
@@ -555,6 +569,19 @@ internal static class PublicApiModelReader
             modifiers.Add("required");
         }
 
+        var isGetUnsafe = isGetVisible && IsRequiresUnsafeMember(metadataReader, getAccessor!.Value.GetCustomAttributes());
+        var isSetUnsafe = isSetVisible && IsRequiresUnsafeMember(metadataReader, setAccessor!.Value.GetCustomAttributes());
+
+        // The unsafe modifier can be set on the property or on its accessors, but not on both
+        var isPropertyUnsafe = IsRequiresUnsafeMember(metadataReader, property.GetCustomAttributes()) ||
+                               (isGetUnsafe || isSetUnsafe) && isGetUnsafe == isGetVisible && isSetUnsafe == isSetVisible;
+        if (isPropertyUnsafe)
+        {
+            modifiers.Add("unsafe");
+            isGetUnsafe = false;
+            isSetUnsafe = false;
+        }
+
         NullableMetadataInfo propertyNullableInfo;
         if (isGetVisible && !getAccessorHandle.IsNil && getAccessor is MethodDefinition getter)
         {
@@ -587,7 +614,7 @@ internal static class PublicApiModelReader
         var accessorText = new List<string>();
         if (isGetVisible)
         {
-            var accessorModifier = BuildAccessorModifier(getAccessor!.Value.Attributes, representativeAttributes);
+            var accessorModifier = BuildAccessorModifier(getAccessor!.Value.Attributes, representativeAttributes) + (isGetUnsafe ? "unsafe " : string.Empty);
             var accessorBody = getAccessor.Value.Attributes.HasFlag(MethodAttributes.Abstract) ? "get;" : "get => throw null;";
             accessorText.Add(accessorModifier + accessorBody);
         }
@@ -596,7 +623,7 @@ internal static class PublicApiModelReader
         {
             var setterSignature = DecodeMethodSignature(metadataReader, declaringTypeHandle, setAccessorHandle, setAccessor!.Value);
             var accessorKeyword = setterSignature.ContainsIsExternalInitModifier ? "init" : "set";
-            var accessorModifier = BuildAccessorModifier(setAccessor.Value.Attributes, representativeAttributes);
+            var accessorModifier = BuildAccessorModifier(setAccessor.Value.Attributes, representativeAttributes) + (isSetUnsafe ? "unsafe " : string.Empty);
             var accessorBody = setAccessor.Value.Attributes.HasFlag(MethodAttributes.Abstract)
                 ? accessorKeyword + ";"
                 : accessorKeyword + " { }";
@@ -629,6 +656,12 @@ internal static class PublicApiModelReader
         if (addMethod.Attributes.HasFlag(MethodAttributes.Static))
         {
             modifiers.Add("static");
+        }
+
+        // Event accessors cannot be marked as unsafe individually
+        if (IsRequiresUnsafeMember(metadataReader, eventDefinition.GetCustomAttributes()))
+        {
+            modifiers.Add("unsafe");
         }
 
         var eventNullableInfo = GetNullableMetadataInfo(
@@ -671,7 +704,7 @@ internal static class PublicApiModelReader
         var methodBody = BuildMethodBody(metadataReader, method, signature);
         var methodName = isExplicitInterfaceImplementation ? BuildExplicitInterfaceMethodName(name) : EscapeIdentifier(name);
         var modifiersPrefix = modifiers.Count > 0 ? string.Join(' ', modifiers) + " " : string.Empty;
-        var unsafeModifier = RequiresUnsafeContext(signature.Signature.ReturnType, signature.Signature.ParameterTypes) ? "unsafe " : string.Empty;
+        var unsafeModifier = RequiresUnsafe(metadataReader, method.GetCustomAttributes(), signature.Signature.ReturnType, signature.Signature.ParameterTypes) ? "unsafe " : string.Empty;
         var requiresNullableDisableDirective = RequiresNullableDirectives(signature.Signature.ReturnType, returnNullableInfo) ||
                                                RequiresNullableDisableDirectiveForParameters(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes, signature.Signature.ReturnType);
         var methodSuffix = FormatConstraintsInline(constraints) + methodBody;
@@ -700,11 +733,14 @@ internal static class PublicApiModelReader
         var typeName = EscapeIdentifier(RemoveGenericArity(metadataReader.GetString(declaringType.Name)));
         var accessibility = GetAccessibility(method.Attributes);
         var modifiersPrefix = string.IsNullOrEmpty(accessibility) ? string.Empty : accessibility + " ";
-        var unsafeModifier = RequiresUnsafeContext(signature.Signature.ReturnType, signature.Signature.ParameterTypes) ? "unsafe " : string.Empty;
+        var requiresUnsafe = RequiresUnsafe(metadataReader, method.GetCustomAttributes(), signature.Signature.ReturnType, signature.Signature.ParameterTypes);
+        var unsafeModifier = requiresUnsafe ? "unsafe " : string.Empty;
         var parameters = BuildParameterDeclarations(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes, signature.Signature.ReturnType, isExtensionMethod: false);
         var requiresNullableDisableDirective = RequiresNullableDisableDirectiveForParameters(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes, signature.Signature.ReturnType);
         var initializer = BuildConstructorInitializer(metadataReader, declaringType);
-        if (signature.Signature.ParameterTypes.Length == 0 && string.IsNullOrEmpty(initializer) && !HasAttribute(metadataReader, method.GetCustomAttributes(), RequiresPreviewFeaturesAttributeFullName))
+
+        // A parameterless constructor requiring an unsafe context is not equivalent to the implicit one as it doesn't satisfy the new() constraint
+        if (signature.Signature.ParameterTypes.Length == 0 && string.IsNullOrEmpty(initializer) && !requiresUnsafe && !HasAttribute(metadataReader, method.GetCustomAttributes(), RequiresPreviewFeaturesAttributeFullName))
             return null;
 
         var methodBody = method.Attributes.HasFlag(MethodAttributes.Abstract) ? ";" : " { }";
@@ -1089,6 +1125,28 @@ internal static class PublicApiModelReader
 
         var topLevelAnnotation = nullableInfo.Flags.IsDefaultOrEmpty ? nullableInfo.ContextFlag : nullableInfo.Flags[0];
         return topLevelAnnotation == 0;
+    }
+
+    private static bool HasUpdatedMemorySafetyRules(MetadataReader metadataReader)
+    {
+        return UpdatedMemorySafetyRulesCache.GetValue(
+            metadataReader,
+            static reader => new StrongBox<bool>(HasAttribute(reader, reader.GetModuleDefinition().GetCustomAttributes(), MemorySafetyRulesAttributeFullName))).Value;
+    }
+
+    private static bool IsRequiresUnsafeMember(MetadataReader metadataReader, CustomAttributeHandleCollection customAttributes)
+    {
+        return HasUpdatedMemorySafetyRules(metadataReader) &&
+               HasAttribute(metadataReader, customAttributes, RequiresUnsafeAttributeFullName);
+    }
+
+    private static bool RequiresUnsafe(MetadataReader metadataReader, CustomAttributeHandleCollection customAttributes, DecodedType returnType, ImmutableArray<DecodedType> parameterTypes)
+    {
+        // Under the updated memory safety rules, the compiler marks the members requiring an unsafe context with an attribute.
+        // Otherwise, a member requires an unsafe context when a pointer type appears in its signature (compiler compat mode).
+        return HasUpdatedMemorySafetyRules(metadataReader)
+            ? HasAttribute(metadataReader, customAttributes, RequiresUnsafeAttributeFullName)
+            : RequiresUnsafeContext(returnType, parameterTypes);
     }
 
     private static bool RequiresUnsafeContext(DecodedType returnType, ImmutableArray<DecodedType> parameterTypes)
@@ -2406,6 +2464,8 @@ internal static class PublicApiModelReader
             return false;
         }
 
+        // The members are matched from the largest value to the smallest one, but they are formatted from the smallest to the largest one (same as Enum.ToString)
+        formattedMemberNames.Reverse();
         result = string.Join(" | ", formattedMemberNames);
         return true;
     }

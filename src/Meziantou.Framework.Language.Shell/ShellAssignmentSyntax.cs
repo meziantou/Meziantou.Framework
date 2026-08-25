@@ -22,6 +22,9 @@ public sealed class ShellAssignmentSyntax : ShellSyntaxNode
     public string Name => NameToken.ValueText;
     public ShellSyntaxToken EqualsToken { get; }
 
+    /// <summary>Returns <see langword="true"/> for the bash and zsh append form, <c>name+=value</c>.</summary>
+    public bool IsAppend => EqualsToken.Kind == ShellSyntaxKind.PlusEqualsToken;
+
     /// <summary>The assigned word, or <see langword="null"/> for an empty assignment such as <c>NAME=</c>.</summary>
     public ShellWordSyntax? Value { get; }
 

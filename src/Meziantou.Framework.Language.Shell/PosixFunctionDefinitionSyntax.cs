@@ -32,6 +32,9 @@ public sealed class PosixFunctionDefinitionSyntax : ShellStatementSyntax
 
     public ShellSyntaxToken NameToken { get; }
     public string Name => NameToken.ValueText;
+
+    /// <summary>Returns <see langword="true"/> for a zsh anonymous function, which has no name.</summary>
+    public bool IsAnonymous => NameToken.IsMissing;
     public ShellSyntaxToken? OpenParenToken { get; }
     public ShellSyntaxToken? CloseParenToken { get; }
 

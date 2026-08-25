@@ -9,6 +9,7 @@ internal sealed partial class PosixParser
     private static readonly string[] DoWord = ["do"];
     private static readonly string[] DoneWord = ["done"];
     private static readonly string[] CloseBraceWord = ["}"];
+    private static readonly string[] EndWord = ["end"];
 
     private ShellStatementSyntax ParseCommandOrCompound()
     {
@@ -53,7 +54,15 @@ internal sealed partial class PosixParser
                 return ParsePrefixedStatement(ShellSyntaxKind.PosixCoprocStatement, hasName: true);
             case "{":
                 return ParseBraceGroup();
+            case "foreach" when dialect.HasFeature(ShellDialectFeatures.ZshExtensions):
+                return ParseZshForeachStatement();
+            case "repeat" when dialect.HasFeature(ShellDialectFeatures.ZshExtensions):
+                return ParseZshRepeatStatement();
         }
+
+        // zsh anonymous function: `() { ... }` or `() command`.
+        if (dialect.HasFeature(ShellDialectFeatures.ZshExtensions) && IsAtAnonymousFunction())
+            return ParseZshAnonymousFunction();
 
         if (_lexer.Current == '(' && _lexer.Peek(1) == '(' && _options.Dialect.HasFeature(ShellDialectFeatures.Arithmetic))
             return ParseArithmeticCommand();
@@ -140,6 +149,10 @@ internal sealed partial class PosixParser
                 nameToken: null,
                 new PosixWhileStatementSyntax(ShellSyntaxKind.PosixWhileStatement, hiddenWhileKeyword, new ShellStatementListSyntax([header]), cStyleDo, cStyleBody, ExpectKeyword("done")));
         }
+
+        // zsh writes the word list in parentheses: `for x (a b) command`.
+        if (_options.Dialect.HasFeature(ShellDialectFeatures.ZshExtensions) && kind == ShellSyntaxKind.PosixForStatement && IsParenthesizedWordList())
+            return ParseZshForeachStatement(keyword);
 
         var variableToken = ReadBareWordToken(ShellSyntaxKind.VariableNameToken);
 
@@ -268,6 +281,133 @@ internal sealed partial class PosixParser
         return new PosixCaseClauseSyntax(openParenToken, patterns, separators, closeParenToken, body, terminatorToken);
     }
 
+    // ---- zsh extensions ----
+
+    /// <summary>Returns whether a <c>name (</c> word list follows the loop keyword, which is the zsh short form.</summary>
+    private bool IsParenthesizedWordList()
+    {
+        var text = _lexer.Text;
+        var scan = _lexer.Position;
+        while (scan < text.Length && PosixLexer.IsNameCharacter(text[scan]))
+        {
+            scan++;
+        }
+
+        if (scan == _lexer.Position)
+            return false;
+
+        while (scan < text.Length && text[scan] is ' ' or '\t')
+        {
+            scan++;
+        }
+
+        return scan < text.Length && text[scan] == '(';
+    }
+
+    /// <summary>Returns whether the text at the current position is an anonymous function header, <c>()</c>.</summary>
+    private bool IsAtAnonymousFunction()
+    {
+        if (_lexer.Current != '(')
+            return false;
+
+        var text = _lexer.Text;
+        var scan = _lexer.Position + 1;
+        while (scan < text.Length && text[scan] is ' ' or '\t')
+        {
+            scan++;
+        }
+
+        return scan < text.Length && text[scan] == ')';
+    }
+
+    private PosixFunctionDefinitionSyntax ParseZshAnonymousFunction()
+    {
+        var openParenToken = ReadOperatorToken(ShellSyntaxKind.OpenParenToken, length: 1);
+        AccumulateInlineTrivia();
+        var closeParenToken = ReadOperatorToken(ShellSyntaxKind.CloseParenToken, length: 1);
+        var nameToken = MissingToken(ShellSyntaxKind.VariableNameToken, openParenToken.FullSpan.Start);
+
+        return new PosixFunctionDefinitionSyntax(functionKeyword: null, nameToken, openParenToken, closeParenToken, ParseFunctionBody());
+    }
+
+    /// <summary>Reads <c>foreach x (a b) ... end</c> and the short <c>for x (a b) command</c> form.</summary>
+    private ZshForeachStatementSyntax ParseZshForeachStatement(ShellSyntaxToken? keyword = null)
+    {
+        keyword ??= ReadKeyword();
+        var variableToken = ReadBareWordToken(ShellSyntaxKind.VariableNameToken);
+        var openParenToken = ExpectCharacter('(', ShellSyntaxKind.OpenParenToken);
+
+        var items = new List<ShellWordSyntax>();
+        while (true)
+        {
+            AccumulateStatementTrivia();
+            if (_lexer.IsAtEnd || _lexer.Current == ')')
+                break;
+
+            if (PosixLexer.IsWordBoundary(_lexer.Current) && !IsAtProcessSubstitution())
+                break;
+
+            var positionBefore = _lexer.Position;
+            items.Add(ParseWord());
+            if (_lexer.Position == positionBefore)
+            {
+                _lexer.Position++;
+            }
+        }
+
+        var closeParenToken = ExpectCharacter(')', ShellSyntaxKind.CloseParenToken);
+
+        // `foreach` closes with `end`; the short `for` form takes a single statement and no terminator.
+        var isForeach = string.Equals(keyword.Text, "foreach", StringComparison.Ordinal);
+        if (!isForeach)
+        {
+            var shortBody = new ShellStatementListSyntax([ParseCommandOrCompound()]);
+
+            return new ZshForeachStatementSyntax(keyword, variableToken, openParenToken, items, closeParenToken, shortBody, endKeyword: null);
+        }
+
+        AccumulateStatementTrivia();
+        if (PeekBareWord() == "{")
+        {
+            var braceBody = new ShellStatementListSyntax([ParseBraceGroup()]);
+
+            return new ZshForeachStatementSyntax(keyword, variableToken, openParenToken, items, closeParenToken, braceBody, endKeyword: null);
+        }
+
+        var body = ParseStatementList(ParseContext.UntilWords(EndWord));
+
+        return new ZshForeachStatementSyntax(keyword, variableToken, openParenToken, items, closeParenToken, body, ExpectKeyword("end"));
+    }
+
+    /// <summary>Reads <c>repeat N</c> followed by a <c>do ... done</c> block, a brace group, or a single command.</summary>
+    private ZshRepeatStatementSyntax ParseZshRepeatStatement()
+    {
+        var repeatKeyword = ReadKeyword();
+        AccumulateInlineTrivia();
+        var count = _lexer.IsAtEnd || PosixLexer.IsWordBoundary(_lexer.Current)
+            ? new ShellWordSyntax([])
+            : ParseWord();
+
+        ShellSyntaxToken? listTerminatorToken = null;
+        AccumulateInlineTrivia();
+        if (_lexer.Current == ';')
+        {
+            listTerminatorToken = ReadOperatorToken(ShellSyntaxKind.SemicolonToken, length: 1);
+        }
+
+        if (PeekBareWordAfterTrivia() == "do")
+        {
+            var doKeyword = ReadKeyword();
+            var doBody = ParseStatementList(ParseContext.UntilWords(DoneWord));
+
+            return new ZshRepeatStatementSyntax(repeatKeyword, count, listTerminatorToken, doKeyword, doBody, ExpectKeyword("done"));
+        }
+
+        var body = new ShellStatementListSyntax([ParseCommandOrCompound()]);
+
+        return new ZshRepeatStatementSyntax(repeatKeyword, count, listTerminatorToken, doKeyword: null, body, doneKeyword: null);
+    }
+
     // ---- functions, groups, subshells ----
 
     private PosixFunctionDefinitionSyntax ParseFunctionDefinitionWithKeyword()
@@ -344,7 +484,9 @@ internal sealed partial class PosixParser
     private PosixCompoundStatementSyntax ParseBraceGroup()
     {
         var openToken = ReadKeyword(ShellSyntaxKind.OpenBraceToken);
+        _zshBraceDepth++;
         var statements = ParseStatementList(ParseContext.UntilWords(CloseBraceWord));
+        _zshBraceDepth--;
 
         AccumulateStatementTrivia();
         ShellSyntaxToken closeToken;
@@ -561,13 +703,24 @@ internal sealed partial class PosixParser
             return false;
 
         var text = _lexer.Text;
+        if (position + 1 >= text.Length || text[position + 1] != '(')
+            return false;
 
-        return position + 1 < text.Length && text[position] is '<' or '>' && text[position + 1] == '(';
+        if (text[position] is '<' or '>')
+            return true;
+
+        // zsh also has `=(...)`, which passes a temporary file rather than a pipe.
+        return text[position] == '=' && _options.Dialect.HasFeature(ShellDialectFeatures.ZshExtensions);
     }
 
     private PosixProcessSubstitutionSyntax ParseProcessSubstitution(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
     {
-        var kind = _lexer.Current == '<' ? ShellSyntaxKind.LessThanOpenParenToken : ShellSyntaxKind.GreaterThanOpenParenToken;
+        var kind = _lexer.Current switch
+        {
+            '<' => ShellSyntaxKind.LessThanOpenParenToken,
+            '=' => ShellSyntaxKind.EqualsOpenParenToken,
+            _ => ShellSyntaxKind.GreaterThanOpenParenToken,
+        };
         var start = _lexer.Position;
         _lexer.Position += 2;
         var openToken = _lexer.CreateToken(kind, start, leadingTrivia, fullStart);
@@ -727,6 +880,18 @@ internal sealed partial class PosixParser
         return MissingToken(ShellSyntaxKind.KeywordToken, fullStart, trivia);
     }
 
+    private ShellSyntaxToken ExpectCharacter(char expected, ShellSyntaxKind kind)
+    {
+        AccumulateStatementTrivia();
+        if (_lexer.Current == expected)
+            return ReadOperatorToken(kind, length: 1);
+
+        AddDiagnostic(new TextSpan(_lexer.Position, 0), "SHELL0012", $"Expected '{expected}'.");
+        var (trivia, fullStart) = TakeTrivia();
+
+        return MissingToken(kind, fullStart, trivia);
+    }
+
     private ShellSyntaxToken ReadBareWordToken(ShellSyntaxKind kind)
     {
         AccumulateStatementTrivia();
@@ -741,9 +906,6 @@ internal sealed partial class PosixParser
 
         return ReadOperatorToken(kind, word.Length);
     }
-
-    /// <summary>A zero-width keyword used where a synthesized node needs a token that has no source text.</summary>
-    private ShellSyntaxToken HiddenKeyword() => MissingToken(ShellSyntaxKind.KeywordToken, _lexer.Position);
 
     private ShellSkippedTextSyntax ConsumeRestAsSkippedText()
     {

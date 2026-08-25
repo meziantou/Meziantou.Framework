@@ -241,6 +241,7 @@ namespace Meziantou.Framework.Language.Shell
         public Meziantou.Framework.Language.Shell.ShellSyntaxToken? FunctionKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxToken NameToken { get => throw null; }
         public string Name { get => throw null; }
+        public bool IsAnonymous { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxToken? OpenParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxToken? CloseParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementSyntax Body { get => throw null; }
@@ -295,6 +296,7 @@ namespace Meziantou.Framework.Language.Shell
         public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseToken { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public bool IsInput { get => throw null; }
+        public bool IsFileSubstitution { get => throw null; }
         public PosixProcessSubstitutionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
@@ -833,6 +835,7 @@ namespace Meziantou.Framework.Language.Shell
         public Meziantou.Framework.Language.Shell.ShellSyntaxToken NameToken { get => throw null; }
         public string Name { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxToken EqualsToken { get => throw null; }
+        public bool IsAppend { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellWordSyntax? Value { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public ShellAssignmentSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken nameToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken equalsToken, Meziantou.Framework.Language.Shell.ShellWordSyntax? value) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
@@ -984,6 +987,7 @@ namespace Meziantou.Framework.Language.Shell
         public Meziantou.Framework.Language.Shell.ShellSyntaxToken GlobToken { get => throw null; }
         public bool IsRecursive { get => throw null; }
         public bool IsBracketExpression { get => throw null; }
+        public bool HasQualifier { get => throw null; }
         public ShellGlobSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken globToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
@@ -1148,145 +1152,150 @@ namespace Meziantou.Framework.Language.Shell
         OpenParenParenToken = 45,
         CloseParenParenToken = 46,
         LessThanOpenParenToken = 47,
-        GreaterThanOpenParenToken = 48,
-        KeywordToken = 49,
-        ColonColonToken = 50,
-        DotToken = 51,
-        CommaToken = 52,
-        AtParenToken = 53,
-        AtBraceToken = 54,
-        DollarOpenParenPowerShellToken = 55,
-        ParameterToken = 56,
-        OperatorToken = 57,
-        NumberToken = 58,
-        HereStringStartToken = 59,
-        HereStringEndToken = 60,
-        GenericToken = 61,
-        LabelToken = 62,
-        QuestionQuestionToken = 63,
-        ColonToken = 64,
-        SplatToken = 65,
-        LessThanToken = 66,
-        GreaterThanToken = 67,
-        GreaterThanGreaterThanToken = 68,
-        GreaterThanPipeToken = 69,
-        LessThanAmpersandToken = 70,
-        GreaterThanAmpersandToken = 71,
-        LessThanGreaterThanToken = 72,
-        LessThanLessThanToken = 73,
-        LessThanLessThanDashToken = 74,
-        LessThanLessThanLessThanToken = 75,
-        AmpersandGreaterThanToken = 76,
-        AmpersandGreaterThanGreaterThanToken = 77,
-        EqualsToken = 78,
-        ExclamationToken = 79,
-        AsteriskToken = 80,
-        AsteriskAsteriskToken = 81,
-        QuestionToken = 82,
-        BracketExpressionToken = 83,
-        IoNumberToken = 84,
-        VariableNameToken = 85,
-        EscapeToken = 86,
-        BadToken = 87,
-        EndOfFileToken = 88,
-        WhitespaceTrivia = 89,
-        EndOfLineTrivia = 90,
-        SingleLineCommentTrivia = 91,
-        CmdRemCommentTrivia = 92,
-        CmdDoubleColonCommentTrivia = 93,
-        MultiLineCommentTrivia = 94,
-        LineContinuationTrivia = 95,
-        PosixIfStatement = 96,
-        PosixElifClause = 97,
-        PosixElseClause = 98,
-        PosixForStatement = 99,
-        PosixWhileStatement = 100,
-        PosixUntilStatement = 101,
-        PosixSelectStatement = 102,
-        PosixCaseStatement = 103,
-        PosixCaseClause = 104,
-        PosixFunctionDefinition = 105,
-        PosixSubshell = 106,
-        PosixGroup = 107,
-        PosixConditionalExpression = 108,
-        PosixArithmeticCommand = 109,
-        PosixArithmeticExpansion = 110,
-        PosixHereDocument = 111,
-        PosixProcessSubstitution = 112,
-        PosixArrayAssignment = 113,
-        PosixTimeStatement = 114,
-        PosixCoprocStatement = 115,
-        PosixHereDocumentBody = 116,
-        CmdCallStatement = 117,
-        CmdElseClause = 118,
-        CmdForStatement = 119,
-        CmdGotoStatement = 120,
-        CmdIfStatement = 121,
-        CmdLabelStatement = 122,
-        CmdParenthesizedBlock = 123,
-        CmdSetStatement = 124,
-        CmdVariableReference = 125,
-        PowerShellArrayExpression = 126,
-        PowerShellArrayLiteral = 127,
-        PowerShellAssignmentExpression = 128,
-        PowerShellAttribute = 129,
-        PowerShellBareWord = 130,
-        PowerShellBeginBlock = 131,
-        PowerShellBinaryExpression = 132,
-        PowerShellBreakStatement = 133,
-        PowerShellCastExpression = 134,
-        PowerShellCatchClause = 135,
-        PowerShellClassDefinition = 136,
-        PowerShellCleanBlock = 137,
-        PowerShellCommand = 138,
-        PowerShellContinueStatement = 139,
-        PowerShellDataStatement = 140,
-        PowerShellDoStatement = 141,
-        PowerShellDynamicParamBlock = 142,
-        PowerShellElseClause = 143,
-        PowerShellElseIfClause = 144,
-        PowerShellEndBlock = 145,
-        PowerShellEnumDefinition = 146,
-        PowerShellExitStatement = 147,
-        PowerShellExpandableString = 148,
-        PowerShellExpressionStatement = 149,
-        PowerShellFunctionDefinition = 150,
-        PowerShellFilterDefinition = 151,
-        PowerShellFinallyClause = 152,
-        PowerShellForEachStatement = 153,
-        PowerShellForStatement = 154,
-        PowerShellHashEntry = 155,
-        PowerShellHashLiteral = 156,
-        PowerShellHereString = 157,
-        PowerShellIfStatement = 158,
-        PowerShellIndex = 159,
-        PowerShellInvocation = 160,
-        PowerShellLabeledStatement = 161,
-        PowerShellMemberAccess = 162,
-        PowerShellNumberLiteral = 163,
-        PowerShellParamBlock = 164,
-        PowerShellParameter = 165,
-        PowerShellParenthesizedExpression = 166,
-        PowerShellPostfixUnaryExpression = 167,
-        PowerShellPrefixUnaryExpression = 168,
-        PowerShellProcessBlock = 169,
-        PowerShellRangeExpression = 170,
-        PowerShellReturnStatement = 171,
-        PowerShellScriptBlock = 172,
-        PowerShellStringLiteral = 173,
-        PowerShellSubExpression = 174,
-        PowerShellSwitchClause = 175,
-        PowerShellSwitchStatement = 176,
-        PowerShellTernaryExpression = 177,
-        PowerShellThrowStatement = 178,
-        PowerShellTrapStatement = 179,
-        PowerShellTryStatement = 180,
-        PowerShellTypeLiteral = 181,
-        PowerShellUnaryExpression = 182,
-        PowerShellUsingStatement = 183,
-        PowerShellVariableExpression = 184,
-        PowerShellWhileStatement = 185,
-        PowerShellWorkflowDefinition = 186
+        EqualsOpenParenToken = 48,
+        GreaterThanOpenParenToken = 49,
+        KeywordToken = 50,
+        ColonColonToken = 51,
+        DotToken = 52,
+        CommaToken = 53,
+        AtParenToken = 54,
+        AtBraceToken = 55,
+        DollarOpenParenPowerShellToken = 56,
+        ParameterToken = 57,
+        OperatorToken = 58,
+        NumberToken = 59,
+        HereStringStartToken = 60,
+        HereStringEndToken = 61,
+        GenericToken = 62,
+        LabelToken = 63,
+        QuestionQuestionToken = 64,
+        ColonToken = 65,
+        SplatToken = 66,
+        LessThanToken = 67,
+        GreaterThanToken = 68,
+        GreaterThanGreaterThanToken = 69,
+        GreaterThanPipeToken = 70,
+        LessThanAmpersandToken = 71,
+        GreaterThanAmpersandToken = 72,
+        LessThanGreaterThanToken = 73,
+        LessThanLessThanToken = 74,
+        LessThanLessThanDashToken = 75,
+        LessThanLessThanLessThanToken = 76,
+        AmpersandGreaterThanToken = 77,
+        AmpersandGreaterThanGreaterThanToken = 78,
+        EqualsToken = 79,
+        PlusEqualsToken = 80,
+        ExclamationToken = 81,
+        AsteriskToken = 82,
+        AsteriskAsteriskToken = 83,
+        QuestionToken = 84,
+        BracketExpressionToken = 85,
+        IoNumberToken = 86,
+        VariableNameToken = 87,
+        EscapeToken = 88,
+        BadToken = 89,
+        EndOfFileToken = 90,
+        WhitespaceTrivia = 91,
+        EndOfLineTrivia = 92,
+        SingleLineCommentTrivia = 93,
+        CmdRemCommentTrivia = 94,
+        CmdDoubleColonCommentTrivia = 95,
+        MultiLineCommentTrivia = 96,
+        LineContinuationTrivia = 97,
+        PosixIfStatement = 98,
+        PosixElifClause = 99,
+        PosixElseClause = 100,
+        PosixForStatement = 101,
+        PosixWhileStatement = 102,
+        PosixUntilStatement = 103,
+        PosixSelectStatement = 104,
+        PosixCaseStatement = 105,
+        PosixCaseClause = 106,
+        PosixFunctionDefinition = 107,
+        PosixSubshell = 108,
+        PosixGroup = 109,
+        PosixConditionalExpression = 110,
+        PosixArithmeticCommand = 111,
+        PosixArithmeticExpansion = 112,
+        PosixHereDocument = 113,
+        PosixProcessSubstitution = 114,
+        PosixArrayAssignment = 115,
+        PosixTimeStatement = 116,
+        PosixCoprocStatement = 117,
+        PosixHereDocumentBody = 118,
+        ZshForeachStatement = 119,
+        ZshRepeatStatement = 120,
+        ZshAlwaysStatement = 121,
+        CmdCallStatement = 122,
+        CmdElseClause = 123,
+        CmdForStatement = 124,
+        CmdGotoStatement = 125,
+        CmdIfStatement = 126,
+        CmdLabelStatement = 127,
+        CmdParenthesizedBlock = 128,
+        CmdSetStatement = 129,
+        CmdVariableReference = 130,
+        PowerShellArrayExpression = 131,
+        PowerShellArrayLiteral = 132,
+        PowerShellAssignmentExpression = 133,
+        PowerShellAttribute = 134,
+        PowerShellBareWord = 135,
+        PowerShellBeginBlock = 136,
+        PowerShellBinaryExpression = 137,
+        PowerShellBreakStatement = 138,
+        PowerShellCastExpression = 139,
+        PowerShellCatchClause = 140,
+        PowerShellClassDefinition = 141,
+        PowerShellCleanBlock = 142,
+        PowerShellCommand = 143,
+        PowerShellContinueStatement = 144,
+        PowerShellDataStatement = 145,
+        PowerShellDoStatement = 146,
+        PowerShellDynamicParamBlock = 147,
+        PowerShellElseClause = 148,
+        PowerShellElseIfClause = 149,
+        PowerShellEndBlock = 150,
+        PowerShellEnumDefinition = 151,
+        PowerShellExitStatement = 152,
+        PowerShellExpandableString = 153,
+        PowerShellExpressionStatement = 154,
+        PowerShellFunctionDefinition = 155,
+        PowerShellFilterDefinition = 156,
+        PowerShellFinallyClause = 157,
+        PowerShellForEachStatement = 158,
+        PowerShellForStatement = 159,
+        PowerShellHashEntry = 160,
+        PowerShellHashLiteral = 161,
+        PowerShellHereString = 162,
+        PowerShellIfStatement = 163,
+        PowerShellIndex = 164,
+        PowerShellInvocation = 165,
+        PowerShellLabeledStatement = 166,
+        PowerShellMemberAccess = 167,
+        PowerShellNumberLiteral = 168,
+        PowerShellParamBlock = 169,
+        PowerShellParameter = 170,
+        PowerShellParenthesizedExpression = 171,
+        PowerShellPostfixUnaryExpression = 172,
+        PowerShellPrefixUnaryExpression = 173,
+        PowerShellProcessBlock = 174,
+        PowerShellRangeExpression = 175,
+        PowerShellReturnStatement = 176,
+        PowerShellScriptBlock = 177,
+        PowerShellStringLiteral = 178,
+        PowerShellSubExpression = 179,
+        PowerShellSwitchClause = 180,
+        PowerShellSwitchStatement = 181,
+        PowerShellTernaryExpression = 182,
+        PowerShellThrowStatement = 183,
+        PowerShellTrapStatement = 184,
+        PowerShellTryStatement = 185,
+        PowerShellTypeLiteral = 186,
+        PowerShellUnaryExpression = 187,
+        PowerShellUsingStatement = 188,
+        PowerShellVariableExpression = 189,
+        PowerShellWhileStatement = 190,
+        PowerShellWorkflowDefinition = 191
     }
 
     public abstract class ShellSyntaxNode
@@ -1341,25 +1350,8 @@ namespace Meziantou.Framework.Language.Shell
 
     public class ShellSyntaxRewriter : Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<Meziantou.Framework.Language.Shell.ShellSyntaxNode>
     {
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitScript(Meziantou.Framework.Language.Shell.ShellScriptSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitStatementList(Meziantou.Framework.Language.Shell.ShellStatementListSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitCommand(Meziantou.Framework.Language.Shell.ShellCommandSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitPipeline(Meziantou.Framework.Language.Shell.ShellPipelineSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitCommandList(Meziantou.Framework.Language.Shell.ShellCommandListSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitRedirection(Meziantou.Framework.Language.Shell.ShellRedirectionSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitAssignment(Meziantou.Framework.Language.Shell.ShellAssignmentSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitWord(Meziantou.Framework.Language.Shell.ShellWordSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitQuotedString(Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitCommandSubstitution(Meziantou.Framework.Language.Shell.ShellCommandSubstitutionSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitLiteralWordPart(Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitVariableReference(Meziantou.Framework.Language.Shell.ShellVariableReferenceSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitEscapeSequence(Meziantou.Framework.Language.Shell.ShellEscapeSequenceSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitArithmeticExpansion(Meziantou.Framework.Language.Shell.PosixArithmeticExpansionSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitGlob(Meziantou.Framework.Language.Shell.ShellGlobSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitRawExpression(Meziantou.Framework.Language.Shell.ShellRawExpressionSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitCompoundStatement(Meziantou.Framework.Language.Shell.PosixCompoundStatementSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitEmptyStatement(Meziantou.Framework.Language.Shell.ShellEmptyStatementSyntax node) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitSkippedText(Meziantou.Framework.Language.Shell.ShellSkippedTextSyntax node) => throw null;
+        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? Visit(Meziantou.Framework.Language.Shell.ShellSyntaxNode? node) => throw null;
+        protected override Meziantou.Framework.Language.Shell.ShellSyntaxNode? DefaultVisit(Meziantou.Framework.Language.Shell.ShellSyntaxNode node) => throw null;
         protected virtual Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitCore(Meziantou.Framework.Language.Shell.ShellSyntaxNode node) => throw null;
     }
 
@@ -1505,6 +1497,9 @@ namespace Meziantou.Framework.Language.Shell
         public virtual void VisitCmdSet(Meziantou.Framework.Language.Shell.CmdSetStatementSyntax node) { }
         public virtual void VisitCmdVariableReference(Meziantou.Framework.Language.Shell.CmdVariableReferenceSyntax node) { }
         public virtual void VisitEmptyStatement(Meziantou.Framework.Language.Shell.ShellEmptyStatementSyntax node) { }
+        public virtual void VisitZshForeachStatement(Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax node) { }
+        public virtual void VisitZshRepeatStatement(Meziantou.Framework.Language.Shell.ZshRepeatStatementSyntax node) { }
+        public virtual void VisitZshAlwaysStatement(Meziantou.Framework.Language.Shell.ZshAlwaysStatementSyntax node) { }
         public virtual void VisitSkippedText(Meziantou.Framework.Language.Shell.ShellSkippedTextSyntax node) { }
     }
 
@@ -1595,6 +1590,9 @@ namespace Meziantou.Framework.Language.Shell
         public virtual TResult VisitCmdSet(Meziantou.Framework.Language.Shell.CmdSetStatementSyntax node) => throw null;
         public virtual TResult VisitCmdVariableReference(Meziantou.Framework.Language.Shell.CmdVariableReferenceSyntax node) => throw null;
         public virtual TResult VisitEmptyStatement(Meziantou.Framework.Language.Shell.ShellEmptyStatementSyntax node) => throw null;
+        public virtual TResult VisitZshForeachStatement(Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax node) => throw null;
+        public virtual TResult VisitZshRepeatStatement(Meziantou.Framework.Language.Shell.ZshRepeatStatementSyntax node) => throw null;
+        public virtual TResult VisitZshAlwaysStatement(Meziantou.Framework.Language.Shell.ZshAlwaysStatementSyntax node) => throw null;
         public virtual TResult VisitSkippedText(Meziantou.Framework.Language.Shell.ShellSkippedTextSyntax node) => throw null;
     }
 
@@ -1705,5 +1703,46 @@ namespace Meziantou.Framework.Language.Shell
         public static bool operator ==(Meziantou.Framework.Language.Shell.TextSpan left, Meziantou.Framework.Language.Shell.TextSpan right) => throw null;
         public static bool operator !=(Meziantou.Framework.Language.Shell.TextSpan left, Meziantou.Framework.Language.Shell.TextSpan right) => throw null;
         public override string ToString() => throw null;
+    }
+
+    public sealed class ZshAlwaysStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
+    {
+        public Meziantou.Framework.Language.Shell.ShellStatementSyntax Body { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellSyntaxToken AlwaysKeyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementSyntax AlwaysBody { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
+        public ZshAlwaysStatementSyntax(Meziantou.Framework.Language.Shell.ShellStatementSyntax body, Meziantou.Framework.Language.Shell.ShellSyntaxToken alwaysKeyword, Meziantou.Framework.Language.Shell.ShellStatementSyntax alwaysBody) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
+        public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
+    }
+
+    public sealed class ZshForeachStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
+    {
+        public Meziantou.Framework.Language.Shell.ShellSyntaxToken Keyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellSyntaxToken VariableToken { get => throw null; }
+        public string VariableName { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Items { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Body { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? EndKeyword { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
+        public ZshForeachStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken keyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken variableToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax>? items, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.Shell.ShellSyntaxToken? endKeyword) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
+        public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
+    }
+
+    public sealed class ZshRepeatStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
+    {
+        public Meziantou.Framework.Language.Shell.ShellSyntaxToken RepeatKeyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellWordSyntax Count { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? ListTerminatorToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? DoKeyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Body { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? DoneKeyword { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
+        public ZshRepeatStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken repeatKeyword, Meziantou.Framework.Language.Shell.ShellWordSyntax count, Meziantou.Framework.Language.Shell.ShellSyntaxToken? listTerminatorToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? doKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.Shell.ShellSyntaxToken? doneKeyword) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
+        public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 }

@@ -104,6 +104,9 @@ public abstract class ShellSyntaxVisitor
     public virtual void VisitCmdSet(CmdSetStatementSyntax node) => DefaultVisit(node);
     public virtual void VisitCmdVariableReference(CmdVariableReferenceSyntax node) => DefaultVisit(node);
     public virtual void VisitEmptyStatement(ShellEmptyStatementSyntax node) => DefaultVisit(node);
+    public virtual void VisitZshForeachStatement(ZshForeachStatementSyntax node) => DefaultVisit(node);
+    public virtual void VisitZshRepeatStatement(ZshRepeatStatementSyntax node) => DefaultVisit(node);
+    public virtual void VisitZshAlwaysStatement(ZshAlwaysStatementSyntax node) => DefaultVisit(node);
     public virtual void VisitSkippedText(ShellSkippedTextSyntax node) => DefaultVisit(node);
 }
 
@@ -214,5 +217,8 @@ public abstract class ShellSyntaxVisitor<TResult>
     public virtual TResult VisitCmdSet(CmdSetStatementSyntax node) => DefaultVisit(node);
     public virtual TResult VisitCmdVariableReference(CmdVariableReferenceSyntax node) => DefaultVisit(node);
     public virtual TResult VisitEmptyStatement(ShellEmptyStatementSyntax node) => DefaultVisit(node);
+    public virtual TResult VisitZshForeachStatement(ZshForeachStatementSyntax node) => DefaultVisit(node);
+    public virtual TResult VisitZshRepeatStatement(ZshRepeatStatementSyntax node) => DefaultVisit(node);
+    public virtual TResult VisitZshAlwaysStatement(ZshAlwaysStatementSyntax node) => DefaultVisit(node);
     public virtual TResult VisitSkippedText(ShellSkippedTextSyntax node) => DefaultVisit(node);
 }

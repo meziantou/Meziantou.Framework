@@ -448,7 +448,21 @@ internal sealed partial class PowerShellParser
                 break;
 
             var positionBefore = _lexer.Position;
-            elements.Add(ParseCommandWord());
+            var word = ParseCommandWord();
+            elements.Add(word);
+
+            // After the stop-parsing token the rest of the line is passed through verbatim, so nothing in it is
+            // a variable, a redirection, or an operator.
+            if (word.ToFullString().TrimStart() == "--%")
+            {
+                if (ReadRestOfLineVerbatim() is { } verbatim)
+                {
+                    elements.Add(verbatim);
+                }
+
+                break;
+            }
+
             if (_lexer.Position == positionBefore)
                 break;
         }
@@ -462,6 +476,25 @@ internal sealed partial class PowerShellParser
         }
 
         return new ShellCommandSyntax(elements);
+    }
+
+    /// <summary>Reads whatever remains on the line as a single literal word, for the <c>--%</c> stop-parsing token.</summary>
+    private ShellWordSyntax? ReadRestOfLineVerbatim()
+    {
+        AccumulateInlineTrivia();
+        if (_lexer.IsAtEnd || SourceText.GetLineBreakLength(_lexer.Text, _lexer.Position) > 0)
+            return null;
+
+        // Take the trivia before advancing: its fallback start is the current position, which would otherwise
+        // already be the end of the run and would shift every span that follows.
+        var (trivia, fullStart) = TakeTrivia();
+        var start = _lexer.Position;
+        while (!_lexer.IsAtEnd && SourceText.GetLineBreakLength(_lexer.Text, _lexer.Position) == 0)
+        {
+            _lexer.Position++;
+        }
+
+        return new ShellWordSyntax([new ShellLiteralWordPartSyntax(_lexer.CreateToken(ShellSyntaxKind.GenericToken, start, trivia, fullStart))]);
     }
 
     /// <summary>Reads one command word: literal text mixed with quoting, variables, and embedded expressions.</summary>

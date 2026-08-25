@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | `Sh` | POSIX | strict POSIX baseline |
 | `Bash` | POSIX | `[[ ]]`, `(( ))`, `<<<`, arrays, `function`, `<(…)`, `coproc`, `select` |
-| `Zsh` | POSIX | the bash set plus zsh extensions |
+| `Zsh` | POSIX | the bash set plus `foreach`/`end`, `repeat`, `always`, anonymous functions, `=(…)`, glob qualifiers, and brace groups that close without a separator |
 | `PowerShell` | PowerShell | Windows PowerShell 5.1 |
 | `PowerShellCore` | PowerShell | pwsh 7+: `&&`/`\|\|`, ternary `? :`, `??`/`??=`, `clean` blocks |
 | `Cmd` | Cmd | cmd.exe batch |
@@ -107,7 +107,7 @@ Console.WriteLine(command.ToFullString()); // echo 'two words' plain
 
 ## Visitors and rewriters
 
-`ShellSyntaxVisitor`, `ShellSyntaxVisitor<TResult>`, and `ShellSyntaxRewriter` cover every node type across all dialects, so one walker handles any tree. A rewriter returns the original instance when nothing changed, so unmodified subtrees keep their exact text:
+`ShellSyntaxVisitor`, `ShellSyntaxVisitor<TResult>`, and `ShellSyntaxRewriter` cover every node type across all dialects, so one walker handles any tree. A rewriter descends into every node whatever its type, returns the original instance when nothing changed, and keeps the exact text of everything it did not touch:
 
 ```csharp
 sealed class RenameCommand(string oldName, string newName) : ShellSyntaxRewriter
@@ -126,7 +126,9 @@ sealed class RenameCommand(string oldName, string newName) : ShellSyntaxRewriter
 }
 ```
 
-`ReplaceNode` applies the same rule for you: when the replacement has no leading trivia of its own, the trivia in front of the node being replaced is kept.
+`ReplaceNode` applies the same rule for you: when the replacement has no leading trivia of its own, the trivia in front of the node being replaced is kept. The rewriter follows that rule too.
+
+Run a rewriter from the script root, `rewriter.Visit(tree.Root)`: replaced nodes are spliced into the source and the script is reparsed once, so the result is a new `ShellScriptSyntax`.
 
 ## Parse options
 

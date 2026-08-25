@@ -17,6 +17,9 @@ public sealed class ShellGlobSyntax : ShellWordPartSyntax
     /// <summary>Returns <see langword="true"/> for a bracket expression such as <c>[abc]</c> or <c>[!a-z]</c>.</summary>
     public bool IsBracketExpression => GlobToken.Kind == ShellSyntaxKind.BracketExpressionToken;
 
+    /// <summary>Returns <see langword="true"/> when a zsh glob qualifier follows the pattern, as in <c>*(.)</c>.</summary>
+    public bool HasQualifier => GlobToken.Text is [.., ')'];
+
     public override void Accept(ShellSyntaxVisitor visitor) => visitor.VisitGlob(this);
     public override TResult Accept<TResult>(ShellSyntaxVisitor<TResult> visitor) => visitor.VisitGlob(this);
 

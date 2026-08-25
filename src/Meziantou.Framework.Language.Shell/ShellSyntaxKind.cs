@@ -56,6 +56,7 @@ public enum ShellSyntaxKind
     OpenParenParenToken,
     CloseParenParenToken,
     LessThanOpenParenToken,
+    EqualsOpenParenToken,
     GreaterThanOpenParenToken,
     KeywordToken,
     ColonColonToken,
@@ -87,6 +88,7 @@ public enum ShellSyntaxKind
     AmpersandGreaterThanToken,
     AmpersandGreaterThanGreaterThanToken,
     EqualsToken,
+    PlusEqualsToken,
     ExclamationToken,
     AsteriskToken,
     AsteriskAsteriskToken,
@@ -130,6 +132,11 @@ public enum ShellSyntaxKind
     PosixTimeStatement,
     PosixCoprocStatement,
     PosixHereDocumentBody,
+
+    // ---- zsh extensions ----
+    ZshForeachStatement,
+    ZshRepeatStatement,
+    ZshAlwaysStatement,
 
     // ---- Cmd family (cmd.exe batch) ----
     CmdCallStatement,

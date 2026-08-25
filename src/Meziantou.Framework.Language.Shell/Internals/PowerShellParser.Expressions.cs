@@ -363,7 +363,6 @@ internal sealed partial class PowerShellParser
             if (_lexer.IsAtEnd || _lexer.Current == ')')
                 break;
 
-            var positionBefore = _lexer.Position;
             arguments.Add(ParseTernaryExpression());
             AccumulateStatementTrivia();
             if (_lexer.Current == ',')

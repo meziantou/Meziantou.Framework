@@ -15,6 +15,7 @@ internal sealed partial class PosixParser
     private int _pendingTriviaStart;
     private int _depth;
     private int _backtickDepth;
+    private int _zshBraceDepth;
 
     public PosixParser(string text, ShellParseOptions options)
     {
@@ -136,6 +137,24 @@ internal sealed partial class PosixParser
         return new ShellCommandListSyntax(pipelines, operators);
     }
 
+    /// <summary>
+    /// Wraps a brace group that a zsh <c>always</c> block follows. The construct only exists in zsh, and only after a
+    /// group, so anywhere else the word <c>always</c> stays an ordinary command name.
+    /// </summary>
+    private ShellStatementSyntax TryAttachZshAlways(ShellStatementSyntax statement)
+    {
+        if (statement.Kind != ShellSyntaxKind.PosixGroup || !_options.Dialect.HasFeature(ShellDialectFeatures.ZshExtensions))
+            return statement;
+
+        AccumulateInlineTrivia();
+        if (PeekBareWord() != "always")
+            return statement;
+
+        var alwaysKeyword = ReadKeyword();
+
+        return new ZshAlwaysStatementSyntax(statement, alwaysKeyword, ParseCommandOrCompound());
+    }
+
     private ShellStatementSyntax ParsePipeline()
     {
         AccumulateInlineTrivia();
@@ -147,7 +166,7 @@ internal sealed partial class PosixParser
             AccumulateInlineTrivia();
         }
 
-        var first = ParseCommandOrCompound();
+        var first = TryAttachZshAlways(ParseCommandOrCompound());
         List<ShellStatementSyntax>? commands = null;
         List<ShellSyntaxToken>? operators = null;
 
@@ -165,7 +184,7 @@ internal sealed partial class PosixParser
                 : ReadOperatorToken(ShellSyntaxKind.PipeToken, length: 1));
 
             AccumulateStatementTrivia();
-            commands.Add(ParseCommandOrCompound());
+            commands.Add(TryAttachZshAlways(ParseCommandOrCompound()));
         }
 
         if (commands is null && bangToken is null)
@@ -239,7 +258,16 @@ internal sealed partial class PosixParser
             scan++;
         }
 
-        if (scan >= _lexer.Text.Length || _lexer.Text[scan] != '=' || scan == _lexer.Position)
+        if (scan == _lexer.Position)
+            return false;
+
+        // `name+=value` appends in bash and zsh; plain `sh` only has `name=value`.
+        var isAppend = scan + 1 < _lexer.Text.Length
+            && _lexer.Text[scan] == '+'
+            && _lexer.Text[scan + 1] == '='
+            && _options.Dialect.HasFeature(ShellDialectFeatures.Arrays);
+
+        if (!isAppend && (scan >= _lexer.Text.Length || _lexer.Text[scan] != '='))
             return false;
 
         var (trivia, fullStart) = TakeTrivia();
@@ -248,8 +276,12 @@ internal sealed partial class PosixParser
         var nameToken = _lexer.CreateToken(ShellSyntaxKind.VariableNameToken, nameStart, trivia, fullStart);
 
         var equalsStart = _lexer.Position;
-        _lexer.Position++;
-        var equalsToken = _lexer.CreateToken(ShellSyntaxKind.EqualsToken, equalsStart, [], equalsStart);
+        _lexer.Position += isAppend ? 2 : 1;
+        var equalsToken = _lexer.CreateToken(
+            isAppend ? ShellSyntaxKind.PlusEqualsToken : ShellSyntaxKind.EqualsToken,
+            equalsStart,
+            [],
+            equalsStart);
 
         if (_lexer.Current == '(' && _options.Dialect.HasFeature(ShellDialectFeatures.Arrays))
         {
@@ -450,7 +482,43 @@ internal sealed partial class PosixParser
             _lexer.Position++;
         }
 
+        // zsh allows a qualifier group directly after the pattern, as in `*(.)` or `foo*(N)`.
+        if (_lexer.Current == '(' && _options.Dialect.HasFeature(ShellDialectFeatures.ZshExtensions) && FindGlobQualifierEnd() is var end && end > 0)
+        {
+            _lexer.Position = end;
+        }
+
         return new ShellGlobSyntax(_lexer.CreateToken(kind, start, leadingTrivia, fullStart));
+    }
+
+    /// <summary>Returns the position just past a balanced glob qualifier group, or -1 when it is not one.</summary>
+    private int FindGlobQualifierEnd()
+    {
+        var text = _lexer.Text;
+        var scan = _lexer.Position;
+        var depth = 0;
+        while (scan < text.Length)
+        {
+            var current = text[scan];
+            if (current == '(')
+            {
+                depth++;
+            }
+            else if (current == ')')
+            {
+                depth--;
+                if (depth == 0)
+                    return scan + 1;
+            }
+            else if (current is '\r' or '\n' or ' ' or '\t')
+            {
+                return -1;
+            }
+
+            scan++;
+        }
+
+        return -1;
     }
 
     private ShellGlobSyntax ParseBracketExpression(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
@@ -959,7 +1027,17 @@ internal sealed partial class PosixParser
     /// Returns whether <paramref name="value"/> ends a word here. Inside a backquoted substitution the closing
     /// backtick terminates the word rather than opening a nested substitution.
     /// </summary>
-    private bool IsWordTerminator(char value) => PosixLexer.IsWordBoundary(value) || (_backtickDepth > 0 && value == '`');
+    private bool IsWordTerminator(char value)
+    {
+        if (PosixLexer.IsWordBoundary(value))
+            return true;
+
+        if (_backtickDepth > 0 && value == '`')
+            return true;
+
+        // Inside a zsh brace group a `}` closes the group even mid-word, so `{ echo a}` is complete.
+        return value == '}' && _zshBraceDepth > 0 && _options.Dialect.HasFeature(ShellDialectFeatures.ZshExtensions);
+    }
 
     private bool IsAtStop(ParseContext context)
     {

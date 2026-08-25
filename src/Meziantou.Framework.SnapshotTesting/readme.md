@@ -59,6 +59,19 @@ You can choose how snapshot names are generated using `SnapshotSettings.Snapshot
 - `SnapshotNamingStrategies.ClassName_TestName` (default)
 - `SnapshotNamingStrategies.FullName`
 
+## Snapshots stored as source files
+
+Some snapshots are source files (for example the output of a source generator, see [`Meziantou.Framework.SnapshotTesting.Roslyn`](https://www.nuget.org/packages/Meziantou.Framework.SnapshotTesting.Roslyn)).
+The package ships MSBuild targets that remove `**/__snapshots__/**/*.cs` and `**/__snapshots__/**/*.vb` from the `Compile` items and add them as `None` items, so they still show up in the IDE but are not compiled with the test project.
+
+Set `SnapshotTestingExcludeSnapshotFilesFromCompilation` to `false` to opt out:
+
+```xml
+<PropertyGroup>
+  <SnapshotTestingExcludeSnapshotFilesFromCompilation>false</SnapshotTestingExcludeSnapshotFilesFromCompilation>
+</PropertyGroup>
+```
+
 ## Approving snapshots
 
 To approve generated `*.actual.*` files, you can use the dedicated tool package:

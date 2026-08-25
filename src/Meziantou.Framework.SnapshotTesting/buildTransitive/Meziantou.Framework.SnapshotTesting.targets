@@ -1,4 +1,25 @@
 <Project>
+  <PropertyGroup>
+    <_MeziantouSnapshotTestingSharedDirectory>$(MSBuildThisFileDirectory)../common/</_MeziantouSnapshotTestingSharedDirectory>
+    <_MeziantouSourceRootGeneratedFileName>SnapshotTestingSourceRoot.g.cs</_MeziantouSourceRootGeneratedFileName>
+    <_MeziantouSourceRootRegistrationMethod>global::Meziantou.Framework.SnapshotTesting.Snapshot.RegisterSourceRootMapping</_MeziantouSourceRootRegistrationMethod>
+    <_MeziantouSourceRootAssemblyMetadataName>SnapshotTestingSourceRootMappings</_MeziantouSourceRootAssemblyMetadataName>
+    <_MeziantouSourceRootInitializerClassName>SnapshotTestingSourceRootInitializer</_MeziantouSourceRootInitializerClassName>
+  </PropertyGroup>
+
+  <!-- The shared files are next to this one in the NuGet package, and in the 'common' folder in the repository -->
   <Import Project="$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets"
           Condition="Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets')" />
+  <Import Project="$(_MeziantouSnapshotTestingSharedDirectory)Meziantou.Framework.SourceRootRegistration.targets"
+          Condition="!Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets') and Exists('$(_MeziantouSnapshotTestingSharedDirectory)Meziantou.Framework.SourceRootRegistration.targets')" />
+
+  <Import Project="$(MSBuildThisFileDirectory)Meziantou.Framework.SnapshotFiles.targets"
+          Condition="Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SnapshotFiles.targets')" />
+  <Import Project="$(_MeziantouSnapshotTestingSharedDirectory)Meziantou.Framework.SnapshotFiles.targets"
+          Condition="!Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SnapshotFiles.targets') and Exists('$(_MeziantouSnapshotTestingSharedDirectory)Meziantou.Framework.SnapshotFiles.targets')" />
+
+  <Target Name="GenerateSnapshotTestingSourceRoots"
+          DependsOnTargets="InitializeSourceRootMappedPaths;_MeziantouGenerateSourceRootsCore"
+          BeforeTargets="CoreCompile"
+          Condition="'$(SnapshotTestingGenerateSourceRoot)' != 'false' and '$(DeterministicSourcePaths)' == 'true'" />
 </Project>

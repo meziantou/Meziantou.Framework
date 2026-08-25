@@ -2155,6 +2155,71 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Attribute_FlagsEnumArgument_WithSameValueMembers_UsesFirstMemberInOrdinalOrder()
+    {
+        await Validate("""
+            namespace System.Diagnostics
+            {
+                [System.Flags]
+                public enum SampleFlags
+                {
+                    None = 0,
+                    Zebra = 1,
+                    Alpha = 1,
+                    Second = 2,
+                }
+
+                [System.AttributeUsage(System.AttributeTargets.All)]
+                public sealed class SampleAttribute : System.Attribute
+                {
+                    public SampleAttribute(SampleFlags flags) { }
+                }
+            }
+
+            [System.Diagnostics.Sample(System.Diagnostics.SampleFlags.Zebra | System.Diagnostics.SampleFlags.Second)]
+            public class SampleCombined
+            {
+            }
+
+            [System.Diagnostics.Sample(System.Diagnostics.SampleFlags.Zebra)]
+            public class SampleSingle
+            {
+            }
+            """, """
+            #nullable enable
+
+            [System.Diagnostics.Sample(System.Diagnostics.SampleFlags.Alpha | System.Diagnostics.SampleFlags.Second)]
+            public class SampleCombined
+            {
+            }
+
+
+            [System.Diagnostics.Sample(System.Diagnostics.SampleFlags.Alpha)]
+            public class SampleSingle
+            {
+            }
+
+            namespace System.Diagnostics
+            {
+                [System.AttributeUsage(System.AttributeTargets.All)]
+                public sealed class SampleAttribute : System.Attribute
+                {
+                    public SampleAttribute(System.Diagnostics.SampleFlags flags) { }
+                }
+
+                [System.Flags]
+                public enum SampleFlags
+                {
+                    None = 0,
+                    Zebra = 1,
+                    Alpha = 1,
+                    Second = 2
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task AttributeTypeArgument_UsesCSharpGenericTypeSyntax()
     {
         var files = await BuildFiles(

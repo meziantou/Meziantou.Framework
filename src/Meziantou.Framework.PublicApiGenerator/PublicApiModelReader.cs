@@ -2533,7 +2533,6 @@ internal static class PublicApiModelReader
             return false;
         }
 
-        var memberNamesByValue = new Dictionary<ulong, string>();
         var members = new List<EnumMember>();
         foreach (var fieldHandle in typeDefinition.GetFields())
         {
@@ -2549,11 +2548,7 @@ internal static class PublicApiModelReader
             if (!TryGetEnumValueBits(constantValue!, out var memberValue))
                 continue;
 
-            var memberName = metadataReader.GetString(field.Name);
-            if (memberNamesByValue.TryAdd(memberValue, memberName))
-            {
-                members.Add(new EnumMember(memberValue, memberName));
-            }
+            members.Add(new EnumMember(memberValue, metadataReader.GetString(field.Name)));
         }
 
         if (members.Count == 0)
@@ -2562,11 +2557,23 @@ internal static class PublicApiModelReader
             return false;
         }
 
+        // Several members can share the same value, so they are ordered by name to always use the same one
+        var membersDescending = members
+            .OrderByDescending(static member => member.Value)
+            .ThenBy(static member => member.Name, StringComparer.Ordinal)
+            .ToImmutableArray();
+
+        var memberNamesByValue = new Dictionary<ulong, string>();
+        foreach (var member in membersDescending)
+        {
+            memberNamesByValue.TryAdd(member.Value, member.Name);
+        }
+
         var isFlags = HasAttribute(metadataReader, typeDefinition.GetCustomAttributes(), "System.FlagsAttribute");
         enumMetadata = new EnumMetadata(
             IsFlags: isFlags,
             MemberNamesByValue: memberNamesByValue,
-            MembersDescending: [.. members.OrderByDescending(static member => member.Value).ThenBy(static member => member.Name, StringComparer.Ordinal)]);
+            MembersDescending: membersDescending);
         return true;
     }
 

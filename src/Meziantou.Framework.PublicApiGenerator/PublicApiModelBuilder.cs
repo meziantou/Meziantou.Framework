@@ -1812,23 +1812,98 @@ internal static class PublicApiModelBuilder
 
     private static string FormatEnumValue(Type enumType, object enumValue)
     {
-        var typedEnumValue = Enum.ToObject(enumType, enumValue);
-        var text = typedEnumValue.ToString();
-        if (string.IsNullOrEmpty(text))
-            return "(" + FormatType(enumType) + ")" + Convert.ToString(enumValue, System.Globalization.CultureInfo.InvariantCulture);
+        var formattedTypeName = FormatType(enumType);
+        var underlyingValue = enumValue is Enum
+            ? Convert.ChangeType(enumValue, Enum.GetUnderlyingType(enumType), System.Globalization.CultureInfo.InvariantCulture)
+            : enumValue;
 
-        if (char.IsDigit(text[0]) || text[0] == '-')
-            return "(" + FormatType(enumType) + ")" + Convert.ToString(enumValue, System.Globalization.CultureInfo.InvariantCulture);
+        if (TryFormatEnumValueUsingMembers(enumType, formattedTypeName, underlyingValue, out var result))
+            return result;
 
-        if (text.Contains(", ", StringComparison.Ordinal))
+        return "(" + formattedTypeName + ")" + Convert.ToString(underlyingValue, System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static bool TryFormatEnumValueUsingMembers(Type enumType, string formattedTypeName, object? enumValue, out string result)
+    {
+        result = string.Empty;
+        if (enumValue is null || !TryGetEnumValueBits(enumValue, out var enumValueBits))
+            return false;
+
+        var members = GetEnumMembersDescending(enumType);
+        if (members.Length == 0)
+            return false;
+
+        foreach (var member in members)
         {
-            return string.Join(
-                " | ",
-                text.Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Select(memberName => FormatType(enumType) + "." + memberName));
+            if (member.Value == enumValueBits)
+            {
+                result = formattedTypeName + "." + member.Name;
+                return true;
+            }
         }
 
-        return FormatType(enumType) + "." + text;
+        if (!HasAttribute(enumType.GetCustomAttributesData(), "System.FlagsAttribute"))
+            return false;
+
+        var remainingValue = enumValueBits;
+        var formattedMemberNames = new List<string>();
+        foreach (var member in members)
+        {
+            if (member.Value == 0)
+                continue;
+
+            if ((remainingValue & member.Value) != member.Value)
+                continue;
+
+            formattedMemberNames.Add(formattedTypeName + "." + member.Name);
+            remainingValue &= ~member.Value;
+        }
+
+        if (remainingValue != 0 || formattedMemberNames.Count == 0)
+            return false;
+
+        // The members are matched from the largest value to the smallest one, but they are formatted from the smallest to the largest one
+        formattedMemberNames.Reverse();
+        result = string.Join(" | ", formattedMemberNames);
+        return true;
+    }
+
+    private static ImmutableArray<EnumMember> GetEnumMembersDescending(Type enumType)
+    {
+        var members = new List<EnumMember>();
+        foreach (var field in enumType.GetFields(BindingFlags.Public | BindingFlags.Static))
+        {
+            if (field.GetRawConstantValue() is { } constantValue && TryGetEnumValueBits(constantValue, out var memberValue))
+            {
+                members.Add(new EnumMember(memberValue, field.Name));
+            }
+        }
+
+        // Several members can share the same value, so they are ordered by name to always use the same one
+        return
+        [
+            .. members
+                .OrderByDescending(static member => member.Value)
+                .ThenBy(static member => member.Name, StringComparer.Ordinal),
+        ];
+    }
+
+    private static bool TryGetEnumValueBits(object value, out ulong bits)
+    {
+        bits = value switch
+        {
+            sbyte sbyteValue => unchecked((ulong)sbyteValue),
+            byte byteValue => byteValue,
+            short shortValue => unchecked((ulong)shortValue),
+            ushort ushortValue => ushortValue,
+            int intValue => unchecked((ulong)intValue),
+            uint uintValue => uintValue,
+            long longValue => unchecked((ulong)longValue),
+            ulong ulongValue => ulongValue,
+            _ => 0,
+        };
+
+        return value is sbyte or byte or short or ushort or int or uint or long or ulong;
     }
 
     private static string RemoveGenericArity(string name)
@@ -1851,6 +1926,8 @@ internal static class PublicApiModelBuilder
 
         sb.AppendLine(text);
     }
+
+    private readonly record struct EnumMember(ulong Value, string Name);
 
     private sealed record ParameterDeclaration(string Text, bool RequiresNullableDirectives);
     private sealed record ExtensionPropertyBuilderReflection(ParameterInfo ReceiverParameter, string PropertyName, MethodInfo? Getter, MethodInfo? Setter, int Order);

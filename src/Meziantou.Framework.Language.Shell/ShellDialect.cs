@@ -7,9 +7,13 @@ namespace Meziantou.Framework.Language.Shell;
 [DebuggerDisplay("{Name}")]
 public sealed class ShellDialect
 {
+    /// <summary>What POSIX itself defines, so every dialect in the family has it.</summary>
+    private const ShellDialectFeatures PosixFeatures = ShellDialectFeatures.ArithmeticExpansion;
+
     private const ShellDialectFeatures BashFeatures =
+        PosixFeatures |
         ShellDialectFeatures.ExtendedTest |
-        ShellDialectFeatures.Arithmetic |
+        ShellDialectFeatures.ArithmeticCommand |
         ShellDialectFeatures.HereString |
         ShellDialectFeatures.DollarQuoting |
         ShellDialectFeatures.Arrays |
@@ -26,7 +30,7 @@ public sealed class ShellDialect
     }
 
     /// <summary>The POSIX shell (<c>sh</c>). The strict baseline of the POSIX family.</summary>
-    public static ShellDialect Sh { get; } = new("sh", ShellDialectFamily.Posix, ShellDialectFeatures.None);
+    public static ShellDialect Sh { get; } = new("sh", ShellDialectFamily.Posix, PosixFeatures);
 
     /// <summary>The GNU Bourne-Again shell (<c>bash</c>).</summary>
     public static ShellDialect Bash { get; } = new("bash", ShellDialectFamily.Posix, BashFeatures);

@@ -19,14 +19,44 @@ public sealed class ShellSyntaxFactoryTests
     }
 
     [Fact]
-    public void QuotedString_EscapesEmbeddedSingleQuotesForPosix()
+    public void QuotedString_UsesDoubleQuotesForPosixWhenTheValueHoldsASingleQuote()
     {
+        // A single-quoted POSIX string has no escapes, so the quote cannot be written inside one.
         var word = SyntaxFactory.Word("it's", ShellDialect.Bash);
 
-        Assert.Equal("""'it'\''s'""", word.ToFullString());
-        Assert.Equal("it's", ShellSyntaxTree.ParseCommand("echo " + word.ToFullString(), ShellDialect.Bash) is ShellCommandSyntax command
-            ? command.Arguments[0].Value
-            : null);
+        Assert.Equal("\"it's\"", word.ToFullString());
+        Assert.Equal("it's", word.Value);
+    }
+
+    [Fact]
+    public void QuotedString_EscapesWhatPosixWouldStillActOnInsideDoubleQuotes()
+    {
+        var word = SyntaxFactory.Word("it's $x `cmd` \\ \"q\"", ShellDialect.Bash);
+
+        Assert.Equal("\"it's \\$x \\`cmd\\` \\\\ \\\"q\\\"\"", word.ToFullString());
+        Assert.Equal("it's $x `cmd` \\ \"q\"", word.Value);
+    }
+
+    [Theory]
+    [InlineData("it's")]
+    [InlineData("it's $x")]
+    [InlineData("a\"b")]
+    [InlineData("a$b")]
+    [InlineData("a`b")]
+    [InlineData("a\\b")]
+    [InlineData("a b")]
+    [InlineData("*.txt")]
+    [InlineData("")]
+    public void Word_ValueMatchesTheInputAndSurvivesAReparse(string value)
+    {
+        foreach (var dialect in new[] { ShellDialect.Sh, ShellDialect.Bash, ShellDialect.Zsh, ShellDialect.PowerShell, ShellDialect.PowerShellCore })
+        {
+            var word = SyntaxFactory.Word(value, dialect);
+
+            Assert.Equal(value, word.Value);
+            var command = Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand("echo " + word.ToFullString(), dialect));
+            Assert.Equal(value, command.Arguments[0].Value);
+        }
     }
 
     [Fact]

@@ -114,18 +114,29 @@ public sealed class ShellScriptSyntax : ShellSyntaxNode
         return Reparse(builder.ToString());
     }
 
+    /// <summary>Finds <paramref name="targetNode"/> by identity and reports the span it occupies.</summary>
+    /// <remarks>
+    /// Walked with a stack rather than by recursion. The parser accepts operator and member chains of any length, so
+    /// the tree can be as deep as the script is long and recursing on that depth would run the stack out.
+    /// </remarks>
     private static bool TryGetNodeSpan(ShellSyntaxNode current, ShellSyntaxNode targetNode, out TextSpan span)
     {
-        if (ReferenceEquals(current, targetNode))
-        {
-            span = current.FullSpan;
-            return true;
-        }
+        var pending = new Stack<ShellSyntaxNode>();
+        pending.Push(current);
 
-        foreach (var child in current.ChildNodes)
+        while (pending.Count > 0)
         {
-            if (TryGetNodeSpan(child, targetNode, out span))
+            var node = pending.Pop();
+            if (ReferenceEquals(node, targetNode))
+            {
+                span = node.FullSpan;
                 return true;
+            }
+
+            foreach (var child in node.ChildNodes)
+            {
+                pending.Push(child);
+            }
         }
 
         span = default;

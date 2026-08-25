@@ -36,7 +36,11 @@ public sealed class CmdIfStatementSyntax : ShellStatementSyntax
     /// <summary>The <c>not</c> keyword, when present.</summary>
     public ShellSyntaxToken? NotKeyword { get; }
 
-    /// <summary>The condition text, kept verbatim.</summary>
+    /// <summary>
+    /// The condition. A <see cref="ShellUnaryExpressionSyntax"/> for the <c>errorlevel</c>, <c>defined</c>,
+    /// <c>exist</c>, and <c>cmdextversion</c> forms, a <see cref="ShellBinaryExpressionSyntax"/> for the <c>==</c> and
+    /// <c>EQU</c> comparisons, and a lone <see cref="ShellOperandExpressionSyntax"/> for text matching none of them.
+    /// </summary>
     public ShellExpressionSyntax Condition { get; }
 
     /// <summary>The statement run when the condition holds.</summary>

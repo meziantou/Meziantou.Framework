@@ -64,6 +64,12 @@ public static class SyntaxFactory
     }
 
     /// <summary>Creates a quoted string that reproduces <paramref name="value"/> literally in <paramref name="dialect"/>.</summary>
+    /// <remarks>
+    /// The returned node's <c>Value</c> is always <paramref name="value"/>. For the POSIX and PowerShell families the
+    /// text also reads back as <paramref name="value"/> when parsed again. Cmd has no escape for a quote inside a
+    /// quoted string and no way to carry a line break in a word, so a value holding either cannot be written as cmd
+    /// text that parses back to it.
+    /// </remarks>
     public static ShellQuotedStringSyntax QuotedString(string value, ShellDialect dialect)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -71,21 +77,78 @@ public static class SyntaxFactory
 
         return dialect.Family switch
         {
-            // A single-quoted POSIX string has no escapes at all, so an embedded quote has to close, escape, reopen.
-            ShellDialectFamily.Posix => Quote('\'', ShellSyntaxKind.SingleQuoteToken, value.Replace("'", @"'\''", StringComparison.Ordinal)),
-            ShellDialectFamily.PowerShell => Quote('\'', ShellSyntaxKind.SingleQuoteToken, value.Replace("'", "''", StringComparison.Ordinal)),
-            _ => Quote('"', ShellSyntaxKind.DoubleQuoteToken, value.Replace("\"", "\"\"", StringComparison.Ordinal)),
+            // A single-quoted POSIX string has no escapes at all, so a value holding a quote is double-quoted
+            // instead, with the characters the shell would still act on written as escape sequences.
+            ShellDialectFamily.Posix => value.Contains('\'', StringComparison.Ordinal)
+                ? Quote('"', ShellSyntaxKind.DoubleQuoteToken, EscapeParts(value, PosixDoubleQuoteSpecials))
+                : Quote('\'', ShellSyntaxKind.SingleQuoteToken, VerbatimParts(value)),
+
+            // PowerShell and cmd double the quote character inside the string rather than escaping it.
+            ShellDialectFamily.PowerShell => Quote('\'', ShellSyntaxKind.SingleQuoteToken, DoubledParts(value, '\'')),
+            _ => Quote('"', ShellSyntaxKind.DoubleQuoteToken, DoubledParts(value, '"')),
         };
 
-        static ShellQuotedStringSyntax Quote(char quote, ShellSyntaxKind kind, string content)
+        static ShellQuotedStringSyntax Quote(char quote, ShellSyntaxKind kind, IReadOnlyList<ShellWordPartSyntax> parts)
         {
             var text = quote.ToString();
 
             return new ShellQuotedStringSyntax(
                 new ShellSyntaxToken(kind, text, text),
-                content.Length == 0 ? [] : [Literal(content)],
+                parts,
                 new ShellSyntaxToken(kind, text, text));
         }
+    }
+
+    /// <summary>The characters a POSIX shell still acts on inside a double-quoted string.</summary>
+    private static ReadOnlySpan<char> PosixDoubleQuoteSpecials => ['$', '`', '"', '\\'];
+
+    private static ShellWordPartSyntax[] VerbatimParts(string value) => value.Length == 0 ? [] : [Literal(value)];
+
+    /// <summary>
+    /// Splits <paramref name="value"/> into literal runs and backslash escapes, the way the parser reads a
+    /// double-quoted string back, so the parts resolve to the original value.
+    /// </summary>
+    private static ShellWordPartSyntax[] EscapeParts(string value, ReadOnlySpan<char> specials)
+    {
+        var parts = new List<ShellWordPartSyntax>();
+        var run = new StringBuilder();
+        foreach (var character in value)
+        {
+            if (specials.IndexOf(character) < 0)
+            {
+                run.Append(character);
+                continue;
+            }
+
+            if (run.Length > 0)
+            {
+                parts.Add(Literal(run.ToString()));
+                run.Clear();
+            }
+
+            parts.Add(new ShellEscapeSequenceSyntax(new ShellSyntaxToken(ShellSyntaxKind.EscapeToken, "\\" + character, character.ToString())));
+        }
+
+        if (run.Length > 0)
+        {
+            parts.Add(Literal(run.ToString()));
+        }
+
+        return [.. parts];
+    }
+
+    /// <summary>
+    /// Writes <paramref name="value"/> with every <paramref name="quote"/> doubled, keeping the original text as the
+    /// token's value so the part resolves to what was asked for.
+    /// </summary>
+    private static ShellWordPartSyntax[] DoubledParts(string value, char quote)
+    {
+        if (value.Length == 0)
+            return [];
+
+        var text = value.Replace(quote.ToString(), new string(quote, 2), StringComparison.Ordinal);
+
+        return [new ShellLiteralWordPartSyntax(new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, text, value))];
     }
 
     /// <summary>Creates a reference to <paramref name="name"/> using the syntax of <paramref name="dialect"/>.</summary>
@@ -234,9 +297,13 @@ public static class SyntaxFactory
         return false;
     }
 
-    private static ShellWordSyntax WithLeadingSpace(ShellWordSyntax word)
+    /// <summary>
+    /// Puts a space in front of <paramref name="word"/> so it stays a word of its own instead of being glued to what
+    /// precedes it. A word that already starts with trivia is returned unchanged.
+    /// </summary>
+    internal static ShellWordSyntax WithLeadingSpace(ShellWordSyntax word)
     {
-        if (word.Parts.Count == 0)
+        if (word.Parts.Count == 0 || word.StartsWithTrivia)
             return word;
 
         var first = word.Parts[0];

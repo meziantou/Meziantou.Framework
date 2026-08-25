@@ -59,6 +59,23 @@ internal sealed partial class PowerShellParser
 
     private ShellExpressionSyntax ParseAssignmentExpression()
     {
+        // Recurses into itself for a right-associative chain, so it needs the guard even though ParseExpression above
+        // already applied one: a chain never goes back through ParseExpression.
+        if (!TryEnterRecursion(new TextSpan(_lexer.Position, 0)))
+            return new ShellRawExpressionSyntax(ConsumeRestAsToken());
+
+        try
+        {
+            return ParseAssignmentExpressionCore();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private ShellExpressionSyntax ParseAssignmentExpressionCore()
+    {
         var left = ParseArrayLiteralExpression();
 
         AccumulateInlineTrivia();
@@ -108,6 +125,23 @@ internal sealed partial class PowerShellParser
     }
 
     private ShellExpressionSyntax ParseTernaryExpression()
+    {
+        // Recurses into itself for a right-associative chain, so it needs the guard even though ParseExpression above
+        // already applied one: a chain never goes back through ParseExpression.
+        if (!TryEnterRecursion(new TextSpan(_lexer.Position, 0)))
+            return new ShellRawExpressionSyntax(ConsumeRestAsToken());
+
+        try
+        {
+            return ParseTernaryExpressionCore();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private ShellExpressionSyntax ParseTernaryExpressionCore()
     {
         var condition = ParseNullCoalescingExpression();
         if (!_options.Dialect.HasFeature(ShellDialectFeatures.TernaryOperator))

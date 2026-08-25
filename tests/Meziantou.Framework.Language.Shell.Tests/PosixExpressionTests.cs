@@ -162,10 +162,20 @@ public sealed class PosixExpressionTests
     }
 
     [Fact]
-    public void ShIsUnaffectedBecauseItHasNoArithmeticExpansion()
+    public void ShHasArithmeticExpansionBecausePosixDefinesIt()
     {
         var tree = ShellSyntaxAssert.TextIsFaithful("echo $((1 + 2))", ShellDialect.Sh);
 
-        Assert.Empty(tree.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
+        var expansion = Assert.Single(tree.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
+        Assert.Equal("1 + 2", expansion.ExpressionText);
+    }
+
+    [Fact]
+    public void ShHasNoArithmeticCommandBecausePosixDefinesNone()
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful("((1 + 2))", ShellDialect.Sh);
+
+        Assert.DoesNotContain(tree.Root.DescendantNodes(), node => node.Kind == ShellSyntaxKind.PosixArithmeticCommand);
+        Assert.Contains(ShellSyntaxTree.ParseText("((1 + 2))", ShellDialect.Bash).Root.DescendantNodes(), node => node.Kind == ShellSyntaxKind.PosixArithmeticCommand);
     }
 }

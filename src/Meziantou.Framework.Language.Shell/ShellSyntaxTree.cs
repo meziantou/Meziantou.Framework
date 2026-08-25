@@ -98,12 +98,39 @@ public sealed class ShellSyntaxTree
             return empty;
         }
 
-        if (statements.Count > 1)
+        for (var index = 1; index < statements.Count; index++)
         {
-            tree.AddTrailingContentDiagnostic(statements[1].FullSpan);
+            if (BelongsTo(statements[index], statements[0]))
+                continue;
+
+            tree.AddTrailingContentDiagnostic(statements[index].FullSpan);
+            break;
         }
 
         return statements[0];
+    }
+
+    /// <summary>
+    /// Returns whether <paramref name="statement"/> is part of <paramref name="command"/> despite following it in the
+    /// statement list.
+    /// </summary>
+    /// <remarks>
+    /// A here-document body starts on the line after the operator that introduces it, so it is a statement of its own
+    /// sitting after the command it belongs to. Reading it as content following the command would report every
+    /// here-document as trailing content.
+    /// </remarks>
+    private static bool BelongsTo(ShellStatementSyntax statement, ShellStatementSyntax command)
+    {
+        if (statement is not PosixHereDocumentSyntax { Redirection: { } redirection })
+            return false;
+
+        foreach (var ancestor in redirection.AncestorsAndSelf())
+        {
+            if (ReferenceEquals(ancestor, command))
+                return true;
+        }
+
+        return false;
     }
 
     private void AddTrailingContentDiagnostic(TextSpan span)

@@ -50,9 +50,13 @@ public sealed class ShellCommandSyntax : ShellStatementSyntax
     /// <summary>Replaces the arguments while keeping the command name, assignments, and redirections in place.</summary>
     public ShellCommandSyntax WithArguments(IEnumerable<ShellWordSyntax>? arguments)
     {
-        var updated = arguments?.ToArray() ?? [];
-        if (updated.SequenceEqual(Arguments))
+        var replacements = arguments?.ToArray() ?? [];
+        if (replacements.SequenceEqual(Arguments))
             return this;
+
+        // A word built by SyntaxFactory carries no trivia, so without a separator it would run into the command name
+        // or the word before it. Words that bring their own leading trivia keep the spacing they were given.
+        var updated = Array.ConvertAll(replacements, SyntaxFactory.WithLeadingSpace);
 
         var elements = new List<ShellSyntaxNode>(ChildNodes.Count);
         var seenName = false;

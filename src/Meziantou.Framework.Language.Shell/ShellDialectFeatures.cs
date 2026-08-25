@@ -9,8 +9,8 @@ public enum ShellDialectFeatures
     /// <summary>The <c>[[ ... ]]</c> extended test construct.</summary>
     ExtendedTest = 1 << 0,
 
-    /// <summary>The <c>(( ... ))</c> arithmetic command and <c>$(( ... ))</c> arithmetic expansion.</summary>
-    Arithmetic = 1 << 1,
+    /// <summary>The <c>(( ... ))</c> arithmetic command. POSIX defines no such command, so <c>sh</c> lacks it.</summary>
+    ArithmeticCommand = 1 << 1,
 
     /// <summary>The <c>&lt;&lt;&lt;</c> here-string redirection operator.</summary>
     HereString = 1 << 2,
@@ -50,4 +50,7 @@ public enum ShellDialectFeatures
 
     /// <summary>Delayed variable expansion using <c>!VAR!</c>.</summary>
     DelayedExpansion = 1 << 14,
+
+    /// <summary>The <c>$(( ... ))</c> arithmetic expansion. POSIX defines it, so every dialect in the family has it.</summary>
+    ArithmeticExpansion = 1 << 15,
 }

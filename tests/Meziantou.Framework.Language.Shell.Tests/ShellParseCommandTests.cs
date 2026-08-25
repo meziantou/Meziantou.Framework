@@ -85,4 +85,23 @@ public sealed class ShellParseCommandTests
             Assert.Null(Record.Exception(() => ShellSyntaxTree.ParseCommand(text, ShellDialect.Bash)));
         }
     }
+
+    [Theory]
+    [InlineData("cat <<EOF\nbody\nEOF\n")]
+    [InlineData("cat <<A <<B\na\nA\nb\nB\n")]
+    public void ParseCommand_HereDocumentBodyIsNotTrailingContent(string text)
+    {
+        // The body is a statement of its own that follows the command, but it belongs to it.
+        var command = ShellSyntaxTree.ParseCommand(text, ShellDialect.Bash);
+
+        Assert.DoesNotContain(command.SyntaxTree!.Diagnostics, diagnostic => diagnostic.Id == "SHELL0101");
+    }
+
+    [Fact]
+    public void ParseCommand_ContentAfterAHereDocumentIsStillTrailingContent()
+    {
+        var command = ShellSyntaxTree.ParseCommand("cat <<EOF\nbody\nEOF\nls -l\n", ShellDialect.Bash);
+
+        Assert.Contains(command.SyntaxTree!.Diagnostics, diagnostic => diagnostic.Id == "SHELL0101");
+    }
 }

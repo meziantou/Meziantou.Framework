@@ -64,7 +64,7 @@ internal sealed partial class PosixParser
         if (dialect.HasFeature(ShellDialectFeatures.ZshExtensions) && IsAtAnonymousFunction())
             return ParseZshAnonymousFunction();
 
-        if (_lexer.Current == '(' && _lexer.Peek(1) == '(' && _options.Dialect.HasFeature(ShellDialectFeatures.Arithmetic))
+        if (_lexer.Current == '(' && _lexer.Peek(1) == '(' && _options.Dialect.HasFeature(ShellDialectFeatures.ArithmeticCommand))
             return ParseArithmeticCommand();
 
         if (_lexer.Current == '(')
@@ -133,7 +133,7 @@ internal sealed partial class PosixParser
         AccumulateInlineTrivia();
 
         // bash's C-style loop, `for (( i = 0; i < n; i++ ))`, keeps its header verbatim.
-        if (_lexer.Current == '(' && _lexer.Peek(1) == '(' && _options.Dialect.HasFeature(ShellDialectFeatures.Arithmetic))
+        if (_lexer.Current == '(' && _lexer.Peek(1) == '(' && _options.Dialect.HasFeature(ShellDialectFeatures.ArithmeticCommand))
         {
             var header = ParseArithmeticCommand();
 

@@ -172,4 +172,24 @@ public sealed class ShellEditingTests
 
         Assert.Equal(updated.Text, updated.Root.ToFullString());
     }
+
+    [Fact]
+    public void WithArguments_SeparatesFactoryWordsFromTheCommandName()
+    {
+        var command = Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand("echo old", ShellDialect.Bash));
+
+        var updated = command.WithArguments([SyntaxFactory.Word("new", ShellDialect.Bash), SyntaxFactory.Word("two", ShellDialect.Bash)]);
+
+        Assert.Equal("echo new two", updated.ToFullString());
+    }
+
+    [Fact]
+    public void WithArguments_KeepsTheSpacingOfWordsThatBringTheirOwn()
+    {
+        var command = Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand("echo a   b", ShellDialect.Bash));
+
+        // Each parsed word owns the whitespace in front of it, so reordering carries the spacing along and no
+        // separator is added on top of it.
+        Assert.Equal("echo   b a", command.WithArguments([.. command.Arguments.Reverse()]).ToFullString());
+    }
 }

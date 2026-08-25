@@ -962,7 +962,7 @@ namespace Meziantou.Framework.Language.Shell
     {
         None = 0,
         ExtendedTest = 1,
-        Arithmetic = 2,
+        ArithmeticCommand = 2,
         HereString = 4,
         DollarQuoting = 8,
         Arrays = 16,
@@ -975,7 +975,8 @@ namespace Meziantou.Framework.Language.Shell
         TernaryOperator = 2048,
         NullCoalescing = 4096,
         CleanBlock = 8192,
-        DelayedExpansion = 16384
+        DelayedExpansion = 16384,
+        ArithmeticExpansion = 32768
     }
 
     public sealed class ShellEmbeddedExpressionSyntax : Meziantou.Framework.Language.Shell.ShellWordPartSyntax

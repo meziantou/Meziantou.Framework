@@ -826,7 +826,7 @@ internal sealed partial class PosixParser
         if (next == '"' && _options.Dialect.HasFeature(ShellDialectFeatures.DollarQuoting))
             return ParseDoubleQuotedString(leadingTrivia, fullStart, ShellSyntaxKind.DollarDoubleQuoteToken);
 
-        if (next == '(' && _lexer.Peek(2) == '(' && _options.Dialect.HasFeature(ShellDialectFeatures.Arithmetic))
+        if (next == '(' && _lexer.Peek(2) == '(' && _options.Dialect.HasFeature(ShellDialectFeatures.ArithmeticExpansion))
             return ParseArithmeticExpansion(leadingTrivia, fullStart);
 
         if (next == '(')

@@ -19,7 +19,7 @@
 | `PowerShellCore` | PowerShell | pwsh 7+: `&&`/`\|\|`, ternary `? :`, `??`/`??=`, `clean` blocks |
 | `Cmd` | Cmd | cmd.exe batch |
 
-Dialects within a family share a parser; `ShellDialect.Features` records what each one supports, so `$((1+2))` is an arithmetic expansion in bash and plain text in sh.
+Dialects within a family share a parser; `ShellDialect.Features` records what each one supports. POSIX defines `$((1+2))`, so every dialect in the family parses it as an arithmetic expansion, while the `((1+2))` arithmetic command is bash and zsh only and stays plain text in sh.
 
 ## Parsing
 
@@ -167,3 +167,5 @@ var tree = ShellSyntaxTree.ParseText(script, options);
 ```
 
 `MaxRecursionDepth` bounds how deeply the parser descends. Input that nests beyond it reports `SHELL0100` and keeps the remainder as skipped text, so deeply nested input cannot overflow the stack.
+
+The depth limit bounds nesting, not length. An operator or member chain such as `$x.a.b.c...` is built by a loop rather than by recursion, so it is accepted at any length and produces a tree as deep as the chain is long. Building, walking, and editing such a tree uses no recursion either, but every node holds its own text, so a chain of many thousands of links costs memory in proportion to its length times its depth.

@@ -38,10 +38,12 @@ public sealed class SourceText
     {
         ArgumentOutOfRangeException.ThrowIfNegative(position);
 
-        foreach (var line in Lines)
+        // A line's End stops before its line break, so a position is matched against where the next line starts
+        // instead. Testing against End would put the second half of a CRLF on the following line.
+        for (var index = 0; index < Lines.Count - 1; index++)
         {
-            if (position <= line.End)
-                return line;
+            if (position < Lines[index + 1].Start)
+                return Lines[index];
         }
 
         return Lines[^1];

@@ -263,15 +263,19 @@ public sealed class ShellSyntaxTreeTests
         Assert.Equal("date", inner.NameValue);
     }
 
-    [Fact]
-    public void ParseText_ArithmeticExpansion_IsModeledInBashButNotSh()
+    [Theory]
+    // POSIX defines arithmetic expansion, so it is modelled for every dialect in the family.
+    [InlineData("sh")]
+    [InlineData("bash")]
+    [InlineData("zsh")]
+    public void ParseText_ArithmeticExpansion_IsModeledForEveryPosixDialect(string dialectName)
     {
-        var bash = ShellSyntaxTree.ParseText("echo $((1 + 2))", ShellDialect.Bash);
-        var expansion = Assert.Single(bash.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
-        Assert.Equal("1 + 2", expansion.ExpressionText);
+        Assert.True(ShellDialect.TryParse(dialectName, out var dialect));
 
-        var sh = ShellSyntaxTree.ParseText("echo $((1 + 2))", ShellDialect.Sh);
-        Assert.Empty(sh.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
+        var tree = ShellSyntaxTree.ParseText("echo $((1 + 2))", dialect);
+
+        var expansion = Assert.Single(tree.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
+        Assert.Equal("1 + 2", expansion.ExpressionText);
     }
 
     [Fact]
@@ -333,6 +337,9 @@ public sealed class ShellSyntaxTreeTests
             { "echo $((1" + Repeat("+1", Chained) + "))", ShellDialect.Bash },
             { "[[ -f a" + Repeat(" && -f a", Chained) + " ]]", ShellDialect.Bash },
             { "$a = $x" + Repeat(".p", Chained), ShellDialect.PowerShellCore },
+            // Right-associative chains recurse into their own parser rather than back through ParseExpression.
+            { "$a = " + Repeat("$b = ", Nested) + "1", ShellDialect.PowerShellCore },
+            { "$a = " + Repeat("$c ? 1 : ", Nested) + "2", ShellDialect.PowerShellCore },
         };
 
         static string Repeat(string value, int count) => string.Concat(Enumerable.Repeat(value, count));
@@ -388,6 +395,17 @@ public sealed class ShellSyntaxTreeTests
         var sh = ShellSyntaxTree.ParseText("echo hi", ShellDialect.Sh);
 
         Assert.False(bash.IsEquivalentTo(sh));
+    }
+
+    [Fact]
+    public void SourceText_PutsBothHalvesOfACrlfOnTheSameLine()
+    {
+        var text = SourceText.From("a\r\nb");
+
+        Assert.Equal(0, text.GetLine(0).LineNumber);
+        Assert.Equal(0, text.GetLine(1).LineNumber);
+        Assert.Equal(0, text.GetLine(2).LineNumber);
+        Assert.Equal(1, text.GetLine(3).LineNumber);
     }
 
     [Fact]

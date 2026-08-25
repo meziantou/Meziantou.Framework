@@ -44,7 +44,7 @@ public sealed class ShellRoundTripFuzzTests
 
             var tree = ShellSyntaxTree.ParseText(text, dialect);
 
-            Assert.Equal(text, tree.Root.ToFullString());
+            ShellSyntaxAssert.TextIsFaithful(text, tree);
         }
     }
 
@@ -68,7 +68,7 @@ public sealed class ShellRoundTripFuzzTests
 
             var tree = ShellSyntaxTree.ParseText(text, ShellDialect.Bash);
 
-            Assert.Equal(text, tree.Root.ToFullString());
+            ShellSyntaxAssert.TextIsFaithful(text, tree);
         }
     }
 
@@ -109,9 +109,7 @@ public sealed class ShellRoundTripFuzzTests
         for (var length = 0; length <= Script.Length; length++)
         {
             var prefix = Script[..length];
-            var tree = ShellSyntaxTree.ParseText(prefix, ShellDialect.Bash);
-
-            Assert.Equal(prefix, tree.Root.ToFullString());
+            ShellSyntaxAssert.TextIsFaithful(prefix, ShellDialect.Bash);
         }
     }
 
@@ -137,9 +135,8 @@ public sealed class ShellRoundTripFuzzTests
             main "$@"
             """;
 
-        var tree = ShellSyntaxTree.ParseText(Script, ShellDialect.Bash);
+        var tree = ShellSyntaxAssert.TextIsFaithful(Script, ShellDialect.Bash);
 
-        Assert.Equal(Script, tree.Root.ToFullString());
         Assert.Empty(tree.Diagnostics);
     }
 
@@ -182,7 +179,7 @@ public sealed class ShellRoundTripFuzzTests
             var text = builder.ToString();
             var dialect = dialects[random.Next(dialects.Length)];
 
-            Assert.Equal(text, ShellSyntaxTree.ParseText(text, dialect).Root.ToFullString());
+            ShellSyntaxAssert.TextIsFaithful(text, dialect);
         }
     }
 
@@ -204,7 +201,7 @@ public sealed class ShellRoundTripFuzzTests
                 }
             });
 
-            Assert.Equal(text, ShellSyntaxTree.ParseText(text, ShellDialect.PowerShellCore).Root.ToFullString());
+            ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.PowerShellCore);
         }
     }
 
@@ -253,7 +250,7 @@ public sealed class ShellRoundTripFuzzTests
         {
             var prefix = Script[..length];
 
-            Assert.Equal(prefix, ShellSyntaxTree.ParseText(prefix, ShellDialect.PowerShellCore).Root.ToFullString());
+            ShellSyntaxAssert.TextIsFaithful(prefix, ShellDialect.PowerShellCore);
         }
 
         // pwsh 7 parses the whole script without an error, so neither should this parser.
@@ -294,7 +291,7 @@ public sealed class ShellRoundTripFuzzTests
 
             var text = builder.ToString();
 
-            Assert.Equal(text, ShellSyntaxTree.ParseText(text, ShellDialect.Cmd).Root.ToFullString());
+            ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
         }
     }
 
@@ -316,7 +313,7 @@ public sealed class ShellRoundTripFuzzTests
                 }
             });
 
-            Assert.Equal(text, ShellSyntaxTree.ParseText(text, ShellDialect.Cmd).Root.ToFullString());
+            ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
         }
     }
 
@@ -350,7 +347,7 @@ public sealed class ShellRoundTripFuzzTests
         {
             var prefix = Script[..length];
 
-            Assert.Equal(prefix, ShellSyntaxTree.ParseText(prefix, ShellDialect.Cmd).Root.ToFullString());
+            ShellSyntaxAssert.TextIsFaithful(prefix, ShellDialect.Cmd);
         }
 
         // cmd.exe runs this script, so a diagnostic on the whole text would be a false positive.

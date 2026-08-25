@@ -210,6 +210,13 @@ internal sealed partial class CmdParser
             _position++;
         }
 
+        // A `!` that opens no delayed expansion is ordinary text, so it has to be taken into the run rather than
+        // skipped; otherwise the character would be missing from the tree.
+        if (_position == start && !IsAtEnd && GetLineBreakLength(_position) == 0)
+        {
+            _position++;
+        }
+
         return new ShellLiteralWordPartSyntax(CreateToken(ShellSyntaxKind.BareTextToken, start, [], start));
     }
 
@@ -450,6 +457,13 @@ internal sealed partial class CmdParser
             _position++;
         }
     }
+
+    /// <summary>
+    /// Where the next token's text starts once its leading trivia is counted. It has to be read before the scan that
+    /// measures the token, because <see cref="TakeTrivia"/> falls back to the current position when no trivia is
+    /// pending, which by then would be the end of the token rather than its start.
+    /// </summary>
+    private int PendingFullStart => _pendingTrivia.Count == 0 ? _position : _pendingTriviaStart;
 
     private (IReadOnlyList<ShellSyntaxTrivia> Trivia, int FullStart) TakeTrivia()
     {

@@ -13,7 +13,8 @@ public sealed class PowerShellParameterSyntax : ShellSyntaxNode
         : base(
             ShellSyntaxKind.PowerShellParameter,
             BuildFullText(attributes ?? []) + variable.ToFullString() + (equalsToken?.ToFullString() ?? string.Empty) + (defaultValue?.ToFullString() ?? string.Empty),
-            variable.FullSpan.Start,
+            // The text starts at the first attribute when there is one, so the span has to start there too.
+            attributes is { Count: > 0 } ? attributes[0].FullSpan.Start : variable.FullSpan.Start,
             BuildTokens(equalsToken))
     {
         Attributes = attributes ?? [];

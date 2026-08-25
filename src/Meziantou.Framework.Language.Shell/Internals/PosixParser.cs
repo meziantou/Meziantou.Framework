@@ -51,6 +51,13 @@ internal sealed partial class PosixParser
             if (_lexer.Current is ';' or '&' && !IsAndOrOperator() && !IsAtCaseTerminator())
             {
                 var separator = ReadSeparatorToken();
+
+                // The separator belongs to the statement in front of it, so pad first to land at the right index.
+                while (separators.Count + 1 < statements.Count)
+                {
+                    separators.Add(MissingToken(ShellSyntaxKind.SemicolonToken, separator.FullSpan.Start));
+                }
+
                 if (separators.Count < statements.Count)
                 {
                     separators.Add(separator);
@@ -64,6 +71,13 @@ internal sealed partial class PosixParser
                 }
 
                 continue;
+            }
+
+            // `SeparatorTokens[i]` follows `Statements[i]`, so a statement that a line break ended rather than a `;`
+            // still needs a placeholder; without one the next `;` would be rebuilt against the wrong statement.
+            while (separators.Count < statements.Count)
+            {
+                separators.Add(MissingToken(ShellSyntaxKind.SemicolonToken, _lexer.Position));
             }
 
             var statement = ParseAndOrList();

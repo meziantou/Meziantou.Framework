@@ -713,4 +713,54 @@ public sealed class PowerShellParserTests
         Assert.Single(tree.Root.Statements.Statements);
         Assert.Empty(tree.Diagnostics);
     }
+
+    // The checks below rebuild the text from the children rather than reading it off the root, which is the only way
+    // to notice a node that dropped a character or points at the wrong span. See ShellSyntaxAssert.
+
+    [Theory]
+    // A prefix operator or an attribute list comes before the part these nodes used to take their position from.
+    [InlineData("$a = -not $b")]
+    [InlineData("if (-not (Test-Path $x)) { 1 }")]
+    [InlineData("$c | Where-Object { -not $_ }")]
+    [InlineData("function f { param([int]$a, [string]$b) }")]
+    [InlineData("[CmdletBinding()]\nparam ($a)")]
+    [InlineData("[CmdletBinding()]\nclass C { }")]
+    // A `;` that follows a line-separated statement has to be rebuilt against the statement it belongs to.
+    [InlineData("Get-Item\nGet-Date; Get-Host\n")]
+    [InlineData("Get-Item\nGet-Date\nGet-Host; Get-Random\n")]
+    // Malformed input still has to keep every character.
+    [InlineData("@{;a=1}")]
+    [InlineData("0x1Fclass::(|| $x[")]
+    [InlineData("\0;b")]
+    public void EveryCharacterStaysInTheTree(string text)
+    {
+        ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.PowerShellCore);
+    }
+
+    [Fact]
+    public void UnaryExpressionSpanStartsAtItsOperator()
+    {
+        var tree = ShellSyntaxTree.ParseText("$a = -not $b", ShellDialect.PowerShellCore);
+        var unary = Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellUnaryExpressionSyntax>());
+
+        Assert.Equal("-not $b", tree.Text[unary.Span.Start..unary.Span.End]);
+    }
+
+    [Fact]
+    public void ParameterSpanStartsAtItsFirstAttribute()
+    {
+        var tree = ShellSyntaxTree.ParseText("function f { param([int]$a) }", ShellDialect.PowerShellCore);
+        var parameter = Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellParameterSyntax>());
+
+        Assert.Equal("[int]$a", tree.Text[parameter.Span.Start..parameter.Span.End]);
+    }
+
+    [Fact]
+    public void ParamBlockSpanStartsAtItsFirstAttribute()
+    {
+        var tree = ShellSyntaxTree.ParseText("[CmdletBinding()]\nparam ($a)", ShellDialect.PowerShellCore);
+        var block = Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellParamBlockSyntax>());
+
+        Assert.Equal("[CmdletBinding()]\nparam ($a)", tree.Text[block.Span.Start..block.Span.End]);
+    }
 }

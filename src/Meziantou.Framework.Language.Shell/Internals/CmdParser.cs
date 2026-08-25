@@ -62,6 +62,13 @@ internal sealed partial class CmdParser
             if (Current == '&' && Peek(1) != '&')
             {
                 var stray = ReadToken(ShellSyntaxKind.AmpersandToken, length: 1);
+
+                // The separator belongs to the statement in front of it, so pad first to land at the right index.
+                while (separators.Count + 1 < statements.Count)
+                {
+                    separators.Add(MissingToken(ShellSyntaxKind.AmpersandToken, stray.FullSpan.Start));
+                }
+
                 if (separators.Count < statements.Count)
                 {
                     separators.Add(stray);
@@ -74,6 +81,13 @@ internal sealed partial class CmdParser
                 }
 
                 continue;
+            }
+
+            // `SeparatorTokens[i]` follows `Statements[i]`, so a statement that a line break ended rather than an `&`
+            // still needs a placeholder; without one the next `&` would be rebuilt against the wrong statement.
+            while (separators.Count < statements.Count)
+            {
+                separators.Add(MissingToken(ShellSyntaxKind.AmpersandToken, _position));
             }
 
             statements.Add(ParseAndOrList(stopAtCloseParen));
@@ -222,13 +236,14 @@ internal sealed partial class CmdParser
     {
         var gotoKeyword = ReadKeyword();
         AccumulateInlineTrivia();
+        var fullStart = PendingFullStart;
         var start = _position;
         while (!IsAtEnd && !IsWordBoundary(Current))
         {
             _position++;
         }
 
-        var (trivia, fullStart) = TakeTrivia();
+        var (trivia, _) = TakeTrivia();
 
         return new CmdGotoStatementSyntax(gotoKeyword, CreateToken(ShellSyntaxKind.GenericToken, start, trivia, fullStart));
     }
@@ -256,6 +271,7 @@ internal sealed partial class CmdParser
         ShellSyntaxToken? equalsToken = null;
         ShellWordSyntax? value = null;
 
+        var nameFullStart = PendingFullStart;
         var start = _position;
         var scan = start;
         var inQuotes = false;
@@ -277,8 +293,8 @@ internal sealed partial class CmdParser
         if (scan > start)
         {
             _position = scan;
-            var (trivia, fullStart) = TakeTrivia();
-            nameToken = CreateToken(ShellSyntaxKind.VariableNameToken, start, trivia, fullStart);
+            var (trivia, _) = TakeTrivia();
+            nameToken = CreateToken(ShellSyntaxKind.VariableNameToken, start, trivia, nameFullStart);
         }
 
         if (Current == '=')
@@ -412,13 +428,14 @@ internal sealed partial class CmdParser
         }
 
         AccumulateInlineTrivia();
+        var variableFullStart = PendingFullStart;
         var variableStart = _position;
         while (!IsAtEnd && (Current == '%' || IsNameCharacter(Current)))
         {
             _position++;
         }
 
-        var (variableTrivia, variableFullStart) = TakeTrivia();
+        var (variableTrivia, _) = TakeTrivia();
         var variableToken = _position > variableStart
             ? CreateToken(ShellSyntaxKind.VariableNameToken, variableStart, variableTrivia, variableFullStart)
             : MissingToken(ShellSyntaxKind.VariableNameToken, variableFullStart, variableTrivia);
@@ -435,12 +452,15 @@ internal sealed partial class CmdParser
             if (IsAtEnd || Current == ')')
                 break;
 
+            // An operator cannot start an item, so the list is malformed. Stopping here leaves the text to the
+            // enclosing statement list; skipping the character would drop it from the tree entirely.
+            if (IsWordBoundary(Current))
+                break;
+
             var positionBefore = _position;
             items.Add(ParseWord());
             if (_position == positionBefore)
-            {
-                _position++;
-            }
+                break;
         }
 
         _stopAtCloseParen = previousStopAtCloseParen;

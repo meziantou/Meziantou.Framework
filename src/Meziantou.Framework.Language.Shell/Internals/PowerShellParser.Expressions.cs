@@ -372,11 +372,8 @@ internal sealed partial class PowerShellParser
                 continue;
             }
 
-            if (_lexer.Position == positionBefore)
-            {
-                _lexer.Position++;
-            }
-
+            // Nothing was consumed, so the argument list is malformed. Stopping here leaves the text to the caller;
+            // skipping the character would drop it from the tree entirely.
             break;
         }
 
@@ -496,10 +493,10 @@ internal sealed partial class PowerShellParser
 
             if (_lexer.Current == ';')
             {
-                // A stray separator before any entry still has to survive the round trip.
-                var stray = ReadOperatorToken(ShellSyntaxKind.SemicolonToken, length: 1);
-                AddDiagnostic(stray.Span, "SHELL0002", "Unexpected ';'.");
-                continue;
+                // A separator with no entry in front of it is an error in PowerShell too. Leaving it unread ends the
+                // literal here and keeps the text, which consuming the token would drop.
+                AddDiagnostic(new TextSpan(_lexer.Position, 1), "SHELL0002", "Unexpected ';'.");
+                break;
             }
 
             var positionBefore = _lexer.Position;

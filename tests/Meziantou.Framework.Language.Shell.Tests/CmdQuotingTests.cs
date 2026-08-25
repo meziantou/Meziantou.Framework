@@ -136,6 +136,47 @@ public sealed class CmdQuotingTests
         Assert.Contains(tree.Root.DescendantTrivia(), trivia => trivia.Kind == ShellSyntaxKind.LineContinuationTrivia);
     }
 
+    [Theory]
+    // cmd only treats `^` as an escape outside quotes: `echo "a^&b"` prints `a^&b`, carets and all.
+    [InlineData("\"a^&b\"", "a^&b")]
+    [InlineData("\"a^^b\"", "a^^b")]
+    [InlineData("\"a^b\"", "a^b")]
+    public void CaretInsideQuotesIsLiteral(string argumentText, string expected)
+    {
+        var word = FirstArgument(argumentText);
+
+        Assert.Equal(expected, word.Value);
+        Assert.Empty(word.DescendantNodes().OfType<ShellEscapeSequenceSyntax>());
+    }
+
+    [Theory]
+    // With delayed expansion off, which is cmd's default, a `!` that closes nothing is ordinary text.
+    [InlineData("\"a!b\"", "a!b")]
+    [InlineData("\"a!\"", "a!")]
+    [InlineData("\"!\"", "!")]
+    [InlineData("a!b", "a!b")]
+    public void ALoneExclamationMarkIsLiteral(string argumentText, string expected)
+    {
+        var word = FirstArgument(argumentText);
+
+        Assert.Equal(expected, word.Value);
+        Assert.Empty(word.DescendantNodes().OfType<CmdVariableReferenceSyntax>());
+    }
+
+    [Theory]
+    [InlineData("%VAR:~0,3%", "VAR:~0,3")]
+    [InlineData("%VAR:~-2%", "VAR:~-2")]
+    [InlineData("%VAR:old=new%", "VAR:old=new")]
+    [InlineData("!VAR:~0,3!", "VAR:~0,3")]
+    public void SubstringAndReplacementExpansions_KeepTheirModifiers(string argumentText, string expectedName)
+    {
+        var word = FirstArgument(argumentText);
+        var reference = Assert.Single(word.Parts.OfType<CmdVariableReferenceSyntax>());
+
+        Assert.Equal(expectedName, reference.Name);
+        Assert.Null(word.Value);
+    }
+
     [Fact]
     public void TrailingCaretJoinsTwoLinesInsideAWord()
     {

@@ -13,7 +13,8 @@ public sealed class PowerShellUnaryExpressionSyntax : ShellExpressionSyntax
         : base(
             kind,
             (prefixOperatorToken?.ToFullString() ?? string.Empty) + operand.ToFullString() + (postfixOperatorToken?.ToFullString() ?? string.Empty),
-            operand.FullSpan.Start,
+            // The text starts at the prefix operator when there is one, so the span has to start there too.
+            prefixOperatorToken?.FullSpan.Start ?? operand.FullSpan.Start,
             BuildTokens(prefixOperatorToken, postfixOperatorToken))
     {
         PrefixOperatorToken = prefixOperatorToken;

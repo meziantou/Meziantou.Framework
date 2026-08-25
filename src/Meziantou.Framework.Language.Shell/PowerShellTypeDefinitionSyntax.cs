@@ -19,7 +19,8 @@ public sealed class PowerShellTypeDefinitionSyntax : ShellStatementSyntax
         : base(
             kind,
             BuildFullText(attributes ?? []) + keyword.ToFullString() + nameToken.ToFullString() + (colonToken?.ToFullString() ?? string.Empty) + SeparatedNodes.BuildText(baseTypes, baseTypeSeparatorTokens) + openBraceToken.ToFullString() + members.ToFullString() + closeBraceToken.ToFullString(),
-            keyword.FullSpan.Start,
+            // The text starts at the first attribute when there is one, so the span has to start there too.
+            attributes is { Count: > 0 } ? attributes[0].FullSpan.Start : keyword.FullSpan.Start,
             BuildTokens(keyword, nameToken, colonToken, baseTypeSeparatorTokens, openBraceToken, closeBraceToken))
     {
         Attributes = attributes ?? [];

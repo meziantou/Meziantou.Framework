@@ -46,6 +46,13 @@ internal sealed partial class PowerShellParser
             if (_lexer.Current == ';')
             {
                 var separator = ReadOperatorToken(ShellSyntaxKind.SemicolonToken, length: 1);
+
+                // The separator belongs to the statement in front of it, so pad first to land at the right index.
+                while (separators.Count + 1 < statements.Count)
+                {
+                    separators.Add(MissingToken(ShellSyntaxKind.SemicolonToken, separator.FullSpan.Start));
+                }
+
                 if (separators.Count == statements.Count)
                 {
                     // An empty statement is legal, so `;; Get-Date` is not an error.
@@ -55,6 +62,13 @@ internal sealed partial class PowerShellParser
                 separators.Add(separator);
 
                 continue;
+            }
+
+            // `SeparatorTokens[i]` follows `Statements[i]`, so a statement that a line break ended rather than a `;`
+            // still needs a placeholder; without one the next `;` would be rebuilt against the wrong statement.
+            while (separators.Count < statements.Count)
+            {
+                separators.Add(MissingToken(ShellSyntaxKind.SemicolonToken, _lexer.Position));
             }
 
             statements.Add(ParseStatement());

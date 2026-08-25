@@ -147,7 +147,36 @@ public sealed class ShellSyntaxTreeTests
         var tree = ShellSyntaxTree.ParseText("cd /tmp\nls\npwd\n", ShellDialect.Bash);
 
         Assert.Equal(3, tree.Root.Statements.Statements.Count);
-        Assert.Empty(tree.Root.Statements.SeparatorTokens);
+
+        // `SeparatorTokens[i]` follows `Statements[i]`, so a statement ended by a line break gets a missing separator
+        // rather than none; a real `;` further down the script would otherwise be rebuilt at the wrong index.
+        Assert.All(tree.Root.Statements.SeparatorTokens, separator =>
+        {
+            Assert.True(separator.IsMissing);
+            Assert.Empty(separator.Text);
+        });
+    }
+
+    [Fact]
+    public void ParseText_SeparatorsLineUpWithTheirStatements()
+    {
+        // A `;` or `&` further down the script must line up with the statement it follows, not with the first one.
+        (string Text, ShellDialect Dialect)[] cases =
+        [
+            ("cd /tmp\nls\npwd; echo done\n", ShellDialect.Bash),
+            ("cd /tmp\nls\npwd & echo done\n", ShellDialect.Bash),
+            ("Get-Item\nGet-Date; Get-Host\n", ShellDialect.PowerShellCore),
+            ("echo a\r\necho b\r\necho c & echo d\r\n", ShellDialect.Cmd),
+        ];
+
+        foreach (var (text, dialect) in cases)
+        {
+            var list = ShellSyntaxAssert.TextIsFaithful(text, dialect).Root.Statements;
+
+            // The real separator sits on the statement it follows; the ones before it are placeholders.
+            Assert.All(list.SeparatorTokens.Take(list.Statements.Count - 2), separator => Assert.True(separator.IsMissing));
+            Assert.False(list.SeparatorTokens[list.Statements.Count - 2].IsMissing);
+        }
     }
 
     [Fact]

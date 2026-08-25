@@ -17,7 +17,7 @@ public sealed class PosixCaseClauseSyntax : ShellSyntaxNode
             (openParenToken?.ToFullString() ?? string.Empty)
                 + SeparatedNodes.BuildText(patterns, patternSeparatorTokens)
                 + closeParenToken?.ToFullString() + body?.ToFullString() + (terminatorToken?.ToFullString() ?? string.Empty),
-            openParenToken?.FullSpan.Start ?? SeparatedNodes.GetFullStart(patterns, patternSeparatorTokens),
+            GetFullStart(openParenToken, patterns, patternSeparatorTokens, closeParenToken, body, terminatorToken),
             BuildTokens(openParenToken, patternSeparatorTokens, closeParenToken!, terminatorToken))
     {
         OpenParenToken = openParenToken;
@@ -47,6 +47,35 @@ public sealed class PosixCaseClauseSyntax : ShellSyntaxNode
 
     public override void Accept(ShellSyntaxVisitor visitor) => visitor.VisitCaseClause(this);
     public override TResult Accept<TResult>(ShellSyntaxVisitor<TResult> visitor) => visitor.VisitCaseClause(this);
+
+    /// <summary>
+    /// The clause starts at whichever part comes first. A clause with neither an opening parenthesis nor a pattern,
+    /// which only malformed input produces, still has to report the position of the text it does cover.
+    /// </summary>
+    private static int GetFullStart(
+        ShellSyntaxToken? openParenToken,
+        IReadOnlyList<ShellWordSyntax>? patterns,
+        IReadOnlyList<ShellSyntaxToken>? patternSeparatorTokens,
+        ShellSyntaxToken? closeParenToken,
+        ShellStatementListSyntax? body,
+        ShellSyntaxToken? terminatorToken)
+    {
+        // The parts appear in this order, and a missing one contributes no text, so the clause starts at the first
+        // part that actually carries some.
+        if (openParenToken is { IsMissing: false })
+            return openParenToken.FullSpan.Start;
+
+        if (patterns is { Count: > 0 } || patternSeparatorTokens is { Count: > 0 })
+            return SeparatedNodes.GetFullStart(patterns, patternSeparatorTokens);
+
+        if (closeParenToken is { IsMissing: false })
+            return closeParenToken.FullSpan.Start;
+
+        if (body is { Statements.Count: > 0 })
+            return body.FullSpan.Start;
+
+        return terminatorToken?.FullSpan.Start ?? closeParenToken?.FullSpan.Start ?? 0;
+    }
 
     private static List<ShellSyntaxToken> BuildTokens(
         ShellSyntaxToken? openParenToken,

@@ -413,4 +413,64 @@ public sealed class CmdParserTests
 
         Assert.Equal("echo", Assert.IsType<ShellCommandSyntax>(statement.Body).NameValue);
     }
+
+    // The checks below rebuild the text from the children rather than reading it off the root, which is the only way
+    // to notice a node that dropped a character or points at the wrong span. See ShellSyntaxAssert.
+
+    [Theory]
+    // The shape of an npm shim: many line-separated statements and a single `&` near the end.
+    [InlineData("@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nendLocal & goto #_undefined_#\r\n")]
+    [InlineData("echo a\r\necho b & echo c\r\n")]
+    [InlineData("echo a\r\necho b\r\necho c & echo d\r\n")]
+    [InlineData("echo a & echo b\r\necho c\r\n")]
+    public void AmpersandIsRebuiltAgainstTheStatementItFollows(string text)
+    {
+        ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+    }
+
+    [Theory]
+    // A `for` whose item list runs into an operator is malformed, but the operator still belongs to the tree.
+    [InlineData("for>>")]
+    [InlineData("for %%i in (a|b) do echo x")]
+    [InlineData("for %%i in (a>b) do echo x")]
+    [InlineData("for %%i in (a&b) do echo x")]
+    [InlineData("for %%i in (unterminated")]
+    // Tokens whose text is measured by a scan have to report the position they start at, not the one they end at.
+    [InlineData("goto.~\r\n")]
+    [InlineData("goto")]
+    [InlineData("set$else/p [:label ")]
+    [InlineData("set")]
+    [InlineData("for %%")]
+    public void MalformedInputKeepsEveryCharacterInTheTree(string text)
+    {
+        ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+    }
+
+    [Fact]
+    public void GotoTargetSpanStartsAtTheTarget()
+    {
+        var tree = ShellSyntaxTree.ParseText("goto :eof", ShellDialect.Cmd);
+        var statement = Assert.IsType<CmdGotoStatementSyntax>(Assert.Single(tree.Root.Statements.Statements));
+
+        Assert.Equal(":eof", tree.Text[statement.LabelToken.Span.Start..statement.LabelToken.Span.End]);
+    }
+
+    [Fact]
+    public void SetNameSpanStartsAtTheName()
+    {
+        var tree = ShellSyntaxTree.ParseText("set NAME=value", ShellDialect.Cmd);
+        var statement = Assert.IsType<CmdSetStatementSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        var name = statement.NameToken!;
+
+        Assert.Equal("NAME", tree.Text[name.Span.Start..name.Span.End]);
+    }
+
+    [Fact]
+    public void ForVariableSpanStartsAtTheVariable()
+    {
+        var tree = ShellSyntaxTree.ParseText("for %%i in (a) do echo %%i", ShellDialect.Cmd);
+        var statement = Assert.IsType<CmdForStatementSyntax>(Assert.Single(tree.Root.Statements.Statements));
+
+        Assert.Equal("%%i", tree.Text[statement.VariableToken.Span.Start..statement.VariableToken.Span.End]);
+    }
 }

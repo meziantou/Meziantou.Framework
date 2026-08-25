@@ -127,6 +127,10 @@ internal sealed partial class PosixParser
         if (_lexer.Current == '(' && _lexer.Peek(1) == '(' && _options.Dialect.HasFeature(ShellDialectFeatures.Arithmetic))
         {
             var header = ParseArithmeticCommand();
+
+            // The loop stands in for a `while` that has no text of its own, so anchor the placeholder at the header;
+            // reading the position later would put the node's span after the text it covers.
+            var hiddenWhileKeyword = MissingToken(ShellSyntaxKind.KeywordToken, header.FullSpan.Start);
             var cStyleDo = ExpectKeyword("do");
             var cStyleBody = ParseStatementList(ParseContext.UntilWords(DoneWord));
 
@@ -134,7 +138,7 @@ internal sealed partial class PosixParser
                 kind,
                 keyword,
                 nameToken: null,
-                new PosixWhileStatementSyntax(ShellSyntaxKind.PosixWhileStatement, HiddenKeyword(), new ShellStatementListSyntax([header]), cStyleDo, cStyleBody, ExpectKeyword("done")));
+                new PosixWhileStatementSyntax(ShellSyntaxKind.PosixWhileStatement, hiddenWhileKeyword, new ShellStatementListSyntax([header]), cStyleDo, cStyleBody, ExpectKeyword("done")));
         }
 
         var variableToken = ReadBareWordToken(ShellSyntaxKind.VariableNameToken);

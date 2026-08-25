@@ -15,7 +15,8 @@ public sealed class PowerShellParamBlockSyntax : ShellStatementSyntax
         : base(
             ShellSyntaxKind.PowerShellParamBlock,
             BuildFullText(attributes ?? []) + paramKeyword.ToFullString() + openParenToken.ToFullString() + SeparatedNodes.BuildText(parameters, separatorTokens) + closeParenToken.ToFullString(),
-            paramKeyword.FullSpan.Start,
+            // The text starts at the first attribute when there is one, so the span has to start there too.
+            attributes is { Count: > 0 } ? attributes[0].FullSpan.Start : paramKeyword.FullSpan.Start,
             BuildTokens(paramKeyword, openParenToken, separatorTokens, closeParenToken))
     {
         Attributes = attributes ?? [];

@@ -9,7 +9,7 @@ public sealed class CmdIfStatementSyntax : ShellStatementSyntax
         ShellSyntaxToken ifKeyword,
         ShellSyntaxToken? caseInsensitiveToken,
         ShellSyntaxToken? notKeyword,
-        ShellRawExpressionSyntax condition,
+        ShellExpressionSyntax condition,
         ShellStatementSyntax body,
         CmdElseClauseSyntax? elseClause)
         : base(
@@ -37,7 +37,7 @@ public sealed class CmdIfStatementSyntax : ShellStatementSyntax
     public ShellSyntaxToken? NotKeyword { get; }
 
     /// <summary>The condition text, kept verbatim.</summary>
-    public ShellRawExpressionSyntax Condition { get; }
+    public ShellExpressionSyntax Condition { get; }
 
     /// <summary>The statement run when the condition holds.</summary>
     public ShellStatementSyntax Body { get; }

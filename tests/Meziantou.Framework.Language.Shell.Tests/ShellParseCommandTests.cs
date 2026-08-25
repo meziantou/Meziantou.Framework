@@ -78,18 +78,6 @@ public sealed class ShellParseCommandTests
     }
 
     [Fact]
-    public void ParseExpression_KeepsTheTextAndAttachesATree()
-    {
-        const string Text = "1 + 2 * 3";
-        var expression = ShellSyntaxTree.ParseExpression(Text, ShellDialect.Bash);
-
-        var raw = Assert.IsType<ShellRawExpressionSyntax>(expression);
-        Assert.Equal(Text, raw.Text);
-        Assert.Equal(Text, raw.ToFullString());
-        Assert.NotNull(raw.SyntaxTree);
-    }
-
-    [Fact]
     public void ParseCommand_NeverThrowsOnMalformedInput()
     {
         foreach (var text in new[] { "", "|", ";;", "echo 'unterminated", "$(" })

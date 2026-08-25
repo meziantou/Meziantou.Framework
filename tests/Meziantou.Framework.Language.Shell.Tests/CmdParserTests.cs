@@ -157,7 +157,7 @@ public sealed class CmdParserTests
 
         Assert.Equal(caseInsensitive, statement.IsCaseInsensitive);
         Assert.Equal(negated, statement.IsNegated);
-        Assert.NotEmpty(statement.Condition.Text);
+        Assert.NotEmpty(statement.Condition.ToFullString());
     }
 
     [Fact]

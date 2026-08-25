@@ -107,6 +107,11 @@ public abstract class ShellSyntaxVisitor
     public virtual void VisitZshForeachStatement(ZshForeachStatementSyntax node) => DefaultVisit(node);
     public virtual void VisitZshRepeatStatement(ZshRepeatStatementSyntax node) => DefaultVisit(node);
     public virtual void VisitZshAlwaysStatement(ZshAlwaysStatementSyntax node) => DefaultVisit(node);
+    public virtual void VisitBinaryExpression(ShellBinaryExpressionSyntax node) => DefaultVisit(node);
+    public virtual void VisitShellUnaryExpression(ShellUnaryExpressionSyntax node) => DefaultVisit(node);
+    public virtual void VisitGroupedExpression(ShellGroupedExpressionSyntax node) => DefaultVisit(node);
+    public virtual void VisitShellConditionalExpression(ShellConditionalExpressionSyntax node) => DefaultVisit(node);
+    public virtual void VisitOperandExpression(ShellOperandExpressionSyntax node) => DefaultVisit(node);
     public virtual void VisitSkippedText(ShellSkippedTextSyntax node) => DefaultVisit(node);
 }
 
@@ -220,5 +225,10 @@ public abstract class ShellSyntaxVisitor<TResult>
     public virtual TResult VisitZshForeachStatement(ZshForeachStatementSyntax node) => DefaultVisit(node);
     public virtual TResult VisitZshRepeatStatement(ZshRepeatStatementSyntax node) => DefaultVisit(node);
     public virtual TResult VisitZshAlwaysStatement(ZshAlwaysStatementSyntax node) => DefaultVisit(node);
+    public virtual TResult VisitBinaryExpression(ShellBinaryExpressionSyntax node) => DefaultVisit(node);
+    public virtual TResult VisitShellUnaryExpression(ShellUnaryExpressionSyntax node) => DefaultVisit(node);
+    public virtual TResult VisitGroupedExpression(ShellGroupedExpressionSyntax node) => DefaultVisit(node);
+    public virtual TResult VisitShellConditionalExpression(ShellConditionalExpressionSyntax node) => DefaultVisit(node);
+    public virtual TResult VisitOperandExpression(ShellOperandExpressionSyntax node) => DefaultVisit(node);
     public virtual TResult VisitSkippedText(ShellSkippedTextSyntax node) => DefaultVisit(node);
 }

@@ -5,7 +5,7 @@ public sealed class PosixDelimitedExpressionStatementSyntax : ShellStatementSynt
 {
     private readonly IReadOnlyList<ShellSyntaxNode> _childNodes;
 
-    public PosixDelimitedExpressionStatementSyntax(ShellSyntaxKind kind, ShellSyntaxToken openToken, ShellRawExpressionSyntax expression, ShellSyntaxToken closeToken)
+    public PosixDelimitedExpressionStatementSyntax(ShellSyntaxKind kind, ShellSyntaxToken openToken, ShellExpressionSyntax expression, ShellSyntaxToken closeToken)
         : base(
             kind,
             openToken?.ToFullString() + expression?.ToFullString() + closeToken?.ToFullString(),
@@ -20,8 +20,11 @@ public sealed class PosixDelimitedExpressionStatementSyntax : ShellStatementSynt
 
     public ShellSyntaxToken OpenToken { get; }
 
-    /// <summary>The text between the delimiters, kept verbatim.</summary>
-    public ShellRawExpressionSyntax Expression { get; }
+    /// <summary>
+    /// The expression between the delimiters. Text that does not fit the grammar comes back as a
+    /// <see cref="ShellRawExpressionSyntax"/> rather than being rejected.
+    /// </summary>
+    public ShellExpressionSyntax Expression { get; }
 
     public ShellSyntaxToken CloseToken { get; }
     public override IReadOnlyList<ShellSyntaxNode> ChildNodes => _childNodes;

@@ -58,14 +58,20 @@ Console.WriteLine(command.NameValue);                       // git
 Console.WriteLine(command.Arguments[2].Value);              // wip
 ```
 
-`ShellSyntaxTree.ParseExpression` is the matching entry point for a single expression. In the PowerShell family it
-returns the real expression tree; the POSIX and cmd families have no standalone expression grammar, so `$(( ))`,
-`[[ ]]`, and `set /a` text comes back as a `ShellRawExpressionSyntax` holding the original text.
+`ParseCommand` is the entry point for a single command; there is no separate expression entry point, because what a
+shell expression *is* differs per dialect. Expressions are reached through the nodes that contain them:
+`PosixArithmeticExpansionSyntax.Expression` for `$(( ))`, `PosixDelimitedExpressionStatementSyntax.Expression` for
+`(( ))` and `[[ ]]`, and `PowerShellExpressionStatementSyntax.Expression` for a PowerShell expression statement.
 
 ```csharp
-var expression = ShellSyntaxTree.ParseExpression("$a -eq $b", ShellDialect.PowerShellCore);
+var command = (ShellCommandSyntax)ShellSyntaxTree.ParseCommand("ls /root", ShellDialect.Bash);
+var arithmetic = ShellSyntaxTree.ParseText("echo $((1 + 2 * 3))", ShellDialect.Bash)
+    .Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>().Single();
 
-Console.WriteLine(expression is PowerShellBinaryExpressionSyntax); // True
+// 1 + (2 * 3): precedence is in the tree, not left to the caller.
+var binary = (ShellBinaryExpressionSyntax)arithmetic.Expression;
+Console.WriteLine(binary.OperatorText);                     // +
+Console.WriteLine(binary.Right is ShellBinaryExpressionSyntax); // True
 ```
 
 ## Inspecting the tree

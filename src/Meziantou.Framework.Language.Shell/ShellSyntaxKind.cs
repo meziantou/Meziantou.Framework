@@ -22,6 +22,12 @@ public enum ShellSyntaxKind
     EscapeSequence,
     Glob,
     RawExpression,
+    BinaryExpression,
+    PrefixUnaryExpression,
+    PostfixUnaryExpression,
+    GroupedExpression,
+    ConditionalExpression,
+    OperandExpression,
     EmbeddedExpression,
     SkippedText,
 

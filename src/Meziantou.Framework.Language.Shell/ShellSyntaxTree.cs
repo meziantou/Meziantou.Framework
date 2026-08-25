@@ -106,48 +106,6 @@ public sealed class ShellSyntaxTree
         return statements[0];
     }
 
-    /// <summary>
-    /// Parses <paramref name="text"/> as a single expression. Content after the first expression is reported as
-    /// <c>SHELL0101</c>. Text that is not a valid expression yields a node holding the original text plus a diagnostic.
-    /// </summary>
-    public static ShellExpressionSyntax ParseExpression(string text, ShellDialect dialect)
-    {
-        ArgumentNullException.ThrowIfNull(dialect);
-
-        return ParseExpression(text, new ShellParseOptions(dialect));
-    }
-
-    /// <inheritdoc cref="ParseExpression(string, ShellDialect)"/>
-    public static ShellExpressionSyntax ParseExpression(string text, ShellParseOptions options)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-
-        text ??= string.Empty;
-        var tree = ParseText(text, options);
-
-        ShellExpressionSyntax expression;
-        bool hasTrailingContent;
-        if (options.Dialect.Family == ShellDialectFamily.PowerShell)
-        {
-            expression = new PowerShellParser(text, options).ParseSingleExpression(out hasTrailingContent);
-        }
-        else
-        {
-            // The POSIX and cmd families have no standalone expression grammar: `$(( ))`, `[[ ]]`, and `set /a`
-            // text is kept verbatim rather than being given a structure it does not have.
-            expression = new ShellRawExpressionSyntax(new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, text, text));
-            hasTrailingContent = false;
-        }
-
-        expression.SetParentAndTree(tree.Root, tree);
-        if (hasTrailingContent)
-        {
-            tree.AddTrailingContentDiagnostic(TextSpan.FromBounds(expression.FullSpan.End, text.Length));
-        }
-
-        return expression;
-    }
-
     private void AddTrailingContentDiagnostic(TextSpan span)
     {
         _diagnostics.Add(new ShellDiagnostic("SHELL0101", "Unexpected content after the parsed statement.", ShellDiagnosticSeverity.Error, span));

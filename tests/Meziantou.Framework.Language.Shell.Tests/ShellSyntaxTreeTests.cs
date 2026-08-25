@@ -268,7 +268,7 @@ public sealed class ShellSyntaxTreeTests
     {
         var bash = ShellSyntaxTree.ParseText("echo $((1 + 2))", ShellDialect.Bash);
         var expansion = Assert.Single(bash.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
-        Assert.Equal("1 + 2", expansion.Expression);
+        Assert.Equal("1 + 2", expansion.ExpressionText);
 
         var sh = ShellSyntaxTree.ParseText("echo $((1 + 2))", ShellDialect.Sh);
         Assert.Empty(sh.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());

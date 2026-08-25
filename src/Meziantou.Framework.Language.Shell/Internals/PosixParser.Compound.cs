@@ -583,19 +583,23 @@ internal sealed partial class PosixParser
             _lexer.Position++;
         }
 
-        var expression = new ShellRawExpressionSyntax(_lexer.CreateToken(ShellSyntaxKind.BareTextToken, expressionStart, [], expressionStart));
+        var expressionEnd = _lexer.Position;
+        _lexer.Position = expressionStart;
+        var expression = TryParseArithmeticExpression(expressionEnd)
+            ?? new ShellRawExpressionSyntax(ReadRawExpressionToken(expressionStart, expressionEnd));
 
+        var (closeTrivia, closeFullStart) = TakeTrivia();
         ShellSyntaxToken closeToken;
         if (_lexer.IsAtEnd)
         {
             AddDiagnostic(openToken.Span, "SHELL0007", "Unterminated arithmetic command.");
-            closeToken = MissingToken(ShellSyntaxKind.CloseParenParenToken, _lexer.Position);
+            closeToken = MissingToken(ShellSyntaxKind.CloseParenParenToken, closeFullStart, closeTrivia);
         }
         else
         {
             var closeStart = _lexer.Position;
             _lexer.Position += 2;
-            closeToken = _lexer.CreateToken(ShellSyntaxKind.CloseParenParenToken, closeStart, [], closeStart);
+            closeToken = _lexer.CreateToken(ShellSyntaxKind.CloseParenParenToken, closeStart, closeTrivia, closeFullStart);
         }
 
         return new PosixDelimitedExpressionStatementSyntax(ShellSyntaxKind.PosixArithmeticCommand, openToken, expression, closeToken);
@@ -610,19 +614,23 @@ internal sealed partial class PosixParser
             SkipQuotedSectionOrCharacter();
         }
 
-        var expression = new ShellRawExpressionSyntax(_lexer.CreateToken(ShellSyntaxKind.BareTextToken, expressionStart, [], expressionStart));
+        var expressionEnd = _lexer.Position;
+        _lexer.Position = expressionStart;
+        var expression = TryParseConditionalExpression(expressionEnd)
+            ?? new ShellRawExpressionSyntax(ReadRawExpressionToken(expressionStart, expressionEnd));
 
+        var (closeTrivia, closeFullStart) = TakeTrivia();
         ShellSyntaxToken closeToken;
         if (_lexer.IsAtEnd)
         {
             AddDiagnostic(openToken.Span, "SHELL0010", "Unterminated conditional expression.");
-            closeToken = MissingToken(ShellSyntaxKind.CloseBracketBracketToken, _lexer.Position);
+            closeToken = MissingToken(ShellSyntaxKind.CloseBracketBracketToken, closeFullStart, closeTrivia);
         }
         else
         {
             var closeStart = _lexer.Position;
             _lexer.Position += 2;
-            closeToken = _lexer.CreateToken(ShellSyntaxKind.CloseBracketBracketToken, closeStart, [], closeStart);
+            closeToken = _lexer.CreateToken(ShellSyntaxKind.CloseBracketBracketToken, closeStart, closeTrivia, closeFullStart);
         }
 
         return new PosixDelimitedExpressionStatementSyntax(ShellSyntaxKind.PosixConditionalExpression, openToken, expression, closeToken);

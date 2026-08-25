@@ -175,7 +175,7 @@ public sealed class PosixParserTests
         var bash = Assert.IsType<PosixDelimitedExpressionStatementSyntax>(ShellSyntaxTree.ParseCommand("[[ -n $x ]]", ShellDialect.Bash));
 
         Assert.Equal(ShellSyntaxKind.PosixConditionalExpression, bash.Kind);
-        Assert.Equal(" -n $x ", bash.Expression.Text);
+        Assert.Equal(" -n $x", bash.Expression.ToFullString());
         Assert.False(bash.IsArithmetic);
 
         Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand("[[ -n $x ]]", ShellDialect.Sh));
@@ -186,7 +186,7 @@ public sealed class PosixParserTests
     {
         var statement = Assert.IsType<PosixDelimitedExpressionStatementSyntax>(ShellSyntaxTree.ParseCommand("[[ $x == \"a]]b\" ]]", ShellDialect.Bash));
 
-        Assert.Equal(" $x == \"a]]b\" ", statement.Expression.Text);
+        Assert.Equal(" $x == \"a]]b\"", statement.Expression.ToFullString());
     }
 
     [Fact]
@@ -195,7 +195,7 @@ public sealed class PosixParserTests
         var statement = Assert.IsType<PosixDelimitedExpressionStatementSyntax>(ShellSyntaxTree.ParseCommand("(( i = (a + b) * 2 ))", ShellDialect.Bash));
 
         Assert.True(statement.IsArithmetic);
-        Assert.Equal(" i = (a + b) * 2 ", statement.Expression.Text);
+        Assert.Equal(" i = (a + b) * 2", statement.Expression.ToFullString());
     }
 
     [Fact]

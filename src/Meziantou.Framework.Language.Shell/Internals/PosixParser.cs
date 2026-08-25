@@ -1003,25 +1003,38 @@ internal sealed partial class PosixParser
             _lexer.Position++;
         }
 
-        var expressionToken = _lexer.CreateToken(ShellSyntaxKind.BareTextToken, expressionStart, [], expressionStart);
+        var expressionEnd = _lexer.Position;
+        _lexer.Position = expressionStart;
+        var expression = TryParseArithmeticExpression(expressionEnd)
+            ?? new ShellRawExpressionSyntax(ReadRawExpressionToken(expressionStart, expressionEnd));
 
+        // Whatever trivia the expression left pending sits between it and `))`, so the close token owns it.
+        var (closeTrivia, closeFullStart) = TakeTrivia();
         ShellSyntaxToken closeToken;
         if (_lexer.IsAtEnd)
         {
             AddDiagnostic(openToken.Span, "SHELL0007", "Unterminated arithmetic expansion.");
-            closeToken = MissingToken(ShellSyntaxKind.CloseParenToken, _lexer.Position);
+            closeToken = MissingToken(ShellSyntaxKind.CloseParenToken, closeFullStart, closeTrivia);
         }
         else
         {
             var closeStart = _lexer.Position;
             _lexer.Position += 2;
-            closeToken = _lexer.CreateToken(ShellSyntaxKind.CloseParenToken, closeStart, [], closeStart);
+            closeToken = _lexer.CreateToken(ShellSyntaxKind.CloseParenToken, closeStart, closeTrivia, closeFullStart);
         }
 
-        return new PosixArithmeticExpansionSyntax(openToken, expressionToken, closeToken);
+        return new PosixArithmeticExpansionSyntax(openToken, expression, closeToken);
     }
 
     // ---- helpers ----
+
+    /// <summary>Consumes the text between two offsets as one token, for expression text no grammar here fits.</summary>
+    private ShellSyntaxToken ReadRawExpressionToken(int start, int end)
+    {
+        _lexer.Position = Math.Clamp(end, start, _lexer.Text.Length);
+
+        return _lexer.CreateToken(ShellSyntaxKind.BareTextToken, start, [], start);
+    }
 
     /// <summary>
     /// Returns whether <paramref name="value"/> ends a word here. Inside a backquoted substitution the closing

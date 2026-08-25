@@ -3,52 +3,6 @@ namespace Meziantou.Framework.Language.Shell.Tests;
 /// <summary>Behaviour of the tree-level APIs: expression parsing, diffing, and structural comparison.</summary>
 public sealed class ShellSyntaxTreeApiTests
 {
-    [Theory]
-    [InlineData("1 + 2", typeof(PowerShellBinaryExpressionSyntax))]
-    [InlineData("$a -eq $b", typeof(PowerShellBinaryExpressionSyntax))]
-    [InlineData("$x.Length", typeof(PowerShellMemberAccessExpressionSyntax))]
-    [InlineData("$x.Method(1)", typeof(PowerShellInvocationExpressionSyntax))]
-    [InlineData("@{ a = 1 }", typeof(PowerShellHashLiteralSyntax))]
-    [InlineData("@(1, 2)", typeof(PowerShellSubExpressionSyntax))]
-    [InlineData("'text'", typeof(PowerShellLiteralExpressionSyntax))]
-    [InlineData("[int]", typeof(PowerShellTypeLiteralSyntax))]
-    [InlineData("$a ? 1 : 2", typeof(PowerShellTernaryExpressionSyntax))]
-    public void ParseExpression_UsesThePowerShellGrammar(string text, Type expected)
-    {
-        var expression = ShellSyntaxTree.ParseExpression(text, ShellDialect.PowerShellCore);
-
-        Assert.IsType(expected, expression);
-        Assert.Equal(text, expression.ToFullString());
-        Assert.NotNull(expression.SyntaxTree);
-    }
-
-    [Theory]
-    [InlineData(ShellDialectFamily.Posix)]
-    [InlineData(ShellDialectFamily.Cmd)]
-    public void ParseExpression_KeepsTextVerbatimWhereThereIsNoExpressionGrammar(ShellDialectFamily family)
-    {
-        var dialect = family == ShellDialectFamily.Posix ? ShellDialect.Bash : ShellDialect.Cmd;
-
-        var expression = Assert.IsType<ShellRawExpressionSyntax>(ShellSyntaxTree.ParseExpression("1 + 2", dialect));
-
-        Assert.Equal("1 + 2", expression.Text);
-    }
-
-    [Fact]
-    public void ParseExpression_ReportsTrailingContent()
-    {
-        var expression = ShellSyntaxTree.ParseExpression("1 + 2 extra", ShellDialect.PowerShellCore);
-
-        Assert.Contains(expression.SyntaxTree!.Diagnostics, diagnostic => diagnostic.Id == "SHELL0101");
-    }
-
-    [Fact]
-    public void ParseExpression_OnEmptyTextDoesNotThrow()
-    {
-        Assert.NotNull(ShellSyntaxTree.ParseExpression("", ShellDialect.PowerShellCore));
-        Assert.NotNull(ShellSyntaxTree.ParseExpression("   ", ShellDialect.PowerShellCore));
-    }
-
     [Fact]
     public void GetChanges_ReportsOnlyTheTextThatDiffers()
     {

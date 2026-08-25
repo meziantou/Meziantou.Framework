@@ -1325,6 +1325,7 @@ namespace Meziantou.Framework.Language.Shell
         public virtual Meziantou.Framework.Language.Shell.ShellScriptSyntax ReplaceNode(Meziantou.Framework.Language.Shell.ShellSyntaxNode oldNode, Meziantou.Framework.Language.Shell.ShellSyntaxNode newNode) => throw null;
         public virtual Meziantou.Framework.Language.Shell.ShellScriptSyntax ReplaceToken(Meziantou.Framework.Language.Shell.ShellSyntaxToken oldToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken newToken) => throw null;
         public virtual Meziantou.Framework.Language.Shell.ShellScriptSyntax ReplaceTrivia(Meziantou.Framework.Language.Shell.ShellSyntaxTrivia oldTrivia, Meziantou.Framework.Language.Shell.ShellSyntaxTrivia newTrivia) => throw null;
+        public bool IsEquivalentTo(Meziantou.Framework.Language.Shell.ShellSyntaxNode? other) => throw null;
         public override string ToString() => throw null;
         public abstract void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor);
         public abstract TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor);

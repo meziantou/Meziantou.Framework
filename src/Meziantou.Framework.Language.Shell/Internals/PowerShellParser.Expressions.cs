@@ -18,6 +18,30 @@ internal sealed partial class PowerShellParser
 
     private static readonly string[] UnaryWordOperators = ["not", "bnot", "split", "join"];
 
+    /// <summary>
+    /// Reads a single expression from the start of the text, for <c>ShellSyntaxTree.ParseExpression</c>.
+    /// </summary>
+    /// <param name="hasTrailingContent">Set when something other than trivia follows the expression.</param>
+    public ShellExpressionSyntax ParseSingleExpression(out bool hasTrailingContent)
+    {
+        AccumulateStatementTrivia();
+        if (_lexer.IsAtEnd)
+        {
+            hasTrailingContent = false;
+            var (trivia, fullStart) = TakeTrivia();
+
+            return new ShellRawExpressionSyntax(new ShellSyntaxToken(
+                ShellSyntaxKind.BareTextToken, string.Empty, string.Empty, leadingTrivia: trivia, fullStart: fullStart));
+        }
+
+        var expression = ParseExpression();
+
+        AccumulateStatementTrivia();
+        hasTrailingContent = !_lexer.IsAtEnd;
+
+        return expression;
+    }
+
     private ShellExpressionSyntax ParseExpression()
     {
         if (!TryEnterRecursion(new TextSpan(_lexer.Position, 0)))

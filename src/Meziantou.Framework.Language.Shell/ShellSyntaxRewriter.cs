@@ -8,11 +8,11 @@ namespace Meziantou.Framework.Language.Shell;
 /// descended into regardless of dialect.
 /// </para>
 /// <para>
-/// A replaced node is spliced into the source text and the script is reparsed once at the end, the same mechanism
-/// <see cref="ShellSyntaxNode.ReplaceNode"/> uses. That is also why the rewrite is driven from the script root:
-/// <c>Visit(tree.Root)</c> returns a rewritten <see cref="ShellScriptSyntax"/>. Visiting a node further down returns
-/// whatever the overrides produce for that node, without rebuilding, because a node cannot be reconstructed from
-/// text outside the context it was parsed in.
+/// A replaced node is spliced into the source text and the script is reparsed once, the same mechanism
+/// <see cref="ShellSyntaxNode.ReplaceNode"/> uses. <c>Visit(tree.Root)</c> returns a rewritten
+/// <see cref="ShellScriptSyntax"/>; visiting a node further down rebuilds through its script and returns the node
+/// that took its place, so a rewrite can be scoped to one subtree. A node with no script above it, one built by
+/// <see cref="SyntaxFactory"/> rather than parsed, is returned unchanged because there is no text to splice into.
 /// </para>
 /// <para>
 /// As with <see cref="ShellSyntaxNode.ReplaceNode"/>, a replacement that carries no leading trivia of its own keeps
@@ -39,16 +39,27 @@ public class ShellSyntaxRewriter : ShellSyntaxVisitor<ShellSyntaxNode?>
             if (replaced is not null && !ReferenceEquals(replaced, node))
                 return replaced;
 
-            if (node is not ShellScriptSyntax script)
-                return node;
-
             var edits = new List<TextEdit>();
-            foreach (var child in script.ChildNodes)
+            foreach (var child in node.ChildNodes)
             {
                 CollectEdits(child, edits);
             }
 
-            return edits.Count == 0 ? script : Rebuild(script, edits);
+            if (edits.Count == 0)
+                return node;
+
+            if (node is ShellScriptSyntax script)
+                return Rebuild(script, edits);
+
+            // Below the root, rebuild the whole script and hand back the node that took this one's place. Every edit
+            // sits inside this node, so its start offset is unchanged and identifies it in the new tree.
+            var owner = node.AncestorsAndSelf().OfType<ShellScriptSyntax>().FirstOrDefault() ?? node.SyntaxTree?.Root;
+            if (owner is null)
+                return node;
+
+            var rebuilt = Rebuild(owner, edits);
+
+            return FindCounterpart(rebuilt, node) ?? node;
         }
         finally
         {
@@ -116,6 +127,18 @@ public class ShellSyntaxRewriter : ShellSyntaxVisitor<ShellSyntaxNode?>
         var options = script.SyntaxTree?.Options ?? new ShellParseOptions(script.Dialect ?? ShellDialect.Bash);
 
         return ShellSyntaxTree.ParseText(builder.ToString(), options).Root;
+    }
+
+    /// <summary>Finds the node that replaced <paramref name="original"/> in the reparsed script.</summary>
+    private static ShellSyntaxNode? FindCounterpart(ShellScriptSyntax rebuilt, ShellSyntaxNode original)
+    {
+        foreach (var candidate in rebuilt.DescendantNodesAndSelf())
+        {
+            if (candidate.Kind == original.Kind && candidate.FullSpan.Start == original.FullSpan.Start)
+                return candidate;
+        }
+
+        return null;
     }
 
     private static bool HasLeadingTrivia(ShellSyntaxNode node)

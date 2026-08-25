@@ -128,4 +128,47 @@ public sealed class ShellSyntaxRewriterDescentTests
         public override ShellSyntaxNode? VisitIfStatement(PosixIfStatementSyntax node)
             => SyntaxFactory.Command(ShellDialect.Bash, "replaced");
     }
+
+    [Fact]
+    public void RewritingASubtreeReturnsTheReplacementForThatSubtree()
+    {
+        var tree = ShellSyntaxTree.ParseText("if true; then echo a; fi\necho b\n", ShellDialect.Bash);
+        var ifStatement = tree.Root.Statements.Statements[0];
+
+        var rewritten = new CommandRenamer("echo", "printf").Visit(ifStatement);
+
+        Assert.NotNull(rewritten);
+        Assert.Equal(ShellSyntaxKind.PosixIfStatement, rewritten.Kind);
+        Assert.Equal("if true; then printf a; fi", rewritten.ToFullString());
+    }
+
+    [Fact]
+    public void RewritingASubtreeLeavesItsSiblingsAlone()
+    {
+        var tree = ShellSyntaxTree.ParseText("echo a\necho b\n", ShellDialect.Bash);
+        var first = tree.Root.Statements.Statements[0];
+
+        var rewritten = new CommandRenamer("echo", "printf").Visit(first);
+
+        // Only the visited subtree is returned; the sibling is not part of it.
+        Assert.Equal("printf a", rewritten!.ToFullString());
+    }
+
+    [Fact]
+    public void RewritingASubtreeWithNoChangeReturnsTheSameInstance()
+    {
+        var tree = ShellSyntaxTree.ParseText("if true; then ls; fi\n", ShellDialect.Bash);
+        var ifStatement = tree.Root.Statements.Statements[0];
+
+        Assert.Same(ifStatement, new CommandRenamer("echo", "printf").Visit(ifStatement));
+    }
+
+    [Fact]
+    public void RewritingADetachedNodeReturnsItUnchanged()
+    {
+        // A node built by the factory has no script to splice into.
+        var command = SyntaxFactory.Command(ShellDialect.Bash, "echo", "a");
+
+        Assert.Same(command, new CommandRenamer("nothing", "x").Visit(command));
+    }
 }

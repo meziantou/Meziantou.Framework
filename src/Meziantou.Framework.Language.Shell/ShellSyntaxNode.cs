@@ -184,6 +184,48 @@ public abstract class ShellSyntaxNode
     public virtual ShellScriptSyntax ReplaceToken(ShellSyntaxToken oldToken, ShellSyntaxToken newToken) => GetScript().ReplaceToken(oldToken, newToken);
     public virtual ShellScriptSyntax ReplaceTrivia(ShellSyntaxTrivia oldTrivia, ShellSyntaxTrivia newTrivia) => GetScript().ReplaceTrivia(oldTrivia, newTrivia);
 
+    /// <summary>
+    /// Compares this subtree with <paramref name="other"/> structurally, ignoring trivia. Node kinds, child order,
+    /// and token text must match; whitespace, line breaks, and comments are not considered.
+    /// </summary>
+    public bool IsEquivalentTo(ShellSyntaxNode? other)
+    {
+        if (ReferenceEquals(this, other))
+            return true;
+
+        if (other is null || other.Kind != Kind)
+            return false;
+
+        if (!TokensAreEquivalent(Tokens, other.Tokens))
+            return false;
+
+        if (ChildNodes.Count != other.ChildNodes.Count)
+            return false;
+
+        for (var index = 0; index < ChildNodes.Count; index++)
+        {
+            if (!ChildNodes[index].IsEquivalentTo(other.ChildNodes[index]))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool TokensAreEquivalent(IReadOnlyList<ShellSyntaxToken> left, IReadOnlyList<ShellSyntaxToken> right)
+    {
+        if (left.Count != right.Count)
+            return false;
+
+        for (var index = 0; index < left.Count; index++)
+        {
+            // Only the token itself matters; its trivia is formatting.
+            if (left[index].Kind != right[index].Kind || !string.Equals(left[index].Text, right[index].Text, StringComparison.Ordinal))
+                return false;
+        }
+
+        return true;
+    }
+
     public override string ToString() => ToFullString();
 
     internal void SetParentAndTree(ShellSyntaxNode? parent, ShellSyntaxTree tree)

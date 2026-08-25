@@ -125,9 +125,25 @@ public sealed class ShellSyntaxTree
         text ??= string.Empty;
         var tree = ParseText(text, options);
 
-        // The POSIX family has no standalone expression grammar; arithmetic and conditional text is kept verbatim.
-        var expression = new ShellRawExpressionSyntax(new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, text, text));
+        ShellExpressionSyntax expression;
+        bool hasTrailingContent;
+        if (options.Dialect.Family == ShellDialectFamily.PowerShell)
+        {
+            expression = new PowerShellParser(text, options).ParseSingleExpression(out hasTrailingContent);
+        }
+        else
+        {
+            // The POSIX and cmd families have no standalone expression grammar: `$(( ))`, `[[ ]]`, and `set /a`
+            // text is kept verbatim rather than being given a structure it does not have.
+            expression = new ShellRawExpressionSyntax(new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, text, text));
+            hasTrailingContent = false;
+        }
+
         expression.SetParentAndTree(tree.Root, tree);
+        if (hasTrailingContent)
+        {
+            tree.AddTrailingContentDiagnostic(TextSpan.FromBounds(expression.FullSpan.End, text.Length));
+        }
 
         return expression;
     }
@@ -146,20 +162,61 @@ public sealed class ShellSyntaxTree
         return ParseText(SourceText.WithChanges(changes).Text, Options);
     }
 
+    /// <summary>
+    /// Returns the edit that turns <paramref name="oldTree"/>'s text into this tree's text. The common prefix and
+    /// suffix are trimmed, so an edit in the middle of a script reports only the part that actually differs.
+    /// </summary>
     public IReadOnlyList<ShellTextChange> GetChanges(ShellSyntaxTree oldTree)
     {
         ArgumentNullException.ThrowIfNull(oldTree);
-        if (string.Equals(Text, oldTree.Text, StringComparison.Ordinal))
+
+        var oldText = oldTree.Text;
+        var newText = Text;
+        if (string.Equals(oldText, newText, StringComparison.Ordinal))
             return [];
 
-        return [new ShellTextChange(new TextSpan(0, oldTree.Text.Length), Text)];
+        var prefix = 0;
+        var maxPrefix = Math.Min(oldText.Length, newText.Length);
+        while (prefix < maxPrefix && oldText[prefix] == newText[prefix])
+        {
+            prefix++;
+        }
+
+        // Never split a surrogate pair: the two halves are not text on their own.
+        if (prefix > 0 && char.IsHighSurrogate(oldText[prefix - 1]))
+        {
+            prefix--;
+        }
+
+        var suffix = 0;
+        var maxSuffix = Math.Min(oldText.Length, newText.Length) - prefix;
+        while (suffix < maxSuffix && oldText[oldText.Length - suffix - 1] == newText[newText.Length - suffix - 1])
+        {
+            suffix++;
+        }
+
+        if (suffix > 0 && char.IsLowSurrogate(oldText[oldText.Length - suffix]))
+        {
+            suffix--;
+        }
+
+        return [new ShellTextChange(
+            TextSpan.FromBounds(prefix, oldText.Length - suffix),
+            newText[prefix..(newText.Length - suffix)])];
     }
 
+    /// <summary>
+    /// Compares this tree with <paramref name="other"/> structurally, ignoring whitespace and comments. Two scripts
+    /// that differ only in formatting are equivalent; two scripts parsed as different dialects never are.
+    /// </summary>
     public bool IsEquivalentTo(ShellSyntaxTree? other)
     {
         if (other is null)
             return false;
 
-        return string.Equals(Text, other.Text, StringComparison.Ordinal) && other.Dialect == Dialect;
+        if (other.Dialect != Dialect)
+            return false;
+
+        return string.Equals(Text, other.Text, StringComparison.Ordinal) || Root.IsEquivalentTo(other.Root);
     }
 }

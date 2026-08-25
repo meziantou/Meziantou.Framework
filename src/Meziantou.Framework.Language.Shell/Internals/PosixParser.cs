@@ -17,6 +17,9 @@ internal sealed partial class PosixParser
     private int _backtickDepth;
     private int _zshBraceDepth;
 
+    /// <summary>Open-parenthesis count inside the pattern of a <c>=~</c>, or -1 when no pattern is being read.</summary>
+    private int _regexParenDepth = -1;
+
     public PosixParser(string text, ShellParseOptions options)
     {
         _options = options;
@@ -453,6 +456,11 @@ internal sealed partial class PosixParser
         var start = _lexer.Position;
         while (!_lexer.IsAtEnd && !IsWordTerminator(_lexer.Current) && !IsWordPartStart(_lexer.Current))
         {
+            if (_regexParenDepth >= 0 && _lexer.Current is '(' or ')')
+            {
+                _regexParenDepth += _lexer.Current == '(' ? 1 : -1;
+            }
+
             _lexer.Position++;
         }
 
@@ -1048,6 +1056,11 @@ internal sealed partial class PosixParser
     /// </summary>
     private bool IsWordTerminator(char value)
     {
+        // Inside a `=~` pattern the regular expression grammar wins: `(`, `|`, and the `)` that closes an open group
+        // belong to the pattern. A `)` that closes nothing still ends it, so `[[ (a =~ b) ]]` keeps its group.
+        if (_regexParenDepth >= 0 && (value is '(' or '|' || (value == ')' && _regexParenDepth > 0)))
+            return false;
+
         if (PosixLexer.IsWordBoundary(value))
             return true;
 

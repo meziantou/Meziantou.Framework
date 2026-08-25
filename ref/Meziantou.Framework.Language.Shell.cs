@@ -976,7 +976,8 @@ namespace Meziantou.Framework.Language.Shell
         NullCoalescing = 4096,
         CleanBlock = 8192,
         DelayedExpansion = 16384,
-        ArithmeticExpansion = 32768
+        ArithmeticExpansion = 32768,
+        ArithmeticExponentiation = 65536
     }
 
     public sealed class ShellEmbeddedExpressionSyntax : Meziantou.Framework.Language.Shell.ShellWordPartSyntax

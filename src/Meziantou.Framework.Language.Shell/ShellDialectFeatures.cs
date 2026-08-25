@@ -53,4 +53,7 @@ public enum ShellDialectFeatures
 
     /// <summary>The <c>$(( ... ))</c> arithmetic expansion. POSIX defines it, so every dialect in the family has it.</summary>
     ArithmeticExpansion = 1 << 15,
+
+    /// <summary>The <c>**</c> exponentiation operator in arithmetic. POSIX defines no such operator, so <c>sh</c> lacks it.</summary>
+    ArithmeticExponentiation = 1 << 16,
 }

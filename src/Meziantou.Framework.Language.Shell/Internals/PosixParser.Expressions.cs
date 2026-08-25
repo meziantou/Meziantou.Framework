@@ -21,6 +21,7 @@ internal sealed partial class PosixParser
         ("==", 8, false), ("!=", 8, false),
         ("<<", 10, false), (">>", 10, false),
         ("<=", 9, false), (">=", 9, false),
+        ("**", 13, true),
         ("=", 1, true),
         ("|", 5, false), ("^", 6, false), ("&", 7, false),
         ("<", 9, false), (">", 9, false),
@@ -83,7 +84,7 @@ internal sealed partial class PosixParser
         var enclosingFailed = _expressionFailed;
         _expressionFailed = false;
         var expression = parse();
-        AccumulateInlineTrivia();
+        AccumulateStatementTrivia();
 
         var succeeded = !_expressionFailed && _lexer.Position == end && _diagnostics.Count == startDiagnostics;
         _expressionFailed = enclosingFailed;
@@ -191,13 +192,13 @@ internal sealed partial class PosixParser
 
         while (true)
         {
-            AccumulateInlineTrivia();
+            AccumulateStatementTrivia();
 
             if (_lexer.Current == '?' && TernaryPrecedence >= minimumPrecedence)
             {
                 var questionToken = ReadOperatorToken(ShellSyntaxKind.QuestionToken, length: 1);
                 var whenTrue = ParseArithmetic(0);
-                AccumulateInlineTrivia();
+                AccumulateStatementTrivia();
                 if (_lexer.Current != ':')
                 {
                     _expressionFailed = true;
@@ -229,6 +230,10 @@ internal sealed partial class PosixParser
             if (!MatchesAt(_lexer.Position, candidate.Text))
                 continue;
 
+            // Exponentiation is a bash and zsh extension; in sh the text is not arithmetic this grammar fits.
+            if (candidate.Text == "**" && !_options.Dialect.HasFeature(ShellDialectFeatures.ArithmeticExponentiation))
+                return null;
+
             // `=` is assignment, but `==` is equality; the table is ordered so the longer one is seen first.
             return candidate;
         }
@@ -238,7 +243,7 @@ internal sealed partial class PosixParser
 
     private ShellExpressionSyntax ParseArithmeticUnaryCore()
     {
-        AccumulateInlineTrivia();
+        AccumulateStatementTrivia();
 
         foreach (var prefix in new[] { "++", "--" })
         {
@@ -264,7 +269,7 @@ internal sealed partial class PosixParser
     {
         var operand = ParseArithmeticPrimary();
 
-        AccumulateInlineTrivia();
+        AccumulateStatementTrivia();
         foreach (var postfix in new[] { "++", "--" })
         {
             if (MatchesAt(_lexer.Position, postfix))
@@ -280,13 +285,13 @@ internal sealed partial class PosixParser
 
     private ShellExpressionSyntax ParseArithmeticPrimary()
     {
-        AccumulateInlineTrivia();
+        AccumulateStatementTrivia();
 
         if (_lexer.Current == '(')
         {
             var openParenToken = ReadOperatorToken(ShellSyntaxKind.OpenParenToken, length: 1);
             var inner = ParseArithmetic(0);
-            AccumulateInlineTrivia();
+            AccumulateStatementTrivia();
             if (_lexer.Current != ')')
             {
                 _expressionFailed = true;
@@ -371,7 +376,7 @@ internal sealed partial class PosixParser
 
         while (true)
         {
-            AccumulateInlineTrivia();
+            AccumulateStatementTrivia();
             if (!MatchesAt(_lexer.Position, "||"))
                 break;
 
@@ -388,7 +393,7 @@ internal sealed partial class PosixParser
 
         while (true)
         {
-            AccumulateInlineTrivia();
+            AccumulateStatementTrivia();
             if (!MatchesAt(_lexer.Position, "&&"))
                 break;
 
@@ -401,7 +406,7 @@ internal sealed partial class PosixParser
 
     private ShellExpressionSyntax ParseConditionalUnaryCore()
     {
-        AccumulateInlineTrivia();
+        AccumulateStatementTrivia();
 
         if (_lexer.Current == '!')
         {
@@ -414,7 +419,7 @@ internal sealed partial class PosixParser
         {
             var openParenToken = ReadOperatorToken(ShellSyntaxKind.OpenParenToken, length: 1);
             var inner = ParseConditionalOr();
-            AccumulateInlineTrivia();
+            AccumulateStatementTrivia();
             if (_lexer.Current != ')')
             {
                 _expressionFailed = true;
@@ -447,8 +452,9 @@ internal sealed partial class PosixParser
                 continue;
 
             var operatorToken = ReadOperatorToken(ShellSyntaxKind.OperatorToken, candidate.Length);
+            var right = candidate is "=~" ? ParseConditionalRegexOperand() : ParseConditionalOperand();
 
-            return new ShellBinaryExpressionSyntax(left, operatorToken, ParseConditionalOperand());
+            return new ShellBinaryExpressionSyntax(left, operatorToken, right);
         }
 
         return left;
@@ -468,6 +474,36 @@ internal sealed partial class PosixParser
         }
 
         return new ShellOperandExpressionSyntax(word);
+    }
+
+    /// <summary>
+    /// Reads the pattern on the right of <c>=~</c>. It is an extended regular expression, so <c>(</c>, <c>|</c>, and
+    /// the <c>)</c> that closes an open group are part of it rather than word boundaries. A <c>)</c> that closes
+    /// nothing ends it, and a group left open means the text is not a conditional expression after all.
+    /// </summary>
+    private ShellOperandExpressionSyntax ParseConditionalRegexOperand()
+    {
+        AccumulateInlineTrivia();
+
+        var enclosingDepth = _regexParenDepth;
+        _regexParenDepth = 0;
+        try
+        {
+            var word = _lexer.IsAtEnd || IsWordTerminator(_lexer.Current)
+                ? new ShellWordSyntax([])
+                : ParseWord();
+
+            if (word.Parts.Count == 0 || _regexParenDepth != 0)
+            {
+                _expressionFailed = true;
+            }
+
+            return new ShellOperandExpressionSyntax(word);
+        }
+        finally
+        {
+            _regexParenDepth = enclosingDepth;
+        }
     }
 
     private string? PeekConditionalWord()

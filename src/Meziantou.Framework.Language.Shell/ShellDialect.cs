@@ -20,7 +20,8 @@ public sealed class ShellDialect
         ShellDialectFeatures.FunctionKeyword |
         ShellDialectFeatures.ProcessSubstitution |
         ShellDialectFeatures.Coproc |
-        ShellDialectFeatures.SelectLoop;
+        ShellDialectFeatures.SelectLoop |
+        ShellDialectFeatures.ArithmeticExponentiation;
 
     private ShellDialect(string name, ShellDialectFamily family, ShellDialectFeatures features)
     {

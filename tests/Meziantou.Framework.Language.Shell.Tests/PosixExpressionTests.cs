@@ -50,6 +50,14 @@ public sealed class PosixExpressionTests
     [InlineData("a ? b : c", "(a ? b : c)")]
     [InlineData("a ? b : c ? d : e", "(a ? b : (c ? d : e))")]
     [InlineData("a += 2", "(a += 2)")]
+    // `**` binds tighter than `*` and is right-associative, and unary minus binds tighter still: bash reads
+    // `-2**2` as `(-2)**2`, which is 4.
+    [InlineData("2 ** 3", "(2 ** 3)")]
+    [InlineData("2**3**2", "(2 ** (3 ** 2))")]
+    [InlineData("2**2*3", "((2 ** 2) * 3)")]
+    [InlineData("1+2**2", "(1 + (2 ** 2))")]
+    [InlineData("-2**2", "((- 2) ** 2)")]
+    [InlineData("a *= b", "(a *= b)")]
     public void Arithmetic_PrecedenceAndAssociativityAreInTheTree(string text, string expected)
     {
         Assert.Equal(expected, Shape(Arithmetic(text)));
@@ -100,6 +108,14 @@ public sealed class PosixExpressionTests
     [InlineData("-f a || -d b", "((-f a) || (-d b))")]
     [InlineData("-f a && -d b || -x c", "(((-f a) && (-d b)) || (-x c))")]
     [InlineData("( -f a || -d b ) && -x c", "([((-f a) || (-d b))] && (-x c))")]
+    // The right side of `=~` is a regular expression, so `(`, `|`, and the `)` that closes a group belong to it.
+    [InlineData("$x =~ (a|b)", "($x =~ (a|b))")]
+    [InlineData("$x =~ ^(a|b)c$", "($x =~ ^(a|b)c$)")]
+    [InlineData("$x =~ a|b", "($x =~ a|b)")]
+    [InlineData("$x =~ (a|b) && -f c", "(($x =~ (a|b)) && (-f c))")]
+    [InlineData("( $x =~ (a|b) )", "[($x =~ (a|b))]")]
+    // A `)` that closes nothing ends the pattern, so the enclosing group still gets its closing parenthesis.
+    [InlineData("($x =~ a)", "[($x =~ a)]")]
     public void Conditional_BuildsTheExpectedShape(string text, string expected)
     {
         Assert.Equal(expected, Shape(Conditional(text)));
@@ -124,12 +140,60 @@ public sealed class PosixExpressionTests
     }
 
     [Theory]
+    // `**` is a bash and zsh extension; sh has no exponentiation, so there the text is not arithmetic.
+    [InlineData("2 ** 3", false)]
+    [InlineData("a ** b", false)]
+    [InlineData("a * b", true)]
+    [InlineData("a *= b", true)]
+    public void Arithmetic_ExponentiationIsBashAndZshOnly(string text, bool expectedInSh)
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful($"echo $(({text}))", ShellDialect.Sh);
+        var expansion = Assert.Single(tree.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
+
+        Assert.Equal(expectedInSh, expansion.Expression is not ShellRawExpressionSyntax);
+        Assert.IsNotType<ShellRawExpressionSyntax>(Arithmetic(text));
+    }
+
+    [Theory]
+    // A line break is ordinary space in arithmetic; it may sit anywhere an operator or an operand may.
+    [InlineData("1 +\n2", "(1 + 2)")]
+    [InlineData("1\n+\n2", "(1 + 2)")]
+    [InlineData("\n1 + 2\n", "(1 + 2)")]
+    [InlineData("(1\n+ 2)\n* 3", "([(1 + 2)] * 3)")]
+    [InlineData("a\n? b\n: c", "(a ? b : c)")]
+    public void Arithmetic_LineBreaksAreJustSpace(string text, string expected)
+    {
+        Assert.Equal(expected, Shape(Arithmetic(text)));
+    }
+
+    [Theory]
+    // In a conditional a line break separates the operands of `&&` and `||`, and may follow `[[`, `!`, and `(`.
+    [InlineData("-f a\n&& -d b", "((-f a) && (-d b))")]
+    [InlineData("-f a &&\n-d b", "((-f a) && (-d b))")]
+    [InlineData("\n-f a\n", "(-f a)")]
+    [InlineData("!\n-f a", "(! (-f a))")]
+    [InlineData("(\n-f a\n)", "[(-f a)]")]
+    public void Conditional_LineBreaksSeparateOperands(string text, string expected)
+    {
+        Assert.Equal(expected, Shape(Conditional(text)));
+    }
+
+    [Theory]
     // Text the grammar does not fit is kept verbatim rather than being forced into a shape it does not have.
     [InlineData("echo $((|))")]
     [InlineData("echo $((+))")]
     [InlineData("(( ))")]
     [InlineData("[[ ]]")]
     [InlineData("[[ && ]]")]
+    // Bash rejects each of these too: `**=` is not an operator, `-a` and `-o` are not `[[ ]]` operators, a
+    // regular expression may not leave a group open, and a line break may not split an operator from its operand.
+    [InlineData("echo $((a **= b))")]
+    [InlineData("[[ -f a -o -f b ]]")]
+    [InlineData("[[ -f a -a -f b ]]")]
+    [InlineData("[[ $x =~ (a ]]")]
+    [InlineData("[[ $x =~ ) ]]")]
+    [InlineData("[[ -d\n/tmp ]]")]
+    [InlineData("[[ $x ==\ny ]]")]
     public void TextThatIsNotAnExpression_FallsBackToRawAndStillRoundTrips(string text)
     {
         var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Bash);

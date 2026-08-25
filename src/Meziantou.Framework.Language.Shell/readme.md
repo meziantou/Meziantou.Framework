@@ -13,7 +13,7 @@
 | `ShellDialect` | Family | Notes |
 | --- | --- | --- |
 | `Sh` | POSIX | strict POSIX baseline |
-| `Bash` | POSIX | `[[ ]]`, `(( ))`, `<<<`, arrays, `function`, `<(…)`, `coproc`, `select` |
+| `Bash` | POSIX | `[[ ]]`, `(( ))`, `<<<`, arrays, `function`, `<(…)`, `coproc`, `select`, arithmetic `**` |
 | `Zsh` | POSIX | the bash set plus `foreach`/`end`, `repeat`, `always`, anonymous functions, `=(…)`, glob qualifiers, and brace groups that close without a separator |
 | `PowerShell` | PowerShell | Windows PowerShell 5.1 |
 | `PowerShellCore` | PowerShell | pwsh 7+: `&&`/`\|\|`, ternary `? :`, `??`/`??=`, `clean` blocks |

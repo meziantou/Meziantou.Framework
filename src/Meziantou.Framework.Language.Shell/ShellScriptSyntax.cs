@@ -40,9 +40,9 @@ public sealed class ShellScriptSyntax : ShellSyntaxNode
         ArgumentNullException.ThrowIfNull(oldNode);
         ArgumentNullException.ThrowIfNull(newNode);
 
-        var keepLeadingTrivia = !HasLeadingTrivia(newNode);
+        var keepLeadingTrivia = !newNode.StartsWithTrivia;
         if (TryGetNodeSpan(this, oldNode, out var fullSpan))
-            return ReplaceSpan(keepLeadingTrivia ? oldNode.Span : fullSpan, newNode.ToFullString());
+            return ReplaceSpan(keepLeadingTrivia ? oldNode.SpanWithoutLeadingTrivia : fullSpan, newNode.ToFullString());
 
         var search = keepLeadingTrivia ? GetTextWithoutLeadingTrivia(oldNode) : oldNode.ToFullString();
         if (TryFindUniqueTextSpan(search, out var span))
@@ -59,24 +59,13 @@ public sealed class ShellScriptSyntax : ShellSyntaxNode
 
         var keepLeadingTrivia = newToken.LeadingTrivia.Count == 0;
         if (ContainsToken(oldToken) && oldToken.FullSpan.End <= ToFullString().Length)
-            return ReplaceSpan(keepLeadingTrivia ? oldToken.Span : oldToken.FullSpan, newToken.ToFullString());
+            return ReplaceSpan(keepLeadingTrivia ? TextSpan.FromBounds(oldToken.Span.Start, Math.Max(oldToken.Span.Start, oldToken.FullSpan.End)) : oldToken.FullSpan, newToken.ToFullString());
 
         var search = keepLeadingTrivia ? oldToken.Text : oldToken.ToFullString();
         if (TryFindUniqueTextSpan(search, out var span))
             return ReplaceSpan(span, newToken.ToFullString());
 
         return this;
-    }
-
-    /// <summary>Returns whether the first token of <paramref name="node"/> carries leading trivia.</summary>
-    private static bool HasLeadingTrivia(ShellSyntaxNode node)
-    {
-        foreach (var token in node.DescendantTokens())
-        {
-            return token.LeadingTrivia.Count > 0;
-        }
-
-        return false;
     }
 
     private static string GetTextWithoutLeadingTrivia(ShellSyntaxNode node)

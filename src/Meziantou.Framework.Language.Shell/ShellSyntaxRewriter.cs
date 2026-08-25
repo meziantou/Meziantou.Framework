@@ -99,7 +99,7 @@ public class ShellSyntaxRewriter : ShellSyntaxVisitor<ShellSyntaxNode?>
             if (updated is not null && !ReferenceEquals(updated, current))
             {
                 // Keep the trivia in front of the node when the replacement brings none of its own.
-                var span = HasLeadingTrivia(updated) ? current.FullSpan : current.Span;
+                var span = updated.StartsWithTrivia ? current.FullSpan : current.SpanWithoutLeadingTrivia;
                 edits.Add(new TextEdit(span, updated.ToFullString()));
 
                 continue;
@@ -147,16 +147,6 @@ public class ShellSyntaxRewriter : ShellSyntaxVisitor<ShellSyntaxNode?>
         }
 
         return null;
-    }
-
-    private static bool HasLeadingTrivia(ShellSyntaxNode node)
-    {
-        foreach (var token in node.DescendantTokens())
-        {
-            return token.LeadingTrivia.Count > 0;
-        }
-
-        return false;
     }
 
     private readonly record struct TextEdit(TextSpan Span, string Text);

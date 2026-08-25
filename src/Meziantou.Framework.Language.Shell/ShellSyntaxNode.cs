@@ -34,6 +34,25 @@ public abstract class ShellSyntaxNode
     public ShellDialect? Dialect => SyntaxTree?.Dialect ?? Ancestors().Select(node => node.SyntaxTree?.Dialect).FirstOrDefault(dialect => dialect is not null);
 
     /// <summary>The span of this node excluding leading and trailing trivia.</summary>
+    /// <summary>Returns whether the node's text begins with trivia.</summary>
+    /// <remarks>
+    /// Reading the leading trivia off the first token is not enough. An incomplete construct can begin with a missing
+    /// token of no width, as <c>l l ()</c> does with its absent function name, and that token carries no trivia even
+    /// though the node does: the trivia sits on the first token that has text.
+    /// </remarks>
+    internal bool StartsWithTrivia => Span.Start > FullSpan.Start;
+
+    /// <summary>
+    /// The span to overwrite when a replacement keeps the trivia in front of the node: everything the node owns except
+    /// that leading trivia.
+    /// </summary>
+    /// <remarks>
+    /// This is not <see cref="Span"/>. That span stops at the last token with text, so trivia held by a missing token
+    /// at the end of an incomplete construct falls outside it while still being part of the node's text. Overwriting
+    /// only <see cref="Span"/> would leave that trivia in place and duplicate it.
+    /// </remarks>
+    internal TextSpan SpanWithoutLeadingTrivia => TextSpan.FromBounds(Span.Start, Math.Max(Span.Start, FullSpan.End));
+
     public TextSpan Span
     {
         get

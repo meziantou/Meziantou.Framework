@@ -93,6 +93,77 @@ public sealed class ShellEditingTests
         Assert.Equal("xxx bbb zzz", updated.Text);
     }
 
+    public static TheoryData<string, ShellDialect> IncompleteScripts() => new()
+    {
+        // Each of these ends in a missing token, so some of the text belongs to a node without belonging to its Span.
+        { "for ", ShellDialect.Bash },
+        { "| ", ShellDialect.Sh },
+        { "&&\n", ShellDialect.Cmd },
+        { "while ", ShellDialect.Zsh },
+        { "case ", ShellDialect.Bash },
+        // These start with a missing token of no width, so the leading trivia sits on the second token.
+        { "l l ()", ShellDialect.Zsh },
+        { "\n()", ShellDialect.Zsh },
+        { "coproc ()", ShellDialect.Zsh },
+    };
+
+    [Theory]
+    [MemberData(nameof(IncompleteScripts))]
+    public void ReplaceNode_WithTheSameNode_ChangesNothing(string text, ShellDialect dialect)
+    {
+        var tree = ShellSyntaxTree.ParseText(text, dialect);
+
+        foreach (var node in tree.Root.DescendantNodes())
+        {
+            Assert.Equal(text, tree.Root.ReplaceNode(node, node).ToFullString());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(IncompleteScripts))]
+    public void ReplaceToken_WithTheSameToken_ChangesNothing(string text, ShellDialect dialect)
+    {
+        var tree = ShellSyntaxTree.ParseText(text, dialect);
+
+        foreach (var token in tree.Root.DescendantTokens())
+        {
+            Assert.Equal(text, tree.Root.ReplaceToken(token, token).ToFullString());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(IncompleteScripts))]
+    public void Rewriter_ThatReplacesNothing_ChangesNothing(string text, ShellDialect dialect)
+    {
+        var tree = ShellSyntaxTree.ParseText(text, dialect);
+
+        Assert.Same(tree.Root, new UnchangedRewriter().Visit(tree.Root));
+    }
+
+    [Fact]
+    public void ReplaceNode_KeepsTriviaHeldByATrailingMissingToken()
+    {
+        // The space belongs to the for statement but falls outside its Span, which stops at the last token with text.
+        var tree = ShellSyntaxTree.ParseText("for ", ShellDialect.Bash);
+        var statement = Assert.Single(tree.Root.Statements.Statements);
+
+        Assert.True(statement.Span.End < statement.FullSpan.End);
+        Assert.Equal("for ", tree.Root.ReplaceNode(statement, statement).ToFullString());
+    }
+
+    [Fact]
+    public void ReplaceNode_SeesLeadingTriviaHeldPastAMissingToken()
+    {
+        // The function definition starts with a missing name of no width, so the space before `(` is on the next token.
+        var tree = ShellSyntaxTree.ParseText("l l ()", ShellDialect.Zsh);
+        var definition = Assert.Single(tree.Root.DescendantNodes().OfType<PosixFunctionDefinitionSyntax>());
+
+        Assert.True(definition.Span.Start > definition.FullSpan.Start);
+        Assert.Equal("l l ()", tree.Root.ReplaceNode(definition, definition).ToFullString());
+    }
+
+    private sealed class UnchangedRewriter : ShellSyntaxRewriter;
+
     [Fact]
     public void EditedTree_StillRoundTrips()
     {

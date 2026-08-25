@@ -981,11 +981,15 @@ internal sealed partial class PosixParser
         return new ShellCommandSubstitutionSyntax(openToken, statements, closeToken);
     }
 
-    private PosixArithmeticExpansionSyntax ParseArithmeticExpansion(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellWordPartSyntax ParseArithmeticExpansion(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
     {
         var start = _lexer.Position;
         _lexer.Position += 3;
         var openToken = _lexer.CreateToken(ShellSyntaxKind.DollarOpenParenToken, start, leadingTrivia, fullStart);
+
+        // `$(( ))` nests like `$( )` does, so it needs the same depth guard.
+        if (!TryEnterRecursion(openToken.Span))
+            return new ShellLiteralWordPartSyntax(ConsumeRestAsText(openToken));
 
         var expressionStart = _lexer.Position;
         var depth = 0;
@@ -1022,6 +1026,8 @@ internal sealed partial class PosixParser
             _lexer.Position += 2;
             closeToken = _lexer.CreateToken(ShellSyntaxKind.CloseParenToken, closeStart, closeTrivia, closeFullStart);
         }
+
+        _depth--;
 
         return new PosixArithmeticExpansionSyntax(openToken, expression, closeToken);
     }

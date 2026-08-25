@@ -254,6 +254,21 @@ internal sealed partial class PowerShellParser
 
     private ShellExpressionSyntax ParseUnaryExpression()
     {
+        if (!TryEnterRecursion(new TextSpan(_lexer.Position, 0)))
+            return new ShellRawExpressionSyntax(ConsumeRestAsToken());
+
+        try
+        {
+            return ParseUnaryExpressionCore();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private ShellExpressionSyntax ParseUnaryExpressionCore()
+    {
         AccumulateStatementTrivia();
 
         // The unary comma wraps its operand in a one-element array: `,1`.

@@ -86,15 +86,29 @@ public abstract class ShellSyntaxNode
         return merged.OrderBy(item => item.FullSpan.Start);
     }
 
+    /// <summary>Returns every descendant node, in source order.</summary>
+    /// <remarks>
+    /// Walked with an explicit stack rather than by recursion: a long operator or member chain builds a deeply
+    /// left-nested tree, and recursing over one would run the stack out on input that parsed perfectly well.
+    /// </remarks>
     public IEnumerable<ShellSyntaxNode> DescendantNodes()
     {
-        foreach (var child in ChildNodes)
+        var stack = new Stack<ShellSyntaxNode>();
+        PushInReverse(stack, ChildNodes);
+
+        while (stack.Count > 0)
         {
-            yield return child;
-            foreach (var descendant in child.DescendantNodes())
-            {
-                yield return descendant;
-            }
+            var node = stack.Pop();
+            yield return node;
+            PushInReverse(stack, node.ChildNodes);
+        }
+    }
+
+    private static void PushInReverse(Stack<ShellSyntaxNode> stack, IReadOnlyList<ShellSyntaxNode> nodes)
+    {
+        for (var index = nodes.Count - 1; index >= 0; index--)
+        {
+            stack.Push(nodes[index]);
         }
     }
 
@@ -110,16 +124,26 @@ public abstract class ShellSyntaxNode
     /// <summary>Returns every descendant node and token, in source order.</summary>
     public IEnumerable<ShellSyntaxNodeOrToken> DescendantNodesAndTokens()
     {
-        foreach (var item in ChildNodesAndTokens())
+        var stack = new Stack<ShellSyntaxNodeOrToken>();
+        PushInReverse(stack, ChildNodesAndTokens());
+
+        while (stack.Count > 0)
         {
+            var item = stack.Pop();
             yield return item;
             if (item.IsNode)
             {
-                foreach (var descendant in item.Node.DescendantNodesAndTokens())
-                {
-                    yield return descendant;
-                }
+                PushInReverse(stack, item.Node.ChildNodesAndTokens());
             }
+        }
+    }
+
+    private static void PushInReverse(Stack<ShellSyntaxNodeOrToken> stack, IEnumerable<ShellSyntaxNodeOrToken> items)
+    {
+        var buffer = items as IList<ShellSyntaxNodeOrToken> ?? [.. items];
+        for (var index = buffer.Count - 1; index >= 0; index--)
+        {
+            stack.Push(buffer[index]);
         }
     }
 
@@ -146,17 +170,11 @@ public abstract class ShellSyntaxNode
     /// <summary>Returns every token in this subtree, in source order.</summary>
     public IEnumerable<ShellSyntaxToken> DescendantTokens()
     {
-        foreach (var item in ChildNodesAndTokens())
+        foreach (var item in DescendantNodesAndTokens())
         {
             if (item.IsToken)
             {
                 yield return item.Token;
-                continue;
-            }
-
-            foreach (var token in item.Node.DescendantTokens())
-            {
-                yield return token;
             }
         }
     }
@@ -196,16 +214,22 @@ public abstract class ShellSyntaxNode
         if (other is null || other.Kind != Kind)
             return false;
 
-        if (!TokensAreEquivalent(Tokens, other.Tokens))
-            return false;
+        var stack = new Stack<(ShellSyntaxNode Left, ShellSyntaxNode Right)>();
+        stack.Push((this, other));
 
-        if (ChildNodes.Count != other.ChildNodes.Count)
-            return false;
-
-        for (var index = 0; index < ChildNodes.Count; index++)
+        while (stack.Count > 0)
         {
-            if (!ChildNodes[index].IsEquivalentTo(other.ChildNodes[index]))
+            var (left, right) = stack.Pop();
+            if (left.Kind != right.Kind || !TokensAreEquivalent(left.Tokens, right.Tokens))
                 return false;
+
+            if (left.ChildNodes.Count != right.ChildNodes.Count)
+                return false;
+
+            for (var index = 0; index < left.ChildNodes.Count; index++)
+            {
+                stack.Push((left.ChildNodes[index], right.ChildNodes[index]));
+            }
         }
 
         return true;
@@ -230,16 +254,24 @@ public abstract class ShellSyntaxNode
 
     internal void SetParentAndTree(ShellSyntaxNode? parent, ShellSyntaxTree tree)
     {
-        ParentNode = parent;
-        SyntaxTree = tree;
-        foreach (var child in ChildNodes)
-        {
-            child.SetParentAndTree(this, tree);
-        }
+        var stack = new Stack<(ShellSyntaxNode Node, ShellSyntaxNode? Parent)>();
+        stack.Push((this, parent));
 
-        foreach (var token in Tokens)
+        while (stack.Count > 0)
         {
-            token.Parent = this;
+            var (node, nodeParent) = stack.Pop();
+            node.ParentNode = nodeParent;
+            node.SyntaxTree = tree;
+
+            foreach (var token in node.Tokens)
+            {
+                token.Parent = node;
+            }
+
+            foreach (var child in node.ChildNodes)
+            {
+                stack.Push((child, node));
+            }
         }
     }
 

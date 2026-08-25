@@ -88,19 +88,27 @@ public class ShellSyntaxRewriter : ShellSyntaxVisitor<ShellSyntaxNode?>
     /// </summary>
     private void CollectEdits(ShellSyntaxNode node, List<TextEdit> edits)
     {
-        var updated = VisitCore(node);
-        if (updated is not null && !ReferenceEquals(updated, node))
-        {
-            // Keep the trivia in front of the node when the replacement brings none of its own.
-            var span = HasLeadingTrivia(updated) ? node.FullSpan : node.Span;
-            edits.Add(new TextEdit(span, updated.ToFullString()));
+        // Walked with a stack rather than by recursion, so a deeply nested tree cannot run the stack out.
+        var pending = new Stack<ShellSyntaxNode>();
+        pending.Push(node);
 
-            return;
-        }
-
-        foreach (var child in node.ChildNodes)
+        while (pending.Count > 0)
         {
-            CollectEdits(child, edits);
+            var current = pending.Pop();
+            var updated = VisitCore(current);
+            if (updated is not null && !ReferenceEquals(updated, current))
+            {
+                // Keep the trivia in front of the node when the replacement brings none of its own.
+                var span = HasLeadingTrivia(updated) ? current.FullSpan : current.Span;
+                edits.Add(new TextEdit(span, updated.ToFullString()));
+
+                continue;
+            }
+
+            foreach (var child in current.ChildNodes)
+            {
+                pending.Push(child);
+            }
         }
     }
 

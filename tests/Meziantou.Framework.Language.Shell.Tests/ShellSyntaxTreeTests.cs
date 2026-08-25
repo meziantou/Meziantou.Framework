@@ -307,6 +307,48 @@ public sealed class ShellSyntaxTreeTests
         Assert.Contains(tree.Diagnostics, diagnostic => diagnostic.Id == "SHELL0100");
     }
 
+    public static TheoryData<string, ShellDialect> DeeplyNestedScripts()
+    {
+        // Nesting that the parser descends into recursively. The depth guard stops it long before the stack runs out,
+        // so these stay cheap however large the input is.
+        const int Nested = 20_000;
+
+        // Chains are built by a loop rather than by recursion, so the guard never sees them and the tree really is
+        // this deep. Every node caches its own text, which makes the memory quadratic in the depth, so keep it small.
+        const int Chained = 2_000;
+
+        return new TheoryData<string, ShellDialect>
+        {
+            { "echo $((" + new string('(', Nested) + "1" + new string(')', Nested) + "))", ShellDialect.Bash },
+            { "echo $((" + new string('-', Nested) + "x))", ShellDialect.Bash },
+            { "echo " + Repeat("$((", Nested) + "1" + Repeat("))", Nested), ShellDialect.Bash },
+            { "[[ " + Repeat("( ", Nested) + "-f a" + Repeat(" )", Nested) + " ]]", ShellDialect.Bash },
+            { "[[ " + new string('!', Nested) + " -f a ]]", ShellDialect.Bash },
+            { new string('(', Nested) + "echo" + new string(')', Nested), ShellDialect.Bash },
+            { new string('(', Nested) + "echo" + new string(')', Nested), ShellDialect.Cmd },
+            { "$a = " + Repeat("@{k=", Nested) + "1" + new string('}', Nested), ShellDialect.PowerShellCore },
+            { "$a = " + Repeat("[int]", Nested) + "1", ShellDialect.PowerShellCore },
+            { "$a = " + new string('!', Nested) + "$x", ShellDialect.PowerShellCore },
+            { "$a = $x" + Repeat("[0", Nested) + new string(']', Nested), ShellDialect.PowerShellCore },
+            { "echo $((1" + Repeat("+1", Chained) + "))", ShellDialect.Bash },
+            { "[[ -f a" + Repeat(" && -f a", Chained) + " ]]", ShellDialect.Bash },
+            { "$a = $x" + Repeat(".p", Chained), ShellDialect.PowerShellCore },
+        };
+
+        static string Repeat(string value, int count) => string.Concat(Enumerable.Repeat(value, count));
+    }
+
+    [Theory]
+    [MemberData(nameof(DeeplyNestedScripts))]
+    public void ParseText_DeeplyNestedScript_DoesNotExhaustTheStack(string text, ShellDialect dialect)
+    {
+        // A stack overflow cannot be caught, so a regression here takes the test host down rather than failing.
+        // Checking faithfulness walks every node and token, and the equivalence check walks the tree a second time.
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, dialect);
+
+        Assert.True(tree.Root.IsEquivalentTo(ShellSyntaxTree.ParseText(text, dialect).Root));
+    }
+
     [Fact]
     public void Span_ExcludesTriviaAndFullSpanIncludesIt()
     {

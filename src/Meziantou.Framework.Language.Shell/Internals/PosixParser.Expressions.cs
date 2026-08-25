@@ -101,9 +101,91 @@ internal sealed partial class PosixParser
         return null;
     }
 
-    // ---- arithmetic ----
+    /// <summary>
+    /// Bounds the recursive descent of both expression grammars. Nesting past the limit marks the parse as failed,
+    /// so the caller keeps the text verbatim instead of the stack running out.
+    /// </summary>
+    private bool TryEnterExpressionRecursion()
+    {
+        if (_depth >= _options.MaxRecursionDepth)
+        {
+            _expressionFailed = true;
+
+            return false;
+        }
+
+        _depth++;
+
+        return true;
+    }
+
+    /// <summary>A zero-width placeholder for an abandoned subtree; the whole parse is discarded anyway.</summary>
+    private ShellRawExpressionSyntax AbandonedExpression() =>
+        new ShellRawExpressionSyntax(new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, string.Empty, string.Empty, fullStart: _lexer.Position));
 
     private ShellExpressionSyntax ParseArithmetic(int minimumPrecedence)
+    {
+        if (!TryEnterExpressionRecursion())
+            return AbandonedExpression();
+
+        try
+        {
+            return ParseArithmeticCore(minimumPrecedence);
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private ShellExpressionSyntax ParseArithmeticUnary()
+    {
+        if (!TryEnterExpressionRecursion())
+            return AbandonedExpression();
+
+        try
+        {
+            return ParseArithmeticUnaryCore();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private ShellExpressionSyntax ParseConditionalOr()
+    {
+        if (!TryEnterExpressionRecursion())
+            return AbandonedExpression();
+
+        try
+        {
+            return ParseConditionalOrCore();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private ShellExpressionSyntax ParseConditionalUnary()
+    {
+        if (!TryEnterExpressionRecursion())
+            return AbandonedExpression();
+
+        try
+        {
+            return ParseConditionalUnaryCore();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    // ---- arithmetic ----
+
+    private ShellExpressionSyntax ParseArithmeticCore(int minimumPrecedence)
     {
         var left = ParseArithmeticUnary();
 
@@ -154,7 +236,7 @@ internal sealed partial class PosixParser
         return null;
     }
 
-    private ShellExpressionSyntax ParseArithmeticUnary()
+    private ShellExpressionSyntax ParseArithmeticUnaryCore()
     {
         AccumulateInlineTrivia();
 
@@ -283,7 +365,7 @@ internal sealed partial class PosixParser
 
     // ---- conditional ----
 
-    private ShellExpressionSyntax ParseConditionalOr()
+    private ShellExpressionSyntax ParseConditionalOrCore()
     {
         var left = ParseConditionalAnd();
 
@@ -317,7 +399,7 @@ internal sealed partial class PosixParser
         return left;
     }
 
-    private ShellExpressionSyntax ParseConditionalUnary()
+    private ShellExpressionSyntax ParseConditionalUnaryCore()
     {
         AccumulateInlineTrivia();
 

@@ -1,6 +1,6 @@
 # Meziantou.Framework.Http.Caching
 
-An HTTP caching implementation for `HttpClient` that follows [RFC 7234 (HTTP Caching)](https://www.rfc-editor.org/rfc/rfc7234.html), since obsoleted by [RFC 9111](https://www.rfc-editor.org/rfc/rfc9111.html), together with [RFC 8246 (Immutable directive)](https://www.rfc-editor.org/rfc/rfc8246.html) and [RFC 5861 (stale-if-error)](https://www.rfc-editor.org/rfc/rfc5861.html).
+An HTTP caching implementation for `HttpClient` that follows [RFC 7234 (HTTP Caching)](https://www.rfc-editor.org/rfc/rfc7234.html), since obsoleted by [RFC 9111](https://www.rfc-editor.org/rfc/rfc9111.html), together with [RFC 8246 (Immutable directive)](https://www.rfc-editor.org/rfc/rfc8246.html), [RFC 5861 (stale-if-error)](https://www.rfc-editor.org/rfc/rfc5861.html), and [No-Vary-Search](https://httpwg.org/http-extensions/draft-ietf-httpbis-no-vary-search.html).
 
 This is a **private** cache: it is attached to a single `HttpClient` and its entries are not shared between users.
 
@@ -15,6 +15,7 @@ This is a **private** cache: it is attached to a single `HttpClient` and its ent
 - ✅ **Cache-Control Directives**: Supports `max-age`, `no-cache`, `no-store`, `must-revalidate`, `max-stale`, `min-fresh`, `only-if-cached`
 - ✅ **Conditional Requests**: Automatic validation using `ETag` and `Last-Modified` headers
 - ✅ **Vary Support**: Caches multiple variants based on request headers (e.g., `Accept-Language`, `Accept-Encoding`)
+- ✅ **No-Vary-Search**: Reuses a cached response for URLs that only differ by query parameters the server declares irrelevant
 - ✅ **Cache Invalidation**: Automatically invalidates cache entries on unsafe methods (POST, PUT, DELETE, PATCH)
 - ✅ **Pragma Support**: Handles `Pragma: no-cache` for HTTP/1.0 backward compatibility
 - ✅ **Thread-Safe**: Designed for concurrent access across multiple threads
@@ -191,6 +192,36 @@ request2.Headers.Add("Accept-Language", "fr-FR");
 var response2 = await httpClient.SendAsync(request2); // Fetches new response and caches separately
 ```
 
+### No-Vary-Search Support
+
+By default, two URLs that differ by a single query parameter are two different cache entries. A server can use the [`No-Vary-Search`](https://httpwg.org/http-extensions/draft-ietf-httpbis-no-vary-search.html) response header to declare which query parameters do *not* change the response, so a single entry can answer all of them:
+
+```csharp
+// Server responds with:
+// Cache-Control: max-age=3600
+// No-Vary-Search: params=("utm_source")
+
+var response1 = await httpClient.GetAsync("https://api.example.com/data?utm_source=newsletter");
+var response2 = await httpClient.GetAsync("https://api.example.com/data?utm_source=twitter"); // Served from cache
+var response3 = await httpClient.GetAsync("https://api.example.com/data"); // Served from cache
+```
+
+The header is a structured field dictionary with three entries:
+
+| Value | Meaning |
+|-------|---------|
+| `key-order` | Only the order of the query parameters is irrelevant |
+| `params=("a" "b")` | The listed parameters are irrelevant; every other one still separates entries |
+| `except=("a" "b")` | Only the listed parameters are relevant; every other one is ignored |
+| `params, except=("a" "b")` | The spelling of `except` [documented by MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/No-Vary-Search), and implemented by browsers. It has the same meaning as `except` alone |
+| `except=()` | Every query parameter is irrelevant |
+
+The entries can be combined: `No-Vary-Search: key-order, params=("utm_source")`.
+
+Queries are compared after being parsed as `application/x-www-form-urlencoded`, so `?a=x`, `?%61=%78`, and `?a=x&&&` are the same query. A malformed or unrecognized header value is ignored, and the URLs are compared exactly, as if the header was absent.
+
+`No-Vary-Search` works alongside `Vary`: a request must match both the variation config and the `Vary` headers to reuse an entry. An unsafe method (`POST`, `PUT`, …) invalidates every entry stored for the target path, including the ones that only match modulo their variation config.
+
 ### Immutable Directive (RFC 8246)
 
 The `immutable` directive indicates that the response body will not change over time. When a response has `Cache-Control: immutable` and is still fresh, the cache will NOT perform conditional revalidation even if the client sends `Cache-Control: no-cache`:
@@ -241,6 +272,7 @@ This is particularly useful for versioned resources (e.g., `/assets/script.v123.
 | `Last-Modified` | `<date>` | Last modification date for conditional requests |
 | | `stale-if-error=<seconds>` | Serve the stale response when revalidation fails or the origin cannot be reached (RFC 5861) |
 | `Vary` | `<headers>` | Headers that affect response variant |
+| `No-Vary-Search` | `key-order`, `params`, `except` | Query parameters that do not affect the response |
 | `Age` | `<seconds>` | Age of cached response (added when serving from cache) |
 
 ## Thread Safety

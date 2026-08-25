@@ -8,6 +8,8 @@ namespace Meziantou.Framework.Http.Caching
     {
         public bool SecondaryKeyMatchNone { get => throw null; set { } }
         public System.Collections.Generic.Dictionary<string, string>? SecondaryKeyHeaders { get => throw null; set { } }
+        public string? NoVarySearch { get => throw null; set { } }
+        public string? NormalizedQuery { get => throw null; set { } }
         public System.DateTimeOffset RequestTime { get => throw null; set { } }
         public System.DateTimeOffset ResponseTime { get => throw null; set { } }
         public System.DateTimeOffset ResponseDate { get => throw null; set { } }

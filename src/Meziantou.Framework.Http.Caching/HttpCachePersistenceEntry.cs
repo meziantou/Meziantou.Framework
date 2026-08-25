@@ -18,6 +18,19 @@ public sealed class HttpCachePersistenceEntry
     /// <summary>Gets or sets the normalized vary-based secondary key headers.</summary>
     public Dictionary<string, string>? SecondaryKeyHeaders { get; set; }
 
+    /// <summary>
+    /// Gets or sets the canonical <c>No-Vary-Search</c> value of the response, or <see langword="null"/> when
+    /// the response does not declare one.
+    /// </summary>
+    public string? NoVarySearch { get; set; }
+
+    /// <summary>Gets or sets the query the response was stored for, canonicalized with <see cref="NoVarySearch"/>.</summary>
+    /// <remarks>
+    /// Only set together with <see cref="NoVarySearch"/>: those entries are stored under a primary key that
+    /// leaves the query out, so the query belongs to their secondary key.
+    /// </remarks>
+    public string? NormalizedQuery { get; set; }
+
     /// <summary>Gets or sets the request time.</summary>
     public DateTimeOffset RequestTime { get; set; }
 
@@ -99,6 +112,8 @@ public sealed class HttpCachePersistenceEntry
         {
             SecondaryKeyMatchNone = SecondaryKeyMatchNone,
             SecondaryKeyHeaders = SecondaryKeyHeaders is null ? null : new Dictionary<string, string>(SecondaryKeyHeaders, StringComparer.OrdinalIgnoreCase),
+            NoVarySearch = NoVarySearch,
+            NormalizedQuery = NormalizedQuery,
             RequestTime = RequestTime,
             ResponseTime = ResponseTime,
             ResponseDate = ResponseDate,
@@ -204,6 +219,16 @@ public sealed class HttpCachePersistenceEntry
             }
         }
 
+        // A response that declares a No-Vary-Search config is stored under a primary key that leaves the
+        // query out, so the query, and the config used to canonicalize it, take part in the secondary key.
+        if (NoVarySearch is not null)
+        {
+            stringBuilder.Append('\u001d');
+            stringBuilder.Append(NoVarySearch);
+            stringBuilder.Append('\u001e');
+            stringBuilder.Append(NormalizedQuery);
+        }
+
         var bytes = Encoding.UTF8.GetBytes(stringBuilder.ToString());
         Span<byte> hash = stackalloc byte[32];
         SHA256.HashData(bytes, hash);
@@ -217,6 +242,12 @@ public sealed class HttpCachePersistenceEntry
         ArgumentNullException.ThrowIfNull(right);
 
         if (left.SecondaryKeyMatchNone != right.SecondaryKeyMatchNone)
+            return false;
+
+        if (!string.Equals(left.NoVarySearch, right.NoVarySearch, StringComparison.Ordinal))
+            return false;
+
+        if (!string.Equals(left.NormalizedQuery, right.NormalizedQuery, StringComparison.Ordinal))
             return false;
 
         var leftHeaders = left.SecondaryKeyHeaders;

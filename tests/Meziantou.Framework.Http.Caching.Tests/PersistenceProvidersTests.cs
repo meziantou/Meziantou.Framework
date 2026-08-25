@@ -208,6 +208,43 @@ public class PersistenceProvidersTests
     }
 
     [Fact]
+    public async Task SqliteProviderPersistsNoVarySearchSecondaryKey()
+    {
+        var connectionString = CreateInMemorySqliteConnectionString();
+        using var keepAliveConnection = CreateSqliteAnchorConnection(connectionString);
+        using var provider = new SqliteHttpCacheStore(connectionString);
+
+        var primaryKey = "GET http://example.com/users no-vary-search";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        var first = CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(5), mustRevalidate: false);
+        first.NoVarySearch = "params=(\"utm_source\")";
+        first.NormalizedQuery = "id=1";
+        await provider.SetEntryAsync(primaryKey, first, CancellationToken.None);
+
+        var second = CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(5), mustRevalidate: false);
+        second.NoVarySearch = "params=(\"utm_source\")";
+        second.NormalizedQuery = "id=2";
+        await provider.SetEntryAsync(primaryKey, second, CancellationToken.None);
+
+        var entries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
+
+        // The queries take part in the secondary key, so both entries are kept
+        Assert.Equal(2, entries.Count);
+        Assert.All(entries, entry => Assert.Equal("params=(\"utm_source\")", entry.NoVarySearch));
+        Assert.Equal(["id=1", "id=2"], entries.Select(entry => entry.NormalizedQuery).Order(StringComparer.Ordinal));
+
+        // Storing an entry with the same secondary key replaces it
+        var replacement = CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(5), mustRevalidate: false);
+        replacement.NoVarySearch = "params=(\"utm_source\")";
+        replacement.NormalizedQuery = "id=1";
+        await provider.SetEntryAsync(primaryKey, replacement, CancellationToken.None);
+
+        entries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
+        Assert.Equal(2, entries.Count);
+    }
+
+    [Fact]
     public async Task SqliteProviderSupportsConcurrentOperations()
     {
         var connectionString = CreateInMemorySqliteConnectionString();

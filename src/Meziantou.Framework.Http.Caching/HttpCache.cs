@@ -20,18 +20,39 @@ internal sealed class HttpCache
     // RFC 9111 Section 2: the primary cache key is composed of the request method and the target URI.
     // GET and HEAD must not share a key, otherwise a stored HEAD response (which has no body) could be
     // served for a subsequent GET.
-    private static string ComputePrimaryKey(HttpMethod method, Uri? uri)
+    private static string ComputePrimaryKey(HttpMethod method, Uri uri)
     {
-        return method.Method + " " + (uri?.GetLeftPart(UriPartial.Query) ?? string.Empty);
+        return method.Method + " " + uri.GetLeftPart(UriPartial.Query);
+    }
+
+    // draft-ietf-httpbis-no-vary-search Section 7: a response that declares a URL variation config can be
+    // reused for any equivalent URL, so it cannot be stored under a key that contains the query. Those
+    // responses get their own key, built from the URL without its query. The marker holds a space, which a
+    // URI never does because Uri escapes it, so the key can never collide with that of a query-less URL.
+    private static string ComputeNoVarySearchKey(HttpMethod method, Uri uri)
+    {
+        return method.Method + " " + uri.GetLeftPart(UriPartial.Path) + " no-vary-search";
     }
 
     public async ValueTask<CacheEntry?> TryGetAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (request.RequestUri is null)
+        var uri = request.RequestUri;
+        if (uri is null)
             return null;
 
-        var primaryKey = ComputePrimaryKey(request.Method, request.RequestUri);
-        var persistedEntries = await _persistenceProvider.GetEntriesAsync(primaryKey, cancellationToken).ConfigureAwait(false);
+        // An entry stored under the exact target URI always matches, so it is looked up first. Section 7 of
+        // the No-Vary-Search draft allows preferring it over an entry that only matches modulo its config,
+        // and it keeps the cost of a cache hit to a single lookup for responses without the header.
+        var exactMatch = await TryGetAsync(ComputePrimaryKey(request.Method, uri), request, uri, matchQuery: false, cancellationToken).ConfigureAwait(false);
+        if (exactMatch is not null)
+            return exactMatch;
+
+        return await TryGetAsync(ComputeNoVarySearchKey(request.Method, uri), request, uri, matchQuery: true, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<CacheEntry?> TryGetAsync(string key, HttpRequestMessage request, Uri uri, bool matchQuery, CancellationToken cancellationToken)
+    {
+        var persistedEntries = await _persistenceProvider.GetEntriesAsync(key, cancellationToken).ConfigureAwait(false);
         if (persistedEntries.Count is 0)
             return null;
 
@@ -58,7 +79,14 @@ internal sealed class HttpCache
             if (!entry.SecondaryKey.MatchRequest(request))
                 continue;
 
+            // draft-ietf-httpbis-no-vary-search Section 6: the entries stored under this key were kept for
+            // other queries of the same path, and only answer requests for an equivalent URL.
+            if (matchQuery && !entry.MatchesQuery(uri))
+                continue;
+
             // RFC 7234 Section 4: Use most recent response by Date header
+            // draft-ietf-httpbis-no-vary-search Section 7: preferring the most recent Date also makes caches
+            // converge on the latest config when several of them are stored.
             if (entry.ResponseDate > latestDate)
             {
                 latestDate = entry.ResponseDate;
@@ -88,14 +116,12 @@ internal sealed class HttpCache
         if (maximumResponseSize is not null && response.Content?.Headers.ContentLength > maximumResponseSize.GetValueOrDefault())
             return;
 
-        var primaryKey = ComputePrimaryKey(request.Method, request.RequestUri);
-
         // The size limit applies to the serialized entry, which includes headers and metadata.
         var entry = await CacheEntry.CreateAsync(request, response, requestTime, responseTime, maximumResponseSize, cancellationToken).ConfigureAwait(false);
         if (entry is null)
             return;
 
-        await _persistenceProvider.SetEntryAsync(primaryKey, entry.ToPersistenceEntry(), cancellationToken).ConfigureAwait(false);
+        await _persistenceProvider.SetEntryAsync(ComputeStorageKey(request.Method, request.RequestUri, entry), entry.ToPersistenceEntry(), cancellationToken).ConfigureAwait(false);
     }
 
     public ValueTask PersistEntryAsync(HttpMethod method, Uri? uri, CacheEntry entry, CancellationToken cancellationToken)
@@ -103,8 +129,12 @@ internal sealed class HttpCache
         if (uri is null)
             return ValueTask.CompletedTask;
 
-        var primaryKey = ComputePrimaryKey(method, uri);
-        return _persistenceProvider.SetEntryAsync(primaryKey, entry.ToPersistenceEntry(), cancellationToken);
+        return _persistenceProvider.SetEntryAsync(ComputeStorageKey(method, uri, entry), entry.ToPersistenceEntry(), cancellationToken);
+    }
+
+    private static string ComputeStorageKey(HttpMethod method, Uri uri, CacheEntry entry)
+    {
+        return entry.VariationConfig.IsDefault ? ComputePrimaryKey(method, uri) : ComputeNoVarySearchKey(method, uri);
     }
 
     public async ValueTask InvalidateAsync(Uri? uri, CancellationToken cancellationToken)
@@ -115,6 +145,13 @@ internal sealed class HttpCache
         // The primary key includes the request method, so every cacheable method must be invalidated.
         await _persistenceProvider.RemoveEntriesAsync(ComputePrimaryKey(HttpMethod.Get, uri), cancellationToken).ConfigureAwait(false);
         await _persistenceProvider.RemoveEntriesAsync(ComputePrimaryKey(HttpMethod.Head, uri), cancellationToken).ConfigureAwait(false);
+
+        // draft-ietf-httpbis-no-vary-search Section 7: invalidating the URLs that are only equivalent modulo
+        // a variation config is optional. Dropping the whole key is the conservative choice: the entries it
+        // holds are keyed on the URL without its query, so the query of the invalidated URL says nothing
+        // about which of them are still valid.
+        await _persistenceProvider.RemoveEntriesAsync(ComputeNoVarySearchKey(HttpMethod.Get, uri), cancellationToken).ConfigureAwait(false);
+        await _persistenceProvider.RemoveEntriesAsync(ComputeNoVarySearchKey(HttpMethod.Head, uri), cancellationToken).ConfigureAwait(false);
     }
 
     private static bool IsCacheable(HttpRequestMessage request, HttpResponseMessage response)

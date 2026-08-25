@@ -54,6 +54,12 @@ var files = PublicApi.Generate(
 
 If `TargetFrameworkMoniker` is omitted (or empty), the generator infers it from assembly metadata.
 
+## Memory safety rules
+
+For assemblies compiled with the updated memory safety rules (`<Features>$(Features);updated-memory-safety-rules</Features>`), the `unsafe` modifier reflects the members the compiler marked as requiring an unsafe context, whatever their signature. Pointers in a signature no longer imply `unsafe`, and delegate declarations are never `unsafe`. Generated files may therefore need the same feature to be compiled.
+
+For other assemblies, a member is `unsafe` when a pointer type appears in its signature, which matches the compatibility mode of the compiler.
+
 ## Example output
 
 Input API:

@@ -1,17 +1,21 @@
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.PublicApiGenerator;
 
 internal static class PublicApiModelBuilder
 {
     private static readonly NullabilityInfoContext NullabilityInfoContext = new();
+    private static readonly ConditionalWeakTable<Module, StrongBox<bool>> UpdatedMemorySafetyRulesCache = new();
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
     private const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
     private const string ClosedAttributeFullName = "System.Runtime.CompilerServices.ClosedAttribute";
     private const string IsClosedTypeAttributeFullName = "System.Runtime.CompilerServices.IsClosedTypeAttribute";
     private const string UnionAttributeFullName = "System.Runtime.CompilerServices.UnionAttribute";
     private const string IUnionInterfaceFullName = "System.Runtime.CompilerServices.IUnion";
+    private const string MemorySafetyRulesAttributeFullName = "System.Runtime.CompilerServices.MemorySafetyRulesAttribute";
+    private const string RequiresUnsafeAttributeFullName = "System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
 
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
@@ -46,6 +50,8 @@ internal static class PublicApiModelBuilder
         "System.Runtime.CompilerServices.ScopedRefAttribute",
         "System.Runtime.CompilerServices.ClosedAttribute",
         "System.Runtime.CompilerServices.IsClosedTypeAttribute",
+        MemorySafetyRulesAttributeFullName,
+        RequiresUnsafeAttributeFullName,
         "System.Reflection.AssemblyCompanyAttribute",
         "System.Reflection.AssemblyConfigurationAttribute",
         "System.Reflection.AssemblyCopyrightAttribute",
@@ -255,7 +261,8 @@ internal static class PublicApiModelBuilder
         AppendAttributes(sb, type.CustomAttributes, indentationLevel);
 
         var modifiers = GetTypeAccessibility(type);
-        var unsafeModifier = RequiresUnsafeContext(invokeMethod) ? " unsafe" : string.Empty;
+        // The unsafe modifier is not allowed on type declarations under the updated memory safety rules
+        var unsafeModifier = !HasUpdatedMemorySafetyRules(type.Module) && RequiresUnsafeContext(invokeMethod) ? " unsafe" : string.Empty;
         var genericArguments = BuildGenericArguments(type);
         var parameters = string.Join(", ", invokeMethod.GetParameters().Select(static parameter => BuildParameter(parameter, isExtensionReceiver: false)));
         var returnType = FormatReturnType(invokeMethod.ReturnParameter);
@@ -312,6 +319,11 @@ internal static class PublicApiModelBuilder
             modifiers.Add("const");
         }
 
+        if (IsRequiresUnsafeMember(field))
+        {
+            modifiers.Add("unsafe");
+        }
+
         var fieldNullability = NullabilityInfoContext.Create(field);
         var fieldType = isByRefField
             ? BuildByRefFieldType(field, fieldNullability)
@@ -352,6 +364,21 @@ internal static class PublicApiModelBuilder
             modifiers.Add("required");
         }
 
+        var getMethod = property.GetMethod is { } getter && IsExternallyVisible(getter) ? getter : null;
+        var setMethod = property.SetMethod is { } setter && IsExternallyVisible(setter) ? setter : null;
+        var isGetUnsafe = getMethod is not null && IsRequiresUnsafeMember(getMethod);
+        var isSetUnsafe = setMethod is not null && IsRequiresUnsafeMember(setMethod);
+
+        // The unsafe modifier can be set on the property or on its accessors, but not on both
+        var isPropertyUnsafe = IsRequiresUnsafeMember(property) ||
+                               (isGetUnsafe || isSetUnsafe) && isGetUnsafe == (getMethod is not null) && isSetUnsafe == (setMethod is not null);
+        if (isPropertyUnsafe)
+        {
+            modifiers.Add("unsafe");
+            isGetUnsafe = false;
+            isSetUnsafe = false;
+        }
+
         var indexParameters = property.GetMethod?.GetParameters() ?? property.SetMethod?.GetParameters().SkipLast(1).ToArray() ?? [];
         var propertyName = indexParameters.Length > 0
             ? $"this[{string.Join(", ", indexParameters.Select(static parameter => BuildParameter(parameter, isExtensionReceiver: false)))}]"
@@ -363,19 +390,17 @@ internal static class PublicApiModelBuilder
                 : null;
         var accessorDeclarations = new List<string>();
 
-        var getMethod = property.GetMethod;
-        if (getMethod is not null && IsExternallyVisible(getMethod))
+        if (getMethod is not null)
         {
-            var accessorModifier = BuildAccessorModifier(getMethod, representativeAccessor);
+            var accessorModifier = BuildAccessorModifier(getMethod, representativeAccessor) + (isGetUnsafe ? "unsafe " : string.Empty);
             var getAccessor = getMethod.IsAbstract ? "get;" : "get => throw null;";
             accessorDeclarations.Add($"{accessorModifier}{getAccessor}");
         }
 
-        var setMethod = property.SetMethod;
-        if (setMethod is not null && IsExternallyVisible(setMethod))
+        if (setMethod is not null)
         {
             var accessorKeyword = IsInitOnly(setMethod) ? "init" : "set";
-            var accessorModifier = BuildAccessorModifier(setMethod, representativeAccessor);
+            var accessorModifier = BuildAccessorModifier(setMethod, representativeAccessor) + (isSetUnsafe ? "unsafe " : string.Empty);
             var setAccessor = setMethod.IsAbstract ? $"{accessorKeyword};" : $"{accessorKeyword} {{ }}";
             accessorDeclarations.Add($"{accessorModifier}{setAccessor}");
         }
@@ -404,6 +429,12 @@ internal static class PublicApiModelBuilder
             modifiers.Add("static");
         }
 
+        // Event accessors cannot be marked as unsafe individually
+        if (IsRequiresUnsafeMember(@event))
+        {
+            modifiers.Add("unsafe");
+        }
+
         var eventNullability = NullabilityInfoContext.Create(addMethod.GetParameters().Single());
         AppendIndentedLine(sb, indentationLevel, $"{string.Join(' ', modifiers)} event {FormatType(@event.EventHandlerType!, eventNullability)} {EscapeIdentifier(@event.Name)};");
         return sb.ToString();
@@ -416,13 +447,15 @@ internal static class PublicApiModelBuilder
 
         var accessibility = GetMethodAccessibility(constructor);
         var modifiersPrefix = string.IsNullOrEmpty(accessibility) ? string.Empty : accessibility + " ";
-        var unsafeModifier = RequiresUnsafeContext(constructor) ? "unsafe " : string.Empty;
+        var requiresUnsafe = RequiresUnsafe(constructor);
+        var unsafeModifier = requiresUnsafe ? "unsafe " : string.Empty;
         var typeName = EscapeIdentifier(RemoveGenericArity(constructor.DeclaringType!.Name));
         var parametersList = constructor.GetParameters();
         var parameters = parametersList.Select(static parameter => BuildParameterDeclaration(parameter, isExtensionReceiver: false)).ToArray();
         var requiresNullableDisableDirective = parametersList.Any(static parameter => RequiresNullableDisableDirective(parameter));
         var initializer = BuildConstructorInitializer(constructor);
-        if (parametersList.Length == 0 && string.IsNullOrEmpty(initializer) && !constructor.CustomAttributes.Any(IsRequiresPreviewFeaturesAttribute))
+        // A parameterless constructor requiring an unsafe context is not equivalent to the implicit one as it doesn't satisfy the new() constraint
+        if (parametersList.Length == 0 && string.IsNullOrEmpty(initializer) && !requiresUnsafe && !constructor.CustomAttributes.Any(IsRequiresPreviewFeaturesAttribute))
             return null;
 
         AppendMemberWithParameters(
@@ -467,7 +500,7 @@ internal static class PublicApiModelBuilder
         var genericArguments = BuildGenericArguments(method);
         var constraints = BuildMethodConstraints(method, indentationLevel);
         var modifiersPrefix = modifiers.Count > 0 ? string.Join(' ', modifiers) + " " : string.Empty;
-        var unsafeModifier = RequiresUnsafeContext(method) ? "unsafe " : string.Empty;
+        var unsafeModifier = RequiresUnsafe(method) ? "unsafe " : string.Empty;
         var requiresNullableDisableDirective = RequiresNullableDisableDirective(method.ReturnParameter) ||
                                                method.GetParameters().Any(static parameter => RequiresNullableDisableDirective(parameter));
         var methodBody = BuildMethodBody(method);
@@ -736,6 +769,33 @@ internal static class PublicApiModelBuilder
         var parameterType = parameter.ParameterType.IsByRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
         var parameterNullability = NullabilityInfoContext.Create(parameter);
         return RequiresNullableDirectives(parameterType, parameterNullability);
+    }
+
+    private static bool HasUpdatedMemorySafetyRules(Module module)
+    {
+        return UpdatedMemorySafetyRulesCache.GetValue(
+            module,
+            static value => new StrongBox<bool>(HasAttribute(value.GetCustomAttributesData(), MemorySafetyRulesAttributeFullName))).Value;
+    }
+
+    private static bool HasAttribute(IEnumerable<CustomAttributeData> attributes, string attributeTypeFullName)
+    {
+        return attributes.Any(attribute => attribute.AttributeType.FullName == attributeTypeFullName);
+    }
+
+    private static bool IsRequiresUnsafeMember(MemberInfo member)
+    {
+        return HasUpdatedMemorySafetyRules(member.Module) &&
+               HasAttribute(member.GetCustomAttributesData(), RequiresUnsafeAttributeFullName);
+    }
+
+    private static bool RequiresUnsafe(MethodBase method)
+    {
+        // Under the updated memory safety rules, the compiler marks the members requiring an unsafe context with an attribute.
+        // Otherwise, a member requires an unsafe context when a pointer type appears in its signature (compiler compat mode).
+        return HasUpdatedMemorySafetyRules(method.Module)
+            ? HasAttribute(method.GetCustomAttributesData(), RequiresUnsafeAttributeFullName)
+            : RequiresUnsafeContext(method);
     }
 
     private static bool RequiresUnsafeContext(MethodBase method)
@@ -1752,23 +1812,98 @@ internal static class PublicApiModelBuilder
 
     private static string FormatEnumValue(Type enumType, object enumValue)
     {
-        var typedEnumValue = Enum.ToObject(enumType, enumValue);
-        var text = typedEnumValue.ToString();
-        if (string.IsNullOrEmpty(text))
-            return "(" + FormatType(enumType) + ")" + Convert.ToString(enumValue, System.Globalization.CultureInfo.InvariantCulture);
+        var formattedTypeName = FormatType(enumType);
+        var underlyingValue = enumValue is Enum
+            ? Convert.ChangeType(enumValue, Enum.GetUnderlyingType(enumType), System.Globalization.CultureInfo.InvariantCulture)
+            : enumValue;
 
-        if (char.IsDigit(text[0]) || text[0] == '-')
-            return "(" + FormatType(enumType) + ")" + Convert.ToString(enumValue, System.Globalization.CultureInfo.InvariantCulture);
+        if (TryFormatEnumValueUsingMembers(enumType, formattedTypeName, underlyingValue, out var result))
+            return result;
 
-        if (text.Contains(", ", StringComparison.Ordinal))
+        return "(" + formattedTypeName + ")" + Convert.ToString(underlyingValue, System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static bool TryFormatEnumValueUsingMembers(Type enumType, string formattedTypeName, object? enumValue, out string result)
+    {
+        result = string.Empty;
+        if (enumValue is null || !TryGetEnumValueBits(enumValue, out var enumValueBits))
+            return false;
+
+        var members = GetEnumMembersDescending(enumType);
+        if (members.Length == 0)
+            return false;
+
+        foreach (var member in members)
         {
-            return string.Join(
-                " | ",
-                text.Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Select(memberName => FormatType(enumType) + "." + memberName));
+            if (member.Value == enumValueBits)
+            {
+                result = formattedTypeName + "." + member.Name;
+                return true;
+            }
         }
 
-        return FormatType(enumType) + "." + text;
+        if (!HasAttribute(enumType.GetCustomAttributesData(), "System.FlagsAttribute"))
+            return false;
+
+        var remainingValue = enumValueBits;
+        var formattedMemberNames = new List<string>();
+        foreach (var member in members)
+        {
+            if (member.Value == 0)
+                continue;
+
+            if ((remainingValue & member.Value) != member.Value)
+                continue;
+
+            formattedMemberNames.Add(formattedTypeName + "." + member.Name);
+            remainingValue &= ~member.Value;
+        }
+
+        if (remainingValue != 0 || formattedMemberNames.Count == 0)
+            return false;
+
+        // The members are matched from the largest value to the smallest one, but they are formatted from the smallest to the largest one
+        formattedMemberNames.Reverse();
+        result = string.Join(" | ", formattedMemberNames);
+        return true;
+    }
+
+    private static ImmutableArray<EnumMember> GetEnumMembersDescending(Type enumType)
+    {
+        var members = new List<EnumMember>();
+        foreach (var field in enumType.GetFields(BindingFlags.Public | BindingFlags.Static))
+        {
+            if (field.GetRawConstantValue() is { } constantValue && TryGetEnumValueBits(constantValue, out var memberValue))
+            {
+                members.Add(new EnumMember(memberValue, field.Name));
+            }
+        }
+
+        // Several members can share the same value, so they are ordered by name to always use the same one
+        return
+        [
+            .. members
+                .OrderByDescending(static member => member.Value)
+                .ThenBy(static member => member.Name, StringComparer.Ordinal),
+        ];
+    }
+
+    private static bool TryGetEnumValueBits(object value, out ulong bits)
+    {
+        bits = value switch
+        {
+            sbyte sbyteValue => unchecked((ulong)sbyteValue),
+            byte byteValue => byteValue,
+            short shortValue => unchecked((ulong)shortValue),
+            ushort ushortValue => ushortValue,
+            int intValue => unchecked((ulong)intValue),
+            uint uintValue => uintValue,
+            long longValue => unchecked((ulong)longValue),
+            ulong ulongValue => ulongValue,
+            _ => 0,
+        };
+
+        return value is sbyte or byte or short or ushort or int or uint or long or ulong;
     }
 
     private static string RemoveGenericArity(string name)
@@ -1791,6 +1926,8 @@ internal static class PublicApiModelBuilder
 
         sb.AppendLine(text);
     }
+
+    private readonly record struct EnumMember(ulong Value, string Name);
 
     private sealed record ParameterDeclaration(string Text, bool RequiresNullableDirectives);
     private sealed record ExtensionPropertyBuilderReflection(ParameterInfo ReceiverParameter, string PropertyName, MethodInfo? Getter, MethodInfo? Setter, int Order);

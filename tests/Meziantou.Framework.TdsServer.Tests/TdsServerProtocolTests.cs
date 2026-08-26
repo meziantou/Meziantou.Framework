@@ -1213,6 +1213,49 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
+    public async Task TdsServer_WithoutTlsCertificate_LogsAWarning()
+    {
+        var logger = new CollectingLogger();
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()),
+            logger);
+
+        await server.StartAsync();
+
+        Assert.Contains(logger.Entries, entry => entry.Contains("No TLS certificate is configured", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task TdsServer_WithTlsCertificate_DoesNotLogAWarning()
+    {
+        using var tlsCertificateFiles = CreateTlsCertificateFiles();
+        var logger = new CollectingLogger();
+
+        var options = new TdsServerOptions
+        {
+            TlsPfxPath = tlsCertificateFiles.PfxPath,
+            TlsPfxPassword = tlsCertificateFiles.PfxPassword,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()),
+            logger);
+
+        await server.StartAsync();
+
+        Assert.DoesNotContain(logger.Entries, entry => entry.Contains("No TLS certificate is configured", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task TdsServer_Dispose_IsIdempotent()
     {
         var options = new TdsServerOptions();

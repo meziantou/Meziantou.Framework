@@ -55,7 +55,7 @@ public sealed class TdsServer : IDisposable
         }
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _ = _options.GetTlsCertificate();
+        WarnWhenEncryptionIsUnavailable(_options, _logger);
         var listenerOptions = _options.TcpListeners.Count > 0
             ? _options.TcpListeners
             : [new TdsTcpListenerOptions { BindAddress = IPAddress.Loopback, Port = 1433 }];
@@ -108,6 +108,19 @@ public sealed class TdsServer : IDisposable
         }
 
         _listeners.Clear();
+    }
+
+    internal static void WarnWhenEncryptionIsUnavailable(TdsServerOptions options, ILogger logger)
+    {
+        if (options.GetTlsCertificate() is not null)
+        {
+            return;
+        }
+
+        logger.LogWarning(
+            "No TLS certificate is configured, so the server answers PRELOGIN with NOT_SUPPORTED. Clients that " +
+            "allow unencrypted connections will send credentials protected only by the TDS password obfuscation, " +
+            "which is trivially reversible. Configure TlsPfxPath, or TlsPemCertificatePath and TlsPemPrivateKeyPath.");
     }
 
     private async Task AcceptLoopAsync(TcpListener listener, CancellationToken cancellationToken)

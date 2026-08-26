@@ -132,6 +132,34 @@ public sealed class PublicSuffixListTests
     }
 
     [Fact]
+    public void NullDomainDoesNotThrow()
+    {
+        Assert.False(PublicSuffixList.TryGetDomainInfo(domain: null, out var domainInfo));
+        Assert.Null(domainInfo.RegistrableDomain);
+        Assert.Null(domainInfo.Subdomain);
+        Assert.Equal("", domainInfo.Domain);
+        Assert.Equal("", domainInfo.PublicSuffix);
+        Assert.Null(PublicSuffixList.GetPublicSuffix(domain: null));
+        Assert.Null(PublicSuffixList.GetRegistrableDomain(domain: null));
+        Assert.False(PublicSuffixList.IsPublicSuffix(domain: null));
+    }
+
+    [Fact]
+    public void EmptySpanDoesNotThrow()
+    {
+        Assert.False(PublicSuffixList.TryGetDomainInfo([], out _));
+        Assert.Null(PublicSuffixList.GetPublicSuffix([]));
+        Assert.Null(PublicSuffixList.GetRegistrableDomain([]));
+        Assert.False(PublicSuffixList.IsPublicSuffix([]));
+    }
+
+    [Fact]
+    public void TryGetDomainInfo_NullUriThrows()
+    {
+        Assert.Throws<ArgumentNullException>(() => PublicSuffixList.TryGetDomainInfo((System.Uri)null!, out _));
+    }
+
+    [Fact]
     public void GetRegistrableDomain_PrivateRule()
     {
         Assert.Equal("foo.blogspot.com", PublicSuffixList.GetRegistrableDomain("www.foo.blogspot.com"));

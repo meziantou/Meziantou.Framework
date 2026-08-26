@@ -13,6 +13,7 @@ public sealed class TdsServer : IDisposable
     private readonly TdsQueryDelegate _queryHandler;
     private readonly List<TcpListener> _listeners = [];
     private CancellationTokenSource? _cts;
+    private bool _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="TdsServer"/> class.</summary>
     public TdsServer(TdsServerOptions? options, TdsAuthenticationDelegate authenticationHandler, TdsQueryDelegate queryHandler)
@@ -31,7 +32,7 @@ public sealed class TdsServer : IDisposable
     /// <summary>Starts the server.</summary>
     public Task StartAsync(CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_cts is not null && _cts.IsCancellationRequested, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
         if (_cts is not null)
         {
             return Task.CompletedTask;
@@ -57,6 +58,12 @@ public sealed class TdsServer : IDisposable
     /// <summary>Stops the server and releases resources.</summary>
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
         _cts?.Cancel();
 
         foreach (var listener in _listeners)

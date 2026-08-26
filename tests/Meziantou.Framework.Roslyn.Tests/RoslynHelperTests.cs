@@ -896,7 +896,37 @@ public sealed class RoslynHelperTests
             """);
         var type = GetRequiredType(compilation, "ISample");
 
-        Assert.Contains(type, type.GetAllInterfacesIncludingSelf());
+        Assert.Contains(type, type.GetAllInterfacesIncludingSelf(), SymbolEqualityComparer.Default);
+    }
+
+    [Fact]
+    public void GetAllInterfacesIncludingThis_DoesNotIncludeTheTypeWhenSymbolIsNotAnInterface()
+    {
+        var compilation = CreateCompilation("""
+            public interface ISample;
+            public class Sample : ISample;
+            """);
+        var type = GetRequiredType(compilation, "Sample");
+        var interfaceType = GetRequiredType(compilation, "ISample");
+
+        var interfaces = type.GetAllInterfacesIncludingSelf();
+
+        Assert.Contains(interfaceType, interfaces, SymbolEqualityComparer.Default);
+        Assert.DoesNotContain(type, interfaces, SymbolEqualityComparer.Default);
+    }
+
+    [Fact]
+    public void GetAllInterfacesIncludingThis_DoesNotDuplicateSelfWhenAlreadyPresent()
+    {
+        var compilation = CreateCompilation("""
+            public interface IBase;
+            public interface ISample : IBase;
+            """);
+        var type = GetRequiredType(compilation, "ISample");
+
+        var interfaces = type.GetAllInterfacesIncludingSelf();
+
+        Assert.Equal(1, interfaces.Count(i => SymbolEqualityComparer.Default.Equals(i, type)));
     }
 
     [Fact]

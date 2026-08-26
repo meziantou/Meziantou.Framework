@@ -814,15 +814,20 @@ public sealed class RoslynHelperTests
             public class Sample : Base
             {
                 public T M<T>(T value) where T : Sample => value;
+                public T MConstrainedToBase<T>(T value) where T : Base => value;
             }
             """);
         var baseType = GetRequiredType(compilation, "Base");
         var sampleType = GetRequiredType(compilation, "Sample");
         var typeParameter = GetRequiredMethod(sampleType, "M").TypeParameters.Single();
+        var typeParameterConstrainedToBase = GetRequiredMethod(sampleType, "MConstrainedToBase").TypeParameters.Single();
 
         Assert.True(sampleType.InheritsFrom(baseType));
         Assert.True(typeParameter.InheritsFrom(baseType));
+        Assert.True(typeParameterConstrainedToBase.InheritsFrom(baseType));
+        Assert.False(baseType.InheritsFrom(baseType));
         Assert.False(baseType.InheritsFrom(sampleType));
+        Assert.False(typeParameterConstrainedToBase.InheritsFrom(sampleType));
     }
 
     [Fact]
@@ -830,18 +835,25 @@ public sealed class RoslynHelperTests
     {
         var compilation = CreateCompilation("""
             public interface ISample;
+            public interface IDerived : ISample;
             public class Sample : ISample
             {
                 public T M<T>(T value) where T : ISample => value;
+                public T MConstrainedToDerived<T>(T value) where T : IDerived => value;
             }
             """);
         var interfaceType = GetRequiredType(compilation, "ISample");
+        var derivedInterfaceType = GetRequiredType(compilation, "IDerived");
         var sampleType = GetRequiredType(compilation, "Sample");
         var typeParameter = GetRequiredMethod(sampleType, "M").TypeParameters.Single();
+        var typeParameterConstrainedToDerived = GetRequiredMethod(sampleType, "MConstrainedToDerived").TypeParameters.Single();
 
         Assert.True(sampleType.Implements(interfaceType));
         Assert.True(typeParameter.Implements(interfaceType));
+        Assert.True(typeParameterConstrainedToDerived.Implements(interfaceType));
+        Assert.True(typeParameterConstrainedToDerived.Implements(derivedInterfaceType));
         Assert.False(interfaceType.Implements(interfaceType));
+        Assert.False(typeParameter.Implements(derivedInterfaceType));
     }
 
     [Fact]
@@ -849,12 +861,17 @@ public sealed class RoslynHelperTests
     {
         var compilation = CreateCompilation("""
             public interface ISample<T>;
-            public class Sample : ISample<string>;
+            public class Sample : ISample<string>
+            {
+                public T M<T>(T value) where T : ISample<int> => value;
+            }
             """);
         var interfaceType = GetRequiredType(compilation, "ISample`1");
         var sampleType = GetRequiredType(compilation, "Sample");
+        var typeParameter = GetRequiredMethod(sampleType, "M").TypeParameters.Single();
 
         Assert.True(sampleType.ImplementsGenericInterface(interfaceType));
+        Assert.True(typeParameter.ImplementsGenericInterface(interfaceType));
         Assert.False(interfaceType.ImplementsGenericInterface(interfaceType));
     }
 
@@ -863,15 +880,21 @@ public sealed class RoslynHelperTests
     {
         var compilation = CreateCompilation("""
             public interface ISample;
-            public class Sample : ISample;
+            public class Sample : ISample
+            {
+                public T M<T>(T value) where T : ISample => value;
+            }
+
             public class Other;
             """);
         var interfaceType = GetRequiredType(compilation, "ISample");
         var sampleType = GetRequiredType(compilation, "Sample");
         var otherType = GetRequiredType(compilation, "Other");
+        var typeParameter = GetRequiredMethod(sampleType, "M").TypeParameters.Single();
 
         Assert.True(interfaceType.IsOrImplements(interfaceType));
         Assert.True(sampleType.IsOrImplements(interfaceType));
+        Assert.True(typeParameter.IsOrImplements(interfaceType));
         Assert.False(otherType.IsOrImplements(interfaceType));
     }
 
@@ -880,14 +903,20 @@ public sealed class RoslynHelperTests
     {
         var compilation = CreateCompilation("""
             public class Base;
-            public class Sample : Base;
+            public class Sample : Base
+            {
+                public T M<T>(T value) where T : Base => value;
+            }
             """);
         var baseType = GetRequiredType(compilation, "Base");
         var sampleType = GetRequiredType(compilation, "Sample");
+        var typeParameter = GetRequiredMethod(sampleType, "M").TypeParameters.Single();
 
         Assert.True(baseType.IsOrInheritsFrom(baseType));
         Assert.True(sampleType.IsOrInheritsFrom(baseType));
+        Assert.True(typeParameter.IsOrInheritsFrom(baseType));
         Assert.False(baseType.IsOrInheritsFrom(sampleType));
+        Assert.False(typeParameter.IsOrInheritsFrom(sampleType));
     }
 
     [Fact]

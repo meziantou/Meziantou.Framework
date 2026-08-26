@@ -39,8 +39,22 @@ using Meziantou.Framework.Roslyn;
 - `ISymbol.GetFirstSourceLocation`
 - `ISymbol.IsVisibleOutsideOfAssembly`
 - `ITypeSymbol.GetUnderlyingNullableTypeOrSelf`
+- `TypeSymbolExtensions`
 
 The package also defines Roslyn and C# feature constants before compilation based on the referenced `Microsoft.CodeAnalysis.*` package version, such as `ROSLYN_4_8_OR_GREATER` and `CSHARP12_OR_GREATER`.
+
+### Type relationships
+
+`InheritsFrom`, `Implements` and `ImplementsGenericInterface` are strict: a type never derives from or implements itself. When the queried symbol is a type parameter, its constraints are inspected and a constraint that is the queried type is a match, so `T` in `where T : Base` derives from `Base` and `T` in `where T : ISample` implements `ISample`.
+
+Use `IsOrInheritsFrom` and `IsOrImplements` to ask whether a type is assignable to another one; they include the type itself, so they don't depend on that distinction:
+
+````csharp
+// true when the type is Base or derives from it
+if (type.IsOrInheritsFrom(baseType))
+{
+}
+````
 
 ## Type embedding
 

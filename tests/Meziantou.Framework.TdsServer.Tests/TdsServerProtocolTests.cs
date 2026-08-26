@@ -265,6 +265,85 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
+    public async Task SqlClient_RpcParameter_VarBinaryMax_PreservesValue()
+    {
+        var payload = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 };
+        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                if (context.RequestType == TdsQueryRequestType.Rpc)
+                {
+                    queryContextTask.TrySetResult(context);
+                }
+
+                return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1));
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT @value";
+        _ = command.Parameters.Add(new SqlParameter("@value", SqlDbType.VarBinary, -1) { Value = payload });
+
+        _ = await command.ExecuteScalarAsync();
+        var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var parameter = Assert.Single(capturedContext.Parameters, candidate => candidate.Name == "@value");
+        Assert.Equal(TdsColumnType.Binary, parameter.Type);
+        Assert.Equal(payload, parameter.AsBinary());
+    }
+
+    [Fact]
+    public async Task SqlClient_RpcParameter_VarBinaryMax_Null_IsDecodedAsNull()
+    {
+        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                if (context.RequestType == TdsQueryRequestType.Rpc)
+                {
+                    queryContextTask.TrySetResult(context);
+                }
+
+                return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1));
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT @value";
+        _ = command.Parameters.Add(new SqlParameter("@value", SqlDbType.VarBinary, -1) { Value = DBNull.Value });
+
+        _ = await command.ExecuteScalarAsync();
+        var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var parameter = Assert.Single(capturedContext.Parameters, candidate => candidate.Name == "@value");
+        Assert.Equal(TdsColumnType.Binary, parameter.Type);
+        Assert.True(parameter.IsNull);
+    }
+
+    [Fact]
     public async Task SqlClient_TextQuery_ParsedWithSqlParser_ReturnsFilteredCustomers()
     {
         const string Query = "SELECT Id, Name FROM customers WHERE Id = 1";

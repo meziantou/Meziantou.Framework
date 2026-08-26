@@ -80,7 +80,7 @@ internal static class ServerSideRequestForgeryConnectPipeline
 
         // The returned NetworkStream owns the socket lifetime once the connection succeeds.
 #pragma warning disable CA2000 // Dispose objects before losing scope
-        var socket = new Socket(selectedAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+        var socket = CreateConnectSocket(selectedAddress.AddressFamily);
 #pragma warning restore CA2000
         try
         {
@@ -92,6 +92,14 @@ internal static class ServerSideRequestForgeryConnectPipeline
             socket.Dispose();
             throw;
         }
+    }
+
+    internal static Socket CreateConnectSocket(AddressFamily addressFamily)
+    {
+        // Mirrors the defaults the runtime applies on its own connect path (HttpConnectionPool.ConnectToTcpHostAsync).
+        // Replacing ConnectCallback opts out of those defaults, and leaving Nagle's algorithm enabled adds latency
+        // to every request whose body is written in small chunks.
+        return new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
     }
 
     private static List<IPAddress> FilterSafeAddresses(Uri requestUri, IReadOnlyList<IPAddress> resolvedAddresses, ServerSideRequestForgeryOptions options, ILogger logger)

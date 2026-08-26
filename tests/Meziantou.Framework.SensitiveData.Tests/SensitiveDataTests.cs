@@ -69,6 +69,19 @@ public sealed class SensitiveDataTests
     }
 
     [Fact]
+    public void ProtectionIsAppliedAtRestAndLiftedWhileRevealing()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        Assert.True(data.IsProtected);
+        data.RevealAndUse(arg: data, static (span, secret) => Assert.False(secret.IsProtected));
+        Assert.True(data.IsProtected);
+
+        data.RevealToArray();
+        Assert.True(data.IsProtected);
+    }
+
+    [Fact]
     public void Clone_CreatesIndependentCopy()
     {
         var original = SensitiveData.Create("foo");

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using Meziantou.Framework.Tds.Handler;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Meziantou.Framework.Tds;
@@ -11,12 +12,26 @@ public sealed class TdsServer : IDisposable
     private readonly TdsServerOptions _options;
     private readonly TdsAuthenticationDelegate _authenticationHandler;
     private readonly TdsQueryDelegate _queryHandler;
+    private readonly ILogger _logger;
     private readonly List<TcpListener> _listeners = [];
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="TdsServer"/> class.</summary>
     public TdsServer(TdsServerOptions? options, TdsAuthenticationDelegate authenticationHandler, TdsQueryDelegate queryHandler)
+        : this(options, authenticationHandler, queryHandler, logger: null)
+    {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="TdsServer"/> class.</summary>
+    /// <param name="options">The server options, or <see langword="null"/> to use the defaults.</param>
+    /// <param name="authenticationHandler">The callback invoked to authenticate a login.</param>
+    /// <param name="queryHandler">The callback invoked to answer a query.</param>
+    /// <param name="logger">
+    /// The logger used to report connection failures. When <see langword="null"/> nothing is logged, and a
+    /// connection that fails to negotiate, authenticate or answer a query does so silently.
+    /// </param>
+    public TdsServer(TdsServerOptions? options, TdsAuthenticationDelegate authenticationHandler, TdsQueryDelegate queryHandler, ILogger? logger)
     {
         ArgumentNullException.ThrowIfNull(authenticationHandler);
         ArgumentNullException.ThrowIfNull(queryHandler);
@@ -24,6 +39,7 @@ public sealed class TdsServer : IDisposable
         _options = options ?? new TdsServerOptions();
         _authenticationHandler = authenticationHandler;
         _queryHandler = queryHandler;
+        _logger = logger ?? NullLogger.Instance;
     }
 
     /// <summary>Gets the ports currently bound by the server.</summary>
@@ -39,16 +55,31 @@ public sealed class TdsServer : IDisposable
         }
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _ = _options.GetTlsCertificate();
+        WarnWhenEncryptionIsUnavailable(_options, _logger);
         var listenerOptions = _options.TcpListeners.Count > 0
             ? _options.TcpListeners
             : [new TdsTcpListenerOptions { BindAddress = IPAddress.Loopback, Port = 1433 }];
 
-        foreach (var listenerOption in listenerOptions)
+        try
         {
-            var listener = new TcpListener(listenerOption.BindAddress, listenerOption.Port);
-            listener.Start();
-            _listeners.Add(listener);
+            foreach (var listenerOption in listenerOptions)
+            {
+                var listener = new TcpListener(listenerOption.BindAddress, listenerOption.Port);
+                listener.Start();
+                _listeners.Add(listener);
+            }
+        }
+        catch
+        {
+            // Binding is all-or-nothing: the caller has no reason to dispose a server whose start threw.
+            StopListeners();
+            _cts.Dispose();
+            _cts = null;
+            throw;
+        }
+
+        foreach (var listener in _listeners)
+        {
             _ = AcceptLoopAsync(listener, _cts.Token);
         }
 
@@ -65,14 +96,31 @@ public sealed class TdsServer : IDisposable
 
         _disposed = true;
         _cts?.Cancel();
+        StopListeners();
+        _cts?.Dispose();
+    }
 
+    private void StopListeners()
+    {
         foreach (var listener in _listeners)
         {
             listener.Stop();
         }
 
         _listeners.Clear();
-        _cts?.Dispose();
+    }
+
+    internal static void WarnWhenEncryptionIsUnavailable(TdsServerOptions options, ILogger logger)
+    {
+        if (options.GetTlsCertificate() is not null)
+        {
+            return;
+        }
+
+        logger.LogWarning(
+            "No TLS certificate is configured, so the server answers PRELOGIN with NOT_SUPPORTED. Clients that " +
+            "allow unencrypted connections will send credentials protected only by the TDS password obfuscation, " +
+            "which is trivially reversible. Configure TlsPfxPath, or TlsPemCertificatePath and TlsPemPrivateKeyPath.");
     }
 
     private async Task AcceptLoopAsync(TcpListener listener, CancellationToken cancellationToken)
@@ -92,6 +140,11 @@ public sealed class TdsServer : IDisposable
             {
                 return;
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Stopped accepting TDS connections after a listener failure");
+                return;
+            }
 
             _ = ProcessClientAsync(client, cancellationToken);
         }
@@ -101,7 +154,7 @@ public sealed class TdsServer : IDisposable
     {
         using var _ = client;
         var endpoint = client.Client.RemoteEndPoint ?? new IPEndPoint(IPAddress.Loopback, 0);
-        var processor = new TdsConnectionProcessor(_options, _authenticationHandler, _queryHandler, NullLogger.Instance);
+        var processor = new TdsConnectionProcessor(_options, _authenticationHandler, _queryHandler, _logger);
         try
         {
             using var stream = client.GetStream();
@@ -109,6 +162,11 @@ public sealed class TdsServer : IDisposable
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+        }
+        catch (Exception ex)
+        {
+            // This runs on a fire-and-forget task, so an escaping exception would otherwise be unobserved.
+            _logger.LogDebug(ex, "TDS connection closed with exception");
         }
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Data;
 using System.Net;
 using System.Net.Sockets;
@@ -6,6 +7,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Meziantou.Framework.Tds.Handler;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
 using Meziantou.Xunit;
 using SqlParser = Microsoft.SqlServer.Management.SqlParser.Parser.Parser;
@@ -1333,6 +1335,122 @@ public sealed class TdsServerProtocolTests
         }
 
         throw new TimeoutException($"The test server on {IPAddress.Loopback}:{port} was not ready within {timeout}.", lastException);
+    }
+
+    [Fact]
+    public async Task TdsServer_StartAsync_WhenAListenerCannotBind_RollsBackTheOthers()
+    {
+        using var occupied = new TcpListener(IPAddress.Loopback, 0);
+        occupied.Start();
+        var occupiedPort = ((IPEndPoint)occupied.LocalEndpoint).Port;
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.AddTcpListener(occupiedPort, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        _ = await Assert.ThrowsAsync<SocketException>(() => server.StartAsync());
+
+        // The listener that did bind is released, so the server is not half-started.
+        Assert.Empty(server.Ports);
+
+        occupied.Stop();
+        await server.StartAsync();
+        Assert.Equal(2, server.Ports.Count);
+    }
+
+    [Fact]
+    public async Task TdsServer_Logger_ReceivesQueryHandlerFailures()
+    {
+        var logger = new CollectingLogger();
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => throw new InvalidOperationException("boom"),
+            logger);
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1";
+        _ = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteScalarAsync());
+
+        Assert.Contains(logger.Entries, entry => entry.Contains("Unhandled exception in query handler", StringComparison.Ordinal));
+    }
+
+    private sealed class CollectingLogger : ILogger
+    {
+        private readonly ConcurrentQueue<string> _entries = new();
+
+        public IReadOnlyCollection<string> Entries => _entries;
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull
+        {
+            return null;
+        }
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            _entries.Enqueue(formatter(state, exception));
+        }
+    }
+
+    [Fact]
+    public async Task TdsServer_WithoutTlsCertificate_LogsAWarning()
+    {
+        var logger = new CollectingLogger();
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()),
+            logger);
+
+        await server.StartAsync();
+
+        Assert.Contains(logger.Entries, entry => entry.Contains("No TLS certificate is configured", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task TdsServer_WithTlsCertificate_DoesNotLogAWarning()
+    {
+        using var tlsCertificateFiles = CreateTlsCertificateFiles();
+        var logger = new CollectingLogger();
+
+        var options = new TdsServerOptions
+        {
+            TlsPfxPath = tlsCertificateFiles.PfxPath,
+            TlsPfxPassword = tlsCertificateFiles.PfxPassword,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()),
+            logger);
+
+        await server.StartAsync();
+
+        Assert.DoesNotContain(logger.Entries, entry => entry.Contains("No TLS certificate is configured", StringComparison.Ordinal));
     }
 
     [Fact]

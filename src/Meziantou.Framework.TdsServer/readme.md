@@ -12,6 +12,18 @@
 - Native JSON column type serialization (`TDSType.JSON`, UTF-8 payload)
 - ASP.NET Core hosting integration through `IHostApplicationBuilder`
 
+## Security: configure TLS
+
+By default no TLS certificate is configured. The server then answers PRELOGIN with `NOT_SUPPORTED`, and a client
+that allows it (`Encrypt=Optional`, the common default) logs in over an unencrypted connection. The password in
+the LOGIN7 packet is protected only by the TDS nibble-swap and XOR obfuscation, which is trivially reversible by
+anyone on the network path. This mirrors SQL Server's own behaviour, and it is fine for a loopback-only test
+server, but **configure a certificate for anything else** - see [TLS configuration](#tls-configuration) below,
+and set `RequireEncryption` to reject clients that will not encrypt.
+
+The quickstart below binds to loopback and does not configure TLS, so its credential check is only meaningful
+on the local machine.
+
 ## Usage
 
 ```csharp

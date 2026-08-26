@@ -319,6 +319,40 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
+    public async Task SqlClient_ResultSet_ValueThatCannotBeSerialized_ReturnsErrorInsteadOfDroppingTheConnection()
+    {
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Int32));
+        resultSet.Rows.Add(["not-a-number"]);
+
+        var result = new TdsQueryResult();
+        result.ResultSets.Add(resultSet);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(result));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1";
+
+        var exception = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteScalarAsync());
+
+        // A SQL error, not "A transport-level error has occurred", which retry logic treats as transient.
+        Assert.Equal(50005, exception.Number);
+        Assert.Contains("Failed to build the query response", exception.Message);
+    }
+
+    [Fact]
     public async Task SqlClient_ResultSet_TypedColumns_UseTheirOwnTdsTypes()
     {
         var expectedGuid = Guid.Parse("1b4e28ba-2fa1-11d2-883f-0016d3cca427");
@@ -967,6 +1001,39 @@ public sealed class TdsServerProtocolTests
         var value = await ExecuteScalarWithTransientSqlRetryAsync(port, encrypt: "True");
 
         Assert.Equal(1, value);
+    }
+
+    [Fact]
+    public async Task SqlClient_EncryptOptional_DowngradesAfterLogin_AndKeepsServingQueries()
+    {
+        using var tlsCertificateFiles = CreateTlsCertificateFiles();
+
+        var options = new TdsServerOptions
+        {
+            TlsPfxPath = tlsCertificateFiles.PfxPath,
+            TlsPfxPassword = tlsCertificateFiles.PfxPassword,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 7)));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        // Encrypt=Optional negotiates ENCRYPT_OFF: the login packet is encrypted and the session then
+        // reverts to the raw transport. Several round trips confirm the swap left a usable connection.
+        await using var connection = new SqlConnection(CreateConnectionString(port, encrypt: "Optional"));
+        await connection.OpenAsync();
+
+        for (var i = 0; i < 3; i++)
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT 1";
+            Assert.Equal(7, Convert.ToInt32(await command.ExecuteScalarAsync(), CultureInfo.InvariantCulture));
+        }
     }
 
     [Fact]

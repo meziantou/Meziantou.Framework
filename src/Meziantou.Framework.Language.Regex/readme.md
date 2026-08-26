@@ -17,7 +17,7 @@ The .NET flavor's scanner is ported from [dotnet/runtime](https://github.com/dot
 | `RegexFlavor` | Family | Notes |
 | --- | --- | --- |
 | `Net` | .NET | balancing groups, character class subtraction, conditionals, `(?#…)`, extended mode |
-| `JavaScript` | ECMAScript | the `u` flag, `[^]`, no `\A`/`\Z`/`\z`/`\G`, no atomic groups, no extended mode, no inline options |
+| `JavaScript` | ECMAScript | the `u` flag and `\u{…}`, `[]` and `[^]`, no `\A`/`\Z`/`\z`/`\G`, no atomic groups, no extended mode, no inline options |
 | `PcrePerl` | PCRE | possessive quantifiers, atomic groups, `\Q…\E`, `\K`, POSIX bracket expressions, `(?R)`, `(?\|…)`, `(*SKIP)`, `(?P<n>…)` |
 | `PosixExtended` | POSIX | extended regular expressions (ERE) |
 | `PosixBasic` | POSIX | basic regular expressions (BRE): no alternation, no `+` or `?`, a bare `(` or `{` is an ordinary character |
@@ -26,7 +26,24 @@ Flavors within a family share a parser; `RegexFlavor.Features` records what each
 
 Where a construct the flavor lacks has an ordinary reading, that is what it gets: `\A` is the letter `A` in JavaScript, and `[a-z-[aeiou]]` in PCRE is the class `[a-z-[aeiou]` followed by a `]`. Where it does not — a grouping construct that flavor simply has no syntax for, such as `(?>…)` in JavaScript — it is reported and then read as a non-capturing group so the body still parses and every character is still accounted for.
 
-Two gaps worth knowing about. `PosixBasic` reads `\(`, `\)`, `\{`, and `\}` as escapes rather than as grouping and bounds, so a basic expression round-trips but its groups are not in the tree as groups. And the JavaScript `v` flag's class set operations — nested classes, `&&`, `\q{…}` — are not implemented, so a `v`-mode class is read as an ordinary one; the `u` flag *is* honoured, and makes a surrogate pair one atom.
+### What is not covered
+
+The .NET flavor is complete: every construct in Microsoft's regular-expression language reference parses to its own
+node type, balancing groups (`(?<c-o>…)`, `(?'c-o'…)`, and the pop-only `(?<-o>…)`) included, with capture numbering
+that matches the engine.
+
+The others are narrower, so if you depend on one of these, check first:
+
+- **`PosixBasic`** reads `\(`, `\)`, `\{`, and `\}` as escapes rather than as grouping and bounds. A basic
+  expression round-trips, but its groups are not in the tree as groups.
+- **JavaScript's `v` flag** class set operations — nested classes, `&&`, `\q{…}` — are not implemented, so a `v`-mode
+  class is read as an ordinary one. The `u` flag is honoured: a surrogate pair is one atom and `\u{…}` names a code
+  point.
+- **PCRE** covers `\Q…\E`, `(?R)`, `(?N)`, `(?|…)`, `(*VERB)`, `(?P<name>…)`, possessive quantifiers, POSIX bracket
+  expressions, and `\K`. It does **not** yet cover `\g{…}` backreferences, `(?&name)` and `(?P>name)` recursion,
+  `(?P=name)`, `(?C…)` callouts, `\h`/`\H`/`\v`/`\V`/`\R`/`\X`, `\o{…}`, `\N{U+…}`, or `(?J)`. Those are
+  reported rather than silently mis-parsed, and the text still round-trips.
+- **Java, Python, and RE2/Go** are not flavors at all.
 
 ## Parsing
 

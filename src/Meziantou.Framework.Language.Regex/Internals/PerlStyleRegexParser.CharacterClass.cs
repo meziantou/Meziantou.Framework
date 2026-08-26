@@ -55,6 +55,12 @@ internal abstract partial class PerlStyleRegexParser
                 firstChar = false;
             }
         }
+        else if (AllowsEmptyCharacterClass && Scanner.Current == ']')
+        {
+            // "[]" is an empty class that matches nothing. Only ECMAScript has it: .NET reads the "]" as a member and
+            // then runs out of pattern looking for the real one.
+            firstChar = false;
+        }
 
         var members = new List<RegexSyntaxNode>();
         RegexSyntaxNode? rangeStart = null;

@@ -134,6 +134,73 @@ public sealed class RegexFlavorTests
         Assert.Empty(javaScript.Root.DescendantNodes().OfType<RegexAnchorSyntax>());
     }
 
+    /// <summary>
+    /// <c>[]</c> matches nothing and <c>[^]</c> matches anything. Only ECMAScript has them: .NET reads the <c>]</c> as
+    /// a member and then runs out of pattern looking for the real one.
+    /// </summary>
+    [Theory]
+    [InlineData("[]", false)]
+    [InlineData("[^]", true)]
+    [InlineData("[]a", false)]
+    [InlineData("a[]b", false)]
+    public void JavaScriptAllowsAnEmptyCharacterClass(string pattern, bool negated)
+    {
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.JavaScript);
+
+        Assert.Empty(tree.Diagnostics);
+        var characterClass = Assert.Single(tree.Root.DescendantNodes().OfType<RegexCharacterClassSyntax>());
+        Assert.Equal(negated, characterClass.IsNegated);
+        Assert.Empty(characterClass.Members);
+    }
+
+    [Fact]
+    public void NetStillRejectsAnEmptyCharacterClass()
+    {
+        var tree = RegexSyntaxAssert.TextIsFaithful("[]", RegexFlavor.Net);
+
+        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0003");
+    }
+
+    /// <summary>
+    /// In Unicode mode <c>\u{10FFFF}</c> names a code point directly, so the braces belong to the escape rather than
+    /// being a bound applied to the letter.
+    /// </summary>
+    [Theory]
+    [InlineData(@"\u{41}", "A")]
+    [InlineData(@"\u{1F600}", "\U0001F600")]
+    [InlineData(@"\u{10FFFF}", "\U0010FFFF")]
+    public void ACodePointEscapeNamesItsCharacter(string pattern, string value)
+    {
+        var options = new RegexParseOptions(RegexFlavor.JavaScript) { PatternOptions = RegexPatternOptions.Unicode };
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, options);
+
+        Assert.Empty(tree.Diagnostics);
+        var escape = Assert.Single(tree.Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
+        Assert.Equal(value, escape.Value);
+    }
+
+    [Theory]
+    [InlineData(@"\u{}")]
+    [InlineData(@"\u{41")]
+    [InlineData(@"\u{110000}")]
+    [InlineData(@"\u{ZZ}")]
+    public void AMalformedCodePointEscapeIsReported(string pattern)
+    {
+        var options = new RegexParseOptions(RegexFlavor.JavaScript) { PatternOptions = RegexPatternOptions.Unicode };
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, options);
+
+        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0012");
+    }
+
+    /// <summary>Without Unicode mode the braces are a bound, not part of the escape, which is what the engines do.</summary>
+    [Fact]
+    public void ACodePointEscapeIsNotOneOutsideUnicodeMode()
+    {
+        var tree = RegexSyntaxAssert.TextIsFaithful(@"\u{41}", RegexFlavor.JavaScript);
+
+        Assert.DoesNotContain(tree.Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>(), e => e.Value == "A");
+    }
+
     [Fact]
     public void ParseJavaScriptLiteral_ReadsTheDelimitersAndFlags()
     {

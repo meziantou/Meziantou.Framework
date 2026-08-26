@@ -373,6 +373,12 @@ internal abstract class RegexParser
         (Options & RegexPatternOptions.EcmaScript) != RegexPatternOptions.None ||
         Flavor.Family == RegexFlavorFamily.JavaScript;
 
+    /// <summary>
+    /// Whether an empty character class is allowed. In ECMAScript <c>[]</c> matches nothing and <c>[^]</c> matches
+    /// anything; in .NET the same text is an unterminated class, so this follows the flavor rather than the options.
+    /// </summary>
+    protected bool AllowsEmptyCharacterClass => Flavor.Family == RegexFlavorFamily.JavaScript;
+
     /// <summary>Whether the pattern is read as a sequence of code points rather than of UTF-16 code units.</summary>
     protected bool UsesUnicodeMode => (Options & RegexPatternOptions.Unicode) != RegexPatternOptions.None;
 

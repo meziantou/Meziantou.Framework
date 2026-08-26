@@ -349,6 +349,11 @@ internal partial class PerlStyleRegexParser
             case 'x':
                 return ScanHex(2, escapeStart);
 
+            // In Unicode mode "\u{10FFFF}" names a code point directly, so the braces are part of the escape rather
+            // than a bound applied to the letter.
+            case 'u' when UsesUnicodeMode && Scanner.Current == '{':
+                return ScanBracedCodePoint(escapeStart);
+
             case 'u':
                 return ScanHex(4, escapeStart);
 
@@ -410,6 +415,46 @@ internal partial class PerlStyleRegexParser
 
         // Octal codes only go up to 255; Perl truncates the high bits and so does the engine.
         return ((char)(value & 0xFF)).ToString();
+    }
+
+    /// <summary>Reads <c>{HHHH}</c> after <c>\u</c> and returns the code point it names.</summary>
+    private string ScanBracedCodePoint(int escapeStart)
+    {
+        Scanner.Position++;
+
+        var digitsStart = Scanner.Position;
+        var value = 0;
+        var overflowed = false;
+        while (!Scanner.IsAtEnd && FromHexChar(Scanner.Current) >= 0)
+        {
+            value = (value * 0x10) + FromHexChar(Scanner.Current);
+            if (value > 0x10FFFF)
+            {
+                overflowed = true;
+                value = 0x10FFFF;
+            }
+
+            Scanner.Position++;
+        }
+
+        var hasDigits = Scanner.Position > digitsStart;
+        var closed = Scanner.Current == '}';
+        if (closed)
+        {
+            Scanner.Position++;
+        }
+
+        if (!hasDigits || !closed || overflowed)
+        {
+            AddDiagnostic(
+                TextSpan.FromBounds(escapeStart, Scanner.Position),
+                RegexDiagnosticIds.InsufficientOrInvalidHexDigits,
+                "The code point escape is not a well-formed '\\u{...}' value.");
+
+            return string.Empty;
+        }
+
+        return char.ConvertFromUtf32(value);
     }
 
     /// <summary>Reads exactly <paramref name="count"/> hexadecimal digits.</summary>

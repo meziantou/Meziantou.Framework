@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -5,51 +6,64 @@ namespace Meziantou.Framework.Tds.QueryEngine;
 
 internal static class TdsProjectionTypeFactory
 {
+    /// <summary>
+    /// Emitted types live in a non-collectible dynamic assembly, so they can never be reclaimed, and column
+    /// aliases come from client SQL -- which makes the number of distinct shapes client-controlled. Cap it so a
+    /// client cannot grow the process without bound by varying aliases across queries.
+    /// </summary>
+    private const int MaxCachedTypes = 1024;
+
     private static readonly AssemblyBuilder AssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Meziantou.Framework.Tds.QueryEngine.Projections"), AssemblyBuilderAccess.Run);
     private static readonly ModuleBuilder ModuleBuilder = AssemblyBuilder.DefineDynamicModule("Projections");
-    private static readonly Lock Lock = new();
-    private static readonly Dictionary<string, Type> Types = [with(StringComparer.Ordinal)];
+    private static readonly Lock CreateLock = new();
+    private static readonly ConcurrentDictionary<string, Type> Types = new(StringComparer.Ordinal);
+    private static int s_createdTypeCount;
 
     public static Type GetProjectionType(IReadOnlyList<TdsProjectionMember> members)
     {
         ArgumentNullException.ThrowIfNull(members);
 
-        var key = CreateKey("Projection", members);
-        lock (Lock)
-        {
-            if (Types.TryGetValue(key, out var type))
-            {
-                return type;
-            }
-
-            type = CreateType("TdsProjection", members);
-            Types.Add(key, type);
-            return type;
-        }
+        return GetOrCreateType(CreateKey("Projection", members), "TdsProjection", members);
     }
 
     public static Type GetCarrierType(IReadOnlyList<TdsProjectionMember> members)
     {
         ArgumentNullException.ThrowIfNull(members);
 
-        var key = CreateKey("Carrier", members);
-        lock (Lock)
+        return GetOrCreateType(CreateKey("Carrier", members), "TdsCarrier", members);
+    }
+
+    private static Type GetOrCreateType(string key, string prefix, IReadOnlyList<TdsProjectionMember> members)
+    {
+        // Cache hits take no lock, so concurrent queries over known shapes do not serialize on type creation.
+        if (Types.TryGetValue(key, out var type))
         {
-            if (Types.TryGetValue(key, out var type))
+            return type;
+        }
+
+        lock (CreateLock)
+        {
+            if (Types.TryGetValue(key, out type))
             {
                 return type;
             }
 
-            type = CreateType("TdsCarrier", members);
-            Types.Add(key, type);
+            if (s_createdTypeCount >= MaxCachedTypes)
+            {
+                throw new TdsQueryEngineException($"The server reached its limit of {MaxCachedTypes} distinct query projection shapes.");
+            }
+
+            type = CreateType(prefix, s_createdTypeCount, members);
+            s_createdTypeCount++;
+            Types[key] = type;
             return type;
         }
     }
 
-    private static Type CreateType(string prefix, IReadOnlyList<TdsProjectionMember> members)
+    private static Type CreateType(string prefix, int index, IReadOnlyList<TdsProjectionMember> members)
     {
         var typeBuilder = ModuleBuilder.DefineType(
-            prefix + Types.Count.ToString(CultureInfo.InvariantCulture),
+            prefix + index.ToString(CultureInfo.InvariantCulture),
             TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed);
 
         _ = typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);

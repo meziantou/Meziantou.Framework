@@ -3384,6 +3384,40 @@ public sealed class TdsQueryEngineTests
         Assert.Contains("late_root", exception.Message);
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The SQL query is generated within the test and not user-controlled.")]
+    public async Task SqlClient_QueryEngine_ManyDistinctProjectionShapes_AreServedConcurrently()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            TdsQueryEngine.CreateQueryHandler(queryEngineOptions));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        // Each alias produces a distinct projection shape, so this exercises both the emit path and the
+        // lock-free cache-hit path from several connections at once.
+        var results = await Task.WhenAll(Enumerable.Range(0, 24).Select(async index =>
+        {
+            await using var connection = new SqlConnection(CreateConnectionString(port));
+            await connection.OpenAsync();
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = $"SELECT Id AS Alias{index % 8} FROM customers";
+
+            await using var reader = await command.ExecuteReaderAsync();
+            return reader.GetName(0);
+        }));
+
+        Assert.Equal(Enumerable.Range(0, 24).Select(index => $"Alias{index % 8}"), results);
+    }
+
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
     {
         var options = new TdsQueryEngineOptions();

@@ -1138,6 +1138,80 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
+    public async Task TdsServer_Dispose_IsIdempotent()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        server.Dispose();
+
+        Assert.Null(Record.Exception(server.Dispose));
+    }
+
+    [Fact]
+    public async Task TdsServer_StartAsync_AfterDispose_Throws()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        server.Dispose();
+
+        _ = await Assert.ThrowsAsync<ObjectDisposedException>(() => server.StartAsync());
+    }
+
+    [Fact]
+    public void TdsServer_Dispose_WithoutStart_DoesNotThrow()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        Assert.Null(Record.Exception(server.Dispose));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(511)]
+    [InlineData(65536)]
+    [InlineData(100000)]
+    public void TdsServerOptions_PacketSize_OutsideTheSupportedRange_Throws(int packetSize)
+    {
+        var options = new TdsServerOptions();
+
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() => options.PacketSize = packetSize);
+    }
+
+    [Theory]
+    [InlineData(512)]
+    [InlineData(4096)]
+    [InlineData(65535)]
+    public void TdsServerOptions_PacketSize_InsideTheSupportedRange_IsAccepted(int packetSize)
+    {
+        var options = new TdsServerOptions
+        {
+            PacketSize = packetSize,
+        };
+
+        Assert.Equal(packetSize, options.PacketSize);
+    }
+
+    [Fact]
     public async Task SqlClient_QueryError_WithAVeryLongMessage_IsTruncatedInsteadOfOverflowingTheToken()
     {
         var result = TdsQueryResult.FromError(new TdsQueryError
@@ -1174,32 +1248,6 @@ public sealed class TdsServerProtocolTests
         // are CRLF on Windows and LF elsewhere.
         var reportedMessage = exception.Message.ReplaceLineEndings("\n").Split('\n')[0];
         Assert.Equal(new string('e', 32_000), reportedMessage);
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(511)]
-    [InlineData(65536)]
-    [InlineData(100000)]
-    public void TdsServerOptions_PacketSize_OutsideTheSupportedRange_Throws(int packetSize)
-    {
-        var options = new TdsServerOptions();
-
-        _ = Assert.Throws<ArgumentOutOfRangeException>(() => options.PacketSize = packetSize);
-    }
-
-    [Theory]
-    [InlineData(512)]
-    [InlineData(4096)]
-    [InlineData(65535)]
-    public void TdsServerOptions_PacketSize_InsideTheSupportedRange_IsAccepted(int packetSize)
-    {
-        var options = new TdsServerOptions
-        {
-            PacketSize = packetSize,
-        };
-
-        Assert.Equal(packetSize, options.PacketSize);
     }
 
     private static string CreateConnectionString(int port, string userName = "sa", string password = "Password123!", string encrypt = "Optional", bool trustServerCertificate = true, int connectTimeout = 5)

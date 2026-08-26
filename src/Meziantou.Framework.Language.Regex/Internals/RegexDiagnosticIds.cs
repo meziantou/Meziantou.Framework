@@ -50,6 +50,8 @@ internal static class RegexDiagnosticIds
 
     // ---- JavaScript only ----
     public const string MalformedClassSetOperation = "REGEX0070";
+    public const string ReservedClassSetPunctuator = "REGEX0071";
+    public const string MalformedClassString = "REGEX0072";
 
     // ---- .NET only ----
     public const string ExclusionGroupNotLast = "REGEX0050";
@@ -66,4 +68,5 @@ internal static class RegexDiagnosticIds
     public const string DuplicateFlag = "REGEX0206";
     public const string ConflictingFlags = "REGEX0207";
     public const string LineTerminatorInLiteral = "REGEX0208";
+    public const string UnterminatedLiteral = "REGEX0209";
 }

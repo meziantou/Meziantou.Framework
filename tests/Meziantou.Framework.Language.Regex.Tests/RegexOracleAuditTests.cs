@@ -9,6 +9,9 @@ public sealed class RegexOracleAuditTests
     private static RegexParseOptions Options(RegexFlavor flavor, RegexPatternOptions options = RegexPatternOptions.None) =>
         new(flavor) { PatternOptions = options };
 
+    private static RegexParseOptions SetMode =>
+        Options(RegexFlavor.JavaScript, RegexPatternOptions.Unicode | RegexPatternOptions.UnicodeSets);
+
     private static RegexSyntaxTree Accepts(string pattern, RegexParseOptions options)
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, options);
@@ -200,6 +203,133 @@ public sealed class RegexOracleAuditTests
     [InlineData(@"\S")]
     [InlineData(@"\b")]
     public void PosixKeepsTheGnuShorthands(string pattern) => Accepts(pattern, Options(RegexFlavor.PosixExtended));
+
+    // ---- review follow-ups ----
+
+    /// <summary>
+    /// A <c>\q{…}</c> body is not free text: the class set syntax characters have to be escaped, and the doubled
+    /// punctuators the grammar reserves may not appear at all.
+    /// </summary>
+    [Theory]
+    [InlineData(@"[\q{a}]")]
+    [InlineData(@"[\q{ab|cd}]")]
+    [InlineData(@"[\q{}]")]
+    [InlineData(@"[\q{|}]")]
+    [InlineData(@"[\q{a b}]")]
+    [InlineData(@"[\q{\[}]")]
+    [InlineData(@"[\q{\]}]")]
+    [InlineData(@"[\q{\-}]")]
+    [InlineData(@"[\q{\/}]")]
+    [InlineData(@"[\q{a&b}]")]
+    public void AWellFormedStringDisjunctionIsAccepted(string pattern) => Accepts(pattern, SetMode);
+
+    [Theory]
+    [InlineData(@"[\q{[}]")]
+    [InlineData(@"[\q{]}]")]
+    [InlineData(@"[\q{(}]")]
+    [InlineData(@"[\q{)}]")]
+    [InlineData(@"[\q{{}]")]
+    [InlineData(@"[\q{-}]")]
+    [InlineData(@"[\q{/}]")]
+    public void AnUnescapedSyntaxCharacterInAStringDisjunctionIsReported(string pattern)
+    {
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, SetMode);
+
+        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0072");
+    }
+
+    [Theory]
+    [InlineData(@"[\q{&&}]")]
+    [InlineData(@"[\q{!!}]")]
+    [InlineData(@"[\q{~~}]")]
+    [InlineData("[!!]")]
+    [InlineData("[a!!b]")]
+    public void AReservedDoublePunctuatorIsReported(string pattern)
+    {
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, SetMode);
+
+        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0071");
+    }
+
+    /// <summary>A backslash escapes the brace too, so the scan cannot stop at the first one it sees.</summary>
+    [Theory]
+    [InlineData(@"[\q{\}}]")]
+    [InlineData(@"[\q{a\}b}]")]
+    public void AnEscapedBraceDoesNotCloseAStringDisjunction(string pattern)
+    {
+        var literal = Assert.Single(Accepts(pattern, SetMode).Root.DescendantNodes().OfType<RegexClassStringLiteralSyntax>());
+
+        Assert.Contains('}', literal.Value);
+    }
+
+    /// <summary>
+    /// Two patterns read with different options are different trees whatever their text, so the structural fallback
+    /// has to check the options as well as the fast path did.
+    /// </summary>
+    [Fact]
+    public void EquivalenceComparesOptionsEvenWhenTheTextMatches()
+    {
+        var plain = RegexSyntaxTree.ParseText("a", RegexFlavor.Net);
+        var ignoringCase = RegexSyntaxTree.ParseText("a", Options(RegexFlavor.Net, RegexPatternOptions.IgnoreCase));
+
+        Assert.False(plain.IsEquivalentTo(ignoringCase));
+        Assert.False(ignoringCase.IsEquivalentTo(plain));
+        Assert.True(plain.IsEquivalentTo(RegexSyntaxTree.ParseText("a", RegexFlavor.Net)));
+    }
+
+    /// <summary>
+    /// Building a node from a token that already belongs to a tree must not take it: the other tree would go on
+    /// reporting text its own nodes no longer own.
+    /// </summary>
+    [Fact]
+    public void BuildingANodeDoesNotStealATokenFromAnotherTree()
+    {
+        var source = RegexSyntaxTree.ParseText("ab", RegexFlavor.Net);
+        var borrowed = source.Root.DescendantTokens().First(t => t.Text == "a");
+        var owner = borrowed.Parent;
+
+        _ = new RegexLiteralSyntax(borrowed);
+
+        Assert.Same(owner, borrowed.Parent);
+        Assert.Equal("ab", source.Root.ToFullString());
+    }
+
+    /// <summary>Attaching to a tree is what records ownership, and it still does.</summary>
+    [Fact]
+    public void AParsedTreeStillReportsTheOwnerOfEveryToken()
+    {
+        var tree = RegexSyntaxTree.ParseText(@"(?<n>a|[b-d])\k<n>{2,3}?", RegexFlavor.Net);
+
+        foreach (var token in tree.Root.DescendantTokens())
+        {
+            Assert.NotNull(token.Parent);
+        }
+    }
+
+    [Theory]
+    [InlineData("/a")]
+    [InlineData("/")]
+    [InlineData("/[/")]
+    public void AnUnterminatedLiteralIsReported(string literal)
+    {
+        var tree = RegexSyntaxTree.ParseJavaScriptLiteral(literal);
+        RegexSyntaxAssert.TextIsFaithful(literal, tree);
+
+        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0209");
+    }
+
+    /// <summary>Text that never claimed to be a literal is a bare pattern, not an unterminated one.</summary>
+    [Theory]
+    [InlineData("a+")]
+    [InlineData("/a/")]
+    [InlineData("/a/g")]
+    public void AWellFormedOrBareInputIsNotReportedAsUnterminated(string literal)
+    {
+        var tree = RegexSyntaxTree.ParseJavaScriptLiteral(literal);
+        RegexSyntaxAssert.TextIsFaithful(literal, tree);
+
+        Assert.DoesNotContain(tree.Diagnostics, d => d.Id == "REGEX0209");
+    }
 
     /// <summary>Only .NET spells a named backreference <c>\&lt;name&gt;</c>.</summary>
     [Fact]

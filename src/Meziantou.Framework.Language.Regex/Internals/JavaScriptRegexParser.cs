@@ -79,7 +79,19 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
         }
 
         if (_literal is not { HasClosingSlash: true })
+        {
+            // An opening delimiter with nothing to close it is not a literal at all. The tree still covers the text so
+            // it round-trips, but saying nothing about it would be wrong.
+            if (_literal is { HasOpeningSlash: true })
+            {
+                AddDiagnostic(
+                    new TextSpan(0, Math.Min(1, Text.Length)),
+                    RegexDiagnosticIds.UnterminatedLiteral,
+                    "Unterminated regular-expression literal: expected a closing '/'.");
+            }
+
             return (null, null, null);
+        }
 
         var slashStart = Scanner.Position;
         if (slashStart >= Text.Length || Text[slashStart] != '/')

@@ -9,14 +9,15 @@ public abstract class RegexSyntaxNode
         FullText = fullText ?? string.Empty;
         FullSpan = new TextSpan(fullStart, FullText.Length);
         Tokens = Snapshot(tokens);
-        foreach (var token in Tokens)
-        {
-            token.Parent = this;
-        }
     }
 
     /// <summary>Builds a node from its parts, in source order.</summary>
     /// <remarks>
+    /// <para>
+    /// A node does not claim its tokens here. A caller may pass one that already belongs to another tree, and taking
+    /// it would change what that tree reports without changing anything about its text. Ownership is recorded when the
+    /// node is attached to a tree, which is the point at which it is really true.
+    /// </para>
     /// The node's text is the concatenation of its parts and its start is where the first one begins, so a node can
     /// never disagree with the source it was built from. Absent optional parts contribute nothing, and a null entry
     /// in <paramref name="tokens"/> is skipped, so a caller does not have to filter either list itself.
@@ -27,10 +28,6 @@ public abstract class RegexSyntaxNode
         FullText = BuildText(parts);
         FullSpan = new TextSpan(GetFullStart(parts), FullText.Length);
         Tokens = CollectTokens(tokens);
-        foreach (var token in Tokens)
-        {
-            token.Parent = this;
-        }
     }
 
     private static string BuildText(ReadOnlySpan<RegexSyntaxNodeOrToken> parts)

@@ -170,12 +170,9 @@ public sealed class RegexSyntaxTree
         if (other is null)
             return false;
 
-        if (other.Flavor != Flavor)
+        if (other.Flavor != Flavor || other.PatternOptions != PatternOptions)
             return false;
 
-        if (other.PatternOptions == PatternOptions && string.Equals(Text, other.Text, StringComparison.Ordinal))
-            return true;
-
-        return Root.IsEquivalentTo(other.Root);
+        return string.Equals(Text, other.Text, StringComparison.Ordinal) || Root.IsEquivalentTo(other.Root);
     }
 }

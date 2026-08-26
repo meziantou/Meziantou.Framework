@@ -137,6 +137,15 @@ internal abstract partial class PerlStyleRegexParser
                 continue;
             }
 
+            if (UsesUnicodeSetsMode && !inRange && Scanner.Position + 1 < Text.Length &&
+                Scanner.Peek() == Scanner.Current &&
+                ReservedDoublePunctuators.Contains(Scanner.Current, StringComparison.Ordinal))
+            {
+                members.Add(SkipReservedDoublePunctuator());
+                firstChar = false;
+                continue;
+            }
+
             // An operator turns the member before it into the first operand of a set operation. An operand is a single
             // thing, so anything else on the left is an error, and the operator is kept as skipped text rather than
             // folded into an operation whose parts would no longer be in source order.
@@ -295,12 +304,15 @@ internal abstract partial class PerlStyleRegexParser
         Scanner.Position += 3;
         var startToken = Scanner.Token(RegexSyntaxKind.QuoteStartToken, start);
 
+        // A backslash escapes the character after it, the closing brace included, so the scan cannot simply stop at
+        // the first "}".
         var textStart = Scanner.Position;
         while (!Scanner.IsAtEnd && Scanner.Current != '}')
         {
-            Scanner.Position++;
+            Scanner.Position += Scanner.Current == '\\' && Scanner.Position + 1 < Text.Length ? 2 : 1;
         }
 
+        ValidateClassStringContent(textStart, Scanner.Position);
         var textToken = Scanner.Position > textStart ? Scanner.Token(RegexSyntaxKind.QuoteTextToken, textStart) : null;
 
         RegexSyntaxToken? closeBraceToken = null;
@@ -319,6 +331,53 @@ internal abstract partial class PerlStyleRegexParser
         }
 
         return WithOptions(new RegexClassStringLiteralSyntax(startToken, textToken, closeBraceToken));
+    }
+
+    /// <summary>The characters a class set has to have escaped, because unescaped they mean something else.</summary>
+    private const string ClassSetSyntaxCharacters = "()[]{}/-";
+
+    /// <summary>
+    /// The characters that may not appear doubled. The grammar reserves them so the syntax can grow later without
+    /// changing what an existing pattern means.
+    /// </summary>
+    /// <remarks><c>&amp;</c> and <c>-</c> are not here: doubled they are the operators, which are read before this.</remarks>
+    private const string ReservedDoublePunctuators = "!#$%*+,.:;<=>?@^`~";
+
+    /// <summary>Checks the body of a <c>\q{…}</c> disjunction, which is not free text.</summary>
+    private void ValidateClassStringContent(int start, int end)
+    {
+        for (var index = start; index < end; index++)
+        {
+            var ch = Text[index];
+            if (ch == '\\')
+            {
+                // Whatever follows a backslash is that character, so it needs no checking of its own.
+                index++;
+                continue;
+            }
+
+            if (ClassSetSyntaxCharacters.Contains(ch, StringComparison.Ordinal))
+            {
+                AddDiagnostic(new TextSpan(index, 1), RegexDiagnosticIds.MalformedClassString, $"'{ch}' must be escaped inside a '\\q{{...}}' disjunction.");
+            }
+            else if (index + 1 < end && Text[index + 1] == ch &&
+                (ReservedDoublePunctuators.Contains(ch, StringComparison.Ordinal) || ch == '&'))
+            {
+                AddDiagnostic(new TextSpan(index, 2), RegexDiagnosticIds.ReservedClassSetPunctuator, $"'{ch}{ch}' is reserved and may not appear here.");
+                index++;
+            }
+        }
+    }
+
+    /// <summary>Reports a doubled punctuator the class set grammar reserves.</summary>
+    private RegexSkippedTextSyntax SkipReservedDoublePunctuator()
+    {
+        var start = Scanner.Position;
+        Scanner.Position += 2;
+        var token = Scanner.Token(RegexSyntaxKind.BadToken, start);
+        AddDiagnostic(token.Span, RegexDiagnosticIds.ReservedClassSetPunctuator, $"'{token.Text}' is reserved and may not appear here.");
+
+        return WithOptions(new RegexSkippedTextSyntax([token], token.FullSpan.Start));
     }
 
     /// <summary>

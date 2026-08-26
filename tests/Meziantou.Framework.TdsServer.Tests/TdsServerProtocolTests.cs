@@ -130,7 +130,42 @@ public sealed class TdsServerProtocolTests
 
         Assert.Equal(123, Convert.ToInt32(result, CultureInfo.InvariantCulture));
         Assert.Equal(TdsQueryRequestType.SqlBatch, capturedContext.RequestType);
-        Assert.Contains(Marker, capturedContext.CommandText);
+        Assert.Equal($"SELECT 1 /* {Marker} */", capturedContext.CommandText);
+    }
+
+    [Fact]
+    public async Task SqlClient_TextQuery_CommandText_ExcludesAllHeaders()
+    {
+        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                queryContextTask.TrySetResult(context);
+                return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1));
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1";
+
+        _ = await command.ExecuteScalarAsync();
+        var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        // The SQLBatch payload starts with an ALL_HEADERS block whose bytes decode to control
+        // characters. It must not be exposed through CommandText.
+        Assert.Equal("SELECT 1", capturedContext.CommandText);
+        Assert.DoesNotContain(capturedContext.CommandText, character => char.IsControl(character));
     }
 
     [Fact]
@@ -175,8 +210,7 @@ public sealed class TdsServerProtocolTests
 
         Assert.Equal(456, Convert.ToInt32(result, CultureInfo.InvariantCulture));
         Assert.Equal(TdsQueryRequestType.SqlBatch, capturedContext.RequestType);
-        Assert.Contains(Marker, capturedContext.CommandText);
-        Assert.True((capturedContext.CommandText?.Length ?? 0) > 6000);
+        Assert.Equal(query, capturedContext.CommandText);
     }
 
     [Fact]

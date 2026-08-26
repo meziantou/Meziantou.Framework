@@ -267,6 +267,62 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void GetActualType_IgnoresAssignmentsFromOtherMembers()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public void Other()
+                {
+                    object value = "text";
+                    value = 41;
+                }
+
+                public void M()
+                {
+                    object value = 42;
+                    object boxed = value;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.Equal(SpecialType.System_Int32, boxed.GetActualType(default)?.SpecialType);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_FollowsAssignmentsInTopLevelStatements()
+    {
+        var compilation = CreateCompilation("""
+            var value = 41;
+            value = 42;
+            object boxed = value;
+            """, outputKind: OutputKind.ConsoleApplication);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.True(boxed.TryGetConstantValue(out var value, default));
+        Assert.Equal(42, value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_ReturnsFalseWhenATopLevelStatementWritesTheLocal()
+    {
+        var compilation = CreateCompilation("""
+            var value = 41;
+            value = 42;
+            value++;
+            object boxed = value;
+            """, outputKind: OutputKind.ConsoleApplication);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
     public void GetActualType_WithoutDataFlowAnalysis_OnlyUnwrapsConversions()
     {
         var compilation = CreateCompilation("""
@@ -1315,7 +1371,8 @@ public sealed class RoslynHelperTests
         IReadOnlyCollection<MetadataReference>? additionalReferences = null,
         CSharpParseOptions? parseOptions = null,
         int? dotnetMajorVersion = null,
-        bool allowInvalidCode = false)
+        bool allowInvalidCode = false,
+        OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
     {
         var references = CreateMetadataReferences(dotnetMajorVersion);
         if (additionalReferences is not null)
@@ -1327,7 +1384,7 @@ public sealed class RoslynHelperTests
             assemblyName,
             [CSharpSyntaxTree.ParseText(source, parseOptions ?? DefaultParseOptions, path: assemblyName + ".cs")],
             references,
-            DefaultCompilationOptions);
+            DefaultCompilationOptions.WithOutputKind(outputKind));
 
         if (!allowInvalidCode)
         {

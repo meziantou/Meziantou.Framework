@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.Roslyn;
 
@@ -98,8 +99,10 @@ internal static partial class LocalDataFlowAnalysis
             return null;
 
         IOperation? result = null;
-        foreach (var assignmentSyntax in operation.Syntax.SyntaxTree.GetRoot(cancellationToken).DescendantNodes().OfType<AssignmentExpressionSyntax>())
+        foreach (var assignmentSyntax in GetLocalScope(local, operation.Syntax, cancellationToken).DescendantNodes().OfType<AssignmentExpressionSyntax>())
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (assignmentSyntax.Span.End > operation.Syntax.SpanStart)
                 continue;
 
@@ -258,8 +261,15 @@ internal static partial class LocalDataFlowAnalysis
 
         var sourceEnd = source.Span.End;
         var destinationStart = destination.SpanStart;
-        foreach (var assignment in destination.SyntaxTree.GetRoot(cancellationToken).DescendantNodes())
+        if (sourceEnd > destinationStart)
+            return false;
+
+        // Any node located between the source and the destination is a descendant of the smallest node containing that range
+        var scope = destination.SyntaxTree.GetRoot(cancellationToken).FindNode(TextSpan.FromBounds(sourceEnd, destinationStart));
+        foreach (var assignment in scope.DescendantNodesAndSelf())
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (assignment.SpanStart < sourceEnd || assignment.Span.End > destinationStart)
                 continue;
 
@@ -358,6 +368,37 @@ internal static partial class LocalDataFlowAnalysis
         firstStatement = sourceCompilationUnit.Members[sourceIndex + 1];
         lastStatement = sourceCompilationUnit.Members[destinationIndex - 1];
         return true;
+    }
+
+    private static SyntaxNode GetLocalScope(ILocalSymbol local, SyntaxNode reference, CancellationToken cancellationToken)
+    {
+        foreach (var syntaxReference in local.DeclaringSyntaxReferences)
+        {
+            var declaration = syntaxReference.GetSyntax(cancellationToken);
+            if (declaration.SyntaxTree == reference.SyntaxTree)
+                return GetEnclosingScope(declaration);
+        }
+
+        return GetEnclosingScope(reference);
+    }
+
+    private static SyntaxNode GetEnclosingScope(SyntaxNode syntax)
+    {
+        var current = syntax;
+        while (true)
+        {
+            // Top-level statements are spread over multiple members of the compilation unit
+            if (current is GlobalStatementSyntax { Parent: { } compilationUnit })
+                return compilationUnit;
+
+            if (current is MemberDeclarationSyntax)
+                return current;
+
+            if (current.Parent is null)
+                return current;
+
+            current = current.Parent;
+        }
     }
 
     private static bool IsInNestedFunction(SyntaxNode syntax)

@@ -69,6 +69,19 @@ public sealed class SensitiveDataTests
     }
 
     [Fact]
+    public void ProtectionIsAppliedAtRestAndLiftedWhileRevealing()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        Assert.True(data.IsProtected);
+        data.RevealAndUse(arg: data, static (span, secret) => Assert.False(secret.IsProtected));
+        Assert.True(data.IsProtected);
+
+        data.RevealToArray();
+        Assert.True(data.IsProtected);
+    }
+
+    [Fact]
     public void Clone_CreatesIndependentCopy()
     {
         var original = SensitiveData.Create("foo");
@@ -142,5 +155,13 @@ public sealed class SensitiveDataTests
     {
         using var data = SensitiveData.Create("foo");
         Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetConverter(typeof(SensitiveData<char>)).ConvertToString(data));
+    }
+
+    [Fact]
+    public void CannotConvertFromStringToNonCharElementType()
+    {
+        var converter = TypeDescriptor.GetConverter(typeof(SensitiveData<byte>));
+        Assert.False(converter.CanConvertFrom(typeof(string)));
+        Assert.Throws<NotSupportedException>(() => converter.ConvertFromString("bar"));
     }
 }

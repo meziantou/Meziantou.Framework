@@ -6,6 +6,11 @@ using Meziantou.Framework.Tds.Handler;
 namespace Meziantou.Framework.Tds.QueryEngine;
 
 /// <summary>Configures the built-in TDS query engine.</summary>
+/// <remarks>
+/// Configure the instance fully before passing it to <see cref="TdsQueryEngine.CreateQueryHandler"/>. The
+/// collections are snapshotted at that point, so later additions are ignored, and mutating them afterwards races
+/// with queries running on other connections.
+/// </remarks>
 public sealed class TdsQueryEngineOptions
 {
     private static readonly TdsQueryEngineAuthorizationHandler DefaultIsAuthorized = static (context, resourceKind, resourceName) =>

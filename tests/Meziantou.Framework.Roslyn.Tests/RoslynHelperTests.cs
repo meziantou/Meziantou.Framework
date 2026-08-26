@@ -267,6 +267,102 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void TryGetConstantValue_ReturnsFalseWhenABackwardGotoCanReachTheReadAfterAWrite()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public void M(bool condition)
+                {
+                    var value = "a";
+                Loop:
+                    if (condition) { }
+                    object boxed = value;
+                    value = "b";
+                    if (condition) goto Loop;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_ReturnsFalseWhenAGotoCanSkipAnAssignment()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public void M(bool condition)
+                {
+                    var value = "a";
+                    if (condition) goto Skip;
+                    value = "b";
+                Skip:
+                    object boxed = value;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_IsNotAffectedByAJumpInAnotherMethod()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public void M()
+                {
+                    var value = 42;
+                    object boxed = value;
+                }
+
+                public void Other(bool condition)
+                {
+                Loop:
+                    if (condition) goto Loop;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.True(boxed.TryGetConstantValue(out var value, default));
+        Assert.Equal(42, value);
+    }
+
+    [Fact]
+    public void GetActualType_ReturnsTheDeclaredTypeWhenABackwardGotoCanReachTheReadAfterAWrite()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public void M(bool condition)
+                {
+                    object value = 42;
+                Loop:
+                    if (condition) { }
+                    object boxed = value;
+                    value = "b";
+                    if (condition) goto Loop;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.Equal(SpecialType.System_Object, boxed.GetActualType(default)?.SpecialType);
+    }
+
+    [Fact]
     public void GetActualType_WithoutDataFlowAnalysis_OnlyUnwrapsConversions()
     {
         var compilation = CreateCompilation("""

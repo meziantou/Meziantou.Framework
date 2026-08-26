@@ -233,6 +233,11 @@ internal static partial class LocalDataFlowAnalysis
         if (source.SyntaxTree != destination.SyntaxTree)
             return true;
 
+        // The range between the two nodes is computed in source order, so a write that is textually after the read but
+        // reachable before it through a jump would be missed. Give up as soon as the enclosing scope contains a label.
+        if (ContainsJumpStatement(source) || ContainsJumpStatement(destination))
+            return true;
+
         if (!TryGetStatementRange(source, destination, out var firstStatement, out var lastStatement))
             return true;
 
@@ -358,6 +363,29 @@ internal static partial class LocalDataFlowAnalysis
         firstStatement = sourceCompilationUnit.Members[sourceIndex + 1];
         lastStatement = sourceCompilationUnit.Members[destinationIndex - 1];
         return true;
+    }
+
+    private static bool ContainsJumpStatement(SyntaxNode syntax)
+    {
+        var scope = GetEnclosingScope(syntax);
+        if (scope is null)
+            return false;
+
+        return scope.DescendantNodes().Any(node => node is LabeledStatementSyntax or GotoStatementSyntax);
+    }
+
+    private static SyntaxNode? GetEnclosingScope(SyntaxNode syntax)
+    {
+        for (var current = syntax; current is not null; current = current.Parent)
+        {
+            if (current is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax or CompilationUnitSyntax)
+                return current;
+
+            if (current is MemberDeclarationSyntax and not GlobalStatementSyntax)
+                return current;
+        }
+
+        return null;
     }
 
     private static bool IsInNestedFunction(SyntaxNode syntax)

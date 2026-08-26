@@ -263,24 +263,13 @@ public static partial class PublicSuffixList
     // Non-ASCII characters are validated by the punycode conversion
     private static bool IsValidLabelChar(char c) => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' || !Ascii.IsValid(c);
 
-    private static FrozenDictionary<string, PublicSuffixRuleFlags> LoadRules()
-    {
-        var entries = new Dictionary<string, PublicSuffixRuleFlags>(EntryCount, StringComparer.Ordinal);
-        AddRules(entries, GetIcannRules(), PublicSuffixRuleFlags.IcannRule);
-        AddRules(entries, GetPrivateRules(), PublicSuffixRuleFlags.PrivateRule);
-        AddRules(entries, GetIcannWildcards(), PublicSuffixRuleFlags.IcannWildcard);
-        AddRules(entries, GetPrivateWildcards(), PublicSuffixRuleFlags.PrivateWildcard);
-        AddRules(entries, GetIcannExceptions(), PublicSuffixRuleFlags.IcannException);
-        AddRules(entries, GetPrivateExceptions(), PublicSuffixRuleFlags.PrivateException);
-        return entries.ToFrozenDictionary(StringComparer.Ordinal);
-    }
-
-    private static void AddRules(Dictionary<string, PublicSuffixRuleFlags> entries, string[] suffixes, PublicSuffixRuleFlags flag)
+    // LoadRules is generated: the flags of every suffix are computed by the tool, so each
+    // suffix belongs to exactly one group and can be inserted without merging.
+    private static void AddRules(Dictionary<string, PublicSuffixRuleFlags> entries, string[] suffixes, PublicSuffixRuleFlags flags)
     {
         foreach (var suffix in suffixes)
         {
-            entries.TryGetValue(suffix, out var flags);
-            entries[suffix] = flags | flag;
+            entries.Add(suffix, flags);
         }
     }
 }

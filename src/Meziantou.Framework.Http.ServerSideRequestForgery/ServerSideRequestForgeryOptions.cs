@@ -20,6 +20,10 @@ public sealed class ServerSideRequestForgeryOptions
         IPNetwork.Parse("169.254.0.0/16"),
         // RFC1918 private IPv4 range.
         IPNetwork.Parse("172.16.0.0/12"),
+        // IETF protocol assignments (RFC6890), including the NAT64 discovery addresses. Not globally routable.
+        IPNetwork.Parse("192.0.0.0/24"),
+        // 6to4 relay anycast range (RFC3068), deprecated and not a valid remote target.
+        IPNetwork.Parse("192.88.99.0/24"),
         // RFC1918 private IPv4 range.
         IPNetwork.Parse("192.168.0.0/16"),
         // Benchmark/testing inter-network range (RFC2544), not for public routing.
@@ -28,10 +32,16 @@ public sealed class ServerSideRequestForgeryOptions
         IPNetwork.Parse("224.0.0.0/4"),
         // Reserved/experimental IPv4 range.
         IPNetwork.Parse("240.0.0.0/4"),
-        // IPv6 unspecified address.
-        IPNetwork.Parse("::/128"),
-        // IPv6 loopback address.
+        // IPv6 unspecified address and the deprecated IPv4-compatible range (::a.b.c.d), which embeds an IPv4 address.
+        IPNetwork.Parse("::/96"),
+        // IPv6 loopback address. Already covered by ::/96 above, but listed explicitly because it is the range most often looked for.
         IPNetwork.Parse("::1/128"),
+        // NAT64 well-known prefix (RFC6052). Embeds an IPv4 address, so it reaches IPv4 targets from an IPv6-only network.
+        IPNetwork.Parse("64:ff9b::/96"),
+        // Teredo tunneling range (RFC4380). Embeds an IPv4 address.
+        IPNetwork.Parse("2001::/32"),
+        // 6to4 range (RFC3056). Embeds an IPv4 address in the second and third groups.
+        IPNetwork.Parse("2002::/16"),
         // IPv6 unique local addresses (ULA), private scope.
         IPNetwork.Parse("fc00::/7"),
         // IPv6 link-local addresses.

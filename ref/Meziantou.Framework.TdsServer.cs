@@ -8,6 +8,7 @@ namespace Meziantou.Framework.Tds
     {
         public System.Collections.Generic.IReadOnlyList<int> Ports { get => throw null; }
         public TdsServer(Meziantou.Framework.Tds.TdsServerOptions? options, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate authenticationHandler, Meziantou.Framework.Tds.Handler.TdsQueryDelegate queryHandler) { }
+        public TdsServer(Meziantou.Framework.Tds.TdsServerOptions? options, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate authenticationHandler, Meziantou.Framework.Tds.Handler.TdsQueryDelegate queryHandler, Microsoft.Extensions.Logging.ILogger? logger) { }
         public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public void Dispose() { }
     }

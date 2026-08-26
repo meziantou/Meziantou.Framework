@@ -318,6 +318,40 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(["abc|" + longValue, "|def"], rows);
     }
 
+    [Fact]
+    public async Task SqlClient_ResultSet_ValueThatCannotBeSerialized_ReturnsErrorInsteadOfDroppingTheConnection()
+    {
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Int32));
+        resultSet.Rows.Add(["not-a-number"]);
+
+        var result = new TdsQueryResult();
+        result.ResultSets.Add(resultSet);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(result));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1";
+
+        var exception = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteScalarAsync());
+
+        // A SQL error, not "A transport-level error has occurred", which retry logic treats as transient.
+        Assert.Equal(50005, exception.Number);
+        Assert.Contains("Failed to build the query response", exception.Message);
+    }
+
     private static Task<List<string?>> ReadStringColumnAsync(TdsResultSet resultSet)
     {
         return ReadResultSetAsync(resultSet, (reader, ordinal) => reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal));

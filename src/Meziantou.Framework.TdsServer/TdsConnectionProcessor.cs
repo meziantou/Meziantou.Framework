@@ -158,25 +158,46 @@ internal sealed class TdsConnectionProcessor
                     continue;
                 }
 
-                var queryContext = TdsQueryRequestParser.Parse(packet, remoteEndPoint, authenticationResult.UserContext);
-                TdsQueryResult queryResult;
+                byte[] responsePayload;
                 try
                 {
-                    queryResult = await _queryHandler(queryContext, cancellationToken).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Unhandled exception in query handler");
-                    queryResult = TdsQueryResult.FromError(new TdsQueryError
+                    var queryContext = TdsQueryRequestParser.Parse(packet, remoteEndPoint, authenticationResult.UserContext);
+                    TdsQueryResult queryResult;
+                    try
                     {
-                        Number = 50002,
-                        State = 1,
-                        Class = 16,
-                        Message = "Unhandled query handler exception",
-                    });
+                        queryResult = await _queryHandler(queryContext, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Unhandled exception in query handler");
+                        queryResult = TdsQueryResult.FromError(new TdsQueryError
+                        {
+                            Number = 50002,
+                            State = 1,
+                            Class = 16,
+                            Message = "Unhandled query handler exception",
+                        });
+                    }
+
+                    responsePayload = TdsResponseSerializer.CreateQueryResponse(queryResult, writer.PayloadSizePerPacket);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // Request parsing and response serialization run on caller-supplied data, so a bad request
+                    // or a value that does not match its declared column type must not drop the connection.
+                    _logger.LogError(ex, "Failed to build the TDS response");
+                    responsePayload = TdsResponseSerializer.CreateQueryResponse(
+                        TdsQueryResult.FromError(new TdsQueryError
+                        {
+                            Number = 50005,
+                            State = 1,
+                            Class = 16,
+                            Message = "Failed to build the query response",
+                        }),
+                        writer.PayloadSizePerPacket);
                 }
 
-                await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateQueryResponse(queryResult, writer.PayloadSizePerPacket), cancellationToken).ConfigureAwait(false);
+                await writer.WriteAsync(TdsPacketType.TabularResult, responsePayload, cancellationToken).ConfigureAwait(false);
             }
         }
         catch (AuthenticationException ex)

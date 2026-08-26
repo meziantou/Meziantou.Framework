@@ -63,6 +63,54 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             cancellationToken: CancellationToken.None).AsTask());
     }
 
+    [Theory]
+    // IPv4 ranges that are reserved but were not covered by the original default list.
+    [InlineData("192.0.0.170")]
+    [InlineData("192.88.99.1")]
+    // IPv6 forms that embed an unsafe IPv4 address. Each of these reaches 127.0.0.1 or 169.254.169.254
+    // on a network that routes the corresponding transition mechanism.
+    [InlineData("::ffff:127.0.0.1")]
+    [InlineData("::ffff:169.254.169.254")]
+    [InlineData("::127.0.0.1")]
+    [InlineData("::169.254.169.254")]
+    [InlineData("64:ff9b::7f00:1")]
+    [InlineData("64:ff9b::a9fe:a9fe")]
+    [InlineData("2002:7f00:0001::")]
+    [InlineData("2002:a9fe:a9fe::")]
+    [InlineData("2001::1")]
+    public async Task ResolveAndSelectIpAddressAsync_RejectsAddressEmbeddingUnsafeIpv4Target(string address)
+    {
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://example.com"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: new ServerSideRequestForgeryOptions(),
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse(address)]),
+            cancellationToken: CancellationToken.None).AsTask());
+    }
+
+    [Theory]
+    // Global unicast addresses that sit close to the newly blocked ranges and must stay reachable.
+    [InlineData("2001:4860:4860::8888")]
+    [InlineData("2003::1")]
+    [InlineData("192.1.0.1")]
+    [InlineData("192.89.0.1")]
+    public async Task ResolveAndSelectIpAddressAsync_AllowsGlobalUnicastAddressNearBlockedRange(string address)
+    {
+        var options = new ServerSideRequestForgeryOptions
+        {
+            ResolutionStrategy = IpAddressResolutionStrategy.Random,
+        };
+
+        var selectedAddress = await ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://example.com"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: options,
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse(address)]),
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal(IPAddress.Parse(address), selectedAddress);
+    }
+
     [Fact]
     public async Task ResolveAndSelectIpAddressAsync_UsesResolutionStrategyFromOptions()
     {

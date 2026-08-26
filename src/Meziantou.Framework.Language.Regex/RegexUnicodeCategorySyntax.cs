@@ -21,11 +21,11 @@ public sealed class RegexUnicodeCategorySyntax : RegexAtomSyntax
 
     public RegexSyntaxToken? CloseBraceToken { get; }
 
-    /// <summary>Returns <see langword="true"/> for <c>\P</c>, the negated form.</summary>
-    public bool IsNegated => CategoryStartToken.Text is [.., 'P'];
+    /// <summary>Returns <see langword="true"/> for the negated form, spelled <c>\P{…}</c> or <c>\p{^…}</c>.</summary>
+    public bool IsNegated => CategoryStartToken.Text is [.., 'P'] || NameToken?.Text is ['^', ..];
 
-    /// <summary>The category or block name, or an empty string when the construct is incomplete.</summary>
-    public string Name => NameToken?.Text ?? string.Empty;
+    /// <summary>The category or block name, without the <c>^</c> that some flavors negate it with.</summary>
+    public string Name => NameToken?.Text is { } text ? text.TrimStart('^') : string.Empty;
 
     public override void Accept(RegexSyntaxVisitor visitor) => visitor.VisitUnicodeCategory(this);
     public override TResult Accept<TResult>(RegexSyntaxVisitor<TResult> visitor) => visitor.VisitUnicodeCategory(this);

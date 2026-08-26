@@ -1,6 +1,11 @@
 namespace Meziantou.Framework.Language.Regex;
 
-/// <summary>Represents a PCRE recursion construct such as <c>(?R)</c> or <c>(?1)</c>.</summary>
+/// <summary>Represents a PCRE recursion or subroutine call.</summary>
+/// <remarks>
+/// Every spelling lands here: <c>(?R)</c> restarts the whole pattern, <c>(?1)</c> and <c>\g&lt;1&gt;</c> restart a
+/// group by number, and <c>(?&amp;name)</c>, <c>(?P&gt;name)</c>, and <c>\g&lt;name&gt;</c> restart one by name. The
+/// two delimiter tokens are whatever that spelling used.
+/// </remarks>
 public sealed class RegexRecursionSyntax : RegexAtomSyntax
 {
     public RegexRecursionSyntax(RegexSyntaxToken openParenToken, RegexSyntaxToken questionToken, RegexSyntaxToken? targetToken, RegexSyntaxToken closeParenToken)

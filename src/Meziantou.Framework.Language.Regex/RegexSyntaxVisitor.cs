@@ -40,9 +40,12 @@ public abstract class RegexSyntaxVisitor
     public virtual void VisitCharacterEscape(RegexCharacterEscapeSyntax node) => DefaultVisit(node);
     public virtual void VisitCharacterRange(RegexCharacterRangeSyntax node) => DefaultVisit(node);
     public virtual void VisitClassSubtraction(RegexClassSubtractionSyntax node) => DefaultVisit(node);
+    public virtual void VisitClassSetOperation(RegexClassSetOperationSyntax node) => DefaultVisit(node);
+    public virtual void VisitClassStringLiteral(RegexClassStringLiteralSyntax node) => DefaultVisit(node);
     public virtual void VisitCollatingElement(RegexCollatingElementSyntax node) => DefaultVisit(node);
     public virtual void VisitConditional(RegexConditionalSyntax node) => DefaultVisit(node);
     public virtual void VisitConditionalReference(RegexConditionalReferenceSyntax node) => DefaultVisit(node);
+    public virtual void VisitCallout(RegexCalloutSyntax node) => DefaultVisit(node);
     public virtual void VisitInlineOptions(RegexInlineOptionsSyntax node) => DefaultVisit(node);
     public virtual void VisitLiteral(RegexLiteralSyntax node) => DefaultVisit(node);
     public virtual void VisitLookaround(RegexLookaroundSyntax node) => DefaultVisit(node);
@@ -94,9 +97,12 @@ public abstract class RegexSyntaxVisitor<TResult>
     public virtual TResult VisitCharacterEscape(RegexCharacterEscapeSyntax node) => DefaultVisit(node);
     public virtual TResult VisitCharacterRange(RegexCharacterRangeSyntax node) => DefaultVisit(node);
     public virtual TResult VisitClassSubtraction(RegexClassSubtractionSyntax node) => DefaultVisit(node);
+    public virtual TResult VisitClassSetOperation(RegexClassSetOperationSyntax node) => DefaultVisit(node);
+    public virtual TResult VisitClassStringLiteral(RegexClassStringLiteralSyntax node) => DefaultVisit(node);
     public virtual TResult VisitCollatingElement(RegexCollatingElementSyntax node) => DefaultVisit(node);
     public virtual TResult VisitConditional(RegexConditionalSyntax node) => DefaultVisit(node);
     public virtual TResult VisitConditionalReference(RegexConditionalReferenceSyntax node) => DefaultVisit(node);
+    public virtual TResult VisitCallout(RegexCalloutSyntax node) => DefaultVisit(node);
     public virtual TResult VisitInlineOptions(RegexInlineOptionsSyntax node) => DefaultVisit(node);
     public virtual TResult VisitLiteral(RegexLiteralSyntax node) => DefaultVisit(node);
     public virtual TResult VisitLookaround(RegexLookaroundSyntax node) => DefaultVisit(node);

@@ -117,6 +117,44 @@ internal abstract class RegexParser
     /// <summary>Parses one atom. Must always consume at least one character, so the parser cannot loop forever.</summary>
     protected abstract RegexAtomSyntax ParseAtom(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia);
 
+    // The delimiters below are virtual because a POSIX basic expression spells them with a backslash: "\(" opens a
+    // group and a bare "(" is a character, which is the reverse of every other flavor. Everything that reads a
+    // delimiter goes through these, so the grammar skeleton itself does not care which spelling is in use.
+
+    /// <summary>The length of the alternation separator at <paramref name="position"/>, or 0 when there is none.</summary>
+    protected virtual int AlternationSeparatorLength(int position) =>
+        position < Text.Length && Text[position] == '|' ? 1 : 0;
+
+    /// <summary>The length of the token that opens a group at <paramref name="position"/>, or 0.</summary>
+    protected virtual int GroupOpenLength(int position) =>
+        position < Text.Length && Text[position] == '(' ? 1 : 0;
+
+    /// <summary>The length of the token that closes a group at <paramref name="position"/>, or 0.</summary>
+    protected virtual int GroupCloseLength(int position) =>
+        position < Text.Length && Text[position] == ')' ? 1 : 0;
+
+    /// <summary>The length of the token that opens a bound at <paramref name="position"/>, or 0.</summary>
+    protected virtual int BoundOpenLength(int position) =>
+        position < Text.Length && Text[position] == '{' ? 1 : 0;
+
+    /// <summary>The length of the token that closes a bound at <paramref name="position"/>, or 0.</summary>
+    protected virtual int BoundCloseLength(int position) =>
+        position < Text.Length && Text[position] == '}' ? 1 : 0;
+
+    /// <summary>
+    /// The length of a <c>*</c>, <c>+</c>, or <c>?</c> quantifier at <paramref name="position"/>, or 0, reporting
+    /// which operator it is. GNU basic expressions spell two of the three escaped.
+    /// </summary>
+    protected virtual int SimpleQuantifierLength(int position, out char operatorCharacter)
+    {
+        operatorCharacter = position < Text.Length ? Text[position] : '\0';
+
+        return operatorCharacter is '*' or '+' or '?' ? 1 : 0;
+    }
+
+    /// <summary>Whether the reading position is at the start of a branch, where POSIX changes what is special.</summary>
+    protected bool IsAtSequenceStart { get; private set; }
+
     /// <summary>Parses the branches of an alternation, in order.</summary>
     protected RegexAlternationSyntax ParseAlternation(bool insideGroup)
     {
@@ -130,12 +168,16 @@ internal abstract class RegexParser
             branches.Add(ParseSequence(insideGroup));
 
             var barPosition = PeekTriviaEnd();
-            if (!supportsAlternation || IsAtBodyEnd(barPosition) || Scanner.CharAt(barPosition) != '|')
+            if (!supportsAlternation || IsAtBodyEnd(barPosition))
+                break;
+
+            var separatorLength = AlternationSeparatorLength(barPosition);
+            if (separatorLength == 0)
                 break;
 
             var trivia = TakeTrivia();
             var barStart = Scanner.Position;
-            Scanner.Position++;
+            Scanner.Position += separatorLength;
             barTokens.Add(Scanner.Token(RegexSyntaxKind.BarToken, barStart, trivia));
         }
 
@@ -159,14 +201,14 @@ internal abstract class RegexParser
             if (IsAtBodyEnd(triviaEnd))
                 break;
 
-            var next = Scanner.CharAt(triviaEnd);
-            if (supportsAlternation && next == '|')
+            if (supportsAlternation && AlternationSeparatorLength(triviaEnd) > 0)
                 break;
 
-            if (insideGroup && next == ')')
+            if (insideGroup && GroupCloseLength(triviaEnd) > 0)
                 break;
 
             var before = Scanner.Position;
+            IsAtSequenceStart = terms.Count == 0;
             var atom = ParseAtom(TakeTrivia());
 
             // An inline option setter matches nothing, so a quantifier after it has nothing to repeat. Leaving the
@@ -218,25 +260,57 @@ internal abstract class RegexParser
         if (position >= Text.Length)
             return false;
 
+        if (BoundOpenLength(position) > 0)
+            return IsWellFormedBoundAt(position);
+
         var ch = Text[position];
         if (ch is '+' or '?')
             return Flavor.HasFeature(RegexFlavorFeatures.PlusAndQuestionQuantifiers);
 
-        if (ch == '{')
-            return !Flavor.HasFeature(RegexFlavorFeatures.EscapedGroupDelimiters) && RegexCharacterTables.IsTrueQuantifier(Text, position);
-
         return ch == '*';
+    }
+
+    /// <summary>
+    /// Whether a well-formed bound starts at <paramref name="position"/>, so that a brace that does not open one can
+    /// stay an ordinary character. Deciding before anything is claimed is what lets the parser avoid a rewind.
+    /// </summary>
+    protected virtual bool IsWellFormedBoundAt(int position)
+    {
+        var openLength = BoundOpenLength(position);
+        if (openLength == 0)
+            return false;
+
+        var index = position + openLength;
+        var digits = 0;
+        while (index < Text.Length && char.IsAsciiDigit(Text[index]))
+        {
+            index++;
+            digits++;
+        }
+
+        if (digits == 0)
+            return false;
+
+        if (index < Text.Length && Text[index] == ',')
+        {
+            index++;
+            while (index < Text.Length && char.IsAsciiDigit(Text[index]))
+            {
+                index++;
+            }
+        }
+
+        return BoundCloseLength(index) > 0;
     }
 
     private RegexQuantifierSyntax? ParseQuantifier(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
     {
         var start = Scanner.Position;
-        var ch = Scanner.Current;
 
-        if (ch is '*' or '+' or '?')
+        if (BoundOpenLength(start) == 0 && SimpleQuantifierLength(start, out var operatorCharacter) is var length && length > 0)
         {
-            Scanner.Position++;
-            var operatorToken = Scanner.Token(QuantifierTokenKind(ch), start, leadingTrivia);
+            Scanner.Position += length;
+            var operatorToken = Scanner.Token(QuantifierTokenKind(operatorCharacter), start, leadingTrivia);
 
             return new RegexSimpleQuantifierSyntax(operatorToken, ReadQuantifierModifier());
         }
@@ -260,7 +334,7 @@ internal abstract class RegexParser
     private RegexRangeQuantifierSyntax ParseRangeQuantifier(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
     {
         var braceStart = Scanner.Position;
-        Scanner.Position++;
+        Scanner.Position += BoundOpenLength(braceStart);
         var openBraceToken = Scanner.Token(RegexSyntaxKind.OpenBraceToken, braceStart, leadingTrivia);
 
         var minToken = ReadBound();
@@ -271,17 +345,18 @@ internal abstract class RegexParser
             var commaStart = Scanner.Position;
             Scanner.Position++;
             commaToken = Scanner.Token(RegexSyntaxKind.CommaToken, commaStart);
-            if (Scanner.Current != '}')
+            if (BoundCloseLength(Scanner.Position) == 0)
             {
                 maxToken = ReadBound();
             }
         }
 
         var closeStart = Scanner.Position;
+        var closeLength = BoundCloseLength(closeStart);
         RegexSyntaxToken closeBraceToken;
-        if (Scanner.Current == '}')
+        if (closeLength > 0)
         {
-            Scanner.Position++;
+            Scanner.Position += closeLength;
             closeBraceToken = Scanner.Token(RegexSyntaxKind.CloseBraceToken, closeStart);
         }
         else
@@ -378,6 +453,14 @@ internal abstract class RegexParser
     /// anything; in .NET the same text is an unterminated class, so this follows the flavor rather than the options.
     /// </summary>
     protected bool AllowsEmptyCharacterClass => Flavor.Family == RegexFlavorFamily.JavaScript;
+
+    /// <summary>
+    /// Whether the class set grammar is in effect: nested classes, <c>&amp;&amp;</c> and <c>--</c> operators, and
+    /// <c>\q{…}</c> string disjunctions. That is what the JavaScript <c>v</c> flag turns on.
+    /// </summary>
+    protected bool UsesUnicodeSetsMode =>
+        (Options & RegexPatternOptions.UnicodeSets) != RegexPatternOptions.None &&
+        Flavor.HasFeature(RegexFlavorFeatures.ClassSetOperations);
 
     /// <summary>Whether the pattern is read as a sequence of code points rather than of UTF-16 code units.</summary>
     protected bool UsesUnicodeMode => (Options & RegexPatternOptions.Unicode) != RegexPatternOptions.None;

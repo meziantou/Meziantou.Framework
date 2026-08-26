@@ -34,6 +34,8 @@ public enum RegexSyntaxKind
     PosixCharacterClass,
     CollatingElement,
     ClassSubtraction,
+    ClassSetOperation,
+    ClassStringLiteral,
 
     // ---- Groups ----
     CapturingGroup,
@@ -46,6 +48,7 @@ public enum RegexSyntaxKind
     Lookaround,
     Conditional,
     ConditionalReference,
+    Callout,
 
     // ---- Tokens ----
     /// <summary>A single ordinary character that matches itself.</summary>
@@ -128,6 +131,12 @@ public enum RegexSyntaxKind
 
     /// <summary>A PCRE backtracking verb such as <c>*SKIP</c>.</summary>
     VerbToken,
+
+    /// <summary>The body of a PCRE callout, such as the <c>1</c> of <c>(?C1)</c>.</summary>
+    CalloutToken,
+
+    /// <summary>A JavaScript <c>v</c>-mode class set operator: <c>&amp;&amp;</c> or <c>--</c>.</summary>
+    ClassSetOperatorToken,
 
     /// <summary>The <c>/</c> delimiter of a JavaScript regular-expression literal.</summary>
     SlashToken,

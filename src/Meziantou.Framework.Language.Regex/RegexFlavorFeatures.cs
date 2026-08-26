@@ -121,6 +121,12 @@ public enum RegexFlavorFeatures : long
     /// <summary>POSIX bracket expressions, <c>[[:alpha:]]</c>.</summary>
     PosixBracketExpressions = 1L << 28,
 
+    /// <summary>
+    /// The class set grammar: nested classes, <c>&amp;&amp;</c> and <c>--</c> operators, and <c>\q{…}</c> string
+    /// disjunctions. JavaScript turns it on with the <c>v</c> flag rather than having it always.
+    /// </summary>
+    ClassSetOperations = 1L << 33,
+
     // ---- other ----
 
     /// <summary>Recursion, <c>(?R)</c> and <c>(?1)</c>.</summary>

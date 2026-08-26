@@ -48,6 +48,9 @@ internal static class RegexDiagnosticIds
     public const string MalformedUnicodePropertyEscape = "REGEX0033";
     public const string UnrecognizedUnicodeProperty = "REGEX0034";
 
+    // ---- JavaScript only ----
+    public const string MalformedClassSetOperation = "REGEX0070";
+
     // ---- .NET only ----
     public const string ExclusionGroupNotLast = "REGEX0050";
     public const string AlternationHasTooManyConditions = "REGEX0051";

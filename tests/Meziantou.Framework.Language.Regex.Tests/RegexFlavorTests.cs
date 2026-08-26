@@ -34,18 +34,81 @@ public sealed class RegexFlavorTests
         Assert.Null(flavor);
     }
 
-    /// <summary>
-    /// A basic expression's escaped parentheses are read as escapes, not as grouping. That is a known limitation, and
-    /// pinning it down here means a later change that does model the grouping has to say so.
-    /// </summary>
+    /// <summary>A basic expression spells its delimiters escaped, so <c>\(…\)</c> is the group.</summary>
     [Fact]
-    public void PosixBasicReadsEscapedParenthesesAsEscapes()
+    public void PosixBasicReadsEscapedParenthesesAsAGroup()
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(@"\(ab\)c", RegexFlavor.PosixBasic);
 
         Assert.Empty(tree.Diagnostics);
+        var group = Assert.Single(tree.Root.DescendantNodes().OfType<RegexCapturingGroupSyntax>());
+        Assert.Equal(@"\(ab\)", group.ToFullString());
+        Assert.Equal(1, group.Number);
+    }
+
+    [Fact]
+    public void PosixBasicReadsBareParenthesesAsLiterals()
+    {
+        var tree = RegexSyntaxAssert.TextIsFaithful("(ab)c", RegexFlavor.PosixBasic);
+
+        Assert.Empty(tree.Diagnostics);
         Assert.Empty(tree.Root.DescendantNodes().OfType<RegexGroupSyntax>());
-        Assert.HasCount(2, tree.Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>().ToArray());
+    }
+
+    [Theory]
+    [InlineData(@"a\{2,3\}", 2, 3)]
+    [InlineData(@"a\{2\}", 2, 2)]
+    [InlineData(@"a\{2,\}", 2, null)]
+    public void PosixBasicReadsEscapedBracesAsABound(string pattern, int min, int? max)
+    {
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.PosixBasic);
+
+        Assert.Empty(tree.Diagnostics);
+        var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.Root.Alternation.Branches[0].Terms[0]);
+        Assert.Equal(min, quantified.Quantifier.MinCount);
+        Assert.Equal(max, quantified.Quantifier.MaxCount);
+    }
+
+    [Fact]
+    public void PosixBasicSupportsTheGnuAlternationAndQuantifiers()
+    {
+        var alternation = RegexSyntaxAssert.TextIsFaithful(@"a\|b", RegexFlavor.PosixBasic);
+        Assert.Empty(alternation.Diagnostics);
+        Assert.Equal(2, alternation.Root.Alternation.Branches.Count);
+
+        foreach (var pattern in new[] { @"a\+", @"a\?" })
+        {
+            var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.PosixBasic);
+            Assert.Empty(tree.Diagnostics);
+            Assert.IsType<RegexQuantifiedSyntax>(tree.Root.Alternation.Branches[0].Terms[0]);
+        }
+    }
+
+    /// <summary>
+    /// In a basic expression these are special only where they can be: <c>^</c> where a branch starts, <c>$</c> where
+    /// one ends, and <c>*</c> only after something to repeat.
+    /// </summary>
+    [Theory]
+    [InlineData("^ab$", 2, 4)]
+    [InlineData("a^b", 0, 3)]
+    [InlineData("a$b", 0, 3)]
+    [InlineData("*ab", 0, 3)]
+    public void PosixBasicTreatsSpecialCharactersPositionally(string pattern, int anchors, int terms)
+    {
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.PosixBasic);
+
+        Assert.Empty(tree.Diagnostics);
+        Assert.HasCount(anchors, tree.Root.DescendantNodes().OfType<RegexAnchorSyntax>().ToArray());
+        Assert.HasCount(terms, tree.Root.Alternation.Branches[0].Terms);
+    }
+
+    [Fact]
+    public void PosixBasicSupportsBackreferences()
+    {
+        var tree = RegexSyntaxAssert.TextIsFaithful(@"\(a\)\1", RegexFlavor.PosixBasic);
+
+        Assert.Empty(tree.Diagnostics);
+        Assert.Equal(1, Assert.Single(tree.Root.DescendantNodes().OfType<RegexBackreferenceSyntax>()).Number);
     }
 
     [Fact]

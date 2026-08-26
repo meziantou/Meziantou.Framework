@@ -54,9 +54,9 @@ public sealed class RegexFlavor
 
     /// <summary>The ECMAScript flavor.</summary>
     /// <remarks>
-    /// The <c>u</c> flag is honoured: it makes a surrogate pair one atom. The <c>v</c> flag's class set operations --
-    /// nested classes, <c>&amp;&amp;</c>, and <c>\q{…}</c> -- are not implemented, so a <c>v</c>-mode class is read as
-    /// an ordinary one.
+    /// Both Unicode flags are honoured. <c>u</c> makes a surrogate pair one atom; <c>v</c> additionally turns on the
+    /// class set grammar, so a class may nest, be intersected with <c>&amp;&amp;</c>, have another subtracted with
+    /// <c>--</c>, and contain a <c>\q{…}</c> string disjunction.
     /// </remarks>
     public static RegexFlavor JavaScript { get; } = new(
         "javascript",
@@ -72,6 +72,7 @@ public sealed class RegexFlavor
         RegexFlavorFeatures.UnicodeCategories |
         RegexFlavorFeatures.UnicodeCategoriesRequireUnicodeFlag |
         RegexFlavorFeatures.UnicodePropertyNames |
+        RegexFlavorFeatures.ClassSetOperations |
         RegexFlavorFeatures.BareBraceIsLiteral);
 
     /// <summary>The PCRE and Perl flavor.</summary>
@@ -103,15 +104,19 @@ public sealed class RegexFlavor
         RegexFlavorFamily.Posix,
         ModernFeatures | RegexFlavorFeatures.PosixBracketExpressions);
 
-    /// <summary>POSIX basic regular expressions (BRE), in which groups and bounds are escaped.</summary>
+    /// <summary>POSIX basic regular expressions (BRE), in which the delimiters are spelled with a backslash.</summary>
     /// <remarks>
-    /// The escaped forms <c>\(</c>, <c>\)</c>, <c>\{</c>, and <c>\}</c> are read as escapes rather than as grouping and
-    /// bounds, so a basic expression round-trips but its groups are not in the tree as groups.
+    /// <c>\(…\)</c> groups, <c>\{n,m\}</c> bounds, and backreferences are all supported. Alternation with <c>\|</c>
+    /// and the <c>\+</c> and <c>\?</c> quantifiers are GNU extensions rather than POSIX proper, and are accepted.
     /// </remarks>
     public static RegexFlavor PosixBasic { get; } = new(
         "bre",
         RegexFlavorFamily.Posix,
-        CommonFeatures | RegexFlavorFeatures.PosixBracketExpressions | RegexFlavorFeatures.EscapedGroupDelimiters);
+        CommonFeatures |
+        RegexFlavorFeatures.PosixBracketExpressions |
+        RegexFlavorFeatures.EscapedGroupDelimiters |
+        RegexFlavorFeatures.Alternation |
+        RegexFlavorFeatures.PlusAndQuestionQuantifiers);
 
     /// <summary>The canonical lowercase name of the flavor, such as <c>net</c> or <c>pcre</c>.</summary>
     public string Name { get; }

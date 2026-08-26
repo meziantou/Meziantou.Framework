@@ -4,17 +4,18 @@ namespace Meziantou.Framework.Language.Regex.Internals;
 /// <remarks>
 /// <para>
 /// POSIX is the Perl grammar with almost everything taken away, which the flavor features already express: no inline
-/// options, no lookaround, no named groups, no Unicode categories, and, for basic expressions, no alternation and no
-/// <c>+</c> or <c>?</c>.
+/// options, no lookaround, no named groups, and no Unicode categories.
 /// </para>
 /// <para>
-/// What features cannot express is that a basic expression writes its groups and bounds escaped, so a bare <c>(</c>
-/// or <c>{</c> is an ordinary character rather than the start of a construct. That is what this parser adds.
+/// What features cannot express is that a basic expression spells its delimiters with a backslash. <c>\(</c> opens a
+/// group, <c>\{</c> opens a bound, <c>\|</c> separates branches, and the bare characters are ordinary text -- the
+/// reverse of every other flavor. The grammar skeleton asks for each delimiter by length rather than matching a
+/// character, so overriding those is all it takes.
 /// </para>
 /// <para>
-/// Their escaped counterparts are read as escapes rather than as grouping: <c>\(a\)</c> parses as an escape, a
-/// literal, and an escape. The text round-trips and reports nothing, but the group is not in the tree as a group. A
-/// consumer that needs the structure of a basic expression will have to wait for it.
+/// The other basic-expression rule is positional: <c>^</c> is an anchor only where a branch starts, <c>$</c> only
+/// where one ends, and a <c>*</c> with nothing before it is an ordinary character rather than a quantifier with
+/// nothing to repeat.
 /// </para>
 /// </remarks>
 internal sealed class PosixRegexParser : PerlStyleRegexParser
@@ -26,29 +27,99 @@ internal sealed class PosixRegexParser : PerlStyleRegexParser
 
     private bool DelimitersAreEscaped => Flavor.HasFeature(RegexFlavorFeatures.EscapedGroupDelimiters);
 
-    protected override RegexAtomSyntax ParseAtom(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
-    {
-        if (!DelimitersAreEscaped)
-            return base.ParseAtom(leadingTrivia);
+    protected override int AlternationSeparatorLength(int position) =>
+        DelimitersAreEscaped ? EscapedLength(position, '|') : base.AlternationSeparatorLength(position);
 
-        // In a basic expression the roles of "(" and "\(" are swapped, so a bare parenthesis is just a character and
-        // an escaped one opens a group.
-        if (Scanner.Current is '(' or ')' or '{' or '}')
-        {
-            var start = Scanner.Position;
-            Scanner.Position++;
+    protected override int GroupOpenLength(int position) =>
+        DelimitersAreEscaped ? EscapedLength(position, '(') : base.GroupOpenLength(position);
 
-            return WithOptions(new RegexLiteralSyntax(Scanner.Token(RegexSyntaxKind.LiteralToken, start, leadingTrivia)));
-        }
+    protected override int GroupCloseLength(int position) =>
+        DelimitersAreEscaped ? EscapedLength(position, ')') : base.GroupCloseLength(position);
 
-        return base.ParseAtom(leadingTrivia);
-    }
+    protected override int BoundOpenLength(int position) =>
+        DelimitersAreEscaped ? EscapedLength(position, '{') : base.BoundOpenLength(position);
+
+    protected override int BoundCloseLength(int position) =>
+        DelimitersAreEscaped ? EscapedLength(position, '}') : base.BoundCloseLength(position);
+
+    /// <summary>Returns 2 when <paramref name="expected"/> appears escaped at <paramref name="position"/>, else 0.</summary>
+    private int EscapedLength(int position, char expected) =>
+        position + 1 < Text.Length && Text[position] == '\\' && Text[position + 1] == expected ? 2 : 0;
 
     protected override bool IsQuantifierAt(int position)
     {
         if (!DelimitersAreEscaped)
             return base.IsQuantifierAt(position);
 
-        return position < Text.Length && Text[position] == '*';
+        // A basic expression has no bare "+" or "?"; GNU spells them escaped, and the bound is "\{…\}".
+        if (BoundOpenLength(position) > 0)
+            return IsWellFormedBoundAt(position);
+
+        return SimpleQuantifierLength(position, out _) > 0;
+    }
+
+    protected override int SimpleQuantifierLength(int position, out char operatorCharacter)
+    {
+        if (!DelimitersAreEscaped)
+            return base.SimpleQuantifierLength(position, out operatorCharacter);
+
+        if (position < Text.Length && Text[position] == '*')
+        {
+            operatorCharacter = '*';
+
+            return 1;
+        }
+
+        // GNU spells the other two escaped, because a basic expression has no bare "+" or "?".
+        foreach (var candidate in (ReadOnlySpan<char>)['+', '?'])
+        {
+            if (EscapedLength(position, candidate) > 0)
+            {
+                operatorCharacter = candidate;
+
+                return 2;
+            }
+        }
+
+        operatorCharacter = '\0';
+
+        return 0;
+    }
+
+    protected override RegexAtomSyntax ParseAtom(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    {
+        if (!DelimitersAreEscaped)
+            return base.ParseAtom(leadingTrivia);
+
+        var start = Scanner.Position;
+
+        // The delimiters are the escaped spellings, so the bare characters are ordinary text.
+        if (Scanner.Current is '(' or ')' or '{' or '}' or '|' or '+' or '?')
+            return ReadLiteral(leadingTrivia);
+
+        // "*" is a quantifier only when something precedes it; at the start of a branch it matches an asterisk.
+        if (Scanner.Current == '*' && IsAtSequenceStart)
+            return ReadLiteral(leadingTrivia);
+
+        // "^" asserts only where a branch begins, and "$" only where one ends. Elsewhere they are characters.
+        if (Scanner.Current == '^' && !IsAtSequenceStart)
+            return ReadLiteral(leadingTrivia);
+
+        if (Scanner.Current == '$' && !IsAtBranchEnd(start + 1))
+            return ReadLiteral(leadingTrivia);
+
+        return base.ParseAtom(leadingTrivia);
+    }
+
+    /// <summary>Whether nothing but the end of a branch follows <paramref name="position"/>.</summary>
+    private bool IsAtBranchEnd(int position) =>
+        position >= Text.Length || AlternationSeparatorLength(position) > 0 || GroupCloseLength(position) > 0;
+
+    private RegexLiteralSyntax ReadLiteral(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    {
+        var start = Scanner.Position;
+        Scanner.Position++;
+
+        return WithOptions(new RegexLiteralSyntax(Scanner.Token(RegexSyntaxKind.LiteralToken, start, leadingTrivia)));
     }
 }

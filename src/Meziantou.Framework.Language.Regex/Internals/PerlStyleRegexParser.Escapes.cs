@@ -52,12 +52,7 @@ internal partial class PerlStyleRegexParser
                 Scanner.Position += 2;
                 return WithOptions(new RegexAnchorSyntax(Scanner.Token(RegexSyntaxKind.AnchorToken, start, leadingTrivia)));
 
-            case 'w':
-            case 'W':
-            case 's':
-            case 'S':
-            case 'd':
-            case 'D':
+            case var letter when IsShorthandClassLetter(letter):
                 Scanner.Position += 2;
                 return WithOptions(new RegexCharacterClassEscapeSyntax(Scanner.Token(RegexSyntaxKind.ClassEscapeToken, start, leadingTrivia)));
 
@@ -68,7 +63,7 @@ internal partial class PerlStyleRegexParser
                 return ParseQuotedLiteral(leadingTrivia);
 
             default:
-                return ParseBackreferenceOrEscape(leadingTrivia);
+                return TryParseFlavorEscape(leadingTrivia) ?? ParseBackreferenceOrEscape(leadingTrivia);
         }
     }
 
@@ -130,6 +125,13 @@ internal partial class PerlStyleRegexParser
         // the name rather than the character that ends it.
         var namesProperties = Flavor.HasFeature(RegexFlavorFeatures.UnicodePropertyNames);
         var nameStart = Scanner.Position;
+
+        // "\p{^L}" is the other way of writing "\P{L}" where the flavor has it.
+        if (namesProperties && Scanner.Current == '^')
+        {
+            Scanner.Position++;
+        }
+
         while (!Scanner.IsAtEnd &&
             (RegexCharacterTables.IsBoundaryWordChar(Scanner.Current) || Scanner.Current == '-' || (namesProperties && Scanner.Current == '=')))
         {

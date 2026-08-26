@@ -107,6 +107,39 @@ internal abstract partial class PerlStyleRegexParser
                 continue;
             }
 
+            // In the class set grammar a class may contain another one, and "\q{…}" contributes whole strings.
+            if (UsesUnicodeSetsMode && !inRange && Scanner.Current == '[')
+            {
+                members.Add(ParseNestedSetClass());
+                firstChar = false;
+                continue;
+            }
+
+            if (UsesUnicodeSetsMode && !inRange && Scanner.Current == '\\' && Scanner.Peek() == 'q' && Scanner.Peek(2) == '{')
+            {
+                members.Add(ParseClassStringLiteral());
+                firstChar = false;
+                continue;
+            }
+
+            // An operator turns the member before it into the first operand of a set operation. An operand is a single
+            // thing, so anything else on the left is an error, and the operator is kept as skipped text rather than
+            // folded into an operation whose parts would no longer be in source order.
+            if (UsesUnicodeSetsMode && !inRange && ClassSetOperatorLength(Scanner.Position) > 0)
+            {
+                if (members.Count == 1)
+                {
+                    members = [ParseClassSetOperation(members[0])];
+                }
+                else
+                {
+                    members.Add(SkipClassSetOperator(members.Count == 0));
+                }
+
+                firstChar = false;
+                continue;
+            }
+
             var element = ReadClassElement();
 
             if (element.IsClassEscape)
@@ -151,8 +184,11 @@ internal abstract partial class PerlStyleRegexParser
                 AddRange(members, rangeStart!, rangeHyphen!, element, rangeStartValue);
                 inRange = false;
             }
-            else if (Scanner.Position + 1 < Text.Length && Text[Scanner.Position] == '-' && Text[Scanner.Position + 1] != ']')
+            else if (Scanner.Position + 1 < Text.Length && Text[Scanner.Position] == '-' && Text[Scanner.Position + 1] != ']' &&
+                ClassSetOperatorLength(Scanner.Position) == 0)
             {
+                // The look-ahead has to decline the first "-" of a "--" operator, or "[a--b]" starts a range from "a"
+                // to "-" and the operator never gets the chance to be one.
                 var hyphenStart = Scanner.Position;
                 Scanner.Position++;
                 rangeStart = element.Node;
@@ -186,6 +222,160 @@ internal abstract partial class PerlStyleRegexParser
         }
 
         return WithOptions(new RegexCharacterClassSyntax(openBracketToken, caretToken, members, closeBracketToken));
+    }
+
+    /// <summary>The length of a class set operator at <paramref name="position"/>, or 0.</summary>
+    /// <remarks>
+    /// A single <c>-</c> is a range, so only the doubled form is an operator. The same is true of <c>&amp;</c>, which
+    /// on its own is an ordinary character.
+    /// </remarks>
+    private int ClassSetOperatorLength(int position)
+    {
+        if (position + 1 >= Text.Length)
+            return 0;
+
+        var ch = Text[position];
+
+        return (ch == '&' || ch == '-') && Text[position + 1] == ch ? 2 : 0;
+    }
+
+    /// <summary>Parses a class nested inside another, which only the class set grammar allows.</summary>
+    private RegexSyntaxNode ParseNestedSetClass()
+    {
+        var start = Scanner.Position;
+        if (!TryEnterRecursion(new TextSpan(start, 1)))
+        {
+            Scanner.Position++;
+
+            return WithOptions(new RegexLiteralSyntax(Scanner.Token(RegexSyntaxKind.LiteralToken, start)));
+        }
+
+        try
+        {
+            Scanner.Position++;
+
+            return ParseCharacterClassBody(Scanner.Token(RegexSyntaxKind.OpenBracketToken, start));
+        }
+        finally
+        {
+            ExitRecursion();
+        }
+    }
+
+    /// <summary>Parses <c>\q{abc|def}</c>, which contributes whole strings rather than characters.</summary>
+    private RegexClassStringLiteralSyntax ParseClassStringLiteral()
+    {
+        var start = Scanner.Position;
+        Scanner.Position += 3;
+        var startToken = Scanner.Token(RegexSyntaxKind.QuoteStartToken, start);
+
+        var textStart = Scanner.Position;
+        while (!Scanner.IsAtEnd && Scanner.Current != '}')
+        {
+            Scanner.Position++;
+        }
+
+        var textToken = Scanner.Position > textStart ? Scanner.Token(RegexSyntaxKind.QuoteTextToken, textStart) : null;
+
+        RegexSyntaxToken? closeBraceToken = null;
+        if (Scanner.Current == '}')
+        {
+            var closeStart = Scanner.Position;
+            Scanner.Position++;
+            closeBraceToken = Scanner.Token(RegexSyntaxKind.CloseBraceToken, closeStart);
+        }
+        else
+        {
+            AddDiagnostic(
+                TextSpan.FromBounds(start, Scanner.Position),
+                RegexDiagnosticIds.UnterminatedBracket,
+                "Unterminated '\\q{...}' string disjunction.");
+        }
+
+        return WithOptions(new RegexClassStringLiteralSyntax(startToken, textToken, closeBraceToken));
+    }
+
+    /// <summary>
+    /// Parses the rest of an intersection or difference, given the operand already read.
+    /// </summary>
+    /// <remarks>
+    /// The grammar is n-ary but not mixed: <c>[a--b--c]</c> is one difference of three operands, while
+    /// <c>[a&amp;&amp;b--c]</c> is an error. An operand is a single thing, so <c>[abc--d]</c> is an error too, which is
+    /// why more than one member on the left is reported rather than quietly grouped.
+    /// </remarks>
+    private RegexClassSetOperationSyntax ParseClassSetOperation(RegexSyntaxNode first)
+    {
+        var operands = new List<RegexSyntaxNode> { first };
+        var operators = new List<RegexSyntaxToken>();
+        var start = first.FullSpan.Start;
+
+        string? expected = null;
+        while (ClassSetOperatorLength(Scanner.Position) is var length && length > 0)
+        {
+            var operatorStart = Scanner.Position;
+            Scanner.Position += length;
+            var operatorToken = Scanner.Token(RegexSyntaxKind.ClassSetOperatorToken, operatorStart);
+            operators.Add(operatorToken);
+
+            expected ??= operatorToken.Text;
+            if (operatorToken.Text != expected)
+            {
+                AddDiagnostic(operatorToken.Span, RegexDiagnosticIds.MalformedClassSetOperation, "Class set operators may not be mixed at the same level.");
+            }
+
+            if (Scanner.IsAtEnd || Scanner.Current == ']')
+            {
+                AddDiagnostic(operatorToken.Span, RegexDiagnosticIds.MalformedClassSetOperation, "A class set operator needs an operand after it.");
+                break;
+            }
+
+            operands.Add(ReadClassSetOperand());
+        }
+
+        return WithOptions(new RegexClassSetOperationSyntax(operands, operators, start));
+    }
+
+    /// <summary>Keeps an operator that has no single operand before it, so the text is still accounted for.</summary>
+    private RegexSkippedTextSyntax SkipClassSetOperator(bool atStart)
+    {
+        var start = Scanner.Position;
+        Scanner.Position += ClassSetOperatorLength(start);
+        var token = Scanner.Token(RegexSyntaxKind.BadToken, start);
+
+        AddDiagnostic(
+            token.Span,
+            RegexDiagnosticIds.MalformedClassSetOperation,
+            atStart
+                ? "A class set operator needs an operand before it."
+                : "A class set operator takes a single operand on each side.");
+
+        return WithOptions(new RegexSkippedTextSyntax([token], token.FullSpan.Start));
+    }
+
+    /// <summary>Reads one operand of a set operation: a nested class, a string disjunction, or a single member.</summary>
+    private RegexSyntaxNode ReadClassSetOperand()
+    {
+        if (Scanner.Current == '[')
+            return ParseNestedSetClass();
+
+        if (Scanner.Current == '\\' && Scanner.Peek() == 'q' && Scanner.Peek(2) == '{')
+            return ParseClassStringLiteral();
+
+        var element = ReadClassElement();
+
+        // An operand may itself be a range, as the right-hand side of "[\w--a-z]" is.
+        if (!element.IsClassEscape && Scanner.Position + 1 < Text.Length && Text[Scanner.Position] == '-' && Text[Scanner.Position + 1] != ']' &&
+            ClassSetOperatorLength(Scanner.Position) == 0)
+        {
+            var hyphenStart = Scanner.Position;
+            Scanner.Position++;
+            var hyphenToken = Scanner.Token(RegexSyntaxKind.HyphenToken, hyphenStart);
+            var end = ReadClassElement();
+
+            return WithOptions(new RegexCharacterRangeSyntax(element.Node, hyphenToken, end.Node));
+        }
+
+        return element.Node;
     }
 
     private void AddRange(List<RegexSyntaxNode> members, RegexSyntaxNode start, RegexSyntaxToken hyphen, ClassElement end, char startValue)
@@ -279,12 +469,7 @@ internal abstract partial class PerlStyleRegexParser
         {
             switch (Scanner.Peek())
             {
-                case 'd':
-                case 'D':
-                case 's':
-                case 'S':
-                case 'w':
-                case 'W':
+                case var letter when IsShorthandClassLetterInClass(letter):
                     Scanner.Position += 2;
                     return new ClassElement(WithOptions(new RegexCharacterClassEscapeSyntax(Scanner.Token(RegexSyntaxKind.ClassEscapeToken, start))), '\0', IsTranslated: false, IsClassEscape: true, IsDashEscape: false);
 

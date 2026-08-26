@@ -112,6 +112,18 @@ namespace Meziantou.Framework.Language.Regex
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
     }
 
+    public sealed class RegexCalloutSyntax : Meziantou.Framework.Language.Regex.RegexAtomSyntax
+    {
+        public Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.Regex.RegexSyntaxToken QuestionToken { get => throw null; }
+        public Meziantou.Framework.Language.Regex.RegexSyntaxToken? BodyToken { get => throw null; }
+        public Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
+        public string Value { get => throw null; }
+        public RegexCalloutSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken openParenToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken questionToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? bodyToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken closeParenToken) { }
+        public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
+        public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
+    }
+
     public readonly struct RegexCaptureInfo : System.IEquatable<Meziantou.Framework.Language.Regex.RegexCaptureInfo>
     {
         public int Number { get => throw null; init { } }
@@ -177,6 +189,30 @@ namespace Meziantou.Framework.Language.Regex
         public Meziantou.Framework.Language.Regex.RegexSyntaxNode? End { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexCharacterRangeSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxNode start, Meziantou.Framework.Language.Regex.RegexSyntaxToken hyphenToken, Meziantou.Framework.Language.Regex.RegexSyntaxNode? end) : base(default(Meziantou.Framework.Language.Regex.RegexSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken>)) { }
+        public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
+        public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
+    }
+
+    public sealed class RegexClassSetOperationSyntax : Meziantou.Framework.Language.Regex.RegexSyntaxNode
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> Operands { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken> OperatorTokens { get => throw null; }
+        public string OperatorText { get => throw null; }
+        public bool IsIntersection { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public RegexClassSetOperationSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode>? operands, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken>? operatorTokens, int fullStart = 0) : base(default(Meziantou.Framework.Language.Regex.RegexSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken>)) { }
+        public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
+        public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
+    }
+
+    public sealed class RegexClassStringLiteralSyntax : Meziantou.Framework.Language.Regex.RegexSyntaxNode
+    {
+        public Meziantou.Framework.Language.Regex.RegexSyntaxToken StartToken { get => throw null; }
+        public Meziantou.Framework.Language.Regex.RegexSyntaxToken? TextToken { get => throw null; }
+        public Meziantou.Framework.Language.Regex.RegexSyntaxToken? CloseBraceToken { get => throw null; }
+        public string Value { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Alternatives { get => throw null; }
+        public RegexClassStringLiteralSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken startToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? textToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? closeBraceToken) : base(default(Meziantou.Framework.Language.Regex.RegexSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken>)) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -307,6 +343,7 @@ namespace Meziantou.Framework.Language.Regex
         UnicodePropertyNames = 67108864,
         CharacterClassSubtraction = 134217728,
         PosixBracketExpressions = 268435456,
+        ClassSetOperations = 8589934592,
         Recursion = 536870912,
         BacktrackingVerbs = 1073741824,
         IgnorePatternWhitespace = 2147483648,
@@ -610,60 +647,65 @@ namespace Meziantou.Framework.Language.Regex
         PosixCharacterClass = 22,
         CollatingElement = 23,
         ClassSubtraction = 24,
-        CapturingGroup = 25,
-        NamedGroup = 26,
-        BalancingGroup = 27,
-        NonCapturingGroup = 28,
-        AtomicGroup = 29,
-        OptionsGroup = 30,
-        BranchResetGroup = 31,
-        Lookaround = 32,
-        Conditional = 33,
-        ConditionalReference = 34,
-        LiteralToken = 35,
-        EscapeToken = 36,
-        ClassEscapeToken = 37,
-        AnchorToken = 38,
-        DotToken = 39,
-        BarToken = 40,
-        AsteriskToken = 41,
-        PlusToken = 42,
-        QuestionToken = 43,
-        OpenBraceToken = 44,
-        CloseBraceToken = 45,
-        CommaToken = 46,
-        NumberToken = 47,
-        OpenParenToken = 48,
-        CloseParenToken = 49,
-        OpenBracketToken = 50,
-        CloseBracketToken = 51,
-        CaretToken = 52,
-        HyphenToken = 53,
-        GroupKindToken = 54,
-        OptionsToken = 55,
-        ColonToken = 56,
-        NameToken = 57,
-        OpenNameToken = 58,
-        CloseNameToken = 59,
-        BackreferenceToken = 60,
-        NamedBackreferenceStartToken = 61,
-        CategoryStartToken = 62,
-        CategoryNameToken = 63,
-        QuoteStartToken = 64,
-        QuoteTextToken = 65,
-        QuoteEndToken = 66,
-        PosixClassStartToken = 67,
-        PosixClassNameToken = 68,
-        PosixClassEndToken = 69,
-        RecursionToken = 70,
-        VerbToken = 71,
-        SlashToken = 72,
-        FlagsToken = 73,
-        BadToken = 74,
-        EndOfPatternToken = 75,
-        WhitespaceTrivia = 76,
-        PatternCommentTrivia = 77,
-        InlineCommentTrivia = 78
+        ClassSetOperation = 25,
+        ClassStringLiteral = 26,
+        CapturingGroup = 27,
+        NamedGroup = 28,
+        BalancingGroup = 29,
+        NonCapturingGroup = 30,
+        AtomicGroup = 31,
+        OptionsGroup = 32,
+        BranchResetGroup = 33,
+        Lookaround = 34,
+        Conditional = 35,
+        ConditionalReference = 36,
+        Callout = 37,
+        LiteralToken = 38,
+        EscapeToken = 39,
+        ClassEscapeToken = 40,
+        AnchorToken = 41,
+        DotToken = 42,
+        BarToken = 43,
+        AsteriskToken = 44,
+        PlusToken = 45,
+        QuestionToken = 46,
+        OpenBraceToken = 47,
+        CloseBraceToken = 48,
+        CommaToken = 49,
+        NumberToken = 50,
+        OpenParenToken = 51,
+        CloseParenToken = 52,
+        OpenBracketToken = 53,
+        CloseBracketToken = 54,
+        CaretToken = 55,
+        HyphenToken = 56,
+        GroupKindToken = 57,
+        OptionsToken = 58,
+        ColonToken = 59,
+        NameToken = 60,
+        OpenNameToken = 61,
+        CloseNameToken = 62,
+        BackreferenceToken = 63,
+        NamedBackreferenceStartToken = 64,
+        CategoryStartToken = 65,
+        CategoryNameToken = 66,
+        QuoteStartToken = 67,
+        QuoteTextToken = 68,
+        QuoteEndToken = 69,
+        PosixClassStartToken = 70,
+        PosixClassNameToken = 71,
+        PosixClassEndToken = 72,
+        RecursionToken = 73,
+        VerbToken = 74,
+        CalloutToken = 75,
+        ClassSetOperatorToken = 76,
+        SlashToken = 77,
+        FlagsToken = 78,
+        BadToken = 79,
+        EndOfPatternToken = 80,
+        WhitespaceTrivia = 81,
+        PatternCommentTrivia = 82,
+        InlineCommentTrivia = 83
     }
 
     public abstract class RegexSyntaxNode
@@ -804,9 +846,12 @@ namespace Meziantou.Framework.Language.Regex
         public virtual void VisitCharacterEscape(Meziantou.Framework.Language.Regex.RegexCharacterEscapeSyntax node) { }
         public virtual void VisitCharacterRange(Meziantou.Framework.Language.Regex.RegexCharacterRangeSyntax node) { }
         public virtual void VisitClassSubtraction(Meziantou.Framework.Language.Regex.RegexClassSubtractionSyntax node) { }
+        public virtual void VisitClassSetOperation(Meziantou.Framework.Language.Regex.RegexClassSetOperationSyntax node) { }
+        public virtual void VisitClassStringLiteral(Meziantou.Framework.Language.Regex.RegexClassStringLiteralSyntax node) { }
         public virtual void VisitCollatingElement(Meziantou.Framework.Language.Regex.RegexCollatingElementSyntax node) { }
         public virtual void VisitConditional(Meziantou.Framework.Language.Regex.RegexConditionalSyntax node) { }
         public virtual void VisitConditionalReference(Meziantou.Framework.Language.Regex.RegexConditionalReferenceSyntax node) { }
+        public virtual void VisitCallout(Meziantou.Framework.Language.Regex.RegexCalloutSyntax node) { }
         public virtual void VisitInlineOptions(Meziantou.Framework.Language.Regex.RegexInlineOptionsSyntax node) { }
         public virtual void VisitLiteral(Meziantou.Framework.Language.Regex.RegexLiteralSyntax node) { }
         public virtual void VisitLookaround(Meziantou.Framework.Language.Regex.RegexLookaroundSyntax node) { }
@@ -844,9 +889,12 @@ namespace Meziantou.Framework.Language.Regex
         public virtual TResult VisitCharacterEscape(Meziantou.Framework.Language.Regex.RegexCharacterEscapeSyntax node) => throw null;
         public virtual TResult VisitCharacterRange(Meziantou.Framework.Language.Regex.RegexCharacterRangeSyntax node) => throw null;
         public virtual TResult VisitClassSubtraction(Meziantou.Framework.Language.Regex.RegexClassSubtractionSyntax node) => throw null;
+        public virtual TResult VisitClassSetOperation(Meziantou.Framework.Language.Regex.RegexClassSetOperationSyntax node) => throw null;
+        public virtual TResult VisitClassStringLiteral(Meziantou.Framework.Language.Regex.RegexClassStringLiteralSyntax node) => throw null;
         public virtual TResult VisitCollatingElement(Meziantou.Framework.Language.Regex.RegexCollatingElementSyntax node) => throw null;
         public virtual TResult VisitConditional(Meziantou.Framework.Language.Regex.RegexConditionalSyntax node) => throw null;
         public virtual TResult VisitConditionalReference(Meziantou.Framework.Language.Regex.RegexConditionalReferenceSyntax node) => throw null;
+        public virtual TResult VisitCallout(Meziantou.Framework.Language.Regex.RegexCalloutSyntax node) => throw null;
         public virtual TResult VisitInlineOptions(Meziantou.Framework.Language.Regex.RegexInlineOptionsSyntax node) => throw null;
         public virtual TResult VisitLiteral(Meziantou.Framework.Language.Regex.RegexLiteralSyntax node) => throw null;
         public virtual TResult VisitLookaround(Meziantou.Framework.Language.Regex.RegexLookaroundSyntax node) => throw null;

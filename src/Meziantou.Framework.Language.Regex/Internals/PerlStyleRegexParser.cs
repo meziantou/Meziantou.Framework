@@ -49,13 +49,16 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     {
         var start = Scanner.Position;
 
+        // The group opener is asked for by length rather than matched as a character, because a POSIX basic
+        // expression spells it "\(".
+        var groupOpen = GroupOpenLength(start);
+        if (groupOpen > 0)
+            return ParseGroup(leadingTrivia, groupOpen);
+
         switch (Scanner.Current)
         {
             case '[':
                 return ParseCharacterClass(leadingTrivia);
-
-            case '(':
-                return ParseGroup(leadingTrivia);
 
             case '\\':
                 return ParseBackslashAtom(leadingTrivia);
@@ -69,7 +72,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
                 Scanner.Position++;
                 return WithOptions(new RegexAnyCharacterSyntax(Scanner.Token(RegexSyntaxKind.DotToken, start, leadingTrivia)));
 
-            case ')':
+            case ')' when GroupCloseLength(start) > 0:
                 return SkipOneCharacter(leadingTrivia, RegexDiagnosticIds.InsufficientOpeningParentheses, "Unmatched ')'.");
 
             // Only a character that is a quantifier in this flavor can be one with nothing to repeat. In a basic
@@ -101,7 +104,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     /// diagnostic plus a node that still covers the text, and every character it consumed in one step is kept as its
     /// own token so the parts of a header are addressable.
     /// </remarks>
-    private RegexAtomSyntax ParseGroup(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    private RegexAtomSyntax ParseGroup(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia, int openLength)
     {
         var start = Scanner.Position;
         if (!TryEnterRecursion(new TextSpan(start, 1)))
@@ -109,7 +112,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
 
         try
         {
-            Scanner.Position++;
+            Scanner.Position += openLength;
             var openParenToken = Scanner.Token(RegexSyntaxKind.OpenParenToken, start, leadingTrivia);
             OptionsStack.Push(Options);
 
@@ -166,13 +169,54 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
                     goto default;
 
                 default:
-                    return ParseOptionsConstruct(openParenToken, questionStart, inConditionalTest);
+                    return TryParseFlavorGroupHeader(openParenToken, questionStart)
+                        ?? ParseOptionsConstruct(openParenToken, questionStart, inConditionalTest);
             }
         }
         finally
         {
             ExitRecursion();
         }
+    }
+
+    /// <summary>Parses a <c>(?…</c> header that only some flavors have, or returns null to fall through.</summary>
+    protected virtual RegexAtomSyntax? TryParseFlavorGroupHeader(RegexSyntaxToken openParenToken, int questionStart) => null;
+
+    /// <summary>Parses a backslash escape that only some flavors have, or returns null to fall through.</summary>
+    /// <remarks>The reading position is on the backslash.</remarks>
+    protected virtual RegexAtomSyntax? TryParseFlavorEscape(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia) => null;
+
+    /// <summary>Whether the letter after a backslash names a shorthand character class at the atom level.</summary>
+    protected virtual bool IsShorthandClassLetter(char letter) => IsCoreShorthandClassLetter(letter);
+
+    /// <summary>Whether the letter after a backslash names a shorthand character class inside a class.</summary>
+    /// <remarks>
+    /// Deliberately not delegating to <see cref="IsShorthandClassLetter"/>: an override that widens one by calling the
+    /// other would then call back into itself.
+    /// </remarks>
+    protected virtual bool IsShorthandClassLetterInClass(char letter) => IsCoreShorthandClassLetter(letter);
+
+    /// <summary>The six shorthand classes every flavor has.</summary>
+    private static bool IsCoreShorthandClassLetter(char letter) => letter is 'd' or 'D' or 's' or 'S' or 'w' or 'W';
+
+    /// <summary>Maps an inline option letter onto the options it sets, reporting whether the letter is one at all.</summary>
+    /// <remarks>
+    /// A letter can be recognized without changing anything: PCRE's <c>J</c> and <c>U</c> alter matching rather than
+    /// syntax, but they still have to be accepted or the construct around them looks malformed.
+    /// </remarks>
+    protected virtual bool TryMapOptionLetter(char letter, out RegexPatternOptions option)
+    {
+        option = (char)(letter | 0x20) switch
+        {
+            'i' => RegexPatternOptions.IgnoreCase,
+            'm' => RegexPatternOptions.Multiline,
+            'n' => RegexPatternOptions.ExplicitCapture,
+            's' => RegexPatternOptions.Singleline,
+            'x' => RegexPatternOptions.IgnorePatternWhitespace,
+            _ => RegexPatternOptions.None,
+        };
+
+        return option != RegexPatternOptions.None;
     }
 
     private RegexCapturingGroupSyntax ParsePlainGroup(RegexSyntaxToken openParenToken)
@@ -668,17 +712,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             }
             else
             {
-                var option = (char)(ch | 0x20) switch
-                {
-                    'i' => RegexPatternOptions.IgnoreCase,
-                    'm' => RegexPatternOptions.Multiline,
-                    'n' => RegexPatternOptions.ExplicitCapture,
-                    's' => RegexPatternOptions.Singleline,
-                    'x' => RegexPatternOptions.IgnorePatternWhitespace,
-                    _ => RegexPatternOptions.None,
-                };
-
-                if (option == RegexPatternOptions.None)
+                if (!TryMapOptionLetter(ch, out var option))
                     break;
 
                 Options = off ? Options & ~option : Options | option;
@@ -690,13 +724,14 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         return Scanner.Position > start ? Scanner.Token(RegexSyntaxKind.OptionsToken, start) : null;
     }
 
-    private RegexSyntaxToken ReadCloseParen(RegexSyntaxToken openParenToken)
+    private protected RegexSyntaxToken ReadCloseParen(RegexSyntaxToken openParenToken)
     {
         var trivia = TakeTrivia();
-        if (Scanner.Current == ')')
+        var closeLength = GroupCloseLength(Scanner.Position);
+        if (closeLength > 0)
         {
             var start = Scanner.Position;
-            Scanner.Position++;
+            Scanner.Position += closeLength;
 
             return Scanner.Token(RegexSyntaxKind.CloseParenToken, start, trivia);
         }
@@ -709,7 +744,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         return Scanner.MissingToken(RegexSyntaxKind.CloseParenToken, trivia);
     }
 
-    private void RestoreOptions()
+    private protected void RestoreOptions()
     {
         if (OptionsStack.Count > 0)
         {

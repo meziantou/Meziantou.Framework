@@ -12,7 +12,11 @@ public sealed class RegexCharacterClassEscapeSyntax : RegexAtomSyntax
     public RegexSyntaxToken EscapeToken { get; }
 
     /// <summary>Returns <see langword="true"/> when the escape is the negated form, spelled with a capital letter.</summary>
-    public bool IsNegated => EscapeToken.Text.Length == 2 && char.IsAsciiLetterUpper(EscapeToken.Text[1]);
+    /// <remarks>
+    /// Only the letters that come in pairs. <c>\R</c> and <c>\X</c> are capitals without a lower-case counterpart, so
+    /// they are not negations of anything.
+    /// </remarks>
+    public bool IsNegated => EscapeToken.Text is [_, 'D' or 'S' or 'W' or 'H' or 'V'];
 
     public override void Accept(RegexSyntaxVisitor visitor) => visitor.VisitCharacterClassEscape(this);
     public override TResult Accept<TResult>(RegexSyntaxVisitor<TResult> visitor) => visitor.VisitCharacterClassEscape(this);

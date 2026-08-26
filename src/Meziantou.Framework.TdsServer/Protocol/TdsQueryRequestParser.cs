@@ -18,7 +18,7 @@ internal static class TdsQueryRequestParser
             {
                 RemoteEndPoint = remoteEndPoint,
                 RequestType = TdsQueryRequestType.SqlBatch,
-                CommandText = DecodeUnicode(packet.Payload),
+                CommandText = DecodeSqlBatchText(packet.Payload),
                 UserContext = userContext,
             },
             TdsPacketType.Rpc => CreateRpcContext(packet.Payload, remoteEndPoint, userContext),
@@ -50,13 +50,7 @@ internal static class TdsQueryRequestParser
             return null;
         }
 
-        var position = 0;
-        var allHeadersLength = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(position, 4));
-        if (allHeadersLength >= 4 && allHeadersLength <= payload.Length)
-        {
-            position = (int)allHeadersLength;
-        }
-
+        var position = GetPayloadOffsetAfterAllHeaders(payload);
         if (position + 4 > payload.Length)
         {
             return null;
@@ -456,9 +450,57 @@ internal static class TdsQueryRequestParser
         };
     }
 
-    private static string DecodeUnicode(byte[] payload)
+    private static string DecodeSqlBatchText(byte[] payload)
     {
-        if (payload.Length == 0)
+        return DecodeUnicode(payload.AsSpan(GetPayloadOffsetAfterAllHeaders(payload)));
+    }
+
+    /// <summary>
+    /// Returns the offset of the payload data that follows the ALL_HEADERS block, or 0 when the
+    /// payload does not start with a well-formed one.
+    /// </summary>
+    /// <remarks>
+    /// TDS 7.2 and later prefix SQLBatch and RPC payloads with ALL_HEADERS: a total length
+    /// (including itself) followed by headers of the form { length, type, data }. Earlier clients
+    /// send the data directly, so the block is validated rather than assumed.
+    /// </remarks>
+    private static int GetPayloadOffsetAfterAllHeaders(ReadOnlySpan<byte> payload)
+    {
+        if (payload.Length < 4)
+        {
+            return 0;
+        }
+
+        var totalLength = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(0, 4));
+        if (totalLength < 4 || totalLength > (uint)payload.Length)
+        {
+            return 0;
+        }
+
+        // Walk the headers: they must tile the block exactly, otherwise this is not ALL_HEADERS.
+        var position = 4u;
+        while (position < totalLength)
+        {
+            if (totalLength - position < 6)
+            {
+                return 0;
+            }
+
+            var headerLength = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice((int)position, 4));
+            if (headerLength < 6 || headerLength > totalLength - position)
+            {
+                return 0;
+            }
+
+            position += headerLength;
+        }
+
+        return (int)totalLength;
+    }
+
+    private static string DecodeUnicode(ReadOnlySpan<byte> payload)
+    {
+        if (payload.IsEmpty)
         {
             return string.Empty;
         }

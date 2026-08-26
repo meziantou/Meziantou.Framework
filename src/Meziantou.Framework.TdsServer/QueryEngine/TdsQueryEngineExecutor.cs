@@ -50,6 +50,11 @@ internal sealed class TdsQueryEngineExecutor
         var queryExecutionContext = CreateQueryExecutionContext(context);
         try
         {
+            if (!context.HasCompleteParameters)
+            {
+                throw new TdsQueryEngineException("The request contains a parameter whose type could not be decoded, so the parameter list is incomplete.");
+            }
+
             if (context.RequestType == TdsQueryRequestType.Rpc && !string.Equals(context.ProcedureName, "sp_executesql", StringComparison.OrdinalIgnoreCase))
             {
                 return await ExecuteStoredProcedureAsync(context, cancellationToken).ConfigureAwait(false);

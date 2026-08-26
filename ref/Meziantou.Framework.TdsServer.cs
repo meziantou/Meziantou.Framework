@@ -98,6 +98,7 @@ namespace Meziantou.Framework.Tds.Handler
         public string? CommandText { get => throw null; init { } }
         public string? ProcedureName { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Tds.Handler.TdsQueryParameter> Parameters { get => throw null; init { } }
+        public bool HasCompleteParameters { get => throw null; init { } }
         public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; init { } }
     }
 

@@ -339,6 +339,113 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
+    public async Task SqlClient_RpcParameters_CommonSqlTypes_AreAllDecoded()
+    {
+        var expectedGuid = Guid.Parse("1b4e28ba-2fa1-11d2-883f-0016d3cca427");
+        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                if (context.RequestType == TdsQueryRequestType.Rpc)
+                {
+                    queryContextTask.TrySetResult(context);
+                }
+
+                return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1));
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT @guid, @decimal, @money, @smallmoney, @datetime, @smalldatetime, @date, @time, @datetime2, @offset, @int";
+        _ = command.Parameters.Add(new SqlParameter("@guid", SqlDbType.UniqueIdentifier) { Value = expectedGuid });
+        _ = command.Parameters.Add(new SqlParameter("@decimal", SqlDbType.Decimal) { Precision = 18, Scale = 4, Value = 1234.5678m });
+        _ = command.Parameters.Add(new SqlParameter("@money", SqlDbType.Money) { Value = 12.34m });
+        _ = command.Parameters.Add(new SqlParameter("@smallmoney", SqlDbType.SmallMoney) { Value = -1.5m });
+        _ = command.Parameters.Add(new SqlParameter("@datetime", SqlDbType.DateTime) { Value = new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Unspecified) });
+        _ = command.Parameters.Add(new SqlParameter("@smalldatetime", SqlDbType.SmallDateTime) { Value = new DateTime(2020, 1, 2, 3, 4, 0, DateTimeKind.Unspecified) });
+        _ = command.Parameters.Add(new SqlParameter("@date", SqlDbType.Date) { Value = new DateTime(2020, 1, 2, 0, 0, 0, DateTimeKind.Unspecified) });
+        _ = command.Parameters.Add(new SqlParameter("@time", SqlDbType.Time) { Value = new TimeSpan(0, 3, 4, 5, 123) });
+        _ = command.Parameters.Add(new SqlParameter("@datetime2", SqlDbType.DateTime2) { Value = new DateTime(2020, 1, 2, 3, 4, 5, 123, DateTimeKind.Unspecified) });
+        _ = command.Parameters.Add(new SqlParameter("@offset", SqlDbType.DateTimeOffset) { Value = new DateTimeOffset(2020, 1, 2, 3, 4, 5, TimeSpan.FromHours(2)) });
+        _ = command.Parameters.Add(new SqlParameter("@int", SqlDbType.Int) { Value = 42 });
+
+        _ = await command.ExecuteScalarAsync();
+        var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(capturedContext.HasCompleteParameters);
+        Assert.Equal(expectedGuid, GetParameterValue(capturedContext, "@guid", TdsColumnType.Guid));
+        Assert.Equal(1234.5678m, GetParameterValue(capturedContext, "@decimal", TdsColumnType.Decimal));
+        Assert.Equal(12.34m, GetParameterValue(capturedContext, "@money", TdsColumnType.Money));
+        Assert.Equal(-1.5m, GetParameterValue(capturedContext, "@smallmoney", TdsColumnType.SmallMoney));
+        Assert.Equal(new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Unspecified), GetParameterValue(capturedContext, "@datetime", TdsColumnType.DateTime));
+        Assert.Equal(new DateTime(2020, 1, 2, 3, 4, 0, DateTimeKind.Unspecified), GetParameterValue(capturedContext, "@smalldatetime", TdsColumnType.DateTime));
+        Assert.Equal(new DateOnly(2020, 1, 2), GetParameterValue(capturedContext, "@date", TdsColumnType.Date));
+        Assert.Equal(new TimeOnly(3, 4, 5, 123), GetParameterValue(capturedContext, "@time", TdsColumnType.Time));
+        Assert.Equal(new DateTime(2020, 1, 2, 3, 4, 5, 123, DateTimeKind.Unspecified), GetParameterValue(capturedContext, "@datetime2", TdsColumnType.DateTime2));
+        Assert.Equal(new DateTimeOffset(2020, 1, 2, 3, 4, 5, TimeSpan.FromHours(2)), GetParameterValue(capturedContext, "@offset", TdsColumnType.DateTimeOffset));
+
+        // The int parameter is sent last: before this fix the first undecodable type dropped everything after it.
+        Assert.Equal(42, GetParameterValue(capturedContext, "@int", TdsColumnType.Int32));
+    }
+
+    [Fact]
+    public async Task SqlClient_RpcParameters_UndecodableType_ReportsIncompleteParameters()
+    {
+        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                if (context.RequestType == TdsQueryRequestType.Rpc)
+                {
+                    queryContextTask.TrySetResult(context);
+                }
+
+                return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1));
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT @xml, @int";
+        _ = command.Parameters.Add(new SqlParameter("@xml", SqlDbType.Xml) { Value = "<root />" });
+        _ = command.Parameters.Add(new SqlParameter("@int", SqlDbType.Int) { Value = 42 });
+
+        _ = await command.ExecuteScalarAsync();
+        var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.False(capturedContext.HasCompleteParameters);
+        Assert.DoesNotContain(capturedContext.Parameters, parameter => parameter.Name == "@int");
+    }
+
+    private static object? GetParameterValue(TdsQueryContext context, string name, TdsColumnType expectedType)
+    {
+        var parameter = Assert.Single(context.Parameters, candidate => candidate.Name == name);
+        Assert.Equal(expectedType, parameter.Type);
+        return parameter.Value;
+    }
+
+    [Fact]
     public async Task SqlClient_RpcParameter_VarBinaryMax_Null_IsDecodedAsNull()
     {
         var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);

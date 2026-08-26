@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Language.Regex/Meziantou.Framework.Language.Regex.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Language.Regex.Tests/Meziantou.Framework.Language.Regex.Tests.csproj" />
+  </Folder>
+</Solution>

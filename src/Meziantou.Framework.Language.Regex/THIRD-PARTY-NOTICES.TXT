@@ -1,0 +1,50 @@
+This package contains code derived from third-party software.
+
+-------------------------------------------------------------------------------
+.NET Runtime (dotnet/runtime)
+https://github.com/dotnet/runtime
+
+Commit: 5ec6efc171b19c0e2d591fbd451920e8f43a1552
+
+Files derived from this project:
+  Internals/PerlStyleRegexParser.cs
+  Internals/PerlStyleRegexParser.Escapes.cs
+  Internals/PerlStyleRegexParser.CharacterClass.cs
+  Internals/RegexCharacterTables.cs
+  Internals/RegexCaptureTable.cs
+  Internals/RegexScanner.cs
+  Internals/NetUnicodeCategoryNames.cs
+
+Derived from:
+  src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexParser.cs
+  src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexCharClass.cs
+  src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexCharClass.Tables.cs
+
+The scanning logic was adapted to build a round-trippable concrete syntax tree instead of a
+RegexNode tree, to record diagnostics instead of throwing, and to perform no reductions, no
+case folding, and no character-set construction.
+
+The MIT License (MIT)
+
+Copyright (c) .NET Foundation and Contributors
+
+All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-------------------------------------------------------------------------------

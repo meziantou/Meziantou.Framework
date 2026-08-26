@@ -1,0 +1,650 @@
+// Portions of this file are derived from dotnet/runtime, licensed to the .NET Foundation under the MIT license.
+// See THIRD-PARTY-NOTICES.TXT in the project root.
+//
+// Source: src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexParser.cs
+// Commit: 5ec6efc171b19c0e2d591fbd451920e8f43a1552
+// Permalink: https://github.com/dotnet/runtime/blob/5ec6efc171b19c0e2d591fbd451920e8f43a1552/src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexParser.cs
+//
+// Changes: ScanRegex and ScanGroupOpen build a round-trippable concrete syntax tree instead of a RegexNode tree, they
+// record diagnostics instead of throwing, and they perform no reductions, no case folding, and no set construction.
+
+using System.Globalization;
+
+namespace Meziantou.Framework.Language.Regex.Internals;
+
+/// <summary>The Perl-derived grammar, parameterized by what the flavor supports.</summary>
+/// <remarks>
+/// Ported from the .NET engine, which is the most complete of the Perl-derived grammars, and then narrowed by feature
+/// flags for the flavors that have less. The alternative, a parser per flavor, would have four copies of the same
+/// escape and character-class handling and four places for them to drift apart.
+/// </remarks>
+internal abstract partial class PerlStyleRegexParser : RegexParser
+{
+    /// <summary>Set while reading the condition of a conditional, so its parentheses do not take a capture number.</summary>
+    private bool _ignoreNextParen;
+
+    /// <summary>
+    /// Set while reading the group that is the test of an expression conditional, where inline options are not
+    /// recognized.
+    /// </summary>
+    /// <remarks>
+    /// The engine expresses this as "the group is an expression conditional that has no children yet", which is true
+    /// of exactly one construct: the parenthesis the conditional rewound to. So <c>(?(?n)a|b)</c> is an invalid
+    /// grouping construct rather than an option setter, while <c>(?(name)(?n))</c>, whose <c>(?n)</c> comes after the
+    /// test, is fine.
+    /// </remarks>
+    private bool _inConditionalTest;
+
+    private int _autocap = 1;
+
+    /// <summary>Takes the next capture number without noting it.</summary>
+    protected override int NextAutoCapture() => _autocap++;
+
+    protected PerlStyleRegexParser(string text, RegexParseOptions parseOptions)
+        : base(text, parseOptions)
+    {
+    }
+
+    protected override RegexAtomSyntax ParseAtom(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    {
+        var start = Scanner.Position;
+
+        switch (Scanner.Current)
+        {
+            case '[':
+                return ParseCharacterClass(leadingTrivia);
+
+            case '(':
+                return ParseGroup(leadingTrivia);
+
+            case '\\':
+                return ParseBackslashAtom(leadingTrivia);
+
+            case '^':
+            case '$':
+                Scanner.Position++;
+                return WithOptions(new RegexAnchorSyntax(Scanner.Token(RegexSyntaxKind.AnchorToken, start, leadingTrivia)));
+
+            case '.':
+                Scanner.Position++;
+                return WithOptions(new RegexAnyCharacterSyntax(Scanner.Token(RegexSyntaxKind.DotToken, start, leadingTrivia)));
+
+            case ')':
+                return SkipOneCharacter(leadingTrivia, RegexDiagnosticIds.InsufficientOpeningParentheses, "Unmatched ')'.");
+
+            case '*':
+            case '+':
+            case '?':
+                return SkipOneCharacter(leadingTrivia, RegexDiagnosticIds.QuantifierAfterNothing, $"Quantifier '{Scanner.Current}' has nothing to repeat.");
+
+            case '{' when IsQuantifierAt(Scanner.Position):
+                return SkipOneCharacter(leadingTrivia, RegexDiagnosticIds.QuantifierAfterNothing, "Quantifier '{' has nothing to repeat.");
+
+            default:
+                Scanner.Position++;
+                return WithOptions(new RegexLiteralSyntax(Scanner.Token(RegexSyntaxKind.LiteralToken, start, leadingTrivia)));
+        }
+    }
+
+    /// <summary>Parses a parenthesized construct, from <c>(</c> through the matching <c>)</c>.</summary>
+    /// <remarks>
+    /// Ported from <c>ScanGroupOpen</c>. Every path that construct reached by <c>goto BreakRecognize</c> becomes a
+    /// diagnostic plus a node that still covers the text, and every character it consumed in one step is kept as its
+    /// own token so the parts of a header are addressable.
+    /// </remarks>
+    private RegexAtomSyntax ParseGroup(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    {
+        var start = Scanner.Position;
+        if (!TryEnterRecursion(new TextSpan(start, 1)))
+            return ConsumeRestAsText(start, leadingTrivia);
+
+        try
+        {
+            Scanner.Position++;
+            var openParenToken = Scanner.Token(RegexSyntaxKind.OpenParenToken, start, leadingTrivia);
+            OptionsStack.Push(Options);
+
+            // The flag applies to this parenthesis only, never to anything nested inside it.
+            var inConditionalTest = _inConditionalTest;
+            _inConditionalTest = false;
+
+            // "(" at the end, "(x" where x is not "?", and "(?)" are all plain groups. The "?" of "(?)" is left where
+            // it is on purpose: the engine leaves it too, and the body parse then reports it as a quantifier with
+            // nothing to repeat.
+            if (Scanner.IsAtEnd || Scanner.Current != '?' || Scanner.Peek() == ')')
+                return ParsePlainGroup(openParenToken);
+
+            var questionStart = Scanner.Position;
+            Scanner.Position++;
+
+            switch (Scanner.Current)
+            {
+                case ':':
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.NonCapturingGroup);
+
+                case '=':
+                case '!':
+                case '>':
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, Scanner.Current == '>' ? RegexSyntaxKind.AtomicGroup : RegexSyntaxKind.Lookaround);
+
+                case '<':
+                case '\'':
+                    return ParseAngledGroup(openParenToken, questionStart);
+
+                case '(':
+                    return ParseConditional(openParenToken, questionStart);
+
+                default:
+                    return ParseOptionsConstruct(openParenToken, questionStart, inConditionalTest);
+            }
+        }
+        finally
+        {
+            ExitRecursion();
+        }
+    }
+
+    private RegexCapturingGroupSyntax ParsePlainGroup(RegexSyntaxToken openParenToken)
+    {
+        // ExplicitCapture and the condition of a conditional both suppress the capture, but the group is still spelled
+        // with a bare "(", so it stays a capturing-group node with number 0.
+        var capturing = (Options & RegexPatternOptions.ExplicitCapture) == RegexPatternOptions.None && !_ignoreNextParen;
+        var number = capturing ? NoteAutoCapture(openParenToken.Span.Start) : 0;
+        _ignoreNextParen = false;
+
+        var alternation = ParseAlternation(insideGroup: true);
+        var closeParenToken = ReadCloseParen(openParenToken);
+        var group = WithOptions(new RegexCapturingGroupSyntax(openParenToken, alternation, closeParenToken, number));
+        group.InnerOptions = alternation.Options;
+        RestoreOptions();
+        NoteCaptureSpan(number, group.Span);
+
+        return group;
+    }
+
+    private RegexGroupSyntax ParseSimpleHeaderGroup(RegexSyntaxToken openParenToken, int questionStart, RegexSyntaxKind kind)
+    {
+        Scanner.Position++;
+        var groupKindToken = Scanner.Token(RegexSyntaxKind.GroupKindToken, questionStart);
+        _ignoreNextParen = false;
+
+        var alternation = ParseAlternation(insideGroup: true);
+        var closeParenToken = ReadCloseParen(openParenToken);
+        RegexGroupSyntax group = kind switch
+        {
+            RegexSyntaxKind.AtomicGroup => new RegexAtomicGroupSyntax(openParenToken, groupKindToken, alternation, closeParenToken),
+            RegexSyntaxKind.Lookaround => new RegexLookaroundSyntax(openParenToken, groupKindToken, alternation, closeParenToken),
+            _ => new RegexNonCapturingGroupSyntax(openParenToken, groupKindToken, alternation, closeParenToken),
+        };
+
+        WithOptions(group);
+        group.InnerOptions = alternation.Options;
+        RestoreOptions();
+
+        return group;
+    }
+
+    /// <summary>Parses <c>(?&lt;…</c> and <c>(?'…</c>: lookbehind, a named group, or a balancing group.</summary>
+    private RegexAtomSyntax ParseAngledGroup(RegexSyntaxToken openParenToken, int questionStart)
+    {
+        var close = Scanner.Current == '\'' ? '\'' : '>';
+        Scanner.Position++;
+
+        // "(?<=" and "(?<!" are lookbehind; the single-quoted spelling has no lookbehind form.
+        if (close == '>' && Scanner.Current is '=' or '!')
+        {
+            Scanner.Position++;
+            var lookbehindKindToken = Scanner.Token(RegexSyntaxKind.GroupKindToken, questionStart);
+            _ignoreNextParen = false;
+
+            var lookbehindBody = ParseAlternation(insideGroup: true);
+            var lookbehindClose = ReadCloseParen(openParenToken);
+            var lookbehind = WithOptions(new RegexLookaroundSyntax(openParenToken, lookbehindKindToken, lookbehindBody, lookbehindClose));
+            lookbehind.InnerOptions = lookbehindBody.Options;
+            RestoreOptions();
+
+            return lookbehind;
+        }
+
+        var groupKindToken = Scanner.Token(RegexSyntaxKind.GroupKindToken, questionStart);
+        _ignoreNextParen = false;
+
+        var nameToken = ReadGroupNameOrNumber(close, openParenToken.Span.Start, out var capnum, out var startsWithHyphen);
+        RegexSyntaxToken? hyphenToken = null;
+        RegexSyntaxToken? previousNameToken = null;
+
+        // A balancing group may name only the group it pops, as "(?<-1>x)" does, so a leading hyphen is enough on
+        // its own to make the rest of the header a pop target.
+        if ((capnum != -1 || startsWithHyphen) && Scanner.Position + 1 < Text.Length && Scanner.Current == '-')
+        {
+            var hyphenStart = Scanner.Position;
+            Scanner.Position++;
+            hyphenToken = Scanner.Token(RegexSyntaxKind.HyphenToken, hyphenStart);
+            previousNameToken = ReadBalancingTarget(close);
+        }
+
+        // The engine accepts the header only when it named something: a group to push, a group to pop, or both.
+        if (capnum == -1 && previousNameToken is null)
+        {
+            AddDiagnostic(
+                TextSpan.FromBounds(openParenToken.Span.Start, Math.Max(openParenToken.Span.Start, Scanner.Position)),
+                RegexDiagnosticIds.InvalidGroupingConstruct,
+                "Invalid grouping construct.");
+        }
+
+        var closeNameToken = ReadNameTerminator(close);
+
+        var alternationBody = ParseAlternation(insideGroup: true);
+        var closeParenToken = ReadCloseParen(openParenToken);
+
+        RegexGroupSyntax result;
+        if (hyphenToken is not null)
+        {
+            var number = capnum > 0 ? capnum : ResolveDeclaredNumber(nameToken);
+            result = new RegexBalancingGroupSyntax(openParenToken, groupKindToken, nameToken, hyphenToken, previousNameToken, closeNameToken, alternationBody, closeParenToken, number);
+            NoteCaptureSpan(number, TextSpan.FromBounds(openParenToken.Span.Start, closeParenToken.Span.End));
+        }
+        else
+        {
+            var number = capnum > 0 ? capnum : ResolveDeclaredNumber(nameToken);
+            result = new RegexNamedGroupSyntax(openParenToken, groupKindToken, nameToken, closeNameToken, alternationBody, closeParenToken, number);
+            NoteCaptureSpan(number, TextSpan.FromBounds(openParenToken.Span.Start, closeParenToken.Span.End));
+        }
+
+        WithOptions(result);
+        result.InnerOptions = alternationBody.Options;
+        RestoreOptions();
+
+        return result;
+    }
+
+    /// <summary>Reads the name or number a named group declares, reporting what the engine reports about it.</summary>
+    private RegexSyntaxToken? ReadGroupNameOrNumber(char close, int groupStart, out int capnum, out bool startsWithHyphen)
+    {
+        capnum = -1;
+        startsWithHyphen = false;
+
+        var start = Scanner.Position;
+        var ch = Scanner.Current;
+
+        if (char.IsAsciiDigit(ch))
+        {
+            capnum = ReadDecimal(out _);
+            var token = Scanner.Token(RegexSyntaxKind.NameToken, start);
+
+            // Group zero is the whole match and cannot be declared, so the engine does not note it either.
+            if (ch != '0')
+            {
+                NoteCaptureNumber(capnum, groupStart);
+            }
+
+            if (!Scanner.IsAtEnd && Scanner.Current != close && Scanner.Current != '-')
+            {
+                AddDiagnostic(token.Span, RegexDiagnosticIds.CaptureGroupNameInvalid, "Invalid capture group name.");
+            }
+            else if (capnum == 0)
+            {
+                AddDiagnostic(token.Span, RegexDiagnosticIds.CaptureGroupOfZero, "Capture group numbers must be greater than zero.");
+            }
+            else if (!CaptureTable.ContainsNumber(capnum))
+            {
+                capnum = -1;
+            }
+
+            return token;
+        }
+
+        if (RegexCharacterTables.IsBoundaryWordChar(ch))
+        {
+            var name = ReadCaptureName();
+            NoteCaptureName(name, groupStart);
+            var token = Scanner.Token(RegexSyntaxKind.NameToken, start);
+            if (!Scanner.IsAtEnd && Scanner.Current != close && Scanner.Current != '-')
+            {
+                AddDiagnostic(token.Span, RegexDiagnosticIds.CaptureGroupNameInvalid, "Invalid capture group name.");
+            }
+
+            capnum = CaptureTable.TryGetNumber(name, out var declared) ? declared : -1;
+
+            return token;
+        }
+
+        if (ch == '-')
+        {
+            startsWithHyphen = true;
+
+            return null;
+        }
+
+        AddDiagnostic(new TextSpan(start, Math.Min(1, Text.Length - start)), RegexDiagnosticIds.CaptureGroupNameInvalid, "Invalid capture group name.");
+
+        return null;
+    }
+
+    /// <summary>Reads the group a balancing group pops, which must already exist.</summary>
+    private RegexSyntaxToken? ReadBalancingTarget(char close)
+    {
+        var start = Scanner.Position;
+        var ch = Scanner.Current;
+
+        if (char.IsAsciiDigit(ch))
+        {
+            var number = ReadDecimal(out _);
+            var token = Scanner.Token(RegexSyntaxKind.NameToken, start);
+            if (!CaptureTable.ContainsNumber(number))
+            {
+                AddDiagnostic(token.Span, RegexDiagnosticIds.UndefinedNumberedReference, FormattableString.Invariant($"Reference to undefined group number {number}."));
+            }
+            else if (!Scanner.IsAtEnd && Scanner.Current != close)
+            {
+                AddDiagnostic(token.Span, RegexDiagnosticIds.CaptureGroupNameInvalid, "Invalid capture group name.");
+            }
+
+            return token;
+        }
+
+        if (RegexCharacterTables.IsBoundaryWordChar(ch))
+        {
+            var name = ReadCaptureName();
+            var token = Scanner.Token(RegexSyntaxKind.NameToken, start);
+            if (!CaptureTable.TryGetNumber(name, out _))
+            {
+                AddDiagnostic(token.Span, RegexDiagnosticIds.UndefinedNamedReference, $"Reference to undefined group name '{name}'.");
+            }
+            else if (!Scanner.IsAtEnd && Scanner.Current != close)
+            {
+                AddDiagnostic(token.Span, RegexDiagnosticIds.CaptureGroupNameInvalid, "Invalid capture group name.");
+            }
+
+            return token;
+        }
+
+        AddDiagnostic(new TextSpan(start, Math.Min(1, Math.Max(0, Text.Length - start))), RegexDiagnosticIds.CaptureGroupNameInvalid, "Invalid capture group name.");
+
+        return null;
+    }
+
+    private RegexSyntaxToken? ReadNameTerminator(char close)
+    {
+        if (Scanner.Current != close)
+        {
+            AddDiagnostic(new TextSpan(Scanner.Position, 0), RegexDiagnosticIds.InvalidGroupingConstruct, "Invalid grouping construct.");
+
+            return null;
+        }
+
+        var start = Scanner.Position;
+        Scanner.Position++;
+
+        return Scanner.Token(RegexSyntaxKind.CloseNameToken, start);
+    }
+
+    private int ResolveDeclaredNumber(RegexSyntaxToken? nameToken) =>
+        nameToken is not null && CaptureTable.TryGetNumber(nameToken.Text, out var number) ? number : 0;
+
+    /// <summary>Parses <c>(?(…)yes|no)</c>.</summary>
+    private RegexConditionalSyntax ParseConditional(RegexSyntaxToken openParenToken, int questionStart)
+    {
+        var questionToken = Scanner.Token(RegexSyntaxKind.QuestionToken, questionStart);
+        var conditionStart = Scanner.Position;
+
+        RegexSyntaxNode? condition = ReadConditionalReference(conditionStart);
+        if (condition is null)
+        {
+            // Not a reference, so the condition is an expression. The engine rewinds to the parenthesis and lets the
+            // ordinary group parser read it, with the capture suppressed.
+            Scanner.Position = conditionStart;
+            ReportIllegalConditionHeader(conditionStart);
+            _ignoreNextParen = true;
+            _inConditionalTest = true;
+            condition = ParseAtom([]);
+            _inConditionalTest = false;
+        }
+
+        var alternation = ParseAlternation(insideGroup: true);
+        if (alternation.Branches.Count > 2)
+        {
+            AddDiagnostic(alternation.Span, RegexDiagnosticIds.AlternationHasTooManyConditions, "A conditional alternation has too many branches.");
+        }
+
+        var closeParenToken = ReadCloseParen(openParenToken);
+        var conditional = WithOptions(new RegexConditionalSyntax(openParenToken, questionToken, condition, alternation, closeParenToken));
+        conditional.InnerOptions = alternation.Options;
+        RestoreOptions();
+
+        return conditional;
+    }
+
+    /// <summary>Reads <c>(1)</c> or <c>(name)</c>, or reports that the condition is an expression by returning null.</summary>
+    private RegexConditionalReferenceSyntax? ReadConditionalReference(int conditionStart)
+    {
+        Scanner.Position++;
+        var openParenToken = Scanner.Token(RegexSyntaxKind.OpenParenToken, conditionStart);
+
+        var nameStart = Scanner.Position;
+        if (char.IsAsciiDigit(Scanner.Current))
+        {
+            var number = ReadDecimal(out _);
+            var nameToken = Scanner.Token(RegexSyntaxKind.NameToken, nameStart);
+            if (Scanner.Current != ')')
+            {
+                AddDiagnostic(nameToken.Span, RegexDiagnosticIds.AlternationHasMalformedReference, FormattableString.Invariant($"Malformed conditional alternation reference '{number}'."));
+            }
+            else
+            {
+                var closeStart = Scanner.Position;
+                Scanner.Position++;
+                var closeToken = Scanner.Token(RegexSyntaxKind.CloseParenToken, closeStart);
+                if (!CaptureTable.ContainsNumber(number))
+                {
+                    AddDiagnostic(nameToken.Span, RegexDiagnosticIds.AlternationHasUndefinedReference, FormattableString.Invariant($"Conditional alternation refers to undefined group number {number}."));
+                }
+
+                return WithOptions(new RegexConditionalReferenceSyntax(openParenToken, nameToken, closeToken));
+            }
+
+            Scanner.Position = conditionStart;
+
+            return null;
+        }
+
+        if (RegexCharacterTables.IsBoundaryWordChar(Scanner.Current))
+        {
+            var name = ReadCaptureName();
+            if (CaptureTable.TryGetNumber(name, out _) && Scanner.Current == ')')
+            {
+                var nameToken = Scanner.Token(RegexSyntaxKind.NameToken, nameStart);
+                var closeStart = Scanner.Position;
+                Scanner.Position++;
+                var closeToken = Scanner.Token(RegexSyntaxKind.CloseParenToken, closeStart);
+
+                return WithOptions(new RegexConditionalReferenceSyntax(openParenToken, nameToken, closeToken));
+            }
+        }
+
+        Scanner.Position = conditionStart;
+
+        return null;
+    }
+
+    /// <summary>Reports the two headers a conditional's expression condition may not have.</summary>
+    private void ReportIllegalConditionHeader(int conditionStart)
+    {
+        if (conditionStart + 2 >= Text.Length || Text[conditionStart + 1] != '?')
+            return;
+
+        if (Text[conditionStart + 2] == '#')
+        {
+            AddDiagnostic(new TextSpan(conditionStart, 3), RegexDiagnosticIds.AlternationHasComment, "A conditional alternation condition cannot contain a comment.");
+        }
+        else if (Text[conditionStart + 2] == '\'' ||
+            (conditionStart + 3 < Text.Length && Text[conditionStart + 2] == '<' && Text[conditionStart + 3] is not '!' and not '='))
+        {
+            AddDiagnostic(new TextSpan(conditionStart, 3), RegexDiagnosticIds.AlternationHasNamedCapture, "A conditional alternation condition cannot be a named capture group.");
+        }
+    }
+
+    /// <summary>Parses <c>(?i)</c> and <c>(?i:…)</c>.</summary>
+    /// <remarks>
+    /// An option setter with no body ends at its own <c>)</c>, and the options it set stay in effect until the
+    /// enclosing group closes, so the entry this construct pushed is discarded rather than restored.
+    /// </remarks>
+    private RegexAtomSyntax ParseOptionsConstruct(RegexSyntaxToken openParenToken, int questionStart, bool inConditionalTest)
+    {
+        var questionToken = Scanner.Token(RegexSyntaxKind.QuestionToken, questionStart);
+        var optionsStart = Scanner.Position;
+        var optionsToken = inConditionalTest ? null : ScanInlineOptions(optionsStart);
+
+        if (Scanner.Current == ')')
+        {
+            var closeStart = Scanner.Position;
+            Scanner.Position++;
+            var closeToken = Scanner.Token(RegexSyntaxKind.CloseParenToken, closeStart);
+            OptionsStack.Pop();
+            _ignoreNextParen = false;
+
+            return WithOptions(new RegexInlineOptionsSyntax(openParenToken, questionToken, optionsToken, closeToken) { AppliedOptions = Options });
+        }
+
+        if (Scanner.Current != ':')
+        {
+            AddDiagnostic(
+                TextSpan.FromBounds(openParenToken.Span.Start, Math.Max(openParenToken.Span.Start, Scanner.Position)),
+                RegexDiagnosticIds.InvalidGroupingConstruct,
+                "Invalid grouping construct.");
+
+            var recoveredBody = ParseAlternation(insideGroup: true);
+            var recoveredClose = ReadCloseParen(openParenToken);
+            var recovered = WithOptions(new RegexOptionsGroupSyntax(openParenToken, questionToken, optionsToken, null, recoveredBody, recoveredClose));
+            recovered.InnerOptions = recoveredBody.Options;
+            RestoreOptions();
+
+            return recovered;
+        }
+
+        var colonStart = Scanner.Position;
+        Scanner.Position++;
+        var colonToken = Scanner.Token(RegexSyntaxKind.ColonToken, colonStart);
+        _ignoreNextParen = false;
+
+        var body = ParseAlternation(insideGroup: true);
+        var closeParenToken = ReadCloseParen(openParenToken);
+        var group = WithOptions(new RegexOptionsGroupSyntax(openParenToken, questionToken, optionsToken, colonToken, body, closeParenToken));
+        group.InnerOptions = body.Options;
+        RestoreOptions();
+
+        return group;
+    }
+
+    /// <summary>Reads an <c>imnsx-imnsx</c> run and applies it, stopping at the first character it does not know.</summary>
+    private RegexSyntaxToken? ScanInlineOptions(int start)
+    {
+        var off = false;
+        while (!Scanner.IsAtEnd)
+        {
+            var ch = Scanner.Current;
+            if (ch == '-')
+            {
+                off = true;
+            }
+            else if (ch == '+')
+            {
+                off = false;
+            }
+            else
+            {
+                var option = (char)(ch | 0x20) switch
+                {
+                    'i' => RegexPatternOptions.IgnoreCase,
+                    'm' => RegexPatternOptions.Multiline,
+                    'n' => RegexPatternOptions.ExplicitCapture,
+                    's' => RegexPatternOptions.Singleline,
+                    'x' => RegexPatternOptions.IgnorePatternWhitespace,
+                    _ => RegexPatternOptions.None,
+                };
+
+                if (option == RegexPatternOptions.None)
+                    break;
+
+                Options = off ? Options & ~option : Options | option;
+            }
+
+            Scanner.Position++;
+        }
+
+        return Scanner.Position > start ? Scanner.Token(RegexSyntaxKind.OptionsToken, start) : null;
+    }
+
+    private RegexSyntaxToken ReadCloseParen(RegexSyntaxToken openParenToken)
+    {
+        var trivia = TakeTrivia();
+        if (Scanner.Current == ')')
+        {
+            var start = Scanner.Position;
+            Scanner.Position++;
+
+            return Scanner.Token(RegexSyntaxKind.CloseParenToken, start, trivia);
+        }
+
+        AddDiagnostic(
+            TextSpan.FromBounds(openParenToken.Span.Start, Math.Max(openParenToken.Span.Start, Scanner.Position)),
+            RegexDiagnosticIds.InsufficientClosingParentheses,
+            "Unterminated group: expected ')'.");
+
+        return Scanner.MissingToken(RegexSyntaxKind.CloseParenToken, trivia);
+    }
+
+    private void RestoreOptions()
+    {
+        if (OptionsStack.Count > 0)
+        {
+            Options = OptionsStack.Pop();
+        }
+    }
+
+    /// <summary>Reads a run of digits, clamping a value that does not fit rather than throwing.</summary>
+    private int ReadDecimal(out bool overflowed)
+    {
+        overflowed = false;
+        long value = 0;
+        var start = Scanner.Position;
+        while (char.IsAsciiDigit(Scanner.Current))
+        {
+            if (!overflowed)
+            {
+                value = (value * 10) + (Scanner.Current - '0');
+                if (value > int.MaxValue)
+                {
+                    overflowed = true;
+                    value = int.MaxValue;
+                }
+            }
+
+            Scanner.Position++;
+        }
+
+        if (overflowed)
+        {
+            AddDiagnostic(
+                TextSpan.FromBounds(start, Scanner.Position),
+                RegexDiagnosticIds.QuantifierOrCaptureGroupOutOfRange,
+                "The quantifier or capture group number is larger than Int32.MaxValue.");
+        }
+
+        return (int)value;
+    }
+
+    /// <summary>Reads a capture-group name and returns it.</summary>
+    private string ReadCaptureName()
+    {
+        var start = Scanner.Position;
+        while (!Scanner.IsAtEnd && RegexCharacterTables.IsBoundaryWordChar(Scanner.Current))
+        {
+            Scanner.Position++;
+        }
+
+        return Text[start..Scanner.Position];
+    }
+
+    private static string FormatNumber(int value) => value.ToString(CultureInfo.InvariantCulture);
+}

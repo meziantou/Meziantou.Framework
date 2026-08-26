@@ -116,6 +116,28 @@ internal static partial class ContextExtensions
         List<Location>? locations = null;
         foreach (var location in symbol.Locations)
         {
+            if (reportOptions.HasFlag(DiagnosticMethodReportOptions.ReportOnMethodName))
+            {
+                var node = location.SourceTree?.GetRoot(context.CancellationToken).FindNode(location.SourceSpan);
+                if (node is MethodDeclarationSyntax methodDeclarationSyntax)
+                {
+                    ReportDiagnostic(context, descriptor, properties, methodDeclarationSyntax.Identifier.GetLocation(), messageArgs);
+                    return;
+                }
+
+                if (node is DelegateDeclarationSyntax delegateDeclarationSyntax)
+                {
+                    ReportDiagnostic(context, descriptor, properties, delegateDeclarationSyntax.Identifier.GetLocation(), messageArgs);
+                    return;
+                }
+
+                if (node is LocalFunctionStatementSyntax localFunctionStatementSyntax)
+                {
+                    ReportDiagnostic(context, descriptor, properties, localFunctionStatementSyntax.Identifier.GetLocation(), messageArgs);
+                    return;
+                }
+            }
+
             if (reportOptions.HasFlag(DiagnosticMethodReportOptions.ReportOnReturnType))
             {
                 var node = location.SourceTree?.GetRoot(context.CancellationToken).FindNode(location.SourceSpan);
@@ -128,6 +150,12 @@ internal static partial class ContextExtensions
                 if (node is DelegateDeclarationSyntax delegateDeclarationSyntax)
                 {
                     ReportDiagnostic(context, descriptor, properties, delegateDeclarationSyntax.ReturnType.GetLocation(), messageArgs);
+                    return;
+                }
+
+                if (node is LocalFunctionStatementSyntax localFunctionStatementSyntax)
+                {
+                    ReportDiagnostic(context, descriptor, properties, localFunctionStatementSyntax.ReturnType.GetLocation(), messageArgs);
                     return;
                 }
             }

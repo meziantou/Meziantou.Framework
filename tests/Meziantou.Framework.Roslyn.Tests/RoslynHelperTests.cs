@@ -1309,6 +1309,120 @@ public sealed class RoslynHelperTests
         Assert.True(syntaxTree.IsGeneratedCode(analyzerOptions, default));
     }
 
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_ReportOnMethodName_ReportsOnTheIdentifier()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public string Method() => "";
+            }
+            """);
+        var method = GetRequiredMethod(GetRequiredType(compilation, "Sample"), "Method");
+
+        var diagnostic = ReportMethodDiagnostic(compilation, method, DiagnosticMethodReportOptions.ReportOnMethodName);
+
+        Assert.Equal("Method", GetLocationText(diagnostic.Location));
+    }
+
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_ReportOnReturnType_ReportsOnTheReturnType()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public string Method() => "";
+            }
+            """);
+        var method = GetRequiredMethod(GetRequiredType(compilation, "Sample"), "Method");
+
+        var diagnostic = ReportMethodDiagnostic(compilation, method, DiagnosticMethodReportOptions.ReportOnReturnType);
+
+        Assert.Equal("string", GetLocationText(diagnostic.Location));
+    }
+
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_ReportOnMethodName_TakesPrecedenceOverReportOnReturnType()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public string Method() => "";
+            }
+            """);
+        var method = GetRequiredMethod(GetRequiredType(compilation, "Sample"), "Method");
+
+        var diagnostic = ReportMethodDiagnostic(compilation, method, DiagnosticMethodReportOptions.ReportOnMethodName | DiagnosticMethodReportOptions.ReportOnReturnType);
+
+        Assert.Equal("Method", GetLocationText(diagnostic.Location));
+    }
+
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_ReportOnMethodName_ReportsOnTheDelegateIdentifier()
+    {
+        var compilation = CreateCompilation("""
+            public delegate string Sample(int value);
+            """);
+        var invokeMethod = GetRequiredType(compilation, "Sample").DelegateInvokeMethod;
+        Assert.NotNull(invokeMethod);
+
+        var diagnostic = ReportMethodDiagnostic(compilation, invokeMethod, DiagnosticMethodReportOptions.ReportOnMethodName);
+
+        Assert.Equal("Sample", GetLocationText(diagnostic.Location));
+    }
+
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_ReportOnMethodName_ReportsOnTheLocalFunctionIdentifier()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public void M()
+                {
+                    string Local() => "";
+                    Local();
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var localFunction = semanticModel.SyntaxTree.GetRoot().DescendantNodes().OfType<LocalFunctionStatementSyntax>().Single();
+        var symbol = (IMethodSymbol?)semanticModel.GetDeclaredSymbol(localFunction);
+        Assert.NotNull(symbol);
+
+        var diagnostic = ReportMethodDiagnostic(compilation, symbol, DiagnosticMethodReportOptions.ReportOnMethodName);
+
+        Assert.Equal("Local", GetLocationText(diagnostic.Location));
+    }
+
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_None_ReportsOnTheSymbolLocations()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public string Method() => "";
+            }
+            """);
+        var method = GetRequiredMethod(GetRequiredType(compilation, "Sample"), "Method");
+
+        var diagnostic = ReportMethodDiagnostic(compilation, method, DiagnosticMethodReportOptions.None);
+
+        Assert.Equal(method.Locations, [diagnostic.Location]);
+    }
+
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_ReportOnMethodName_ReportsWithoutLocationForMetadataMethods()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample;
+            """);
+        var method = GetRequiredMethod(GetRequiredType(compilation, "System.Object"), "ToString");
+
+        var diagnostic = ReportMethodDiagnostic(compilation, method, DiagnosticMethodReportOptions.ReportOnMethodName);
+
+        Assert.False(diagnostic.Location.IsInSource);
+    }
+
     private static CSharpCompilation CreateCompilation(
         string source,
         string assemblyName = "Tests",
@@ -1466,6 +1580,29 @@ public sealed class RoslynHelperTests
         Assert.NotNull(operation);
 
         return operation;
+    }
+
+    private static Diagnostic ReportMethodDiagnostic(Compilation compilation, IMethodSymbol symbol, DiagnosticMethodReportOptions reportOptions)
+    {
+        Diagnostic? reported = null;
+
+        // A DiagnosticAnalyzer cannot be defined in this assembly (RS1041), so the context is created directly
+#pragma warning disable CS0618
+        var context = new SymbolAnalysisContext(symbol, compilation, new AnalyzerOptions([]), diagnostic => reported = diagnostic, _ => true, cancellationToken: default);
+#pragma warning restore CS0618
+
+        context.ReportDiagnostic(CreateDescriptor(), symbol, reportOptions);
+
+        Assert.NotNull(reported);
+
+        return reported;
+    }
+
+    private static string GetLocationText(Location location)
+    {
+        Assert.NotNull(location.SourceTree);
+
+        return location.SourceTree.GetText().ToString(location.SourceSpan);
     }
 
     private static DiagnosticDescriptor CreateDescriptor()

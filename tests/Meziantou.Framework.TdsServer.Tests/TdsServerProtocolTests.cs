@@ -917,6 +917,32 @@ public sealed class TdsServerProtocolTests
         throw new TimeoutException($"The test server on {IPAddress.Loopback}:{port} was not ready within {timeout}.", lastException);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(511)]
+    [InlineData(65536)]
+    [InlineData(100000)]
+    public void TdsServerOptions_PacketSize_OutsideTheSupportedRange_Throws(int packetSize)
+    {
+        var options = new TdsServerOptions();
+
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() => options.PacketSize = packetSize);
+    }
+
+    [Theory]
+    [InlineData(512)]
+    [InlineData(4096)]
+    [InlineData(65535)]
+    public void TdsServerOptions_PacketSize_InsideTheSupportedRange_IsAccepted(int packetSize)
+    {
+        var options = new TdsServerOptions
+        {
+            PacketSize = packetSize,
+        };
+
+        Assert.Equal(packetSize, options.PacketSize);
+    }
+
     private static string CreateConnectionString(int port, string userName = "sa", string password = "Password123!", string encrypt = "Optional", bool trustServerCertificate = true, int connectTimeout = 5)
     {
         return $"Server={IPAddress.Loopback},{port};User ID={userName};Password={password};Database=master;Encrypt={encrypt};TrustServerCertificate={(trustServerCertificate ? "True" : "False")};Pooling=False;Connect Timeout={connectTimeout}";

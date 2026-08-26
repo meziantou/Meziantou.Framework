@@ -45,10 +45,8 @@ public sealed class CpuSnapshot
 
     private static CpuInfo? GetCpuInfo()
     {
-        if (OperatingSystem.IsWindows() && DotnetRuntimeSnapshot.IsFullFramework && !DotnetRuntimeSnapshot.IsMonoStatic)
-            return MosCpuInfoProvider.MosCpuInfo.Value;
         if (OperatingSystem.IsWindows())
-            return WmicCpuInfoProvider.WmicCpuInfo.Value;
+            return WindowsCpuInfoProvider.WindowsCpuInfo.Value;
         if (OperatingSystem.IsLinux())
             return ProcCpuInfoProvider.ProcCpuInfo.Value;
         if (OperatingSystem.IsMacOS())

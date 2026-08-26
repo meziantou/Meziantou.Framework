@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
-internal static class WmicCpuInfoKeyNames
+internal static class Win32ProcessorKeyNames
 {
     internal const string NumberOfLogicalProcessors = "NumberOfLogicalProcessors";
     internal const string NumberOfCores = "NumberOfCores";

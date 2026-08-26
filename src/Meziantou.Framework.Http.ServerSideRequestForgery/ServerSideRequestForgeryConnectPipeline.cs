@@ -6,6 +6,9 @@ namespace Meziantou.Framework.Http.ServerSideRequestForgery;
 
 internal static class ServerSideRequestForgeryConnectPipeline
 {
+    // Reserved TLD (RFC2606): never a real destination, so a proxy returned for it is the handler's proxy address.
+    private static readonly Uri[] ProxyProbeUris = [new("https://ssrf-proxy-probe.invalid/"), new("http://ssrf-proxy-probe.invalid/")];
+
     internal static void Configure(SocketsHttpHandler handler, ServerSideRequestForgeryOptions options, IDnsIpAddressResolver dnsIpAddressResolver)
     {
         ArgumentNullException.ThrowIfNull(handler);
@@ -13,7 +16,7 @@ internal static class ServerSideRequestForgeryConnectPipeline
         ArgumentNullException.ThrowIfNull(options.ResolutionStrategy);
         ArgumentNullException.ThrowIfNull(dnsIpAddressResolver);
 
-        handler.ConnectCallback = (context, cancellationToken) => ConnectAsync(context, options, dnsIpAddressResolver, cancellationToken);
+        handler.ConnectCallback = (context, cancellationToken) => ConnectGuardingAgainstProxyAsync(handler, context, options, dnsIpAddressResolver, cancellationToken);
     }
 
     internal static async ValueTask<IPAddress> ResolveAndSelectIpAddressAsync(Uri requestUri, DnsEndPoint dnsEndPoint, ServerSideRequestForgeryOptions options, IDnsIpAddressResolver dnsIpAddressResolver, CancellationToken cancellationToken)
@@ -69,6 +72,15 @@ internal static class ServerSideRequestForgeryConnectPipeline
         }
 
         return selectedAddress;
+    }
+
+    private static ValueTask<Stream> ConnectGuardingAgainstProxyAsync(SocketsHttpHandler handler, SocketsHttpConnectionContext context, ServerSideRequestForgeryOptions options, IDnsIpAddressResolver dnsIpAddressResolver, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var requestUri = context.InitialRequestMessage?.RequestUri ?? throw new InvalidOperationException("The request URI cannot be null.");
+        EnsureConnectionIsNotToAProxy(handler, requestUri, context.DnsEndPoint, options);
+        return ConnectAsync(context, options, dnsIpAddressResolver, cancellationToken);
     }
 
     private static async ValueTask<Stream> ConnectAsync(SocketsHttpConnectionContext context, ServerSideRequestForgeryOptions options, IDnsIpAddressResolver dnsIpAddressResolver, CancellationToken cancellationToken)
@@ -154,6 +166,63 @@ internal static class ServerSideRequestForgeryConnectPipeline
         }
 
         return !options.UnsafeIpNetworks.Any(network => network.Contains(normalizedAddress));
+    }
+
+    internal static void EnsureConnectionIsNotToAProxy(SocketsHttpHandler handler, Uri requestUri, DnsEndPoint dnsEndPoint, ServerSideRequestForgeryOptions options)
+    {
+        if (!IsConnectionToAProxy(handler, requestUri, dnsEndPoint))
+            return;
+
+        Log.RejectedProxyConnection(options.Logger, requestUri, dnsEndPoint.Host);
+        ServerSideRequestForgeryMetrics.IncrementRejectedRequest("proxy_connection");
+        throw new ServerSideRequestForgeryException("The connection targets a proxy. The request's real destination is established by the proxy and is not visible here, so it cannot be validated. Set SocketsHttpHandler.UseProxy to false, or send requests that need SSRF protection through a handler that does not use a proxy.");
+    }
+
+    private static bool IsConnectionToAProxy(SocketsHttpHandler handler, Uri requestUri, DnsEndPoint dnsEndPoint)
+    {
+        // Reading the proxy here rather than when the callback is installed keeps the check correct when the
+        // proxy is assigned after ConfigureSsrf, or when HttpClient.DefaultProxy changes later.
+        var proxy = handler.UseProxy ? handler.Proxy ?? HttpClient.DefaultProxy : null;
+        if (proxy is null)
+            return false;
+
+        // Asking about the request URI alone is not enough. For an https target the pool substitutes the proxy's
+        // own URI as the initial request, and GetProxy then returns that same URI - which is indistinguishable
+        // from "this destination is bypassed". So also probe with destinations that are certainly not the proxy,
+        // which reveals the proxy's address even when the request URI has been substituted.
+        if (ProxyAddressMatchesEndPoint(proxy, requestUri, dnsEndPoint, unknownMeansProxied: true))
+            return true;
+
+        foreach (var probeUri in ProxyProbeUris)
+        {
+            if (ProxyAddressMatchesEndPoint(proxy, probeUri, dnsEndPoint, unknownMeansProxied: false))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool ProxyAddressMatchesEndPoint(IWebProxy proxy, Uri destination, DnsEndPoint dnsEndPoint, bool unknownMeansProxied)
+    {
+        Uri? proxyUri;
+        try
+        {
+            proxyUri = proxy.GetProxy(destination);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // A proxy that cannot answer for the real request is treated as one that applies, so the connection
+            // fails closed. A probe destination it dislikes tells us nothing and must not fail an ordinary request.
+            return unknownMeansProxied;
+        }
+
+        // IWebProxy reports "no proxy for this destination" either by returning null (HttpClient.DefaultProxy)
+        // or by returning the destination itself (WebProxy when the address is bypassed).
+        if (proxyUri is null || proxyUri == destination)
+            return false;
+
+        return proxyUri.Port == dnsEndPoint.Port
+            && string.Equals(NormalizeHost(proxyUri.IdnHost), NormalizeHost(dnsEndPoint.Host), StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsAllowedScheme(Uri requestUri, ServerSideRequestForgeryOptions options)

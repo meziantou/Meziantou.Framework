@@ -10,10 +10,14 @@ internal static class TdsResponseSerializer
 {
     private const ushort MaxVariableColumnLength = 8000;
     private const ushort PartiallyLengthPrefixedMarker = 0xFFFF;
+    private const byte TemporalScale = 7; // matches the resolution of DateTime/TimeSpan
+    private const byte DecimalPrecision = 38;
+    private const byte DecimalMaxLength = 17; // 1 sign byte + 16 magnitude bytes
 
     // A token's length field is 16 bits, so a message has to leave room for the rest of the token body.
     private const int MaxTokenMessageLength = 32000;
 
+    private static readonly DateTime SqlEpoch = new(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
     private static readonly byte[] DefaultCollation = [0x09, 0x04, 0xD0, 0x00, 0x34];
 
     public static byte[] CreateLoginSuccess(TdsAuthenticationResult authenticationResult)
@@ -113,12 +117,12 @@ internal static class TdsResponseSerializer
 
     private static void WriteResultSet(BinaryWriter writer, TdsResultSet resultSet, bool hasMoreResults, int payloadSizePerPacket)
     {
-        var usePartialLength = GetPartiallyLengthPrefixedColumns(resultSet);
-        WriteColumnMetadataToken(writer, resultSet.Columns, usePartialLength);
+        var encodings = GetColumnEncodings(resultSet);
+        WriteColumnMetadataToken(writer, resultSet.Columns, encodings);
 
         foreach (var row in resultSet.Rows)
         {
-            WriteRowToken(writer, resultSet.Columns, usePartialLength, payloadSizePerPacket, row);
+            WriteRowToken(writer, resultSet.Columns, encodings, payloadSizePerPacket, row);
         }
 
         var status = hasMoreResults ? (ushort)0x0001 : (ushort)0x0000;
@@ -129,13 +133,19 @@ internal static class TdsResponseSerializer
     /// Determines, per column, whether values must be sent partially-length-prefixed because at least one of
     /// them exceeds what a fixed-length column can carry. Short columns keep the cheaper 2-byte framing.
     /// </summary>
-    private static bool[] GetPartiallyLengthPrefixedColumns(TdsResultSet resultSet)
+    private static ColumnEncoding[] GetColumnEncodings(TdsResultSet resultSet)
     {
-        var result = new bool[resultSet.Columns.Count];
+        var result = new ColumnEncoding[resultSet.Columns.Count];
         for (var i = 0; i < resultSet.Columns.Count; i++)
         {
             var column = resultSet.Columns[i];
-            if (column.ColumnType is TdsColumnType.Json || IsFixedLengthColumn(column.ColumnType))
+            if (column.ColumnType is TdsColumnType.Decimal)
+            {
+                result[i] = new ColumnEncoding(UsePartialLength: false, GetDecimalScale(resultSet, i));
+                continue;
+            }
+
+            if (!UsesTextEncoding(column.ColumnType) && column.ColumnType is not TdsColumnType.Binary)
             {
                 continue;
             }
@@ -144,7 +154,7 @@ internal static class TdsResponseSerializer
             {
                 if (i < row.Count && ExceedsFixedColumnLength(column, row[i]))
                 {
-                    result[i] = true;
+                    result[i] = new ColumnEncoding(UsePartialLength: true, Scale: 0);
                     break;
                 }
             }
@@ -153,15 +163,38 @@ internal static class TdsResponseSerializer
         return result;
     }
 
-    private static bool IsFixedLengthColumn(TdsColumnType columnType)
+    /// <summary>
+    /// A decimal column carries a single scale for every row, so use the largest scale present. .NET decimals
+    /// track their own scale, and values are rescaled to the column's when written.
+    /// </summary>
+    private static byte GetDecimalScale(TdsResultSet resultSet, int columnIndex)
     {
-        return columnType is TdsColumnType.TinyInt
-            or TdsColumnType.SmallInt
-            or TdsColumnType.Int32
-            or TdsColumnType.Int64
-            or TdsColumnType.Boolean
-            or TdsColumnType.Real
-            or TdsColumnType.Double;
+        byte scale = 0;
+        foreach (var row in resultSet.Rows)
+        {
+            if (columnIndex >= row.Count || row[columnIndex] is null)
+            {
+                continue;
+            }
+
+            var value = Convert.ToDecimal(row[columnIndex], CultureInfo.InvariantCulture);
+            var valueScale = (byte)((decimal.GetBits(value)[3] >> 16) & 0xFF);
+            if (valueScale > scale)
+            {
+                scale = valueScale;
+            }
+        }
+
+        return scale;
+    }
+
+    /// <summary>Gets a value indicating whether the column has no dedicated TDS type and is sent as text.</summary>
+    private static bool UsesTextEncoding(TdsColumnType columnType)
+    {
+        return columnType is TdsColumnType.NVarChar
+            or TdsColumnType.Variant
+            or TdsColumnType.UserDefined
+            or TdsColumnType.Table;
     }
 
     private static bool ExceedsFixedColumnLength(TdsColumn column, object? value)
@@ -249,14 +282,15 @@ internal static class TdsResponseSerializer
         writer.Write(rowCount);
     }
 
-    private static void WriteColumnMetadataToken(BinaryWriter writer, Collection<TdsColumn> columns, bool[] usePartialLength)
+    private static void WriteColumnMetadataToken(BinaryWriter writer, Collection<TdsColumn> columns, ColumnEncoding[] encodings)
     {
         writer.Write((byte)0x81);
         writer.Write((ushort)columns.Count);
         for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++)
         {
             var column = columns[columnIndex];
-            var declaredLength = usePartialLength[columnIndex] ? PartiallyLengthPrefixedMarker : MaxVariableColumnLength;
+            var encoding = encodings[columnIndex];
+            var declaredLength = encoding.UsePartialLength ? PartiallyLengthPrefixedMarker : MaxVariableColumnLength;
             writer.Write((uint)0);
             var flags = column.IsNullable ? (ushort)0x0001 : (ushort)0x0000;
             writer.Write(flags);
@@ -340,6 +374,68 @@ internal static class TdsResponseSerializer
                         writer.Write((byte)0x3E); // FLOAT
                     }
                     break;
+                case TdsColumnType.Decimal:
+                    writer.Write((byte)0x6A); // DECIMALN
+                    writer.Write(DecimalMaxLength);
+                    writer.Write(DecimalPrecision);
+                    writer.Write(encoding.Scale);
+                    break;
+                case TdsColumnType.Money:
+                    if (column.IsNullable)
+                    {
+                        writer.Write((byte)0x6E); // MONEYN
+                        writer.Write((byte)8);
+                    }
+                    else
+                    {
+                        writer.Write((byte)0x3C); // MONEY
+                    }
+                    break;
+                case TdsColumnType.SmallMoney:
+                    if (column.IsNullable)
+                    {
+                        writer.Write((byte)0x6E); // MONEYN
+                        writer.Write((byte)4);
+                    }
+                    else
+                    {
+                        writer.Write((byte)0x7A); // SMALLMONEY
+                    }
+                    break;
+                case TdsColumnType.Guid:
+                    writer.Write((byte)0x24); // GUIDN
+                    writer.Write((byte)16);
+                    break;
+                case TdsColumnType.Date:
+                    writer.Write((byte)0x28); // DATEN carries no scale
+                    break;
+                case TdsColumnType.Time:
+                    writer.Write((byte)0x29); // TIMEN
+                    writer.Write(TemporalScale);
+                    break;
+                case TdsColumnType.DateTime:
+                    if (column.IsNullable)
+                    {
+                        writer.Write((byte)0x6F); // DATETIMN
+                        writer.Write((byte)8);
+                    }
+                    else
+                    {
+                        writer.Write((byte)0x3D); // DATETIME
+                    }
+                    break;
+                case TdsColumnType.DateTime2:
+                    writer.Write((byte)0x2A); // DATETIME2N
+                    writer.Write(TemporalScale);
+                    break;
+                case TdsColumnType.DateTimeOffset:
+                    writer.Write((byte)0x2B); // DATETIMEOFFSETN
+                    writer.Write(TemporalScale);
+                    break;
+                case TdsColumnType.Xml:
+                    writer.Write((byte)0xF1); // XML
+                    writer.Write((byte)0); // no schema collection
+                    break;
                 case TdsColumnType.Binary:
                     writer.Write((byte)0xA5); // VARBINARY
                     writer.Write(declaredLength);
@@ -358,21 +454,21 @@ internal static class TdsResponseSerializer
         }
     }
 
-    private static void WriteRowToken(BinaryWriter writer, Collection<TdsColumn> columns, bool[] usePartialLength, int payloadSizePerPacket, IReadOnlyList<object?> values)
+    private static void WriteRowToken(BinaryWriter writer, Collection<TdsColumn> columns, ColumnEncoding[] encodings, int payloadSizePerPacket, IReadOnlyList<object?> values)
     {
         writer.Write((byte)0xD1);
         for (var i = 0; i < columns.Count; i++)
         {
             var value = i < values.Count ? values[i] : null;
-            WriteColumnValue(writer, columns[i], usePartialLength[i], payloadSizePerPacket, value);
+            WriteColumnValue(writer, columns[i], encodings[i], payloadSizePerPacket, value);
         }
     }
 
-    private static void WriteColumnValue(BinaryWriter writer, TdsColumn column, bool usePartialLength, int payloadSizePerPacket, object? value)
+    private static void WriteColumnValue(BinaryWriter writer, TdsColumn column, ColumnEncoding encoding, int payloadSizePerPacket, object? value)
     {
         if (value is null)
         {
-            WriteNullValue(writer, column, usePartialLength);
+            WriteNullValue(writer, column, encoding);
             return;
         }
 
@@ -434,9 +530,66 @@ internal static class TdsResponseSerializer
 
                 writer.Write(Convert.ToDouble(value, System.Globalization.CultureInfo.InvariantCulture));
                 break;
+            case TdsColumnType.Decimal:
+                WriteDecimalValue(writer, Convert.ToDecimal(value, CultureInfo.InvariantCulture), encoding.Scale);
+                break;
+            case TdsColumnType.Money:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)8);
+                }
+
+                var money = (long)(Convert.ToDecimal(value, CultureInfo.InvariantCulture) * 10000m);
+                writer.Write((int)(money >> 32));
+                writer.Write((uint)money);
+                break;
+            case TdsColumnType.SmallMoney:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)4);
+                }
+
+                writer.Write((int)(Convert.ToDecimal(value, CultureInfo.InvariantCulture) * 10000m));
+                break;
+            case TdsColumnType.Guid:
+                writer.Write((byte)16);
+                writer.Write(ToGuid(value).ToByteArray());
+                break;
+            case TdsColumnType.Date:
+                writer.Write((byte)3);
+                WriteUInt24LittleEndian(writer, ToDateTime(value).Subtract(DateTime.MinValue).Days);
+                break;
+            case TdsColumnType.Time:
+                writer.Write((byte)5);
+                WriteScaledTime(writer, ToTimeSpan(value));
+                break;
+            case TdsColumnType.DateTime:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)8);
+                }
+
+                var dateTime = ToDateTime(value);
+                var wholeDays = (int)(dateTime.Date - SqlEpoch).TotalDays;
+                writer.Write(wholeDays);
+                writer.Write((uint)(dateTime.TimeOfDay.Ticks * 300 / TimeSpan.TicksPerSecond));
+                break;
+            case TdsColumnType.DateTime2:
+                writer.Write((byte)8);
+                WriteDateTime2Value(writer, ToDateTime(value));
+                break;
+            case TdsColumnType.DateTimeOffset:
+                writer.Write((byte)10);
+                var offsetValue = ToDateTimeOffset(value);
+                WriteDateTime2Value(writer, offsetValue.UtcDateTime);
+                writer.Write((short)offsetValue.Offset.TotalMinutes);
+                break;
+            case TdsColumnType.Xml:
+                WritePartiallyLengthPrefixed(writer, Encoding.Unicode.GetBytes(value.ToString() ?? string.Empty), payloadSizePerPacket);
+                break;
             case TdsColumnType.Binary:
                 var bytes = value as byte[] ?? Encoding.UTF8.GetBytes(value.ToString() ?? string.Empty);
-                if (usePartialLength)
+                if (encoding.UsePartialLength)
                 {
                     WritePartiallyLengthPrefixed(writer, bytes, payloadSizePerPacket);
                 }
@@ -454,7 +607,7 @@ internal static class TdsResponseSerializer
             default:
                 var text = ConvertToSqlText(value, column.ColumnType);
                 var payload = Encoding.Unicode.GetBytes(text);
-                if (usePartialLength)
+                if (encoding.UsePartialLength)
                 {
                     WritePartiallyLengthPrefixed(writer, payload, payloadSizePerPacket);
                 }
@@ -481,9 +634,9 @@ internal static class TdsResponseSerializer
         WriteToken(writer, token: 0xE3, bodyStream);
     }
 
-    private static void WriteNullValue(BinaryWriter writer, TdsColumn column, bool usePartialLength)
+    private static void WriteNullValue(BinaryWriter writer, TdsColumn column, ColumnEncoding encoding)
     {
-        if (usePartialLength)
+        if (encoding.UsePartialLength)
         {
             WritePartiallyLengthPrefixedNull(writer);
             return;
@@ -548,7 +701,37 @@ internal static class TdsResponseSerializer
                 }
                 break;
             case TdsColumnType.Json:
+            case TdsColumnType.Xml:
                 WritePartiallyLengthPrefixedNull(writer);
+                break;
+            case TdsColumnType.Money:
+            case TdsColumnType.DateTime:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)0);
+                }
+                else
+                {
+                    writer.Write(0L);
+                }
+                break;
+            case TdsColumnType.SmallMoney:
+                if (column.IsNullable)
+                {
+                    writer.Write((byte)0);
+                }
+                else
+                {
+                    writer.Write(0);
+                }
+                break;
+            case TdsColumnType.Decimal:
+            case TdsColumnType.Guid:
+            case TdsColumnType.Date:
+            case TdsColumnType.Time:
+            case TdsColumnType.DateTime2:
+            case TdsColumnType.DateTimeOffset:
+                writer.Write((byte)0);
                 break;
             default:
                 if (column.IsNullable)
@@ -641,6 +824,89 @@ internal static class TdsResponseSerializer
         writer.Write(bytes);
     }
 
+    private static void WriteDecimalValue(BinaryWriter writer, decimal value, byte scale)
+    {
+        var isNegative = value < 0;
+        var valueBits = decimal.GetBits(Math.Abs(value));
+        var valueScale = (byte)((valueBits[3] >> 16) & 0xFF);
+
+        // The wire format carries an unscaled integer, so take the mantissa and lift it to the column's scale.
+        var mantissa = new decimal(valueBits[0], valueBits[1], valueBits[2], isNegative: false, scale: 0);
+        for (var i = valueScale; i < scale; i++)
+        {
+            mantissa *= 10m;
+        }
+
+        var bits = decimal.GetBits(mantissa);
+        writer.Write(DecimalMaxLength);
+        writer.Write(isNegative ? (byte)0 : (byte)1);
+        writer.Write(bits[0]);
+        writer.Write(bits[1]);
+        writer.Write(bits[2]);
+        writer.Write(0); // the magnitude is at most 96 bits, so the top 4 bytes are always zero
+    }
+
+    private static void WriteDateTime2Value(BinaryWriter writer, DateTime value)
+    {
+        WriteScaledTime(writer, value.TimeOfDay);
+        WriteUInt24LittleEndian(writer, value.Subtract(DateTime.MinValue).Days);
+    }
+
+    private static void WriteScaledTime(BinaryWriter writer, TimeSpan value)
+    {
+        // TemporalScale is 7, so one unit is one tick.
+        var ticks = value.Ticks;
+        writer.Write((byte)ticks);
+        writer.Write((byte)(ticks >> 8));
+        writer.Write((byte)(ticks >> 16));
+        writer.Write((byte)(ticks >> 24));
+        writer.Write((byte)(ticks >> 32));
+    }
+
+    private static void WriteUInt24LittleEndian(BinaryWriter writer, int value)
+    {
+        writer.Write((byte)value);
+        writer.Write((byte)(value >> 8));
+        writer.Write((byte)(value >> 16));
+    }
+
+    private static Guid ToGuid(object value)
+    {
+        return value as Guid? ?? Guid.Parse(Convert.ToString(value, CultureInfo.InvariantCulture)!);
+    }
+
+    private static DateTime ToDateTime(object value)
+    {
+        return value switch
+        {
+            DateTime dateTime => dateTime,
+            DateOnly dateOnly => dateOnly.ToDateTime(TimeOnly.MinValue),
+            DateTimeOffset dateTimeOffset => dateTimeOffset.DateTime,
+            _ => Convert.ToDateTime(value, CultureInfo.InvariantCulture),
+        };
+    }
+
+    private static DateTimeOffset ToDateTimeOffset(object value)
+    {
+        return value switch
+        {
+            DateTimeOffset dateTimeOffset => dateTimeOffset,
+            DateTime dateTime => new DateTimeOffset(dateTime, TimeSpan.Zero),
+            _ => DateTimeOffset.Parse(Convert.ToString(value, CultureInfo.InvariantCulture)!, CultureInfo.InvariantCulture),
+        };
+    }
+
+    private static TimeSpan ToTimeSpan(object value)
+    {
+        return value switch
+        {
+            TimeSpan timeSpan => timeSpan,
+            TimeOnly timeOnly => timeOnly.ToTimeSpan(),
+            DateTime dateTime => dateTime.TimeOfDay,
+            _ => TimeSpan.Parse(Convert.ToString(value, CultureInfo.InvariantCulture)!, CultureInfo.InvariantCulture),
+        };
+    }
+
     private static void WritePartiallyLengthPrefixed(BinaryWriter writer, byte[] payload, int payloadSizePerPacket)
     {
         writer.Write((ulong)payload.Length);
@@ -666,4 +932,6 @@ internal static class TdsResponseSerializer
     {
         writer.Write(ulong.MaxValue);
     }
+
+    private readonly record struct ColumnEncoding(bool UsePartialLength, byte Scale);
 }

@@ -130,7 +130,7 @@ public sealed class TdsServerProtocolTests
 
         Assert.Equal(123, Convert.ToInt32(result, CultureInfo.InvariantCulture));
         Assert.Equal(TdsQueryRequestType.SqlBatch, capturedContext.RequestType);
-        Assert.Contains(Marker, capturedContext.CommandText);
+        Assert.Equal($"SELECT 1 /* {Marker} */", capturedContext.CommandText);
     }
 
     [Fact]
@@ -217,6 +217,39 @@ public sealed class TdsServerProtocolTests
 
         Assert.Equal(1, Convert.ToInt32(result, CultureInfo.InvariantCulture));
         Assert.Equal(UserId, capturedUserId);
+    }
+
+    [Fact]
+    public async Task SqlClient_TextQuery_SqlBatch_CommandTextExcludesAllHeaders()
+    {
+        const string Query = "SELECT 1 /* SqlBatchAllHeadersMarker */";
+        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                queryContextTask.TrySetResult(context);
+                return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1));
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = Query;
+
+        _ = await command.ExecuteScalarAsync();
+        var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(Query, capturedContext.CommandText);
     }
 
     [Fact]

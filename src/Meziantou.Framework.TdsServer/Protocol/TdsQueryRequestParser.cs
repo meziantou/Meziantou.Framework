@@ -18,7 +18,7 @@ internal static class TdsQueryRequestParser
             {
                 RemoteEndPoint = remoteEndPoint,
                 RequestType = TdsQueryRequestType.SqlBatch,
-                CommandText = DecodeUnicode(packet.Payload),
+                CommandText = DecodeUnicode(packet.Payload.AsSpan(GetAllHeadersLength(packet.Payload))),
                 UserContext = userContext,
             },
             TdsPacketType.Rpc => CreateRpcContext(packet.Payload, remoteEndPoint, userContext),
@@ -50,13 +50,7 @@ internal static class TdsQueryRequestParser
             return null;
         }
 
-        var position = 0;
-        var allHeadersLength = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(position, 4));
-        if (allHeadersLength >= 4 && allHeadersLength <= payload.Length)
-        {
-            position = (int)allHeadersLength;
-        }
-
+        var position = GetAllHeadersLength(payload);
         if (position + 4 > payload.Length)
         {
             return null;
@@ -456,9 +450,49 @@ internal static class TdsQueryRequestParser
         };
     }
 
-    private static string DecodeUnicode(byte[] payload)
+    /// <summary>
+    /// Returns the size of the ALL_HEADERS block that prefixes SQLBatch and RPC streams in TDS 7.2 and later,
+    /// or 0 when the payload does not start with a well-formed one.
+    /// </summary>
+    private static int GetAllHeadersLength(ReadOnlySpan<byte> payload)
     {
-        if (payload.Length == 0)
+        if (payload.Length < 4)
+        {
+            return 0;
+        }
+
+        // ALL_HEADERS is a total length (which includes itself) followed by headers, each of which is its own
+        // length (including itself) plus a 2-byte type. Anything that does not add up exactly is treated as
+        // absent, because TDS 7.1 clients send the SQL text with no header block at all.
+        var totalLength = BinaryPrimitives.ReadUInt32LittleEndian(payload[..4]);
+        if (totalLength < 4 || totalLength > (uint)payload.Length)
+        {
+            return 0;
+        }
+
+        var position = 4u;
+        while (position < totalLength)
+        {
+            if (totalLength - position < 6)
+            {
+                return 0;
+            }
+
+            var headerLength = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice((int)position, 4));
+            if (headerLength < 6 || headerLength > totalLength - position)
+            {
+                return 0;
+            }
+
+            position += headerLength;
+        }
+
+        return (int)totalLength;
+    }
+
+    private static string DecodeUnicode(ReadOnlySpan<byte> payload)
+    {
+        if (payload.IsEmpty)
         {
             return string.Empty;
         }

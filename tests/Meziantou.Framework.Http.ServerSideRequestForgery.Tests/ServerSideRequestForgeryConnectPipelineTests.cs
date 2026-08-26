@@ -18,6 +18,19 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         Assert.NotNull(handler.ConnectCallback);
     }
 
+    [Theory]
+    [InlineData(AddressFamily.InterNetwork)]
+    [InlineData(AddressFamily.InterNetworkV6)]
+    public void CreateConnectSocket_DisablesNagleAlgorithm(AddressFamily addressFamily)
+    {
+        using var socket = ServerSideRequestForgeryConnectPipeline.CreateConnectSocket(addressFamily);
+
+        Assert.True(socket.NoDelay);
+        Assert.Equal(addressFamily, socket.AddressFamily);
+        Assert.Equal(SocketType.Stream, socket.SocketType);
+        Assert.Equal(ProtocolType.Tcp, socket.ProtocolType);
+    }
+
     [Fact]
     public async Task ConnectCallback_SendsRequestToTheValidatedAddress()
     {

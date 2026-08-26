@@ -21,6 +21,8 @@ internal sealed class TdsTcpConnectionHandler : ConnectionHandler
         _authenticationDelegateHolder = authenticationDelegateHolder;
         _queryDelegateHolder = queryDelegateHolder;
         _logger = logger;
+
+        TdsServer.WarnWhenEncryptionIsUnavailable(options, logger);
     }
 
     public override async Task OnConnectedAsync(ConnectionContext connection)

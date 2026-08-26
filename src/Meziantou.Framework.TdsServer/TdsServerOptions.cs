@@ -38,6 +38,13 @@ public sealed class TdsServerOptions
     }
 
     /// <summary>Gets or sets a value indicating whether encryption is required by the server.</summary>
+    /// <remarks>
+    /// When this is <see langword="false"/> and no TLS certificate is configured, the server answers PRELOGIN
+    /// with NOT_SUPPORTED, and clients that allow it (for example <c>Encrypt=Optional</c>) log in over an
+    /// unencrypted connection. The LOGIN7 password is then protected only by the TDS nibble-swap and XOR
+    /// obfuscation, which is trivially reversible by anyone on the network path. Configure
+    /// <see cref="TlsPfxPath"/> or the PEM options for any deployment that is not loopback-only.
+    /// </remarks>
     public bool RequireEncryption { get; set; }
 
     /// <summary>Gets or sets the path to a PFX certificate file used for TLS.</summary>

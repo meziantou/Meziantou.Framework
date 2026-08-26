@@ -9,6 +9,9 @@ namespace Meziantou.Framework.Tds.Protocol;
 internal static class TdsResponseSerializer
 {
     private const ushort MaxVariableColumnLength = 8000;
+
+    // A token's length field is 16 bits, so a message has to leave room for the rest of the token body.
+    private const int MaxTokenMessageLength = 32000;
     private static readonly byte[] DefaultCollation = [0x09, 0x04, 0xD0, 0x00, 0x34];
 
     public static byte[] CreateLoginSuccess(TdsAuthenticationResult authenticationResult)
@@ -132,9 +135,7 @@ internal static class TdsResponseSerializer
         bodyWriter.Write((byte)0);
         bodyWriter.Flush();
 
-        writer.Write((byte)0xAD);
-        writer.Write((ushort)bodyStream.Length);
-        writer.Write(bodyStream.ToArray());
+        WriteToken(writer, token: 0xAD, bodyStream);
     }
 
     private static void WriteEnvironmentChangeToken(BinaryWriter writer, byte environmentType, string newValue, string oldValue)
@@ -146,9 +147,7 @@ internal static class TdsResponseSerializer
         WriteBVarChar(bodyWriter, oldValue);
         bodyWriter.Flush();
 
-        writer.Write((byte)0xE3);
-        writer.Write((ushort)bodyStream.Length);
-        writer.Write(bodyStream.ToArray());
+        WriteToken(writer, token: 0xE3, bodyStream);
     }
 
     private static void WriteInfoToken(BinaryWriter writer, string message)
@@ -158,15 +157,13 @@ internal static class TdsResponseSerializer
         bodyWriter.Write((uint)0);
         bodyWriter.Write((byte)1);
         bodyWriter.Write((byte)10);
-        WriteUsVarChar(bodyWriter, message);
+        WriteUsVarChar(bodyWriter, Truncate(message, MaxTokenMessageLength));
         WriteBVarChar(bodyWriter, "TdsServer");
         WriteBVarChar(bodyWriter, string.Empty);
         bodyWriter.Write((uint)1);
         bodyWriter.Flush();
 
-        writer.Write((byte)0xAB);
-        writer.Write((ushort)bodyStream.Length);
-        writer.Write(bodyStream.ToArray());
+        WriteToken(writer, token: 0xAB, bodyStream);
     }
 
     private static void WriteErrorToken(BinaryWriter writer, uint number, byte state, byte @class, string message)
@@ -176,15 +173,13 @@ internal static class TdsResponseSerializer
         bodyWriter.Write(number);
         bodyWriter.Write(state);
         bodyWriter.Write(@class);
-        WriteUsVarChar(bodyWriter, message);
+        WriteUsVarChar(bodyWriter, Truncate(message, MaxTokenMessageLength));
         WriteBVarChar(bodyWriter, "TdsServer");
         WriteBVarChar(bodyWriter, string.Empty);
         bodyWriter.Write((uint)1);
         bodyWriter.Flush();
 
-        writer.Write((byte)0xAA);
-        writer.Write((ushort)bodyStream.Length);
-        writer.Write(bodyStream.ToArray());
+        WriteToken(writer, token: 0xAA, bodyStream);
     }
 
     private static void WriteDoneToken(BinaryWriter writer, ushort status, ulong rowCount)
@@ -408,9 +403,7 @@ internal static class TdsResponseSerializer
         bodyWriter.Write((byte)0);
         bodyWriter.Flush();
 
-        writer.Write((byte)0xE3);
-        writer.Write((ushort)bodyStream.Length);
-        writer.Write(bodyStream.ToArray());
+        WriteToken(writer, token: 0xE3, bodyStream);
     }
 
     private static void WriteNullValue(BinaryWriter writer, TdsColumn column)
@@ -525,6 +518,25 @@ internal static class TdsResponseSerializer
             TdsColumnType.Variant => value.ToString() ?? string.Empty,
             _ => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
         };
+    }
+
+    private static void WriteToken(BinaryWriter writer, byte token, MemoryStream bodyStream)
+    {
+        writer.Write(token);
+        writer.Write(checked((ushort)bodyStream.Length));
+        writer.Write(bodyStream.ToArray());
+    }
+
+    private static string Truncate(string value, int maxLength)
+    {
+        if (value.Length <= maxLength)
+        {
+            return value;
+        }
+
+        // Do not split a surrogate pair, which would leave an unpaired surrogate in the message.
+        var length = char.IsHighSurrogate(value[maxLength - 1]) ? maxLength - 1 : maxLength;
+        return value[..length];
     }
 
     private static void WriteUsVarChar(BinaryWriter writer, string value)

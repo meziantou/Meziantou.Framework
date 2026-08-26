@@ -7,4 +7,6 @@ internal sealed class TdsRpcRequest
     public string? ProcedureName { get; init; }
 
     public required List<TdsQueryParameter> Parameters { get; init; }
+
+    public bool HasCompleteParameters { get; init; } = true;
 }

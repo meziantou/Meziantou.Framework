@@ -267,6 +267,119 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void TryGetConstantValue_ReturnsFalseWhenReadOnlyFieldIsWrittenThroughAnOutArgument()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                private readonly int _x = 5;
+
+                public Sample()
+                {
+                    Init(out _x);
+                }
+
+                private static void Init(out int value) => value = 10;
+
+                public void M()
+                {
+                    object boxed = _x;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_ReturnsFalseWhenReadOnlyFieldIsIncrementedInConstructor()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                private readonly int _x = 5;
+
+                public Sample()
+                {
+                    _x++;
+                }
+
+                public void M()
+                {
+                    object boxed = _x;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_ReturnsFalseWhenReadOnlyFieldIsAliasedByARefLocal()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                private readonly int _x = 5;
+
+                public Sample()
+                {
+                    ref var alias = ref _x;
+                    alias = 10;
+                }
+
+                public void M()
+                {
+                    object boxed = _x;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_ReturnsFalseWhenLocalIsWrittenThroughARefArgumentInTopLevelStatements()
+    {
+        var compilation = CreateCompilation("""
+            var text = "a";
+            Modify(ref text);
+            object boxed = text;
+
+            static void Modify(ref string value) => value = "b";
+            """, compilationOptions: DefaultCompilationOptions.WithOutputKind(OutputKind.ConsoleApplication));
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_FollowsLocalInitializersInTopLevelStatements()
+    {
+        var compilation = CreateCompilation("""
+            var text = "a";
+            System.Console.WriteLine("unrelated");
+            object boxed = text;
+            """, compilationOptions: DefaultCompilationOptions.WithOutputKind(OutputKind.ConsoleApplication));
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.True(boxed.TryGetConstantValue(out var value, default));
+        Assert.Equal("a", value);
+    }
+
+    [Fact]
     public void GetActualType_WithoutDataFlowAnalysis_OnlyUnwrapsConversions()
     {
         var compilation = CreateCompilation("""
@@ -1314,6 +1427,7 @@ public sealed class RoslynHelperTests
         string assemblyName = "Tests",
         IReadOnlyCollection<MetadataReference>? additionalReferences = null,
         CSharpParseOptions? parseOptions = null,
+        CSharpCompilationOptions? compilationOptions = null,
         int? dotnetMajorVersion = null,
         bool allowInvalidCode = false)
     {
@@ -1327,7 +1441,7 @@ public sealed class RoslynHelperTests
             assemblyName,
             [CSharpSyntaxTree.ParseText(source, parseOptions ?? DefaultParseOptions, path: assemblyName + ".cs")],
             references,
-            DefaultCompilationOptions);
+            compilationOptions ?? DefaultCompilationOptions);
 
         if (!allowInvalidCode)
         {

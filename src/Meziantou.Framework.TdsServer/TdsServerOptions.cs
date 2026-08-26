@@ -6,14 +6,36 @@ namespace Meziantou.Framework.Tds;
 /// <summary>Configuration options for the TDS server.</summary>
 public sealed class TdsServerOptions
 {
+    /// <summary>The smallest packet size a TDS client is required to support.</summary>
+    public const int MinimumPacketSize = 512;
+
+    /// <summary>The largest packet size a TDS packet header can describe, since it stores the length in 16 bits.</summary>
+    public const int MaximumPacketSize = ushort.MaxValue;
+
     private readonly Lock _tlsCertificateLock = new();
+    private int _packetSize = 4096;
     private X509Certificate2? _tlsCertificate;
     private bool _tlsCertificateLoaded;
 
     internal List<TdsTcpListenerOptions> TcpListeners { get; } = [];
 
     /// <summary>Gets or sets the packet size used when writing TDS packets.</summary>
-    public int PacketSize { get; set; } = 4096;
+    /// <remarks>
+    /// Must be between <see cref="MinimumPacketSize"/> and <see cref="MaximumPacketSize"/>. The TDS packet
+    /// header stores the packet length in 16 bits, so a larger value cannot be represented on the wire.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is outside the supported range.</exception>
+    public int PacketSize
+    {
+        get => _packetSize;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, MinimumPacketSize);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaximumPacketSize);
+
+            _packetSize = value;
+        }
+    }
 
     /// <summary>Gets or sets a value indicating whether encryption is required by the server.</summary>
     public bool RequireEncryption { get; set; }

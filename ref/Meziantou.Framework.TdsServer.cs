@@ -14,6 +14,8 @@ namespace Meziantou.Framework.Tds
 
     public sealed class TdsServerOptions
     {
+        public const int MinimumPacketSize = 512;
+        public const int MaximumPacketSize = 65535;
         public int PacketSize { get => throw null; set { } }
         public bool RequireEncryption { get => throw null; set { } }
         public string? TlsPfxPath { get => throw null; set { } }

@@ -331,8 +331,25 @@ internal static class TdsQueryRequestParser
             return null;
         }
 
-        _ = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
+        var maxLength = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
         position += 2;
+
+        if (maxLength == 0xFFFF)
+        {
+            var plpPayload = TryReadPlpPayload(payload, ref position, out var isNull);
+            if (isNull)
+            {
+                return CreateParameter(name, rawValue: null, TdsColumnType.Binary);
+            }
+
+            if (plpPayload is null)
+            {
+                return null;
+            }
+
+            return CreateParameter(name, plpPayload, TdsColumnType.Binary);
+        }
+
         var valueLength = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
         position += 2;
 

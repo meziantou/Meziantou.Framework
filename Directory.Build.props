@@ -19,6 +19,15 @@
     <NoWarn>$(NoWarn);NU5104</NoWarn> <!-- Allow prerelease dependencies -->
   </PropertyGroup>
 
+  <!--
+    Microsoft.Sbom.Targets runs Component Detection during 'dotnet pack' on CI. The ecosystem detectors shell out to
+    the tools they find on the agents (mvn, pip, ...), which makes the pack step hang intermittently. Nothing in the
+    repository consumes the generated manifests, so the SBOM generation the SDK enables on CI is turned off here.
+  -->
+  <PropertyGroup>
+    <GenerateSBOM>false</GenerateSBOM>
+  </PropertyGroup>
+
   <PropertyGroup>
     <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
     <LangVersion>preview</LangVersion>

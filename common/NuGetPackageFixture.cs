@@ -36,7 +36,6 @@ public abstract class NuGetPackageFixture(string packageProjectName) : IAsyncLif
             "-nologo",
             "/p:ArtifactsPath=" + artifactsPath,
             "/p:Version=" + PackageVersionValue,
-            "/p:GenerateSBOM=false",
             "/p:RunAnalyzers=false",
             "/p:PublicApiGeneratorGenerateOnBuild=false",
             "/p:PublicApiGeneratorVerifyNoChangeOnBuild=false",

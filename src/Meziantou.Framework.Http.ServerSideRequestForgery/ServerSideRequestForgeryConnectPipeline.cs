@@ -21,6 +21,12 @@ internal static class ServerSideRequestForgeryConnectPipeline
 
     internal static async ValueTask<IPAddress> ResolveAndSelectIpAddressAsync(Uri requestUri, DnsEndPoint dnsEndPoint, ServerSideRequestForgeryOptions options, IDnsIpAddressResolver dnsIpAddressResolver, CancellationToken cancellationToken)
     {
+        var safeAddresses = await ResolveSafeIpAddressesAsync(requestUri, dnsEndPoint, options, dnsIpAddressResolver, cancellationToken).ConfigureAwait(false);
+        return await SelectIpAddressAsync(requestUri, safeAddresses, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal static async ValueTask<List<IPAddress>> ResolveSafeIpAddressesAsync(Uri requestUri, DnsEndPoint dnsEndPoint, ServerSideRequestForgeryOptions options, IDnsIpAddressResolver dnsIpAddressResolver, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(requestUri);
         ArgumentNullException.ThrowIfNull(dnsEndPoint);
         ArgumentNullException.ThrowIfNull(options);
@@ -51,7 +57,12 @@ internal static class ServerSideRequestForgeryConnectPipeline
             throw new SocketException((int)SocketError.HostNotFound);
         }
 
-        var safeAddresses = FilterSafeAddresses(requestUri, resolvedAddresses, options, logger);
+        return FilterSafeAddresses(requestUri, resolvedAddresses, options, logger);
+    }
+
+    internal static async ValueTask<IPAddress> SelectIpAddressAsync(Uri requestUri, List<IPAddress> safeAddresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
+    {
+        var logger = options.Logger;
         IPAddress selectedAddress;
         try
         {
@@ -88,22 +99,49 @@ internal static class ServerSideRequestForgeryConnectPipeline
         ArgumentNullException.ThrowIfNull(context);
 
         var requestUri = context.InitialRequestMessage?.RequestUri ?? throw new InvalidOperationException("The request URI cannot be null.");
-        var selectedAddress = await ResolveAndSelectIpAddressAsync(requestUri, context.DnsEndPoint, options, dnsIpAddressResolver, cancellationToken).ConfigureAwait(false);
+        var safeAddresses = await ResolveSafeIpAddressesAsync(requestUri, context.DnsEndPoint, options, dnsIpAddressResolver, cancellationToken).ConfigureAwait(false);
 
-        // The returned NetworkStream owns the socket lifetime once the connection succeeds.
+        // Every address here has already been validated. Ask the strategy again after each failure, over the
+        // addresses that are left, so the fallback keeps whatever constraint the strategy expresses: Ipv4Only
+        // never falls back to IPv6, and PreferIpv4 falls back to IPv6 only once every IPv4 address has failed.
+        var remainingAddresses = safeAddresses;
+        Exception? lastConnectException = null;
+        while (remainingAddresses.Count > 0)
+        {
+            IPAddress selectedAddress;
+            try
+            {
+                selectedAddress = await SelectIpAddressAsync(requestUri, remainingAddresses, options, cancellationToken).ConfigureAwait(false);
+            }
+            catch (ServerSideRequestForgeryException) when (lastConnectException is not null)
+            {
+                // The strategy has no candidate left among the addresses that have not already failed.
+                break;
+            }
+
+            // The returned NetworkStream owns the socket lifetime once the connection succeeds.
 #pragma warning disable CA2000 // Dispose objects before losing scope
-        var socket = CreateConnectSocket(selectedAddress.AddressFamily);
+            var socket = CreateConnectSocket(selectedAddress.AddressFamily);
 #pragma warning restore CA2000
-        try
-        {
-            await socket.ConnectAsync(new IPEndPoint(selectedAddress, context.DnsEndPoint.Port), cancellationToken).ConfigureAwait(false);
-            return new NetworkStream(socket, ownsSocket: true);
+            try
+            {
+                await socket.ConnectAsync(new IPEndPoint(selectedAddress, context.DnsEndPoint.Port), cancellationToken).ConfigureAwait(false);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch (Exception ex)
+            {
+                socket.Dispose();
+                if (ex is OperationCanceledException || cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+
+                lastConnectException = ex;
+                remainingAddresses.Remove(selectedAddress);
+            }
         }
-        catch
-        {
-            socket.Dispose();
-            throw;
-        }
+
+        throw lastConnectException ?? new SocketException((int)SocketError.HostNotFound);
     }
 
     internal static Socket CreateConnectSocket(AddressFamily addressFamily)

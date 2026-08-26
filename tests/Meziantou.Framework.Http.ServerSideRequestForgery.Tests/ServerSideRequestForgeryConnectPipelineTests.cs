@@ -52,6 +52,78 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     }
 
     [Fact]
+    public async Task ConnectCallback_FallsBackToAnotherValidatedAddressWhenTheConnectFails()
+    {
+        using var server = new LoopbackHttpServer();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            // Picks the first remaining address, so the unreachable IPv6 loopback is tried before the live server.
+            ResolutionStrategy = new FirstAddressStrategy(),
+        };
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+        options.SafeIpNetworks.Add(IPNetwork.Parse("::1/128"));
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.IPv6Loopback, IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        // The server listens on the IPv4 loopback only, so the IPv6 attempt on the same port cannot succeed.
+        var response = await httpClient.GetAsync(new Uri($"http://example.invalid:{server.Port}/"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(1, server.AcceptedConnectionCount);
+    }
+
+    [Fact]
+    public async Task ConnectCallback_AsksTheStrategyAgainWithoutTheAddressThatFailed()
+    {
+        using var server = new LoopbackHttpServer();
+        var strategy = new RecordingStrategy();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            ResolutionStrategy = strategy,
+        };
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+        options.SafeIpNetworks.Add(IPNetwork.Parse("::1/128"));
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.IPv6Loopback, IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        _ = await httpClient.GetAsync(new Uri($"http://example.invalid:{server.Port}/"), TestContext.Current.CancellationToken);
+
+        Assert.Collection(
+            strategy.Calls,
+            firstCall => Assert.Equal([IPAddress.IPv6Loopback, IPAddress.Loopback], firstCall),
+            secondCall => Assert.Equal([IPAddress.Loopback], secondCall));
+    }
+
+    [Fact]
+    public async Task ConnectCallback_DoesNotFallBackToAnAddressTheStrategyExcludes()
+    {
+        using var server = new LoopbackHttpServer();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            ResolutionStrategy = IpAddressResolutionStrategy.Ipv6Only,
+        };
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+        options.SafeIpNetworks.Add(IPNetwork.Parse("::1/128"));
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.IPv6Loopback, IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        // The live server is on the IPv4 loopback, which Ipv6Only must never fall back to even though the
+        // address passed validation and is reachable.
+        await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri($"http://example.invalid:{server.Port}/"), TestContext.Current.CancellationToken));
+
+        Assert.Equal(0, server.AcceptedConnectionCount);
+    }
+
+    [Fact]
     public async Task ConnectCallback_SurfacesRejectionAsInnerExceptionOfHttpRequestException()
     {
         var options = new ServerSideRequestForgeryOptions();
@@ -600,6 +672,35 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             _ = host;
             _ = cancellationToken;
             return ValueTask.FromResult(addresses);
+        }
+    }
+
+    private sealed class FirstAddressStrategy : IpAddressResolutionStrategy
+    {
+        protected internal override ValueTask<IPAddress> ResolveAsync(IReadOnlyList<IPAddress> addresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
+        {
+            _ = options;
+            _ = cancellationToken;
+            if (addresses.Count == 0)
+                throw new ServerSideRequestForgeryException("No safe IP addresses available after validation.");
+
+            return ValueTask.FromResult(addresses[0]);
+        }
+    }
+
+    private sealed class RecordingStrategy : IpAddressResolutionStrategy
+    {
+        public List<IPAddress[]> Calls { get; } = [];
+
+        protected internal override ValueTask<IPAddress> ResolveAsync(IReadOnlyList<IPAddress> addresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
+        {
+            _ = options;
+            _ = cancellationToken;
+            Calls.Add([.. addresses]);
+            if (addresses.Count == 0)
+                throw new ServerSideRequestForgeryException("No safe IP addresses available after validation.");
+
+            return ValueTask.FromResult(addresses[0]);
         }
     }
 

@@ -266,26 +266,21 @@ public static partial class PublicSuffixList
     private static FrozenDictionary<string, PublicSuffixRuleFlags> LoadRules()
     {
         var entries = new Dictionary<string, PublicSuffixRuleFlags>(EntryCount, StringComparer.Ordinal);
-        AddRules(entries, IcannRules, PublicSuffixRuleFlags.IcannRule);
-        AddRules(entries, PrivateRules, PublicSuffixRuleFlags.PrivateRule);
-        AddRules(entries, IcannWildcards, PublicSuffixRuleFlags.IcannWildcard);
-        AddRules(entries, PrivateWildcards, PublicSuffixRuleFlags.PrivateWildcard);
-        AddRules(entries, IcannExceptions, PublicSuffixRuleFlags.IcannException);
-        AddRules(entries, PrivateExceptions, PublicSuffixRuleFlags.PrivateException);
+        AddRules(entries, GetIcannRules(), PublicSuffixRuleFlags.IcannRule);
+        AddRules(entries, GetPrivateRules(), PublicSuffixRuleFlags.PrivateRule);
+        AddRules(entries, GetIcannWildcards(), PublicSuffixRuleFlags.IcannWildcard);
+        AddRules(entries, GetPrivateWildcards(), PublicSuffixRuleFlags.PrivateWildcard);
+        AddRules(entries, GetIcannExceptions(), PublicSuffixRuleFlags.IcannException);
+        AddRules(entries, GetPrivateExceptions(), PublicSuffixRuleFlags.PrivateException);
         return entries.ToFrozenDictionary(StringComparer.Ordinal);
     }
 
-    private static void AddRules(Dictionary<string, PublicSuffixRuleFlags> entries, ReadOnlySpan<byte> data, PublicSuffixRuleFlags flag)
+    private static void AddRules(Dictionary<string, PublicSuffixRuleFlags> entries, string[] suffixes, PublicSuffixRuleFlags flag)
     {
-        foreach (var range in data.Split((byte)'\n'))
+        foreach (var suffix in suffixes)
         {
-            var suffix = data[range];
-            if (suffix.IsEmpty)
-                continue;
-
-            var key = Encoding.UTF8.GetString(suffix);
-            entries.TryGetValue(key, out var flags);
-            entries[key] = flags | flag;
+            entries.TryGetValue(suffix, out var flags);
+            entries[suffix] = flags | flag;
         }
     }
 }

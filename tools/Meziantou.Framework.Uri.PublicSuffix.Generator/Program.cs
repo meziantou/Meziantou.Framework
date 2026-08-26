@@ -50,17 +50,17 @@ var generated = $$"""
         private const int RuleCountValue = {{ruleCount.ToString(CultureInfo.InvariantCulture)}};
         private const long LastUpdatedTicks = {{commitDate.UtcDateTime.Ticks.ToString(CultureInfo.InvariantCulture)}}L;
 
-    {{BuildGroup(entries, "IcannRules", PublicSuffixRuleFlags.IcannRule)}}
+    {{BuildGroup(entries, "GetIcannRules", PublicSuffixRuleFlags.IcannRule)}}
 
-    {{BuildGroup(entries, "PrivateRules", PublicSuffixRuleFlags.PrivateRule)}}
+    {{BuildGroup(entries, "GetPrivateRules", PublicSuffixRuleFlags.PrivateRule)}}
 
-    {{BuildGroup(entries, "IcannWildcards", PublicSuffixRuleFlags.IcannWildcard)}}
+    {{BuildGroup(entries, "GetIcannWildcards", PublicSuffixRuleFlags.IcannWildcard)}}
 
-    {{BuildGroup(entries, "PrivateWildcards", PublicSuffixRuleFlags.PrivateWildcard)}}
+    {{BuildGroup(entries, "GetPrivateWildcards", PublicSuffixRuleFlags.PrivateWildcard)}}
 
-    {{BuildGroup(entries, "IcannExceptions", PublicSuffixRuleFlags.IcannException)}}
+    {{BuildGroup(entries, "GetIcannExceptions", PublicSuffixRuleFlags.IcannException)}}
 
-    {{BuildGroup(entries, "PrivateExceptions", PublicSuffixRuleFlags.PrivateException)}}
+    {{BuildGroup(entries, "GetPrivateExceptions", PublicSuffixRuleFlags.PrivateException)}}
     }
     """.ReplaceLineEndings("\n");
 
@@ -201,20 +201,21 @@ static string BuildGroup(SortedDictionary<string, PublicSuffixRuleFlags> entries
     var suffixes = entries.Where(entry => (entry.Value & flag) is not PublicSuffixRuleFlags.None).Select(entry => entry.Key).ToList();
 
     var builder = new StringBuilder();
-    builder.Append("    private static ReadOnlySpan<byte> ").Append(name).Append(" =>");
+    builder.Append("    private static string[] ").Append(name).Append("() =>");
     if (suffixes.Count is 0)
     {
-        builder.Append(" \"\"u8;");
+        builder.Append(" [];");
         return builder.ToString();
     }
 
-    builder.Append(" \"\"\"\n");
+    builder.Append("\n    [\n");
     foreach (var suffix in suffixes)
     {
-        builder.Append("        ").Append(suffix).Append('\n');
+        // The suffixes are punycode, so they never need escaping
+        builder.Append("        \"").Append(suffix).Append("\",\n");
     }
 
-    builder.Append("        \"\"\"u8;");
+    builder.Append("    ];");
     return builder.ToString();
 }
 

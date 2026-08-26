@@ -1138,6 +1138,32 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
+    public async Task TdsServer_StartAsync_WhenAListenerCannotBind_RollsBackTheOthers()
+    {
+        using var occupied = new TcpListener(IPAddress.Loopback, 0);
+        occupied.Start();
+        var occupiedPort = ((IPEndPoint)occupied.LocalEndpoint).Port;
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.AddTcpListener(occupiedPort, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        _ = await Assert.ThrowsAsync<SocketException>(() => server.StartAsync());
+
+        // The listener that did bind is released, so the server is not half-started.
+        Assert.Empty(server.Ports);
+
+        occupied.Stop();
+        await server.StartAsync();
+        Assert.Equal(2, server.Ports.Count);
+    }
+
+    [Fact]
     public async Task TdsServer_Dispose_IsIdempotent()
     {
         var options = new TdsServerOptions();

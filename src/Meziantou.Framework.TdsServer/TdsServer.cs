@@ -44,11 +44,26 @@ public sealed class TdsServer : IDisposable
             ? _options.TcpListeners
             : [new TdsTcpListenerOptions { BindAddress = IPAddress.Loopback, Port = 1433 }];
 
-        foreach (var listenerOption in listenerOptions)
+        try
         {
-            var listener = new TcpListener(listenerOption.BindAddress, listenerOption.Port);
-            listener.Start();
-            _listeners.Add(listener);
+            foreach (var listenerOption in listenerOptions)
+            {
+                var listener = new TcpListener(listenerOption.BindAddress, listenerOption.Port);
+                listener.Start();
+                _listeners.Add(listener);
+            }
+        }
+        catch
+        {
+            // Binding is all-or-nothing: the caller has no reason to dispose a server whose start threw.
+            StopListeners();
+            _cts.Dispose();
+            _cts = null;
+            throw;
+        }
+
+        foreach (var listener in _listeners)
+        {
             _ = AcceptLoopAsync(listener, _cts.Token);
         }
 
@@ -65,14 +80,18 @@ public sealed class TdsServer : IDisposable
 
         _disposed = true;
         _cts?.Cancel();
+        StopListeners();
+        _cts?.Dispose();
+    }
 
+    private void StopListeners()
+    {
         foreach (var listener in _listeners)
         {
             listener.Stop();
         }
 
         _listeners.Clear();
-        _cts?.Dispose();
     }
 
     private async Task AcceptLoopAsync(TcpListener listener, CancellationToken cancellationToken)

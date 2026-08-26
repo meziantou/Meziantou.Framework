@@ -224,6 +224,25 @@ public sealed class RegexReviewFeedbackTests
         Assert.Equal(0x1F600, literal.CodePoint);
     }
 
+    /// <summary>
+    /// A literal lives on one line: the grammar excludes a line terminator from an ordinary character and from the
+    /// character after a backslash, so neither spelling can hide one.
+    /// </summary>
+    [Theory]
+    [InlineData("/a\nb/")]
+    [InlineData("/a\rb/")]
+    [InlineData("/a\u2028b/")]
+    [InlineData("/a\u2029b/")]
+    [InlineData("/a\\\nb/")]
+    public void ALiteralCannotContainALineTerminator(string literal)
+    {
+        var tree = RegexSyntaxTree.ParseJavaScriptLiteral(literal);
+        RegexSyntaxAssert.TextIsFaithful(literal, tree);
+
+        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0208", $"[{literal}] reported {string.Join(",", tree.Diagnostics.Select(d => d.Id))}");
+        Assert.False(tree.Root.IsJavaScriptLiteral && tree.Root.CloseSlashToken is not null);
+    }
+
     /// <summary>An edit to a literal has to stay a literal, or the delimiters become ordinary slashes.</summary>
     [Fact]
     public void EditingALiteralKeepsItALiteral()

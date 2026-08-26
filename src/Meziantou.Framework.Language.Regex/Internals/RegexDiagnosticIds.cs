@@ -62,4 +62,5 @@ internal static class RegexDiagnosticIds
     public const string UnknownFlag = "REGEX0205";
     public const string DuplicateFlag = "REGEX0206";
     public const string ConflictingFlags = "REGEX0207";
+    public const string LineTerminatorInLiteral = "REGEX0208";
 }

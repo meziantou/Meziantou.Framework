@@ -24,6 +24,16 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
 
     protected override (RegexSyntaxToken? CloseSlash, RegexSyntaxToken? Flags, RegexSyntaxToken? Trailing) ReadLiteralSuffix()
     {
+        if (_literal is { LineTerminatorPosition: >= 0 } broken)
+        {
+            AddDiagnostic(
+                new TextSpan(broken.LineTerminatorPosition, 1),
+                RegexDiagnosticIds.LineTerminatorInLiteral,
+                "A regular-expression literal cannot contain a line terminator.");
+
+            return (null, null, ReadTrailingContent());
+        }
+
         if (_literal is not { HasClosingSlash: true })
             return (null, null, null);
 
@@ -61,9 +71,10 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
     }
 
     /// <summary>Stops the body at the closing delimiter, so the flags are not read as part of the pattern.</summary>
-    protected override bool IsAtBodyEnd(int position) => _literal is { HasClosingSlash: true } literal
-        ? position >= literal.BodyEnd
-        : base.IsAtBodyEnd(position);
+    protected override bool IsAtBodyEnd(int position) =>
+        _literal is { HasClosingSlash: true } or { LineTerminatorPosition: >= 0 }
+            ? position >= _literal.BodyEnd
+            : base.IsAtBodyEnd(position);
 
     /// <summary>Reports the three ways a flag list can be wrong: unknown, repeated, or <c>u</c> together with <c>v</c>.</summary>
     private void ReportFlagProblems(RegexSyntaxToken flagsToken)

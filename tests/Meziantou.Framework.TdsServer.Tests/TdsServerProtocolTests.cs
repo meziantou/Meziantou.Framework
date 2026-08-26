@@ -255,6 +255,106 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(UserId, capturedUserId);
     }
 
+    [Theory]
+    [InlineData(10)]
+    [InlineData(4000)]
+    [InlineData(4001)]
+    [InlineData(100000)]
+    public async Task SqlClient_ResultSet_NVarCharValue_IsNotTruncated(int length)
+    {
+        var expected = string.Create(length, length, (span, _) =>
+        {
+            for (var i = 0; i < span.Length; i++)
+            {
+                span[i] = (char)('a' + (i % 26));
+            }
+        });
+
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.NVarChar));
+        resultSet.Rows.Add([expected]);
+        resultSet.Rows.Add([null]);
+
+        var rows = await ReadStringColumnAsync(resultSet);
+
+        Assert.Equal([expected, null], rows);
+    }
+
+    [Theory]
+    [InlineData(10)]
+    [InlineData(8000)]
+    [InlineData(100000)]
+    public async Task SqlClient_ResultSet_BinaryValue_IsNotTruncated(int length)
+    {
+        var expected = new byte[length];
+        for (var i = 0; i < expected.Length; i++)
+        {
+            expected[i] = (byte)(i % 256);
+        }
+
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Binary));
+        resultSet.Rows.Add([expected]);
+        resultSet.Rows.Add([null]);
+
+        var rows = await ReadResultSetAsync(resultSet, (reader, ordinal) => reader.IsDBNull(ordinal) ? null : Convert.ToHexString((byte[])reader.GetValue(ordinal)));
+
+        Assert.Equal([Convert.ToHexString(expected), null], rows);
+    }
+
+    [Fact]
+    public async Task SqlClient_ResultSet_MixedLengths_UseIndependentColumnFraming()
+    {
+        var longValue = new string('x', 9000);
+
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Short", TdsColumnType.NVarChar));
+        resultSet.Columns.Add(new TdsColumn("Long", TdsColumnType.NVarChar));
+        resultSet.Rows.Add(["abc", longValue]);
+        resultSet.Rows.Add([null, "def"]);
+
+        var rows = await ReadResultSetAsync(resultSet, (reader, _) => (reader.IsDBNull(0) ? null : reader.GetString(0)) + "|" + reader.GetString(1));
+
+        Assert.Equal(["abc|" + longValue, "|def"], rows);
+    }
+
+    private static Task<List<string?>> ReadStringColumnAsync(TdsResultSet resultSet)
+    {
+        return ReadResultSetAsync(resultSet, (reader, ordinal) => reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal));
+    }
+
+    private static async Task<List<T>> ReadResultSetAsync<T>(TdsResultSet resultSet, Func<SqlDataReader, int, T> readValue)
+    {
+        var result = new TdsQueryResult();
+        result.ResultSets.Add(resultSet);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(result));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1";
+
+        await using var reader = await command.ExecuteReaderAsync();
+        var rows = new List<T>();
+        while (await reader.ReadAsync())
+        {
+            rows.Add(readValue(reader, 0));
+        }
+
+        return rows;
+    }
+
     [Fact]
     public async Task SqlClient_TextQuery_WithParameters_UsesRpc()
     {

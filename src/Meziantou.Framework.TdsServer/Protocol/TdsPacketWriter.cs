@@ -16,6 +16,9 @@ internal sealed class TdsPacketWriter
         _packetSize = Math.Max(packetSize, 512);
     }
 
+    /// <summary>Gets the number of payload bytes each TDS packet can carry.</summary>
+    public int PayloadSizePerPacket => _packetSize - 8;
+
     public async ValueTask WriteAsync(TdsPacketType packetType, ReadOnlyMemory<byte> payload, CancellationToken cancellationToken)
     {
         var maxPayloadPerPacket = _packetSize - 8;

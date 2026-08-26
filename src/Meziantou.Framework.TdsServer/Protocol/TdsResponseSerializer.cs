@@ -9,9 +9,11 @@ namespace Meziantou.Framework.Tds.Protocol;
 internal static class TdsResponseSerializer
 {
     private const ushort MaxVariableColumnLength = 8000;
+    private const ushort PartiallyLengthPrefixedMarker = 0xFFFF;
 
     // A token's length field is 16 bits, so a message has to leave room for the rest of the token body.
     private const int MaxTokenMessageLength = 32000;
+
     private static readonly byte[] DefaultCollation = [0x09, 0x04, 0xD0, 0x00, 0x34];
 
     public static byte[] CreateLoginSuccess(TdsAuthenticationResult authenticationResult)
@@ -63,7 +65,7 @@ internal static class TdsResponseSerializer
         return stream.ToArray();
     }
 
-    public static byte[] CreateQueryResponse(TdsQueryResult result)
+    public static byte[] CreateQueryResponse(TdsQueryResult result, int payloadSizePerPacket)
     {
         ArgumentNullException.ThrowIfNull(result);
 
@@ -87,7 +89,7 @@ internal static class TdsResponseSerializer
         {
             var resultSet = result.ResultSets[i];
             var hasMoreResults = i + 1 < result.ResultSets.Count;
-            WriteResultSet(writer, resultSet, hasMoreResults);
+            WriteResultSet(writer, resultSet, hasMoreResults, payloadSizePerPacket);
         }
 
         if (result.ResultSets.Count == 0)
@@ -109,17 +111,74 @@ internal static class TdsResponseSerializer
         return stream.ToArray();
     }
 
-    private static void WriteResultSet(BinaryWriter writer, TdsResultSet resultSet, bool hasMoreResults)
+    private static void WriteResultSet(BinaryWriter writer, TdsResultSet resultSet, bool hasMoreResults, int payloadSizePerPacket)
     {
-        WriteColumnMetadataToken(writer, resultSet.Columns);
+        var usePartialLength = GetPartiallyLengthPrefixedColumns(resultSet);
+        WriteColumnMetadataToken(writer, resultSet.Columns, usePartialLength);
 
         foreach (var row in resultSet.Rows)
         {
-            WriteRowToken(writer, resultSet.Columns, row);
+            WriteRowToken(writer, resultSet.Columns, usePartialLength, payloadSizePerPacket, row);
         }
 
         var status = hasMoreResults ? (ushort)0x0001 : (ushort)0x0000;
         WriteDoneToken(writer, status, (ulong)resultSet.Rows.Count);
+    }
+
+    /// <summary>
+    /// Determines, per column, whether values must be sent partially-length-prefixed because at least one of
+    /// them exceeds what a fixed-length column can carry. Short columns keep the cheaper 2-byte framing.
+    /// </summary>
+    private static bool[] GetPartiallyLengthPrefixedColumns(TdsResultSet resultSet)
+    {
+        var result = new bool[resultSet.Columns.Count];
+        for (var i = 0; i < resultSet.Columns.Count; i++)
+        {
+            var column = resultSet.Columns[i];
+            if (column.ColumnType is TdsColumnType.Json || IsFixedLengthColumn(column.ColumnType))
+            {
+                continue;
+            }
+
+            foreach (var row in resultSet.Rows)
+            {
+                if (i < row.Count && ExceedsFixedColumnLength(column, row[i]))
+                {
+                    result[i] = true;
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private static bool IsFixedLengthColumn(TdsColumnType columnType)
+    {
+        return columnType is TdsColumnType.TinyInt
+            or TdsColumnType.SmallInt
+            or TdsColumnType.Int32
+            or TdsColumnType.Int64
+            or TdsColumnType.Boolean
+            or TdsColumnType.Real
+            or TdsColumnType.Double;
+    }
+
+    private static bool ExceedsFixedColumnLength(TdsColumn column, object? value)
+    {
+        if (value is null)
+        {
+            return false;
+        }
+
+        if (column.ColumnType is TdsColumnType.Binary)
+        {
+            return value is byte[] bytes
+                ? bytes.Length > MaxVariableColumnLength
+                : Encoding.UTF8.GetByteCount(value.ToString() ?? string.Empty) > MaxVariableColumnLength;
+        }
+
+        return Encoding.Unicode.GetByteCount(ConvertToSqlText(value, column.ColumnType)) > MaxVariableColumnLength;
     }
 
     private static void WriteLoginAckToken(BinaryWriter writer, string programName)
@@ -190,12 +249,14 @@ internal static class TdsResponseSerializer
         writer.Write(rowCount);
     }
 
-    private static void WriteColumnMetadataToken(BinaryWriter writer, Collection<TdsColumn> columns)
+    private static void WriteColumnMetadataToken(BinaryWriter writer, Collection<TdsColumn> columns, bool[] usePartialLength)
     {
         writer.Write((byte)0x81);
         writer.Write((ushort)columns.Count);
-        foreach (var column in columns)
+        for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++)
         {
+            var column = columns[columnIndex];
+            var declaredLength = usePartialLength[columnIndex] ? PartiallyLengthPrefixedMarker : MaxVariableColumnLength;
             writer.Write((uint)0);
             var flags = column.IsNullable ? (ushort)0x0001 : (ushort)0x0000;
             writer.Write(flags);
@@ -281,14 +342,14 @@ internal static class TdsResponseSerializer
                     break;
                 case TdsColumnType.Binary:
                     writer.Write((byte)0xA5); // VARBINARY
-                    writer.Write(MaxVariableColumnLength);
+                    writer.Write(declaredLength);
                     break;
                 case TdsColumnType.Json:
                     writer.Write((byte)0xF4); // JSON
                     break;
                 default:
                     writer.Write((byte)0xE7); // NVARCHAR
-                    writer.Write(MaxVariableColumnLength);
+                    writer.Write(declaredLength);
                     writer.Write(DefaultCollation);
                     break;
             }
@@ -297,21 +358,21 @@ internal static class TdsResponseSerializer
         }
     }
 
-    private static void WriteRowToken(BinaryWriter writer, Collection<TdsColumn> columns, IReadOnlyList<object?> values)
+    private static void WriteRowToken(BinaryWriter writer, Collection<TdsColumn> columns, bool[] usePartialLength, int payloadSizePerPacket, IReadOnlyList<object?> values)
     {
         writer.Write((byte)0xD1);
         for (var i = 0; i < columns.Count; i++)
         {
             var value = i < values.Count ? values[i] : null;
-            WriteColumnValue(writer, columns[i], value);
+            WriteColumnValue(writer, columns[i], usePartialLength[i], payloadSizePerPacket, value);
         }
     }
 
-    private static void WriteColumnValue(BinaryWriter writer, TdsColumn column, object? value)
+    private static void WriteColumnValue(BinaryWriter writer, TdsColumn column, bool usePartialLength, int payloadSizePerPacket, object? value)
     {
         if (value is null)
         {
-            WriteNullValue(writer, column);
+            WriteNullValue(writer, column, usePartialLength);
             return;
         }
 
@@ -375,20 +436,34 @@ internal static class TdsResponseSerializer
                 break;
             case TdsColumnType.Binary:
                 var bytes = value as byte[] ?? Encoding.UTF8.GetBytes(value.ToString() ?? string.Empty);
-                var binaryLength = Math.Min(bytes.Length, MaxVariableColumnLength);
-                writer.Write((ushort)binaryLength);
-                writer.Write(bytes, 0, binaryLength);
+                if (usePartialLength)
+                {
+                    WritePartiallyLengthPrefixed(writer, bytes, payloadSizePerPacket);
+                }
+                else
+                {
+                    writer.Write((ushort)bytes.Length);
+                    writer.Write(bytes);
+                }
+
                 break;
             case TdsColumnType.Json:
                 var json = ConvertToSqlText(value, column.ColumnType);
-                WritePartiallyLengthPrefixedUtf8(writer, json);
+                WritePartiallyLengthPrefixed(writer, Encoding.UTF8.GetBytes(json), payloadSizePerPacket);
                 break;
             default:
                 var text = ConvertToSqlText(value, column.ColumnType);
                 var payload = Encoding.Unicode.GetBytes(text);
-                var length = Math.Min(payload.Length, MaxVariableColumnLength);
-                writer.Write((ushort)length);
-                writer.Write(payload, 0, length);
+                if (usePartialLength)
+                {
+                    WritePartiallyLengthPrefixed(writer, payload, payloadSizePerPacket);
+                }
+                else
+                {
+                    writer.Write((ushort)payload.Length);
+                    writer.Write(payload);
+                }
+
                 break;
         }
     }
@@ -406,8 +481,14 @@ internal static class TdsResponseSerializer
         WriteToken(writer, token: 0xE3, bodyStream);
     }
 
-    private static void WriteNullValue(BinaryWriter writer, TdsColumn column)
+    private static void WriteNullValue(BinaryWriter writer, TdsColumn column, bool usePartialLength)
     {
+        if (usePartialLength)
+        {
+            WritePartiallyLengthPrefixedNull(writer);
+            return;
+        }
+
         switch (column.ColumnType)
         {
             case TdsColumnType.TinyInt:
@@ -560,14 +641,22 @@ internal static class TdsResponseSerializer
         writer.Write(bytes);
     }
 
-    private static void WritePartiallyLengthPrefixedUtf8(BinaryWriter writer, string value)
+    private static void WritePartiallyLengthPrefixed(BinaryWriter writer, byte[] payload, int payloadSizePerPacket)
     {
-        var payload = Encoding.UTF8.GetBytes(value);
         writer.Write((ulong)payload.Length);
-        if (payload.Length > 0)
+
+        var offset = 0;
+        while (offset < payload.Length)
         {
-            writer.Write(payload.Length);
-            writer.Write(payload);
+            // End each chunk on a TDS packet boundary so no chunk is ever continued in the next packet.
+            var positionInPacket = (int)(writer.BaseStream.Position % payloadSizePerPacket);
+            var remainingInPacket = payloadSizePerPacket - positionInPacket - sizeof(int);
+            var count = remainingInPacket > 0 ? remainingInPacket : remainingInPacket + payloadSizePerPacket;
+            count = Math.Min(count, payload.Length - offset);
+
+            writer.Write(count);
+            writer.Write(payload, offset, count);
+            offset += count;
         }
 
         writer.Write(0);

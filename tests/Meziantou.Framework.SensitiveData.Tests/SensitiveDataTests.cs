@@ -143,4 +143,12 @@ public sealed class SensitiveDataTests
         using var data = SensitiveData.Create("foo");
         Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetConverter(typeof(SensitiveData<char>)).ConvertToString(data));
     }
+
+    [Fact]
+    public void CannotConvertFromStringToNonCharElementType()
+    {
+        var converter = TypeDescriptor.GetConverter(typeof(SensitiveData<byte>));
+        Assert.False(converter.CanConvertFrom(typeof(string)));
+        Assert.Throws<NotSupportedException>(() => converter.ConvertFromString("bar"));
+    }
 }

@@ -163,6 +163,28 @@ public static partial class SensitiveData
 /// contents, such as through a debugger or memory dump utility.
 /// </summary>
 /// <typeparam name="T">The unmanaged type of elements stored in this sensitive data buffer.</typeparam>
+/// <remarks>
+/// <para>The protection applied while the contents are at rest depends on the platform:</para>
+/// <list type="bullet">
+/// <item><description>
+/// Windows: the buffer is allocated on a private heap and encrypted with <c>CryptProtectMemory</c>.
+/// </description></item>
+/// <item><description>
+/// Linux and macOS: the buffer is mapped with <c>mmap</c> and made inaccessible with <c>mprotect(PROT_NONE)</c>.
+/// It is also locked into physical memory with <c>mlock</c> on a best-effort basis. Locking commonly fails when
+/// <c>RLIMIT_MEMLOCK</c> is low, which is the default in many container images; that failure is not reported, and
+/// the contents may then be written to swap. The contents are never encrypted on these platforms, so a core dump
+/// taken while the buffer is unprotected contains them in clear.
+/// </description></item>
+/// <item><description>
+/// Other platforms: the buffer is combined with a random key of the same length. The key lives in the same
+/// process, so this only guards against casual inspection.
+/// </description></item>
+/// </list>
+/// <para>
+/// Failing to apply or remove the protection throws; the instance is never silently left unprotected.
+/// </para>
+/// </remarks>
 /// <example>
 /// <code>
 /// // Create and use sensitive data
@@ -179,9 +201,10 @@ public static partial class SensitiveData
 /// char[] revealed = secret.RevealToArray();
 ///
 /// // Use the data with a callback to avoid keeping it in memory
-/// secret.RevealAndUse(state: null, (span, _) => {
+/// secret.RevealAndUse(arg: Console.Out, static (span, output) =>
+/// {
 ///     // Process the sensitive data here
-///     Console.WriteLine($"Processing {span.Length} characters");
+///     output.WriteLine($"Processing {span.Length} characters");
 /// });
 /// </code>
 /// </example>
@@ -213,6 +236,20 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     {
         ThrowIfDisposed();
         return _data.Length;
+    }
+
+    /// <summary>
+    /// Indicates whether the platform protection is currently applied to the buffer.
+    /// Exposed so tests can assert the protection is actually in effect rather than only that
+    /// the contents round-trip.
+    /// </summary>
+    internal bool IsProtected
+    {
+        get
+        {
+            ThrowIfDisposed();
+            return _data.IsProtected;
+        }
     }
 
     /// <summary>
@@ -337,6 +374,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
         private ProtectionMode _protectionMode;
         private bool _unixMemoryLocked;
         private bool _unixMemoryProtected;
+        private bool _isProtected;
 
         public NativeMemorySafeHandle()
             : base(invalidHandleValue: Invalid, ownsHandle: true)
@@ -346,6 +384,9 @@ public sealed unsafe class SensitiveData<T> : IDisposable
         public int Length { get; private set; }
 
         public Lock SyncLock { get; } = new();
+
+        // A zero-length buffer holds no contents, so there is nothing to protect and nothing to disclose.
+        public bool IsProtected => _allocatedBytes == 0 || _isProtected;
 
         public override bool IsInvalid => handle == Invalid;
 
@@ -399,14 +440,25 @@ public sealed unsafe class SensitiveData<T> : IDisposable
             if (OperatingSystem.IsWindows() && _protectionMode is ProtectionMode.Windows)
             {
                 WindowsHeap.ProtectMemory(handle, _allocatedBytes);
+                _isProtected = true;
             }
             else if ((OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) && _protectionMode is ProtectionMode.Unix)
             {
-                _unixMemoryProtected = SensitiveData.UnixMemoryProtection.TryProtect(handle, _allocatedBytes, SensitiveData.UnixMemoryProtection.PROT_NONE);
+                // Ignoring a failure here would leave the contents readable for the rest of the instance's
+                // life with nothing to indicate the protection is not applied, so report it like Unprotect
+                // and the Windows path already do.
+                if (!SensitiveData.UnixMemoryProtection.TryProtect(handle, _allocatedBytes, SensitiveData.UnixMemoryProtection.PROT_NONE))
+                {
+                    ThrowLastPInvokeError();
+                }
+
+                _unixMemoryProtected = true;
+                _isProtected = true;
             }
             else if (_protectionMode is ProtectionMode.Xor)
             {
                 XorWithKey();
+                _isProtected = true;
             }
         }
 
@@ -418,6 +470,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
             if (OperatingSystem.IsWindows() && _protectionMode is ProtectionMode.Windows)
             {
                 WindowsHeap.UnprotectMemory(handle, _allocatedBytes);
+                _isProtected = false;
             }
             else if ((OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) && _protectionMode is ProtectionMode.Unix)
             {
@@ -430,10 +483,12 @@ public sealed unsafe class SensitiveData<T> : IDisposable
                 }
 
                 _unixMemoryProtected = false;
+                _isProtected = false;
             }
             else if (_protectionMode is ProtectionMode.Xor)
             {
                 XorWithKey();
+                _isProtected = false;
             }
         }
 

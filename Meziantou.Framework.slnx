@@ -292,5 +292,6 @@
     <Project Path="tools/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Http.Hsts.Generator/Meziantou.Framework.Http.Hsts.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Unicode.Generator/Meziantou.Framework.Unicode.Generator.csproj" />
+    <Project Path="tools/Meziantou.Framework.Uri.PublicSuffix.Generator/Meziantou.Framework.Uri.PublicSuffix.Generator.csproj" />
   </Folder>
 </Solution>

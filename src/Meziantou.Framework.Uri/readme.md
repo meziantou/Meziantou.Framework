@@ -100,3 +100,43 @@ _ = QueryStringUtilities.SetQueryString(uri, "name", "value");
 // Remove a query string parameter
 _ = QueryStringUtilities.AddQueryString(uri, "name", null);
 ````
+
+## Public Suffix List
+
+A snapshot of the [Public Suffix List](https://publicsuffix.org/list/) is compiled into the assembly and used to find the public suffix (eTLD) and the registrable domain (eTLD+1) of a domain name. No network access is performed; the list is refreshed when a new version of the package is released.
+
+````c#
+// Get the registrable domain (eTLD+1)
+_ = PublicSuffixList.GetRegistrableDomain("www.example.co.uk"); // example.co.uk
+_ = PublicSuffixList.GetRegistrableDomain("co.uk");             // null
+
+// Get the public suffix (eTLD)
+_ = PublicSuffixList.GetPublicSuffix("www.example.co.uk"); // co.uk
+
+// Test if a domain is a public suffix
+_ = PublicSuffixList.IsPublicSuffix("co.uk");       // true
+_ = PublicSuffixList.IsPublicSuffix("example.com"); // false
+
+// Decompose a domain name
+if (PublicSuffixList.TryGetDomainInfo("www.a.example.co.uk", out DomainInfo info))
+{
+    _ = info.PublicSuffix;         // co.uk
+    _ = info.RegistrableDomain;    // example.co.uk
+    _ = info.Subdomain;            // www.a
+    _ = info.Source;               // PublicSuffixRuleSources.Icann
+    _ = info.IsKnownPublicSuffix;  // true
+}
+
+// A Uri can be used directly
+_ = PublicSuffixList.TryGetDomainInfo(new Uri("https://www.example.co.uk/path"), out _);
+````
+
+The list has two sections: the suffixes delegated by ICANN, and the suffixes submitted by domain holders such as `blogspot.com`. Both are used by default; the matching can be restricted to one of them.
+
+````c#
+// blogspot.com is a private rule
+_ = PublicSuffixList.GetRegistrableDomain("foo.blogspot.com");                                   // foo.blogspot.com
+_ = PublicSuffixList.GetRegistrableDomain("foo.blogspot.com", PublicSuffixRuleSources.Icann);    // blogspot.com
+````
+
+When a domain matches no rule of the list, the implicit `*` rule applies and the top-level domain is the public suffix. `DomainInfo.IsKnownPublicSuffix` reports whether an actual rule matched.

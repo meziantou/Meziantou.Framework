@@ -1,0 +1,52 @@
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0' # once a week
+  push:
+    branches:
+      - main
+    paths:
+      - 'tools/Meziantou.Framework.Uri.PublicSuffix.Generator/**'
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  update_file:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+      - run: |
+          dotnet run --project tools/Meziantou.Framework.Uri.PublicSuffix.Generator
+          if ($LASTEXITCODE -ne 0) {
+            $branch = "update-public-suffix-list"
+            $title = "Update public suffix list"
+            git config --global user.email "git@meziantou.net"
+            git config --global user.name "meziantou"
+            git checkout -b $branch
+            git add .
+            git commit -m $title
+            git push origin $branch --force
+            $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            $body = "$title`n`nCreated by: $runUrl"
+
+            # The branch is reused every week, so update the pull request when one is already open
+            $openPr = gh pr list --head $branch --state open --json number --jq '.[0].number // empty'
+            if ($openPr) {
+              gh pr edit $openPr --title $title --body $body
+            } else {
+              gh pr create --title $title --body $body --base main --head $branch
+            }
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

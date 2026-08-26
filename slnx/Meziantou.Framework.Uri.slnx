@@ -1,8 +1,15 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="../src/Meziantou.Framework.Uri/Meziantou.Framework.Uri.csproj" />
+    <Project Path="../src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Uri.Tests/Meziantou.Framework.Uri.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="../tools/Meziantou.Framework.Uri.PublicSuffix.Generator/Meziantou.Framework.Uri.PublicSuffix.Generator.csproj" />
   </Folder>
 </Solution>

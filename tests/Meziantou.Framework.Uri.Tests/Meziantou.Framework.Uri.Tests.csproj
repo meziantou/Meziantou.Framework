@@ -8,4 +8,11 @@
     <ProjectReference Include="../../src/Meziantou.Framework.Uri/Meziantou.Framework.Uri.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="files/public_suffix_tests.txt" />
+    <EmbeddedResource Include="files/public_suffix_tests.txt">
+      <LogicalName>%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Security;
@@ -35,12 +36,36 @@ internal sealed class TdsQueryEngineExecutor
     }
 
     private readonly TdsQueryEngineOptions _options;
+    private readonly FrozenDictionary<string, TdsQueryRoot> _queryRoots;
+    private readonly FrozenDictionary<string, Delegate> _storedProcedures;
+    private readonly FrozenDictionary<string, TdsQueryScalarFunction> _scalarFunctions;
+    private readonly FrozenDictionary<string, XmlSchemaSet> _xmlSchemaCollections;
 
     public TdsQueryEngineExecutor(TdsQueryEngineOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
         _options = options;
+
+        // The option collections are plain mutable dictionaries handed out through the public API, and they are
+        // read from every connection thread. Snapshot them once so a late registration cannot race an in-flight
+        // query, and so the query-root lookup is not rebuilt per request.
+        _queryRoots = BuildQueryRoots(options.QueryRoots);
+        _storedProcedures = options.StoredProcedures.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+        _scalarFunctions = options.ScalarFunctions.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+        _xmlSchemaCollections = options.XmlSchemaCollections.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static FrozenDictionary<string, TdsQueryRoot> BuildQueryRoots(IEnumerable<TdsQueryRoot> queryRoots)
+    {
+        var result = new Dictionary<string, TdsQueryRoot>(StringComparer.OrdinalIgnoreCase);
+        foreach (var queryRoot in queryRoots)
+        {
+            // First registration wins, matching the previous behaviour.
+            _ = result.TryAdd(queryRoot.Name, queryRoot);
+        }
+
+        return result.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
     }
 
     public async ValueTask<TdsQueryResult> ExecuteAsync(TdsQueryContext context, CancellationToken cancellationToken)
@@ -84,18 +109,7 @@ internal sealed class TdsQueryEngineExecutor
 
     private QueryExecutionContext CreateQueryExecutionContext(TdsQueryContext queryContext)
     {
-        var result = new Dictionary<string, TdsQueryRoot>(StringComparer.OrdinalIgnoreCase);
-        foreach (var queryRoot in _options.QueryRoots)
-        {
-            if (result.ContainsKey(queryRoot.Name))
-            {
-                continue;
-            }
-
-            result.Add(queryRoot.Name, queryRoot);
-        }
-
-        return new QueryExecutionContext(queryContext, result);
+        return new QueryExecutionContext(queryContext, _queryRoots);
     }
 
     private async ValueTask<TdsQueryResult> ExecuteStoredProcedureAsync(TdsQueryContext context, CancellationToken cancellationToken)
@@ -105,7 +119,7 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException("The RPC request does not specify a stored procedure name.");
         }
 
-        if (!_options.StoredProcedures.TryGetValue(context.ProcedureName, out var storedProcedure))
+        if (!_storedProcedures.TryGetValue(context.ProcedureName, out var storedProcedure))
         {
             throw new TdsQueryEngineException($"Unknown stored procedure '{context.ProcedureName}'.");
         }
@@ -1776,7 +1790,7 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var arguments = function.Arguments?.Select(argument => BuildScalar(argument, aliases, parameter, parameters)).ToArray() ?? [];
-        if (!_options.ScalarFunctions.TryGetValue(function.FunctionName, out var mapping))
+        if (!_scalarFunctions.TryGetValue(function.FunctionName, out var mapping))
         {
             throw new TdsQueryEngineException($"Scalar function '{function.FunctionName}' is not supported.");
         }
@@ -2223,7 +2237,7 @@ internal sealed class TdsQueryEngineExecutor
             ? null
             : NormalizeObjectIdentifier(dataTypeSpec.XmlSchemaCollection.Sql);
         XmlSchemaSet? schemaSet = null;
-        if (schemaCollectionName is not null && !_options.XmlSchemaCollections.TryGetValue(schemaCollectionName, out schemaSet))
+        if (schemaCollectionName is not null && !_xmlSchemaCollections.TryGetValue(schemaCollectionName, out schemaSet))
         {
             throw new TdsQueryEngineException($"Unknown XML schema collection '{schemaCollectionName}'.");
         }

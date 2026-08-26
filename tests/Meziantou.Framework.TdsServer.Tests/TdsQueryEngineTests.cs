@@ -3352,6 +3352,38 @@ public sealed class TdsQueryEngineTests
         Assert.True(await invalidQueryTask.Task.WaitAsync(TimeSpan.FromSeconds(5)));
     }
 
+    [Fact]
+    public async Task SqlClient_QueryEngine_OptionsAreSnapshottedWhenTheHandlerIsCreated()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        var handler = TdsQueryEngine.CreateQueryHandler(queryEngineOptions);
+
+        // Registering after the handler exists is ignored rather than racing in-flight queries.
+        queryEngineOptions.AddQueryRoot("late_root", _ => GetCustomers().AsQueryable());
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            handler);
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Id FROM late_root";
+
+        var exception = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteReaderAsync());
+
+        Assert.Equal(50004, exception.Number);
+        Assert.Contains("late_root", exception.Message);
+    }
+
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
     {
         var options = new TdsQueryEngineOptions();

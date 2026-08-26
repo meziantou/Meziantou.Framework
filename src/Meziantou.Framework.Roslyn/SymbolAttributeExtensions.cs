@@ -13,6 +13,21 @@ namespace Meziantou.Framework.Roslyn;
 #endif
 internal static partial class SymbolAttributeExtensions
 {
+    /// <summary>
+    /// Gets the attributes applied to <paramref name="symbol"/> that match <paramref name="attributeType"/>.
+    /// Only the attributes applied to the symbol itself are considered. Unlike <c>Attribute.GetCustomAttributes(inherit: true)</c>,
+    /// the base types of the symbol and the members it overrides are never inspected.
+    /// </summary>
+    /// <param name="symbol">The symbol whose attributes are inspected.</param>
+    /// <param name="attributeType">The type of the attribute to look for. When <see langword="null"/>, no attribute is returned.</param>
+    /// <param name="inherits">
+    /// When <see langword="true"/>, an attribute also matches when its class derives from <paramref name="attributeType"/>.
+    /// When <see langword="false"/>, the attribute class must be exactly <paramref name="attributeType"/>.
+    /// This parameter is ignored when <paramref name="attributeType"/> is sealed, as no other class can derive from it.
+    /// Note this is unrelated to the <c>inherit</c> parameter of <c>Attribute.GetCustomAttributes</c>: it never makes the
+    /// base types of the symbol or the members it overrides be inspected.
+    /// </param>
+    /// <returns>The attributes applied to <paramref name="symbol"/> that match <paramref name="attributeType"/>.</returns>
     public static IEnumerable<AttributeData> GetAttributes(this ISymbol symbol, ITypeSymbol? attributeType, bool inherits = true)
     {
         if (attributeType is null)
@@ -41,6 +56,21 @@ internal static partial class SymbolAttributeExtensions
         }
     }
 
+    /// <summary>
+    /// Gets the first attribute applied to <paramref name="symbol"/> that matches <paramref name="attributeType"/>.
+    /// Only the attributes applied to the symbol itself are considered. Unlike <c>Attribute.GetCustomAttributes(inherit: true)</c>,
+    /// the base types of the symbol and the members it overrides are never inspected.
+    /// </summary>
+    /// <param name="symbol">The symbol whose attributes are inspected.</param>
+    /// <param name="attributeType">The type of the attribute to look for. When <see langword="null"/>, no attribute is returned.</param>
+    /// <param name="inherits">
+    /// When <see langword="true"/>, an attribute also matches when its class derives from <paramref name="attributeType"/>.
+    /// When <see langword="false"/>, the attribute class must be exactly <paramref name="attributeType"/>.
+    /// This parameter is ignored when <paramref name="attributeType"/> is sealed, as no other class can derive from it.
+    /// Note this is unrelated to the <c>inherit</c> parameter of <c>Attribute.GetCustomAttributes</c>: it never makes the
+    /// base types of the symbol or the members it overrides be inspected.
+    /// </param>
+    /// <returns>The first matching attribute, or <see langword="null"/> when <paramref name="symbol"/> has no matching attribute.</returns>
     public static AttributeData? GetFirstAttribute(this ISymbol symbol, ITypeSymbol? attributeType, bool inherits = true)
     {
         if (attributeType is null)
@@ -69,6 +99,21 @@ internal static partial class SymbolAttributeExtensions
         return null;
     }
 
+    /// <summary>
+    /// Indicates whether <paramref name="symbol"/> has an attribute matching <paramref name="attributeType"/>.
+    /// Only the attributes applied to the symbol itself are considered. Unlike <c>Attribute.GetCustomAttributes(inherit: true)</c>,
+    /// the base types of the symbol and the members it overrides are never inspected.
+    /// </summary>
+    /// <param name="symbol">The symbol whose attributes are inspected.</param>
+    /// <param name="attributeType">The type of the attribute to look for. When <see langword="null"/>, the method returns <see langword="false"/>.</param>
+    /// <param name="inherits">
+    /// When <see langword="true"/>, an attribute also matches when its class derives from <paramref name="attributeType"/>.
+    /// When <see langword="false"/>, the attribute class must be exactly <paramref name="attributeType"/>.
+    /// This parameter is ignored when <paramref name="attributeType"/> is sealed, as no other class can derive from it.
+    /// Note this is unrelated to the <c>inherit</c> parameter of <c>Attribute.GetCustomAttributes</c>: it never makes the
+    /// base types of the symbol or the members it overrides be inspected.
+    /// </param>
+    /// <returns><see langword="true"/> when <paramref name="symbol"/> has a matching attribute; otherwise <see langword="false"/>.</returns>
     public static bool HasAttribute(this ISymbol symbol, [NotNullWhen(true)] ITypeSymbol? attributeType, bool inherits = true)
     {
         return GetFirstAttribute(symbol, attributeType, inherits) is not null;

@@ -21,4 +21,7 @@ internal static partial class Log
 
     [LoggerMessage(EventId = 6, Level = LogLevel.Warning, Message = "Rejected request to {requestUri}. Resolution strategy failed: {reason}")]
     public static partial void RejectedResolutionStrategyFailure(ILogger logger, Uri requestUri, string reason);
+
+    [LoggerMessage(EventId = 7, Level = LogLevel.Warning, Message = "Rejected request to {requestUri}. The connection targets proxy '{proxyHost}', whose tunnelled destination cannot be validated.")]
+    public static partial void RejectedProxyConnection(ILogger logger, Uri requestUri, string proxyHost);
 }

@@ -18,6 +18,107 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     }
 
     [Fact]
+    public async Task ConnectCallback_RejectsConnectionThroughAProxy()
+    {
+        var options = CreateProxyTestOptions();
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = true,
+            Proxy = new WebProxy("http://127.0.0.1:9", BypassOnLocal: false),
+        };
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("https://example.invalid/"), TestContext.Current.CancellationToken));
+
+        // Without the guard this reaches the proxy and fails with a socket error instead.
+        Assert.IsType<ServerSideRequestForgeryException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task ConnectCallback_AllowsDirectConnectionWhenTheProxyBypassesTheTarget()
+    {
+        var options = CreateProxyTestOptions();
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = true,
+            Proxy = new WebProxy("http://127.0.0.1:9", BypassOnLocal: false, BypassList: ["example\\.invalid"]),
+        };
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("http://example.invalid:1/"), TestContext.Current.CancellationToken));
+
+        // The connection is direct, so validation passes and the request fails only because nothing is listening.
+        Assert.IsType<SocketException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task ConnectCallback_AllowsConnectionWhenUseProxyIsFalse()
+    {
+        var options = CreateProxyTestOptions();
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = false,
+            Proxy = new WebProxy("http://127.0.0.1:9", BypassOnLocal: false),
+        };
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("http://example.invalid:1/"), TestContext.Current.CancellationToken));
+
+        Assert.IsType<SocketException>(exception.InnerException);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_LogsRejectionReason()
+    {
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            Logger = loggerProvider.CreateLogger("ssrf-test"),
+        };
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = true,
+            Proxy = new WebProxy("http://proxy.invalid:8080", BypassOnLocal: false),
+        };
+
+        Assert.Throws<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            new Uri("https://example.com/"),
+            new DnsEndPoint("proxy.invalid", 8080),
+            options));
+
+        Assert.Contains(loggerProvider.Logs.Warnings, entry => entry.EventId.Id == 7);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_DoesNotThrowWhenTheEndPointIsNotTheProxy()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = true,
+            Proxy = new WebProxy("http://proxy.invalid:8080", BypassOnLocal: false),
+        };
+
+        ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            new Uri("https://example.com/"),
+            new DnsEndPoint("example.com", 443),
+            options);
+    }
+
+    private static ServerSideRequestForgeryOptions CreateProxyTestOptions()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+        return options;
+    }
+
+    [Fact]
     public async Task ResolveAndSelectIpAddressAsync_RejectsUnsafeScheme()
     {
         var options = new ServerSideRequestForgeryOptions();

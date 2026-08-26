@@ -23,7 +23,9 @@ public static class ContainerDefinitionMongoDbExtensions
 
             var definition = new MongoDbContainerDefinition(image);
             definition.Ports.Add(27017);
-            definition.WaitStrategies.Add(Wait.ForLogMessage("Waiting for connections"));
+            // The image starts a temporary mongod to apply MONGO_INITDB_ROOT_USERNAME/PASSWORD, shuts it down,
+            // then starts the real one, so the message is logged twice and only the second start accepts clients.
+            definition.WaitStrategies.Add(Wait.ForLogMessage("Waiting for connections", occurrences: 2));
             definition.WaitStrategies.Add(Wait.ForPort(27017));
             return definition;
         }

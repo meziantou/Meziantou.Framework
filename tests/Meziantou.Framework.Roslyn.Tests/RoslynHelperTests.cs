@@ -312,6 +312,93 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void TryGetConstantValue_FollowsChainedMemberInitializers()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                private static readonly int a = 42;
+                private static readonly int b = a;
+                private static readonly int c = b;
+
+                public void M()
+                {
+                    object boxed = c;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.True(boxed.TryGetConstantValue(out var value, default));
+        Assert.Equal(42, value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_StopsOnMutuallyReferencingFields()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                private static readonly int a = b;
+                private static readonly int b = a;
+
+                public void M()
+                {
+                    object boxed = a;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_StopsOnMutuallyReferencingProperties()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                private static int P { get; } = Q;
+                private static int Q { get; } = P;
+
+                public void M()
+                {
+                    object boxed = P;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void GetActualType_StopsOnMutuallyReferencingFields()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                private static readonly int a = b;
+                private static readonly int b = a;
+
+                public void M()
+                {
+                    object boxed = a;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.Equal(SpecialType.System_Int32, boxed.GetActualType(default)?.SpecialType);
+    }
+    [Fact]
     public void GetActualType_WithoutDataFlowAnalysis_OnlyUnwrapsConversions()
     {
         var compilation = CreateCompilation("""

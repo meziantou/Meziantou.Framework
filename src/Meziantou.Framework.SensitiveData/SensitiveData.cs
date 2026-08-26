@@ -201,9 +201,10 @@ public static partial class SensitiveData
 /// char[] revealed = secret.RevealToArray();
 ///
 /// // Use the data with a callback to avoid keeping it in memory
-/// secret.RevealAndUse(state: null, (span, _) => {
+/// secret.RevealAndUse(arg: Console.Out, static (span, output) =>
+/// {
 ///     // Process the sensitive data here
-///     Console.WriteLine($"Processing {span.Length} characters");
+///     output.WriteLine($"Processing {span.Length} characters");
 /// });
 /// </code>
 /// </example>

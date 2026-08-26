@@ -1,6 +1,7 @@
 using System.Diagnostics.Metrics;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using Meziantou.Extensions.Logging.InMemory;
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery.Tests;
@@ -15,6 +16,71 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         using var handler = new SocketsHttpHandler();
         handler.ConfigureSsrf(new ServerSideRequestForgeryOptions(), new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")]));
         Assert.NotNull(handler.ConnectCallback);
+    }
+
+    [Theory]
+    [InlineData(AddressFamily.InterNetwork)]
+    [InlineData(AddressFamily.InterNetworkV6)]
+    public void CreateConnectSocket_DisablesNagleAlgorithm(AddressFamily addressFamily)
+    {
+        using var socket = ServerSideRequestForgeryConnectPipeline.CreateConnectSocket(addressFamily);
+
+        Assert.True(socket.NoDelay);
+        Assert.Equal(addressFamily, socket.AddressFamily);
+        Assert.Equal(SocketType.Stream, socket.SocketType);
+        Assert.Equal(ProtocolType.Tcp, socket.ProtocolType);
+    }
+
+    [Fact]
+    public async Task ConnectCallback_SendsRequestToTheValidatedAddress()
+    {
+        using var server = new LoopbackHttpServer();
+        var options = new ServerSideRequestForgeryOptions();
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        // 'example.invalid' cannot be resolved by real DNS (RFC2606), so a response can only come back if the
+        // connection used the address the resolver returned instead of resolving the host again.
+        var response = await httpClient.GetAsync(new Uri($"http://example.invalid:{server.Port}/"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("ok", await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ConnectCallback_SurfacesRejectionAsInnerExceptionOfHttpRequestException()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("http://example.invalid/"), TestContext.Current.CancellationToken));
+
+        Assert.IsType<ServerSideRequestForgeryException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task ConnectCallback_DoesNotConnectWhenTheSchemeIsRejected()
+    {
+        using var server = new LoopbackHttpServer();
+        var options = new ServerSideRequestForgeryOptions();
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri($"http://example.invalid:{server.Port}/"), TestContext.Current.CancellationToken));
+
+        Assert.IsType<ServerSideRequestForgeryException>(exception.InnerException);
+        Assert.Equal(0, server.AcceptedConnectionCount);
     }
 
     [Fact]
@@ -470,4 +536,72 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         }
     }
 
+    private sealed class LoopbackHttpServer : IDisposable
+    {
+        private const string Response = "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok";
+
+        private readonly TcpListener _listener;
+        private readonly CancellationTokenSource _cancellationTokenSource = new();
+        private int _acceptedConnectionCount;
+
+        public LoopbackHttpServer()
+        {
+            _listener = new TcpListener(IPAddress.Loopback, port: 0);
+            _listener.Start();
+            Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
+            _ = Task.Run(() => AcceptLoopAsync(_cancellationTokenSource.Token));
+        }
+
+        public int Port { get; }
+
+        public int AcceptedConnectionCount => Volatile.Read(ref _acceptedConnectionCount);
+
+        private async Task AcceptLoopAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    using var client = await _listener.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
+                    Interlocked.Increment(ref _acceptedConnectionCount);
+
+                    using var stream = client.GetStream();
+                    await ReadRequestHeadersAsync(stream, cancellationToken).ConfigureAwait(false);
+                    await stream.WriteAsync(Encoding.ASCII.GetBytes(Response), cancellationToken).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (SocketException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+
+        private static async Task ReadRequestHeadersAsync(NetworkStream stream, CancellationToken cancellationToken)
+        {
+            var buffer = new byte[4096];
+            var count = 0;
+            while (count < buffer.Length)
+            {
+                var read = await stream.ReadAsync(buffer.AsMemory(count), cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                    break;
+
+                count += read;
+                if (Encoding.ASCII.GetString(buffer, 0, count).Contains("\r\n\r\n", StringComparison.Ordinal))
+                    break;
+            }
+        }
+
+        public void Dispose()
+        {
+            _cancellationTokenSource.Cancel();
+            _listener.Dispose();
+            _cancellationTokenSource.Dispose();
+        }
+    }
 }

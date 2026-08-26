@@ -1,4 +1,6 @@
 #nullable enable
+using System.Collections.Immutable;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
@@ -212,6 +214,49 @@ public sealed class RoslynHelperTests
         var reportDiagnosticMethods = typeof(ContextExtensions).GetMethods(BindingFlags.Public | BindingFlags.Static);
 
         Assert.Contains(reportDiagnosticMethods, method => method.Name == "ReportDiagnostic");
+    }
+
+    [Fact]
+    public void ReportDiagnostic_DeclaresMessageArgsAsParams()
+    {
+        var messageArgsParameters = typeof(ContextExtensions).GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(method => method.Name == "ReportDiagnostic")
+            .Select(method => method.GetParameters()[^1])
+            .ToArray();
+
+        Assert.NotEmpty(messageArgsParameters);
+        Assert.All(messageArgsParameters, parameter =>
+        {
+            Assert.Equal("messageArgs", parameter.Name);
+            Assert.True(parameter.IsDefined(typeof(ParamArrayAttribute), inherit: false), $"messageArgs is not a params parameter on {parameter.Member}");
+        });
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_AcceptsMessageArgsWithoutAnExplicitArray()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+            }
+            """);
+
+        var diagnostics = await compilation
+            .WithAnalyzers([new MessageArgsAnalyzer()])
+            .GetAnalyzerDiagnosticsAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            [
+                "Message context-locations",
+                "Message context-node",
+                "Message reporter-location",
+                "Message reporter-locations",
+                "Message reporter-node",
+                "Message reporter-properties",
+                "Message reporter-token",
+                "Message {0}",
+            ],
+            diagnostics.Select(diagnostic => diagnostic.GetMessage(CultureInfo.InvariantCulture)).OrderBy(message => message, StringComparer.Ordinal));
     }
 
     [Fact]
@@ -1472,6 +1517,42 @@ public sealed class RoslynHelperTests
     {
         return new DiagnosticDescriptor("MFTEST001", "Title", "Message", "Category", DiagnosticSeverity.Warning, isEnabledByDefault: true);
     }
+
+    // RS1036/RS1041 only apply to analyzers shipped in an analyzer package. This one only exists to exercise the extension methods.
+#pragma warning disable RS1036 // A project containing analyzers or source generators should specify the property '<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>'
+#pragma warning disable RS1041 // This compiler extension should not be implemented in an assembly with target framework
+    [DiagnosticAnalyzer(LanguageNames.CSharp)]
+    private sealed class MessageArgsAnalyzer : DiagnosticAnalyzer
+    {
+        private static readonly DiagnosticDescriptor Descriptor = new("MFTEST002", "Title", "Message {0}", "Category", DiagnosticSeverity.Warning, isEnabledByDefault: true);
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];
+
+        public override void Initialize(AnalysisContext context)
+        {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+            context.RegisterSyntaxNodeAction(AnalyzeClassDeclaration, SyntaxKind.ClassDeclaration);
+        }
+
+        private static void AnalyzeClassDeclaration(SyntaxNodeAnalysisContext context)
+        {
+            var declaration = (ClassDeclarationSyntax)context.Node;
+            var location = declaration.GetLocation();
+            DiagnosticReporter reporter = context;
+
+            reporter.ReportDiagnostic(Descriptor, declaration, "reporter-node");
+            reporter.ReportDiagnostic(Descriptor, declaration.Identifier, "reporter-token");
+            reporter.ReportDiagnostic(Descriptor, location, "reporter-location");
+            reporter.ReportDiagnostic(Descriptor, (IEnumerable<Location>)[location], "reporter-locations");
+            reporter.ReportDiagnostic(Descriptor, ImmutableDictionary<string, string?>.Empty, declaration, "reporter-properties");
+            reporter.ReportDiagnostic(Descriptor, location);
+            context.ReportDiagnostic(Descriptor, declaration, "context-node");
+            context.ReportDiagnostic(Descriptor, (IEnumerable<Location>)[location], "context-locations");
+        }
+    }
+#pragma warning restore RS1041
+#pragma warning restore RS1036
 
     private sealed class GeneratedCodeOptionProvider(string? generatedCode) : AnalyzerConfigOptionsProvider
     {

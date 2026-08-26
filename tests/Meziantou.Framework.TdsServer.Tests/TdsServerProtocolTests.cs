@@ -910,6 +910,39 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
+    public async Task SqlClient_EncryptOptional_DowngradesAfterLogin_AndKeepsServingQueries()
+    {
+        using var tlsCertificateFiles = CreateTlsCertificateFiles();
+
+        var options = new TdsServerOptions
+        {
+            TlsPfxPath = tlsCertificateFiles.PfxPath,
+            TlsPfxPassword = tlsCertificateFiles.PfxPassword,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 7)));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        // Encrypt=Optional negotiates ENCRYPT_OFF: the login packet is encrypted and the session then
+        // reverts to the raw transport. Several round trips confirm the swap left a usable connection.
+        await using var connection = new SqlConnection(CreateConnectionString(port, encrypt: "Optional"));
+        await connection.OpenAsync();
+
+        for (var i = 0; i < 3; i++)
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT 1";
+            Assert.Equal(7, Convert.ToInt32(await command.ExecuteScalarAsync(), CultureInfo.InvariantCulture));
+        }
+    }
+
+    [Fact]
     public async Task SqlClient_EncryptOptional_AndEncryptTrue_WorkOnSameEndpoint()
     {
         using var tlsCertificateFiles = CreateTlsCertificateFiles();

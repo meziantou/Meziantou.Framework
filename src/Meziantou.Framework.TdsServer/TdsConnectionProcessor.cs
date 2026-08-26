@@ -43,6 +43,7 @@ internal sealed class TdsConnectionProcessor
         var transportOutput = output;
         var writer = new TdsPacketWriter(output, _options.PacketSize);
         SslStream? sslStream = null;
+        var usingTls = false;
         TdsPreLoginNegotiationResult? negotiationResult = null;
         try
         {
@@ -87,6 +88,7 @@ internal sealed class TdsConnectionProcessor
             if (negotiationResult.Value.UpgradeToTls)
             {
                 sslStream = await UpgradeToTlsAsync(transportInput, transportOutput, serverCertificate!, _options.PacketSize, cancellationToken).ConfigureAwait(false);
+                usingTls = true;
                 input = sslStream;
                 output = sslStream;
                 writer = new TdsPacketWriter(output, _options.PacketSize);
@@ -128,9 +130,11 @@ internal sealed class TdsConnectionProcessor
                 return;
             }
 
-            if (negotiationResult.Value.DowngradeAfterLogin && sslStream is not null)
+            if (negotiationResult.Value.DowngradeAfterLogin && usingTls)
             {
-                sslStream = null;
+                // The client asked for encryption of the login packet only, so the rest of the session goes back
+                // to the raw transport. Keep the SslStream reference so the finally block still disposes it.
+                usingTls = false;
                 input = transportInput;
                 output = transportOutput;
                 writer = new TdsPacketWriter(output, _options.PacketSize);

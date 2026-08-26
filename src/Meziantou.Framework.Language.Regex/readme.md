@@ -42,6 +42,18 @@ Every flavor parses its own grammar into its own node types, not into a pile of 
   `\|`, `\+`, and `\?` extensions, and the positional rules that make `^`, `$`, and `*` ordinary characters where
   they cannot be special.
 
+Two notes on how faithful each flavor is, since they were checked against the engines themselves rather than against
+a reading of the grammars:
+
+- **`JavaScript` follows whichever grammar the flags select.** Without `u` or `v` the web-compatibility grammar
+  applies, so a malformed escape stands for its own letter and `\x4` matches `x4`; with them the grammar is strict and
+  the same text is an error. Both directions were checked against V8 over several thousand patterns.
+- **`PcrePerl` follows PCRE2 where PCRE2 and Perl differ.** Perl accepts `{2}` with nothing to repeat, `[a-\d]`, and
+  `{5,2}`; PCRE2 rejects all three, and so does this.
+- **POSIX has no character escapes.** `\x41`, `\cA`, `\n`, and `\k` are the letters `x41`, `cA`, `n`, and `k`, which
+  is what the engines see. The shorthand classes it does accept -- `\w`, `\s`, `\b` and their negations -- are the
+  GNU extensions.
+
 Java, Python, and RE2/Go are not flavors.
 
 ## Parsing

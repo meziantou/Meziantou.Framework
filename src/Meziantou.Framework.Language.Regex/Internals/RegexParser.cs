@@ -226,6 +226,12 @@ internal abstract class RegexParser
         return WithOptions(new RegexSequenceSyntax(terms, start));
     }
 
+    /// <summary>
+    /// Whether <paramref name="term"/> is something a quantifier can repeat. An assertion matches no characters, so
+    /// repeating it is meaningless and most engines reject it.
+    /// </summary>
+    protected virtual bool IsQuantifiable(RegexTermSyntax term) => true;
+
     /// <summary>Applies every quantifier that follows <paramref name="atom"/>, innermost first.</summary>
     protected RegexTermSyntax ParseQuantifiers(RegexAtomSyntax atom)
     {
@@ -248,6 +254,13 @@ internal abstract class RegexParser
                     quantifier.Span,
                     RegexDiagnosticIds.NestedQuantifiersNotParenthesized,
                     $"Nested quantifier '{quantifier.ToString().Trim()}' is not enclosed in parentheses.");
+            }
+            else if (!IsQuantifiable(term))
+            {
+                Scanner.AddDiagnostic(
+                    quantifier.Span,
+                    RegexDiagnosticIds.QuantifierAfterNothing,
+                    $"Quantifier '{quantifier.ToString().Trim()}' has nothing to repeat.");
             }
 
             term = WithOptions(new RegexQuantifiedSyntax(term, quantifier));

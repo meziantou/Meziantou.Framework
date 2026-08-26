@@ -84,6 +84,9 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             case '{' when IsQuantifierAt(Scanner.Position):
                 return SkipOneCharacter(leadingTrivia, RegexDiagnosticIds.QuantifierAfterNothing, "Quantifier '{' has nothing to repeat.");
 
+            case '{' or '}' or ']' when !AllowsLoneQuantifierBracket:
+                return SkipOneCharacter(leadingTrivia, RegexDiagnosticIds.QuantifierAfterNothing, $"'{Scanner.Current}' must be escaped to match itself.");
+
             default:
                 Scanner.Position++;
 
@@ -127,7 +130,8 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             // "(" at the end, "(x" where x is not "?", and "(?)" are all plain groups. The "?" of "(?)" is left where
             // it is on purpose: the engine leaves it too, and the body parse then reports it as a quantifier with
             // nothing to repeat. A flavor without the "(?…)" family treats every one of them the same way.
-            if (Scanner.IsAtEnd || Scanner.Current != '?' || Scanner.Peek() == ')' ||
+            if (Scanner.IsAtEnd || Scanner.Current != '?' ||
+                (Scanner.Peek() == ')' && !AllowsEmptyOptionGroup) ||
                 !Flavor.HasFeature(RegexFlavorFeatures.ExtendedGroupSyntax))
             {
                 return ParsePlainGroup(openParenToken);
@@ -185,6 +189,89 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     /// <summary>Parses a backslash escape that only some flavors have, or returns null to fall through.</summary>
     /// <remarks>The reading position is on the backslash.</remarks>
     protected virtual RegexAtomSyntax? TryParseFlavorEscape(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia) => null;
+
+    /// <summary>Whether the reading position is inside a character class, where a few escapes differ.</summary>
+    protected bool IsInCharacterClass { get; private set; }
+
+    /// <summary>Whether <c>\</c> followed by <paramref name="ch"/> may simply stand for that character.</summary>
+    protected virtual bool AllowsIdentityEscape(char ch) =>
+        !Flavor.HasFeature(RegexFlavorFeatures.StrictEscapes) ||
+        UsesEcmaScriptBehavior ||
+        !RegexCharacterTables.IsBoundaryWordChar(ch);
+
+    /// <summary>
+    /// Whether a <c>\x</c>, <c>\u</c>, or <c>\c</c> escape without the digits it needs falls back to standing for
+    /// its own letter instead of being reported.
+    /// </summary>
+    protected virtual bool AllowsMalformedNumericEscape => false;
+
+    /// <summary>Whether a shorthand class may be an endpoint of a range, which makes the dash an ordinary character.</summary>
+    protected virtual bool AllowsShorthandClassInRange => false;
+
+    /// <summary>
+    /// Whether a bare <c>{</c>, <c>}</c>, or <c>]</c> is an ordinary character. The strict ECMAScript grammar calls it
+    /// a lone quantifier bracket and rejects it.
+    /// </summary>
+    protected virtual bool AllowsLoneQuantifierBracket => true;
+
+    /// <summary>
+    /// Whether <c>\c</c> may be followed by something other than an ASCII letter. The .NET engine subtracts <c>@</c>
+    /// from whatever is there and takes it if the result is a control character; the strict ECMAScript grammar wants
+    /// a letter.
+    /// </summary>
+    protected virtual bool AllowsNonLetterControlEscape => true;
+
+    /// <summary>
+    /// Whether the Perl character escapes -- <c>\a</c>, <c>\e</c>, <c>\f</c>, <c>\n</c>, <c>\r</c>, <c>\t</c>,
+    /// <c>\v</c>, <c>\x</c>, <c>\u</c>, <c>\c</c>, and octal -- mean anything.
+    /// </summary>
+    /// <remarks>
+    /// POSIX has none of them. There a backslash before an ordinary character just means that character, so reading
+    /// <c>\x41</c> as an "A" would describe a pattern the engine does not see.
+    /// </remarks>
+    protected virtual bool RecognizesPerlCharacterEscapes => true;
+
+    /// <summary>Whether <c>(?)</c> is an option group that sets nothing rather than a malformed construct.</summary>
+    protected virtual bool AllowsEmptyOptionGroup => false;
+
+    /// <summary>
+    /// Whether any character may follow <c>\c</c>. PCRE exclusive-ors whatever is there with <c>0x40</c> and accepts
+    /// the result; .NET only takes it when it lands on a control character.
+    /// </summary>
+    protected virtual bool AllowsAnyControlEscapeCharacter => false;
+
+    /// <summary>Whether <c>\xh</c> with a single hexadecimal digit is well formed, as it is in PCRE.</summary>
+    protected virtual bool AllowsShortHexEscape => false;
+
+    /// <summary>Whether a property may be written without braces, as <c>\pL</c>.</summary>
+    protected virtual bool AllowsBracelessProperty => false;
+
+    /// <summary>
+    /// Whether <c>\&lt;name&gt;</c> is a backreference. Only .NET spells one that way; in POSIX <c>\&lt;</c> asserts a
+    /// word boundary and in PCRE it is an ordinary escape.
+    /// </summary>
+    protected virtual bool AllowsBareAngleBackreference => false;
+
+    /// <summary>Whether a backslash followed by digits may fall back to an octal escape.</summary>
+    protected virtual bool AllowsOctalEscape => true;
+
+    /// <summary>Whether <c>\k</c> naming nothing falls back to standing for its own letter.</summary>
+    protected virtual bool AllowsUndefinedNamedBackreference => false;
+
+    /// <summary>Whether the pattern declares any named group, which decides what a bare <c>\k</c> means.</summary>
+    protected bool HasAnyGroupName
+    {
+        get
+        {
+            foreach (var number in CaptureTable.Numbers)
+            {
+                if (!char.IsAsciiDigit(CaptureTable.GetName(number)[0]))
+                    return true;
+            }
+
+            return false;
+        }
+    }
 
     /// <summary>Whether the letter after a backslash names a shorthand character class at the atom level.</summary>
     protected virtual bool IsShorthandClassLetter(char letter) => IsCoreShorthandClassLetter(letter);
@@ -288,10 +375,34 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         }
 
         var targetToken = Scanner.Token(RegexSyntaxKind.RecursionToken, targetStart);
+        ReportUnknownRecursionTarget(targetToken);
         var closeParenToken = ReadCloseParen(openParenToken);
         RestoreOptions();
 
         return WithOptions(new RegexRecursionSyntax(openParenToken, questionToken, targetToken, closeParenToken));
+    }
+
+    /// <summary>Reports a recursion into a group that does not exist. <c>R</c> means the whole pattern, so it always does.</summary>
+    private protected void ReportUnknownRecursionTarget(RegexSyntaxToken? targetToken)
+    {
+        if (targetToken is null || targetToken.Text is "R" or "")
+            return;
+
+        var target = targetToken.Text;
+        if (int.TryParse(target, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var number))
+        {
+            if (!CaptureTable.ContainsNumber(number))
+            {
+                AddDiagnostic(targetToken.Span, RegexDiagnosticIds.UndefinedNumberedReference, $"Reference to undefined group number {target}.");
+            }
+
+            return;
+        }
+
+        if (!CaptureTable.TryGetNumber(target, out _))
+        {
+            AddDiagnostic(targetToken.Span, RegexDiagnosticIds.UndefinedNamedReference, $"Reference to undefined group name '{target}'.");
+        }
     }
 
     /// <summary>Parses a backtracking control verb such as <c>(*SKIP)</c>.</summary>

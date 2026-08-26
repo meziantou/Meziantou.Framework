@@ -11,6 +11,50 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
         _literal = literal;
     }
 
+    /// <summary>
+    /// ECMAScript has two grammars, and which one applies is decided by the <c>u</c> and <c>v</c> flags rather than by
+    /// the flavor.
+    /// </summary>
+    /// <remarks>
+    /// Without them the web-compatibility grammar applies: an escape that is not well formed stands for its own
+    /// letter, so <c>\x4</c> matches <c>x4</c> and <c>\k</c> in a pattern with no named group matches <c>k</c>. With
+    /// them the grammar is strict, and only a syntax character or <c>/</c> may follow a backslash and mean itself.
+    /// </remarks>
+    private bool UsesStrictGrammar => UsesUnicodeMode;
+
+    protected override bool AllowsIdentityEscape(char ch)
+    {
+        if (!UsesStrictGrammar)
+            return true;
+
+        // The strict grammar allows only these, plus "-" inside a character class.
+        return ch is '^' or '$' or '\\' or '.' or '*' or '+' or '?' or '(' or ')' or '[' or ']' or '{' or '}' or '|' or '/'
+            || (ch == '-' && IsInCharacterClass);
+    }
+
+    protected override bool AllowsMalformedNumericEscape => !UsesStrictGrammar;
+
+    protected override bool AllowsLoneQuantifierBracket => !UsesStrictGrammar;
+
+    protected override bool AllowsOctalEscape => !UsesStrictGrammar;
+
+    protected override bool AllowsNonLetterControlEscape => !UsesStrictGrammar;
+
+    /// <summary>
+    /// An assertion matches nothing, so repeating it means nothing. Lookahead is the one exception, and only in the
+    /// web-compatibility grammar; lookbehind is never quantifiable.
+    /// </summary>
+    protected override bool IsQuantifiable(RegexTermSyntax term) => term switch
+    {
+        RegexAnchorSyntax => false,
+        RegexLookaroundSyntax lookaround => !UsesStrictGrammar && !lookaround.IsLookbehind,
+        _ => true,
+    };
+
+    protected override bool AllowsShorthandClassInRange => !UsesStrictGrammar;
+
+    protected override bool AllowsUndefinedNamedBackreference => !UsesStrictGrammar;
+
     protected override RegexSyntaxToken? ReadLiteralPrefix()
     {
         if (_literal is not { HasOpeningSlash: true })

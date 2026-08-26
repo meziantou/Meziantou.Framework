@@ -40,6 +40,21 @@ internal abstract partial class PerlStyleRegexParser
     /// </remarks>
     private RegexCharacterClassSyntax ParseCharacterClassBody(RegexSyntaxToken openBracketToken)
     {
+        // A few escapes are allowed inside a class and nowhere else, so the reader has to know where it is.
+        var wasInCharacterClass = IsInCharacterClass;
+        IsInCharacterClass = true;
+        try
+        {
+            return ParseCharacterClassMembers(openBracketToken);
+        }
+        finally
+        {
+            IsInCharacterClass = wasInCharacterClass;
+        }
+    }
+
+    private RegexCharacterClassSyntax ParseCharacterClassMembers(RegexSyntaxToken openBracketToken)
+    {
         RegexSyntaxToken? caretToken = null;
         var firstChar = true;
 
@@ -144,7 +159,16 @@ internal abstract partial class PerlStyleRegexParser
 
             if (element.IsClassEscape)
             {
-                if (inRange)
+                if (inRange && AllowsShorthandClassInRange)
+                {
+                    // Where this is allowed there is no range at all: the dash between them is an ordinary member.
+                    members.Add(rangeStart!);
+                    members.Add(WithOptions(new RegexLiteralSyntax(
+                        new RegexSyntaxToken(RegexSyntaxKind.LiteralToken, rangeHyphen!.Text, fullStart: rangeHyphen.FullSpan.Start))));
+                    members.Add(element.Node);
+                    inRange = false;
+                }
+                else if (inRange)
                 {
                     // The engine rejects a shorthand class as a range endpoint outright. Keeping the range in the tree
                     // is the recovery: it accounts for every character, and the diagnostic says what is wrong with it.
@@ -231,7 +255,9 @@ internal abstract partial class PerlStyleRegexParser
     /// </remarks>
     private int ClassSetOperatorLength(int position)
     {
-        if (position + 1 >= Text.Length)
+        // Only the class set grammar has operators. Everywhere else "--" is an ordinary dash followed by another, and
+        // suppressing the range look-ahead for it would quietly change what "[a--b]" means.
+        if (!UsesUnicodeSetsMode || position + 1 >= Text.Length)
             return 0;
 
         var ch = Text[position];

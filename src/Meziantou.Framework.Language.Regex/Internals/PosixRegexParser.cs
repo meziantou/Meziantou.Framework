@@ -27,6 +27,13 @@ internal sealed class PosixRegexParser : PerlStyleRegexParser
 
     private bool DelimitersAreEscaped => Flavor.HasFeature(RegexFlavorFeatures.EscapedGroupDelimiters);
 
+    /// <summary>
+    /// POSIX has no character escapes. The shorthand classes it does have -- <c>\w</c>, <c>\s</c>, <c>\b</c> and
+    /// their negations -- are GNU extensions handled before this, and everything else after a backslash is just the
+    /// character itself.
+    /// </summary>
+    protected override bool RecognizesPerlCharacterEscapes => false;
+
     protected override int AlternationSeparatorLength(int position) =>
         DelimitersAreEscaped ? EscapedLength(position, '|') : base.AlternationSeparatorLength(position);
 

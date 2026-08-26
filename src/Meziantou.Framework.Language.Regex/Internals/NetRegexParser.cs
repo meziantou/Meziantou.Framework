@@ -11,4 +11,7 @@ internal sealed class NetRegexParser : PerlStyleRegexParser
         : base(text, parseOptions)
     {
     }
+
+    /// <summary>The deprecated <c>\&lt;name&gt;</c> spelling of a named backreference is .NET's alone.</summary>
+    protected override bool AllowsBareAngleBackreference => true;
 }

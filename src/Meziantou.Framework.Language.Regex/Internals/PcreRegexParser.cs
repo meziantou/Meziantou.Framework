@@ -35,6 +35,14 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
         return letter is 'J' or 'U' or 'a' or 'u';
     }
 
+    protected override bool AllowsEmptyOptionGroup => true;
+
+    protected override bool AllowsShortHexEscape => true;
+
+    protected override bool AllowsAnyControlEscapeCharacter => true;
+
+    protected override bool AllowsBracelessProperty => true;
+
     protected override RegexAtomSyntax? TryParseFlavorGroupHeader(RegexSyntaxToken openParenToken, int questionStart)
     {
         // A subroutine call runs another group's pattern at this point. "(?&name)" is the Perl spelling and
@@ -58,6 +66,7 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
         {
             'g' => ParseGReference(leadingTrivia),
             'o' when Scanner.Peek(2) == '{' => ParseBracedNumericEscape(leadingTrivia, octal: true),
+            'x' when Scanner.Peek(2) == '{' => ParseBracedNumericEscape(leadingTrivia, octal: false, hexOnly: true),
             'N' when Scanner.Peek(2) == '{' => ParseBracedNumericEscape(leadingTrivia, octal: false),
             _ => null,
         };
@@ -81,6 +90,7 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
             Scanner.Position++;
             var openToken = Scanner.Token(RegexSyntaxKind.OpenNameToken, openStart);
             var target = ReadUntil(close, RegexSyntaxKind.RecursionToken);
+            ReportUnknownRecursionTarget(target);
             var closeToken = ReadExpected(close, RegexSyntaxKind.CloseNameToken, startToken)
                 ?? Scanner.MissingToken(RegexSyntaxKind.CloseNameToken);
 
@@ -132,6 +142,7 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
         var questionToken = Scanner.Token(RegexSyntaxKind.QuestionToken, questionStart);
 
         var target = ReadUntil(')', RegexSyntaxKind.RecursionToken);
+        ReportUnknownRecursionTarget(target);
         var closeParenToken = ReadCloseParen(openParenToken);
         RestoreOptions();
 
@@ -167,7 +178,7 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
     }
 
     /// <summary>Parses <c>\o{101}</c> and <c>\N{U+0041}</c>, both of which name a code point in braces.</summary>
-    private RegexCharacterEscapeSyntax ParseBracedNumericEscape(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia, bool octal)
+    private RegexCharacterEscapeSyntax ParseBracedNumericEscape(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia, bool octal, bool hexOnly = false)
     {
         var start = Scanner.Position;
         Scanner.Position += 3;
@@ -185,7 +196,7 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
             Scanner.Position++;
         }
 
-        var value = TryReadCodePoint(digits, octal, out var codePoint) && closed
+        var value = TryReadCodePoint(hexOnly ? "U+" + digits : digits, octal, out var codePoint) && closed
             ? char.ConvertFromUtf32(codePoint)
             : string.Empty;
 
@@ -270,6 +281,29 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
             return;
 
         var name = nameToken.Text;
+
+        // "\g{-2}" counts back from here, so what it needs is two groups already declared rather than a group of
+        // that number.
+        if (name is ['-', ..] &&
+            int.TryParse(name.AsSpan(1), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var back))
+        {
+            var declared = 0;
+            foreach (var declaredNumber in CaptureTable.Numbers)
+            {
+                if (CaptureTable.GetPosition(declaredNumber) < nameStart)
+                {
+                    declared++;
+                }
+            }
+
+            if (back == 0 || back > declared)
+            {
+                AddDiagnostic(new TextSpan(nameStart, name.Length), RegexDiagnosticIds.UndefinedNumberedReference, $"Reference to undefined group number {name}.");
+            }
+
+            return;
+        }
+
         if (name is ['-', ..])
             return;
 

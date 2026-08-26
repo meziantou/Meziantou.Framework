@@ -4,6 +4,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 
@@ -15,18 +16,19 @@ namespace Meziantou.Framework.Roslyn;
 #endif
 internal static partial class TypeSymbolExtensions
 {
-    public static IList<INamedTypeSymbol> GetAllInterfacesIncludingSelf(this ITypeSymbol type)
+    public static ImmutableArray<INamedTypeSymbol> GetAllInterfacesIncludingSelf(this ITypeSymbol type)
     {
         var allInterfaces = type.AllInterfaces;
-        if (type is INamedTypeSymbol namedType && namedType.TypeKind == TypeKind.Interface && !allInterfaces.Contains(namedType))
+        if (type is not INamedTypeSymbol { TypeKind: TypeKind.Interface } namedType)
+            return allInterfaces;
+
+        foreach (var @interface in allInterfaces)
         {
-            var result = new List<INamedTypeSymbol>(allInterfaces.Length + 1);
-            result.AddRange(allInterfaces);
-            result.Add(namedType);
-            return result;
+            if (SymbolEqualityComparer.Default.Equals(@interface, namedType))
+                return allInterfaces;
         }
 
-        return allInterfaces;
+        return allInterfaces.Add(namedType);
     }
 
     public static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol? symbol)

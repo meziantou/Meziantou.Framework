@@ -1015,26 +1015,39 @@ internal sealed class TdsQueryEngineExecutor
         return source.Query.Provider.CreateQuery(call);
     }
 
-    private Expression BuildBoolean(SqlBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext)
+    /// <summary>Builds a predicate that is true exactly when SQL would evaluate <paramref name="expression"/> to TRUE.</summary>
+    /// <param name="negated">When true, builds the predicate for <c>NOT expression</c>.</param>
+    /// <remarks>
+    /// SQL uses three-valued logic and a WHERE clause keeps a row only when the predicate is TRUE,
+    /// so UNKNOWN and FALSE can both be collapsed to <see langword="false"/> here. That collapse is
+    /// only valid if NOT never wraps an already-collapsed predicate, because <c>NOT UNKNOWN</c> is
+    /// UNKNOWN while <c>!false</c> is <see langword="true"/>. NOT is therefore pushed down into the
+    /// leaves instead: De Morgan for AND/OR (which holds in three-valued logic) and operator
+    /// negation for comparisons.
+    /// </remarks>
+    private Expression BuildBoolean(SqlBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext, bool negated = false)
     {
         return expression switch
         {
-            SqlComparisonBooleanExpression comparison => BuildComparison(comparison, aliases, parameter, parameters),
-            SqlInBooleanExpression inExpression => BuildInBoolean(inExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext),
-            SqlIsNullBooleanExpression isNullExpression => BuildIsNullBoolean(isNullExpression, aliases, parameter, parameters),
-            SqlExistsBooleanExpression existsExpression => BuildExistsBoolean(existsExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext),
-            SqlNotBooleanExpression notExpression => Expression.Not(BuildBoolean(notExpression.Expression, aliases, parameter, parameters, cteRoots, queryExecutionContext)),
-            SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.And } binary => Expression.AndAlso(
-                BuildBoolean(binary.Left, aliases, parameter, parameters, cteRoots, queryExecutionContext),
-                BuildBoolean(binary.Right, aliases, parameter, parameters, cteRoots, queryExecutionContext)),
-            SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.Or } orBinary => Expression.OrElse(
-                BuildBoolean(orBinary.Left, aliases, parameter, parameters, cteRoots, queryExecutionContext),
-                BuildBoolean(orBinary.Right, aliases, parameter, parameters, cteRoots, queryExecutionContext)),
+            SqlComparisonBooleanExpression comparison => BuildComparison(comparison, aliases, parameter, parameters, negated),
+            SqlInBooleanExpression inExpression => BuildInBoolean(inExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
+            SqlIsNullBooleanExpression isNullExpression => BuildIsNullBoolean(isNullExpression, aliases, parameter, parameters, negated),
+            SqlExistsBooleanExpression existsExpression => BuildExistsBoolean(existsExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated),
+            SqlNotBooleanExpression notExpression => BuildBoolean(notExpression.Expression, aliases, parameter, parameters, cteRoots, queryExecutionContext, !negated),
+            SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.And } binary => BuildBinaryBoolean(binary, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated, isAnd: true),
+            SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.Or } orBinary => BuildBinaryBoolean(orBinary, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated, isAnd: false),
             _ => throw new TdsQueryEngineException("Only comparison, IN, EXISTS, and IS NULL predicates combined with AND/OR/NOT are supported."),
         };
     }
 
-    private BinaryExpression BuildComparison(SqlComparisonBooleanExpression comparison, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    private Expression BuildBinaryBoolean(SqlBinaryBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext, bool negated, bool isAnd)
+    {
+        var left = BuildBoolean(expression.Left, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated);
+        var right = BuildBoolean(expression.Right, aliases, parameter, parameters, cteRoots, queryExecutionContext, negated);
+        return isAnd ^ negated ? Expression.AndAlso(left, right) : Expression.OrElse(left, right);
+    }
+
+    private Expression BuildComparison(SqlComparisonBooleanExpression comparison, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, bool negated)
     {
         var left = BuildScalar(comparison.Left, aliases, parameter, parameters);
         var right = BuildScalar(comparison.Right, aliases, parameter, parameters, left.Type);
@@ -1043,7 +1056,19 @@ internal sealed class TdsQueryEngineExecutor
             right = ConvertExpression(right, left.Type);
         }
 
-        return comparison.ComparisonOperator switch
+        var comparisonOperator = negated ? NegateComparisonOperator(comparison.ComparisonOperator) : comparison.ComparisonOperator;
+        return BuildComparisonCore(left, right, comparisonOperator, "Comparison operator");
+    }
+
+    private static Expression BuildComparisonCore(Expression left, Expression right, SqlComparisonBooleanExpressionType comparisonOperator, string operatorDescription)
+    {
+        // Any comparison with NULL is UNKNOWN in SQL, and never TRUE, whichever operator is used.
+        if (IsNullConstant(left) || IsNullConstant(right))
+        {
+            return Expression.Constant(value: false, typeof(bool));
+        }
+
+        Expression comparison = comparisonOperator switch
         {
             SqlComparisonBooleanExpressionType.Equals => Expression.Equal(left, right),
             SqlComparisonBooleanExpressionType.NotEqual => Expression.NotEqual(left, right),
@@ -1052,70 +1077,191 @@ internal sealed class TdsQueryEngineExecutor
             SqlComparisonBooleanExpressionType.GreaterThanOrEqual => Expression.GreaterThanOrEqual(left, right),
             SqlComparisonBooleanExpressionType.LessThan => Expression.LessThan(left, right),
             SqlComparisonBooleanExpressionType.LessThanOrEqual => Expression.LessThanOrEqual(left, right),
-            _ => throw new TdsQueryEngineException($"Comparison operator '{comparison.ComparisonOperator}' is not supported."),
+            _ => throw new TdsQueryEngineException($"{operatorDescription} '{comparisonOperator}' is not supported."),
+        };
+
+        // Ordering comparisons on Nullable<T> already yield false for a null operand, which matches
+        // SQL. Equality does not: null == null is true in .NET and null != x is true for any x.
+        var guardLeft = false;
+        var guardRight = false;
+        switch (comparisonOperator)
+        {
+            case SqlComparisonBooleanExpressionType.Equals:
+                // Only wrong when both sides are NULL, so guarding one side is enough.
+                guardLeft = CanBeNull(left) && CanBeNull(right);
+                break;
+
+            case SqlComparisonBooleanExpressionType.NotEqual:
+            case SqlComparisonBooleanExpressionType.LessOrGreaterThan:
+                guardLeft = CanBeNull(left);
+                guardRight = CanBeNull(right);
+                break;
+        }
+
+        if (guardRight)
+        {
+            comparison = Expression.AndAlso(BuildIsNotNull(right), comparison);
+        }
+
+        if (guardLeft)
+        {
+            comparison = Expression.AndAlso(BuildIsNotNull(left), comparison);
+        }
+
+        return comparison;
+    }
+
+    private static SqlComparisonBooleanExpressionType NegateComparisonOperator(SqlComparisonBooleanExpressionType comparisonOperator)
+    {
+        return comparisonOperator switch
+        {
+            SqlComparisonBooleanExpressionType.Equals => SqlComparisonBooleanExpressionType.NotEqual,
+            SqlComparisonBooleanExpressionType.NotEqual => SqlComparisonBooleanExpressionType.Equals,
+            SqlComparisonBooleanExpressionType.LessOrGreaterThan => SqlComparisonBooleanExpressionType.Equals,
+            SqlComparisonBooleanExpressionType.GreaterThan => SqlComparisonBooleanExpressionType.LessThanOrEqual,
+            SqlComparisonBooleanExpressionType.GreaterThanOrEqual => SqlComparisonBooleanExpressionType.LessThan,
+            SqlComparisonBooleanExpressionType.LessThan => SqlComparisonBooleanExpressionType.GreaterThanOrEqual,
+            SqlComparisonBooleanExpressionType.LessThanOrEqual => SqlComparisonBooleanExpressionType.GreaterThan,
+            // Unsupported operators are reported by the caller, which names the original operator.
+            _ => comparisonOperator,
         };
     }
 
-    private Expression BuildInBoolean(SqlInBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext)
+    /// <summary>Returns whether the expression can evaluate to NULL at run time.</summary>
+    /// <remarks>SQL parameters and literals are baked in as constants, so their nullness is known while translating.</remarks>
+    private static bool CanBeNull(Expression expression)
+    {
+        if (expression.Type.IsValueType && Nullable.GetUnderlyingType(expression.Type) is null)
+        {
+            return false;
+        }
+
+        return expression is not ConstantExpression { Value: not null };
+    }
+
+    private static bool IsNullConstant(Expression expression)
+    {
+        return expression is ConstantExpression { Value: null };
+    }
+
+    private static Expression BuildIsNotNull(Expression expression)
+    {
+        return Expression.NotEqual(expression, Expression.Constant(null, expression.Type));
+    }
+
+    private Expression BuildInBoolean(SqlInBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext, bool negated)
     {
         var inExpression = BuildScalar(expression.InExpression, aliases, parameter, parameters);
-        Expression containsExpression = expression.ComparisonValue switch
+        var hasNot = expression.HasNot ^ negated;
+        return expression.ComparisonValue switch
         {
-            SqlInBooleanExpressionCollectionValue collectionValue => BuildInCollectionExpression(collectionValue, inExpression, aliases, parameter, parameters),
-            SqlInBooleanExpressionQueryValue queryValue => BuildInSubqueryExpression(queryValue, inExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext),
+            SqlInBooleanExpressionCollectionValue collectionValue => BuildInCollectionBoolean(collectionValue, inExpression, aliases, parameter, parameters, hasNot),
+            SqlInBooleanExpressionQueryValue queryValue => BuildInSubqueryBoolean(queryValue, inExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext, hasNot),
             _ => throw new TdsQueryEngineException("Only IN collections and simple IN subqueries are supported."),
         };
-
-        return expression.HasNot ? Expression.Not(containsExpression) : containsExpression;
     }
 
-    private MethodCallExpression BuildInCollectionExpression(SqlInBooleanExpressionCollectionValue collectionValue, Expression inExpression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    private Expression BuildInCollectionBoolean(SqlInBooleanExpressionCollectionValue collectionValue, Expression inExpression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, bool hasNot)
     {
         var values = collectionValue.Values
             .Select(value => BuildScalar(value, aliases, parameter, parameters, inExpression.Type))
-            .Select(value => value.Type == inExpression.Type ? value : ConvertExpression(value, inExpression.Type));
+            .Select(value => value.Type == inExpression.Type ? value : ConvertExpression(value, inExpression.Type))
+            .ToArray();
         var valuesArray = Expression.NewArrayInit(inExpression.Type, values);
-
-        return Expression.Call(
+        Expression contains = Expression.Call(
             typeof(Enumerable),
             nameof(Enumerable.Contains),
             [inExpression.Type],
             valuesArray,
             inExpression);
+
+        Expression? containsNull = null;
+        if (hasNot && Array.Exists(values, CanBeNull))
+        {
+            containsNull = Expression.Call(
+                typeof(Enumerable),
+                nameof(Enumerable.Contains),
+                [inExpression.Type],
+                valuesArray,
+                Expression.Constant(null, inExpression.Type));
+        }
+
+        return BuildInResult(contains, containsNull, inExpression, hasNot);
     }
 
-    private MethodCallExpression BuildInSubqueryExpression(SqlInBooleanExpressionQueryValue queryValue, Expression inExpression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext)
+    private Expression BuildInSubqueryBoolean(SqlInBooleanExpressionQueryValue queryValue, Expression inExpression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext, bool hasNot)
     {
         var subquery = TranslateInSubquery(queryValue.Value, inExpression.Type, aliases, parameter, parameters, cteRoots, queryExecutionContext);
-        return Expression.Call(
+        Expression contains = Expression.Call(
             typeof(Queryable),
             nameof(Queryable.Contains),
             [inExpression.Type],
             subquery.Expression,
             inExpression);
+
+        Expression? containsNull = null;
+        if (hasNot && !(inExpression.Type.IsValueType && Nullable.GetUnderlyingType(inExpression.Type) is null))
+        {
+            containsNull = Expression.Call(
+                typeof(Queryable),
+                nameof(Queryable.Contains),
+                [inExpression.Type],
+                subquery.Expression,
+                Expression.Constant(null, inExpression.Type));
+        }
+
+        return BuildInResult(contains, containsNull, inExpression, hasNot);
     }
 
-    private MethodCallExpression BuildExistsBoolean(SqlExistsBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext)
+    /// <remarks>
+    /// <c>x IN (...)</c> is TRUE only when x is not NULL and matches a non-NULL element: a NULL in
+    /// the list makes a non-match UNKNOWN rather than FALSE, which excludes the row either way.
+    /// <c>x NOT IN (...)</c> additionally becomes UNKNOWN whenever the list contains a NULL, so no
+    /// row qualifies at all.
+    /// </remarks>
+    private static Expression BuildInResult(Expression contains, Expression? containsNull, Expression inExpression, bool hasNot)
+    {
+        var result = hasNot ? Expression.Not(contains) : contains;
+        if (containsNull is not null)
+        {
+            result = Expression.AndAlso(Expression.Not(containsNull), result);
+        }
+
+        if (CanBeNull(inExpression))
+        {
+            result = Expression.AndAlso(BuildIsNotNull(inExpression), result);
+        }
+
+        return result;
+    }
+
+    private Expression BuildExistsBoolean(SqlExistsBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext, bool negated)
     {
         var subquery = TranslateExistsSubquery(expression.QueryExpression, aliases, parameter, parameters, cteRoots, queryExecutionContext);
-        return Expression.Call(
+        Expression any = Expression.Call(
             typeof(Queryable),
             nameof(Queryable.Any),
             [subquery.ElementType],
             subquery.Expression);
+
+        // EXISTS is never UNKNOWN, so it can be negated directly.
+        return negated ? Expression.Not(any) : any;
     }
 
-    private Expression BuildIsNullBoolean(SqlIsNullBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    private Expression BuildIsNullBoolean(SqlIsNullBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, bool negated)
     {
         var value = BuildScalar(expression.Expression, aliases, parameter, parameters);
+
+        // IS NULL is never UNKNOWN, so it can be negated directly.
+        var hasNot = expression.HasNot ^ negated;
         if (value.Type.IsValueType && Nullable.GetUnderlyingType(value.Type) is null)
         {
-            return Expression.Constant(expression.HasNot, typeof(bool));
+            return Expression.Constant(hasNot, typeof(bool));
         }
 
         var nullExpression = Expression.Constant(null, value.Type);
         var isNullExpression = Expression.Equal(value, nullExpression);
-        return expression.HasNot ? Expression.Not(isNullExpression) : isNullExpression;
+        return hasNot ? Expression.Not(isNullExpression) : isNullExpression;
     }
 
     private IQueryable TranslateInSubquery(SqlQueryExpression queryExpression, Type targetType, IReadOnlyDictionary<string, AliasBinding> outerAliases, ParameterExpression outerParameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext? queryExecutionContext)
@@ -1299,7 +1445,7 @@ internal sealed class TdsQueryEngineExecutor
         return expression.HasNot ? Expression.Not(isNullExpression) : isNullExpression;
     }
 
-    private BinaryExpression BuildGroupComparison(SqlComparisonBooleanExpression comparison, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildGroupComparison(SqlComparisonBooleanExpression comparison, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
     {
         var left = BuildGroupScalar(comparison.Left, source, parameter, parameters);
         var right = BuildGroupScalar(comparison.Right, source, parameter, parameters, left.Type);
@@ -1308,17 +1454,7 @@ internal sealed class TdsQueryEngineExecutor
             right = ConvertExpression(right, left.Type);
         }
 
-        return comparison.ComparisonOperator switch
-        {
-            SqlComparisonBooleanExpressionType.Equals => Expression.Equal(left, right),
-            SqlComparisonBooleanExpressionType.NotEqual => Expression.NotEqual(left, right),
-            SqlComparisonBooleanExpressionType.LessOrGreaterThan => Expression.NotEqual(left, right),
-            SqlComparisonBooleanExpressionType.GreaterThan => Expression.GreaterThan(left, right),
-            SqlComparisonBooleanExpressionType.GreaterThanOrEqual => Expression.GreaterThanOrEqual(left, right),
-            SqlComparisonBooleanExpressionType.LessThan => Expression.LessThan(left, right),
-            SqlComparisonBooleanExpressionType.LessThanOrEqual => Expression.LessThanOrEqual(left, right),
-            _ => throw new TdsQueryEngineException($"HAVING comparison operator '{comparison.ComparisonOperator}' is not supported."),
-        };
+        return BuildComparisonCore(left, right, comparison.ComparisonOperator, "HAVING comparison operator");
     }
 
     private Expression BuildGroupScalar(SqlScalarExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Type? targetType = null)

@@ -927,6 +927,250 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotEquals_ExcludesNullRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name <> 'Alice'
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name != null) AndAlso (nullableCustomer.Name != \"Alice\"))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotComparison_ExcludesNullRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE NOT (Name = 'Alice')
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name != null) AndAlso (nullableCustomer.Name != \"Alice\"))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotAnd_AppliesDeMorgan()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        // UNKNOWN AND FALSE is FALSE in SQL, so NOT (...) is TRUE for the NULL row.
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE NOT (Name = 'Alice' AND Id = 1)
+                    """;
+            },
+            """
+            Id
+            2
+            3
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (((nullableCustomer.Name != null) AndAlso (nullableCustomer.Name != \"Alice\")) OrElse (nullableCustomer.Id != 1))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotIsNull_ReturnsNonNullRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE NOT (Name IS NULL)
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => Not((nullableCustomer.Name == null))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereEqualsNullLiteral_ReturnsNoRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name = NULL
+                    """;
+            },
+            """
+            Id
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => False).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotEqualsNullLiteral_ReturnsNoRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name <> NULL
+                    """;
+            },
+            """
+            Id
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => False).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereEqualsNullParameter_ReturnsNoRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name = @name
+                    """;
+                _ = command.Parameters.Add(new SqlParameter("@name", SqlDbType.NVarChar, 50) { Value = DBNull.Value });
+            },
+            """
+            Id
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => False).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotInWithoutNull_ExcludesNullRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name NOT IN ('Alice')
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name != null) AndAlso Not(new [] {\"Alice\"}.Contains(nullableCustomer.Name)))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereInCollectionContainingNull_ReturnsMatchingRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name IN ('Alice', NULL)
+                    """;
+            },
+            """
+            Id
+            1
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name != null) AndAlso new [] {\"Alice\", null}.Contains(nullableCustomer.Name))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotInCollectionContainingNull_ReturnsNoRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        // NOT IN over a list containing NULL is UNKNOWN for every row, so nothing qualifies.
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name NOT IN ('Alice', NULL)
+                    """;
+            },
+            """
+            Id
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name != null) AndAlso (Not(new [] {\"Alice\", null}.Contains(null)) AndAlso Not(new [] {\"Alice\", null}.Contains(nullableCustomer.Name))))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_HavingNotEquals_ExcludesNullGroups()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Name, COUNT(*) AS Total
+                    FROM nullable_customers
+                    GROUP BY Name
+                    HAVING Name <> 'Alice'
+                    """;
+            },
+            """
+            Name Total
+            Bob 1
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].GroupBy(nullableCustomer => nullableCustomer.Name).Where(group => ((group.Key != null) AndAlso (group.Key != \"Alice\"))).Select(group2 => new TdsProjection() {Name = group2.Key, Total = group2.Count()})");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_WhereInCollection_ReturnsFilteredRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();

@@ -1211,6 +1211,45 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(packetSize, options.PacketSize);
     }
 
+    [Fact]
+    public async Task SqlClient_QueryError_WithAVeryLongMessage_IsTruncatedInsteadOfOverflowingTheToken()
+    {
+        var result = TdsQueryResult.FromError(new TdsQueryError
+        {
+            Number = 50004,
+            State = 1,
+            Class = 16,
+            Message = new string('e', 100_000),
+        });
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(result));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1";
+
+        var exception = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteScalarAsync());
+
+        Assert.Equal(50004, exception.Number);
+
+        // The message fits in the token's 16-bit length field rather than wrapping it. SqlClient appends its
+        // own note about the severity, so compare the first line only. Normalise the line endings first: they
+        // are CRLF on Windows and LF elsewhere.
+        var reportedMessage = exception.Message.ReplaceLineEndings("\n").Split('\n')[0];
+        Assert.Equal(new string('e', 32_000), reportedMessage);
+    }
+
     private static string CreateConnectionString(int port, string userName = "sa", string password = "Password123!", string encrypt = "Optional", bool trustServerCertificate = true, int connectTimeout = 5)
     {
         return $"Server={IPAddress.Loopback},{port};User ID={userName};Password={password};Database=master;Encrypt={encrypt};TrustServerCertificate={(trustServerCertificate ? "True" : "False")};Pooling=False;Connect Timeout={connectTimeout}";

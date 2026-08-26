@@ -59,7 +59,7 @@ internal static class TdsPacketReader
             return new TdsPacket
             {
                 Type = messageType ?? TdsPacketType.TabularResult,
-                Payload = payloadLength == 0 ? [] : payload![..payloadLength].ToArray(),
+                Payload = payloadLength == 0 ? [] : payload.AsSpan(0, payloadLength).ToArray(),
             };
         }
         finally

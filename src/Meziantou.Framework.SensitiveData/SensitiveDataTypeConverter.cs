@@ -5,9 +5,27 @@ namespace Meziantou.Framework;
 [SuppressMessage("Usage", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated dynamically")]
 internal sealed class SensitiveDataTypeConverter : TypeConverter
 {
+    private readonly Type _type;
+
+    public SensitiveDataTypeConverter()
+        : this(typeof(SensitiveData<char>))
+    {
+    }
+
+    // TypeDescriptor uses this constructor when a converter declared by TypeConverterAttribute
+    // exposes it, and passes the type being described. SensitiveDataTypeConverter is declared on
+    // the open generic SensitiveData<T>, so without it the converter cannot tell SensitiveData<char>
+    // apart from any other construction of SensitiveData<T>.
+    public SensitiveDataTypeConverter(Type type)
+    {
+        _type = type;
+    }
+
+    private bool IsSupportedType => _type == typeof(SensitiveData<char>);
+
     public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
     {
-        return sourceType == typeof(string);
+        return IsSupportedType && sourceType == typeof(string);
     }
 
     public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
@@ -24,6 +42,9 @@ internal sealed class SensitiveDataTypeConverter : TypeConverter
     {
         if (value is string str)
         {
+            if (!IsSupportedType)
+                throw new NotSupportedException($"Cannot convert a string to '{_type}'. Only '{typeof(SensitiveData<char>)}' can be created from a string.");
+
             return SensitiveData.Create(str);
         }
 

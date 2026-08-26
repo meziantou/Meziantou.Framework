@@ -282,6 +282,100 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(["abc|" + longValue, "|def"], rows);
     }
 
+    [Fact]
+    public async Task SqlClient_ResultSet_TypedColumns_UseTheirOwnTdsTypes()
+    {
+        var expectedGuid = Guid.Parse("1b4e28ba-2fa1-11d2-883f-0016d3cca427");
+        var expectedDateTime = new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Unspecified);
+        var expectedDateTime2 = new DateTime(2020, 1, 2, 3, 4, 5, 123, DateTimeKind.Unspecified);
+        var expectedOffset = new DateTimeOffset(2020, 1, 2, 3, 4, 5, TimeSpan.FromHours(2));
+
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Decimal", TdsColumnType.Decimal));
+        resultSet.Columns.Add(new TdsColumn("Money", TdsColumnType.Money));
+        resultSet.Columns.Add(new TdsColumn("SmallMoney", TdsColumnType.SmallMoney));
+        resultSet.Columns.Add(new TdsColumn("Guid", TdsColumnType.Guid));
+        resultSet.Columns.Add(new TdsColumn("Date", TdsColumnType.Date));
+        resultSet.Columns.Add(new TdsColumn("Time", TdsColumnType.Time));
+        resultSet.Columns.Add(new TdsColumn("DateTime", TdsColumnType.DateTime));
+        resultSet.Columns.Add(new TdsColumn("DateTime2", TdsColumnType.DateTime2));
+        resultSet.Columns.Add(new TdsColumn("DateTimeOffset", TdsColumnType.DateTimeOffset));
+        resultSet.Columns.Add(new TdsColumn("Xml", TdsColumnType.Xml));
+        resultSet.Rows.Add(
+        [
+            1234.5678m,
+            12.34m,
+            -1.5m,
+            expectedGuid,
+            new DateOnly(2020, 1, 2),
+            new TimeOnly(3, 4, 5, 123),
+            expectedDateTime,
+            expectedDateTime2,
+            expectedOffset,
+            "<root />",
+        ]);
+
+        var values = await ReadRowAsync(resultSet);
+
+        // Each value comes back as its CLR type, not as a string.
+        Assert.Equal(1234.5678m, values[0]);
+        Assert.Equal(12.34m, values[1]);
+        Assert.Equal(-1.5m, values[2]);
+        Assert.Equal(expectedGuid, values[3]);
+        Assert.Equal(new DateTime(2020, 1, 2, 0, 0, 0, DateTimeKind.Unspecified), values[4]);
+        Assert.Equal(new TimeSpan(0, 3, 4, 5, 123), values[5]);
+        Assert.Equal(expectedDateTime, values[6]);
+        Assert.Equal(expectedDateTime2, values[7]);
+        Assert.Equal(expectedOffset, values[8]);
+        Assert.Equal("<root />", values[9]);
+    }
+
+    [Fact]
+    public async Task SqlClient_ResultSet_TypedColumns_NullValues()
+    {
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Decimal", TdsColumnType.Decimal));
+        resultSet.Columns.Add(new TdsColumn("Money", TdsColumnType.Money));
+        resultSet.Columns.Add(new TdsColumn("Guid", TdsColumnType.Guid));
+        resultSet.Columns.Add(new TdsColumn("Date", TdsColumnType.Date));
+        resultSet.Columns.Add(new TdsColumn("Time", TdsColumnType.Time));
+        resultSet.Columns.Add(new TdsColumn("DateTime", TdsColumnType.DateTime));
+        resultSet.Columns.Add(new TdsColumn("DateTime2", TdsColumnType.DateTime2));
+        resultSet.Columns.Add(new TdsColumn("DateTimeOffset", TdsColumnType.DateTimeOffset));
+        resultSet.Columns.Add(new TdsColumn("Xml", TdsColumnType.Xml));
+        resultSet.Rows.Add([null, null, null, null, null, null, null, null, null]);
+
+        var values = await ReadRowAsync(resultSet);
+
+        Assert.All(values, value => Assert.Equal(DBNull.Value, value));
+    }
+
+    [Fact]
+    public async Task SqlClient_ResultSet_DecimalColumn_UsesLargestScaleInTheColumn()
+    {
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Decimal));
+        resultSet.Rows.Add([1m]);
+        resultSet.Rows.Add([2.5m]);
+        resultSet.Rows.Add([-3.12345m]);
+
+        var rows = await ReadResultSetAsync(resultSet, (reader, ordinal) => reader.GetDecimal(ordinal).ToString(CultureInfo.InvariantCulture));
+
+        Assert.Equal(["1.00000", "2.50000", "-3.12345"], rows);
+    }
+
+    private static async Task<object[]> ReadRowAsync(TdsResultSet resultSet)
+    {
+        var rows = await ReadResultSetAsync(resultSet, (reader, _) =>
+        {
+            var values = new object[reader.FieldCount];
+            _ = reader.GetValues(values);
+            return values;
+        });
+
+        return Assert.Single(rows);
+    }
+
     private static Task<List<string?>> ReadStringColumnAsync(TdsResultSet resultSet)
     {
         return ReadResultSetAsync(resultSet, (reader, ordinal) => reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal));
@@ -816,12 +910,16 @@ public sealed class TdsServerProtocolTests
             TdsColumnType.Real => 1.25f,
             TdsColumnType.Double => 2.5d,
             TdsColumnType.Binary => (byte[])value,
-            TdsColumnType.Date => "2024-05-01",
-            TdsColumnType.Time => "01:02:03",
-            TdsColumnType.DateTime => "2024-05-01T12:34:56.0000000Z",
-            TdsColumnType.DateTime2 => "2024-05-01T12:34:56.0000000Z",
-            TdsColumnType.DateTimeOffset => "2024-05-01T12:34:56.0000000+02:00",
-            TdsColumnType.Guid => "9f89d58d-f350-4ad6-af79-b2cbf2f65fd2",
+            TdsColumnType.Decimal => 123.45m,
+            TdsColumnType.Money => 987.65m,
+            TdsColumnType.SmallMoney => 54.32m,
+            TdsColumnType.Date => new DateTime(2024, 05, 01, 0, 0, 0, DateTimeKind.Unspecified),
+            TdsColumnType.Time => new TimeSpan(1, 2, 3),
+            TdsColumnType.DateTime => new DateTime(2024, 05, 01, 12, 34, 56, DateTimeKind.Unspecified),
+            TdsColumnType.DateTime2 => new DateTime(2024, 05, 01, 12, 34, 56, DateTimeKind.Unspecified),
+            TdsColumnType.DateTimeOffset => new DateTimeOffset(2024, 05, 01, 12, 34, 56, TimeSpan.FromHours(2)),
+            TdsColumnType.Guid => (Guid)value,
+            TdsColumnType.Xml => "<root>xml</root>",
             TdsColumnType.Json => "{\"value\":42}",
             _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty,
         };

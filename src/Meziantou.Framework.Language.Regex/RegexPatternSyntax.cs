@@ -129,11 +129,17 @@ public sealed class RegexPatternSyntax : RegexSyntaxNode
     public override void Accept(RegexSyntaxVisitor visitor) => visitor.VisitPattern(this);
     public override TResult Accept<TResult>(RegexSyntaxVisitor<TResult> visitor) => visitor.VisitPattern(this);
 
+    /// <summary>Reparses the spliced text the way this pattern was parsed in the first place.</summary>
+    /// <remarks>
+    /// Going through the tree keeps a JavaScript literal a literal. Without that, replacing a node inside <c>/a/g</c>
+    /// would return a bare pattern whose delimiters had become literal slashes.
+    /// </remarks>
     private RegexPatternSyntax Reparse(string text)
     {
-        var options = SyntaxTree?.Options ?? new RegexParseOptions(Flavor ?? RegexFlavor.Net);
+        if (SyntaxTree is { } tree)
+            return tree.Reparse(text).Root;
 
-        return RegexSyntaxTree.ParseText(text, options).Root;
+        return RegexSyntaxTree.ParseText(text, new RegexParseOptions(Flavor ?? RegexFlavor.Net)).Root;
     }
 
     private RegexPatternSyntax ReplaceSpan(TextSpan span, string newText)

@@ -99,8 +99,19 @@ public sealed class RegexSyntaxTree
     {
         ArgumentNullException.ThrowIfNull(changes);
 
-        return ParseText(SourceText.WithChanges(changes).Text, Options);
+        return Reparse(SourceText.WithChanges(changes).Text);
     }
+
+    /// <summary>
+    /// Reparses <paramref name="text"/> the way this tree was parsed, literal delimiters included.
+    /// </summary>
+    /// <remarks>
+    /// A tree built by <see cref="ParseJavaScriptLiteral"/> has to go back through it. Reparsing <c>/a/g</c> as a bare
+    /// pattern would read the delimiters as literal slashes and the flags as ordinary characters, so an edit anywhere
+    /// in the pattern would quietly destroy the structure around it.
+    /// </remarks>
+    internal RegexSyntaxTree Reparse(string text) =>
+        Root.IsJavaScriptLiteral ? ParseJavaScriptLiteral(text) : ParseText(text, Options);
 
     /// <summary>
     /// Returns the edit that turns <paramref name="oldTree"/>'s text into this tree's text. The common prefix and
@@ -147,8 +158,13 @@ public sealed class RegexSyntaxTree
 
     /// <summary>
     /// Compares this tree with <paramref name="other"/> structurally, ignoring extended-mode whitespace and comments.
-    /// Two patterns parsed as different flavors are never equivalent.
+    /// Two patterns parsed as different flavors, or with different options, are never equivalent.
     /// </summary>
+    /// <remarks>
+    /// Identical text is a shortcut only when the options match as well. The same characters read with and without
+    /// <see cref="RegexPatternOptions.IgnorePatternWhitespace"/> are different trees -- a space is a term in one and
+    /// trivia in the other -- so comparing the text alone would call them equivalent.
+    /// </remarks>
     public bool IsEquivalentTo(RegexSyntaxTree? other)
     {
         if (other is null)
@@ -157,6 +173,9 @@ public sealed class RegexSyntaxTree
         if (other.Flavor != Flavor)
             return false;
 
-        return string.Equals(Text, other.Text, StringComparison.Ordinal) || Root.IsEquivalentTo(other.Root);
+        if (other.PatternOptions == PatternOptions && string.Equals(Text, other.Text, StringComparison.Ordinal))
+            return true;
+
+        return Root.IsEquivalentTo(other.Root);
     }
 }

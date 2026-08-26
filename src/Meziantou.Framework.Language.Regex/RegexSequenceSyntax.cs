@@ -13,7 +13,7 @@ public sealed class RegexSequenceSyntax : RegexSyntaxNode
             terms is { Count: > 0 } ? terms[0].FullSpan.Start : fullStart,
             tokens: null)
     {
-        Terms = terms ?? [];
+        Terms = Snapshot(terms);
         _childNodes = [.. Terms];
     }
 

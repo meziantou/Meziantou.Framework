@@ -8,7 +8,7 @@ public abstract class RegexSyntaxNode
         Kind = kind;
         FullText = fullText ?? string.Empty;
         FullSpan = new TextSpan(fullStart, FullText.Length);
-        Tokens = tokens ?? [];
+        Tokens = Snapshot(tokens);
         foreach (var token in Tokens)
         {
             token.Parent = this;
@@ -86,6 +86,15 @@ public abstract class RegexSyntaxNode
 
         return collected;
     }
+
+    /// <summary>Copies a caller-supplied collection so later mutation of it cannot reach the tree.</summary>
+    /// <remarks>
+    /// A node computes its text and its span once, at construction. Holding on to the caller's list would let them
+    /// change what <see cref="ChildNodes"/> reports without changing the text those spans were measured against, and
+    /// every invariant the tree offers rests on those two agreeing.
+    /// </remarks>
+    private protected static IReadOnlyList<T> Snapshot<T>(IReadOnlyList<T>? items) =>
+        items is { Count: > 0 } ? [.. items] : [];
 
     /// <summary>Wraps a part of a node, yielding the absent part when it is null.</summary>
     private protected static RegexSyntaxNodeOrToken Part(RegexSyntaxNode? node) => node is null ? default : new RegexSyntaxNodeOrToken(node);

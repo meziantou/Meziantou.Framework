@@ -34,8 +34,6 @@ public enum RegexSyntaxKind
     PosixCharacterClass,
     CollatingElement,
     ClassSubtraction,
-    ClassSetOperation,
-    ClassStringLiteral,
 
     // ---- Groups ----
     CapturingGroup,
@@ -124,9 +122,6 @@ public enum RegexSyntaxKind
 
     /// <summary>The <c>:]</c>, <c>.]</c>, or <c>=]</c> that closes a POSIX bracket expression.</summary>
     PosixClassEndToken,
-
-    /// <summary>A JavaScript <c>v</c>-mode class set operator: <c>&amp;&amp;</c>, <c>--</c>, or <c>||</c>.</summary>
-    ClassSetOperatorToken,
 
     /// <summary>The body of a PCRE recursion construct such as <c>R</c> or <c>1</c> in <c>(?R)</c> and <c>(?1)</c>.</summary>
     RecursionToken,

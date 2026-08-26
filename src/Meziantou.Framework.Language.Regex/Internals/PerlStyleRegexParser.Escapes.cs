@@ -42,15 +42,9 @@ internal partial class PerlStyleRegexParser
                 Scanner.Position += 2;
                 return WithOptions(new RegexAnchorSyntax(Scanner.Token(RegexSyntaxKind.AnchorToken, start, leadingTrivia)));
 
-            case 'A':
-            case 'G':
-            case 'z':
-            case 'Z' when Flavor.HasFeature(RegexFlavorFeatures.AnchorsAZ):
-                // Where the flavor has no such anchor the escape is not an anchor at all: it falls through and stands
-                // for the letter, which is what an engine without it does.
-                if (!Flavor.HasFeature(RegexFlavorFeatures.AnchorsAZ))
-                    return ParseBackreferenceOrEscape(leadingTrivia);
-
+            // Where the flavor has no such anchor the escape is not an anchor at all: it falls through and stands for
+            // the letter, which is what an engine without it does.
+            case 'A' or 'G' or 'z' or 'Z' when Flavor.HasFeature(RegexFlavorFeatures.AnchorsAZ):
                 Scanner.Position += 2;
                 return WithOptions(new RegexAnchorSyntax(Scanner.Token(RegexSyntaxKind.AnchorToken, start, leadingTrivia)));
 
@@ -67,16 +61,39 @@ internal partial class PerlStyleRegexParser
                 Scanner.Position += 2;
                 return WithOptions(new RegexCharacterClassEscapeSyntax(Scanner.Token(RegexSyntaxKind.ClassEscapeToken, start, leadingTrivia)));
 
-            case 'p':
-            case 'P' when SupportsUnicodeCategories:
-                if (!SupportsUnicodeCategories)
-                    return ParseBackreferenceOrEscape(leadingTrivia);
-
+            case 'p' or 'P' when SupportsUnicodeCategories:
                 return ParseUnicodeCategory(leadingTrivia);
+
+            case 'Q' when Flavor.HasFeature(RegexFlavorFeatures.QuotedLiterals):
+                return ParseQuotedLiteral(leadingTrivia);
 
             default:
                 return ParseBackreferenceOrEscape(leadingTrivia);
         }
+    }
+
+    /// <summary>Parses a <c>\Q…\E</c> run, in which every character stands for itself.</summary>
+    /// <remarks>An unterminated run reaches the end of the pattern, which is what the engines that have it do.</remarks>
+    private RegexQuotedLiteralSyntax ParseQuotedLiteral(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    {
+        var start = Scanner.Position;
+        Scanner.Position += 2;
+        var startToken = Scanner.Token(RegexSyntaxKind.QuoteStartToken, start, leadingTrivia);
+
+        var textStart = Scanner.Position;
+        var end = Text.AsSpan(textStart).IndexOf("\\E", StringComparison.Ordinal);
+        Scanner.Position = end < 0 ? Text.Length : textStart + end;
+        var textToken = Scanner.Position > textStart ? Scanner.Token(RegexSyntaxKind.QuoteTextToken, textStart) : null;
+
+        RegexSyntaxToken? endToken = null;
+        if (end >= 0)
+        {
+            var endStart = Scanner.Position;
+            Scanner.Position += 2;
+            endToken = Scanner.Token(RegexSyntaxKind.QuoteEndToken, endStart);
+        }
+
+        return WithOptions(new RegexQuotedLiteralSyntax(startToken, textToken, endToken));
     }
 
     /// <summary>Parses <c>\p{Name}</c> or <c>\P{Name}</c>.</summary>
@@ -109,8 +126,12 @@ internal partial class PerlStyleRegexParser
         Scanner.Position++;
         var openBraceToken = Scanner.Token(RegexSyntaxKind.OpenBraceToken, braceStart);
 
+        // Flavors that name a property as well as a value accept "Script=Greek", so the separator has to be part of
+        // the name rather than the character that ends it.
+        var namesProperties = Flavor.HasFeature(RegexFlavorFeatures.UnicodePropertyNames);
         var nameStart = Scanner.Position;
-        while (!Scanner.IsAtEnd && (RegexCharacterTables.IsBoundaryWordChar(Scanner.Current) || Scanner.Current == '-'))
+        while (!Scanner.IsAtEnd &&
+            (RegexCharacterTables.IsBoundaryWordChar(Scanner.Current) || Scanner.Current == '-' || (namesProperties && Scanner.Current == '=')))
         {
             Scanner.Position++;
         }
@@ -125,7 +146,9 @@ internal partial class PerlStyleRegexParser
             Scanner.Position++;
             closeBraceToken = Scanner.Token(RegexSyntaxKind.CloseBraceToken, closeStart);
 
-            if (!NetUnicodeCategoryNames.IsDefined(name))
+            // The known-name set is .NET's own. Another flavor has a different and larger one, so checking a name
+            // against this table there would reject properties that flavor really does have.
+            if (!namesProperties && !NetUnicodeCategoryNames.IsDefined(name))
             {
                 AddDiagnostic(nameToken.Span, RegexDiagnosticIds.UnrecognizedUnicodeProperty, $"Unknown Unicode property or block name '{name}'.");
             }
@@ -254,7 +277,7 @@ internal partial class PerlStyleRegexParser
     /// <summary>Reads <c>\1</c>-style backreferences, which are octal escapes when no such group exists.</summary>
     private bool TryParseUnangledBackreference(int backpos, IReadOnlyList<RegexSyntaxTrivia> leadingTrivia, out RegexAtomSyntax result)
     {
-        if ((Options & RegexPatternOptions.EcmaScript) != RegexPatternOptions.None)
+        if (UsesEcmaScriptBehavior)
         {
             // ECMAScript takes the longest prefix of the digits that names a group declared before this point.
             var capnum = -1;
@@ -358,7 +381,7 @@ internal partial class PerlStyleRegexParser
 
             default:
                 if (Flavor.HasFeature(RegexFlavorFeatures.StrictEscapes) &&
-                    (Options & RegexPatternOptions.EcmaScript) == RegexPatternOptions.None &&
+                    !UsesEcmaScriptBehavior &&
                     RegexCharacterTables.IsBoundaryWordChar(ch))
                 {
                     AddDiagnostic(TextSpan.FromBounds(escapeStart, Scanner.Position), RegexDiagnosticIds.UnrecognizedEscape, $"Unrecognized escape sequence '\\{ch}'.");
@@ -381,7 +404,7 @@ internal partial class PerlStyleRegexParser
             value = (value * 8) + digit;
 
             // ECMAScript stops as soon as the value could no longer be a control character.
-            if ((Options & RegexPatternOptions.EcmaScript) != RegexPatternOptions.None && value >= 0x20)
+            if (UsesEcmaScriptBehavior && value >= 0x20)
                 break;
         }
 

@@ -60,4 +60,6 @@ internal static class RegexDiagnosticIds
     public const string MaxRecursionDepthExceeded = "REGEX0200";
     public const string TrailingContent = "REGEX0204";
     public const string UnknownFlag = "REGEX0205";
+    public const string DuplicateFlag = "REGEX0206";
+    public const string ConflictingFlags = "REGEX0207";
 }

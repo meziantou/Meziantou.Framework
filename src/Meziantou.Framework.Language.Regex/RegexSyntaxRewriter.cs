@@ -105,9 +105,12 @@ public class RegexSyntaxRewriter : RegexSyntaxVisitor<RegexSyntaxNode?>
                 continue;
             }
 
-            foreach (var child in current.ChildNodes)
+            // Pushed back to front so they pop front to back: an override that keeps state, such as one that
+            // replaces only the first match, has to see the tree in the order the traversal APIs report it.
+            var children = current.ChildNodes;
+            for (var index = children.Count - 1; index >= 0; index--)
             {
-                pending.Push(child);
+                pending.Push(children[index]);
             }
         }
     }
@@ -132,9 +135,10 @@ public class RegexSyntaxRewriter : RegexSyntaxVisitor<RegexSyntaxNode?>
 
         builder.Append(source, position, source.Length - position);
 
-        var options = pattern.SyntaxTree?.Options ?? new RegexParseOptions(pattern.Flavor ?? RegexFlavor.Net);
+        if (pattern.SyntaxTree is { } tree)
+            return tree.Reparse(builder.ToString()).Root;
 
-        return RegexSyntaxTree.ParseText(builder.ToString(), options).Root;
+        return RegexSyntaxTree.ParseText(builder.ToString(), new RegexParseOptions(pattern.Flavor ?? RegexFlavor.Net)).Root;
     }
 
     /// <summary>Finds the node that replaced <paramref name="original"/> in the reparsed pattern.</summary>

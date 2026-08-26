@@ -40,7 +40,7 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
             var flagsStart = Scanner.Position;
             Scanner.Position = _literal.FlagsEnd;
             flagsToken = Scanner.Token(RegexSyntaxKind.FlagsToken, flagsStart);
-            ReportUnknownFlags(flagsToken);
+            ReportFlagProblems(flagsToken);
         }
 
         return (closeSlashToken, flagsToken, ReadTrailingContent());
@@ -65,19 +65,33 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
         ? position >= literal.BodyEnd
         : base.IsAtBodyEnd(position);
 
-    private void ReportUnknownFlags(RegexSyntaxToken flagsToken)
+    /// <summary>Reports the three ways a flag list can be wrong: unknown, repeated, or <c>u</c> together with <c>v</c>.</summary>
+    private void ReportFlagProblems(RegexSyntaxToken flagsToken)
     {
-        var seen = 0;
-        foreach (var flag in flagsToken.Text)
+        var text = flagsToken.Text;
+        var seen = new HashSet<char>();
+
+        for (var index = 0; index < text.Length; index++)
         {
-            if (flag is 'd' or 'g' or 'i' or 'm' or 's' or 'u' or 'v' or 'y')
+            var flag = text[index];
+            var span = new TextSpan(flagsToken.Span.Start + index, 1);
+
+            if (flag is not ('d' or 'g' or 'i' or 'm' or 's' or 'u' or 'v' or 'y'))
             {
-                seen++;
+                AddDiagnostic(span, RegexDiagnosticIds.UnknownFlag, $"Unknown regular-expression flag '{flag}'.");
                 continue;
             }
 
-            AddDiagnostic(new TextSpan(flagsToken.Span.Start + seen, 1), RegexDiagnosticIds.UnknownFlag, $"Unknown regular-expression flag '{flag}'.");
-            seen++;
+            if (!seen.Add(flag))
+            {
+                AddDiagnostic(span, RegexDiagnosticIds.DuplicateFlag, $"The regular-expression flag '{flag}' is repeated.");
+            }
+        }
+
+        // The two Unicode modes are alternatives, not a pair: "v" is "u" plus the class set grammar.
+        if (seen.Contains('u') && seen.Contains('v'))
+        {
+            AddDiagnostic(flagsToken.Span, RegexDiagnosticIds.ConflictingFlags, "The 'u' and 'v' flags cannot both be set.");
         }
     }
 }

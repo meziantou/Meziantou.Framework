@@ -50,7 +50,7 @@ internal abstract partial class PerlStyleRegexParser
             caretToken = Scanner.Token(RegexSyntaxKind.CaretToken, caretStart);
 
             // Under ECMAScript "[^]" is an empty negated class rather than a class containing "]".
-            if ((Options & RegexPatternOptions.EcmaScript) != RegexPatternOptions.None && Scanner.Current == ']')
+            if (UsesEcmaScriptBehavior && Scanner.Current == ']')
             {
                 firstChar = false;
             }
@@ -282,8 +282,7 @@ internal abstract partial class PerlStyleRegexParser
                     Scanner.Position += 2;
                     return new ClassElement(WithOptions(new RegexCharacterClassEscapeSyntax(Scanner.Token(RegexSyntaxKind.ClassEscapeToken, start))), '\0', IsTranslated: false, IsClassEscape: true, IsDashEscape: false);
 
-                case 'p':
-                case 'P' when SupportsUnicodeCategories:
+                case 'p' or 'P' when SupportsUnicodeCategories:
                     return new ClassElement(ParseUnicodeCategory([]), '\0', IsTranslated: false, IsClassEscape: true, IsDashEscape: false);
 
                 case '-':

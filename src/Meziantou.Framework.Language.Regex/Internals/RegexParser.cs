@@ -361,6 +361,21 @@ internal abstract class RegexParser
 
     // ---- helpers shared by the flavor parsers ----
 
+    /// <summary>
+    /// Whether the pattern is read with ECMAScript behaviour: <c>[^]</c> is an empty negated class, octal escapes stop
+    /// early, and a numeric backreference takes the longest prefix that names an existing group.
+    /// </summary>
+    /// <remarks>
+    /// It is either asked for through .NET's own ECMAScript option or implied by the flavor, because for JavaScript
+    /// those are simply the rules rather than an option.
+    /// </remarks>
+    protected bool UsesEcmaScriptBehavior =>
+        (Options & RegexPatternOptions.EcmaScript) != RegexPatternOptions.None ||
+        Flavor.Family == RegexFlavorFamily.JavaScript;
+
+    /// <summary>Whether the pattern is read as a sequence of code points rather than of UTF-16 code units.</summary>
+    protected bool UsesUnicodeMode => (Options & RegexPatternOptions.Unicode) != RegexPatternOptions.None;
+
     protected int PeekTriviaEnd() => Scanner.PeekTriviaEnd(Options, Flavor);
 
     protected IReadOnlyList<RegexSyntaxTrivia> TakeTrivia() => Scanner.TakeTrivia(Options, Flavor);

@@ -113,11 +113,14 @@ public static class SyntaxFactory
     {
         ArgumentNullException.ThrowIfNull(atom);
 
+        // Anything else would be written into the node's text and reparse as a literal, so the node would not describe
+        // the pattern it claims to.
         var kind = quantifier switch
         {
+            '*' => RegexSyntaxKind.AsteriskToken,
             '+' => RegexSyntaxKind.PlusToken,
             '?' => RegexSyntaxKind.QuestionToken,
-            _ => RegexSyntaxKind.AsteriskToken,
+            _ => throw new ArgumentOutOfRangeException(nameof(quantifier), quantifier, "A quantifier operator must be '*', '+', or '?'."),
         };
 
         return new RegexQuantifiedSyntax(atom, new RegexSimpleQuantifierSyntax(new RegexSyntaxToken(kind, quantifier.ToString()), Modifier(mode)));
@@ -186,13 +189,30 @@ public static class SyntaxFactory
 
     private static string FormatCount(int value) => value.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-    /// <summary>Returns whether a character has to be escaped to match itself.</summary>
+    /// <summary>Returns whether a character has to be escaped to match itself in this flavor.</summary>
     /// <remarks>
-    /// The set is the engine's own table of characters that stop a run of ordinary text, plus <c>]</c> and <c>}</c>,
-    /// which are harmless on their own but are escaped anyway so the result reads the same in every flavor.
+    /// <para>
+    /// Escaping is not a superset game: adding a backslash can <em>create</em> a construct. In POSIX basic expressions
+    /// a bare <c>(</c> is already the literal and <c>\(</c> is what opens a group, so escaping it there would produce
+    /// the opposite of what the caller asked for. The set therefore has to be chosen per flavor rather than by taking
+    /// the union.
+    /// </para>
+    /// <para>
+    /// The Perl-derived set is the engine's own table of characters that stop a run of ordinary text, plus <c>]</c>,
+    /// <c>}</c>, and <c>-</c>, which are harmless outside a class but not inside one, and whitespace and <c>#</c>,
+    /// which matter once extended mode is on.
+    /// </para>
     /// </remarks>
-    private static bool NeedsEscape(char value, RegexFlavor flavor) =>
-        RegexCharacterTables.IsSpecialOrSpace(value) ||
-        value is ']' or '}' or '-' ||
-        (flavor.HasFeature(RegexFlavorFeatures.EscapedGroupDelimiters) && value is '(' or ')' or '{');
+    private static bool NeedsEscape(char value, RegexFlavor flavor) => flavor.Family switch
+    {
+        // Basic expressions: the escaped forms are the constructs, so only the unescaped specials are escaped here.
+        RegexFlavorFamily.Posix when flavor.HasFeature(RegexFlavorFeatures.EscapedGroupDelimiters) =>
+            value is '.' or '*' or '[' or ']' or '^' or '$' or '\\',
+
+        // Extended expressions have no backslash escapes beyond the specials themselves.
+        RegexFlavorFamily.Posix =>
+            value is '.' or '*' or '+' or '?' or '[' or ']' or '(' or ')' or '{' or '}' or '|' or '^' or '$' or '\\',
+
+        _ => RegexCharacterTables.IsSpecialOrSpace(value) || value is ']' or '}' or '-',
+    };
 }

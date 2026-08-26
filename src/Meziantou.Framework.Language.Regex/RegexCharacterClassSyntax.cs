@@ -18,7 +18,7 @@ public sealed class RegexCharacterClassSyntax : RegexAtomSyntax
     {
         OpenBracketToken = openBracketToken;
         CaretToken = caretToken;
-        Members = members ?? [];
+        Members = Snapshot(members);
         CloseBracketToken = closeBracketToken;
         _childNodes = [.. Members];
     }

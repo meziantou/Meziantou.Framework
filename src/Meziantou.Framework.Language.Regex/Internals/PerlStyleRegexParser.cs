@@ -72,9 +72,10 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             case ')':
                 return SkipOneCharacter(leadingTrivia, RegexDiagnosticIds.InsufficientOpeningParentheses, "Unmatched ')'.");
 
+            // Only a character that is a quantifier in this flavor can be one with nothing to repeat. In a basic
+            // expression "+" and "?" are ordinary characters, so reporting them here would invent an error.
             case '*':
-            case '+':
-            case '?':
+            case '+' or '?' when Flavor.HasFeature(RegexFlavorFeatures.PlusAndQuestionQuantifiers):
                 return SkipOneCharacter(leadingTrivia, RegexDiagnosticIds.QuantifierAfterNothing, $"Quantifier '{Scanner.Current}' has nothing to repeat.");
 
             case '{' when IsQuantifierAt(Scanner.Position):
@@ -82,6 +83,14 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
 
             default:
                 Scanner.Position++;
+
+                // In Unicode mode a pattern is a sequence of code points, so a surrogate pair is one atom and a
+                // quantifier after it repeats the whole character rather than half of one.
+                if (UsesUnicodeMode && char.IsHighSurrogate(Text[start]) && char.IsLowSurrogate(Scanner.Current))
+                {
+                    Scanner.Position++;
+                }
+
                 return WithOptions(new RegexLiteralSyntax(Scanner.Token(RegexSyntaxKind.LiteralToken, start, leadingTrivia)));
         }
     }
@@ -108,11 +117,18 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             var inConditionalTest = _inConditionalTest;
             _inConditionalTest = false;
 
+            // A backtracking verb is "(*NAME)", so it is decided before the "(?" headers are looked at.
+            if (Scanner.Current == '*' && Flavor.HasFeature(RegexFlavorFeatures.BacktrackingVerbs))
+                return ParseBacktrackingVerb(openParenToken);
+
             // "(" at the end, "(x" where x is not "?", and "(?)" are all plain groups. The "?" of "(?)" is left where
             // it is on purpose: the engine leaves it too, and the body parse then reports it as a quantifier with
-            // nothing to repeat.
-            if (Scanner.IsAtEnd || Scanner.Current != '?' || Scanner.Peek() == ')')
+            // nothing to repeat. A flavor without the "(?…)" family treats every one of them the same way.
+            if (Scanner.IsAtEnd || Scanner.Current != '?' || Scanner.Peek() == ')' ||
+                !Flavor.HasFeature(RegexFlavorFeatures.ExtendedGroupSyntax))
+            {
                 return ParsePlainGroup(openParenToken);
+            }
 
             var questionStart = Scanner.Position;
             Scanner.Position++;
@@ -120,19 +136,34 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             switch (Scanner.Current)
             {
                 case ':':
-                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.NonCapturingGroup);
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.NonCapturingGroup, RegexFlavorFeatures.NonCapturingGroups);
 
                 case '=':
                 case '!':
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.Lookaround, RegexFlavorFeatures.Lookahead);
+
                 case '>':
-                    return ParseSimpleHeaderGroup(openParenToken, questionStart, Scanner.Current == '>' ? RegexSyntaxKind.AtomicGroup : RegexSyntaxKind.Lookaround);
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.AtomicGroup, RegexFlavorFeatures.AtomicGroups);
+
+                case '|':
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.BranchResetGroup, RegexFlavorFeatures.BranchReset);
 
                 case '<':
                 case '\'':
                     return ParseAngledGroup(openParenToken, questionStart);
 
+                case 'P' when Flavor.HasFeature(RegexFlavorFeatures.PythonNamedGroups) && Scanner.Peek() == '<':
+                    return ParseAngledGroup(openParenToken, questionStart);
+
                 case '(':
                     return ParseConditional(openParenToken, questionStart);
+
+                case 'R':
+                case >= '0' and <= '9' when Flavor.HasFeature(RegexFlavorFeatures.Recursion):
+                    if (Flavor.HasFeature(RegexFlavorFeatures.Recursion))
+                        return ParseRecursion(openParenToken, questionStart);
+
+                    goto default;
 
                 default:
                     return ParseOptionsConstruct(openParenToken, questionStart, inConditionalTest);
@@ -162,11 +193,22 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         return group;
     }
 
-    private RegexGroupSyntax ParseSimpleHeaderGroup(RegexSyntaxToken openParenToken, int questionStart, RegexSyntaxKind kind)
+    /// <summary>Parses a group whose header is <c>(?</c> plus one character.</summary>
+    /// <remarks>
+    /// A header the flavor does not have is reported and then read as a non-capturing group, so the body is still
+    /// parsed and every character is still accounted for.
+    /// </remarks>
+    private RegexGroupSyntax ParseSimpleHeaderGroup(RegexSyntaxToken openParenToken, int questionStart, RegexSyntaxKind kind, RegexFlavorFeatures required)
     {
         Scanner.Position++;
         var groupKindToken = Scanner.Token(RegexSyntaxKind.GroupKindToken, questionStart);
         _ignoreNextParen = false;
+
+        if (!Flavor.HasFeature(required))
+        {
+            AddDiagnostic(groupKindToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"The '{groupKindToken.Text}' grouping construct is not supported by the {Flavor.Name} flavor.");
+            kind = RegexSyntaxKind.NonCapturingGroup;
+        }
 
         var alternation = ParseAlternation(insideGroup: true);
         var closeParenToken = ReadCloseParen(openParenToken);
@@ -174,6 +216,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         {
             RegexSyntaxKind.AtomicGroup => new RegexAtomicGroupSyntax(openParenToken, groupKindToken, alternation, closeParenToken),
             RegexSyntaxKind.Lookaround => new RegexLookaroundSyntax(openParenToken, groupKindToken, alternation, closeParenToken),
+            RegexSyntaxKind.BranchResetGroup => new RegexBranchResetGroupSyntax(openParenToken, groupKindToken, alternation, closeParenToken),
             _ => new RegexNonCapturingGroupSyntax(openParenToken, groupKindToken, alternation, closeParenToken),
         };
 
@@ -184,9 +227,55 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         return group;
     }
 
-    /// <summary>Parses <c>(?&lt;…</c> and <c>(?'…</c>: lookbehind, a named group, or a balancing group.</summary>
+    /// <summary>Parses <c>(?R)</c> and <c>(?1)</c>, which restart the pattern or one of its groups.</summary>
+    private RegexRecursionSyntax ParseRecursion(RegexSyntaxToken openParenToken, int questionStart)
+    {
+        var questionToken = Scanner.Token(RegexSyntaxKind.QuestionToken, questionStart);
+        _ignoreNextParen = false;
+
+        var targetStart = Scanner.Position;
+        if (Scanner.Current == 'R')
+        {
+            Scanner.Position++;
+        }
+        else
+        {
+            ReadDecimal(out _);
+        }
+
+        var targetToken = Scanner.Token(RegexSyntaxKind.RecursionToken, targetStart);
+        var closeParenToken = ReadCloseParen(openParenToken);
+        RestoreOptions();
+
+        return WithOptions(new RegexRecursionSyntax(openParenToken, questionToken, targetToken, closeParenToken));
+    }
+
+    /// <summary>Parses a backtracking control verb such as <c>(*SKIP)</c>.</summary>
+    private RegexBacktrackingVerbSyntax ParseBacktrackingVerb(RegexSyntaxToken openParenToken)
+    {
+        var verbStart = Scanner.Position;
+        Scanner.Position++;
+        while (!Scanner.IsAtEnd && Scanner.Current is not (')' or '('))
+        {
+            Scanner.Position++;
+        }
+
+        var verbToken = Scanner.Token(RegexSyntaxKind.VerbToken, verbStart);
+        var closeParenToken = ReadCloseParen(openParenToken);
+        RestoreOptions();
+
+        return WithOptions(new RegexBacktrackingVerbSyntax(openParenToken, verbToken, closeParenToken));
+    }
+
+    /// <summary>Parses <c>(?&lt;…</c>, <c>(?'…</c>, and <c>(?P&lt;…</c>: lookbehind, a named group, or a balancing group.</summary>
     private RegexAtomSyntax ParseAngledGroup(RegexSyntaxToken openParenToken, int questionStart)
     {
+        // "(?P<" is the Python spelling of "(?<"; the extra letter is part of the header and nothing else.
+        if (Scanner.Current == 'P')
+        {
+            Scanner.Position++;
+        }
+
         var close = Scanner.Current == '\'' ? '\'' : '>';
         Scanner.Position++;
 
@@ -196,6 +285,11 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             Scanner.Position++;
             var lookbehindKindToken = Scanner.Token(RegexSyntaxKind.GroupKindToken, questionStart);
             _ignoreNextParen = false;
+
+            if (!Flavor.HasFeature(RegexFlavorFeatures.Lookbehind))
+            {
+                AddDiagnostic(lookbehindKindToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"The '{lookbehindKindToken.Text}' grouping construct is not supported by the {Flavor.Name} flavor.");
+            }
 
             var lookbehindBody = ParseAlternation(insideGroup: true);
             var lookbehindClose = ReadCloseParen(openParenToken);
@@ -209,6 +303,12 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         var groupKindToken = Scanner.Token(RegexSyntaxKind.GroupKindToken, questionStart);
         _ignoreNextParen = false;
 
+        var namedSpelling = close == '\'' ? RegexFlavorFeatures.QuoteNamedGroups : RegexFlavorFeatures.AngleNamedGroups;
+        if (!Flavor.HasFeature(namedSpelling))
+        {
+            AddDiagnostic(groupKindToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"The '{groupKindToken.Text}' grouping construct is not supported by the {Flavor.Name} flavor.");
+        }
+
         var nameToken = ReadGroupNameOrNumber(close, openParenToken.Span.Start, out var capnum, out var startsWithHyphen);
         RegexSyntaxToken? hyphenToken = null;
         RegexSyntaxToken? previousNameToken = null;
@@ -220,6 +320,11 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             var hyphenStart = Scanner.Position;
             Scanner.Position++;
             hyphenToken = Scanner.Token(RegexSyntaxKind.HyphenToken, hyphenStart);
+            if (!Flavor.HasFeature(RegexFlavorFeatures.BalancingGroups))
+            {
+                AddDiagnostic(hyphenToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"Balancing groups are not supported by the {Flavor.Name} flavor.");
+            }
+
             previousNameToken = ReadBalancingTarget(close);
         }
 
@@ -386,6 +491,11 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     private RegexConditionalSyntax ParseConditional(RegexSyntaxToken openParenToken, int questionStart)
     {
         var questionToken = Scanner.Token(RegexSyntaxKind.QuestionToken, questionStart);
+        if (!Flavor.HasFeature(RegexFlavorFeatures.Conditionals))
+        {
+            AddDiagnostic(questionToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"Conditional alternations are not supported by the {Flavor.Name} flavor.");
+        }
+
         var conditionStart = Scanner.Position;
 
         RegexSyntaxNode? condition = ReadConditionalReference(conditionStart);
@@ -492,8 +602,13 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     private RegexAtomSyntax ParseOptionsConstruct(RegexSyntaxToken openParenToken, int questionStart, bool inConditionalTest)
     {
         var questionToken = Scanner.Token(RegexSyntaxKind.QuestionToken, questionStart);
+        if (!Flavor.HasFeature(RegexFlavorFeatures.InlineOptions))
+        {
+            AddDiagnostic(questionToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"Inline options are not supported by the {Flavor.Name} flavor.");
+        }
+
         var optionsStart = Scanner.Position;
-        var optionsToken = inConditionalTest ? null : ScanInlineOptions(optionsStart);
+        var optionsToken = inConditionalTest || !Flavor.HasFeature(RegexFlavorFeatures.InlineOptions) ? null : ScanInlineOptions(optionsStart);
 
         if (Scanner.Current == ')')
         {

@@ -19,8 +19,10 @@ public sealed class RegexSyntaxToken
         Text = text ?? string.Empty;
         ValueText = valueText ?? Text;
         IsMissing = isMissing;
-        LeadingTrivia = leadingTrivia ?? [];
-        TrailingTrivia = trailingTrivia ?? [];
+        // Copied rather than kept by reference: the spans below are measured now, and a caller who mutated their list
+        // afterwards would change ToFullString() while Span and FullSpan went on describing the old text.
+        LeadingTrivia = leadingTrivia is { Count: > 0 } ? [.. leadingTrivia] : [];
+        TrailingTrivia = trailingTrivia is { Count: > 0 } ? [.. trailingTrivia] : [];
 
         var leadingLength = SumTextLength(LeadingTrivia);
         Span = new TextSpan(fullStart + leadingLength, Text.Length);

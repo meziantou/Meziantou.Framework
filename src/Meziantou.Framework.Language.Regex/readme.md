@@ -17,12 +17,16 @@ The .NET flavor's scanner is ported from [dotnet/runtime](https://github.com/dot
 | `RegexFlavor` | Family | Notes |
 | --- | --- | --- |
 | `Net` | .NET | balancing groups, character class subtraction, conditionals, `(?#…)`, extended mode |
-| `JavaScript` | ECMAScript | `u` and `v` flags, no `\A`/`\Z`/`\z`/`\G`, no extended mode, no inline options |
-| `PcrePerl` | PCRE | possessive quantifiers, atomic groups, `\Q…\E`, `\K`, POSIX bracket expressions, recursion |
+| `JavaScript` | ECMAScript | the `u` flag, `[^]`, no `\A`/`\Z`/`\z`/`\G`, no atomic groups, no extended mode, no inline options |
+| `PcrePerl` | PCRE | possessive quantifiers, atomic groups, `\Q…\E`, `\K`, POSIX bracket expressions, `(?R)`, `(?\|…)`, `(*SKIP)`, `(?P<n>…)` |
 | `PosixExtended` | POSIX | extended regular expressions (ERE) |
 | `PosixBasic` | POSIX | basic regular expressions (BRE): no alternation, no `+` or `?`, a bare `(` or `{` is an ordinary character |
 
-Flavors within a family share a parser; `RegexFlavor.Features` records what each one supports. A construct the flavor does not have is not an error, it is simply not that construct: `\A` is the letter `A` in JavaScript, and `[a-z-[aeiou]]` in PCRE is the class `[a-z-[aeiou]` followed by a `]`.
+Flavors within a family share a parser; `RegexFlavor.Features` records what each one supports.
+
+Where a construct the flavor lacks has an ordinary reading, that is what it gets: `\A` is the letter `A` in JavaScript, and `[a-z-[aeiou]]` in PCRE is the class `[a-z-[aeiou]` followed by a `]`. Where it does not — a grouping construct that flavor simply has no syntax for, such as `(?>…)` in JavaScript — it is reported and then read as a non-capturing group so the body still parses and every character is still accounted for.
+
+Two gaps worth knowing about. `PosixBasic` reads `\(`, `\)`, `\{`, and `\}` as escapes rather than as grouping and bounds, so a basic expression round-trips but its groups are not in the tree as groups. And the JavaScript `v` flag's class set operations — nested classes, `&&`, `\q{…}` — are not implemented, so a `v`-mode class is read as an ordinary one; the `u` flag *is* honoured, and makes a surrogate pair one atom.
 
 ## Parsing
 
@@ -89,8 +93,9 @@ var patternOptions = RegexOptionsInterop.ToPatternOptions(RegexOptions.IgnoreCas
 Console.WriteLine(patternOptions);   // IgnoreCase
 ```
 
-`MaxRecursionDepth` bounds how deeply the parser descends. Input that nests beyond it reports `REGEX0200` and keeps the
-remainder as skipped text, so deeply nested input cannot overflow the stack.
+`MaxRecursionDepth` bounds how deeply the parser descends. Input that nests beyond it reports `REGEX0200`, and the
+remainder is kept as skipped text — which usually means a second diagnostic for the groups that never got closed — so
+deeply nested input cannot overflow the stack. A value below one is rejected where it is set.
 
 ## Inspecting the tree
 
@@ -109,7 +114,8 @@ Console.WriteLine(tree.Root.Alternation.Branches[0].Terms.Count);  // 2
 ```
 
 A literal is one atom per UTF-16 code unit, and a quantifier binds the atom in front of it. That matches the engine: in
-`"😀*"` the quantifier applies to the low surrogate alone.
+`"😀*"` the quantifier applies to the low surrogate alone. Under the JavaScript `u` flag a pattern is a sequence of code
+points instead, so the pair is one atom and `RegexLiteralSyntax.CodePoint` reports it.
 
 `Options` records what was in effect at each node's first character, which is what makes an inline option setter
 readable after the fact:
@@ -174,9 +180,13 @@ var updated = tree.WithChanges(new RegexTextChange(new TextSpan(2, 1), "*"));
 Console.WriteLine(updated.Text);   // ab*c
 ```
 
+An edit to a tree from `ParseJavaScriptLiteral` stays a literal: the delimiters and flags are preserved rather than
+becoming ordinary characters.
+
 `GetChanges` reports what actually differs between two trees, with the common prefix and suffix trimmed, and
 `IsEquivalentTo` compares them structurally, so two patterns that differ only in extended-mode formatting are
-equivalent:
+equivalent. Trees parsed with different flavors, or with different options, are never equivalent — the same characters
+read with and without extended mode are genuinely different trees:
 
 ```csharp
 var options = new RegexParseOptions(RegexFlavor.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
@@ -234,8 +244,8 @@ Replaced nodes are spliced into the source and the pattern is reparsed once. `re
 Every edit reparses the whole pattern. That keeps the model simple and the tree always consistent with its text, and a
 pattern is short enough that it costs nothing worth saving.
 
-`PosixBasic` reads `\(`, `\)`, `\{`, and `\}` as escapes rather than as grouping and bounds, so a basic
-expression round-trips and reports nothing but its groups are not in the tree as groups.
+Every node stores its own text, so a tree costs memory in proportion to the pattern's length times its depth: a
+20,000-character pattern is roughly 16 MB. That is fine for patterns and would not be for documents.
 
 The .NET flavor follows the current .NET engine. The engine changes between releases — .NET 10 rejects
 `(?(name)(?n))`, which .NET 11 accepts, and knows fewer Unicode block names — so on an older runtime this parser may

@@ -17,8 +17,8 @@ public sealed class RegexAlternationSyntax : RegexSyntaxNode
             branches is { Count: > 0 } || barTokens is { Count: > 0 } ? SeparatedNodes.GetFullStart(branches, barTokens) : fullStart,
             barTokens ?? [])
     {
-        Branches = branches ?? [];
-        BarTokens = barTokens ?? [];
+        Branches = Snapshot(branches);
+        BarTokens = Snapshot(barTokens);
         _childNodes = [.. Branches];
     }
 

@@ -112,10 +112,65 @@ public sealed class RegexSyntaxFactoryTests
         }
     }
 
-    [Fact]
-    public void PosixBasicEscapesTheDelimitersThatOtherFlavorsLeaveBare()
+    /// <summary>
+    /// In a basic expression the escaped form is the construct, so escaping a parenthesis there would open a group
+    /// rather than match one. The literal is the bare character.
+    /// </summary>
+    [Theory]
+    [InlineData('(', "(")]
+    [InlineData(')', ")")]
+    [InlineData('{', "{")]
+    [InlineData('}', "}")]
+    [InlineData('+', "+")]
+    [InlineData('?', "?")]
+    [InlineData('|', "|")]
+    [InlineData('.', @"\.")]
+    [InlineData('*', @"\*")]
+    [InlineData('[', @"\[")]
+    public void PosixBasicLeavesTheEscapedDelimitersBare(char value, string expected)
     {
-        Assert.Equal(@"\(", SyntaxFactory.Literal('(', RegexFlavor.PosixBasic).ToFullString());
-        Assert.Equal(@"\{", SyntaxFactory.Literal('{', RegexFlavor.PosixBasic).ToFullString());
+        Assert.Equal(expected, SyntaxFactory.Literal(value, RegexFlavor.PosixBasic).ToFullString());
+    }
+
+    [Theory]
+    [InlineData('(', @"\(")]
+    [InlineData('{', @"\{")]
+    [InlineData('+', @"\+")]
+    [InlineData('|', @"\|")]
+    public void PosixExtendedEscapesTheCharactersThatAreConstructsThere(char value, string expected)
+    {
+        Assert.Equal(expected, SyntaxFactory.Literal(value, RegexFlavor.PosixExtended).ToFullString());
+    }
+
+    /// <summary>Whatever the factory escapes has to parse back as a literal, in the flavor it was built for.</summary>
+    [Theory]
+    [InlineData("net")]
+    [InlineData("javascript")]
+    [InlineData("pcre")]
+    [InlineData("ere")]
+    [InlineData("bre")]
+    public void AnEscapedLiteralParsesBackAsOneAtomInItsOwnFlavor(string flavorName)
+    {
+        Assert.True(RegexFlavor.TryParse(flavorName, out var flavor));
+
+        foreach (var value in @"a1 .*+?[]{}()|^$\-#/<>=!:'")
+        {
+            var built = SyntaxFactory.Literal(value, flavor).ToFullString();
+            var tree = RegexSyntaxAssert.TextIsFaithful(built, flavor);
+
+            Assert.Empty(tree.Diagnostics, $"[{built}] built for {value} in {flavorName}");
+            Assert.Empty(tree.Root.DescendantNodes().OfType<RegexQuantifiedSyntax>());
+            Assert.Empty(tree.Root.DescendantNodes().OfType<RegexGroupSyntax>());
+            Assert.Empty(tree.Root.DescendantNodes().OfType<RegexCharacterClassSyntax>());
+            Assert.Single(tree.Root.Alternation.Branches[0].Terms);
+        }
+    }
+
+    [Fact]
+    public void Quantified_RejectsAnOperatorThatIsNotOne()
+    {
+        var literal = (RegexAtomSyntax)SyntaxFactory.Literal('a', RegexFlavor.Net);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => SyntaxFactory.Quantified(literal, 'x'));
     }
 }

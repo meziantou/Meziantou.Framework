@@ -20,7 +20,18 @@ public sealed record RegexParseOptions
     /// <c>REGEX0200</c> and treating the remaining text as skipped text. Guards against stack overflow on deeply
     /// nested input.
     /// </summary>
-    public int MaxRecursionDepth { get; init; } = DefaultMaxRecursionDepth;
+    /// <exception cref="ArgumentOutOfRangeException">The value is less than one.</exception>
+    public int MaxRecursionDepth
+    {
+        get => field;
+        init
+        {
+            // A depth below one makes even a top-level group skipped text, which looks like a parser bug rather than
+            // like the misconfiguration it is. Better to fail where the mistake was made.
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            field = value;
+        }
+    } = DefaultMaxRecursionDepth;
 
     /// <summary>
     /// The options in effect at the start of the pattern, as if the caller had passed them to the engine. An inline

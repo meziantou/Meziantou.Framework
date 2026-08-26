@@ -7,9 +7,8 @@ namespace Meziantou.Framework.Language.Regex;
 [DebuggerDisplay("{Name}")]
 public sealed class RegexFlavor
 {
-    /// <summary>What every flavor has, including POSIX basic expressions.</summary>
-    private const RegexFlavorFeatures CommonFeatures =
-        RegexFlavorFeatures.Backreferences;
+    /// <summary>What every flavor has, POSIX basic expressions included.</summary>
+    private const RegexFlavorFeatures CommonFeatures = RegexFlavorFeatures.Backreferences;
 
     /// <summary>What every flavor except POSIX basic expressions has.</summary>
     private const RegexFlavorFeatures ModernFeatures =
@@ -21,12 +20,13 @@ public sealed class RegexFlavor
     private const RegexFlavorFeatures PerlFeatures =
         ModernFeatures |
         RegexFlavorFeatures.LazyQuantifiers |
+        RegexFlavorFeatures.ExtendedGroupSyntax |
+        RegexFlavorFeatures.NonCapturingGroups |
         RegexFlavorFeatures.NamedGroups |
         RegexFlavorFeatures.AngleNamedGroups |
+        RegexFlavorFeatures.Lookahead |
         RegexFlavorFeatures.Lookbehind |
-        RegexFlavorFeatures.InlineOptions |
         RegexFlavorFeatures.UnicodeCategories |
-        RegexFlavorFeatures.StrictEscapes |
         RegexFlavorFeatures.BareBraceIsLiteral;
 
     private RegexFlavor(string name, RegexFlavorFamily family, RegexFlavorFeatures features)
@@ -45,23 +45,33 @@ public sealed class RegexFlavor
         RegexFlavorFeatures.BalancingGroups |
         RegexFlavorFeatures.AtomicGroups |
         RegexFlavorFeatures.Conditionals |
+        RegexFlavorFeatures.InlineOptions |
         RegexFlavorFeatures.IgnorePatternWhitespace |
         RegexFlavorFeatures.CommentGroups |
         RegexFlavorFeatures.CharacterClassSubtraction |
+        RegexFlavorFeatures.StrictEscapes |
         RegexFlavorFeatures.AnchorsAZ);
 
-    /// <summary>The ECMAScript flavor, up to and including the <c>u</c> and <c>v</c> flags.</summary>
+    /// <summary>The ECMAScript flavor.</summary>
+    /// <remarks>
+    /// The <c>u</c> flag is honoured: it makes a surrogate pair one atom. The <c>v</c> flag's class set operations --
+    /// nested classes, <c>&amp;&amp;</c>, and <c>\q{…}</c> -- are not implemented, so a <c>v</c>-mode class is read as
+    /// an ordinary one.
+    /// </remarks>
     public static RegexFlavor JavaScript { get; } = new(
         "javascript",
         RegexFlavorFamily.JavaScript,
         ModernFeatures |
         RegexFlavorFeatures.LazyQuantifiers |
+        RegexFlavorFeatures.ExtendedGroupSyntax |
+        RegexFlavorFeatures.NonCapturingGroups |
         RegexFlavorFeatures.NamedGroups |
         RegexFlavorFeatures.AngleNamedGroups |
+        RegexFlavorFeatures.Lookahead |
         RegexFlavorFeatures.Lookbehind |
         RegexFlavorFeatures.UnicodeCategories |
         RegexFlavorFeatures.UnicodeCategoriesRequireUnicodeFlag |
-        RegexFlavorFeatures.ClassSetOperations |
+        RegexFlavorFeatures.UnicodePropertyNames |
         RegexFlavorFeatures.BareBraceIsLiteral);
 
     /// <summary>The PCRE and Perl flavor.</summary>
@@ -77,10 +87,13 @@ public sealed class RegexFlavor
         RegexFlavorFeatures.BranchReset |
         RegexFlavorFeatures.Recursion |
         RegexFlavorFeatures.BacktrackingVerbs |
+        RegexFlavorFeatures.InlineOptions |
         RegexFlavorFeatures.IgnorePatternWhitespace |
         RegexFlavorFeatures.CommentGroups |
         RegexFlavorFeatures.PosixBracketExpressions |
         RegexFlavorFeatures.QuotedLiterals |
+        RegexFlavorFeatures.UnicodePropertyNames |
+        RegexFlavorFeatures.StrictEscapes |
         RegexFlavorFeatures.AnchorsAZ |
         RegexFlavorFeatures.KeepOut);
 
@@ -91,6 +104,10 @@ public sealed class RegexFlavor
         ModernFeatures | RegexFlavorFeatures.PosixBracketExpressions);
 
     /// <summary>POSIX basic regular expressions (BRE), in which groups and bounds are escaped.</summary>
+    /// <remarks>
+    /// The escaped forms <c>\(</c>, <c>\)</c>, <c>\{</c>, and <c>\}</c> are read as escapes rather than as grouping and
+    /// bounds, so a basic expression round-trips but its groups are not in the tree as groups.
+    /// </remarks>
     public static RegexFlavor PosixBasic { get; } = new(
         "bre",
         RegexFlavorFamily.Posix,

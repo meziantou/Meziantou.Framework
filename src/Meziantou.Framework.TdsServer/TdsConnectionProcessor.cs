@@ -176,7 +176,7 @@ internal sealed class TdsConnectionProcessor
                     });
                 }
 
-                await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateQueryResponse(queryResult), cancellationToken).ConfigureAwait(false);
+                await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateQueryResponse(queryResult, writer.PayloadSizePerPacket), cancellationToken).ConfigureAwait(false);
             }
         }
         catch (AuthenticationException ex)

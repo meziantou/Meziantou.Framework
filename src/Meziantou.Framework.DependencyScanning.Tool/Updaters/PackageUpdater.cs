@@ -6,6 +6,13 @@ internal abstract class PackageUpdater
     public int MinimumAge { get; set; }
     public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
 
+    /// <summary>
+    /// Whether this source reports a publication date for its versions. When it does, a version that comes
+    /// back without one means the age could not be verified, so <see cref="MinimumAge"/> must reject it
+    /// rather than silently let it through.
+    /// </summary>
+    protected virtual bool VersionsHavePublicationDates => true;
+
     public virtual async Task<string?> UpdateAsync(Dependency dependency, CancellationToken cancellationToken)
     {
         var updatedVersion = await GetUpdatedVersionAsync(dependency, cancellationToken).ConfigureAwait(false);
@@ -38,11 +45,18 @@ internal abstract class PackageUpdater
                 continue;
 
             // Filter by minimum age if enabled
-            if (minimumAgeTimeSpan.HasValue && publishedDate.HasValue)
+            if (minimumAgeTimeSpan.HasValue)
             {
-                var age = now - publishedDate.Value;
-                if (age < minimumAgeTimeSpan.Value)
+                if (publishedDate.HasValue)
+                {
+                    var age = now - publishedDate.Value;
+                    if (age < minimumAgeTimeSpan.Value)
+                        continue;
+                }
+                else if (VersionsHavePublicationDates)
+                {
                     continue;
+                }
             }
 
             if (rawMaxVersion is null || versioningStrategy.CompareVersions(version, rawMaxVersion) > 0)

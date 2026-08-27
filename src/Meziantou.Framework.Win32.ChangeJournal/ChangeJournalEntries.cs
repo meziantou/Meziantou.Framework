@@ -144,35 +144,44 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
 
             var controlCode = Options.Unprivileged ? Win32ControlCode.ReadUnprivilegedUsnJournal : Win32ControlCode.ReadUsnJournal;
             var entryData = Win32DeviceControl.ControlWithInput(handle, controlCode, ref readData, BufferSize);
+            _entries.Clear();
+
             if (entryData.Length > CurrentUSNLength) // There are more data than just data currentUSN.
             {
+                var headerLength = Marshal.SizeOf<USN_RECORD_COMMON_HEADER>();
                 fixed (byte* fixedBufferPointer = entryData)
                 {
                     var bufferPointer = (nint)fixedBufferPointer;
                     _currentUSN = Marshal.ReadInt64(bufferPointer);
 
                     // Enumerate entries
-                    _entries.Clear();
                     var offset = CurrentUSNLength; // Skip currentUSN field
                     while (offset < entryData.Length)
                     {
                         var entryPointer = bufferPointer + offset;
                         var header = Marshal.PtrToStructure<USN_RECORD_COMMON_HEADER>(entryPointer);
 
-                        var entry = GetBufferedEntry(entryPointer, header);
-                        offset += (int)header.RecordLength;
-                        _entries.Add(entry);
-                    }
+                        // A record must be large enough to hold its own header and must not extend past the data that
+                        // was returned. Without this check, a length of 0 loops forever and an oversized length makes
+                        // the next iteration read past the end of the buffer.
+                        if (header.RecordLength < headerLength || header.RecordLength > (uint)(entryData.Length - offset))
+                            throw new InvalidDataException($"The change journal returned a record of length {header.RecordLength} at offset {offset}, which does not fit in the {entryData.Length}-byte buffer");
 
-                    _currentIndex = 0;
-                    return true;
+                        _entries.Add(GetBufferedEntry(entryPointer, header));
+                        offset += (int)header.RecordLength;
+                    }
                 }
             }
-            else
+
+            // The buffer can hold the current USN without holding any record, in which case there is nothing to enumerate.
+            if (_entries.Count is 0)
             {
                 _eof = true;
                 return false;
             }
+
+            _currentIndex = 0;
+            return true;
         }
     }
 }

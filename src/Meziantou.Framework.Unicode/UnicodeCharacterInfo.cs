@@ -102,20 +102,22 @@ public readonly struct UnicodeCharacterInfo
     public Rune? SimpleTitlecaseMapping { get; }
 
     /// <summary>Gets a value indicating whether the character has the Emoji property.</summary>
-    public bool IsEmoji => (_emojiProperties & 0x01) != 0;
+    public bool IsEmoji => HasFlag(EmojiProperties.Emoji);
 
     /// <summary>Gets a value indicating whether the character has the Emoji_Presentation property.</summary>
-    public bool HasEmojiPresentation => (_emojiProperties & 0x02) != 0;
+    public bool HasEmojiPresentation => HasFlag(EmojiProperties.EmojiPresentation);
 
     /// <summary>Gets a value indicating whether the character has the Emoji_Modifier property.</summary>
-    public bool IsEmojiModifier => (_emojiProperties & 0x04) != 0;
+    public bool IsEmojiModifier => HasFlag(EmojiProperties.EmojiModifier);
 
     /// <summary>Gets a value indicating whether the character has the Emoji_Modifier_Base property.</summary>
-    public bool IsEmojiModifierBase => (_emojiProperties & 0x08) != 0;
+    public bool IsEmojiModifierBase => HasFlag(EmojiProperties.EmojiModifierBase);
 
     /// <summary>Gets a value indicating whether the character has the Emoji_Component property.</summary>
-    public bool IsEmojiComponent => (_emojiProperties & 0x10) != 0;
+    public bool IsEmojiComponent => HasFlag(EmojiProperties.EmojiComponent);
 
     /// <summary>Gets a value indicating whether the character has the Extended_Pictographic property.</summary>
-    public bool IsExtendedPictographic => (_emojiProperties & 0x20) != 0;
+    public bool IsExtendedPictographic => HasFlag(EmojiProperties.ExtendedPictographic);
+
+    private bool HasFlag(EmojiProperties flag) => ((EmojiProperties)_emojiProperties & flag) != EmojiProperties.None;
 }

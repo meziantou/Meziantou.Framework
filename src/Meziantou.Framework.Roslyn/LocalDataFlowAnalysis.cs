@@ -109,7 +109,7 @@ internal static partial class LocalDataFlowAnalysis
         if (GetLocalInitializer(operation.SemanticModel, local, cancellationToken) is not { } initializer)
             return null;
 
-        return HasWriteBetween(operation.SemanticModel, local, initializer.Syntax, operation.Syntax, cancellationToken) ? null : initializer;
+        return HasWriteBetween(operation.SemanticModel, local, initializer.Syntax, operation.Syntax) ? null : initializer;
     }
 
     private static IOperation? GetLastLocalAssignment(IOperation operation, ILocalSymbol local, CancellationToken cancellationToken)
@@ -142,7 +142,7 @@ internal static partial class LocalDataFlowAnalysis
         if (result is null)
             return null;
 
-        return HasWriteBetween(semanticModel, local, result.Syntax, operation.Syntax, cancellationToken) ? null : result;
+        return HasWriteBetween(semanticModel, local, result.Syntax, operation.Syntax) ? null : result;
     }
 
     private static IOperation? GetLocalInitializer(SemanticModel semanticModel, ILocalSymbol local, CancellationToken cancellationToken)
@@ -222,15 +222,18 @@ internal static partial class LocalDataFlowAnalysis
             if (syntaxReference.GetSyntax(cancellationToken) is not TypeDeclarationSyntax typeDeclaration)
                 continue;
 
-            foreach (var assignment in typeDeclaration.DescendantNodes().OfType<AssignmentExpressionSyntax>())
+            foreach (var node in typeDeclaration.DescendantNodes())
             {
-                if (assignment.SyntaxTree == initializer.SyntaxTree && initializer.Span.Contains(assignment.Span))
+                if (GetWriteTarget(node) is not { } target)
                     continue;
 
-                if (!TryGetSemanticModel(semanticModel, assignment, out var assignmentSemanticModel))
+                if (target.SyntaxTree == initializer.SyntaxTree && initializer.Span.Contains(target.Span))
+                    continue;
+
+                if (!TryGetSemanticModel(semanticModel, target, out var targetSemanticModel))
                     return true;
 
-                var targetSymbol = assignmentSemanticModel.GetSymbolInfo(assignment.Left, cancellationToken).Symbol;
+                var targetSymbol = targetSemanticModel.GetSymbolInfo(target, cancellationToken).Symbol;
                 if (SymbolEquals(targetSymbol, symbol))
                     return true;
             }
@@ -252,7 +255,7 @@ internal static partial class LocalDataFlowAnalysis
         return ContainsSymbol(dataFlow.Captured, local);
     }
 
-    private static bool HasWriteBetween(SemanticModel semanticModel, ISymbol symbol, SyntaxNode source, SyntaxNode destination, CancellationToken cancellationToken)
+    private static bool HasWriteBetween(SemanticModel semanticModel, ISymbol symbol, SyntaxNode source, SyntaxNode destination)
     {
         if (source.SyntaxTree != destination.SyntaxTree)
             return true;
@@ -263,9 +266,6 @@ internal static partial class LocalDataFlowAnalysis
         if (firstStatement is null || lastStatement is null)
             return false;
 
-        if (firstStatement is not StatementSyntax || lastStatement is not StatementSyntax)
-            return HasWriteBetweenBySyntax(semanticModel, symbol, source, destination, cancellationToken);
-
         var dataFlow = semanticModel.AnalyzeDataFlow(firstStatement, lastStatement);
         if (dataFlow?.Succeeded != true)
             return true;
@@ -275,37 +275,19 @@ internal static partial class LocalDataFlowAnalysis
             ContainsSymbol(dataFlow.Captured, symbol);
     }
 
-    private static bool HasWriteBetweenBySyntax(SemanticModel semanticModel, ISymbol symbol, SyntaxNode source, SyntaxNode destination, CancellationToken cancellationToken)
+    private static ExpressionSyntax? GetWriteTarget(SyntaxNode node)
     {
-        if (source.SyntaxTree != destination.SyntaxTree)
-            return true;
-
-        var sourceEnd = source.Span.End;
-        var destinationStart = destination.SpanStart;
-        foreach (var assignment in destination.SyntaxTree.GetRoot(cancellationToken).DescendantNodes())
+        return node switch
         {
-            if (assignment.SpanStart < sourceEnd || assignment.Span.End > destinationStart)
-                continue;
-
-            SyntaxNode? target = assignment switch
-            {
-                AssignmentExpressionSyntax assignmentExpression => assignmentExpression.Left,
-                PrefixUnaryExpressionSyntax prefixUnaryExpression
-                    when prefixUnaryExpression.IsKind(SyntaxKind.PreIncrementExpression) || prefixUnaryExpression.IsKind(SyntaxKind.PreDecrementExpression) => prefixUnaryExpression.Operand,
-                PostfixUnaryExpressionSyntax postfixUnaryExpression
-                    when postfixUnaryExpression.IsKind(SyntaxKind.PostIncrementExpression) || postfixUnaryExpression.IsKind(SyntaxKind.PostDecrementExpression) => postfixUnaryExpression.Operand,
-                _ => null,
-            };
-
-            if (target is null)
-                continue;
-
-            var targetSymbol = semanticModel.GetSymbolInfo(target, cancellationToken).Symbol;
-            if (SymbolEquals(targetSymbol, symbol))
-                return true;
-        }
-
-        return false;
+            AssignmentExpressionSyntax assignmentExpression => assignmentExpression.Left,
+            PrefixUnaryExpressionSyntax prefixUnaryExpression
+                when prefixUnaryExpression.IsKind(SyntaxKind.PreIncrementExpression) || prefixUnaryExpression.IsKind(SyntaxKind.PreDecrementExpression) => prefixUnaryExpression.Operand,
+            PostfixUnaryExpressionSyntax postfixUnaryExpression
+                when postfixUnaryExpression.IsKind(SyntaxKind.PostIncrementExpression) || postfixUnaryExpression.IsKind(SyntaxKind.PostDecrementExpression) => postfixUnaryExpression.Operand,
+            ArgumentSyntax argument when !argument.RefKindKeyword.IsKind(SyntaxKind.None) => argument.Expression,
+            RefExpressionSyntax refExpression => refExpression.Expression,
+            _ => null,
+        };
     }
 
     private static bool TryGetSemanticModel(SemanticModel semanticModel, SyntaxNode syntax, [NotNullWhen(true)] out SemanticModel? result)
@@ -326,7 +308,7 @@ internal static partial class LocalDataFlowAnalysis
         return true;
     }
 
-    private static bool TryGetStatementRange(SyntaxNode source, SyntaxNode destination, out SyntaxNode? firstStatement, out SyntaxNode? lastStatement)
+    private static bool TryGetStatementRange(SyntaxNode source, SyntaxNode destination, out StatementSyntax? firstStatement, out StatementSyntax? lastStatement)
     {
         firstStatement = null;
         lastStatement = null;
@@ -357,7 +339,7 @@ internal static partial class LocalDataFlowAnalysis
         return true;
     }
 
-    private static bool TryGetGlobalStatementRange(StatementSyntax sourceStatement, StatementSyntax destinationStatement, out SyntaxNode? firstStatement, out SyntaxNode? lastStatement)
+    private static bool TryGetGlobalStatementRange(StatementSyntax sourceStatement, StatementSyntax destinationStatement, out StatementSyntax? firstStatement, out StatementSyntax? lastStatement)
     {
         firstStatement = null;
         lastStatement = null;
@@ -379,8 +361,19 @@ internal static partial class LocalDataFlowAnalysis
         if (sourceIndex + 1 >= destinationIndex)
             return true;
 
-        firstStatement = sourceCompilationUnit.Members[sourceIndex + 1];
-        lastStatement = sourceCompilationUnit.Members[destinationIndex - 1];
+        for (var index = sourceIndex + 1; index < destinationIndex; index++)
+        {
+            if (sourceCompilationUnit.Members[index] is not GlobalStatementSyntax globalStatement)
+            {
+                firstStatement = null;
+                lastStatement = null;
+                return false;
+            }
+
+            firstStatement ??= globalStatement.Statement;
+            lastStatement = globalStatement.Statement;
+        }
+
         return true;
     }
 

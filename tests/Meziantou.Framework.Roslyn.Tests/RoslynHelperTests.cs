@@ -613,6 +613,33 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void HasReturnTypeAttribute_DoesNotConsiderAttributesAppliedToOverriddenMethods()
+    {
+        var compilation = CreateCompilation("""
+            using System;
+
+            public class BaseAttribute : Attribute;
+
+            public class Parent
+            {
+                [return: Base]
+                public virtual string M() => "";
+            }
+
+            public class Child : Parent
+            {
+                public override string M() => "";
+            }
+            """);
+        var child = GetRequiredType(compilation, "Child");
+        var baseAttribute = GetRequiredType(compilation, "BaseAttribute");
+        var method = GetRequiredMethod(child, "M");
+
+        Assert.False(method.HasReturnTypeAttribute(baseAttribute));
+        Assert.Null(method.GetReturnTypeAttribute(baseAttribute));
+    }
+
+    [Fact]
     public void Ancestors_ReturnsOperationParents()
     {
         var compilation = CreateCompilation("""
@@ -787,6 +814,26 @@ public sealed class RoslynHelperTests
         Assert.True(type.HasAttribute(baseAttribute));
         Assert.False(type.HasAttribute(baseAttribute, inherits: false));
         Assert.True(type.HasAttribute(specialAttribute, inherits: false));
+    }
+
+    [Fact]
+    public void HasAttribute_DoesNotConsiderAttributesAppliedToBaseTypes()
+    {
+        var compilation = CreateCompilation("""
+            using System;
+
+            public class BaseAttribute : Attribute;
+
+            [Base]
+            public class Parent;
+            public class Child : Parent;
+            """);
+        var child = GetRequiredType(compilation, "Child");
+        var baseAttribute = GetRequiredType(compilation, "BaseAttribute");
+
+        Assert.False(child.HasAttribute(baseAttribute));
+        Assert.Empty(child.GetAttributes(baseAttribute));
+        Assert.Null(child.GetFirstAttribute(baseAttribute));
     }
 
     [Fact]

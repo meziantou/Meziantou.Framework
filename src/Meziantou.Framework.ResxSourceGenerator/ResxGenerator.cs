@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
@@ -156,7 +157,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
             {
                 if (resourceMan is null)
                 {
-                    resourceMan = new global::System.Resources.ResourceManager(""" + resourceName + @""", typeof(" + className + @").Assembly);
+                    resourceMan = new global::System.Resources.ResourceManager(" + ToLiteral(resourceName) + @", typeof(" + className + @").Assembly);
                 }
 
                 return resourceMan;
@@ -322,7 +323,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         {
             get
             {
-                return GetString(""" + entry.Name + @""");
+                return GetString(" + ToLiteral(entry.Name) + @");
             }
         }
 ");
@@ -347,7 +348,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         /// " + formatComment + @"
         public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(global::System.Globalization.CultureInfo? provider, " + inParams + @")
         {
-            return GetString(culture: provider, name: """ + entry.Name + @""", args: new object?[] { " + callParams + @" });
+            return GetString(culture: provider, name: " + ToLiteral(entry.Name) + @", args: new object?[] { " + callParams + @" });
         }
 ");
 
@@ -355,7 +356,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         /// " + formatComment + @"
         public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(" + inParams + @")
         {
-            return GetString(name: """ + entry.Name + @""", args: new object?[] { " + callParams + @" });
+            return GetString(name: " + ToLiteral(entry.Name) + @", args: new object?[] { " + callParams + @" });
         }
 ");
                         }
@@ -368,7 +369,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         {
             get
             {
-                return (global::" + entry.FullTypeName + @"?)GetObject(""" + entry.Name + @""");
+                return (global::" + entry.FullTypeName + @"?)GetObject(" + ToLiteral(entry.Name) + @");
             }
         }
 ");
@@ -388,7 +389,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                 if (string.IsNullOrEmpty(entry.Name))
                     continue;
 
-                sb.AppendLine("        public const string @" + ToCSharpNameIdentifier(entry.Name) + " = \"" + entry.Name + "\";");
+                sb.AppendLine("        public const string @" + ToCSharpNameIdentifier(entry.Name) + " = " + ToLiteral(entry.Name) + ";");
             }
 
             sb.AppendLine("    }");
@@ -534,6 +535,15 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         }
 
         return string.Join(Environment.NewLine + "        /// ", elements);
+    }
+
+    /// <summary>
+    /// Formats a value read from the resx file as a C# string literal, quotes included. Resource names and
+    /// resource file names are arbitrary text, so they cannot be concatenated into the generated source as-is.
+    /// </summary>
+    private static string ToLiteral(string value)
+    {
+        return SymbolDisplay.FormatLiteral(value, quote: true);
     }
 
     private static string EscapeCSharpIdentifier(string name)

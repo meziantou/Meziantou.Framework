@@ -122,6 +122,43 @@ public sealed class ResxGeneratorTest
         Assert.Contains("public static global::System.Drawing.Bitmap? @Image1", fileContent);
     }
 
+    [Theory]
+    [InlineData("He\"llo")]
+    [InlineData(@"a\tb")]
+    [InlineData(@"Path\To")]
+    [InlineData("Line1\nLine2")]
+    public async Task ResourceNamesWithSpecialCharactersAreEscaped(string name)
+    {
+        var element = new XElement("root",
+            new XElement("data", new XAttribute("name", name), new XElement("value", "Value {0}")));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        // The literal must round-trip to the exact key of the resx entry, otherwise the lookup silently returns null
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        var literal = SymbolDisplay.FormatLiteral(name, quote: true);
+        Assert.Contains("GetString(" + literal + ")", fileContent);
+        Assert.Contains(" = " + literal + ";", fileContent);
+    }
+
+    [Fact]
+    public async Task ResourceFileNameWithSpecialCharactersIsEscaped()
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = @"My\Resource""Name",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("new global::System.Resources.ResourceManager(" + SymbolDisplay.FormatLiteral(@"My\Resource""Name", quote: true), fileContent);
+    }
+
     [Fact]
     public async Task GenerateProperties_WithFormatParameterMetadata()
     {

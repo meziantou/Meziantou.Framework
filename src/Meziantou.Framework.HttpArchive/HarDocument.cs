@@ -1,11 +1,16 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Meziantou.Framework.HttpArchive;
 
 /// <summary>Represents the root of a HAR (HTTP Archive) document.</summary>
 public sealed class HarDocument
 {
+    // Derived from the generated contract rather than a second source-generated context, so the serialization
+    // metadata for the whole model is emitted once instead of twice.
+    private static readonly JsonTypeInfo<HarDocument> IndentedTypeInfo = CreateIndentedTypeInfo();
+
     /// <summary>Gets or sets the log object containing all HAR data.</summary>
     [JsonPropertyName("log")]
     public HarLog? Log { get; set; } = new();
@@ -43,7 +48,7 @@ public sealed class HarDocument
     /// <returns>The JSON string representation of the HAR document.</returns>
     public string ToJsonString(bool indented = false)
     {
-        var typeInfo = indented ? HarSerializerContextIndented.Default.HarDocument : HarSerializerContext.Default.HarDocument;
+        var typeInfo = GetTypeInfo(indented);
         return JsonSerializer.Serialize(this, typeInfo);
     }
 
@@ -52,7 +57,7 @@ public sealed class HarDocument
     /// <param name="indented">Whether to format the JSON output with indentation.</param>
     public void WriteTo(Stream stream, bool indented = false)
     {
-        var typeInfo = indented ? HarSerializerContextIndented.Default.HarDocument : HarSerializerContext.Default.HarDocument;
+        var typeInfo = GetTypeInfo(indented);
         JsonSerializer.Serialize(stream, this, typeInfo);
     }
 
@@ -62,11 +67,26 @@ public sealed class HarDocument
     /// <param name="cancellationToken">A cancellation token to observe.</param>
     public Task WriteToAsync(Stream stream, bool indented = false, CancellationToken cancellationToken = default)
     {
-        var typeInfo = indented ? HarSerializerContextIndented.Default.HarDocument : HarSerializerContext.Default.HarDocument;
+        var typeInfo = GetTypeInfo(indented);
         return JsonSerializer.SerializeAsync(stream, this, typeInfo, cancellationToken);
     }
 
     /// <summary>Gets or sets additional vendor-specific fields.</summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? ExtensionData { get; set; }
+
+    private static JsonTypeInfo<HarDocument> GetTypeInfo(bool indented)
+    {
+        return indented ? IndentedTypeInfo : HarSerializerContext.Default.HarDocument;
+    }
+
+    private static JsonTypeInfo<HarDocument> CreateIndentedTypeInfo()
+    {
+        var options = new JsonSerializerOptions(HarSerializerContext.Default.Options)
+        {
+            WriteIndented = true,
+        };
+
+        return (JsonTypeInfo<HarDocument>)options.GetTypeInfo(typeof(HarDocument));
+    }
 }

@@ -71,7 +71,7 @@ public abstract partial class CountingBloomFilter
     private protected int GetEstimatedCountHash(Hash32 hash) => GetEstimatedCountHashCore32(hash.Hash1, hash.Hash2);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AddHashCore(ulong hash1, ulong hash2)
+    private void AddHashCore(uint hash1, uint hash2)
     {
         var counterCount = (ulong)Counters.CounterCount;
         var combined = hash1;
@@ -86,7 +86,7 @@ public abstract partial class CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void RemoveHashCore(ulong hash1, ulong hash2)
+    private void RemoveHashCore(uint hash1, uint hash2)
     {
         var counterCount = (ulong)Counters.CounterCount;
         var combined = hash1;
@@ -101,7 +101,7 @@ public abstract partial class CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int GetEstimatedCountHashCore(ulong hash1, ulong hash2)
+    private int GetEstimatedCountHashCore(uint hash1, uint hash2)
     {
         var counterCount = (ulong)Counters.CounterCount;
         var combined = hash1;
@@ -166,6 +166,9 @@ public abstract partial class CountingBloomFilter
         return result;
     }
 
+    // Each Reduce overload shifts by the width of its hash argument, so the accumulator passed in must
+    // keep the width of the hash halves it came from. Widening a 32-bit half to ulong would select the
+    // 64-bit overload and shift the whole hash away, mapping every value to index 0.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static long Reduce(ulong hash, ulong range) => (long)(((UInt128)hash * range) >> 64);
 

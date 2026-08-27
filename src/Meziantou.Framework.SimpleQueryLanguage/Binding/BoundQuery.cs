@@ -1,5 +1,6 @@
 using System.CodeDom.Compiler;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.SimpleQueryLanguage.Syntax;
 
 namespace Meziantou.Framework.SimpleQueryLanguage.Binding;
@@ -7,20 +8,70 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Binding;
 /// <summary>Represents a bound query node in the query tree after semantic analysis.</summary>
 public abstract class BoundQuery
 {
+    /// <summary>
+    /// The largest number of disjunctions a query may expand to. Converting to disjunctive normal form
+    /// distributes AND over OR, so the term count grows exponentially with the number of OR groups.
+    /// </summary>
+    private const int MaxDisjunctions = 8192;
+
     /// <summary>Creates a disjunctive normal form representation of the query syntax tree.</summary>
     /// <param name="syntax">The query syntax tree to bind.</param>
     /// <returns>A list of disjunctions, where each disjunction is a list of conjunctions.</returns>
+    /// <exception cref="QueryTooComplexException">The query nests expressions too deeply, or expands to too many disjunctions.</exception>
     public static IReadOnlyList<IReadOnlyList<BoundQuery>> Create(QuerySyntax syntax)
     {
         ArgumentNullException.ThrowIfNull(syntax);
 
-        var result = CreateInternal(syntax);
-        var dnf = ToDisjunctiveNormalForm(result);
-        return Flatten(dnf);
+        try
+        {
+            var result = CreateInternal(syntax);
+            EnsureDisjunctionCountIsSupported(result);
+
+            var dnf = ToDisjunctiveNormalForm(result);
+            return Flatten(dnf);
+        }
+        catch (InsufficientExecutionStackException ex)
+        {
+            throw new QueryTooComplexException("The query nests expressions too deeply to be evaluated", ex);
+        }
+    }
+
+    /// <summary>
+    /// Computes how many disjunctions <see cref="ToDisjunctiveNormalForm"/> would produce, without
+    /// materializing them, so an oversized query is rejected before any work is done.
+    /// </summary>
+    private static void EnsureDisjunctionCountIsSupported(BoundQuery node)
+    {
+        var count = CountDisjunctions(node, isNegated: false);
+        if (count > MaxDisjunctions)
+            throw new QueryTooComplexException($"The query expands to more than {MaxDisjunctions} disjunctions. Reduce the number of OR groups combined with AND.");
+    }
+
+    private static int CountDisjunctions(BoundQuery node, bool isNegated)
+    {
+        RuntimeHelpers.EnsureSufficientExecutionStack();
+
+        // Negation swaps AND and OR, so it also swaps how the term count grows.
+        return node switch
+        {
+            BoundNegatedQuery negatedQuery => CountDisjunctions(negatedQuery.Query, !isNegated),
+            BoundAndQuery andQuery when isNegated => Add(CountDisjunctions(andQuery.Left, isNegated: true), CountDisjunctions(andQuery.Right, isNegated: true)),
+            BoundAndQuery andQuery => Multiply(CountDisjunctions(andQuery.Left, isNegated: false), CountDisjunctions(andQuery.Right, isNegated: false)),
+            BoundOrQuery orQuery when isNegated => Multiply(CountDisjunctions(orQuery.Left, isNegated: true), CountDisjunctions(orQuery.Right, isNegated: true)),
+            BoundOrQuery orQuery => Add(CountDisjunctions(orQuery.Left, isNegated: false), CountDisjunctions(orQuery.Right, isNegated: false)),
+            _ => 1,
+        };
+
+        // Saturating arithmetic: the exact count can overflow an int, and anything past the limit is equally rejected.
+        static int Add(int a, int b) => (int)Math.Min((long)a + b, MaxDisjunctions + 1L);
+
+        static int Multiply(int a, int b) => (int)Math.Min((long)a * b, MaxDisjunctions + 1L);
     }
 
     private static BoundQuery CreateInternal(QuerySyntax syntax)
     {
+        RuntimeHelpers.EnsureSufficientExecutionStack();
+
         return syntax.Kind switch
         {
             QuerySyntaxKind.TextQuery => CreateTextExpression((TextQuerySyntax)syntax),
@@ -84,6 +135,8 @@ public abstract class BoundQuery
 
     private static BoundQuery ToDisjunctiveNormalForm(BoundQuery node)
     {
+        RuntimeHelpers.EnsureSufficientExecutionStack();
+
         if (node is BoundNegatedQuery negated)
             return ToDisjunctiveNormalForm(Negate(negated.Query));
 
@@ -136,6 +189,8 @@ public abstract class BoundQuery
 
     private static BoundQuery Negate(BoundQuery node)
     {
+        RuntimeHelpers.EnsureSufficientExecutionStack();
+
         return node switch
         {
             BoundKeyValueQuery kevValue => NegateKevValueQuery(kevValue),

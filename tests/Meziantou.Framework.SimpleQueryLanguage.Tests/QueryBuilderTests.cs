@@ -825,6 +825,64 @@ public sealed class QueryBuilderTests
         Assert.False(query.Evaluate(new Sample { Int32Value = 2, StringValue = "sample" }));
     }
 
+    [Fact]
+    public void DeeplyNestedParentheses_ThrowsQueryTooComplex()
+    {
+        var query = new string('(', 100_000) + "a" + new string(')', 100_000);
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => true);
+
+        Assert.Throws<QueryTooComplexException>(() => queryBuilder.Build(query));
+    }
+
+    [Fact]
+    public void VeryLongConjunction_ThrowsQueryTooComplex()
+    {
+        var query = string.Join(' ', Enumerable.Range(0, 100_000).Select(i => "term" + i.ToString(CultureInfo.InvariantCulture)));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => true);
+
+        Assert.Throws<QueryTooComplexException>(() => queryBuilder.Build(query));
+    }
+
+    [Fact]
+    public void ManyOrGroupsCombinedWithAnd_ThrowsQueryTooComplex()
+    {
+        // Converting to disjunctive normal form would produce 2^30 terms
+        var query = string.Join(" AND ", Enumerable.Range(0, 30).Select(i => $"(a{i}:1 OR b{i}:2)"));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => true);
+
+        Assert.Throws<QueryTooComplexException>(() => queryBuilder.Build(query));
+    }
+
+    [Fact]
+    public void ModeratelyComplexQuery_IsStillSupported()
+    {
+        // 2^10 disjunctions is well within the limit and must keep working
+        var query = string.Join(" AND ", Enumerable.Range(0, 10).Select(i => $"(int32:{i} OR int32:{i + 100})"));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+
+        Assert.False(queryBuilder.Build(query).Evaluate(new Sample { Int32Value = 0 }));
+    }
+
+    [Fact]
+    public void LongFreeTextQuery_IsStillSupported()
+    {
+        // A user pasting a long sentence into a search box must not be rejected
+        var query = string.Join(' ', Enumerable.Repeat("word", 500));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
+
+        Assert.True(queryBuilder.Build(query).Evaluate(new Sample { StringValue = "word" }));
+    }
+
     private static QueryBuilder<Sample> CreateDateTimeOffsetRangeQueryBuilder(DateTimeOffset utcNow)
     {
         var timeProvider = new FakeTimeProvider();

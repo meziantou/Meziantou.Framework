@@ -103,10 +103,20 @@ internal static class Tokenizer
                 continue;
             var m = child.BeginRe.Match(input, from);
             // For guarded modes (hljs's `on:begin` veto), walk forward through
-            // candidate matches until one is accepted by the guard.
+            // candidate matches until one is accepted by the guard. The next start
+            // is bounded the same way MatchEnd bounds its cursor: a zero-width
+            // candidate at the very end of the input would otherwise ask Regex.Match
+            // to start past the end of the string, which throws.
             while (m.Success && child.BeginGuard is not null && !BeginGuards.Accept(child.BeginGuard, m, input))
             {
-                m = child.BeginRe.Match(input, m.Index + Math.Max(1, m.Length));
+                var next = m.Index + Math.Max(1, m.Length);
+                if (next > input.Length)
+                {
+                    m = Match.Empty;
+                    break;
+                }
+
+                m = child.BeginRe.Match(input, next);
             }
             if (!m.Success)
                 continue;

@@ -64,6 +64,33 @@ public sealed class UnicodeTests
     }
 
     [Fact]
+    public void ReplaceConfusablesCharacters_ExpandsMultiCharacterReplacements()
+    {
+        Assert.Equal("c\u0338", Unicode.ReplaceConfusablesCharacters("\u00A2"));
+    }
+
+    [Fact]
+    public void ReplaceConfusablesCharacters_HandlesAstralCodePoints()
+    {
+        Assert.Equal("xAy", Unicode.ReplaceConfusablesCharacters("x\U0001D400y"));
+    }
+
+    [Fact]
+    public void ReplaceConfusablesCharacters_PreservesTheScannedPrefix()
+    {
+        Assert.Equal("abca", Unicode.ReplaceConfusablesCharacters("abc\u0430"));
+    }
+
+    [Fact]
+    public void ReplaceConfusablesCharacters_HandlesEmptyAndLoneSurrogates()
+    {
+        Assert.Same("", Unicode.ReplaceConfusablesCharacters(""));
+        Assert.Same("\uD800", Unicode.ReplaceConfusablesCharacters("\uD800"));
+        Assert.Equal("a\uD800", Unicode.ReplaceConfusablesCharacters("a\uD800"));
+        Assert.Equal("A\uD800", Unicode.ReplaceConfusablesCharacters("\u0410\uD800"));
+    }
+
+    [Fact]
     public void IsConfusableCharacter_ReturnsExpectedValue()
     {
         Assert.True(Unicode.IsConfusableCharacter(new Rune('\u0410')));

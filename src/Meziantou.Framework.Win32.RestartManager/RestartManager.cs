@@ -73,7 +73,7 @@ public sealed class RestartManager : IDisposable
     {
         var result = PInvoke.RmJoinSession(out var handle, sessionKey);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
-            throw new Win32Exception((int)result, $"RmStartSession failed ({result})");
+            throw new Win32Exception((int)result, $"RmJoinSession failed ({result})");
 
         return new RestartManager(handle, sessionKey);
     }

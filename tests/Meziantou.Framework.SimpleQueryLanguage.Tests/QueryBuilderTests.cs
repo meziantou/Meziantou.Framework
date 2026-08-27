@@ -658,6 +658,15 @@ public sealed class QueryBuilderTests
     }
 
     [Fact]
+    public void Build_NullQuery_ThrowsArgumentNullException()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+
+        var exception = Assert.Throws<ArgumentNullException>(() => queryBuilder.Build(query: null!));
+        Assert.Equal("query", exception.ParamName);
+    }
+
+    [Fact]
     public void EmptyQuery()
     {
         var queryBuilder = new QueryBuilder<Sample>();

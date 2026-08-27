@@ -312,6 +312,62 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void GetActualType_IgnoresAssignmentsFromOtherMembers()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public void Other()
+                {
+                    object value = "text";
+                    value = 41;
+                }
+
+                public void M()
+                {
+                    object value = 42;
+                    object boxed = value;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.Equal(SpecialType.System_Int32, boxed.GetActualType(default)?.SpecialType);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_FollowsAssignmentsInTopLevelStatements()
+    {
+        var compilation = CreateCompilation("""
+            var value = 41;
+            value = 42;
+            object boxed = value;
+            """, compilationOptions: DefaultCompilationOptions.WithOutputKind(OutputKind.ConsoleApplication));
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.True(boxed.TryGetConstantValue(out var value, default));
+        Assert.Equal(42, value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_ReturnsFalseWhenATopLevelStatementWritesTheLocal()
+    {
+        var compilation = CreateCompilation("""
+            var value = 41;
+            value = 42;
+            value++;
+            object boxed = value;
+            """, compilationOptions: DefaultCompilationOptions.WithOutputKind(OutputKind.ConsoleApplication));
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
     public void TryGetConstantValue_FollowsChainedMemberInitializers()
     {
         var compilation = CreateCompilation("""

@@ -173,19 +173,30 @@ public sealed class ChangeJournal : IDisposable
     public void Dispose() => ChangeJournalHandle.Dispose();
 
     /// <summary>Deletes the change journal and waits for the deletion to complete.</summary>
+    /// <remarks>Deleting a change journal requires a scan of every file on the volume, so it can take a long time and continues across system restarts.</remarks>
+    /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public void Delete() => Delete(waitForCompletion: true);
 
     /// <summary>Deletes the change journal.</summary>
-    /// <param name="waitForCompletion">If <see langword="true"/>, waits for the deletion to complete; otherwise, deletes asynchronously.</param>
+    /// <param name="waitForCompletion">If <see langword="true"/>, waits for the deletion to complete; otherwise, starts the deletion and returns immediately.</param>
+    /// <remarks>
+    /// Deleting a change journal requires a scan of every file on the volume, so it can take a long time and continues across system restarts.
+    /// While the deletion is in progress, any attempt to create, modify, delete, or query the change journal fails with <c>ERROR_JOURNAL_DELETE_IN_PROGRESS</c>.
+    /// </remarks>
+    /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public void Delete(bool waitForCompletion)
     {
+        // USN_DELETE_FLAG_DELETE requests the deletion. USN_DELETE_FLAG_NOTIFY on its own does not delete anything:
+        // it only waits for a deletion that may already be in progress, so both flags are needed to delete and wait.
         var deletionData = new DELETE_USN_JOURNAL_DATA
         {
             UsnJournalID = Data.ID,
-            DeleteFlags = waitForCompletion ? USN_DELETE_FLAGS.USN_DELETE_FLAG_NOTIFY : USN_DELETE_FLAGS.USN_DELETE_FLAG_DELETE,
+            DeleteFlags = waitForCompletion
+                ? USN_DELETE_FLAGS.USN_DELETE_FLAG_DELETE | USN_DELETE_FLAGS.USN_DELETE_FLAG_NOTIFY
+                : USN_DELETE_FLAGS.USN_DELETE_FLAG_DELETE,
         };
 
-        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref deletionData, initialBufferLength: 0);
+        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.DeleteUsnJournal, ref deletionData, initialBufferLength: 0);
         RefreshJournalData();
     }
 

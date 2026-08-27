@@ -402,6 +402,49 @@ public sealed class ResxGeneratorTest
         Assert.Empty(diagnostics);
     }
 
+    [Fact]
+    public async Task GenerationStopsWhenCancellationIsRequested()
+    {
+        using var cts = new CancellationTokenSource();
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var compilation = await CreateCompilation();
+
+        // The first group cancels while it is being read, so the remaining groups must not be generated
+        AdditionalText[] additionalTexts =
+        [
+            new CancellingAdditionalText("a.resx", element.ToString(), cts),
+            new TestAdditionalText("b.resx", element.ToString()),
+        ];
+
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            generators: [new ResxGenerator().AsSourceGenerator()],
+            additionalTexts: additionalTexts,
+            optionsProvider: new OptionProvider { Namespace = "test", ResourceName = "test" });
+
+        Assert.Throws<OperationCanceledException>(() => driver.RunGenerators(compilation, cts.Token));
+    }
+
+    private sealed class CancellingAdditionalText : AdditionalText
+    {
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly SourceText _text;
+
+        public CancellingAdditionalText(string path, string text, CancellationTokenSource cancellationTokenSource)
+        {
+            Path = path;
+            _text = SourceText.From(text);
+            _cancellationTokenSource = cancellationTokenSource;
+        }
+
+        public override string Path { get; }
+
+        public override SourceText GetText(CancellationToken cancellationToken = default)
+        {
+            _cancellationTokenSource.Cancel();
+            return _text;
+        }
+    }
+
     private sealed class OptionProvider : AnalyzerConfigOptionsProvider
     {
         public string? ProjectDir { get; set; }

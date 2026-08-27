@@ -35,6 +35,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
         foreach (var resxGroup in resxGroups)
         {
+            context.CancellationToken.ThrowIfCancellationRequested();
             var hasError = false;
 
             string? GetMetadataValue(string name, string? globalName)
@@ -415,6 +416,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         var entries = new List<ResxEntry>();
         foreach (var entry in resxGroug.OrderBy(file => file.Path, StringComparer.Ordinal))
         {
+            context.CancellationToken.ThrowIfCancellationRequested();
             var content = entry.GetText(context.CancellationToken);
             if (content is null)
                 continue;

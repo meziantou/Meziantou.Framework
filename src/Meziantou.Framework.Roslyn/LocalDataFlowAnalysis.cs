@@ -30,11 +30,15 @@ internal static partial class LocalDataFlowAnalysis
         if (!useDataFlowAnalysis)
             return operation.Type;
 
-        var value = GetFlowValue(operation, cancellationToken);
-        if (value is not null && value != operation)
-            return GetActualType(value, useDataFlowAnalysis, cancellationToken);
+        HashSet<ISymbol>? visitedSymbols = null;
+        while (true)
+        {
+            var value = GetFlowValue(operation, ref visitedSymbols, cancellationToken);
+            if (value is null || value == operation)
+                return operation.Type;
 
-        return operation.Type;
+            operation = value.UnwrapImplicitConversions();
+        }
     }
 
     public static bool TryGetConstantValue(this IOperation operation, out object? value, CancellationToken cancellationToken)
@@ -44,33 +48,50 @@ internal static partial class LocalDataFlowAnalysis
 
     public static bool TryGetConstantValue(this IOperation operation, bool useDataFlowAnalysis, out object? value, CancellationToken cancellationToken)
     {
-        operation = operation.UnwrapImplicitConversions();
-        if (operation.ConstantValue.HasValue)
+        HashSet<ISymbol>? visitedSymbols = null;
+        while (true)
         {
-            value = operation.ConstantValue.Value;
-            return true;
-        }
+            operation = operation.UnwrapImplicitConversions();
+            if (operation.ConstantValue.HasValue)
+            {
+                value = operation.ConstantValue.Value;
+                return true;
+            }
 
-        if (useDataFlowAnalysis)
-        {
-            var flowValue = GetFlowValue(operation, cancellationToken);
-            if (flowValue is not null && flowValue != operation)
-                return TryGetConstantValue(flowValue, useDataFlowAnalysis, out value, cancellationToken);
+            if (!useDataFlowAnalysis)
+                break;
+
+            var flowValue = GetFlowValue(operation, ref visitedSymbols, cancellationToken);
+            if (flowValue is null || flowValue == operation)
+                break;
+
+            operation = flowValue;
         }
 
         value = null;
         return false;
     }
 
-    private static IOperation? GetFlowValue(IOperation operation, CancellationToken cancellationToken)
+    private static IOperation? GetFlowValue(IOperation operation, ref HashSet<ISymbol>? visitedSymbols, CancellationToken cancellationToken)
     {
         return operation switch
         {
             ILocalReferenceOperation localReference => GetLocalValue(localReference, cancellationToken),
-            IFieldReferenceOperation fieldReference => GetFieldValue(fieldReference, cancellationToken),
-            IPropertyReferenceOperation propertyReference => GetPropertyValue(propertyReference, cancellationToken),
+            IFieldReferenceOperation fieldReference => TryVisit(ref visitedSymbols, fieldReference.Field) ? GetFieldValue(fieldReference, cancellationToken) : null,
+            IPropertyReferenceOperation propertyReference => TryVisit(ref visitedSymbols, propertyReference.Property) ? GetPropertyValue(propertyReference, cancellationToken) : null,
             _ => null,
         };
+    }
+
+    /// <summary>
+    /// Records a member already resolved by the current data flow walk. Members can reference each other
+    /// (<c>private static readonly int a = b;</c> and <c>private static readonly int b = a;</c>), so walking
+    /// a member twice means the chain is cyclic and must be abandoned.
+    /// </summary>
+    private static bool TryVisit(ref HashSet<ISymbol>? visitedSymbols, ISymbol symbol)
+    {
+        visitedSymbols ??= new HashSet<ISymbol>(SymbolEqualityComparer.Default);
+        return visitedSymbols.Add(symbol);
     }
 
     private static IOperation? GetLocalValue(ILocalReferenceOperation operation, CancellationToken cancellationToken)

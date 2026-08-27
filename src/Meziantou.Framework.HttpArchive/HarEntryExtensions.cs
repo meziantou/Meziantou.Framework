@@ -54,6 +54,11 @@ public static class HarEntryExtensions
     /// <summary>Creates an <see cref="HttpRequestMessage"/> from a HAR request.</summary>
     /// <param name="request">The HAR request to convert.</param>
     /// <returns>An <see cref="HttpRequestMessage"/> representing the HAR request.</returns>
+    /// <remarks>
+    /// When the archive recorded the body as <c>params</c> instead of <c>text</c>, a
+    /// <c>application/x-www-form-urlencoded</c> body is rebuilt from the parameters. Multipart bodies cannot be
+    /// rebuilt this way because the original boundary is not part of the archive; they convert to an empty body.
+    /// </remarks>
     public static HttpRequestMessage ToHttpRequestMessage(this HarRequest request)
     {
         var message = new HttpRequestMessage
@@ -66,15 +71,61 @@ public static class HarEntryExtensions
         HttpContent? content = null;
         if (request.PostData is not null)
         {
-            content = request.PostData.Text is not null
-                ? new ByteArrayContent(Encoding.UTF8.GetBytes(request.PostData.Text))
-                : new ByteArrayContent([]);
-
-            message.Content = content;
+            content = CreateRequestContent(request.PostData);
         }
+        else if (HasContentHeader(request.Headers))
+        {
+            // The body was not captured, but the entity headers describing it were: keep somewhere to put them.
+            content = new ByteArrayContent([]);
+        }
+
+        message.Content = content;
 
         CopyHeaders(request.Headers, message.Headers, content, request.PostData?.MimeType);
         return message;
+    }
+
+    private static ByteArrayContent CreateRequestContent(HarPostData postData)
+    {
+        if (postData.Text is not null)
+            return new ByteArrayContent(Encoding.UTF8.GetBytes(postData.Text));
+
+        if (postData.Params is { Count: > 0 } parameters &&
+            postData.MimeType.StartsWith("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
+        {
+            return new ByteArrayContent(Encoding.UTF8.GetBytes(BuildFormUrlEncodedBody(parameters)));
+        }
+
+        return new ByteArrayContent([]);
+    }
+
+    private static string BuildFormUrlEncodedBody(List<HarPostDataParameter> parameters)
+    {
+        // Archives store the parameters already percent-encoded, exactly as they were split out of the body,
+        // so they are joined back as-is rather than re-encoded.
+        var builder = new StringBuilder();
+        foreach (var parameter in parameters)
+        {
+            if (builder.Length > 0)
+            {
+                builder.Append('&');
+            }
+
+            builder.Append(parameter.Name).Append('=').Append(parameter.Value);
+        }
+
+        return builder.ToString();
+    }
+
+    private static bool HasContentHeader(List<HarHeader> headers)
+    {
+        foreach (var header in headers)
+        {
+            if (!WireOnlyHeaderNames.Contains(header.Name) && ContentHeaderNames.Contains(header.Name))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>Creates an <see cref="HttpResponseMessage"/> from a HAR response.</summary>

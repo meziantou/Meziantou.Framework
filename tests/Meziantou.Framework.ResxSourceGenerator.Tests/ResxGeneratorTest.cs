@@ -310,6 +310,22 @@ public sealed class ResxGeneratorTest
     }
 
     [Fact]
+    public async Task GenerationSucceedsWhenProjectDirIsNotProvided()
+    {
+        // The project directory is only set by the props shipped in the package, so a project referencing the
+        // analyzer directly leaves it unset. The assembly name must not be used as a directory in that case.
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var result = await GenerateFiles([(FullPath.GetTempPath() / "elsewhere" / "test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("// ResourceName: test", fileContent);
+        Assert.Equal("test.resx.g.cs", result.GeneratedFileName);
+    }
+
+    [Fact]
     public async Task ComputeNamespace_RootDir()
     {
         var result = await GenerateFiles([(FullPath.GetTempPath() / "dir" / "proj" / "test.resx", new XElement("root").ToString())], new OptionProvider

@@ -68,7 +68,9 @@ internal static class ResxGeneratorCommon
 
     internal static string? ComputeResourceName(string rootNamespace, string projectDir, string resourcePath)
     {
-        var fullProjectDir = EnsureEndSeparator(Path.GetFullPath(projectDir));
+        if (TryGetFullDirectoryPath(projectDir) is not string fullProjectDir)
+            return Path.GetFileNameWithoutExtension(resourcePath);
+
         var fullResourcePath = Path.GetFullPath(resourcePath);
 
         if (fullProjectDir == fullResourcePath)
@@ -85,7 +87,9 @@ internal static class ResxGeneratorCommon
 
     internal static string? ComputeNamespace(string rootNamespace, string projectDir, string resourcePath)
     {
-        var fullProjectDir = EnsureEndSeparator(Path.GetFullPath(projectDir));
+        if (TryGetFullDirectoryPath(projectDir) is not string fullProjectDir)
+            return null;
+
         var fullResourcePath = EnsureEndSeparator(Path.GetDirectoryName(Path.GetFullPath(resourcePath))!);
 
         if (fullProjectDir == fullResourcePath)
@@ -106,10 +110,10 @@ internal static class ResxGeneratorCommon
     /// </summary>
     internal static string ComputeHintName(string projectDir, string resourcePath)
     {
-        var fullProjectDir = EnsureEndSeparator(Path.GetFullPath(projectDir));
+        var fullProjectDir = TryGetFullDirectoryPath(projectDir);
         var fullResourcePath = Path.GetFullPath(resourcePath);
 
-        var name = fullResourcePath.StartsWith(fullProjectDir, StringComparison.Ordinal)
+        var name = fullProjectDir is not null && fullResourcePath.StartsWith(fullProjectDir, StringComparison.Ordinal)
             ? fullResourcePath[fullProjectDir.Length..]
             : Path.GetFileName(resourcePath);
 
@@ -127,6 +131,26 @@ internal static class ResxGeneratorCommon
         }
 
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Resolves a directory to a rooted path ending with a separator, or returns <see langword="null"/> when the
+    /// value cannot be one. The project directory is unset in projects that reference the analyzer directly
+    /// instead of importing the props shipped in the package.
+    /// </summary>
+    private static string? TryGetFullDirectoryPath(string directory)
+    {
+        if (string.IsNullOrEmpty(directory))
+            return null;
+
+        try
+        {
+            return EnsureEndSeparator(Path.GetFullPath(directory));
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
     }
 
     private static string EnsureEndSeparator(string path)

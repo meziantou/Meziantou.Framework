@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
 using Meziantou.Framework;
@@ -155,12 +156,11 @@ internal sealed class DockerRegistryAuthProvider
                 Password = credentials.Secret,
             };
         }
-        catch (FileNotFoundException)
+        catch (Exception ex) when (ex is Win32Exception or IOException or InvalidOperationException)
         {
-            return null;
-        }
-        catch (DirectoryNotFoundException)
-        {
+            // The helper is an optimization: a config naming one that is not installed (a config copied between
+            // machines, or Docker Desktop uninstalled but its config left behind) must fall through to 'auths'
+            // rather than fail the pull. Starting a missing executable raises Win32Exception, not FileNotFoundException.
             return null;
         }
     }

@@ -103,7 +103,7 @@ namespace Meziantou.Framework.CodeDom
         protected virtual void WriteUInt64Literal(Meziantou.Framework.CodeDom.IndentedTextWriter writer, ulong value) { }
         protected virtual void WriteStringLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, string value) { }
         protected virtual void WriteCharLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, char value) { }
-        protected virtual void WriteDecimalLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, System.Decimal value) { }
+        protected virtual void WriteDecimalLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, decimal value) { }
         protected virtual void WriteSingleLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, float value) { }
         protected virtual void WriteDoubleLiteral(Meziantou.Framework.CodeDom.IndentedTextWriter writer, double value) { }
         protected virtual void WriteBinaryExpression(Meziantou.Framework.CodeDom.IndentedTextWriter writer, Meziantou.Framework.CodeDom.BinaryExpression expression) { }
@@ -487,7 +487,7 @@ namespace Meziantou.Framework.CodeDom
         public static implicit operator Meziantou.Framework.CodeDom.Expression(ulong value) => throw null;
         public static implicit operator Meziantou.Framework.CodeDom.Expression(float value) => throw null;
         public static implicit operator Meziantou.Framework.CodeDom.Expression(double value) => throw null;
-        public static implicit operator Meziantou.Framework.CodeDom.Expression(System.Decimal value) => throw null;
+        public static implicit operator Meziantou.Framework.CodeDom.Expression(decimal value) => throw null;
         public static implicit operator Meziantou.Framework.CodeDom.Expression(string value) => throw null;
         public static implicit operator Meziantou.Framework.CodeDom.Expression(bool value) => throw null;
         public static Meziantou.Framework.CodeDom.LiteralExpression Null() => throw null;

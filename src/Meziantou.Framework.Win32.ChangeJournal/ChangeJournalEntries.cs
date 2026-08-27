@@ -123,6 +123,11 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
         {
             _currentUSN = Options.InitialUSN ?? Usn.Zero;
             _currentIndex = -1;
+
+            // Both must be cleared, otherwise MoveNext either stops immediately because the previous
+            // enumeration reached the end of the journal, or replays the last batch that was read.
+            _eof = false;
+            _entries.Clear();
         }
 
         private unsafe bool Read()

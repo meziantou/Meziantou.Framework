@@ -15,11 +15,27 @@
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="GenerateResources" />
   </ItemGroup>
 
-  <Target Name="AddManifestResourceNameToAdditionalFiles" AfterTargets="CreateManifestResourceNames" BeforeTargets="CoreCompile">
-    <!-- Update AdditionalFiles metadata based on matching EmbeddedResource items -->
+  <Target Name="AddManifestResourceNameToAdditionalFiles" AfterTargets="CreateManifestResourceNames" BeforeTargets="CoreCompile" DependsOnTargets="_CollectResxManifestResourceNames;_AddManifestResourceNameToAdditionalFile" />
+
+  <!-- Only the culture-neutral resx files carry the resource name. The generator reads the metadata from
+       every file of a group (Resource1.resx, Resource1.fr.resx, etc.) and considers the group invalid when the
+       values differ, so the satellite files must be left alone. -->
+  <Target Name="_CollectResxManifestResourceNames">
     <ItemGroup>
-      <AdditionalFiles Update="@(AdditionalFiles)">
-        <DefaultResourceName>%(EmbeddedResource.ManifestResourceName)</DefaultResourceName>
+      <_ResxManifestResourceName Include="@(EmbeddedResource)" Condition="'%(EmbeddedResource.Extension)' == '.resx' AND '%(EmbeddedResource.WithCulture)' != 'true'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Update AdditionalFiles metadata based on matching EmbeddedResource items. The target is batched so that
+       each AdditionalFiles item gets the name of the resx it points to instead of the name of the last resource. -->
+  <Target Name="_AddManifestResourceNameToAdditionalFile" Outputs="%(_ResxManifestResourceName.Identity)">
+    <PropertyGroup>
+      <_ResxFullPath>%(_ResxManifestResourceName.FullPath)</_ResxFullPath>
+      <_ResxManifestName>%(_ResxManifestResourceName.ManifestResourceName)</_ResxManifestName>
+    </PropertyGroup>
+    <ItemGroup>
+      <AdditionalFiles Condition="'%(AdditionalFiles.FullPath)' == '$(_ResxFullPath)'">
+        <DefaultResourceName>$(_ResxManifestName)</DefaultResourceName>
       </AdditionalFiles>
     </ItemGroup>
   </Target>

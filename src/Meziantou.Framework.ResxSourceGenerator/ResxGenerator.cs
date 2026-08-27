@@ -31,6 +31,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
     {
         // Group additional file by resource kind ((a.resx, a.en.resx, a.en-us.resx), (b.resx, b.en-us.resx))
         var resxGroups = ResxGeneratorCommon.GetResxGroups(files);
+        var hintNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var resxGroup in resxGroups)
         {
@@ -106,7 +107,22 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 ";
             content += GenerateCode(ns, className, resourceName, visibility, generateResourcesType, generateKeyNamesType, entries!, supportNullableReferenceTypes);
 
-            context.AddSource($"{Path.GetFileName(resxGroup.Key)}.resx.g.cs", SourceText.From(content, Encoding.UTF8));
+            context.AddSource(GetHintName(hintNames, projectDir, resxGroup.Key), SourceText.From(content, Encoding.UTF8));
+        }
+    }
+
+    private static string GetHintName(HashSet<string> hintNames, string projectDir, string resourcePath)
+    {
+        var name = ResxGeneratorCommon.ComputeHintName(projectDir, resourcePath);
+        if (hintNames.Add(name))
+            return name + ".resx.g.cs";
+
+        // Two different paths can lead to the same name once the invalid characters are replaced
+        for (var i = 1; ; i++)
+        {
+            var candidate = name + i.ToString(CultureInfo.InvariantCulture);
+            if (hintNames.Add(candidate))
+                return candidate + ".resx.g.cs";
         }
     }
 

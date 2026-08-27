@@ -23,8 +23,22 @@ namespace Meziantou.Framework.SimpleQueryLanguage;
 public sealed class ExpressionQueryBuilder<T>
 {
     private readonly Dictionary<ExpressionFilterKey, Func<string, Expression<Func<T, bool>>>> _handlers = [];
+    private readonly TimeProvider _timeProvider;
     private FreeTextExpressionHandler<T>? _freeTextHandler;
     private UnhandledPropertyExpressionHandler<T>? _unhandledPropertyHandler;
+
+    /// <summary>Initializes a new instance of <see cref="ExpressionQueryBuilder{T}"/> using the system time provider.</summary>
+    public ExpressionQueryBuilder()
+        : this(timeProvider: null)
+    {
+    }
+
+    /// <summary>Initializes a new instance of <see cref="ExpressionQueryBuilder{T}"/> with a specific time provider for date-related range keywords.</summary>
+    /// <param name="timeProvider">The time provider to use, or <see langword="null"/> to use <see cref="TimeProvider.System"/>.</param>
+    public ExpressionQueryBuilder(TimeProvider? timeProvider)
+    {
+        _timeProvider = timeProvider ?? TimeProvider.System;
+    }
 
     private void AddHandlerCore(string key, KeyValueOperator op, Func<string, Expression<Func<T, bool>>> handler)
     {
@@ -62,7 +76,7 @@ public sealed class ExpressionQueryBuilder<T>
         if (IsComparisonType<TValue>())
         {
             // Register range handler for equality (handles both simple equality and range syntax)
-            AddHandlerCore(key, KeyValueOperator.EqualTo, value => CreateRangeExpression(value, selector, tryParseValue));
+            AddHandlerCore(key, KeyValueOperator.EqualTo, value => CreateRangeExpression(value, selector, tryParseValue, _timeProvider));
 
             // Register comparison operators
             AddHandlerCore(key, KeyValueOperator.LessThan, value => CreateComparisonExpression(value, selector, Expression.LessThan, tryParseValue));
@@ -233,12 +247,13 @@ public sealed class ExpressionQueryBuilder<T>
     private static Expression<Func<T, bool>> CreateRangeExpression<TValue>(
         string value,
         Expression<Func<T, TValue>> selector,
-        ScalarParser<TValue>? tryParseValue)
+        ScalarParser<TValue>? tryParseValue,
+        TimeProvider timeProvider)
     {
         var parser = tryParseValue ?? ValueConverter.TryParseValue;
 
         // Try to parse as range
-        var range = RangeSyntax.TryParse(value, parser, TimeProvider.System);
+        var range = RangeSyntax.TryParse(value, parser, timeProvider);
         if (range is BinaryRangeSyntax<TValue> binary)
         {
             var lowerExpression = CreateComparisonExpressionCore(

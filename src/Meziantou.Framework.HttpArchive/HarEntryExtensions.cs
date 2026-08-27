@@ -7,6 +7,8 @@ namespace Meziantou.Framework.HttpArchive;
 public static class HarEntryExtensions
 {
     private const string ContentTypeHeaderName = "Content-Type";
+    private const string CookieHeaderName = "Cookie";
+    private const string SetCookieHeaderName = "Set-Cookie";
 
     private static readonly HashSet<string> ContentHeaderNames = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -82,6 +84,13 @@ public static class HarEntryExtensions
         message.Content = content;
 
         CopyHeaders(request.Headers, message.Headers, content, request.PostData?.MimeType);
+
+        // Some tools record cookies only in the structured list, without the header that carried them.
+        if (request.Cookies.Count > 0 && !message.Headers.Contains(CookieHeaderName))
+        {
+            message.Headers.TryAddWithoutValidation(CookieHeaderName, BuildCookieHeader(request.Cookies));
+        }
+
         return message;
     }
 
@@ -144,7 +153,65 @@ public static class HarEntryExtensions
         message.Content = content;
 
         CopyHeaders(response.Headers, message.Headers, content, response.Content.MimeType);
+
+        if (response.Cookies.Count > 0 && !message.Headers.Contains(SetCookieHeaderName))
+        {
+            foreach (var cookie in response.Cookies)
+            {
+                message.Headers.TryAddWithoutValidation(SetCookieHeaderName, BuildSetCookieHeader(cookie));
+            }
+        }
+
         return message;
+    }
+
+    private static string BuildCookieHeader(List<HarCookie> cookies)
+    {
+        var builder = new StringBuilder();
+        foreach (var cookie in cookies)
+        {
+            if (builder.Length > 0)
+            {
+                builder.Append("; ");
+            }
+
+            builder.Append(cookie.Name).Append('=').Append(cookie.Value);
+        }
+
+        return builder.ToString();
+    }
+
+    private static string BuildSetCookieHeader(HarCookie cookie)
+    {
+        var builder = new StringBuilder();
+        builder.Append(cookie.Name).Append('=').Append(cookie.Value);
+
+        if (!string.IsNullOrEmpty(cookie.Path))
+        {
+            builder.Append("; Path=").Append(cookie.Path);
+        }
+
+        if (!string.IsNullOrEmpty(cookie.Domain))
+        {
+            builder.Append("; Domain=").Append(cookie.Domain);
+        }
+
+        if (cookie.Expires is { } expires)
+        {
+            builder.Append("; Expires=").Append(expires.UtcDateTime.ToString("R", CultureInfo.InvariantCulture));
+        }
+
+        if (cookie.HttpOnly is true)
+        {
+            builder.Append("; HttpOnly");
+        }
+
+        if (cookie.Secure is true)
+        {
+            builder.Append("; Secure");
+        }
+
+        return builder.ToString();
     }
 
     private static ByteArrayContent CreateContent(HarContent harContent)

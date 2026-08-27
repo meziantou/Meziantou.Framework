@@ -11,7 +11,7 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
     private const string NuGetOrgSource = "https://api.nuget.org/v3/index.json";
     public override VersioningStrategy VersioningStrategy { get; set; } = NuGetVersioningStrategy.Instance;
 
-    protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.NuGet;
+    protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.NuGet && dependency.Name is not null;
 
     protected override async IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
     {

@@ -18,7 +18,7 @@ internal sealed class NpmPackageUpdater : PackageUpdater
     };
     public override VersioningStrategy VersioningStrategy { get; set; } = NpmVersioningStrategy.Instance;
 
-    protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.Npm;
+    protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.Npm && dependency.Name is not null;
 
     protected override async IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
     {

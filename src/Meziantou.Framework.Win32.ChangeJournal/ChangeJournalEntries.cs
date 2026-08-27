@@ -134,7 +134,7 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
                 StartUsn = _currentUSN.Value,
                 ReasonMask = (uint)Options.ReasonFilter,
                 ReturnOnlyOnClose = Options.ReturnOnlyOnClose ? 1u : 0u,
-                Timeout = (ulong)Options.Timeout.TotalSeconds,
+                Timeout = Options.TimeoutInSeconds,
                 UsnJournalID = ChangeJournal.Data.ID,
                 MinMajorVersion = Options.MinimumMajorVersion,
                 MaxMajorVersion = Options.MaximumMajorVersion,

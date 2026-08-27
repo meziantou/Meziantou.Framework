@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Roslyn;
 
 internal static partial class ContextExtensions
 {
-    public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, IEnumerable<Location> locations, object?[]? messageArgs = null) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, locations, messageArgs);
+    public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, IEnumerable<Location> locations, params object?[]? messageArgs) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, locations, messageArgs);
 
     public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IEnumerable<Location> locations, params object?[]? messageArgs) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, locations, messageArgs);
 
@@ -70,19 +70,19 @@ internal static partial class ContextExtensions
     public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, SyntaxReference syntaxReference, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, syntaxReference, messageArgs);
 
-    public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[] messageArgs)
-        => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties: null, operation, options, messageArgs);
+    public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[]? messageArgs)
+        => ReportDiagnostic(new DiagnosticReporter(context), descriptor, ImmutableDictionary<string, string?>.Empty, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[] messageArgs)
+    public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, ILocalFunctionOperation operation, DiagnosticMethodReportOptions options, params object?[] messageArgs)
+    public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, ILocalFunctionOperation operation, DiagnosticMethodReportOptions options, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, IOperation operation, params object?[] messageArgs)
+    public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, IOperation operation, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, operation, messageArgs);
 
-    public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IOperation operation, params object?[] messageArgs)
+    public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IOperation operation, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, messageArgs);
 
     public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, AttributeData attribute, params object?[]? messageArgs)
@@ -90,7 +90,7 @@ internal static partial class ContextExtensions
 
     public static void ReportDiagnostic(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, AttributeData attribute, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, attribute, messageArgs);
-    public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, IEnumerable<Location> locations, object?[]? messageArgs = null) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, locations, messageArgs);
+    public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, IEnumerable<Location> locations, params object?[]? messageArgs) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, locations, messageArgs);
 
     public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IEnumerable<Location> locations, params object?[]? messageArgs) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, locations, messageArgs);
 
@@ -148,19 +148,19 @@ internal static partial class ContextExtensions
     public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, SyntaxReference syntaxReference, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, syntaxReference, messageArgs);
 
-    public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[] messageArgs)
-        => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties: null, operation, options, messageArgs);
+    public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[]? messageArgs)
+        => ReportDiagnostic(new DiagnosticReporter(context), descriptor, ImmutableDictionary<string, string?>.Empty, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[] messageArgs)
+    public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, ILocalFunctionOperation operation, DiagnosticMethodReportOptions options, params object?[] messageArgs)
+    public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, ILocalFunctionOperation operation, DiagnosticMethodReportOptions options, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, IOperation operation, params object?[] messageArgs)
+    public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, IOperation operation, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, operation, messageArgs);
 
-    public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IOperation operation, params object?[] messageArgs)
+    public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IOperation operation, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, messageArgs);
 
     public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, AttributeData attribute, params object?[]? messageArgs)
@@ -168,7 +168,7 @@ internal static partial class ContextExtensions
 
     public static void ReportDiagnostic(this SymbolAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, AttributeData attribute, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, attribute, messageArgs);
-    public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, IEnumerable<Location> locations, object?[]? messageArgs = null) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, locations, messageArgs);
+    public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, IEnumerable<Location> locations, params object?[]? messageArgs) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, locations, messageArgs);
 
     public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IEnumerable<Location> locations, params object?[]? messageArgs) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, locations, messageArgs);
 
@@ -226,19 +226,19 @@ internal static partial class ContextExtensions
     public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, SyntaxReference syntaxReference, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, syntaxReference, messageArgs);
 
-    public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[] messageArgs)
-        => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties: null, operation, options, messageArgs);
+    public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[]? messageArgs)
+        => ReportDiagnostic(new DiagnosticReporter(context), descriptor, ImmutableDictionary<string, string?>.Empty, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[] messageArgs)
+    public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, ILocalFunctionOperation operation, DiagnosticMethodReportOptions options, params object?[] messageArgs)
+    public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, ILocalFunctionOperation operation, DiagnosticMethodReportOptions options, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, IOperation operation, params object?[] messageArgs)
+    public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, IOperation operation, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, operation, messageArgs);
 
-    public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IOperation operation, params object?[] messageArgs)
+    public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IOperation operation, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, messageArgs);
 
     public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, AttributeData attribute, params object?[]? messageArgs)
@@ -246,7 +246,7 @@ internal static partial class ContextExtensions
 
     public static void ReportDiagnostic(this OperationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, AttributeData attribute, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, attribute, messageArgs);
-    public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, IEnumerable<Location> locations, object?[]? messageArgs = null) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, locations, messageArgs);
+    public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, IEnumerable<Location> locations, params object?[]? messageArgs) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, locations, messageArgs);
 
     public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IEnumerable<Location> locations, params object?[]? messageArgs) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, locations, messageArgs);
 
@@ -304,19 +304,19 @@ internal static partial class ContextExtensions
     public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, SyntaxReference syntaxReference, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, syntaxReference, messageArgs);
 
-    public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[] messageArgs)
-        => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties: null, operation, options, messageArgs);
+    public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[]? messageArgs)
+        => ReportDiagnostic(new DiagnosticReporter(context), descriptor, ImmutableDictionary<string, string?>.Empty, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[] messageArgs)
+    public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, ILocalFunctionOperation operation, DiagnosticMethodReportOptions options, params object?[] messageArgs)
+    public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, ILocalFunctionOperation operation, DiagnosticMethodReportOptions options, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, IOperation operation, params object?[] messageArgs)
+    public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, IOperation operation, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, operation, messageArgs);
 
-    public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IOperation operation, params object?[] messageArgs)
+    public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IOperation operation, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, messageArgs);
 
     public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, AttributeData attribute, params object?[]? messageArgs)
@@ -324,7 +324,7 @@ internal static partial class ContextExtensions
 
     public static void ReportDiagnostic(this OperationBlockAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, AttributeData attribute, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, attribute, messageArgs);
-    public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, IEnumerable<Location> locations, object?[]? messageArgs = null) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, locations, messageArgs);
+    public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, IEnumerable<Location> locations, params object?[]? messageArgs) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, locations, messageArgs);
 
     public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IEnumerable<Location> locations, params object?[]? messageArgs) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, locations, messageArgs);
 
@@ -382,19 +382,19 @@ internal static partial class ContextExtensions
     public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, SyntaxReference syntaxReference, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, syntaxReference, messageArgs);
 
-    public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[] messageArgs)
-        => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties: null, operation, options, messageArgs);
+    public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[]? messageArgs)
+        => ReportDiagnostic(new DiagnosticReporter(context), descriptor, ImmutableDictionary<string, string?>.Empty, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[] messageArgs)
+    public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IInvocationOperation operation, DiagnosticInvocationReportOptions options, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, ILocalFunctionOperation operation, DiagnosticMethodReportOptions options, params object?[] messageArgs)
+    public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, ILocalFunctionOperation operation, DiagnosticMethodReportOptions options, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, options, messageArgs);
 
-    public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, IOperation operation, params object?[] messageArgs)
+    public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, IOperation operation, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, operation, messageArgs);
 
-    public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IOperation operation, params object?[] messageArgs)
+    public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IOperation operation, params object?[]? messageArgs)
         => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, operation, messageArgs);
 
     public static void ReportDiagnostic(this CompilationAnalysisContext context, DiagnosticDescriptor descriptor, AttributeData attribute, params object?[]? messageArgs)

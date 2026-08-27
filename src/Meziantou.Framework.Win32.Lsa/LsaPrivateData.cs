@@ -105,10 +105,16 @@ public static class LsaPrivateData
             if (privateData is null)
                 return null;
 
-            var value = new string(privateData->Buffer.Value, 0, privateData->Length / 2);
-            FreeMemory(privateData);
-
-            return value;
+            try
+            {
+                return new string(privateData->Buffer.Value, 0, privateData->Length / 2);
+            }
+            finally
+            {
+                // Mimic SecureZeroMemory so the decrypted secret does not stay readable in the freed block. SecureZeroMemory is not an exported function, neither is RtlSecureZeroMemory
+                new Span<byte>(privateData->Buffer.Value, privateData->Length).Clear();
+                FreeMemory(privateData);
+            }
         }
     }
 

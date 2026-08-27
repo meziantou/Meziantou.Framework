@@ -111,7 +111,7 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
                 return false;
 
             _currentIndex++;
-            if (_entries is null || _currentIndex >= _entries.Count)
+            if (_currentIndex >= _entries.Count)
             {
                 return Read();
             }

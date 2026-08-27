@@ -229,7 +229,6 @@ public sealed class ChangeJournal : IDisposable
             Flags = PInvoke.FLAG_USN_TRACK_MODIFIED_RANGES_ENABLE,
             ChunkSize = chunkSize,
             FileSizeThreshold = fileSizeThreshold,
-
         };
         Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.TrackModifiedRanges, ref trackData, initialBufferLength: 0);
     }

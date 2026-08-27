@@ -85,6 +85,21 @@ public class ChangeJournalTests
     }
 
     [Theory]
+    [InlineData(0, 0ul)]                    // do not wait, return at the end of the journal
+    [InlineData(-1, uint.MaxValue)]         // Timeout.InfiniteTimeSpan
+    [InlineData(-5000, uint.MaxValue)]      // any negative value waits indefinitely
+    [InlineData(1, 1ul)]                    // sub-second values round up instead of becoming "do not wait"
+    [InlineData(500, 1ul)]
+    [InlineData(1000, 1ul)]
+    [InlineData(1500, 2ul)]
+    [InlineData(30_000, 30ul)]
+    public void ReadOptions_ConvertsTimeoutToWholeSeconds(int milliseconds, ulong expected)
+    {
+        var options = new ReadChangeJournalOptions(initialUSN: null, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.FromMilliseconds(milliseconds), unprivileged: false);
+        Assert.Equal(expected, options.TimeoutInSeconds);
+    }
+
+    [Theory]
     [InlineData(1L, 2L, -1)]
     [InlineData(2L, 1L, 1)]
     [InlineData(2L, 2L, 0)]

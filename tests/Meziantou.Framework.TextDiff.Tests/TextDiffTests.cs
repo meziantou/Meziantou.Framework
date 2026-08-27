@@ -585,6 +585,32 @@ public sealed class TextDiffTests
     }
 
     [Fact]
+    public void ComputeDiff_InvalidAlgorithm_ThrowsWithTheOptionsParamName()
+    {
+        var options = new TextDiffOptions { Algorithm = (TextDiffAlgorithm)99 };
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => Diff.ComputeDiff("a", "b", options));
+        Assert.Equal("options", exception.ParamName);
+    }
+
+    [Fact]
+    public void ComputeHierarchyDiff_InvalidAlgorithm_ThrowsWithTheOptionsParamName()
+    {
+        var options = new TextDiffOptions { Algorithm = (TextDiffAlgorithm)99 };
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(
+            () => Diff.ComputeHierarchyDiff("a", "b", [TextChunker.Lines, TextChunker.Words], options));
+        Assert.Equal("options", exception.ParamName);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    public void ComputeDiff_DefinedAlgorithm_DoesNotThrow(TextDiffAlgorithm algorithm)
+    {
+        var result = Diff.ComputeDiff("a", "b", new TextDiffOptions { Algorithm = algorithm });
+
+        Assert.True(result.HasDifferences);
+    }
+
+    [Fact]
     public void ComputeHierarchyDiff_NullChunkers_Throws()
     {
         Assert.Throws<ArgumentNullException>(() => Diff.ComputeHierarchyDiff("a", "b", chunkers: null!));

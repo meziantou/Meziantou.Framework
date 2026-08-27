@@ -45,7 +45,7 @@ internal static class Program
         var rootDirectoryOption = CreateRootDirectoryOption();
         var filesOption = CreateFilesOption();
         var dependencyTypesOption = CreateDependencyTypesOption();
-        var updateLockFilesOption = new Option<bool>("--update-lock-files") { Description = "Update lock files when dependencies are updated" };
+        var updateLockFilesOption = new Option<bool>("--update-lock-files") { Description = "Update lock files when dependencies are updated. Runs 'dotnet restore' and 'npm install', which execute MSBuild targets and npm install scripts from the scanned repository. Only use it on repositories you trust." };
         var minimumAgeOption = CreateMinimumAgeOption();
 
         var updateCommand = new Command("update")

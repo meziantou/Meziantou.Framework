@@ -6,7 +6,13 @@ namespace Meziantou.Framework.PublicApiGenerator;
 
 internal static class PublicApiModelBuilder
 {
-    private static readonly NullabilityInfoContext NullabilityInfoContext = new();
+    // NullabilityInfoContext is not thread safe: its Create methods use a non-concurrent cache internally and
+    // concurrent calls can throw InvalidOperationException. Each thread gets its own instance so that concurrent
+    // PublicApi.Generate(Assembly) calls cannot collide.
+    [ThreadStatic]
+    private static NullabilityInfoContext? s_nullabilityInfoContext;
+
+    private static NullabilityInfoContext NullabilityInfoContext => s_nullabilityInfoContext ??= new NullabilityInfoContext();
     private static readonly ConditionalWeakTable<Module, StrongBox<bool>> UpdatedMemorySafetyRulesCache = new();
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
     private const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";

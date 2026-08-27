@@ -31,22 +31,40 @@ public sealed class ExpressionQueryBuilder<T>
         _handlers.Add(new ExpressionFilterKey(key.ToLowerInvariant(), op), handler);
     }
 
-    /// <summary>Registers a handler for a string property with equality comparison.</summary>
+    /// <summary>Registers a handler for a string property using a "contains" comparison.</summary>
     /// <param name="key">The property key to handle.</param>
     /// <param name="selector">Expression selecting the string property.</param>
-    /// <param name="comparisonType">The string comparison type to use.</param>
-    public void AddHandler(string key, Expression<Func<T, string?>> selector, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+    /// <param name="comparisonType">
+    /// The string comparison to use, or <see langword="null"/> to emit a plain <see cref="string.Contains(string)"/> call.
+    /// Most LINQ providers, including Entity Framework Core, cannot translate the <see cref="StringComparison"/> overload
+    /// of <see cref="string.Contains(string, StringComparison)"/>, so passing a value here makes the query usable in memory only.
+    /// When left <see langword="null"/>, case sensitivity is decided by the underlying provider — the database collation for EF Core,
+    /// and an ordinal comparison for LINQ to Objects.
+    /// </param>
+    public void AddHandler(string key, Expression<Func<T, string?>> selector, StringComparison? comparisonType = null)
     {
         Expression<Func<T, bool>> CreatePredicate(string value)
         {
             var box = new QueryValueStore<string>(value);
             var valueExpression = Expression.PropertyOrField(Expression.Constant(box), nameof(QueryValueStore<string>.Value));
 
-            var comparisonExpression = Expression.Constant(comparisonType);
-            var containsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string), typeof(StringComparison)])!;
-            var body = Expression.Call(selector.Body, containsMethod, valueExpression, comparisonExpression);
+            Expression body;
+            if (comparisonType is null)
+            {
+                var containsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string)])!;
+                body = Expression.Call(selector.Body, containsMethod, valueExpression);
+            }
+            else
+            {
+                var containsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string), typeof(StringComparison)])!;
+                body = Expression.Call(selector.Body, containsMethod, valueExpression, Expression.Constant(comparisonType.Value));
+            }
 
-            return Expression.Lambda<Func<T, bool>>(body, selector.Parameters);
+            // The selected property is nullable, so guard the call. EF Core folds this into the generated SQL,
+            // and in memory it stops a null property from throwing.
+            var notNull = Expression.NotEqual(selector.Body, Expression.Constant(value: null, typeof(string)));
+
+            return Expression.Lambda<Func<T, bool>>(Expression.AndAlso(notNull, body), selector.Parameters);
         }
 
         AddHandlerCore(key, KeyValueOperator.EqualTo, CreatePredicate);

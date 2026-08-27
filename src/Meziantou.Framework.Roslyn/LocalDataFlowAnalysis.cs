@@ -246,7 +246,10 @@ internal static partial class LocalDataFlowAnalysis
             return false;
 
         var dataFlow = semanticModel.AnalyzeDataFlow(statement);
-        return dataFlow?.Succeeded == true && ContainsSymbol(dataFlow.Captured, local);
+        if (dataFlow?.Succeeded != true)
+            return true;
+
+        return ContainsSymbol(dataFlow.Captured, local);
     }
 
     private static bool HasWriteBetween(SemanticModel semanticModel, ISymbol symbol, SyntaxNode source, SyntaxNode destination, CancellationToken cancellationToken)

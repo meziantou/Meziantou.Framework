@@ -542,8 +542,8 @@ namespace Meziantou.Framework
     public struct SafeHandleValue : System.IDisposable
     {
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, "_safeHandle")]
-        public bool HasValue { get => throw null; }
-        public nint Value { get => throw null; }
+        public readonly bool HasValue { get => throw null; }
+        public readonly nint Value { get => throw null; }
         public SafeHandleValue(System.Runtime.InteropServices.SafeHandle safeHandle) { }
         public void Dispose() { }
         public static implicit operator nint(Meziantou.Framework.SafeHandleValue handle) => throw null;
@@ -662,10 +662,10 @@ namespace Meziantou.Framework
         }
         public ref struct LineSplitEnumerator
         {
-            public LineSplitEntry Current { get => throw null; }
+            public readonly LineSplitEntry Current { get => throw null; }
             public LineSplitEnumerator(System.ReadOnlySpan<char> str) { }
             public LineSplitEnumerator(System.ReadOnlySpan<char> str, Meziantou.Framework.LineBreakMode lineBreakMode) { }
-            public LineSplitEnumerator GetEnumerator() => throw null;
+            public readonly LineSplitEnumerator GetEnumerator() => throw null;
             public bool MoveNext() => throw null;
         }
     }
@@ -750,10 +750,10 @@ namespace Meziantou.Framework.Collections
         public bool TryFind(System.Func<T, bool> predicate, out T result) => throw null;
         public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
-            public T Current { get => throw null; }
+            public readonly T Current { get => throw null; }
             public bool MoveNext() => throw null;
-            public void Dispose() { }
-            public void Reset() { }
+            public readonly void Dispose() { }
+            public readonly void Reset() { }
         }
     }
 
@@ -767,8 +767,8 @@ namespace Meziantou.Framework.Collections
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
-            public T Current { get => throw null; }
-            public void Dispose() { }
+            public readonly T Current { get => throw null; }
+            public readonly void Dispose() { }
             public bool MoveNext() => throw null;
             void System.Collections.IEnumerator.Reset() { }
         }
@@ -793,8 +793,8 @@ namespace Meziantou.Framework.Collections
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
-            public T Current { get => throw null; }
-            public void Dispose() { }
+            public readonly T Current { get => throw null; }
+            public readonly void Dispose() { }
             public bool MoveNext() => throw null;
             void System.Collections.IEnumerator.Reset() { }
         }
@@ -817,8 +817,8 @@ namespace Meziantou.Framework.Collections
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
-            public T Current { get => throw null; }
-            public void Dispose() { }
+            public readonly T Current { get => throw null; }
+            public readonly void Dispose() { }
             public bool MoveNext() => throw null;
             void System.Collections.IEnumerator.Reset() { }
         }
@@ -856,7 +856,7 @@ namespace Meziantou.Framework.Collections
         void System.Collections.IList.RemoveAt(int index) { }
         public struct Enumerator<T> where T : System.IEquatable<T>
         {
-            public ref T Current { get => throw null; }
+            public readonly ref T Current { get => throw null; }
             public bool MoveNext() => throw null;
         }
     }
@@ -996,8 +996,8 @@ namespace Meziantou.Framework.Collections
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
-            public T Current { get => throw null; }
-            public void Dispose() { }
+            public readonly T Current { get => throw null; }
+            public readonly void Dispose() { }
             public bool MoveNext() => throw null;
             void System.Collections.IEnumerator.Reset() { }
         }
@@ -1033,8 +1033,8 @@ namespace Meziantou.Framework.Collections
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
-            public T Current { get => throw null; }
-            public void Dispose() { }
+            public readonly T Current { get => throw null; }
+            public readonly void Dispose() { }
             public bool MoveNext() => throw null;
             void System.Collections.IEnumerator.Reset() { }
         }
@@ -1100,8 +1100,8 @@ namespace Meziantou.Framework.Text
         public static SpanUtf8BytesRuneEnumerator EnumerateRunesFromUtf8(this System.ReadOnlySpan<byte> utf8Bytes) => throw null;
         public ref struct SpanUtf8BytesRuneEnumerator
         {
-            public System.Text.Rune Current { get => throw null; }
-            public SpanUtf8BytesRuneEnumerator GetEnumerator() => throw null;
+            public readonly System.Text.Rune Current { get => throw null; }
+            public readonly SpanUtf8BytesRuneEnumerator GetEnumerator() => throw null;
             public bool MoveNext() => throw null;
         }
     }

@@ -102,8 +102,8 @@ namespace Meziantou.Framework.Win32
 
     public struct JobObjectCpuHardCap
     {
-        public bool Enabled { get => throw null; set { } }
-        public int Rate { get => throw null; set { } }
+        public bool Enabled { readonly get => throw null; set { } }
+        public int Rate { readonly get => throw null; set { } }
     }
 
     public sealed class JobObjectIoCounters : System.IEquatable<Meziantou.Framework.Win32.JobObjectIoCounters>

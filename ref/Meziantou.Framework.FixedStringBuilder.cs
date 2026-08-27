@@ -25,7 +25,7 @@ namespace Meziantou.Framework.FixedStringBuilder
         public static bool operator !=(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 right) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
-        public System.ReadOnlySpan<char> AsSpan() => throw null;
+        public readonly System.ReadOnlySpan<char> AsSpan() => throw null;
         System.Span<char> Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => throw null;
         public static implicit operator Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16(string value) => throw null;
         public override string ToString() => throw null;
@@ -54,7 +54,7 @@ namespace Meziantou.Framework.FixedStringBuilder
         public static bool operator !=(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 right) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
-        public System.ReadOnlySpan<char> AsSpan() => throw null;
+        public readonly System.ReadOnlySpan<char> AsSpan() => throw null;
         System.Span<char> Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => throw null;
         public static implicit operator Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32(string value) => throw null;
         public override string ToString() => throw null;
@@ -83,7 +83,7 @@ namespace Meziantou.Framework.FixedStringBuilder
         public static bool operator !=(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 right) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
-        public System.ReadOnlySpan<char> AsSpan() => throw null;
+        public readonly System.ReadOnlySpan<char> AsSpan() => throw null;
         System.Span<char> Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => throw null;
         public static implicit operator Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64(string value) => throw null;
         public override string ToString() => throw null;
@@ -112,7 +112,7 @@ namespace Meziantou.Framework.FixedStringBuilder
         public static bool operator !=(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 right) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
-        public System.ReadOnlySpan<char> AsSpan() => throw null;
+        public readonly System.ReadOnlySpan<char> AsSpan() => throw null;
         System.Span<char> Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => throw null;
         public static implicit operator Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8(string value) => throw null;
         public override string ToString() => throw null;

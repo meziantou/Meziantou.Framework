@@ -569,6 +569,18 @@ internal static class PublicApiModelReader
             modifiers.Add("required");
         }
 
+        var isGetReadOnly = isGetVisible && IsReadOnlyMember(metadataReader, declaringType, getAccessor!.Value.GetCustomAttributes());
+        var isSetReadOnly = isSetVisible && IsReadOnlyMember(metadataReader, declaringType, setAccessor!.Value.GetCustomAttributes());
+
+        // readonly can be set on the property or on its accessors, but not on both
+        var isPropertyReadOnly = isGetReadOnly == isGetVisible && isSetReadOnly == isSetVisible;
+        if (isPropertyReadOnly)
+        {
+            modifiers.Add("readonly");
+            isGetReadOnly = false;
+            isSetReadOnly = false;
+        }
+
         var isGetUnsafe = isGetVisible && IsRequiresUnsafeMember(metadataReader, getAccessor!.Value.GetCustomAttributes());
         var isSetUnsafe = isSetVisible && IsRequiresUnsafeMember(metadataReader, setAccessor!.Value.GetCustomAttributes());
 
@@ -614,7 +626,7 @@ internal static class PublicApiModelReader
         var accessorText = new List<string>();
         if (isGetVisible)
         {
-            var accessorModifier = BuildAccessorModifier(getAccessor!.Value.Attributes, representativeAttributes) + (isGetUnsafe ? "unsafe " : string.Empty);
+            var accessorModifier = BuildAccessorModifier(getAccessor!.Value.Attributes, representativeAttributes) + (isGetReadOnly ? "readonly " : string.Empty) + (isGetUnsafe ? "unsafe " : string.Empty);
             var accessorBody = getAccessor.Value.Attributes.HasFlag(MethodAttributes.Abstract) ? "get;" : "get => throw null;";
             accessorText.Add(accessorModifier + accessorBody);
         }
@@ -623,7 +635,7 @@ internal static class PublicApiModelReader
         {
             var setterSignature = DecodeMethodSignature(metadataReader, declaringTypeHandle, setAccessorHandle, setAccessor!.Value);
             var accessorKeyword = setterSignature.ContainsIsExternalInitModifier ? "init" : "set";
-            var accessorModifier = BuildAccessorModifier(setAccessor.Value.Attributes, representativeAttributes) + (isSetUnsafe ? "unsafe " : string.Empty);
+            var accessorModifier = BuildAccessorModifier(setAccessor.Value.Attributes, representativeAttributes) + (isSetReadOnly ? "readonly " : string.Empty) + (isSetUnsafe ? "unsafe " : string.Empty);
             var accessorBody = setAccessor.Value.Attributes.HasFlag(MethodAttributes.Abstract)
                 ? accessorKeyword + ";"
                 : accessorKeyword + " { }";
@@ -693,7 +705,7 @@ internal static class PublicApiModelReader
         var declaringType = metadataReader.GetTypeDefinition(declaringTypeHandle);
         var modifiers = isExplicitInterfaceImplementation
             ? []
-            : BuildMethodModifiers(method.Attributes, declaringType.Attributes.HasFlag(TypeAttributes.Interface));
+            : BuildMethodModifiers(method.Attributes, declaringType.Attributes.HasFlag(TypeAttributes.Interface), IsReadOnlyMember(metadataReader, declaringType, method.GetCustomAttributes()));
         var genericArguments = BuildGenericArguments(metadataReader, method.GetGenericParameters());
         var constraints = BuildConstraints(metadataReader, method.GetGenericParameters(), BuildSignatureGenericContext(metadataReader, declaringTypeHandle, methodHandle));
         var isExtensionMethod = method.Attributes.HasFlag(MethodAttributes.Static) &&
@@ -1134,6 +1146,18 @@ internal static class PublicApiModelReader
             static reader => new StrongBox<bool>(HasAttribute(reader, reader.GetModuleDefinition().GetCustomAttributes(), MemorySafetyRulesAttributeFullName))).Value;
     }
 
+    private static bool IsReadOnlyMember(MetadataReader metadataReader, TypeDefinition declaringType, CustomAttributeHandleCollection customAttributes)
+    {
+        // Members of a readonly struct are implicitly readonly and carry no attribute, so this only matches per-member readonly
+        if ((declaringType.Attributes & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface)
+            return false;
+
+        if (!string.Equals(GetTypeFullName(metadataReader, declaringType.BaseType), "System.ValueType", StringComparison.Ordinal))
+            return false;
+
+        return HasAttribute(metadataReader, customAttributes, "System.Runtime.CompilerServices.IsReadOnlyAttribute");
+    }
+
     private static bool IsRequiresUnsafeMember(MetadataReader metadataReader, CustomAttributeHandleCollection customAttributes)
     {
         return HasUpdatedMemorySafetyRules(metadataReader) &&
@@ -1463,7 +1487,7 @@ internal static class PublicApiModelReader
         return " { }";
     }
 
-    private static List<string> BuildMethodModifiers(MethodAttributes attributes, bool declaringTypeIsInterface)
+    private static List<string> BuildMethodModifiers(MethodAttributes attributes, bool declaringTypeIsInterface, bool isReadOnly = false)
     {
         var modifiers = new List<string>();
         var shouldEmitAccessibility = !(declaringTypeIsInterface && attributes.HasFlag(MethodAttributes.Abstract));
@@ -1479,6 +1503,11 @@ internal static class PublicApiModelReader
         if (attributes.HasFlag(MethodAttributes.Static))
         {
             modifiers.Add("static");
+        }
+
+        if (isReadOnly)
+        {
+            modifiers.Add("readonly");
         }
 
         if (declaringTypeIsInterface)

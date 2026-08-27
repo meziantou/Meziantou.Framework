@@ -1621,6 +1621,49 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task StructMembers_ReadOnlyModifier()
+    {
+        await Validate("""
+            public struct Mutable
+            {
+                public int Field;
+                public readonly int Get() => 0;
+                public readonly override string ToString() => "";
+                public void Mutate() { }
+                public int Auto { get; set; }
+                public readonly int ReadOnlyProperty => 0;
+            }
+
+            public readonly struct AlreadyReadOnly
+            {
+                public int Get() => 0;
+                public override string ToString() => "";
+                public int Auto { get; }
+            }
+            """, """
+            #nullable enable
+
+            public readonly struct AlreadyReadOnly
+            {
+                public int Auto { get => throw null; }
+                public int Get() => throw null;
+                public override string ToString() => throw null;
+            }
+
+
+            public struct Mutable
+            {
+                public int Field;
+                public int Auto { readonly get => throw null; set { } }
+                public readonly int ReadOnlyProperty { get => throw null; }
+                public readonly int Get() => throw null;
+                public readonly override string ToString() => throw null;
+                public void Mutate() { }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Fields_InstanceAndStaticReadonly()
     {
         await Validate("""

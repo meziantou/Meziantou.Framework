@@ -1,64 +1,69 @@
 namespace Meziantou.Framework.Unix.ControlGroups;
 
 /// <summary>Represents memory statistics for a cgroup.</summary>
+/// <remarks>
+/// Every property is nullable because the set of keys <c>memory.stat</c> emits varies by kernel version and
+/// configuration. <see langword="null"/> means the running kernel did not report the value, which is distinct
+/// from it reporting zero.
+/// </remarks>
 public sealed class MemoryStat
 {
     /// <summary>Memory used in anonymous mappings (bytes).</summary>
-    public long Anon { get; private set; }
+    public long? Anon { get; private set; }
 
     /// <summary>Memory used to cache filesystem data (bytes).</summary>
-    public long File { get; private set; }
+    public long? File { get; private set; }
 
     /// <summary>Total kernel memory (bytes).</summary>
-    public long Kernel { get; private set; }
+    public long? Kernel { get; private set; }
 
     /// <summary>Memory allocated to kernel stacks (bytes).</summary>
-    public long KernelStack { get; private set; }
+    public long? KernelStack { get; private set; }
 
     /// <summary>Memory allocated for page tables (bytes).</summary>
-    public long PageTables { get; private set; }
+    public long? PageTables { get; private set; }
 
     /// <summary>Memory used for storing per-cpu kernel data structures (bytes).</summary>
-    public long PerCpu { get; private set; }
+    public long? PerCpu { get; private set; }
 
     /// <summary>Memory used in network transmission buffers (bytes).</summary>
-    public long Sock { get; private set; }
+    public long? Sock { get; private set; }
 
     /// <summary>Memory cached in swap (bytes).</summary>
-    public long SwapCached { get; private set; }
+    public long? SwapCached { get; private set; }
 
     /// <summary>Cached filesystem data mapped with mmap (bytes).</summary>
-    public long FileMapped { get; private set; }
+    public long? FileMapped { get; private set; }
 
     /// <summary>Cached filesystem data that was modified but not yet written back (bytes).</summary>
-    public long FileDirty { get; private set; }
+    public long? FileDirty { get; private set; }
 
     /// <summary>Cached filesystem data being written back to disk (bytes).</summary>
-    public long FileWriteback { get; private set; }
+    public long? FileWriteback { get; private set; }
 
     /// <summary>Inactive anonymous memory (bytes).</summary>
-    public long InactiveAnon { get; private set; }
+    public long? InactiveAnon { get; private set; }
 
     /// <summary>Active anonymous memory (bytes).</summary>
-    public long ActiveAnon { get; private set; }
+    public long? ActiveAnon { get; private set; }
 
     /// <summary>Inactive file-backed memory (bytes).</summary>
-    public long InactiveFile { get; private set; }
+    public long? InactiveFile { get; private set; }
 
     /// <summary>Active file-backed memory (bytes).</summary>
-    public long ActiveFile { get; private set; }
+    public long? ActiveFile { get; private set; }
 
     /// <summary>Unevictable memory (bytes).</summary>
-    public long Unevictable { get; private set; }
+    public long? Unevictable { get; private set; }
 
     /// <summary>Reclaimable slab memory (bytes).</summary>
-    public long SlabReclaimable { get; private set; }
+    public long? SlabReclaimable { get; private set; }
 
     /// <summary>Unreclaimable slab memory (bytes).</summary>
-    public long SlabUnreclaimable { get; private set; }
+    public long? SlabUnreclaimable { get; private set; }
 
     /// <summary>Total slab memory (bytes).</summary>
-    public long Slab { get; private set; }
+    public long? Slab { get; private set; }
 
     /// <summary>Number of pages swapped in.</summary>
     public long? PageSwapIn { get; private set; }

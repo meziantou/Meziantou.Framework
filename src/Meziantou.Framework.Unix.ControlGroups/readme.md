@@ -19,7 +19,7 @@ A .NET library for managing Linux Control Groups v2 (cgroups v2).
 
 ## Requirements
 
-- Linux kernel 4.5+ with cgroup v2 enabled
+- Linux kernel 4.5+ with cgroup v2 enabled. Some APIs need a newer kernel: `AssociateThread`/`GetThreads` need 4.14, `Freeze`/`Unfreeze`/`IsFrozen` need 5.2, and `Kill` needs 5.14. The set of keys reported by `GetMemoryStat` also varies by version — for example `swapcached` needs 5.13 and `kernel` needs 6.0 — and `MemoryStat` reports `null` for anything the running kernel does not emit.
 - cgroup v2 filesystem mounted at `/sys/fs/cgroup` (default on most modern distributions)
 - Appropriate permissions to manage cgroups
 

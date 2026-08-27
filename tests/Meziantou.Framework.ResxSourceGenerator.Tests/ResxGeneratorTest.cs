@@ -310,6 +310,23 @@ public sealed class ResxGeneratorTest
     }
 
     [Fact]
+    public async Task DebugHeaderDoesNotContainAbsolutePaths()
+    {
+        // The generated text ends up in the PDB, so it must be identical whatever the directory the project sits in
+        var projectDir = FullPath.GetTempPath() / "dir" / "proj";
+        var result = await GenerateFiles([(projectDir / "Folder1" / "test.resx", new XElement("root").ToString())], new OptionProvider
+        {
+            ProjectDir = projectDir,
+            RootNamespace = "proj",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.DoesNotContain(projectDir.Value, fileContent, ignoreCase: true);
+        Assert.Contains("// key: Folder1/test", fileContent);
+        Assert.Contains("// files: Folder1/test.resx", fileContent);
+    }
+
+    [Fact]
     public async Task ComputeNamespace_RootDir()
     {
         var result = await GenerateFiles([(FullPath.GetTempPath() / "dir" / "proj" / "test.resx", new XElement("root").ToString())], new OptionProvider

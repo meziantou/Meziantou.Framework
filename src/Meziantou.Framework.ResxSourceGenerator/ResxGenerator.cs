@@ -82,10 +82,10 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
             var content = $@"
 // Debug info:
-// key: {resxGroup.Key}
-// files: {string.Join(", ", resxGroup.Select(f => f.Path))}
+// key: {ToDisplayPath(projectDir, resxGroup.Key)}
+// files: {string.Join(", ", resxGroup.Select(f => ToDisplayPath(projectDir, f.Path)))}
 // RootNamespace (metadata): {rootNamespaceConfiguration}
-// ProjectDir (metadata): {projectDirConfiguration}
+// ProjectDir (metadata): {(projectDirConfiguration is null ? "<not set>" : "<set>")}
 // Namespace / DefaultResourcesNamespace (metadata): {namespaceConfiguration}
 // DefaultResourceName (metadata): {defaultResourceNameConfiguration}
 // ResourceName (metadata): {resourceNameConfiguration}
@@ -95,7 +95,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 // GenerateResources (metadata): {generateResourcesTypeConfiguration}
 // AssemblyName: {assemblyName}
 // RootNamespace (computed): {rootNamespace}
-// ProjectDir (computed): {projectDir}
+// ProjectDir (computed): {(string.IsNullOrEmpty(projectDir) ? "<empty>" : "<set>")}
 // defaultNamespace: {defaultNamespace}
 // defaultResourceName: {defaultResourceName}
 // Namespace: {ns}
@@ -109,6 +109,35 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
             context.AddSource(GetHintName(hintNames, projectDir, resxGroup.Key), SourceText.From(content, Encoding.UTF8));
         }
+    }
+
+    /// <summary>
+    /// Formats a path for the debug header. The generated text is embedded in the PDB, so an absolute path would
+    /// leak the layout of the build machine and make the same commit produce different output on another machine.
+    /// </summary>
+    private static string ToDisplayPath(string projectDir, string path)
+    {
+        if (!string.IsNullOrEmpty(projectDir))
+        {
+            try
+            {
+                var fullProjectDir = Path.GetFullPath(projectDir);
+                if (fullProjectDir[^1] != Path.DirectorySeparatorChar)
+                {
+                    fullProjectDir += Path.DirectorySeparatorChar;
+                }
+
+                var fullPath = Path.GetFullPath(path);
+                if (fullPath.StartsWith(fullProjectDir, StringComparison.Ordinal))
+                    return fullPath[fullProjectDir.Length..].Replace('\\', '/');
+            }
+            catch (ArgumentException)
+            {
+                // The path cannot be rooted, fall back to the file name
+            }
+        }
+
+        return Path.GetFileName(path);
     }
 
     private static string GetHintName(HashSet<string> hintNames, string projectDir, string resourcePath)

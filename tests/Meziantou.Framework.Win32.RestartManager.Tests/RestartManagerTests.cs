@@ -140,4 +140,28 @@ public class RestartManagerTests
 
         Assert.Throws<ObjectDisposedException>(() => _ = session.IsResourcesLocked());
     }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void IsResourcesLocked_ReflectsTheCurrentStateOfRegisteredFiles()
+    {
+        var unlockedPath = Path.GetTempFileName();
+        var lockedPath = Path.GetTempFileName();
+        try
+        {
+            using var session = RestartManager.CreateSession();
+            session.RegisterFiles([unlockedPath, lockedPath]);
+
+            Assert.False(session.IsResourcesLocked());
+
+            using (File.Open(lockedPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                Assert.True(session.IsResourcesLocked());
+            }
+        }
+        finally
+        {
+            File.Delete(unlockedPath);
+            File.Delete(lockedPath);
+        }
+    }
 }

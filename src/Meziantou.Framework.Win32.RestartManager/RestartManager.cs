@@ -111,18 +111,15 @@ public sealed class RestartManager : IDisposable
     {
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
+        // A single-element buffer is enough here. ERROR_MORE_DATA already means more than one process is
+        // affected, and arrayCount reports the total number needed in both cases, so there is nothing to retry.
         uint arraySize = 1;
-        while (true)
-        {
-            var array = new RM_PROCESS_INFO[arraySize];
-            var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out _);
-            if (result is WIN32_ERROR.ERROR_SUCCESS or WIN32_ERROR.ERROR_MORE_DATA)
-            {
-                return arrayCount > 0;
-            }
+        var array = new RM_PROCESS_INFO[arraySize];
+        var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out _);
+        if (result is WIN32_ERROR.ERROR_SUCCESS or WIN32_ERROR.ERROR_MORE_DATA)
+            return arrayCount > 0;
 
-            throw new Win32Exception((int)result, $"RmGetList failed ({result})");
-        }
+        throw new Win32Exception((int)result, $"RmGetList failed ({result})");
     }
 
     /// <summary>Gets a list of processes that are currently locking the registered resources.</summary>

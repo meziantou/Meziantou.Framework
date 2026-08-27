@@ -1297,6 +1297,36 @@ public sealed partial class SnapshotTests
         }
     }
 
+    [Fact]
+    public void ScrubLinesMatching_BoundsTheMatchWithTheSpecifiedTimeout()
+    {
+        var settings = new SnapshotSettings();
+        settings.ScrubLinesMatching("^(a+)+$", RegexOptions.None, TimeSpan.FromMilliseconds(50));
+
+        var scrubber = Assert.Single(settings.Scrubbers);
+
+        Assert.Throws<RegexMatchTimeoutException>(() => scrubber.Scrub(new string('a', 40) + "b"));
+    }
+
+    [Fact]
+    public void ScrubLinesMatching_BoundsTheMatchByDefault()
+    {
+        var settings = new SnapshotSettings();
+        settings.ScrubLinesMatching("^(a+)+$");
+
+        var scrubber = Assert.Single(settings.Scrubbers);
+
+        Assert.Throws<RegexMatchTimeoutException>(() => scrubber.Scrub(new string('a', 40) + "b"));
+    }
+
+    [Fact]
+    public void ScrubLinesMatching_ReportsAnInvalidPatternWhenTheScrubberIsAdded()
+    {
+        var settings = new SnapshotSettings();
+
+        Assert.Throws<RegexParseException>(() => settings.ScrubLinesMatching("(unclosed"));
+    }
+
     private sealed class FixedAssertionExceptionBuilder : AssertionExceptionBuilder
     {
         public override Exception CreateException(string message)

@@ -261,6 +261,7 @@ namespace Meziantou.Framework.SnapshotTesting
 
     public static class SnapshotSettingsScrubberExtensions
     {
+        public static System.TimeSpan DefaultMatchTimeout { get => throw null; }
         public static void ScrubLines(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Func<string, bool> predicate) { }
         public static void ScrubLinesContaining(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, params string[] searchText) { }
         public static void ScrubLinesContaining(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.StringComparison stringComparison, params string[] searchText) { }

@@ -285,6 +285,30 @@ public sealed class BloomFilterTests
         Assert.InRange(filter.GetEstimatedCount(0), 1, 5);
     }
 
+    [Theory]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash128))]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash64))]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash32))]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash3))]
+    [InlineData(nameof(CountingBloomFilter.CreateCrc64))]
+    [InlineData(nameof(CountingBloomFilter.CreateCrc32))]
+    public void CountingBloomFilter_MayContain_MatchesGetEstimatedCount(string createMethodName)
+    {
+        const int ItemCount = 1_000;
+
+        var size = CountingBloomFilterSize.CreateOptimalSize(ItemCount, 0.01);
+        var filter = (ICountingBloomFilter)typeof(CountingBloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size])!;
+        for (var value = 0; value < ItemCount; value++)
+        {
+            filter.Add(value);
+        }
+
+        for (var value = 0; value < ItemCount * 5; value++)
+        {
+            Assert.Equal(filter.GetEstimatedCount(value) > 0, filter.MayContain(value));
+        }
+    }
+
     [Fact]
     public void CountingBloomFilterSize_CreateOptimalSize_MatchesBloomFilterSize()
     {

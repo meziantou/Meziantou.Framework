@@ -171,6 +171,15 @@ public sealed class ExpressionQueryBuilderTests
     }
 
     [Fact]
+    public void Build_NullQuery_ThrowsArgumentNullException()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+
+        var exception = Assert.Throws<ArgumentNullException>(() => queryBuilder.Build(query: null!));
+        Assert.Equal("query", exception.ParamName);
+    }
+
+    [Fact]
     public void DateKeyword_Today_UsesTimeProvider()
     {
         var query = CreateDateQueryBuilder(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero)).Build("date:today");

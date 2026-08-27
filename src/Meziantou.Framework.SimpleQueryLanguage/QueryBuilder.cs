@@ -224,6 +224,8 @@ public sealed class QueryBuilder<T>
     /// <returns>A compiled query that can be evaluated against objects.</returns>
     public Query<T> Build(string query)
     {
+        ArgumentNullException.ThrowIfNull(query);
+
         var predicate = CreatePredicate(query);
         return new Query<T>(query, predicate);
     }

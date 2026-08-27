@@ -129,6 +129,21 @@ internal static partial class MethodSymbolExtensions
         return false;
     }
 
+    /// <summary>
+    /// Gets the first return type attribute of <paramref name="method"/> that matches <paramref name="attributeType"/>.
+    /// Only the attributes applied to the return type of <paramref name="method"/> are considered. Unlike <c>Attribute.GetCustomAttributes(inherit: true)</c>,
+    /// the methods overridden by <paramref name="method"/> are never inspected.
+    /// </summary>
+    /// <param name="method">The method whose return type attributes are inspected.</param>
+    /// <param name="attributeType">The type of the attribute to look for. When <see langword="null"/>, no attribute is returned.</param>
+    /// <param name="inherits">
+    /// When <see langword="true"/>, an attribute also matches when its class derives from <paramref name="attributeType"/>.
+    /// When <see langword="false"/>, the attribute class must be exactly <paramref name="attributeType"/>.
+    /// This parameter is ignored when <paramref name="attributeType"/> is sealed, as no other class can derive from it.
+    /// Note this is unrelated to the <c>inherit</c> parameter of <c>Attribute.GetCustomAttributes</c>: it never makes the
+    /// methods overridden by <paramref name="method"/> be inspected.
+    /// </param>
+    /// <returns>The first matching attribute, or <see langword="null"/> when the return type of <paramref name="method"/> has no matching attribute.</returns>
     public static AttributeData? GetReturnTypeAttribute(this IMethodSymbol method, ITypeSymbol? attributeType, bool inherits = true)
     {
         if (attributeType is null)
@@ -157,6 +172,21 @@ internal static partial class MethodSymbolExtensions
         return null;
     }
 
+    /// <summary>
+    /// Indicates whether the return type of <paramref name="method"/> has an attribute matching <paramref name="attributeType"/>.
+    /// Only the attributes applied to the return type of <paramref name="method"/> are considered. Unlike <c>Attribute.GetCustomAttributes(inherit: true)</c>,
+    /// the methods overridden by <paramref name="method"/> are never inspected.
+    /// </summary>
+    /// <param name="method">The method whose return type attributes are inspected.</param>
+    /// <param name="attributeType">The type of the attribute to look for. When <see langword="null"/>, the method returns <see langword="false"/>.</param>
+    /// <param name="inherits">
+    /// When <see langword="true"/>, an attribute also matches when its class derives from <paramref name="attributeType"/>.
+    /// When <see langword="false"/>, the attribute class must be exactly <paramref name="attributeType"/>.
+    /// This parameter is ignored when <paramref name="attributeType"/> is sealed, as no other class can derive from it.
+    /// Note this is unrelated to the <c>inherit</c> parameter of <c>Attribute.GetCustomAttributes</c>: it never makes the
+    /// methods overridden by <paramref name="method"/> be inspected.
+    /// </param>
+    /// <returns><see langword="true"/> when the return type of <paramref name="method"/> has a matching attribute; otherwise <see langword="false"/>.</returns>
     public static bool HasReturnTypeAttribute(this IMethodSymbol method, [NotNullWhen(true)] ITypeSymbol? attributeType, bool inherits = true)
     {
         return GetReturnTypeAttribute(method, attributeType, inherits) is not null;

@@ -343,7 +343,7 @@ public sealed class RoslynHelperTests
             var value = 41;
             value = 42;
             object boxed = value;
-            """, outputKind: OutputKind.ConsoleApplication);
+            """, compilationOptions: DefaultCompilationOptions.WithOutputKind(OutputKind.ConsoleApplication));
         var semanticModel = GetSemanticModel(compilation);
         var boxed = GetInitializerOperation(semanticModel, "boxed");
 
@@ -359,7 +359,7 @@ public sealed class RoslynHelperTests
             value = 42;
             value++;
             object boxed = value;
-            """, outputKind: OutputKind.ConsoleApplication);
+            """, compilationOptions: DefaultCompilationOptions.WithOutputKind(OutputKind.ConsoleApplication));
         var semanticModel = GetSemanticModel(compilation);
         var boxed = GetInitializerOperation(semanticModel, "boxed");
 
@@ -453,6 +453,119 @@ public sealed class RoslynHelperTests
         var boxed = GetInitializerOperation(semanticModel, "boxed");
 
         Assert.Equal(SpecialType.System_Int32, boxed.GetActualType(default)?.SpecialType);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_ReturnsFalseWhenReadOnlyFieldIsWrittenThroughAnOutArgument()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                private readonly int _x = 5;
+
+                public Sample()
+                {
+                    Init(out _x);
+                }
+
+                private static void Init(out int value) => value = 10;
+
+                public void M()
+                {
+                    object boxed = _x;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_ReturnsFalseWhenReadOnlyFieldIsIncrementedInConstructor()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                private readonly int _x = 5;
+
+                public Sample()
+                {
+                    _x++;
+                }
+
+                public void M()
+                {
+                    object boxed = _x;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_ReturnsFalseWhenReadOnlyFieldIsAliasedByARefLocal()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                private readonly int _x = 5;
+
+                public Sample()
+                {
+                    ref var alias = ref _x;
+                    alias = 10;
+                }
+
+                public void M()
+                {
+                    object boxed = _x;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_ReturnsFalseWhenLocalIsWrittenThroughARefArgumentInTopLevelStatements()
+    {
+        var compilation = CreateCompilation("""
+            var text = "a";
+            Modify(ref text);
+            object boxed = text;
+
+            static void Modify(ref string value) => value = "b";
+            """, compilationOptions: DefaultCompilationOptions.WithOutputKind(OutputKind.ConsoleApplication));
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.False(boxed.TryGetConstantValue(out var value, default));
+        Assert.Null(value);
+    }
+
+    [Fact]
+    public void TryGetConstantValue_FollowsLocalInitializersInTopLevelStatements()
+    {
+        var compilation = CreateCompilation("""
+            var text = "a";
+            System.Console.WriteLine("unrelated");
+            object boxed = text;
+            """, compilationOptions: DefaultCompilationOptions.WithOutputKind(OutputKind.ConsoleApplication));
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.True(boxed.TryGetConstantValue(out var value, default));
+        Assert.Equal("a", value);
     }
 
     [Fact]
@@ -670,6 +783,33 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void HasReturnTypeAttribute_DoesNotConsiderAttributesAppliedToOverriddenMethods()
+    {
+        var compilation = CreateCompilation("""
+            using System;
+
+            public class BaseAttribute : Attribute;
+
+            public class Parent
+            {
+                [return: Base]
+                public virtual string M() => "";
+            }
+
+            public class Child : Parent
+            {
+                public override string M() => "";
+            }
+            """);
+        var child = GetRequiredType(compilation, "Child");
+        var baseAttribute = GetRequiredType(compilation, "BaseAttribute");
+        var method = GetRequiredMethod(child, "M");
+
+        Assert.False(method.HasReturnTypeAttribute(baseAttribute));
+        Assert.Null(method.GetReturnTypeAttribute(baseAttribute));
+    }
+
+    [Fact]
     public void Ancestors_ReturnsOperationParents()
     {
         var compilation = CreateCompilation("""
@@ -847,6 +987,26 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void HasAttribute_DoesNotConsiderAttributesAppliedToBaseTypes()
+    {
+        var compilation = CreateCompilation("""
+            using System;
+
+            public class BaseAttribute : Attribute;
+
+            [Base]
+            public class Parent;
+            public class Child : Parent;
+            """);
+        var child = GetRequiredType(compilation, "Child");
+        var baseAttribute = GetRequiredType(compilation, "BaseAttribute");
+
+        Assert.False(child.HasAttribute(baseAttribute));
+        Assert.Empty(child.GetAttributes(baseAttribute));
+        Assert.Null(child.GetFirstAttribute(baseAttribute));
+    }
+
+    [Fact]
     public void IsVisibleOutsideOfAssembly_ReturnsTrueForPublicAndProtectedSymbolChains()
     {
         var compilation = CreateCompilation("""
@@ -953,7 +1113,37 @@ public sealed class RoslynHelperTests
             """);
         var type = GetRequiredType(compilation, "ISample");
 
-        Assert.Contains(type, type.GetAllInterfacesIncludingSelf());
+        Assert.Contains(type, type.GetAllInterfacesIncludingSelf(), SymbolEqualityComparer.Default);
+    }
+
+    [Fact]
+    public void GetAllInterfacesIncludingThis_DoesNotIncludeTheTypeWhenSymbolIsNotAnInterface()
+    {
+        var compilation = CreateCompilation("""
+            public interface ISample;
+            public class Sample : ISample;
+            """);
+        var type = GetRequiredType(compilation, "Sample");
+        var interfaceType = GetRequiredType(compilation, "ISample");
+
+        var interfaces = type.GetAllInterfacesIncludingSelf();
+
+        Assert.Contains(interfaceType, interfaces, SymbolEqualityComparer.Default);
+        Assert.DoesNotContain(type, interfaces, SymbolEqualityComparer.Default);
+    }
+
+    [Fact]
+    public void GetAllInterfacesIncludingThis_DoesNotDuplicateSelfWhenAlreadyPresent()
+    {
+        var compilation = CreateCompilation("""
+            public interface IBase;
+            public interface ISample : IBase;
+            """);
+        var type = GetRequiredType(compilation, "ISample");
+
+        var interfaces = type.GetAllInterfacesIncludingSelf();
+
+        Assert.Equal(1, interfaces.Count(i => SymbolEqualityComparer.Default.Equals(i, type)));
     }
 
     [Fact]
@@ -1003,15 +1193,20 @@ public sealed class RoslynHelperTests
             public class Sample : Base
             {
                 public T M<T>(T value) where T : Sample => value;
+                public T MConstrainedToBase<T>(T value) where T : Base => value;
             }
             """);
         var baseType = GetRequiredType(compilation, "Base");
         var sampleType = GetRequiredType(compilation, "Sample");
         var typeParameter = GetRequiredMethod(sampleType, "M").TypeParameters.Single();
+        var typeParameterConstrainedToBase = GetRequiredMethod(sampleType, "MConstrainedToBase").TypeParameters.Single();
 
         Assert.True(sampleType.InheritsFrom(baseType));
         Assert.True(typeParameter.InheritsFrom(baseType));
+        Assert.True(typeParameterConstrainedToBase.InheritsFrom(baseType));
+        Assert.False(baseType.InheritsFrom(baseType));
         Assert.False(baseType.InheritsFrom(sampleType));
+        Assert.False(typeParameterConstrainedToBase.InheritsFrom(sampleType));
     }
 
     [Fact]
@@ -1019,18 +1214,25 @@ public sealed class RoslynHelperTests
     {
         var compilation = CreateCompilation("""
             public interface ISample;
+            public interface IDerived : ISample;
             public class Sample : ISample
             {
                 public T M<T>(T value) where T : ISample => value;
+                public T MConstrainedToDerived<T>(T value) where T : IDerived => value;
             }
             """);
         var interfaceType = GetRequiredType(compilation, "ISample");
+        var derivedInterfaceType = GetRequiredType(compilation, "IDerived");
         var sampleType = GetRequiredType(compilation, "Sample");
         var typeParameter = GetRequiredMethod(sampleType, "M").TypeParameters.Single();
+        var typeParameterConstrainedToDerived = GetRequiredMethod(sampleType, "MConstrainedToDerived").TypeParameters.Single();
 
         Assert.True(sampleType.Implements(interfaceType));
         Assert.True(typeParameter.Implements(interfaceType));
+        Assert.True(typeParameterConstrainedToDerived.Implements(interfaceType));
+        Assert.True(typeParameterConstrainedToDerived.Implements(derivedInterfaceType));
         Assert.False(interfaceType.Implements(interfaceType));
+        Assert.False(typeParameter.Implements(derivedInterfaceType));
     }
 
     [Fact]
@@ -1038,12 +1240,17 @@ public sealed class RoslynHelperTests
     {
         var compilation = CreateCompilation("""
             public interface ISample<T>;
-            public class Sample : ISample<string>;
+            public class Sample : ISample<string>
+            {
+                public T M<T>(T value) where T : ISample<int> => value;
+            }
             """);
         var interfaceType = GetRequiredType(compilation, "ISample`1");
         var sampleType = GetRequiredType(compilation, "Sample");
+        var typeParameter = GetRequiredMethod(sampleType, "M").TypeParameters.Single();
 
         Assert.True(sampleType.ImplementsGenericInterface(interfaceType));
+        Assert.True(typeParameter.ImplementsGenericInterface(interfaceType));
         Assert.False(interfaceType.ImplementsGenericInterface(interfaceType));
     }
 
@@ -1052,15 +1259,21 @@ public sealed class RoslynHelperTests
     {
         var compilation = CreateCompilation("""
             public interface ISample;
-            public class Sample : ISample;
+            public class Sample : ISample
+            {
+                public T M<T>(T value) where T : ISample => value;
+            }
+
             public class Other;
             """);
         var interfaceType = GetRequiredType(compilation, "ISample");
         var sampleType = GetRequiredType(compilation, "Sample");
         var otherType = GetRequiredType(compilation, "Other");
+        var typeParameter = GetRequiredMethod(sampleType, "M").TypeParameters.Single();
 
         Assert.True(interfaceType.IsOrImplements(interfaceType));
         Assert.True(sampleType.IsOrImplements(interfaceType));
+        Assert.True(typeParameter.IsOrImplements(interfaceType));
         Assert.False(otherType.IsOrImplements(interfaceType));
     }
 
@@ -1069,14 +1282,20 @@ public sealed class RoslynHelperTests
     {
         var compilation = CreateCompilation("""
             public class Base;
-            public class Sample : Base;
+            public class Sample : Base
+            {
+                public T M<T>(T value) where T : Base => value;
+            }
             """);
         var baseType = GetRequiredType(compilation, "Base");
         var sampleType = GetRequiredType(compilation, "Sample");
+        var typeParameter = GetRequiredMethod(sampleType, "M").TypeParameters.Single();
 
         Assert.True(baseType.IsOrInheritsFrom(baseType));
         Assert.True(sampleType.IsOrInheritsFrom(baseType));
+        Assert.True(typeParameter.IsOrInheritsFrom(baseType));
         Assert.False(baseType.IsOrInheritsFrom(sampleType));
+        Assert.False(typeParameter.IsOrInheritsFrom(sampleType));
     }
 
     [Fact]
@@ -1498,14 +1717,128 @@ public sealed class RoslynHelperTests
         Assert.True(syntaxTree.IsGeneratedCode(analyzerOptions, default));
     }
 
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_ReportOnMethodName_ReportsOnTheIdentifier()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public string Method() => "";
+            }
+            """);
+        var method = GetRequiredMethod(GetRequiredType(compilation, "Sample"), "Method");
+
+        var diagnostic = ReportMethodDiagnostic(compilation, method, DiagnosticMethodReportOptions.ReportOnMethodName);
+
+        Assert.Equal("Method", GetLocationText(diagnostic.Location));
+    }
+
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_ReportOnReturnType_ReportsOnTheReturnType()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public string Method() => "";
+            }
+            """);
+        var method = GetRequiredMethod(GetRequiredType(compilation, "Sample"), "Method");
+
+        var diagnostic = ReportMethodDiagnostic(compilation, method, DiagnosticMethodReportOptions.ReportOnReturnType);
+
+        Assert.Equal("string", GetLocationText(diagnostic.Location));
+    }
+
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_ReportOnMethodName_TakesPrecedenceOverReportOnReturnType()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public string Method() => "";
+            }
+            """);
+        var method = GetRequiredMethod(GetRequiredType(compilation, "Sample"), "Method");
+
+        var diagnostic = ReportMethodDiagnostic(compilation, method, DiagnosticMethodReportOptions.ReportOnMethodName | DiagnosticMethodReportOptions.ReportOnReturnType);
+
+        Assert.Equal("Method", GetLocationText(diagnostic.Location));
+    }
+
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_ReportOnMethodName_ReportsOnTheDelegateIdentifier()
+    {
+        var compilation = CreateCompilation("""
+            public delegate string Sample(int value);
+            """);
+        var invokeMethod = GetRequiredType(compilation, "Sample").DelegateInvokeMethod;
+        Assert.NotNull(invokeMethod);
+
+        var diagnostic = ReportMethodDiagnostic(compilation, invokeMethod, DiagnosticMethodReportOptions.ReportOnMethodName);
+
+        Assert.Equal("Sample", GetLocationText(diagnostic.Location));
+    }
+
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_ReportOnMethodName_ReportsOnTheLocalFunctionIdentifier()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public void M()
+                {
+                    string Local() => "";
+                    Local();
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var localFunction = semanticModel.SyntaxTree.GetRoot().DescendantNodes().OfType<LocalFunctionStatementSyntax>().Single();
+        var symbol = (IMethodSymbol?)semanticModel.GetDeclaredSymbol(localFunction);
+        Assert.NotNull(symbol);
+
+        var diagnostic = ReportMethodDiagnostic(compilation, symbol, DiagnosticMethodReportOptions.ReportOnMethodName);
+
+        Assert.Equal("Local", GetLocationText(diagnostic.Location));
+    }
+
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_None_ReportsOnTheSymbolLocations()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public string Method() => "";
+            }
+            """);
+        var method = GetRequiredMethod(GetRequiredType(compilation, "Sample"), "Method");
+
+        var diagnostic = ReportMethodDiagnostic(compilation, method, DiagnosticMethodReportOptions.None);
+
+        Assert.Equal(method.Locations, [diagnostic.Location]);
+    }
+
+    [Fact]
+    public void ReportDiagnostic_MethodSymbol_ReportOnMethodName_ReportsWithoutLocationForMetadataMethods()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample;
+            """);
+        var method = GetRequiredMethod(GetRequiredType(compilation, "System.Object"), "ToString");
+
+        var diagnostic = ReportMethodDiagnostic(compilation, method, DiagnosticMethodReportOptions.ReportOnMethodName);
+
+        Assert.False(diagnostic.Location.IsInSource);
+    }
+
     private static CSharpCompilation CreateCompilation(
         string source,
         string assemblyName = "Tests",
         IReadOnlyCollection<MetadataReference>? additionalReferences = null,
         CSharpParseOptions? parseOptions = null,
+        CSharpCompilationOptions? compilationOptions = null,
         int? dotnetMajorVersion = null,
-        bool allowInvalidCode = false,
-        OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
+        bool allowInvalidCode = false)
     {
         var references = CreateMetadataReferences(dotnetMajorVersion);
         if (additionalReferences is not null)
@@ -1517,7 +1850,7 @@ public sealed class RoslynHelperTests
             assemblyName,
             [CSharpSyntaxTree.ParseText(source, parseOptions ?? DefaultParseOptions, path: assemblyName + ".cs")],
             references,
-            DefaultCompilationOptions.WithOutputKind(outputKind));
+            compilationOptions ?? DefaultCompilationOptions);
 
         if (!allowInvalidCode)
         {
@@ -1656,6 +1989,29 @@ public sealed class RoslynHelperTests
         Assert.NotNull(operation);
 
         return operation;
+    }
+
+    private static Diagnostic ReportMethodDiagnostic(Compilation compilation, IMethodSymbol symbol, DiagnosticMethodReportOptions reportOptions)
+    {
+        Diagnostic? reported = null;
+
+        // A DiagnosticAnalyzer cannot be defined in this assembly (RS1041), so the context is created directly
+#pragma warning disable CS0618
+        var context = new SymbolAnalysisContext(symbol, compilation, new AnalyzerOptions([]), diagnostic => reported = diagnostic, _ => true, cancellationToken: default);
+#pragma warning restore CS0618
+
+        context.ReportDiagnostic(CreateDescriptor(), symbol, reportOptions);
+
+        Assert.NotNull(reported);
+
+        return reported;
+    }
+
+    private static string GetLocationText(Location location)
+    {
+        Assert.NotNull(location.SourceTree);
+
+        return location.SourceTree.GetText().ToString(location.SourceSpan);
     }
 
     private static DiagnosticDescriptor CreateDescriptor()

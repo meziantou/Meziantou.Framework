@@ -4,6 +4,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 
@@ -15,18 +16,19 @@ namespace Meziantou.Framework.Roslyn;
 #endif
 internal static partial class TypeSymbolExtensions
 {
-    public static IList<INamedTypeSymbol> GetAllInterfacesIncludingSelf(this ITypeSymbol type)
+    public static ImmutableArray<INamedTypeSymbol> GetAllInterfacesIncludingSelf(this ITypeSymbol type)
     {
         var allInterfaces = type.AllInterfaces;
-        if (type is INamedTypeSymbol namedType && namedType.TypeKind == TypeKind.Interface && !allInterfaces.Contains(namedType))
+        if (type is not INamedTypeSymbol { TypeKind: TypeKind.Interface } namedType)
+            return allInterfaces;
+
+        foreach (var @interface in allInterfaces)
         {
-            var result = new List<INamedTypeSymbol>(allInterfaces.Length + 1);
-            result.AddRange(allInterfaces);
-            result.Add(namedType);
-            return result;
+            if (SymbolEqualityComparer.Default.Equals(@interface, namedType))
+                return allInterfaces;
         }
 
-        return allInterfaces;
+        return allInterfaces.Add(namedType);
     }
 
     public static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol? symbol)
@@ -51,6 +53,14 @@ internal static partial class TypeSymbolExtensions
         }
     }
 
+    /// <summary>
+    /// Determines whether <paramref name="classSymbol"/> derives from <paramref name="baseClassType"/>. A type is not considered to derive from itself.
+    /// </summary>
+    /// <remarks>
+    /// When <paramref name="classSymbol"/> is a type parameter, its constraint types are inspected and a constraint that is <paramref name="baseClassType"/> is a match,
+    /// so <c>T</c> in <c>where T : Base</c> derives from <c>Base</c>. <see cref="Implements(ITypeSymbol, ITypeSymbol)"/> and
+    /// <see cref="ImplementsGenericInterface(ITypeSymbol, ITypeSymbol)"/> behave the same way.
+    /// </remarks>
     public static bool InheritsFrom(this ITypeSymbol classSymbol, [NotNullWhen(true)] ITypeSymbol? baseClassType)
     {
         return InheritsFrom(classSymbol, baseClassType, visitedTypeParameters: null);
@@ -65,7 +75,7 @@ internal static partial class TypeSymbolExtensions
         {
             return AnyConstraintTypeMatches(typeParameter, visitedTypeParameters, (constraintType, visitedTypeParameters) =>
             {
-                return !SymbolEquals(constraintType, baseClassType) && constraintType.InheritsFrom(baseClassType, visitedTypeParameters);
+                return SymbolEquals(constraintType, baseClassType) || constraintType.InheritsFrom(baseClassType, visitedTypeParameters);
             });
         }
 
@@ -81,6 +91,13 @@ internal static partial class TypeSymbolExtensions
         return false;
     }
 
+    /// <summary>
+    /// Determines whether <paramref name="classSymbol"/> implements <paramref name="interfaceType"/>. An interface is not considered to implement itself.
+    /// </summary>
+    /// <remarks>
+    /// When <paramref name="classSymbol"/> is a type parameter, its constraint types are inspected and a constraint that is <paramref name="interfaceType"/> is a match,
+    /// so <c>T</c> in <c>where T : ISample</c> implements <c>ISample</c>.
+    /// </remarks>
     public static bool Implements(this ITypeSymbol classSymbol, [NotNullWhen(true)] ITypeSymbol? interfaceType)
     {
         return Implements(classSymbol, interfaceType, visitedTypeParameters: null);
@@ -108,6 +125,14 @@ internal static partial class TypeSymbolExtensions
         return false;
     }
 
+    /// <summary>
+    /// Determines whether <paramref name="classSymbol"/> implements a construction of the generic interface <paramref name="interfaceType"/>, whatever its type arguments are.
+    /// An interface is not considered to implement itself.
+    /// </summary>
+    /// <remarks>
+    /// When <paramref name="classSymbol"/> is a type parameter, its constraint types are inspected and a constraint that is a construction of
+    /// <paramref name="interfaceType"/> is a match, so <c>T</c> in <c>where T : ISample&lt;int&gt;</c> implements <c>ISample&lt;&gt;</c>.
+    /// </remarks>
     public static bool ImplementsGenericInterface(this ITypeSymbol classSymbol, [NotNullWhen(true)] ITypeSymbol? interfaceType)
     {
         return ImplementsGenericInterface(classSymbol, interfaceType, visitedTypeParameters: null);
@@ -135,6 +160,9 @@ internal static partial class TypeSymbolExtensions
         return false;
     }
 
+    /// <summary>
+    /// Determines whether <paramref name="symbol"/> is <paramref name="interfaceType"/> or implements it.
+    /// </summary>
     public static bool IsOrImplements(this ITypeSymbol symbol, [NotNullWhen(true)] ITypeSymbol? interfaceType)
     {
         if (interfaceType is null)
@@ -143,6 +171,9 @@ internal static partial class TypeSymbolExtensions
         return SymbolEquals(symbol, interfaceType) || symbol.Implements(interfaceType);
     }
 
+    /// <summary>
+    /// Determines whether <paramref name="symbol"/> is <paramref name="expectedType"/> or derives from it.
+    /// </summary>
     public static bool IsOrInheritsFrom(this ITypeSymbol symbol, [NotNullWhen(true)] ITypeSymbol? expectedType)
     {
         return IsOrInheritsFrom(symbol, expectedType, visitedTypeParameters: null);

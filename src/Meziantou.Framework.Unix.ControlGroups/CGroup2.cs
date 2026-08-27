@@ -205,6 +205,11 @@ public sealed partial class CGroup2
     /// <param name="periodMicroseconds">Period in microseconds (default is 100000 = 100ms).</param>
     public void SetCpuMax(long? maxMicroseconds, long periodMicroseconds = 100000)
     {
+        if (maxMicroseconds.HasValue)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(maxMicroseconds.Value, nameof(maxMicroseconds));
+        }
+
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(periodMicroseconds, nameof(periodMicroseconds));
 
         var maxStr = maxMicroseconds.HasValue ? maxMicroseconds.Value.ToString(CultureInfo.InvariantCulture) : "max";
@@ -350,6 +355,9 @@ public sealed partial class CGroup2
     /// <param name="writeIopsPerSecond">Write IOPS limit, or null for no limit.</param>
     public void SetIoMax(int major, int minor, long? readBytesPerSecond = null, long? writeBytesPerSecond = null, long? readIopsPerSecond = null, long? writeIopsPerSecond = null)
     {
+        if (readBytesPerSecond is null && writeBytesPerSecond is null && readIopsPerSecond is null && writeIopsPerSecond is null)
+            throw new ArgumentException("At least one limit must be provided. Use RemoveIoMax to clear the limits of a device.", nameof(readBytesPerSecond));
+
         var sb = new StringBuilder();
         sb.Append($"{major.ToString(CultureInfo.InvariantCulture)}:{minor.ToString(CultureInfo.InvariantCulture)}");
 

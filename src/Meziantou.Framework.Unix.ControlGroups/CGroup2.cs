@@ -223,6 +223,30 @@ public sealed partial class CGroup2
         WriteFile("cpu.max", "max");
     }
 
+    /// <summary>Gets the CPU maximum bandwidth limit.</summary>
+    /// <returns>The quota and period, or <see langword="null"/> when the value cannot be read.</returns>
+    public CpuMax? GetCpuMax()
+    {
+        var content = ReadFile("cpu.max");
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        var parts = content.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length is not 2)
+            return null;
+
+        if (!long.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var period))
+            return null;
+
+        if (parts[0].Equals("max", StringComparison.OrdinalIgnoreCase))
+            return new CpuMax(MaxMicroseconds: null, period);
+
+        if (long.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var max))
+            return new CpuMax(max, period);
+
+        return null;
+    }
+
     #endregion
 
     #region Memory Controller
@@ -241,21 +265,7 @@ public sealed partial class CGroup2
     }
 
     /// <summary>Gets the memory maximum limit in bytes.</summary>
-    public long? GetMemoryMax()
-    {
-        var content = ReadFile("memory.max");
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        content = content.Trim();
-        if (content.Equals("max", StringComparison.OrdinalIgnoreCase))
-            return null;
-
-        if (long.TryParse(content, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
-            return value;
-
-        return null;
-    }
+    public long? GetMemoryMax() => ReadLimit("memory.max");
 
     /// <summary>Sets the memory high limit (soft limit with throttling).</summary>
     /// <param name="bytes">High memory limit in bytes, or null for no limit.</param>
@@ -270,6 +280,10 @@ public sealed partial class CGroup2
         WriteFile("memory.high", value);
     }
 
+    /// <summary>Gets the memory high limit in bytes.</summary>
+    /// <returns>The limit, or <see langword="null"/> when there is no limit.</returns>
+    public long? GetMemoryHigh() => ReadLimit("memory.high");
+
     /// <summary>Sets the memory low limit (best-effort protection).</summary>
     /// <param name="bytes">Low memory limit in bytes, or null for no protection.</param>
     public void SetMemoryLow(long? bytes)
@@ -283,6 +297,10 @@ public sealed partial class CGroup2
         WriteFile("memory.low", value);
     }
 
+    /// <summary>Gets the memory low limit in bytes.</summary>
+    /// <returns>The protection level, or <see langword="null"/> when there is no protection.</returns>
+    public long? GetMemoryLow() => ReadLimit("memory.low");
+
     /// <summary>Sets the memory min limit (hard protection).</summary>
     /// <param name="bytes">Min memory limit in bytes, or null for no protection.</param>
     public void SetMemoryMin(long? bytes)
@@ -295,6 +313,10 @@ public sealed partial class CGroup2
         var value = bytes.HasValue ? bytes.Value.ToString(CultureInfo.InvariantCulture) : "0";
         WriteFile("memory.min", value);
     }
+
+    /// <summary>Gets the memory min limit in bytes.</summary>
+    /// <returns>The protection level, or <see langword="null"/> when there is no protection.</returns>
+    public long? GetMemoryMin() => ReadLimit("memory.min");
 
     /// <summary>Gets the current memory usage in bytes.</summary>
     public long? GetMemoryCurrent()
@@ -321,6 +343,10 @@ public sealed partial class CGroup2
         var value = bytes.HasValue ? bytes.Value.ToString(CultureInfo.InvariantCulture) : "max";
         WriteFile("memory.swap.max", value);
     }
+
+    /// <summary>Gets the swap maximum limit in bytes.</summary>
+    /// <returns>The limit, or <see langword="null"/> when there is no limit.</returns>
+    public long? GetSwapMax() => ReadLimit("memory.swap.max");
 
     #endregion
 
@@ -410,21 +436,7 @@ public sealed partial class CGroup2
     }
 
     /// <summary>Gets the maximum number of processes allowed.</summary>
-    public long? GetPidsMax()
-    {
-        var content = ReadFile("pids.max");
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        content = content.Trim();
-        if (content.Equals("max", StringComparison.OrdinalIgnoreCase))
-            return null;
-
-        if (long.TryParse(content, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
-            return value;
-
-        return null;
-    }
+    public long? GetPidsMax() => ReadLimit("pids.max");
 
     /// <summary>Gets the current number of processes.</summary>
     public long? GetPidsCurrent()
@@ -504,6 +516,25 @@ public sealed partial class CGroup2
         {
             return "";
         }
+    }
+
+    /// <summary>Reads an interface file holding a single limit, where "max" means unlimited.</summary>
+    /// <param name="fileName">The name of the interface file.</param>
+    /// <returns>The limit, or <see langword="null"/> when the cgroup is unlimited.</returns>
+    private long? ReadLimit(string fileName)
+    {
+        var content = ReadFile(fileName);
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+
+        content = content.Trim();
+        if (content.Equals("max", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        if (long.TryParse(content, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+            return value;
+
+        return null;
     }
 
     private void WriteFile(string fileName, string content)

@@ -37,13 +37,18 @@ namespace Meziantou.Framework.Unix.ControlGroups
         public int? GetCpuWeight() => throw null;
         public void SetCpuMax(long? maxMicroseconds, long periodMicroseconds = 100000L) { }
         public void RemoveCpuMax() { }
+        public Meziantou.Framework.Unix.ControlGroups.CpuMax? GetCpuMax() => throw null;
         public void SetMemoryMax(long? bytes) { }
         public long? GetMemoryMax() => throw null;
         public void SetMemoryHigh(long? bytes) { }
+        public long? GetMemoryHigh() => throw null;
         public void SetMemoryLow(long? bytes) { }
+        public long? GetMemoryLow() => throw null;
         public void SetMemoryMin(long? bytes) { }
+        public long? GetMemoryMin() => throw null;
         public long? GetMemoryCurrent() => throw null;
         public void SetSwapMax(long? bytes) { }
+        public long? GetSwapMax() => throw null;
         public void SetIoWeight(int major, int minor, int weight) { }
         public void SetDefaultIoWeight(int weight) { }
         public void SetIoMax(int major, int minor, long? readBytesPerSecond = null, long? writeBytesPerSecond = null, long? readIopsPerSecond = null, long? writeIopsPerSecond = null) { }
@@ -62,6 +67,24 @@ namespace Meziantou.Framework.Unix.ControlGroups
         public long? GetHugeTlbMax(string pageSize) => throw null;
         public long? GetHugeTlbCurrent(string pageSize) => throw null;
         public long? GetHugeTlbEventsMax(string pageSize) => throw null;
+    }
+
+    public readonly struct CpuMax : System.IEquatable<Meziantou.Framework.Unix.ControlGroups.CpuMax>
+    {
+        public long? MaxMicroseconds { get => throw null; init { } }
+        public long PeriodMicroseconds { get => throw null; init { } }
+        public CpuMax(long? MaxMicroseconds, long PeriodMicroseconds) { }
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator !=(Meziantou.Framework.Unix.ControlGroups.CpuMax left, Meziantou.Framework.Unix.ControlGroups.CpuMax right) => throw null;
+        public static bool operator ==(Meziantou.Framework.Unix.ControlGroups.CpuMax left, Meziantou.Framework.Unix.ControlGroups.CpuMax right) => throw null;
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public bool Equals(Meziantou.Framework.Unix.ControlGroups.CpuMax other) => throw null;
+        public void Deconstruct(out long? MaxMicroseconds, out long PeriodMicroseconds) => throw null;
     }
 
     public sealed class CpuStat

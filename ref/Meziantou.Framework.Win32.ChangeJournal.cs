@@ -16,6 +16,7 @@ namespace Meziantou.Framework.Win32
         public static Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3 GetEntry(string path) => throw null;
         public static Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3 GetEntry(Microsoft.Win32.SafeHandles.SafeFileHandle handle) => throw null;
         public void RefreshJournalData() { }
+        [System.Obsolete("Use RefreshJournalData instead.")]
         public void ReadJournalData() { }
         public void Dispose() { }
         public void Delete() { }

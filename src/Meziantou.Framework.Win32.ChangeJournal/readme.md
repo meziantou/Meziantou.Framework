@@ -10,9 +10,11 @@ var entry = ChangeJournal.GetEntry(@"D:\test.txt");
 
 ## Get all records
 
+Use `TimeSpan.Zero` to read the records that are already in the journal and stop at the end of it.
+
 ```c#
 using var changeJournal = ChangeJournal.Open(new DriveInfo("D:"), unprivileged: false);
-foreach (var change in changeJournal.GetEntries(ChangeReason.All, returnOnlyOnClose: false, Timeout.InfiniteTimeSpan))
+foreach (var change in changeJournal.GetEntries(ChangeReason.All, returnOnlyOnClose: false, TimeSpan.Zero))
 {
     if (change is ChangeJournalEntryVersion2or3 changev2)
     {
@@ -26,7 +28,19 @@ foreach (var change in changeJournal.GetEntries(ChangeReason.All, returnOnlyOnCl
 ## Get all records from a USN
 
 ```c#
-foreach (var change in changeJournal.GetEntries(entry.UniqueSequenceNumber, ChangeReason.All, returnOnlyOnClose: false, Timeout.InfiniteTimeSpan))
+foreach (var change in changeJournal.GetEntries(entry.UniqueSequenceNumber, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.Zero))
+{
+}
+```
+
+## Monitor changes as they happen
+
+Pass a non-zero timeout to wait for new records instead of stopping at the end of the journal.
+`Timeout.InfiniteTimeSpan` waits indefinitely, so the loop below never completes on its own.
+The underlying control code counts in whole seconds, so a sub-second timeout is rounded up to one second.
+
+```c#
+foreach (var change in changeJournal.GetEntries(ChangeReason.All, returnOnlyOnClose: false, Timeout.InfiniteTimeSpan))
 {
 }
 ```

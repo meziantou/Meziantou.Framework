@@ -24,7 +24,7 @@ public partial class CGroup2
     /// <param name="cpuList">CPU list in cgroup format.</param>
     public void SetCpusetCpusRaw(string cpuList)
     {
-        WriteFile("cpuset.cpus", cpuList ?? "");
+        WriteFile("cpuset.cpus", cpuList);
     }
 
     /// <summary>Gets the CPUs that tasks in this cgroup can use.</summary>
@@ -69,7 +69,7 @@ public partial class CGroup2
     /// <param name="nodeList">Memory node list in cgroup format.</param>
     public void SetCpusetMemsRaw(string nodeList)
     {
-        WriteFile("cpuset.mems", nodeList ?? "");
+        WriteFile("cpuset.mems", nodeList);
     }
 
     /// <summary>Gets the memory nodes that tasks in this cgroup can use.</summary>

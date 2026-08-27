@@ -281,6 +281,35 @@ public sealed class ResxGeneratorTest
     }
 
     [Fact]
+    public async Task ResxFilesWithSameFileName()
+    {
+        var element1 = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "from Folder1")));
+        var element2 = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "from Folder2")));
+
+        var result = await GenerateFiles(
+            [
+                (FullPath.GetTempPath() / "proj" / "Folder1" / "Messages.resx", element1.ToString()),
+                (FullPath.GetTempPath() / "proj" / "Folder2" / "Messages.resx", element2.ToString()),
+            ], new OptionProvider
+            {
+                ProjectDir = FullPath.GetTempPath() / "proj",
+                RootNamespace = "Test",
+            });
+
+        Assert.Collection(result.GeneratedTrees.OrderBy(t => t.FilePath, StringComparer.Ordinal),
+            tree =>
+            {
+                Assert.Equal("Folder1.Messages.resx.g.cs", Path.GetFileName(tree.FilePath));
+                Assert.Equal("Test.Folder1", tree.GetRoot(XunitCancellationToken).GetNamespace());
+            },
+            tree =>
+            {
+                Assert.Equal("Folder2.Messages.resx.g.cs", Path.GetFileName(tree.FilePath));
+                Assert.Equal("Test.Folder2", tree.GetRoot(XunitCancellationToken).GetNamespace());
+            });
+    }
+
+    [Fact]
     public async Task ComputeNamespace_RootDir()
     {
         var result = await GenerateFiles([(FullPath.GetTempPath() / "dir" / "proj" / "test.resx", new XElement("root").ToString())], new OptionProvider

@@ -54,6 +54,13 @@ public class ResxGeneratorTests
     }
 
     [Fact]
+    public void ResxFilesWithSameFileNameAreBothGenerated()
+    {
+        Assert.Equal("value from Folder1", Folder1.Resource2.Sample);
+        Assert.Equal("value from Folder2", Folder2.Resource2.Sample);
+    }
+
+    [Fact]
     public void BinaryFile()
     {
         Assert.Equal([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], Resource1.Image1!.AsSpan()[..8]);

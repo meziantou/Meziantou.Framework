@@ -9,6 +9,9 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     <AdditionalFiles Include="**/*.resx" />
+
+    <!-- The metadata name must match the CompilerVisibleItemMetadata declared in the props file -->
+    <AdditionalFiles Update="Resource3.resx" GenerateKeyNamesType="false" />
   </ItemGroup>
 
   <!-- Use the props shipped in the package, so the MSBuild logic computing the resource names is also tested -->

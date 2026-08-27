@@ -226,6 +226,9 @@ internal static class Compiler
     {
         var map = new Dictionary<string, KeywordHit>(caseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
+        // Groups are processed in declaration order and a later group intentionally overrides an
+        // earlier one for the same word, so a specific scope (type/literal/built_in) can take
+        // precedence over the generic `keyword` group. See Keywords for the full contract.
         foreach (var (scope, words) in keywords.Groups)
         {
             var keywordScope = scope is "_" ? null : scope;

@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.SyntaxHighlighting.Tests;
+﻿﻿namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 
 public class HighlighterTests
 {

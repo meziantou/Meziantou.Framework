@@ -12,10 +12,16 @@ internal sealed class StreamSnapshotSerializer : ISnapshotSerializer
             return false;
         }
 
-        var ms = new MemoryStream();
+        // The caller usually hands over a stream they have just written to, so its position sits at the
+        // end and copying from there would silently snapshot zero bytes.
+        if (stream.CanSeek)
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+        }
+
+        using var ms = new MemoryStream();
         stream.CopyTo(ms);
-        var data = ms.ToArray();
-        result = new SerializedSnapshot([new SnapshotData(type.FileExtension, data)]);
+        result = new SerializedSnapshot([new SnapshotData(type.FileExtension, ms.ToArray())]);
         return true;
     }
 }

@@ -426,6 +426,33 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
+    public void DefaultSerializer_HandlesStreamPositionedAtTheEnd()
+    {
+        var snapshotType = SnapshotType.Png;
+        var expectedBytes = "stream-binary-data"u8.ToArray();
+        using var stream = new MemoryStream();
+        stream.Write(expectedBytes);
+
+        var data = new SnapshotSettings().Serializers.Serialize(snapshotType, stream);
+
+        var snapshot = Assert.Single(data.Data);
+        Assert.Equal(expectedBytes, snapshot.Data);
+    }
+
+    [Fact]
+    public void DefaultSerializer_HandlesNonSeekableStream()
+    {
+        var snapshotType = SnapshotType.Png;
+        var expectedBytes = "stream-binary-data"u8.ToArray();
+        using var stream = new NonSeekableStream(expectedBytes);
+
+        var data = new SnapshotSettings().Serializers.Serialize(snapshotType, stream);
+
+        var snapshot = Assert.Single(data.Data);
+        Assert.Equal(expectedBytes, snapshot.Data);
+    }
+
+    [Fact]
     public void DefaultSerializer_HandlesGifByteArrayAsSingleBinarySnapshot()
     {
         var snapshotType = SnapshotType.Gif;
@@ -1295,6 +1322,11 @@ public sealed partial class SnapshotTests
             result = new SerializedSnapshot([new SnapshotData("txt", Encoding.UTF8.GetBytes(value))]);
             return true;
         }
+    }
+
+    private sealed class NonSeekableStream(byte[] data) : MemoryStream(data)
+    {
+        public override bool CanSeek => false;
     }
 
     private sealed class FixedAssertionExceptionBuilder : AssertionExceptionBuilder

@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -88,7 +87,7 @@ public sealed class RestartManager : IDisposable
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
         string[] resources = [path];
-        var result = RegisterResources(_sessionHandle.SessionHandle, resources);
+        var result = PInvoke.RmRegisterResources(_sessionHandle.SessionHandle, resources, rgApplications: default, rgsServiceNames: default);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
     }
@@ -102,7 +101,7 @@ public sealed class RestartManager : IDisposable
         ArgumentNullException.ThrowIfNull(paths);
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
-        var result = RegisterResources(_sessionHandle.SessionHandle, paths);
+        var result = PInvoke.RmRegisterResources(_sessionHandle.SessionHandle, paths, rgApplications: default, rgsServiceNames: default);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
     }
@@ -219,35 +218,6 @@ public sealed class RestartManager : IDisposable
             var result = PInvoke.RmStartSession(&localHandle, 0, new PWSTR(sessionKeyBufferPtr));
             handle = localHandle;
             return result;
-        }
-    }
-
-    private static unsafe WIN32_ERROR RegisterResources(uint sessionHandle, string[] paths)
-    {
-        if (paths.Length == 0)
-            return PInvoke.RmRegisterResources(sessionHandle, 0, (PCWSTR*)null, 0, (RM_UNIQUE_PROCESS*)null, 0, (PCWSTR*)null);
-
-        var handles = new GCHandle[paths.Length];
-        try
-        {
-            var pathPointers = stackalloc PCWSTR[paths.Length];
-            for (var i = 0; i < paths.Length; i++)
-            {
-                handles[i] = GCHandle.Alloc(paths[i], GCHandleType.Pinned);
-                pathPointers[i] = new PCWSTR((char*)handles[i].AddrOfPinnedObject());
-            }
-
-            return PInvoke.RmRegisterResources(sessionHandle, (uint)paths.Length, pathPointers, 0, (RM_UNIQUE_PROCESS*)null, 0, (PCWSTR*)null);
-        }
-        finally
-        {
-            foreach (var handle in handles)
-            {
-                if (handle.IsAllocated)
-                {
-                    handle.Free();
-                }
-            }
         }
     }
 

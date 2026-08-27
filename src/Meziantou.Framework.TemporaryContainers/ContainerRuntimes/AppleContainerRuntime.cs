@@ -70,7 +70,10 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 
             case ArchiveImage archive:
                 var loadResult = await Cli.RunBufferedAsync(["image", "load", "-i", archive.ArchivePath], cancellationToken).ConfigureAwait(false);
-                return ParseLoadedImage(loadResult.StandardOutput);
+                // Apple's load output is not documented, so an unrecognised shape falls back to the raw output
+                // rather than failing outright.
+                return ContainerImageOutputParser.TryParseLoadedImage(loadResult.StandardOutput)
+                    ?? loadResult.StandardOutput.Trim();
 
             case ExistingImage existing:
                 return existing.ImageId;
@@ -342,24 +345,5 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
             builder.Append(char.IsAsciiLetterOrDigit(ch) || ch is '_' or '.' or '-' ? ch : '-');
 
         return builder.ToString();
-    }
-
-    private static string ParseLoadedImage(string output)
-    {
-        const string Marker = "Loaded image";
-        foreach (var line in output.Split('\n'))
-        {
-            var trimmed = line.Trim();
-            var markerIndex = trimmed.IndexOf(Marker, StringComparison.OrdinalIgnoreCase);
-            if (markerIndex < 0)
-                continue;
-
-            var rest = trimmed[(markerIndex + Marker.Length)..];
-            var colonIndex = rest.IndexOf(':', StringComparison.Ordinal);
-            if (colonIndex >= 0)
-                return rest[(colonIndex + 1)..].Trim();
-        }
-
-        return output.Trim();
     }
 }

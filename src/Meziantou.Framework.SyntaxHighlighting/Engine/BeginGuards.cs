@@ -10,10 +10,10 @@ namespace Meziantou.Framework.SyntaxHighlighting.Engine;
 /// </summary>
 internal static partial class BeginGuards
 {
-    [GeneratedRegex(@"^\s*=", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: -1)]
+    [GeneratedRegex(@"^\s*=", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 30_000)]
     private static partial Regex LeadingEquals();
 
-    [GeneratedRegex(@"^\s+extends\s+", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: -1)]
+    [GeneratedRegex(@"^\s+extends\s+", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 30_000)]
     private static partial Regex LeadingExtends();
 
     public static bool Accept(string name, Match match, string input) => name switch

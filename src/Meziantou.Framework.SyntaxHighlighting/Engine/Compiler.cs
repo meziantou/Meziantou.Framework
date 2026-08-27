@@ -4,7 +4,12 @@ namespace Meziantou.Framework.SyntaxHighlighting.Engine;
 
 internal static class Compiler
 {
-    private static readonly TimeSpan RegexTimeout = Timeout.InfiniteTimeSpan;
+    // Grammar patterns run against untrusted input, so a match must not be able to run forever.
+    // The bound is deliberately generous: the slowest legitimate single match measured across the
+    // grammars is ~4.7s (the YAML key pattern over a 48 KB document of prose), so 30s leaves ample
+    // headroom while still turning a catastrophically backtracking pattern into a
+    // RegexMatchTimeoutException instead of a hung thread.
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(30);
 
     private static readonly HashSet<string> CommonKeywords = new(StringComparer.OrdinalIgnoreCase)
     {

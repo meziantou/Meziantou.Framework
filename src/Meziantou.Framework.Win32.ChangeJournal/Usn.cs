@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>Represents a Update Sequence Number (USN), which is a 64-bit value that uniquely identifies a change journal record.</summary>
 [StructLayout(LayoutKind.Sequential)]
-public readonly struct Usn : IEquatable<Usn>
+public readonly struct Usn : IEquatable<Usn>, IComparable<Usn>, IComparable
 {
     /// <summary>
     /// Gets a <see cref="Usn"/> value representing zero.
@@ -23,6 +23,15 @@ public readonly struct Usn : IEquatable<Usn>
     public bool Equals(Usn other) => Value == other.Value;
 
     public override int GetHashCode() => Value.GetHashCode();
+
+    public int CompareTo(Usn other) => Value.CompareTo(other.Value);
+
+    public int CompareTo(object? obj) => obj switch
+    {
+        null => 1,
+        Usn other => CompareTo(other),
+        _ => throw new ArgumentException($"Object must be of type {nameof(Usn)}", nameof(obj)),
+    };
 
     public static bool operator ==(Usn usn1, Usn usn2) => usn1.Equals(usn2);
 

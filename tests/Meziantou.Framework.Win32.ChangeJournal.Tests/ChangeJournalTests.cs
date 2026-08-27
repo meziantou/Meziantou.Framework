@@ -84,6 +84,31 @@ public class ChangeJournalTests
         Assert.NotEqual(default, identifier);
     }
 
+    [Theory]
+    [InlineData(1L, 2L, -1)]
+    [InlineData(2L, 1L, 1)]
+    [InlineData(2L, 2L, 0)]
+    [InlineData(-1L, 1L, -1)]
+    public void UsnCompareTo(long left, long right, int expected)
+    {
+        Assert.Equal(expected, Math.Sign(new Usn(left).CompareTo(new Usn(right))));
+        Assert.Equal(expected, Math.Sign(new Usn(left).CompareTo((object)new Usn(right))));
+    }
+
+    [Fact]
+    public void UsnCompareToNullIsGreater()
+    {
+        Assert.Equal(1, new Usn(0).CompareTo(obj: null));
+    }
+
+    [Fact]
+    public void UsnCanBeSorted()
+    {
+        var usns = new List<Usn> { new(30), new(10), new(20) };
+        usns.Sort();
+        Assert.Equal([new Usn(10), new Usn(20), new Usn(30)], usns);
+    }
+
     [Fact]
     public void FileIdentifier128ToString()
     {

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
@@ -6,6 +7,9 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 
 internal sealed class GitHubActionsUpdater : PackageUpdater
 {
+    // Anonymous calls share a 60 requests/hour budget per IP, which a repository with a few dozen
+    // actions exhausts in a single run. A token raises that to 5000.
+    private static readonly string[] TokenEnvironmentVariables = ["GITHUB_TOKEN", "GH_TOKEN"];
     private static readonly HttpClient HttpClient = new();
     public override VersioningStrategy VersioningStrategy { get; set; } = GitHubActionsVersioningStrategy.Instance;
 
@@ -24,6 +28,10 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
         request.Headers.TryAddWithoutValidation("X-GitHub-Api-Version", "2022-11-28");
         request.Headers.UserAgent.ParseAdd("Meziantou.Framework.DependencyScanning.Tool");
         request.Headers.Accept.ParseAdd("application/vnd.github+json");
+        if (GetToken() is { Length: > 0 } token)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
 
         var tagsWithDates = await GetTagsWithDatesAsync(request, cancellationToken).ConfigureAwait(false);
         if (tagsWithDates is null)
@@ -61,12 +69,31 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
         return !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repository);
     }
 
+    private static string? GetToken()
+    {
+        foreach (var name in TokenEnvironmentVariables)
+        {
+            var value = Environment.GetEnvironmentVariable(name);
+            if (!string.IsNullOrEmpty(value))
+                return value;
+        }
+
+        return null;
+    }
+
     private static async Task<(string Tag, DateTime? PublishedDate)[]?> GetTagsWithDatesAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         try
         {
             using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-            if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
+            if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
+            {
+                // Without this the caller cannot tell "rate limited" from "no newer tag exists"
+                Console.Error.WriteLine($"GitHub API returned {(int)response.StatusCode} for '{request.RequestUri}'; GitHub Actions versions were not checked. Set GITHUB_TOKEN to raise the rate limit.");
+                return null;
+            }
+
+            if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
                 return null;
 
             response.EnsureSuccessStatusCode();

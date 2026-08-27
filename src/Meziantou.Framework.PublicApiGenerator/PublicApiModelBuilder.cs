@@ -766,6 +766,7 @@ internal static class PublicApiModelBuilder
         }
 
         return !parameterType.IsValueType &&
+               !parameterType.IsFunctionPointer &&
                !parameterType.IsGenericParameter &&
                nullabilityInfo.ReadState == NullabilityState.Unknown;
     }
@@ -814,7 +815,7 @@ internal static class PublicApiModelBuilder
 
     private static bool ContainsPointer(Type type)
     {
-        if (type.IsPointer)
+        if (type.IsPointer || type.IsFunctionPointer)
             return true;
 
         if (type.IsByRef || type.IsArray)
@@ -1673,6 +1674,14 @@ internal static class PublicApiModelBuilder
         if (type.IsPointer)
             return FormatType(type.GetElementType()!, nullabilityInfo?.ElementType) + "*";
 
+        if (type.IsFunctionPointer)
+        {
+            return CSharpTypeFormatter.FormatFunctionPointer(
+                type.IsUnmanagedFunctionPointer,
+                [.. type.GetFunctionPointerParameterTypes().Select(parameterType => FormatType(parameterType))],
+                FormatType(type.GetFunctionPointerReturnType()));
+        }
+
         if (type.IsArray)
         {
             var arrayType = FormatType(type.GetElementType()!, nullabilityInfo?.ElementType) + "[" + new string(',', type.GetArrayRank() - 1) + "]";
@@ -1723,6 +1732,12 @@ internal static class PublicApiModelBuilder
 
         if (type == typeof(char))
             return "char";
+
+        if (type == typeof(nint))
+            return "nint";
+
+        if (type == typeof(nuint))
+            return "nuint";
 
         if (type == typeof(string))
             return nullableReference ? "string?" : "string";

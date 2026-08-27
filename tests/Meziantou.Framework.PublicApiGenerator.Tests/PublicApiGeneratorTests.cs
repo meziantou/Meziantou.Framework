@@ -1650,6 +1650,35 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task FunctionPointers_AndWellKnownValueTypes()
+    {
+        await Validate("""
+            public unsafe class Sample
+            {
+                public delegate*<int, void> Managed;
+                public delegate*<string, int, long> WithArguments;
+                public delegate* unmanaged<int, void> Unmanaged;
+                public decimal DecimalValue;
+                public nint NativeInteger;
+
+                public delegate*<int, void> Method(delegate*<long, void> callback) => null;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public delegate*<int, void> Managed;
+                public delegate*<string, int, long> WithArguments;
+                public delegate* unmanaged<int, void> Unmanaged;
+                public decimal DecimalValue;
+                public nint NativeInteger;
+                public unsafe delegate*<int, void> Method(delegate*<long, void> callback) => throw null;
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Fields_InstanceAndStaticReadonly()
     {
         await Validate("""

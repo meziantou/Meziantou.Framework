@@ -44,7 +44,8 @@ internal static class ResxGeneratorCommon
         string? result = null;
         foreach (var file in additionalFiles)
         {
-            if (analyzerConfigOptionsProvider.GetOptions(file).TryGetValue("build_metadata.AdditionalFiles." + name, out var value))
+            // An unset metadata is reported as an empty value, so it must not be considered as a different value
+            if (analyzerConfigOptionsProvider.GetOptions(file).TryGetValue("build_metadata.AdditionalFiles." + name, out var value) && !string.IsNullOrEmpty(value))
             {
                 if (result is not null && value != result)
                 {
@@ -97,6 +98,35 @@ internal static class ResxGeneratorCommon
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Computes the base name of the generated file. Two resx files can share the same file name, so the path
+    /// relative to the project is used to keep the name unique within the generator.
+    /// </summary>
+    internal static string ComputeHintName(string projectDir, string resourcePath)
+    {
+        var fullProjectDir = EnsureEndSeparator(Path.GetFullPath(projectDir));
+        var fullResourcePath = Path.GetFullPath(resourcePath);
+
+        var name = fullResourcePath.StartsWith(fullProjectDir, StringComparison.Ordinal)
+            ? fullResourcePath[fullProjectDir.Length..]
+            : Path.GetFileName(resourcePath);
+
+        var sb = new StringBuilder(name.Length);
+        foreach (var c in name)
+        {
+            sb.Append(c switch
+            {
+                '/' or '\\' => '.',
+                // Characters allowed in a hint name (Microsoft.CodeAnalysis.AdditionalSourcesCollection)
+                '.' or ',' or '-' or '_' or ' ' or '(' or ')' or '[' or ']' => c,
+                _ when char.IsLetterOrDigit(c) => c,
+                _ => '_',
+            });
+        }
+
+        return sb.ToString();
     }
 
     private static string EnsureEndSeparator(string path)

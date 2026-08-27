@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -7,12 +8,19 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 /// <summary>Base runtime backed by an executable CLI.</summary>
 internal abstract class ExecutableContainerRuntime : ContainerRuntime
 {
-    private ContainerCli? _cli;
-    private readonly Lock _syncObject = new();
+    // A daemon that is reachable but busy can take a while to answer. The timeout only matters when it never answers.
+    private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(30);
 
-    protected ExecutableContainerRuntime(string name)
+    private readonly string? _executablePath;
+    private readonly Lock _syncObject = new();
+    private ContainerCli? _cli;
+    private bool _isOperational;
+
+    /// <param name="executablePath">When set, the CLI to run instead of looking <see cref="ExecutableName"/> up in the PATH.</param>
+    protected ExecutableContainerRuntime(string name, string? executablePath = null)
         : base(name)
     {
+        _executablePath = executablePath;
     }
 
     private protected ContainerCli Cli
@@ -25,10 +33,22 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
 
     internal abstract string ExecutableName { get; }
 
-    public override bool IsSupported() => EnsureCliInitialized() is not null;
+    public override async Task<bool> IsSupportedAsync(CancellationToken cancellationToken = default)
+    {
+        if (EnsureCliInitialized() is not { } cli)
+            return false;
+
+        return await IsOperationalAsync(cli, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Arguments of a cheap command that succeeds only when the daemon behind the CLI answers.</summary>
+    internal abstract IReadOnlyList<string> BuildProbeArguments();
 
     internal string? FindExecutable()
     {
+        if (_executablePath is not null)
+            return _executablePath;
+
         // On Windows, Docker Desktop ships both an extensionless shim and the real '.exe';
         // the shim cannot be launched by Process.Start, so prefer an executable extension.
         if (OperatingSystem.IsWindows())
@@ -59,6 +79,38 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
 
             _cli = new ContainerCli(this, executable);
             return _cli;
+        }
+    }
+
+    /// <summary>Checks that the daemon behind the CLI answers. Finding the executable is not enough: Docker Desktop leaves 'docker' on the PATH when the engine is stopped, and every command then fails with a connection error.</summary>
+    private async Task<bool> IsOperationalAsync(ContainerCli cli, CancellationToken cancellationToken)
+    {
+        if (_isOperational)
+            return true;
+
+        if (!await RunProbeAsync(cli, cancellationToken).ConfigureAwait(false))
+            return false;
+
+        // Only a success is cached, so a daemon started after a failed probe is still detected. Concurrent callers may
+        // probe at the same time, which costs an extra process at worst.
+        _isOperational = true;
+        return true;
+    }
+
+    private async Task<bool> RunProbeAsync(ContainerCli cli, CancellationToken cancellationToken)
+    {
+        using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cancellationTokenSource.CancelAfter(ProbeTimeout);
+        try
+        {
+            var result = await cli.RunBufferedAsync(BuildProbeArguments(), cancellationTokenSource.Token, allowNonZero: true).ConfigureAwait(false);
+            return result.ExitCode == 0;
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException ||
+            ex is OperationCanceledException && !cancellationToken.IsCancellationRequested)
+        {
+            // The probe is a diagnostic: whatever prevents it from completing, including the timeout, means the runtime cannot be used.
+            return false;
         }
     }
 

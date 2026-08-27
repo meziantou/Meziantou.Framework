@@ -1,10 +1,10 @@
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 internal sealed class AutoContainerRuntime : ContainerRuntime
 {
-    private readonly Lock _syncObject = new();
     private readonly DockerApiRuntime _dockerApiRuntime = new();
     private ContainerRuntime? _resolvedRuntime;
 
@@ -13,35 +13,37 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
     {
     }
 
-    public override bool IsSupported()
+    public override async Task<bool> IsSupportedAsync(CancellationToken cancellationToken = default)
     {
-        return GetResolvedRuntimeOrNull() is not null;
+        return await GetResolvedRuntimeOrNullAsync(cancellationToken).ConfigureAwait(false) is not null;
     }
 
-    internal ContainerRuntime? GetResolvedRuntimeOrNull()
+    internal async Task<ContainerRuntime?> GetResolvedRuntimeOrNullAsync(CancellationToken cancellationToken)
     {
+        // Only a success is cached, so a runtime that becomes available later is still detected.
         if (_resolvedRuntime is { } runtime)
             return runtime;
 
-        lock (_syncObject)
+        foreach (var candidate in GetAllCandidates())
         {
-            if (_resolvedRuntime is { } resolved)
-                return resolved;
-
-            foreach (var candidate in GetAllCandidates())
+            if (await candidate.IsSupportedAsync(cancellationToken).ConfigureAwait(false))
             {
-                if (candidate.IsSupported())
-                    return _resolvedRuntime = candidate;
+                // Concurrent callers probe the candidates in the same order, so they resolve the same runtime; the
+                // exchange only makes sure they all report the one that was published.
+                return Interlocked.CompareExchange(ref _resolvedRuntime, candidate, comparand: null) ?? candidate;
             }
-
-            return null;
         }
+
+        return null;
     }
 
-    private ContainerRuntime GetResolvedRuntimeOrThrow()
+    private async Task<ContainerRuntime> GetResolvedRuntimeOrThrowAsync(CancellationToken cancellationToken)
     {
-        return GetResolvedRuntimeOrNull() ?? throw CreateUnavailableRuntimeException(this);
+        return await GetResolvedRuntimeOrNullAsync(cancellationToken).ConfigureAwait(false) ?? throw CreateUnavailableRuntimeException(this);
     }
+
+    /// <summary>The runtime resolved by a previous operation. The container resolves the runtime before it runs anything, so the members that cannot await do not have to resolve it themselves.</summary>
+    private ContainerRuntime ResolvedRuntime => _resolvedRuntime ?? throw CreateUnavailableRuntimeException(this);
 
     private IEnumerable<ContainerRuntime> GetAllCandidates()
     {
@@ -56,58 +58,107 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
         yield return Podman;
     }
 
-    internal override bool SupportsPause => GetResolvedRuntimeOrThrow().SupportsPause;
+    internal override bool SupportsPause => ResolvedRuntime.SupportsPause;
 
-    internal override bool SupportsRestart => GetResolvedRuntimeOrThrow().SupportsRestart;
+    internal override bool SupportsRestart => ResolvedRuntime.SupportsRestart;
 
-    internal override Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().EnsureCreatedAsync(definition, cancellationToken);
+    internal override async Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.EnsureCreatedAsync(definition, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override Task StartAsync(string id, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().StartAsync(id, cancellationToken);
+    internal override async Task StartAsync(string id, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.StartAsync(id, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override Task StopAsync(string id, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().StopAsync(id, cancellationToken);
+    internal override async Task StopAsync(string id, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.StopAsync(id, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override Task RestartAsync(string id, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().RestartAsync(id, cancellationToken);
+    internal override async Task RestartAsync(string id, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.RestartAsync(id, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override Task PauseAsync(string id, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().PauseAsync(id, cancellationToken);
+    internal override async Task PauseAsync(string id, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.PauseAsync(id, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override Task UnpauseAsync(string id, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().UnpauseAsync(id, cancellationToken);
+    internal override async Task UnpauseAsync(string id, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.UnpauseAsync(id, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override Task KillAsync(string id, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().KillAsync(id, cancellationToken);
+    internal override async Task KillAsync(string id, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.KillAsync(id, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override Task DeleteAsync(string id, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().DeleteAsync(id, cancellationToken);
+    internal override async Task DeleteAsync(string id, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.DeleteAsync(id, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override Task<bool> ExistsAsync(string id, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().ExistsAsync(id, cancellationToken);
+    internal override async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.ExistsAsync(id, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override Task<ContainerInfo> InspectAsync(string id, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().InspectAsync(id, cancellationToken);
+    internal override async Task<ContainerInfo> InspectAsync(string id, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.InspectAsync(id, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override IAsyncEnumerable<LogEntry> GetLogsAsync(string id, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().GetLogsAsync(id, cancellationToken);
+    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await foreach (var entry in runtime.GetLogsAsync(id, cancellationToken).ConfigureAwait(false))
+            yield return entry;
+    }
 
-    internal override Task<ExecResult> ExecAsync(string id, ExecOptions options, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().ExecAsync(id, options, cancellationToken);
+    internal override async Task<ExecResult> ExecAsync(string id, ExecOptions options, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.ExecAsync(id, options, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override Task<Stream> OpenReadAsync(string id, string path, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().OpenReadAsync(id, path, cancellationToken);
+    internal override async Task<Stream> OpenReadAsync(string id, string path, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.OpenReadAsync(id, path, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override Task WriteFileAsync(string id, string path, Stream content, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().WriteFileAsync(id, path, content, cancellationToken);
+    internal override async Task WriteFileAsync(string id, string path, Stream content, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.WriteFileAsync(id, path, content, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override Task CopyToContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().CopyToContainerAsync(id, source, destination, cancellationToken);
+    internal override async Task CopyToContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.CopyToContainerAsync(id, source, destination, cancellationToken).ConfigureAwait(false);
+    }
 
-    internal override Task CopyFromContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
-        => GetResolvedRuntimeOrThrow().CopyFromContainerAsync(id, source, destination, cancellationToken);
+    internal override async Task CopyFromContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.CopyFromContainerAsync(id, source, destination, cancellationToken).ConfigureAwait(false);
+    }
 
     internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
-        => GetResolvedRuntimeOrThrow().ResolvePortMap(info, definition);
+        => ResolvedRuntime.ResolvePortMap(info, definition);
 }

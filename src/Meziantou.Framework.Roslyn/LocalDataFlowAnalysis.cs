@@ -262,6 +262,11 @@ internal static partial class LocalDataFlowAnalysis
         if (source.SyntaxTree != destination.SyntaxTree)
             return true;
 
+        // The range between the two nodes is computed in source order, so a write that is textually after the read but
+        // reachable before it through a jump would be missed. Give up as soon as the enclosing scope contains a label.
+        if (ContainsJumpStatement(source) || ContainsJumpStatement(destination))
+            return true;
+
         if (!TryGetStatementRange(source, destination, out var firstStatement, out var lastStatement))
             return true;
 
@@ -385,13 +390,17 @@ internal static partial class LocalDataFlowAnalysis
         {
             var declaration = syntaxReference.GetSyntax(cancellationToken);
             if (declaration.SyntaxTree == reference.SyntaxTree)
-                return GetEnclosingScope(declaration);
+                return GetDeclaringMember(declaration);
         }
 
-        return GetEnclosingScope(reference);
+        return GetDeclaringMember(reference);
     }
 
-    private static SyntaxNode GetEnclosingScope(SyntaxNode syntax)
+    /// <summary>
+    /// Returns the member that can contain the assignments of a local. Unlike <see cref="GetEnclosingScope"/>, it walks
+    /// past lambdas and local functions: a local declared in a method can be assigned anywhere in that method.
+    /// </summary>
+    private static SyntaxNode GetDeclaringMember(SyntaxNode syntax)
     {
         var current = syntax;
         while (true)
@@ -408,6 +417,29 @@ internal static partial class LocalDataFlowAnalysis
 
             current = current.Parent;
         }
+    }
+
+    private static bool ContainsJumpStatement(SyntaxNode syntax)
+    {
+        var scope = GetEnclosingScope(syntax);
+        if (scope is null)
+            return false;
+
+        return scope.DescendantNodes().Any(node => node is LabeledStatementSyntax or GotoStatementSyntax);
+    }
+
+    private static SyntaxNode? GetEnclosingScope(SyntaxNode syntax)
+    {
+        for (var current = syntax; current is not null; current = current.Parent)
+        {
+            if (current is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax or CompilationUnitSyntax)
+                return current;
+
+            if (current is MemberDeclarationSyntax and not GlobalStatementSyntax)
+                return current;
+        }
+
+        return null;
     }
 
     private static bool IsInNestedFunction(SyntaxNode syntax)

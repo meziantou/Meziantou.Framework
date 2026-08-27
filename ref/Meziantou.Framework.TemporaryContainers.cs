@@ -185,7 +185,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Podman { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime AppleContainer { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Wslc { get => throw null; }
-        public virtual bool IsSupported() => throw null;
+        public virtual System.Threading.Tasks.Task<bool> IsSupportedAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public override string ToString() => throw null;
     }
 

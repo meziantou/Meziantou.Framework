@@ -281,6 +281,35 @@ public sealed class ResxGeneratorTest
     }
 
     [Fact]
+    public async Task ResxFilesWithSameFileName()
+    {
+        var element1 = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "from Folder1")));
+        var element2 = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "from Folder2")));
+
+        var result = await GenerateFiles(
+            [
+                (FullPath.GetTempPath() / "proj" / "Folder1" / "Messages.resx", element1.ToString()),
+                (FullPath.GetTempPath() / "proj" / "Folder2" / "Messages.resx", element2.ToString()),
+            ], new OptionProvider
+            {
+                ProjectDir = FullPath.GetTempPath() / "proj",
+                RootNamespace = "Test",
+            });
+
+        Assert.Collection(result.GeneratedTrees.OrderBy(t => t.FilePath, StringComparer.Ordinal),
+            tree =>
+            {
+                Assert.Equal("Folder1.Messages.resx.g.cs", Path.GetFileName(tree.FilePath));
+                Assert.Equal("Test.Folder1", tree.GetRoot(XunitCancellationToken).GetNamespace());
+            },
+            tree =>
+            {
+                Assert.Equal("Folder2.Messages.resx.g.cs", Path.GetFileName(tree.FilePath));
+                Assert.Equal("Test.Folder2", tree.GetRoot(XunitCancellationToken).GetNamespace());
+            });
+    }
+
+    [Fact]
     public async Task ComputeNamespace_RootDir()
     {
         var result = await GenerateFiles([(FullPath.GetTempPath() / "dir" / "proj" / "test.resx", new XElement("root").ToString())], new OptionProvider
@@ -331,10 +360,10 @@ public sealed class ResxGeneratorTest
         };
         var options = new OptionProvider
         {
-            PerFileNamespace = new Dictionary<string, string>(StringComparer.Ordinal)
+            PerFileMetadata = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal)
             {
-                ["test.resx"] = "A",
-                ["test.fr.resx"] = "B",
+                ["test.resx"] = new(StringComparer.Ordinal) { ["Namespace"] = "A" },
+                ["test.fr.resx"] = new(StringComparer.Ordinal) { ["Namespace"] = "B" },
             },
         };
 
@@ -344,6 +373,33 @@ public sealed class ResxGeneratorTest
 
         var diagnostics = await AnalyzeFiles(files, options);
         Assert.Collection(diagnostics, diag => Assert.Equal("MFRG0004", diag.Id));
+    }
+
+    [Fact]
+    public async Task EmptyMetadataIsNotInconsistent()
+    {
+        // MSBuild reports an unset metadata as an empty value, so only the neutral resx file carries the resource name
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var files = new[]
+        {
+            (ResxPath: "test.fr.resx", ResxContent: element.ToString()),
+            (ResxPath: "test.resx", ResxContent: element.ToString()),
+        };
+        var options = new OptionProvider
+        {
+            Namespace = "test",
+            PerFileMetadata = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal)
+            {
+                ["test.resx"] = new(StringComparer.Ordinal) { ["DefaultResourceName"] = "Sample.Test" },
+                ["test.fr.resx"] = new(StringComparer.Ordinal) { ["DefaultResourceName"] = "" },
+            },
+        };
+
+        var result = await GenerateFiles(files, options);
+        Assert.Contains("Sample.Test", result.GeneratedFileRoot.ToFullString());
+
+        var diagnostics = await AnalyzeFiles(files, options);
+        Assert.Empty(diagnostics);
     }
 
     private sealed class OptionProvider : AnalyzerConfigOptionsProvider
@@ -358,7 +414,7 @@ public sealed class ResxGeneratorTest
         public string? Visibility { get; set; }
         public string? GenerateResourcesType { get; set; }
         public string? GenerateKeyNamesType { get; set; }
-        public Dictionary<string, string> PerFileNamespace { get; set; } = new(StringComparer.Ordinal);
+        public Dictionary<string, Dictionary<string, string>> PerFileMetadata { get; set; } = new(StringComparer.Ordinal);
 
         public override AnalyzerConfigOptions GlobalOptions => new Options(this);
 
@@ -395,7 +451,7 @@ public sealed class ResxGeneratorTest
                     return false;
                 }
 
-                if (_path is not null && string.Equals(key, nameof(OptionProvider.Namespace), StringComparison.Ordinal) && _optionProvider.PerFileNamespace.TryGetValue(_path, out value))
+                if (_path is not null && _optionProvider.PerFileMetadata.TryGetValue(_path, out var metadata) && metadata.TryGetValue(key, out value))
                 {
                     return true;
                 }

@@ -4,6 +4,11 @@ namespace Meziantou.Framework;
 
 internal static class HistogramDiff
 {
+    // A token that occurs this often on both sides anchors the region badly: it splits it at an
+    // arbitrary one of its many occurrences and the result is worse than not anchoring at all. Give up
+    // on the region and let the fallback algorithm handle it, as git's histogram diff does.
+    private const int MaxAnchorScore = 64;
+
     internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer)
     {
         var leftModified = new bool[left.Length];
@@ -26,10 +31,13 @@ internal static class HistogramDiff
         bool[] leftModified,
         bool[] rightModified)
     {
-        // Each level consumes a single anchor, so recursing on both sides of it made the recursion
-        // depth proportional to the number of anchors. The region after the anchor is a tail call:
-        // iterate on it instead of recursing, which leaves only the region before the anchor on the
-        // stack. Recursing on both sides overflowed the stack on a few thousand changed chunks.
+        // Each pass keeps every anchor it can find instead of a single one. Consuming one anchor per
+        // occurrence table made the search quadratic: the table was rebuilt over the whole remaining
+        // region for each anchor, so a region with k anchors cost O(region * k).
+        //
+        // The region after the last anchor is a tail call, so iterate on it and leave only the gaps
+        // between anchors on the stack. Recursing on it too overflowed the stack on a few thousand
+        // changed chunks.
         while (true)
         {
             while (leftStart < leftEnd && rightStart < rightEnd && comparer.Equals(left[leftStart], right[rightStart]))
@@ -51,18 +59,21 @@ internal static class HistogramDiff
             if (leftStart >= leftEnd || rightStart >= rightEnd)
                 return;
 
-            var anchor = FindBestAnchor(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer);
-            if (anchor is null)
+            var anchors = FindAnchors(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer);
+            if (anchors.Count == 0)
             {
                 ApplyMyers(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer, leftModified, rightModified);
                 return;
             }
 
-            ComputeRange(left, leftStart, anchor.Value.LeftIndex, right, rightStart, anchor.Value.RightIndex, comparer, leftModified, rightModified);
-            leftModified[anchor.Value.LeftIndex] = false;
-            rightModified[anchor.Value.RightIndex] = false;
-            leftStart = anchor.Value.LeftIndex + 1;
-            rightStart = anchor.Value.RightIndex + 1;
+            foreach (var anchor in anchors)
+            {
+                ComputeRange(left, leftStart, anchor.LeftIndex, right, rightStart, anchor.RightIndex, comparer, leftModified, rightModified);
+                leftModified[anchor.LeftIndex] = false;
+                rightModified[anchor.RightIndex] = false;
+                leftStart = anchor.LeftIndex + 1;
+                rightStart = anchor.RightIndex + 1;
+            }
         }
     }
 
@@ -85,19 +96,20 @@ internal static class HistogramDiff
         DiffAlgorithmHelpers.ApplySubDiff(subDiff, leftModified, leftStart, rightModified, rightStart);
     }
 
-    private static Anchor? FindBestAnchor(string[] left, int leftStart, int leftEnd, string[] right, int rightStart, int rightEnd, IEqualityComparer<string> comparer)
+    private static List<Anchor> FindAnchors(string[] left, int leftStart, int leftEnd, string[] right, int rightStart, int rightEnd, IEqualityComparer<string> comparer)
     {
-        // A single map holds the occurrence counts on both sides and the first right-hand position of
-        // each token. This replaces a second dictionary and the List<int> that used to be allocated per
+        // A single map holds the occurrence counts on both sides and the first position of each token on
+        // each side. This replaces a second dictionary and the List<int> that used to be allocated per
         // distinct token, which dominated the allocations of this pass.
         var stats = new Dictionary<string, TokenStats>(comparer);
-        for (var i = leftStart; i < leftEnd; i++)
+        for (var i = leftEnd - 1; i >= leftStart; i--)
         {
             ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(stats, left[i], out _);
             entry.LeftCount++;
+            entry.FirstLeftIndex = i;
         }
 
-        // Walking backwards leaves the smallest index of each token in FirstRightIndex.
+        // Walking backwards leaves the smallest index of each token in FirstLeftIndex/FirstRightIndex.
         for (var i = rightEnd - 1; i >= rightStart; i--)
         {
             ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(stats, right[i], out _);
@@ -105,30 +117,43 @@ internal static class HistogramDiff
             entry.FirstRightIndex = i;
         }
 
-        Anchor? best = null;
+        // The histogram rule: anchor on the least frequent token the two sides share.
         var bestScore = int.MaxValue;
+        foreach (var entry in stats.Values)
+        {
+            if (entry.LeftCount is 0 || entry.RightCount is 0)
+                continue;
+
+            var score = entry.LeftCount + entry.RightCount;
+            if (score < bestScore)
+            {
+                bestScore = score;
+            }
+        }
+
+        if (bestScore > MaxAnchorScore)
+            return [];
+
+        // Walking the range in order yields the candidates already sorted by left index, which is what
+        // the longest-increasing-subsequence pass needs.
+        var candidates = new List<Anchor>();
         for (var leftIndex = leftStart; leftIndex < leftEnd; leftIndex++)
         {
             var entry = stats[left[leftIndex]];
-            if (entry.RightCount is 0)
+            if (entry.RightCount is 0 || entry.LeftCount + entry.RightCount != bestScore)
                 continue;
 
-            // leftIndex only increases and ties are won by the smallest leftIndex, so an anchor found
-            // later can only replace the current best with a strictly lower score.
-            var score = entry.LeftCount + entry.RightCount;
-            if (score >= bestScore)
+            // Keep one candidate per token so a repeated token cannot contribute several crossing pairs.
+            if (entry.FirstLeftIndex != leftIndex)
                 continue;
 
-            best = new Anchor(leftIndex, entry.FirstRightIndex);
-            bestScore = score;
-
-            // 2 is the lowest reachable score: the token occurs exactly once on each side. Nothing
-            // later in the range can beat it, so stop scanning.
-            if (score is 2)
-                break;
+            candidates.Add(new Anchor(leftIndex, entry.FirstRightIndex));
         }
 
-        return best;
+        if (candidates.Count == 0)
+            return candidates;
+
+        return DiffAlgorithmHelpers.LongestIncreasingSubsequenceByRight(candidates);
     }
 
     [StructLayout(LayoutKind.Auto)]
@@ -136,9 +161,7 @@ internal static class HistogramDiff
     {
         public int LeftCount;
         public int RightCount;
+        public int FirstLeftIndex;
         public int FirstRightIndex;
     }
-
-    [StructLayout(LayoutKind.Auto)]
-    private readonly record struct Anchor(int LeftIndex, int RightIndex);
 }

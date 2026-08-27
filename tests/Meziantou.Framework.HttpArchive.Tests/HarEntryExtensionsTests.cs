@@ -448,6 +448,121 @@ public sealed class HarEntryExtensionsTests
         Assert.Equal(body.Length, message.Content.Headers.ContentLength);
     }
 
+    [Fact]
+    public async Task ToHttpRequestMessage_RebuildsBodyFromParams()
+    {
+        var request = new HarRequest
+        {
+            Method = "POST",
+            Url = "https://example.com/login",
+            HttpVersion = "http/2.0",
+            PostData = new HarPostData
+            {
+                MimeType = "application/x-www-form-urlencoded;charset=UTF-8",
+                Params =
+                [
+                    new HarPostDataParameter { Name = "username", Value = "someone%40example.com" },
+                    new HarPostDataParameter { Name = "remember", Value = "on" },
+                ],
+            },
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.NotNull(message.Content);
+        Assert.Equal("username=someone%40example.com&remember=on", await message.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task ToHttpRequestMessage_TextWinsOverParams()
+    {
+        var request = new HarRequest
+        {
+            Method = "POST",
+            Url = "https://example.com/login",
+            HttpVersion = "http/2.0",
+            PostData = new HarPostData
+            {
+                MimeType = "application/x-www-form-urlencoded",
+                Text = "a=1&b=2",
+                Params = [new HarPostDataParameter { Name = "ignored", Value = "x" }],
+            },
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.NotNull(message.Content);
+        Assert.Equal("a=1&b=2", await message.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task ToHttpRequestMessage_MultipartParamsProduceAnEmptyBody()
+    {
+        var request = new HarRequest
+        {
+            Method = "POST",
+            Url = "https://example.com/upload",
+            HttpVersion = "http/2.0",
+            PostData = new HarPostData
+            {
+                MimeType = "multipart/form-data; boundary=----WebKitFormBoundaryABC",
+                Params = [new HarPostDataParameter { Name = "file", FileName = "a.txt", ContentType = "text/plain" }],
+            },
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.NotNull(message.Content);
+        Assert.Empty(await message.Content.ReadAsByteArrayAsync());
+    }
+
+    [Fact]
+    public void ToHttpRequestMessage_KeepsContentHeadersWhenBodyWasNotCaptured()
+    {
+        var request = new HarRequest
+        {
+            Method = "POST",
+            Url = "https://example.com/upload",
+            HttpVersion = "http/2.0",
+            Headers = [new HarHeader { Name = "Content-Type", Value = "application/octet-stream" }],
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.NotNull(message.Content);
+        Assert.Equal("application/octet-stream", message.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public void ToHttpRequestMessage_NoContentHeadersLeavesContentNull()
+    {
+        var request = new HarRequest
+        {
+            Method = "GET",
+            Url = "https://example.com/",
+            HttpVersion = "http/2.0",
+            Headers = [new HarHeader { Name = "Accept", Value = "*/*" }],
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.Null(message.Content);
+    }
+
+    [Fact]
+    public async Task RealWorldHar_FormPostKeepsItsBody()
+    {
+        var document = LoadChromeHar();
+        var entry = document.Log.Entries.Single(e => e.Request.Url.EndsWith("/login", StringComparison.Ordinal));
+
+        Assert.Null(entry.Request.PostData!.Text);
+
+        using var message = entry.ToHttpRequestMessage();
+
+        Assert.NotNull(message.Content);
+        Assert.Equal("username=someone%40example.com&password=redacted&remember=on", await message.Content.ReadAsStringAsync());
+    }
+
     private static HarDocument LoadChromeHar()
     {
         using var stream = typeof(HarEntryExtensionsTests).Assembly.GetManifestResourceStream("files/chrome-devtools.har")!;

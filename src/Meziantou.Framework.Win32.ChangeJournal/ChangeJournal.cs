@@ -147,6 +147,7 @@ public sealed class ChangeJournal : IDisposable
     }
 
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [Obsolete("Use RefreshJournalData instead.")]
     public void ReadJournalData()
     {
         RefreshJournalData();

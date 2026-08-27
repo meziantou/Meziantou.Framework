@@ -12,10 +12,8 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 internal sealed class DockerApiRuntime : ContainerRuntime
 {
-    private readonly Lock _syncObject = new();
-    private HttpClient? _httpClient;
-    private string? _apiVersion;
     private readonly DockerRegistryAuthProvider _authProvider;
+    private DockerApiConnection? _connection;
 
     internal DockerApiRuntime()
         : base("DockerApi")
@@ -23,7 +21,8 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         _authProvider = new DockerRegistryAuthProvider();
     }
 
-    public override bool IsSupported() => EnsureInitializedCore() is not null;
+    public override async Task<bool> IsSupportedAsync(CancellationToken cancellationToken = default)
+        => await EnsureConnectionAsync(cancellationToken).ConfigureAwait(false) is not null;
 
     internal override bool SupportsPause => true;
 
@@ -233,14 +232,14 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
     private async Task PullImageAsync(string imageName, CancellationToken cancellationToken)
     {
+        var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
         var endpoint = "/images/create?fromImage=" + Uri.EscapeDataString(imageName);
-        using var request = new HttpRequestMessage(HttpMethod.Post, BuildEndpoint(endpoint));
+        using var request = new HttpRequestMessage(HttpMethod.Post, BuildEndpoint(connection, endpoint));
         var registryAuth = await _authProvider.GetRegistryAuthHeaderValueAsync(imageName, cancellationToken).ConfigureAwait(false);
         if (!string.IsNullOrEmpty(registryAuth))
             request.Headers.TryAddWithoutValidation("X-Registry-Auth", registryAuth);
 
-        var httpClient = EnsureInitializedOrThrow();
-        using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        using var response = await connection.HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
 
         if (!response.IsSuccessStatusCode)
             throw await CreateRequestExceptionAsync(response, request.Method.Method, request.RequestUri?.AbsolutePath ?? endpoint, cancellationToken).ConfigureAwait(false);
@@ -258,13 +257,13 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
     private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string endpoint, HttpContent? content, CancellationToken cancellationToken, bool allowNotFound = false, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead)
     {
-        using var request = new HttpRequestMessage(method, BuildEndpoint(endpoint))
+        var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        using var request = new HttpRequestMessage(method, BuildEndpoint(connection, endpoint))
         {
             Content = content,
         };
 
-        var httpClient = EnsureInitializedOrThrow();
-        var response = await httpClient.SendAsync(request, completionOption, cancellationToken).ConfigureAwait(false);
+        var response = await connection.HttpClient.SendAsync(request, completionOption, cancellationToken).ConfigureAwait(false);
 
         if (response.IsSuccessStatusCode || allowNotFound && response.StatusCode == HttpStatusCode.NotFound)
             return response;
@@ -272,13 +271,12 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         throw await CreateRequestExceptionAsync(response, method.Method, request.RequestUri?.AbsolutePath ?? endpoint, cancellationToken).ConfigureAwait(false);
     }
 
-    private string BuildEndpoint(string endpoint)
+    private static string BuildEndpoint(DockerApiConnection connection, string endpoint)
     {
         if (!endpoint.StartsWith('/', StringComparison.Ordinal))
             endpoint = "/" + endpoint;
 
-        var apiVersion = EnsureInitializedOrThrowApiVersion();
-        return "/v" + apiVersion + endpoint;
+        return "/v" + connection.ApiVersion + endpoint;
     }
 
     private static async Task<Exception> CreateRequestExceptionAsync(HttpResponseMessage response, string method, string endpoint, CancellationToken cancellationToken)
@@ -431,68 +429,65 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return new StringContent(json, Encoding.UTF8, "application/json");
     }
 
-    private HttpClient EnsureInitializedOrThrow()
+    private async Task<DockerApiConnection> EnsureConnectionOrThrowAsync(CancellationToken cancellationToken)
     {
-        return EnsureInitializedCore() ?? throw CreateUnavailableRuntimeException(this);
+        return await EnsureConnectionAsync(cancellationToken).ConfigureAwait(false) ?? throw CreateUnavailableRuntimeException(this);
     }
 
-    private string EnsureInitializedOrThrowApiVersion()
+    private async Task<DockerApiConnection?> EnsureConnectionAsync(CancellationToken cancellationToken)
     {
-        _ = EnsureInitializedOrThrow();
-        return _apiVersion ?? throw CreateUnavailableRuntimeException(this);
-    }
+        // Only a success is cached, so a daemon started after a failed attempt is still detected.
+        if (_connection is { } connection)
+            return connection;
 
-    private HttpClient? EnsureInitializedCore()
-    {
-        if (_httpClient is { } client)
-            return client;
-
-        lock (_syncObject)
+        foreach (var endpoint in DockerApiTransport.GetEndpoints())
         {
-            if (_httpClient is { } existingClient)
-                return existingClient;
-
-            foreach (var endpoint in DockerApiTransport.GetEndpoints())
+            HttpClient? candidateClient = null;
+            try
             {
-                HttpClient? candidateClient = null;
-                try
-                {
-                    candidateClient = DockerApiTransport.CreateClient(endpoint);
-                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-                    var versionResponse = candidateClient.GetAsync("/version", cts.Token).ConfigureAwait(false).GetAwaiter().GetResult();
-                    if (!versionResponse.IsSuccessStatusCode)
-                        continue;
+                candidateClient = DockerApiTransport.CreateClient(endpoint);
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts.CancelAfter(TimeSpan.FromSeconds(2));
+                using var versionResponse = await candidateClient.GetAsync("/version", cts.Token).ConfigureAwait(false);
+                if (!versionResponse.IsSuccessStatusCode)
+                    continue;
 
-                    using var stream = versionResponse.Content.ReadAsStream();
-                    var version = JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.Version);
-                    if (string.IsNullOrWhiteSpace(version?.ApiVersion))
-                        continue;
+                await using var stream = await versionResponse.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
+                var version = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.Version, cts.Token).ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(version?.ApiVersion))
+                    continue;
 
-                    _httpClient = candidateClient;
-                    _apiVersion = version.ApiVersion;
+                // The client and the API version are published together, so a caller that sees the connection sees both.
+                // Concurrent callers may reach this point at the same time: the first one published wins and the others
+                // dispose the client they built.
+                var candidate = new DockerApiConnection(candidateClient, version.ApiVersion);
+                var published = Interlocked.CompareExchange(ref _connection, candidate, comparand: null) ?? candidate;
+                if (ReferenceEquals(published, candidate))
                     candidateClient = null;
-                    return _httpClient;
-                }
-                catch (OperationCanceledException)
-                {
-                }
-                catch (HttpRequestException)
-                {
-                }
-                catch (SocketException)
-                {
-                }
-                catch (IOException)
-                {
-                }
-                finally
-                {
-                    candidateClient?.Dispose();
-                }
-            }
 
-            return null;
+                return published;
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+            }
+            catch (HttpRequestException)
+            {
+            }
+            catch (SocketException)
+            {
+            }
+            catch (IOException)
+            {
+            }
+            finally
+            {
+                candidateClient?.Dispose();
+            }
         }
+
+        return null;
     }
 
+    /// <summary>The endpoint the runtime talks to, published as a single value so that a caller never sees a client without its API version.</summary>
+    private sealed record DockerApiConnection(HttpClient HttpClient, string ApiVersion);
 }

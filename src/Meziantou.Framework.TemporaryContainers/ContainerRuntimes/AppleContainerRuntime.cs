@@ -9,12 +9,16 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 {
     private const string ReuseNamePrefix = "meziantou-tc-";
 
-    public AppleContainerRuntime(string name)
-        : base(name)
+    public AppleContainerRuntime(string name, string? executablePath = null)
+        : base(name, executablePath)
     {
     }
 
     internal override string ExecutableName => "container";
+
+    // 'container --version' is answered by the CLI itself, so the probe has to go through the API server: listing the
+    // containers is the cheapest command that does.
+    internal override IReadOnlyList<string> BuildProbeArguments() => ["ls", "-q"];
 
     internal override Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {

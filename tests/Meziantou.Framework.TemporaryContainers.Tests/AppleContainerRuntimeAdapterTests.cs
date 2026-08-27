@@ -19,6 +19,7 @@ public sealed class AppleContainerRuntimeAdapterTests
         Assert.Equal("copy src abc:/dst", string.Join(' ', runtime.BuildCopyToContainerArguments("abc", "src", "/dst")));
         Assert.Equal("copy abc:/src dst", string.Join(' ', runtime.BuildCopyFromContainerArguments("abc", "/src", "dst")));
         Assert.Equal("logs --follow abc", string.Join(' ', runtime.BuildLogsArguments("abc")));
+        Assert.Equal("ls -q", string.Join(' ', runtime.BuildProbeArguments()));
     }
 
     [Fact]

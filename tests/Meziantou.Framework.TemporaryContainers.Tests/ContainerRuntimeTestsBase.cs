@@ -5,8 +5,8 @@ using Meziantou.Xunit;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
-/// <summary>Integration tests shared by every runtime. One concrete subclass per runtime supplies the runtime to exercise; the whole class is skipped when that runtime is not installed.</summary>
-public abstract class ContainerRuntimeTestsBase
+/// <summary>Integration tests shared by every runtime. One concrete subclass per runtime supplies the runtime to exercise; the whole class is skipped when that runtime is not available.</summary>
+public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
 {
     private const string LinuxImage = "busybox:1.37";
     private const string WindowsImage = "mcr.microsoft.com/windows/servercore:ltsc2022";
@@ -17,7 +17,7 @@ public abstract class ContainerRuntimeTestsBase
     private const string LinuxHttpServerCommand = "mkdir -p /www; printf 'hello from container' > /www/index.html; echo SERVER READY; exec httpd -f -p 8080 -h /www";
     private const string WindowsHttpServerCommand = "$content='hello from container'; New-Item -ItemType Directory -Path C:/www -Force | Out-Null; Set-Content -Path C:/www/index.html -Value $content -NoNewline; $listener=[System.Net.HttpListener]::new(); $listener.Prefixes.Add('http://+:8080/'); $listener.Start(); Write-Output 'SERVER READY'; while ($true) { $context=$listener.GetContext(); $bytes=[System.Text.Encoding]::UTF8.GetBytes($content); $context.Response.ContentLength64=$bytes.Length; $context.Response.OutputStream.Write($bytes, 0, $bytes.Length); $context.Response.OutputStream.Close(); }";
 
-    private readonly bool _useWindowsContainerImages;
+    private bool _useWindowsContainerImages;
 
     private bool UseWindowsContainerImages => _useWindowsContainerImages;
 
@@ -32,12 +32,19 @@ public abstract class ContainerRuntimeTestsBase
     protected ContainerRuntimeTestsBase(ContainerRuntime runtime)
     {
         Runtime = runtime;
-        _useWindowsContainerImages = DetectUseWindowsContainerImages(runtime);
-
-        global::Xunit.Assert.SkipUnless(runtime.IsSupported(), $"The '{runtime}' container runtime is not available on this system.");
     }
 
     protected ContainerRuntime Runtime { get; }
+
+    /// <summary>Checking that the runtime answers is asynchronous, so the skip gate cannot live in the constructor.</summary>
+    public async ValueTask InitializeAsync()
+    {
+        global::Xunit.Assert.SkipUnless(await Runtime.IsSupportedAsync(XunitCancellationToken), $"The '{Runtime}' container runtime is not available on this system.");
+
+        _useWindowsContainerImages = DetectUseWindowsContainerImages(Runtime);
+    }
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     private static bool DetectUseWindowsContainerImages(ContainerRuntime runtime)
     {

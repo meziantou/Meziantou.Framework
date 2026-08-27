@@ -17,11 +17,21 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows5.1.2600")]
 public sealed class ChangeJournal : IDisposable
 {
-    /// <summary>The NTFS file name limit is 255 UTF-16 code units, so a record's name never needs more than this.</summary>
-    private const int MaximumFileNameLengthInBytes = 255 * sizeof(char);
+    /// <summary>
+    ///     The number of UTF-16 code units to reserve for the file name of a single record, which is what
+    ///     <see cref="USN_RECORD_V3.SizeOf(int)"/> counts. A USN record stores the name component only, not a path, so this is
+    ///     the volume's maximum component length rather than a path limit: enabling long paths raises the total path length,
+    ///     it does not change the component length. <c>GetVolumeInformation</c> reports the real value for a volume and it is
+    ///     255 on NTFS. It is only a starting size, so a volume that allows longer names just grows the buffer below.
+    /// </summary>
+    private const int MaximumFileNameLength = 255;
 
-    /// <summary>Upper bound on the buffer used to read a single USN record, so a driver that keeps reporting ERROR_MORE_DATA cannot grow it without limit.</summary>
-    private const int MaximumEntryBufferLength = 64 * 1024;
+    /// <summary>
+    ///     Upper bound on the buffer used to read a single USN record, so a driver that keeps reporting ERROR_MORE_DATA cannot
+    ///     grow it without limit. A record can never reach this size: <c>FileNameLength</c> is a <see cref="ushort"/>, which caps
+    ///     the name at 65535 bytes.
+    /// </summary>
+    private const int MaximumEntryBufferLength = 128 * 1024;
 
     private readonly bool _unprivileged;
 
@@ -121,7 +131,7 @@ public sealed class ChangeJournal : IDisposable
     {
         using var handleScope = new SafeHandleValue(handle);
 
-        var buffer = new byte[USN_RECORD_V3.SizeOf(MaximumFileNameLengthInBytes)];
+        var buffer = new byte[USN_RECORD_V3.SizeOf(MaximumFileNameLength)];
         while (true)
         {
             uint returnedSize;

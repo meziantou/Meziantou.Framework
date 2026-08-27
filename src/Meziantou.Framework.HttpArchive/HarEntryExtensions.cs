@@ -23,6 +23,18 @@ public static class HarEntryExtensions
         "Allow",
     };
 
+    /// <summary>
+    /// Headers that describe the bytes as they travelled on the wire. The reconstructed content holds the
+    /// decoded body from <c>content.text</c>, so replaying these would describe bytes that are no longer there:
+    /// a stale Content-Length makes the send fail outright. The recorded values remain available on
+    /// <see cref="HarResponse.Content"/>, <see cref="HarRequest.BodySize"/> and the header lists.
+    /// </summary>
+    private static readonly HashSet<string> WireOnlyHeaderNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Content-Length",
+        "Content-Encoding",
+    };
+
     /// <summary>Creates an <see cref="HttpRequestMessage"/> from a HAR entry.</summary>
     /// <param name="entry">The HAR entry to convert.</param>
     /// <returns>An <see cref="HttpRequestMessage"/> representing the HAR request.</returns>
@@ -118,6 +130,9 @@ public static class HarEntryExtensions
         var hasContentType = false;
         foreach (var header in headers)
         {
+            if (WireOnlyHeaderNames.Contains(header.Name))
+                continue;
+
             if (ContentHeaderNames.Contains(header.Name))
             {
                 if (content?.Headers.TryAddWithoutValidation(header.Name, header.Value) is true)

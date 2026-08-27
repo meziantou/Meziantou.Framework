@@ -211,10 +211,11 @@ public sealed partial class CGroup2
         WriteFile("cpu.max", $"{maxStr} {periodMicroseconds.ToString(CultureInfo.InvariantCulture)}");
     }
 
-    /// <summary>Removes the CPU maximum bandwidth limit.</summary>
+    /// <summary>Removes the CPU maximum bandwidth limit. The period is left unchanged.</summary>
     public void RemoveCpuMax()
     {
-        SetCpuMax(null, 100000);
+        // cpu.max accepts "max" on its own, which clears the quota and keeps the configured period.
+        WriteFile("cpu.max", "max");
     }
 
     #endregion

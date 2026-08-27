@@ -6,8 +6,6 @@ using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.System.RestartManager;
 
-#pragma warning disable CA1416 // RestartManager is Windows-only
-
 namespace Meziantou.Framework.Win32;
 
 /// <summary>Provides a wrapper around the Windows Restart Manager API to detect which processes are locking files and manage application restarts.</summary>
@@ -36,7 +34,7 @@ namespace Meziantou.Framework.Win32;
 /// }
 /// </code>
 /// </example>
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows6.0.6000")]
 public sealed class RestartManager : IDisposable
 {
     private uint SessionHandle { get; }
@@ -276,5 +274,3 @@ public sealed class RestartManager : IDisposable
         return restartManager.GetProcessesLockingResources();
     }
 }
-
-#pragma warning restore CA1416

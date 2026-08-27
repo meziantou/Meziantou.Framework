@@ -147,4 +147,96 @@ public class KeywordGroupsTests
 
         CollectDuplicates(language, type.GetField("Starts")!.GetValue(compiledMode), visited, result);
     }
+
+    // The pinned list above records *which* words are declared in two groups. These record what
+    // that actually produces in rendered output, so the precedence rule can be read off real
+    // highlighted code rather than inferred from the grammars.
+
+    [Fact]
+    public void Precedence_Cpp_LiteralGroupOverridesKeywordGroup()
+    {
+        AssertHighlighter("cpp",
+"""
+bool ok = true; int* p = nullptr;
+""",
+"""
+<span class="hljs-type">bool</span> ok = <span class="hljs-literal">true</span>; <span class="hljs-type">int</span>* p = <span class="hljs-literal">nullptr</span>;
+""");
+    }
+
+    [Fact]
+    public void Precedence_Sql_TypeGroupOverridesKeywordGroup()
+    {
+        AssertHighlighter("sql",
+"""
+CREATE TABLE t (a bigint, b boolean);
+""",
+"""
+<span class="hljs-keyword">CREATE TABLE</span> t (a <span class="hljs-type">bigint</span>, b <span class="hljs-type">boolean</span>);
+""");
+    }
+
+    [Fact]
+    public void Precedence_Sql_BuiltInGroupOverridesKeywordGroup()
+    {
+        AssertHighlighter("sql",
+"""
+SELECT current_user, current_date;
+""",
+"""
+<span class="hljs-keyword">SELECT</span> <span class="hljs-built_in">current_user</span>, <span class="hljs-built_in">current_date</span>;
+""");
+    }
+
+    [Fact]
+    public void Precedence_CSharp_BuiltInGroupOverridesKeywordGroup()
+    {
+        AssertHighlighter("csharp",
+"""
+dynamic d = 1;
+""",
+"""
+<span class="hljs-built_in">dynamic</span> d = <span class="hljs-number">1</span>;
+""");
+    }
+
+    [Fact]
+    public void Precedence_TypeScript_BuiltInGroupOverridesKeywordGroup()
+    {
+        AssertHighlighter("typescript",
+"""
+function f(): void { }
+""",
+"""
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">f</span>(<span class="hljs-params"></span>): <span class="hljs-built_in">void</span> { }
+""");
+    }
+
+    [Fact]
+    public void Precedence_VbNet_BuiltInGroupOverridesKeywordGroup()
+    {
+        AssertHighlighter("vbnet",
+"""
+Dim x = New Object()
+""",
+"""
+<span class="hljs-keyword">Dim</span> x = <span class="hljs-built_in">New</span> <span class="hljs-type">Object</span>()
+""");
+    }
+
+    /// <summary>
+    /// MSIL declares <c>native</c> in <c>built_in</c> first and <c>keyword</c> second, so here the
+    /// generic group wins. Precedence is positional, not "the more specific scope always wins".
+    /// </summary>
+    [Fact]
+    public void Precedence_Msil_LaterGroupWinsEvenWhenItIsTheGenericOne()
+    {
+        AssertHighlighter("msil",
+"""
+ldind.i native int
+""",
+"""
+<span class="hljs-keyword">ldind.i</span> <span class="hljs-keyword">native</span> <span class="hljs-built_in">int</span>
+""");
+    }
 }

@@ -22,6 +22,22 @@ foreach (var entry in result.Entries)
 }
 ````
 
+## Rebuild either side of the diff
+
+`Text` is the chunk from the old text (from the new text for an `Insert`). When a comparison
+option such as `IgnoreCase` makes two *different* chunks compare equal, `OldText` and
+`NewText` give the exact chunk from each side:
+
+````csharp
+var oldText = string.Concat(result.Entries
+    .Where(e => e.Operation is TextDiffOperation.Equal or TextDiffOperation.Delete)
+    .Select(e => e.OldText));
+
+var newText = string.Concat(result.Entries
+    .Where(e => e.Operation is TextDiffOperation.Equal or TextDiffOperation.Insert)
+    .Select(e => e.NewText));
+````
+
 ## Configure chunking and comparison
 
 ````csharp

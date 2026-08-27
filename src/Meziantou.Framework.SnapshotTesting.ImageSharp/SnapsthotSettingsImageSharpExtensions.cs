@@ -12,6 +12,10 @@ public static class SnapsthotSettingsImageSharpExtensions
         /// Supports <see cref="SixLabors.ImageSharp.Image"/> values serialized as PNG, JPEG, BMP, TIFF, and WebP snapshots.
         /// </summary>
         /// <param name="settings">Optional image comparison settings. When <see langword="null"/>, exact pixel comparison is used.</param>
+        /// <remarks>
+        /// The serializer writes PNG, JPEG, BMP, TIFF and WebP, and the comparer is registered for the same
+        /// set, which is also what ImageSharp can decode.
+        /// </remarks>
         public void AddImageSharp(ImageComparisonSettings? settings = null)
         {
             snapshotSettings.AddConverter(new Rgba32HumanReadableConverter());

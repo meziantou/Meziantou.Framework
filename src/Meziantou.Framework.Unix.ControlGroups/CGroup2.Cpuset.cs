@@ -31,22 +31,14 @@ public partial class CGroup2
     /// <returns>Array of CPU numbers.</returns>
     public int[]? GetCpusetCpus()
     {
-        var content = ReadFile("cpuset.cpus");
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        return ParseCpuList(content.Trim());
+        return ParseCpuList(ReadFile("cpuset.cpus").Trim());
     }
 
     /// <summary>Gets the effective CPUs (actually granted by parent).</summary>
     /// <returns>Array of CPU numbers.</returns>
     public int[]? GetCpusetCpusEffective()
     {
-        var content = ReadFile("cpuset.cpus.effective");
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        return ParseCpuList(content.Trim());
+        return ParseCpuList(ReadFile("cpuset.cpus.effective").Trim());
     }
 
     /// <summary>Sets the memory nodes that tasks in this cgroup can use.</summary>
@@ -76,22 +68,14 @@ public partial class CGroup2
     /// <returns>Array of memory node numbers.</returns>
     public int[]? GetCpusetMems()
     {
-        var content = ReadFile("cpuset.mems");
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        return ParseCpuList(content.Trim());
+        return ParseCpuList(ReadFile("cpuset.mems").Trim());
     }
 
     /// <summary>Gets the effective memory nodes (actually granted by parent).</summary>
     /// <returns>Array of memory node numbers.</returns>
     public int[]? GetCpusetMemsEffective()
     {
-        var content = ReadFile("cpuset.mems.effective");
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        return ParseCpuList(content.Trim());
+        return ParseCpuList(ReadFile("cpuset.mems.effective").Trim());
     }
 
     /// <summary>Sets the cpuset partition type.</summary>
@@ -107,8 +91,8 @@ public partial class CGroup2
     /// <returns>The partition type.</returns>
     public string? GetCpusetPartition()
     {
-        var content = ReadFile("cpuset.cpus.partition");
-        return string.IsNullOrWhiteSpace(content) ? null : content.Trim();
+        var content = ReadFile("cpuset.cpus.partition").Trim();
+        return content.Length is 0 ? null : content;
     }
 
     private static string ConvertToRanges(ReadOnlySpan<int> numbers)

@@ -4,6 +4,13 @@ using System.Runtime.Versioning;
 namespace Meziantou.Framework.Unix.ControlGroups;
 
 /// <summary>Represents a cgroup v2 control group for managing and limiting resource usage of processes.</summary>
+/// <remarks>
+/// Getters returning a nullable value use <see langword="null"/> to mean "unlimited", and nothing else. Reading a
+/// cgroup that does not exist throws <see cref="DirectoryNotFoundException"/>, reading a limit whose controller is
+/// not enabled throws <see cref="FileNotFoundException"/>, and content the library cannot parse throws
+/// <see cref="InvalidDataException"/>. The exceptions are the optional kernel features, <see cref="IsFrozen"/> and
+/// the HugeTLB getters, where an absent file is an expected answer rather than an error.
+/// </remarks>
 [SupportedOSPlatform("linux")]
 public sealed partial class CGroup2
 {
@@ -101,8 +108,6 @@ public sealed partial class CGroup2
     public IEnumerable<int> GetProcesses()
     {
         var content = ReadFile("cgroup.procs");
-        if (string.IsNullOrWhiteSpace(content))
-            yield break;
 
         foreach (var line in content.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
@@ -117,8 +122,6 @@ public sealed partial class CGroup2
     public IEnumerable<int> GetThreads()
     {
         var content = ReadFile("cgroup.threads");
-        if (string.IsNullOrWhiteSpace(content))
-            yield break;
 
         foreach (var line in content.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
@@ -136,21 +139,13 @@ public sealed partial class CGroup2
     /// <summary>Gets the list of available controllers.</summary>
     public IEnumerable<string> GetAvailableControllers()
     {
-        var content = ReadFile("cgroup.controllers");
-        if (string.IsNullOrWhiteSpace(content))
-            return [];
-
-        return content.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return ReadFile("cgroup.controllers").Split(' ', StringSplitOptions.RemoveEmptyEntries);
     }
 
     /// <summary>Gets the list of enabled controllers in the subtree.</summary>
     public IEnumerable<string> GetEnabledControllers()
     {
-        var content = ReadFile("cgroup.subtree_control");
-        if (string.IsNullOrWhiteSpace(content))
-            return [];
-
-        return content.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return ReadFile("cgroup.subtree_control").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
     }
 
     /// <summary>Set multiple controllers in the subtree.</summary>
@@ -188,17 +183,7 @@ public sealed partial class CGroup2
     }
 
     /// <summary>Gets the CPU weight.</summary>
-    public int? GetCpuWeight()
-    {
-        var content = ReadFile("cpu.weight");
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        if (int.TryParse(content.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var weight))
-            return weight;
-
-        return null;
-    }
+    public int? GetCpuWeight() => checked((int)ReadCount("cpu.weight"));
 
     /// <summary>Sets the CPU maximum bandwidth limit.</summary>
     /// <param name="maxMicroseconds">Maximum time in microseconds that the cgroup can run during one period.</param>
@@ -227,16 +212,10 @@ public sealed partial class CGroup2
     /// <returns>The quota and period, or <see langword="null"/> when the value cannot be read.</returns>
     public CpuMax? GetCpuMax()
     {
-        var content = ReadFile("cpu.max");
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        var parts = content.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length is not 2)
-            return null;
-
-        if (!long.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var period))
-            return null;
+        var content = ReadFile("cpu.max").Trim();
+        var parts = content.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length is not 2 || !long.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var period))
+            throw UnexpectedContent("cpu.max", content);
 
         if (parts[0].Equals("max", StringComparison.OrdinalIgnoreCase))
             return new CpuMax(MaxMicroseconds: null, period);
@@ -244,7 +223,7 @@ public sealed partial class CGroup2
         if (long.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var max))
             return new CpuMax(max, period);
 
-        return null;
+        throw UnexpectedContent("cpu.max", content);
     }
 
     #endregion
@@ -319,17 +298,7 @@ public sealed partial class CGroup2
     public long? GetMemoryMin() => ReadLimit("memory.min");
 
     /// <summary>Gets the current memory usage in bytes.</summary>
-    public long? GetMemoryCurrent()
-    {
-        var content = ReadFile("memory.current");
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        if (long.TryParse(content.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
-            return value;
-
-        return null;
-    }
+    public long? GetMemoryCurrent() => ReadCount("memory.current");
 
     /// <summary>Sets the swap maximum limit in bytes.</summary>
     /// <param name="bytes">Maximum swap in bytes, or null for no limit.</param>
@@ -439,17 +408,7 @@ public sealed partial class CGroup2
     public long? GetPidsMax() => ReadLimit("pids.max");
 
     /// <summary>Gets the current number of processes.</summary>
-    public long? GetPidsCurrent()
-    {
-        var content = ReadFile("pids.current");
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        if (long.TryParse(content.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
-            return value;
-
-        return null;
-    }
+    public long? GetPidsCurrent() => ReadCount("pids.current");
 
     #endregion
 
@@ -470,8 +429,7 @@ public sealed partial class CGroup2
     /// <summary>Gets whether the cgroup is frozen.</summary>
     public bool IsFrozen()
     {
-        var events = ReadFile("cgroup.events");
-        if (string.IsNullOrWhiteSpace(events))
+        if (!TryReadFile("cgroup.events", out var events))
             return false;
 
         foreach (var line in events.Split('\n', StringSplitOptions.RemoveEmptyEntries))
@@ -500,41 +458,65 @@ public sealed partial class CGroup2
 
     #region Helper Methods
 
+    /// <summary>Reads an interface file of this cgroup.</summary>
+    /// <param name="fileName">The name of the interface file.</param>
+    /// <exception cref="FileNotFoundException">The controller is not enabled on this cgroup.</exception>
+    /// <exception cref="DirectoryNotFoundException">The cgroup does not exist.</exception>
     private string ReadFile(string fileName)
     {
-        var filePath = System.IO.Path.Combine(_path, fileName);
+        return File.ReadAllText(System.IO.Path.Combine(_path, fileName));
+    }
 
+    /// <summary>Reads an interface file that legitimately may not exist, such as an optional kernel feature.</summary>
+    /// <param name="fileName">The name of the interface file.</param>
+    /// <param name="content">The content of the file when it exists.</param>
+    /// <returns><see langword="true"/> when the file exists; otherwise, <see langword="false"/>.</returns>
+    private bool TryReadFile(string fileName, [NotNullWhen(true)] out string? content)
+    {
         try
         {
-            return File.ReadAllText(filePath);
+            content = File.ReadAllText(System.IO.Path.Combine(_path, fileName));
+            return true;
         }
         catch (FileNotFoundException)
         {
-            return "";
+            content = null;
+            return false;
         }
         catch (DirectoryNotFoundException)
         {
-            return "";
+            content = null;
+            return false;
         }
     }
+
+    private InvalidDataException UnexpectedContent(string fileName, string content)
+        => new($"'{System.IO.Path.Combine(_path, fileName)}' contains '{content}', which is not a valid value");
 
     /// <summary>Reads an interface file holding a single limit, where "max" means unlimited.</summary>
     /// <param name="fileName">The name of the interface file.</param>
     /// <returns>The limit, or <see langword="null"/> when the cgroup is unlimited.</returns>
     private long? ReadLimit(string fileName)
     {
-        var content = ReadFile(fileName);
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        content = content.Trim();
+        var content = ReadFile(fileName).Trim();
         if (content.Equals("max", StringComparison.OrdinalIgnoreCase))
             return null;
 
         if (long.TryParse(content, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
             return value;
 
-        return null;
+        throw UnexpectedContent(fileName, content);
+    }
+
+    /// <summary>Reads an interface file holding a single number that is always present.</summary>
+    /// <param name="fileName">The name of the interface file.</param>
+    private long ReadCount(string fileName)
+    {
+        var content = ReadFile(fileName).Trim();
+        if (long.TryParse(content, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+            return value;
+
+        throw UnexpectedContent(fileName, content);
     }
 
     private void WriteFile(string fileName, string content)
@@ -550,21 +532,13 @@ public sealed partial class CGroup2
     /// <summary>Gets CPU statistics for this cgroup.</summary>
     public CpuStat? GetCpuStat()
     {
-        var content = ReadFile("cpu.stat");
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        return CpuStat.Parse(content);
+        return CpuStat.Parse(ReadFile("cpu.stat"));
     }
 
     /// <summary>Gets memory statistics for this cgroup.</summary>
     public MemoryStat? GetMemoryStat()
     {
-        var content = ReadFile("memory.stat");
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        return MemoryStat.Parse(content);
+        return MemoryStat.Parse(ReadFile("memory.stat"));
     }
 
     #endregion

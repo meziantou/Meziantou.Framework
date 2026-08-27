@@ -26,10 +26,7 @@ public partial class CGroup2
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
 
-        var fileName = $"hugetlb.{pageSize}.max";
-        var content = ReadFile(fileName);
-
-        if (string.IsNullOrWhiteSpace(content))
+        if (!TryReadFile($"hugetlb.{pageSize}.max", out var content))
             return null;
 
         content = content.Trim();
@@ -39,7 +36,7 @@ public partial class CGroup2
         if (long.TryParse(content, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
             return value;
 
-        return null;
+        throw UnexpectedContent($"hugetlb.{pageSize}.max", content);
     }
 
     /// <summary>Gets the current HugeTLB usage for a specific page size.</summary>
@@ -49,16 +46,14 @@ public partial class CGroup2
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
 
-        var fileName = $"hugetlb.{pageSize}.current";
-        var content = ReadFile(fileName);
-
-        if (string.IsNullOrWhiteSpace(content))
+        if (!TryReadFile($"hugetlb.{pageSize}.current", out var content))
             return null;
 
-        if (long.TryParse(content.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+        content = content.Trim();
+        if (long.TryParse(content, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
             return value;
 
-        return null;
+        throw UnexpectedContent($"hugetlb.{pageSize}.current", content);
     }
 
     /// <summary>Gets the number of times the HugeTLB limit was hit.</summary>
@@ -68,10 +63,7 @@ public partial class CGroup2
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
 
-        var fileName = $"hugetlb.{pageSize}.events";
-        var content = ReadFile(fileName);
-
-        if (string.IsNullOrWhiteSpace(content))
+        if (!TryReadFile($"hugetlb.{pageSize}.events", out var content))
             return null;
 
         foreach (var line in content.Split('\n', StringSplitOptions.RemoveEmptyEntries))

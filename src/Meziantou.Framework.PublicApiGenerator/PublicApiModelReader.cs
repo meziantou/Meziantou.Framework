@@ -1165,7 +1165,7 @@ internal static class PublicApiModelReader
 
     private static bool ContainsPointer(DecodedType type)
     {
-        if (type.Kind == DecodedTypeKind.Pointer)
+        if (type.Kind is DecodedTypeKind.Pointer or DecodedTypeKind.FunctionPointer)
             return true;
 
         if (type.ElementType is not null && ContainsPointer(type.ElementType))
@@ -2926,7 +2926,7 @@ internal static class PublicApiModelReader
             var namespaceName = type.Namespace.IsNil ? string.Empty : reader.GetString(type.Namespace);
             var name = RemoveGenericArity(reader.GetString(type.Name));
             return new(
-                string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name,
+                CSharpTypeFormatter.NormalizeWellKnownTypeName(string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name),
                 IsReferenceType: rawTypeKind != ElementTypeValueType,
                 IsTypeParameter: false);
         }
@@ -2937,7 +2937,7 @@ internal static class PublicApiModelReader
             var namespaceName = type.Namespace.IsNil ? string.Empty : reader.GetString(type.Namespace);
             var name = RemoveGenericArity(reader.GetString(type.Name));
             return new(
-                string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name,
+                CSharpTypeFormatter.NormalizeWellKnownTypeName(string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name),
                 IsReferenceType: rawTypeKind != ElementTypeValueType,
                 IsTypeParameter: false);
         }
@@ -3181,7 +3181,15 @@ internal static class PublicApiModelReader
 
         public DecodedType GetByReferenceType(DecodedType elementType) => new(elementType.Name, IsReferenceType: elementType.IsReferenceType, IsTypeParameter: elementType.IsTypeParameter, Kind: DecodedTypeKind.ByReference, ElementType: elementType);
 
-        public DecodedType GetFunctionPointerType(MethodSignature<DecodedType> signature) => new("delegate*", IsReferenceType: false, IsTypeParameter: false);
+        public DecodedType GetFunctionPointerType(MethodSignature<DecodedType> signature)
+        {
+            var isUnmanaged = signature.Header.CallingConvention != SignatureCallingConvention.Default;
+            var name = CSharpTypeFormatter.FormatFunctionPointer(
+                isUnmanaged,
+                [.. signature.ParameterTypes.Select(FormatDecodedTypeWithoutNullable)],
+                FormatDecodedTypeWithoutNullable(signature.ReturnType));
+            return new(name, IsReferenceType: false, IsTypeParameter: false, Kind: DecodedTypeKind.FunctionPointer);
+        }
 
         public DecodedType GetGenericInstantiation(DecodedType genericType, ImmutableArray<DecodedType> typeArguments)
         {
@@ -3253,7 +3261,7 @@ internal static class PublicApiModelReader
             var namespaceName = type.Namespace.IsNil ? string.Empty : reader.GetString(type.Namespace);
             var name = RemoveGenericArity(reader.GetString(type.Name));
             return new(
-                string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name,
+                CSharpTypeFormatter.NormalizeWellKnownTypeName(string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name),
                 IsReferenceType: rawTypeKind != ElementTypeValueType,
                 IsTypeParameter: false);
         }
@@ -3264,7 +3272,7 @@ internal static class PublicApiModelReader
             var namespaceName = type.Namespace.IsNil ? string.Empty : reader.GetString(type.Namespace);
             var name = RemoveGenericArity(reader.GetString(type.Name));
             return new(
-                string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name,
+                CSharpTypeFormatter.NormalizeWellKnownTypeName(string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name),
                 IsReferenceType: rawTypeKind != ElementTypeValueType,
                 IsTypeParameter: false);
         }
@@ -3287,6 +3295,7 @@ internal static class PublicApiModelReader
         Array,
         ByReference,
         Pointer,
+        FunctionPointer,
     }
 
     private sealed record ExtensionPropertyBuilderMetadata(

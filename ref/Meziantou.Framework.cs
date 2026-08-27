@@ -302,7 +302,7 @@ namespace Meziantou.Framework
 
     public static class NumberExtensions
     {
-        public static System.Decimal MakeSameSignAs(this System.Decimal number, System.Decimal sign) => throw null;
+        public static decimal MakeSameSignAs(this decimal number, decimal sign) => throw null;
         public static int MakeSameSignAs(this int number, int sign) => throw null;
         public static long MakeSameSignAs(this long number, long sign) => throw null;
         public static float MakeSameSignAs(this float number, float sign) => throw null;
@@ -333,8 +333,8 @@ namespace Meziantou.Framework
         public static string ToStringInvariant(this float number, string? format) => throw null;
         public static string ToStringInvariant(this double number) => throw null;
         public static string ToStringInvariant(this double number, string? format) => throw null;
-        public static string ToStringInvariant(this System.Decimal number) => throw null;
-        public static string ToStringInvariant(this System.Decimal number, string? format) => throw null;
+        public static string ToStringInvariant(this decimal number) => throw null;
+        public static string ToStringInvariant(this decimal number, string? format) => throw null;
     }
 
     public abstract class ObjectGraphVisitor
@@ -421,7 +421,7 @@ namespace Meziantou.Framework
         public static ushort NextUInt16(this System.Random random, ushort min = 0, ushort max = 65535) => throw null;
         public static uint NextUInt32(this System.Random random, uint min = 0U, uint max = 4294967295U) => throw null;
         public static ulong NextUInt64(this System.Random random, ulong min = 0UL, ulong max = 18446744073709551615UL) => throw null;
-        public static System.Decimal NextDecimal(this System.Random random, [System.Runtime.CompilerServices.DecimalConstant(0, 128, 4294967295U, 4294967295U, 4294967295U)] System.Decimal min, [System.Runtime.CompilerServices.DecimalConstant(0, 0, 4294967295U, 4294967295U, 4294967295U)] System.Decimal max) => throw null;
+        public static decimal NextDecimal(this System.Random random, [System.Runtime.CompilerServices.DecimalConstant(0, 128, 4294967295U, 4294967295U, 4294967295U)] decimal min, [System.Runtime.CompilerServices.DecimalConstant(0, 0, 4294967295U, 4294967295U, 4294967295U)] decimal max) => throw null;
         public static string NextString(this System.Random random, int length, string chars) => throw null;
         public static string NextString(this System.Random random, int minLength, int maxLength, string chars) => throw null;
     }
@@ -620,8 +620,8 @@ namespace Meziantou.Framework
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, float? value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, double value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, double? value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, System.Decimal value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, System.Decimal? value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, decimal value) => throw null;
+        public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, decimal? value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, System.FormattableString? value) => throw null;
         public static System.Text.StringBuilder AppendInvariant<T>(this System.Text.StringBuilder sb, T value) where T : System.IFormattable => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, object? value) => throw null;

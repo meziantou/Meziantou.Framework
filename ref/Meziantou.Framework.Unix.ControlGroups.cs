@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Unix.ControlGroups
 {
     [System.Runtime.Versioning.SupportedOSPlatform("linux")]
     [System.Runtime.Versioning.SupportedOSPlatform("linux")]
-    public sealed class CGroup2
+    public sealed class CGroup2 : System.IEquatable<Meziantou.Framework.Unix.ControlGroups.CGroup2>
     {
         public string Name { get => throw null; }
         public Meziantou.Framework.Unix.ControlGroups.CGroup2? Parent { get => throw null; }
@@ -57,6 +57,11 @@ namespace Meziantou.Framework.Unix.ControlGroups
         public void Kill() { }
         public Meziantou.Framework.Unix.ControlGroups.CpuStat? GetCpuStat() => throw null;
         public Meziantou.Framework.Unix.ControlGroups.MemoryStat? GetMemoryStat() => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Unix.ControlGroups.CGroup2? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.Unix.ControlGroups.CGroup2? left, Meziantou.Framework.Unix.ControlGroups.CGroup2? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Unix.ControlGroups.CGroup2? left, Meziantou.Framework.Unix.ControlGroups.CGroup2? right) => throw null;
         public override string ToString() => throw null;
         public void SetHugeTlbMax(string pageSize, long? bytes) { }
         public long? GetHugeTlbMax(string pageSize) => throw null;

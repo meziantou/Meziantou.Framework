@@ -5,9 +5,10 @@ namespace Meziantou.Framework.Unix.ControlGroups;
 
 /// <summary>Represents a cgroup v2 control group for managing and limiting resource usage of processes.</summary>
 [SupportedOSPlatform("linux")]
-public sealed partial class CGroup2
+public sealed partial class CGroup2 : IEquatable<CGroup2>
 {
     private const string CGroupV2MountPoint = "/sys/fs/cgroup";
+    private const string RootName = "/";
 
     private readonly string _path;
 
@@ -27,20 +28,11 @@ public sealed partial class CGroup2
     {
         Name = name;
         Parent = parent;
-
-        if (parent is null)
-        {
-            // Root level cgroup or absolute path
-            _path = name.StartsWith('/', StringComparison.Ordinal) ? name : System.IO.Path.Combine(CGroupV2MountPoint, name);
-        }
-        else
-        {
-            _path = System.IO.Path.Combine(parent._path, name);
-        }
+        _path = parent is null ? CGroupV2MountPoint : System.IO.Path.Combine(parent._path, name);
     }
 
     /// <summary>Gets the root cgroup.</summary>
-    public static CGroup2 Root => new(CGroupV2MountPoint, parent: null);
+    public static CGroup2 Root { get; } = new(RootName, parent: null);
 
     /// <summary>Gets an existing child cgroup without creating it.</summary>
     /// <param name="name">The name of the child cgroup.</param>
@@ -528,6 +520,26 @@ public sealed partial class CGroup2
     }
 
     #endregion
+
+    /// <summary>Determines whether the specified cgroup refers to the same path as this instance.</summary>
+    /// <param name="other">The cgroup to compare with this instance.</param>
+    public bool Equals([NotNullWhen(true)] CGroup2? other) => other is not null && string.Equals(_path, other._path, StringComparison.Ordinal);
+
+    /// <inheritdoc />
+    public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as CGroup2);
+
+    /// <inheritdoc />
+    public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(_path);
+
+    /// <summary>Determines whether two cgroups refer to the same path.</summary>
+    /// <param name="left">The first cgroup to compare.</param>
+    /// <param name="right">The second cgroup to compare.</param>
+    public static bool operator ==(CGroup2? left, CGroup2? right) => left is null ? right is null : left.Equals(right);
+
+    /// <summary>Determines whether two cgroups refer to different paths.</summary>
+    /// <param name="left">The first cgroup to compare.</param>
+    /// <param name="right">The second cgroup to compare.</param>
+    public static bool operator !=(CGroup2? left, CGroup2? right) => !(left == right);
 
     /// <summary>Returns a string representation of this cgroup.</summary>
     public override string ToString() => _path;

@@ -25,12 +25,14 @@ public abstract class ContainerRuntime
     public static ContainerRuntime Wslc { get; } = new DockerContainerRuntime(nameof(Wslc), DockerContainerRuntime.Flavor.Wslc);
 
     /// <summary>Determines whether this runtime can be resolved.</summary>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <remarks>The runtime is not considered available until its daemon answers, so the first call runs a command or opens a connection. A success is cached; a failure is not, so a daemon that starts later is still detected.</remarks>
     /// <returns><see langword="true"/> if the runtime executable is available and operational; otherwise, <see langword="false"/>.</returns>
-    public virtual bool IsSupported() => false;
+    public virtual Task<bool> IsSupportedAsync(CancellationToken cancellationToken = default) => Task.FromResult(false);
 
-    internal void EnsureSupported()
+    internal async Task EnsureSupportedAsync(CancellationToken cancellationToken)
     {
-        if (!IsSupported())
+        if (!await IsSupportedAsync(cancellationToken).ConfigureAwait(false))
             throw CreateUnavailableRuntimeException(this);
     }
 

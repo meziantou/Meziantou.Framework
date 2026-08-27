@@ -58,14 +58,15 @@ public sealed class DockerRuntimeAdapterTests
         Assert.Equal("cp src abc:/dst", string.Join(' ', runtime.BuildCopyToContainerArguments("abc", "src", "/dst")));
         Assert.Equal("cp abc:/src dst", string.Join(' ', runtime.BuildCopyFromContainerArguments("abc", "/src", "dst")));
         Assert.Contains("--timestamps", runtime.BuildLogsArguments("abc"));
+        Assert.Equal("version", string.Join(' ', runtime.BuildProbeArguments()));
     }
 
     [Fact]
     public void PodmanUsesDockerDialect()
     {
-        var runtime = ContainerRuntime.Podman;
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Podman);
 
-        Assert.IsAssignableTo<DockerContainerRuntime>(runtime);
+        Assert.Equal("version", string.Join(' ', runtime.BuildProbeArguments()));
     }
 
     [Fact]
@@ -73,7 +74,67 @@ public sealed class DockerRuntimeAdapterTests
     {
         var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
 
-        Assert.IsAssignableTo<DockerContainerRuntime>(runtime);
+        Assert.Equal("list -q", string.Join(' ', runtime.BuildProbeArguments()));
+    }
+
+    [Fact]
+    public async Task IsSupportedAsync_ReturnsTrueWhenTheProbeCommandSucceeds()
+    {
+        var executable = CreateStubCli(exitCode: 0);
+        try
+        {
+            var runtime = new DockerContainerRuntime(nameof(ContainerRuntime.Docker), DockerContainerRuntime.Flavor.Docker, executable);
+
+            Assert.True(await runtime.IsSupportedAsync(XunitCancellationToken));
+        }
+        finally
+        {
+            File.Delete(executable);
+        }
+    }
+
+    [Fact]
+    public async Task IsSupportedAsync_ReturnsFalseWhenTheProbeCommandFails()
+    {
+        // The daemon is not reachable: the CLI is there, but every command it runs fails.
+        var executable = CreateStubCli(exitCode: 1);
+        try
+        {
+            var runtime = new DockerContainerRuntime(nameof(ContainerRuntime.Docker), DockerContainerRuntime.Flavor.Docker, executable);
+
+            Assert.False(await runtime.IsSupportedAsync(XunitCancellationToken));
+        }
+        finally
+        {
+            File.Delete(executable);
+        }
+    }
+
+    [Fact]
+    public async Task IsSupportedAsync_ReturnsFalseWhenTheExecutableCannotBeStarted()
+    {
+        var missing = Path.Combine(Path.GetTempPath(), "MezTC-missing-" + Guid.NewGuid().ToString("N"));
+        var runtime = new DockerContainerRuntime(nameof(ContainerRuntime.Docker), DockerContainerRuntime.Flavor.Docker, missing);
+
+        Assert.False(await runtime.IsSupportedAsync(XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task IsSupportedAsync_CachesTheSuccessfulProbe()
+    {
+        var executable = CreateStubCli(exitCode: 0);
+        var runtime = new DockerContainerRuntime(nameof(ContainerRuntime.Docker), DockerContainerRuntime.Flavor.Docker, executable);
+        try
+        {
+            Assert.True(await runtime.IsSupportedAsync(XunitCancellationToken));
+        }
+        finally
+        {
+            File.Delete(executable);
+        }
+
+        // The CLI is gone, so a second probe would fail: the runtime must answer from what it already knows.
+        Assert.True(await runtime.IsSupportedAsync(XunitCancellationToken));
     }
 
     [Fact]
@@ -149,5 +210,24 @@ public sealed class DockerRuntimeAdapterTests
         var container = runtime.ParseInspect(inspectOutput);
 
         Assert.Equal(unchecked((int)3221225786u), container.ExitCode);
+    }
+
+    /// <summary>Writes a CLI that exits with <paramref name="exitCode"/> whatever it is asked to do, so the outcome of the probe can be forced.</summary>
+    private static string CreateStubCli(int exitCode)
+    {
+        var path = Path.Combine(Path.GetTempPath(), "MezTC-stub-" + Guid.NewGuid().ToString("N"));
+        if (OperatingSystem.IsWindows())
+        {
+            path += ".cmd";
+            File.WriteAllText(path, $"@exit /b {exitCode}\r\n");
+        }
+        else
+        {
+            path += ".sh";
+            File.WriteAllText(path, $"#!/bin/sh\nexit {exitCode}\n");
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        return path;
     }
 }

@@ -30,24 +30,14 @@ public partial class TemporaryContainer : IAsyncDisposable
     public ContainerDefinition Definition => _definition;
 
     /// <summary>Gets the container runtime in use.</summary>
-    public ContainerRuntime Runtime
+    public ContainerRuntime Runtime => _runtime ??= _definition.Runtime;
+
+    /// <summary>Resolves the runtime and checks that it can actually be used, which may run a command or open a connection.</summary>
+    private async Task EnsureRuntimeSupportedAsync(CancellationToken cancellationToken)
     {
-        get
-        {
-            EnsureRuntimeCreated();
-            return _runtime;
-        }
+        _runtime ??= _definition.Runtime;
+        await _runtime.EnsureSupportedAsync(cancellationToken).ConfigureAwait(false);
     }
-
-[MemberNotNull(nameof(_runtime))]
-private void EnsureRuntimeCreated()
-{
-    if (_runtime is not null)
-        return;
-
-    _runtime = _definition.Runtime;
-    _runtime.EnsureSupported();
-}
 
     /// <summary>Creates the container if it does not exist yet, without starting it. When <see cref="ContainerDefinition.ReuseId"/> is set, an existing matching container is adopted instead.</summary>
     /// <param name="cancellationToken">A cancellation token.</param>
@@ -58,7 +48,7 @@ private void EnsureRuntimeCreated()
         if (_created)
             return;
 
-        EnsureRuntimeCreated();
+        await EnsureRuntimeSupportedAsync(cancellationToken).ConfigureAwait(false);
 
         _id = await Runtime.EnsureCreatedAsync(_definition, cancellationToken).ConfigureAwait(false);
 

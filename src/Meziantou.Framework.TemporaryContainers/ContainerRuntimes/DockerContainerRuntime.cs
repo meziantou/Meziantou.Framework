@@ -12,8 +12,8 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
 
     private readonly Flavor _flavor;
 
-    public DockerContainerRuntime(string name, Flavor flavor)
-        : base(name)
+    public DockerContainerRuntime(string name, Flavor flavor, string? executablePath = null)
+        : base(name, executablePath)
     {
         _flavor = flavor;
     }
@@ -24,6 +24,13 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         Flavor.Podman => "podman",
         Flavor.Wslc => "wslc",
         _ => throw new InvalidOperationException($"Unknown flavor: {_flavor}"),
+    };
+
+    internal override IReadOnlyList<string> BuildProbeArguments() => _flavor switch
+    {
+        // wslc reports its version through '--version', which the CLI answers on its own, so the probe lists the containers instead.
+        Flavor.Wslc => ["list", "-q"],
+        _ => ["version"],
     };
 
     internal override bool LogsIncludeTimestamps => true;

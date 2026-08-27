@@ -190,7 +190,7 @@ public sealed class ContainerDefinitionTests
 
         public ContainerState State { get; set; } = ContainerState.Created;
 
-        public override bool IsSupported() => true;
+        public override Task<bool> IsSupportedAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
 
         internal override Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
         {

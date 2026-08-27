@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Meziantou.Framework.SyntaxHighlighting.Engine;
 
 namespace Meziantou.Framework.SyntaxHighlighting.Languages;
@@ -10,39 +11,110 @@ internal static class LanguageRegistry
         Tokenizer.SubLanguageResolver = Get;
     }
 
-#pragma warning disable CA1308 // Normalize strings to uppercase: language aliases are lowercase by convention.
-    public static CompiledMode Get(string language) => language.ToLowerInvariant() switch
-#pragma warning restore CA1308
+    // The values are factories rather than compiled grammars so that looking a language up — or
+    // merely asking whether it is supported — does not compile every other grammar.
+    private static readonly FrozenDictionary<string, Func<CompiledMode>> Languages =
+        new Dictionary<string, Func<CompiledMode>>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["json"] = () => Json.Instance,
+            ["jsonc"] = () => Json.Instance,
+            ["css"] = () => Css.Instance,
+            ["csharp"] = () => CSharp.Instance,
+            ["cs"] = () => CSharp.Instance,
+            ["c#"] = () => CSharp.Instance,
+            ["ini"] = () => Ini.Instance,
+            ["toml"] = () => Ini.Instance,
+            ["gitconfig"] = () => Ini.Instance,
+            ["bnf"] = () => Bnf.Instance,
+            ["x86asm"] = () => X86Asm.Instance,
+            ["dos"] = () => Dos.Instance,
+            ["bat"] = () => Dos.Instance,
+            ["cmd"] = () => Dos.Instance,
+            ["yaml"] = () => Yaml.Instance,
+            ["yml"] = () => Yaml.Instance,
+            ["sql"] = () => Sql.Instance,
+            ["nginx"] = () => Nginx.Instance,
+            ["nginxconf"] = () => Nginx.Instance,
+            ["graphql"] = () => Graphql.Instance,
+            ["gql"] = () => Graphql.Instance,
+            ["vbnet"] = () => VbNet.Instance,
+            ["vb"] = () => VbNet.Instance,
+            ["fsharp"] = () => FSharp.Instance,
+            ["fs"] = () => FSharp.Instance,
+            ["f#"] = () => FSharp.Instance,
+            ["cpp"] = () => Cpp.Instance,
+            ["c++"] = () => Cpp.Instance,
+            ["cc"] = () => Cpp.Instance,
+            ["h++"] = () => Cpp.Instance,
+            ["hpp"] = () => Cpp.Instance,
+            ["hh"] = () => Cpp.Instance,
+            ["hxx"] = () => Cpp.Instance,
+            ["cxx"] = () => Cpp.Instance,
+            ["powershell"] = () => PowerShell.Instance,
+            ["pwsh"] = () => PowerShell.Instance,
+            ["ps"] = () => PowerShell.Instance,
+            ["ps1"] = () => PowerShell.Instance,
+            ["bash"] = () => Bash.Instance,
+            ["sh"] = () => Bash.Instance,
+            ["zsh"] = () => Bash.Instance,
+            ["ksh"] = () => Bash.Instance,
+            ["javascript"] = () => Javascript.Instance,
+            ["js"] = () => Javascript.Instance,
+            ["jsx"] = () => Javascript.Instance,
+            ["mjs"] = () => Javascript.Instance,
+            ["cjs"] = () => Javascript.Instance,
+            ["typescript"] = () => Typescript.Instance,
+            ["ts"] = () => Typescript.Instance,
+            ["tsx"] = () => Typescript.Instance,
+            ["mts"] = () => Typescript.Instance,
+            ["cts"] = () => Typescript.Instance,
+            ["less"] = () => Less.Instance,
+            ["scss"] = () => Scss.Instance,
+            ["php"] = () => Php.Instance,
+            ["xml"] = () => Xml.Instance,
+            ["xsd"] = () => Xml.Instance,
+            ["xsl"] = () => Xml.Instance,
+            ["plist"] = () => Xml.Instance,
+            ["rss"] = () => Xml.Instance,
+            ["atom"] = () => Xml.Instance,
+            ["svg"] = () => Xml.Instance,
+            ["html"] = () => Html.Instance,
+            ["htm"] = () => Html.Instance,
+            ["xhtml"] = () => Html.Instance,
+            ["razor"] = () => Razor.Instance,
+            ["cshtml"] = () => Razor.Instance,
+            ["cshtml-razor"] = () => Razor.Instance,
+            ["dockerfile"] = () => Dockerfile.Instance,
+            ["docker"] = () => Dockerfile.Instance,
+            ["markdown"] = () => Markdown.Instance,
+            ["md"] = () => Markdown.Instance,
+            ["mkdown"] = () => Markdown.Instance,
+            ["mkd"] = () => Markdown.Instance,
+            ["http"] = () => Http.Instance,
+            ["https"] = () => Http.Instance,
+            ["urlencoded"] = () => UrlEncoded.Instance,
+            ["x-www-form-urlencoded"] = () => UrlEncoded.Instance,
+            ["msil"] = () => Msil.Instance,
+            ["il"] = () => Msil.Instance,
+            ["cil"] = () => Msil.Instance,
+        }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+
+    public static CompiledMode Get(string language) =>
+        TryGet(language, out var mode) ? mode : throw new NotSupportedException($"Language '{language}' is not supported.");
+
+    public static bool TryGet(string language, [NotNullWhen(true)] out CompiledMode? mode)
     {
-        "json" or "jsonc" => Json.Instance,
-        "css" => Css.Instance,
-        "csharp" or "cs" or "c#" => CSharp.Instance,
-        "ini" or "toml" or "gitconfig" => Ini.Instance,
-        "bnf" => Bnf.Instance,
-        "x86asm" => X86Asm.Instance,
-        "dos" or "bat" or "cmd" => Dos.Instance,
-        "yaml" or "yml" => Yaml.Instance,
-        "sql" => Sql.Instance,
-        "nginx" or "nginxconf" => Nginx.Instance,
-        "graphql" or "gql" => Graphql.Instance,
-        "vbnet" or "vb" => VbNet.Instance,
-        "fsharp" or "fs" or "f#" => FSharp.Instance,
-        "cpp" or "c++" or "cc" or "h++" or "hpp" or "hh" or "hxx" or "cxx" => Cpp.Instance,
-        "powershell" or "pwsh" or "ps" or "ps1" => PowerShell.Instance,
-        "bash" or "sh" or "zsh" or "ksh" => Bash.Instance,
-        "javascript" or "js" or "jsx" or "mjs" or "cjs" => Javascript.Instance,
-        "typescript" or "ts" or "tsx" or "mts" or "cts" => Typescript.Instance,
-        "less" => Less.Instance,
-        "scss" => Scss.Instance,
-        "php" => Php.Instance,
-        "xml" or "xsd" or "xsl" or "plist" or "rss" or "atom" or "svg" => Xml.Instance,
-        "html" or "htm" or "xhtml" => Html.Instance,
-        "razor" or "cshtml" or "cshtml-razor" => Razor.Instance,
-        "dockerfile" or "docker" => Dockerfile.Instance,
-        "markdown" or "md" or "mkdown" or "mkd" => Markdown.Instance,
-        "http" or "https" => Http.Instance,
-        "urlencoded" or "x-www-form-urlencoded" => UrlEncoded.Instance,
-        "msil" or "il" or "cil" => Msil.Instance,
-        _ => throw new NotSupportedException($"Language '{language}' is not supported."),
-    };
+        if (Languages.TryGetValue(language, out var factory))
+        {
+            mode = factory();
+            return true;
+        }
+
+        mode = null;
+        return false;
+    }
+
+    public static bool IsSupported(string language) => Languages.ContainsKey(language);
+
+    public static IEnumerable<string> GetSupportedLanguages() => Languages.Keys.Order(StringComparer.Ordinal);
 }

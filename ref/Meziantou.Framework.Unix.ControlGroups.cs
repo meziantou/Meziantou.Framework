@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Unix.ControlGroups
         public void SetCpusetCpusRaw(string cpuList) { }
         public int[]? GetCpusetCpus() => throw null;
         public int[]? GetCpusetCpusEffective() => throw null;
-        public void SetCpusetMems(params int[] nodes) { }
+        public void SetCpusetMems(params System.ReadOnlySpan<int> nodes) { }
         public void SetCpusetMemsRaw(string nodeList) { }
         public int[]? GetCpusetMems() => throw null;
         public int[]? GetCpusetMemsEffective() => throw null;

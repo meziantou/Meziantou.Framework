@@ -38,4 +38,11 @@ public sealed class LsaPrivateDataTests
         var value = LsaPrivateData.GetValue("LsaPrivateDataTestsUnset");
         Assert.Null(value);
     }
+
+    [Fact, RunIf(WindowsGroups.Administrator)]
+    public void LsaPrivateData_RemoveUnsetValue()
+    {
+        LsaPrivateData.RemoveValue("LsaPrivateDataTestsUnsetRemove");
+        Assert.Null(LsaPrivateData.GetValue("LsaPrivateDataTestsUnsetRemove"));
+    }
 }

@@ -42,6 +42,8 @@ using Meziantou.Framework.Win32;
 LsaPrivateData.RemoveValue("MySecretKey");
 ```
 
+Removing a key that does not exist does nothing.
+
 ## Additional Resources
 
 - [Local Security Authority (LSA) on Microsoft Learn](https://learn.microsoft.com/en-us/windows/win32/secauthn/lsa-authentication?WT.mc_id=DT-MVP-5003978)

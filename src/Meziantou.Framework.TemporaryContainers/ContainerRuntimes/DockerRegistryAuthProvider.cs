@@ -1,3 +1,4 @@
+using System.Buffers.Text;
 using System.Text;
 using System.Text.Json;
 using Meziantou.Framework;
@@ -168,7 +169,9 @@ internal sealed class DockerRegistryAuthProvider
     private static string BuildRegistryAuthHeader(DockerApiModels.RegistryAuthHeader credentials)
     {
         var bytes = JsonSerializer.SerializeToUtf8Bytes(credentials, DockerApiJsonContext.Default.RegistryAuthHeader);
-        return Convert.ToBase64String(bytes);
+
+        // The daemon decodes X-Registry-Auth with base64url, so '+' and '/' from the standard alphabet are rejected.
+        return Base64Url.EncodeToString(bytes);
     }
 
     private static string NormalizeRegistry(string value)

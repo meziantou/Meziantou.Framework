@@ -770,6 +770,31 @@ public sealed class FunctionalTests
         Assert.Equal(expectedResult, strategy.IsCompatibleVersion(currentVersion, candidateVersion));
     }
 
+    [Theory]
+    // GitHub sends absolute URLs and several relations in one header
+    [InlineData("<https://api.github.com/repositories/1/tags?page=2>; rel=\"next\", <https://api.github.com/repositories/1/tags?page=9>; rel=\"last\"", "https://api.github.com/repositories/1/tags?page=2")]
+    // Docker registries send a relative URL that has to be resolved against the request
+    [InlineData("</v2/library/nginx/tags/list?n=100&last=1.27>; rel=\"next\"", "https://registry-1.docker.io/v2/library/nginx/tags/list?n=100&last=1.27")]
+    // The last page only advertises relations other than 'next'
+    [InlineData("<https://api.github.com/repositories/1/tags?page=1>; rel=\"prev\", <https://api.github.com/repositories/1/tags?page=1>; rel=\"first\"", null)]
+    public void LinkHeader_TryGetNextPageUri(string headerValue, string? expected)
+    {
+        using var response = new HttpResponseMessage();
+        response.Headers.TryAddWithoutValidation("Link", headerValue);
+
+        var result = LinkHeader.TryGetNextPageUri(response, new Uri("https://registry-1.docker.io/v2/library/nginx/tags/list"));
+
+        Assert.Equal(expected, result?.ToString());
+    }
+
+    [Fact]
+    public void LinkHeader_TryGetNextPageUri_NoHeader()
+    {
+        using var response = new HttpResponseMessage();
+
+        Assert.Null(LinkHeader.TryGetNextPageUri(response, new Uri("https://registry-1.docker.io/v2/library/nginx/tags/list")));
+    }
+
     private static async Task<IReadOnlyList<Dependency>> ScanDependencies(TemporaryDirectory temporaryDirectory)
     {
         var deps = (await DependencyScanner.ScanDirectoryAsync(temporaryDirectory.FullPath, options: null, XunitCancellationToken)).ToList();

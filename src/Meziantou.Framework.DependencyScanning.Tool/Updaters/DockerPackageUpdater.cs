@@ -8,6 +8,11 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 
 internal sealed class DockerPackageUpdater : PackageUpdater
 {
+    // Docker Hub answers with every tag at once, but GHCR, Harbor and ECR paginate; without following the
+    // Link header only the first page of tags is ever considered. No explicit page size is requested, so
+    // registries that already return everything keep doing so.
+    private const int MaxPages = 100;
+
     private static readonly HttpClient HttpClient = new();
     public override VersioningStrategy VersioningStrategy { get; set; } = DockerVersioningStrategy.Instance;
 
@@ -31,35 +36,46 @@ internal sealed class DockerPackageUpdater : PackageUpdater
         packageName = NormalizePackageName(packageName);
         var (registry, repository) = ParseImageName(packageName);
 
-        var tagsListUri = new UriBuilder(Uri.UriSchemeHttps, registry) { Path = $"v2/{repository}/tags/list" }.Uri;
-        using var initialResponse = await SendTagsListRequestAsync(tagsListUri, accessToken: null, cancellationToken).ConfigureAwait(false);
-        if (initialResponse.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
-            yield break;
-
-        if (initialResponse.StatusCode is HttpStatusCode.Unauthorized)
+        var nextUri = new UriBuilder(Uri.UriSchemeHttps, registry) { Path = $"v2/{repository}/tags/list" }.Uri;
+        string? accessToken = null;
+        for (var page = 0; page < MaxPages && nextUri is not null; page++)
         {
-            var accessToken = await GetRegistryTokenAsync(initialResponse, repository, cancellationToken).ConfigureAwait(false);
-            if (string.IsNullOrEmpty(accessToken))
+            var result = await GetTagsPageAsync(nextUri, repository, accessToken, cancellationToken).ConfigureAwait(false);
+            if (result is null)
                 yield break;
 
-            using var authenticatedResponse = await SendTagsListRequestAsync(tagsListUri, accessToken, cancellationToken).ConfigureAwait(false);
-            if (authenticatedResponse.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
-                yield break;
-
-            authenticatedResponse.EnsureSuccessStatusCode();
-            await foreach (var tag in ParseTagsAsync(authenticatedResponse, cancellationToken).ConfigureAwait(false))
+            foreach (var tag in result.Value.Tags)
             {
                 yield return tag;
             }
 
-            yield break;
+            accessToken = result.Value.AccessToken;
+            nextUri = result.Value.NextPage;
+        }
+    }
+
+    private static async Task<(List<string> Tags, Uri? NextPage, string? AccessToken)?> GetTagsPageAsync(Uri uri, string repository, string? accessToken, CancellationToken cancellationToken)
+    {
+        using var response = await SendTagsListRequestAsync(uri, accessToken, cancellationToken).ConfigureAwait(false);
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
+            return null;
+
+        if (response.StatusCode is HttpStatusCode.Unauthorized)
+        {
+            accessToken = await GetRegistryTokenAsync(response, repository, cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(accessToken))
+                return null;
+
+            using var authenticatedResponse = await SendTagsListRequestAsync(uri, accessToken, cancellationToken).ConfigureAwait(false);
+            if (authenticatedResponse.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
+                return null;
+
+            authenticatedResponse.EnsureSuccessStatusCode();
+            return (await ReadTagsAsync(authenticatedResponse, cancellationToken).ConfigureAwait(false), LinkHeader.TryGetNextPageUri(authenticatedResponse, uri), accessToken);
         }
 
-        initialResponse.EnsureSuccessStatusCode();
-        await foreach (var tag in ParseTagsAsync(initialResponse, cancellationToken).ConfigureAwait(false))
-        {
-            yield return tag;
-        }
+        response.EnsureSuccessStatusCode();
+        return (await ReadTagsAsync(response, cancellationToken).ConfigureAwait(false), LinkHeader.TryGetNextPageUri(response, uri), accessToken);
     }
 
     public override Task UpdateLockFileAsync(FullPath rootDirectory, IEnumerable<Dependency> updatedDependencies, CancellationToken cancellationToken) => Task.CompletedTask;
@@ -106,8 +122,9 @@ internal sealed class DockerPackageUpdater : PackageUpdater
         return await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async IAsyncEnumerable<string> ParseTagsAsync(HttpResponseMessage response, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private static async Task<List<string>> ReadTagsAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
+        var tags = new List<string>();
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (document.RootElement.TryGetProperty("tags", out var tagsElement) && tagsElement.ValueKind is JsonValueKind.Array)
@@ -117,10 +134,12 @@ internal sealed class DockerPackageUpdater : PackageUpdater
                 var tag = tagElement.GetString();
                 if (!string.IsNullOrEmpty(tag))
                 {
-                    yield return tag;
+                    tags.Add(tag);
                 }
             }
         }
+
+        return tags;
     }
 
     private static async Task<string?> GetRegistryTokenAsync(HttpResponseMessage unauthorizedResponse, string repository, CancellationToken cancellationToken)

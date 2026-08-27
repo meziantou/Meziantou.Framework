@@ -563,6 +563,88 @@ public sealed class HarEntryExtensionsTests
         Assert.Equal("username=someone%40example.com&password=redacted&remember=on", await message.Content.ReadAsStringAsync());
     }
 
+    [Fact]
+    public void ToHttpRequestMessage_SynthesizesCookieHeaderFromCookieList()
+    {
+        var request = new HarRequest
+        {
+            Method = "GET",
+            Url = "https://example.com/",
+            HttpVersion = "http/2.0",
+            Cookies =
+            [
+                new HarCookie { Name = "session", Value = "abc123" },
+                new HarCookie { Name = "theme", Value = "dark" },
+            ],
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.Equal("session=abc123; theme=dark", Assert.Single(message.Headers.GetValues("Cookie")));
+    }
+
+    [Fact]
+    public void ToHttpRequestMessage_KeepsTheRecordedCookieHeader()
+    {
+        var request = new HarRequest
+        {
+            Method = "GET",
+            Url = "https://example.com/",
+            HttpVersion = "http/2.0",
+            Headers = [new HarHeader { Name = "Cookie", Value = "session=fromheader" }],
+            Cookies = [new HarCookie { Name = "session", Value = "fromlist" }],
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.Equal("session=fromheader", Assert.Single(message.Headers.GetValues("Cookie")));
+    }
+
+    [Fact]
+    public void ToHttpResponseMessage_SynthesizesSetCookieHeaders()
+    {
+        var response = new HarResponse
+        {
+            Status = 200,
+            HttpVersion = "http/2.0",
+            Cookies =
+            [
+                new HarCookie
+                {
+                    Name = "session",
+                    Value = "abc123",
+                    Path = "/",
+                    Domain = "example.com",
+                    Expires = new DateTimeOffset(2026, 9, 27, 9, 14, 22, TimeSpan.Zero),
+                    HttpOnly = true,
+                    Secure = true,
+                },
+                new HarCookie { Name = "theme", Value = "dark" },
+            ],
+            Content = new HarContent { MimeType = "text/plain", Text = "ok" },
+        };
+
+        using var message = response.ToHttpResponseMessage();
+
+        var values = message.Headers.GetValues("Set-Cookie").ToList();
+        Assert.HasCount(2, values);
+        Assert.Equal("session=abc123; Path=/; Domain=example.com; Expires=Sun, 27 Sep 2026 09:14:22 GMT; HttpOnly; Secure", values[0]);
+        Assert.Equal("theme=dark", values[1]);
+    }
+
+    [Fact]
+    public void RealWorldHar_DoesNotDuplicateRecordedCookieHeaders()
+    {
+        var document = LoadChromeHar();
+        var entry = document.Log.Entries[0];
+
+        using var request = entry.ToHttpRequestMessage();
+        using var response = entry.ToHttpResponseMessage();
+
+        Assert.Equal("session=abc123; theme=dark", Assert.Single(request.Headers.GetValues("Cookie")));
+        Assert.Single(response.Headers.GetValues("Set-Cookie"));
+    }
+
     private static HarDocument LoadChromeHar()
     {
         using var stream = typeof(HarEntryExtensionsTests).Assembly.GetManifestResourceStream("files/chrome-devtools.har")!;

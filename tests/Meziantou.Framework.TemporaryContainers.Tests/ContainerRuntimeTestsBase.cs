@@ -411,12 +411,14 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     {
         var reuseId = "meziantou-tc-test-" + Guid.NewGuid().ToString("N");
         string firstId;
+        int firstPort;
 
         var firstDefinition = CreateHttpServerDefinition();
         firstDefinition.ReuseId = reuseId;
         await using (var first = await StartWithRetryAsync(firstDefinition))
         {
             firstId = first.Id;
+            firstPort = first.GetMappedPort(8080);
         }
 
         try
@@ -427,6 +429,11 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
             await second.EnsureCreatedAsync(XunitCancellationToken);
 
             Assert.Equal(firstId, second.Id);
+
+            // The adopted container keeps the host ports it was created with, so the second run has to report those
+            // and not a freshly picked mapping.
+            await second.StartAsync(XunitCancellationToken);
+            Assert.Equal(firstPort, second.GetMappedPort(8080));
         }
         finally
         {

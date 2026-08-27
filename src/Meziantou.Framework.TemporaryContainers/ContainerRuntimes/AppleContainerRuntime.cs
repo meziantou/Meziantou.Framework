@@ -20,11 +20,11 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
     // containers is the cheapest command that does.
     internal override IReadOnlyList<string> BuildProbeArguments() => ["ls", "-q"];
 
-    internal override Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
+    internal override void PrepareDefinitionForCreate(ContainerDefinition definition)
     {
-        // Apple's container runtime does not support random-port assignment and does not
-        // report host port bindings in inspect output. Pre-assign free host ports so that
-        // GetMappedPort works correctly after the container starts.
+        // Apple's container runtime does not support random-port assignment, so a free host port has to be picked
+        // here. This only runs when a container is actually created: an adopted container keeps the host ports it was
+        // created with, and rewriting them would make GetMappedPort report ports nothing is listening on.
         var portsWithoutHostPort = new List<int>();
         foreach (var port in definition.Ports)
         {
@@ -37,8 +37,6 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
             definition.Ports.Remove(containerPort);
             definition.Ports.Add(GetFreeTcpPort(), containerPort);
         }
-
-        return base.EnsureCreatedAsync(definition, cancellationToken);
     }
 
     private static int GetFreeTcpPort()
@@ -222,20 +220,41 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
             State = ParseState(status),
             Status = status,
             IPAddress = slash >= 0 ? address![..slash] : address,
-            Ports = new Dictionary<int, int>(),
-            Labels = new Dictionary<string, string>(StringComparer.Ordinal),
+            Ports = GetPorts(result.Configuration?.PublishedPorts),
+            Labels = result.Configuration?.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal),
         };
     }
 
     internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
     {
-        // Apple's runtime does not report host port bindings in inspect and has no random-port discovery,
-        // so the mapping is derived from the published ports (host defaults to the container port).
+        ArgumentNullException.ThrowIfNull(info);
+
+        // The runtime reports the bindings it actually created, which is the only source that is correct for a
+        // container adopted through ReuseId: its host ports were chosen by whichever run created it.
+        if (info.Ports.Count > 0)
+            return info.Ports;
+
+        // Older CLI versions do not report 'publishedPorts', so fall back to what the definition asked for.
         var map = new Dictionary<int, int>();
         foreach (var port in definition.Ports)
             map[port.Port] = port.HostPort ?? port.Port;
 
         return map;
+    }
+
+    private static Dictionary<int, int> GetPorts(List<ApplePublishedPortDto>? publishedPorts)
+    {
+        var ports = new Dictionary<int, int>();
+        if (publishedPorts is null)
+            return ports;
+
+        foreach (var port in publishedPorts)
+        {
+            if (port.Proto is null or "tcp" && port.HostPort > 0)
+                ports[port.ContainerPort] = port.HostPort;
+        }
+
+        return ports;
     }
 
     private static ContainerState ParseState(string? status)

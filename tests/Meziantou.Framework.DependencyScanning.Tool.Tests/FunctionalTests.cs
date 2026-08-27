@@ -528,6 +528,35 @@ public sealed class FunctionalTests
         Assert.Equal("^2.0.0", strategy.GetUpdateReferenceText("^1.0.0", "2.0.0"));
         Assert.Equal("~2.0.0", strategy.GetUpdateReferenceText("~1.0.0", "2.0.0"));
         Assert.Equal("2.0.0", strategy.GetUpdateReferenceText("1.0.0", "2.0.0"));
+
+        // A partial range keeps its prefix and gains the full version, like 'npm update --save'
+        Assert.Equal("^1.9.4", strategy.GetUpdateReferenceText("^1.1", "1.9.4"));
+        Assert.Equal("~7.7.4", strategy.GetUpdateReferenceText("~7", "7.7.4"));
+    }
+
+    [Theory]
+    [InlineData("1.0.0", true)]
+    [InlineData("^1.1", true)]
+    [InlineData("~7", true)]
+    [InlineData(">=2.4", true)]
+    [InlineData("v1.2", true)]
+    [InlineData("1.x", false)]
+    [InlineData("*", false)]
+    [InlineData("latest", false)]
+    [InlineData("", false)]
+    public void NpmVersioningStrategy_IsSupportedVersion(string version, bool expectedResult)
+    {
+        Assert.Equal(expectedResult, NpmVersioningStrategy.Instance.IsSupportedVersion(version));
+    }
+
+    [Theory]
+    [InlineData("^1.1", "1.9.4", true)]
+    [InlineData("~7", "7.7.4", true)]
+    [InlineData("^1.1", "1.1.0", false)]
+    [InlineData("^2", "1.9.4", false)]
+    public void NpmVersioningStrategy_IsCompatibleVersion(string currentVersion, string candidateVersion, bool expectedResult)
+    {
+        Assert.Equal(expectedResult, NpmVersioningStrategy.Instance.IsCompatibleVersion(currentVersion, candidateVersion));
     }
 
     [Theory]
@@ -535,6 +564,18 @@ public sealed class FunctionalTests
     [InlineData("1.0.0-alpine", "1.0.1-slim", false)]
     [InlineData("1.0.0", "1.0.1-alpine", false)]
     [InlineData("1.0.0", "1.1.0", true)]
+    // Two- and one-component tags are the common shape for official images
+    [InlineData("1.27", "1.31", true)]
+    [InlineData("9.0", "10.0", true)]
+    [InlineData("20-alpine", "24-alpine", true)]
+    [InlineData("20-alpine", "24-slim", false)]
+    // The candidate is written back as the tag, so the number of components must not change
+    [InlineData("1.27", "1.31.4", false)]
+    [InlineData("1.27.1", "1.31", false)]
+    [InlineData("20-alpine", "24.1-alpine", false)]
+    // Still not a version
+    [InlineData("latest", "1.0.0", false)]
+    [InlineData("1.0.0", "latest", false)]
     public void DockerVersioningStrategy_IsCompatibleVersion(string currentVersion, string candidateVersion, bool expectedResult)
     {
         var strategy = DockerVersioningStrategy.Instance;

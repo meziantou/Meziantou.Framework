@@ -10,6 +10,10 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
     // Anonymous calls share a 60 requests/hour budget per IP, which a repository with a few dozen
     // actions exhausts in a single run. A token raises that to 5000.
     private static readonly string[] TokenEnvironmentVariables = ["GITHUB_TOKEN", "GH_TOKEN"];
+    // GitHub does not document its tag ordering, so on a repository with more than one page of tags the
+    // newest release can sit behind the Link header rather than in the first response.
+    private const int MaxPages = 10;
+
     private static readonly HttpClient HttpClient = new();
     public override VersioningStrategy VersioningStrategy { get; set; } = GitHubActionsVersioningStrategy.Instance;
 
@@ -23,8 +27,25 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
         if (!TryParseRepository(dependency.Name, out var owner, out var repository))
             yield break;
 
-        var tagsUri = new Uri($"https://api.github.com/repos/{owner}/{repository}/tags?per_page=100");
-        using var request = new HttpRequestMessage(HttpMethod.Get, tagsUri);
+        var nextUri = new Uri($"https://api.github.com/repos/{owner}/{repository}/tags?per_page=100");
+        for (var page = 0; page < MaxPages && nextUri is not null; page++)
+        {
+            var result = await GetTagsWithDatesAsync(nextUri, cancellationToken).ConfigureAwait(false);
+            if (result is null)
+                yield break;
+
+            foreach (var (tag, date) in result.Value.Tags)
+            {
+                yield return new PackageVersion(tag, date);
+            }
+
+            nextUri = result.Value.NextPage;
+        }
+    }
+
+    private static HttpRequestMessage CreateTagsRequest(Uri uri)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, uri);
         request.Headers.TryAddWithoutValidation("X-GitHub-Api-Version", "2022-11-28");
         request.Headers.UserAgent.ParseAdd("Meziantou.Framework.DependencyScanning.Tool");
         request.Headers.Accept.ParseAdd("application/vnd.github+json");
@@ -33,14 +54,7 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
-        var tagsWithDates = await GetTagsWithDatesAsync(request, cancellationToken).ConfigureAwait(false);
-        if (tagsWithDates is null)
-            yield break;
-
-        foreach (var (tag, date) in tagsWithDates)
-        {
-            yield return new PackageVersion(tag, date);
-        }
+        return request;
     }
 
     public override Task UpdateLockFileAsync(FullPath rootDirectory, IEnumerable<Dependency> updatedDependencies, CancellationToken cancellationToken) => Task.CompletedTask;
@@ -81,10 +95,11 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
         return null;
     }
 
-    private static async Task<(string Tag, DateTime? PublishedDate)[]?> GetTagsWithDatesAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    private static async Task<((string Tag, DateTime? PublishedDate)[] Tags, Uri? NextPage)?> GetTagsWithDatesAsync(Uri uri, CancellationToken cancellationToken)
     {
         try
         {
+            using var request = CreateTagsRequest(uri);
             using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
             {
@@ -132,7 +147,7 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
                 result.Add((name, publishedDate));
             }
 
-            return [.. result];
+            return ([.. result], LinkHeader.TryGetNextPageUri(response, uri));
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

@@ -39,14 +39,14 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows")]
 public sealed class RestartManager : IDisposable
 {
-    private uint SessionHandle { get; }
+    private readonly RestartManagerSessionHandle _sessionHandle;
 
     /// <summary>Gets the session key for this Restart Manager session.</summary>
     public string SessionKey { get; }
 
     private RestartManager(uint sessionHandle, string sessionKey)
     {
-        SessionHandle = sessionHandle;
+        _sessionHandle = new RestartManagerSessionHandle(sessionHandle);
         SessionKey = sessionKey;
     }
 
@@ -85,9 +85,10 @@ public sealed class RestartManager : IDisposable
     public void RegisterFile(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
+        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
         string[] resources = [path];
-        var result = RegisterResources(SessionHandle, resources);
+        var result = RegisterResources(_sessionHandle.SessionHandle, resources);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
     }
@@ -99,8 +100,9 @@ public sealed class RestartManager : IDisposable
     public void RegisterFiles(string[] paths)
     {
         ArgumentNullException.ThrowIfNull(paths);
+        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
-        var result = RegisterResources(SessionHandle, paths);
+        var result = RegisterResources(_sessionHandle.SessionHandle, paths);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
     }
@@ -110,11 +112,13 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public bool IsResourcesLocked()
     {
+        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
+
         uint arraySize = 1;
         while (true)
         {
             var array = new RM_PROCESS_INFO[arraySize];
-            var result = PInvoke.RmGetList(SessionHandle, out var arrayCount, ref arraySize, array, out _);
+            var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out _);
             if (result is WIN32_ERROR.ERROR_SUCCESS or WIN32_ERROR.ERROR_MORE_DATA)
             {
                 return arrayCount > 0;
@@ -129,11 +133,13 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public IReadOnlyList<Process> GetProcessesLockingResources()
     {
+        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
+
         uint arraySize = 10;
         while (true)
         {
             var array = new RM_PROCESS_INFO[arraySize];
-            var result = PInvoke.RmGetList(SessionHandle, out var arrayCount, ref arraySize, array, out _);
+            var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out _);
             if (result == WIN32_ERROR.ERROR_SUCCESS)
             {
                 var processes = new List<Process>((int)arrayCount);
@@ -177,8 +183,10 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when the shutdown operation fails.</exception>
     public void Shutdown(RestartManagerShutdownType action, RestartManagerWriteStatusCallback? statusCallback)
     {
+        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
+
         RM_WRITE_STATUS_CALLBACK? callback = statusCallback is null ? null : statusCallback.Invoke;
-        var result = PInvoke.RmShutdown(SessionHandle, (uint)action, callback);
+        var result = PInvoke.RmShutdown(_sessionHandle.SessionHandle, (uint)action, callback);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
     }
@@ -195,8 +203,10 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when the restart operation fails.</exception>
     public void Restart(RestartManagerWriteStatusCallback? statusCallback)
     {
+        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
+
         RM_WRITE_STATUS_CALLBACK? callback = statusCallback is null ? null : statusCallback.Invoke;
-        var result = PInvoke.RmRestart(SessionHandle, 0, callback);
+        var result = PInvoke.RmRestart(_sessionHandle.SessionHandle, 0, callback);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRestart failed ({result})");
     }
@@ -241,17 +251,10 @@ public sealed class RestartManager : IDisposable
         }
     }
 
-    /// <summary>Ends the Restart Manager session and releases all resources.</summary>
-    /// <exception cref="Win32Exception">Thrown when ending the session fails.</exception>
-    [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations", Justification = "<Pending>")]
+    /// <summary>Ends the Restart Manager session and releases all resources. Calling this method more than once has no effect.</summary>
     public void Dispose()
     {
-        if (SessionHandle != 0)
-        {
-            var result = PInvoke.RmEndSession(SessionHandle);
-            if (result != WIN32_ERROR.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, $"RmEndSession failed ({result})");
-        }
+        _sessionHandle.Dispose();
     }
 
     /// <summary>Determines whether the specified file is currently locked by any process.</summary>

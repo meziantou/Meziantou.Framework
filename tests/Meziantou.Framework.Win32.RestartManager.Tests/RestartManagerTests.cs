@@ -59,4 +59,30 @@ public class RestartManagerTests
             File.Delete(path);
         }
     }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void Dispose_CanBeCalledMultipleTimes()
+    {
+        var session = RestartManager.CreateSession();
+        session.Dispose();
+        session.Dispose();
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void RegisterFile_AfterDispose_ThrowsObjectDisposedException()
+    {
+        var session = RestartManager.CreateSession();
+        session.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => session.RegisterFile(@"C:\does-not-matter.txt"));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void IsResourcesLocked_AfterDispose_ThrowsObjectDisposedException()
+    {
+        var session = RestartManager.CreateSession();
+        session.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => _ = session.IsResourcesLocked());
+    }
 }

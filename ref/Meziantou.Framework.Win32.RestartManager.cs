@@ -14,6 +14,7 @@ namespace Meziantou.Framework.Win32
         public void RegisterFiles(string[] paths) { }
         public bool IsResourcesLocked() => throw null;
         public System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingResources() => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Win32.RestartManagerProcessInfo> GetLockingProcesses() => throw null;
         public void Shutdown(Meziantou.Framework.Win32.RestartManagerShutdownType action) { }
         public void Shutdown(Meziantou.Framework.Win32.RestartManagerShutdownType action, Meziantou.Framework.Win32.RestartManagerWriteStatusCallback? statusCallback) { }
         public void Restart() { }
@@ -23,6 +24,44 @@ namespace Meziantou.Framework.Win32
         public static bool IsFileLocked(string path) => throw null;
         public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingFile(string path) => throw null;
         public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingFiles(string[] paths) => throw null;
+    }
+
+    [System.Flags]
+    public enum RestartManagerApplicationStatus
+    {
+        Unknown = 0,
+        Running = 1,
+        Stopped = 2,
+        StoppedOther = 4,
+        Restarted = 8,
+        ErrorOnStop = 16,
+        ErrorOnRestart = 32,
+        ShutdownMasked = 64,
+        RestartMasked = 128
+    }
+
+    public enum RestartManagerApplicationType
+    {
+        Unknown = 0,
+        MainWindow = 1,
+        OtherWindow = 2,
+        Service = 3,
+        Explorer = 4,
+        Console = 5,
+        Critical = 1000
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    public sealed class RestartManagerProcessInfo
+    {
+        public int ProcessId { get => throw null; }
+        public System.DateTime StartTime { get => throw null; }
+        public string ApplicationName { get => throw null; }
+        public string ServiceShortName { get => throw null; }
+        public Meziantou.Framework.Win32.RestartManagerApplicationType ApplicationType { get => throw null; }
+        public Meziantou.Framework.Win32.RestartManagerApplicationStatus Status { get => throw null; }
+        public int TerminalServicesSessionId { get => throw null; }
+        public bool IsRestartable { get => throw null; }
     }
 
     [System.Flags]

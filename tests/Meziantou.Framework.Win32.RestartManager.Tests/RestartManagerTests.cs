@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
@@ -162,6 +163,31 @@ public class RestartManagerTests
         {
             File.Delete(unlockedPath);
             File.Delete(lockedPath);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetLockingProcesses_ReportsTheDetailsOfTheLockingProcess()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                using var session = RestartManager.CreateSession();
+                session.RegisterFile(path);
+
+                var info = Assert.Single(session.GetLockingProcesses(), item => item.ProcessId == _currentProcessId);
+                Assert.NotEmpty(info.ApplicationName);
+
+                using var currentProcess = Process.GetCurrentProcess();
+                var difference = (currentProcess.StartTime - info.StartTime).Duration();
+                Assert.True(difference < TimeSpan.FromSeconds(1), $"Expected {currentProcess.StartTime:O} but got {info.StartTime:O}");
+            }
+        }
+        finally
+        {
+            File.Delete(path);
         }
     }
 }

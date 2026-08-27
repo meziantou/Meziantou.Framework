@@ -128,6 +128,36 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public IReadOnlyList<Process> GetProcessesLockingResources()
     {
+        var (array, count) = GetList();
+        var processes = new List<Process>((int)count);
+        for (var i = 0; i < count; i++)
+        {
+            var process = TryGetProcess(array[i].Process);
+            if (process is not null)
+                processes.Add(process);
+        }
+
+        return processes;
+    }
+
+    /// <summary>Gets the applications and services that are currently using the registered resources.</summary>
+    /// <returns>A read-only list of <see cref="RestartManagerProcessInfo"/> describing each application or service.</returns>
+    /// <remarks>Unlike <see cref="GetProcessesLockingResources"/>, this method reports everything the Restart Manager knows about each application, including its name, type, status and whether it can be restarted, and it also reports applications that have already exited.</remarks>
+    /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
+    public IReadOnlyList<RestartManagerProcessInfo> GetLockingProcesses()
+    {
+        var (array, count) = GetList();
+        var result = new List<RestartManagerProcessInfo>((int)count);
+        for (var i = 0; i < count; i++)
+        {
+            result.Add(new RestartManagerProcessInfo(array[i]));
+        }
+
+        return result;
+    }
+
+    private (RM_PROCESS_INFO[] Array, uint Count) GetList()
+    {
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
         uint arraySize = 10;
@@ -136,25 +166,12 @@ public sealed class RestartManager : IDisposable
             var array = new RM_PROCESS_INFO[arraySize];
             var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out _);
             if (result == WIN32_ERROR.ERROR_SUCCESS)
-            {
-                var processes = new List<Process>((int)arrayCount);
-                for (var i = 0; i < arrayCount; i++)
-                {
-                    var process = TryGetProcess(array[i].Process);
-                    if (process is not null)
-                        processes.Add(process);
-                }
+                return (array, arrayCount);
 
-                return processes;
-            }
-            else if (result == WIN32_ERROR.ERROR_MORE_DATA)
-            {
-                arraySize = arrayCount;
-            }
-            else
-            {
+            if (result != WIN32_ERROR.ERROR_MORE_DATA)
                 throw new Win32Exception((int)result, $"RmGetList failed ({result})");
-            }
+
+            arraySize = arrayCount;
         }
     }
 
@@ -244,7 +261,7 @@ public sealed class RestartManager : IDisposable
     {
         try
         {
-            return process.StartTime.ToFileTime() != ToFileTime(startTime);
+            return process.StartTime.ToFileTime() != startTime.ToFileTime();
         }
         catch (Exception exception) when (exception is InvalidOperationException or Win32Exception)
         {
@@ -252,11 +269,6 @@ public sealed class RestartManager : IDisposable
             // dropping it here would hide a real lock holder, which is worse than the recycled-id race.
             return false;
         }
-    }
-
-    private static long ToFileTime(FILETIME fileTime)
-    {
-        return ((long)(uint)fileTime.dwHighDateTime << 32) | (uint)fileTime.dwLowDateTime;
     }
 
     private static unsafe WIN32_ERROR StartSession(out uint handle, Span<char> sessionKeyBuffer)

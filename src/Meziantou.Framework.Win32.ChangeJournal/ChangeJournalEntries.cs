@@ -34,23 +34,21 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
         if (header is { MajorVersion: 2, MinorVersion: 0 })
         {
             var entry = Marshal.PtrToStructure<USN_RECORD_V2>(bufferPointer);
-            var filenamePointer = bufferPointer + entry.FileNameOffset;
-            var name = Marshal.PtrToStringAuto(filenamePointer, entry.FileNameLength / 2);
-            Debug.Assert(name is not null);
-            return new ChangeJournalEntryVersion2or3(entry, name);
+            return new ChangeJournalEntryVersion2or3(entry, GetFileName(bufferPointer, header, entry.FileNameOffset, entry.FileNameLength));
         }
         else if (header is { MajorVersion: 3, MinorVersion: 0 })
         {
             var entry = Marshal.PtrToStructure<USN_RECORD_V3>(bufferPointer);
-            var filenamePointer = bufferPointer + entry.FileNameOffset;
-            var name = Marshal.PtrToStringAuto(filenamePointer, entry.FileNameLength / 2);
-            Debug.Assert(name is not null);
-            return new ChangeJournalEntryVersion2or3(entry, name);
+            return new ChangeJournalEntryVersion2or3(entry, GetFileName(bufferPointer, header, entry.FileNameOffset, entry.FileNameLength));
         }
         else if (header is { MajorVersion: 4, MinorVersion: 0 })
         {
             var entry = Marshal.PtrToStructure<USN_RECORD_V4>(bufferPointer);
             var extendOffset = Marshal.OffsetOf<USN_RECORD_V4>(nameof(USN_RECORD_V4.Extents));
+
+            // The extents are stored inside the record, so they must not extend past the record's own length.
+            if (entry.ExtentSize < Marshal.SizeOf<USN_RECORD_EXTENT>() || (long)extendOffset + ((long)entry.NumberOfExtents * entry.ExtentSize) > header.RecordLength)
+                throw new InvalidDataException($"The change journal returned a record of length {header.RecordLength} holding {entry.NumberOfExtents} extents of {entry.ExtentSize} bytes at offset {extendOffset}");
 
             var extents = new ChangeJournalEntryExtent[entry.NumberOfExtents];
             for (var i = 0; i < entry.NumberOfExtents; i++)
@@ -66,6 +64,18 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
         {
             throw new NotSupportedException($"Record version {header.MajorVersion}.{header.MinorVersion} is not supported");
         }
+    }
+
+    private static string GetFileName(IntPtr bufferPointer, USN_RECORD_COMMON_HEADER header, ushort fileNameOffset, ushort fileNameLength)
+    {
+        // The name is stored inside the record, so it must not extend past the record's own length.
+        if ((uint)fileNameOffset + fileNameLength > header.RecordLength)
+            throw new InvalidDataException($"The change journal returned a record of length {header.RecordLength} holding a file name of {fileNameLength} bytes at offset {fileNameOffset}");
+
+        // Names in a USN record are always UTF-16, which is what the length in bytes is converted with.
+        var name = Marshal.PtrToStringUni(bufferPointer + fileNameOffset, fileNameLength / sizeof(char));
+        Debug.Assert(name is not null);
+        return name;
     }
 
     private sealed class ChangeJournalEntriesEnumerator : IEnumerator<ChangeJournalEntry>

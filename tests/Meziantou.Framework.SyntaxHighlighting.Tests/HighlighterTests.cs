@@ -42,4 +42,32 @@ public class HighlighterTests
         Assert.DoesNotContain("hljs-keyword", customResult);
         Assert.Equal(defaultResult, defaultResult2);
     }
+
+    [Fact]
+    public void Highlight_NullText_ThrowsArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => SyntaxHighlighter.Highlight(text: null!, "csharp"));
+
+        Assert.Equal("text", exception.ParamName);
+    }
+
+    [Fact]
+    public void Highlight_NullLanguage_ThrowsArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() => SyntaxHighlighter.Highlight("class C { }", language: null!));
+
+        Assert.Equal("language", exception.ParamName);
+    }
+
+    [Fact]
+    public void Highlight_UnknownLanguage_ThrowsNotSupportedException()
+    {
+        Assert.Throws<NotSupportedException>(() => SyntaxHighlighter.Highlight("class C { }", "not-a-language"));
+    }
+
+    [Fact]
+    public void Highlight_EmptyText_ReturnsEmptyString()
+    {
+        Assert.Empty(SyntaxHighlighter.Highlight("", "csharp"));
+    }
 }

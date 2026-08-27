@@ -5,7 +5,7 @@ components. Each component is used under its own license.
 
 ## highlight.js
 
-The engine in `Highlighter/Engine/` and the grammars in `Highlighter/Languages/`
+The engine in `Engine/` and the grammars in `Languages/`
 are derived from highlight.js (https://highlightjs.org/), v11.10.0.
 
 highlight.js is distributed under the BSD-3-Clause license, the full text of

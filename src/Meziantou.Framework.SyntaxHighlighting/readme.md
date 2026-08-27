@@ -76,3 +76,10 @@ The package currently supports these language identifiers and common aliases:
 - `x86asm`
 - `xml`, `xsd`, `xsl`, `plist`, `rss`, `atom`, `svg`
 - `yaml`, `yml`
+
+## Third-party code
+
+The engine and the language grammars are derived from
+[highlight.js](https://highlightjs.org/) v11.10.0, which is distributed under the
+BSD-3-Clause license. The full notice is in `THIRD_PARTY_NOTICES.md`, included in
+the NuGet package.

@@ -6,4 +6,9 @@
     <Version>1.0.1</Version>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- BSD-3-Clause requires binary redistributions to reproduce the highlight.js notice -->
+    <None Include="THIRD_PARTY_NOTICES.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
 </Project>

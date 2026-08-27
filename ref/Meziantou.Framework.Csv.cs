@@ -34,9 +34,9 @@ namespace Meziantou.Framework.Csv
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.CsvColumn>? Columns { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> Values { get => throw null; }
-        public string? this[int index] { get => throw null; }
-        public string? this[string columnName] { get => throw null; }
-        public string? this[Meziantou.Framework.Csv.CsvColumn column] { get => throw null; }
+        public virtual string? this[int index] { get => throw null; }
+        public virtual string? this[string columnName] { get => throw null; }
+        public virtual string? this[Meziantou.Framework.Csv.CsvColumn column] { get => throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 

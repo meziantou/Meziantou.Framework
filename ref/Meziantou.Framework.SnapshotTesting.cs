@@ -335,7 +335,7 @@ namespace Meziantou.Framework.SnapshotTesting
         public static Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy Overwrite { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy OverwriteWithoutFailure { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy Default { get => throw null; }
-        public bool ReuseTemporaryFile { get => throw null; }
+        public virtual bool ReuseTemporaryFile { get => throw null; }
         public abstract bool CanUpdateSnapshot(Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot);
         public virtual void UpdateFiles(Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.SnapshotTesting.SnapshotUpdateFile> filesToUpdate, System.Collections.Generic.IReadOnlyList<string> filesToDelete) { }
         public abstract void UpdateFile(Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, string verifiedFilePath, string actualFilePath);

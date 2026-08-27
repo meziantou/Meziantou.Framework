@@ -564,6 +564,11 @@ internal static class PublicApiModelReader
             modifiers.Add("static");
         }
 
+        if (!((declaringType.Attributes & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface))
+        {
+            AddInheritanceModifiers(modifiers, representativeAttributes);
+        }
+
         if (HasRequiredMemberAttribute(metadataReader, property.GetCustomAttributes()))
         {
             modifiers.Add("required");
@@ -668,6 +673,12 @@ internal static class PublicApiModelReader
         if (addMethod.Attributes.HasFlag(MethodAttributes.Static))
         {
             modifiers.Add("static");
+        }
+
+        var eventDeclaringType = metadataReader.GetTypeDefinition(declaringTypeHandle);
+        if (!((eventDeclaringType.Attributes & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface))
+        {
+            AddInheritanceModifiers(modifiers, addMethod.Attributes);
         }
 
         // Event accessors cannot be marked as unsafe individually
@@ -1515,22 +1526,22 @@ internal static class PublicApiModelReader
             return modifiers;
         }
 
+        AddInheritanceModifiers(modifiers, attributes);
+        return modifiers;
+    }
+
+    private static void AddInheritanceModifiers(List<string> modifiers, MethodAttributes attributes)
+    {
         if (attributes.HasFlag(MethodAttributes.Abstract))
         {
             modifiers.Add("abstract");
-            return modifiers;
+            return;
         }
 
         if (attributes.HasFlag(MethodAttributes.Virtual) && !attributes.HasFlag(MethodAttributes.Final))
         {
-            if (attributes.HasFlag(MethodAttributes.NewSlot))
-            {
-                modifiers.Add("virtual");
-            }
-            else
-            {
-                modifiers.Add("override");
-            }
+            // A newslot virtual method introduces the member, otherwise it overrides an inherited one
+            modifiers.Add(attributes.HasFlag(MethodAttributes.NewSlot) ? "virtual" : "override");
         }
         else if (attributes.HasFlag(MethodAttributes.Virtual) &&
                  attributes.HasFlag(MethodAttributes.Final) &&
@@ -1539,8 +1550,6 @@ internal static class PublicApiModelReader
             modifiers.Add("sealed");
             modifiers.Add("override");
         }
-
-        return modifiers;
     }
 
     private static string FormatConstraintsInline(List<string> constraints)

@@ -10,7 +10,7 @@ namespace Meziantou.Xunit
         public Meziantou.Xunit.TestGlobalizationMode GlobalizationMode { get => throw null; set { } }
         public Meziantou.Xunit.ContinuousIntegrationEnvironments ContinuousIntegration { get => throw null; set { } }
         public Meziantou.Xunit.WindowsGroups WindowsGroup { get => throw null; set { } }
-        protected bool InvertCondition { get; }
+        protected abstract bool InvertCondition { get; }
         protected ConditionalTestAttributeBase(Meziantou.Xunit.TestOperatingSystems operatingSystem) { }
         protected ConditionalTestAttributeBase(Meziantou.Xunit.TestGlobalizationMode globalizationMode) { }
         protected ConditionalTestAttributeBase(Meziantou.Xunit.WindowsGroups windowsGroup) { }
@@ -28,7 +28,7 @@ namespace Meziantou.Xunit
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public sealed class RunIfAttribute : Meziantou.Xunit.ConditionalTestAttributeBase
     {
-        protected bool InvertCondition { get => throw null; }
+        protected override bool InvertCondition { get => throw null; }
         public RunIfAttribute(Meziantou.Xunit.TestOperatingSystems operatingSystem) { }
         public RunIfAttribute(Meziantou.Xunit.TestGlobalizationMode globalizationMode) { }
         public RunIfAttribute(Meziantou.Xunit.WindowsGroups windowsGroup) { }
@@ -38,7 +38,7 @@ namespace Meziantou.Xunit
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public sealed class SkipIfAttribute : Meziantou.Xunit.ConditionalTestAttributeBase
     {
-        protected bool InvertCondition { get => throw null; }
+        protected override bool InvertCondition { get => throw null; }
         public SkipIfAttribute(Meziantou.Xunit.TestOperatingSystems operatingSystem) { }
         public SkipIfAttribute(Meziantou.Xunit.TestGlobalizationMode globalizationMode) { }
         public SkipIfAttribute(Meziantou.Xunit.WindowsGroups windowsGroup) { }

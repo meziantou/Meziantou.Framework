@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Yamlish
 
     public abstract class YamlishConverter
     {
-        public bool HandleNullValues { get => throw null; }
+        public virtual bool HandleNullValues { get => throw null; }
         public abstract bool CanConvert(System.Type typeToConvert);
         public abstract object? Read(Meziantou.Framework.Yamlish.Nodes.YamlishNode node, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
         public abstract Meziantou.Framework.Yamlish.Nodes.YamlishNode Write(object value, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
@@ -178,7 +178,7 @@ namespace Meziantou.Framework.Yamlish.Nodes
 
     public sealed class YamlishMapping : Meziantou.Framework.Yamlish.Nodes.YamlishNode, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Yamlish.Nodes.YamlishNode>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Yamlish.Nodes.YamlishNode>>, System.Collections.Generic.IReadOnlyDictionary<string, Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.IEnumerable
     {
-        public Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get => throw null; }
+        public override Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get => throw null; }
         public int Count { get => throw null; }
         public System.Collections.Generic.IEnumerable<string> Keys { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Yamlish.Nodes.YamlishNode> Values { get => throw null; }
@@ -193,7 +193,7 @@ namespace Meziantou.Framework.Yamlish.Nodes
 
     public abstract class YamlishNode
     {
-        public Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get; }
+        public abstract Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get; }
         public override string ToString() => throw null;
     }
 
@@ -206,7 +206,7 @@ namespace Meziantou.Framework.Yamlish.Nodes
 
     public sealed class YamlishScalar : Meziantou.Framework.Yamlish.Nodes.YamlishNode
     {
-        public Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get => throw null; }
+        public override Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get => throw null; }
         public string Value { get => throw null; }
         public Meziantou.Framework.Yamlish.Nodes.YamlishScalarKind ScalarKind { get => throw null; }
         public bool IsNull { get => throw null; }
@@ -226,7 +226,7 @@ namespace Meziantou.Framework.Yamlish.Nodes
 
     public sealed class YamlishSequence : Meziantou.Framework.Yamlish.Nodes.YamlishNode, System.Collections.Generic.IEnumerable<Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.IEnumerable
     {
-        public Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get => throw null; }
+        public override Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get => throw null; }
         public Meziantou.Framework.Yamlish.YamlishSequenceStyle Style { get => throw null; set { } }
         public int Count { get => throw null; }
         public Meziantou.Framework.Yamlish.Nodes.YamlishNode this[int index] { get => throw null; }

@@ -201,7 +201,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting
         public static Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy Overwrite { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy OverwriteWithoutFailure { get => throw null; }
         public static Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy Default { get => throw null; }
-        public bool ReuseTemporaryFile { get => throw null; }
+        public virtual bool ReuseTemporaryFile { get => throw null; }
         public abstract bool CanUpdateSnapshot(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot);
         public abstract void UpdateFile(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, string targetFile, string tempFile);
         public abstract bool MustReportError(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, string path);

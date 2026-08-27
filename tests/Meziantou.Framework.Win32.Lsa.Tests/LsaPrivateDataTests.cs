@@ -38,4 +38,26 @@ public sealed class LsaPrivateDataTests
         var value = LsaPrivateData.GetValue("LsaPrivateDataTestsUnset");
         Assert.Null(value);
     }
+
+    // LSA_UNICODE_STRING holds the length in bytes in a ushort, so 32767 characters is the last length that fits
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetValue_KeyLongerThanMaxLength_Throws()
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => LsaPrivateData.SetValue(new string('a', 32768), "test"));
+        Assert.Equal("key", exception.ParamName);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetValue_ValueLongerThanMaxLength_Throws()
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => LsaPrivateData.SetValue("LsaPrivateDataTests", new string('a', 32768)));
+        Assert.Equal("value", exception.ParamName);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetValue_KeyLongerThanMaxLength_Throws()
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => LsaPrivateData.GetValue(new string('a', 32768)));
+        Assert.Equal("key", exception.ParamName);
+    }
 }

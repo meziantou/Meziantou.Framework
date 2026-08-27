@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Versioning;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -139,15 +140,9 @@ public sealed class RestartManager : IDisposable
                 var processes = new List<Process>((int)arrayCount);
                 for (var i = 0; i < arrayCount; i++)
                 {
-                    try
-                    {
-                        var process = Process.GetProcessById((int)array[i].Process.dwProcessId);
-                        if (process is not null)
-                            processes.Add(process);
-                    }
-                    catch
-                    {
-                    }
+                    var process = TryGetProcess(array[i].Process);
+                    if (process is not null)
+                        processes.Add(process);
                 }
 
                 return processes;
@@ -219,6 +214,49 @@ public sealed class RestartManager : IDisposable
         var result = PInvoke.RmCancelCurrentTask(_sessionHandle.SessionHandle);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmCancelCurrentTask failed ({result})");
+    }
+
+    private static Process? TryGetProcess(RM_UNIQUE_PROCESS uniqueProcess)
+    {
+        Process process;
+        try
+        {
+            process = Process.GetProcessById((int)uniqueProcess.dwProcessId);
+        }
+        catch (ArgumentException)
+        {
+            // The process exited between RmGetList and now.
+            return null;
+        }
+
+        if (HasDifferentStartTime(process, uniqueProcess.ProcessStartTime))
+        {
+            process.Dispose();
+            return null;
+        }
+
+        return process;
+    }
+
+    // Windows recycles process ids, so the id alone does not identify a process: the one running now may not
+    // be the one RmGetList saw. RM_UNIQUE_PROCESS carries the start time precisely to tell those apart.
+    private static bool HasDifferentStartTime(Process process, FILETIME startTime)
+    {
+        try
+        {
+            return process.StartTime.ToFileTime() != ToFileTime(startTime);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or Win32Exception)
+        {
+            // The start time is not readable, typically for a protected or system process. Keep the process:
+            // dropping it here would hide a real lock holder, which is worse than the recycled-id race.
+            return false;
+        }
+    }
+
+    private static long ToFileTime(FILETIME fileTime)
+    {
+        return ((long)(uint)fileTime.dwHighDateTime << 32) | (uint)fileTime.dwLowDateTime;
     }
 
     private static unsafe WIN32_ERROR StartSession(out uint handle, Span<char> sessionKeyBuffer)

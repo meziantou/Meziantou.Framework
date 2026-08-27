@@ -1135,6 +1135,7 @@ public sealed class PublicApiGeneratorTests
 
         File.WriteAllText(outputFilePath, "// stale");
 
+        using var error = new StringWriter();
         var verifyNoChangeExitCode = await Program.MainImpl(
             [
                 "--input", assemblyPath.ToString(),
@@ -1143,10 +1144,16 @@ public sealed class PublicApiGeneratorTests
                 "--omit-auto-generated-comment",
                 "--verify-no-change",
             ],
-            configure: null);
+            configuration => configuration.Error = error);
 
         Assert.Equal(1, verifyNoChangeExitCode);
         Assert.Equal("// stale", File.ReadAllText(outputFilePath));
+
+        // The failure is expected, so it must be reported as a message and not as an unhandled exception
+        var errorOutput = error.ToString();
+        Assert.Contains("is out of date", errorOutput);
+        Assert.DoesNotContain("Unhandled exception", errorOutput);
+        Assert.DoesNotContain("   at ", errorOutput);
     }
 
     [Fact]

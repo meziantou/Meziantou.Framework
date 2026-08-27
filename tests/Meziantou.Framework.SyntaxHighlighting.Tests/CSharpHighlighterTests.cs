@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.SyntaxHighlighting.Tests;
+﻿namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 
 public class CSharpHighlighterTests
 {
@@ -4124,6 +4124,54 @@ class Foo { }
 """
 <span class="hljs-keyword">class</span> <span class="hljs-title">Foo</span> { }
 
+""");
+    }
+
+    [Fact]
+    public void AliasQualifiedName_GlobalAlias()
+    {
+        AssertHighlighter("csharp",
+"""
+var value = global::System.String.Empty;
+""",
+"""
+<span class="hljs-keyword">var</span> <span class="hljs-keyword">value</span> = <span class="hljs-keyword">global</span>::System.String.Empty;
+""");
+    }
+
+    [Fact]
+    public void AliasQualifiedName_UsingAlias()
+    {
+        AssertHighlighter("csharp",
+"""
+using S = global::System;
+""",
+"""
+<span class="hljs-keyword">using</span> S = <span class="hljs-keyword">global</span>::System;
+""");
+    }
+
+    [Fact]
+    public void AliasQualifiedName_ExternAlias()
+    {
+        AssertHighlighter("csharp",
+"""
+extern alias Legacy;
+""",
+"""
+<span class="hljs-keyword">extern</span> <span class="hljs-keyword">alias</span> Legacy;
+""");
+    }
+
+    [Fact]
+    public void AliasQualifiedName_InsideTypeMember()
+    {
+        AssertHighlighter("csharp",
+"""
+class C { global::System.Int32 Value { get; set; } }
+""",
+"""
+<span class="hljs-keyword">class</span> <span class="hljs-title">C</span> { <span class="hljs-keyword">global</span>::System.Int32 Value { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; } }
 """);
     }
 }

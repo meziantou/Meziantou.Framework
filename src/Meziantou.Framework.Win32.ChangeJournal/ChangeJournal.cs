@@ -147,6 +147,7 @@ public sealed class ChangeJournal : IDisposable
     }
 
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [Obsolete("Use RefreshJournalData instead.")]
     public void ReadJournalData()
     {
         RefreshJournalData();
@@ -207,8 +208,12 @@ public sealed class ChangeJournal : IDisposable
     /// <summary>Creates a new change journal or modifies an existing one.</summary>
     /// <param name="maximumSize">The maximum size, in bytes, that the journal can use on the volume.</param>
     /// <param name="allocationDelta">The size, in bytes, by which the journal grows when needed.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="maximumSize"/> or <paramref name="allocationDelta"/> is negative.</exception>
     public void Create(long maximumSize, long allocationDelta)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(maximumSize);
+        ArgumentOutOfRangeException.ThrowIfNegative(allocationDelta);
+
         var creationData = new CREATE_USN_JOURNAL_DATA
         {
             AllocationDelta = (ulong)allocationDelta,
@@ -229,7 +234,6 @@ public sealed class ChangeJournal : IDisposable
             Flags = PInvoke.FLAG_USN_TRACK_MODIFIED_RANGES_ENABLE,
             ChunkSize = chunkSize,
             FileSizeThreshold = fileSizeThreshold,
-
         };
         Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.TrackModifiedRanges, ref trackData, initialBufferLength: 0);
     }

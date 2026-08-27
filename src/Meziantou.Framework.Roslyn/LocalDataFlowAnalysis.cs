@@ -119,8 +119,10 @@ internal static partial class LocalDataFlowAnalysis
             return null;
 
         IOperation? result = null;
-        foreach (var assignmentSyntax in operation.Syntax.SyntaxTree.GetRoot(cancellationToken).DescendantNodes().OfType<AssignmentExpressionSyntax>())
+        foreach (var assignmentSyntax in GetLocalScope(local, operation.Syntax, cancellationToken).DescendantNodes().OfType<AssignmentExpressionSyntax>())
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (assignmentSyntax.Span.End > operation.Syntax.SpanStart)
                 continue;
 
@@ -380,6 +382,41 @@ internal static partial class LocalDataFlowAnalysis
         }
 
         return true;
+    }
+
+    private static SyntaxNode GetLocalScope(ILocalSymbol local, SyntaxNode reference, CancellationToken cancellationToken)
+    {
+        foreach (var syntaxReference in local.DeclaringSyntaxReferences)
+        {
+            var declaration = syntaxReference.GetSyntax(cancellationToken);
+            if (declaration.SyntaxTree == reference.SyntaxTree)
+                return GetDeclaringMember(declaration);
+        }
+
+        return GetDeclaringMember(reference);
+    }
+
+    /// <summary>
+    /// Returns the member that can contain the assignments of a local. Unlike <see cref="GetEnclosingScope"/>, it walks
+    /// past lambdas and local functions: a local declared in a method can be assigned anywhere in that method.
+    /// </summary>
+    private static SyntaxNode GetDeclaringMember(SyntaxNode syntax)
+    {
+        var current = syntax;
+        while (true)
+        {
+            // Top-level statements are spread over multiple members of the compilation unit
+            if (current is GlobalStatementSyntax { Parent: { } compilationUnit })
+                return compilationUnit;
+
+            if (current is MemberDeclarationSyntax)
+                return current;
+
+            if (current.Parent is null)
+                return current;
+
+            current = current.Parent;
+        }
     }
 
     private static bool ContainsJumpStatement(SyntaxNode syntax)

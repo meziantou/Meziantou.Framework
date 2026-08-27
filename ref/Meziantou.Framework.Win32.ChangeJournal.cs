@@ -16,6 +16,7 @@ namespace Meziantou.Framework.Win32
         public static Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3 GetEntry(string path) => throw null;
         public static Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3 GetEntry(Microsoft.Win32.SafeHandles.SafeFileHandle handle) => throw null;
         public void RefreshJournalData() { }
+        [System.Obsolete("Use RefreshJournalData instead.")]
         public void ReadJournalData() { }
         public void Dispose() { }
         public void Delete() { }
@@ -140,7 +141,7 @@ namespace Meziantou.Framework.Win32
         ClientReplicationManagement = 8
     }
 
-    public readonly struct Usn : System.IEquatable<Meziantou.Framework.Win32.Usn>
+    public readonly struct Usn : System.IComparable, System.IComparable<Meziantou.Framework.Win32.Usn>, System.IEquatable<Meziantou.Framework.Win32.Usn>
     {
         public static Meziantou.Framework.Win32.Usn Zero { get => throw null; }
         public long Value { get => throw null; }
@@ -149,6 +150,8 @@ namespace Meziantou.Framework.Win32
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public bool Equals(Meziantou.Framework.Win32.Usn other) => throw null;
         public override int GetHashCode() => throw null;
+        public int CompareTo(Meziantou.Framework.Win32.Usn other) => throw null;
+        public int CompareTo(object? obj) => throw null;
         public static bool operator ==(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;
         public static bool operator !=(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;
         public static bool operator <=(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;

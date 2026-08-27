@@ -17,6 +17,12 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows5.1.2600")]
 public sealed class ChangeJournal : IDisposable
 {
+    /// <summary>The NTFS file name limit is 255 UTF-16 code units, so a record's name never needs more than this.</summary>
+    private const int MaximumFileNameLengthInBytes = 255 * sizeof(char);
+
+    /// <summary>Upper bound on the buffer used to read a single USN record, so a driver that keeps reporting ERROR_MORE_DATA cannot grow it without limit.</summary>
+    private const int MaximumEntryBufferLength = 64 * 1024;
+
     private readonly bool _unprivileged;
 
     internal SafeFileHandle ChangeJournalHandle { get; }
@@ -113,30 +119,29 @@ public sealed class ChangeJournal : IDisposable
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public static unsafe ChangeJournalEntryVersion2or3 GetEntry(SafeFileHandle handle)
     {
-        var buffer = new byte[USN_RECORD_V3.SizeOf(512)];
-        fixed (void* bufferPtr = buffer)
+        using var handleScope = new SafeHandleValue(handle);
+
+        var buffer = new byte[USN_RECORD_V3.SizeOf(MaximumFileNameLengthInBytes)];
+        while (true)
         {
-            using var handleScope = new SafeHandleValue(handle);
             uint returnedSize;
-            var controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, PInvoke.FSCTL_READ_FILE_USN_DATA, lpInBuffer: null, 0, bufferPtr, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
-            if (!controlResult)
+            fixed (void* bufferPointer = buffer)
             {
-                var errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == (int)WIN32_ERROR.ERROR_MORE_DATA)
+                if (PInvoke.DeviceIoControl((HANDLE)handleScope.Value, PInvoke.FSCTL_READ_FILE_USN_DATA, lpInBuffer: null, 0, bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null))
                 {
-                    buffer = new byte[returnedSize];
-                    controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, PInvoke.FSCTL_READ_FILE_USN_DATA, lpInBuffer: null, 0, bufferPtr, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
-                    if (!controlResult)
-                        throw new Win32Exception(Marshal.GetLastWin32Error());
-                }
-                else
-                {
-                    throw new Win32Exception(errorCode);
+                    var header = Marshal.PtrToStructure<USN_RECORD_COMMON_HEADER>((nint)bufferPointer);
+                    return (ChangeJournalEntryVersion2or3)ChangeJournalEntries.GetBufferedEntry((nint)bufferPointer, header);
                 }
             }
 
-            var header = Marshal.PtrToStructure<USN_RECORD_COMMON_HEADER>((nint)bufferPtr);
-            return (ChangeJournalEntryVersion2or3)ChangeJournalEntries.GetBufferedEntry((nint)bufferPtr, header);
+            var errorCode = Marshal.GetLastWin32Error();
+            if (errorCode is not (int)WIN32_ERROR.ERROR_MORE_DATA || buffer.Length >= MaximumEntryBufferLength)
+                throw new Win32Exception(errorCode);
+
+            // ERROR_MORE_DATA reports the number of bytes written, not the number required, so grow geometrically
+            // instead of trusting returnedSize to be large enough.
+            var length = Math.Max(buffer.Length * 2, (int)Math.Min(returnedSize, MaximumEntryBufferLength));
+            buffer = new byte[Math.Min(length, MaximumEntryBufferLength)];
         }
     }
 

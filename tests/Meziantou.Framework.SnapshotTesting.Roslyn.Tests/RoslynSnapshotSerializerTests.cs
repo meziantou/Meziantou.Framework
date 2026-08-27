@@ -287,4 +287,30 @@ public sealed class RoslynSnapshotSerializerTests
             });
         }
     }
+
+    [Fact]
+    public void DiagnosticCollection_IsWrittenInTheOrderGiven()
+    {
+        var descriptor = new DiagnosticDescriptor("SG0001", "Title", "{0}", "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true);
+        var diagnostics = new[]
+        {
+            Diagnostic.Create(descriptor, Location.None, "zulu"),
+            Diagnostic.Create(descriptor, Location.None, "alpha"),
+            Diagnostic.Create(descriptor, Location.None, "mike"),
+        };
+
+        var settings = new SnapshotSettings();
+        settings.AddRoslyn();
+
+        var snapshot = Assert.Single(settings.Serializers.Serialize(SnapshotType.Default, diagnostics).Data);
+
+        Assert.Equal(
+            """
+            warning SG0001: zulu
+            warning SG0001: alpha
+            warning SG0001: mike
+
+            """.ReplaceLineEndings("\n"),
+            Encoding.UTF8.GetString(snapshot.Data));
+    }
 }

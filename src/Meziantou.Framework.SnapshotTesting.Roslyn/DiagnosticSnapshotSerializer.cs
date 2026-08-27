@@ -8,9 +8,10 @@ internal sealed class DiagnosticSnapshotSerializer : ISnapshotSerializer
 
     public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
     {
-        // The order is the caller's: unlike the generators of a driver run, an assertion on a list of
-        // diagnostics is usually about the order they were reported in. Sort them before validating
-        // when the source of the list does not guarantee one.
+        // Diagnostics are written in the order they are given. Unlike the generators of a driver run, whose
+        // order is not a contract, an assertion on a list of diagnostics is usually about the order they were
+        // reported in, so this serializer deliberately does not reorder them. A caller whose source does not
+        // guarantee an order is the one that should sort before calling.
         IEnumerable<Diagnostic>? diagnostics = value switch
         {
             Diagnostic diagnostic => [diagnostic],

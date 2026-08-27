@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -14,7 +15,7 @@ namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 public sealed partial class EscapingTests
 {
     // \G so the match is anchored at the scan position rather than the start of the string.
-    [GeneratedRegex("""\G(</span>|<span class="[A-Za-z0-9_\- ]*">)""")]
+    [GeneratedRegex("""\G(?:</span>|<span class="[A-Za-z0-9_\- ]*">)""", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 10_000)]
     private static partial Regex EmitterTag();
 
     private static readonly string[] HostileInputs =
@@ -76,6 +77,7 @@ public sealed partial class EscapingTests
         }
     }
 
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
     private static IEnumerable<string> GetInputs()
     {
         foreach (var hostile in HostileInputs)

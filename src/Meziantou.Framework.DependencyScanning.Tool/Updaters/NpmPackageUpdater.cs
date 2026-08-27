@@ -1,6 +1,5 @@
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using Meziantou.Framework;
 
@@ -9,13 +8,7 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 internal sealed class NpmPackageUpdater : PackageUpdater
 {
     private static readonly HttpClient HttpClient = new();
-    private static readonly JsonSerializerOptions DefaultJsonOptions = new()
-    {
-        Converters =
-        {
-            new NpmPackageRepositoryJsonConverter(),
-        },
-    };
+
     public override VersioningStrategy VersioningStrategy { get; set; } = NpmVersioningStrategy.Instance;
 
     protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.Npm;
@@ -41,7 +34,7 @@ internal sealed class NpmPackageUpdater : PackageUpdater
             yield break;
 
         packageResponse.EnsureSuccessStatusCode();
-        var package = await packageResponse.Content.ReadFromJsonAsync<NpmPackage>(options: DefaultJsonOptions, cancellationToken).ConfigureAwait(false);
+        var package = await packageResponse.Content.ReadFromJsonAsync<NpmPackage>(cancellationToken).ConfigureAwait(false);
         if (package is null)
             yield break;
 
@@ -115,9 +108,6 @@ internal sealed class NpmPackageUpdater : PackageUpdater
         [JsonPropertyName("homepage")]
         public string? Homepage { get; set; }
 
-        [JsonPropertyName("repository")]
-        public NpmPackageRepository[]? Repository { get; set; }
-
         [JsonPropertyName("versions")]
         public IReadOnlyDictionary<string, NpmPackageVersion> Versions { get; set; } = null!;
 
@@ -144,78 +134,9 @@ internal sealed class NpmPackageUpdater : PackageUpdater
         [JsonPropertyName("description")]
         public string? Description { get; set; }
 
-        [JsonPropertyName("repository")]
-        public NpmPackageRepository[]? Repository { get; set; }
-
         public override string ToString()
         {
             return Id;
-        }
-    }
-
-    private sealed class NpmPackageRepository
-    {
-        [JsonPropertyName("type")]
-        public string Type { get; set; } = null!;
-
-        [JsonPropertyName("url")]
-        public string Url { get; set; } = null!;
-    }
-
-    private sealed class NpmPackageRepositoryJsonConverter : JsonConverter<NpmPackageRepository[]>
-    {
-        public override bool HandleNull => false;
-
-        public override NpmPackageRepository[]? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (reader.TokenType is JsonTokenType.StartArray)
-            {
-                reader.Read();
-                var result = new List<NpmPackageRepository>();
-                while (reader.TokenType is not JsonTokenType.EndArray)
-                {
-                    var item = ReadSingleItem(ref reader);
-                    if (item is not null)
-                    {
-                        result.Add(item);
-                    }
-
-                    if (reader.TokenType is JsonTokenType.EndObject)
-                    {
-                        reader.Read();
-                    }
-                }
-
-                return [.. result];
-            }
-
-            var value = ReadSingleItem(ref reader);
-            if (value is not null)
-                return [value];
-
-            throw new NotSupportedException($"Token {reader.TokenType} is not supported");
-        }
-
-        private static NpmPackageRepository? ReadSingleItem(ref Utf8JsonReader reader)
-        {
-            // Repository can be a string or an object
-            if (reader.TokenType is JsonTokenType.StartObject)
-            {
-                return JsonSerializer.Deserialize<NpmPackageRepository>(ref reader);
-            }
-
-            if (reader.TokenType is JsonTokenType.String)
-            {
-                var str = reader.GetString();
-                return new NpmPackageRepository { Url = str! };
-            }
-
-            throw new NotSupportedException($"Token {reader.TokenType} is not supported");
-        }
-
-        public override void Write(Utf8JsonWriter writer, NpmPackageRepository[]? value, JsonSerializerOptions options)
-        {
-            throw new NotSupportedException();
         }
     }
 }

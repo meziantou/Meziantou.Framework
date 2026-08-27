@@ -137,6 +137,12 @@ internal static class ResxGeneratorCommon
         return path + Path.DirectorySeparatorChar;
     }
 
+    // Matches the shape of a BCP-47 culture name: a 2 or 3 letter language, an optional 4 letter script,
+    // and an optional region that is either 2 letters or 3 digits (zh, fil, zh-Hans, fr-FR, sr-Latn-RS, es-419).
+    // The shape is checked instead of asking CultureInfo so that grouping does not depend on the ICU version
+    // of the machine running the compiler.
+    private const string CultureNamePattern = "^[a-zA-Z]{2,3}(-[a-zA-Z]{4})?(-([a-zA-Z]{2}|[0-9]{3}))?$";
+
     private static string GetResourceName(string path)
     {
         var pathWithoutExtension = Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileNameWithoutExtension(path));
@@ -144,7 +150,7 @@ internal static class ResxGeneratorCommon
         if (indexOf < 0)
             return pathWithoutExtension;
 
-        return Regex.IsMatch(pathWithoutExtension[(indexOf + 1)..], "^[a-zA-Z]{2}(-[a-zA-Z]{2})?$", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))
+        return Regex.IsMatch(pathWithoutExtension[(indexOf + 1)..], CultureNamePattern, RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))
             ? pathWithoutExtension[0..indexOf]
             : pathWithoutExtension;
     }

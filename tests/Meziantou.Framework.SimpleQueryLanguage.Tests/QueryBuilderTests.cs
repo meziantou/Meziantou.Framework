@@ -658,6 +658,18 @@ public sealed class QueryBuilderTests
     }
 
     [Theory]
+    [InlineData("dummy:10", true)]
+    [InlineData("-dummy:10", false)]
+    [InlineData("NOT dummy:10", false)]
+    public void UnhandledField_HandlerRespectsNegation(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetUnhandledPropertyHandler((obj, key, op, value) => true);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample()));
+    }
+
+    [Theory]
     [InlineData("size:medium", true)]
     [InlineData("size>small", true)]
     [InlineData("size>large", false)]

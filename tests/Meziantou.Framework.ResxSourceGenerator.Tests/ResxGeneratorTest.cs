@@ -123,6 +123,25 @@ public sealed class ResxGeneratorTest
     }
 
     [Fact]
+    public async Task GeneratedCodeQualifiesEveryFrameworkTypeReference()
+    {
+        // A consumer can declare a type or namespace named System, so nothing in the generated code may rely on it
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        for (var index = fileContent.IndexOf("System.", StringComparison.Ordinal); index >= 0; index = fileContent.IndexOf("System.", index + 1, StringComparison.Ordinal))
+        {
+            var qualified = index >= 8 && fileContent.AsSpan(index - 8, 8).SequenceEqual("global::".AsSpan());
+            Assert.True(qualified, "Unqualified reference: " + fileContent[Math.Max(0, index - 40)..Math.Min(fileContent.Length, index + 40)]);
+        }
+    }
+
+    [Fact]
     public async Task GenerateProperties_WithFormatParameterMetadata()
     {
         XNamespace generatorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";

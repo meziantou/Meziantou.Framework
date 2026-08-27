@@ -1297,6 +1297,27 @@ public sealed partial class SnapshotTests
         }
     }
 
+    [Fact]
+    public void ResolutionGuidance_PointsAtTheStrategyVariable_WhenUpdatesAreAllowed()
+    {
+        var guidance = SnapshotEngine.BuildResolutionGuidance(blockedByAutoDetection: false);
+
+        Assert.Contains("To update snapshots automatically, re-run the test with SNAPSHOTTESTING_STRATEGY=Overwrite (or OverwriteWithoutFailure).", guidance);
+        Assert.DoesNotContain("SNAPSHOTTESTING_STRATEGY has no effect here", guidance);
+    }
+
+    [Fact]
+    public void ResolutionGuidance_DoesNotPointAtTheStrategyVariable_WhenAutoDetectionBlocksUpdates()
+    {
+        var guidance = SnapshotEngine.BuildResolutionGuidance(blockedByAutoDetection: true);
+
+        // Telling the user to set SNAPSHOTTESTING_STRATEGY here would send them down a path that cannot work.
+        Assert.DoesNotContain("re-run the test with SNAPSHOTTESTING_STRATEGY=Overwrite", guidance);
+        Assert.Contains("SNAPSHOTTESTING_STRATEGY has no effect here", guidance);
+        Assert.Contains("Meziantou.Framework.SnapshotTesting.Tool", guidance);
+        Assert.Contains("AutoDetectContinuousEnvironment", guidance);
+    }
+
     private sealed class FixedAssertionExceptionBuilder : AssertionExceptionBuilder
     {
         public override Exception CreateException(string message)

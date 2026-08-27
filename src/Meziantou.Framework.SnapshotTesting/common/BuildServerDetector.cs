@@ -1,5 +1,10 @@
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Detects an unattended build. WSL and containers are deliberately not treated as one: both are ordinary
+/// local development environments, and a build server running inside a container sets one of the variables
+/// below anyway.
+/// </summary>
 internal static class BuildServerDetector
 {
     private static bool HasEnvironmentVariable(string name) => Environment.GetEnvironmentVariable(name) is not null;
@@ -13,9 +18,7 @@ internal static class BuildServerDetector
         || HasEnvironmentVariable("GITLAB_CI")
         || HasEnvironmentVariable("GO_SERVER_URL")
         || HasEnvironmentVariable("TRAVIS_BUILD_ID")
-        || HasEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER")
         || HasEnvironmentVariable("APPVEYOR")
-        || HasEnvironmentVariable("WSL_DISTRO_NAME")
         || HasEnvironmentVariable("BuildRunner", "MyGet")
         || HasEnvironmentVariable("TF_BUILD", "True")
         ;

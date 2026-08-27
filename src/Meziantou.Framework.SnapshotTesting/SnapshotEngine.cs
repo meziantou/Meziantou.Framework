@@ -32,11 +32,12 @@ internal static class SnapshotEngine
         if (!comparison.HasDifferences && !settings.ForceUpdateSnapshots)
             return;
 
+        var blockedByAutoDetection = settings.AutoDetectContinuousEnvironment && SnapshotSettings.IsRunningOnContinuousIntegration();
         if (!settings.SnapshotUpdateStrategy.CanUpdateSnapshotInternal(settings, callerContext.SourceFilePath, comparison.ExpectedSummary, comparison.ActualSummary))
         {
             if (comparison.HasDifferences)
             {
-                ThrowAssertion(settings, comparison.Message);
+                ThrowAssertion(settings, comparison.Message, blockedByAutoDetection);
             }
 
             return;
@@ -51,7 +52,8 @@ internal static class SnapshotEngine
 
         if (comparison.HasDifferences && settings.SnapshotUpdateStrategy.MustReportError(settings, callerContext.SourceFilePath))
         {
-            ThrowAssertion(settings, comparison.Message);
+            // Getting here means the update was allowed, so the guidance must not blame auto-detection.
+            ThrowAssertion(settings, comparison.Message, blockedByAutoDetection: false);
         }
     }
 
@@ -184,21 +186,35 @@ internal static class SnapshotEngine
             }
         }
 
-        AppendResolutionGuidance(sb);
-
         return sb.ToString().TrimEnd();
     }
 
-    private static void AppendResolutionGuidance(StringBuilder sb)
+    /// <summary>
+    /// Builds the guidance appended to a failure. It has to know whether the environment detection suppressed
+    /// updates: when it did, SNAPSHOTTESTING_STRATEGY is ignored, and telling the user to set it sends them
+    /// down a path that cannot work.
+    /// </summary>
+    internal static string BuildResolutionGuidance(bool blockedByAutoDetection)
     {
-        sb.AppendLine();
+        var sb = new StringBuilder();
         sb.AppendLine("Resolution guidance:");
         sb.AppendLine("  - Compare each Verified/Actual pair listed above.");
         sb.AppendLine("  - If the new behavior is correct, copy each .actual file to its .verified file.");
-        sb.AppendLine("  - To update snapshots automatically, re-run the test with SNAPSHOTTESTING_STRATEGY=Overwrite (or OverwriteWithoutFailure).");
+
+        if (blockedByAutoDetection)
+        {
+            sb.AppendLine("  - Snapshot updates are disabled because a continuous integration, continuous testing or LLM environment was detected, so SNAPSHOTTESTING_STRATEGY has no effect here.");
+            sb.AppendLine("    Approve the .actual files with the Meziantou.Framework.SnapshotTesting.Tool package, or set SnapshotSettings.AutoDetectContinuousEnvironment to false to update them from this environment.");
+        }
+        else
+        {
+            sb.AppendLine("  - To update snapshots automatically, re-run the test with SNAPSHOTTESTING_STRATEGY=Overwrite (or OverwriteWithoutFailure).");
+        }
+
         sb.AppendLine("  - If the old behavior is correct, fix the test or production code so output matches the .verified files.");
         sb.AppendLine("  - Remove unexpected .verified files when they are no longer expected.");
         sb.AppendLine("  - Re-run the test.");
+        return sb.ToString();
     }
 
     private static string? FormatSummary(IEnumerable<FullPath> paths)
@@ -474,9 +490,13 @@ internal static class SnapshotEngine
         }
     }
 
-    private static void ThrowAssertion(SnapshotSettings settings, string message)
+    private static void ThrowAssertion(SnapshotSettings settings, string message, bool blockedByAutoDetection)
     {
-        throw settings.AssertionExceptionCreator.CreateException(message);
+        var sb = new StringBuilder(message);
+        sb.AppendLine();
+        sb.AppendLine();
+        sb.Append(BuildResolutionGuidance(blockedByAutoDetection));
+        throw settings.AssertionExceptionCreator.CreateException(sb.ToString().TrimEnd());
     }
 
     private readonly record struct SnapshotComparisonResult(

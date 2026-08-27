@@ -22,7 +22,8 @@ public sealed class ChangeJournal : IDisposable
     ///     <see cref="USN_RECORD_V3.SizeOf(int)"/> counts. A USN record stores the name component only, not a path, so this is
     ///     the volume's maximum component length rather than a path limit: enabling long paths raises the total path length,
     ///     it does not change the component length. <c>GetVolumeInformation</c> reports the real value for a volume and it is
-    ///     255 on NTFS. It is only a starting size, so a volume that allows longer names just grows the buffer below.
+    ///     255 on both file systems that support a change journal, NTFS and ReFS. It is only a starting size, so a volume that
+    ///     allows longer names just grows the buffer below.
     /// </summary>
     private const int MaximumFileNameLength = 255;
 

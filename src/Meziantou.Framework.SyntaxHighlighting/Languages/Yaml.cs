@@ -12,14 +12,22 @@ internal static class Yaml
         string[] literals = ["true", "false", "yes", "no", "null"];
         const string UriChars = @"[\w#;/?:@&=+$,.~*'()[\]]+";
 
+        // The run class contains both ' ' and ':', so an unbounded `*` lets a candidate key span a
+        // whole line and then backtrack over it looking for the terminating ':'. Repeated at every
+        // start position that is quadratic in the line length, which makes a single long line (a
+        // multi-word description value, for example) pathologically slow. YAML restricts a simple
+        // key to 1024 characters, so bounding the run keeps every real key matching while making
+        // the scan linear.
+        const string KeyRun = @"[\w*@ :()\./-]{0,1024}";
+
         var key = new Mode
         {
             Scope = "attr",
             Variants =
             [
-                new Mode { Begin = @"[\w*@][\w*@ :()\./-]*:(?=[ \t]|$)" },
-                new Mode { Begin = @"""[\w*@][\w*@ :()\./-]*"":(?=[ \t]|$)" },
-                new Mode { Begin = @"'[\w*@][\w*@ :()\./-]*':(?=[ \t]|$)" },
+                new Mode { Begin = @"[\w*@]" + KeyRun + @":(?=[ \t]|$)" },
+                new Mode { Begin = @"""[\w*@]" + KeyRun + @""":(?=[ \t]|$)" },
+                new Mode { Begin = @"'[\w*@]" + KeyRun + @"':(?=[ \t]|$)" },
             ],
         };
 

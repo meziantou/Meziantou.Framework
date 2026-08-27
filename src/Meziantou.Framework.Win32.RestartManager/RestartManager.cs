@@ -42,6 +42,15 @@ public sealed class RestartManager : IDisposable
     /// <summary>Gets the session key for this Restart Manager session.</summary>
     public string SessionKey { get; }
 
+    /// <summary>Gets the reason a system restart is required to free the registered resources.</summary>
+    /// <remarks>
+    /// This reflects the most recent call to <see cref="IsResourcesLocked"/>, <see cref="GetProcessesLockingResources"/>
+    /// or <see cref="GetLockingProcesses"/>, and is <see cref="RestartManagerRebootReason.None"/> until one of them runs.
+    /// When it is not <see cref="RestartManagerRebootReason.None"/>, calling <see cref="Shutdown(RestartManagerShutdownType)"/>
+    /// will not free the resources and the user should be prompted for a system restart instead.
+    /// </remarks>
+    public RestartManagerRebootReason RebootReason { get; private set; }
+
     private RestartManager(uint sessionHandle, string sessionKey)
     {
         _sessionHandle = new RestartManagerSessionHandle(sessionHandle);
@@ -116,9 +125,12 @@ public sealed class RestartManager : IDisposable
         // affected, and arrayCount reports the total number needed in both cases, so there is nothing to retry.
         uint arraySize = 1;
         var array = new RM_PROCESS_INFO[arraySize];
-        var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out _);
+        var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out var rebootReason);
         if (result is WIN32_ERROR.ERROR_SUCCESS or WIN32_ERROR.ERROR_MORE_DATA)
+        {
+            RebootReason = (RestartManagerRebootReason)rebootReason;
             return arrayCount > 0;
+        }
 
         throw new Win32Exception((int)result, $"RmGetList failed ({result})");
     }
@@ -164,9 +176,12 @@ public sealed class RestartManager : IDisposable
         while (true)
         {
             var array = new RM_PROCESS_INFO[arraySize];
-            var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out _);
+            var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out var rebootReason);
             if (result == WIN32_ERROR.ERROR_SUCCESS)
+            {
+                RebootReason = (RestartManagerRebootReason)rebootReason;
                 return (array, arrayCount);
+            }
 
             if (result != WIN32_ERROR.ERROR_MORE_DATA)
                 throw new Win32Exception((int)result, $"RmGetList failed ({result})");

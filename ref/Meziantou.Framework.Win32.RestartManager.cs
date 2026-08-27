@@ -8,6 +8,7 @@ namespace Meziantou.Framework.Win32
     public sealed class RestartManager : System.IDisposable
     {
         public string SessionKey { get => throw null; }
+        public Meziantou.Framework.Win32.RestartManagerRebootReason RebootReason { get => throw null; }
         public static Meziantou.Framework.Win32.RestartManager CreateSession() => throw null;
         public static Meziantou.Framework.Win32.RestartManager JoinSession(string sessionKey) => throw null;
         public void RegisterFile(string path) { }
@@ -62,6 +63,17 @@ namespace Meziantou.Framework.Win32
         public Meziantou.Framework.Win32.RestartManagerApplicationStatus Status { get => throw null; }
         public int TerminalServicesSessionId { get => throw null; }
         public bool IsRestartable { get => throw null; }
+    }
+
+    [System.Flags]
+    public enum RestartManagerRebootReason
+    {
+        None = 0,
+        PermissionDenied = 1,
+        SessionMismatch = 2,
+        CriticalProcess = 4,
+        CriticalService = 8,
+        DetectedSelf = 16
     }
 
     [System.Flags]

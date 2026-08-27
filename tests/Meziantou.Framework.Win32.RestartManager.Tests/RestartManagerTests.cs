@@ -190,4 +190,29 @@ public class RestartManagerTests
             File.Delete(path);
         }
     }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void RebootReason_IsRefreshedWhenTheSessionIsQueried()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                using var session = RestartManager.CreateSession();
+                session.RegisterFile(path);
+
+                Assert.Equal(RestartManagerRebootReason.None, session.RebootReason);
+
+                Assert.True(session.IsResourcesLocked());
+
+                // The session and the lock live in the same process, which is what DetectedSelf reports.
+                Assert.Equal(RestartManagerRebootReason.DetectedSelf, session.RebootReason);
+            }
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }

@@ -657,6 +657,18 @@ public sealed class QueryBuilderTests
         Assert.Throws<NotSupportedException>(() => query.Evaluate(new() { StringValue = "dummy:10" }));
     }
 
+    [Theory]
+    [InlineData("dummy:10", true)]
+    [InlineData("-dummy:10", false)]
+    [InlineData("NOT dummy:10", false)]
+    public void UnhandledField_HandlerRespectsNegation(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetUnhandledPropertyHandler((obj, key, op, value) => true);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample()));
+    }
+
     [Fact]
     public void EmptyQuery()
     {

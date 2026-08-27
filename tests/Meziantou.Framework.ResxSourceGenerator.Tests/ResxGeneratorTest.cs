@@ -309,6 +309,52 @@ public sealed class ResxGeneratorTest
             });
     }
 
+    [Theory]
+    [InlineData("fr")]
+    [InlineData("fil")]
+    [InlineData("fr-FR")]
+    [InlineData("zh-Hans")]
+    [InlineData("sr-Latn-RS")]
+    [InlineData("es-419")]
+    public async Task SatelliteResxFilesAreGroupedWithTheNeutralFile(string culture)
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+
+        var result = await GenerateFiles(
+            [
+                (FullPath.GetTempPath() / "proj" / "Messages.resx", element.ToString()),
+                (FullPath.GetTempPath() / "proj" / $"Messages.{culture}.resx", element.ToString()),
+            ], new OptionProvider
+            {
+                ProjectDir = FullPath.GetTempPath() / "proj",
+                RootNamespace = "Test",
+            });
+
+        Assert.Equal("Messages.resx.g.cs", result.GeneratedFileName);
+    }
+
+    [Theory]
+    [InlineData("Backup")]
+    [InlineData("v2")]
+    [InlineData("Design")]
+    public async Task NonCultureSuffixesAreTheirOwnResource(string suffix)
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+
+        var result = await GenerateFiles(
+            [
+                (FullPath.GetTempPath() / "proj" / "Messages.resx", element.ToString()),
+                (FullPath.GetTempPath() / "proj" / $"Messages.{suffix}.resx", element.ToString()),
+            ], new OptionProvider
+            {
+                ProjectDir = FullPath.GetTempPath() / "proj",
+                RootNamespace = "Test",
+            });
+
+        var fileNames = result.GeneratedTrees.Select(tree => Path.GetFileName(tree.FilePath)).Order(StringComparer.Ordinal);
+        Assert.Equal(new[] { $"Messages.{suffix}.resx.g.cs", "Messages.resx.g.cs" }.Order(StringComparer.Ordinal), fileNames);
+    }
+
     [Fact]
     public async Task ComputeNamespace_RootDir()
     {

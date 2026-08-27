@@ -354,7 +354,6 @@ internal static partial class CSharp
         {
             Keywords = keywords,
             KeywordValidator = ValidateKeyword,
-            Illegal = "::",
             Contains =
             [
                 xmlDocComment,

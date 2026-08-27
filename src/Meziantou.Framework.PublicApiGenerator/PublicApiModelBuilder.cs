@@ -1790,23 +1790,8 @@ internal static class PublicApiModelBuilder
     {
         return value switch
         {
-            null => "null",
-            string text => "\"" + text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"",
-            char character => "'" + (character == '\'' ? "\\'" : character.ToString()) + "'",
-            bool boolean => boolean ? "true" : "false",
-            float floatValue => floatValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "f",
-            double doubleValue => doubleValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "d",
-            decimal decimalValue => decimalValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "m",
-            long longValue => longValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "L",
-            ulong ulongValue => ulongValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "UL",
-            uint uintValue => uintValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "U",
-            short shortValue => shortValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            ushort ushortValue => ushortValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            byte byteValue => byteValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            sbyte sbyteValue => sbyteValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            int intValue => intValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
             Enum enumValue => FormatEnumValue(enumValue.GetType(), enumValue),
-            _ => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "default",
+            _ => CSharpLiteralFormatter.Format(value),
         };
     }
 

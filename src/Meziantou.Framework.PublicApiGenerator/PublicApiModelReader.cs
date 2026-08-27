@@ -2830,17 +2830,7 @@ internal static class PublicApiModelReader
         };
     }
 
-    private static string FormatConstant(object? value)
-    {
-        return value switch
-        {
-            null => "null",
-            string text => "\"" + text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"",
-            char character => "'" + character.ToString().Replace("\\", "\\\\", StringComparison.Ordinal).Replace("'", "\\'", StringComparison.Ordinal) + "'",
-            bool boolValue => boolValue ? "true" : "false",
-            _ => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "null",
-        };
-    }
+    private static string FormatConstant(object? value) => CSharpLiteralFormatter.Format(value);
 
     private static void AppendIndentedLine(StringBuilder sb, int indentationLevel, string line)
     {

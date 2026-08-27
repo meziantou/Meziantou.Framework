@@ -377,6 +377,77 @@ public sealed class HarEntryExtensionsTests
         Assert.Equal("UTF-8", message.Content.Headers.ContentType?.CharSet);
     }
 
+    [Fact]
+    public void ToHttpResponseMessage_DoesNotReplayRecordedContentLength()
+    {
+        var response = new HarResponse
+        {
+            Status = 200,
+            HttpVersion = "http/2.0",
+            Headers =
+            [
+                new HarHeader { Name = "Content-Length", Value = "648" },
+                new HarHeader { Name = "Content-Type", Value = "text/plain" },
+            ],
+            Content = new HarContent { MimeType = "text/plain", Text = "hello" },
+        };
+
+        using var message = response.ToHttpResponseMessage();
+
+        Assert.Equal(5, message.Content.Headers.ContentLength);
+        Assert.Equal("5", Assert.Single(message.Content.Headers.GetValues("Content-Length")));
+    }
+
+    [Fact]
+    public void ToHttpResponseMessage_DoesNotReplayContentEncoding()
+    {
+        var response = new HarResponse
+        {
+            Status = 200,
+            HttpVersion = "http/2.0",
+            Headers = [new HarHeader { Name = "Content-Encoding", Value = "gzip" }],
+            Content = new HarContent { MimeType = "text/plain", Text = "already decoded" },
+        };
+
+        using var message = response.ToHttpResponseMessage();
+
+        Assert.False(message.Content.Headers.Contains("Content-Encoding"));
+    }
+
+    [Fact]
+    public async Task RealWorldHar_GzippedEntryHasConsistentContentLength()
+    {
+        var document = LoadChromeHar();
+        var entry = document.Log.Entries[0];
+
+        Assert.Equal("648", entry.Response.Headers.Single(h => string.Equals(h.Name, "content-length", StringComparison.OrdinalIgnoreCase)).Value);
+
+        using var message = entry.ToHttpResponseMessage();
+        var body = await message.Content.ReadAsByteArrayAsync();
+
+        Assert.Equal(body.Length, message.Content.Headers.ContentLength);
+        Assert.False(message.Content.Headers.Contains("Content-Encoding"));
+    }
+
+    [Fact]
+    public async Task ToHttpRequestMessage_RecordedContentLengthDoesNotBreakSending()
+    {
+        var request = new HarRequest
+        {
+            Method = "POST",
+            Url = "https://example.com/upload",
+            HttpVersion = "http/1.1",
+            Headers = [new HarHeader { Name = "Content-Length", Value = "99999" }],
+            PostData = new HarPostData { MimeType = "text/plain", Text = "abc" },
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.NotNull(message.Content);
+        var body = await message.Content.ReadAsByteArrayAsync();
+        Assert.Equal(body.Length, message.Content.Headers.ContentLength);
+    }
+
     private static HarDocument LoadChromeHar()
     {
         using var stream = typeof(HarEntryExtensionsTests).Assembly.GetManifestResourceStream("files/chrome-devtools.har")!;

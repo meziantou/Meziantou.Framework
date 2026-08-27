@@ -44,7 +44,8 @@ internal static class ResxGeneratorCommon
         string? result = null;
         foreach (var file in additionalFiles)
         {
-            if (analyzerConfigOptionsProvider.GetOptions(file).TryGetValue("build_metadata.AdditionalFiles." + name, out var value))
+            // An unset metadata is reported as an empty value, so it must not be considered as a different value
+            if (analyzerConfigOptionsProvider.GetOptions(file).TryGetValue("build_metadata.AdditionalFiles." + name, out var value) && !string.IsNullOrEmpty(value))
             {
                 if (result is not null && value != result)
                 {

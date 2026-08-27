@@ -11,4 +11,7 @@
     <AdditionalFiles Include="**/*.resx" />
   </ItemGroup>
 
+  <!-- Use the props shipped in the package, so the MSBuild logic computing the resource names is also tested -->
+  <Import Project="../../src/Meziantou.Framework.ResxSourceGenerator/build/Meziantou.Framework.ResxSourceGenerator.props" />
+
 </Project>

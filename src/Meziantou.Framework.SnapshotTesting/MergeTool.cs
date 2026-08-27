@@ -103,11 +103,11 @@ public abstract class MergeTool
     }
 
     private static readonly ConcurrentBag<FullPath> TemporaryDirectories = [];
-    private static int _temporaryDirectoryCleanupRegistered;
+    private static int s_temporaryDirectoryCleanupRegistered;
 
     private static void RegisterTemporaryDirectoryCleanup()
     {
-        if (Interlocked.Exchange(ref _temporaryDirectoryCleanupRegistered, 1) != 0)
+        if (Interlocked.Exchange(ref s_temporaryDirectoryCleanupRegistered, 1) != 0)
             return;
 
         AppDomain.CurrentDomain.ProcessExit += (_, _) => DeleteTemporaryDirectories();

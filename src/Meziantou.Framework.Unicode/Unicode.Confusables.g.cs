@@ -3,12 +3,13 @@
 // Data source: https://www.unicode.org/Public/UCD/latest/security/confusables.txt
 // Last modified: 2025-08-16T00:45:12.0000000+00:00
 // Statistics:
-//   - Total confusable mappings: 6565
-//   - Single-character replacements: 4462
-//   - Multi-character replacements: 2103
+//   - Total confusable mappings: 6557
+//   - Single-character replacements: 4457
+//   - Multi-character replacements: 2100
 //
 // Specification: https://www.unicode.org/reports/tr39/
-// Purpose: Helps detect visually confusable characters that may be used in security attacks
+// Purpose: Maps non-ASCII characters to the ASCII-ish character they resemble.
+    //          ASCII sources are excluded so ordinary text is never rewritten.
 // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
 
 #nullable enable
@@ -30,16 +31,8 @@ internal static class UnicodeConfusablesData
 
     private static Dictionary<Rune, string> Create()
     {
-        return new Dictionary<Rune, string>(capacity: 6565)
+        return new Dictionary<Rune, string>(capacity: 6557)
         {
-            [new Rune(0x22)] = "\u0027\u0027",
-            [new Rune(0x25)] = "\u00BA\u002F\u2080",
-            [new Rune(0x30)] = "\u004F",
-            [new Rune(0x31)] = "\u006C",
-            [new Rune(0x49)] = "\u006C",
-            [new Rune(0x60)] = "\u0027",
-            [new Rune(0x6D)] = "\u0072\u006E",
-            [new Rune(0x7C)] = "\u006C",
             [new Rune(0xA0)] = "\u0020",
             [new Rune(0xA2)] = "\u0063\u0338",
             [new Rune(0xA5)] = "\u0059\u0335",

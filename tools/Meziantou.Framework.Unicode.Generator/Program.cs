@@ -104,6 +104,7 @@ static async Task<(List<Entry> entries, string lastModified)> LoadConfusablesEnt
     var entries = new Dictionary<Rune, Entry>();
     var lineCount = 0;
     var processedLines = 0;
+    var skippedAsciiSources = 0;
     foreach (var rawLine in content.Split('\n'))
     {
         lineCount++;
@@ -127,13 +128,22 @@ static async Task<(List<Entry> entries, string lastModified)> LoadConfusablesEnt
         var source = ParseSingleRune(parts[0]);
         var target = ParseCodePointSequence(parts[1]);
 
+        // ASCII is the alphabet this table normalizes toward, so an ASCII source is already
+        // in its canonical form. Folding it (0 -> O, 1 -> l, m -> rn, ...) would corrupt
+        // ordinary text without making anything less confusable.
+        if (source.Value < 0x80)
+        {
+            skippedAsciiSources++;
+            continue;
+        }
+
         if (!entries.TryAdd(source, new Entry(source, target)))
             throw new InvalidOperationException("Duplicated source mapping: U+" + source.Value.ToString("X", CultureInfo.InvariantCulture));
 
         processedLines++;
     }
 
-    Console.WriteLine($"  Loaded {entries.Count} confusable mappings from {lineCount} lines ({processedLines} data lines)");
+    Console.WriteLine($"  Loaded {entries.Count} confusable mappings from {lineCount} lines ({processedLines} data lines, {skippedAsciiSources} ASCII sources skipped)");
     return (entries.Values.ToList(), lastModified);
 }
 
@@ -1186,7 +1196,8 @@ async Task WriteConfusableCharactersFile(List<Entry> confusableEntries, string c
     //   - Multi-character replacements: {{multiCharMappings.ToString(CultureInfo.InvariantCulture)}}
     //
     // Specification: https://www.unicode.org/reports/tr39/
-    // Purpose: Helps detect visually confusable characters that may be used in security attacks
+    // Purpose: Maps non-ASCII characters to the ASCII-ish character they resemble.
+        //          ASCII sources are excluded so ordinary text is never rewritten.
     // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
 
     #nullable enable

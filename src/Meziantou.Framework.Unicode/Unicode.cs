@@ -3,10 +3,18 @@ namespace Meziantou.Framework;
 /// <summary>Provides Unicode helper methods.</summary>
 public static partial class Unicode
 {
-    /// <summary>Replaces confusable Unicode characters using the Unicode confusables table.</summary>
+    /// <summary>Replaces characters that look like another character with their canonical form.</summary>
     /// <param name="str">The text to normalize.</param>
-    /// <returns>The text with confusable characters replaced.</returns>
-    /// <seealso href="https://unicode.org/reports/tr39/" />
+    /// <returns>The normalized text. Characters that are already ASCII are returned unchanged.</returns>
+    /// <remarks>
+    /// The mapping is derived from the Unicode confusables table, excluding sources that are already
+    /// ASCII, so ordinary text such as <c>"Item 1 of 10"</c> is returned unchanged.
+    /// <para>
+    /// The result is displayable text, not a comparison key. It is deliberately not the skeleton
+    /// defined by UTS #39: the input is not normalized and the mapping is applied in a single pass,
+    /// so two strings that a reader would consider confusable can still produce different results.
+    /// </para>
+    /// </remarks>
     public static string ReplaceConfusablesCharacters(string str)
     {
         ArgumentNullException.ThrowIfNull(str);
@@ -46,10 +54,10 @@ public static partial class Unicode
         return sb.ToString();
     }
 
-    /// <summary>Replaces a confusable Unicode character using the Unicode confusables table.</summary>
+    /// <summary>Replaces a character that looks like another character with its canonical form.</summary>
     /// <param name="rune">The character to normalize.</param>
-    /// <returns>The replacement text for the character.</returns>
-    /// <seealso href="https://unicode.org/reports/tr39/" />
+    /// <returns>The replacement text, or the character itself when it has no replacement.</returns>
+    /// <remarks>ASCII characters are never replaced.</remarks>
     public static string ReplaceConfusablesCharacters(Rune rune)
     {
         if (UnicodeConfusablesData.TryGetReplacement(rune, out var replacement))
@@ -58,10 +66,13 @@ public static partial class Unicode
         return rune.ToString();
     }
 
-    /// <summary>Replaces a confusable Unicode character using the Unicode confusables table.</summary>
+    /// <summary>Replaces a character that looks like another character with its canonical form.</summary>
     /// <param name="value">The character to normalize.</param>
-    /// <returns>The replacement text for the character.</returns>
-    /// <seealso href="https://unicode.org/reports/tr39/" />
+    /// <returns>The replacement text, or the character itself when it has no replacement.</returns>
+    /// <remarks>
+    /// ASCII characters are never replaced. A <see cref="char"/> cannot represent a code point above
+    /// U+FFFF, so use the <see cref="Rune"/> or <see cref="string"/> overload to normalize those.
+    /// </remarks>
     public static string ReplaceConfusablesCharacters(char value)
     {
         if (!Rune.TryCreate(value, out var rune))
@@ -73,10 +84,10 @@ public static partial class Unicode
         return rune.ToString();
     }
 
-    /// <summary>Determines whether a Unicode character has a confusable replacement.</summary>
+    /// <summary>Determines whether a Unicode character has a replacement in the confusables table.</summary>
     /// <param name="rune">The Unicode scalar value to inspect.</param>
-    /// <returns><see langword="true"/> when the character is confusable; otherwise <see langword="false"/>.</returns>
-    /// <seealso href="https://unicode.org/reports/tr39/" />
+    /// <returns><see langword="true"/> when the character has a replacement; otherwise <see langword="false"/>.</returns>
+    /// <remarks>Always returns <see langword="false"/> for ASCII characters, which are never replaced.</remarks>
     public static bool IsConfusableCharacter(Rune rune)
     {
         return UnicodeConfusablesData.TryGetReplacement(rune, out _);

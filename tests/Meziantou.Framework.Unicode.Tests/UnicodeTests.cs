@@ -38,6 +38,31 @@ public sealed class UnicodeTests
         Assert.Equal("\uD800", output);
     }
 
+    [Theory]
+    [InlineData("Item 1 of 10")]
+    [InlineData("100% done")]
+    [InlineData("a|b`c\"d")]
+    [InlineData("Hello, World!")]
+    public void ReplaceConfusablesCharacters_LeavesAsciiUnchanged(string input)
+    {
+        Assert.Same(input, Unicode.ReplaceConfusablesCharacters(input));
+    }
+
+    [Fact]
+    public void ReplaceConfusablesCharacters_StillFoldsNonAsciiLookAlikes()
+    {
+        Assert.Equal("paypal", Unicode.ReplaceConfusablesCharacters("\u0440\u0430\u0443\u0440\u0430l"));
+    }
+
+    [Fact]
+    public void IsConfusableCharacter_IsFalseForAscii()
+    {
+        foreach (var c in "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz|`%\"")
+        {
+            Assert.False(Unicode.IsConfusableCharacter(new Rune(c)), $"U+{(int)c:X4} should not be confusable");
+        }
+    }
+
     [Fact]
     public void IsConfusableCharacter_ReturnsExpectedValue()
     {

@@ -283,6 +283,30 @@ public sealed class BloomFilterTests
         Assert.Throws<ArgumentOutOfRangeException>(() => CountingBloomFilterSize.CreateOptimalSize(expectedItemCount, falsePositiveProbability));
     }
 
+    [Theory]
+    [InlineData(2_000_000_000_000_000_000L, 0.01)]
+    [InlineData(long.MaxValue, 0.01)]
+    [InlineData(long.MaxValue, 0.5)]
+    public void CreateOptimalSize_SizeExceedingLongMaxValue_Throws(long expectedItemCount, double falsePositiveProbability)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => BloomFilterSize.CreateOptimalSize(expectedItemCount, falsePositiveProbability));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CountingBloomFilterSize.CreateOptimalSize(expectedItemCount, falsePositiveProbability));
+    }
+
+    [Fact]
+    public void CreateOptimalSize_LargestSupportedItemCount_KeepsHashCountCorrect()
+    {
+        const long ExpectedItemCount = 900_000_000_000_000_000L;
+
+        var size = BloomFilterSize.CreateOptimalSize(ExpectedItemCount, 0.01);
+        var countingSize = CountingBloomFilterSize.CreateOptimalSize(ExpectedItemCount, 0.01);
+
+        Assert.Equal(7, size.HashCount);
+        Assert.Equal(7, countingSize.HashCount);
+        Assert.InRange(size.BitCount, ExpectedItemCount * 9, ExpectedItemCount * 10);
+        Assert.Equal(size.BitCount, countingSize.CounterCount);
+    }
+
     private static IEnumerable<object> GetValues()
     {
         return

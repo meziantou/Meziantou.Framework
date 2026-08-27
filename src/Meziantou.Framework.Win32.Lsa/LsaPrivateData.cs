@@ -44,7 +44,6 @@ public static class LsaPrivateData
             throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
 
         var objectAttributes = new LSA_OBJECT_ATTRIBUTES();
-        var localsystem = new LSA_UNICODE_STRING();
         var secretName = new LSA_UNICODE_STRING();
         fixed (char* keyPtr = key)
         fixed (char* valuePtr = value)
@@ -64,7 +63,7 @@ public static class LsaPrivateData
                 };
             }
 
-            using var lsaPolicyHandle = GetLsaPolicy(in objectAttributes, ref localsystem);
+            using var lsaPolicyHandle = GetLsaPolicy(in objectAttributes);
             var result = PInvoke.LsaStorePrivateData(lsaPolicyHandle, in secretName, lusSecretData);
 
             var winErrorCode = PInvoke.LsaNtStatusToWinError(result);
@@ -84,7 +83,6 @@ public static class LsaPrivateData
             throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
 
         var objectAttributes = new LSA_OBJECT_ATTRIBUTES();
-        var localsystem = new LSA_UNICODE_STRING();
         var secretName = new LSA_UNICODE_STRING();
         fixed (char* keyPtr = key)
         {
@@ -93,7 +91,7 @@ public static class LsaPrivateData
             secretName.Length = (ushort)(key.Length * 2);
 
             // Get LSA policy
-            using var lsaPolicyHandle = GetLsaPolicy(in objectAttributes, ref localsystem);
+            using var lsaPolicyHandle = GetLsaPolicy(in objectAttributes);
             var result = PInvoke.LsaRetrievePrivateData(lsaPolicyHandle, in secretName, out var privateData);
             if (result == NTSTATUS.STATUS_OBJECT_NAME_NOT_FOUND)
                 return null;
@@ -112,9 +110,10 @@ public static class LsaPrivateData
         }
     }
 
-    private static unsafe LsaCloseSafeHandle GetLsaPolicy(in LSA_OBJECT_ATTRIBUTES objectAttributes, ref LSA_UNICODE_STRING localSystem)
+    private static unsafe LsaCloseSafeHandle GetLsaPolicy(in LSA_OBJECT_ATTRIBUTES objectAttributes)
     {
-        var ntsResult = PInvoke.LsaOpenPolicy(localSystem, in objectAttributes, PInvoke.POLICY_GET_PRIVATE_INFORMATION, out var lsaPolicyHandle);
+        // A null SystemName means the local system
+        var ntsResult = PInvoke.LsaOpenPolicy(SystemName: null, in objectAttributes, PInvoke.POLICY_GET_PRIVATE_INFORMATION, out var lsaPolicyHandle);
         var winErrorCode = PInvoke.LsaNtStatusToWinError(ntsResult);
         if (winErrorCode != 0)
             throw new Win32Exception((int)winErrorCode, "LsaOpenPolicy failed: " + winErrorCode.ToString(CultureInfo.InvariantCulture));

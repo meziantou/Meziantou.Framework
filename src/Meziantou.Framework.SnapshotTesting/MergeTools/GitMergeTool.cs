@@ -22,6 +22,10 @@ internal sealed class GitMergeTool : GitTool
                          .Replace("$MERGED", currentFilePath, StringComparison.Ordinal));
 
                 var process = Process.Start(filename, args);
+
+                // Exited never fires unless the process is asked to raise it, and without it the copy below
+                // is never deleted and the Process handle is never released.
+                process.EnableRaisingEvents = true;
                 process.Exited += (sender, args) =>
                 {
                     try

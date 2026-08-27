@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Meziantou.Framework.DiffEngine;
 using Meziantou.Framework.LLMContext;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
@@ -79,12 +80,53 @@ public abstract class MergeTool
         return null;
     }
 
-    private protected static FullPath CopyFileToTemp(string path)
+    /// <summary>
+    /// Copies a snapshot next to a merge tool invocation. The copies live under a single root so they can be
+    /// removed when the process ends: a merge tool is launched once per failing assertion, and nothing else
+    /// is in a position to clean up after a tool the user may never close.
+    /// </summary>
+    private protected static FullPath CopyFileToTemp(string path) => CopyFileToTempCore(path);
+
+    internal static FullPath TemporaryDirectoryRoot { get; } = FullPath.GetTempPath() / "Meziantou.Framework.SnapshotTesting";
+
+    internal static FullPath CopyFileToTempCore(string path)
     {
-        var temp = FullPath.GetTempPath() / Guid.NewGuid().ToString("N");
+        // A GUID subdirectory keeps the original file name, which is what the diff tool shows in its header.
+        var temp = TemporaryDirectoryRoot / Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(temp);
+        TemporaryDirectories.Add(temp);
+        RegisterTemporaryDirectoryCleanup();
+
         var filePath = temp / Path.GetFileName(path);
         File.Copy(path, filePath, overwrite: false);
         return filePath;
+    }
+
+    private static readonly ConcurrentBag<FullPath> TemporaryDirectories = [];
+    private static int _temporaryDirectoryCleanupRegistered;
+
+    private static void RegisterTemporaryDirectoryCleanup()
+    {
+        if (Interlocked.Exchange(ref _temporaryDirectoryCleanupRegistered, 1) != 0)
+            return;
+
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => DeleteTemporaryDirectories();
+    }
+
+    internal static void DeleteTemporaryDirectories()
+    {
+        while (TemporaryDirectories.TryTake(out var directory))
+        {
+            try
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
     }
 }

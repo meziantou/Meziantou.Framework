@@ -168,10 +168,108 @@ public sealed class ExpressionQueryBuilderTests
         Assert.Null(query.Predicate);
     }
 
+    [Theory]
+    [InlineData("id:10", 1)]
+    [InlineData("id>5", 1)]
+    [InlineData("id<5", 1)]
+    [InlineData("id>=10", 1)]
+    [InlineData("id:5..15", 1)]
+    public void NullableInt32(string query, int expectedCount)
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<int?>("id", item => item.NullableInt32Value);
+
+        var items = new[]
+        {
+            new Sample { NullableInt32Value = 10 },
+            new Sample { NullableInt32Value = 3 },
+            new Sample { NullableInt32Value = null },
+        }.AsQueryable();
+
+        Assert.HasCount(expectedCount, queryBuilder.Build(query).Apply(items).ToList());
+    }
+
+    [Fact]
+    public void TimeSpan_SupportsComparisonOperators()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<TimeSpan>("duration", item => item.TimeSpanValue);
+        var query = queryBuilder.Build("duration>00:05:00");
+
+        var items = new[]
+        {
+            new Sample { TimeSpanValue = TimeSpan.FromMinutes(10) },
+            new Sample { TimeSpanValue = TimeSpan.FromMinutes(1) },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(TimeSpan.FromMinutes(10), result[0].TimeSpanValue);
+    }
+
+    [Fact]
+    public void DateTime_SupportsComparisonOperators()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<DateTime>("date", item => item.DateTimeValue);
+        var query = queryBuilder.Build("date>2026-03-01");
+
+        var items = new[]
+        {
+            new Sample { DateTimeValue = new DateTime(2026, 3, 15, 0, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 2, 15, 0, 0, 0, DateTimeKind.Utc) },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(new DateTime(2026, 3, 15, 0, 0, 0, DateTimeKind.Utc), result[0].DateTimeValue);
+    }
+
+    [Fact]
+    public void Enum_RegistersEqualityOnly()
+    {
+        // Expression.LessThan is not defined for enum types, so registering the handler must not throw
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<DayOfWeek>("day", item => item.DayOfWeekValue);
+
+        var items = new[]
+        {
+            new Sample { DayOfWeekValue = DayOfWeek.Friday },
+            new Sample { DayOfWeekValue = DayOfWeek.Monday },
+        }.AsQueryable();
+        var result = queryBuilder.Build("day:friday").Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(DayOfWeek.Friday, result[0].DayOfWeekValue);
+    }
+
+    [Fact]
+    public void UnorderableType_RegistersEqualityOnly()
+    {
+        var id = Guid.NewGuid();
+
+        // Guid cannot be ordered with <, so registering the handler must not throw
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<Guid>("guid", item => item.GuidValue);
+
+        var items = new[]
+        {
+            new Sample { GuidValue = id },
+            new Sample { GuidValue = Guid.NewGuid() },
+        }.AsQueryable();
+
+        Assert.Single(queryBuilder.Build($"guid:{id}").Apply(items).ToList());
+    }
+
     private sealed class Sample
     {
         public int Int32Value { get; set; }
         public long Int64Value { get; set; }
         public string? StringValue { get; set; }
+        public int? NullableInt32Value { get; set; }
+        public TimeSpan TimeSpanValue { get; set; }
+        public DateTime DateTimeValue { get; set; }
+        public DayOfWeek DayOfWeekValue { get; set; }
+        public Guid GuidValue { get; set; }
     }
 }

@@ -114,6 +114,66 @@ public sealed class BloomFilterTests
         Assert.InRange(filter.GetEstimateCount(), ItemCount * 0.95, ItemCount * 1.05);
     }
 
+    [Theory]
+    [InlineData(nameof(BloomFilter.CreateXXHash32))]
+    [InlineData(nameof(BloomFilter.CreateCrc32))]
+    public void BloomFilter32_FalsePositiveRate_StaysNearTarget(string createMethodName)
+    {
+        const int ItemCount = 10_000;
+        const int ProbeCount = 100_000;
+        const double FalsePositiveProbability = 0.01;
+
+        var size = BloomFilterSize.CreateOptimalSize(ItemCount, FalsePositiveProbability);
+        var filter = (IBloomFilter)typeof(BloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size])!;
+        for (var value = 0; value < ItemCount; value++)
+        {
+            filter.Add(value);
+        }
+
+        var falsePositiveCount = 0;
+        for (var value = ItemCount; value < ItemCount + ProbeCount; value++)
+        {
+            if (filter.MayContain(value))
+            {
+                falsePositiveCount++;
+            }
+        }
+
+        Assert.InRange((double)falsePositiveCount / ProbeCount, 0, FalsePositiveProbability * 3);
+
+        // Too few reachable positions also skews the set-bit count the estimate is derived from.
+        Assert.InRange(filter.GetEstimateCount(), ItemCount * 0.9, ItemCount * 1.1);
+    }
+
+    [Theory]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash32))]
+    [InlineData(nameof(CountingBloomFilter.CreateCrc32))]
+    public void CountingBloomFilter32_FalsePositiveRate_StaysNearTarget(string createMethodName)
+    {
+        const int ItemCount = 10_000;
+        const int ProbeCount = 100_000;
+        const double FalsePositiveProbability = 0.01;
+
+        var size = CountingBloomFilterSize.CreateOptimalSize(ItemCount, FalsePositiveProbability);
+        var filter = (ICountingBloomFilter)typeof(CountingBloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size])!;
+        for (var value = 0; value < ItemCount; value++)
+        {
+            filter.Add(value);
+        }
+
+        var falsePositiveCount = 0;
+        for (var value = ItemCount; value < ItemCount + ProbeCount; value++)
+        {
+            if (filter.MayContain(value))
+            {
+                falsePositiveCount++;
+            }
+        }
+
+        Assert.InRange((double)falsePositiveCount / ProbeCount, 0, FalsePositiveProbability * 3);
+        Assert.InRange(filter.GetEstimatedCount(0), 1, 5);
+    }
+
     [Fact]
     public void XXHash32_AddRange_ThenMayContain_ReturnsTrue()
     {

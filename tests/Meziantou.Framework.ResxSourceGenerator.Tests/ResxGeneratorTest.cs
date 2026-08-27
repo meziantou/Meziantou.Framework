@@ -199,6 +199,64 @@ public sealed class ResxGeneratorTest
     }
 
     [Fact]
+    public async Task ResourceNamesMappingToTheSameIdentifierDoNotCollide()
+    {
+        var element = new XElement("root",
+            new XElement("data", new XAttribute("name", "Hello World"), new XElement("value", "a")),
+            new XElement("data", new XAttribute("name", "Hello-World"), new XElement("value", "b")));
+
+        // GenerateFiles asserts the generated code compiles, which is the point of the test
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("public static string? @Hello_World", fileContent);
+        Assert.Contains("// Skipped 'Hello_World'", fileContent);
+    }
+
+    [Theory]
+    [InlineData("ResourceManager")]
+    [InlineData("Culture")]
+    [InlineData("GetString")]
+    [InlineData("GetObject")]
+    [InlineData("GetStream")]
+    public async Task ResourceNamesCannotShadowTheGeneratedMembers(string name)
+    {
+        var element = new XElement("root",
+            new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "a")),
+            new XElement("data", new XAttribute("name", name), new XElement("value", "b")));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("// Skipped '" + name + "'", fileContent);
+        Assert.Contains("@Sample", fileContent);
+    }
+
+    [Fact]
+    public async Task AFormatMethodDoesNotCollideWithAResourceOfTheSameName()
+    {
+        var element = new XElement("root",
+            new XElement("data", new XAttribute("name", "Hello"), new XElement("value", "Hello {0}!")),
+            new XElement("data", new XAttribute("name", "FormatHello"), new XElement("value", "b")));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        Assert.Contains("public static string? @FormatHello", result.GeneratedFileRoot.ToFullString());
+    }
+
+    [Fact]
     public async Task GenerateProperties_WithFormatParameterMetadata()
     {
         XNamespace generatorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";

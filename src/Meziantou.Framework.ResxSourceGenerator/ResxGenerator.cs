@@ -297,10 +297,31 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         }
 ");
 
+            // Resx names are free-form text, so two of them can map to the same identifier ("A B" and "A-B"), and
+            // one can collide with a member this class always declares. Emitting both is a compilation error.
+            var memberNames = new HashSet<string>(StringComparer.Ordinal)
+            {
+                className,
+                "resourceMan",
+                "ResourceManager",
+                "Culture",
+                "GetObject",
+                "GetStream",
+                "GetString",
+                "GetStringWithDefault",
+            };
+
             foreach (var entry in entries.OrderBy(e => e.Name, StringComparer.Ordinal))
             {
                 if (string.IsNullOrEmpty(entry.Name))
                     continue;
+
+                var memberName = ToCSharpNameIdentifier(entry.Name);
+                if (!memberNames.Add(memberName))
+                {
+                    sb.AppendLine("        // Skipped '" + memberName + "': the name is already used by another member");
+                    continue;
+                }
 
                 if (entry.IsText)
                 {
@@ -319,7 +340,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
                     sb.AppendLine(@"
         /// " + comment + @"
-        public static string? @" + ToCSharpNameIdentifier(entry.Name) + @"
+        public static string? @" + memberName + @"
         {
             get
             {
@@ -337,7 +358,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                             .DefaultIfEmpty(-1)
                             .Max();
 
-                        if (args >= 0)
+                        if (args >= 0 && memberNames.Add("Format" + memberName))
                         {
                             var parameters = GetFormatParameters(entry, args);
                             var inParams = string.Join(", ", parameters.Select(parameter => parameter.TypeName + " " + EscapeCSharpIdentifier(parameter.Name)));
@@ -346,7 +367,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
                             sb.AppendLine(@"
         /// " + formatComment + @"
-        public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(global::System.Globalization.CultureInfo? provider, " + inParams + @")
+        public static string? Format" + memberName + "(global::System.Globalization.CultureInfo? provider, " + inParams + @")
         {
             return GetString(culture: provider, name: " + ToLiteral(entry.Name) + @", args: new object?[] { " + callParams + @" });
         }
@@ -354,7 +375,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
                             sb.AppendLine(@"
         /// " + formatComment + @"
-        public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(" + inParams + @")
+        public static string? Format" + memberName + "(" + inParams + @")
         {
             return GetString(name: " + ToLiteral(entry.Name) + @", args: new object?[] { " + callParams + @" });
         }
@@ -365,7 +386,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                 else if (entry.FullTypeName is string fullTypeName)
                 {
                     sb.AppendLine(@"
-        public static global::" + fullTypeName + "? @" + ToCSharpNameIdentifier(entry.Name) + @"
+        public static global::" + fullTypeName + "? @" + memberName + @"
         {
             get
             {
@@ -377,7 +398,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                 else
                 {
                     // Emitting the member would produce "global::?" and break the whole compilation
-                    sb.AppendLine("        // Could not determine the type of the resource " + ToCSharpNameIdentifier(entry.Name));
+                    sb.AppendLine("        // Could not determine the type of the resource " + memberName);
                 }
             }
 
@@ -389,12 +410,17 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         {
             sb.AppendLine($"    {visibility} partial class {className}Names");
             sb.AppendLine("    {");
+            var keyNames = new HashSet<string>(StringComparer.Ordinal) { className + "Names" };
             foreach (var entry in entries)
             {
                 if (string.IsNullOrEmpty(entry.Name))
                     continue;
 
-                sb.AppendLine("        public const string @" + ToCSharpNameIdentifier(entry.Name) + " = " + ToLiteral(entry.Name) + ";");
+                var keyName = ToCSharpNameIdentifier(entry.Name);
+                if (!keyNames.Add(keyName))
+                    continue;
+
+                sb.AppendLine("        public const string @" + keyName + " = " + ToLiteral(entry.Name) + ";");
             }
 
             sb.AppendLine("    }");

@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
+using Xunit.Sdk;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
@@ -912,6 +913,15 @@ public sealed partial class SnapshotTests
         Assert.Contains("To update snapshots automatically, re-run the test with SNAPSHOTTESTING_STRATEGY=Overwrite (or OverwriteWithoutFailure).", exception.Message);
         Assert.True(File.Exists(actualPath0));
         Assert.True(File.Exists(actualPath1));
+    }
+
+    [Fact]
+    public void DefaultAssertionExceptionBuilder_UsesTheXunitExceptionType()
+    {
+        var exception = AssertionExceptionBuilder.Default.CreateException("the message");
+
+        Assert.IsType<XunitException>(exception);
+        Assert.Equal("the message", exception.Message);
     }
 
     [Theory]

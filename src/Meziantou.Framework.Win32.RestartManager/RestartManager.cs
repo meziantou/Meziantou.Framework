@@ -173,7 +173,7 @@ public sealed class RestartManager : IDisposable
 
     /// <summary>Shuts down applications and services that are using the registered resources.</summary>
     /// <param name="action">The shutdown options to use.</param>
-    /// <param name="statusCallback">An optional callback to receive progress updates during the shutdown operation.</param>
+    /// <param name="statusCallback">An optional callback to receive progress updates during the shutdown operation. The callback is invoked by native code and must not throw; use <see cref="CancelCurrentTask"/> from another thread to stop the operation instead.</param>
     /// <exception cref="Win32Exception">Thrown when the shutdown operation fails.</exception>
     public void Shutdown(RestartManagerShutdownType action, RestartManagerWriteStatusCallback? statusCallback)
     {
@@ -191,7 +191,7 @@ public sealed class RestartManager : IDisposable
     }
 
     /// <summary>Restarts applications and services that were shut down by the Restart Manager and that were registered for restart.</summary>
-    /// <param name="statusCallback">An optional callback to receive progress updates during the restart operation.</param>
+    /// <param name="statusCallback">An optional callback to receive progress updates during the restart operation. The callback is invoked by native code and must not throw; use <see cref="CancelCurrentTask"/> from another thread to stop the operation instead.</param>
     /// <exception cref="Win32Exception">Thrown when the restart operation fails.</exception>
     public void Restart(RestartManagerWriteStatusCallback? statusCallback)
     {
@@ -199,6 +199,20 @@ public sealed class RestartManager : IDisposable
         var result = PInvoke.RmRestart(SessionHandle, 0, callback);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRestart failed ({result})");
+    }
+
+    /// <summary>Cancels the <see cref="Shutdown(RestartManagerShutdownType)"/> or <see cref="Restart()"/> operation that is currently running on this session.</summary>
+    /// <remarks>
+    /// <see cref="Shutdown(RestartManagerShutdownType)"/> and <see cref="Restart()"/> block until they complete, so this method
+    /// has to be called from another thread while one of them is running. It can only be called by the session that was created
+    /// with <see cref="CreateSession"/>, not by a session joined with <see cref="JoinSession(string)"/>.
+    /// </remarks>
+    /// <exception cref="Win32Exception">Thrown when the cancellation fails.</exception>
+    public void CancelCurrentTask()
+    {
+        var result = PInvoke.RmCancelCurrentTask(SessionHandle);
+        if (result != WIN32_ERROR.ERROR_SUCCESS)
+            throw new Win32Exception((int)result, $"RmCancelCurrentTask failed ({result})");
     }
 
     private static unsafe WIN32_ERROR StartSession(out uint handle, Span<char> sessionKeyBuffer)

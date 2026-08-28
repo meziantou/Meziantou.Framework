@@ -180,6 +180,31 @@ public sealed partial class StronglyTypedIdTests
     }
 
     [Fact]
+    public void String_TryParse_ValidatingConstructor_ReturnsFalse()
+    {
+        Assert.False(IdStringValidated.TryParse("", out _));
+    }
+
+    [Fact]
+    public void String_TryParse_ReadOnlySpan_ValidatingConstructor_ReturnsFalse()
+    {
+        Assert.False(IdStringValidated.TryParse("".AsSpan(), out _));
+    }
+
+    [Fact]
+    public void String_TryParse_ValidatingConstructor_ReturnsTrueForValidValue()
+    {
+        Assert.True(IdStringValidated.TryParse("test", out var result));
+        Assert.Equal("test", result.Value);
+    }
+
+    [Fact]
+    public void Int32_TryParse_ValidatingConstructor_ReturnsFalse()
+    {
+        Assert.False(IdInt32Validated.TryParse("-1", out _));
+    }
+
+    [Fact]
     public void String_TryParse_ReadOnlySpan()
     {
         Assert.True(IdString.TryParse("test".AsSpan(), out var value));
@@ -223,6 +248,27 @@ public sealed partial class StronglyTypedIdTests
     public void NewtonsoftJson_Int32_ParseNull()
     {
         Assert.Throws<JsonSerializationException>(() => Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32>("null"));
+    }
+
+    [Fact]
+    public void NewtonsoftJson_Int32_ParseObjectWithoutValue()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32>("{}");
+        Assert.Equal(default, value);
+    }
+
+    [Fact]
+    public void NewtonsoftJson_Int32_ParseObjectWithUnknownProperties()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32>(@"{ ""a"": {}, ""b"": false }");
+        Assert.Equal(default, value);
+    }
+
+    [Fact]
+    public void SystemTextJson_Int32_ParseObjectWithoutValue()
+    {
+        var value = System.Text.Json.JsonSerializer.Deserialize<IdInt32>("{}");
+        Assert.Equal(default, value);
     }
 
     [Fact]
@@ -471,6 +517,26 @@ public sealed partial class StronglyTypedIdTests
         Assert.Equal(Guid.Empty, clone.Value);
     }
 
+    [Fact]
+    public void Bson_Half_Class_Null() => Assert.Null(BsonClone<IdClassHalf?>(null));
+
+    [Fact]
+    public void Bson_Int128_Class_Null() => Assert.Null(BsonClone<IdClassInt128?>(null));
+
+    [Fact]
+    public void Bson_UInt128_Class_Null() => Assert.Null(BsonClone<IdClassUInt128?>(null));
+
+    [Fact]
+    public void Bson_BigInteger_Class_Null() => Assert.Null(BsonClone<IdClassBigInteger?>(null));
+
+    [Fact]
+    public void Bson_Int128_Class_Value()
+    {
+        var instance = IdClassInt128.FromInt128(Int128.MaxValue);
+        var clone = BsonClone(instance);
+        Assert.Equal(Int128.MaxValue, clone.Value);
+    }
+
     [return: NotNullIfNotNull(nameof(value))]
     private static T? BsonClone<T>(T value)
     {
@@ -613,11 +679,46 @@ public sealed partial class StronglyTypedIdTests
     [StronglyTypedId(typeof(ulong))]
     private sealed partial class IdClassUInt64 { }
 
+    [StronglyTypedId(typeof(Half))]
+    private sealed partial class IdClassHalf { }
+
+    [StronglyTypedId(typeof(Int128))]
+    private sealed partial class IdClassInt128 { }
+
+    [StronglyTypedId(typeof(UInt128))]
+    private sealed partial class IdClassUInt128 { }
+
+    [StronglyTypedId(typeof(BigInteger))]
+    private sealed partial class IdClassBigInteger { }
+
     [StronglyTypedId(typeof(int))]
     private partial struct IdCtorDefined
     {
         public IdCtorDefined(int value)
         {
+            _value = value;
+        }
+    }
+
+    [StronglyTypedId(typeof(string))]
+    private partial struct IdStringValidated
+    {
+        private IdStringValidated(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                throw new ArgumentException("The value cannot be empty", nameof(value));
+
+            _value = value;
+        }
+    }
+
+    [StronglyTypedId(typeof(int))]
+    private partial struct IdInt32Validated
+    {
+        private IdInt32Validated(int value)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+
             _value = value;
         }
     }

@@ -157,21 +157,21 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
 
         foreach (var element in doc.Descendants(ns + "PropertyGroup"))
         {
-            foreach (var targetFrameworkElement in element.Elements("TargetFrameworkVersion"))
+            foreach (var targetFrameworkElement in element.Elements(ns + "TargetFrameworkVersion"))
             {
                 context.ReportDependency(this, name: null, targetFrameworkElement.Value.Trim(), DependencyType.DotNetTargetFramework,
                     nameLocation: null,
                     versionLocation: new XmlLocation(context.FileSystem, context.FullPath, targetFrameworkElement));
             }
 
-            foreach (var targetFrameworkElement in element.Elements("TargetFramework"))
+            foreach (var targetFrameworkElement in element.Elements(ns + "TargetFramework"))
             {
                 context.ReportDependency(this, name: null, targetFrameworkElement.Value.Trim(), DependencyType.DotNetTargetFramework,
                     nameLocation: null,
                     versionLocation: new XmlLocation(context.FileSystem, context.FullPath, targetFrameworkElement));
             }
 
-            foreach (var targetFrameworkElement in element.Elements("TargetFrameworks"))
+            foreach (var targetFrameworkElement in element.Elements(ns + "TargetFrameworks"))
             {
                 foreach (Match match in TargetFrameworksRegex().Matches(targetFrameworkElement.Value))
                 {

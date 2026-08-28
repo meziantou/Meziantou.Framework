@@ -377,6 +377,274 @@ public sealed class HarEntryExtensionsTests
         Assert.Equal("UTF-8", message.Content.Headers.ContentType?.CharSet);
     }
 
+    [Fact]
+    public void ToHttpResponseMessage_DoesNotReplayRecordedContentLength()
+    {
+        var response = new HarResponse
+        {
+            Status = 200,
+            HttpVersion = "http/2.0",
+            Headers =
+            [
+                new HarHeader { Name = "Content-Length", Value = "648" },
+                new HarHeader { Name = "Content-Type", Value = "text/plain" },
+            ],
+            Content = new HarContent { MimeType = "text/plain", Text = "hello" },
+        };
+
+        using var message = response.ToHttpResponseMessage();
+
+        Assert.Equal(5, message.Content.Headers.ContentLength);
+        Assert.Equal("5", Assert.Single(message.Content.Headers.GetValues("Content-Length")));
+    }
+
+    [Fact]
+    public void ToHttpResponseMessage_DoesNotReplayContentEncoding()
+    {
+        var response = new HarResponse
+        {
+            Status = 200,
+            HttpVersion = "http/2.0",
+            Headers = [new HarHeader { Name = "Content-Encoding", Value = "gzip" }],
+            Content = new HarContent { MimeType = "text/plain", Text = "already decoded" },
+        };
+
+        using var message = response.ToHttpResponseMessage();
+
+        Assert.False(message.Content.Headers.Contains("Content-Encoding"));
+    }
+
+    [Fact]
+    public async Task RealWorldHar_GzippedEntryHasConsistentContentLength()
+    {
+        var document = LoadChromeHar();
+        var entry = document.Log.Entries[0];
+
+        Assert.Equal("648", entry.Response.Headers.Single(h => string.Equals(h.Name, "content-length", StringComparison.OrdinalIgnoreCase)).Value);
+
+        using var message = entry.ToHttpResponseMessage();
+        var body = await message.Content.ReadAsByteArrayAsync();
+
+        Assert.Equal(body.Length, message.Content.Headers.ContentLength);
+        Assert.False(message.Content.Headers.Contains("Content-Encoding"));
+    }
+
+    [Fact]
+    public async Task ToHttpRequestMessage_RecordedContentLengthDoesNotBreakSending()
+    {
+        var request = new HarRequest
+        {
+            Method = "POST",
+            Url = "https://example.com/upload",
+            HttpVersion = "http/1.1",
+            Headers = [new HarHeader { Name = "Content-Length", Value = "99999" }],
+            PostData = new HarPostData { MimeType = "text/plain", Text = "abc" },
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.NotNull(message.Content);
+        var body = await message.Content.ReadAsByteArrayAsync();
+        Assert.Equal(body.Length, message.Content.Headers.ContentLength);
+    }
+
+    [Fact]
+    public async Task ToHttpRequestMessage_RebuildsBodyFromParams()
+    {
+        var request = new HarRequest
+        {
+            Method = "POST",
+            Url = "https://example.com/login",
+            HttpVersion = "http/2.0",
+            PostData = new HarPostData
+            {
+                MimeType = "application/x-www-form-urlencoded;charset=UTF-8",
+                Params =
+                [
+                    new HarPostDataParameter { Name = "username", Value = "someone%40example.com" },
+                    new HarPostDataParameter { Name = "remember", Value = "on" },
+                ],
+            },
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.NotNull(message.Content);
+        Assert.Equal("username=someone%40example.com&remember=on", await message.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task ToHttpRequestMessage_TextWinsOverParams()
+    {
+        var request = new HarRequest
+        {
+            Method = "POST",
+            Url = "https://example.com/login",
+            HttpVersion = "http/2.0",
+            PostData = new HarPostData
+            {
+                MimeType = "application/x-www-form-urlencoded",
+                Text = "a=1&b=2",
+                Params = [new HarPostDataParameter { Name = "ignored", Value = "x" }],
+            },
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.NotNull(message.Content);
+        Assert.Equal("a=1&b=2", await message.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task ToHttpRequestMessage_MultipartParamsProduceAnEmptyBody()
+    {
+        var request = new HarRequest
+        {
+            Method = "POST",
+            Url = "https://example.com/upload",
+            HttpVersion = "http/2.0",
+            PostData = new HarPostData
+            {
+                MimeType = "multipart/form-data; boundary=----WebKitFormBoundaryABC",
+                Params = [new HarPostDataParameter { Name = "file", FileName = "a.txt", ContentType = "text/plain" }],
+            },
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.NotNull(message.Content);
+        Assert.Empty(await message.Content.ReadAsByteArrayAsync());
+    }
+
+    [Fact]
+    public void ToHttpRequestMessage_KeepsContentHeadersWhenBodyWasNotCaptured()
+    {
+        var request = new HarRequest
+        {
+            Method = "POST",
+            Url = "https://example.com/upload",
+            HttpVersion = "http/2.0",
+            Headers = [new HarHeader { Name = "Content-Type", Value = "application/octet-stream" }],
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.NotNull(message.Content);
+        Assert.Equal("application/octet-stream", message.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public void ToHttpRequestMessage_NoContentHeadersLeavesContentNull()
+    {
+        var request = new HarRequest
+        {
+            Method = "GET",
+            Url = "https://example.com/",
+            HttpVersion = "http/2.0",
+            Headers = [new HarHeader { Name = "Accept", Value = "*/*" }],
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.Null(message.Content);
+    }
+
+    [Fact]
+    public async Task RealWorldHar_FormPostKeepsItsBody()
+    {
+        var document = LoadChromeHar();
+        var entry = document.Log.Entries.Single(e => e.Request.Url.EndsWith("/login", StringComparison.Ordinal));
+
+        Assert.Null(entry.Request.PostData!.Text);
+
+        using var message = entry.ToHttpRequestMessage();
+
+        Assert.NotNull(message.Content);
+        Assert.Equal("username=someone%40example.com&password=redacted&remember=on", await message.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public void ToHttpRequestMessage_SynthesizesCookieHeaderFromCookieList()
+    {
+        var request = new HarRequest
+        {
+            Method = "GET",
+            Url = "https://example.com/",
+            HttpVersion = "http/2.0",
+            Cookies =
+            [
+                new HarCookie { Name = "session", Value = "abc123" },
+                new HarCookie { Name = "theme", Value = "dark" },
+            ],
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.Equal("session=abc123; theme=dark", Assert.Single(message.Headers.GetValues("Cookie")));
+    }
+
+    [Fact]
+    public void ToHttpRequestMessage_KeepsTheRecordedCookieHeader()
+    {
+        var request = new HarRequest
+        {
+            Method = "GET",
+            Url = "https://example.com/",
+            HttpVersion = "http/2.0",
+            Headers = [new HarHeader { Name = "Cookie", Value = "session=fromheader" }],
+            Cookies = [new HarCookie { Name = "session", Value = "fromlist" }],
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.Equal("session=fromheader", Assert.Single(message.Headers.GetValues("Cookie")));
+    }
+
+    [Fact]
+    public void ToHttpResponseMessage_SynthesizesSetCookieHeaders()
+    {
+        var response = new HarResponse
+        {
+            Status = 200,
+            HttpVersion = "http/2.0",
+            Cookies =
+            [
+                new HarCookie
+                {
+                    Name = "session",
+                    Value = "abc123",
+                    Path = "/",
+                    Domain = "example.com",
+                    Expires = new DateTimeOffset(2026, 9, 27, 9, 14, 22, TimeSpan.Zero),
+                    HttpOnly = true,
+                    Secure = true,
+                },
+                new HarCookie { Name = "theme", Value = "dark" },
+            ],
+            Content = new HarContent { MimeType = "text/plain", Text = "ok" },
+        };
+
+        using var message = response.ToHttpResponseMessage();
+
+        var values = message.Headers.GetValues("Set-Cookie").ToList();
+        Assert.HasCount(2, values);
+        Assert.Equal("session=abc123; Path=/; Domain=example.com; Expires=Sun, 27 Sep 2026 09:14:22 GMT; HttpOnly; Secure", values[0]);
+        Assert.Equal("theme=dark", values[1]);
+    }
+
+    [Fact]
+    public void RealWorldHar_DoesNotDuplicateRecordedCookieHeaders()
+    {
+        var document = LoadChromeHar();
+        var entry = document.Log.Entries[0];
+
+        using var request = entry.ToHttpRequestMessage();
+        using var response = entry.ToHttpResponseMessage();
+
+        Assert.Equal("session=abc123; theme=dark", Assert.Single(request.Headers.GetValues("Cookie")));
+        Assert.Single(response.Headers.GetValues("Set-Cookie"));
+    }
+
     private static HarDocument LoadChromeHar()
     {
         using var stream = typeof(HarEntryExtensionsTests).Assembly.GetManifestResourceStream("files/chrome-devtools.har")!;

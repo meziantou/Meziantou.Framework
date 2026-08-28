@@ -53,6 +53,22 @@ public abstract partial class CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private protected bool MayContainHash(Hash128 hash)
+    {
+        var counterCount = (ulong)Counters.CounterCount;
+        var combined = hash.Hash1;
+        for (var i = 0; i < HashCount; i++)
+        {
+            if (Counters.Get(Reduce(combined, counterCount)) == 0)
+                return false;
+
+            combined += hash.Hash2;
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected void AddHash(Hash64 hash) => AddHashCore(hash.Hash1, hash.Hash2);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -62,6 +78,9 @@ public abstract partial class CountingBloomFilter
     private protected int GetEstimatedCountHash(Hash64 hash) => GetEstimatedCountHashCore(hash.Hash1, hash.Hash2);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private protected bool MayContainHash(Hash64 hash) => MayContainHashCore(hash.Hash1, hash.Hash2);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected void AddHash(Hash32 hash) => AddHashCore32(hash.Hash1, hash.Hash2);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -69,6 +88,9 @@ public abstract partial class CountingBloomFilter
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected int GetEstimatedCountHash(Hash32 hash) => GetEstimatedCountHashCore32(hash.Hash1, hash.Hash2);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private protected bool MayContainHash(Hash32 hash) => MayContainHashCore32(hash.Hash1, hash.Hash2);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void AddHashCore(uint hash1, uint hash2)
@@ -119,6 +141,25 @@ public abstract partial class CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool MayContainHashCore(uint hash1, uint hash2)
+    {
+        var counterCount = (ulong)Counters.CounterCount;
+        var combined = hash1;
+        for (var i = 0; i < HashCount; i++)
+        {
+            if (Counters.Get(Reduce(combined, counterCount)) == 0)
+                return false;
+
+            unchecked
+            {
+                combined += hash2;
+            }
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void AddHashCore32(uint hash1, uint hash2)
     {
         var counterCount = (ulong)Counters.CounterCount;
@@ -164,6 +205,25 @@ public abstract partial class CountingBloomFilter
         }
 
         return result;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool MayContainHashCore32(uint hash1, uint hash2)
+    {
+        var counterCount = (ulong)Counters.CounterCount;
+        var combined = hash1;
+        for (var i = 0; i < HashCount; i++)
+        {
+            if (Counters.Get(Reduce(combined, counterCount)) == 0)
+                return false;
+
+            unchecked
+            {
+                combined += hash2;
+            }
+        }
+
+        return true;
     }
 
     // Each Reduce overload shifts by the width of its hash argument, so the accumulator passed in must

@@ -60,8 +60,7 @@ myGroup.SetCpuMax(50_000, 100_000); // 50ms per 100ms period
 myGroup.RemoveCpuMax();
 
 // Get CPU statistics
-var cpuStat = myGroup.GetCpuStat();
-if (cpuStat != null)
+if (myGroup.GetCpuStat().TryGetValue(out var cpuStat))
 {
     Console.WriteLine($"CPU Usage: {cpuStat.UsageMicroseconds} μs");
     Console.WriteLine($"User time: {cpuStat.UserMicroseconds} μs");
@@ -89,11 +88,20 @@ myGroup.SetSwapMax(512L * 1024 * 1024);
 
 // Get current memory usage
 var currentMemory = myGroup.GetMemoryCurrent();
-Console.WriteLine($"Current memory usage: {currentMemory} bytes");
+Console.WriteLine($"Current memory usage: {currentMemory.Value} bytes");
+
+// Get the hard limit. null means "unlimited"; "not enabled" and "unlimited" are different answers
+var max = myGroup.GetMemoryMax();
+Console.WriteLine(max.State switch
+{
+    CGroupValueState.Configured => $"Limited to {max.Value} bytes",
+    CGroupValueState.NotConfigured => "No memory limit",
+    CGroupValueState.Unavailable => "The memory controller is not enabled on the parent cgroup",
+    _ => $"Unexpected memory.max content: '{max.RawValue}'",
+});
 
 // Get detailed memory statistics
-var memoryStat = myGroup.GetMemoryStat();
-if (memoryStat != null)
+if (myGroup.GetMemoryStat().TryGetValue(out var memoryStat))
 {
     Console.WriteLine($"Anonymous memory: {memoryStat.Anon} bytes");
     Console.WriteLine($"File cache: {memoryStat.File} bytes");
@@ -144,11 +152,11 @@ myGroup.SetPidsMax(100);
 
 // Get current number of processes
 var currentPids = myGroup.GetPidsCurrent();
-Console.WriteLine($"Current processes: {currentPids}");
+Console.WriteLine($"Current processes: {currentPids.Value}");
 
-// Get limit
+// Get limit (GetValueOrDefault avoids handling every state when a fallback is good enough)
 var maxPids = myGroup.GetPidsMax();
-Console.WriteLine($"Max processes: {maxPids}");
+Console.WriteLine($"Max processes: {maxPids.GetValueOrDefault(long.MaxValue)}");
 ```
 
 ### CPU Affinity (Cpuset)
@@ -168,7 +176,7 @@ myGroup.SetCpusetMems(0, 1);
 
 // Get effective CPUs (actually granted)
 var effectiveCpus = myGroup.GetCpusetCpusEffective();
-Console.WriteLine($"Effective CPUs: {string.Join(", ", effectiveCpus ?? [])}");
+Console.WriteLine($"Effective CPUs: {string.Join(", ", effectiveCpus.GetValueOrDefault([]))}");
 
 // Set partition type
 myGroup.SetCpusetPartition("isolated");
@@ -183,13 +191,16 @@ myGroup.SetCpusetPartition("isolated");
 // Set HugeTLB limit for 2MB pages
 myGroup.SetHugeTlbMax("2MB", 100 * 1024 * 1024); // 100 MB
 
-// Get current HugeTLB usage
+// Get current HugeTLB usage. Unavailable when the kernel does not provide this page size
 var current = myGroup.GetHugeTlbCurrent("2MB");
-Console.WriteLine($"Current 2MB HugeTLB usage: {current} bytes");
+if (current.IsConfigured)
+{
+    Console.WriteLine($"Current 2MB HugeTLB usage: {current.Value} bytes");
+}
 
 // Get limit hit count
 var limitHits = myGroup.GetHugeTlbEventsMax("2MB");
-Console.WriteLine($"HugeTLB limit hits: {limitHits}");
+Console.WriteLine($"HugeTLB limit hits: {limitHits.GetValueOrDefault(0)}");
 ```
 
 ### Process Management
@@ -282,7 +293,18 @@ myGroup.Delete();
 
 6. **cgroup v2 Only**: This library only supports cgroup v2. For systems still using cgroup v1, consider upgrading or use v1-specific tools.
 
-7. **Error Handling**: File operations may throw `IOException`, `UnauthorizedAccessException`, or `DirectoryNotFoundException`. Handle these appropriately.
+7. **Error Handling**: File operations may throw `IOException`, `UnauthorizedAccessException`, or `DirectoryNotFoundException`. Handle these appropriately. Reading a cgroup that no longer exists throws `DirectoryNotFoundException` rather than reporting an absent value, so a stale `CGroup2` instance does not look like a healthy cgroup without controllers.
+
+8. **Reading values**: getters that read a single interface file return `CGroupValue<T>` instead of a nullable value, because "the controller is not enabled" and "there is no limit" are different answers and a caller deciding whether to apply its own limit must not confuse them:
+
+   | `State` | meaning |
+   |---|---|
+   | `Configured` | the file holds a value, available through `Value` |
+   | `NotConfigured` | the file holds no limit (`max`) |
+   | `Unavailable` | the file does not exist: the controller is not enabled on the parent cgroup, or the kernel does not support the feature |
+   | `Invalid` | the file holds content this library does not understand; `RawValue` keeps it for diagnostics |
+
+   Use `switch` over `State` when the cases differ, `TryGetValue` when only a value matters, and `GetValueOrDefault(fallback)` when a fallback is good enough. `Value` throws `InvalidOperationException` when there is no value.
 
 ## Example: Complete Application Resource Limiting
 
@@ -314,9 +336,9 @@ while (!process.HasExited)
     var memCurrent = appGroup.GetMemoryCurrent();
     var pidsCurrent = appGroup.GetPidsCurrent();
     
-    Console.WriteLine($"CPU: {cpuStat?.UsageMicroseconds} μs");
-    Console.WriteLine($"Memory: {memCurrent / (1024.0 * 1024):F2} MB");
-    Console.WriteLine($"Processes: {pidsCurrent}");
+    Console.WriteLine($"CPU: {cpuStat.Value.UsageMicroseconds} μs");
+    Console.WriteLine($"Memory: {memCurrent.Value / (1024.0 * 1024):F2} MB");
+    Console.WriteLine($"Processes: {pidsCurrent.Value}");
     
     await Task.Delay(1000);
 }

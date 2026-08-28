@@ -125,7 +125,8 @@ public sealed class CGroup2Tests : IDisposable
         child.SetCpuWeight(200);
 
         var weight = child.GetCpuWeight();
-        Assert.Equal(200, weight);
+        Assert.Equal(CGroupValueState.Configured, weight.State);
+        Assert.Equal(200, weight.Value);
 
         child.Delete();
     }
@@ -151,7 +152,11 @@ public sealed class CGroup2Tests : IDisposable
         child.SetMemoryMax(limit);
 
         var actualLimit = child.GetMemoryMax();
-        Assert.Equal(limit, actualLimit);
+        Assert.Equal(CGroupValueState.Configured, actualLimit.State);
+        Assert.Equal(limit, actualLimit.Value);
+
+        child.SetMemoryMax(null);
+        Assert.Equal(CGroupValueState.NotConfigured, child.GetMemoryMax().State);
 
         child.Delete();
     }
@@ -164,8 +169,8 @@ public sealed class CGroup2Tests : IDisposable
 
         var current = child.GetMemoryCurrent();
 
-        Assert.NotNull(current);
-        Assert.True(current >= 0);
+        Assert.Equal(CGroupValueState.Configured, current.State);
+        Assert.True(current.Value >= 0);
 
         child.Delete();
     }
@@ -179,7 +184,8 @@ public sealed class CGroup2Tests : IDisposable
         child.SetPidsMax(50);
 
         var limit = child.GetPidsMax();
-        Assert.Equal(50, limit);
+        Assert.Equal(CGroupValueState.Configured, limit.State);
+        Assert.Equal(50, limit.Value);
 
         child.Delete();
     }
@@ -191,10 +197,10 @@ public sealed class CGroup2Tests : IDisposable
 
         var stat = _testRoot.GetCpuStat();
 
-        Assert.NotNull(stat);
-        Assert.True(stat.UsageMicroseconds >= 0);
-        Assert.True(stat.UserMicroseconds >= 0);
-        Assert.True(stat.SystemMicroseconds >= 0);
+        Assert.True(stat.IsConfigured);
+        Assert.True(stat.Value.UsageMicroseconds >= 0);
+        Assert.True(stat.Value.UserMicroseconds >= 0);
+        Assert.True(stat.Value.SystemMicroseconds >= 0);
     }
 
     [Fact]
@@ -204,9 +210,9 @@ public sealed class CGroup2Tests : IDisposable
 
         var stat = _testRoot.GetMemoryStat();
 
-        Assert.NotNull(stat);
-        Assert.True(stat.Anon >= 0);
-        Assert.True(stat.File >= 0);
+        Assert.True(stat.IsConfigured);
+        Assert.True(stat.Value.Anon >= 0);
+        Assert.True(stat.Value.File >= 0);
     }
 
     [Fact]

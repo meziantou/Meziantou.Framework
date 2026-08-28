@@ -160,4 +160,174 @@ public sealed class CGroup2ParsingTests
         // Documents a known quirk: the input is not de-duplicated, so [1, 1, 2] yields "1,1-2".
         Assert.Equal("1,1-2", CGroup2.ConvertToRanges([1, 1, 2]));
     }
+
+    [Fact]
+    public void ParseLimit_ShouldTellTheFourOutcomesApart()
+    {
+        // The point of CGroupValue: a caller deciding whether to apply its own limit must not confuse
+        // "the controller is not enabled" with "memory is unlimited".
+        Assert.Equal(CGroupValueState.Unavailable, CGroup2.ParseLimit(null).State);
+        Assert.Equal(CGroupValueState.NotConfigured, CGroup2.ParseLimit("max\n").State);
+        Assert.Equal(CGroupValueState.Configured, CGroup2.ParseLimit("1073741824\n").State);
+        Assert.Equal(CGroupValueState.Invalid, CGroup2.ParseLimit("something-new\n").State);
+    }
+
+    [Fact]
+    public void ParseLimit_ShouldReturnTheValue()
+    {
+        var value = CGroup2.ParseLimit("1073741824\n");
+
+        Assert.Equal(1073741824, value.Value);
+        Assert.Equal("1073741824", value.RawValue);
+    }
+
+    [Fact]
+    public void ParseLimit_ShouldKeepTheRawValueOfContentItCannotParse()
+    {
+        // A kernel format change must be diagnosable, so the unparsed content is kept.
+        var value = CGroup2.ParseLimit(" something-new \n");
+
+        Assert.Equal(CGroupValueState.Invalid, value.State);
+        Assert.Equal("something-new", value.RawValue);
+    }
+
+    [Theory]
+    [InlineData("42\n", 42L)]
+    [InlineData(" 0 ", 0L)]
+    public void ParseInt64_ShouldParseNumbers(string content, long expected)
+    {
+        Assert.Equal(expected, CGroup2.ParseInt64(content).Value);
+    }
+
+    [Fact]
+    public void ParseInt64_ShouldNotTreatMaxAsNotConfigured()
+    {
+        // Counters such as memory.current never report "max", so it is invalid content rather than "no limit".
+        Assert.Equal(CGroupValueState.Invalid, CGroup2.ParseInt64("max\n").State);
+    }
+
+    [Fact]
+    public void ParseInt32_ShouldParseNumbers()
+    {
+        Assert.Equal(200, CGroup2.ParseInt32("200\n").Value);
+        Assert.Equal(CGroupValueState.Invalid, CGroup2.ParseInt32("99999999999\n").State);
+        Assert.Equal(CGroupValueState.Unavailable, CGroup2.ParseInt32(null).State);
+    }
+
+    [Fact]
+    public void ParseCpuMax_ShouldParseAQuotaAndAPeriod()
+    {
+        var value = CGroup2.ParseCpuMax("50000 100000\n");
+
+        Assert.Equal(CGroupValueState.Configured, value.State);
+        Assert.Equal(new CpuMax(50000, 100000), value.Value);
+    }
+
+    [Fact]
+    public void ParseCpuMax_ShouldKeepThePeriodWhenTheQuotaIsUnlimited()
+    {
+        // The period stays meaningful without a quota, so an unlimited cpu.max is Configured with a null quota
+        // rather than NotConfigured, which would throw the period away.
+        var value = CGroup2.ParseCpuMax("max 50000\n");
+
+        Assert.Equal(CGroupValueState.Configured, value.State);
+        Assert.Null(value.Value.MaxMicroseconds);
+        Assert.Equal(50000, value.Value.PeriodMicroseconds);
+    }
+
+    [Theory]
+    [InlineData("100000\n")]
+    [InlineData("abc 100000\n")]
+    [InlineData("50000 abc\n")]
+    [InlineData("50000 100000 200000\n")]
+    public void ParseCpuMax_ShouldReportInvalidContent(string content)
+    {
+        Assert.Equal(CGroupValueState.Invalid, CGroup2.ParseCpuMax(content).State);
+    }
+
+    [Fact]
+    public void ParseCpuMax_ShouldReportAnAbsentFile()
+    {
+        Assert.Equal(CGroupValueState.Unavailable, CGroup2.ParseCpuMax(null).State);
+    }
+
+    [Fact]
+    public void ParseHugeTlbEventsMax_ShouldReadTheMaxKey()
+    {
+        Assert.Equal(7, CGroup2.ParseHugeTlbEventsMax("max 7\n").Value);
+    }
+
+    [Fact]
+    public void ParseHugeTlbEventsMax_ShouldReportInvalidContentWhenTheMaxKeyIsAbsent()
+    {
+        Assert.Equal(CGroupValueState.Invalid, CGroup2.ParseHugeTlbEventsMax("other 7\n").State);
+    }
+
+    [Fact]
+    public void ParseHugeTlbEventsMax_ShouldReportAPageSizeTheKernelDoesNotProvide()
+    {
+        Assert.Equal(CGroupValueState.Unavailable, CGroup2.ParseHugeTlbEventsMax(null).State);
+    }
+
+    [Fact]
+    public void ParseCpuListValue_ShouldReportAnEmptyFileAsAValue()
+    {
+        // An empty cpuset.cpus means the cgroup inherits from its parent, which is a value, not an absent one.
+        var value = CGroup2.ParseCpuListValue("\n");
+
+        Assert.Equal(CGroupValueState.Configured, value.State);
+        Assert.Empty(value.Value);
+    }
+
+    [Fact]
+    public void ParseCpuListValue_ShouldParseRanges()
+    {
+        Assert.Equal([0, 1, 2, 5], CGroup2.ParseCpuListValue("0-2,5\n").Value);
+        Assert.Equal(CGroupValueState.Unavailable, CGroup2.ParseCpuListValue(null).State);
+    }
+
+    [Fact]
+    public void CGroupValue_DefaultShouldBeUnavailable()
+    {
+        CGroupValue<long> value = default;
+
+        Assert.Equal(CGroupValueState.Unavailable, value.State);
+        Assert.False(value.IsConfigured);
+        Assert.Null(value.RawValue);
+    }
+
+    [Fact]
+    public void CGroupValue_ValueShouldThrowWhenThereIsNoValue()
+    {
+        Assert.Throws<InvalidOperationException>(() => CGroup2.ParseLimit("max").Value);
+        Assert.Throws<InvalidOperationException>(() => CGroup2.ParseLimit(null).Value);
+        Assert.Throws<InvalidOperationException>(() => CGroup2.ParseLimit("bogus").Value);
+    }
+
+    [Fact]
+    public void CGroupValue_TryGetValueShouldOnlySucceedWhenConfigured()
+    {
+        Assert.True(CGroup2.ParseLimit("1024").TryGetValue(out var value));
+        Assert.Equal(1024, value);
+
+        Assert.False(CGroup2.ParseLimit("max").TryGetValue(out _));
+        Assert.False(CGroup2.ParseLimit(null).TryGetValue(out _));
+    }
+
+    [Fact]
+    public void CGroupValue_GetValueOrDefaultShouldFallBackWhenThereIsNoValue()
+    {
+        Assert.Equal(1024, CGroup2.ParseLimit("1024").GetValueOrDefault(-1));
+        Assert.Equal(-1, CGroup2.ParseLimit("max").GetValueOrDefault(-1));
+        Assert.Equal(-1, CGroup2.ParseLimit(null).GetValueOrDefault(-1));
+        Assert.Equal(0, CGroup2.ParseLimit(null).GetValueOrDefault());
+    }
+
+    [Fact]
+    public void CGroupValue_ShouldCompareStateAndValue()
+    {
+        Assert.Equal(CGroup2.ParseLimit("1024"), CGroup2.ParseLimit("1024"));
+        Assert.NotEqual(CGroup2.ParseLimit("1024"), CGroup2.ParseLimit("2048"));
+        Assert.NotEqual(CGroup2.ParseLimit("max"), CGroup2.ParseLimit(null));
+    }
 }

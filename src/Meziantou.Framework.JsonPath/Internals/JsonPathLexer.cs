@@ -334,9 +334,27 @@ internal ref struct JsonPathLexer
         }
 
         var hex = _input.Slice(_position, 4);
-        if (!int.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var value))
+
+        // RFC 9535 requires exactly 4 HEXDIG. int.TryParse with NumberStyles.HexNumber would also accept
+        // leading and trailing whitespace (AllowLeadingWhite | AllowTrailingWhite), so the digits are
+        // validated explicitly instead.
+        var value = 0;
+        foreach (var ch in hex)
         {
-            throw new FormatException($"Invalid hex digits '{hex}' at position {_position}.");
+            var digit = ch switch
+            {
+                >= '0' and <= '9' => ch - '0',
+                >= 'a' and <= 'f' => ch - 'a' + 10,
+                >= 'A' and <= 'F' => ch - 'A' + 10,
+                _ => -1,
+            };
+
+            if (digit < 0)
+            {
+                throw new FormatException($"Invalid hex digits '{hex}' at position {_position}.");
+            }
+
+            value = (value << 4) | digit;
         }
 
         _position += 4;

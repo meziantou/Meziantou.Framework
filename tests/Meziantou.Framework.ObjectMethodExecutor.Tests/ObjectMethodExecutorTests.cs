@@ -43,6 +43,40 @@ public sealed class ObjectMethodExecutorTests
     }
 
     [Fact]
+    public void GetDefaultValueForParameter_ReturnsSuppliedValues()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!, [42]);
+
+        Assert.Equal(42, executor.GetDefaultValueForParameter(0));
+    }
+
+    [Fact]
+    public void GetDefaultValueForParameter_ThrowsWhenNoDefaultsSupplied()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!);
+
+        Assert.Throws<InvalidOperationException>(() => executor.GetDefaultValueForParameter(0));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(1)]
+    public void GetDefaultValueForParameter_ThrowsWhenIndexOutOfRange(int index)
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!, [42]);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => executor.GetDefaultValueForParameter(index));
+    }
+
+    [Fact]
+    public void Create_ThrowsWhenDefaultValueCountDoesNotMatchParameterCount()
+    {
+        var methodInfo = typeof(Test).GetMethod("SyncInt32WithParam")!;
+
+        Assert.Throws<ArgumentException>(() => ObjectMethodExecutor.Create(methodInfo, [1, 2]));
+    }
+
+    [Fact]
     public async Task StaticAsyncTaskTests()
     {
         var validator = new Validator();
@@ -94,6 +128,29 @@ public sealed class ObjectMethodExecutorTests
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncCustomAwaiter")!);
         var result = await executor.ExecuteAsync(new Test(), []);
         Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task AwaiterImplementingOnlyINotifyCompletion()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("NotifyOnlyAwaitable")!);
+
+        Assert.True(executor.IsMethodAsync);
+        Assert.Equal(42, await executor.ExecuteAsync(new Test(), []));
+    }
+
+    private sealed class NotifyOnlyAwaitable
+    {
+        public NotifyOnlyAwaiter GetAwaiter() => new();
+
+        internal sealed class NotifyOnlyAwaiter : INotifyCompletion
+        {
+            public bool IsCompleted => false;
+
+            public int GetResult() => 42;
+
+            public void OnCompleted(Action continuation) => ThreadPool.QueueUserWorkItem(_ => continuation());
+        }
     }
 
     [Fact]
@@ -179,6 +236,8 @@ public sealed class ObjectMethodExecutorTests
         }
 
         public ValueTask<int> ValueTaskInt32() => ValueTask.FromResult(1);
+
+        public NotifyOnlyAwaitable NotifyOnlyAwaitable() => new();
 
         public async ValueTask AsyncValueTask(Validator validator)
         {

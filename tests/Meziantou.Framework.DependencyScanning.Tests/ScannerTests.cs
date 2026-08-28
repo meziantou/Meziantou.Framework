@@ -23,6 +23,12 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
   "devDependencies": {
     "b": "1.2.3",
     "c": null
+  },
+  "peerDependencies": {
+    "d": "3.1.4"
+  },
+  "optionalDependencies": {
+    "e": "4.1.5"
   }
 }
 """;
@@ -37,6 +43,12 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
   "devDependencies": {
     "b": "2.0.0",
     "c": null
+  },
+  "peerDependencies": {
+    "d": "2.0.0"
+  },
+  "optionalDependencies": {
+    "e": "2.0.0"
   }
 }
 """;
@@ -45,7 +57,9 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         var result = await GetDependencies<NpmPackageJsonDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.Npm, "a", "1.0.0", 0, 0),
-            (DependencyType.Npm, "b", "1.2.3", 0, 0));
+            (DependencyType.Npm, "b", "1.2.3", 0, 0),
+            (DependencyType.Npm, "d", "3.1.4", 0, 0),
+            (DependencyType.Npm, "e", "4.1.5", 0, 0));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("package.json", Expected, ignoreNewLines: true);
@@ -215,7 +229,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             <Project Sdk="Microsoft.NET.Sdk" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
               <PropertyGroup>
-                <TargetFramework>netstandard2.0</TargetFramework>
+                <TargetFramework>2.0.0</TargetFramework>
                 <RootNamespace>Sample</RootNamespace>
               </PropertyGroup>
 
@@ -230,7 +244,9 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
 
         AddFile("test.csproj", Original);
         var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
-        AssertContainDependency(result, (DependencyType.NuGet, "TestPackage", "4.2.1", 11, 45));
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "TestPackage", "4.2.1", 11, 45),
+            (DependencyType.DotNetTargetFramework, null, "netstandard2.0", 0, 0));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);
@@ -251,6 +267,40 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             """);
 
         await Assert.ThrowsAsync<DependencyScannerException>(() => dependency.UpdateVersionAsync("2.0.0"));
+    }
+
+    [Fact]
+    public async Task DotNetTargetFrameworkWithNamespace()
+    {
+        const string Original = """
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <TargetFramework>net472</TargetFramework>
+        <TargetFrameworks>net48</TargetFrameworks>
+        <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
+        <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    </PropertyGroup>
+</Project>
+""";
+        const string Expected = """
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <TargetFramework>net0.0</TargetFramework>
+        <TargetFrameworks>net0.0</TargetFrameworks>
+        <TargetFrameworks>net0.0;net0.0</TargetFrameworks>
+        <TargetFrameworkVersion>net0.0</TargetFrameworkVersion>
+    </PropertyGroup>
+</Project>
+""";
+
+        AddFile("test.csproj", Original);
+        var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.DotNetTargetFramework, null, "net472", 0, 0),
+            (DependencyType.DotNetTargetFramework, null, "v4.7.2", 0, 0));
+
+        await UpdateDependencies(result, "dummy", "net0.0");
+        AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);
     }
 
     [Fact]
@@ -569,6 +619,35 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("Dockerfile", Expected, ignoreNewLines: false);
+    }
+
+    [Theory]
+    [InlineData("Dockerfile")]
+    [InlineData("dockerfile")]
+    [InlineData("Dockerfile.prod")]
+    [InlineData("app.Dockerfile")]
+    [InlineData("Containerfile")]
+    [InlineData("Containerfile.prod")]
+    [InlineData("app.Containerfile")]
+    public async Task DockerfileFileNames(string fileName)
+    {
+        AddFile(fileName, "FROM a.com/b:1.2.2\n");
+
+        var result = await GetDependencies<DockerfileDependencyScanner>();
+
+        AssertContainDependency(result, (DependencyType.DockerImage, "a.com/b", "1.2.2", 1, 14));
+    }
+
+    [Theory]
+    [InlineData("NotADockerfile")]
+    [InlineData("readme.txt")]
+    public async Task DockerfileFileNames_NotScanned(string fileName)
+    {
+        AddFile(fileName, "FROM a.com/b:1.2.2\n");
+
+        var result = await GetDependencies<DockerfileDependencyScanner>();
+
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -1328,16 +1407,23 @@ jobs:
               repositories:
               - repository: dummy
                 name: repo
+                endpoint: myendpoint
                 ref: 'main'
                 type: git
             """);
         var result = await GetDependencies<AzureDevOpsScanner>();
+
+        var dependency = Assert.Single(result, d => d.Type == DependencyType.GitReference);
+        Assert.Equal("dummy", dependency.Metadata["repository"]);
+        Assert.Equal("myendpoint", dependency.Metadata["endpoint"]);
+
         await UpdateDependencies(result, "dummy", "1.2.3");
         AssertFileContentEqual("sample.yml", """
             resources:
               repositories:
               - repository: dummy
                 name: dummy1
+                endpoint: myendpoint
                 ref: '1.2.3'
                 type: git
             """, ignoreNewLines: true);
@@ -1480,6 +1566,9 @@ jobs:
     [Theory]
     [InlineData("renovate.json")]
     [InlineData("renovate.json5")]
+    [InlineData(".renovaterc")]
+    [InlineData(".renovaterc.json")]
+    [InlineData(".renovaterc.json5")]
     [InlineData("renovaterc")]
     [InlineData("renovaterc.json")]
     [InlineData("renovaterc.json5")]

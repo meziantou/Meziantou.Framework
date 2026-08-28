@@ -422,6 +422,99 @@ public sealed class JsonPathEvaluateTests
         Assert.Equal(2, result.Count);
     }
 
+    [Theory]
+    [InlineData("match")]
+    [InlineData("search")]
+    public void Evaluate_Function_CatastrophicBacktrackingPattern_DoesNotThrow(string function)
+    {
+        // '(a|aa)+$' against a non-matching string is the classic exponential-backtracking case. Before
+        // NonBacktracking it spun for the full timeout and then threw RegexMatchTimeoutException straight
+        // out of Evaluate -- including in Lax mode, which documents that errors produce no match.
+        var doc = JsonNode.Parse($$"""[{"s": "{{new string('a', 40)}}b"}]""");
+        var path = JsonPath.Parse($"$[?{function}(@.s, '(a|aa)+$')]");
+
+        var lax = path.Evaluate(doc, JsonPathEvaluationMode.Lax);
+        var strict = path.Evaluate(doc, JsonPathEvaluationMode.Strict);
+
+        Assert.Empty(lax);
+        Assert.Empty(strict);
+    }
+
+    [Fact]
+    public void Evaluate_Function_CatastrophicBacktrackingPattern_CompletesQuickly()
+    {
+        var array = new JsonArray();
+        for (var i = 0; i < 50; i++)
+        {
+            array.Add(new JsonObject { ["s"] = new string('a', 40) + "b" });
+        }
+
+        var path = JsonPath.Parse("$[?match(@.s, '(a|aa)+$')]");
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = path.Evaluate(array);
+        stopwatch.Stop();
+
+        Assert.Empty(result);
+
+        // The old backtracking engine took ~5s per element, so 50 elements would have needed ~250s.
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Evaluation took {stopwatch.Elapsed}.");
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_NonLiteralPattern_IsNotCached()
+    {
+        // The pattern comes from the document, so it differs per node and must bypass the per-AST cache.
+        var doc = JsonNode.Parse("""[{"s": "foo", "p": "f.o"}, {"s": "bar", "p": "z.z"}, {"s": "baz", "p": "b.z"}]""");
+        var path = JsonPath.Parse("$[?match(@.s, @.p)]");
+
+        var result = path.Evaluate(doc);
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("foo", result[0].Value!.AsObject()["s"]!.GetValue<string>());
+        Assert.Equal("baz", result[1].Value!.AsObject()["s"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_CachedRegex_IsStableAcrossReuseAndThreads()
+    {
+        // A parsed JsonPath is documented as reusable and thread-safe, and the regex cache is populated lazily.
+        var doc = JsonNode.Parse("""[{"a": "foo"}, {"a": "bar"}, {"a": "foobar"}]""");
+        var path = JsonPath.Parse("""$[?search(@.a, "foo")]""");
+
+        Assert.Equal(2, path.Evaluate(doc).Count);
+        Assert.Equal(2, path.Evaluate(doc).Count);
+
+        var counts = new int[32];
+        Parallel.For(0, counts.Length, i => counts[i] = path.Evaluate(doc).Count);
+        Assert.All(counts, count => Assert.Equal(2, count));
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_UnusablePatternIsCachedToo()
+    {
+        var doc = JsonNode.Parse("""[{"s": "aa"}, {"s": "bb"}]""");
+        var path = JsonPath.Parse("$[?match(@.s, '(')]");
+
+        Assert.Empty(path.Evaluate(doc));
+        Assert.Empty(path.Evaluate(doc));
+    }
+
+    [Theory]
+    // The pattern is written as it appears inside the JSONPath string literal, so a backslash intended for
+    // the regex engine has to be escaped for the JSONPath lexer first.
+    [InlineData("(")]                  // not a valid pattern at all
+    [InlineData("a{2,1}")]             // invalid quantifier range
+    [InlineData(@"(a)\\1")]            // backreference: not part of I-Regexp, unsupported by NonBacktracking
+    [InlineData("(?=a)b")]             // lookahead: likewise
+    public void Evaluate_Function_UnusablePattern_YieldsNoMatch(string pattern)
+    {
+        var doc = JsonNode.Parse("""[{"s": "aa"}]""");
+        var path = JsonPath.Parse($"$[?match(@.s, '{pattern}')]");
+
+        Assert.Empty(path.Evaluate(doc, JsonPathEvaluationMode.Lax));
+        Assert.Empty(path.Evaluate(doc, JsonPathEvaluationMode.Strict));
+    }
+
     [Fact]
     public void Evaluate_DescendantSegment_CyclicNavigator_ThrowsInsteadOfOverflowingTheStack()
     {

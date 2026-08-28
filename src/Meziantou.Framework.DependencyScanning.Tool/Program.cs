@@ -12,6 +12,10 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 
 internal static class Program
 {
+    // Without MatchLeadingDot a '**/*' pattern skips every path segment starting with a dot, which hides
+    // .github/workflows and .config from the scan entirely.
+    private const GlobOptions DefaultGlobOptions = GlobOptions.MatchLeadingDot;
+
     private static readonly char[] DependencyTypeDelimiters = [',', ';', ' '];
     private static readonly JsonSerializerOptions ListJsonSerializerOptions = new()
     {
@@ -45,7 +49,7 @@ internal static class Program
         var rootDirectoryOption = CreateRootDirectoryOption();
         var filesOption = CreateFilesOption();
         var dependencyTypesOption = CreateDependencyTypesOption();
-        var updateLockFilesOption = new Option<bool>("--update-lock-files") { Description = "Update lock files when dependencies are updated" };
+        var updateLockFilesOption = new Option<bool>("--update-lock-files") { Description = "Update lock files when dependencies are updated. Runs 'dotnet restore' and 'npm install', which execute MSBuild targets and npm install scripts from the scanned repository. Only use it on repositories you trust." };
         var minimumAgeOption = CreateMinimumAgeOption();
 
         var updateCommand = new Command("update")
@@ -116,7 +120,7 @@ internal static class Program
 
     private static Option<int> CreateMinimumAgeOption() => new("--minimum-age")
     {
-        Description = "Minimum age in days for package versions to consider for update (default: 7). Use 0 or negative to disable filtering. Not applied to Docker images as registries don't expose publication dates.",
+        Description = "Minimum age in days for package versions to consider for update (default: 7). Use 0 or negative to disable filtering. Versions whose publication date is unknown are skipped, except for Docker images as registries don't expose publication dates at all.",
         DefaultValueFactory = _ => 7,
     };
 
@@ -171,12 +175,13 @@ internal static class Program
 
         WriteSearchScope(output, globs);
         var dependencies = await ScanDependenciesAsync(rootPath, globs, cancellationToken).ConfigureAwait(false);
-        WriteDependenciesAsText(output, dependencies);
         var filteredDependencies = FilterDependencies(dependencies, dependencyTypeSet);
+        WriteDependenciesAsText(output, filteredDependencies);
 
         var updaters = CreatePackageUpdaters(minimumAge);
 
         var updatedDependencies = new ConcurrentBag<Dependency>();
+        var failureCount = 0;
         var updatableDependencies = filteredDependencies.Where(static dependency => dependency.VersionLocation?.IsUpdatable is true);
         await Parallel.ForEachAsync(
             updatableDependencies,
@@ -186,12 +191,22 @@ internal static class Program
                 if (dependencyTypeSet is not null && !dependencyTypeSet.Contains(dependency.Type))
                     return;
 
-                string? updatedVersion = null;
-                foreach (var updater in updaters)
+                string? updatedVersion;
+                try
                 {
-                    updatedVersion = await updater.UpdateAsync(dependency, localCancellationToken).ConfigureAwait(false);
-                    if (updatedVersion is not null)
-                        break;
+                    updatedVersion = await UpdateDependencyAsync(updaters, dependency, localCancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (localCancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+#pragma warning disable CA1031 // One unreachable registry must not abort the whole run
+                catch (Exception ex)
+#pragma warning restore CA1031
+                {
+                    Interlocked.Increment(ref failureCount);
+                    error.WriteLine($"Unable to update {dependency}: {ex.Message}");
+                    return;
                 }
 
                 if (updatedVersion is not null)
@@ -205,11 +220,41 @@ internal static class Program
         {
             foreach (var updater in updaters)
             {
-                await updater.UpdateLockFileAsync(rootPath, updatedDependencies, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await updater.UpdateLockFileAsync(rootPath, updatedDependencies, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+#pragma warning disable CA1031 // A failing lock file must not hide the updates that succeeded
+                catch (Exception ex)
+#pragma warning restore CA1031
+                {
+                    failureCount++;
+                    error.WriteLine($"Unable to update lock files: {ex.Message}");
+                }
             }
         }
 
-        return 0;
+        output.WriteLine(failureCount is 0
+            ? $"{updatedDependencies.Count} dependencies updated"
+            : $"{updatedDependencies.Count} dependencies updated, {failureCount} failed");
+
+        return failureCount is 0 ? 0 : 1;
+    }
+
+    private static async Task<string?> UpdateDependencyAsync(PackageUpdater[] updaters, Dependency dependency, CancellationToken cancellationToken)
+    {
+        foreach (var updater in updaters)
+        {
+            var updatedVersion = await updater.UpdateAsync(dependency, cancellationToken).ConfigureAwait(false);
+            if (updatedVersion is not null)
+                return updatedVersion;
+        }
+
+        return null;
     }
 
     private static async Task<int> ListAsync(string? rootDirectory, string[]? filePatterns, DependencyType[]? dependencyTypes, bool upgradable, int minimumAge, OutputFormat format, TextWriter output, TextWriter error, CancellationToken cancellationToken)
@@ -226,7 +271,7 @@ internal static class Program
         var filteredDependencies = FilterDependencies(dependencies, dependencyTypeSet);
         if (upgradable)
         {
-            filteredDependencies = await FilterUpgradableDependenciesAsync(filteredDependencies, minimumAge, cancellationToken).ConfigureAwait(false);
+            filteredDependencies = await FilterUpgradableDependenciesAsync(filteredDependencies, minimumAge, error, cancellationToken).ConfigureAwait(false);
         }
 
         if (format is OutputFormat.Json)
@@ -254,7 +299,7 @@ internal static class Program
         ];
     }
 
-    private static async Task<Dependency[]> FilterUpgradableDependenciesAsync(Dependency[] dependencies, int minimumAge, CancellationToken cancellationToken)
+    private static async Task<Dependency[]> FilterUpgradableDependenciesAsync(Dependency[] dependencies, int minimumAge, TextWriter error, CancellationToken cancellationToken)
     {
         // Must match what 'update' would do, otherwise a version too recent to be applied is still listed
         var updaters = CreatePackageUpdaters(minimumAge);
@@ -264,13 +309,26 @@ internal static class Program
             new ParallelOptions { CancellationToken = cancellationToken, MaxDegreeOfParallelism = 1 },
             async (dependency, localCancellationToken) =>
             {
-                foreach (var updater in updaters)
+                try
                 {
-                    if (await updater.GetUpdatedVersionAsync(dependency, localCancellationToken).ConfigureAwait(false) is not null)
+                    foreach (var updater in updaters)
                     {
-                        upgradableDependencies.Add(dependency);
-                        break;
+                        if (await updater.GetUpdatedVersionAsync(dependency, localCancellationToken).ConfigureAwait(false) is not null)
+                        {
+                            upgradableDependencies.Add(dependency);
+                            break;
+                        }
                     }
+                }
+                catch (OperationCanceledException) when (localCancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+#pragma warning disable CA1031 // One unreachable registry must not abort the whole listing
+                catch (Exception ex)
+#pragma warning restore CA1031
+                {
+                    error.WriteLine($"Unable to check {dependency}: {ex.Message}");
                 }
             }).ConfigureAwait(false);
 
@@ -339,9 +397,9 @@ internal static class Program
         if (patterns is null || patterns.Length is 0)
         {
             return new GlobCollection(
-                Glob.Parse("**/*", GlobDialect.Standard),
-                Glob.Parse("!**/node_modules/**/*", GlobDialect.Standard),
-                Glob.Parse("!**/.playwright/package/**/*", GlobDialect.Standard));
+                Glob.Parse("**/*", GlobDialect.Standard, DefaultGlobOptions),
+                Glob.Parse("!**/node_modules/**/*", GlobDialect.Standard, DefaultGlobOptions),
+                Glob.Parse("!**/.playwright/package/**/*", GlobDialect.Standard, DefaultGlobOptions));
         }
 
         var parsedPatterns = new List<IGlobEvaluatable>(patterns.Length);
@@ -350,7 +408,7 @@ internal static class Program
             if (string.IsNullOrWhiteSpace(pattern))
                 continue;
 
-            if (!Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase, out var parsedPattern))
+            if (!Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot, out var parsedPattern))
             {
                 error.WriteLine($"Glob pattern '{pattern}' is invalid");
                 return null;

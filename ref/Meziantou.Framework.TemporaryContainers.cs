@@ -253,7 +253,7 @@ namespace Meziantou.Framework.TemporaryContainers
 
     public closed class ImageSource : System.IEquatable<Meziantou.Framework.TemporaryContainers.ImageSource>
     {
-        protected System.Type EqualityContract { get => throw null; }
+        protected virtual System.Type EqualityContract { get => throw null; }
         public static implicit operator Meziantou.Framework.TemporaryContainers.ImageSource(string name) => throw null;
         public static Meziantou.Framework.TemporaryContainers.ImageSource FromRegistry(string name) => throw null;
         public static Meziantou.Framework.TemporaryContainers.ImageSource FromDockerfile(string dockerfilePath, string? contextDirectory = null) => throw null;

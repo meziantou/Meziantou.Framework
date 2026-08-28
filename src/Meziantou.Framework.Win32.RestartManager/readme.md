@@ -99,6 +99,14 @@ The Restart Manager can shut down and restart applications that are locking reso
 using var session = RestartManager.CreateSession();
 session.RegisterFile(@"C:\path\to\file.txt");
 
+// A non-zero reboot reason means shutting applications down cannot free the resources,
+// and that a system restart is required instead. Check it before shutting anything down.
+if (session.IsResourcesLocked() && session.RebootReason != RestartManagerRebootReason.None)
+{
+    Console.WriteLine($"A system restart is required: {session.RebootReason}");
+    return;
+}
+
 // Shutdown applications with options
 session.Shutdown(RestartManagerShutdownType.ForceShutdown);
 

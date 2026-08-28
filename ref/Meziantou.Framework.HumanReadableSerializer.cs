@@ -16,7 +16,7 @@ namespace Meziantou.Framework.HumanReadable
 
     public abstract class HumanReadableConverter
     {
-        public bool HandleNull { get => throw null; }
+        public virtual bool HandleNull { get => throw null; }
         public abstract bool CanConvert(System.Type type);
         public abstract void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, object? value, System.Type valueType, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
     }
@@ -194,7 +194,7 @@ namespace Meziantou.Framework.HumanReadable.Converters
 
     public class HumanReadableHttpMessageOptions : System.IEquatable<Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions>
     {
-        protected System.Type EqualityContract { get => throw null; }
+        protected virtual System.Type EqualityContract { get => throw null; }
         public System.Collections.Generic.ISet<string> ExcludedHeaderNames { get => throw null; }
         public System.Collections.Generic.IList<Meziantou.Framework.HumanReadable.Converters.HttpHeaderValueFormatter> HeaderValueTransformer { get => throw null; }
         public bool OmitProtocolVersion { get => throw null; set { } }
@@ -222,7 +222,7 @@ namespace Meziantou.Framework.HumanReadable.Converters
 
     public sealed class HumanReadableHttpRequestMessageOptions : Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions, System.IEquatable<Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions>
     {
-        protected System.Type EqualityContract { get => throw null; }
+        protected override System.Type EqualityContract { get => throw null; }
         public override string ToString() => throw null;
         protected override bool PrintMembers(System.Text.StringBuilder builder) => throw null;
         public static bool operator !=(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpRequestMessageOptions? right) => throw null;
@@ -235,7 +235,7 @@ namespace Meziantou.Framework.HumanReadable.Converters
 
     public sealed class HumanReadableHttpResponseMessageOptions : Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions, System.IEquatable<Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions>
     {
-        protected System.Type EqualityContract { get => throw null; }
+        protected override System.Type EqualityContract { get => throw null; }
         public bool RedactContentSecurityPolicyNonce { get => throw null; set { } }
         public Meziantou.Framework.HumanReadable.Converters.HttpRequestMessageFormat RequestMessageFormat { get => throw null; set { } }
         public override string ToString() => throw null;

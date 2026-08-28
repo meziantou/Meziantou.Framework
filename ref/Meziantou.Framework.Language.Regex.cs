@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Language.Regex
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSequenceSyntax> Branches { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken> BarTokens { get => throw null; }
         public bool HasAlternatives { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexAlternationSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSequenceSyntax>? branches, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken>? barTokens = null, int fullStart = 0) : base(default(Meziantou.Framework.Language.Regex.RegexSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken>)) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -53,9 +53,9 @@ namespace Meziantou.Framework.Language.Regex
     {
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken GroupKindToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexAlternationSyntax Alternation { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexAtomicGroupSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken openParenToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken groupKindToken, Meziantou.Framework.Language.Regex.RegexAlternationSyntax alternation, Meziantou.Framework.Language.Regex.RegexSyntaxToken closeParenToken) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -89,12 +89,12 @@ namespace Meziantou.Framework.Language.Regex
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken? PreviousNameToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken? CloseNameToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexAlternationSyntax Alternation { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
         public string Name { get => throw null; }
         public string PreviousName { get => throw null; }
         public int Number { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexBalancingGroupSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken openParenToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken groupKindToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? nameToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken hyphenToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? previousNameToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? closeNameToken, Meziantou.Framework.Language.Regex.RegexAlternationSyntax alternation, Meziantou.Framework.Language.Regex.RegexSyntaxToken closeParenToken, int number) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -104,9 +104,9 @@ namespace Meziantou.Framework.Language.Regex
     {
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken GroupKindToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexAlternationSyntax Alternation { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexBranchResetGroupSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken openParenToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken groupKindToken, Meziantou.Framework.Language.Regex.RegexAlternationSyntax alternation, Meziantou.Framework.Language.Regex.RegexSyntaxToken closeParenToken) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -142,10 +142,10 @@ namespace Meziantou.Framework.Language.Regex
     public sealed class RegexCapturingGroupSyntax : Meziantou.Framework.Language.Regex.RegexGroupSyntax
     {
         public Meziantou.Framework.Language.Regex.RegexAlternationSyntax Alternation { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
         public int Number { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexCapturingGroupSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken openParenToken, Meziantou.Framework.Language.Regex.RegexAlternationSyntax alternation, Meziantou.Framework.Language.Regex.RegexSyntaxToken closeParenToken, int number) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -167,7 +167,7 @@ namespace Meziantou.Framework.Language.Regex
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> Members { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseBracketToken { get => throw null; }
         public bool IsNegated { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexCharacterClassSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken openBracketToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? caretToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode>? members, Meziantou.Framework.Language.Regex.RegexSyntaxToken closeBracketToken) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -187,7 +187,7 @@ namespace Meziantou.Framework.Language.Regex
         public Meziantou.Framework.Language.Regex.RegexSyntaxNode Start { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken HyphenToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxNode? End { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexCharacterRangeSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxNode start, Meziantou.Framework.Language.Regex.RegexSyntaxToken hyphenToken, Meziantou.Framework.Language.Regex.RegexSyntaxNode? end) : base(default(Meziantou.Framework.Language.Regex.RegexSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken>)) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -199,7 +199,7 @@ namespace Meziantou.Framework.Language.Regex
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken> OperatorTokens { get => throw null; }
         public string OperatorText { get => throw null; }
         public bool IsIntersection { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexClassSetOperationSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode>? operands, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken>? operatorTokens, int fullStart = 0) : base(default(Meziantou.Framework.Language.Regex.RegexSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken>)) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -221,7 +221,7 @@ namespace Meziantou.Framework.Language.Regex
     {
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken HyphenToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexCharacterClassSyntax Subtracted { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexClassSubtractionSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken hyphenToken, Meziantou.Framework.Language.Regex.RegexCharacterClassSyntax subtracted) : base(default(Meziantou.Framework.Language.Regex.RegexSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken>)) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -254,9 +254,9 @@ namespace Meziantou.Framework.Language.Regex
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken QuestionToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxNode? Condition { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexAlternationSyntax Alternation { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexConditionalSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken openParenToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken questionToken, Meziantou.Framework.Language.Regex.RegexSyntaxNode? condition, Meziantou.Framework.Language.Regex.RegexAlternationSyntax alternation, Meziantou.Framework.Language.Regex.RegexSyntaxToken closeParenToken) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -352,8 +352,8 @@ namespace Meziantou.Framework.Language.Regex
 
     public abstract class RegexGroupSyntax : Meziantou.Framework.Language.Regex.RegexAtomSyntax
     {
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get; }
+        public abstract Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get; }
+        public abstract Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get; }
         public Meziantou.Framework.Language.Regex.RegexPatternOptions InnerOptions { get => throw null; }
     }
 
@@ -392,12 +392,12 @@ namespace Meziantou.Framework.Language.Regex
     {
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken GroupKindToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexAlternationSyntax Alternation { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexLookaroundKind LookaroundKind { get => throw null; }
         public bool IsLookbehind { get => throw null; }
         public bool IsNegative { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexLookaroundSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken openParenToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken groupKindToken, Meziantou.Framework.Language.Regex.RegexAlternationSyntax alternation, Meziantou.Framework.Language.Regex.RegexSyntaxToken closeParenToken) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -421,11 +421,11 @@ namespace Meziantou.Framework.Language.Regex
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken? NameToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken? CloseNameToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexAlternationSyntax Alternation { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
         public string Name { get => throw null; }
         public int Number { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexNamedGroupSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken openParenToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken groupKindToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? nameToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? closeNameToken, Meziantou.Framework.Language.Regex.RegexAlternationSyntax alternation, Meziantou.Framework.Language.Regex.RegexSyntaxToken closeParenToken, int number) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -435,9 +435,9 @@ namespace Meziantou.Framework.Language.Regex
     {
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken GroupKindToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexAlternationSyntax Alternation { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexNonCapturingGroupSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken openParenToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken groupKindToken, Meziantou.Framework.Language.Regex.RegexAlternationSyntax alternation, Meziantou.Framework.Language.Regex.RegexSyntaxToken closeParenToken) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -449,10 +449,10 @@ namespace Meziantou.Framework.Language.Regex
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken? OptionsToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken? ColonToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexAlternationSyntax Alternation { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken OpenParenToken { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseParenToken { get => throw null; }
         public string OptionsText { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexOptionsGroupSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken openParenToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken questionToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? optionsToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? colonToken, Meziantou.Framework.Language.Regex.RegexAlternationSyntax alternation, Meziantou.Framework.Language.Regex.RegexSyntaxToken closeParenToken) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -506,7 +506,7 @@ namespace Meziantou.Framework.Language.Regex
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken? FlagsToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken? TrailingToken { get => throw null; }
         public bool IsJavaScriptLiteral { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexPatternSyntax(Meziantou.Framework.Language.Regex.RegexAlternationSyntax alternation, Meziantou.Framework.Language.Regex.RegexSyntaxToken endOfPatternToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? openSlashToken = null, Meziantou.Framework.Language.Regex.RegexSyntaxToken? closeSlashToken = null, Meziantou.Framework.Language.Regex.RegexSyntaxToken? flagsToken = null, Meziantou.Framework.Language.Regex.RegexSyntaxToken? trailingToken = null, string? fullText = null) : base(default(Meziantou.Framework.Language.Regex.RegexSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken>)) { }
         public Meziantou.Framework.Language.Regex.RegexPatternSyntax WithAlternation(Meziantou.Framework.Language.Regex.RegexAlternationSyntax alternation) => throw null;
         public override Meziantou.Framework.Language.Regex.RegexPatternSyntax ReplaceNode(Meziantou.Framework.Language.Regex.RegexSyntaxNode oldNode, Meziantou.Framework.Language.Regex.RegexSyntaxNode newNode) => throw null;
@@ -533,7 +533,7 @@ namespace Meziantou.Framework.Language.Regex
         public Meziantou.Framework.Language.Regex.RegexTermSyntax Term { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexQuantifierSyntax Quantifier { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexQuantifierMode Mode { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexQuantifiedSyntax(Meziantou.Framework.Language.Regex.RegexTermSyntax term, Meziantou.Framework.Language.Regex.RegexQuantifierSyntax quantifier) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -548,10 +548,10 @@ namespace Meziantou.Framework.Language.Regex
 
     public abstract class RegexQuantifierSyntax : Meziantou.Framework.Language.Regex.RegexSyntaxNode
     {
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken? ModifierToken { get; }
+        public abstract Meziantou.Framework.Language.Regex.RegexSyntaxToken? ModifierToken { get; }
         public Meziantou.Framework.Language.Regex.RegexQuantifierMode Mode { get => throw null; }
-        public int MinCount { get; }
-        public int? MaxCount { get; }
+        public abstract int MinCount { get; }
+        public abstract int? MaxCount { get; }
     }
 
     public sealed class RegexQuotedLiteralSyntax : Meziantou.Framework.Language.Regex.RegexAtomSyntax
@@ -572,9 +572,9 @@ namespace Meziantou.Framework.Language.Regex
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken? CommaToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken? MaxToken { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken CloseBraceToken { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken? ModifierToken { get => throw null; }
-        public int MinCount { get => throw null; }
-        public int? MaxCount { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken? ModifierToken { get => throw null; }
+        public override int MinCount { get => throw null; }
+        public override int? MaxCount { get => throw null; }
         public RegexRangeQuantifierSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken openBraceToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken minToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? commaToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? maxToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken closeBraceToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? modifierToken) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -594,7 +594,7 @@ namespace Meziantou.Framework.Language.Regex
     public sealed class RegexSequenceSyntax : Meziantou.Framework.Language.Regex.RegexSyntaxNode
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexTermSyntax> Terms { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public RegexSequenceSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexTermSyntax>? terms, int fullStart = 0) : base(default(Meziantou.Framework.Language.Regex.RegexSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken>)) { }
         public Meziantou.Framework.Language.Regex.RegexSequenceSyntax WithTerms(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Regex.RegexTermSyntax>? terms) => throw null;
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
@@ -604,9 +604,9 @@ namespace Meziantou.Framework.Language.Regex
     public sealed class RegexSimpleQuantifierSyntax : Meziantou.Framework.Language.Regex.RegexQuantifierSyntax
     {
         public Meziantou.Framework.Language.Regex.RegexSyntaxToken OperatorToken { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexSyntaxToken? ModifierToken { get => throw null; }
-        public int MinCount { get => throw null; }
-        public int? MaxCount { get => throw null; }
+        public override Meziantou.Framework.Language.Regex.RegexSyntaxToken? ModifierToken { get => throw null; }
+        public override int MinCount { get => throw null; }
+        public override int? MaxCount { get => throw null; }
         public RegexSimpleQuantifierSyntax(Meziantou.Framework.Language.Regex.RegexSyntaxToken operatorToken, Meziantou.Framework.Language.Regex.RegexSyntaxToken? modifierToken) { }
         public override void Accept(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Regex.RegexSyntaxVisitor<TResult> visitor) => throw null;
@@ -712,7 +712,7 @@ namespace Meziantou.Framework.Language.Regex
     {
         protected string FullText { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxKind Kind { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
+        public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxNode> ChildNodes { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken> Tokens { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxTree? SyntaxTree { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxNode? Parent { get => throw null; }

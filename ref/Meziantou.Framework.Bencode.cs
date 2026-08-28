@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Bencode
 {
     public sealed class BencodeDictionary : Meziantou.Framework.Bencode.BencodeValue, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue>>, System.Collections.Generic.IReadOnlyDictionary<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue>, System.Collections.IEnumerable
     {
-        public Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
+        public override Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
         public int Count { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Bencode.BencodeString> Keys { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Bencode.BencodeValue> Values { get => throw null; }
@@ -33,7 +33,7 @@ namespace Meziantou.Framework.Bencode
 
     public sealed class BencodeInteger : Meziantou.Framework.Bencode.BencodeValue, System.IEquatable<Meziantou.Framework.Bencode.BencodeInteger>
     {
-        public Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
+        public override Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
         public long Value { get => throw null; }
         public BencodeInteger(long value) { }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Bencode.BencodeInteger? other) => throw null;
@@ -45,7 +45,7 @@ namespace Meziantou.Framework.Bencode
 
     public sealed class BencodeList : Meziantou.Framework.Bencode.BencodeValue, System.Collections.Generic.IEnumerable<Meziantou.Framework.Bencode.BencodeValue>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Bencode.BencodeValue>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Bencode.BencodeValue>, System.Collections.IEnumerable
     {
-        public Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
+        public override Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
         public int Count { get => throw null; }
         public Meziantou.Framework.Bencode.BencodeValue this[int index] { get => throw null; }
         public BencodeList(System.Collections.Generic.IEnumerable<Meziantou.Framework.Bencode.BencodeValue> values) { }
@@ -57,7 +57,7 @@ namespace Meziantou.Framework.Bencode
 
     public sealed class BencodeString : Meziantou.Framework.Bencode.BencodeValue, System.IEquatable<Meziantou.Framework.Bencode.BencodeString>
     {
-        public Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
+        public override Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
         public System.ReadOnlyMemory<byte> Value { get => throw null; }
         public BencodeString(System.ReadOnlyMemory<byte> value) { }
         public string ToUtf8String() => throw null;
@@ -70,7 +70,7 @@ namespace Meziantou.Framework.Bencode
 
     public abstract class BencodeValue
     {
-        public Meziantou.Framework.Bencode.BencodeValueKind Kind { get; }
+        public abstract Meziantou.Framework.Bencode.BencodeValueKind Kind { get; }
         public abstract void WriteTo(Meziantou.Framework.Bencode.BencodeWriter writer, bool canonical);
     }
 

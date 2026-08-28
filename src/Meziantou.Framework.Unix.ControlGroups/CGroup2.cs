@@ -209,6 +209,11 @@ public sealed partial class CGroup2
     /// <param name="periodMicroseconds">Period in microseconds (default is 100000 = 100ms).</param>
     public void SetCpuMax(long? maxMicroseconds, long periodMicroseconds = 100000)
     {
+        if (maxMicroseconds.HasValue)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(maxMicroseconds.Value, nameof(maxMicroseconds));
+        }
+
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(periodMicroseconds, nameof(periodMicroseconds));
 
         var maxStr = maxMicroseconds.HasValue ? maxMicroseconds.Value.ToString(CultureInfo.InvariantCulture) : "max";
@@ -345,7 +350,7 @@ public sealed partial class CGroup2
         WriteFile("io.weight", $"default {weight.ToString(CultureInfo.InvariantCulture)}");
     }
 
-    /// <summary>Sets IO bandwidth limits for a device.</summary>
+    /// <summary>Sets IO bandwidth limits for a device. When every limit is null, the limits of the device are removed.</summary>
     /// <param name="major">Device major number.</param>
     /// <param name="minor">Device minor number.</param>
     /// <param name="readBytesPerSecond">Read bandwidth limit in bytes per second, or null for no limit.</param>
@@ -354,6 +359,12 @@ public sealed partial class CGroup2
     /// <param name="writeIopsPerSecond">Write IOPS limit, or null for no limit.</param>
     public void SetIoMax(int major, int minor, long? readBytesPerSecond = null, long? writeBytesPerSecond = null, long? readIopsPerSecond = null, long? writeIopsPerSecond = null)
     {
+        if (readBytesPerSecond is null && writeBytesPerSecond is null && readIopsPerSecond is null && writeIopsPerSecond is null)
+        {
+            RemoveIoMax(major, minor);
+            return;
+        }
+
         var sb = new StringBuilder();
         sb.Append($"{major.ToString(CultureInfo.InvariantCulture)}:{minor.ToString(CultureInfo.InvariantCulture)}");
 

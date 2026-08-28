@@ -102,7 +102,7 @@ namespace Meziantou.Framework.Language.Xml
 
     public sealed class XmlDeclarationSyntax : Meziantou.Framework.Language.Xml.XmlSyntaxNode
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxNode> ChildNodes { get => throw null; }
         public string Version { get => throw null; }
         public string? Encoding { get => throw null; }
         public string? Standalone { get => throw null; }
@@ -152,7 +152,7 @@ namespace Meziantou.Framework.Language.Xml
 
     public sealed class XmlDocumentSyntax : Meziantou.Framework.Language.Xml.XmlSyntaxNode, System.Xml.XPath.IXPathNavigable
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxNode> ChildNodes { get => throw null; }
         public XmlDocumentSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxNode> childNodes, string? fullText = null) : base(default(Meziantou.Framework.Language.Xml.XmlSyntaxKind), default(string), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxToken>)) { }
         public Meziantou.Framework.Language.Xml.XmlDocumentSyntax WithChildNodes(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Xml.XmlSyntaxNode> childNodes) => throw null;
         public override Meziantou.Framework.Language.Xml.XmlDocumentSyntax ReplaceNode(Meziantou.Framework.Language.Xml.XmlSyntaxNode oldNode, Meziantou.Framework.Language.Xml.XmlSyntaxNode newNode) => throw null;
@@ -193,7 +193,7 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlEndTagSyntax? EndTag { get => throw null; }
         public bool IsSelfClosing { get => throw null; }
         public string StartTagText { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxNode> ChildNodes { get => throw null; }
         public XmlElementSyntax(string name, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlAttributeSyntax> attributes, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxNode> content, Meziantou.Framework.Language.Xml.XmlEndTagSyntax? endTag, bool isSelfClosing, string fullText, string startTagText) : base(default(Meziantou.Framework.Language.Xml.XmlSyntaxKind), default(string), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxToken>)) { }
         public Meziantou.Framework.Language.Xml.XmlAttributeSyntax? GetAttribute(string name) => throw null;
         public string GetInnerText() => throw null;
@@ -289,7 +289,7 @@ namespace Meziantou.Framework.Language.Xml
     {
         protected string FullText { get => throw null; }
         public Meziantou.Framework.Language.Xml.XmlSyntaxKind Kind { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxNode> ChildNodes { get => throw null; }
+        public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxNode> ChildNodes { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxToken> Tokens { get => throw null; }
         public Meziantou.Framework.Language.Xml.XmlSyntaxTree? SyntaxTree { get => throw null; }
         public Meziantou.Framework.Language.Xml.XmlSyntaxNode? Parent { get => throw null; }

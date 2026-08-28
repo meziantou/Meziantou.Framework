@@ -127,6 +127,24 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         }
     }
 
+    /// <summary>
+    /// Returns <paramref name="name"/>, or the first "name1", "name2"... that is still free. Mirrors
+    /// <see cref="GetHintName"/>: two resx names can produce the same identifier once the characters that are
+    /// invalid in one are replaced, and a resx name can collide with a member the generated type always declares.
+    /// </summary>
+    private static string GetUniqueMemberName(HashSet<string> memberNames, string name)
+    {
+        if (memberNames.Add(name))
+            return name;
+
+        for (var i = 1; ; i++)
+        {
+            var candidate = name + i.ToString(CultureInfo.InvariantCulture);
+            if (memberNames.Add(candidate))
+                return candidate;
+        }
+    }
+
     private static string GenerateCode(string? ns, string className, string? resourceName, string visibility, bool generateResourcesType, bool generateKeyNamesType, List<ResxEntry> entries, bool enableNullableAttributes)
     {
         var sb = new StringBuilder();
@@ -297,10 +315,27 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         }
 ");
 
+            // Resx names are free-form text, so two of them can map to the same identifier ("A B" and "A-B"), and
+            // one can collide with a member this class always declares. Emitting both is a compilation error, so
+            // the later ones get a numeric suffix. Entries are ordered by name, which keeps the result stable.
+            var memberNames = new HashSet<string>(StringComparer.Ordinal)
+            {
+                className,
+                "resourceMan",
+                "ResourceManager",
+                "Culture",
+                "GetObject",
+                "GetStream",
+                "GetString",
+                "GetStringWithDefault",
+            };
+
             foreach (var entry in entries.OrderBy(e => e.Name, StringComparer.Ordinal))
             {
                 if (string.IsNullOrEmpty(entry.Name))
                     continue;
+
+                var memberName = GetUniqueMemberName(memberNames, ToCSharpNameIdentifier(entry.Name));
 
                 if (entry.IsText)
                 {
@@ -319,7 +354,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
                     sb.AppendLine(@"
         /// " + comment + @"
-        public static string? @" + ToCSharpNameIdentifier(entry.Name) + @"
+        public static string? @" + memberName + @"
         {
             get
             {
@@ -339,6 +374,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
                         if (args >= 0)
                         {
+                            var formatName = GetUniqueMemberName(memberNames, "Format" + memberName);
                             var parameters = GetFormatParameters(entry, args);
                             var inParams = string.Join(", ", parameters.Select(parameter => parameter.TypeName + " " + EscapeCSharpIdentifier(parameter.Name)));
                             var callParams = string.Join(", ", parameters.Select(parameter => EscapeCSharpIdentifier(parameter.Name)));
@@ -346,7 +382,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
                             sb.AppendLine(@"
         /// " + formatComment + @"
-        public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(global::System.Globalization.CultureInfo? provider, " + inParams + @")
+        public static string? " + formatName + "(global::System.Globalization.CultureInfo? provider, " + inParams + @")
         {
             return GetString(culture: provider, name: " + ToLiteral(entry.Name) + @", args: new object?[] { " + callParams + @" });
         }
@@ -354,7 +390,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
                             sb.AppendLine(@"
         /// " + formatComment + @"
-        public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(" + inParams + @")
+        public static string? " + formatName + "(" + inParams + @")
         {
             return GetString(name: " + ToLiteral(entry.Name) + @", args: new object?[] { " + callParams + @" });
         }
@@ -365,7 +401,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                 else if (entry.FullTypeName is string fullTypeName)
                 {
                     sb.AppendLine(@"
-        public static global::" + fullTypeName + "? @" + ToCSharpNameIdentifier(entry.Name) + @"
+        public static global::" + fullTypeName + "? @" + memberName + @"
         {
             get
             {
@@ -377,7 +413,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                 else
                 {
                     // Emitting the member would produce "global::?" and break the whole compilation
-                    sb.AppendLine("        // Could not determine the type of the resource " + ToCSharpNameIdentifier(entry.Name));
+                    sb.AppendLine("        // Could not determine the type of the resource " + memberName);
                 }
             }
 
@@ -389,12 +425,16 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         {
             sb.AppendLine($"    {visibility} partial class {className}Names");
             sb.AppendLine("    {");
-            foreach (var entry in entries)
+            // Ordered and de-duplicated exactly like the resource type, so a given resx entry gets the same
+            // member name in both
+            var keyNames = new HashSet<string>(StringComparer.Ordinal) { className + "Names" };
+            foreach (var entry in entries.OrderBy(e => e.Name, StringComparer.Ordinal))
             {
                 if (string.IsNullOrEmpty(entry.Name))
                     continue;
 
-                sb.AppendLine("        public const string @" + ToCSharpNameIdentifier(entry.Name) + " = " + ToLiteral(entry.Name) + ";");
+                var keyName = GetUniqueMemberName(keyNames, ToCSharpNameIdentifier(entry.Name));
+                sb.AppendLine("        public const string @" + keyName + " = " + ToLiteral(entry.Name) + ";");
             }
 
             sb.AppendLine("    }");

@@ -1,3 +1,5 @@
+using Meziantou.Framework;
+
 namespace Meziantou.Xunit;
 
 /// <summary>
@@ -14,15 +16,7 @@ public static class TestEnvironment
     /// <c>InvariantGlobalization</c> MSBuild property, takes precedence over the <c>DOTNET_SYSTEM_GLOBALIZATION_INVARIANT</c>
     /// environment variable.
     /// </remarks>
-    public static bool IsGlobalizationInvariant()
-    {
-        if (AppContext.TryGetSwitch("System.Globalization.Invariant", out var isEnabled))
-            return isEnabled;
-
-        // The environment variable is read by the runtime but is not surfaced as an AppContext switch
-        var value = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
-        return value is "1" || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
-    }
+    public static bool IsGlobalizationInvariant() => GlobalizationHelper.IsGlobalizationInvariant();
 
     /// <summary>
     /// Determines whether the test suite runs on one of the specified continuous integration environments.

@@ -283,7 +283,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("if (!value.TryFormat(span, out var charsWritten, ReadOnlySpan<char>.Empty, null))");
         AppendLine("{");
         indent++;
-        AppendLine("ThrowValueTooLong();");
+        AppendLine("ThrowFormattedValueTooLong();");
         indent--;
         AppendLine("}");
         AppendLine("_length += (short)charsWritten;");
@@ -299,7 +299,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("if (!value.TryFormat(span, out var charsWritten, format, null))");
         AppendLine("{");
         indent++;
-        AppendLine("ThrowValueTooLong();");
+        AppendLine("ThrowFormattedValueTooLong();");
         indent--;
         AppendLine("}");
         AppendLine("_length += (short)charsWritten;");
@@ -459,7 +459,12 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
+        AppendLine("[global::System.Diagnostics.CodeAnalysis.DoesNotReturn]");
         AppendLine("private static void ThrowValueTooLong() => throw new ArgumentException(\"The value is too long to fit in this fixed string.\");");
+        AppendLine();
+
+        AppendLine("[global::System.Diagnostics.CodeAnalysis.DoesNotReturn]");
+        AppendLine("private static void ThrowFormattedValueTooLong() => throw new ArgumentException(\"The formatted value does not fit in the remaining capacity of this fixed string.\");");
 
         indent--;
         AppendLine("}");

@@ -238,18 +238,7 @@ public static partial class Unicode
     }
 
     /// <summary>Whether the application runs without ICU, where <see cref="string.Normalize(NormalizationForm)"/> does nothing.</summary>
-    private static readonly bool IsGlobalizationInvariant = GetIsGlobalizationInvariant();
-
-    private static bool GetIsGlobalizationInvariant()
-    {
-        // Mirrors how the runtime resolves the setting: the switch set by the InvariantGlobalization
-        // MSBuild property takes precedence over the environment variable.
-        if (AppContext.TryGetSwitch("System.Globalization.Invariant", out var isEnabled))
-            return isEnabled;
-
-        var value = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
-        return value is "1" || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
-    }
+    private static readonly bool IsGlobalizationInvariant = GlobalizationHelper.IsGlobalizationInvariant();
 
     private static void ThrowIfGlobalizationInvariant()
     {

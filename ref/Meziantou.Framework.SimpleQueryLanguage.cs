@@ -52,6 +52,12 @@ namespace Meziantou.Framework.SimpleQueryLanguage
         public Meziantou.Framework.SimpleQueryLanguage.Query<T> Build(string query) => throw null;
     }
 
+    public sealed class QueryTooComplexException : System.Exception
+    {
+        public QueryTooComplexException(string? message) { }
+        public QueryTooComplexException(string? message, System.Exception? innerException) { }
+    }
+
     public sealed class Query<T>
     {
         public string Text { get => throw null; }

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
@@ -49,27 +50,39 @@ internal sealed class NpmPackageUpdater : PackageUpdater
 
     public override async Task UpdateLockFileAsync(FullPath rootDirectory, IEnumerable<Dependency> updatedDependencies, CancellationToken cancellationToken)
     {
-        var files = updatedDependencies
-            .Where(dep => dep.Type is DependencyType.Npm && dep.VersionLocation is not null)
-            .Select(dep => FullPath.FromPath(dep.VersionLocation!.FilePath))
-            .Distinct()
-            .ToArray();
-
-        foreach (var file in files)
+        var lockFiles = new HashSet<FullPath>();
+        foreach (var dependency in updatedDependencies)
         {
-            var lockFile = TryFindLockFile(file.Parent, "package-lock.json");
+            if (dependency.Type is not DependencyType.Npm || dependency.VersionLocation is null)
+                continue;
+
+            var lockFile = TryFindLockFile(FullPath.FromPath(dependency.VersionLocation.FilePath).Parent, "package-lock.json");
             if (!lockFile.IsEmpty)
             {
-                var result = await ProcessWrapper.Create(OperatingSystem.IsWindows() ? @"C:\Program Files\nodejs\npm.cmd" : "npm")
-                    .WithWorkingDirectory(file.Parent)
-                    .WithArguments("install", "--no-audit", "--force")
+                lockFiles.Add(lockFile);
+            }
+        }
+
+        foreach (var lockFile in lockFiles)
+        {
+            try
+            {
+                // npm has to run where the lock file lives. In an npm-workspaces repository the lock file
+                // sits at the root, and running in a sub-package would create a second one there.
+                var result = await ProcessWrapper.Create(OperatingSystem.IsWindows() ? "npm.cmd" : "npm")
+                    .WithWorkingDirectory(lockFile.Parent)
+                    .WithArguments("install", "--no-audit")
                     .WithValidation(ProcessValidationMode.None)
                     .ExecuteBufferedAsync(cancellationToken);
 
                 if (!result.ExitCode.IsSuccess)
                 {
-                    Console.WriteLine($"Unable to update lock file '{lockFile}':\n{result.Output}");
+                    Console.Error.WriteLine($"Unable to update lock file '{lockFile}':\n{result.Output}");
                 }
+            }
+            catch (Win32Exception ex)
+            {
+                Console.Error.WriteLine($"Unable to run npm to update lock file '{lockFile}': {ex.Message}");
             }
         }
     }

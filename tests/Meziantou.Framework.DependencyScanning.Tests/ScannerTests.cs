@@ -1098,6 +1098,30 @@ jobs:
     }
 
     [Fact]
+    public async Task Regex_LeavesTheSharedStreamOpenForTheNextScanner()
+    {
+        AddFile("package.json", /*lang=json,strict*/ """
+{
+  "dependencies": {
+    "a": "1.0.0"
+  }
+}
+""");
+
+        var result = await GetDependencies<NpmPackageJsonDependencyScanner>([
+            new RegexScanner
+            {
+                FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobDialect.Standard)),
+                DependencyType = DependencyType.DockerImage,
+                Regex = DockerImageWithVersionRegex(),
+            },
+            new NpmPackageJsonDependencyScanner(),
+        ]);
+
+        AssertContainDependency(result, (DependencyType.Npm, "a", "1.0.0", 0, 0));
+    }
+
+    [Fact]
     public async Task DotNetToolsDependencies()
     {
         const string Original = /*lang=json,strict*/ """

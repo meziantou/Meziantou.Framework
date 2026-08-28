@@ -2,6 +2,19 @@
 
 `Meziantou.Framework.SnapshotTesting.ImageSharp` extends [`Meziantou.Framework.SnapshotTesting`](https://www.nuget.org/packages/Meziantou.Framework.SnapshotTesting) with support for [SixLabors.ImageSharp](https://github.com/SixLabors/ImageSharp) images, enabling snapshot validation of `Image` objects stored as PNG, JPEG, BMP, TIFF, or WebP files.
 
+## Licensing
+
+This package is MIT-licensed, but it takes a hard dependency on
+[SixLabors.ImageSharp](https://github.com/SixLabors/ImageSharp), which since v3 is published under the
+[Six Labors Split License](https://github.com/SixLabors/ImageSharp/blob/main/LICENSE): AGPL-3.0 unless you
+hold a commercial licence. Installing this package therefore brings that obligation with it, and your build
+will emit a "No Six Labors license found" warning until you set `SixLaborsLicenseKey`, set
+`SixLaborsLicenseFile`, or add a `sixlabors.lic` file.
+
+If that does not suit your project,
+[`Meziantou.Framework.SnapshotTesting.SkiaSharp`](https://www.nuget.org/packages/Meziantou.Framework.SnapshotTesting.SkiaSharp)
+offers the same image snapshot support on top of SkiaSharp, which is MIT-licensed.
+
 ## Setup
 
 Call `AddImageSharp()` on your `SnapshotSettings` to register the ImageSharp serializer and comparer:

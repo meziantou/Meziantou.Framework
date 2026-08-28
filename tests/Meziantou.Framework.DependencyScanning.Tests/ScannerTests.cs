@@ -291,6 +291,23 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task MsBuildSdkReference_FileShrankSinceScan()
+    {
+        AddFile("test.csproj", """
+            <Project Sdk="My.Sdk/1.2.3" />
+            """);
+        var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
+        var dependency = Assert.Single(result, d => d.Name == "My.Sdk");
+
+        // The recorded location points past the end of the shortened attribute value
+        AddFile("test.csproj", """
+            <Project Sdk="A" />
+            """);
+
+        await Assert.ThrowsAsync<DependencyScannerException>(() => dependency.UpdateVersionAsync("2.0.0"));
+    }
+
+    [Fact]
     public async Task DotNetTargetFrameworkWithNamespace()
     {
         const string Original = """

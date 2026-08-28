@@ -241,6 +241,13 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
+        AppendLine("/// <summary>");
+        AppendLine("/// Resets this string to an empty string.");
+        AppendLine("/// </summary>");
+        AppendLine("/// <remarks>");
+        AppendLine("/// Only the length is reset. The characters that were written are not overwritten and stay in");
+        AppendLine("/// the underlying buffer. Do not rely on this method to erase sensitive data.");
+        AppendLine("/// </remarks>");
         AppendLine("public void Clear() => _length = 0;");
         AppendLine();
 

@@ -103,6 +103,20 @@ public sealed class FixedStringBuilderTests
     }
 
     [Fact]
+    public void ClearResetsTheLengthWithoutErasingTheBuffer()
+    {
+        FixedStringBuilder8 value = "abcdefgh";
+        value.Clear();
+
+        Assert.Equal(0, value.Length);
+        Assert.Equal("", value.ToString(null, null));
+
+        // Documented behavior: Clear only resets the length, the characters stay in the underlying buffer.
+        var fullSpan = ((IFixedString)value).GetUnsafeFullSpan();
+        Assert.Equal("abcdefgh", fullSpan.ToString());
+    }
+
+    [Fact]
     public void EqualsSupportsStringComparison()
     {
         FixedStringBuilder8 a = "AbC";

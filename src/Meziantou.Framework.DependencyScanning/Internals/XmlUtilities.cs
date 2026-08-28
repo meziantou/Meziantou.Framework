@@ -36,26 +36,6 @@ internal static class XmlUtilities
         }
     }
 
-    public static async Task SaveDocumentWithoutClosingStream(Stream stream, XDocument document, CancellationToken cancellationToken)
-    {
-        var settings = new XmlWriterSettings
-        {
-            OmitXmlDeclaration = document.Declaration is null,
-            CloseOutput = false,
-            Async = true,
-            Indent = false,
-        };
-        var xmlWriter = XmlWriter.Create(stream, settings);
-        try
-        {
-            await document.SaveAsync(xmlWriter, cancellationToken).ConfigureAwait(false);
-        }
-        finally
-        {
-            await xmlWriter.DisposeAsync().ConfigureAwait(false);
-        }
-    }
-
     public static string CreateXPath(XElement element)
     {
         var current = element;

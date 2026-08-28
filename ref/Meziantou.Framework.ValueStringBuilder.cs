@@ -6,10 +6,10 @@ namespace Meziantou.Framework
 {
     public ref struct ValueStringBuilder
     {
-        public int Length { get => throw null; set { } }
-        public int Capacity { get => throw null; }
+        public int Length { readonly get => throw null; set { } }
+        public readonly int Capacity { get => throw null; }
         public ref char this[int index] { get => throw null; }
-        public System.Span<char> RawChars { get => throw null; }
+        public readonly System.Span<char> RawChars { get => throw null; }
         public void Append([System.Runtime.CompilerServices.InterpolatedStringHandlerArgument("")] ref AppendInterpolatedStringHandler handler) { }
         public void Append(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgument(new string[] { "", "provider" })] ref AppendInterpolatedStringHandler handler) { }
         public void AppendSpanFormattable<T>(T value, string? format = null, System.IFormatProvider? provider = null) where T : System.ISpanFormattable { }
@@ -20,9 +20,9 @@ namespace Meziantou.Framework
         public void NullTerminate() { }
         public ref char GetPinnableReference() => throw null;
         public override string ToString() => throw null;
-        public System.ReadOnlySpan<char> AsSpan() => throw null;
-        public System.ReadOnlySpan<char> AsSpan(int start) => throw null;
-        public System.ReadOnlySpan<char> AsSpan(int start, int length) => throw null;
+        public readonly System.ReadOnlySpan<char> AsSpan() => throw null;
+        public readonly System.ReadOnlySpan<char> AsSpan(int start) => throw null;
+        public readonly System.ReadOnlySpan<char> AsSpan(int start, int length) => throw null;
         public void Insert(int index, char value, int count) { }
         public void Insert(int index, string? s) { }
         public void Append(char c) { }

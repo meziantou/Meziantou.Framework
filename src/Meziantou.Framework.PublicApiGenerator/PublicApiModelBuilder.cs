@@ -366,6 +366,18 @@ internal static class PublicApiModelBuilder
 
         var getMethod = property.GetMethod is { } getter && IsExternallyVisible(getter) ? getter : null;
         var setMethod = property.SetMethod is { } setter && IsExternallyVisible(setter) ? setter : null;
+        var isGetReadOnly = getMethod is not null && IsReadOnlyMember(getMethod);
+        var isSetReadOnly = setMethod is not null && IsReadOnlyMember(setMethod);
+
+        // readonly can be set on the property or on its accessors, but not on both
+        var isPropertyReadOnly = isGetReadOnly == (getMethod is not null) && isSetReadOnly == (setMethod is not null);
+        if (isPropertyReadOnly)
+        {
+            modifiers.Add("readonly");
+            isGetReadOnly = false;
+            isSetReadOnly = false;
+        }
+
         var isGetUnsafe = getMethod is not null && IsRequiresUnsafeMember(getMethod);
         var isSetUnsafe = setMethod is not null && IsRequiresUnsafeMember(setMethod);
 
@@ -392,7 +404,7 @@ internal static class PublicApiModelBuilder
 
         if (getMethod is not null)
         {
-            var accessorModifier = BuildAccessorModifier(getMethod, representativeAccessor) + (isGetUnsafe ? "unsafe " : string.Empty);
+            var accessorModifier = BuildAccessorModifier(getMethod, representativeAccessor) + (isGetReadOnly ? "readonly " : string.Empty) + (isGetUnsafe ? "unsafe " : string.Empty);
             var getAccessor = getMethod.IsAbstract ? "get;" : "get => throw null;";
             accessorDeclarations.Add($"{accessorModifier}{getAccessor}");
         }
@@ -400,7 +412,7 @@ internal static class PublicApiModelBuilder
         if (setMethod is not null)
         {
             var accessorKeyword = IsInitOnly(setMethod) ? "init" : "set";
-            var accessorModifier = BuildAccessorModifier(setMethod, representativeAccessor) + (isSetUnsafe ? "unsafe " : string.Empty);
+            var accessorModifier = BuildAccessorModifier(setMethod, representativeAccessor) + (isSetReadOnly ? "readonly " : string.Empty) + (isSetUnsafe ? "unsafe " : string.Empty);
             var setAccessor = setMethod.IsAbstract ? $"{accessorKeyword};" : $"{accessorKeyword} {{ }}";
             accessorDeclarations.Add($"{accessorModifier}{setAccessor}");
         }
@@ -655,6 +667,11 @@ internal static class PublicApiModelBuilder
             modifiers.Add("static");
         }
 
+        if (IsReadOnlyMember(method))
+        {
+            modifiers.Add("readonly");
+        }
+
         if (declaringTypeIsInterface)
         {
             return modifiers;
@@ -782,6 +799,13 @@ internal static class PublicApiModelBuilder
     private static bool HasAttribute(IEnumerable<CustomAttributeData> attributes, string attributeTypeFullName)
     {
         return attributes.Any(attribute => attribute.AttributeType.FullName == attributeTypeFullName);
+    }
+
+    private static bool IsReadOnlyMember(MethodInfo method)
+    {
+        // Members of a readonly struct are implicitly readonly and carry no attribute, so this only matches per-member readonly
+        return method.DeclaringType is { IsValueType: true, IsInterface: false } &&
+               HasAttribute(method.GetCustomAttributesData(), "System.Runtime.CompilerServices.IsReadOnlyAttribute");
     }
 
     private static bool IsRequiresUnsafeMember(MemberInfo member)

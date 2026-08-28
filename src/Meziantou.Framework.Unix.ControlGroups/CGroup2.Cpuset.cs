@@ -51,10 +51,8 @@ public partial class CGroup2
 
     /// <summary>Sets the memory nodes that tasks in this cgroup can use.</summary>
     /// <param name="nodes">Array of memory node numbers.</param>
-    public void SetCpusetMems(params int[] nodes)
+    public void SetCpusetMems(params ReadOnlySpan<int> nodes)
     {
-        ArgumentNullException.ThrowIfNull(nodes);
-
         if (nodes.Length == 0)
         {
             SetCpusetMemsRaw("");

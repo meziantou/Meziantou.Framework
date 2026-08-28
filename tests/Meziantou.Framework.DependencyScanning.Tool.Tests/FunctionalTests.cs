@@ -326,6 +326,100 @@ public sealed class FunctionalTests
     }
 
     [Fact]
+    public async Task NuGetPackageSourceResolver_PackageSourceMapping_LongestPatternWinsOverWildcard()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var projectFile = tempDir.CreateEmptyFile("a.csproj");
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="nuget" value="https://api.nuget.org/v3/index.json" />
+                <add key="private" value="https://private/v3/index.json" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="nuget">
+                  <package pattern="*" />
+                </packageSource>
+                <packageSource key="private">
+                  <package pattern="Contoso.*" />
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var contoso = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Library");
+        var newtonsoft = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Newtonsoft.Json");
+
+        // 'Contoso.*' is more specific than '*', so the public feed must not be queried for it
+        Assert.Equal(["https://private/v3/index.json"], contoso.PackageSources);
+        Assert.Equal(["https://api.nuget.org/v3/index.json"], newtonsoft.PackageSources);
+    }
+
+    [Fact]
+    public async Task NuGetPackageSourceResolver_PackageSourceMapping_ExactPatternWinsOverPrefix()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var projectFile = tempDir.CreateEmptyFile("a.csproj");
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="prefix" value="https://prefix/v3/index.json" />
+                <add key="exact" value="https://exact/v3/index.json" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="prefix">
+                  <package pattern="Contoso.*" />
+                </packageSource>
+                <packageSource key="exact">
+                  <package pattern="Contoso.Library" />
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Library");
+        var other = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Other");
+
+        Assert.Equal(["https://exact/v3/index.json"], resolution.PackageSources);
+        Assert.Equal(["https://prefix/v3/index.json"], other.PackageSources);
+    }
+
+    [Fact]
+    public async Task NuGetPackageSourceResolver_PackageSourceMapping_EquallySpecificPatternsKeepEverySource()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var projectFile = tempDir.CreateEmptyFile("a.csproj");
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="first" value="https://first/v3/index.json" />
+                <add key="second" value="https://second/v3/index.json" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="first">
+                  <package pattern="Contoso.*" />
+                </packageSource>
+                <packageSource key="second">
+                  <package pattern="Contoso.*" />
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Library");
+
+        Assert.Equal(2, resolution.PackageSources.Count);
+        Assert.Contains("https://first/v3/index.json", resolution.PackageSources);
+        Assert.Contains("https://second/v3/index.json", resolution.PackageSources);
+    }
+
+    [Fact]
     public async Task NuGetPackageSourceResolver_PackageSourceMapping_UnmatchedPackageReturnsNoSource()
     {
         await using var tempDir = TemporaryDirectory.Create();

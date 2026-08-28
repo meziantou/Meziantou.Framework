@@ -153,7 +153,6 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
                 return new AttributeInfo(
                     semanticModel.Compilation,
-                    attributeSyntax,
                     (INamedTypeSymbol)ctx.TargetSymbol,
                     idType,
                     type,
@@ -486,11 +485,10 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
     private sealed class AttributeInfo : IEquatable<AttributeInfo>
     {
-        public AttributeInfo(Compilation compilation, SyntaxNode attributeSyntax, INamedTypeSymbol typeSymbol, IdType idType, ITypeSymbol idTypeSymbol, StronglyTypedIdOptions options)
+        public AttributeInfo(Compilation compilation, INamedTypeSymbol typeSymbol, IdType idType, ITypeSymbol idTypeSymbol, StronglyTypedIdOptions options)
         {
             Debug.Assert(idType != IdType.Unknown);
 
-            AttributeSyntax = attributeSyntax;
             IdType = idType;
             Options = options;
             ApplyOptions();
@@ -653,9 +651,6 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 }
             }
         }
-
-        // Only use to report diagnostic
-        public SyntaxNode AttributeSyntax { get; }
 
         // Info provided by the attribute
         public PartialTypeContext PartialTypeContext { get; }

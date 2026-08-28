@@ -60,6 +60,50 @@ public class CsvReaderTests
     }
 
     [Fact]
+    public async Task CsvReader_ColumnNumberCountsCharactersNotFields()
+    {
+        using var sr = new StringReader("A,B,C\nvalue");
+        var reader = new CsvReader(sr);
+
+        Assert.Equal(0, reader.ColumnNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(6, reader.ColumnNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(5, reader.ColumnNumber);
+    }
+
+    [Fact]
+    public async Task CsvReader_LineNumberCountsConsumedLineTerminators()
+    {
+        using var sr = new StringReader("a\nb\nc");
+        var reader = new CsvReader(sr);
+
+        Assert.Equal(0, reader.LineNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(1, reader.LineNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(2, reader.LineNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(2, reader.LineNumber);
+    }
+
+    [Fact]
+    public async Task CsvReader_LineNumberCountsLineTerminatorsInsideQuotedValues()
+    {
+        using var sr = new StringReader("\"a\nb\",c");
+        var reader = new CsvReader(sr);
+
+        await reader.ReadRowAsync();
+
+        Assert.Equal(1, reader.LineNumber);
+    }
+
+    [Fact]
     public async Task CsvReader_MultiLineQuotedValue()
     {
         var sb = new StringBuilder();
@@ -193,5 +237,32 @@ public class CsvReaderTests
         {
             return Task.FromResult(Read(buffer, index, count));
         }
+    }
+
+    [Fact]
+    public async Task CsvReader_CreateRowAndCreateColumnCanBeOverridden()
+    {
+        using var sr = new StringReader("A,B\n1,2");
+        var reader = new CustomReader(sr) { HasHeaderRow = true };
+
+        var row = await reader.ReadRowAsync();
+
+        var customRow = Assert.IsType<CustomRow>(row);
+        Assert.Equal("1", customRow["A"]);
+        Assert.NotNull(customRow.Columns);
+        Assert.IsType<CustomColumn>(customRow.Columns[0]);
+    }
+
+    private sealed class CustomColumn(string? name, int index) : CsvColumn(name, index);
+
+    private sealed class CustomRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
+        : CsvRow(columns, values);
+
+    private sealed class CustomReader(TextReader reader) : CsvReader(reader)
+    {
+        protected override CsvColumn CreateColumn(string name, int index) => new CustomColumn(name, index);
+
+        protected override CsvRow CreateRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
+            => new CustomRow(columns, values);
     }
 }

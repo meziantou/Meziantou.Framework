@@ -390,11 +390,19 @@ async Task WriteUnicodeCharacterInfosFile(List<(int Start, int End, string Name)
     if (WriteUnicodeDataBinaryIfChanged(unicodeDataPath, unicodeDataBytes, unicodeDataEntries))
         outputUpdated = true;
 
-    var maxNameLength = unicodeDataEntries.Max(entry => entry.Name.Length);
-    var maxNameLengthPowerOfTwo = NextPowerOfTwo(maxNameLength);
+    // The reader uses a single stack buffer for every string in the table, not just names,
+    // and the serialized length prefix is a UTF-8 byte count. Bound both accordingly.
+    var maxStringByteLength = unicodeDataEntries.Max(entry => Math.Max(
+        Encoding.UTF8.GetByteCount(entry.Name),
+        Math.Max(
+            Math.Max(GetByteCount(entry.DecompositionMapping), GetByteCount(entry.NumericValue)),
+            Math.Max(GetByteCount(entry.Unicode1Name), GetByteCount(entry.IsoComment)))));
+    var maxStringByteLengthPowerOfTwo = NextPowerOfTwo(maxStringByteLength);
 
-    if (maxNameLengthPowerOfTwo > 256)
-        throw new InvalidOperationException("Max character name length exceeds 256: " + maxNameLengthPowerOfTwo);
+    if (maxStringByteLengthPowerOfTwo > 256)
+        throw new InvalidOperationException("Max serialized string length exceeds 256: " + maxStringByteLengthPowerOfTwo);
+
+    static int GetByteCount(string? value) => value is null ? 0 : Encoding.UTF8.GetByteCount(value);
 
     var emojiCount = unicodeDataEntries.Count(e => e.EmojiProperties != EmojiProperties.None);
     var compressedSize = unicodeDataBytes.Length;
@@ -409,7 +417,7 @@ async Task WriteUnicodeCharacterInfosFile(List<(int Start, int End, string Name)
         //   - Total characters: {{unicodeDataEntries.Count}}
         //   - Emoji characters: {{emojiCount}}
         //   - Compressed size: {{compressedSize:N0}} bytes ({{compressionRatio * 100d:F1}}% of uncompressed)
-        //   - Max character name length: {{maxNameLength}} chars
+        //   - Max serialized string length: {{maxStringByteLength}} bytes
         //
         // Specification: https://www.unicode.org/reports/tr44/
         // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
@@ -419,7 +427,7 @@ async Task WriteUnicodeCharacterInfosFile(List<(int Start, int End, string Name)
         namespace Meziantou.Framework;
         internal static partial class UnicodeCharacterInfos
         {
-            private const int MaxCharacterNameLength = {{maxNameLengthPowerOfTwo}};
+            private const int MaxSerializedStringLength = {{maxStringByteLengthPowerOfTwo}};
         }
         """);
 
@@ -462,6 +470,47 @@ static Rune ParseSingleRune(string input)
 
     var value = int.Parse(tokens[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
     return new Rune(value);
+}
+
+// Values below come from files downloaded at build time, so they must never be
+// interpolated into generated source without escaping.
+static string EscapeStringLiteral(string value)
+{
+    var sb = new StringBuilder(value.Length);
+    foreach (var c in value)
+    {
+        switch (c)
+        {
+            case '\\':
+                sb.Append("\\\\");
+                break;
+
+            case '"':
+                sb.Append("\\\"");
+                break;
+
+            default:
+                if (char.IsControl(c))
+                {
+                    sb.Append(CultureInfo.InvariantCulture, $"\\u{(int)c:X4}");
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+
+                break;
+        }
+    }
+
+    return sb.ToString();
+}
+
+static string EscapeXmlText(string value)
+{
+    return value.Replace("&", "&amp;", StringComparison.Ordinal)
+        .Replace("<", "&lt;", StringComparison.Ordinal)
+        .Replace(">", "&gt;", StringComparison.Ordinal);
 }
 
 static string EscapeString(string value)
@@ -533,14 +582,14 @@ static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries)
             entry.EmojiProperties));
     }
 
-    var maxStringLength = strings.Count == 0 ? 0 : strings.Max(s => s.Length);
+    var maxStringLength = strings.Count == 0 ? 0 : strings.Max(s => Encoding.UTF8.GetByteCount(s));
     if (maxStringLength > 255)
-        throw new InvalidOperationException("A string exceeds the maximum length of 255 characters.");
+        throw new InvalidOperationException("A string exceeds the maximum length of 255 bytes.");
 
     if (strings.Count > 65536 - 1)
         throw new InvalidOperationException("Too many strings: " + strings.Count);
 
-    Console.WriteLine($"Serialized {serialized.Count} UnicodeData entries with {strings.Count} unique strings (max length: {maxStringLength})");
+    Console.WriteLine($"Serialized {serialized.Count} UnicodeData entries with {strings.Count} unique strings (max length: {maxStringLength} bytes)");
 
     using (var compressed = new MemoryStream())
     {
@@ -1229,8 +1278,8 @@ async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockR
     {
         var propertyName = ToPropertyName(name);
         var codePointCount = end - start + 1;
-        sb.AppendLine(CultureInfo.InvariantCulture, $"    /// <summary>{name} (U+{start:X4}..U+{end:X4}, {codePointCount:N0} code points).</summary>");
-        sb.AppendLine(CultureInfo.InvariantCulture, $"    public static UnicodeBlock {propertyName} {{ get; }} = UnicodeBlock.CreateInternal(\"{name}\", new UnicodeRange(0x{start:X}, 0x{end:X}));");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"    /// <summary>{EscapeXmlText(name)} (U+{start:X4}..U+{end:X4}, {codePointCount:N0} code points).</summary>");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"    public static UnicodeBlock {propertyName} {{ get; }} = UnicodeBlock.CreateInternal(\"{EscapeStringLiteral(name)}\", new UnicodeRange(0x{start:X}, 0x{end:X}));");
         sb.AppendLine();
     }
 
@@ -1305,7 +1354,12 @@ async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockR
                 sb.Append(c);
             }
         }
-        return sb.ToString();
+
+        var propertyName = sb.ToString();
+        if (propertyName.Length == 0 || !char.IsLetter(propertyName[0]))
+            throw new InvalidOperationException($"Block name '{blockName}' does not yield a valid C# identifier");
+
+        return propertyName;
     }
 }
 

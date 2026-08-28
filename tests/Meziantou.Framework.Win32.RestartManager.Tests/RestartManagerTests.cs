@@ -96,6 +96,26 @@ public class RestartManagerTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetProcessesLockingFiles()
+    {
+        var unlockedPath = Path.GetTempFileName();
+        var lockedPath = Path.GetTempFileName();
+        try
+        {
+            using (File.Open(lockedPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                var processes = RestartManager.GetProcessesLockingFiles([unlockedPath, lockedPath]);
+                Assert.Contains(_currentProcessId, processes.Select(process => process.Id));
+            }
+        }
+        finally
+        {
+            File.Delete(unlockedPath);
+            File.Delete(lockedPath);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void Dispose_CanBeCalledMultipleTimes()
     {
         var session = RestartManager.CreateSession();

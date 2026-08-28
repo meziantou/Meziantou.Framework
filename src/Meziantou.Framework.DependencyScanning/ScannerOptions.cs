@@ -11,7 +11,7 @@ namespace Meziantou.Framework.DependencyScanning;
 /// {
 ///     DegreeOfParallelism = 8,
 ///     RecurseSubdirectories = true,
-///     IncludedDependencyTypes = [DependencyType.NuGet, DependencyType.Npm].ToImmutableHashSet()
+///     IncludedDependencyTypes = [DependencyType.NuGet, DependencyType.Npm]
 /// };
 /// var dependencies = await DependencyScanner.ScanDirectoryAsync("C:\\MyProject", options, cancellationToken);
 /// </code>

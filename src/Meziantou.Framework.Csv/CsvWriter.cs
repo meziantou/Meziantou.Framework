@@ -115,7 +115,7 @@ public class CsvWriter
             if (Quote.HasValue)
             {
                 var quote = Quote.Value;
-                if (value[0] != quote && value.IndexOf(Separator, StringComparison.Ordinal) < 0)
+                if (!RequiresQuoting(value, quote))
                 {
                     await writer.WriteAsync(value).ConfigureAwait(false);
                 }
@@ -144,5 +144,20 @@ public class CsvWriter
                 await writer.WriteAsync(value).ConfigureAwait(false);
             }
         }
+    }
+
+    private bool RequiresQuoting(string value, char quote)
+    {
+        ReadOnlySpan<char> specialCharacters = [quote, Separator, '\r', '\n'];
+        if (value.AsSpan().IndexOfAny(specialCharacters) >= 0)
+            return true;
+
+        foreach (var c in EndOfLine)
+        {
+            if (value.Contains(c, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
     }
 }

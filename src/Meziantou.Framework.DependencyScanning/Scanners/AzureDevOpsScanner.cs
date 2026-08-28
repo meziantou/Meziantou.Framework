@@ -118,8 +118,8 @@ public sealed class AzureDevOpsScanner : DependencyScanner
                     var type = GetProperty(repository, "type", StringComparison.Ordinal);
                     if (string.Equals(GetScalarValue(type), "git", StringComparison.OrdinalIgnoreCase))
                     {
-                        var endpoint = GetProperty(repository, "endpoint", StringComparison.Ordinal);
-                        var alias = GetProperty(repository, "repository", StringComparison.Ordinal);
+                        var endpoint = GetScalarValue(GetProperty(repository, "endpoint", StringComparison.Ordinal));
+                        var alias = GetScalarValue(GetProperty(repository, "repository", StringComparison.Ordinal));
                         var name = GetProperty(repository, "name", StringComparison.Ordinal);
                         var version = GetProperty(repository, "ref", StringComparison.Ordinal);
                         if (name is not null)

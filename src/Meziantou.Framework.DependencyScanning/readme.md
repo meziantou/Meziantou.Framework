@@ -5,7 +5,7 @@ A .NET library for scanning source code directories and files to discover and ma
 ## Features
 
 - **Multi-format Support**: Scan dependencies from various project files and configuration formats
-- **Multiple Package Ecosystems**: NuGet, npm, PyPI, Docker, Ruby Gems, Helm Charts, and more
+- **Multiple Package Ecosystems**: NuGet, npm, PyPI, Docker, Swift packages, Helm Charts, and more
 - **Parallel Scanning**: High-performance parallel file scanning with configurable degree of parallelism
 - **Dependency Updates**: Locate and update dependency versions programmatically
 - **Customizable Scanning**: Filter by file patterns, dependency types, and custom predicates
@@ -26,7 +26,6 @@ The library can detect the following dependency types:
 - **AzureDevOpsTask** - Azure DevOps pipeline tasks
 - **AzureDevOpsTemplate** - Azure DevOps pipeline templates
 - **HelmChart** - Helm chart dependencies
-- **RubyGem** - Ruby gems
 - **RenovateConfiguration** - Renovate configuration extends
 - **SwiftPackage** - Swift Package Manager dependencies
 - **MSBuildProjectReference** - MSBuild project references
@@ -86,13 +85,13 @@ var dependencies = await DependencyScanner.ScanDirectoryAsync(
 var options = new ScannerOptions
 {
     // Only scan for specific dependency types
-    IncludedDependencyTypes = [DependencyType.NuGet, DependencyType.Npm].ToImmutableHashSet(),
+    IncludedDependencyTypes = [DependencyType.NuGet, DependencyType.Npm],
 };
 
 // Or exclude specific types
 var options2 = new ScannerOptions
 {
-    ExcludedDependencyTypes = [DependencyType.DockerImage].ToImmutableHashSet(),
+    ExcludedDependencyTypes = [DependencyType.DockerImage],
 };
 ```
 

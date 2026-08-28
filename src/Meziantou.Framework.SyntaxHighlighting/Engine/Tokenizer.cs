@@ -37,10 +37,12 @@ internal static class Tokenizer
         var bufferStart = 0;
         var index = 0;
         var lastBeginIndex = -1;
+        // Memoizes the next match of each pattern for this run. See ScanCache/NextMatch.
+        var scanCache = new Dictionary<Regex, (int From, Match? Match)>(ReferenceEqualityComparer.Instance);
 
         while (true)
         {
-            var hit = FindNextHit(input, index, stack, beginCaptures);
+            var hit = FindNextHit(input, index, stack, beginCaptures, scanCache);
             if (hit is null)
                 break;
 
@@ -92,7 +94,32 @@ internal static class Tokenizer
         return emitter.ToHtml();
     }
 
-    private static Hit? FindNextHit(string input, int from, List<CompiledMode> stack, List<string?> beginCaptures)
+    /// <summary>
+    /// The leftmost match of <paramref name="re"/> at an index &gt;= <paramref name="from"/>,
+    /// memoized for the duration of one highlight run.
+    /// </summary>
+    /// <remarks>
+    /// The engine asks for the next match of every candidate pattern after every token, and each
+    /// of those calls re-scans the rest of the input, which makes tokenization quadratic in the
+    /// document size. A match already found at index <c>i</c> while scanning from <c>f</c> is
+    /// still the leftmost match for any start in <c>[f, i]</c> — there is nothing in between, or
+    /// it would have been found first — so the scan can be skipped until the cursor passes it.
+    /// A pattern that did not match from <c>f</c> cannot match from any later start either.
+    /// The cursor can move backwards (ReturnBegin/ReturnEnd), so a start before the memoized
+    /// scan origin falls through to a real scan.
+    /// </remarks>
+    private static Match? NextMatch(Regex re, string input, int from, Dictionary<Regex, (int From, Match? Match)> cache)
+    {
+        if (cache.TryGetValue(re, out var cached) && from >= cached.From && (cached.Match is null || cached.Match.Index >= from))
+            return cached.Match;
+
+        var match = re.Match(input, from);
+        var result = match.Success ? match : null;
+        cache[re] = (from, result);
+        return result;
+    }
+
+    private static Hit? FindNextHit(string input, int from, List<CompiledMode> stack, List<string?> beginCaptures, Dictionary<Regex, (int From, Match? Match)> cache)
     {
         Hit? best = null;
         var top = stack[^1];
@@ -101,14 +128,28 @@ internal static class Tokenizer
         {
             if (child.BeginRe is null)
                 continue;
-            var m = child.BeginRe.Match(input, from);
+            var m = NextMatch(child.BeginRe, input, from, cache);
             // For guarded modes (hljs's `on:begin` veto), walk forward through
-            // candidate matches until one is accepted by the guard.
-            while (m.Success && child.BeginGuard is not null && !BeginGuards.Accept(child.BeginGuard, m, input))
+            // candidate matches until one is accepted by the guard. The next start
+            // is bounded the same way MatchEnd bounds its cursor: a zero-width
+            // candidate at the very end of the input would otherwise ask Regex.Match
+            // to start past the end of the string, which throws.
+            while (m is not null && child.BeginGuard is not null && !BeginGuards.Accept(child.BeginGuard, m, input))
             {
-                m = child.BeginRe.Match(input, m.Index + Math.Max(1, m.Length));
+                var next = m.Index + Math.Max(1, m.Length);
+                if (next > input.Length)
+                {
+                    m = null;
+                    break;
+                }
+
+                var candidate = child.BeginRe.Match(input, next);
+                m = candidate.Success ? candidate : null;
+                // Remember the accepted candidate, not the vetoed one, so the next lookup
+                // for this pattern resumes from the same answer.
+                cache[child.BeginRe] = (from, m);
             }
-            if (!m.Success)
+            if (m is null)
                 continue;
             if (best is null || m.Index < best.Value.Index)
                 best = new Hit(m.Index, m.Length, HitKind.Begin, child, -1, m);
@@ -120,7 +161,7 @@ internal static class Tokenizer
             var frame = stack[depth];
             if (frame.EndRe is not null)
             {
-                var m = MatchEnd(frame, beginCaptures[depth], input, from);
+                var m = MatchEnd(frame, beginCaptures[depth], input, from, cache);
                 if (m is not null && (best is null || m.Index < best.Value.Index))
                 {
                     best = new Hit(m.Index, m.Length, HitKind.End, frame, depth, m);
@@ -132,8 +173,8 @@ internal static class Tokenizer
 
         if (top.IllegalRe is not null)
         {
-            var m = top.IllegalRe.Match(input, from);
-            if (m.Success && (best is null || m.Index < best.Value.Index))
+            var m = NextMatch(top.IllegalRe, input, from, cache);
+            if (m is not null && (best is null || m.Index < best.Value.Index))
                 best = new Hit(m.Index, m.Length, HitKind.Illegal, Child: null, -1, m);
         }
 
@@ -144,14 +185,13 @@ internal static class Tokenizer
     /// For modes with EndSameAsBegin, scan forward through end candidates and skip any
     /// whose group-1 capture doesn't match the value captured at begin time.
     /// </summary>
-    private static Match? MatchEnd(CompiledMode frame, string? beginCapture, string input, int from)
+    private static Match? MatchEnd(CompiledMode frame, string? beginCapture, string input, int from, Dictionary<Regex, (int From, Match? Match)> cache)
     {
         if (frame.EndRe is null)
             return null;
         if (!frame.EndSameAsBegin)
         {
-            var m = frame.EndRe.Match(input, from);
-            return m.Success ? m : null;
+            return NextMatch(frame.EndRe, input, from, cache);
         }
 
         var expected = beginCapture.AsSpan();

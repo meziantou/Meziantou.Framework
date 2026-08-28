@@ -81,10 +81,10 @@ internal sealed class SegmentedCounterStorage
     {
         if ((ulong)counterIndex >= (ulong)CounterCount)
         {
-            ThrowInvalidCounterIndex(counterIndex);
+            ThrowInvalidCounterIndex(counterIndex, CounterCount);
         }
 
         [DoesNotReturn]
-        static void ThrowInvalidCounterIndex(long counterIndex) => throw new ArgumentOutOfRangeException(nameof(counterIndex), $"Counter index must be between 0 and {long.MaxValue} (inclusive). Actual value: {counterIndex}");
+        static void ThrowInvalidCounterIndex(long counterIndex, long counterCount) => throw new ArgumentOutOfRangeException(nameof(counterIndex), $"Counter index must be between 0 and {counterCount - 1} (inclusive). Actual value: {counterIndex}");
     }
 }

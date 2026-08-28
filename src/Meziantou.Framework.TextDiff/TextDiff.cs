@@ -20,13 +20,13 @@ public static class TextDiff
         ArgumentNullException.ThrowIfNull(newText);
 
         options ??= new TextDiffOptions();
+        ValidateOptions(options);
 
         var processedOld = options.IgnoreEndOfLine ? NormalizeLineEndings(oldText) : oldText;
         var processedNew = options.IgnoreEndOfLine ? NormalizeLineEndings(newText) : newText;
 
-        var chunker = options.Chunker ?? TextChunker.Lines;
-        var oldChunks = ToArray(chunker.Chunk(processedOld));
-        var newChunks = ToArray(chunker.Chunk(processedNew));
+        var oldChunks = ToArray(options.Chunker.Chunk(processedOld));
+        var newChunks = ToArray(options.Chunker.Chunk(processedNew));
 
         var comparer = BuildComparer(options);
         var diff = DiffAlgorithmDispatcher.Compute(options.Algorithm, oldChunks, newChunks, comparer);
@@ -60,6 +60,7 @@ public static class TextDiff
         ArgumentNullException.ThrowIfNull(chunkers);
 
         options ??= new TextDiffOptions();
+        ValidateOptions(options);
 
         var chunkerArray = ValidateChunkers(chunkers);
         var processedOld = options.IgnoreEndOfLine ? NormalizeLineEndings(oldText) : oldText;
@@ -67,6 +68,12 @@ public static class TextDiff
 
         var comparer = BuildComparer(options);
         return ComputeHierarchyDiffCore(processedOld, processedNew, chunkerArray, chunkerIndex: 0, options, comparer);
+    }
+
+    private static void ValidateOptions(TextDiffOptions options)
+    {
+        if (!Enum.IsDefined(options.Algorithm))
+            throw new ArgumentOutOfRangeException(nameof(options), options.Algorithm, $"'{nameof(TextDiffOptions.Algorithm)}' is not a valid {nameof(TextDiffAlgorithm)} value.");
     }
 
     private static IEqualityComparer<string> BuildComparer(TextDiffOptions options)

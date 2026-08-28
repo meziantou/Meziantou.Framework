@@ -32,6 +32,11 @@ var skeleton = Unicode.GetConfusableSkeleton(userName);
 > The skeleton is a comparison key, not displayable text. Do not show it to users or store it
 > in place of the original string.
 
+> These two methods require Unicode normalization and therefore ICU. In
+> globalization-invariant mode (`InvariantGlobalization=true`) `string.Normalize` silently does
+> nothing, so they throw `PlatformNotSupportedException` rather than return a result that would
+> quietly fail to detect spoofing.
+
 This package also exposes Unicode character metadata from the Unicode data table:
 
 ```csharp

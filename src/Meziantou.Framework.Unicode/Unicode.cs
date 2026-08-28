@@ -134,6 +134,7 @@ public static partial class Unicode
     /// <param name="value">The text to reduce. Must be well-formed UTF-16.</param>
     /// <returns>The skeleton of <paramref name="value"/>.</returns>
     /// <exception cref="ArgumentException"><paramref name="value"/> contains an unpaired surrogate.</exception>
+    /// <exception cref="PlatformNotSupportedException">The application runs in globalization-invariant mode.</exception>
     /// <remarks>
     /// The skeleton is <c>toNFD(toConfusable(toNFD(X)))</c>. It is a comparison key and nothing more:
     /// it is not displayable text, and it must not be shown to users or stored in place of the
@@ -154,6 +155,8 @@ public static partial class Unicode
         if (value.Length == 0)
             return value;
 
+        ThrowIfGlobalizationInvariant();
+
         var decomposed = value.Normalize(NormalizationForm.FormD);
         var mapped = MapConfusableCharacters(decomposed);
         return mapped.Normalize(NormalizationForm.FormD);
@@ -164,6 +167,7 @@ public static partial class Unicode
     /// <param name="b">The second string. Must be well-formed UTF-16.</param>
     /// <returns><see langword="true"/> when both strings have the same skeleton; otherwise <see langword="false"/>.</returns>
     /// <exception cref="ArgumentException">Either string contains an unpaired surrogate.</exception>
+    /// <exception cref="PlatformNotSupportedException">The application runs in globalization-invariant mode.</exception>
     /// <remarks>
     /// This compares whole strings character by character after reduction. It does not consider
     /// script mixing, so two strings drawn from different scripts that are not individually
@@ -177,6 +181,8 @@ public static partial class Unicode
 
         if (string.Equals(a, b, StringComparison.Ordinal))
             return true;
+
+        ThrowIfGlobalizationInvariant();
 
         return string.Equals(GetConfusableSkeleton(a), GetConfusableSkeleton(b), StringComparison.Ordinal);
     }
@@ -208,5 +214,29 @@ public static partial class Unicode
         }
 
         return sb?.ToString() ?? value;
+    }
+
+    /// <summary>Whether the application runs without ICU, where <see cref="string.Normalize(NormalizationForm)"/> does nothing.</summary>
+    private static readonly bool IsGlobalizationInvariant = GetIsGlobalizationInvariant();
+
+    private static bool GetIsGlobalizationInvariant()
+    {
+        // Mirrors how the runtime resolves the setting: the switch set by the InvariantGlobalization
+        // MSBuild property takes precedence over the environment variable.
+        if (AppContext.TryGetSwitch("System.Globalization.Invariant", out var isEnabled))
+            return isEnabled;
+
+        var value = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+        return value is "1" || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void ThrowIfGlobalizationInvariant()
+    {
+        // In globalization-invariant mode string.Normalize returns its input unchanged instead of
+        // throwing, which would silently reduce the skeleton to a single unnormalized mapping pass
+        // and reintroduce the homograph bypass this algorithm exists to close. Refusing to answer is
+        // the only safe option: a wrong answer here is a security decision made on bad data.
+        if (IsGlobalizationInvariant)
+            throw new PlatformNotSupportedException("Confusable detection requires Unicode normalization, which is unavailable in globalization-invariant mode. Disable InvariantGlobalization to use this API.");
     }
 }

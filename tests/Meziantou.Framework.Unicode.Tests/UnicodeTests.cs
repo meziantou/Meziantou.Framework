@@ -1,3 +1,5 @@
+using Meziantou.Xunit;
+
 namespace Meziantou.Framework.Tests;
 
 public sealed class UnicodeTests
@@ -359,6 +361,7 @@ public sealed class UnicodeTests
     // A precomposed letter whose decomposition is confusable.
     [InlineData("\u00CF", "I\u0308")]
     // Latin diaeresis vs Cyrillic diaeresis.
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [InlineData("Zo\u00EB", "Zo\u0451")]
     public void AreConfusable_DetectsConfusableStrings(string a, string b)
     {
@@ -369,12 +372,14 @@ public sealed class UnicodeTests
     [Theory]
     [InlineData("paypal", "example")]
     [InlineData("a", "b")]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [InlineData("", "a")]
     public void AreConfusable_DoesNotReportUnrelatedStrings(string a, string b)
     {
         Assert.False(Unicode.AreConfusable(a, b));
     }
 
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [Fact]
     public void GetConfusableSkeleton_FoldsThroughTheAsciiMappings()
     {
@@ -383,6 +388,7 @@ public sealed class UnicodeTests
         Assert.Equal("l\u0308", Unicode.GetConfusableSkeleton("\u00CF"));
     }
 
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [Fact]
     public void GetConfusableSkeleton_IsIdempotent()
     {
@@ -404,6 +410,26 @@ public sealed class UnicodeTests
         Assert.Throws<ArgumentNullException>(() => Unicode.GetConfusableSkeleton(null!));
         Assert.Throws<ArgumentNullException>(() => Unicode.AreConfusable(null!, "a"));
         Assert.Throws<ArgumentNullException>(() => Unicode.AreConfusable("a", null!));
+    }
+
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    [Fact]
+    public void GetConfusableSkeleton_RejectsUnpairedSurrogates()
+    {
         Assert.Throws<ArgumentException>(() => Unicode.GetConfusableSkeleton("a\uD800"));
+    }
+
+    [RunIf(globalizationMode: TestGlobalizationMode.Invariant)]
+    [Fact]
+    public void GetConfusableSkeleton_ThrowsInInvariantGlobalization()
+    {
+        // string.Normalize is a no-op without ICU, so the skeleton would silently degrade to a
+        // single unnormalized mapping pass. Refusing is the only safe answer for a security API.
+        Assert.Throws<PlatformNotSupportedException>(() => Unicode.GetConfusableSkeleton("caf\u00E9"));
+        Assert.Throws<PlatformNotSupportedException>(() => Unicode.AreConfusable("caf\u00E9", "cafe\u0301"));
+
+        // The paths that answer before normalization is needed still work.
+        Assert.Same("", Unicode.GetConfusableSkeleton(""));
+        Assert.True(Unicode.AreConfusable("identical", "identical"));
     }
 }

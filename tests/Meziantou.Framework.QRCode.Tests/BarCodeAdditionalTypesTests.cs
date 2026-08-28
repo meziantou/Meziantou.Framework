@@ -402,4 +402,66 @@ public class BarCodeAdditionalTypesTests
             }
         }
     }
+
+    // ───── Module patterns ─────
+    //
+    // Produced from this encoder's output and each confirmed to decode back to the documented
+    // payload with an external reader (ZXing) while the tests were written. These symbologies had
+    // no coverage beyond image snapshots, so a wrong parity or check digit would have rendered
+    // cleanly and gone unnoticed.
+
+    [Fact]
+    public void CreateCode93_ProducesTheExpectedModules()
+    {
+        // Decodes as "ABC123".
+        Assert.Equal(
+            "1010111101101010001101001001101000101010010001010001001010000101011011001000010101010111101",
+            BarcodeModulePattern.Render(Barcode.CreateCode93("ABC123")));
+    }
+
+    [Fact]
+    public void CreateEan8_ProducesTheExpectedModules()
+    {
+        // Decodes as "55123457" - the encoder appends the check digit.
+        Assert.Equal(
+            "1010110001011000100110010010011010101000010101110010011101000100101",
+            BarcodeModulePattern.Render(Barcode.CreateEan8("5512345")));
+    }
+
+    [Fact]
+    public void CreateEan13_ProducesTheExpectedModules()
+    {
+        // Decodes as "4006381333931". The first digit is carried by the left-group parity rather
+        // than by a symbol of its own, so a wrong parity row silently changes the leading digit.
+        Assert.Equal(
+            "10100011010100111010111101111010001001011001101010100001010000101000010111010010000101100110101",
+            BarcodeModulePattern.Render(Barcode.CreateEan13("400638133393")));
+    }
+
+    [Fact]
+    public void CreateUpcA_ProducesTheExpectedModules()
+    {
+        // Decodes as "036000291452".
+        Assert.Equal(
+            "10100011010111101010111100011010001101000110101010110110011101001100110101110010011101101100101",
+            BarcodeModulePattern.Render(Barcode.CreateUpcA("03600029145")));
+    }
+
+    [Fact]
+    public void CreateCodabar_ProducesTheExpectedModules()
+    {
+        // Decodes as "A40156B" when the reader is asked to keep the start and stop guards.
+        Assert.Equal(
+            "10110010010101101001010101001101010110010110101001010010101101001001011",
+            BarcodeModulePattern.Render(Barcode.CreateCodabar("40156", startCharacter: 'A', stopCharacter: 'B')));
+    }
+
+    [Fact]
+    public void CreateItf_ProducesTheExpectedModules()
+    {
+        // Decodes as "12345678".
+        Assert.Equal(
+            "101011101000101011100011101110100010100011101000111000101010001010111000111011101",
+            BarcodeModulePattern.Render(Barcode.CreateItf("12345678")));
+    }
 }

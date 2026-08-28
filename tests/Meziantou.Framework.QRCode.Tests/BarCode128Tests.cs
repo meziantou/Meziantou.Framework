@@ -228,4 +228,17 @@ public class BarCode128Tests
 
         return (width, height);
     }
+
+    // ───── Module patterns ─────
+    //
+    // Produced from this encoder's output and confirmed to decode back to the payload with an
+    // external reader (ZXing) while the tests were written.
+
+    [Theory]
+    [InlineData("SKU-123456", "110100100001101110100010110001110110111011101001101110010111011110101100111001000101100011100010110111011010001100011101011")]
+    [InlineData("12345678", "1101001110010110011100100010110001110001011011000010100100011101101100011101011")]
+    public void CreateCode128_ProducesTheExpectedModules(string data, string expected)
+    {
+        Assert.Equal(expected, BarcodeModulePattern.Render(Barcode.CreateCode128(data)));
+    }
 }

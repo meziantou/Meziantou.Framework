@@ -476,26 +476,68 @@ public static class QRCodePayload
             throw new ArgumentException("Only one of remittanceReference or remittanceText can be specified.", nameof(remittanceReference));
         }
 
+        ValidateSepaField(beneficiaryName, 70, nameof(beneficiaryName));
+        ValidateSepaField(iban, 34, nameof(iban));
+        ValidateSepaField(bic, 11, nameof(bic));
+        ValidateSepaField(remittanceReference, 35, nameof(remittanceReference));
+        ValidateSepaField(remittanceText, 140, nameof(remittanceText));
+        ValidateSepaField(information, 70, nameof(information));
+
+        if (amount is < 0.01m or > 999999999.99m)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "The amount must be between 0.01 and 999999999.99.");
+        }
+
+        // EPC069-12 separates the twelve elements with a line feed, so the separator is written
+        // explicitly rather than through AppendLine, whose separator depends on the platform.
         var sb = new StringBuilder();
-        sb.AppendLine("BCD");         // Service Tag
-        sb.AppendLine("002");         // Version
-        sb.AppendLine("1");           // Character set (1 = UTF-8)
-        sb.AppendLine("SCT");         // Identification code
-        sb.AppendLine(bic ?? "");     // BIC
-        sb.AppendLine(beneficiaryName);
-        sb.AppendLine(iban);
-        sb.Append("EUR");
-        sb.AppendLine(amount.ToString("F2", CultureInfo.InvariantCulture));
+        sb.Append("BCD\n");                     // Service Tag
+        sb.Append("002\n");                     // Version
+        sb.Append("1\n");                       // Character set (1 = UTF-8)
+        sb.Append("SCT\n");                     // Identification code
+        sb.Append(bic).Append('\n');            // BIC
+        sb.Append(beneficiaryName).Append('\n');
+        sb.Append(iban).Append('\n');
+        sb.Append("EUR").Append(amount.ToString("F2", CultureInfo.InvariantCulture)).Append('\n');
 
         // Purpose (empty)
-        sb.AppendLine("");
+        sb.Append('\n');
 
         // Remittance reference (structured) or text (unstructured)
-        sb.AppendLine(remittanceReference ?? "");
-        sb.AppendLine(remittanceText ?? "");
+        sb.Append(remittanceReference).Append('\n');
+        sb.Append(remittanceText).Append('\n');
 
-        sb.Append(information ?? "");
+        sb.Append(information);
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Validates a single EPC element.
+    /// </summary>
+    /// <remarks>
+    /// EPC069-12 is positional and has no escape mechanism, so a control character in a value
+    /// cannot be represented. A line feed would shift every following element down by one and
+    /// silently redirect the payment, so the value is rejected rather than mangled.
+    /// </remarks>
+    private static void ValidateSepaField(string? value, int maxLength, string parameterName)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        foreach (var c in value)
+        {
+            if (char.IsControl(c))
+            {
+                throw new ArgumentException($"The value cannot contain control characters because the EPC format cannot escape them.", parameterName);
+            }
+        }
+
+        if (value.Length > maxLength)
+        {
+            throw new ArgumentException($"The value cannot exceed {maxLength} characters.", parameterName);
+        }
     }
 
     private static void AppendMeCardEscaped(StringBuilder sb, string value)

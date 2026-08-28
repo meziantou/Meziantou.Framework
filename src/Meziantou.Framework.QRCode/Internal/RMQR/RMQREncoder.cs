@@ -18,7 +18,7 @@ internal static class RMQREncoder
         var builder = new RMQRMatrixBuilder(version);
         builder.Build(allCodewords, ecLevel);
 
-        return new QRCode(builder.Modules, version, QRCodeType.RMQR);
+        return new QRCode(builder.Modules, version, QRCodeType.RMQR, ecLevel);
     }
 
     private static byte[] EncodeData(string data, int version, ErrorCorrectionLevel ecLevel, EncodingMode mode)

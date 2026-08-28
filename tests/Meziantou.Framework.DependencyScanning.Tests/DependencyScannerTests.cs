@@ -119,6 +119,21 @@ public sealed class DependencyScannerTests
     }
 
     [Fact]
+    public async Task ScanDirectory_PropagatesCancellationFromXmlParsing()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        await File.WriteAllTextAsync(directory.GetFullPath("test.csproj"), """
+            <Project><ItemGroup><PackageReference Include="A" Version="1.0.0" /></ItemGroup></Project>
+            """, XunitCancellationToken);
+
+        using var cancellationTokenSource = new CancellationTokenSource();
+        await cancellationTokenSource.CancelAsync();
+
+        var options = new ScannerOptions { DegreeOfParallelism = 1, Scanners = [new MsBuildReferencesDependencyScanner()] };
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, onDependencyFound: _ => { }, cancellationTokenSource.Token));
+    }
+
+    [Fact]
     public void DefaultScannersIncludeAllScanners()
     {
         var scanners = new ScannerOptions().Scanners.Select(t => t.GetType()).OrderBy(t => t.FullName, StringComparer.Ordinal).ToArray();

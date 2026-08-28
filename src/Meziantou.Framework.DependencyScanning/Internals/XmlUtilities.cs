@@ -30,8 +30,9 @@ internal static class XmlUtilities
             using var xmlReader = XmlReader.Create(stream, XmlSettings);
             return await XDocument.LoadAsync(xmlReader, loadOptions, cancellationToken).ConfigureAwait(false);
         }
-        catch
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // An invalid document is not an error: the file is simply not a document this scanner can read
             return null;
         }
     }

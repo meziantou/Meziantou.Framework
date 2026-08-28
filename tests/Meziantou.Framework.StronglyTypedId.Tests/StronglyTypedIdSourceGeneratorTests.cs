@@ -177,6 +177,56 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task GenericType_ReportedByAnalyzer()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test<T> { }
+            """;
+
+        var result = await GenerateFiles(sourceCode, mustCompile: false);
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+        Assert.Empty(result.GeneratorResult.GeneratedTrees);
+
+        var diagnostics = await Analyze(sourceCode);
+        Assert.Collection(diagnostics, diag => Assert.Equal("MFSTID0004", diag.Id));
+    }
+
+    [Fact]
+    public async Task GenericContainingType_ReportedByAnalyzer()
+    {
+        var sourceCode = """
+            public partial class Outer<T>
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+                public partial struct Test { }
+            }
+            """;
+
+        var result = await GenerateFiles(sourceCode, mustCompile: false);
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+        Assert.Empty(result.GeneratorResult.GeneratedTrees);
+
+        var diagnostics = await Analyze(sourceCode);
+        Assert.Collection(diagnostics, diag => Assert.Equal("MFSTID0004", diag.Id));
+    }
+
+    [Fact]
+    public async Task NonGenericTypeNestedInNonGenericType_NotReported()
+    {
+        var sourceCode = """
+            public partial class Outer
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+                public partial struct Test { }
+            }
+            """;
+
+        var diagnostics = await Analyze(sourceCode);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
     public async Task MultipleAttribute()
     {
         var sourceCode = """

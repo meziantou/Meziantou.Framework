@@ -15,7 +15,7 @@ public readonly struct ObjectMethodExecutorAwaitable
     private readonly Func<object, bool> _isCompletedMethod;
     private readonly Func<object, object?> _getResultMethod;
     private readonly Action<object, Action> _onCompletedMethod;
-    private readonly Action<object, Action> _unsafeOnCompletedMethod;
+    private readonly Action<object, Action>? _unsafeOnCompletedMethod;
 
     // Perf note: since we're requiring the customAwaitable to be supplied here as an object,
     // this will trigger a further allocation if it was a value type (i.e., to box it). We can't
@@ -41,7 +41,7 @@ public readonly struct ObjectMethodExecutorAwaitable
         Func<object, bool> isCompletedMethod,
         Func<object, object?> getResultMethod,
         Action<object, Action> onCompletedMethod,
-        Action<object, Action> unsafeOnCompletedMethod)
+        Action<object, Action>? unsafeOnCompletedMethod)
     {
         _customAwaitable = customAwaitable;
         _getAwaiterMethod = getAwaiterMethod;
@@ -67,20 +67,20 @@ public readonly struct ObjectMethodExecutorAwaitable
         private readonly Func<object, bool> _isCompletedMethod;
         private readonly Func<object, object?> _getResultMethod;
         private readonly Action<object, Action> _onCompletedMethod;
-        private readonly Action<object, Action> _unsafeOnCompletedMethod;
+        private readonly Action<object, Action>? _unsafeOnCompletedMethod;
 
         /// <summary>Initializes a new instance of the <see cref="Awaiter"/> struct.</summary>
         /// <param name="customAwaiter">The custom awaiter to wrap.</param>
         /// <param name="isCompletedMethod">The method to check if the operation is completed.</param>
         /// <param name="getResultMethod">The method to retrieve the result.</param>
         /// <param name="onCompletedMethod">The method to schedule continuations.</param>
-        /// <param name="unsafeOnCompletedMethod">The method to schedule continuations without capturing context.</param>
+        /// <param name="unsafeOnCompletedMethod">The method to schedule continuations without capturing context, or <see langword="null"/> if the underlying awaiter does not implement <see cref="ICriticalNotifyCompletion"/>.</param>
         public Awaiter(
             object customAwaiter,
             Func<object, bool> isCompletedMethod,
             Func<object, object?> getResultMethod,
             Action<object, Action> onCompletedMethod,
-            Action<object, Action> unsafeOnCompletedMethod)
+            Action<object, Action>? unsafeOnCompletedMethod)
         {
             _customAwaiter = customAwaiter;
             _isCompletedMethod = isCompletedMethod;

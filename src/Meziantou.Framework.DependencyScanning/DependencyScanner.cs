@@ -226,7 +226,14 @@ public abstract class DependencyScanner
         // Parse files
         var tasks = new Task[options.DegreeOfParallelism + 1];
         tasks[0] = enumeratorTask;
-        Array.Fill(tasks, Task.Run(async () =>
+        for (var i = 1; i < tasks.Length; i++)
+        {
+            tasks[i] = Task.Run(ScanFilesFromChannelAsync, cancellationToken);
+        }
+
+        return Task.WhenAll(tasks);
+
+        async Task ScanFilesFromChannelAsync()
         {
             var reader = filesToScanChannel.Reader;
             var scanners = options.EnabledScanners;
@@ -254,9 +261,7 @@ public abstract class DependencyScanner
                     }
                 }
             }
-        }, cancellationToken), startIndex: 1, options.DegreeOfParallelism);
-
-        return Task.WhenAll(tasks);
+        }
     }
 
     /// <summary>Determines whether this scanner should scan the specified file.</summary>

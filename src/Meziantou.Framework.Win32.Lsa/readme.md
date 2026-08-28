@@ -44,6 +44,8 @@ using Meziantou.Framework.Win32;
 LsaPrivateData.RemoveValue("L$MySecretKey");
 ```
 
+Removing a key that does not exist does nothing.
+
 ## Security considerations
 
 - **Consider DPAPI first.** Microsoft's own documentation for `LsaStorePrivateData` recommends [`CryptProtectData`](https://learn.microsoft.com/en-us/windows/desktop/api/dpapi/nf-dpapi-cryptprotectdata) and `CryptUnprotectData` instead, and says to use the LSA private data functions only when you need to manipulate LSA secrets specifically.

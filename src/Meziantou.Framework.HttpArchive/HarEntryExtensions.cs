@@ -7,6 +7,8 @@ namespace Meziantou.Framework.HttpArchive;
 public static class HarEntryExtensions
 {
     private const string ContentTypeHeaderName = "Content-Type";
+    private const string CookieHeaderName = "Cookie";
+    private const string SetCookieHeaderName = "Set-Cookie";
 
     private static readonly HashSet<string> ContentHeaderNames = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -21,6 +23,18 @@ public static class HarEntryExtensions
         "Expires",
         "Last-Modified",
         "Allow",
+    };
+
+    /// <summary>
+    /// Headers that describe the bytes as they travelled on the wire. The reconstructed content holds the
+    /// decoded body from <c>content.text</c>, so replaying these would describe bytes that are no longer there:
+    /// a stale Content-Length makes the send fail outright. The recorded values remain available on
+    /// <see cref="HarResponse.Content"/>, <see cref="HarRequest.BodySize"/> and the header lists.
+    /// </summary>
+    private static readonly HashSet<string> WireOnlyHeaderNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Content-Length",
+        "Content-Encoding",
     };
 
     /// <summary>Creates an <see cref="HttpRequestMessage"/> from a HAR entry.</summary>
@@ -42,6 +56,11 @@ public static class HarEntryExtensions
     /// <summary>Creates an <see cref="HttpRequestMessage"/> from a HAR request.</summary>
     /// <param name="request">The HAR request to convert.</param>
     /// <returns>An <see cref="HttpRequestMessage"/> representing the HAR request.</returns>
+    /// <remarks>
+    /// When the archive recorded the body as <c>params</c> instead of <c>text</c>, a
+    /// <c>application/x-www-form-urlencoded</c> body is rebuilt from the parameters. Multipart bodies cannot be
+    /// rebuilt this way because the original boundary is not part of the archive; they convert to an empty body.
+    /// </remarks>
     public static HttpRequestMessage ToHttpRequestMessage(this HarRequest request)
     {
         var message = new HttpRequestMessage
@@ -54,15 +73,68 @@ public static class HarEntryExtensions
         HttpContent? content = null;
         if (request.PostData is not null)
         {
-            content = request.PostData.Text is not null
-                ? new ByteArrayContent(Encoding.UTF8.GetBytes(request.PostData.Text))
-                : new ByteArrayContent([]);
-
-            message.Content = content;
+            content = CreateRequestContent(request.PostData);
+        }
+        else if (HasContentHeader(request.Headers))
+        {
+            // The body was not captured, but the entity headers describing it were: keep somewhere to put them.
+            content = new ByteArrayContent([]);
         }
 
+        message.Content = content;
+
         CopyHeaders(request.Headers, message.Headers, content, request.PostData?.MimeType);
+
+        // Some tools record cookies only in the structured list, without the header that carried them.
+        if (request.Cookies.Count > 0 && !message.Headers.Contains(CookieHeaderName))
+        {
+            message.Headers.TryAddWithoutValidation(CookieHeaderName, BuildCookieHeader(request.Cookies));
+        }
+
         return message;
+    }
+
+    private static ByteArrayContent CreateRequestContent(HarPostData postData)
+    {
+        if (postData.Text is not null)
+            return new ByteArrayContent(Encoding.UTF8.GetBytes(postData.Text));
+
+        if (postData.Params is { Count: > 0 } parameters &&
+            postData.MimeType.StartsWith("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
+        {
+            return new ByteArrayContent(Encoding.UTF8.GetBytes(BuildFormUrlEncodedBody(parameters)));
+        }
+
+        return new ByteArrayContent([]);
+    }
+
+    private static string BuildFormUrlEncodedBody(List<HarPostDataParameter> parameters)
+    {
+        // Archives store the parameters already percent-encoded, exactly as they were split out of the body,
+        // so they are joined back as-is rather than re-encoded.
+        var builder = new StringBuilder();
+        foreach (var parameter in parameters)
+        {
+            if (builder.Length > 0)
+            {
+                builder.Append('&');
+            }
+
+            builder.Append(parameter.Name).Append('=').Append(parameter.Value);
+        }
+
+        return builder.ToString();
+    }
+
+    private static bool HasContentHeader(List<HarHeader> headers)
+    {
+        foreach (var header in headers)
+        {
+            if (!WireOnlyHeaderNames.Contains(header.Name) && ContentHeaderNames.Contains(header.Name))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>Creates an <see cref="HttpResponseMessage"/> from a HAR response.</summary>
@@ -81,7 +153,65 @@ public static class HarEntryExtensions
         message.Content = content;
 
         CopyHeaders(response.Headers, message.Headers, content, response.Content.MimeType);
+
+        if (response.Cookies.Count > 0 && !message.Headers.Contains(SetCookieHeaderName))
+        {
+            foreach (var cookie in response.Cookies)
+            {
+                message.Headers.TryAddWithoutValidation(SetCookieHeaderName, BuildSetCookieHeader(cookie));
+            }
+        }
+
         return message;
+    }
+
+    private static string BuildCookieHeader(List<HarCookie> cookies)
+    {
+        var builder = new StringBuilder();
+        foreach (var cookie in cookies)
+        {
+            if (builder.Length > 0)
+            {
+                builder.Append("; ");
+            }
+
+            builder.Append(cookie.Name).Append('=').Append(cookie.Value);
+        }
+
+        return builder.ToString();
+    }
+
+    private static string BuildSetCookieHeader(HarCookie cookie)
+    {
+        var builder = new StringBuilder();
+        builder.Append(cookie.Name).Append('=').Append(cookie.Value);
+
+        if (!string.IsNullOrEmpty(cookie.Path))
+        {
+            builder.Append("; Path=").Append(cookie.Path);
+        }
+
+        if (!string.IsNullOrEmpty(cookie.Domain))
+        {
+            builder.Append("; Domain=").Append(cookie.Domain);
+        }
+
+        if (cookie.Expires is { } expires)
+        {
+            builder.Append("; Expires=").Append(expires.UtcDateTime.ToString("R", CultureInfo.InvariantCulture));
+        }
+
+        if (cookie.HttpOnly is true)
+        {
+            builder.Append("; HttpOnly");
+        }
+
+        if (cookie.Secure is true)
+        {
+            builder.Append("; Secure");
+        }
+
+        return builder.ToString();
     }
 
     private static ByteArrayContent CreateContent(HarContent harContent)
@@ -118,6 +248,9 @@ public static class HarEntryExtensions
         var hasContentType = false;
         foreach (var header in headers)
         {
+            if (WireOnlyHeaderNames.Contains(header.Name))
+                continue;
+
             if (ContentHeaderNames.Contains(header.Name))
             {
                 if (content?.Headers.TryAddWithoutValidation(header.Name, header.Value) is true)

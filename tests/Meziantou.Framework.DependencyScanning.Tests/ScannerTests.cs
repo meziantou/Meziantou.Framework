@@ -66,6 +66,44 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Theory]
+    [InlineData("utf-8")]
+    [InlineData("utf-8-bom")]
+    [InlineData("utf-16le")]
+    [InlineData("utf-16be")]
+    public async Task NpmPackageJsonDependencies_Encodings(string encodingName)
+    {
+        Encoding encoding = encodingName switch
+        {
+            "utf-8" => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+            "utf-8-bom" => new UTF8Encoding(encoderShouldEmitUTF8Identifier: true),
+            "utf-16le" => new UnicodeEncoding(bigEndian: false, byteOrderMark: true),
+            _ => new UnicodeEncoding(bigEndian: true, byteOrderMark: true),
+        };
+
+        const string Content = /*lang=json,strict*/ """
+{
+  "dependencies": {
+    "a": "1.0.0"
+  }
+}
+""";
+        const string Expected = /*lang=json,strict*/ """
+{
+  "dependencies": {
+    "a": "2.0.0"
+  }
+}
+""";
+        AddFile("package.json", [.. encoding.GetPreamble(), .. encoding.GetBytes(Content)]);
+
+        var result = await GetDependencies<NpmPackageJsonDependencyScanner>();
+        AssertContainDependency(result, (DependencyType.Npm, "a", "1.0.0", 0, 0));
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("package.json", Expected, ignoreNewLines: true);
+    }
+
+    [Theory]
     [InlineData("http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd")]
     [InlineData("http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd")]
     [InlineData("http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd")]

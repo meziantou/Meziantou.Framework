@@ -120,14 +120,13 @@ public partial class TemporaryContainer : IAsyncDisposable
             return;
 
         _disposed = true;
-        await StopForwardingLogsAsync().ConfigureAwait(false);
-
-        if (_id is null || _definition.ReuseId is not null)
-            return;
 
         try
         {
-            await Runtime.DeleteAsync(_id, CancellationToken.None).ConfigureAwait(false);
+            await StopForwardingLogsAsync().ConfigureAwait(false);
+
+            if (_id is not null && _definition.ReuseId is null)
+                await Runtime.DeleteAsync(_id, CancellationToken.None).ConfigureAwait(false);
         }
         catch
         {

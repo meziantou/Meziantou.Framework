@@ -6,6 +6,9 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 /// <summary>Scans Dockerfile and Containerfile for Docker image dependencies in FROM and COPY --from instructions.</summary>
 public sealed partial class DockerfileDependencyScanner : DependencyScanner
 {
+    private static readonly string[] FileNames = ["Dockerfile", "Containerfile"];
+    private static readonly string[] Extensions = [".Dockerfile", ".Containerfile"];
+
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.DockerImage];
 
     public override async ValueTask ScanAsync(ScanFileContext context)
@@ -39,7 +42,25 @@ public sealed partial class DockerfileDependencyScanner : DependencyScanner
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.HasFileName("Dockerfile", ignoreCase: true);
+        // <name>.Dockerfile
+        if (context.HasExtension(Extensions, ignoreCase: true))
+            return true;
+
+        foreach (var fileName in FileNames)
+        {
+            if (context.HasFileName(fileName, ignoreCase: true))
+                return true;
+
+            // Dockerfile.<name>
+            if (context.FileName.Length > fileName.Length &&
+                context.FileName[fileName.Length] is '.' &&
+                context.FileName.StartsWith(fileName, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     [GeneratedRegex(@"^FROM\s*(?<ImageName>[^\s]+):(?<Version>[^\s]+)(\s+AS\s+\w+)?\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10000)]

@@ -2,6 +2,8 @@ namespace Meziantou.Framework.DependencyScanning.Internals;
 
 internal static class StreamUtilities
 {
+    private static readonly Encoding BigEndianUTF32 = new UTF32Encoding(bigEndian: true, byteOrderMark: true);
+
     public static StreamReader CreateReader(Stream stream, Encoding encoding)
     {
         return new StreamReader(stream, encoding, leaveOpen: true);
@@ -38,14 +40,18 @@ internal static class StreamUtilities
         if (buffer is [0xef, 0xbb, 0xbf, ..])
             return Encoding.UTF8;
 
+        // The UTF-32 BOMs must be tested before the UTF-16 ones: the UTF-32LE BOM starts with the UTF-16LE BOM
+        if (buffer is [0xff, 0xfe, 0x00, 0x00])
+            return Encoding.UTF32; //UTF-32LE
+
+        if (buffer is [0x00, 0x00, 0xfe, 0xff])
+            return BigEndianUTF32;
+
         if (buffer is [0xff, 0xfe, ..])
             return Encoding.Unicode; //UTF-16LE
 
         if (buffer is [0xfe, 0xff, ..])
             return Encoding.BigEndianUnicode; //UTF-16BE
-
-        if (buffer is [0x00, 0x00, 0xfe, 0xff, ..])
-            return Encoding.UTF32;
 
         return Encoding.Default;
     }

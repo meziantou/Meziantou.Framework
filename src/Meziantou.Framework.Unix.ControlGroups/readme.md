@@ -46,8 +46,9 @@ var subGroup = myGroup.CreateOrGetChild("worker1");
 ### CPU Control
 
 ```csharp
-// Enable CPU controller
-myGroup.SetControllers("cpu");
+// Enable the CPU controller for the children of the root cgroup, which is where myGroup lives.
+// Controllers are always enabled on the PARENT, never on the cgroup being limited.
+root.SetControllers("cpu");
 
 // Set CPU weight (relative share, 1-10000, default 100)
 myGroup.SetCpuWeight(200); // 2x the default share
@@ -71,8 +72,8 @@ if (cpuStat != null)
 ### Memory Control
 
 ```csharp
-// Enable memory controller
-myGroup.SetControllers("memory");
+// Enable the memory controller on the parent (see the note in "CPU Control")
+root.SetControllers("memory");
 
 // Set hard memory limit (1 GB)
 myGroup.SetMemoryMax(1024L * 1024 * 1024);
@@ -103,8 +104,8 @@ if (memoryStat != null)
 ### IO Control
 
 ```csharp
-// Enable IO controller
-myGroup.SetControllers("io");
+// Enable the IO controller on the parent
+root.SetControllers("io");
 
 // Set default IO weight
 myGroup.SetDefaultIoWeight(200);
@@ -135,8 +136,8 @@ myGroup.RemoveIoMax(8, 0);
 ### PID Control
 
 ```csharp
-// Enable PIDs controller
-myGroup.SetControllers("pids");
+// Enable the PIDs controller on the parent
+root.SetControllers("pids");
 
 // Limit to 100 processes
 myGroup.SetPidsMax(100);
@@ -153,8 +154,8 @@ Console.WriteLine($"Max processes: {maxPids}");
 ### CPU Affinity (Cpuset)
 
 ```csharp
-// Enable cpuset controller
-myGroup.SetControllers("cpuset");
+// Enable the cpuset controller on the parent
+root.SetControllers("cpuset");
 
 // Restrict to CPUs 0, 1, 2
 myGroup.SetCpusetCpus(0, 1, 2);
@@ -251,7 +252,7 @@ Console.WriteLine($"Available: {string.Join(", ", available)}");
 var enabled = myGroup.GetEnabledControllers();
 Console.WriteLine($"Enabled: {string.Join(", ", enabled)}");
 
-// Enable multiple controllers at once
+// Enable multiple controllers at once for myGroup's children
 myGroup.SetControllers("cpu", "memory", "io");
 
 // Disable a controller
@@ -271,15 +272,17 @@ myGroup.Delete();
 
 1. **Permissions**: Managing cgroups typically requires root privileges or appropriate capabilities.
 
-2. **No Internal Process Constraint**: Non-root cgroups can only enable controllers if they don't contain any processes. Move processes to leaf cgroups first.
+2. **Controllers are enabled on the parent**: `SetControllers` writes to `cgroup.subtree_control`, which enables controllers for a cgroup's **children**. To limit `myGroup`, enable the controller on `myGroup.Parent`. Calling `myGroup.SetControllers("cpu")` makes `cpu.*` files appear in `myGroup`'s children, not in `myGroup` itself.
 
-3. **Hierarchical**: Resource limits are hierarchical. A child cgroup can't use more resources than its parent allows.
+3. **No Internal Process Constraint**: Non-root cgroups can only enable controllers if they don't contain any processes. Move processes to leaf cgroups first.
 
-4. **Culture Invariant**: All number parsing and formatting use `CultureInfo.InvariantCulture` for consistency.
+4. **Hierarchical**: Resource limits are hierarchical. A child cgroup can't use more resources than its parent allows.
 
-5. **cgroup v2 Only**: This library only supports cgroup v2. For systems still using cgroup v1, consider upgrading or use v1-specific tools.
+5. **Culture Invariant**: All number parsing and formatting use `CultureInfo.InvariantCulture` for consistency.
 
-6. **Error Handling**: File operations may throw `IOException`, `UnauthorizedAccessException`, or `DirectoryNotFoundException`. Handle these appropriately.
+6. **cgroup v2 Only**: This library only supports cgroup v2. For systems still using cgroup v1, consider upgrading or use v1-specific tools.
+
+7. **Error Handling**: File operations may throw `IOException`, `UnauthorizedAccessException`, or `DirectoryNotFoundException`. Handle these appropriately.
 
 ## Example: Complete Application Resource Limiting
 
@@ -290,14 +293,14 @@ using System.Diagnostics;
 // Create a cgroup for the application
 var appGroup = CGroup2.Root.CreateOrGetChild("myapp");
 
-// Enable controllers
-appGroup.SetControllers("cpu", "memory", "io", "pids");
+// Enable controllers on the parent so they apply to appGroup
+CGroup2.Root.SetControllers("cpu", "memory", "io", "pids");
 
 // Configure limits
 appGroup.SetCpuWeight(100);       // Normal priority
 appGroup.SetCpuMax(200_000, 100_000);    // Max 2 CPUs
 appGroup.SetMemoryMax(2L * 1024 * 1024 * 1024); // 2 GB
-appGroup.SetMemoryHigh(1536L * 1024 * 1024 * 1024); // Start throttling at 1.5 GB
+appGroup.SetMemoryHigh(1536L * 1024 * 1024); // Start throttling at 1.5 GB
 appGroup.SetPidsMax(200);       // Max 200 processes
 
 // Start your application

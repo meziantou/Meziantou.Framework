@@ -5,6 +5,9 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 
 internal static class NuGetPackageSourceResolver
 {
+    private const int NoMatch = -1;
+    private const int ExactMatch = int.MaxValue;
+
     private static readonly StringComparer Comparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
     public static NuGetSourceResolution Resolve(FullPath dependencyFile, string packageName)
@@ -99,16 +102,27 @@ internal static class NuGetPackageSourceResolver
         if (packageMappings.Count is 0)
             return [.. packageSources.Values];
 
+        // NuGet resolves a package to the source with the longest matching pattern, not to every source
+        // whose patterns happen to match. Querying them all would send an internally-mapped package name
+        // to a wildcard-mapped public feed, which is exactly what source mapping exists to prevent.
+        var bestScore = NoMatch;
         var matches = new List<string>();
         foreach (var (sourceName, patterns) in packageMappings)
         {
             if (!packageSources.TryGetValue(sourceName, out var sourceUrl))
                 continue;
 
-            if (IsMatch(packageName, patterns))
+            var score = GetMatchScore(packageName, patterns);
+            if (score is NoMatch || score < bestScore)
+                continue;
+
+            if (score > bestScore)
             {
-                matches.Add(sourceUrl);
+                bestScore = score;
+                matches.Clear();
             }
+
+            matches.Add(sourceUrl);
         }
 
         if (matches.Count is 0)
@@ -117,17 +131,33 @@ internal static class NuGetPackageSourceResolver
         return [.. matches.Distinct(Comparer)];
     }
 
-    private static bool IsMatch(string packageName, IReadOnlyCollection<string> patterns)
+    private static int GetMatchScore(string packageName, IReadOnlyCollection<string> patterns)
     {
+        var best = NoMatch;
         foreach (var pattern in patterns)
         {
-            if (GlobMatch(packageName, pattern))
+            var score = GetMatchScore(packageName, pattern);
+            if (score > best)
             {
-                return true;
+                best = score;
             }
         }
 
-        return false;
+        return best;
+    }
+
+    /// <summary>
+    /// Ranks how specifically <paramref name="pattern"/> matches <paramref name="packageName"/>: an exact
+    /// pattern outranks every wildcard, and among wildcards the longest literal prefix wins.
+    /// Returns <see cref="NoMatch"/> when the pattern does not match at all.
+    /// </summary>
+    private static int GetMatchScore(string packageName, string pattern)
+    {
+        var wildcardIndex = pattern.IndexOf('*', StringComparison.Ordinal);
+        if (wildcardIndex < 0)
+            return Comparer.Equals(packageName, pattern) ? ExactMatch : NoMatch;
+
+        return GlobMatch(packageName, pattern) ? wildcardIndex : NoMatch;
     }
 
     private static bool GlobMatch(string text, string pattern)

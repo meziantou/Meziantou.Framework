@@ -30,29 +30,10 @@ internal static class XmlUtilities
             using var xmlReader = XmlReader.Create(stream, XmlSettings);
             return await XDocument.LoadAsync(xmlReader, loadOptions, cancellationToken).ConfigureAwait(false);
         }
-        catch
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // An invalid document is not an error: the file is simply not a document this scanner can read
             return null;
-        }
-    }
-
-    public static async Task SaveDocumentWithoutClosingStream(Stream stream, XDocument document, CancellationToken cancellationToken)
-    {
-        var settings = new XmlWriterSettings
-        {
-            OmitXmlDeclaration = document.Declaration is null,
-            CloseOutput = false,
-            Async = true,
-            Indent = false,
-        };
-        var xmlWriter = XmlWriter.Create(stream, settings);
-        try
-        {
-            await document.SaveAsync(xmlWriter, cancellationToken).ConfigureAwait(false);
-        }
-        finally
-        {
-            await xmlWriter.DisposeAsync().ConfigureAwait(false);
         }
     }
 

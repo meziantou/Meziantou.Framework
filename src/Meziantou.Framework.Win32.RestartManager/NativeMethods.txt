@@ -4,6 +4,7 @@ RmRegisterResources
 RmGetList
 RmShutdown
 RmRestart
+RmCancelCurrentTask
 RmEndSession
 
 RM_PROCESS_INFO

@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
+using Xunit.Sdk;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
@@ -941,6 +943,15 @@ public sealed partial class SnapshotTests
         Assert.True(File.Exists(actualPath1));
     }
 
+    [Fact]
+    public void DefaultAssertionExceptionBuilder_UsesTheXunitExceptionType()
+    {
+        var exception = AssertionExceptionBuilder.Default.CreateException("the message");
+
+        Assert.IsType<XunitException>(exception);
+        Assert.Equal("the message", exception.Message);
+    }
+
     [Theory]
     [InlineData("DISALLOW", nameof(SnapshotUpdateStrategy.Disallow))]
     [InlineData("overwrite", nameof(SnapshotUpdateStrategy.Overwrite))]
@@ -1322,6 +1333,74 @@ public sealed partial class SnapshotTests
             result = new SerializedSnapshot([new SnapshotData("txt", Encoding.UTF8.GetBytes(value))]);
             return true;
         }
+    }
+
+    [Fact]
+    public void DefaultSnapshotPath_IsStableWhenTheAssertionMoves()
+    {
+        var settings = new SnapshotSettings();
+        var sourceFilePath = FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs"));
+        var methodName = "SampleTest" + new string('a', 200);
+
+        SnapshotPathContext CreateContext(int lineNumber) => new(
+            sourceFilePath,
+            "SampleTests",
+            methodName,
+            lineNumber,
+            SnapshotType.Default,
+            Index: 0,
+            Extension: "txt",
+            TestContext: null,
+            settings);
+
+        var beforeTheEdit = settings.SnapshotPathStrategy(CreateContext(12));
+        var afterTheEdit = settings.SnapshotPathStrategy(CreateContext(4711));
+
+        Assert.Equal(beforeTheEdit, afterTheEdit);
+        Assert.Matches(SnapshotNameWithHashSuffixRegex(), beforeTheEdit.Name);
+    }
+
+    [GeneratedRegex("_[0-9a-f]{8}\\.verified\\.txt$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex SnapshotNameWithHashSuffixRegex();
+
+    [Fact]
+    public void GitTool_GetGitConfiguration_ReadsTheValueWithoutDeadlocking()
+    {
+        if (ExecutableFinder.GetFullExecutablePath("git") is null)
+            return;
+
+        using var directory = TemporaryDirectory.Create();
+        RunGit(directory.FullPath, "init");
+        RunGit(directory.FullPath, "config", "difftool.sample.cmd", "sample $LOCAL $REMOTE");
+
+        Assert.Equal("sample $LOCAL $REMOTE", TestGitTool.Read(directory.FullPath, "difftool.sample.cmd"));
+        Assert.Null(TestGitTool.Read(directory.FullPath, "difftool.missing.cmd"));
+
+        static void RunGit(string workingDirectory, params string[] arguments)
+        {
+            var psi = new ProcessStartInfo(ExecutableFinder.GetFullExecutablePath("git")!)
+            {
+                WorkingDirectory = workingDirectory,
+                CreateNoWindow = true,
+                UseShellExecute = false,
+            };
+
+            foreach (var argument in arguments)
+            {
+                psi.ArgumentList.Add(argument);
+            }
+
+            using var process = Process.Start(psi)!;
+            process.WaitForExit();
+            Assert.Equal(0, process.ExitCode);
+        }
+    }
+
+    private sealed class TestGitTool : GitTool
+    {
+        public override MergeToolResult? Start(string currentFilePath, string newFilePath) => null;
+
+        public static string? Read(string? workingDirectory, string key) => GetGitConfiguration(workingDirectory, key);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
@@ -85,5 +86,58 @@ public class RestartManagerTests
         {
             directory.Delete(recursive: true);
         }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void JoinSession_WithUnknownKey_ReportsTheFailingFunction()
+    {
+        var exception = Assert.Throws<Win32Exception>(() => RestartManager.JoinSession("00000000000000000000000000000000"));
+        Assert.StartsWith("RmJoinSession failed", exception.Message);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetProcessesLockingFiles()
+    {
+        var unlockedPath = Path.GetTempFileName();
+        var lockedPath = Path.GetTempFileName();
+        try
+        {
+            using (File.Open(lockedPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                var processes = RestartManager.GetProcessesLockingFiles([unlockedPath, lockedPath]);
+                Assert.Contains(_currentProcessId, processes.Select(process => process.Id));
+            }
+        }
+        finally
+        {
+            File.Delete(unlockedPath);
+            File.Delete(lockedPath);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void Dispose_CanBeCalledMultipleTimes()
+    {
+        var session = RestartManager.CreateSession();
+        session.Dispose();
+        session.Dispose();
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void RegisterFile_AfterDispose_ThrowsObjectDisposedException()
+    {
+        var session = RestartManager.CreateSession();
+        session.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => session.RegisterFile(@"C:\does-not-matter.txt"));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void IsResourcesLocked_AfterDispose_ThrowsObjectDisposedException()
+    {
+        var session = RestartManager.CreateSession();
+        session.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => _ = session.IsResourcesLocked());
     }
 }

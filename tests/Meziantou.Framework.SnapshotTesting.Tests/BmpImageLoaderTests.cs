@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
 public sealed class BmpImageLoaderTests
@@ -61,5 +63,30 @@ public sealed class BmpImageLoaderTests
         Assert.Equal(bmpImage.Height, pngImage.Height);
         Assert.Equal(bmpImage.Pixels.ToArray(), pngImage.Pixels.ToArray());
         Assert.Equal(bmpImage, pngImage);
+    }
+
+    [Fact]
+    public void Image_Load_ReportsInvalidDataForAnOutOfRangePixelDataOffset()
+    {
+        var imageData = ImageTestData.CreateBmp24(width: 1, height: 1, pixels: [0xFF112233u], pixelsPerMeter: 2835);
+
+        // The pixel data offset is a raw uint in the file header; the loader narrows it with a checked cast,
+        // which would otherwise surface as OverflowException.
+        BinaryPrimitives.WriteUInt32LittleEndian(imageData.AsSpan(10), uint.MaxValue);
+
+        var exception = Assert.Throws<InvalidDataException>(() => Image.Load(imageData));
+        Assert.IsType<OverflowException>(exception.InnerException);
+    }
+
+    [Fact]
+    public void ImageComparer_ReportsADifferenceForCorruptImageData()
+    {
+        var expected = ImageTestData.CreateBmp24(width: 1, height: 1, pixels: [0xFF112233u], pixelsPerMeter: 2835);
+        var actual = ImageTestData.CreateBmp24(width: 1, height: 1, pixels: [0xFF112233u], pixelsPerMeter: 2835);
+        BinaryPrimitives.WriteUInt32LittleEndian(actual.AsSpan(10), uint.MaxValue);
+
+        var equal = ImageComparer.Instance.Equals(new SnapshotData("bmp", expected), new SnapshotData("bmp", actual));
+
+        Assert.False(equal);
     }
 }

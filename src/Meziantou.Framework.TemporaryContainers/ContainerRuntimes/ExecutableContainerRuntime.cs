@@ -150,6 +150,11 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
 
     internal abstract ContainerInfo ParseInspect(string output);
 
+    /// <summary>Last chance to adjust the definition before a new container is created. Not called when an existing container is adopted through <see cref="ContainerDefinition.ReuseId"/>.</summary>
+    internal virtual void PrepareDefinitionForCreate(ContainerDefinition definition)
+    {
+    }
+
     internal override Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {
         return EnsureCreatedCoreAsync(definition, cancellationToken);
@@ -162,6 +167,8 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
         {
             return existingId;
         }
+
+        PrepareDefinitionForCreate(definition);
 
         var imageRef = await PrepareImageAsync(definition.Image, definition.PullPolicy, cancellationToken).ConfigureAwait(false);
         var args = BuildCreateArguments(definition, imageRef);
@@ -387,17 +394,5 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
     private static string EscapePowerShellSingleQuotedString(string value)
     {
         return value.Replace("'", "''", StringComparison.Ordinal);
-    }
-
-    protected static DateTimeOffset? ParseDate(string? value)
-    {
-        if (string.IsNullOrEmpty(value))
-            return null;
-
-        if (!DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var result))
-            return null;
-
-        // Runtimes report the zero date for events that never happened (for example FinishedAt on a running container).
-        return result.UtcDateTime.Year <= 1 ? null : result;
     }
 }

@@ -277,4 +277,14 @@ public class QRCodeConsoleRendererTests
             """);
     }
 
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    public void ToConsoleString_NegativeQuietZone_Throws(int quietZoneModules)
+    {
+        // This used to return an empty string, while every other renderer threw.
+        var qr = QRCode.Create("HELLO", ErrorCorrectionLevel.L);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToConsoleString(new QRCodeConsoleOptions { QuietZoneModules = quietZoneModules }));
+    }
 }

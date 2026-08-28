@@ -145,7 +145,7 @@ public sealed class FixedStringBuilderTests
         ReadOnlySpan<char> span = "World".AsSpan();
         FixedStringBuilder16 value = $"Hi {span}";
 
-        Assert.Equal("Hi World", value.ToString());
+        Assert.Equal("Hi World", value.ToString(null, null));
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public sealed class FixedStringBuilderTests
         ReadOnlySpan<char> span = "ab".AsSpan();
         FixedStringBuilder16 value = $"{span,4}";
 
-        Assert.Equal("  ab", value.ToString());
+        Assert.Equal("  ab", value.ToString(null, null));
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public sealed class FixedStringBuilderTests
     {
         FixedStringBuilder16 value = $"{new NotSpanFormattable()}";
 
-        Assert.Equal("custom", value.ToString());
+        Assert.Equal("custom", value.ToString(null, null));
     }
 
     [Fact]
@@ -170,7 +170,7 @@ public sealed class FixedStringBuilderTests
     {
         FixedStringBuilder16 value = $"{DayOfWeek.Monday}";
 
-        Assert.Equal("Monday", value.ToString());
+        Assert.Equal("Monday", value.ToString(null, null));
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public sealed class FixedStringBuilderTests
     {
         FixedStringBuilder16 value = $"{new OnlyFormattable():X}";
 
-        Assert.Equal("fmt:X", value.ToString());
+        Assert.Equal("fmt:X", value.ToString(null, null));
     }
 
     [Fact]
@@ -186,7 +186,7 @@ public sealed class FixedStringBuilderTests
     {
         FixedStringBuilder16 value = $"{"ab",4:X}";
 
-        Assert.Equal("  ab", value.ToString());
+        Assert.Equal("  ab", value.ToString(null, null));
     }
 
     [Fact]
@@ -195,7 +195,7 @@ public sealed class FixedStringBuilderTests
         object? nullValue = null;
         FixedStringBuilder16 value = $"[{nullValue}]";
 
-        Assert.Equal("[]", value.ToString());
+        Assert.Equal("[]", value.ToString(null, null));
     }
 
     private sealed class NotSpanFormattable

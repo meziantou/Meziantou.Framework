@@ -8,6 +8,13 @@ namespace Meziantou.Framework.FixedStringBuilder.Generator;
 [Generator]
 public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
 {
+    /// <summary>
+    /// The largest capacity a fixed string can have. The generated type counts its characters in a
+    /// <see cref="short"/>, so a larger capacity would let the length overflow and produce a negative
+    /// <c>Length</c> instead of throwing.
+    /// </summary>
+    internal const int MaximumLength = short.MaxValue;
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         context.RegisterPostInitializationOutput(static context =>
@@ -68,7 +75,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
             if (attribute.ConstructorArguments.Length != 1)
                 continue;
 
-            if (attribute.ConstructorArguments[0].Value is int length and > 0)
+            if (attribute.ConstructorArguments[0].Value is int length and > 0 and <= MaximumLength)
             {
                 var fixedStringInterface = context.SemanticModel.Compilation.GetTypeByMetadataName("Meziantou.Framework.FixedStringBuilder.IFixedString`1");
                 var fixedStringNonGenericInterface = context.SemanticModel.Compilation.GetTypeByMetadataName("Meziantou.Framework.FixedStringBuilder.IFixedString");

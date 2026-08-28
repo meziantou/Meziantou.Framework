@@ -181,6 +181,38 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         Assert.Equal("MFFSG0003", diagnostic.Id);
     }
 
+    [Fact]
+    public async Task AnalyzerReportsLengthAboveMaximum()
+    {
+        const string Source = """
+            [FixedStringBuilderAttribute(32768)]
+            public partial struct Sample
+            {
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(Source);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("MFFSG0004", diagnostic.Id);
+    }
+
+    [Fact]
+    public async Task DoesNotGenerateWhenLengthIsAboveMaximum()
+    {
+        const string Source = """
+            [FixedStringBuilderAttribute(32768)]
+            public partial struct Sample
+            {
+            }
+            """;
+
+        var (runResult, _) = await GenerateAsync(Source);
+
+        // Only the two post-initialization sources: the type itself is not generated because its length would
+        // overflow the short used to count the characters.
+        Assert.HasCount(2, runResult.Results[0].GeneratedSources);
+    }
+
     private static async Task<(GeneratorDriverRunResult RunResult, Compilation Compilation)> GenerateAsync(string source)
     {
         var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");

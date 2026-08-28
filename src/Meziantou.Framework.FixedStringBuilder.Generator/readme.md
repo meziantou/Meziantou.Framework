@@ -27,4 +27,5 @@ Generated fixed strings enforce capacity and throw `ArgumentException` when data
 | `MFFSG0001` | FixedStringBuilderGenerator | FixedStringBuilderAttribute requires one argument | Error | ✔️ |
 | `MFFSG0002` | FixedStringBuilderGenerator | FixedStringBuilderAttribute argument type is invalid | Error | ✔️ |
 | `MFFSG0003` | FixedStringBuilderGenerator | FixedStringBuilderAttribute length must be positive | Error | ✔️ |
+| `MFFSG0004` | FixedStringBuilderGenerator | FixedStringBuilderAttribute length is too large | Error | ✔️ |
 <!-- analyzer-rules -->

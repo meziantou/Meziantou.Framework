@@ -664,8 +664,7 @@ public sealed partial class StronglyTypedIdTests
     {
         private IdInt32Validated(int value)
         {
-            if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value));
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
 
             _value = value;
         }

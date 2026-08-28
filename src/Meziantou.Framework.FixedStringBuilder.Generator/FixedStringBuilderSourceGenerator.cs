@@ -251,7 +251,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
-        AppendLine("public int Length");
+        AppendLine("public readonly int Length");
         AppendLine("{");
         indent++;
         AppendLine("get => _length;");
@@ -354,19 +354,19 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
-        AppendLine($"public bool Equals({simpleTypeName} other) => _length == other._length && AsSpan().SequenceEqual(other.AsSpan());");
+        AppendLine($"public readonly bool Equals({simpleTypeName} other) => _length == other._length && AsSpan().SequenceEqual(other.AsSpan());");
         AppendLine();
-        AppendLine($"public bool Equals({simpleTypeName} other, StringComparison comparison) => AsSpan().Equals(other.AsSpan(), comparison);");
+        AppendLine($"public readonly bool Equals({simpleTypeName} other, StringComparison comparison) => AsSpan().Equals(other.AsSpan(), comparison);");
         AppendLine();
         AppendLine($"public static bool operator ==({simpleTypeName} left, {simpleTypeName} right) => left.Equals(right);");
         AppendLine();
         AppendLine($"public static bool operator !=({simpleTypeName} left, {simpleTypeName} right) => !left.Equals(right);");
         AppendLine();
 
-        AppendLine("public override bool Equals(object? obj) => obj is " + simpleTypeName + " other && Equals(other);");
+        AppendLine("public override readonly bool Equals(object? obj) => obj is " + simpleTypeName + " other && Equals(other);");
         AppendLine();
 
-        AppendLine("public override int GetHashCode()");
+        AppendLine("public override readonly int GetHashCode()");
         AppendLine("{");
         indent++;
         AppendLine("var hash = unchecked((int)2166136261);");
@@ -394,13 +394,13 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
 
         AppendLine($"public static implicit operator {simpleTypeName}(string value) => new(value);");
         AppendLine();
-        AppendLine("public override string ToString() => ToString(null, null);");
+        AppendLine("public override readonly string ToString() => ToString(null, null);");
         AppendLine();
-        AppendLine("public string ToString(string? format, IFormatProvider? formatProvider) => _length == 0 ? string.Empty : new string(AsSpan());");
+        AppendLine("public readonly string ToString(string? format, IFormatProvider? formatProvider) => _length == 0 ? string.Empty : new string(AsSpan());");
         AppendLine();
 
         AppendLine("[EditorBrowsable(EditorBrowsableState.Never)]");
-        AppendLine("public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)");
+        AppendLine("public readonly bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)");
         AppendLine("{");
         indent++;
         AppendLine("if (destination.Length < _length)");

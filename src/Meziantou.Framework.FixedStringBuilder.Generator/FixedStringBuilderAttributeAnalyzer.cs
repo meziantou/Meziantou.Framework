@@ -39,10 +39,19 @@ public sealed class FixedStringBuilderAttributeAnalyzer : DiagnosticAnalyzer
     {
         context.EnableConcurrentExecution();
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
-        context.RegisterSyntaxNodeAction(static context => AnalyzeTypeDeclaration(context), SyntaxKind.StructDeclaration);
+        context.RegisterCompilationStartAction(static context =>
+        {
+            // Resolve the attribute once per compilation so each declaration can be compared against the symbol
+            // itself. When the generator did not run there is no attribute and nothing to analyze.
+            var attributeSymbol = context.Compilation.GetTypeByMetadataName("FixedStringBuilderAttribute");
+            if (attributeSymbol is null)
+                return;
+
+            context.RegisterSyntaxNodeAction(context => AnalyzeTypeDeclaration(context, attributeSymbol), SyntaxKind.StructDeclaration);
+        });
     }
 
-    private static void AnalyzeTypeDeclaration(SyntaxNodeAnalysisContext context)
+    private static void AnalyzeTypeDeclaration(SyntaxNodeAnalysisContext context, INamedTypeSymbol attributeSymbol)
     {
         if (context.Node is not TypeDeclarationSyntax typeDeclarationSyntax)
             return;
@@ -51,12 +60,12 @@ public sealed class FixedStringBuilderAttributeAnalyzer : DiagnosticAnalyzer
         {
             foreach (var attributeSyntax in attributeList.Attributes)
             {
-                if (!IsCandidate(attributeSyntax.Name))
-                    continue;
+                var symbolInfo = context.SemanticModel.GetSymbolInfo(attributeSyntax, context.CancellationToken);
 
-                var symbolInfo = context.SemanticModel.GetSymbolInfo(attributeSyntax, context.CancellationToken).Symbol as IMethodSymbol;
-                if (symbolInfo is not null &&
-                    (symbolInfo.ContainingType.Name is not "FixedStringBuilderAttribute" || !symbolInfo.ContainingType.ContainingNamespace.IsGlobalNamespace))
+                // The symbol does not bind when the arguments do not match any constructor, which is exactly what
+                // MFFSG0001 reports, so the candidates are considered too.
+                if ((symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault()) is not IMethodSymbol attributeConstructor ||
+                    !SymbolEqualityComparer.Default.Equals(attributeConstructor.ContainingType, attributeSymbol))
                 {
                     continue;
                 }
@@ -82,18 +91,5 @@ public sealed class FixedStringBuilderAttributeAnalyzer : DiagnosticAnalyzer
                 }
             }
         }
-    }
-
-    private static bool IsCandidate(NameSyntax nameSyntax)
-    {
-        var name = nameSyntax switch
-        {
-            IdentifierNameSyntax identifierNameSyntax => identifierNameSyntax.Identifier.ValueText,
-            QualifiedNameSyntax qualifiedNameSyntax => qualifiedNameSyntax.Right.Identifier.ValueText,
-            AliasQualifiedNameSyntax aliasQualifiedNameSyntax => aliasQualifiedNameSyntax.Name.Identifier.ValueText,
-            _ => null,
-        };
-
-        return name is "FixedStringBuilder" or "FixedStringBuilderAttribute";
     }
 }

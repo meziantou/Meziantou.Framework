@@ -247,6 +247,49 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         Assert.All(outputs, static output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
     }
 
+    [Fact]
+    public async Task AnalyzerIgnoresAnUnrelatedAttributeThatDoesNotBind()
+    {
+        // Other.FixedStringBuilderAttribute has no parameterless constructor, so the attribute does not bind to a
+        // symbol. It is still not the generator's attribute and must not be reported on.
+        const string Source = """
+            namespace Other
+            {
+                [System.AttributeUsage(System.AttributeTargets.Struct)]
+                public sealed class FixedStringBuilderAttribute : System.Attribute
+                {
+                    public FixedStringBuilderAttribute(string name) { }
+                }
+            }
+
+            [Other.FixedStringBuilder]
+            public partial struct Sample
+            {
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(Source);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public async Task AnalyzerReportsThroughAnAlias()
+    {
+        // The attribute is the generator's one, so it must be analyzed even though the name is not written out.
+        const string Source = """
+            using Aliased = FixedStringBuilderAttribute;
+
+            [Aliased(0)]
+            public partial struct Sample
+            {
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(Source);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("MFFSG0003", diagnostic.Id);
+    }
+
     private static async Task<(GeneratorDriverRunResult RunResult, Compilation Compilation)> GenerateAsync(string source)
     {
         var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "10.0.0", "ref/net10.0/");

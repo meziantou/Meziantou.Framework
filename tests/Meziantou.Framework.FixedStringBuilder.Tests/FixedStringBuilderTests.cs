@@ -1,9 +1,46 @@
+using System.Reflection;
 using Meziantou.Framework.FixedStringBuilder;
 
 namespace Meziantou.Framework.Tests;
 
 public sealed class FixedStringBuilderTests
 {
+    [Theory]
+    [InlineData("get_Length")]
+    [InlineData("Equals")]
+    [InlineData("GetHashCode")]
+    [InlineData("ToString")]
+    [InlineData("TryFormat")]
+    [InlineData("AsSpan")]
+    public void NonMutatingMembersAreReadOnly(string methodName)
+    {
+        // A non-readonly member forces a defensive copy of the whole struct when it is called on a readonly
+        // field or through an "in" parameter.
+        var methods = typeof(FixedStringBuilder64)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Where(method => method.Name == methodName)
+            .ToArray();
+
+        Assert.NotEmpty(methods);
+        Assert.All(methods, static method => Assert.Contains(
+            method.GetCustomAttributesData(),
+            static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.IsReadOnlyAttribute"));
+    }
+
+    [Fact]
+    public void MutatingMembersAreNotReadOnly()
+    {
+        var methods = typeof(FixedStringBuilder64)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Where(static method => method.Name is "Clear" or "AppendLiteral")
+            .ToArray();
+
+        Assert.NotEmpty(methods);
+        Assert.All(methods, static method => Assert.DoesNotContain(
+            method.GetCustomAttributesData(),
+            static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.IsReadOnlyAttribute"));
+    }
+
     [Fact]
     public void MaxLengthValues()
     {

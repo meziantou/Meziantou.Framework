@@ -53,7 +53,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         Assert.Contains("[global::System.Runtime.CompilerServices.InlineArray(10)]", allGeneratedSources);
         Assert.Contains("private Storage _storage;", allGeneratedSources);
         Assert.Contains("public readonly ReadOnlySpan<char> AsSpan() => ((ReadOnlySpan<char>)_storage).Slice(0, _length);", allGeneratedSources);
-        Assert.Contains("public bool Equals(FixedStringBuilder10 other, StringComparison comparison)", allGeneratedSources);
+        Assert.Contains("public readonly bool Equals(FixedStringBuilder10 other, StringComparison comparison)", allGeneratedSources);
 
         using var peStream = new MemoryStream();
         var emitResult = compilation.Emit(peStream);

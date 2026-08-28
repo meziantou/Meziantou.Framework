@@ -29,8 +29,11 @@ namespace Meziantou.Framework
     public readonly struct TextDiffEntry : System.IEquatable<Meziantou.Framework.TextDiffEntry>
     {
         public Meziantou.Framework.TextDiffOperation Operation { get => throw null; }
+        public string? OldText { get => throw null; }
+        public string? NewText { get => throw null; }
         public string Text { get => throw null; }
         public TextDiffEntry(Meziantou.Framework.TextDiffOperation operation, string text) { }
+        public TextDiffEntry(Meziantou.Framework.TextDiffOperation operation, string? oldText, string? newText) { }
         public bool Equals(Meziantou.Framework.TextDiffEntry other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;

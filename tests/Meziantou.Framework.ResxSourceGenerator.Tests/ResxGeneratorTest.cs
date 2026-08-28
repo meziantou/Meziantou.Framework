@@ -257,6 +257,25 @@ public sealed class ResxGeneratorTest
     }
 
     [Fact]
+    public async Task GeneratedCodeQualifiesEveryFrameworkTypeReference()
+    {
+        // A consumer can declare a type or namespace named System, so nothing in the generated code may rely on it
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        for (var index = fileContent.IndexOf("System.", StringComparison.Ordinal); index >= 0; index = fileContent.IndexOf("System.", index + 1, StringComparison.Ordinal))
+        {
+            var qualified = index >= 8 && fileContent.AsSpan(index - 8, 8).SequenceEqual("global::".AsSpan());
+            Assert.True(qualified, "Unqualified reference: " + fileContent[Math.Max(0, index - 40)..Math.Min(fileContent.Length, index + 40)]);
+        }
+    }
+
+    [Fact]
     public async Task GenerateProperties_WithFormatParameterMetadata()
     {
         XNamespace generatorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";
@@ -441,6 +460,52 @@ public sealed class ResxGeneratorTest
                 Assert.Equal("Folder2.Messages.resx.g.cs", Path.GetFileName(tree.FilePath));
                 Assert.Equal("Test.Folder2", tree.GetRoot(XunitCancellationToken).GetNamespace());
             });
+    }
+
+    [Theory]
+    [InlineData("fr")]
+    [InlineData("fil")]
+    [InlineData("fr-FR")]
+    [InlineData("zh-Hans")]
+    [InlineData("sr-Latn-RS")]
+    [InlineData("es-419")]
+    public async Task SatelliteResxFilesAreGroupedWithTheNeutralFile(string culture)
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+
+        var result = await GenerateFiles(
+            [
+                (FullPath.GetTempPath() / "proj" / "Messages.resx", element.ToString()),
+                (FullPath.GetTempPath() / "proj" / $"Messages.{culture}.resx", element.ToString()),
+            ], new OptionProvider
+            {
+                ProjectDir = FullPath.GetTempPath() / "proj",
+                RootNamespace = "Test",
+            });
+
+        Assert.Equal("Messages.resx.g.cs", result.GeneratedFileName);
+    }
+
+    [Theory]
+    [InlineData("Backup")]
+    [InlineData("v2")]
+    [InlineData("Design")]
+    public async Task NonCultureSuffixesAreTheirOwnResource(string suffix)
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+
+        var result = await GenerateFiles(
+            [
+                (FullPath.GetTempPath() / "proj" / "Messages.resx", element.ToString()),
+                (FullPath.GetTempPath() / "proj" / $"Messages.{suffix}.resx", element.ToString()),
+            ], new OptionProvider
+            {
+                ProjectDir = FullPath.GetTempPath() / "proj",
+                RootNamespace = "Test",
+            });
+
+        var fileNames = result.GeneratedTrees.Select(tree => Path.GetFileName(tree.FilePath)).Order(StringComparer.Ordinal);
+        Assert.Equal(new[] { $"Messages.{suffix}.resx.g.cs", "Messages.resx.g.cs" }.Order(StringComparer.Ordinal), fileNames);
     }
 
     [Fact]

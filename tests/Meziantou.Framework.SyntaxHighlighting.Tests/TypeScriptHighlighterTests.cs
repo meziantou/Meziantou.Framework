@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.SyntaxHighlighting.Tests;
+﻿namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 
 public class TypeScriptHighlighterTests
 {
@@ -3224,6 +3224,30 @@ const x = 1;
 """,
 """
 <span class="hljs-comment">/// &lt;reference path=&quot;./foo.d.ts&quot; /&gt;</span>
+""");
+    }
+
+    [Fact]
+    public void JsxTag_SelfClosingTagIsTreatedAsMarkup()
+    {
+        AssertHighlighter("typescript",
+"""
+const el = <Foo bar={1} />;
+""",
+"""
+<span class="hljs-keyword">const</span> el = <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Foo</span> <span class="hljs-attr">bar</span>=<span class="hljs-string">{1}</span> /&gt;</span></span>;
+""");
+    }
+
+    [Fact]
+    public void JsxTag_GenericArrowFunctionIsNotTreatedAsMarkup()
+    {
+        AssertHighlighter("typescript",
+"""
+const f = <T,>(x: T) => x;
+""",
+"""
+<span class="hljs-keyword">const</span> f = &lt;T,&gt;<span class="hljs-function">(<span class="hljs-params"><span class="hljs-attr">x</span>: T</span>) =&gt;</span> x;
 """);
     }
 }

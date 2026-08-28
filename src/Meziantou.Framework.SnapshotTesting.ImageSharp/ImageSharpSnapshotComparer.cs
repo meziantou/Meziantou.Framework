@@ -8,23 +8,36 @@ internal sealed class ImageSharpSnapshotComparer(ImageComparisonSettings? settin
 {
     public bool Equals(SnapshotData expected, SnapshotData actual)
     {
+        ArgumentNullException.ThrowIfNull(expected);
+        ArgumentNullException.ThrowIfNull(actual);
+
         // Identical bytes decode to identical pixels, so an exact comparison matches, SSIM is 1.0 and both
         // hash distances are 0 - every configured threshold is satisfied. This is the case for every passing
         // image snapshot test, and it avoids decoding both images.
         if (expected.Data.AsSpan().SequenceEqual(actual.Data))
             return true;
 
-        using var expectedImage = Image.Load<Rgba32>(expected.Data);
-        using var actualImage = Image.Load<Rgba32>(actual.Data);
+        try
+        {
+            using var expectedImage = Image.Load<Rgba32>(expected.Data);
+            using var actualImage = Image.Load<Rgba32>(actual.Data);
 
-        if (expectedImage.Width != actualImage.Width || expectedImage.Height != actualImage.Height)
+            if (expectedImage.Width != actualImage.Width || expectedImage.Height != actualImage.Height)
+                return false;
+
+            var threshold = settings?.SimilarityThreshold;
+            if (threshold is null)
+                return ExactEquals(expectedImage, actualImage);
+
+            return ComputeMeanSsim(expectedImage, actualImage) >= threshold.Value;
+        }
+        catch (ImageFormatException)
+        {
+            // A snapshot that cannot be decoded is a snapshot that does not match. Letting the exception
+            // escape would report a corrupt verified file as a library crash instead of a mismatch, which is
+            // what the built-in ImageComparer and SkiaSharpSnapshotComparer already do.
             return false;
-
-        var threshold = settings?.SimilarityThreshold;
-        if (threshold is null)
-            return ExactEquals(expectedImage, actualImage);
-
-        return ComputeMeanSsim(expectedImage, actualImage) >= threshold.Value;
+        }
     }
 
     private static bool ExactEquals(Image<Rgba32> expected, Image<Rgba32> actual)

@@ -6,6 +6,8 @@ namespace Meziantou.Framework.HttpArchive;
 /// <summary>Provides extension methods for converting HAR entries to <see cref="HttpRequestMessage"/> and <see cref="HttpResponseMessage"/>.</summary>
 public static class HarEntryExtensions
 {
+    private const string ContentTypeHeaderName = "Content-Type";
+
     private static readonly HashSet<string> ContentHeaderNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "Content-Disposition",
@@ -15,7 +17,7 @@ public static class HarEntryExtensions
         "Content-Location",
         "Content-MD5",
         "Content-Range",
-        "Content-Type",
+        ContentTypeHeaderName,
         "Expires",
         "Last-Modified",
         "Allow",
@@ -50,33 +52,16 @@ public static class HarEntryExtensions
         };
 
         HttpContent? content = null;
-
         if (request.PostData is not null)
         {
-            if (request.PostData.Text is not null)
-            {
-                content = new StringContent(request.PostData.Text, mediaType: new MediaTypeHeaderValue(request.PostData.MimeType));
-            }
-            else
-            {
-                content = new ByteArrayContent([]);
-            }
+            content = request.PostData.Text is not null
+                ? new ByteArrayContent(Encoding.UTF8.GetBytes(request.PostData.Text))
+                : new ByteArrayContent([]);
 
             message.Content = content;
         }
 
-        foreach (var header in request.Headers)
-        {
-            if (ContentHeaderNames.Contains(header.Name))
-            {
-                content?.Headers.TryAddWithoutValidation(header.Name, header.Value);
-            }
-            else
-            {
-                message.Headers.TryAddWithoutValidation(header.Name, header.Value);
-            }
-        }
-
+        CopyHeaders(request.Headers, message.Headers, content, request.PostData?.MimeType);
         return message;
     }
 
@@ -92,35 +77,64 @@ public static class HarEntryExtensions
             Version = ParseHttpVersion(response.HttpVersion),
         };
 
-        HttpContent content;
-        if (string.Equals(response.Content.Encoding, "base64", StringComparison.OrdinalIgnoreCase) && response.Content.Text is not null)
-        {
-            content = new ByteArrayContent(Convert.FromBase64String(response.Content.Text));
-        }
-        else if (response.Content.Text is not null)
-        {
-            content = new StringContent(response.Content.Text, mediaType: new MediaTypeHeaderValue(response.Content.MimeType));
-        }
-        else
-        {
-            content = new ByteArrayContent([]);
-        }
-
+        var content = CreateContent(response.Content);
         message.Content = content;
 
-        foreach (var header in response.Headers)
+        CopyHeaders(response.Headers, message.Headers, content, response.Content.MimeType);
+        return message;
+    }
+
+    private static ByteArrayContent CreateContent(HarContent harContent)
+    {
+        if (harContent.Text is null)
+            return new ByteArrayContent([]);
+
+        if (string.Equals(harContent.Encoding, "base64", StringComparison.OrdinalIgnoreCase) && TryDecodeBase64(harContent.Text, out var bytes))
+            return new ByteArrayContent(bytes);
+
+        return new ByteArrayContent(Encoding.UTF8.GetBytes(harContent.Text));
+    }
+
+    private static bool TryDecodeBase64(string text, [NotNullWhen(true)] out byte[]? bytes)
+    {
+        var buffer = new byte[((text.Length / 4) + 1) * 3];
+        if (Convert.TryFromBase64String(text, buffer, out var written))
+        {
+            bytes = buffer.AsSpan(0, written).ToArray();
+            return true;
+        }
+
+        bytes = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Copies the archived headers onto the message, routing entity headers to the content.
+    /// <paramref name="fallbackMimeType"/> is applied only when the archive contained no Content-Type header,
+    /// so the message never ends up with two of them.
+    /// </summary>
+    private static void CopyHeaders(List<HarHeader> headers, HttpHeaders messageHeaders, HttpContent? content, string? fallbackMimeType)
+    {
+        var hasContentType = false;
+        foreach (var header in headers)
         {
             if (ContentHeaderNames.Contains(header.Name))
             {
-                content.Headers.TryAddWithoutValidation(header.Name, header.Value);
+                if (content?.Headers.TryAddWithoutValidation(header.Name, header.Value) is true)
+                {
+                    hasContentType |= string.Equals(header.Name, ContentTypeHeaderName, StringComparison.OrdinalIgnoreCase);
+                }
             }
             else
             {
-                message.Headers.TryAddWithoutValidation(header.Name, header.Value);
+                messageHeaders.TryAddWithoutValidation(header.Name, header.Value);
             }
         }
 
-        return message;
+        if (content is not null && !hasContentType && !string.IsNullOrEmpty(fallbackMimeType))
+        {
+            content.Headers.TryAddWithoutValidation(ContentTypeHeaderName, fallbackMimeType);
+        }
     }
 
     private static Version ParseHttpVersion(string httpVersion)

@@ -70,10 +70,9 @@ internal static class CodabarEncoder
 
     private static void AppendCharacter(List<bool> modules, char character)
     {
-        if (!CharacterEncodings.TryGetValue(character, out var encoding))
-        {
-            throw new ArgumentException($"The character '{character}' is not supported by Codabar.", nameof(character));
-        }
+        // Encode has already validated the payload and normalized the guards, so a missing
+        // entry here means the table and the validation disagree.
+        var encoding = CharacterEncodings[character];
 
         var isDark = true;
         for (var i = 0; i < 7; i++)

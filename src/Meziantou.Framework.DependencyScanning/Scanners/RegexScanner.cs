@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.Globbing;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
@@ -63,7 +64,7 @@ public sealed class RegexScanner : DependencyScanner
 
         _frozen = true;
 
-        using var sr = new StreamReader(context.Content);
+        using var sr = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
         var text = await sr.ReadToEndAsync(context.CancellationToken).ConfigureAwait(false);
 
         foreach (Match match in regex.Matches(text))

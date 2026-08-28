@@ -1,0 +1,1 @@
+{"version":1,"type":"doc","content":[{"type":"taskList","content":[{"type":"taskItem","content":[{"type":"text","text":"parent"}],"attrs":{"state":"TODO"}},{"type":"taskList","content":[{"type":"taskItem","content":[{"type":"text","text":"child done"}],"attrs":{"state":"DONE"}}]}]}]}

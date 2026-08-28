@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Extensions.Logging.FileLogger\Meziantou.Extensions.Logging.FileLogger.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.AnsiFormatting\Meziantou.Framework.AnsiFormatting.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.AtlassianDataFormat\Meziantou.Framework.AtlassianDataFormat.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Avatar\Meziantou.Framework.Avatar.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Bcrypt\Meziantou.Framework.Bcrypt.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Bencode\Meziantou.Framework.Bencode.csproj" />
@@ -80,6 +81,7 @@
     <TrimmerRootAssembly Include="Meziantou.Extensions.Logging.FileLogger" />
     <TrimmerRootAssembly Include="Meziantou.Framework" />
     <TrimmerRootAssembly Include="Meziantou.Framework.AnsiFormatting" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.AtlassianDataFormat" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Avatar" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Bcrypt" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Bencode" />

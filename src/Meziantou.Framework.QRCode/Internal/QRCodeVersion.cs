@@ -12,13 +12,9 @@ internal static class QRCodeVersion
     /// </summary>
     public static int GetDataCodewords(int version, ErrorCorrectionLevel ecLevel)
     {
-        var totalCodewords = GetTotalCodewords(version);
-        var ecCodewordsPerBlock = GetECCodewordsPerBlock(version, ecLevel);
-        var (group1Blocks, _, group2Blocks, _) = GetBlockInfo(version, ecLevel);
-        var totalBlocks = group1Blocks + group2Blocks;
-        var totalECCodewords = ecCodewordsPerBlock * totalBlocks;
+        var (group1Blocks, group1DataCodewords, group2Blocks, group2DataCodewords) = GetBlockInfo(version, ecLevel);
 
-        return totalCodewords - totalECCodewords;
+        return (group1Blocks * group1DataCodewords) + (group2Blocks * group2DataCodewords);
     }
 
     /// <summary>
@@ -66,9 +62,9 @@ internal static class QRCodeVersion
             28, 28, 28, 28,    // V17
             30, 26, 28, 28,    // V18
             28, 26, 26, 26,    // V19
-            28, 26, 28, 28,    // V20
-            28, 26, 30, 28,    // V21
-            28, 28, 24, 30,    // V22
+            28, 26, 30, 28,    // V20
+            28, 26, 28, 30,    // V21
+            28, 28, 30, 24,    // V22
             30, 28, 30, 30,    // V23
             30, 28, 30, 30,    // V24
             26, 28, 30, 30,    // V25
@@ -93,192 +89,78 @@ internal static class QRCodeVersion
     }
 
     /// <summary>
-    /// Gets the block structure for a given version and EC level.
-    /// Returns (group1Blocks, group1DataCodewords, group2Blocks, group2DataCodewords).
+    /// Gets the number of Reed-Solomon blocks for a given version and EC level, per ISO/IEC 18004 Table 9.
     /// </summary>
-    public static (int Group1Blocks, int Group1DataCodewords, int Group2Blocks, int Group2DataCodewords) GetBlockInfo(int version, ErrorCorrectionLevel ecLevel)
+    public static int GetBlockCount(int version, ErrorCorrectionLevel ecLevel)
     {
-        // Packed as: group1Blocks, group1DataCW, group2Blocks, group2DataCW
-        // Index: (version-1) * 4 + ecLevel, each entry is 4 bytes
-        ReadOnlySpan<byte> group1Blocks =
+        // Rows: version 1-40, Columns: L, M, Q, H
+        ReadOnlySpan<byte> table =
         [
             1, 1, 1, 1,       // V1
             1, 1, 1, 1,       // V2
             1, 1, 2, 2,       // V3
             1, 2, 2, 4,       // V4
-            1, 2, 2, 2,       // V5
+            1, 2, 4, 4,       // V5
             2, 4, 4, 4,       // V6
-            2, 4, 2, 4,       // V7
-            2, 2, 4, 4,       // V8
-            2, 3, 4, 4,       // V9
-            2, 4, 6, 6,       // V10
-            4, 1, 4, 3,       // V11
-            2, 6, 4, 7,       // V12
-            4, 8, 8, 12,      // V13
-            3, 4, 11, 11,     // V14
-            5, 5, 5, 11,      // V15
-            5, 7, 15, 3,      // V16
-            1, 10, 1, 2,      // V17
-            5, 9, 17, 2,      // V18
-            3, 3, 17, 9,      // V19
-            3, 3, 15, 15,     // V20
-            4, 17, 17, 19,    // V21
-            2, 17, 7, 34,     // V22
-            4, 4, 11, 16,     // V23
-            6, 6, 11, 30,     // V24
-            8, 8, 7, 22,      // V25
-            10, 19, 28, 33,   // V26
-            8, 22, 8, 12,     // V27
-            3, 3, 26, 11,     // V28
-            7, 21, 7, 23,     // V29
-            5, 19, 10, 15,    // V30
-            13, 2, 29, 42,    // V31
-            17, 10, 10, 23,   // V32
-            17, 14, 29, 44,   // V33
-            13, 14, 44, 59,   // V34
-            12, 12, 39, 22,   // V35
-            6, 6, 46, 2,      // V36
-            17, 29, 49, 24,   // V37
-            4, 13, 48, 42,    // V38
-            20, 40, 43, 10,   // V39
-            19, 18, 34, 20,   // V40
+            2, 4, 6, 5,       // V7
+            2, 4, 6, 6,       // V8
+            2, 5, 8, 8,       // V9
+            4, 5, 8, 8,       // V10
+            4, 5, 8, 11,      // V11
+            4, 8, 10, 11,     // V12
+            4, 9, 12, 16,     // V13
+            4, 9, 16, 16,     // V14
+            6, 10, 12, 18,    // V15
+            6, 10, 17, 16,    // V16
+            6, 11, 16, 19,    // V17
+            6, 13, 18, 21,    // V18
+            7, 14, 21, 25,    // V19
+            8, 16, 20, 25,    // V20
+            8, 17, 23, 25,    // V21
+            9, 17, 23, 34,    // V22
+            9, 18, 25, 30,    // V23
+            10, 20, 27, 32,   // V24
+            12, 21, 29, 35,   // V25
+            12, 23, 34, 37,   // V26
+            12, 25, 34, 40,   // V27
+            13, 26, 35, 42,   // V28
+            14, 28, 38, 45,   // V29
+            15, 29, 40, 48,   // V30
+            16, 31, 43, 51,   // V31
+            17, 33, 45, 54,   // V32
+            18, 35, 48, 57,   // V33
+            19, 37, 51, 60,   // V34
+            19, 38, 53, 63,   // V35
+            20, 40, 56, 66,   // V36
+            21, 43, 59, 70,   // V37
+            22, 45, 62, 74,   // V38
+            24, 47, 65, 77,   // V39
+            25, 49, 68, 81,   // V40
         ];
 
-        ReadOnlySpan<byte> group1DataCW =
-        [
-            19, 16, 13, 9,    // V1
-            34, 28, 22, 16,   // V2
-            55, 44, 17, 13,   // V3
-            80, 32, 24, 9,    // V4
-            108, 43, 15, 11,  // V5
-            68, 27, 19, 15,   // V6
-            78, 31, 14, 13,   // V7
-            97, 38, 18, 14,   // V8
-            116, 36, 16, 12,  // V9
-            68, 43, 19, 15,   // V10
-            81, 50, 22, 12,   // V11
-            92, 36, 20, 14,   // V12
-            107, 37, 20, 11,  // V13
-            115, 40, 16, 12,  // V14
-            87, 41, 24, 12,   // V15
-            98, 45, 19, 15,   // V16
-            107, 46, 22, 14,  // V17
-            120, 43, 22, 14,  // V18
-            113, 44, 21, 13,  // V19
-            107, 41, 24, 15,  // V20
-            116, 42, 22, 16,  // V21
-            111, 46, 24, 13,  // V22
-            121, 47, 24, 15,  // V23
-            117, 45, 24, 16,  // V24
-            106, 47, 24, 15,  // V25
-            114, 46, 22, 16,  // V26
-            122, 45, 23, 15,  // V27
-            117, 45, 24, 15,  // V28
-            116, 45, 23, 15,  // V29
-            115, 45, 24, 15,  // V30
-            115, 46, 24, 15,  // V31
-            115, 46, 24, 15,  // V32
-            115, 46, 24, 15,  // V33
-            115, 46, 24, 15,  // V34
-            121, 47, 24, 15,  // V35
-            121, 47, 24, 15,  // V36
-            122, 46, 24, 15,  // V37
-            122, 46, 24, 15,  // V38
-            117, 47, 24, 15,  // V39
-            118, 47, 24, 15,  // V40
-        ];
+        return table[((version - 1) * 4) + (int)ecLevel];
+    }
 
-        ReadOnlySpan<byte> group2Blocks =
-        [
-            0, 0, 0, 0,       // V1
-            0, 0, 0, 0,       // V2
-            0, 0, 0, 0,       // V3
-            0, 0, 0, 0,       // V4
-            0, 0, 2, 2,       // V5
-            0, 0, 0, 0,       // V6
-            0, 0, 4, 1,       // V7
-            0, 2, 2, 2,       // V8
-            0, 2, 4, 4,       // V9
-            2, 1, 2, 2,       // V10
-            0, 4, 4, 8,       // V11
-            2, 2, 6, 4,       // V12
-            0, 1, 4, 4,       // V13
-            1, 5, 5, 5,       // V14
-            1, 5, 7, 7,       // V15
-            1, 3, 2, 13,      // V16
-            5, 1, 15, 17,     // V17
-            1, 4, 1, 19,      // V18
-            4, 11, 4, 16,     // V19
-            5, 13, 5, 10,     // V20
-            4, 0, 6, 6,       // V21
-            7, 0, 16, 0,      // V22
-            5, 14, 14, 14,    // V23
-            4, 14, 16, 2,     // V24
-            4, 13, 22, 13,    // V25
-            2, 4, 6, 4,       // V26
-            4, 3, 26, 28,     // V27
-            10, 23, 2, 31,    // V28
-            7, 7, 34, 26,     // V29
-            10, 10, 32, 32,   // V30
-            3, 29, 2, 1,      // V31
-            0, 23, 32, 23,    // V32
-            1, 21, 14, 3,     // V33
-            6, 23, 7, 1,      // V34
-            7, 26, 7, 41,     // V35
-            14, 34, 10, 64,   // V36
-            4, 14, 10, 46,    // V37
-            18, 32, 14, 32,   // V38
-            4, 7, 22, 67,     // V39
-            6, 31, 34, 61,    // V40
-        ];
+    /// <summary>
+    /// Gets the block structure for a given version and EC level.
+    /// Returns (group1Blocks, group1DataCodewords, group2Blocks, group2DataCodewords).
+    /// </summary>
+    /// <remarks>
+    /// ISO/IEC 18004 distributes the data codewords as evenly as possible across the blocks, so the
+    /// split is fully determined by the total codeword count, the EC codewords per block and the
+    /// block count. Deriving it here keeps <see cref="GetDataCodewords"/> and this method from
+    /// disagreeing, which previously produced symbols the error correction encoder could not build.
+    /// </remarks>
+    public static (int Group1Blocks, int Group1DataCodewords, int Group2Blocks, int Group2DataCodewords) GetBlockInfo(int version, ErrorCorrectionLevel ecLevel)
+    {
+        var totalBlocks = GetBlockCount(version, ecLevel);
+        var dataCodewords = GetTotalCodewords(version) - (GetECCodewordsPerBlock(version, ecLevel) * totalBlocks);
 
-        ReadOnlySpan<byte> group2DataCW =
-        [
-            0, 0, 0, 0,       // V1
-            0, 0, 0, 0,       // V2
-            0, 0, 0, 0,       // V3
-            0, 0, 0, 0,       // V4
-            0, 0, 16, 12,     // V5
-            0, 0, 0, 0,       // V6
-            0, 0, 15, 14,     // V7
-            0, 39, 19, 15,    // V8
-            0, 37, 17, 13,    // V9
-            69, 44, 20, 16,   // V10
-            0, 51, 23, 13,    // V11
-            93, 37, 21, 15,   // V12
-            0, 38, 21, 12,    // V13
-            116, 41, 17, 13,  // V14
-            88, 42, 25, 13,   // V15
-            99, 46, 20, 16,   // V16
-            108, 47, 23, 15,  // V17
-            121, 44, 23, 15,  // V18
-            114, 45, 22, 14,  // V19
-            108, 42, 25, 16,  // V20
-            117, 0, 23, 17,   // V21
-            112, 0, 25, 0,    // V22
-            122, 48, 25, 16,  // V23
-            118, 46, 25, 17,  // V24
-            107, 48, 25, 16,  // V25
-            115, 47, 23, 17,  // V26
-            123, 46, 24, 16,  // V27
-            118, 46, 25, 16,  // V28
-            117, 46, 24, 16,  // V29
-            116, 46, 25, 16,  // V30
-            116, 47, 25, 16,  // V31
-            0, 47, 25, 16,    // V32
-            116, 47, 25, 16,  // V33
-            116, 47, 25, 16,  // V34
-            122, 48, 25, 16,  // V35
-            122, 48, 25, 16,  // V36
-            123, 47, 25, 16,  // V37
-            123, 47, 25, 16,  // V38
-            118, 48, 25, 16,  // V39
-            119, 48, 25, 16,  // V40
-        ];
+        var group2Blocks = dataCodewords % totalBlocks;
+        var group1Blocks = totalBlocks - group2Blocks;
+        var group1DataCodewords = dataCodewords / totalBlocks;
 
-        var idx = ((version - 1) * 4) + (int)ecLevel;
-
-        return (group1Blocks[idx], group1DataCW[idx], group2Blocks[idx], group2DataCW[idx]);
+        return (group1Blocks, group1DataCodewords, group2Blocks, group1DataCodewords + 1);
     }
 
     /// <summary>

@@ -207,4 +207,12 @@ public class RMQRCodeTests
 
         return sb.ToString();
     }
+
+    [Theory]
+    [InlineData(ErrorCorrectionLevel.M)]
+    [InlineData(ErrorCorrectionLevel.H)]
+    public void CreateRMQR_ReportsTheErrorCorrectionLevel(ErrorCorrectionLevel ecLevel)
+    {
+        Assert.Equal(ecLevel, QRCode.CreateRMQR("HELLO", ecLevel).ErrorCorrectionLevel);
+    }
 }

@@ -159,7 +159,9 @@ internal static class MicroQRVersion
     {
         return (version, ecLevel) switch
         {
-            (1, _) => true, // M1 only has error detection, accept any EC level
+            // M1 carries error detection only, so it cannot satisfy a request for M or Q. Treating
+            // it as satisfying every level silently handed back a symbol with no error correction.
+            (1, ErrorCorrectionLevel.L) => true,
             (2, ErrorCorrectionLevel.L or ErrorCorrectionLevel.M) => true,
             (3, ErrorCorrectionLevel.L or ErrorCorrectionLevel.M) => true,
             (4, ErrorCorrectionLevel.L or ErrorCorrectionLevel.M or ErrorCorrectionLevel.Q) => true,

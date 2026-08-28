@@ -104,13 +104,44 @@ public class MicroQRCodeTests
         Assert.Throws<InvalidOperationException>(() => QRCode.CreateMicroQR(new string('A', 100)));
     }
 
-    [Fact]
-    public void CreateMicroQR_ECLevel_H_FallsBackToSupportedLevel()
+    [Theory]
+    [InlineData("ABCDEF")]
+    [InlineData("12345")]
+    [InlineData("1")]
+    public void CreateMicroQR_ECLevelH_Throws(string data)
     {
-        // H is not supported by any Micro QR version, but M1 accepts any EC level
-        // (it only supports error detection). For data that fits M1, H is silently resolved.
-        // For data that requires M2+, H should throw since no version supports it.
-        Assert.Throws<InvalidOperationException>(() => QRCode.CreateMicroQR("ABCDEF", ErrorCorrectionLevel.H));
+        // No Micro QR version supports H. This used to report "the data is too long", and for
+        // data small enough to fit M1 it silently returned a symbol with no error correction.
+        Assert.Throws<ArgumentOutOfRangeException>(() => QRCode.CreateMicroQR(data, ErrorCorrectionLevel.H));
+    }
+
+    [Fact]
+    public void CreateMicroQR_M1_ReportsTheLevelItActuallyUsed()
+    {
+        var qr = QRCode.CreateMicroQR("123", ErrorCorrectionLevel.L);
+
+        Assert.Equal(1, qr.Version);
+        Assert.Equal(ErrorCorrectionLevel.L, qr.ErrorCorrectionLevel);
+    }
+
+    [Theory]
+    [InlineData(ErrorCorrectionLevel.M)]
+    [InlineData(ErrorCorrectionLevel.Q)]
+    public void CreateMicroQR_LevelStrongerThanM1_SkipsM1(ErrorCorrectionLevel ecLevel)
+    {
+        // "123" fits M1, but M1 carries error detection only, so a request for M or Q has to
+        // move up to a version that genuinely provides it.
+        var qr = QRCode.CreateMicroQR("123", ecLevel);
+
+        Assert.True(qr.Version > 1);
+        Assert.Equal(ecLevel, qr.ErrorCorrectionLevel);
+    }
+
+    [Fact]
+    public void CreateMicroQR_ReportsTheRequestedLevel()
+    {
+        Assert.Equal(ErrorCorrectionLevel.M, QRCode.CreateMicroQR("HELLO", ErrorCorrectionLevel.M).ErrorCorrectionLevel);
+        Assert.Equal(ErrorCorrectionLevel.Q, QRCode.CreateMicroQR("12345678901", ErrorCorrectionLevel.Q).ErrorCorrectionLevel);
     }
 
     // ───── Determinism ─────

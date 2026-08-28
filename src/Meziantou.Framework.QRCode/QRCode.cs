@@ -11,17 +11,26 @@ public sealed class QRCode
 {
     private readonly bool[,] _modules;
 
-    internal QRCode(bool[,] modules, int version, QRCodeType type)
+    internal QRCode(bool[,] modules, int version, QRCodeType type, ErrorCorrectionLevel errorCorrectionLevel)
     {
         _modules = modules;
         Version = version;
         Type = type;
+        ErrorCorrectionLevel = errorCorrectionLevel;
         Height = modules.GetLength(0);
         Width = modules.GetLength(1);
     }
 
     /// <summary>Gets the type of QR code.</summary>
     public QRCodeType Type { get; }
+
+    /// <summary>Gets the error correction level the symbol was built with.</summary>
+    /// <remarks>
+    /// This can differ from the requested level. Micro QR version M1 carries error detection only,
+    /// and is reported as <see cref="ErrorCorrectionLevel.L"/> because the enumeration has no
+    /// weaker member.
+    /// </remarks>
+    public ErrorCorrectionLevel ErrorCorrectionLevel { get; }
 
     /// <summary>Gets the QR code version.</summary>
     public int Version { get; }
@@ -100,6 +109,11 @@ public sealed class QRCode
             throw new ArgumentException("The data cannot be empty.", nameof(data));
         }
 
+        if (errorCorrectionLevel is ErrorCorrectionLevel.H)
+        {
+            throw new ArgumentOutOfRangeException(nameof(errorCorrectionLevel), errorCorrectionLevel, "Micro QR only supports EC levels L, M and Q.");
+        }
+
         return MicroQREncoder.Encode(data, errorCorrectionLevel);
     }
 
@@ -127,6 +141,6 @@ public sealed class QRCode
         var builder = new MatrixBuilder(version);
         builder.Build(allCodewords, errorCorrectionLevel, bestMask);
 
-        return new QRCode(builder.Modules, version, QRCodeType.Standard);
+        return new QRCode(builder.Modules, version, QRCodeType.Standard, errorCorrectionLevel);
     }
 }

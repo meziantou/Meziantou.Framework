@@ -446,20 +446,7 @@ public class QRCodePayloadTests
             bic: "COBADEFFXXX",
             remittanceText: "Donation");
 
-        Assert.Equal("""
-            BCD
-            002
-            1
-            SCT
-            COBADEFFXXX
-            Red Cross
-            DE89370400440532013000
-            EUR12.50
-
-
-            Donation
-
-            """, payload, ignoreLineEndingDifferences: true);
+        Assert.Equal("BCD\n002\n1\nSCT\nCOBADEFFXXX\nRed Cross\nDE89370400440532013000\nEUR12.50\n\n\nDonation\n", payload);
     }
 
     [Fact]
@@ -470,20 +457,7 @@ public class QRCodePayloadTests
             "NL91ABNA0417164300",
             100.00m);
 
-        Assert.Equal("""
-            BCD
-            002
-            1
-            SCT
-
-            John Doe
-            NL91ABNA0417164300
-            EUR100.00
-
-
-
-
-            """, payload, ignoreLineEndingDifferences: true);
+        Assert.Equal("BCD\n002\n1\nSCT\n\nJohn Doe\nNL91ABNA0417164300\nEUR100.00\n\n\n\n", payload);
     }
 
     [Fact]
@@ -495,20 +469,7 @@ public class QRCodePayloadTests
             50.00m,
             remittanceReference: "RF18539007547034");
 
-        Assert.Equal("""
-            BCD
-            002
-            1
-            SCT
-
-            Company
-            DE89370400440532013000
-            EUR50.00
-
-            RF18539007547034
-
-
-            """, payload, ignoreLineEndingDifferences: true);
+        Assert.Equal("BCD\n002\n1\nSCT\n\nCompany\nDE89370400440532013000\nEUR50.00\n\nRF18539007547034\n\n", payload);
     }
 
     [Fact]
@@ -529,6 +490,72 @@ public class QRCodePayloadTests
     public void SepaPayment_ThrowsWhenIbanIsNull()
     {
         Assert.Throws<ArgumentNullException>(() => QRCodePayload.SepaPayment("Name", null!, 10m));
+    }
+
+    [Theory]
+    [InlineData("Bob\nDE00ATTACKERIBAN0000\nEUR999.00")]
+    [InlineData("Bob\rDE00ATTACKERIBAN0000")]
+    [InlineData("Bob\r\nDE00ATTACKERIBAN0000")]
+    public void SepaPayment_ThrowsWhenBeneficiaryNameContainsANewLine(string beneficiaryName)
+    {
+        // EPC069-12 is positional: a new line in one element shifts every later element down,
+        // which lets a caller-supplied name replace the IBAN the payer sends money to.
+        Assert.Throws<ArgumentException>(() => QRCodePayload.SepaPayment(beneficiaryName, "DE89370400440532013000", 10m));
+    }
+
+    [Fact]
+    public void SepaPayment_ThrowsWhenIbanContainsANewLine()
+    {
+        Assert.Throws<ArgumentException>(() => QRCodePayload.SepaPayment("Name", "DE89370400440532013000\nEUR999.00", 10m));
+    }
+
+    [Fact]
+    public void SepaPayment_ThrowsWhenBicContainsANewLine()
+    {
+        Assert.Throws<ArgumentException>(() => QRCodePayload.SepaPayment("Name", "DE89370400440532013000", 10m, bic: "COBA\nDEFF"));
+    }
+
+    [Fact]
+    public void SepaPayment_ThrowsWhenRemittanceTextContainsANewLine()
+    {
+        Assert.Throws<ArgumentException>(() => QRCodePayload.SepaPayment("Name", "DE89370400440532013000", 10m, remittanceText: "Invoice\n1"));
+    }
+
+    [Fact]
+    public void SepaPayment_ThrowsWhenInformationContainsANewLine()
+    {
+        Assert.Throws<ArgumentException>(() => QRCodePayload.SepaPayment("Name", "DE89370400440532013000", 10m, information: "Thanks\nBye"));
+    }
+
+    [Fact]
+    public void SepaPayment_ThrowsWhenBeneficiaryNameIsTooLong()
+    {
+        Assert.Throws<ArgumentException>(() => QRCodePayload.SepaPayment(new string('a', 71), "DE89370400440532013000", 10m));
+    }
+
+    [Fact]
+    public void SepaPayment_ThrowsWhenRemittanceTextIsTooLong()
+    {
+        Assert.Throws<ArgumentException>(() => QRCodePayload.SepaPayment("Name", "DE89370400440532013000", 10m, remittanceText: new string('a', 141)));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(0.009)]
+    [InlineData(1000000000)]
+    public void SepaPayment_ThrowsWhenAmountIsOutOfRange(decimal amount)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => QRCodePayload.SepaPayment("Name", "DE89370400440532013000", amount));
+    }
+
+    [Fact]
+    public void SepaPayment_UsesLineFeedRegardlessOfPlatform()
+    {
+        var payload = QRCodePayload.SepaPayment("Name", "DE89370400440532013000", 10m);
+
+        Assert.DoesNotContain('\r', payload);
+        Assert.Equal(11, payload.Count(c => c == '\n'));
     }
 
     // Edge cases for encoding and special characters
@@ -605,20 +632,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.SepaPayment("Doe", "DE89370400440532013000", 25.00m, information: "Thank you");
 
-        Assert.Equal("""
-            BCD
-            002
-            1
-            SCT
-
-            Doe
-            DE89370400440532013000
-            EUR25.00
-
-
-
-            Thank you
-            """, payload, ignoreLineEndingDifferences: true);
+        Assert.Equal("BCD\n002\n1\nSCT\n\nDoe\nDE89370400440532013000\nEUR25.00\n\n\n\nThank you", payload);
     }
 
     [Fact]

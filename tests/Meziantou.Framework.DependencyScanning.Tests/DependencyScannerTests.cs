@@ -88,6 +88,22 @@ public sealed class DependencyScannerTests
         });
     }
 
+    [Theory]
+    [InlineData("/root", "/root", "")]
+    [InlineData("/root/", "/root", "")]
+    [InlineData("/root", "/root/", "")]
+    [InlineData("/root", "/root/sub", "sub")]
+    [InlineData("/root/", "/root/sub", "sub")]
+    [InlineData("/root", "/root/sub/nested", "sub/nested")]
+    [InlineData("/root", "/rootother", "")]
+    [InlineData("/root", "/other", "")]
+    public void CandidateFileContext_RelativeDirectory(string rootDirectory, string directory, string expected)
+    {
+        var context = new CandidateFileContext(rootDirectory, directory, "file.txt");
+
+        Assert.Equal(expected, context.RelativeDirectory.ToString());
+    }
+
     [Fact]
     public async Task ScanDirectory_ScansFilesConcurrently()
     {

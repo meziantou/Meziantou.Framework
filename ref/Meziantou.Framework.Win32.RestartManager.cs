@@ -18,6 +18,7 @@ namespace Meziantou.Framework.Win32
         public void Shutdown(Meziantou.Framework.Win32.RestartManagerShutdownType action, Meziantou.Framework.Win32.RestartManagerWriteStatusCallback? statusCallback) { }
         public void Restart() { }
         public void Restart(Meziantou.Framework.Win32.RestartManagerWriteStatusCallback? statusCallback) { }
+        public void CancelCurrentTask() { }
         public void Dispose() { }
         public static bool IsFileLocked(string path) => throw null;
         public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingFile(string path) => throw null;

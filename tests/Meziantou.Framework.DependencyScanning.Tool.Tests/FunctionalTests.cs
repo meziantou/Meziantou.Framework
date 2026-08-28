@@ -162,6 +162,39 @@ public sealed class FunctionalTests
     }
 
     [Fact]
+    public async Task UnreachableSourceDoesNotAbortTheRun()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="broken" value="https://nonexistent-feed.invalid/v3/index.json" />
+              </packageSources>
+            </configuration>
+            """, XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("a.csproj"), """
+            <Project>
+                <ItemGroup>
+                    <PackageReference Include="Meziantou.Framework" Version="1.0.0" />
+                    <PackageReference Include="Newtonsoft.Json" Version="10.0.0" />
+                </ItemGroup>
+            </Project>
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath], console.ConfigureConsole);
+
+        Assert.Equal(1, result);
+        // The run continued past the first failure instead of throwing out of the command
+        Assert.Contains("Meziantou.Framework", console.Error);
+        Assert.Contains("Newtonsoft.Json", console.Error);
+        Assert.Contains("2 failed", console.Output);
+    }
+
+    [Fact]
     public async Task ListDependenciesAsJson()
     {
         await using var tempDir = TemporaryDirectory.Create();

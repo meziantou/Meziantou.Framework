@@ -97,6 +97,29 @@ public sealed class ObjectMethodExecutorTests
     }
 
     [Fact]
+    public async Task AwaiterImplementingOnlyINotifyCompletion()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("NotifyOnlyAwaitable")!);
+
+        Assert.True(executor.IsMethodAsync);
+        Assert.Equal(42, await executor.ExecuteAsync(new Test(), []));
+    }
+
+    private sealed class NotifyOnlyAwaitable
+    {
+        public NotifyOnlyAwaiter GetAwaiter() => new();
+
+        internal sealed class NotifyOnlyAwaiter : INotifyCompletion
+        {
+            public bool IsCompleted => false;
+
+            public int GetResult() => 42;
+
+            public void OnCompleted(Action continuation) => ThreadPool.QueueUserWorkItem(_ => continuation());
+        }
+    }
+
+    [Fact]
     public async Task AsyncValueTaskTests()
     {
         var validator = new Validator();
@@ -179,6 +202,8 @@ public sealed class ObjectMethodExecutorTests
         }
 
         public ValueTask<int> ValueTaskInt32() => ValueTask.FromResult(1);
+
+        public NotifyOnlyAwaitable NotifyOnlyAwaitable() => new();
 
         public async ValueTask AsyncValueTask(Validator validator)
         {

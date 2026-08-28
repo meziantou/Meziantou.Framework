@@ -20,7 +20,7 @@ namespace Meziantou.Framework
         public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
-            public Awaiter(object customAwaiter, System.Func<object, bool> isCompletedMethod, System.Func<object, object?> getResultMethod, System.Action<object, System.Action> onCompletedMethod, System.Action<object, System.Action> unsafeOnCompletedMethod) { }
+            public Awaiter(object customAwaiter, System.Func<object, bool> isCompletedMethod, System.Func<object, object?> getResultMethod, System.Action<object, System.Action> onCompletedMethod, System.Action<object, System.Action>? unsafeOnCompletedMethod) { }
             public object? GetResult() => throw null;
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }

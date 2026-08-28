@@ -272,6 +272,24 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         Assert.Empty(diagnostics);
     }
 
+    [Fact]
+    public async Task AnalyzerReportsThroughAnAlias()
+    {
+        // The attribute is the generator's one, so it must be analyzed even though the name is not written out.
+        const string Source = """
+            using Aliased = FixedStringBuilderAttribute;
+
+            [Aliased(0)]
+            public partial struct Sample
+            {
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(Source);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("MFFSG0003", diagnostic.Id);
+    }
+
     private static async Task<(GeneratorDriverRunResult RunResult, Compilation Compilation)> GenerateAsync(string source)
     {
         var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");

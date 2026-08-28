@@ -93,6 +93,8 @@ internal sealed class NpmVersioningStrategy : VersioningStrategy
             value = suffix;
         }
 
-        return SemanticVersion.TryParse(value, out semanticVersion);
+        // Ranges such as '^1.1' or '~7' omit components. Unlike Docker tags the shape is not preserved:
+        // registry versions are always complete, and 'npm update --save' also writes the full version back.
+        return PartialSemanticVersion.TryParse(value, out semanticVersion, out _);
     }
 }

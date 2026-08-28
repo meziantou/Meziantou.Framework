@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
 using Meziantou.Framework;
@@ -61,12 +62,20 @@ internal sealed class DockerRegistryAuthProvider
 
     private static DockerApiModels.AuthConfigFile? LoadConfiguration()
     {
-        var configPath = FullPath.GetFolderPath(Environment.SpecialFolder.UserProfile) / ".docker" / "config.json";
+        var configPath = GetConfigurationDirectory(Environment.GetEnvironmentVariable("DOCKER_CONFIG")) / "config.json";
         if (!File.Exists(configPath))
             return null;
 
         using var stream = File.OpenRead(configPath);
         return JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.AuthConfigFile);
+    }
+
+    /// <summary>The directory the credentials are read from: <c>DOCKER_CONFIG</c> when it is set, <c>~/.docker</c> otherwise. CI systems that isolate credentials into a per-job directory rely on the environment variable.</summary>
+    internal static FullPath GetConfigurationDirectory(string? dockerConfigEnvironmentVariable)
+    {
+        return string.IsNullOrWhiteSpace(dockerConfigEnvironmentVariable)
+            ? FullPath.GetFolderPath(Environment.SpecialFolder.UserProfile) / ".docker"
+            : FullPath.FromPath(dockerConfigEnvironmentVariable);
     }
 
     private static string? GetCredentialHelper(DockerApiModels.AuthConfigFile config, string registry)
@@ -155,12 +164,11 @@ internal sealed class DockerRegistryAuthProvider
                 Password = credentials.Secret,
             };
         }
-        catch (FileNotFoundException)
+        catch (Exception ex) when (ex is Win32Exception or IOException or InvalidOperationException)
         {
-            return null;
-        }
-        catch (DirectoryNotFoundException)
-        {
+            // The helper is an optimization: a config naming one that is not installed (a config copied between
+            // machines, or Docker Desktop uninstalled but its config left behind) must fall through to 'auths'
+            // rather than fail the pull. Starting a missing executable raises Win32Exception, not FileNotFoundException.
             return null;
         }
     }

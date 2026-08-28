@@ -114,7 +114,7 @@ internal static class PatienceDiff
         if (pairs.Count == 0)
             return pairs;
 
-        return LongestIncreasingSubsequenceByRight(pairs);
+        return DiffAlgorithmHelpers.LongestIncreasingSubsequenceByRight(pairs);
     }
 
     private static Dictionary<string, int> FindUniquePositions(string[] values, int start, int end, IEqualityComparer<string> comparer)
@@ -129,69 +129,4 @@ internal static class PatienceDiff
 
         return result;
     }
-
-    private static List<Anchor> LongestIncreasingSubsequenceByRight(List<Anchor> pairs)
-    {
-        const int StackAllocationThreshold = 128;
-
-        var count = pairs.Count;
-        var tailsBuffer = count <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[count];
-        var previousBuffer = count <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[count];
-
-        var tails = tailsBuffer[..count];
-        var previous = previousBuffer[..count];
-        previous.Fill(-1);
-        var length = 0;
-
-        var pairsSpan = CollectionsMarshal.AsSpan(pairs);
-        for (var i = 0; i < count; i++)
-        {
-            var position = LowerBoundByRight(pairsSpan, tails, length, pairsSpan[i].RightIndex);
-            if (position > 0)
-            {
-                previous[i] = tails[position - 1];
-            }
-
-            tails[position] = i;
-            if (position == length)
-            {
-                length++;
-            }
-        }
-
-        var result = new List<Anchor>(length);
-        var index = tails[length - 1];
-        while (index >= 0)
-        {
-            result.Add(pairsSpan[index]);
-            index = previous[index];
-        }
-
-        result.Reverse();
-        return result;
-    }
-
-    private static int LowerBoundByRight(ReadOnlySpan<Anchor> pairs, ReadOnlySpan<int> tails, int length, int rightIndex)
-    {
-        var low = 0;
-        var high = length;
-        while (low < high)
-        {
-            var middle = low + ((high - low) / 2);
-            var value = pairs[tails[middle]].RightIndex;
-            if (value < rightIndex)
-            {
-                low = middle + 1;
-            }
-            else
-            {
-                high = middle;
-            }
-        }
-
-        return low;
-    }
-
-    [StructLayout(LayoutKind.Auto)]
-    private readonly record struct Anchor(int LeftIndex, int RightIndex);
 }

@@ -53,6 +53,24 @@ Notes:
 - If a single assertion serializes multiple files, an index suffix (`_0`, `_1`, ...) is appended.
 - If names are too long (or already end with `.verified` / `.actual`), a stable hash is added.
 
+## Storing snapshots in git
+
+Snapshots are often binary: PNG frames from the GIF/ICO serializers, whatever the ImageSharp and
+SkiaSharp backends emit, and `.bin` for any value whose extension is unknown. Add an entry to your
+`.gitattributes` so git never applies line-ending conversion to them:
+
+```gitattributes
+**/__snapshots__/** -text
+```
+
+Without it, a repository using the default `core.autocrlf=true` on Windows rewrites the line endings
+of every binary snapshot on checkout. The symptom is snapshots that pass for whoever approved them
+and fail for everyone else. PNG files fail to decode outright rather than mis-comparing, because the
+PNG signature contains a `CR LF` pair specifically to catch this, but the reported error
+("Unsupported image format") does not point at the cause.
+
+## Snapshot naming
+
 You can choose how snapshot names are generated using `SnapshotSettings.SnapshotNamingStrategy`:
 
 - `SnapshotNamingStrategies.TestName`

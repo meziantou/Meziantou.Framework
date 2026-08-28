@@ -413,15 +413,15 @@ namespace Meziantou.Framework
         public static byte NextByte(this System.Random random, byte min = 0, byte max = 255) => throw null;
         public static sbyte NextSByte(this System.Random random, sbyte min = 0, sbyte max = 127) => throw null;
         public static System.DateTime NextDateTime(this System.Random random, System.DateTime min, System.DateTime max) => throw null;
-        public static double NextDouble(this System.Random random, double min = 0, double max = 1) => throw null;
+        public static double NextDouble(this System.Random random, double min = 0d, double max = 1d) => throw null;
         public static short NextInt16(this System.Random random, short min = 0, short max = 32767) => throw null;
         public static int NextInt32(this System.Random random, int min = 0, int max = 2147483647) => throw null;
-        public static long NextInt64(this System.Random random, long min = 0, long max = 9223372036854775807) => throw null;
-        public static float NextSingle(this System.Random random, float min = 0, float max = 1) => throw null;
+        public static long NextInt64(this System.Random random, long min = 0L, long max = 9223372036854775807L) => throw null;
+        public static float NextSingle(this System.Random random, float min = 0f, float max = 1f) => throw null;
         public static ushort NextUInt16(this System.Random random, ushort min = 0, ushort max = 65535) => throw null;
-        public static uint NextUInt32(this System.Random random, uint min = 0, uint max = 4294967295) => throw null;
-        public static ulong NextUInt64(this System.Random random, ulong min = 0, ulong max = 18446744073709551615) => throw null;
-        public static decimal NextDecimal(this System.Random random, [System.Runtime.CompilerServices.DecimalConstant(0, 128, 4294967295, 4294967295, 4294967295)] decimal min, [System.Runtime.CompilerServices.DecimalConstant(0, 0, 4294967295, 4294967295, 4294967295)] decimal max) => throw null;
+        public static uint NextUInt32(this System.Random random, uint min = 0U, uint max = 4294967295U) => throw null;
+        public static ulong NextUInt64(this System.Random random, ulong min = 0UL, ulong max = 18446744073709551615UL) => throw null;
+        public static decimal NextDecimal(this System.Random random, [System.Runtime.CompilerServices.DecimalConstant(0, 128, 4294967295U, 4294967295U, 4294967295U)] decimal min, [System.Runtime.CompilerServices.DecimalConstant(0, 0, 4294967295U, 4294967295U, 4294967295U)] decimal max) => throw null;
         public static string NextString(this System.Random random, int length, string chars) => throw null;
         public static string NextString(this System.Random random, int minLength, int maxLength, string chars) => throw null;
     }

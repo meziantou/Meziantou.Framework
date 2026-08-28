@@ -35,7 +35,7 @@ namespace Meziantou.Framework.Unix.ControlGroups
         public void SetControllers(params System.ReadOnlySpan<string> controllers) { }
         public void SetCpuWeight(int weight) { }
         public int? GetCpuWeight() => throw null;
-        public void SetCpuMax(long? maxMicroseconds, long periodMicroseconds = 100000) { }
+        public void SetCpuMax(long? maxMicroseconds, long periodMicroseconds = 100000L) { }
         public void RemoveCpuMax() { }
         public void SetMemoryMax(long? bytes) { }
         public long? GetMemoryMax() => throw null;

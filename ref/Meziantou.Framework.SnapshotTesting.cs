@@ -9,11 +9,6 @@ namespace Meziantou.Framework.SnapshotTesting
         public virtual System.Exception CreateException(string message) => throw null;
     }
 
-    public abstract class AssertionMessageFormatter
-    {
-        public abstract string FormatMessage(string? expected, string? actual);
-    }
-
     public static class HumanReadableSerializerScrubExtensions
     {
         public static void ScrubGuid(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }

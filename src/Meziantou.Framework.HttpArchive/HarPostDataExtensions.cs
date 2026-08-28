@@ -12,7 +12,11 @@ public static class HarPostDataExtensions
     /// <param name="postData">The HAR post data.</param>
     /// <param name="rawData">The decoded raw bytes if available.</param>
     /// <param name="encodingExtensionName">The extension field name containing the encoding metadata.</param>
-    /// <returns><see langword="true" /> when payload bytes are available; otherwise, <see langword="false" />.</returns>
+    /// <returns>
+    /// <see langword="true" /> when payload bytes are available; otherwise, <see langword="false" />.
+    /// Returns <see langword="false" /> when the text is not valid for the declared encoding, or when the
+    /// declared encoding is not understood, rather than reporting the undecoded text as the payload.
+    /// </returns>
     public static bool TryGetRawData(this HarPostData? postData, [NotNullWhen(true)] out byte[]? rawData, string encodingExtensionName = DefaultEncodingExtensionName)
     {
         if (postData?.Text is null)
@@ -21,15 +25,32 @@ public static class HarPostDataExtensions
             return false;
         }
 
-        if (TryGetEncoding(postData, encodingExtensionName, out var encoding) &&
-            string.Equals(encoding, "base64", StringComparison.OrdinalIgnoreCase))
+        if (TryGetEncoding(postData, encodingExtensionName, out var encoding))
         {
-            rawData = Convert.FromBase64String(postData.Text);
-            return true;
+            if (!string.Equals(encoding, "base64", StringComparison.OrdinalIgnoreCase))
+            {
+                rawData = null;
+                return false;
+            }
+
+            return TryDecodeBase64(postData.Text, out rawData);
         }
 
         rawData = Encoding.UTF8.GetBytes(postData.Text);
         return true;
+    }
+
+    private static bool TryDecodeBase64(string text, [NotNullWhen(true)] out byte[]? bytes)
+    {
+        var buffer = new byte[((text.Length / 4) + 1) * 3];
+        if (Convert.TryFromBase64String(text, buffer, out var written))
+        {
+            bytes = buffer.AsSpan(0, written).ToArray();
+            return true;
+        }
+
+        bytes = null;
+        return false;
     }
 
     private static bool TryGetEncoding(HarPostData postData, string encodingExtensionName, out string? encoding)

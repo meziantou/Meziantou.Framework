@@ -247,6 +247,42 @@ internal static class ImageTestData
         return stream.ToArray();
     }
 
+    /// <summary>
+    /// Writes a PNG whose IDAT payload is supplied verbatim, so the inflated size can deliberately disagree
+    /// with what the IHDR dimensions imply.
+    /// </summary>
+    public static byte[] CreatePngWithRawImageData(int width, int height, byte bitDepth, byte colorType, byte[] rawImageData)
+    {
+        ArgumentNullException.ThrowIfNull(rawImageData);
+
+        byte[] compressedData;
+        using (var compressedStream = new MemoryStream())
+        {
+            using (var zlib = new ZLibStream(compressedStream, CompressionLevel.SmallestSize, leaveOpen: true))
+            {
+                zlib.Write(rawImageData);
+            }
+
+            compressedData = compressedStream.ToArray();
+        }
+
+        using var stream = new MemoryStream();
+        stream.Write([137, 80, 78, 71, 13, 10, 26, 10]);
+
+        Span<byte> ihdrData = stackalloc byte[13];
+        BinaryPrimitives.WriteUInt32BigEndian(ihdrData, (uint)width);
+        BinaryPrimitives.WriteUInt32BigEndian(ihdrData[4..], (uint)height);
+        ihdrData[8] = bitDepth;
+        ihdrData[9] = colorType;
+        ihdrData[10] = 0;
+        ihdrData[11] = 0;
+        ihdrData[12] = 0;
+        WritePngChunk(stream, "IHDR"u8, ihdrData);
+        WritePngChunk(stream, "IDAT"u8, compressedData);
+        WritePngChunk(stream, "IEND"u8, ReadOnlySpan<byte>.Empty);
+        return stream.ToArray();
+    }
+
     public static byte[] CreateIcoWithPngEntries(params byte[][] pngImages)
     {
         ArgumentNullException.ThrowIfNull(pngImages);

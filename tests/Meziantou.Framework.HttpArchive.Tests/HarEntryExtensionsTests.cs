@@ -179,6 +179,55 @@ public sealed class HarEntryExtensionsTests
     }
 
     [Fact]
+    public void PostData_TryGetRawData_InvalidBase64()
+    {
+        var postData = new HarPostData
+        {
+            Text = "not!valid!base64",
+            ExtensionData = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                [HarPostDataExtensions.DefaultEncodingExtensionName] = JsonDocument.Parse("\"base64\"").RootElement.Clone(),
+            },
+        };
+
+        Assert.False(postData.TryGetRawData(out var rawData));
+        Assert.Null(rawData);
+    }
+
+    [Fact]
+    public void PostData_TryGetRawData_UnknownEncoding()
+    {
+        var postData = new HarPostData
+        {
+            Text = "48656c6c6f",
+            ExtensionData = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                [HarPostDataExtensions.DefaultEncodingExtensionName] = JsonDocument.Parse("\"hex\"").RootElement.Clone(),
+            },
+        };
+
+        Assert.False(postData.TryGetRawData(out var rawData));
+        Assert.Null(rawData);
+    }
+
+    [Fact]
+    public void PostData_TryGetRawData_CustomEncodingExtensionName()
+    {
+        var binaryData = new byte[] { 0x00, 0xFF };
+        var postData = new HarPostData
+        {
+            Text = Convert.ToBase64String(binaryData),
+            ExtensionData = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                ["_encoding"] = JsonDocument.Parse("\"base64\"").RootElement.Clone(),
+            },
+        };
+
+        Assert.True(postData.TryGetRawData(out var rawData, "_encoding"));
+        Assert.Equal(binaryData, rawData);
+    }
+
+    [Fact]
     public void PostData_TryGetRawData_Utf8()
     {
         var postData = new HarPostData

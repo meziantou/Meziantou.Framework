@@ -137,18 +137,18 @@ namespace Meziantou.Framework
 
     public enum ByteSizeUnit
     {
-        Byte = 1,
-        KiloByte = 1000,
-        MegaByte = 1000000,
-        GigaByte = 1000000000,
-        TeraByte = 1000000000000,
-        PetaByte = 1000000000000000,
-        ExaByte = 1000000000000000000,
-        KibiByte = 1024,
-        MebiByte = 1048576,
-        GibiByte = 1073741824,
-        TebiByte = 1099511627776,
-        PebiByte = 1125899906842624,
-        ExbiByte = 1152921504606846976
+        Byte = 1L,
+        KiloByte = 1000L,
+        MegaByte = 1000000L,
+        GigaByte = 1000000000L,
+        TeraByte = 1000000000000L,
+        PetaByte = 1000000000000000L,
+        ExaByte = 1000000000000000000L,
+        KibiByte = 1024L,
+        MebiByte = 1048576L,
+        GibiByte = 1073741824L,
+        TebiByte = 1099511627776L,
+        PebiByte = 1125899906842624L,
+        ExbiByte = 1152921504606846976L
     }
 }

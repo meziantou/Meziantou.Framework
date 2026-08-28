@@ -12,6 +12,12 @@ const string ConfusablesUrl = "https://www.unicode.org/Public/UCD/latest/securit
 const string UnicodeDataUrl = "https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt";
 const string BlocksUrl = "https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt";
 const string EmojiDataUrl = "https://www.unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt";
+const string ScriptsUrl = "https://www.unicode.org/Public/UCD/latest/ucd/Scripts.txt";
+const string PropertyValueAliasesUrl = "https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt";
+const string ScriptExtensionsUrl = "https://www.unicode.org/Public/UCD/latest/ucd/ScriptExtensions.txt";
+
+// start (3 bytes) + end (3 bytes) + script id (2 bytes)
+const int ScriptRecordSize = 8;
 
 var outputUpdated = false;
 if (!FullPath.CurrentDirectory().TryFindGitRepositoryRoot(out var root))
@@ -22,6 +28,7 @@ var confusableOutputFilePath = outputPath / "Unicode.Confusables.g.cs";
 var unicodeCharacterInfosFilePath = outputPath / "UnicodeCharacterInfos.g.cs";
 var unicodeBlocksFilePath = outputPath / "UnicodeBlocks.g.cs";
 var emojiDataFilePath = outputPath / "UnicodeEmoji.g.cs";
+var unicodeScriptsFilePath = outputPath / "UnicodeScripts.g.cs";
 var unicodeDataPath = outputPath / "Resources" / "UnicodeData.bin.gz";
 var csprojPath = root / "src" / "Meziantou.Framework.Unicode" / "Meziantou.Framework.Unicode.csproj";
 
@@ -31,6 +38,7 @@ var blockRanges = await LoadBlocksRanges();
 await WriteUnicodeBlocksFile(blockRanges);
 await WriteUnicodeCharacterInfosFile(blockRanges);
 await WriteEmojiDataFile();
+await WriteUnicodeScriptsFile();
 
 // Update project version
 if (outputUpdated)
@@ -460,6 +468,410 @@ static string ParseCodePointSequence(string input)
     }
 
     return sb.ToString();
+}
+
+async Task WriteUnicodeScriptsFile()
+{
+    Console.WriteLine("Loading Unicode scripts...");
+    var longNames = await LoadScriptLongNames();
+    var ranges = await LoadScriptRanges(longNames);
+
+    // Script identifiers are emitted in alphabetical order so the numeric values stay stable
+    // when a new script is added anywhere but the end. They are not persisted anywhere, so a
+    // renumbering only affects this assembly.
+    var scriptNames = ranges.Select(r => r.Script).Concat(longNames.Values)
+        .Where(name => !string.Equals(name, "Unknown", StringComparison.Ordinal))
+        .Distinct(StringComparer.Ordinal).ToList();
+    scriptNames.Sort(StringComparer.Ordinal);
+
+    // Unknown is first so that default(UnicodeScript) is the "no script" value rather than
+    // whichever real script happens to sort first.
+    scriptNames.Insert(0, "Unknown");
+    var scriptIds = new Dictionary<string, int>(StringComparer.Ordinal);
+    foreach (var name in scriptNames)
+    {
+        scriptIds[name] = scriptIds.Count;
+    }
+
+    if (scriptIds.Count > ushort.MaxValue)
+        throw new InvalidOperationException("Too many scripts: " + scriptIds.Count);
+
+    ranges.Sort((a, b) => a.Start.CompareTo(b.Start));
+    for (var i = 1; i < ranges.Count; i++)
+    {
+        if (ranges[i].Start <= ranges[i - 1].End)
+            throw new InvalidOperationException($"Overlapping script ranges at U+{ranges[i].Start:X4}");
+    }
+
+    var bytes = new List<byte>(ranges.Count * ScriptRecordSize);
+    foreach (var range in ranges)
+    {
+        WriteUInt24(bytes, range.Start);
+        WriteUInt24(bytes, range.End);
+        WriteUInt16(bytes, scriptIds[range.Script]);
+    }
+
+    var enumMembers = new StringBuilder();
+    foreach (var name in scriptNames)
+    {
+        enumMembers.AppendLine(CultureInfo.InvariantCulture, $"    /// <summary>The {EscapeXmlText(name.Replace('_', ' '))} script.</summary>");
+        enumMembers.AppendLine(CultureInfo.InvariantCulture, $"    {ToScriptIdentifier(name)} = {scriptIds[name]},");
+        enumMembers.AppendLine();
+    }
+
+    var blob = FormatBlob(bytes);
+
+    var extensionRanges = await LoadScriptExtensionRanges(longNames, scriptIds);
+    var extensionSets = new List<List<int>>();
+    var extensionSetIndex = new Dictionary<string, int>(StringComparer.Ordinal);
+    var extensionBytes = new List<byte>();
+    foreach (var range in extensionRanges.OrderBy(r => r.Start))
+    {
+        var key = string.Join(',', range.Scripts);
+        if (!extensionSetIndex.TryGetValue(key, out var setIndex))
+        {
+            setIndex = extensionSets.Count;
+            extensionSetIndex[key] = setIndex;
+            extensionSets.Add(range.Scripts);
+        }
+
+        WriteUInt24(extensionBytes, range.Start);
+        WriteUInt24(extensionBytes, range.End);
+        WriteUInt16(extensionBytes, setIndex);
+    }
+
+    // Sets are stored as: count (1 byte) then that many script ids (2 bytes each). The range
+    // record holds an index into a side table of offsets so lookup stays O(1) after the search.
+    var setOffsets = new List<int>();
+    var setBytes = new List<byte>();
+    foreach (var set in extensionSets)
+    {
+        setOffsets.Add(setBytes.Count);
+        if (set.Count > byte.MaxValue)
+            throw new InvalidOperationException("Script extension set is too large: " + set.Count);
+
+        setBytes.Add((byte)set.Count);
+        foreach (var id in set)
+        {
+            WriteUInt16(setBytes, id);
+        }
+    }
+
+    var setOffsetBytes = new List<byte>();
+    foreach (var offset in setOffsets)
+    {
+        WriteUInt24(setOffsetBytes, offset);
+    }
+
+    Console.WriteLine($"  Loaded {extensionRanges.Count} script extension ranges ({extensionSets.Count} distinct sets)");
+
+    var extensionBlob = FormatBlob(extensionBytes);
+    var extensionOffsetBlob = FormatBlob(setOffsetBytes);
+    var extensionSetBlob = FormatBlob(setBytes);
+
+    var content = string.Create(CultureInfo.InvariantCulture, $$"""
+        // <auto-generated />
+        // Generated from Unicode script data
+        // Data source: {{ScriptsUrl}}
+        // Statistics:
+        //   - Scripts: {{scriptNames.Count}}
+        //   - Ranges: {{ranges.Count}}
+        //   - Encoded size: {{bytes.Count:N0}} bytes
+        //   - Script extension ranges: {{extensionRanges.Count}} ({{extensionSets.Count}} distinct sets)
+        //
+        // Specification: https://www.unicode.org/reports/tr24/
+        // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
+
+        #nullable enable
+
+        using System.Text;
+
+        namespace Meziantou.Framework;
+
+        /// <summary>Represents a Unicode script, as defined by the Script character property.</summary>
+        /// <seealso href="https://www.unicode.org/reports/tr24/" />
+        public enum UnicodeScript : ushort
+        {
+        {{enumMembers.ToString().TrimEnd()}}
+        }
+
+        /// <summary>Provides access to the Unicode Script character property.</summary>
+        /// <seealso href="https://www.unicode.org/reports/tr24/" />
+        public static class UnicodeScripts
+        {
+            // Sorted, non-overlapping ranges. Each record is {{ScriptRecordSize}} bytes:
+            // start (3), end (3), script id (2), little-endian. Stored as a blob rather than a
+            // switch so the table costs data instead of IL.
+            private static ReadOnlySpan<byte> Ranges =>
+            [{{blob.ToString().TrimEnd().TrimEnd(',')}}
+            ];
+
+            /// <summary>Gets the script of a code point.</summary>
+            /// <param name="codePoint">The code point.</param>
+            /// <returns>The script, or <see cref="UnicodeScript.Unknown"/> when the code point has no assigned script.</returns>
+            public static UnicodeScript GetScript(int codePoint)
+            {
+                var ranges = Ranges;
+                var low = 0;
+                var high = (ranges.Length / {{ScriptRecordSize}}) - 1;
+                while (low <= high)
+                {
+                    var middle = (int)(((uint)low + (uint)high) / 2);
+                    var offset = middle * {{ScriptRecordSize}};
+                    var start = ReadUInt24(ranges, offset);
+                    if (codePoint < start)
+                    {
+                        high = middle - 1;
+                        continue;
+                    }
+
+                    if (codePoint > ReadUInt24(ranges, offset + 3))
+                    {
+                        low = middle + 1;
+                        continue;
+                    }
+
+                    return (UnicodeScript)(ranges[offset + 6] | (ranges[offset + 7] << 8));
+                }
+
+                return UnicodeScript.Unknown;
+            }
+
+            /// <summary>Gets the script of a rune.</summary>
+            /// <param name="rune">The rune.</param>
+            /// <returns>The script, or <see cref="UnicodeScript.Unknown"/> when the rune has no assigned script.</returns>
+            public static UnicodeScript GetScript(Rune rune) => GetScript(rune.Value);
+
+            /// <summary>The number of distinct <see cref="UnicodeScript"/> values.</summary>
+            internal const int ScriptCount = {{scriptNames.Count}};
+
+            // Script_Extensions ranges, same {{ScriptRecordSize}}-byte layout, but the trailing 2 bytes
+            // are an index into ExtensionSetOffsets instead of a script id.
+            private static ReadOnlySpan<byte> ExtensionRanges =>
+            [{{extensionBlob.ToString().TrimEnd().TrimEnd(',')}}
+            ];
+
+            // 3-byte offsets into ExtensionSets.
+            private static ReadOnlySpan<byte> ExtensionSetOffsets =>
+            [{{extensionOffsetBlob.ToString().TrimEnd().TrimEnd(',')}}
+            ];
+
+            // count (1 byte) followed by that many 2-byte script ids.
+            private static ReadOnlySpan<byte> ExtensionSets =>
+            [{{extensionSetBlob.ToString().TrimEnd().TrimEnd(',')}}
+            ];
+
+            /// <summary>Gets the Script_Extensions of a code point, or an empty span when it has none.</summary>
+            internal static ReadOnlySpan<byte> GetScriptExtensionsRaw(int codePoint)
+            {
+                var ranges = ExtensionRanges;
+                var low = 0;
+                var high = (ranges.Length / {{ScriptRecordSize}}) - 1;
+                while (low <= high)
+                {
+                    var middle = (int)(((uint)low + (uint)high) / 2);
+                    var offset = middle * {{ScriptRecordSize}};
+                    var start = ReadUInt24(ranges, offset);
+                    if (codePoint < start)
+                    {
+                        high = middle - 1;
+                        continue;
+                    }
+
+                    if (codePoint > ReadUInt24(ranges, offset + 3))
+                    {
+                        low = middle + 1;
+                        continue;
+                    }
+
+                    var setIndex = ranges[offset + 6] | (ranges[offset + 7] << 8);
+                    var setOffset = ReadUInt24(ExtensionSetOffsets, setIndex * 3);
+                    var sets = ExtensionSets;
+                    var count = sets[setOffset];
+                    return sets.Slice(setOffset + 1, count * 2);
+                }
+
+                return default;
+            }
+
+            private static int ReadUInt24(ReadOnlySpan<byte> value, int offset)
+                => value[offset] | (value[offset + 1] << 8) | (value[offset + 2] << 16);
+        }
+        """);
+
+    if (await WriteTextIfChanged(unicodeScriptsFilePath, content))
+        outputUpdated = true;
+}
+
+async Task<Dictionary<string, string>> LoadScriptLongNames()
+{
+    Console.WriteLine($"  Downloading from: {PropertyValueAliasesUrl}");
+    using var response = await SharedHttpClient.Instance.GetAsync(PropertyValueAliasesUrl);
+    response.EnsureSuccessStatusCode();
+    var content = await response.Content.ReadAsStringAsync();
+
+    var result = new Dictionary<string, string>(StringComparer.Ordinal);
+    foreach (var rawLine in content.Split('\n'))
+    {
+        var line = rawLine.Trim();
+        if (!line.StartsWith("sc ;", StringComparison.Ordinal))
+            continue;
+
+        var parts = line.Split(';', StringSplitOptions.TrimEntries);
+        if (parts.Length < 3)
+            continue;
+
+        result[parts[1]] = parts[2];
+    }
+
+    Console.WriteLine($"  Loaded {result.Count} script aliases");
+    return result;
+}
+
+async Task<List<ScriptRange>> LoadScriptRanges(Dictionary<string, string> longNames)
+{
+    Console.WriteLine($"  Downloading from: {ScriptsUrl}");
+    using var response = await SharedHttpClient.Instance.GetAsync(ScriptsUrl);
+    response.EnsureSuccessStatusCode();
+    var content = await response.Content.ReadAsStringAsync();
+
+    var ranges = new List<ScriptRange>();
+    foreach (var rawLine in content.Split('\n'))
+    {
+        var line = rawLine.Trim();
+        var commentIndex = line.IndexOf('#', StringComparison.Ordinal);
+        if (commentIndex >= 0)
+        {
+            line = line[..commentIndex].Trim();
+        }
+
+        if (line.Length == 0)
+            continue;
+
+        var parts = line.Split(';', StringSplitOptions.TrimEntries);
+        if (parts.Length < 2)
+            continue;
+
+        var rangeParts = parts[0].Split("..", StringSplitOptions.TrimEntries);
+        var start = int.Parse(rangeParts[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+        var end = rangeParts.Length > 1
+            ? int.Parse(rangeParts[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture)
+            : start;
+
+        // Scripts.txt uses long names; normalize anything that appears as an alias.
+        var script = longNames.TryGetValue(parts[1], out var longName) ? longName : parts[1];
+        ranges.Add(new ScriptRange(start, end, script));
+    }
+
+    Console.WriteLine($"  Loaded {ranges.Count} script ranges");
+    return ranges;
+}
+
+static string ToScriptIdentifier(string scriptName)
+{
+    var sb = new StringBuilder(scriptName.Length);
+    var upperNext = true;
+    foreach (var c in scriptName)
+    {
+        if (c == '_')
+        {
+            upperNext = true;
+            continue;
+        }
+
+        sb.Append(upperNext ? char.ToUpperInvariant(c) : c);
+        upperNext = false;
+    }
+
+    var identifier = sb.ToString();
+    if (identifier.Length == 0 || !char.IsLetter(identifier[0]))
+        throw new InvalidOperationException($"Script name '{scriptName}' does not yield a valid C# identifier");
+
+    return identifier;
+}
+
+static StringBuilder FormatBlob(List<byte> bytes)
+{
+    var blob = new StringBuilder();
+    for (var i = 0; i < bytes.Count; i++)
+    {
+        if (i % 16 == 0)
+        {
+            blob.AppendLine();
+            blob.Append("        ");
+        }
+        else
+        {
+            blob.Append(' ');
+        }
+
+        blob.Append(CultureInfo.InvariantCulture, $"0x{bytes[i]:X2},");
+    }
+
+    return blob;
+}
+
+async Task<List<ScriptExtensionRange>> LoadScriptExtensionRanges(Dictionary<string, string> longNames, Dictionary<string, int> scriptIds)
+{
+    Console.WriteLine($"  Downloading from: {ScriptExtensionsUrl}");
+    using var response = await SharedHttpClient.Instance.GetAsync(ScriptExtensionsUrl);
+    response.EnsureSuccessStatusCode();
+    var content = await response.Content.ReadAsStringAsync();
+
+    var ranges = new List<ScriptExtensionRange>();
+    foreach (var rawLine in content.Split('\n'))
+    {
+        var line = rawLine.Trim();
+        var commentIndex = line.IndexOf('#', StringComparison.Ordinal);
+        if (commentIndex >= 0)
+        {
+            line = line[..commentIndex].Trim();
+        }
+
+        if (line.Length == 0)
+            continue;
+
+        var parts = line.Split(';', StringSplitOptions.TrimEntries);
+        if (parts.Length < 2)
+            continue;
+
+        var rangeParts = parts[0].Split("..", StringSplitOptions.TrimEntries);
+        var start = int.Parse(rangeParts[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+        var end = rangeParts.Length > 1
+            ? int.Parse(rangeParts[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture)
+            : start;
+
+        // ScriptExtensions.txt uses the short aliases; map them to the same ids as Scripts.txt.
+        var scripts = new List<int>();
+        foreach (var code in parts[1].Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (!longNames.TryGetValue(code, out var longName))
+                throw new InvalidOperationException("Unknown script alias: " + code);
+
+            if (!scriptIds.TryGetValue(longName, out var id))
+                throw new InvalidOperationException("Script has no id: " + longName);
+
+            scripts.Add(id);
+        }
+
+        scripts.Sort();
+        ranges.Add(new ScriptExtensionRange(start, end, scripts));
+    }
+
+    return ranges;
+}
+
+static void WriteUInt24(List<byte> destination, int value)
+{
+    destination.Add((byte)value);
+    destination.Add((byte)(value >> 8));
+    destination.Add((byte)(value >> 16));
+}
+
+static void WriteUInt16(List<byte> destination, int value)
+{
+    destination.Add((byte)value);
+    destination.Add((byte)(value >> 8));
 }
 
 static Rune ParseSingleRune(string input)
@@ -1365,19 +1777,11 @@ async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockR
 
 internal sealed record Entry(Rune Source, string Target);
 
-internal sealed record PendingRange(int Start, UnicodeDataEntry Entry);
+internal sealed record ScriptRange(int Start, int End, string Script);
 
-[Flags]
-internal enum EmojiProperties : byte
-{
-    None = 0,
-    Emoji = 1 << 0,
-    EmojiPresentation = 1 << 1,
-    EmojiModifier = 1 << 2,
-    EmojiModifierBase = 1 << 3,
-    EmojiComponent = 1 << 4,
-    ExtendedPictographic = 1 << 5,
-}
+internal sealed record ScriptExtensionRange(int Start, int End, List<int> Scripts);
+
+internal sealed record PendingRange(int Start, UnicodeDataEntry Entry);
 
 internal sealed record UnicodeDataEntry(
     Rune Rune,

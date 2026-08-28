@@ -1328,6 +1328,34 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
+    public void DefaultSnapshotPath_IsStableWhenTheAssertionMoves()
+    {
+        var settings = new SnapshotSettings();
+        var sourceFilePath = FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs"));
+        var methodName = "SampleTest" + new string('a', 200);
+
+        SnapshotPathContext CreateContext(int lineNumber) => new(
+            sourceFilePath,
+            "SampleTests",
+            methodName,
+            lineNumber,
+            SnapshotType.Default,
+            Index: 0,
+            Extension: "txt",
+            TestContext: null,
+            settings);
+
+        var beforeTheEdit = settings.SnapshotPathStrategy(CreateContext(12));
+        var afterTheEdit = settings.SnapshotPathStrategy(CreateContext(4711));
+
+        Assert.Equal(beforeTheEdit, afterTheEdit);
+        Assert.Matches(SnapshotNameWithHashSuffixRegex(), beforeTheEdit.Name);
+    }
+
+    [GeneratedRegex("_[0-9a-f]{8}\\.verified\\.txt$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex SnapshotNameWithHashSuffixRegex();
+
+    [Fact]
     public void GitTool_GetGitConfiguration_ReadsTheValueWithoutDeadlocking()
     {
         if (ExecutableFinder.GetFullExecutablePath("git") is null)

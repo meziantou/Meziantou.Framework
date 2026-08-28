@@ -257,4 +257,17 @@ public sealed class RestartManager : IDisposable
         restartManager.RegisterFile(path);
         return restartManager.GetProcessesLockingResources();
     }
+
+    /// <summary>Gets a list of processes that are currently locking any of the specified files.</summary>
+    /// <param name="paths">An array of full file paths to check.</param>
+    /// <returns>A read-only list of <see cref="Process"/> instances that are locking at least one of the files.</returns>
+    /// <remarks>Prefer this method over calling <see cref="GetProcessesLockingFile(string)"/> in a loop: registering resources performs relatively expensive write operations, so registering all the files in a single session is significantly cheaper.</remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="paths"/> is <see langword="null"/>.</exception>
+    /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
+    public static IReadOnlyList<Process> GetProcessesLockingFiles(string[] paths)
+    {
+        using var restartManager = CreateSession();
+        restartManager.RegisterFiles(paths);
+        return restartManager.GetProcessesLockingResources();
+    }
 }

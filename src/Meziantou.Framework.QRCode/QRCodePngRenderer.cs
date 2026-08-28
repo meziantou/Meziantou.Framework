@@ -1,5 +1,4 @@
-using System.Buffers.Binary;
-using System.IO.Compression;
+using Meziantou.Framework.Internal;
 
 namespace Meziantou.Framework;
 
@@ -8,12 +7,6 @@ namespace Meziantou.Framework;
 /// </summary>
 public static class QRCodePngRenderer
 {
-    private static readonly byte[] PngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
-    private static readonly byte[] IhdrChunkType = [73, 72, 68, 82];
-    private static readonly byte[] IdatChunkType = [73, 68, 65, 84];
-    private static readonly byte[] IendChunkType = [73, 69, 78, 68];
-    private static readonly uint[] Crc32Table = InitializeCrc32Table();
-
     /// <summary>Renders the QR code as PNG bytes with default options.</summary>
     public static byte[] ToPng(this QRCode qrCode)
     {
@@ -47,9 +40,8 @@ public static class QRCodePngRenderer
         var width = GetTotalDimension(qrCode.Width, options.QuietZoneModules, options.ModuleSize);
         var height = GetTotalDimension(qrCode.Height, options.QuietZoneModules, options.ModuleSize);
         var imageData = CreateImageData(qrCode, width, height, options);
-        var compressedImageData = CompressImageData(imageData);
 
-        WritePng(stream, width, height, compressedImageData);
+        PngWriter.WriteRgba(stream, width, height, imageData);
     }
 
     private static int GetTotalDimension(int size, int quietZoneModules, int moduleSize)
@@ -96,83 +88,5 @@ public static class QRCodePngRenderer
         }
 
         return result;
-    }
-
-    private static byte[] CompressImageData(ReadOnlySpan<byte> imageData)
-    {
-        using var output = new MemoryStream();
-        using (var compressionStream = new ZLibStream(output, CompressionLevel.SmallestSize, leaveOpen: true))
-        {
-            compressionStream.Write(imageData);
-        }
-
-        return output.ToArray();
-    }
-
-    private static void WritePng(Stream stream, int width, int height, ReadOnlySpan<byte> compressedImageData)
-    {
-        stream.Write(PngSignature);
-
-        Span<byte> ihdrData = stackalloc byte[13];
-        BinaryPrimitives.WriteUInt32BigEndian(ihdrData, (uint)width);
-        BinaryPrimitives.WriteUInt32BigEndian(ihdrData[4..], (uint)height);
-        ihdrData[8] = 8;
-        ihdrData[9] = 6;
-        ihdrData[10] = 0;
-        ihdrData[11] = 0;
-        ihdrData[12] = 0;
-
-        WriteChunk(stream, IhdrChunkType, ihdrData);
-        WriteChunk(stream, IdatChunkType, compressedImageData);
-        WriteChunk(stream, IendChunkType, ReadOnlySpan<byte>.Empty);
-    }
-
-    private static void WriteChunk(Stream stream, ReadOnlySpan<byte> chunkType, ReadOnlySpan<byte> data)
-    {
-        Span<byte> uintBuffer = stackalloc byte[4];
-        BinaryPrimitives.WriteUInt32BigEndian(uintBuffer, (uint)data.Length);
-        stream.Write(uintBuffer);
-        stream.Write(chunkType);
-        stream.Write(data);
-
-        var crc = ComputeCrc32(chunkType, data);
-        BinaryPrimitives.WriteUInt32BigEndian(uintBuffer, crc);
-        stream.Write(uintBuffer);
-    }
-
-    private static uint ComputeCrc32(ReadOnlySpan<byte> chunkType, ReadOnlySpan<byte> data)
-    {
-        var crc = uint.MaxValue;
-        crc = UpdateCrc32(crc, chunkType);
-        crc = UpdateCrc32(crc, data);
-
-        return ~crc;
-    }
-
-    private static uint UpdateCrc32(uint crc, ReadOnlySpan<byte> data)
-    {
-        foreach (var value in data)
-        {
-            crc = Crc32Table[(int)((crc ^ value) & 0xFF)] ^ (crc >> 8);
-        }
-
-        return crc;
-    }
-
-    private static uint[] InitializeCrc32Table()
-    {
-        var table = new uint[256];
-        for (uint index = 0; index < table.Length; index++)
-        {
-            var crc = index;
-            for (var bit = 0; bit < 8; bit++)
-            {
-                crc = (crc & 1) == 0 ? (crc >> 1) : (0xEDB88320u ^ (crc >> 1));
-            }
-
-            table[index] = crc;
-        }
-
-        return table;
     }
 }

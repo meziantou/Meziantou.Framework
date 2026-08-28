@@ -168,6 +168,53 @@ public class QRCodePayloadTests
     }
 
     [Fact]
+    public void Email_AddressCannotInjectQueryParameters()
+    {
+        var payload = QRCodePayload.Email("victim@x.com?bcc=attacker@evil.example", "Hi");
+
+        // The '?' is encoded, so the address stays one address and subject= is the first parameter.
+        Assert.Equal("mailto:victim@x.com%3Fbcc%3Dattacker@evil.example?subject=Hi", payload);
+    }
+
+    [Theory]
+    [InlineData("a@b.com#fragment")]
+    [InlineData("a@b.com&x=1")]
+    [InlineData("a@b.com ")]
+    public void Email_AddressStructuralCharactersAreEncoded(string address)
+    {
+        var payload = QRCodePayload.Email(address);
+
+        Assert.Equal(1, payload.Count(c => c == ':'));
+        Assert.DoesNotContain("?", payload);
+        Assert.DoesNotContain("#", payload);
+        Assert.DoesNotContain("&", payload);
+    }
+
+    [Fact]
+    public void Bitcoin_AddressCannotInjectQueryParameters()
+    {
+        var payload = QRCodePayload.Bitcoin("addr?amount=999", amount: 0.05m);
+
+        Assert.Equal("bitcoin:addr%3Famount%3D999?amount=0.05", payload);
+    }
+
+    [Fact]
+    public void Sms_NumberCannotShiftTheMessageSeparator()
+    {
+        var payload = QRCodePayload.Sms("+1555:evil", "Hello");
+
+        // Exactly two colons: the scheme separator and the number/message separator.
+        Assert.Equal("smsto:+1555%3Aevil:Hello", payload);
+    }
+
+    [Fact]
+    public void Phone_NumberStructuralCharactersAreEncoded()
+    {
+        Assert.Equal("tel:+1234567890", QRCodePayload.Phone("+1234567890"));
+        Assert.Equal("tel:+1555%3Fx%3D1", QRCodePayload.Phone("+1555?x=1"));
+    }
+
+    [Fact]
     public void Sms_ThrowsWhenNumberIsNull()
     {
         Assert.Throws<ArgumentNullException>(() => QRCodePayload.Sms(null!));

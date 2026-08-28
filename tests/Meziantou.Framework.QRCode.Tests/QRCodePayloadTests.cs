@@ -109,8 +109,8 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.VCard("Doe", "John", email: email);
 
-        // Exactly five content lines: BEGIN, VERSION, N, FN, EMAIL, END.
-        Assert.Equal(5, payload.Split("\r\n").Length - 1);
+        // Six content lines - BEGIN, VERSION, N, FN, EMAIL, END - so five separators.
+        Assert.HasCount(6, payload.Split("\r\n"));
         Assert.DoesNotContain("\r\nTEL:", payload);
         Assert.DoesNotContain("\r\nURL:", payload);
     }
@@ -120,7 +120,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.VCard("Doe");
 
-        Assert.Equal(4, payload.Split("\r\n").Length - 1);
+        Assert.HasCount(5, payload.Split("\r\n"));
         Assert.DoesNotContain("\n", payload.Replace("\r\n", "", StringComparison.Ordinal));
     }
 
@@ -135,9 +135,9 @@ public class QRCodePayloadTests
         // The injected text survives as escaped content inside SUMMARY, so it is inert: what
         // matters is that it never becomes a content line of its own.
         var lines = payload.Split("\r\n");
-        Assert.Equal(1, lines.Count(line => line is "BEGIN:VEVENT"));
-        Assert.Equal(1, lines.Count(line => line is "END:VEVENT"));
-        Assert.Equal(5, lines.Length);
+        Assert.Single(lines, line => line is "BEGIN:VEVENT");
+        Assert.Single(lines, line => line is "END:VEVENT");
+        Assert.HasCount(5, lines);
     }
 
     [Fact]

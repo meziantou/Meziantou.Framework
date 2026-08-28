@@ -257,13 +257,16 @@ public readonly partial struct Color : IEquatable<Color>
         return byte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
     }
 
+    /// <summary>
+    /// Parses the alpha component of an <c>rgba()</c> function.
+    /// </summary>
+    /// <remarks>
+    /// CSS alpha is a fraction between 0 and 1, so it is never parsed as a 0-255 byte. Trying the
+    /// byte form first made <c>rgba(0,0,0,1)</c> - the most common way to write opaque - resolve to
+    /// an alpha of 1, a colour that is 99.6% transparent, with no error raised.
+    /// </remarks>
     private static bool TryParseAlpha(string value, out byte alpha)
     {
-        if (TryParseByte(value, out alpha))
-        {
-            return true;
-        }
-
         if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue)
             && doubleValue >= 0
             && doubleValue <= 1)

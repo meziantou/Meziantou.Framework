@@ -150,6 +150,54 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateTypesWithSameNameInDifferentNamespaces()
+    {
+        var sourceCode = """
+            namespace A
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+                public partial struct Test {}
+            }
+
+            namespace B
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+                public partial struct Test {}
+            }
+            """;
+
+        var result = await GenerateFiles(sourceCode);
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+        Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
+
+        AssertGeneratedTypes(result, ["A.Test", "B.Test"]);
+    }
+
+    [Fact]
+    public async Task GenerateNestedTypesWithSameNameInDifferentContainingTypes()
+    {
+        var sourceCode = """
+            public partial class A
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+                public partial struct Test {}
+            }
+
+            public partial class B
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+                public partial struct Test {}
+            }
+            """;
+
+        var result = await GenerateFiles(sourceCode);
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+        Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
+
+        AssertGeneratedTypes(result, ["A+Test", "B+Test"]);
+    }
+
+    [Fact]
     public async Task DummyAttribute()
     {
         var sourceCode = """
@@ -1108,6 +1156,31 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         var generated = runResult.GeneratedTrees.Length > 0 ? (await runResult.GeneratedTrees[0].GetRootAsync(XunitCancellationToken)).ToFullString() : "<no file generated>";
         Assert.True(compilationOutput.Success);
         Assert.Empty(compilationOutput.Diagnostics);
+    }
+
+    /// <summary>Loads the generated assembly and ensures the members are generated for every expected type.</summary>
+    private static void AssertGeneratedTypes((GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[]? Assembly, byte[] Symbols) result, string[] typeNames)
+    {
+        Assert.NotNull(result.Assembly);
+
+        var alc = new AssemblyLoadContext("test", isCollectible: true);
+        try
+        {
+            var assembly = alc.LoadFromStream(new MemoryStream(result.Assembly), new MemoryStream(result.Symbols));
+            foreach (var typeName in typeNames)
+            {
+                var type = assembly.GetType(typeName);
+                Assert.NotNull(type);
+
+                var from = (MethodInfo)type.GetMember("FromInt32").Single();
+                var instance = from.Invoke(null, [10]);
+                Assert.Equal("10", System.Text.Json.JsonSerializer.Serialize(instance));
+            }
+        }
+        finally
+        {
+            alc.Unload();
+        }
     }
 
     private static Task TestGeneratedAssembly([StringSyntax("c#-test")] string sourceCode, Action<Type> assert)

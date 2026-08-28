@@ -947,6 +947,42 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task GeneratedConverterTypeNames()
+    {
+        // These names are part of the public surface of the generated types and are documented in the readme
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+            public partial struct ProjectId { }
+
+            namespace Meziantou.Framework
+            {
+                public interface IStronglyTypedId { string ValueAsString { get; } System.Type UnderlyingType { get; } }
+                public interface IStronglyTypedId<T> : IStronglyTypedId { T Value { get; } }
+            }
+            """;
+        var compilation = await CreateCompilation(sourceCode,
+        [
+            new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/"),
+            new NuGetReference("Newtonsoft.Json", "13.0.4", "lib/netstandard2.0/"),
+            new NuGetReference("MongoDB.Bson", "2.18.0", "lib/netstandard2.1/"),
+        ]);
+
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: [InstantiateGenerator()]);
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics, XunitCancellationToken);
+        Assert.Empty(diagnostics);
+
+        var type = outputCompilation.GetTypeByMetadataName("ProjectId");
+        Assert.NotNull(type);
+        Assert.NotEmpty(type.GetTypeMembers("ProjectIdTypeConverter"));
+        Assert.NotEmpty(type.GetTypeMembers("ProjectIdJsonConverter"));
+        Assert.NotEmpty(type.GetTypeMembers("ProjectIdNewtonsoftJsonConverter"));
+        Assert.NotEmpty(type.GetTypeMembers("ProjectIdBsonConverter"));
+
+        // IStronglyTypedId<T> is parameterized with the underlying type, not with the id type
+        Assert.Contains(type.AllInterfaces, i => i.Name == "IStronglyTypedId" && i.TypeArguments is [{ SpecialType: SpecialType.System_Int32 }]);
+    }
+
+    [Fact]
     public async Task TestIncrementalSupport()
     {
         var generator = InstantiateGenerator();

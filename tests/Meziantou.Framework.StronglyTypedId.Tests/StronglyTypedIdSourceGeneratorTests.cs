@@ -910,12 +910,12 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         var compilation = await CreateCompilation(IdSourceCode, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
         compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(InterfaceWithoutUnderlyingType));
         driver = driver.RunGenerators(compilation, XunitCancellationToken);
-        Assert.False(GetGeneratedSource(driver).Contains("UnderlyingType", StringComparison.Ordinal));
+        Assert.DoesNotContain("UnderlyingType", GetGeneratedSource(driver));
 
         // Only the definition of IStronglyTypedId changes, so the generated code must not be reused
         compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.Last(), CSharpSyntaxTree.ParseText(InterfaceWithUnderlyingType));
         driver = driver.RunGenerators(compilation, XunitCancellationToken);
-        Assert.True(GetGeneratedSource(driver).Contains("UnderlyingType", StringComparison.Ordinal));
+        Assert.Contains("UnderlyingType", GetGeneratedSource(driver));
 
         static string GetGeneratedSource(GeneratorDriver driver)
         {

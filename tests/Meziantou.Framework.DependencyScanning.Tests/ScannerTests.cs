@@ -215,7 +215,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             <Project Sdk="Microsoft.NET.Sdk" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
               <PropertyGroup>
-                <TargetFramework>netstandard2.0</TargetFramework>
+                <TargetFramework>2.0.0</TargetFramework>
                 <RootNamespace>Sample</RootNamespace>
               </PropertyGroup>
 
@@ -230,9 +230,45 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
 
         AddFile("test.csproj", Original);
         var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
-        AssertContainDependency(result, (DependencyType.NuGet, "TestPackage", "4.2.1", 11, 45));
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "TestPackage", "4.2.1", 11, 45),
+            (DependencyType.DotNetTargetFramework, null, "netstandard2.0", 0, 0));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task DotNetTargetFrameworkWithNamespace()
+    {
+        const string Original = """
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <TargetFramework>net472</TargetFramework>
+        <TargetFrameworks>net48</TargetFrameworks>
+        <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
+        <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    </PropertyGroup>
+</Project>
+""";
+        const string Expected = """
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <TargetFramework>net0.0</TargetFramework>
+        <TargetFrameworks>net0.0</TargetFrameworks>
+        <TargetFrameworks>net0.0;net0.0</TargetFrameworks>
+        <TargetFrameworkVersion>net0.0</TargetFrameworkVersion>
+    </PropertyGroup>
+</Project>
+""";
+
+        AddFile("test.csproj", Original);
+        var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.DotNetTargetFramework, null, "net472", 0, 0),
+            (DependencyType.DotNetTargetFramework, null, "v4.7.2", 0, 0));
+
+        await UpdateDependencies(result, "dummy", "net0.0");
         AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);
     }
 

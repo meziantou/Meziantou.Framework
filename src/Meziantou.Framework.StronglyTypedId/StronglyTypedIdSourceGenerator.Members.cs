@@ -298,28 +298,31 @@ public partial class StronglyTypedIdSourceGenerator
         }
 
         // Parse
-        WriteNewMember(
-            XmlSummary("Converts the string representation of a ", XmlSeeCref(context.TypeName), " to the equivalent ", XmlSeeCref(context.TypeName), " type."),
-            XmlParam("value", "The string to convert."),
-            XmlReturn("A new instance that contains the value that was parsed"));
-        using (writer.BeginBlock($"public static {context.TypeName} Parse(string value)"))
+        if (!context.IsParseDefined_String)
         {
-            using (writer.BeginBlock($"if (TryParse(value, out var result))"))
+            WriteNewMember(
+                XmlSummary("Converts the string representation of a ", XmlSeeCref(context.TypeName), " to the equivalent ", XmlSeeCref(context.TypeName), " type."),
+                XmlParam("value", "The string to convert."),
+                XmlReturn("A new instance that contains the value that was parsed"));
+            using (writer.BeginBlock($"public static {context.TypeName} Parse(string value)"))
             {
-                if (!context.SupportNotNullWhenAttribute)
+                using (writer.BeginBlock($"if (TryParse(value, out var result))"))
                 {
-                    writer.WriteLine($"#nullable disable");
+                    if (!context.SupportNotNullWhenAttribute)
+                    {
+                        writer.WriteLine($"#nullable disable");
+                    }
+
+                    writer.WriteLine($"return result;");
+
+                    if (!context.SupportNotNullWhenAttribute)
+                    {
+                        writer.WriteLine($"#nullable enable");
+                    }
                 }
 
-                writer.WriteLine($"return result;");
-
-                if (!context.SupportNotNullWhenAttribute)
-                {
-                    writer.WriteLine($"#nullable enable");
-                }
+                writer.WriteLine($"throw new global::System.FormatException($\"value '{{value}}' is not valid\");");
             }
-
-            writer.WriteLine($"throw new global::System.FormatException($\"value '{{value}}' is not valid\");");
         }
 
         // TryParse

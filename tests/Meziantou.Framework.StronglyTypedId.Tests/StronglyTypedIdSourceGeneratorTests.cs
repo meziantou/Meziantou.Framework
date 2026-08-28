@@ -268,6 +268,25 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateStruct_UserDefinedParse()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test
+            {
+                public static Test Parse(string value) => FromInt32(int.Parse(value, global::System.Globalization.CultureInfo.InvariantCulture) * 2);
+            }
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type =>
+        {
+            var parseMethod = type.GetMethod("Parse", [typeof(string)])!;
+            var instance = parseMethod.Invoke(null, ["21"]);
+            Assert.Equal(42, type.GetProperty("Value")!.GetValue(instance));
+        });
+    }
+
+    [Fact]
     public async Task GenerateStruct_Guid_New_DefaultStrategy()
     {
         var sourceCode = """

@@ -238,4 +238,31 @@ public class CsvReaderTests
             return Task.FromResult(Read(buffer, index, count));
         }
     }
+
+    [Fact]
+    public async Task CsvReader_CreateRowAndCreateColumnCanBeOverridden()
+    {
+        using var sr = new StringReader("A,B\n1,2");
+        var reader = new CustomReader(sr) { HasHeaderRow = true };
+
+        var row = await reader.ReadRowAsync();
+
+        var customRow = Assert.IsType<CustomRow>(row);
+        Assert.Equal("1", customRow["A"]);
+        Assert.NotNull(customRow.Columns);
+        Assert.IsType<CustomColumn>(customRow.Columns[0]);
+    }
+
+    private sealed class CustomColumn(string? name, int index) : CsvColumn(name, index);
+
+    private sealed class CustomRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
+        : CsvRow(columns, values);
+
+    private sealed class CustomReader(TextReader reader) : CsvReader(reader)
+    {
+        protected override CsvColumn CreateColumn(string name, int index) => new CustomColumn(name, index);
+
+        protected override CsvRow CreateRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
+            => new CustomRow(columns, values);
+    }
 }

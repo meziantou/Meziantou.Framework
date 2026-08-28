@@ -24,7 +24,10 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
     /// <summary>Gets the values of the row.</summary>
     public IReadOnlyList<string> Values { get; }
 
-    internal CsvRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
+    /// <summary>Initializes a new instance of the <see cref="CsvRow"/> class.</summary>
+    /// <param name="columns">The columns of the row, or <see langword="null"/> if the CSV file has no header row.</param>
+    /// <param name="values">The values of the row.</param>
+    protected internal CsvRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
     {
         Values = values;
         Columns = columns;

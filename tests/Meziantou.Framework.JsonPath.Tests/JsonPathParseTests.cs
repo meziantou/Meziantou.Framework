@@ -76,4 +76,35 @@ public sealed class JsonPathParseTests
         var path = JsonPath.Parse(expression);
         Assert.Equal(expression, path.ToString());
     }
+
+    [Theory]
+    // RFC 9535 requires exactly 4 HEXDIG in a \u escape; whitespace is not a hex digit.
+    [InlineData("$[\"\\u 041\"]")]
+    [InlineData("$[\"\\u041 \"]")]
+    [InlineData("$['\\u 041']")]
+    [InlineData("$[\"\\u\t041\"]")]
+    [InlineData("$[\"\\u04 1\"]")]
+    public void TryParse_UnicodeEscapeWithWhitespaceInHexDigits_ReturnsFalse(string expression)
+    {
+        Assert.False(JsonPath.TryParse(expression, out var result));
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData("$[\"\\u0041\"]")]
+    [InlineData("$[\"\\u00e9\"]")]
+    [InlineData("$[\"\\u00E9\"]")]
+    [InlineData("$[\"\\uD834\\uDD1E\"]")]
+    public void TryParse_WellFormedUnicodeEscape_ReturnsTrue(string expression)
+    {
+        Assert.True(JsonPath.TryParse(expression, out _));
+    }
+
+    [Fact]
+    public void Parse_UnicodeEscape_IsCaseInsensitiveAndDecodesToTheSameName()
+    {
+        var doc = System.Text.Json.Nodes.JsonNode.Parse("""{"é":1}""");
+        Assert.Equal(1, JsonPath.Parse("$[\"\\u00e9\"]").EvaluateValue(doc)!.GetValue<int>());
+        Assert.Equal(1, JsonPath.Parse("$[\"\\u00E9\"]").EvaluateValue(doc)!.GetValue<int>());
+    }
 }

@@ -150,9 +150,9 @@ internal ref struct JsonPathLexer
                 return ReadNumber(pos);
 
             default:
-                if (IsNameFirst(ch))
+                if (TryReadNameCodePoint(_position, isFirst: true, out _, out var length))
                 {
-                    return ReadIdentifierOrKeyword(pos);
+                    return ReadIdentifierOrKeyword(pos, length);
                 }
 
                 throw new FormatException($"Unexpected character '{ch}' at position {pos}.");
@@ -438,13 +438,13 @@ internal ref struct JsonPathLexer
         return new JsonPathToken(JsonPathTokenKind.NumberLiteral, pos, doubleValue, isIntegerLiteral: false);
     }
 
-    private JsonPathToken ReadIdentifierOrKeyword(int pos)
+    private JsonPathToken ReadIdentifierOrKeyword(int pos, int firstLength)
     {
         var start = _position;
-        _position++;
-        while (_position < _input.Length && IsNameChar(_input[_position]))
+        _position += firstLength;
+        while (TryReadNameCodePoint(_position, isFirst: false, out _, out var length))
         {
-            _position++;
+            _position += length;
         }
 
         var text = _input[start.._position];
@@ -476,9 +476,52 @@ internal ref struct JsonPathLexer
 
     private static bool IsBlank(char ch) => ch is ' ' or '\t' or '\n' or '\r';
 
+    /// <summary>
+    /// Reads the code point at <paramref name="index"/> when it is a valid member-name-shorthand character.
+    /// Code points above the BMP are encoded as a surrogate pair, so they are decoded here rather than
+    /// tested one UTF-16 char at a time \u2014 a lone surrogate half is never a name character.
+    /// </summary>
+    /// <param name="index">The position to read from.</param>
+    /// <param name="isFirst">Whether the code point is the first of the name, which excludes DIGIT.</param>
+    /// <param name="codePoint">When this method returns, contains the decoded code point.</param>
+    /// <param name="length">When this method returns, contains the number of UTF-16 chars consumed (1 or 2).</param>
+    /// <returns><see langword="true"/> when a valid name code point was read; otherwise, <see langword="false"/>.</returns>
+    private readonly bool TryReadNameCodePoint(int index, bool isFirst, out int codePoint, out int length)
+    {
+        codePoint = 0;
+        length = 0;
+        if (index >= _input.Length)
+        {
+            return false;
+        }
+
+        var ch = _input[index];
+        if (char.IsHighSurrogate(ch))
+        {
+            if (index + 1 >= _input.Length || !char.IsLowSurrogate(_input[index + 1]))
+            {
+                return false;
+            }
+
+            codePoint = char.ConvertToUtf32(ch, _input[index + 1]);
+            length = 2;
+        }
+        else if (char.IsLowSurrogate(ch))
+        {
+            return false;
+        }
+        else
+        {
+            codePoint = ch;
+            length = 1;
+        }
+
+        return isFirst ? IsNameFirst(codePoint) : IsNameChar(codePoint);
+    }
+
     /// <summary>name-first = ALPHA / "_" / %x80-D7FF / %xE000-10FFFF</summary>
-    internal static bool IsNameFirst(char ch) => ch is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z') or '_' or (>= '\x80' and <= '\uD7FF') or (>= '\uE000');
+    internal static bool IsNameFirst(int codePoint) => codePoint is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z') or '_' or (>= 0x80 and <= 0xD7FF) or (>= 0xE000 and <= 0x10FFFF);
 
     /// <summary>name-char = name-first / DIGIT</summary>
-    private static bool IsNameChar(char ch) => IsNameFirst(ch) || ch is >= '0' and <= '9';
+    private static bool IsNameChar(int codePoint) => IsNameFirst(codePoint) || codePoint is >= '0' and <= '9';
 }

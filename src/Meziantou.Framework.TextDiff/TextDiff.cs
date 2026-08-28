@@ -3,8 +3,8 @@ namespace Meziantou.Framework;
 /// <summary>Computes the differences between two texts.</summary>
 public static class TextDiff
 {
-    private static readonly IEqualityComparer<string> OrdinalWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparer.Ordinal);
-    private static readonly IEqualityComparer<string> OrdinalIgnoreCaseWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparer.OrdinalIgnoreCase);
+    private static readonly IEqualityComparer<string> OrdinalWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparison.Ordinal);
+    private static readonly IEqualityComparer<string> OrdinalIgnoreCaseWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparison.OrdinalIgnoreCase);
 
 
     /// <summary>Computes the differences between <paramref name="oldText"/> and <paramref name="newText"/>.</summary>
@@ -267,9 +267,9 @@ public static class TextDiff
         return chunkerArray;
     }
 
-    private sealed class WhitespaceTrimmingComparer(StringComparer inner) : IEqualityComparer<string>
+    private sealed class WhitespaceTrimmingComparer(StringComparison comparison) : IEqualityComparer<string>
     {
-        private readonly StringComparison _comparison = inner == StringComparer.OrdinalIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        private readonly StringComparison _comparison = comparison;
 
         public bool Equals(string? x, string? y)
         {

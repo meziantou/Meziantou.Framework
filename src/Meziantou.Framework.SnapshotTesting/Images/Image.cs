@@ -33,7 +33,34 @@ internal sealed class Image : IEquatable<Image>
         return Load(data);
     }
 
+    /// <summary>
+    /// Decodes an image. Callers treat a decode failure as "these two snapshots differ", so every way a
+    /// malformed file can fail has to arrive as <see cref="InvalidDataException" /> or
+    /// <see cref="NotSupportedException" />. The decoders narrow file-supplied 32-bit values with checked
+    /// casts and index into the data with offsets derived from them, so an arithmetic or range failure is a
+    /// statement about the file rather than a bug.
+    /// </summary>
     internal static Image Load(ReadOnlySpan<byte> data)
+    {
+        try
+        {
+            return LoadCore(data);
+        }
+        catch (OverflowException ex)
+        {
+            throw new InvalidDataException("The image data contains an out-of-range value.", ex);
+        }
+        catch (IndexOutOfRangeException ex)
+        {
+            throw new InvalidDataException("The image data is truncated or inconsistent.", ex);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            throw new InvalidDataException("The image data is truncated or inconsistent.", ex);
+        }
+    }
+
+    private static Image LoadCore(ReadOnlySpan<byte> data)
     {
         if (BmpImageLoader.IsBmp(data))
             return BmpImageLoader.Load(data);

@@ -8,19 +8,30 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>
 /// Provides methods to interact with Local Security Authority (LSA) private data storage on Windows.
-/// LSA private data storage is a secure storage area for sensitive information like credentials and secrets.
+/// LSA private data storage keeps values encrypted on disk under a DACL that allows only the creator and administrators to read them.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Microsoft recommends <c>CryptProtectData</c> and <c>CryptUnprotectData</c> over the LSA private data functions unless you specifically need to manipulate LSA secrets.
+/// The stored data is not absolutely protected.
+/// </para>
+/// <para>
+/// The key name decides how far the secret reaches. A name starting with <c>L$</c> creates a local object that cannot be accessed remotely,
+/// <c>G$</c> a global object, and <c>M$</c> a machine object that only the operating system can read back.
+/// A name with none of those prefixes creates an object that <b>can be accessed remotely</b>, so prefer an <c>L$</c> prefix unless you need otherwise.
+/// </para>
+/// </remarks>
 /// <example>
 /// Store and retrieve a secret value:
 /// <code>
 /// // Store a secret value (requires administrator privileges)
-/// LsaPrivateData.SetValue("MySecretKey", "MySecretValue");
-/// 
+/// LsaPrivateData.SetValue("L$MySecretKey", "MySecretValue");
+///
 /// // Retrieve the value
-/// string? value = LsaPrivateData.GetValue("MySecretKey");
-/// 
+/// string? value = LsaPrivateData.GetValue("L$MySecretKey");
+///
 /// // Remove the value (requires administrator privileges)
-/// LsaPrivateData.RemoveValue("MySecretKey");
+/// LsaPrivateData.RemoveValue("L$MySecretKey");
 /// </code>
 /// </example>
 [SupportedOSPlatform("windows5.1.2600")]
@@ -44,7 +55,6 @@ public static class LsaPrivateData
             throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
 
         var objectAttributes = new LSA_OBJECT_ATTRIBUTES();
-        var localsystem = new LSA_UNICODE_STRING();
         var secretName = new LSA_UNICODE_STRING();
         fixed (char* keyPtr = key)
         fixed (char* valuePtr = value)
@@ -64,7 +74,7 @@ public static class LsaPrivateData
                 };
             }
 
-            using var lsaPolicyHandle = GetLsaPolicy(in objectAttributes, ref localsystem);
+            using var lsaPolicyHandle = GetLsaPolicy(in objectAttributes);
             var result = PInvoke.LsaStorePrivateData(lsaPolicyHandle, in secretName, lusSecretData);
 
             var winErrorCode = PInvoke.LsaNtStatusToWinError(result);
@@ -84,7 +94,6 @@ public static class LsaPrivateData
             throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
 
         var objectAttributes = new LSA_OBJECT_ATTRIBUTES();
-        var localsystem = new LSA_UNICODE_STRING();
         var secretName = new LSA_UNICODE_STRING();
         fixed (char* keyPtr = key)
         {
@@ -93,7 +102,7 @@ public static class LsaPrivateData
             secretName.Length = (ushort)(key.Length * 2);
 
             // Get LSA policy
-            using var lsaPolicyHandle = GetLsaPolicy(in objectAttributes, ref localsystem);
+            using var lsaPolicyHandle = GetLsaPolicy(in objectAttributes);
             var result = PInvoke.LsaRetrievePrivateData(lsaPolicyHandle, in secretName, out var privateData);
             if (result == NTSTATUS.STATUS_OBJECT_NAME_NOT_FOUND)
                 return null;
@@ -118,9 +127,10 @@ public static class LsaPrivateData
         }
     }
 
-    private static unsafe LsaCloseSafeHandle GetLsaPolicy(in LSA_OBJECT_ATTRIBUTES objectAttributes, ref LSA_UNICODE_STRING localSystem)
+    private static unsafe LsaCloseSafeHandle GetLsaPolicy(in LSA_OBJECT_ATTRIBUTES objectAttributes)
     {
-        var ntsResult = PInvoke.LsaOpenPolicy(localSystem, in objectAttributes, PInvoke.POLICY_GET_PRIVATE_INFORMATION, out var lsaPolicyHandle);
+        // A null SystemName means the local system
+        var ntsResult = PInvoke.LsaOpenPolicy(SystemName: null, in objectAttributes, PInvoke.POLICY_GET_PRIVATE_INFORMATION, out var lsaPolicyHandle);
         var winErrorCode = PInvoke.LsaNtStatusToWinError(ntsResult);
         if (winErrorCode != 0)
             throw new Win32Exception((int)winErrorCode, "LsaOpenPolicy failed: " + winErrorCode.ToString(CultureInfo.InvariantCulture));

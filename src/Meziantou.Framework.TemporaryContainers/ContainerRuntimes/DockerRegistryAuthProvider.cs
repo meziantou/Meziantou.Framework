@@ -1,3 +1,4 @@
+using System.Buffers.Text;
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
@@ -62,12 +63,20 @@ internal sealed class DockerRegistryAuthProvider
 
     private static DockerApiModels.AuthConfigFile? LoadConfiguration()
     {
-        var configPath = FullPath.GetFolderPath(Environment.SpecialFolder.UserProfile) / ".docker" / "config.json";
+        var configPath = GetConfigurationDirectory(Environment.GetEnvironmentVariable("DOCKER_CONFIG")) / "config.json";
         if (!File.Exists(configPath))
             return null;
 
         using var stream = File.OpenRead(configPath);
         return JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.AuthConfigFile);
+    }
+
+    /// <summary>The directory the credentials are read from: <c>DOCKER_CONFIG</c> when it is set, <c>~/.docker</c> otherwise. CI systems that isolate credentials into a per-job directory rely on the environment variable.</summary>
+    internal static FullPath GetConfigurationDirectory(string? dockerConfigEnvironmentVariable)
+    {
+        return string.IsNullOrWhiteSpace(dockerConfigEnvironmentVariable)
+            ? FullPath.GetFolderPath(Environment.SpecialFolder.UserProfile) / ".docker"
+            : FullPath.FromPath(dockerConfigEnvironmentVariable);
     }
 
     private static string? GetCredentialHelper(DockerApiModels.AuthConfigFile config, string registry)
@@ -168,7 +177,9 @@ internal sealed class DockerRegistryAuthProvider
     private static string BuildRegistryAuthHeader(DockerApiModels.RegistryAuthHeader credentials)
     {
         var bytes = JsonSerializer.SerializeToUtf8Bytes(credentials, DockerApiJsonContext.Default.RegistryAuthHeader);
-        return Convert.ToBase64String(bytes);
+
+        // The daemon decodes X-Registry-Auth with base64url, so '+' and '/' from the standard alphabet are rejected.
+        return Base64Url.EncodeToString(bytes);
     }
 
     private static string NormalizeRegistry(string value)

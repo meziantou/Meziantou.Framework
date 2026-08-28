@@ -56,7 +56,7 @@ namespace Meziantou.Framework.Tds.Handler
         public string? Database { get => throw null; }
         public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; }
         public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Success(string? database = null, System.Security.Claims.ClaimsPrincipal? userContext = null) => throw null;
-        public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Fail(string message, uint errorNumber = 18456, byte errorState = 1, byte errorClass = 14) => throw null;
+        public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Fail(string message, uint errorNumber = 18456U, byte errorState = 1, byte errorClass = 14) => throw null;
     }
 
     public sealed class TdsColumn

@@ -55,7 +55,9 @@ internal static class BmpImageLoader
         var rowWithoutPadding = checked(width * bytesPerPixel);
         var rowStride = checked((rowWithoutPadding + 3) & ~3);
         var pixelDataSize = checked(rowStride * absoluteHeight);
-        if (pixelDataOffset + pixelDataSize > data.Length)
+        // Subtract rather than add: pixelDataOffset is already known to be inside the buffer, so this cannot
+        // overflow, whereas pixelDataOffset + pixelDataSize can and would then pass the check.
+        if (pixelDataSize > data.Length - pixelDataOffset)
             throw new InvalidDataException("The BMP pixel data is truncated.");
 
         var pixels = new Argb[checked(width * absoluteHeight)];

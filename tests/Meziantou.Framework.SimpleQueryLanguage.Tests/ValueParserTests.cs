@@ -82,6 +82,49 @@ public class ValueParserTests
         Assert.False(ValueConverter.TryParseValue<CustomTypeWithTryParse>("", out _));
     }
 
+    [Fact]
+    public void ParseNullableInt32()
+    {
+        Assert.True(ValueConverter.TryParseValue<int?>("10", out var result));
+        Assert.Equal(10, result);
+    }
+
+    [Fact]
+    public void ParseNullableInt32_Invalid()
+    {
+        Assert.False(ValueConverter.TryParseValue<int?>("not-a-number", out _));
+    }
+
+    [Fact]
+    public void ParseNullableDateTimeOffset()
+    {
+        Assert.True(ValueConverter.TryParseValue<DateTimeOffset?>("2022-01-01", out var result));
+        Assert.Equal(new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero), result);
+    }
+
+    [Fact]
+    public void ParseNullableEnum()
+    {
+        Assert.True(ValueConverter.TryParseValue<DayOfWeek?>("monday", out var result));
+        Assert.Equal(DayOfWeek.Monday, result);
+    }
+
+    [Fact]
+    public void ParseNullableCustomTypeWithTryParse()
+    {
+        Assert.True(ValueConverter.TryParseValue<CustomStructWithTryParse?>("test", out var result));
+        Assert.NotNull(result);
+    }
+
+    private readonly struct CustomStructWithTryParse
+    {
+        public static bool TryParse(string value, out CustomStructWithTryParse result)
+        {
+            result = default;
+            return !string.IsNullOrEmpty(value);
+        }
+    }
+
     private sealed class CustomTypeWithTryParse
     {
         public static bool TryParse(string value, out CustomTypeWithTryParse? result)

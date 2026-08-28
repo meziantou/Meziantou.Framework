@@ -9,7 +9,7 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
     private static readonly HttpClient HttpClient = new();
     public override VersioningStrategy VersioningStrategy { get; set; } = GitHubActionsVersioningStrategy.Instance;
 
-    protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.GitHubActions;
+    protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.GitHubActions && dependency.Name is not null;
 
     protected override async IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
     {

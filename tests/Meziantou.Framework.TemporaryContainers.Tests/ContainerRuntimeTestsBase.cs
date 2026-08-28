@@ -2,6 +2,7 @@ using System.Net.Sockets;
 using System.Text.Json;
 using Meziantou.Extensions.Logging.Xunit.v3;
 using Meziantou.Xunit;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
@@ -407,16 +408,47 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DisposeAsync_RemovesTheContainerWhenTheLoggerThrows()
+    {
+        var definition = CreateHttpServerDefinition();
+        definition.Logging.Logger = new ThrowingLogger();
+
+        var container = await StartWithRetryAsync(definition);
+        var id = container.Id;
+
+        // Let the forwarding pump reach the logger, so the failure is in flight when the container is disposed.
+        await Task.Delay(TimeSpan.FromSeconds(1), XunitCancellationToken);
+
+        await container.DisposeAsync();
+
+        Assert.False(await Runtime.ExistsAsync(id, XunitCancellationToken));
+    }
+
+    /// <summary>Mimics a logger backed by xunit's test output helper, which throws once the test that owns it has completed.</summary>
+    private sealed class ThrowingLogger : ILogger
+    {
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+            => throw new InvalidOperationException("There is no currently active test.");
+    }
+
+    [Fact]
     public async Task Reuse_AdoptsExistingContainer()
     {
         var reuseId = "meziantou-tc-test-" + Guid.NewGuid().ToString("N");
         string firstId;
+        int firstPort;
 
         var firstDefinition = CreateHttpServerDefinition();
         firstDefinition.ReuseId = reuseId;
         await using (var first = await StartWithRetryAsync(firstDefinition))
         {
             firstId = first.Id;
+            firstPort = first.GetMappedPort(8080);
         }
 
         try
@@ -427,6 +459,11 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
             await second.EnsureCreatedAsync(XunitCancellationToken);
 
             Assert.Equal(firstId, second.Id);
+
+            // The adopted container keeps the host ports it was created with, so the second run has to report those
+            // and not a freshly picked mapping.
+            await second.StartAsync(XunitCancellationToken);
+            Assert.Equal(firstPort, second.GetMappedPort(8080));
         }
         finally
         {

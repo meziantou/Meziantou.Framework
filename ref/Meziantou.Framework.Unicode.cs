@@ -409,7 +409,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeBlock GetBlock(System.Text.Rune rune) => throw null;
     }
 
-    public readonly struct UnicodeCharacterInfo
+    public readonly struct UnicodeCharacterInfo : System.IEquatable<Meziantou.Framework.UnicodeCharacterInfo>
     {
         public System.Text.Rune Rune { get => throw null; }
         public string Name { get => throw null; }
@@ -433,6 +433,11 @@ namespace Meziantou.Framework
         public bool IsEmojiModifierBase { get => throw null; }
         public bool IsEmojiComponent { get => throw null; }
         public bool IsExtendedPictographic { get => throw null; }
+        public bool Equals(Meziantou.Framework.UnicodeCharacterInfo other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.UnicodeCharacterInfo left, Meziantou.Framework.UnicodeCharacterInfo right) => throw null;
+        public static bool operator !=(Meziantou.Framework.UnicodeCharacterInfo left, Meziantou.Framework.UnicodeCharacterInfo right) => throw null;
     }
 
     public static class UnicodeEmoji

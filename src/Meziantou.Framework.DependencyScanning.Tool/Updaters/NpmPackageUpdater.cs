@@ -1,6 +1,6 @@
+using System.ComponentModel;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using Meziantou.Framework;
 
@@ -9,16 +9,10 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 internal sealed class NpmPackageUpdater : PackageUpdater
 {
     private static readonly HttpClient HttpClient = new();
-    private static readonly JsonSerializerOptions DefaultJsonOptions = new()
-    {
-        Converters =
-        {
-            new NpmPackageRepositoryJsonConverter(),
-        },
-    };
+
     public override VersioningStrategy VersioningStrategy { get; set; } = NpmVersioningStrategy.Instance;
 
-    protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.Npm;
+    protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.Npm && dependency.Name is not null;
 
     protected override async IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -41,7 +35,7 @@ internal sealed class NpmPackageUpdater : PackageUpdater
             yield break;
 
         packageResponse.EnsureSuccessStatusCode();
-        var package = await packageResponse.Content.ReadFromJsonAsync<NpmPackage>(options: DefaultJsonOptions, cancellationToken).ConfigureAwait(false);
+        var package = await packageResponse.Content.ReadFromJsonAsync<NpmPackage>(cancellationToken).ConfigureAwait(false);
         if (package is null)
             yield break;
 
@@ -56,27 +50,39 @@ internal sealed class NpmPackageUpdater : PackageUpdater
 
     public override async Task UpdateLockFileAsync(FullPath rootDirectory, IEnumerable<Dependency> updatedDependencies, CancellationToken cancellationToken)
     {
-        var files = updatedDependencies
-            .Where(dep => dep.Type is DependencyType.Npm && dep.VersionLocation is not null)
-            .Select(dep => FullPath.FromPath(dep.VersionLocation!.FilePath))
-            .Distinct()
-            .ToArray();
-
-        foreach (var file in files)
+        var lockFiles = new HashSet<FullPath>();
+        foreach (var dependency in updatedDependencies)
         {
-            var lockFile = TryFindLockFile(file.Parent, "package-lock.json");
+            if (dependency.Type is not DependencyType.Npm || dependency.VersionLocation is null)
+                continue;
+
+            var lockFile = TryFindLockFile(FullPath.FromPath(dependency.VersionLocation.FilePath).Parent, "package-lock.json");
             if (!lockFile.IsEmpty)
             {
-                var result = await ProcessWrapper.Create(OperatingSystem.IsWindows() ? @"C:\Program Files\nodejs\npm.cmd" : "npm")
-                    .WithWorkingDirectory(file.Parent)
-                    .WithArguments("install", "--no-audit", "--force")
+                lockFiles.Add(lockFile);
+            }
+        }
+
+        foreach (var lockFile in lockFiles)
+        {
+            try
+            {
+                // npm has to run where the lock file lives. In an npm-workspaces repository the lock file
+                // sits at the root, and running in a sub-package would create a second one there.
+                var result = await ProcessWrapper.Create(OperatingSystem.IsWindows() ? "npm.cmd" : "npm")
+                    .WithWorkingDirectory(lockFile.Parent)
+                    .WithArguments("install", "--no-audit")
                     .WithValidation(ProcessValidationMode.None)
                     .ExecuteBufferedAsync(cancellationToken);
 
                 if (!result.ExitCode.IsSuccess)
                 {
-                    Console.WriteLine($"Unable to update lock file '{lockFile}':\n{result.Output}");
+                    Console.Error.WriteLine($"Unable to update lock file '{lockFile}':\n{result.Output}");
                 }
+            }
+            catch (Win32Exception ex)
+            {
+                Console.Error.WriteLine($"Unable to run npm to update lock file '{lockFile}': {ex.Message}");
             }
         }
     }
@@ -115,9 +121,6 @@ internal sealed class NpmPackageUpdater : PackageUpdater
         [JsonPropertyName("homepage")]
         public string? Homepage { get; set; }
 
-        [JsonPropertyName("repository")]
-        public NpmPackageRepository[]? Repository { get; set; }
-
         [JsonPropertyName("versions")]
         public IReadOnlyDictionary<string, NpmPackageVersion> Versions { get; set; } = null!;
 
@@ -144,78 +147,9 @@ internal sealed class NpmPackageUpdater : PackageUpdater
         [JsonPropertyName("description")]
         public string? Description { get; set; }
 
-        [JsonPropertyName("repository")]
-        public NpmPackageRepository[]? Repository { get; set; }
-
         public override string ToString()
         {
             return Id;
-        }
-    }
-
-    private sealed class NpmPackageRepository
-    {
-        [JsonPropertyName("type")]
-        public string Type { get; set; } = null!;
-
-        [JsonPropertyName("url")]
-        public string Url { get; set; } = null!;
-    }
-
-    private sealed class NpmPackageRepositoryJsonConverter : JsonConverter<NpmPackageRepository[]>
-    {
-        public override bool HandleNull => false;
-
-        public override NpmPackageRepository[]? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (reader.TokenType is JsonTokenType.StartArray)
-            {
-                reader.Read();
-                var result = new List<NpmPackageRepository>();
-                while (reader.TokenType is not JsonTokenType.EndArray)
-                {
-                    var item = ReadSingleItem(ref reader);
-                    if (item is not null)
-                    {
-                        result.Add(item);
-                    }
-
-                    if (reader.TokenType is JsonTokenType.EndObject)
-                    {
-                        reader.Read();
-                    }
-                }
-
-                return [.. result];
-            }
-
-            var value = ReadSingleItem(ref reader);
-            if (value is not null)
-                return [value];
-
-            throw new NotSupportedException($"Token {reader.TokenType} is not supported");
-        }
-
-        private static NpmPackageRepository? ReadSingleItem(ref Utf8JsonReader reader)
-        {
-            // Repository can be a string or an object
-            if (reader.TokenType is JsonTokenType.StartObject)
-            {
-                return JsonSerializer.Deserialize<NpmPackageRepository>(ref reader);
-            }
-
-            if (reader.TokenType is JsonTokenType.String)
-            {
-                var str = reader.GetString();
-                return new NpmPackageRepository { Url = str! };
-            }
-
-            throw new NotSupportedException($"Token {reader.TokenType} is not supported");
-        }
-
-        public override void Write(Utf8JsonWriter writer, NpmPackageRepository[]? value, JsonSerializerOptions options)
-        {
-            throw new NotSupportedException();
         }
     }
 }

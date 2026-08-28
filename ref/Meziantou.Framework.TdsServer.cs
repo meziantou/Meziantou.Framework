@@ -56,7 +56,7 @@ namespace Meziantou.Framework.Tds.Handler
         public string? Database { get => throw null; }
         public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; }
         public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Success(string? database = null, System.Security.Claims.ClaimsPrincipal? userContext = null) => throw null;
-        public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Fail(string message, uint errorNumber = 18456, byte errorState = 1, byte errorClass = 14) => throw null;
+        public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Fail(string message, uint errorNumber = 18456U, byte errorState = 1, byte errorClass = 14) => throw null;
     }
 
     public sealed class TdsColumn
@@ -126,7 +126,7 @@ namespace Meziantou.Framework.Tds.Handler
         public long? AsInt64() => throw null;
         public bool? AsBoolean() => throw null;
         public double? AsDouble() => throw null;
-        public System.Decimal? AsDecimal() => throw null;
+        public decimal? AsDecimal() => throw null;
         public byte[]? AsBinary() => throw null;
         public System.Text.Json.Nodes.JsonObject? AsJson() => throw null;
         public System.Xml.Linq.XDocument? AsXml() => throw null;

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Unix.ControlGroups.Tests;
@@ -46,14 +47,15 @@ public sealed class CGroup2Tests : IDisposable
         // Cleanup: remove test cgroup
         try
         {
-            if (_testRoot is not null && _testRoot.Exists())
+            if (_testRoot.Exists())
             {
                 _testRoot.Delete();
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore cleanup errors
+            // A cgroup that still holds processes cannot be removed. Report it instead of leaking it silently.
+            _testOutputHelper.WriteLine($"Cannot delete the test cgroup '{_testRoot}': {ex}");
         }
     }
 
@@ -90,18 +92,23 @@ public sealed class CGroup2Tests : IDisposable
     [Fact]
     public void AddProcess_ShouldAddProcessToCGroup()
     {
-        // Arrange
-        var currentPid = Environment.ProcessId;
+        // Move a short-lived child process, never the test host: a failed assertion must not leave the
+        // runner confined to the test cgroup, where it would break sibling tests and block cleanup.
+        using var process = Process.Start("sleep", "30");
+        try
+        {
+            // Act
+            _testRoot.AssociateProcess(process);
 
-        // Act
-        _testRoot.AssociateProcess(currentPid);
-
-        // Assert
-        var processes = _testRoot.GetProcesses().ToList();
-        Assert.Contains(currentPid, processes);
-
-        // Note: Moving back to root is done in cleanup
-        CGroup2.Root.AssociateProcess(currentPid);
+            // Assert
+            var processes = _testRoot.GetProcesses().ToList();
+            Assert.Contains(process.Id, processes);
+        }
+        finally
+        {
+            process.Kill();
+            process.WaitForExit();
+        }
     }
 
     [Fact]

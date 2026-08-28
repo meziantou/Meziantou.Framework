@@ -15,16 +15,18 @@ public class AssertionExceptionBuilder
     {
         // Try to find the current runner exception.
         // These exceptions are better formatted in the test output.
-        var xunitAssertionType = Type.GetType("Xunit.Sdk.XunitException, xunit.assert");
-        if (xunitAssertionType != null)
+        // xunit v3 renamed the assert assembly, so both names must be probed.
+        var xunitAssertionType = Type.GetType("Xunit.Sdk.XunitException, xunit.v3.assert") ??
+                                 Type.GetType("Xunit.Sdk.XunitException, xunit.assert");
+        if (xunitAssertionType is not null)
             return (Exception)Activator.CreateInstance(xunitAssertionType, message)!;
 
         var nunitAssertionType = Type.GetType("NUnit.Framework.AssertionException, nunit.framework");
-        if (nunitAssertionType != null)
+        if (nunitAssertionType is not null)
             return (Exception)Activator.CreateInstance(nunitAssertionType, message)!;
 
         var msTestV2AssertionType = Type.GetType("Microsoft.VisualStudio.TestTools.UnitTesting.AssertFailedException, Microsoft.VisualStudio.TestPlatform.TestFramework");
-        if (msTestV2AssertionType != null)
+        if (msTestV2AssertionType is not null)
             return (Exception)Activator.CreateInstance(msTestV2AssertionType, message)!;
 
         return new SnapshotAssertionException(message);

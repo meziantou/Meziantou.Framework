@@ -267,14 +267,27 @@ internal static class PngImageLoader
     /// <summary>Inflates the concatenated IDAT chunks.</summary>
     /// <param name="compressedStream">The concatenated IDAT chunks, positioned at the first byte.</param>
     /// <param name="expectedLength">
-    /// The image data size computed from the header, used to size the output buffer. A malformed image may
-    /// inflate to a different size, in which case the stream simply grows as usual.
+    /// The image data size computed from the validated header. Inflating is stopped one byte past it: the
+    /// header already says how much data the image can hold, so anything beyond that is malformed and the
+    /// caller reports the size mismatch. Copying the whole stream instead would let a corrupt file inflate
+    /// to an arbitrary size and exhaust memory before the size is ever checked.
     /// </param>
     private static MemoryStream DecompressPngIdatData(Stream compressedStream, int expectedLength)
     {
         using var zlibStream = new ZLibStream(compressedStream, CompressionMode.Decompress, leaveOpen: true);
         var output = new MemoryStream(expectedLength);
-        zlibStream.CopyTo(output);
+
+        // One byte past the expected size is enough to tell "exactly right" from "too long".
+        var limit = (long)expectedLength + 1;
+        var buffer = new byte[Math.Min(limit, 81920)];
+        while (output.Length < limit)
+        {
+            var read = zlibStream.Read(buffer, 0, (int)Math.Min(buffer.Length, limit - output.Length));
+            if (read == 0)
+                break;
+
+            output.Write(buffer, 0, read);
+        }
 
         return output;
     }

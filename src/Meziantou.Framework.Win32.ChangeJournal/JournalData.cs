@@ -14,6 +14,7 @@ public sealed class JournalData
     /// <param name="nativeData"></param>
     internal JournalData(Windows.Win32.System.Ioctl.USN_JOURNAL_DATA_V2 nativeData)
     {
+        IsActive = true;
         ID = nativeData.UsnJournalID;
         FirstUSN = nativeData.FirstUsn;
         NextUSN = nativeData.NextUsn;
@@ -27,6 +28,14 @@ public sealed class JournalData
         RangeTrackChunkSize = nativeData.RangeTrackChunkSize;
         RangeTrackFileSizeThreshold = nativeData.RangeTrackFileSizeThreshold;
     }
+
+    /// <summary>Gets a value indicating whether a change journal is active on the volume.</summary>
+    /// <remarks>
+    ///     When this is <see langword="false"/>, the volume has no change journal and every other property is zero.
+    ///     Reading entries in that state fails with a <see cref="System.ComponentModel.Win32Exception"/>, so check this
+    ///     before enumerating. Use <see cref="ChangeJournal.Create(long, long)"/> to create the journal.
+    /// </remarks>
+    public bool IsActive { get; }
 
     /// <summary>64-bit unique journal identifier.</summary>
     public ulong ID { get; }

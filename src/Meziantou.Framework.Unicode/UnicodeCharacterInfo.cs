@@ -1,7 +1,7 @@
 namespace Meziantou.Framework;
 
 /// <summary>Represents Unicode character information.</summary>
-public readonly struct UnicodeCharacterInfo
+public readonly struct UnicodeCharacterInfo : IEquatable<UnicodeCharacterInfo>
 {
     private readonly sbyte _decimalDigitValue;
     private readonly sbyte _digitValue;
@@ -118,4 +118,22 @@ public readonly struct UnicodeCharacterInfo
 
     /// <summary>Gets a value indicating whether the character has the Extended_Pictographic property.</summary>
     public bool IsExtendedPictographic => (_emojiProperties & 0x20) != 0;
+
+    /// <summary>Determines whether this instance and another describe the same Unicode character.</summary>
+    /// <param name="other">The other character information.</param>
+    /// <returns><see langword="true"/> when both describe the same character; otherwise <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Instances come from a fixed table keyed by <see cref="Rune"/>, so the scalar value identifies the
+    /// entry. <see cref="Name"/> is compared as well so that a <see langword="default"/> instance, which
+    /// carries the scalar value U+0000 and no name, is not equal to the real entry for U+0000.
+    /// </remarks>
+    public bool Equals(UnicodeCharacterInfo other) => Rune == other.Rune && string.Equals(Name, other.Name, StringComparison.Ordinal);
+
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is UnicodeCharacterInfo other && Equals(other);
+
+    public override int GetHashCode() => Rune.GetHashCode();
+
+    public static bool operator ==(UnicodeCharacterInfo left, UnicodeCharacterInfo right) => left.Equals(right);
+
+    public static bool operator !=(UnicodeCharacterInfo left, UnicodeCharacterInfo right) => !left.Equals(right);
 }

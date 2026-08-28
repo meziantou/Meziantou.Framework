@@ -73,7 +73,7 @@ public sealed class ResxGeneratorAnalyzer : DiagnosticAnalyzer
             var generateResourcesTypeConfiguration = GetMetadataValue("GenerateResourcesType", globalName: null);
 
             var rootNamespace = rootNamespaceConfiguration ?? assemblyName ?? "";
-            var projectDir = projectDirConfiguration ?? assemblyName ?? "";
+            var projectDir = projectDirConfiguration ?? "";
             var defaultResourceName = defaultResourceNameConfiguration ?? ResxGeneratorCommon.ComputeResourceName(rootNamespace, projectDir, resxGroup.Key);
             var resourceName = resourceNameConfiguration ?? defaultResourceName;
             var generateResourcesType = ResxGeneratorCommon.ParseBoolean(generateResourcesTypeConfiguration, defaultValue: true);

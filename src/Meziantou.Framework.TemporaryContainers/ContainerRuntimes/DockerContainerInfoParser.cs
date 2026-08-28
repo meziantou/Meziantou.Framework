@@ -72,6 +72,7 @@ internal static class DockerContainerInfoParser
         if (!DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var result))
             return null;
 
+        // Runtimes report the zero date for events that never happened (for example FinishedAt on a running container).
         return result.UtcDateTime.Year <= 1 ? null : result;
     }
 }

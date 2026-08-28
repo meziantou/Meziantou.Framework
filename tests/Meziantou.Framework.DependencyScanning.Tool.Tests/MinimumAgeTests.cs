@@ -80,6 +80,20 @@ public sealed class MinimumAgeTests
         Assert.Null(location.UpdatedValue);
     }
 
+    [Fact]
+    public async Task DependencyWithoutNameIsUpdated()
+    {
+        // global.json reports its SDK version without a name; such dependencies must still be considered.
+        var location = new RecordingLocation();
+        var dependency = new Dependency(name: null, "1.0.0", DependencyType.DotNetSdk, nameLocation: null, versionLocation: location);
+        var updater = new FakePackageUpdater([new PackageVersion("2.0.0", PublishedDate: null)]);
+
+        var result = await updater.UpdateAsync(dependency, XunitCancellationToken);
+
+        Assert.Equal("2.0.0", result);
+        Assert.Equal("2.0.0", location.UpdatedValue);
+    }
+
     private static async Task<(string? Result, Dependency Dependency, RecordingLocation Location)> RunUpdateAsync(PackageVersion[] versions, int minimumAge)
     {
         var location = new RecordingLocation();

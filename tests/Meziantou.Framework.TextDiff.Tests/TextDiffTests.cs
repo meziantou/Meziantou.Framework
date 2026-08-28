@@ -528,6 +528,103 @@ public sealed class TextDiffTests
     }
 
     // IgnoreCase tests
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void ComputeDiff_AllAlgorithms_IgnoreOptions_ReconstructsOldAndNewText(TextDiffAlgorithm algorithm)
+    {
+        var random = new Random(20260827);
+
+        foreach (var chunker in new[] { TextChunker.Lines, TextChunker.Words, TextChunker.Characters })
+        {
+            foreach (var ignoreCase in new[] { false, true })
+            {
+                foreach (var ignoreWhitespace in new[] { false, true })
+                {
+                    foreach (var ignoreEndOfLine in new[] { false, true })
+                    {
+                        var options = new TextDiffOptions
+                        {
+                            Algorithm = algorithm,
+                            Chunker = chunker,
+                            IgnoreCase = ignoreCase,
+                            IgnoreWhitespace = ignoreWhitespace,
+                            IgnoreEndOfLine = ignoreEndOfLine,
+                        };
+
+                        for (var iteration = 0; iteration < 10; iteration++)
+                        {
+                            var oldText = CreateNoisyText(random);
+                            var newText = CreateNoisyText(random);
+
+                            var result = Diff.ComputeDiff(oldText, newText, options);
+
+                            // IgnoreEndOfLine normalizes the input before chunking, so that is what the entries carry.
+                            var expectedOld = ignoreEndOfLine ? oldText.ReplaceLineEndings("\n") : oldText;
+                            var expectedNew = ignoreEndOfLine ? newText.ReplaceLineEndings("\n") : newText;
+
+                            Assert.Equal(expectedOld, ReconstructOldText(result));
+                            Assert.Equal(expectedNew, ReconstructNewText(result));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void ComputeDiff_IgnoreCase_EqualEntryKeepsBothSides()
+    {
+        var result = Diff.ComputeDiff("Hello\nWORLD", "hello\nworld", new TextDiffOptions { IgnoreCase = true });
+
+        Assert.False(result.HasDifferences);
+        Assert.Collection(
+            result.Entries,
+            entry =>
+            {
+                Assert.Equal(TextDiffOperation.Equal, entry.Operation);
+                Assert.Equal("Hello\n", entry.OldText);
+                Assert.Equal("hello\n", entry.NewText);
+                Assert.Equal("Hello\n", entry.Text);
+            },
+            entry =>
+            {
+                Assert.Equal(TextDiffOperation.Equal, entry.Operation);
+                Assert.Equal("WORLD", entry.OldText);
+                Assert.Equal("world", entry.NewText);
+                Assert.Equal("WORLD", entry.Text);
+            });
+    }
+
+    [Fact]
+    public void TextDiffEntry_DeleteAndInsert_ExposeOnlyTheirOwnSide()
+    {
+        var result = Diff.ComputeDiff("removed\ncommon", "added\ncommon");
+
+        var deleted = Assert.Single(result.Entries, e => e.Operation == TextDiffOperation.Delete);
+        Assert.Equal("removed\n", deleted.OldText);
+        Assert.Null(deleted.NewText);
+        Assert.Equal("removed\n", deleted.Text);
+
+        var inserted = Assert.Single(result.Entries, e => e.Operation == TextDiffOperation.Insert);
+        Assert.Null(inserted.OldText);
+        Assert.Equal("added\n", inserted.NewText);
+        Assert.Equal("added\n", inserted.Text);
+    }
+
+    [Fact]
+    public void TextDiffEntry_EqualityDistinguishesTheNewSide()
+    {
+        var a = new TextDiffEntry(TextDiffOperation.Equal, "Hello", "hello");
+        var b = new TextDiffEntry(TextDiffOperation.Equal, "Hello", "hello");
+        var c = new TextDiffEntry(TextDiffOperation.Equal, "Hello", "Hello");
+
+        Assert.Equal(a, b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        Assert.NotEqual(a, c);
+        Assert.True(a != c);
+    }
+
     [Fact]
     public void ComputeDiff_IgnoreCase_NoDifferences()
     {
@@ -822,7 +919,7 @@ public sealed class TextDiffTests
         {
             if (entry.Operation is TextDiffOperation.Equal or TextDiffOperation.Delete)
             {
-                sb.Append(entry.Text);
+                sb.Append(entry.OldText);
             }
         }
 
@@ -836,7 +933,7 @@ public sealed class TextDiffTests
         {
             if (entry.Operation is TextDiffOperation.Equal or TextDiffOperation.Insert)
             {
-                sb.Append(entry.Text);
+                sb.Append(entry.NewText);
             }
         }
 
@@ -883,6 +980,27 @@ public sealed class TextDiffTests
         }
 
         return lines;
+    }
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    private static string CreateNoisyText(Random random)
+    {
+        var builder = new StringBuilder();
+        var lineCount = random.Next(0, 8);
+        for (var line = 0; line < lineCount; line++)
+        {
+            var wordCount = random.Next(0, 4);
+            for (var word = 0; word < wordCount; word++)
+            {
+                var token = "tok" + random.Next(3).ToString(CultureInfo.InvariantCulture);
+                builder.Append(random.Next(2) is 0 ? token.ToUpperInvariant() : token);
+                builder.Append(' ', random.Next(1, 4));
+            }
+
+            builder.Append(random.Next(2) is 0 ? "\r\n" : "\n");
+        }
+
+        return builder.ToString();
     }
 
     private sealed record DiffCorpusCase(string Name, string OldText, string NewText, bool HasDifferences);

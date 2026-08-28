@@ -96,7 +96,8 @@ public static class TextDiff
                 && !leftModified[lineLeft]
                 && !rightModified[lineRight])
             {
-                entries.Add(new TextDiffEntry(TextDiffOperation.Equal, oldChunks[lineLeft]));
+                // The comparison options can make two different chunks equal, so keep both sides.
+                entries.Add(new TextDiffEntry(TextDiffOperation.Equal, oldChunks[lineLeft], newChunks[lineRight]));
                 lineLeft++;
                 lineRight++;
             }

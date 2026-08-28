@@ -40,6 +40,16 @@ public sealed class DockerApiRuntimeTests
     }
 
     [Fact]
+    public async Task ReadMultiplexedLogsAsync_DoesNotEndTheTrailingLineWithACarriageReturn()
+    {
+        // A container writing CRLF endings that is killed between the CR and the LF. TryReadLine already drops the CR
+        // from every complete line, so the trailing one must not be the only line that keeps it.
+        var entries = await ReadAllAsync((LogStream.Stdout, "starting\r\nSERVER READY\r"));
+
+        Assert.Equal(["starting", "SERVER READY"], entries.Select(entry => entry.Message));
+    }
+
+    [Fact]
     public async Task ReadMultiplexedLogsAsync_KeepsTheTimestampOfTheTrailingLine()
     {
         var entries = await ReadAllAsync((LogStream.Stdout, "2026-08-27T10:11:12.0000000Z SERVER READY"));

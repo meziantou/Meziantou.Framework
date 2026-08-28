@@ -350,4 +350,74 @@ public sealed class UnicodeTests
         Assert.False(block.Equals(null));
         Assert.Equal(block.GetHashCode(), UnicodeBlocks.BasicLatin.GetHashCode());
     }
+
+    [Theory]
+    [InlineData(0x0041, UnicodeScript.Latin)]
+    [InlineData(0x0030, UnicodeScript.Common)]
+    [InlineData(0x0410, UnicodeScript.Cyrillic)]
+    [InlineData(0x03B1, UnicodeScript.Greek)]
+    [InlineData(0x0301, UnicodeScript.Inherited)]
+    [InlineData(0x4E00, UnicodeScript.Han)]
+    [InlineData(0x3042, UnicodeScript.Hiragana)]
+    [InlineData(0x30A2, UnicodeScript.Katakana)]
+    [InlineData(0x1F600, UnicodeScript.Common)]
+    // Unassigned, private use, and the top of the code space have no script.
+    [InlineData(0x0378, UnicodeScript.Unknown)]
+    [InlineData(0xE000, UnicodeScript.Unknown)]
+    [InlineData(0x10FFFF, UnicodeScript.Unknown)]
+    public void GetScript_ReturnsExpectedScript(int codePoint, UnicodeScript expected)
+    {
+        Assert.Equal(expected, UnicodeScripts.GetScript(codePoint));
+        Assert.Equal(expected, UnicodeScripts.GetScript(new Rune(codePoint)));
+    }
+
+    [Fact]
+    public void GetScript_ReturnsUnknownOutsideTheCodeSpace()
+    {
+        Assert.Equal(UnicodeScript.Unknown, UnicodeScripts.GetScript(-1));
+        Assert.Equal(UnicodeScript.Unknown, UnicodeScripts.GetScript(int.MinValue));
+        Assert.Equal(UnicodeScript.Unknown, UnicodeScripts.GetScript(0x110000));
+        Assert.Equal(UnicodeScript.Unknown, UnicodeScripts.GetScript(int.MaxValue));
+    }
+
+    [Fact]
+    public void UnicodeScript_DefaultIsUnknown()
+    {
+        Assert.Equal(UnicodeScript.Unknown, default);
+    }
+
+    [Theory]
+    // Each pair is the last code point of a script range and the first of the next one, so the
+    // binary search is exercised exactly where an off-by-one would show up.
+    [InlineData(0x005A, UnicodeScript.Latin, 0x005B, UnicodeScript.Common)]
+    [InlineData(0x007A, UnicodeScript.Latin, 0x007B, UnicodeScript.Common)]
+    [InlineData(0x00AA, UnicodeScript.Latin, 0x00AB, UnicodeScript.Common)]
+    [InlineData(0x00D6, UnicodeScript.Latin, 0x00D7, UnicodeScript.Common)]
+    [InlineData(0x00F6, UnicodeScript.Latin, 0x00F7, UnicodeScript.Common)]
+    [InlineData(0x0377, UnicodeScript.Greek, 0x0378, UnicodeScript.Unknown)]
+    public void GetScript_IsCorrectAtRangeBoundaries(int last, UnicodeScript lastScript, int next, UnicodeScript nextScript)
+    {
+        Assert.Equal(lastScript, UnicodeScripts.GetScript(last));
+        Assert.Equal(nextScript, UnicodeScripts.GetScript(next));
+    }
+
+    [Fact]
+    public void GetScript_NeverThrowsAcrossTheWholeCodeSpace()
+    {
+        // The binary search decodes offsets from a byte blob, so walk every scalar value once to
+        // prove no input drives it out of the table.
+        var scripts = new HashSet<UnicodeScript>();
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            if (codePoint is >= 0xD800 and <= 0xDFFF)
+                continue;
+
+            scripts.Add(UnicodeScripts.GetScript(codePoint));
+        }
+
+        Assert.Contains(UnicodeScript.Latin, scripts);
+        Assert.Contains(UnicodeScript.Han, scripts);
+        Assert.Contains(UnicodeScript.Unknown, scripts);
+    }
+
 }

@@ -28,4 +28,6 @@ Generated fixed strings enforce capacity and throw `ArgumentException` when data
 | `MFFSG0002` | FixedStringBuilderGenerator | FixedStringBuilderAttribute argument type is invalid | Error | ✔️ |
 | `MFFSG0003` | FixedStringBuilderGenerator | FixedStringBuilderAttribute length must be positive | Error | ✔️ |
 | `MFFSG0004` | FixedStringBuilderGenerator | FixedStringBuilderAttribute length is too large | Error | ✔️ |
+| `MFFSG0005` | FixedStringBuilderGenerator | FixedStringBuilderAttribute requires a partial struct | Error | ✔️ |
+| `MFFSG0006` | FixedStringBuilderGenerator | FixedStringBuilderAttribute does not support readonly or ref structs | Error | ✔️ |
 <!-- analyzer-rules -->

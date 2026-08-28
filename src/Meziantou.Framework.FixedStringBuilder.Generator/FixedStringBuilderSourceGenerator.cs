@@ -67,6 +67,11 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         if (!declaration.Modifiers.Any(SyntaxKind.PartialKeyword))
             return null;
 
+        // The generated members are mutable and implement interfaces, so they would not compile in these shapes.
+        // The analyzer reports MFFSG0006 for them.
+        if (declaration.Modifiers.Any(SyntaxKind.ReadOnlyKeyword) || declaration.Modifiers.Any(SyntaxKind.RefKeyword))
+            return null;
+
         if (context.TargetSymbol is not INamedTypeSymbol targetTypeSymbol)
             return null;
 

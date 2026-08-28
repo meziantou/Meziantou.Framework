@@ -41,7 +41,23 @@ public sealed class FixedStringBuilderAttributeAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [MissingOrInvalidArgumentCount, ArgumentMustBeInt, LengthMustBePositive, LengthIsTooLarge];
+    internal static readonly DiagnosticDescriptor TypeMustBePartial = new(
+        id: "MFFSG0005",
+        title: "FixedStringBuilderAttribute requires a partial struct",
+        messageFormat: "'{0}' must be partial for the members to be generated",
+        category: "FixedStringBuilderGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    internal static readonly DiagnosticDescriptor TypeMustNotBeReadOnlyOrRef = new(
+        id: "MFFSG0006",
+        title: "FixedStringBuilderAttribute does not support readonly or ref structs",
+        messageFormat: "'{0}' must not be a readonly struct or a ref struct",
+        category: "FixedStringBuilderGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [MissingOrInvalidArgumentCount, ArgumentMustBeInt, LengthMustBePositive, LengthIsTooLarge, TypeMustBePartial, TypeMustNotBeReadOnlyOrRef];
 
     public override void Initialize(AnalysisContext context)
     {
@@ -67,6 +83,18 @@ public sealed class FixedStringBuilderAttributeAnalyzer : DiagnosticAnalyzer
                     (symbolInfo.ContainingType.Name is not "FixedStringBuilderAttribute" || !symbolInfo.ContainingType.ContainingNamespace.IsGlobalNamespace))
                 {
                     continue;
+                }
+
+                // The generator silently skips a type it cannot add members to, so the mistake has to be reported here.
+                if (!typeDeclarationSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(TypeMustBePartial, typeDeclarationSyntax.Identifier.GetLocation(), typeDeclarationSyntax.Identifier.ValueText));
+                }
+                else if (typeDeclarationSyntax.Modifiers.Any(SyntaxKind.ReadOnlyKeyword) || typeDeclarationSyntax.Modifiers.Any(SyntaxKind.RefKeyword))
+                {
+                    // A fixed string builder is mutable and implements interfaces, so the generated members do not
+                    // compile inside a readonly struct or a ref struct.
+                    context.ReportDiagnostic(Diagnostic.Create(TypeMustNotBeReadOnlyOrRef, typeDeclarationSyntax.Identifier.GetLocation(), typeDeclarationSyntax.Identifier.ValueText));
                 }
 
                 var arguments = attributeSyntax.ArgumentList?.Arguments;

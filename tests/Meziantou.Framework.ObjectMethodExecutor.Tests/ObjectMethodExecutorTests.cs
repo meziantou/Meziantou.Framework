@@ -27,6 +27,54 @@ public sealed class ObjectMethodExecutorTests
     }
 
     [Fact]
+    public void MutatingStructMethod_AppliesMutationToBoxedInstance()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(MutableCounter).GetMethod(nameof(MutableCounter.Increment))!);
+        object target = new MutableCounter();
+
+        executor.Execute(target, []);
+
+        Assert.Equal(1, ((MutableCounter)target).Value);
+    }
+
+    [Fact]
+    public async Task MutatingStructMethod_AppliesMutationToBoxedInstance_Async()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(MutableCounter).GetMethod(nameof(MutableCounter.IncrementAsync))!);
+        object target = new MutableCounter();
+
+        await executor.ExecuteAsync(target, []);
+
+        Assert.Equal(1, ((MutableCounter)target).Value);
+    }
+
+    [Fact]
+    public void MutatingStructMethod_MatchesMethodInfoInvoke()
+    {
+        var methodInfo = typeof(MutableCounter).GetMethod(nameof(MutableCounter.Increment))!;
+        object viaInvoke = new MutableCounter();
+        methodInfo.Invoke(viaInvoke, parameters: null);
+
+        object viaExecutor = new MutableCounter();
+        ObjectMethodExecutor.Create(methodInfo).Execute(viaExecutor, []);
+
+        Assert.Equal(((MutableCounter)viaInvoke).Value, ((MutableCounter)viaExecutor).Value);
+    }
+
+    private struct MutableCounter
+    {
+        public int Value;
+
+        public void Increment() => Value++;
+
+        public Task IncrementAsync()
+        {
+            Value++;
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
     public void SyncInt32Test()
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32")!);

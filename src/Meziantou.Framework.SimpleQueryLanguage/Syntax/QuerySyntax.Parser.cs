@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.SimpleQueryLanguage.Syntax;
 
 public partial class QuerySyntax
@@ -121,6 +123,10 @@ public partial class QuerySyntax
 
         private QuerySyntax ParsePrimaryExpression()
         {
+            // Parenthesized and negated expressions recurse, so a deeply nested query would otherwise
+            // overflow the stack and kill the process. This turns that into a catchable exception.
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
             return Current.Kind switch
             {
                 QuerySyntaxKind.NotKeyword => ParseNotExpression(),

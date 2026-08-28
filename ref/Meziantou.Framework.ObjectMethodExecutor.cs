@@ -5,6 +5,7 @@
 namespace Meziantou.Framework
 {
     [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("ObjectMethodExecutor performs reflection on arbitrary types.")]
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("ObjectMethodExecutor compiles expression trees and may construct generic types at runtime.")]
     public sealed class ObjectMethodExecutor
     {
         public bool IsMethodAsync { get => throw null; }
@@ -12,6 +13,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.ObjectMethodExecutor Create(System.Reflection.MethodInfo methodInfo, object[]? parameterDefaultValues) => throw null;
         public object? Execute(object? target, object?[]? parameters) => throw null;
         public Meziantou.Framework.ObjectMethodExecutorAwaitable ExecuteAsync(object? target, object?[]? parameters) => throw null;
+        public object? GetDefaultValueForParameter(int index) => throw null;
     }
 
     public readonly struct ObjectMethodExecutorAwaitable
@@ -20,7 +22,7 @@ namespace Meziantou.Framework
         public readonly struct Awaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
-            public Awaiter(object customAwaiter, System.Func<object, bool> isCompletedMethod, System.Func<object, object?> getResultMethod, System.Action<object, System.Action> onCompletedMethod, System.Action<object, System.Action> unsafeOnCompletedMethod) { }
+            public Awaiter(object customAwaiter, System.Func<object, bool> isCompletedMethod, System.Func<object, object?> getResultMethod, System.Action<object, System.Action> onCompletedMethod, System.Action<object, System.Action>? unsafeOnCompletedMethod) { }
             public object? GetResult() => throw null;
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }

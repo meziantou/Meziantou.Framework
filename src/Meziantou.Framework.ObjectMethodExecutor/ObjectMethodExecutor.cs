@@ -32,6 +32,7 @@ namespace Meziantou.Framework;
 /// </code>
 /// </example>
 [RequiresUnreferencedCode("ObjectMethodExecutor performs reflection on arbitrary types.")]
+[RequiresDynamicCode("ObjectMethodExecutor compiles expression trees and may construct generic types at runtime.")]
 public sealed class ObjectMethodExecutor
 {
     private readonly object?[]? _parameterDefaultValues;
@@ -74,6 +75,9 @@ public sealed class ObjectMethodExecutor
 
         }
 
+        if (parameterDefaultValues is not null && parameterDefaultValues.Length != MethodParameters.Length)
+            throw new ArgumentException($"Expected {MethodParameters.Length} default value(s) for '{methodInfo.Name}', but got {parameterDefaultValues.Length}", nameof(parameterDefaultValues));
+
         _parameterDefaultValues = parameterDefaultValues;
     }
 
@@ -102,7 +106,7 @@ public sealed class ObjectMethodExecutor
 
     /// <summary>Creates an executor for the specified method with parameter default values.</summary>
     /// <param name="methodInfo">The method to be invoked.</param>
-    /// <param name="parameterDefaultValues">The default values for the method parameters.</param>
+    /// <param name="parameterDefaultValues">The default values for the method parameters, readable afterwards through <see cref="GetDefaultValueForParameter"/>. Must contain exactly one entry per parameter.</param>
     /// <returns>An <see cref="ObjectMethodExecutor"/> that can invoke the specified method.</returns>
     public static ObjectMethodExecutor Create(MethodInfo methodInfo, object?[]? parameterDefaultValues)
     {
@@ -160,7 +164,17 @@ public sealed class ObjectMethodExecutor
         return _executorAsync(target, parameters);
     }
 
-    private object? GetDefaultValueForParameter(int index)
+    /// <summary>Gets the default value supplied for the parameter at <paramref name="index"/>.</summary>
+    /// <remarks>
+    /// Callers use this to build the <c>parameters</c> array passed to <see cref="Execute"/> or
+    /// <see cref="ExecuteAsync"/> when they have no value of their own for a parameter. The executor
+    /// itself never consults these values.
+    /// </remarks>
+    /// <param name="index">The zero-based index of the parameter.</param>
+    /// <returns>The default value supplied for that parameter when the executor was created.</returns>
+    /// <exception cref="InvalidOperationException">No parameter default values were supplied to <see cref="Create(MethodInfo, object[])"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is negative or not less than the number of parameters.</exception>
+    public object? GetDefaultValueForParameter(int index)
     {
         if (_parameterDefaultValues is null)
             throw new InvalidOperationException($"Cannot call {nameof(GetDefaultValueForParameter)}, because no parameter default values were supplied.");
@@ -194,7 +208,7 @@ public sealed class ObjectMethodExecutor
         MethodCallExpression methodCall;
         if (!methodInfo.IsStatic)
         {
-            var instanceCast = Expression.Convert(targetParameter, targetTypeInfo.AsType());
+            var instanceCast = GetTargetExpression(targetParameter, targetTypeInfo);
             methodCall = Expression.Call(instanceCast, methodInfo, parameters);
         }
         else
@@ -228,6 +242,19 @@ public sealed class ObjectMethodExecutor
         };
     }
 
+    private static UnaryExpression GetTargetExpression(ParameterExpression targetParameter, TypeInfo targetTypeInfo)
+    {
+        var targetType = targetTypeInfo.AsType();
+
+        // For a value type, Expression.Convert emits "unbox.any", which copies the struct out of the box.
+        // A method that mutates the receiver would then mutate that copy and the caller would observe
+        // nothing. Expression.Unbox emits "unbox", which yields a managed pointer into the boxed data, so
+        // mutations are applied in place. This matches what MethodInfo.Invoke does.
+        return targetType.IsValueType
+            ? Expression.Unbox(targetParameter, targetType)
+            : Expression.Convert(targetParameter, targetType);
+    }
+
     private static MethodExecutorAsync GetExecutorAsync(
         MethodInfo methodInfo,
         TypeInfo targetTypeInfo,
@@ -254,7 +281,7 @@ public sealed class ObjectMethodExecutor
         MethodCallExpression methodCall;
         if (!methodInfo.IsStatic)
         {
-            var instanceCast = Expression.Convert(targetParameter, targetTypeInfo.AsType());
+            var instanceCast = GetTargetExpression(targetParameter, targetTypeInfo);
             methodCall = Expression.Call(instanceCast, methodInfo, parameters);
         }
         else

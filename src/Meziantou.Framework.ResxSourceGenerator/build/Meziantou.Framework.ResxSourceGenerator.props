@@ -11,8 +11,8 @@
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="DefaultResourceName" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="ResourceName" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="Visibility" />
-    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="GenerateKeyNames" />
-    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="GenerateResources" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="GenerateKeyNamesType" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="GenerateResourcesType" />
   </ItemGroup>
 
   <Target Name="AddManifestResourceNameToAdditionalFiles" AfterTargets="CreateManifestResourceNames" BeforeTargets="CoreCompile" DependsOnTargets="_CollectResxManifestResourceNames;_AddManifestResourceNameToAdditionalFile" />

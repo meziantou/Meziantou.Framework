@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
@@ -84,6 +85,33 @@ public class RestartManagerTests
         finally
         {
             directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void JoinSession_WithUnknownKey_ReportsTheFailingFunction()
+    {
+        var exception = Assert.Throws<Win32Exception>(() => RestartManager.JoinSession("00000000000000000000000000000000"));
+        Assert.StartsWith("RmJoinSession failed", exception.Message);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetProcessesLockingFiles()
+    {
+        var unlockedPath = Path.GetTempFileName();
+        var lockedPath = Path.GetTempFileName();
+        try
+        {
+            using (File.Open(lockedPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                var processes = RestartManager.GetProcessesLockingFiles([unlockedPath, lockedPath]);
+                Assert.Contains(_currentProcessId, processes.Select(process => process.Id));
+            }
+        }
+        finally
+        {
+            File.Delete(unlockedPath);
+            File.Delete(lockedPath);
         }
     }
 }

@@ -47,6 +47,8 @@ public sealed partial class CGroup2
     /// <returns>The child cgroup.</returns>
     public CGroup2? GetChild(string name)
     {
+        ValidateSegment(name, nameof(name));
+
         if (!Directory.Exists(System.IO.Path.Combine(_path, name)))
             return null;
 
@@ -58,6 +60,8 @@ public sealed partial class CGroup2
     /// <returns>The child cgroup.</returns>
     public CGroup2 CreateOrGetChild(string name)
     {
+        ValidateSegment(name, nameof(name));
+
         var child = new CGroup2(name, this);
         Directory.CreateDirectory(child._path);
         return child;
@@ -211,10 +215,11 @@ public sealed partial class CGroup2
         WriteFile("cpu.max", $"{maxStr} {periodMicroseconds.ToString(CultureInfo.InvariantCulture)}");
     }
 
-    /// <summary>Removes the CPU maximum bandwidth limit.</summary>
+    /// <summary>Removes the CPU maximum bandwidth limit. The period is left unchanged.</summary>
     public void RemoveCpuMax()
     {
-        SetCpuMax(null, 100000);
+        // cpu.max accepts "max" on its own, which clears the quota and keeps the configured period.
+        WriteFile("cpu.max", "max");
     }
 
     #endregion
@@ -479,6 +484,18 @@ public sealed partial class CGroup2
 
     #region Helper Methods
 
+    /// <summary>Ensures a caller-provided value is a single path segment, so it cannot escape the cgroup hierarchy.</summary>
+    /// <param name="value">The value to validate.</param>
+    /// <param name="paramName">The name of the parameter being validated.</param>
+    /// <exception cref="ArgumentException">The value is empty, is a relative path segment, or contains a directory separator.</exception>
+    internal static void ValidateSegment(string value, string paramName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(value, paramName);
+
+        if (value is "." or ".." || value.AsSpan().ContainsAny('/', '\0'))
+            throw new ArgumentException($"'{value}' must be a single path segment and cannot be '.', '..', or contain '/'", paramName);
+    }
+
     private string ReadFile(string fileName)
     {
         var filePath = System.IO.Path.Combine(_path, fileName);
@@ -500,7 +517,11 @@ public sealed partial class CGroup2
     private void WriteFile(string fileName, string content)
     {
         var filePath = System.IO.Path.Combine(_path, fileName);
-        File.WriteAllText(filePath, content);
+
+        // cgroup interface files are only updated by a write(2). File.WriteAllText issues no write at all when
+        // content is empty, and the O_TRUNC implied by FileMode.Create does not clear the value held by kernfs.
+        // Appending a newline (what 'echo' does) keeps clearing a setting from silently doing nothing.
+        File.WriteAllText(filePath, content + "\n");
     }
 
     #endregion

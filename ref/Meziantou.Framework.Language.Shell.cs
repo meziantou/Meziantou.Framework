@@ -1732,8 +1732,7 @@ namespace Meziantou.Framework.Language.Shell
         public static Meziantou.Framework.Language.Shell.ShellSyntaxToken Token(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, string text, string? valueText = null, bool isMissing = false, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia>? leadingTrivia = null, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia>? trailingTrivia = null) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellSyntaxTrivia Trivia(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, string text) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellSyntaxTrivia Whitespace(string text = " ") => throw null;
-        public static Meziantou.Framework.Language.Shell.ShellSyntaxTrivia EndOfLine(string text = "
-    ") => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellSyntaxTrivia EndOfLine(string text = "\n") => throw null;
         public static Meziantou.Framework.Language.Shell.ShellSyntaxTrivia Comment(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax Literal(string text, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia>? leadingTrivia = null) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellWordSyntax Word(params Meziantou.Framework.Language.Shell.ShellWordPartSyntax[] parts) => throw null;

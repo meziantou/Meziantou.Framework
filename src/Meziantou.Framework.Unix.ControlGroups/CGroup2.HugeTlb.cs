@@ -1,14 +1,13 @@
 namespace Meziantou.Framework.Unix.ControlGroups;
 
-/// <summary>Extension methods for HugeTLB controller on CGroup2.</summary>
-public partial class CGroup2
+public sealed partial class CGroup2
 {
     /// <summary>Sets the HugeTLB usage limit for a specific page size.</summary>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
     /// <param name="bytes">Maximum usage in bytes, or null for no limit.</param>
     public void SetHugeTlbMax(string pageSize, long? bytes)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
+        ValidateSegment(pageSize, nameof(pageSize));
         if (bytes.HasValue)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(bytes.Value, nameof(bytes));
@@ -24,7 +23,7 @@ public partial class CGroup2
     /// <returns>The limit in bytes, or null if set to max.</returns>
     public long? GetHugeTlbMax(string pageSize)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
+        ValidateSegment(pageSize, nameof(pageSize));
 
         var fileName = $"hugetlb.{pageSize}.max";
         var content = ReadFile(fileName);
@@ -47,7 +46,7 @@ public partial class CGroup2
     /// <returns>Current usage in bytes.</returns>
     public long? GetHugeTlbCurrent(string pageSize)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
+        ValidateSegment(pageSize, nameof(pageSize));
 
         var fileName = $"hugetlb.{pageSize}.current";
         var content = ReadFile(fileName);
@@ -66,7 +65,7 @@ public partial class CGroup2
     /// <returns>Number of limit hits.</returns>
     public long? GetHugeTlbEventsMax(string pageSize)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
+        ValidateSegment(pageSize, nameof(pageSize));
 
         var fileName = $"hugetlb.{pageSize}.events";
         var content = ReadFile(fileName);

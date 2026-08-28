@@ -22,6 +22,7 @@ namespace Meziantou.Framework.Win32
         public void Dispose() { }
         public static bool IsFileLocked(string path) => throw null;
         public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingFile(string path) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingFiles(string[] paths) => throw null;
     }
 
     [System.Flags]

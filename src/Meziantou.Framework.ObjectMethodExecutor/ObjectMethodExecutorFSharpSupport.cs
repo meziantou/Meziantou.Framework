@@ -21,6 +21,7 @@ internal static class ObjectMethodExecutorFSharpSupport
     private static PropertyInfo? s_fsharpOptionOfCancellationTokenNoneProperty;
 
     [UnconditionalSuppressMessage("Trimmer", "IL2060", Justification = "Reflecting over the async FSharpAsync<> contract.")]
+    [RequiresDynamicCode("Coercing FSharpAsync<T> to Task<T> constructs generic types and methods at runtime.")]
     public static bool TryBuildCoercerFromFSharpAsyncToAwaitable(
         Type possibleFSharpAsyncType,
         [NotNullWhen(true)] out Expression? coerceToAwaitableExpression,
@@ -63,6 +64,7 @@ internal static class ObjectMethodExecutorFSharpSupport
         return true;
     }
 
+    [RequiresDynamicCode("Coercing FSharpAsync<T> to Task<T> constructs generic types and methods at runtime.")]
     private static bool IsFSharpAsyncOpenGenericType(Type? possibleFSharpAsyncGenericType)
     {
         if (possibleFSharpAsyncGenericType == null)
@@ -92,6 +94,7 @@ internal static class ObjectMethodExecutorFSharpSupport
     [UnconditionalSuppressMessage("Trimmer", "IL2026", Justification = "Reflecting over the async FSharpAsync<> contract")]
     [UnconditionalSuppressMessage("Trimmer", "IL2055", Justification = "Reflecting over the async FSharpAsync<> contract")]
     [UnconditionalSuppressMessage("Trimmer", "IL2072", Justification = "Reflecting over the async FSharpAsync<> contract")]
+    [RequiresDynamicCode("Coercing FSharpAsync<T> to Task<T> constructs generic types and methods at runtime.")]
     private static bool TryPopulateFSharpValueCaches(Type possibleFSharpAsyncGenericType)
     {
         var assembly = possibleFSharpAsyncGenericType.Assembly;

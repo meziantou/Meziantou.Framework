@@ -33,6 +33,13 @@ public sealed class LsaPrivateDataTests
     }
 
     [Fact, RunIf(WindowsGroups.Administrator)]
+    public void LsaPrivateData_RemoveUnsetValue()
+    {
+        LsaPrivateData.RemoveValue("LsaPrivateDataTestsUnsetRemove");
+        Assert.Null(LsaPrivateData.GetValue("LsaPrivateDataTestsUnsetRemove"));
+    }
+
+    [Fact, RunIf(WindowsGroups.Administrator)]
     public void LsaPrivateData_SetGetRemoveNonAsciiValue()
     {
         WithLsaLock(() =>
@@ -81,6 +88,28 @@ public sealed class LsaPrivateDataTests
     public void RemoveValue_EmptyKey_Throws()
     {
         Assert.Throws<ArgumentException>(() => LsaPrivateData.RemoveValue(""));
+    }
+
+    // LSA_UNICODE_STRING holds the length in bytes in a ushort, so 32767 characters is the last length that fits
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetValue_KeyLongerThanMaxLength_Throws()
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => LsaPrivateData.SetValue(new string('a', 32768), "test"));
+        Assert.Equal("key", exception.ParamName);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetValue_ValueLongerThanMaxLength_Throws()
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => LsaPrivateData.SetValue("LsaPrivateDataTests", new string('a', 32768)));
+        Assert.Equal("value", exception.ParamName);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetValue_KeyLongerThanMaxLength_Throws()
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => LsaPrivateData.GetValue(new string('a', 32768)));
+        Assert.Equal("key", exception.ParamName);
     }
 
     private static void WithLsaLock(Action action)

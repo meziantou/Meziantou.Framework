@@ -6,6 +6,8 @@ namespace Meziantou.Framework.DependencyScanning;
 [StructLayout(LayoutKind.Auto)]
 public readonly ref struct CandidateFileContext
 {
+    private static readonly char[] DirectorySeparators = [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar];
+
     public CandidateFileContext(ReadOnlySpan<char> rootDirectory, ReadOnlySpan<char> directory, ReadOnlySpan<char> fileName)
     {
         RootDirectory = rootDirectory;
@@ -58,6 +60,20 @@ public readonly ref struct CandidateFileContext
         return false;
     }
 
-    /// <summary>Gets the directory path relative to the root directory.</summary>
-    public ReadOnlySpan<char> RelativeDirectory => Directory.SequenceEqual(RootDirectory) ? "" : Directory[(RootDirectory.Length + 1)..];
+    /// <summary>Gets the directory path relative to the root directory, or an empty span when the directory is not under the root directory.</summary>
+    public ReadOnlySpan<char> RelativeDirectory
+    {
+        get
+        {
+            var root = RootDirectory.TrimEnd(DirectorySeparators);
+            var directory = Directory.TrimEnd(DirectorySeparators);
+            if (directory.Length <= root.Length || !directory.StartsWith(root, StringComparison.Ordinal))
+                return "";
+
+            if (Array.IndexOf(DirectorySeparators, directory[root.Length]) < 0)
+                return "";
+
+            return directory[(root.Length + 1)..];
+        }
+    }
 }

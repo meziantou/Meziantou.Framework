@@ -33,7 +33,16 @@ public sealed class StronglyTypedIdAnalyzer : DiagnosticAnalyzer
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(UnsupportedType, UnsupportedGuidGenerationStrategy, UnusedGuidGenerationStrategy);
+    private static readonly DiagnosticDescriptor UnsupportedGenericType = new(
+        id: "MFSTID0004",
+        title: "Generic types are not supported",
+        messageFormat: "The type '{0}' cannot be a strongly-typed id because it is generic or nested in a generic type",
+        category: "StronglyTypedId",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "An attribute argument cannot use a type parameter (CS0416), so the generated converters could not be associated with the type.");
+
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(UnsupportedType, UnsupportedGuidGenerationStrategy, UnusedGuidGenerationStrategy, UnsupportedGenericType);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -85,6 +94,17 @@ public sealed class StronglyTypedIdAnalyzer : DiagnosticAnalyzer
             var typeSymbol = TryGetIdTypeSymbol(attribute, nonGenericAttribute, genericAttribute);
             if (typeSymbol is null)
                 continue;
+
+            if (StronglyTypedIdSourceGenerator.IsGenericTypeOrNestedInGenericType(symbol))
+            {
+                var location = attribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation() ?? symbol.Locations.FirstOrDefault();
+                if (location is not null)
+                {
+                    context.ReportDiagnostic(UnsupportedGenericType, location, symbol.ToDisplayString());
+                }
+
+                continue;
+            }
 
             var idType = StronglyTypedIdSourceGenerator.GetIdType(context.Compilation, typeSymbol);
             if (idType is StronglyTypedIdSourceGenerator.IdType.Unknown)

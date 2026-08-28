@@ -428,17 +428,31 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
-    public void DefaultSerializer_HandlesStreamPositionedAtTheEnd()
+    public void DefaultSerializer_ReadsTheStreamFromItsCurrentPosition()
     {
         var snapshotType = SnapshotType.Png;
-        var expectedBytes = "stream-binary-data"u8.ToArray();
-        using var stream = new MemoryStream();
-        stream.Write(expectedBytes);
+        using var stream = new MemoryStream("stream-binary-data"u8.ToArray());
+        stream.Position = "stream-".Length;
 
         var data = new SnapshotSettings().Serializers.Serialize(snapshotType, stream);
 
         var snapshot = Assert.Single(data.Data);
-        Assert.Equal(expectedBytes, snapshot.Data);
+        Assert.Equal("binary-data"u8.ToArray(), snapshot.Data);
+    }
+
+    [Fact]
+    public void DefaultSerializer_ProducesAnEmptySnapshotForAStreamPositionedAtTheEnd()
+    {
+        // The stream is not rewound, so a caller that has just written to it snapshots nothing. Pinned here
+        // because it is a surprising consequence of reading from the current position.
+        var snapshotType = SnapshotType.Png;
+        using var stream = new MemoryStream();
+        stream.Write("stream-binary-data"u8);
+
+        var data = new SnapshotSettings().Serializers.Serialize(snapshotType, stream);
+
+        var snapshot = Assert.Single(data.Data);
+        Assert.Empty(snapshot.Data);
     }
 
     [Fact]

@@ -12,13 +12,8 @@ internal sealed class StreamSnapshotSerializer : ISnapshotSerializer
             return false;
         }
 
-        // The caller usually hands over a stream they have just written to, so its position sits at the
-        // end and copying from there would silently snapshot zero bytes.
-        if (stream.CanSeek)
-        {
-            stream.Seek(0, SeekOrigin.Begin);
-        }
-
+        // Read from wherever the stream currently is, rather than rewinding it: seeking would change what a
+        // caller who deliberately positioned the stream gets back.
         using var ms = new MemoryStream();
         stream.CopyTo(ms);
         result = new SerializedSnapshot([new SnapshotData(type.FileExtension, ms.ToArray())]);

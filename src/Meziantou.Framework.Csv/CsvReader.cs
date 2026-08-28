@@ -133,7 +133,7 @@ public class CsvReader
         {
             var inQuote = false;
             var value = new StringBuilder();
-            var hasCell = false;
+            var hasPendingValue = false;
             ColumnNumber = 0;
             while (true)
             {
@@ -141,7 +141,7 @@ public class CsvReader
                 if (!c.HasValue)
                 {
                     endOfStream = true;
-                    if (hasCell)
+                    if (hasPendingValue)
                     {
                         rowValues.Add(value.ToString());
                     }
@@ -161,14 +161,14 @@ public class CsvReader
                     {
                         if (next == '\n')
                         {
-                            hasCell = true;
+                            hasPendingValue = true;
                             value.Append(c.Value);
                             c = await ReadCharAsync().ConfigureAwait(false);
                             ColumnNumber++;
                             if (!c.HasValue)
                             {
                                 endOfStream = true;
-                                if (hasCell)
+                                if (hasPendingValue)
                                 {
                                     rowValues.Add(value.ToString());
                                 }
@@ -185,7 +185,7 @@ public class CsvReader
                         if (next == Quote)
                         {
                             await ReadCharAsync().ConfigureAwait(false);
-                            hasCell = true;
+                            hasPendingValue = true;
                             value.Append(Quote.Value);
                         }
                         else
@@ -195,13 +195,13 @@ public class CsvReader
                     }
                     else
                     {
-                        hasCell = true;
+                        hasPendingValue = true;
                         value.Append(c.Value);
                     }
                 }
                 else if (c == '\n')
                 {
-                    if (hasCell)
+                    if (hasPendingValue)
                     {
                         rowValues.Add(value.ToString());
                     }
@@ -217,7 +217,7 @@ public class CsvReader
                         ColumnNumber++;
                     }
 
-                    if (hasCell)
+                    if (hasPendingValue)
                     {
                         rowValues.Add(value.ToString());
                     }
@@ -229,11 +229,12 @@ public class CsvReader
                 {
                     if (value.Length == 0)
                     {
+                        hasPendingValue = true;
                         inQuote = true;
                     }
                     else
                     {
-                        hasCell = true;
+                        hasPendingValue = true;
                         value.Append(c.Value);
                     }
                 }
@@ -241,11 +242,11 @@ public class CsvReader
                 {
                     rowValues.Add(value.ToString());
                     value.Clear();
-                    hasCell = false;
+                    hasPendingValue = true;
                 }
                 else
                 {
-                    hasCell = true;
+                    hasPendingValue = true;
                     value.Append(c.Value);
                 }
             }

@@ -217,6 +217,102 @@ public class CsvReaderTests
         Assert.Equal(2, reader.RowNumber);
     }
 
+    [Theory]
+    [InlineData("a,b,", new[] { "a", "b", "" })]
+    [InlineData("a,b,\n", new[] { "a", "b", "" })]
+    [InlineData("a,b,\r\n", new[] { "a", "b", "" })]
+    [InlineData("a,b,\"\"", new[] { "a", "b", "" })]
+    [InlineData(",", new[] { "", "" })]
+    [InlineData(",,", new[] { "", "", "" })]
+    [InlineData("\"\"", new[] { "" })]
+    [InlineData("a,\"\",b", new[] { "a", "", "b" })]
+    [InlineData("\"a,b\",", new[] { "a,b", "" })]
+    [InlineData("a,b", new[] { "a", "b" })]
+    public async Task CsvReader_EmptyTrailingValueIsPreserved(string data, string[] expected)
+    {
+        using var sr = new StringReader(data);
+        var reader = new CsvReader(sr);
+
+        var row = await reader.ReadRowAsync();
+
+        Assert.NotNull(row);
+        Assert.Equal(expected, row.Values);
+    }
+
+    [Fact]
+    public async Task CsvReader_EmptyInputReturnsNoRow()
+    {
+        using var sr = new StringReader("");
+        var reader = new CsvReader(sr);
+
+        Assert.Null(await reader.ReadRowAsync());
+    }
+
+    [Fact]
+    public async Task CsvReader_TrailingNewLineDoesNotProduceAnExtraRow()
+    {
+        using var sr = new StringReader("a\nb\n");
+        var reader = new CsvReader(sr);
+
+        Assert.NotNull(await reader.ReadRowAsync());
+        Assert.NotNull(await reader.ReadRowAsync());
+        Assert.Null(await reader.ReadRowAsync());
+    }
+
+    [Fact]
+    public async Task CsvReader_BlankLineStillYieldsARowWithoutValues()
+    {
+        using var sr = new StringReader("a\n\nb");
+        var reader = new CsvReader(sr);
+
+        var row1 = await reader.ReadRowAsync();
+        Assert.NotNull(row1);
+        Assert.Equal(["a"], row1.Values);
+
+        var row2 = await reader.ReadRowAsync();
+        Assert.NotNull(row2);
+        Assert.Empty(row2.Values);
+
+        var row3 = await reader.ReadRowAsync();
+        Assert.NotNull(row3);
+        Assert.Equal(["b"], row3.Values);
+    }
+
+    [Fact]
+    public async Task CsvReader_EmptyTrailingValueIsAddressableByColumnName()
+    {
+        using var sr = new StringReader("A,B,C\n1,2,");
+        var reader = new CsvReader(sr) { HasHeaderRow = true };
+
+        var row = await reader.ReadRowAsync();
+
+        Assert.NotNull(row);
+        Assert.Equal(["1", "2", ""], row.Values);
+        Assert.Equal("", row["C"]);
+    }
+
+    [Fact]
+    public async Task CsvWriter_TrailingEmptyValue_RoundTripsThroughCsvReader()
+    {
+        using var sw = new StringWriter();
+        var writer = new CsvWriter(sw) { EndOfLine = "\n" };
+        await writer.WriteRowAsync("a", "b", "");
+        await writer.WriteRowAsync("", "", "");
+
+        using var sr = new StringReader(sw.ToString());
+        var reader = new CsvReader(sr);
+
+        var row1 = await reader.ReadRowAsync();
+        Assert.NotNull(row1);
+        Assert.Equal(["a", "b", ""], row1.Values);
+
+        var row2 = await reader.ReadRowAsync();
+        Assert.NotNull(row2);
+        Assert.Equal(["", "", ""], row2.Values);
+
+        Assert.Null(await reader.ReadRowAsync());
+    }
+
     private sealed class TruncatedCarriageReturnReader : TextReader
     {
         private readonly char[] _content = ['"', 'a', '\r'];

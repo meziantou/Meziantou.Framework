@@ -214,6 +214,55 @@ public sealed class FixedStringBuilderSourceGeneratorTests
     }
 
     [Fact]
+    public async Task AnalyzerReportsNonPartialType()
+    {
+        const string Source = """
+            [FixedStringBuilderAttribute(4)]
+            public struct Sample
+            {
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(Source);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("MFFSG0005", diagnostic.Id);
+    }
+
+    [Theory]
+    [InlineData("readonly partial")]
+    [InlineData("ref partial")]
+    public async Task AnalyzerReportsReadOnlyOrRefType(string modifiers)
+    {
+        var source = $$"""
+            [FixedStringBuilderAttribute(4)]
+            public {{modifiers}} struct Sample
+            {
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(source);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("MFFSG0006", diagnostic.Id);
+    }
+
+    [Theory]
+    [InlineData("public struct Sample { }")]
+    [InlineData("public readonly partial struct Sample { }")]
+    [InlineData("public ref partial struct Sample { }")]
+    public async Task DoesNotGenerateForUnsupportedTypeShapes(string declaration)
+    {
+        var source = $$"""
+            [FixedStringBuilderAttribute(4)]
+            {{declaration}}
+            """;
+
+        var (runResult, _) = await GenerateAsync(source);
+
+        // Only the two post-initialization sources: the members would not compile in these shapes.
+        Assert.HasCount(2, runResult.Results[0].GeneratedSources);
+    }
+
+    [Fact]
     public async Task GeneratesBothTypesWhenTheirSanitizedNamesCollide()
     {
         // "A.B.C" and "A.B_C" both sanitize to "A_B_C"

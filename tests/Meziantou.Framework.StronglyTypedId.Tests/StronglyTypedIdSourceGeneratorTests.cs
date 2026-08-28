@@ -1014,6 +1014,21 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task GeneratedXmlDocumentationUsesValidTags()
+    {
+        var sourceCode = "[Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))] public partial struct Test { }";
+        var result = await GenerateFiles(sourceCode);
+        var generated = result.GeneratorResult.GeneratedTrees.Single().ToString();
+
+        // '<return>' is not a valid documentation tag, the correct one is '<returns>'
+        Assert.DoesNotContain("<return>", generated);
+        Assert.Contains("<returns>", generated);
+
+        // '<see>' must always carry a 'cref' or a 'langword' attribute
+        Assert.DoesNotContain("<see>", generated);
+    }
+
+    [Fact]
     public async Task TestIncrementalSupport_IStronglyTypedIdUnderlyingType()
     {
         const string IdSourceCode = "[Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))] public partial struct Test { }";

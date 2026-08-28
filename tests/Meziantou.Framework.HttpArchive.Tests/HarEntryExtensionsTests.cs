@@ -264,4 +264,122 @@ public sealed class HarEntryExtensionsTests
         Assert.False(postData.TryGetRawData(out var rawData));
         Assert.Null(rawData);
     }
+
+    [Fact]
+    public void RealWorldHar_EveryEntryConvertsWithoutThrowing()
+    {
+        var document = LoadChromeHar();
+
+        Assert.HasCount(6, document.Log.Entries);
+
+        foreach (var entry in document.Log.Entries)
+        {
+            using var request = entry.ToHttpRequestMessage();
+            using var response = entry.ToHttpResponseMessage();
+
+            Assert.NotNull(request.RequestUri);
+            Assert.NotNull(response.Content);
+        }
+    }
+
+    [Fact]
+    public void RealWorldHar_ContentTypeIsNeverDuplicated()
+    {
+        var document = LoadChromeHar();
+
+        foreach (var entry in document.Log.Entries)
+        {
+            using var response = entry.ToHttpResponseMessage();
+            if (response.Content.Headers.TryGetValues("Content-Type", out var values))
+            {
+                Assert.Single(values);
+            }
+        }
+    }
+
+    [Fact]
+    public void ToHttpResponseMessage_MimeTypeWithCharset()
+    {
+        var response = new HarResponse
+        {
+            Status = 200,
+            HttpVersion = "http/2.0",
+            Content = new HarContent { MimeType = "text/html; charset=utf-8", Text = "<h1>Hi</h1>" },
+        };
+
+        using var message = response.ToHttpResponseMessage();
+
+        Assert.Equal("text/html; charset=utf-8", Assert.Single(message.Content.Headers.GetValues("Content-Type")));
+    }
+
+    [Fact]
+    public void ToHttpResponseMessage_EmptyMimeType()
+    {
+        var response = new HarResponse
+        {
+            Status = 304,
+            HttpVersion = "http/2.0",
+            Content = new HarContent { MimeType = "" },
+        };
+
+        using var message = response.ToHttpResponseMessage();
+
+        Assert.False(message.Content.Headers.Contains("Content-Type"));
+    }
+
+    [Fact]
+    public void ToHttpResponseMessage_HeaderWinsOverMimeType()
+    {
+        var response = new HarResponse
+        {
+            Status = 200,
+            HttpVersion = "http/2.0",
+            Headers = [new HarHeader { Name = "Content-Type", Value = "application/json; charset=utf-8" }],
+            Content = new HarContent { MimeType = "application/json", Text = "{}" },
+        };
+
+        using var message = response.ToHttpResponseMessage();
+
+        Assert.Equal("application/json; charset=utf-8", Assert.Single(message.Content.Headers.GetValues("Content-Type")));
+    }
+
+    [Fact]
+    public async Task ToHttpResponseMessage_InvalidBase64FallsBackToRawText()
+    {
+        var response = new HarResponse
+        {
+            Status = 200,
+            HttpVersion = "http/2.0",
+            Content = new HarContent { MimeType = "image/png", Text = "not!valid!base64", Encoding = "base64" },
+        };
+
+        using var message = response.ToHttpResponseMessage();
+
+        Assert.Equal("not!valid!base64", await message.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public void ToHttpRequestMessage_PostDataMimeTypeWithCharset()
+    {
+        var request = new HarRequest
+        {
+            Method = "POST",
+            Url = "https://example.com/login",
+            HttpVersion = "http/2.0",
+            PostData = new HarPostData { MimeType = "application/x-www-form-urlencoded;charset=UTF-8", Text = "a=1" },
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.NotNull(message.Content);
+        Assert.Single(message.Content.Headers.GetValues("Content-Type"));
+        Assert.Equal("application/x-www-form-urlencoded", message.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("UTF-8", message.Content.Headers.ContentType?.CharSet);
+    }
+
+    private static HarDocument LoadChromeHar()
+    {
+        using var stream = typeof(HarEntryExtensionsTests).Assembly.GetManifestResourceStream("files/chrome-devtools.har")!;
+        return HarDocument.Parse(stream);
+    }
 }

@@ -5,6 +5,7 @@
 namespace Meziantou.Framework
 {
     [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("ObjectMethodExecutor performs reflection on arbitrary types.")]
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("ObjectMethodExecutor compiles expression trees and may construct generic types at runtime.")]
     public sealed class ObjectMethodExecutor
     {
         public bool IsMethodAsync { get => throw null; }

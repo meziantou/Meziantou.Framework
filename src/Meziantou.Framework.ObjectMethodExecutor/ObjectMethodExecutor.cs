@@ -32,6 +32,7 @@ namespace Meziantou.Framework;
 /// </code>
 /// </example>
 [RequiresUnreferencedCode("ObjectMethodExecutor performs reflection on arbitrary types.")]
+[RequiresDynamicCode("ObjectMethodExecutor compiles expression trees and may construct generic types at runtime.")]
 public sealed class ObjectMethodExecutor
 {
     private readonly object?[]? _parameterDefaultValues;

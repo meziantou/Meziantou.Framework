@@ -182,6 +182,38 @@ public sealed class FixedStringBuilderSourceGeneratorTests
     }
 
     [Fact]
+    public async Task AnalyzerReportsLengthAboveMaximum()
+    {
+        const string Source = """
+            [FixedStringBuilderAttribute(32768)]
+            public partial struct Sample
+            {
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(Source);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("MFFSG0004", diagnostic.Id);
+    }
+
+    [Fact]
+    public async Task DoesNotGenerateWhenLengthIsAboveMaximum()
+    {
+        const string Source = """
+            [FixedStringBuilderAttribute(32768)]
+            public partial struct Sample
+            {
+            }
+            """;
+
+        var (runResult, _) = await GenerateAsync(Source);
+
+        // Only the two post-initialization sources: the type itself is not generated because its length would
+        // overflow the short used to count the characters.
+        Assert.HasCount(2, runResult.Results[0].GeneratedSources);
+    }
+
+    [Fact]
     public async Task GeneratesBothTypesWhenTheirSanitizedNamesCollide()
     {
         // "A.B.C" and "A.B_C" both sanitize to "A_B_C"

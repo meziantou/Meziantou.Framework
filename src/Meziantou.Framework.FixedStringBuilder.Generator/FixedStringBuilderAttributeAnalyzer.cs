@@ -33,7 +33,15 @@ public sealed class FixedStringBuilderAttributeAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [MissingOrInvalidArgumentCount, ArgumentMustBeInt, LengthMustBePositive];
+    internal static readonly DiagnosticDescriptor LengthIsTooLarge = new(
+        id: "MFFSG0004",
+        title: "FixedStringBuilderAttribute length is too large",
+        messageFormat: "FixedStringBuilderAttribute length must be less than or equal to {0}",
+        category: "FixedStringBuilderGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [MissingOrInvalidArgumentCount, ArgumentMustBeInt, LengthMustBePositive, LengthIsTooLarge];
 
     public override void Initialize(AnalysisContext context)
     {
@@ -88,6 +96,10 @@ public sealed class FixedStringBuilderAttributeAnalyzer : DiagnosticAnalyzer
                 if (length <= 0)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(LengthMustBePositive, valueExpression.GetLocation()));
+                }
+                else if (length > FixedStringBuilderSourceGenerator.MaximumLength)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(LengthIsTooLarge, valueExpression.GetLocation(), FixedStringBuilderSourceGenerator.MaximumLength));
                 }
             }
         }

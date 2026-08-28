@@ -203,4 +203,30 @@ public class BarCode39Tests
 
         return (width, height);
     }
+
+    // ───── Module patterns ─────
+    //
+    // The expected patterns were produced from this encoder's output and each one was confirmed
+    // to decode back to the documented payload with an external reader (ZXing) while the tests
+    // were written. Pinning the modules keeps a change that still renders a plausible-looking
+    // barcode, but an unreadable one, from passing.
+
+    [Theory]
+    [InlineData("ABC-123", "10010110110101101010010110101101001011011011010010101001010110110110100101011010110010101101101100101010100101101101")]
+    [InlineData("A", "10010110110101101010010110100101101101")]
+    public void CreateCode39_ProducesTheExpectedModules(string data, string expected)
+    {
+        Assert.Equal(expected, BarcodeModulePattern.Render(Barcode.CreateCode39(data)));
+    }
+
+    [Fact]
+    public void CreateCode39_WithChecksum_ProducesTheExpectedModules()
+    {
+        // Decodes as "ABC-123" once the reader validates and strips the Mod 43 check digit.
+        var barcode = Barcode.CreateCode39("ABC-123", includeChecksum: true);
+
+        Assert.Equal(
+            "100101101101011010100101101011010010110110110100101010010101101101101001010110101100101011011011001010101100110101010100101101101",
+            BarcodeModulePattern.Render(barcode));
+    }
 }

@@ -604,6 +604,35 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         AssertFileContentEqual("Dockerfile", Expected, ignoreNewLines: false);
     }
 
+    [Theory]
+    [InlineData("Dockerfile")]
+    [InlineData("dockerfile")]
+    [InlineData("Dockerfile.prod")]
+    [InlineData("app.Dockerfile")]
+    [InlineData("Containerfile")]
+    [InlineData("Containerfile.prod")]
+    [InlineData("app.Containerfile")]
+    public async Task DockerfileFileNames(string fileName)
+    {
+        AddFile(fileName, "FROM a.com/b:1.2.2\n");
+
+        var result = await GetDependencies<DockerfileDependencyScanner>();
+
+        AssertContainDependency(result, (DependencyType.DockerImage, "a.com/b", "1.2.2", 1, 14));
+    }
+
+    [Theory]
+    [InlineData("NotADockerfile")]
+    [InlineData("readme.txt")]
+    public async Task DockerfileFileNames_NotScanned(string fileName)
+    {
+        AddFile(fileName, "FROM a.com/b:1.2.2\n");
+
+        var result = await GetDependencies<DockerfileDependencyScanner>();
+
+        Assert.Empty(result);
+    }
+
     [Fact]
     public async Task GlobalJsonFromDependencies()
     {

@@ -523,6 +523,32 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task PackagesConfigInvalidXml()
+    {
+        AddFile("packages.config", """<packages><package id="a" version="1.0.0">""");
+
+        var result = await GetDependencies<PackagesConfigDependencyScanner>();
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task PackagesConfigInvalidXmlDoesNotStopTheScan()
+    {
+        AddFile("packages.config", """<packages><package id="a" version="1.0.0">""");
+        AddFile("Chart.yaml", """
+            dependencies:
+              - name: mariadb
+                version: 7.x.x
+                repository: https://example.com/charts
+            """);
+
+        var result = await GetDependencies<HelmChartDependencyScanner>();
+
+        AssertContainDependency(result, (DependencyType.HelmChart, "https://example.com/charts", "7.x.x", 0, 0));
+    }
+
+    [Fact]
     public async Task DockerfileFromDependencies()
     {
         const string Original = """

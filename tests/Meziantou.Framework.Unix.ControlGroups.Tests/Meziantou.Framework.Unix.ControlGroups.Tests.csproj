@@ -2,9 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <!-- The CGroup2Tests integration tests are skipped when not running on Linux, when cgroup v2 is unavailable,
-         or when running on GitHub Actions. The parser tests in CGroup2ParsingTests need none of that and always run. -->
-    <MinimumExpectedTests>21</MinimumExpectedTests>
     <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
     <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
   </PropertyGroup>

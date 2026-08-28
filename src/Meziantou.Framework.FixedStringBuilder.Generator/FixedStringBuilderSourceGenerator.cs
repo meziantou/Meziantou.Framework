@@ -72,16 +72,39 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
             {
                 var fixedStringInterface = context.SemanticModel.Compilation.GetTypeByMetadataName("Meziantou.Framework.FixedStringBuilder.IFixedString`1");
                 var fixedStringNonGenericInterface = context.SemanticModel.Compilation.GetTypeByMetadataName("Meziantou.Framework.FixedStringBuilder.IFixedString");
-                return new FixedStringTypeInfo(targetTypeSymbol, length, fixedStringInterface is not null, fixedStringNonGenericInterface is not null);
+                return new FixedStringTypeInfo(
+                    Namespace: targetTypeSymbol.ContainingNamespace.IsGlobalNamespace ? null : targetTypeSymbol.ContainingNamespace.ToDisplayString(),
+                    FullyQualifiedName: targetTypeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                    Name: targetTypeSymbol.Name,
+                    TypeParameters: GetTypeParameters(targetTypeSymbol),
+                    Accessibility: GetAccessibility(targetTypeSymbol.DeclaredAccessibility),
+                    ContainingTypeDeclarations: GetContainingTypeDeclarations(targetTypeSymbol),
+                    Length: length,
+                    ImplementsIFixedStringGeneric: fixedStringInterface is not null,
+                    ImplementsIFixedStringNonGeneric: fixedStringNonGenericInterface is not null);
             }
         }
 
         return null;
     }
 
+    private static string GetContainingTypeDeclarations(INamedTypeSymbol symbol)
+    {
+        var containingTypes = new Stack<INamedTypeSymbol>();
+        for (var containingType = symbol.ContainingType; containingType is not null; containingType = containingType.ContainingType)
+        {
+            containingTypes.Push(containingType);
+        }
+
+        if (containingTypes.Count == 0)
+            return string.Empty;
+
+        return string.Join("\n", containingTypes.Select(static containingType => $"{GetAccessibility(containingType.DeclaredAccessibility)} partial {GetTypeKeyword(containingType)} {containingType.Name}{GetTypeParameters(containingType)}"));
+    }
+
     private static void Generate(SourceProductionContext context, FixedStringTypeInfo target)
     {
-        var hintName = target.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+        var hintName = target.FullyQualifiedName
             .Replace("global::", "", StringComparison.Ordinal)
             .Replace('<', '_')
             .Replace('>', '_')
@@ -105,9 +128,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("using System.Runtime.InteropServices;");
         AppendLine();
 
-        var namespaceName = target.Type.ContainingNamespace.IsGlobalNamespace
-            ? null
-            : target.Type.ContainingNamespace.ToDisplayString();
+        var namespaceName = target.Namespace;
         if (namespaceName is not null)
         {
             AppendLine($"namespace {namespaceName}");
@@ -115,21 +136,19 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
             indent++;
         }
 
-        var containingTypes = new Stack<INamedTypeSymbol>();
-        for (var containingType = target.Type.ContainingType; containingType is not null; containingType = containingType.ContainingType)
-        {
-            containingTypes.Push(containingType);
-        }
+        var containingTypeDeclarations = target.ContainingTypeDeclarations.Length == 0
+            ? []
+            : target.ContainingTypeDeclarations.Split('\n');
 
-        foreach (var containingType in containingTypes)
+        foreach (var containingTypeDeclaration in containingTypeDeclarations)
         {
-            AppendLine($"{GetAccessibility(containingType.DeclaredAccessibility)} partial {GetTypeKeyword(containingType)} {containingType.Name}{GetTypeParameters(containingType)}");
+            AppendLine(containingTypeDeclaration);
             AppendLine("{");
             indent++;
         }
 
-        var fullTypeName = target.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var simpleTypeName = target.Type.Name + GetTypeParameters(target.Type);
+        var fullTypeName = target.FullyQualifiedName;
+        var simpleTypeName = target.Name + target.TypeParameters;
         var implementedInterfaces = new List<string>
         {
             $"global::System.IEquatable<{fullTypeName}>",
@@ -143,7 +162,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
 
         AppendLine("[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Sequential)]");
         AppendLine("[global::System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]");
-        AppendLine($"{GetAccessibility(target.Type.DeclaredAccessibility)} partial struct {target.Type.Name}{GetTypeParameters(target.Type)} : {string.Join(", ", implementedInterfaces)}");
+        AppendLine($"{target.Accessibility} partial struct {simpleTypeName} : {string.Join(", ", implementedInterfaces)}");
         AppendLine("{");
         indent++;
 
@@ -408,9 +427,8 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         indent--;
         AppendLine("}");
 
-        while (containingTypes.Count > 0)
+        for (var i = 0; i < containingTypeDeclarations.Length; i++)
         {
-            containingTypes.Pop();
             indent--;
             AppendLine("}");
         }
@@ -470,5 +488,20 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         return "<" + string.Join(", ", symbol.TypeParameters.Select(static t => t.Name)) + ">";
     }
 
-    private sealed record FixedStringTypeInfo(INamedTypeSymbol Type, int Length, bool ImplementsIFixedStringGeneric, bool ImplementsIFixedStringNonGeneric);
+    /// <summary>
+    /// The data needed to generate a fixed string. This flows through the incremental pipeline, so it must only
+    /// contain values that compare by value. In particular it must never hold a symbol or a syntax node: those
+    /// compare by reference and keep a <see cref="Compilation"/> alive, which stops the generator from caching
+    /// its output and makes it re-run on every keystroke.
+    /// </summary>
+    private sealed record FixedStringTypeInfo(
+        string? Namespace,
+        string FullyQualifiedName,
+        string Name,
+        string TypeParameters,
+        string Accessibility,
+        string ContainingTypeDeclarations,
+        int Length,
+        bool ImplementsIFixedStringGeneric,
+        bool ImplementsIFixedStringNonGeneric);
 }

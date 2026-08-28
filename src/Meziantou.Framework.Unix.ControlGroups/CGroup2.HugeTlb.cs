@@ -1,7 +1,6 @@
 namespace Meziantou.Framework.Unix.ControlGroups;
 
-/// <summary>Extension methods for HugeTLB controller on CGroup2.</summary>
-public partial class CGroup2
+public sealed partial class CGroup2
 {
     /// <summary>Sets the HugeTLB usage limit for a specific page size.</summary>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>

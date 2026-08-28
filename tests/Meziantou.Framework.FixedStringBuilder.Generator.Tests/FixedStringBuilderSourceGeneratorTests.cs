@@ -183,6 +183,87 @@ public sealed class FixedStringBuilderSourceGeneratorTests
     }
 
     [Fact]
+    public async Task AnalyzerReportsLengthAboveMaximum()
+    {
+        const string Source = """
+            [FixedStringBuilderAttribute(32768)]
+            public partial struct Sample
+            {
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(Source);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("MFFSG0004", diagnostic.Id);
+    }
+
+    [Fact]
+    public async Task DoesNotGenerateWhenLengthIsAboveMaximum()
+    {
+        const string Source = """
+            [FixedStringBuilderAttribute(32768)]
+            public partial struct Sample
+            {
+            }
+            """;
+
+        var (runResult, _) = await GenerateAsync(Source);
+
+        // Only the two post-initialization sources: the type itself is not generated because its length would
+        // overflow the short used to count the characters.
+        Assert.HasCount(2, runResult.Results[0].GeneratedSources);
+    }
+
+    [Fact]
+    public async Task AnalyzerReportsNonPartialType()
+    {
+        const string Source = """
+            [FixedStringBuilderAttribute(4)]
+            public struct Sample
+            {
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(Source);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("MFFSG0005", diagnostic.Id);
+    }
+
+    [Theory]
+    [InlineData("readonly partial")]
+    [InlineData("ref partial")]
+    public async Task AnalyzerReportsReadOnlyOrRefType(string modifiers)
+    {
+        var source = $$"""
+            [FixedStringBuilderAttribute(4)]
+            public {{modifiers}} struct Sample
+            {
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(source);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("MFFSG0006", diagnostic.Id);
+    }
+
+    [Theory]
+    [InlineData("public struct Sample { }")]
+    [InlineData("public readonly partial struct Sample { }")]
+    [InlineData("public ref partial struct Sample { }")]
+    public async Task DoesNotGenerateForUnsupportedTypeShapes(string declaration)
+    {
+        var source = $$"""
+            [FixedStringBuilderAttribute(4)]
+            {{declaration}}
+            """;
+
+        var (runResult, _) = await GenerateAsync(source);
+
+        // Only the two post-initialization sources: the members would not compile in these shapes.
+        Assert.HasCount(2, runResult.Results[0].GeneratedSources);
+    }
+
+    [Fact]
     public async Task GeneratesBothTypesWhenTheirSanitizedNamesCollide()
     {
         // "A.B.C" and "A.B_C" both sanitize to "A_B_C"
@@ -220,7 +301,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
             public partial struct FixedStringBuilder10;
             """;
 
-        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
+        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "10.0.0", "ref/net10.0/");
         var references = netcoreRef.Select(static location => MetadataReference.CreateFromFile(location)).ToArray();
 
         Compilation CreateCompilation(string unrelatedSource) => CSharpCompilation.Create(
@@ -274,9 +355,52 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         Assert.Equal("CS8168", error.Id);
     }
 
+    [Fact]
+    public async Task AnalyzerIgnoresAnUnrelatedAttributeThatDoesNotBind()
+    {
+        // Other.FixedStringBuilderAttribute has no parameterless constructor, so the attribute does not bind to a
+        // symbol. It is still not the generator's attribute and must not be reported on.
+        const string Source = """
+            namespace Other
+            {
+                [System.AttributeUsage(System.AttributeTargets.Struct)]
+                public sealed class FixedStringBuilderAttribute : System.Attribute
+                {
+                    public FixedStringBuilderAttribute(string name) { }
+                }
+            }
+
+            [Other.FixedStringBuilder]
+            public partial struct Sample
+            {
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(Source);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public async Task AnalyzerReportsThroughAnAlias()
+    {
+        // The attribute is the generator's one, so it must be analyzed even though the name is not written out.
+        const string Source = """
+            using Aliased = FixedStringBuilderAttribute;
+
+            [Aliased(0)]
+            public partial struct Sample
+            {
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(Source);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("MFFSG0003", diagnostic.Id);
+    }
+
     private static async Task<(GeneratorDriverRunResult RunResult, Compilation Compilation)> GenerateAsync(string source)
     {
-        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
+        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "10.0.0", "ref/net10.0/");
         var references = netcoreRef.Select(static location => MetadataReference.CreateFromFile(location)).ToArray();
         var compilation = CSharpCompilation.Create(
             "compilation",

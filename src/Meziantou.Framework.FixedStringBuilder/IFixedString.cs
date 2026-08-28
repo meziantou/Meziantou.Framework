@@ -18,6 +18,11 @@ public interface IFixedString : ISpanFormattable
     /// <summary>
     /// Resets this string to an empty string.
     /// </summary>
+    /// <remarks>
+    /// Only the length is reset. The characters that were written are not overwritten: they stay in the underlying
+    /// buffer and remain readable through <see cref="GetUnsafeFullSpan"/>. Do not rely on this method to erase
+    /// sensitive data.
+    /// </remarks>
     void Clear();
 
     /// <summary>

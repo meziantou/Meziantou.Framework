@@ -362,17 +362,22 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                         }
                     }
                 }
-                else
+                else if (entry.FullTypeName is string fullTypeName)
                 {
                     sb.AppendLine(@"
-        public static global::" + entry.FullTypeName + "? @" + ToCSharpNameIdentifier(entry.Name) + @"
+        public static global::" + fullTypeName + "? @" + ToCSharpNameIdentifier(entry.Name) + @"
         {
             get
             {
-                return (global::" + entry.FullTypeName + @"?)GetObject(" + ToLiteral(entry.Name) + @");
+                return (global::" + fullTypeName + @"?)GetObject(" + ToLiteral(entry.Name) + @");
             }
         }
 ");
+                }
+                else
+                {
+                    // Emitting the member would produce "global::?" and break the whole compilation
+                    sb.AppendLine("        // Could not determine the type of the resource " + ToCSharpNameIdentifier(entry.Name));
                 }
             }
 
@@ -710,17 +715,26 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                 if (IsText)
                     return "string";
 
-                if (Value is not null)
+                // A file reference stores the type of the referenced content in its value: "path;type name;encoding"
+                if (IsFileRef && Value is not null)
                 {
                     var parts = Value.Split(';');
                     if (parts.Length > 1)
-                    {
-                        var type = parts[1];
-                        return type.Split(',')[0];
-                    }
+                        return NullIfEmpty(parts[1].Split(',')[0]);
                 }
 
+                // An inline value carries its type in the type attribute:
+                // <data name="Color" type="System.Drawing.Color, System.Drawing"><value>Red</value></data>
+                if (Type is not null)
+                    return NullIfEmpty(Type.Split(',')[0]);
+
                 return null;
+
+                static string? NullIfEmpty(string value)
+                {
+                    var trimmed = value.Trim();
+                    return string.IsNullOrEmpty(trimmed) ? null : trimmed;
+                }
             }
         }
 

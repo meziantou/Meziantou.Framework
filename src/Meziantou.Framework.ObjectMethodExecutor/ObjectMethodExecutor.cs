@@ -208,7 +208,7 @@ public sealed class ObjectMethodExecutor
         MethodCallExpression methodCall;
         if (!methodInfo.IsStatic)
         {
-            var instanceCast = Expression.Convert(targetParameter, targetTypeInfo.AsType());
+            var instanceCast = GetTargetExpression(targetParameter, targetTypeInfo);
             methodCall = Expression.Call(instanceCast, methodInfo, parameters);
         }
         else
@@ -242,6 +242,19 @@ public sealed class ObjectMethodExecutor
         };
     }
 
+    private static UnaryExpression GetTargetExpression(ParameterExpression targetParameter, TypeInfo targetTypeInfo)
+    {
+        var targetType = targetTypeInfo.AsType();
+
+        // For a value type, Expression.Convert emits "unbox.any", which copies the struct out of the box.
+        // A method that mutates the receiver would then mutate that copy and the caller would observe
+        // nothing. Expression.Unbox emits "unbox", which yields a managed pointer into the boxed data, so
+        // mutations are applied in place. This matches what MethodInfo.Invoke does.
+        return targetType.IsValueType
+            ? Expression.Unbox(targetParameter, targetType)
+            : Expression.Convert(targetParameter, targetType);
+    }
+
     private static MethodExecutorAsync GetExecutorAsync(
         MethodInfo methodInfo,
         TypeInfo targetTypeInfo,
@@ -268,7 +281,7 @@ public sealed class ObjectMethodExecutor
         MethodCallExpression methodCall;
         if (!methodInfo.IsStatic)
         {
-            var instanceCast = Expression.Convert(targetParameter, targetTypeInfo.AsType());
+            var instanceCast = GetTargetExpression(targetParameter, targetTypeInfo);
             methodCall = Expression.Call(instanceCast, methodInfo, parameters);
         }
         else

@@ -20,6 +20,17 @@ internal sealed class JsonNodeDocument
 
     public static async ValueTask<JsonNodeDocument> ParseAsync(Stream stream, CancellationToken cancellationToken)
     {
+        var encoding = await StreamUtilities.GetEncodingAsync(stream, cancellationToken).ConfigureAwait(false);
+        stream.Seek(0, SeekOrigin.Begin);
+
+        // System.Text.Json only reads UTF-8, so anything else has to be transcoded first
+        if (encoding.CodePage != Encoding.UTF8.CodePage)
+        {
+            using var reader = StreamUtilities.CreateReader(stream, encoding);
+            var text = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+            return new JsonNodeDocument(ParseNode(text));
+        }
+
         var root = await JsonNode.ParseAsync(stream, nodeOptions: null, documentOptions: JsonDocumentOptions, cancellationToken: cancellationToken).ConfigureAwait(false) ?? throw new JsonException("Expected a JSON value.");
         return new JsonNodeDocument(root);
     }

@@ -150,6 +150,54 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateTypesWithSameNameInDifferentNamespaces()
+    {
+        var sourceCode = """
+            namespace A
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+                public partial struct Test {}
+            }
+
+            namespace B
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+                public partial struct Test {}
+            }
+            """;
+
+        var result = await GenerateFiles(sourceCode);
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+        Assert.HasCount(2, result.GeneratorResult.GeneratedTrees);
+
+        AssertGeneratedTypes(result, ["A.Test", "B.Test"]);
+    }
+
+    [Fact]
+    public async Task GenerateNestedTypesWithSameNameInDifferentContainingTypes()
+    {
+        var sourceCode = """
+            public partial class A
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+                public partial struct Test {}
+            }
+
+            public partial class B
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+                public partial struct Test {}
+            }
+            """;
+
+        var result = await GenerateFiles(sourceCode);
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+        Assert.HasCount(2, result.GeneratorResult.GeneratedTrees);
+
+        AssertGeneratedTypes(result, ["A+Test", "B+Test"]);
+    }
+
+    [Fact]
     public async Task DummyAttribute()
     {
         var sourceCode = """
@@ -174,6 +222,56 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 
         var diagnostics = await Analyze(sourceCode);
         Assert.Collection(diagnostics, diag => Assert.Equal("MFSTID0001", diag.Id));
+    }
+
+    [Fact]
+    public async Task GenericType_ReportedByAnalyzer()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test<T> { }
+            """;
+
+        var result = await GenerateFiles(sourceCode, mustCompile: false);
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+        Assert.Empty(result.GeneratorResult.GeneratedTrees);
+
+        var diagnostics = await Analyze(sourceCode);
+        Assert.Collection(diagnostics, diag => Assert.Equal("MFSTID0004", diag.Id));
+    }
+
+    [Fact]
+    public async Task GenericContainingType_ReportedByAnalyzer()
+    {
+        var sourceCode = """
+            public partial class Outer<T>
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+                public partial struct Test { }
+            }
+            """;
+
+        var result = await GenerateFiles(sourceCode, mustCompile: false);
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+        Assert.Empty(result.GeneratorResult.GeneratedTrees);
+
+        var diagnostics = await Analyze(sourceCode);
+        Assert.Collection(diagnostics, diag => Assert.Equal("MFSTID0004", diag.Id));
+    }
+
+    [Fact]
+    public async Task NonGenericTypeNestedInNonGenericType_NotReported()
+    {
+        var sourceCode = """
+            public partial class Outer
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+                public partial struct Test { }
+            }
+            """;
+
+        var diagnostics = await Analyze(sourceCode);
+        Assert.Empty(diagnostics);
     }
 
     [Fact]
@@ -264,6 +362,25 @@ public sealed class StronglyTypedIdSourceGeneratorTests
             var newInstance = newMethod.Invoke(null, null);
             var value = (Guid)type.GetProperty("Value")!.GetValue(newInstance)!;
             Assert.Equal(7, value.Version);
+        });
+    }
+
+    [Fact]
+    public async Task GenerateStruct_UserDefinedParse()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test
+            {
+                public static Test Parse(string value) => FromInt32(int.Parse(value, global::System.Globalization.CultureInfo.InvariantCulture) * 2);
+            }
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type =>
+        {
+            var parseMethod = type.GetMethod("Parse", [typeof(string)])!;
+            var instance = parseMethod.Invoke(null, ["21"]);
+            Assert.Equal(42, type.GetProperty("Value")!.GetValue(instance));
         });
     }
 
@@ -897,6 +1014,42 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task GeneratedConverterTypeNames()
+    {
+        // These names are part of the public surface of the generated types and are documented in the readme
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+            public partial struct ProjectId { }
+
+            namespace Meziantou.Framework
+            {
+                public interface IStronglyTypedId { string ValueAsString { get; } System.Type UnderlyingType { get; } }
+                public interface IStronglyTypedId<T> : IStronglyTypedId { T Value { get; } }
+            }
+            """;
+        var compilation = await CreateCompilation(sourceCode,
+        [
+            new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/"),
+            new NuGetReference("Newtonsoft.Json", "13.0.4", "lib/netstandard2.0/"),
+            new NuGetReference("MongoDB.Bson", "2.18.0", "lib/netstandard2.1/"),
+        ]);
+
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: [InstantiateGenerator()]);
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics, XunitCancellationToken);
+        Assert.Empty(diagnostics);
+
+        var type = outputCompilation.GetTypeByMetadataName("ProjectId");
+        Assert.NotNull(type);
+        Assert.NotEmpty(type.GetTypeMembers("ProjectIdTypeConverter"));
+        Assert.NotEmpty(type.GetTypeMembers("ProjectIdJsonConverter"));
+        Assert.NotEmpty(type.GetTypeMembers("ProjectIdNewtonsoftJsonConverter"));
+        Assert.NotEmpty(type.GetTypeMembers("ProjectIdBsonConverter"));
+
+        // IStronglyTypedId<T> is parameterized with the underlying type, not with the id type
+        Assert.Contains(type.AllInterfaces, i => i.Name == "IStronglyTypedId" && i.TypeArguments is [{ SpecialType: SpecialType.System_Int32 }]);
+    }
+
+    [Fact]
     public async Task TestIncrementalSupport()
     {
         var generator = InstantiateGenerator();
@@ -1108,6 +1261,31 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         var generated = runResult.GeneratedTrees.Length > 0 ? (await runResult.GeneratedTrees[0].GetRootAsync(XunitCancellationToken)).ToFullString() : "<no file generated>";
         Assert.True(compilationOutput.Success);
         Assert.Empty(compilationOutput.Diagnostics);
+    }
+
+    /// <summary>Loads the generated assembly and ensures the members are generated for every expected type.</summary>
+    private static void AssertGeneratedTypes((GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[]? Assembly, byte[] Symbols) result, string[] typeNames)
+    {
+        Assert.NotNull(result.Assembly);
+
+        var alc = new AssemblyLoadContext("test", isCollectible: true);
+        try
+        {
+            var assembly = alc.LoadFromStream(new MemoryStream(result.Assembly), new MemoryStream(result.Symbols));
+            foreach (var typeName in typeNames)
+            {
+                var type = assembly.GetType(typeName);
+                Assert.NotNull(type);
+
+                var from = (MethodInfo)type.GetMember("FromInt32").Single();
+                var instance = from.Invoke(null, [10]);
+                Assert.Equal("10", System.Text.Json.JsonSerializer.Serialize(instance));
+            }
+        }
+        finally
+        {
+            alc.Unload();
+        }
     }
 
     private static Task TestGeneratedAssembly([StringSyntax("c#-test")] string sourceCode, Action<Type> assert)

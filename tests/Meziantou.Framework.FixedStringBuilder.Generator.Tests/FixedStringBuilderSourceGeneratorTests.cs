@@ -50,8 +50,9 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         Assert.Contains("internal partial class FixedStringBuilderAttribute", allGeneratedSources);
         Assert.Contains("internal sealed partial class EmbeddedAttribute", allGeneratedSources);
         Assert.Contains("public static int MaxLength => 10;", allGeneratedSources);
-        Assert.Contains("private char _c0;", allGeneratedSources);
-        Assert.Contains("public readonly ReadOnlySpan<char> AsSpan() => MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in _c0), _length);", allGeneratedSources);
+        Assert.Contains("[global::System.Runtime.CompilerServices.InlineArray(10)]", allGeneratedSources);
+        Assert.Contains("private Storage _storage;", allGeneratedSources);
+        Assert.Contains("public readonly ReadOnlySpan<char> AsSpan() => ((ReadOnlySpan<char>)_storage).Slice(0, _length);", allGeneratedSources);
         Assert.Contains("public bool Equals(FixedStringBuilder10 other, StringComparison comparison)", allGeneratedSources);
 
         using var peStream = new MemoryStream();
@@ -326,6 +327,32 @@ public sealed class FixedStringBuilderSourceGeneratorTests
 
         Assert.NotEmpty(outputs);
         Assert.All(outputs, static output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
+    }
+
+    [Fact]
+    public async Task AsSpanCannotOutliveTheValueItPointsInto()
+    {
+        const string Source = """
+            [FixedStringBuilderAttribute(10)]
+            public partial struct FixedStringBuilder10
+            {
+            }
+
+            public static class Harness
+            {
+                public static System.ReadOnlySpan<char> Escape()
+                {
+                    FixedStringBuilder10 value = "abcd";
+                    return value.AsSpan();
+                }
+            }
+            """;
+
+        var (_, compilation) = await GenerateAsync(Source);
+
+        var errors = compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error).ToArray();
+        var error = Assert.Single(errors);
+        Assert.Equal("CS8168", error.Id);
     }
 
     [Fact]

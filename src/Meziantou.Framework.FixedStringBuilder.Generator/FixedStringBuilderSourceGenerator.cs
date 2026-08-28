@@ -173,6 +173,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("#nullable enable");
         AppendLine("using System;");
         AppendLine("using System.ComponentModel;");
+        AppendLine("using System.Diagnostics.CodeAnalysis;");
         AppendLine("using System.Runtime.CompilerServices;");
         AppendLine("using System.Runtime.InteropServices;");
         AppendLine();
@@ -219,13 +220,18 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine();
 
         AppendLine("private short _length;");
-        AppendLine("#pragma warning disable CS0169, CS0649");
-        for (var i = 0; i < target.Length; i++)
-        {
-            AppendLine($"private char _c{i};");
-        }
+        AppendLine("private Storage _storage;");
+        AppendLine();
 
-        AppendLine("#pragma warning restore CS0169, CS0649");
+        AppendLine($"[global::System.Runtime.CompilerServices.InlineArray({target.Length})]");
+        AppendLine("private struct Storage");
+        AppendLine("{");
+        indent++;
+        AppendLine("#pragma warning disable CS0169");
+        AppendLine("private char _element0;");
+        AppendLine("#pragma warning restore CS0169");
+        indent--;
+        AppendLine("}");
         AppendLine();
 
         AppendLine($"public {simpleTypeName}(int literalLength, int formattedCount)");
@@ -377,7 +383,8 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
-        AppendLine("public readonly ReadOnlySpan<char> AsSpan() => MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in _c0), _length);");
+        AppendLine("[UnscopedRef]");
+        AppendLine("public readonly ReadOnlySpan<char> AsSpan() => ((ReadOnlySpan<char>)_storage).Slice(0, _length);");
         AppendLine();
         if (target.ImplementsIFixedStringNonGeneric)
         {
@@ -411,7 +418,10 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
-        AppendLine("private Span<char> AsUnsafeFullSpan() => MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in _c0), MaxLength);");
+        // Unlike AsSpan, this one has to launder the ref: the explicit IFixedString.GetUnsafeFullSpan
+        // implementation returns it, and an interface member cannot be [UnscopedRef]. That is the escape hatch
+        // IFixedString.GetUnsafeFullSpan is documented to be.
+        AppendLine("private Span<char> AsUnsafeFullSpan() => MemoryMarshal.CreateSpan(ref Unsafe.As<Storage, char>(ref Unsafe.AsRef(in _storage)), MaxLength);");
         AppendLine();
         AppendLine("private Span<char> AsRemainingSpan() => AsUnsafeFullSpan().Slice(_length);");
         AppendLine();

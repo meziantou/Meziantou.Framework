@@ -210,7 +210,7 @@ public sealed class CGroup2Tests : IDisposable
     }
 
     [Fact]
-    public void Freeze_ShouldFreezeProcesses()
+    public async Task Freeze_ShouldFreezeProcesses()
     {
         if (!File.Exists(Path.Combine(_testRoot.Path, "cgroup.freeze")))
             throw new Exception("$XunitDynamicSkip$Freezer not available");
@@ -226,7 +226,7 @@ public sealed class CGroup2Tests : IDisposable
             isFrozen = child.IsFrozen();
             if (!isFrozen)
             {
-                Thread.Sleep(25);
+                await Task.Delay(25, XunitCancellationToken);
             }
         }
 

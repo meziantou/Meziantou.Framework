@@ -1014,6 +1014,33 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task TestIncrementalSupport_IStronglyTypedIdUnderlyingType()
+    {
+        const string IdSourceCode = "[Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))] public partial struct Test { }";
+        const string InterfaceWithoutUnderlyingType = "namespace Meziantou.Framework { public interface IStronglyTypedId { string ValueAsString { get; } } }";
+        const string InterfaceWithUnderlyingType = "namespace Meziantou.Framework { public interface IStronglyTypedId { string ValueAsString { get; } System.Type UnderlyingType { get; } } }";
+
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            generators: [InstantiateGenerator()],
+            driverOptions: new GeneratorDriverOptions(default, trackIncrementalGeneratorSteps: true));
+
+        var compilation = await CreateCompilation(IdSourceCode, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
+        compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(InterfaceWithoutUnderlyingType));
+        driver = driver.RunGenerators(compilation, XunitCancellationToken);
+        Assert.DoesNotContain("UnderlyingType", GetGeneratedSource(driver));
+
+        // Only the definition of IStronglyTypedId changes, so the generated code must not be reused
+        compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.Last(), CSharpSyntaxTree.ParseText(InterfaceWithUnderlyingType));
+        driver = driver.RunGenerators(compilation, XunitCancellationToken);
+        Assert.Contains("UnderlyingType", GetGeneratedSource(driver));
+
+        static string GetGeneratedSource(GeneratorDriver driver)
+        {
+            return driver.GetRunResult().Results.Single().GeneratedSources.Single().SourceText.ToString();
+        }
+    }
+
+    [Fact]
     public void AttributeInfoDoesNotKeepReferenceToCompilationData()
     {
         // AttributeInfo is the value cached by the incremental pipeline. Keeping a syntax node, a symbol or a compilation

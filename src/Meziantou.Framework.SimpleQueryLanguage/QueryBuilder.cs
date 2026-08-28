@@ -180,7 +180,7 @@ public sealed class QueryBuilder<T>
         else
         {
             // field>=1
-            if (ValueConverter.TryParseValue<TValue>(value, out var parsedValue))
+            if (tryParseValue(value, out var parsedValue))
             {
                 var range = new UnaryRangeSyntax<TValue>(op, parsedValue);
                 return predicate(obj, range);
@@ -224,6 +224,8 @@ public sealed class QueryBuilder<T>
     /// <returns>A compiled query that can be evaluated against objects.</returns>
     public Query<T> Build(string query)
     {
+        ArgumentNullException.ThrowIfNull(query);
+
         var predicate = CreatePredicate(query);
         return new Query<T>(query, predicate);
     }
@@ -302,7 +304,9 @@ public sealed class QueryBuilder<T>
 
         if (_unhandledPropertyFilter is not null)
         {
-            return v => _unhandledPropertyFilter(v, node.Key, op, node.Value);
+            return node.IsNegated
+                    ? v => !_unhandledPropertyFilter(v, node.Key, op, node.Value)
+                    : v => _unhandledPropertyFilter(v, node.Key, op, node.Value);
         }
 
         return CreatePredicate(new BoundTextQuery(node.IsNegated, $"{node.Key}:{node.Value}"));

@@ -9,13 +9,23 @@ namespace Meziantou.Framework.Json.Internals;
 [StructLayout(LayoutKind.Auto)]
 internal ref struct JsonPathParser
 {
+    /// <summary>
+    /// Maximum nesting depth of filter expressions and function calls. The parser is recursive, so an
+    /// unbounded nesting level would overflow the stack, which cannot be caught and terminates the process.
+    /// The value matches <see cref="System.Text.Json.JsonDocumentOptions.MaxDepth"/>'s default and is far
+    /// above any practical query.
+    /// </summary>
+    private const int MaxNestingDepth = 64;
+
     private JsonPathLexer _lexer;
     private JsonPathToken _current;
+    private int _depth;
 
     private JsonPathParser(ReadOnlySpan<char> input)
     {
         _lexer = new JsonPathLexer(input);
         _current = _lexer.NextToken();
+        _depth = 0;
     }
 
     public static JsonPathExpression Parse(ReadOnlySpan<char> input)
@@ -298,6 +308,19 @@ internal ref struct JsonPathParser
 
     // basic-expr = paren-expr / comparison-expr / test-expr
     private LogicalExpression ParseBasicExpression()
+    {
+        EnterNestingLevel();
+        try
+        {
+            return ParseBasicExpressionCore();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private LogicalExpression ParseBasicExpressionCore()
     {
         // paren-expr = [logical-not-op S] "(" S logical-expr S ")"
         // test-expr = [logical-not-op S] (filter-query / function-expr)
@@ -606,6 +629,21 @@ internal ref struct JsonPathParser
     // function-expr = function-name "(" S [function-argument *(S "," S function-argument)] S ")"
     private FunctionCallExpression ParseFunctionCallExpression()
     {
+        // Nested function arguments recurse back into this method without going through
+        // ParseBasicExpression, so this entry point needs its own guard.
+        EnterNestingLevel();
+        try
+        {
+            return ParseFunctionCallExpressionCore();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private FunctionCallExpression ParseFunctionCallExpressionCore()
+    {
         var name = _current.StringValue!;
         var pos = _current.Position;
         Advance(); // consume function name
@@ -776,6 +814,14 @@ internal ref struct JsonPathParser
     private void Advance()
     {
         _current = _lexer.NextToken();
+    }
+
+    private void EnterNestingLevel()
+    {
+        if (++_depth > MaxNestingDepth)
+        {
+            throw new FormatException($"Filter expression nesting exceeds the maximum depth of {MaxNestingDepth} at position {_current.Position}.");
+        }
     }
 
     private static long GetLongValue(JsonPathToken token)

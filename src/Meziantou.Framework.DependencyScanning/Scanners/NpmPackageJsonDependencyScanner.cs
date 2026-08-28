@@ -13,7 +13,7 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
         "dependencies",
         "devDependencies",
         "peerDependencies",
-        "optionaldependencies",
+        "optionalDependencies",
     ];
 
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.Npm];

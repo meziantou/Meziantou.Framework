@@ -8,25 +8,40 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>
 /// Provides methods to interact with Local Security Authority (LSA) private data storage on Windows.
-/// LSA private data storage is a secure storage area for sensitive information like credentials and secrets.
+/// LSA private data storage keeps values encrypted on disk under a DACL that allows only the creator and administrators to read them.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Microsoft recommends <c>CryptProtectData</c> and <c>CryptUnprotectData</c> over the LSA private data functions unless you specifically need to manipulate LSA secrets.
+/// The stored data is not absolutely protected.
+/// </para>
+/// <para>
+/// The key name decides how far the secret reaches. A name starting with <c>L$</c> creates a local object that cannot be accessed remotely,
+/// <c>G$</c> a global object, and <c>M$</c> a machine object that only the operating system can read back.
+/// A name with none of those prefixes creates an object that <b>can be accessed remotely</b>, so prefer an <c>L$</c> prefix unless you need otherwise.
+/// </para>
+/// </remarks>
 /// <example>
 /// Store and retrieve a secret value:
 /// <code>
 /// // Store a secret value (requires administrator privileges)
-/// LsaPrivateData.SetValue("MySecretKey", "MySecretValue");
-/// 
+/// LsaPrivateData.SetValue("L$MySecretKey", "MySecretValue");
+///
 /// // Retrieve the value
-/// string? value = LsaPrivateData.GetValue("MySecretKey");
-/// 
+/// string? value = LsaPrivateData.GetValue("L$MySecretKey");
+///
 /// // Remove the value (requires administrator privileges)
-/// LsaPrivateData.RemoveValue("MySecretKey");
+/// LsaPrivateData.RemoveValue("L$MySecretKey");
 /// </code>
 /// </example>
 [SupportedOSPlatform("windows5.1.2600")]
 public static class LsaPrivateData
 {
+    // LSA_UNICODE_STRING stores the length as a number of bytes in a ushort, so longer strings would silently wrap
+    private const int MaxLengthInChars = ushort.MaxValue / 2;
+
     /// <summary>Removes a value from LSA private data storage. Requires administrator privileges.</summary>
+    /// <remarks>Removing a key that does not exist does nothing.</remarks>
     /// <param name="key">The key of the value to remove.</param>
     public static void RemoveValue(string key)
     {
@@ -35,13 +50,13 @@ public static class LsaPrivateData
 
     /// <summary>Stores a value in LSA private data storage. Requires administrator privileges.</summary>
     /// <param name="key">The key under which to store the value. Cannot be null or empty.</param>
-    /// <param name="value">The value to store. If null, the key will be removed.</param>
+    /// <param name="value">The value to store. If null, the key is removed; removing a key that does not exist does nothing.</param>
     public static unsafe void SetValue(string key, string? value)
     {
-        ArgumentNullException.ThrowIfNull(key);
+        ValidateKey(key);
 
-        if (key.Length == 0)
-            throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
+        if (value is not null)
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value.Length, MaxLengthInChars, nameof(value));
 
         var objectAttributes = new LSA_OBJECT_ATTRIBUTES();
         var secretName = new LSA_UNICODE_STRING();
@@ -67,6 +82,10 @@ public static class LsaPrivateData
             using var lsaPolicyHandle = GetLsaPolicy(in objectAttributes, PInvoke.POLICY_GET_PRIVATE_INFORMATION | PInvoke.POLICY_CREATE_SECRET);
             var result = PInvoke.LsaStorePrivateData(lsaPolicyHandle, in secretName, lusSecretData);
 
+            // Removing a key that does not exist is a no-op, so RemoveValue and GetValue agree on what a missing key means
+            if (value is null && result == NTSTATUS.STATUS_OBJECT_NAME_NOT_FOUND)
+                return;
+
             var winErrorCode = PInvoke.LsaNtStatusToWinError(result);
             if (winErrorCode != 0)
                 throw new Win32Exception((int)winErrorCode);
@@ -78,10 +97,7 @@ public static class LsaPrivateData
     /// <returns>The value associated with the key, or null if the key does not exist.</returns>
     public static unsafe string? GetValue(string key)
     {
-        ArgumentNullException.ThrowIfNull(key);
-
-        if (key.Length == 0)
-            throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
+        ValidateKey(key);
 
         var objectAttributes = new LSA_OBJECT_ATTRIBUTES();
         var secretName = new LSA_UNICODE_STRING();
@@ -115,6 +131,16 @@ public static class LsaPrivateData
                 FreeMemory(privateData);
             }
         }
+    }
+
+    private static void ValidateKey(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        if (key.Length == 0)
+            throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
+
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(key.Length, MaxLengthInChars, nameof(key));
     }
 
     private static unsafe LsaCloseSafeHandle GetLsaPolicy(in LSA_OBJECT_ATTRIBUTES objectAttributes, uint desiredAccess)

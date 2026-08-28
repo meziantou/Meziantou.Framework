@@ -31,16 +31,16 @@ namespace Meziantou.Framework.Win32
     [System.Flags]
     public enum GroupSidAttributes
     {
-        SE_GROUP_MANDATORY = 1,
-        SE_GROUP_ENABLED_BY_DEFAULT = 2,
-        SE_GROUP_ENABLED = 4,
-        SE_GROUP_OWNER = 8,
-        SE_GROUP_USE_FOR_DENY_ONLY = 16,
-        SE_GROUP_INTEGRITY = 32,
-        SE_GROUP_INTEGRITY_ENABLED = 64,
-        SE_GROUP_LOGON_ID = 3221225472,
-        SE_GROUP_RESOURCE = 536870912,
-        SE_GROUP_VALID_ATTRIBUTES = 3758096511
+        SE_GROUP_MANDATORY = 1U,
+        SE_GROUP_ENABLED_BY_DEFAULT = 2U,
+        SE_GROUP_ENABLED = 4U,
+        SE_GROUP_OWNER = 8U,
+        SE_GROUP_USE_FOR_DENY_ONLY = 16U,
+        SE_GROUP_INTEGRITY = 32U,
+        SE_GROUP_INTEGRITY_ENABLED = 64U,
+        SE_GROUP_LOGON_ID = 3221225472U,
+        SE_GROUP_RESOURCE = 536870912U,
+        SE_GROUP_VALID_ATTRIBUTES = 3758096511U
     }
 
     public enum MandatoryIntegrityLevel
@@ -57,11 +57,11 @@ namespace Meziantou.Framework.Win32
     [System.Flags]
     public enum PrivilegeAttribute
     {
-        Disabled = 0,
-        Enabled = 2,
-        EnabledByDefault = 1,
-        Removed = 4,
-        UsedForAccess = 2147483648
+        Disabled = 0U,
+        Enabled = 2U,
+        EnabledByDefault = 1U,
+        Removed = 4U,
+        UsedForAccess = 2147483648U
     }
 
     public static class Privileges

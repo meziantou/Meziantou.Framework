@@ -109,20 +109,21 @@ internal sealed class TextLocation : Location, ILocationLineInfo
 
     internal static TextLocation FromIndex(IFileSystem fileSystem, string filePath, string text, int index, int length)
     {
-        var line = 1;
-        var lineIndex = 0;
-        for (var i = 0; i < text.Length; i++)
-        {
-            if (i == index)
-                return new TextLocation(fileSystem, filePath, line, index - lineIndex, length);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, text.Length);
 
+        var line = 1;
+        var lineStartIndex = 0;
+        for (var i = 0; i < index; i++)
+        {
             if (text[i] == '\n')
             {
-                lineIndex = i;
+                lineStartIndex = i + 1;
                 line++;
             }
         }
 
-        throw new ArgumentException("Index was not found in the text", nameof(index));
+        // LineNumber and LinePosition are 1-based
+        return new TextLocation(fileSystem, filePath, line, index - lineStartIndex + 1, length);
     }
 }

@@ -125,7 +125,7 @@ partial class CountingBloomFilter<#= algorithm.Name #> : ICountingBloomFilter
 <# foreach (var type in types) { #>
     public void Add(<#= ToCsharpTypeName(type) #> value) => AddHash(Hash(value));
     public void Remove(<#= ToCsharpTypeName(type) #> value) => RemoveHash(Hash(value));
-    public bool MayContain(<#= ToCsharpTypeName(type) #> value) => GetEstimatedCountHash(Hash(value)) > 0;
+    public bool MayContain(<#= ToCsharpTypeName(type) #> value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(<#= ToCsharpTypeName(type) #> value) => GetEstimatedCountHash(Hash(value));
 <# } #>
 <# foreach (var type in algorithm.BatchTypes) { #>

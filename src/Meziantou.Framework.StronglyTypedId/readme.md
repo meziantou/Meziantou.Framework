@@ -21,13 +21,13 @@ public partial struct ProjectId { }
 [System.ComponentModel.TypeConverterAttribute(typeof(ProjectIdTypeConverter))]
 [System.Text.Json.Serialization.JsonConverterAttribute(typeof(ProjectIdJsonConverter))]
 [Newtonsoft.Json.JsonConverterAttribute(typeof(ProjectIdNewtonsoftJsonConverter))]
-[MongoDB.Bson.Serialization.Attributes.BsonSerializerAttribute(typeof(ProjectIdMongoDBBsonSerializer))]
+[MongoDB.Bson.Serialization.Attributes.BsonSerializerAttribute(typeof(ProjectIdBsonConverter))]
 public partial struct ProjectId :
     System.IEquatable<ProjectId>,
     System.IParsable<ProjectId>,        // .NET 7+
     System.ISpanParsable<ProjectId>,    // .NET 7+
     IStronglyTypedId,                   // When Meziantou.Framework.StronglyTypedId.Interfaces is referenced
-    IStronglyTypedId<ProjectId>,        // When Meziantou.Framework.StronglyTypedId.Interfaces is referenced
+    IStronglyTypedId<int>,              // When Meziantou.Framework.StronglyTypedId.Interfaces is referenced
     IComparable, IComparable<ProjectId> // When at least one of the interface is explicitly defined by the user
 {
     public int Value { get; }
@@ -47,7 +47,7 @@ public partial struct ProjectId :
     public static bool operator !=(ProjectId a, ProjectId b);
     public override string ToString();
 
-    private partial class CustomerIdTypeConverter : System.ComponentModel.TypeConverter
+    private partial class ProjectIdTypeConverter : System.ComponentModel.TypeConverter
     {
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Type sourceType);
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value);
@@ -56,14 +56,14 @@ public partial struct ProjectId :
     }
 
     // Generated only when System.Text.Json is accessible
-    private partial class CustomerIdJsonConverter : System.Text.Json.Serialization.JsonConverter<ProjectId>
+    private partial class ProjectIdJsonConverter : System.Text.Json.Serialization.JsonConverter<ProjectId>
     {
         public override void Write(System.Text.Json.Utf8JsonWriter writer, ProjectId value, System.Text.Json.JsonSerializerOptions options);
         public override ProjectId Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
     }
 
     // Generated only when Newtonsoft.Json is accessible
-    private partial class CustomerIdNewtonsoftJsonConverter : Newtonsoft.Json.JsonConverter
+    private partial class ProjectIdNewtonsoftJsonConverter : Newtonsoft.Json.JsonConverter
     {
         public override bool CanRead { get; }
         public override bool CanWrite { get; }
@@ -73,7 +73,7 @@ public partial struct ProjectId :
     }
 
     // Generated only when MongoDB.Bson.Serialization.Serializers.SerializerBase is accessible
-    private partial class ProjectIdMongoDBBsonSerializer : MongoDB.Bson.Serialization.Serializers.SerializerBase<ProjectId>
+    private partial class ProjectIdBsonConverter : MongoDB.Bson.Serialization.Serializers.SerializerBase<ProjectId>
     {
         public override ProjectId Deserialize(MongoDB.Bson.Serialization.BsonDeserializationContext context, MongoDB.Bson.Serialization.BsonDeserializationArgs args);
         public override void Serialize(MongoDB.Bson.Serialization.BsonSerializationContext context, MongoDB.Bson.Serialization.BsonSerializationArgs args, ProjectId value);
@@ -177,11 +177,11 @@ public partial struct ProjectId : IComparable { }
 public partial struct ProjectId : IComparable<ProjectId>
 {
 	public int CompareTo(object? other);
-	public int CompareTo(ProjectId? other);
-	public static bool operator <(ProjectId? left, ProjectId? right);
-	public static bool operator <=(IdInt32Comparable? left, IdInt32Comparable? right);
-	public static bool operator >(IdInt32Comparable? left, IdInt32Comparable? right);
-	public static bool operator >=(IdInt32Comparable? left, IdInt32Comparable? right);
+	public int CompareTo(ProjectId other);
+	public static bool operator <(ProjectId left, ProjectId right);
+	public static bool operator <=(ProjectId left, ProjectId right);
+	public static bool operator >(ProjectId left, ProjectId right);
+	public static bool operator >=(ProjectId left, ProjectId right);
 }
 ````
 
@@ -199,4 +199,5 @@ public partial struct ProjectId : IComparable<ProjectId>
 | `MFSTID0001` | StronglyTypedId | Not supported type | Error | ✔️ |
 | `MFSTID0002` | StronglyTypedId | Guid generation strategy is not supported by the target framework | Error | ✔️ |
 | `MFSTID0003` | StronglyTypedId | Guid generation strategy is only applicable to Guid | Warning | ✔️ |
+| `MFSTID0004` | StronglyTypedId | Generic types are not supported | Error | ✔️ |
 <!-- analyzer-rules -->

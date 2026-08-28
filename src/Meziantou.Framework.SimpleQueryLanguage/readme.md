@@ -45,7 +45,9 @@ The `ExpressionQueryBuilder<T>` class creates `Expression<Func<T, bool>>` object
 // Define a query builder for your entity
 var queryBuilder = new ExpressionQueryBuilder<Person>();
 
-// Add handlers for string properties (uses Contains for partial matching)
+// Add handlers for string properties (uses Contains for partial matching).
+// Case sensitivity follows the provider: the database collation for EF Core, ordinal for LINQ to Objects.
+// Pass a StringComparison to force one, but note that EF Core cannot translate it.
 queryBuilder.AddHandler("name", person => person.FullName);
 
 // Add handlers for comparable types (supports range and comparison operators)

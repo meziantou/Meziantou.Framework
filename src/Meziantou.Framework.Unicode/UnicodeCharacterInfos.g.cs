@@ -6,7 +6,7 @@
 //   - Total characters: 297334
 //   - Emoji characters: 1537
 //   - Compressed size: 992,905 bytes (6.7% of uncompressed)
-//   - Max character name length: 88 chars
+//   - Max serialized string length: 100 bytes
 //
 // Specification: https://www.unicode.org/reports/tr44/
 // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
@@ -16,5 +16,5 @@
 namespace Meziantou.Framework;
 internal static partial class UnicodeCharacterInfos
 {
-    private const int MaxCharacterNameLength = 128;
+    private const int MaxSerializedStringLength = 128;
 }

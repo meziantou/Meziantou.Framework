@@ -11,6 +11,9 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
     [
         "renovate.json",
         "renovate.json5",
+        ".renovaterc",
+        ".renovaterc.json",
+        ".renovaterc.json5",
         "renovaterc",
         "renovaterc.json",
         "renovaterc.json5",

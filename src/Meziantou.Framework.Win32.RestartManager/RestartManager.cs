@@ -5,8 +5,6 @@ using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.System.RestartManager;
 
-#pragma warning disable CA1416 // RestartManager is Windows-only
-
 namespace Meziantou.Framework.Win32;
 
 /// <summary>Provides a wrapper around the Windows Restart Manager API to detect which processes are locking files and manage application restarts.</summary>
@@ -35,7 +33,7 @@ namespace Meziantou.Framework.Win32;
 /// }
 /// </code>
 /// </example>
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows6.0.6000")]
 public sealed class RestartManager : IDisposable
 {
     private uint SessionHandle { get; }
@@ -72,7 +70,7 @@ public sealed class RestartManager : IDisposable
     {
         var result = PInvoke.RmJoinSession(out var handle, sessionKey);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
-            throw new Win32Exception((int)result, $"RmStartSession failed ({result})");
+            throw new Win32Exception((int)result, $"RmJoinSession failed ({result})");
 
         return new RestartManager(handle, sessionKey);
     }
@@ -259,6 +257,17 @@ public sealed class RestartManager : IDisposable
         restartManager.RegisterFile(path);
         return restartManager.GetProcessesLockingResources();
     }
-}
 
-#pragma warning restore CA1416
+    /// <summary>Gets a list of processes that are currently locking any of the specified files.</summary>
+    /// <param name="paths">An array of full file paths to check.</param>
+    /// <returns>A read-only list of <see cref="Process"/> instances that are locking at least one of the files.</returns>
+    /// <remarks>Prefer this method over calling <see cref="GetProcessesLockingFile(string)"/> in a loop: registering resources performs relatively expensive write operations, so registering all the files in a single session is significantly cheaper.</remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="paths"/> is <see langword="null"/>.</exception>
+    /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
+    public static IReadOnlyList<Process> GetProcessesLockingFiles(string[] paths)
+    {
+        using var restartManager = CreateSession();
+        restartManager.RegisterFiles(paths);
+        return restartManager.GetProcessesLockingResources();
+    }
+}

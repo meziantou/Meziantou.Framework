@@ -177,6 +177,71 @@ public sealed class ExpressionQueryBuilderTests
         Assert.Equal("query", exception.ParamName);
     }
 
+    [Fact]
+    public void StringHandler_MatchesSubstring()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("name", item => item.StringValue);
+        var query = queryBuilder.Build("name:John");
+
+        var items = new[]
+        {
+            new Sample { StringValue = "John Doe" },
+            new Sample { StringValue = "Jane Doe" },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal("John Doe", result[0].StringValue);
+    }
+
+    [Fact]
+    public void StringHandler_NullProperty_DoesNotThrow()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("name", item => item.StringValue);
+        var query = queryBuilder.Build("name:John");
+
+        var items = new[]
+        {
+            new Sample { StringValue = null },
+            new Sample { StringValue = "John Doe" },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal("John Doe", result[0].StringValue);
+    }
+
+    [Fact]
+    public void StringHandler_DoesNotEmitStringComparison()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("name", item => item.StringValue);
+        var query = queryBuilder.Build("name:John");
+
+        // string.Contains(string, StringComparison) is not translatable by Entity Framework Core
+        Assert.DoesNotContain(nameof(StringComparison.OrdinalIgnoreCase), query.Predicate!.ToString());
+    }
+
+    [Fact]
+    public void StringHandler_ExplicitComparisonType_IgnoresCase()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("name", item => item.StringValue, StringComparison.OrdinalIgnoreCase);
+        var query = queryBuilder.Build("name:john");
+
+        var items = new[]
+        {
+            new Sample { StringValue = "John Doe" },
+            new Sample { StringValue = null },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal("John Doe", result[0].StringValue);
+    }
+
     private sealed class Sample
     {
         public int Int32Value { get; set; }

@@ -115,6 +115,7 @@ namespace Meziantou.Framework
     public sealed class QRCode
     {
         public Meziantou.Framework.QRCodeType Type { get => throw null; }
+        public Meziantou.Framework.ErrorCorrectionLevel ErrorCorrectionLevel { get => throw null; }
         public int Version { get => throw null; }
         public int Width { get => throw null; }
         public int Height { get => throw null; }

@@ -17,13 +17,11 @@ public static class QRCodeSvgRenderer
         ArgumentNullException.ThrowIfNull(qrCode);
         ArgumentNullException.ThrowIfNull(options);
 
-        var moduleSize = options.ModuleSize;
-        if (moduleSize <= 0)
-            throw new ArgumentOutOfRangeException("options.ModuleSize", options.ModuleSize, "ModuleSize must be greater than 0.");
+        ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleSize, 1);
+        ArgumentOutOfRangeException.ThrowIfNegative(options.QuietZoneModules);
 
+        var moduleSize = options.ModuleSize;
         var quietZone = options.QuietZoneModules;
-        if (quietZone < 0)
-            throw new ArgumentOutOfRangeException("options.QuietZoneModules", options.QuietZoneModules, "QuietZoneModules must be greater than or equal to 0.");
 
         var totalWidth = ((long)qrCode.Width + (2L * quietZone)) * moduleSize;
         var totalHeight = ((long)qrCode.Height + (2L * quietZone)) * moduleSize;

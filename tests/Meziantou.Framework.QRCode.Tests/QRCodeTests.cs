@@ -374,6 +374,16 @@ public class QRCodeTests
         Assert.Throws<ArgumentException>(() => QRCode.Create(Array.Empty<byte>(), ErrorCorrectionLevel.M));
     }
 
+    [Theory]
+    [InlineData(ErrorCorrectionLevel.L)]
+    [InlineData(ErrorCorrectionLevel.M)]
+    [InlineData(ErrorCorrectionLevel.Q)]
+    [InlineData(ErrorCorrectionLevel.H)]
+    public void Create_ReportsTheErrorCorrectionLevel(ErrorCorrectionLevel ecLevel)
+    {
+        Assert.Equal(ecLevel, QRCode.Create("HELLO WORLD", ecLevel).ErrorCorrectionLevel);
+    }
+
     [Fact]
     public void Create_DataTooLong_ThrowsInvalidOperationException()
     {

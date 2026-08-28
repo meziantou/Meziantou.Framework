@@ -1,10 +1,19 @@
 namespace Meziantou.Framework;
 
+/// <summary>Computes the differences between two texts.</summary>
 public static class TextDiff
 {
     private static readonly IEqualityComparer<string> OrdinalWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparer.Ordinal);
     private static readonly IEqualityComparer<string> OrdinalIgnoreCaseWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparer.OrdinalIgnoreCase);
 
+
+    /// <summary>Computes the differences between <paramref name="oldText"/> and <paramref name="newText"/>.</summary>
+    /// <param name="oldText">The original text.</param>
+    /// <param name="newText">The modified text.</param>
+    /// <param name="options">The chunking and comparison options. Defaults to a line diff using
+    /// <see cref="TextDiffAlgorithm.Myers"/> with no option ignored.</param>
+    /// <returns>The chunks of both texts in order, each tagged with what happened to it.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="oldText"/> or <paramref name="newText"/> is <see langword="null"/>.</exception>
     public static TextDiffResult ComputeDiff(string oldText, string newText, TextDiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(oldText);
@@ -25,6 +34,25 @@ public static class TextDiff
         return BuildResult(oldChunks, newChunks, diff);
     }
 
+
+    /// <summary>
+    /// Computes the differences between <paramref name="oldText"/> and <paramref name="newText"/>, refining each
+    /// changed chunk with the next chunker in <paramref name="chunkers"/>.
+    /// </summary>
+    /// <param name="oldText">The original text.</param>
+    /// <param name="newText">The modified text.</param>
+    /// <param name="chunkers">
+    /// The chunking levels, coarsest first — for example <c>[TextChunker.Lines, TextChunker.Words]</c>. At least
+    /// two are required; use <see cref="ComputeDiff"/> for a single level. <see cref="TextDiffOptions.Chunker"/>
+    /// is not used by this overload.
+    /// </param>
+    /// <param name="options">The comparison options. Defaults to <see cref="TextDiffAlgorithm.Myers"/> with no
+    /// option ignored.</param>
+    /// <returns>The chunks produced by the first chunker, each of which may carry a finer diff of its own.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="oldText"/>, <paramref name="newText"/> or
+    /// <paramref name="chunkers"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="chunkers"/> holds fewer than two chunkers, or one of
+    /// them is <see langword="null"/>.</exception>
     public static TextDiffHierarchyResult ComputeHierarchyDiff(string oldText, string newText, IReadOnlyList<TextChunker> chunkers, TextDiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(oldText);
@@ -68,7 +96,8 @@ public static class TextDiff
                 && !leftModified[lineLeft]
                 && !rightModified[lineRight])
             {
-                entries.Add(new TextDiffEntry(TextDiffOperation.Equal, oldChunks[lineLeft]));
+                // The comparison options can make two different chunks equal, so keep both sides.
+                entries.Add(new TextDiffEntry(TextDiffOperation.Equal, oldChunks[lineLeft], newChunks[lineRight]));
                 lineLeft++;
                 lineRight++;
             }

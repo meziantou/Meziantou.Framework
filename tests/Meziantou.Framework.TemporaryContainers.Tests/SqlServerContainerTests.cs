@@ -80,6 +80,22 @@ public sealed class SqlServerContainerTests
         Assert.Equal(1, Convert.ToInt32(result, CultureInfo.InvariantCulture));
     }
 
+    [Fact]
+    public async Task StartAsync_ConnectionStringWorksWhenThePasswordContainsASeparator()
+    {
+        SkipOnNonCompatibleEnvironments();
+
+        var definition = ContainerDefinition.CreateSqlServer();
+        definition.SaPassword = "Pa;ss=w0rd!";
+        await using var container = await StartWithRetryAsync(definition);
+
+        await using var connection = await OpenConnectionWithRetryAsync(container.GetConnectionString());
+        await using var command = new SqlCommand("SELECT 1", connection);
+        var result = await command.ExecuteScalarAsync(XunitCancellationToken);
+
+        Assert.Equal(1, Convert.ToInt32(result, CultureInfo.InvariantCulture));
+    }
+
     private static Task<SqlServerContainer> StartWithRetryAsync(SqlServerContainerDefinition definition)
     {
         return ContainerTestHelper.StartWithRetryAsync(definition.CreateContainer, XunitCancellationToken);

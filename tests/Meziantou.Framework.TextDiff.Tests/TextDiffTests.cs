@@ -89,9 +89,9 @@ public sealed class TextDiffTests
             JoinLines("A", "A", "B", "C"),
             [
                 new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
-                new TextDiffEntry(TextDiffOperation.Insert, "A\n"),
-                new TextDiffEntry(TextDiffOperation.Equal, "B\n"),
-                new TextDiffEntry(TextDiffOperation.Delete, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "B\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "B\n"),
                 new TextDiffEntry(TextDiffOperation.Equal, "C"),
             ]),
         new(
@@ -137,9 +137,9 @@ public sealed class TextDiffTests
             JoinLines("a", "c", "b", "d"),
             [
                 new TextDiffEntry(TextDiffOperation.Equal, "a\n"),
-                new TextDiffEntry(TextDiffOperation.Insert, "c\n"),
-                new TextDiffEntry(TextDiffOperation.Equal, "b\n"),
-                new TextDiffEntry(TextDiffOperation.Delete, "c\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "b\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "c\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "b\n"),
                 new TextDiffEntry(TextDiffOperation.Equal, "d"),
             ]),
         new(
@@ -370,6 +370,62 @@ public sealed class TextDiffTests
         thread.Join();
 
         Assert.NotNull(result);
+        Assert.Equal(oldText, ReconstructOldText(result));
+        Assert.Equal(newText, ReconstructNewText(result));
+    }
+
+    [Fact]
+    public void ComputeDiff_Histogram_ManyAnchors_IsNotQuadraticInTheAnchorCount()
+    {
+        // Rebuilding the occurrence table to consume a single anchor made this input cost O(n * anchors):
+        // it took over 30s at this size and ~11.6s at 20k lines. Collecting every anchor from one pass
+        // brings it to a few tens of milliseconds, so the budget below only trips on a real regression.
+        const int Count = 50_000;
+        var oldLines = new string[Count];
+        var newLines = new string[Count];
+        for (var i = 0; i < Count; i++)
+        {
+            var suffix = i.ToString(CultureInfo.InvariantCulture);
+            oldLines[i] = "u" + suffix;
+            newLines[i] = (i % 2 is 0 ? "u" : "v") + suffix;
+        }
+
+        var oldText = JoinLines(oldLines);
+        var newText = JoinLines(newLines);
+
+        TextDiffResult? result = null;
+        var thread = new Thread(() => result = Diff.ComputeDiff(oldText, newText, new TextDiffOptions { Algorithm = TextDiffAlgorithm.Histogram }));
+        thread.Start();
+
+        Assert.True(thread.Join(TimeSpan.FromSeconds(20)), "The histogram anchor search did not complete in 20s.");
+        Assert.NotNull(result);
+        Assert.Equal(oldText, ReconstructOldText(result));
+        Assert.Equal(newText, ReconstructNewText(result));
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void ComputeDiff_Histogram_HighlyRepetitiveInput_FallsBackToMyers()
+    {
+        // Every token occurs hundreds of times on each side, so the best anchor scores far above
+        // MaxAnchorScore and the region is handed to the fallback algorithm instead of being anchored
+        // on a token that appears everywhere.
+        const int Count = 2_000;
+        var random = new Random(20260827);
+        var oldLines = new string[Count];
+        var newLines = new string[Count];
+        for (var i = 0; i < Count; i++)
+        {
+            oldLines[i] = "line" + random.Next(3).ToString(CultureInfo.InvariantCulture);
+            newLines[i] = "line" + random.Next(3).ToString(CultureInfo.InvariantCulture);
+        }
+
+        var oldText = JoinLines(oldLines);
+        var newText = JoinLines(newLines);
+
+        var result = Diff.ComputeDiff(oldText, newText, new TextDiffOptions { Algorithm = TextDiffAlgorithm.Histogram });
+
+        Assert.True(result.HasDifferences);
         Assert.Equal(oldText, ReconstructOldText(result));
         Assert.Equal(newText, ReconstructNewText(result));
     }

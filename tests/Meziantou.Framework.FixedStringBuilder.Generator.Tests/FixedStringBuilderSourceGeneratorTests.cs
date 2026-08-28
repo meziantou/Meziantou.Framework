@@ -262,6 +262,72 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         Assert.HasCount(2, runResult.Results[0].GeneratedSources);
     }
 
+    [Fact]
+    public async Task GeneratesBothTypesWhenTheirSanitizedNamesCollide()
+    {
+        // "A.B.C" and "A.B_C" both sanitize to "A_B_C"
+        const string Source = """
+            namespace A.B
+            {
+                [FixedStringBuilderAttribute(4)]
+                public partial struct C;
+            }
+
+            namespace A
+            {
+                [FixedStringBuilderAttribute(4)]
+                public partial struct B_C;
+            }
+            """;
+
+        var (runResult, compilation) = await GenerateAsync(Source);
+        Assert.Empty(runResult.Diagnostics);
+
+        var hintNames = runResult.Results[0].GeneratedSources.Select(static source => source.HintName).ToArray();
+        Assert.HasCount(4, hintNames);
+        Assert.HasCount(hintNames.Length, hintNames.Distinct(StringComparer.Ordinal));
+
+        using var peStream = new MemoryStream();
+        var emitResult = compilation.Emit(peStream);
+        Assert.True(emitResult.Success, string.Join('\n', emitResult.Diagnostics));
+    }
+
+    [Fact]
+    public async Task OutputIsCachedWhenAnUnrelatedFileChanges()
+    {
+        const string Target = """
+            [FixedStringBuilderAttribute(10)]
+            public partial struct FixedStringBuilder10;
+            """;
+
+        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
+        var references = netcoreRef.Select(static location => MetadataReference.CreateFromFile(location)).ToArray();
+
+        Compilation CreateCompilation(string unrelatedSource) => CSharpCompilation.Create(
+            "compilation",
+            [CSharpSyntaxTree.ParseText(Target, ParseOptions), CSharpSyntaxTree.ParseText(unrelatedSource, ParseOptions)],
+            references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+
+        ISourceGenerator generator = new FixedStringBuilderSourceGenerator().AsSourceGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [generator],
+            parseOptions: ParseOptions,
+            driverOptions: new GeneratorDriverOptions(IncrementalGeneratorOutputKind.None, trackIncrementalGeneratorSteps: true));
+
+        driver = driver.RunGenerators(CreateCompilation("internal sealed class Unrelated { }"));
+        driver = driver.RunGenerators(CreateCompilation("internal sealed class Unrelated { private int _field; }"));
+
+        var outputs = driver.GetRunResult().Results[0].TrackedSteps
+            .Where(static step => step.Key.StartsWith("SourceOutput", StringComparison.Ordinal))
+            .SelectMany(static step => step.Value)
+            .SelectMany(static step => step.Outputs)
+            .ToArray();
+
+        Assert.NotEmpty(outputs);
+        Assert.All(outputs, static output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
+    }
+
     private static async Task<(GeneratorDriverRunResult RunResult, Compilation Compilation)> GenerateAsync(string source)
     {
         var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");

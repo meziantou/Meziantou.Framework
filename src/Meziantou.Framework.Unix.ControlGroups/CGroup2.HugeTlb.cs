@@ -20,69 +20,52 @@ public sealed partial class CGroup2
 
     /// <summary>Gets the HugeTLB usage limit for a specific page size.</summary>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
-    /// <returns>The limit in bytes, or null if set to max.</returns>
-    public long? GetHugeTlbMax(string pageSize)
+    /// <returns>
+    /// The limit in bytes, <see cref="CGroupValueState.NotConfigured"/> when there is no limit, or
+    /// <see cref="CGroupValueState.Unavailable"/> when the running kernel does not provide this page size.
+    /// </returns>
+    public CGroupValue<long> GetHugeTlbMax(string pageSize)
     {
         ValidateSegment(pageSize, nameof(pageSize));
 
-        var fileName = $"hugetlb.{pageSize}.max";
-        var content = ReadFile(fileName);
-
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        content = content.Trim();
-        if (content.Equals("max", StringComparison.OrdinalIgnoreCase))
-            return null;
-
-        if (long.TryParse(content, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
-            return value;
-
-        return null;
+        return ReadLimit($"hugetlb.{pageSize}.max");
     }
 
     /// <summary>Gets the current HugeTLB usage for a specific page size.</summary>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
-    /// <returns>Current usage in bytes.</returns>
-    public long? GetHugeTlbCurrent(string pageSize)
+    /// <returns>Current usage in bytes, or <see cref="CGroupValueState.Unavailable"/> when the running kernel does not provide this page size.</returns>
+    public CGroupValue<long> GetHugeTlbCurrent(string pageSize)
     {
         ValidateSegment(pageSize, nameof(pageSize));
 
-        var fileName = $"hugetlb.{pageSize}.current";
-        var content = ReadFile(fileName);
-
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        if (long.TryParse(content.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
-            return value;
-
-        return null;
+        return ReadCount($"hugetlb.{pageSize}.current");
     }
 
     /// <summary>Gets the number of times the HugeTLB limit was hit.</summary>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
-    /// <returns>Number of limit hits.</returns>
-    public long? GetHugeTlbEventsMax(string pageSize)
+    /// <returns>Number of limit hits, or <see cref="CGroupValueState.Unavailable"/> when the running kernel does not provide this page size.</returns>
+    public CGroupValue<long> GetHugeTlbEventsMax(string pageSize)
     {
         ValidateSegment(pageSize, nameof(pageSize));
 
-        var fileName = $"hugetlb.{pageSize}.events";
-        var content = ReadFile(fileName);
+        return ParseHugeTlbEventsMax(ReadFileOrNull($"hugetlb.{pageSize}.events"));
+    }
 
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
+    /// <summary>Parses the content of a <c>hugetlb.&lt;size&gt;.events</c> interface file.</summary>
+    /// <param name="content">The content of the interface file, or <see langword="null"/> when it does not exist.</param>
+    internal static CGroupValue<long> ParseHugeTlbEventsMax(string? content)
+    {
+        if (content is null)
+            return CGroupValue<long>.Unavailable();
 
+        content = content.Trim();
         foreach (var line in content.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
             var parts = line.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length == 2 && parts[0] == "max")
-            {
-                if (long.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
-                    return value;
-            }
+            if (parts.Length is 2 && parts[0] is "max" && long.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+                return CGroupValue<long>.Configured(value, content);
         }
 
-        return null;
+        return CGroupValue<long>.Invalid(content);
     }
 }

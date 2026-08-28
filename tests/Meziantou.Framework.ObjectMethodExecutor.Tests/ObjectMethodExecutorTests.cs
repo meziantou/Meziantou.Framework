@@ -43,6 +43,40 @@ public sealed class ObjectMethodExecutorTests
     }
 
     [Fact]
+    public void GetDefaultValueForParameter_ReturnsSuppliedValues()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!, [42]);
+
+        Assert.Equal(42, executor.GetDefaultValueForParameter(0));
+    }
+
+    [Fact]
+    public void GetDefaultValueForParameter_ThrowsWhenNoDefaultsSupplied()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!);
+
+        Assert.Throws<InvalidOperationException>(() => executor.GetDefaultValueForParameter(0));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(1)]
+    public void GetDefaultValueForParameter_ThrowsWhenIndexOutOfRange(int index)
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!, [42]);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => executor.GetDefaultValueForParameter(index));
+    }
+
+    [Fact]
+    public void Create_ThrowsWhenDefaultValueCountDoesNotMatchParameterCount()
+    {
+        var methodInfo = typeof(Test).GetMethod("SyncInt32WithParam")!;
+
+        Assert.Throws<ArgumentException>(() => ObjectMethodExecutor.Create(methodInfo, [1, 2]));
+    }
+
+    [Fact]
     public async Task StaticAsyncTaskTests()
     {
         var validator = new Validator();

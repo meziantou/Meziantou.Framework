@@ -75,6 +75,9 @@ public sealed class ObjectMethodExecutor
 
         }
 
+        if (parameterDefaultValues is not null && parameterDefaultValues.Length != MethodParameters.Length)
+            throw new ArgumentException($"Expected {MethodParameters.Length} default value(s) for '{methodInfo.Name}', but got {parameterDefaultValues.Length}", nameof(parameterDefaultValues));
+
         _parameterDefaultValues = parameterDefaultValues;
     }
 
@@ -103,7 +106,7 @@ public sealed class ObjectMethodExecutor
 
     /// <summary>Creates an executor for the specified method with parameter default values.</summary>
     /// <param name="methodInfo">The method to be invoked.</param>
-    /// <param name="parameterDefaultValues">The default values for the method parameters.</param>
+    /// <param name="parameterDefaultValues">The default values for the method parameters, readable afterwards through <see cref="GetDefaultValueForParameter"/>. Must contain exactly one entry per parameter.</param>
     /// <returns>An <see cref="ObjectMethodExecutor"/> that can invoke the specified method.</returns>
     public static ObjectMethodExecutor Create(MethodInfo methodInfo, object?[]? parameterDefaultValues)
     {
@@ -161,7 +164,17 @@ public sealed class ObjectMethodExecutor
         return _executorAsync(target, parameters);
     }
 
-    private object? GetDefaultValueForParameter(int index)
+    /// <summary>Gets the default value supplied for the parameter at <paramref name="index"/>.</summary>
+    /// <remarks>
+    /// Callers use this to build the <c>parameters</c> array passed to <see cref="Execute"/> or
+    /// <see cref="ExecuteAsync"/> when they have no value of their own for a parameter. The executor
+    /// itself never consults these values.
+    /// </remarks>
+    /// <param name="index">The zero-based index of the parameter.</param>
+    /// <returns>The default value supplied for that parameter when the executor was created.</returns>
+    /// <exception cref="InvalidOperationException">No parameter default values were supplied to <see cref="Create(MethodInfo, object[])"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is negative or not less than the number of parameters.</exception>
+    public object? GetDefaultValueForParameter(int index)
     {
         if (_parameterDefaultValues is null)
             throw new InvalidOperationException($"Cannot call {nameof(GetDefaultValueForParameter)}, because no parameter default values were supplied.");

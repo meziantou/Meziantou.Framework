@@ -8,19 +8,30 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>
 /// Provides methods to interact with Local Security Authority (LSA) private data storage on Windows.
-/// LSA private data storage is a secure storage area for sensitive information like credentials and secrets.
+/// LSA private data storage keeps values encrypted on disk under a DACL that allows only the creator and administrators to read them.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Microsoft recommends <c>CryptProtectData</c> and <c>CryptUnprotectData</c> over the LSA private data functions unless you specifically need to manipulate LSA secrets.
+/// The stored data is not absolutely protected.
+/// </para>
+/// <para>
+/// The key name decides how far the secret reaches. A name starting with <c>L$</c> creates a local object that cannot be accessed remotely,
+/// <c>G$</c> a global object, and <c>M$</c> a machine object that only the operating system can read back.
+/// A name with none of those prefixes creates an object that <b>can be accessed remotely</b>, so prefer an <c>L$</c> prefix unless you need otherwise.
+/// </para>
+/// </remarks>
 /// <example>
 /// Store and retrieve a secret value:
 /// <code>
 /// // Store a secret value (requires administrator privileges)
-/// LsaPrivateData.SetValue("MySecretKey", "MySecretValue");
-/// 
+/// LsaPrivateData.SetValue("L$MySecretKey", "MySecretValue");
+///
 /// // Retrieve the value
-/// string? value = LsaPrivateData.GetValue("MySecretKey");
-/// 
+/// string? value = LsaPrivateData.GetValue("L$MySecretKey");
+///
 /// // Remove the value (requires administrator privileges)
-/// LsaPrivateData.RemoveValue("MySecretKey");
+/// LsaPrivateData.RemoveValue("L$MySecretKey");
 /// </code>
 /// </example>
 [SupportedOSPlatform("windows5.1.2600")]

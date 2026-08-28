@@ -898,6 +898,33 @@ jobs:
     }
 
     [Fact]
+    public async Task Regex_FirstLine()
+    {
+        const string Original = """
+            image: node:10
+            image: alpine:3
+            """;
+        const string Expected = """
+            image: dummy1:2.0.0
+            image: dummy2:2.0.0
+            """;
+
+        AddFile("custom/sample.yml", Original);
+        var result = await GetDependencies<RegexScanner>([new RegexScanner()
+        {
+            FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobDialect.Standard)),
+            DependencyType = DependencyType.DockerImage,
+            Regex = DockerImageWithVersionRegex(),
+        }]);
+        AssertContainDependency(result,
+            (DependencyType.DockerImage, "node", "10", 1, 13),
+            (DependencyType.DockerImage, "alpine", "3", 2, 15));
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("custom/sample.yml", Expected, ignoreNewLines: false);
+    }
+
+    [Fact]
     public async Task Regex_OptionalVersion()
     {
         const string Original = """

@@ -128,8 +128,8 @@ public sealed class HarHttpRecordingStoreTests
         await using (var stream = File.OpenRead(filePath))
         {
             var harDocument = await HarDocument.ParseAsync(stream, CancellationToken.None);
-            var harEntry = Assert.Single(harDocument.Log.Entries);
-            Assert.Equal("base64", harEntry.Response.Content.Encoding);
+            var harEntry = Assert.Single(harDocument.Log!.Entries!);
+            Assert.Equal("base64", harEntry.Response!.Content!.Encoding);
         }
 
         var loaded = await store.LoadAsync(CancellationToken.None);
@@ -165,8 +165,8 @@ public sealed class HarHttpRecordingStoreTests
         await using (var stream = File.OpenRead(filePath))
         {
             var harDocument = await HarDocument.ParseAsync(stream, CancellationToken.None);
-            var harEntry = Assert.Single(harDocument.Log.Entries);
-            var postData = harEntry.Request.PostData;
+            var harEntry = Assert.Single(harDocument.Log!.Entries!);
+            var postData = harEntry.Request!.PostData;
             Assert.NotNull(postData);
             Assert.Equal(Convert.ToBase64String(requestBody), postData.Text);
             Assert.NotNull(postData.ExtensionData);

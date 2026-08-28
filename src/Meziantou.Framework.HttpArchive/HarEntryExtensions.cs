@@ -40,17 +40,21 @@ public static class HarEntryExtensions
     /// <summary>Creates an <see cref="HttpRequestMessage"/> from a HAR entry.</summary>
     /// <param name="entry">The HAR entry to convert.</param>
     /// <returns>An <see cref="HttpRequestMessage"/> representing the HAR request.</returns>
+    /// <exception cref="InvalidOperationException">The entry does not contain a request.</exception>
     public static HttpRequestMessage ToHttpRequestMessage(this HarEntry entry)
     {
-        return entry.Request.ToHttpRequestMessage();
+        var request = entry.Request ?? throw new InvalidOperationException("The HAR entry does not contain a request.");
+        return request.ToHttpRequestMessage();
     }
 
     /// <summary>Creates an <see cref="HttpResponseMessage"/> from a HAR entry.</summary>
     /// <param name="entry">The HAR entry to convert.</param>
     /// <returns>An <see cref="HttpResponseMessage"/> representing the HAR response.</returns>
+    /// <exception cref="InvalidOperationException">The entry does not contain a response.</exception>
     public static HttpResponseMessage ToHttpResponseMessage(this HarEntry entry)
     {
-        return entry.Response.ToHttpResponseMessage();
+        var response = entry.Response ?? throw new InvalidOperationException("The HAR entry does not contain a response.");
+        return response.ToHttpResponseMessage();
     }
 
     /// <summary>Creates an <see cref="HttpRequestMessage"/> from a HAR request.</summary>
@@ -61,12 +65,13 @@ public static class HarEntryExtensions
     /// <c>application/x-www-form-urlencoded</c> body is rebuilt from the parameters. Multipart bodies cannot be
     /// rebuilt this way because the original boundary is not part of the archive; they convert to an empty body.
     /// </remarks>
+    /// <exception cref="InvalidOperationException">The request does not contain a method or a URL.</exception>
     public static HttpRequestMessage ToHttpRequestMessage(this HarRequest request)
     {
         var message = new HttpRequestMessage
         {
-            Method = new HttpMethod(request.Method),
-            RequestUri = new Uri(request.Url),
+            Method = new HttpMethod(request.Method ?? throw new InvalidOperationException("The HAR request does not contain a method.")),
+            RequestUri = new Uri(request.Url ?? throw new InvalidOperationException("The HAR request does not contain a URL.")),
             Version = ParseHttpVersion(request.HttpVersion),
         };
 
@@ -86,9 +91,9 @@ public static class HarEntryExtensions
         CopyHeaders(request.Headers, message.Headers, content, request.PostData?.MimeType);
 
         // Some tools record cookies only in the structured list, without the header that carried them.
-        if (request.Cookies.Count > 0 && !message.Headers.Contains(CookieHeaderName))
+        if (request.Cookies is { Count: > 0 } cookies && !message.Headers.Contains(CookieHeaderName))
         {
-            message.Headers.TryAddWithoutValidation(CookieHeaderName, BuildCookieHeader(request.Cookies));
+            message.Headers.TryAddWithoutValidation(CookieHeaderName, BuildCookieHeader(cookies));
         }
 
         return message;
@@ -100,7 +105,7 @@ public static class HarEntryExtensions
             return new ByteArrayContent(Encoding.UTF8.GetBytes(postData.Text));
 
         if (postData.Params is { Count: > 0 } parameters &&
-            postData.MimeType.StartsWith("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
+            postData.MimeType?.StartsWith("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase) is true)
         {
             return new ByteArrayContent(Encoding.UTF8.GetBytes(BuildFormUrlEncodedBody(parameters)));
         }
@@ -126,11 +131,17 @@ public static class HarEntryExtensions
         return builder.ToString();
     }
 
-    private static bool HasContentHeader(List<HarHeader> headers)
+    private static bool HasContentHeader(List<HarHeader>? headers)
     {
+        if (headers is null)
+            return false;
+
         foreach (var header in headers)
         {
-            if (!WireOnlyHeaderNames.Contains(header.Name) && ContentHeaderNames.Contains(header.Name))
+            if (header.Name is not { } name)
+                continue;
+
+            if (!WireOnlyHeaderNames.Contains(name) && ContentHeaderNames.Contains(name))
                 return true;
         }
 
@@ -152,11 +163,11 @@ public static class HarEntryExtensions
         var content = CreateContent(response.Content);
         message.Content = content;
 
-        CopyHeaders(response.Headers, message.Headers, content, response.Content.MimeType);
+        CopyHeaders(response.Headers, message.Headers, content, response.Content?.MimeType);
 
-        if (response.Cookies.Count > 0 && !message.Headers.Contains(SetCookieHeaderName))
+        if (response.Cookies is { Count: > 0 } cookies && !message.Headers.Contains(SetCookieHeaderName))
         {
-            foreach (var cookie in response.Cookies)
+            foreach (var cookie in cookies)
             {
                 message.Headers.TryAddWithoutValidation(SetCookieHeaderName, BuildSetCookieHeader(cookie));
             }
@@ -214,15 +225,15 @@ public static class HarEntryExtensions
         return builder.ToString();
     }
 
-    private static ByteArrayContent CreateContent(HarContent harContent)
+    private static ByteArrayContent CreateContent(HarContent? harContent)
     {
-        if (harContent.Text is null)
+        if (harContent?.Text is not { } text)
             return new ByteArrayContent([]);
 
-        if (string.Equals(harContent.Encoding, "base64", StringComparison.OrdinalIgnoreCase) && TryDecodeBase64(harContent.Text, out var bytes))
+        if (string.Equals(harContent.Encoding, "base64", StringComparison.OrdinalIgnoreCase) && TryDecodeBase64(text, out var bytes))
             return new ByteArrayContent(bytes);
 
-        return new ByteArrayContent(Encoding.UTF8.GetBytes(harContent.Text));
+        return new ByteArrayContent(Encoding.UTF8.GetBytes(text));
     }
 
     private static bool TryDecodeBase64(string text, [NotNullWhen(true)] out byte[]? bytes)
@@ -241,26 +252,26 @@ public static class HarEntryExtensions
     /// <summary>
     /// Copies the archived headers onto the message, routing entity headers to the content.
     /// <paramref name="fallbackMimeType"/> is applied only when the archive contained no Content-Type header,
-    /// so the message never ends up with two of them.
+    /// so the message never ends up with two of them. Headers without a name are skipped.
     /// </summary>
-    private static void CopyHeaders(List<HarHeader> headers, HttpHeaders messageHeaders, HttpContent? content, string? fallbackMimeType)
+    private static void CopyHeaders(List<HarHeader>? headers, HttpHeaders messageHeaders, HttpContent? content, string? fallbackMimeType)
     {
         var hasContentType = false;
-        foreach (var header in headers)
+        foreach (var header in headers ?? [])
         {
-            if (WireOnlyHeaderNames.Contains(header.Name))
+            if (header.Name is not { } name || WireOnlyHeaderNames.Contains(name))
                 continue;
 
-            if (ContentHeaderNames.Contains(header.Name))
+            if (ContentHeaderNames.Contains(name))
             {
-                if (content?.Headers.TryAddWithoutValidation(header.Name, header.Value) is true)
+                if (content?.Headers.TryAddWithoutValidation(name, header.Value) is true)
                 {
-                    hasContentType |= string.Equals(header.Name, ContentTypeHeaderName, StringComparison.OrdinalIgnoreCase);
+                    hasContentType |= string.Equals(name, ContentTypeHeaderName, StringComparison.OrdinalIgnoreCase);
                 }
             }
             else
             {
-                messageHeaders.TryAddWithoutValidation(header.Name, header.Value);
+                messageHeaders.TryAddWithoutValidation(name, header.Value);
             }
         }
 
@@ -270,7 +281,7 @@ public static class HarEntryExtensions
         }
     }
 
-    private static Version ParseHttpVersion(string httpVersion)
+    private static Version ParseHttpVersion(string? httpVersion)
     {
         return httpVersion switch
         {

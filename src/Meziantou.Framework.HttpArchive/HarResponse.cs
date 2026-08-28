@@ -12,30 +12,30 @@ public sealed class HarResponse
 
     /// <summary>Gets or sets the response status description.</summary>
     [JsonPropertyName("statusText")]
-    public string StatusText { get; set; } = "";
+    public string? StatusText { get; set; } = "";
 
     /// <summary>Gets or sets the response HTTP version.</summary>
     [JsonPropertyName("httpVersion")]
-    public string HttpVersion { get; set; } = "";
+    public string? HttpVersion { get; set; } = "";
 
     /// <summary>Gets or sets the list of cookie objects.</summary>
     [JsonPropertyName("cookies")]
     [SuppressMessage("Design", "CA1002:Do not expose generic lists")]
-    public List<HarCookie> Cookies { get; set; } = [];
+    public List<HarCookie>? Cookies { get; set; } = [];
 
     /// <summary>Gets or sets the list of header objects.</summary>
     [JsonPropertyName("headers")]
     [SuppressMessage("Design", "CA1002:Do not expose generic lists")]
-    public List<HarHeader> Headers { get; set; } = [];
+    public List<HarHeader>? Headers { get; set; } = [];
 
     /// <summary>Gets or sets the details about the response body.</summary>
     [JsonPropertyName("content")]
-    public HarContent Content { get; set; } = new();
+    public HarContent? Content { get; set; } = new();
 
     /// <summary>Gets or sets the redirection target URL from the Location response header.</summary>
     [JsonPropertyName("redirectURL")]
     [SuppressMessage("Design", "CA1056:URI-like properties should not be strings")]
-    public string RedirectUrl { get; set; } = "";
+    public string? RedirectUrl { get; set; } = "";
 
     /// <summary>Gets or sets the total number of bytes from the start of the HTTP response message until (and including) the double CRLF before the body. Use -1 if the info is not available.</summary>
     [JsonPropertyName("headersSize")]

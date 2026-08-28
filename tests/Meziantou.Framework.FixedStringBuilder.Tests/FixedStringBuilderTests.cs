@@ -111,4 +111,89 @@ public sealed class FixedStringBuilderTests
         Assert.False(a.Equals(b, StringComparison.Ordinal));
         Assert.True(a.Equals(b, StringComparison.OrdinalIgnoreCase));
     }
+
+    [Fact]
+    public void ToStringReturnsTheContent()
+    {
+        FixedStringBuilder16 value = "abc";
+
+        Assert.Equal("abc", value.ToString());
+        Assert.Equal("", default(FixedStringBuilder16).ToString());
+    }
+
+    [Fact]
+    public void AsSpanReturnsTheWrittenCharacters()
+    {
+        FixedStringBuilder16 value = "abc";
+
+        Assert.Equal(3, value.AsSpan().Length);
+        Assert.Equal("abc", value.AsSpan().ToString());
+        Assert.Equal(0, default(FixedStringBuilder16).AsSpan().Length);
+    }
+
+    [Fact]
+    public void EqualityOperatorsCompareTheContent()
+    {
+        FixedStringBuilder8 a = "abc";
+        FixedStringBuilder8 b = "abc";
+        FixedStringBuilder8 c = "abd";
+
+        Assert.True(a == b);
+        Assert.False(a != b);
+        Assert.False(a == c);
+        Assert.True(a != c);
+    }
+
+    [Fact]
+    public void EqualsObjectComparesOnlyTheSameType()
+    {
+        FixedStringBuilder8 a = "abc";
+        FixedStringBuilder8 b = "abc";
+
+        Assert.True(a.Equals((object)b));
+        Assert.False(a.Equals((object)"abc"));
+        Assert.False(a.Equals(null));
+    }
+
+    [Fact]
+    public void GetHashCodeIsEqualForEqualValues()
+    {
+        FixedStringBuilder8 a = "abc";
+        FixedStringBuilder8 b = "abc";
+
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        Assert.Equal(default(FixedStringBuilder8).GetHashCode(), default(FixedStringBuilder8).GetHashCode());
+    }
+
+    [Fact]
+    public void InterpolatedAlignmentPadsRightWhenNegative()
+    {
+        FixedStringBuilder8 value = $"{1,-4}";
+
+        Assert.Equal("1   ", value.ToString());
+    }
+
+    [Fact]
+    public void InterpolatedAlignmentIsIgnoredWhenTheValueIsWider()
+    {
+        FixedStringBuilder8 value = $"{1234,2}";
+
+        Assert.Equal("1234", value.ToString());
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsAFormatString()
+    {
+        FixedStringBuilder8 value = $"{255:X2}";
+
+        Assert.Equal("FF", value.ToString());
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsAFormatStringAndAlignment()
+    {
+        FixedStringBuilder8 value = $"{255,4:X2}";
+
+        Assert.Equal("  FF", value.ToString());
+    }
 }

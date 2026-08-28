@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
@@ -139,5 +140,79 @@ public class RestartManagerTests
         session.Dispose();
 
         Assert.Throws<ObjectDisposedException>(() => _ = session.IsResourcesLocked());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void IsResourcesLocked_ReflectsTheCurrentStateOfRegisteredFiles()
+    {
+        var unlockedPath = Path.GetTempFileName();
+        var lockedPath = Path.GetTempFileName();
+        try
+        {
+            using var session = RestartManager.CreateSession();
+            session.RegisterFiles([unlockedPath, lockedPath]);
+
+            Assert.False(session.IsResourcesLocked());
+
+            using (File.Open(lockedPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                Assert.True(session.IsResourcesLocked());
+            }
+        }
+        finally
+        {
+            File.Delete(unlockedPath);
+            File.Delete(lockedPath);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetLockingProcesses_ReportsTheDetailsOfTheLockingProcess()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                using var session = RestartManager.CreateSession();
+                session.RegisterFile(path);
+
+                var info = Assert.Single(session.GetLockingProcesses(), item => item.ProcessId == _currentProcessId);
+                Assert.NotEmpty(info.ApplicationName);
+
+                using var currentProcess = Process.GetCurrentProcess();
+                var difference = (currentProcess.StartTime - info.StartTime).Duration();
+                Assert.True(difference < TimeSpan.FromSeconds(1), $"Expected {currentProcess.StartTime:O} but got {info.StartTime:O}");
+            }
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void RebootReason_IsRefreshedWhenTheSessionIsQueried()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                using var session = RestartManager.CreateSession();
+                session.RegisterFile(path);
+
+                Assert.Equal(RestartManagerRebootReason.None, session.RebootReason);
+
+                Assert.True(session.IsResourcesLocked());
+
+                // The session and the lock live in the same process, which is what DetectedSelf reports.
+                Assert.Equal(RestartManagerRebootReason.DetectedSelf, session.RebootReason);
+            }
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 }

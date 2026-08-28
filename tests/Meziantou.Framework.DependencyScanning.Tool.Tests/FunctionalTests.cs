@@ -104,6 +104,31 @@ public sealed class FunctionalTests
     }
 
     [Fact]
+    public async Task UpdateListsOnlyTheSelectedDependencyTypes()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("Dockerfile"), """
+            FROM nginx:1.27.1
+            """, XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("package.json"), """
+            {
+            "dependencies": {
+                "npm": "8.0.0"
+              }
+            }
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "Npm"], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        // The listing must match what is about to be updated, not everything that was scanned
+        Assert.Contains("1 dependencies found", console.Output);
+        Assert.DoesNotContain("DockerImage", console.Output);
+    }
+
+    [Fact]
     public async Task FilterDependencyType_DockerImage()
     {
         await using var tempDir = TemporaryDirectory.Create();
@@ -152,13 +177,50 @@ public sealed class FunctionalTests
         var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "GitHubActions"], console.ConfigureConsole);
         Assert.Equal(0, result);
 
+        // The tool's own listing is what proves the glob fix: before it, the scan reported only the
+        // Dockerfile and the workflow under .github was never visited. This is decided before any network
+        // call, unlike the resulting version - updating an action needs a live GitHub API request, which is
+        // anonymous in CI and routinely rate-limited on shared runner IPs, so it cannot be asserted here.
+        Assert.Contains("GitHubActions:actions/checkout", console.Output);
+
         var dependencies = await DependencyScanner.ScanDirectoryAsync(tempDir.FullPath, options: null, XunitCancellationToken);
-        var gitHubActionsDependency = Assert.Single(dependencies, static dep => dep.Type is DependencyType.GitHubActions);
-        Assert.NotNull(gitHubActionsDependency.Version);
-        Assert.True(GitHubActionsVersioningStrategy.Instance.CompareVersions(gitHubActionsDependency.Version, "v2") >= 0);
+        Assert.Single(dependencies, static dep => dep.Type is DependencyType.GitHubActions);
 
         var dockerDependency = Assert.Single(dependencies, static dep => dep.Type is DependencyType.DockerImage);
         Assert.Equal("1.27.1", dockerDependency.Version);
+    }
+
+    [Fact]
+    public async Task UnreachableSourceDoesNotAbortTheRun()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="broken" value="https://nonexistent-feed.invalid/v3/index.json" />
+              </packageSources>
+            </configuration>
+            """, XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("a.csproj"), """
+            <Project>
+                <ItemGroup>
+                    <PackageReference Include="Meziantou.Framework" Version="1.0.0" />
+                    <PackageReference Include="Newtonsoft.Json" Version="10.0.0" />
+                </ItemGroup>
+            </Project>
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath], console.ConfigureConsole);
+
+        Assert.Equal(1, result);
+        // The run continued past the first failure instead of throwing out of the command
+        Assert.Contains("Meziantou.Framework", console.Error);
+        Assert.Contains("Newtonsoft.Json", console.Error);
+        Assert.Contains("2 failed", console.Output);
     }
 
     [Fact]
@@ -196,6 +258,28 @@ public sealed class FunctionalTests
         Assert.Equal("npm", dependency.GetProperty("name").GetString());
         Assert.Equal("8.0.0", dependency.GetProperty("version").GetString());
         Assert.True(dependency.GetProperty("isUpdatable").GetBoolean());
+    }
+
+    [Fact]
+    public async Task DefaultGlobScansDotDirectories()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".github/workflows/sample.yml"), """
+            jobs:
+              test:
+                steps:
+                  - uses: actions/checkout@v2
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["list", "--directory", tempDir.FullPath, "--format", "json"], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        using var json = JsonDocument.Parse(console.Output);
+        var dependency = Assert.Single(json.RootElement.EnumerateArray());
+        Assert.Equal("GitHubActions", dependency.GetProperty("type").GetString());
+        Assert.Equal("actions/checkout", dependency.GetProperty("name").GetString());
     }
 
     [Fact]

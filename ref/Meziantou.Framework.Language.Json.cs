@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Language.Json
     {
         public Meziantou.Framework.Language.Json.JsonValueSyntax Value { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonSyntaxToken? CommaToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> ChildNodes { get => throw null; }
         public JsonArrayElementSyntax(Meziantou.Framework.Language.Json.JsonValueSyntax value, Meziantou.Framework.Language.Json.JsonSyntaxToken? commaToken = null) : base(default(Meziantou.Framework.Language.Json.JsonSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxToken>)) { }
         public Meziantou.Framework.Language.Json.JsonArrayElementSyntax WithValue(Meziantou.Framework.Language.Json.JsonValueSyntax value) => throw null;
         public Meziantou.Framework.Language.Json.JsonArrayElementSyntax WithCommaToken(Meziantou.Framework.Language.Json.JsonSyntaxToken? commaToken) => throw null;
@@ -21,7 +21,7 @@ namespace Meziantou.Framework.Language.Json
         public Meziantou.Framework.Language.Json.JsonSyntaxToken OpenBracketToken { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonArrayElementSyntax> Elements { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonSyntaxToken CloseBracketToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> ChildNodes { get => throw null; }
         public JsonArraySyntax(Meziantou.Framework.Language.Json.JsonSyntaxToken openBracketToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> childNodes, Meziantou.Framework.Language.Json.JsonSyntaxToken closeBracketToken) : base(default(Meziantou.Framework.Language.Json.JsonSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxToken>)) { }
         public Meziantou.Framework.Language.Json.JsonArraySyntax WithElements(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Json.JsonArrayElementSyntax>? elements) => throw null;
         public Meziantou.Framework.Language.Json.JsonArraySyntax WithChildNodes(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Json.JsonSyntaxNode>? childNodes) => throw null;
@@ -55,7 +55,7 @@ namespace Meziantou.Framework.Language.Json
 
     public sealed class JsonDocumentSyntax : Meziantou.Framework.Language.Json.JsonSyntaxNode
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> ChildNodes { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonValueSyntax? Value { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonSyntaxToken EndOfFileToken { get => throw null; }
         public JsonDocumentSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> childNodes, Meziantou.Framework.Language.Json.JsonSyntaxToken endOfFileToken, string? fullText = null) : base(default(Meziantou.Framework.Language.Json.JsonSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxToken>)) { }
@@ -82,7 +82,7 @@ namespace Meziantou.Framework.Language.Json
         public Meziantou.Framework.Language.Json.JsonSyntaxToken ColonToken { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonValueSyntax Value { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonSyntaxToken? CommaToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> ChildNodes { get => throw null; }
         public JsonMemberSyntax(Meziantou.Framework.Language.Json.JsonSyntaxToken nameToken, Meziantou.Framework.Language.Json.JsonSyntaxToken colonToken, Meziantou.Framework.Language.Json.JsonValueSyntax value, Meziantou.Framework.Language.Json.JsonSyntaxToken? commaToken = null) : base(default(Meziantou.Framework.Language.Json.JsonSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxToken>)) { }
         public Meziantou.Framework.Language.Json.JsonMemberSyntax WithName(string name) => throw null;
         public Meziantou.Framework.Language.Json.JsonMemberSyntax WithValue(Meziantou.Framework.Language.Json.JsonValueSyntax value) => throw null;
@@ -106,7 +106,7 @@ namespace Meziantou.Framework.Language.Json
         public Meziantou.Framework.Language.Json.JsonSyntaxToken OpenBraceToken { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonMemberSyntax> Members { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonSyntaxToken CloseBraceToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> ChildNodes { get => throw null; }
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> ChildNodes { get => throw null; }
         public JsonObjectSyntax(Meziantou.Framework.Language.Json.JsonSyntaxToken openBraceToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> childNodes, Meziantou.Framework.Language.Json.JsonSyntaxToken closeBraceToken) : base(default(Meziantou.Framework.Language.Json.JsonSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxToken>)) { }
         public Meziantou.Framework.Language.Json.JsonMemberSyntax? GetMember(string name) => throw null;
         public Meziantou.Framework.Language.Json.JsonObjectSyntax WithMembers(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Json.JsonMemberSyntax>? members) => throw null;
@@ -191,7 +191,7 @@ namespace Meziantou.Framework.Language.Json
     {
         protected string FullText { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonSyntaxKind Kind { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> ChildNodes { get => throw null; }
+        public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> ChildNodes { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxToken> Tokens { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonSyntaxTree? SyntaxTree { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonSyntaxNode? Parent { get => throw null; }

@@ -62,30 +62,24 @@ public sealed class CGroup2Tests : IDisposable
     [Fact]
     public void CreateChild_ShouldCreateNewCGroup()
     {
-        // Arrange & Act
         var child = _testRoot.CreateOrGetChild("child1");
 
-        // Assert
         Assert.True(child.Exists());
         Assert.Equal("child1", child.Name);
         Assert.Equal(_testRoot, child.Parent);
 
-        // Cleanup
         child.Delete();
     }
 
     [Fact]
     public void CreateOrGetChild_ShouldCreateIfNotExists()
     {
-        // Arrange & Act
         var child1 = _testRoot.CreateOrGetChild("child2");
         var child2 = _testRoot.CreateOrGetChild("child2");
 
-        // Assert
         Assert.True(child1.Exists());
         Assert.Equal(child1.Path, child2.Path);
 
-        // Cleanup
         child1.Delete();
     }
 
@@ -97,10 +91,8 @@ public sealed class CGroup2Tests : IDisposable
         using var process = Process.Start("sleep", "30");
         try
         {
-            // Act
             _testRoot.AssociateProcess(process);
 
-            // Assert
             var processes = _testRoot.GetProcesses().ToList();
             Assert.Contains(process.Id, processes);
         }
@@ -118,10 +110,8 @@ public sealed class CGroup2Tests : IDisposable
         if (!availableControllers.Contains("cpu", StringComparer.Ordinal))
             throw new Exception("$XunitDynamicSkip$CPU controller not available");
 
-        // Act
         _testRoot.SetControllers("cpu");
 
-        // Assert
         var enabledControllers = _testRoot.GetEnabledControllers().ToList();
         Assert.Contains("cpu", enabledControllers);
     }
@@ -129,100 +119,78 @@ public sealed class CGroup2Tests : IDisposable
     [Fact]
     public void SetCpuWeight_ShouldSetWeight()
     {
-        // Arrange
         var child = _testRoot.CreateOrGetChild("cpu_test");
         _testRoot.SetControllers("cpu");
 
-        // Act
         child.SetCpuWeight(200);
 
-        // Assert
         var weight = child.GetCpuWeight();
         Assert.Equal(200, weight);
 
-        // Cleanup
         child.Delete();
     }
 
     [Fact]
     public void SetCpuWeight_ShouldThrowForInvalidWeight()
     {
-        // Arrange
         var child = _testRoot.CreateOrGetChild("cpu_test2");
 
-        // Act & Assert
         Assert.Throws<ArgumentOutOfRangeException>(() => child.SetCpuWeight(0));
         Assert.Throws<ArgumentOutOfRangeException>(() => child.SetCpuWeight(10001));
 
-        // Cleanup
         child.Delete();
     }
 
     [Fact]
     public void SetMemoryMax_ShouldSetLimit()
     {
-        // Arrange
         var child = _testRoot.CreateOrGetChild("mem_test");
         _testRoot.SetControllers("memory");
 
-        // Act
         var limit = 100L * 1024 * 1024; // 100 MB
         child.SetMemoryMax(limit);
 
-        // Assert
         var actualLimit = child.GetMemoryMax();
         Assert.Equal(limit, actualLimit);
 
-        // Cleanup
         child.Delete();
     }
 
     [Fact]
     public void GetMemoryCurrent_ShouldReturnCurrentUsage()
     {
-        // Arrange
         var child = _testRoot.CreateOrGetChild("mem_current_test");
         _testRoot.SetControllers("memory");
 
-        // Act
         var current = child.GetMemoryCurrent();
 
-        // Assert
         Assert.NotNull(current);
         Assert.True(current >= 0);
 
-        // Cleanup
         child.Delete();
     }
 
     [Fact]
     public void SetPidsMax_ShouldSetLimit()
     {
-        // Arrange
         var child = _testRoot.CreateOrGetChild("pids_test");
         _testRoot.SetControllers("pids");
 
-        // Act
         child.SetPidsMax(50);
 
-        // Assert
         var limit = child.GetPidsMax();
         Assert.Equal(50, limit);
 
-        // Cleanup
         child.Delete();
     }
 
     [Fact]
     public void GetCpuStat_ShouldReturnStatistics()
     {
-        // Arrange
         _testRoot.SetControllers("cpu");
 
-        // Act
         var stat = _testRoot.GetCpuStat();
 
-        // Assert
         Assert.NotNull(stat);
         Assert.True(stat.UsageMicroseconds >= 0);
         Assert.True(stat.UserMicroseconds >= 0);
@@ -232,36 +200,38 @@ public sealed class CGroup2Tests : IDisposable
     [Fact]
     public void GetMemoryStat_ShouldReturnStatistics()
     {
-        // Arrange
         _testRoot.SetControllers("memory");
 
-        // Act
         var stat = _testRoot.GetMemoryStat();
 
-        // Assert
         Assert.NotNull(stat);
         Assert.True(stat.Anon >= 0);
         Assert.True(stat.File >= 0);
     }
 
     [Fact]
-    public void Freeze_ShouldFreezeProcesses()
+    public async Task Freeze_ShouldFreezeProcesses()
     {
         if (!File.Exists(Path.Combine(_testRoot.Path, "cgroup.freeze")))
             throw new Exception("$XunitDynamicSkip$Freezer not available");
 
-        // Arrange
         var child = _testRoot.CreateOrGetChild("freeze_test");
 
-        // Act
         child.Freeze();
-        Thread.Sleep(100); // Give it a moment to freeze
 
-        // Assert
-        var isFrozen = child.IsFrozen();
+        // Freezing is asynchronous, so poll instead of racing a fixed sleep against a loaded machine.
+        var isFrozen = false;
+        for (var i = 0; i < 200 && !isFrozen; i++)
+        {
+            isFrozen = child.IsFrozen();
+            if (!isFrozen)
+            {
+                await Task.Delay(25, XunitCancellationToken);
+            }
+        }
+
         Assert.True(isFrozen);
 
-        // Cleanup
         child.Unfreeze();
         child.Delete();
     }

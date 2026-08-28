@@ -21,6 +21,13 @@ internal static class JsonPathEvaluator
     /// </summary>
     private static readonly List<PathComponent> UntrackedPath = [];
 
+    /// <summary>
+    /// Backstop for a single <c>match()</c>/<c>search()</c> evaluation. <see cref="RegexOptions.NonBacktracking"/>
+    /// already guarantees linear time, so this only bounds pathologically long inputs. It is applied per node,
+    /// so it must stay small: a filter over a large array multiplies it by the node count.
+    /// </summary>
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+
     public static JsonPathResult Evaluate(JsonPathExpression expression, JsonNode? root)
     {
         return Evaluate(expression, root, JsonPathEvaluationMode.Lax);
@@ -1026,16 +1033,7 @@ internal static class JsonPathEvaluator
             return false;
         }
 
-        try
-        {
-            var regex = ConvertIRegexpToRegex(pattern);
-            var fullPattern = $"^(?:{regex})$";
-            return Regex.IsMatch(str, fullPattern, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(5));
-        }
-        catch (ArgumentException)
-        {
-            return false;
-        }
+        return IsRegexMatch(func, str, pattern, anchored: true);
     }
 
     private static bool EvaluateSearchFunction<TValue>(
@@ -1060,14 +1058,65 @@ internal static class JsonPathEvaluator
             return false;
         }
 
+        return IsRegexMatch(func, str, pattern, anchored: false);
+    }
+
+    /// <summary>
+    /// Runs an I-Regexp pattern (RFC 9485) against a string. Per RFC 9535 §2.4.6/§2.4.7, a pattern that
+    /// cannot be evaluated yields LogicalFalse rather than an error, so every failure mode returns
+    /// <see langword="false"/> instead of propagating out of <c>Evaluate</c>.
+    /// </summary>
+    /// <param name="func">The call being evaluated, used to cache the compiled pattern.</param>
+    /// <param name="input">The string to test.</param>
+    /// <param name="iRegexp">The I-Regexp pattern.</param>
+    /// <param name="anchored">Whether the pattern must match the whole string (<c>match()</c>) or any substring (<c>search()</c>).</param>
+    /// <returns><see langword="true"/> when the pattern matches; otherwise, <see langword="false"/>.</returns>
+    private static bool IsRegexMatch(FunctionCallExpression func, string input, string iRegexp, bool anchored)
+    {
+        // The pattern is a literal in almost every real query, so translate and compile it once per AST node
+        // rather than once per node visited. A computed pattern falls back to the per-call path.
+        var regex = func.Arguments[1].Kind is FunctionArgumentKind.Literal && func.Arguments[1].Value is string
+            ? func.GetOrCreateRegex(p => CreateRegex(p, anchored)).Regex
+            : CreateRegex(iRegexp, anchored).Regex;
+
+        if (regex is null)
+        {
+            return false;
+        }
+
         try
         {
-            var regex = ConvertIRegexpToRegex(pattern);
-            return Regex.IsMatch(str, regex, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(5));
+            return regex.IsMatch(input);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;
+        }
+    }
+
+    private static FunctionCallExpression.RegexCacheEntry CreateRegex(string iRegexp, bool anchored)
+    {
+        try
+        {
+            var pattern = ConvertIRegexpToRegex(iRegexp);
+            if (anchored)
+            {
+                pattern = $"^(?:{pattern})$";
+            }
+
+            return new FunctionCallExpression.RegexCacheEntry(
+                new Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, RegexTimeout));
         }
         catch (ArgumentException)
         {
-            return false;
+            // Not a valid .NET pattern.
+            return FunctionCallExpression.RegexCacheEntry.Unusable;
+        }
+        catch (NotSupportedException)
+        {
+            // A construct NonBacktracking rejects (backreference, lookaround, atomic group). None of these
+            // are part of I-Regexp, so such a pattern is not a valid argument to match()/search() anyway.
+            return FunctionCallExpression.RegexCacheEntry.Unusable;
         }
     }
 

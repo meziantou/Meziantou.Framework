@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../../common/GlobalizationHelper.cs" Link="GlobalizationHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Resources/UnicodeData.bin.gz">
       <LogicalName>Meziantou.Framework.Resources.UnicodeData.bin.gz</LogicalName>
       <WithCulture>false</WithCulture>

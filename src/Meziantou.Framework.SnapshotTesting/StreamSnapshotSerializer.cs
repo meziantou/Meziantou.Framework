@@ -12,10 +12,11 @@ internal sealed class StreamSnapshotSerializer : ISnapshotSerializer
             return false;
         }
 
-        var ms = new MemoryStream();
+        // Read from wherever the stream currently is, rather than rewinding it: seeking would change what a
+        // caller who deliberately positioned the stream gets back.
+        using var ms = new MemoryStream();
         stream.CopyTo(ms);
-        var data = ms.ToArray();
-        result = new SerializedSnapshot([new SnapshotData(type.FileExtension, data)]);
+        result = new SerializedSnapshot([new SnapshotData(type.FileExtension, ms.ToArray())]);
         return true;
     }
 }

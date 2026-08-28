@@ -6,7 +6,6 @@ namespace Meziantou.Framework.PublicApiGenerator;
 
 internal static class PublicApiModelBuilder
 {
-    private static readonly NullabilityInfoContext NullabilityInfoContext = new();
     private static readonly ConditionalWeakTable<Module, StrongBox<bool>> UpdatedMemorySafetyRulesCache = new();
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
     private const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
@@ -324,7 +323,7 @@ internal static class PublicApiModelBuilder
             modifiers.Add("unsafe");
         }
 
-        var fieldNullability = NullabilityInfoContext.Create(field);
+        var fieldNullability = new NullabilityInfoContext().Create(field);
         var fieldType = isByRefField
             ? BuildByRefFieldType(field, fieldNullability)
             : FormatType(field.FieldType, fieldNullability);
@@ -359,6 +358,11 @@ internal static class PublicApiModelBuilder
             modifiers.Add("static");
         }
 
+        if (representativeAccessor.DeclaringType?.IsInterface != true)
+        {
+            AddInheritanceModifiers(modifiers, representativeAccessor);
+        }
+
         if (IsRequiredMember(property.CustomAttributes))
         {
             modifiers.Add("required");
@@ -366,6 +370,18 @@ internal static class PublicApiModelBuilder
 
         var getMethod = property.GetMethod is { } getter && IsExternallyVisible(getter) ? getter : null;
         var setMethod = property.SetMethod is { } setter && IsExternallyVisible(setter) ? setter : null;
+        var isGetReadOnly = getMethod is not null && IsReadOnlyMember(getMethod);
+        var isSetReadOnly = setMethod is not null && IsReadOnlyMember(setMethod);
+
+        // readonly can be set on the property or on its accessors, but not on both
+        var isPropertyReadOnly = isGetReadOnly == (getMethod is not null) && isSetReadOnly == (setMethod is not null);
+        if (isPropertyReadOnly)
+        {
+            modifiers.Add("readonly");
+            isGetReadOnly = false;
+            isSetReadOnly = false;
+        }
+
         var isGetUnsafe = getMethod is not null && IsRequiresUnsafeMember(getMethod);
         var isSetUnsafe = setMethod is not null && IsRequiresUnsafeMember(setMethod);
 
@@ -384,15 +400,15 @@ internal static class PublicApiModelBuilder
             ? $"this[{string.Join(", ", indexParameters.Select(static parameter => BuildParameter(parameter, isExtensionReceiver: false)))}]"
             : EscapeIdentifier(property.Name);
         var propertyNullability = property.GetMethod is not null
-            ? NullabilityInfoContext.Create(property.GetMethod.ReturnParameter)
+            ? new NullabilityInfoContext().Create(property.GetMethod.ReturnParameter)
             : property.SetMethod is not null
-                ? NullabilityInfoContext.Create(property.SetMethod.GetParameters().Last())
+                ? new NullabilityInfoContext().Create(property.SetMethod.GetParameters().Last())
                 : null;
         var accessorDeclarations = new List<string>();
 
         if (getMethod is not null)
         {
-            var accessorModifier = BuildAccessorModifier(getMethod, representativeAccessor) + (isGetUnsafe ? "unsafe " : string.Empty);
+            var accessorModifier = BuildAccessorModifier(getMethod, representativeAccessor) + (isGetReadOnly ? "readonly " : string.Empty) + (isGetUnsafe ? "unsafe " : string.Empty);
             var getAccessor = getMethod.IsAbstract ? "get;" : "get => throw null;";
             accessorDeclarations.Add($"{accessorModifier}{getAccessor}");
         }
@@ -400,7 +416,7 @@ internal static class PublicApiModelBuilder
         if (setMethod is not null)
         {
             var accessorKeyword = IsInitOnly(setMethod) ? "init" : "set";
-            var accessorModifier = BuildAccessorModifier(setMethod, representativeAccessor) + (isSetUnsafe ? "unsafe " : string.Empty);
+            var accessorModifier = BuildAccessorModifier(setMethod, representativeAccessor) + (isSetReadOnly ? "readonly " : string.Empty) + (isSetUnsafe ? "unsafe " : string.Empty);
             var setAccessor = setMethod.IsAbstract ? $"{accessorKeyword};" : $"{accessorKeyword} {{ }}";
             accessorDeclarations.Add($"{accessorModifier}{setAccessor}");
         }
@@ -429,13 +445,18 @@ internal static class PublicApiModelBuilder
             modifiers.Add("static");
         }
 
+        if (addMethod.DeclaringType?.IsInterface != true)
+        {
+            AddInheritanceModifiers(modifiers, addMethod);
+        }
+
         // Event accessors cannot be marked as unsafe individually
         if (IsRequiresUnsafeMember(@event))
         {
             modifiers.Add("unsafe");
         }
 
-        var eventNullability = NullabilityInfoContext.Create(addMethod.GetParameters().Single());
+        var eventNullability = new NullabilityInfoContext().Create(addMethod.GetParameters().Single());
         AppendIndentedLine(sb, indentationLevel, $"{string.Join(' ', modifiers)} event {FormatType(@event.EventHandlerType!, eventNullability)} {EscapeIdentifier(@event.Name)};");
         return sb.ToString();
     }
@@ -655,33 +676,17 @@ internal static class PublicApiModelBuilder
             modifiers.Add("static");
         }
 
+        if (IsReadOnlyMember(method))
+        {
+            modifiers.Add("readonly");
+        }
+
         if (declaringTypeIsInterface)
         {
             return modifiers;
         }
 
-        if (method.IsAbstract)
-        {
-            modifiers.Add("abstract");
-            return modifiers;
-        }
-
-        if (method.IsVirtual && !method.IsFinal)
-        {
-            if (method.GetBaseDefinition() == method)
-            {
-                modifiers.Add("virtual");
-            }
-            else
-            {
-                modifiers.Add("override");
-            }
-        }
-        else if (method.IsVirtual && method.IsFinal && method.GetBaseDefinition() != method)
-        {
-            modifiers.Add("sealed");
-            modifiers.Add("override");
-        }
+        AddInheritanceModifiers(modifiers, method);
 
         if (IsLibraryImportMethod(method))
         {
@@ -693,6 +698,26 @@ internal static class PublicApiModelBuilder
         }
 
         return modifiers;
+    }
+
+    private static void AddInheritanceModifiers(List<string> modifiers, MethodInfo method)
+    {
+        if (method.IsAbstract)
+        {
+            modifiers.Add("abstract");
+            return;
+        }
+
+        if (method.IsVirtual && !method.IsFinal)
+        {
+            // A method that is its own base definition introduces the member, otherwise it overrides an inherited one
+            modifiers.Add(method.GetBaseDefinition() == method ? "virtual" : "override");
+        }
+        else if (method.IsVirtual && method.IsFinal && method.GetBaseDefinition() != method)
+        {
+            modifiers.Add("sealed");
+            modifiers.Add("override");
+        }
     }
 
     private static ParameterDeclaration BuildParameterDeclaration(ParameterInfo parameter, bool isExtensionReceiver)
@@ -731,7 +756,7 @@ internal static class PublicApiModelBuilder
         }
 
         var parameterType = parameter.ParameterType.IsByRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
-        var parameterNullability = NullabilityInfoContext.Create(parameter);
+        var parameterNullability = new NullabilityInfoContext().Create(parameter);
         sb.Append(FormatType(parameterType, parameterNullability));
         sb.Append(' ');
         sb.Append(EscapeIdentifier(parameter.Name ?? "value"));
@@ -768,7 +793,7 @@ internal static class PublicApiModelBuilder
     private static bool RequiresNullableDisableDirective(ParameterInfo parameter)
     {
         var parameterType = parameter.ParameterType.IsByRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
-        var parameterNullability = NullabilityInfoContext.Create(parameter);
+        var parameterNullability = new NullabilityInfoContext().Create(parameter);
         return RequiresNullableDirectives(parameterType, parameterNullability);
     }
 
@@ -782,6 +807,13 @@ internal static class PublicApiModelBuilder
     private static bool HasAttribute(IEnumerable<CustomAttributeData> attributes, string attributeTypeFullName)
     {
         return attributes.Any(attribute => attribute.AttributeType.FullName == attributeTypeFullName);
+    }
+
+    private static bool IsReadOnlyMember(MethodInfo method)
+    {
+        // Members of a readonly struct are implicitly readonly and carry no attribute, so this only matches per-member readonly
+        return method.DeclaringType is { IsValueType: true, IsInterface: false } &&
+               HasAttribute(method.GetCustomAttributesData(), "System.Runtime.CompilerServices.IsReadOnlyAttribute");
     }
 
     private static bool IsRequiresUnsafeMember(MemberInfo member)
@@ -930,7 +962,7 @@ internal static class PublicApiModelBuilder
     {
         var sb = new StringBuilder();
         var receiverParameter = block.ReceiverParameter;
-        var receiverNullability = NullabilityInfoContext.Create(receiverParameter);
+        var receiverNullability = new NullabilityInfoContext().Create(receiverParameter);
         var receiverType = receiverParameter.ParameterType.IsByRef
             ? receiverParameter.ParameterType.GetElementType()!
             : receiverParameter.ParameterType;
@@ -945,7 +977,7 @@ internal static class PublicApiModelBuilder
         else
         {
             var setterValueParameter = block.Setter!.GetParameters()[1];
-            propertyType = FormatType(setterValueParameter.ParameterType, NullabilityInfoContext.Create(setterValueParameter));
+            propertyType = FormatType(setterValueParameter.ParameterType, new NullabilityInfoContext().Create(setterValueParameter));
         }
 
         var accessorDeclarations = new List<string>();
@@ -1036,12 +1068,12 @@ internal static class PublicApiModelBuilder
         var returnType = returnParameter.ParameterType;
         if (!returnType.IsByRef)
         {
-            var returnNullability = NullabilityInfoContext.Create(returnParameter);
+            var returnNullability = new NullabilityInfoContext().Create(returnParameter);
             return FormatType(returnType, returnNullability);
         }
 
         var elementType = returnType.GetElementType()!;
-        var returnNullabilityInfo = NullabilityInfoContext.Create(returnParameter);
+        var returnNullabilityInfo = new NullabilityInfoContext().Create(returnParameter);
         var elementNullability = returnNullabilityInfo.ElementType;
         if (returnParameter.GetRequiredCustomModifiers().Any(static modifier => modifier.FullName == "System.Runtime.InteropServices.InAttribute"))
             return "ref readonly " + FormatType(elementType, elementNullability);
@@ -1332,7 +1364,7 @@ internal static class PublicApiModelBuilder
         var caseTypes = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Where(IsGeneratedUnionCaseConstructor)
             .OrderBy(static constructor => constructor.MetadataToken)
-            .Select(constructor => FormatType(constructor.GetParameters()[0].ParameterType, NullabilityInfoContext.Create(constructor.GetParameters()[0])))
+            .Select(constructor => FormatType(constructor.GetParameters()[0].ParameterType, new NullabilityInfoContext().Create(constructor.GetParameters()[0])))
             .ToArray();
         return "(" + string.Join(", ", caseTypes) + ")";
     }

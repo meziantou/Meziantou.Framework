@@ -8,6 +8,13 @@ namespace Meziantou.Framework.FixedStringBuilder.Generator;
 [Generator]
 public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
 {
+    /// <summary>
+    /// The largest capacity a fixed string can have. The generated type counts its characters in a
+    /// <see cref="short"/>, so a larger capacity would let the length overflow and produce a negative
+    /// <c>Length</c> instead of throwing.
+    /// </summary>
+    internal const int MaximumLength = short.MaxValue;
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         context.RegisterPostInitializationOutput(static context =>
@@ -60,6 +67,11 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         if (!declaration.Modifiers.Any(SyntaxKind.PartialKeyword))
             return null;
 
+        // The generated members are mutable and implement interfaces, so they would not compile in these shapes.
+        // The analyzer reports MFFSG0006 for them.
+        if (declaration.Modifiers.Any(SyntaxKind.ReadOnlyKeyword) || declaration.Modifiers.Any(SyntaxKind.RefKeyword))
+            return null;
+
         if (context.TargetSymbol is not INamedTypeSymbol targetTypeSymbol)
             return null;
 
@@ -68,7 +80,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
             if (attribute.ConstructorArguments.Length != 1)
                 continue;
 
-            if (attribute.ConstructorArguments[0].Value is int length and > 0)
+            if (attribute.ConstructorArguments[0].Value is int length and > 0 and <= MaximumLength)
             {
                 var fixedStringInterface = context.SemanticModel.Compilation.GetTypeByMetadataName("Meziantou.Framework.FixedStringBuilder.IFixedString`1");
                 var fixedStringNonGenericInterface = context.SemanticModel.Compilation.GetTypeByMetadataName("Meziantou.Framework.FixedStringBuilder.IFixedString");
@@ -247,6 +259,13 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("}");
         AppendLine();
 
+        AppendLine("/// <summary>");
+        AppendLine("/// Resets this string to an empty string.");
+        AppendLine("/// </summary>");
+        AppendLine("/// <remarks>");
+        AppendLine("/// Only the length is reset. The characters that were written are not overwritten and stay in");
+        AppendLine("/// the underlying buffer. Do not rely on this method to erase sensitive data.");
+        AppendLine("/// </remarks>");
         AppendLine("public void Clear() => _length = 0;");
         AppendLine();
 

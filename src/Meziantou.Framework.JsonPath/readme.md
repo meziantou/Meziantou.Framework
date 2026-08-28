@@ -68,10 +68,20 @@ Full RFC 9535 compliance:
 
 ## Limits
 
+### Parsing
+
+Filter expressions, nested filter selectors, and function arguments may nest up to 64 levels deep. Beyond that,
+`Parse` throws a `FormatException` and `TryParse` returns `false`. The parser is recursive, so this bound is what
+keeps a hostile or machine-generated expression from exhausting the stack; 64 matches the default `MaxDepth` of
+`System.Text.Json` and is far above any practical query.
+
+### Evaluation
+
 Descendant segments (`..`) and deep equality comparisons recurse, so evaluation visits at most 256 levels of
-nesting; beyond that it throws `JsonPathEvaluationException` in both evaluation modes. Documents produced by
-`System.Text.Json`'s own parsers cannot exceed their default `MaxDepth` of 64, so this only affects values built
-programmatically, parsed with a raised `MaxDepth`, or exposed by a custom navigator.
+nesting; beyond that it throws `JsonPathEvaluationException` in both evaluation modes. The limit is higher than the
+parser's because documents can legitimately be deeper than expressions: values produced by `System.Text.Json`'s own
+parsers cannot exceed their default `MaxDepth` of 64, so this only affects values built programmatically, parsed
+with a raised `MaxDepth`, or exposed by a custom navigator.
 
 A custom `JsonPathNavigator<TValue>` should expose an acyclic view of its object model. A cycle — a parent
 back-reference, for example — is reported as this same depth error rather than recursing forever.

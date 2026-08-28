@@ -6,6 +6,7 @@ namespace Meziantou.Framework.SimpleQueryLanguage
 {
     public sealed class ExpressionQueryBuilder<T>
     {
+        public ExpressionQueryBuilder(System.TimeProvider? timeProvider) { }
         public void AddHandler(string key, System.Linq.Expressions.Expression<System.Func<T, string?>> selector, System.StringComparison? comparisonType = null) { }
         public void AddHandler<TValue>(string key, System.Linq.Expressions.Expression<System.Func<T, TValue>> selector, Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue = null) { }
         public void AddHandler(string key, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator op, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }

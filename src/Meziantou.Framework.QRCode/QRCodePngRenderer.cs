@@ -39,9 +39,22 @@ public static class QRCodePngRenderer
 
         var width = GetTotalDimension(qrCode.Width, options.QuietZoneModules, options.ModuleSize);
         var height = GetTotalDimension(qrCode.Height, options.QuietZoneModules, options.ModuleSize);
-        var imageData = CreateImageData(qrCode, width, height, options);
 
-        PngWriter.WriteRgba(stream, width, height, imageData);
+        PngWriter.WritePalette(stream, width, height, options.LightColor, options.DarkColor, (row, y) =>
+        {
+            var sourceRow = (y / options.ModuleSize) - options.QuietZoneModules;
+            if (sourceRow < 0 || sourceRow >= qrCode.Height)
+                return;
+
+            for (var x = 0; x < width; x++)
+            {
+                var sourceColumn = (x / options.ModuleSize) - options.QuietZoneModules;
+                if (sourceColumn >= 0 && sourceColumn < qrCode.Width && qrCode[sourceRow, sourceColumn])
+                {
+                    row[x >> 3] |= (byte)(0x80 >> (x & 7));
+                }
+            }
+        });
     }
 
     private static int GetTotalDimension(int size, int quietZoneModules, int moduleSize)
@@ -53,40 +66,5 @@ public static class QRCodePngRenderer
         }
 
         return (int)value;
-    }
-
-    private static byte[] CreateImageData(QRCode qrCode, int width, int height, QRCodePngOptions options)
-    {
-        var stride = (width * 4) + 1;
-        var dataLength = (long)stride * height;
-        if (dataLength > int.MaxValue)
-        {
-            throw new ArgumentOutOfRangeException("options.ModuleSize", "The output image is too large.");
-        }
-
-        var result = new byte[(int)dataLength];
-
-        for (var row = 0; row < height; row++)
-        {
-            var rowOffset = row * stride;
-            var sourceRow = (row / options.ModuleSize) - options.QuietZoneModules;
-            for (var col = 0; col < width; col++)
-            {
-                var sourceCol = (col / options.ModuleSize) - options.QuietZoneModules;
-                var isDark = sourceRow >= 0
-                    && sourceRow < qrCode.Height
-                    && sourceCol >= 0
-                    && sourceCol < qrCode.Width
-                    && qrCode[sourceRow, sourceCol];
-                var color = isDark ? options.DarkColor : options.LightColor;
-                var pixelOffset = rowOffset + 1 + (col * 4);
-                result[pixelOffset] = color.Red;
-                result[pixelOffset + 1] = color.Green;
-                result[pixelOffset + 2] = color.Blue;
-                result[pixelOffset + 3] = color.Alpha;
-            }
-        }
-
-        return result;
     }
 }

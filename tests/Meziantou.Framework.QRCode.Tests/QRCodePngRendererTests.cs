@@ -48,9 +48,9 @@ public class QRCodePngRendererTests
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
         var png = qr.ToPng();
 
-        var (width, height, _, _) = ParsePng(png);
-        Assert.Equal(290, width);
-        Assert.Equal(290, height);
+        var parsed = ParsePng(png);
+        Assert.Equal(290, parsed.Width);
+        Assert.Equal(290, parsed.Height);
     }
 
     [Theory]
@@ -69,9 +69,9 @@ public class QRCodePngRendererTests
         var qr = QRCode.CreateMicroQR("123", ErrorCorrectionLevel.L);
         var png = qr.ToPng(new QRCodePngOptions { ModuleSize = 2, QuietZoneModules = 1 });
 
-        var (width, height, _, _) = ParsePng(png);
-        Assert.Equal((11 + 2) * 2, width);
-        Assert.Equal((11 + 2) * 2, height);
+        var parsed = ParsePng(png);
+        Assert.Equal((11 + 2) * 2, parsed.Width);
+        Assert.Equal((11 + 2) * 2, parsed.Height);
     }
 
     [Fact]
@@ -80,9 +80,9 @@ public class QRCodePngRendererTests
         var qr = QRCode.CreateRMQR("AB", ErrorCorrectionLevel.M);
         var png = qr.ToPng(new QRCodePngOptions { ModuleSize = 3, QuietZoneModules = 0 });
 
-        var (width, height, _, _) = ParsePng(png);
-        Assert.Equal(27 * 3, width);
-        Assert.Equal(11 * 3, height);
+        var parsed = ParsePng(png);
+        Assert.Equal(27 * 3, parsed.Width);
+        Assert.Equal(11 * 3, parsed.Height);
     }
 
     [Fact]
@@ -113,19 +113,20 @@ public class QRCodePngRendererTests
             LightColor = Color.FromArgb(0x40, 0xaa, 0xbb, 0xcc),
         }));
 
-        var width = normal.Width;
-        var pixelIndex = 1;
-        var expectedNormalPixel = qr[0, 0] ? (byte)0 : (byte)255;
-        var expectedCustomPixel = qr[0, 0] ? new byte[] { 0x11, 0x22, 0x33, 0x7f } : [0xaa, 0xbb, 0xcc, 0x40];
-
-        Assert.Equal(width, custom.Width);
+        Assert.Equal(normal.Width, custom.Width);
         Assert.Equal(normal.Height, custom.Height);
-        Assert.Equal((byte)6, custom.ColorType);
-        Assert.Equal(expectedNormalPixel, normal.ImageData[pixelIndex]);
-        Assert.Equal(expectedCustomPixel[0], custom.ImageData[pixelIndex]);
-        Assert.Equal(expectedCustomPixel[1], custom.ImageData[pixelIndex + 1]);
-        Assert.Equal(expectedCustomPixel[2], custom.ImageData[pixelIndex + 2]);
-        Assert.Equal(expectedCustomPixel[3], custom.ImageData[pixelIndex + 3]);
+
+        // Indexed, one bit per pixel: the colours live in PLTE and tRNS, and a set bit means dark.
+        Assert.Equal((byte)3, custom.ColorType);
+        Assert.Equal((byte)1, custom.BitDepth);
+        Assert.Equal(new byte[] { 0xaa, 0xbb, 0xcc, 0x11, 0x22, 0x33 }, custom.Palette);
+        Assert.Equal(new byte[] { 0x40, 0x7f }, custom.Transparency);
+        Assert.Equal(qr[0, 0], custom.IsSet(0, 0));
+
+        // The default colours are opaque, so no tRNS chunk is written at all.
+        Assert.Equal(new byte[] { 0xff, 0xff, 0xff, 0x00, 0x00, 0x00 }, normal.Palette);
+        Assert.Empty(normal.Transparency);
+        Assert.Equal(qr[0, 0], normal.IsSet(0, 0));
     }
 
     [Fact]
@@ -177,12 +178,27 @@ public class QRCodePngRendererTests
         Assert.Throws<ArgumentNullException>(() => qr.ToPng(options: null!));
     }
 
-    private static (int Width, int Height, byte ColorType, byte[] ImageData) ParsePng(byte[] data)
+    private sealed record ParsedPng(int Width, int Height, byte BitDepth, byte ColorType, byte[] Palette, byte[] Transparency, byte[] ImageData)
+    {
+        /// <summary>Gets whether the pixel at the given position uses palette entry 1.</summary>
+        public bool IsSet(int row, int column)
+        {
+            var bytesPerRow = ((Width * BitDepth) + 7) / 8;
+            var rowOffset = (row * (bytesPerRow + 1)) + 1;
+
+            return (ImageData[rowOffset + (column >> 3)] & (0x80 >> (column & 7))) != 0;
+        }
+    }
+
+    private static ParsedPng ParsePng(byte[] data)
     {
         var offset = 8;
         var width = 0;
         var height = 0;
+        byte bitDepth = 0;
         byte colorType = 0;
+        var palette = Array.Empty<byte>();
+        var transparency = Array.Empty<byte>();
         using var idatData = new MemoryStream();
 
         while (offset < data.Length)
@@ -195,7 +211,16 @@ public class QRCodePngRendererTests
             {
                 width = BinaryPrimitives.ReadInt32BigEndian(chunkData[..4]);
                 height = BinaryPrimitives.ReadInt32BigEndian(chunkData[4..8]);
+                bitDepth = chunkData[8];
                 colorType = chunkData[9];
+            }
+            else if (chunkType.SequenceEqual("PLTE"u8))
+            {
+                palette = chunkData.ToArray();
+            }
+            else if (chunkType.SequenceEqual("tRNS"u8))
+            {
+                transparency = chunkData.ToArray();
             }
             else if (chunkType.SequenceEqual("IDAT"u8))
             {
@@ -214,6 +239,6 @@ public class QRCodePngRendererTests
         using var imageData = new MemoryStream();
         zlib.CopyTo(imageData);
 
-        return (width, height, colorType, imageData.ToArray());
+        return new ParsedPng(width, height, bitDepth, colorType, palette, transparency, imageData.ToArray());
     }
 }

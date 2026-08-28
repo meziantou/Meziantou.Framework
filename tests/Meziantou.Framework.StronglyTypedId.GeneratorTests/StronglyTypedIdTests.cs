@@ -226,6 +226,27 @@ public sealed partial class StronglyTypedIdTests
     }
 
     [Fact]
+    public void NewtonsoftJson_Int32_ParseObjectWithoutValue()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32>("{}");
+        Assert.Equal(default, value);
+    }
+
+    [Fact]
+    public void NewtonsoftJson_Int32_ParseObjectWithUnknownProperties()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32>(@"{ ""a"": {}, ""b"": false }");
+        Assert.Equal(default, value);
+    }
+
+    [Fact]
+    public void SystemTextJson_Int32_ParseObjectWithoutValue()
+    {
+        var value = System.Text.Json.JsonSerializer.Deserialize<IdInt32>("{}");
+        Assert.Equal(default, value);
+    }
+
+    [Fact]
     public void NewtonsoftJson_IdRecordStructInt32_ParseNull()
     {
         Assert.Throws<JsonSerializationException>(() => Newtonsoft.Json.JsonConvert.DeserializeObject<IdRecordStructInt32>("null"));

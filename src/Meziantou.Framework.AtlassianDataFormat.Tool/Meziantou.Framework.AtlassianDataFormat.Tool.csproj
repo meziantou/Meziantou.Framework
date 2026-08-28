@@ -1,0 +1,22 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
+    <RootNamespace>Meziantou.Framework.AtlassianDataFormatTool</RootNamespace>
+
+    <Version>1.0.0</Version>
+    <Description>CLI to convert Atlassian Document Format (ADF) documents to Markdown using Meziantou.Framework.AtlassianDataFormat</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.AtlassianDataFormat/Meziantou.Framework.AtlassianDataFormat.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+  </ItemGroup>
+
+</Project>

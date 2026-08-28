@@ -16,7 +16,7 @@ internal static class MicroQREncoder
         var builder = new MicroQRMatrixBuilder(version);
         builder.Build(allCodewords, effectiveECLevel, bestMask);
 
-        return new QRCode(builder.Modules, version, QRCodeType.MicroQR);
+        return new QRCode(builder.Modules, version, QRCodeType.MicroQR, effectiveECLevel);
     }
 
     private static byte[] EncodeData(string data, int version, ErrorCorrectionLevel ecLevel, EncodingMode mode)

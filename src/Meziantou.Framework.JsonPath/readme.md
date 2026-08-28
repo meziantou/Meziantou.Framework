@@ -65,3 +65,13 @@ Full RFC 9535 compliance:
 - **Filter expressions**: comparisons (`==`, `!=`, `<`, `<=`, `>`, `>=`), logical operators (`&&`, `||`, `!`), existence tests, parenthesized grouping
 - **Built-in functions**: `length()`, `count()`, `match()`, `search()`, `value()`
 - **Normalized paths**: canonical path output per RFC 9535 §2.7
+
+## Limits
+
+Descendant segments (`..`) and deep equality comparisons recurse, so evaluation visits at most 256 levels of
+nesting; beyond that it throws `JsonPathEvaluationException` in both evaluation modes. Documents produced by
+`System.Text.Json`'s own parsers cannot exceed their default `MaxDepth` of 64, so this only affects values built
+programmatically, parsed with a raised `MaxDepth`, or exposed by a custom navigator.
+
+A custom `JsonPathNavigator<TValue>` should expose an acyclic view of its object model. A cycle — a parent
+back-reference, for example — is reported as this same depth error rather than recursing forever.

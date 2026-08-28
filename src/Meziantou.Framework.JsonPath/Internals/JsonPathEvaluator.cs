@@ -6,6 +6,15 @@ namespace Meziantou.Framework.Json.Internals;
 /// <summary>Evaluates a parsed JSONPath AST against a JSON value tree.</summary>
 internal static class JsonPathEvaluator
 {
+    /// <summary>
+    /// Maximum node depth visited by a descendant segment or a deep equality comparison. Both walks are
+    /// recursive, so an unbounded depth would overflow the stack, which cannot be caught and terminates the
+    /// process. It also terminates cycles, which a custom <see cref="JsonPathNavigator{TValue}"/> may expose.
+    /// The value leaves ample room above the default <see cref="System.Text.Json.JsonDocumentOptions.MaxDepth"/>
+    /// of 64 that bounds any document produced by System.Text.Json's own parsers.
+    /// </summary>
+    private const int MaxRecursionDepth = 256;
+
     public static JsonPathResult Evaluate(JsonPathExpression expression, JsonNode? root)
     {
         return Evaluate(expression, root, JsonPathEvaluationMode.Lax);
@@ -97,7 +106,7 @@ internal static class JsonPathEvaluator
         JsonPathEvaluationMode mode,
         List<(TValue? Node, List<PathComponent> Path)> result)
     {
-        VisitDescendants(node, path, selectors, root, navigator, mode, result);
+        VisitDescendants(node, path, selectors, root, navigator, mode, result, depth: 0);
     }
 
     private static void VisitDescendants<TValue>(
@@ -107,8 +116,14 @@ internal static class JsonPathEvaluator
         TValue? root,
         JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode,
-        List<(TValue? Node, List<PathComponent> Path)> result)
+        List<(TValue? Node, List<PathComponent> Path)> result,
+        int depth)
     {
+        if (depth > MaxRecursionDepth)
+        {
+            throw new JsonPathEvaluationException($"Maximum recursion depth of {MaxRecursionDepth} exceeded at {NormalizedPathBuilder.Build(path)}. The value is too deeply nested, or the navigator exposes a cycle.");
+        }
+
         ApplyChildSegment(selectors, node, path, root, navigator, mode, result, strictFailure: false);
 
         switch (navigator.GetKind(node))
@@ -120,7 +135,7 @@ internal static class JsonPathEvaluator
                     {
                         PathComponent.FromName(property.Name),
                     };
-                    VisitDescendants(property.Value, childPath, selectors, root, navigator, mode, result);
+                    VisitDescendants(property.Value, childPath, selectors, root, navigator, mode, result, depth + 1);
                 }
 
                 break;
@@ -138,7 +153,7 @@ internal static class JsonPathEvaluator
                     {
                         PathComponent.FromIndex(i),
                     };
-                    VisitDescendants(value, childPath, selectors, root, navigator, mode, result);
+                    VisitDescendants(value, childPath, selectors, root, navigator, mode, result, depth + 1);
                 }
 
                 break;
@@ -602,7 +617,7 @@ internal static class JsonPathEvaluator
             return ScalarAndNodeEqual(right.Scalar, left.Node, navigator);
         }
 
-        return NodesEqual(left.Node, right.Node, navigator);
+        return NodesEqual(left.Node, right.Node, navigator, depth: 0);
     }
 
     private static bool CompareLessThan<TValue>(
@@ -663,8 +678,13 @@ internal static class JsonPathEvaluator
         };
     }
 
-    private static bool NodesEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator)
+    private static bool NodesEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator, int depth)
     {
+        if (depth > MaxRecursionDepth)
+        {
+            throw new JsonPathEvaluationException($"Maximum recursion depth of {MaxRecursionDepth} exceeded while comparing two values. A value is too deeply nested, or the navigator exposes a cycle.");
+        }
+
         var leftKind = navigator.GetKind(left);
         var rightKind = navigator.GetKind(right);
         if (leftKind != rightKind)
@@ -693,17 +713,17 @@ internal static class JsonPathEvaluator
                        && leftString == rightString;
 
             case JsonPathNodeKind.Array:
-                return ArraysEqual(left, right, navigator);
+                return ArraysEqual(left, right, navigator, depth);
 
             case JsonPathNodeKind.Object:
-                return ObjectsEqual(left, right, navigator);
+                return ObjectsEqual(left, right, navigator, depth);
 
             default:
                 return false;
         }
     }
 
-    private static bool ArraysEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator)
+    private static bool ArraysEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator, int depth)
     {
         var length = navigator.GetArrayLength(left);
         if (navigator.GetArrayLength(right) != length)
@@ -718,7 +738,7 @@ internal static class JsonPathEvaluator
                 return false;
             }
 
-            if (!NodesEqual(leftValue, rightValue, navigator))
+            if (!NodesEqual(leftValue, rightValue, navigator, depth + 1))
             {
                 return false;
             }
@@ -727,7 +747,7 @@ internal static class JsonPathEvaluator
         return true;
     }
 
-    private static bool ObjectsEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator)
+    private static bool ObjectsEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator, int depth)
     {
         var leftCount = 0;
         foreach (var property in navigator.GetProperties(left))
@@ -738,7 +758,7 @@ internal static class JsonPathEvaluator
                 return false;
             }
 
-            if (!NodesEqual(property.Value, rightValue, navigator))
+            if (!NodesEqual(property.Value, rightValue, navigator, depth + 1))
             {
                 return false;
             }

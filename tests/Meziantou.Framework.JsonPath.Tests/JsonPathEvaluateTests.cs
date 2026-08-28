@@ -423,6 +423,61 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
+    public void Evaluate_DescendantSegment_CyclicNavigator_ThrowsInsteadOfOverflowingTheStack()
+    {
+        var root = CyclicNode.CreateCycle();
+        var path = JsonPath.Parse("$..name");
+
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(root, CyclicNavigator.Instance));
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(root, CyclicNavigator.Instance, JsonPathEvaluationMode.Strict));
+    }
+
+    [Fact]
+    public void Evaluate_DescendantSegment_VeryDeepDocument_ThrowsInsteadOfOverflowingTheStack()
+    {
+        JsonNode node = JsonValue.Create(1);
+        for (var i = 0; i < 20_000; i++)
+        {
+            node = new JsonObject { ["a"] = node };
+        }
+
+        Assert.Throws<JsonPathEvaluationException>(() => JsonPath.Parse("$..a").Evaluate(node));
+    }
+
+    [Fact]
+    public void Evaluate_DescendantSegment_DocumentAtTheSystemTextJsonDepthLimit_Succeeds()
+    {
+        // System.Text.Json's own parsers cap documents at MaxDepth 64, so anything they can produce must
+        // still evaluate. The evaluator's own limit is well above that.
+        JsonNode node = JsonValue.Create(1);
+        for (var i = 0; i < 60; i++)
+        {
+            node = new JsonObject { ["a"] = node };
+        }
+
+        Assert.HasCount(60, JsonPath.Parse("$..a").Evaluate(node));
+    }
+
+    [Fact]
+    public void Evaluate_DeepEquality_VeryDeepDocument_ThrowsInsteadOfOverflowingTheStack()
+    {
+        static JsonNode Build()
+        {
+            JsonNode node = JsonValue.Create(1);
+            for (var i = 0; i < 20_000; i++)
+            {
+                node = new JsonObject { ["a"] = node };
+            }
+
+            return node;
+        }
+
+        var doc = new JsonObject { ["x"] = Build(), ["arr"] = new JsonArray { Build() } };
+
+        Assert.Throws<JsonPathEvaluationException>(() => JsonPath.Parse("$.arr[?@ == $.x]").Evaluate(doc));
+    }
+
+    [Fact]
     public void Evaluate_Function_Value()
     {
         var doc = JsonNode.Parse("""[{"a": {"b": 1}}, {"a": {"b": 2}}]""");
@@ -882,6 +937,80 @@ public sealed class JsonPathEvaluateTests
                 return true;
             }
 
+            result = false;
+            return false;
+        }
+    }
+
+    private sealed class CyclicNode
+    {
+        public Dictionary<string, CyclicNode?> Properties { get; } = new(StringComparer.Ordinal);
+
+        public string? Text { get; init; }
+
+        /// <summary>Builds a two-node graph where the child points back at its parent.</summary>
+        public static CyclicNode CreateCycle()
+        {
+            var parent = new CyclicNode();
+            var child = new CyclicNode();
+            parent.Properties["child"] = child;
+            parent.Properties["name"] = new CyclicNode { Text = "root" };
+            child.Properties["parent"] = parent;
+            return parent;
+        }
+    }
+
+    private sealed class CyclicNavigator : JsonPathNavigator<CyclicNode>
+    {
+        public static CyclicNavigator Instance { get; } = new();
+
+        public override JsonPathNodeKind GetKind(CyclicNode? value)
+        {
+            if (value is null)
+                return JsonPathNodeKind.Null;
+
+            return value.Text is null ? JsonPathNodeKind.Object : JsonPathNodeKind.String;
+        }
+
+        public override bool TryGetPropertyValue(CyclicNode? value, string name, out CyclicNode? result)
+        {
+            result = null;
+            return value is not null && value.Properties.TryGetValue(name, out result);
+        }
+
+        public override IEnumerable<JsonPathProperty<CyclicNode>> GetProperties(CyclicNode? value)
+        {
+            if (value is null)
+                yield break;
+
+            foreach (var property in value.Properties)
+            {
+                yield return new JsonPathProperty<CyclicNode>(property.Key, property.Value);
+            }
+        }
+
+        public override int GetArrayLength(CyclicNode? value) => 0;
+
+        public override bool TryGetElement(CyclicNode? value, int index, out CyclicNode? result)
+        {
+            result = null;
+            return false;
+        }
+
+        public override bool TryGetString(CyclicNode? value, out string? result)
+        {
+            result = value?.Text;
+            return result is not null;
+        }
+
+        public override bool TryGetNumber(CyclicNode? value, out double result)
+        {
+            result = 0;
+            return false;
+        }
+
+        public override bool TryGetBoolean(CyclicNode? value, out bool result)
+        {
             result = false;
             return false;
         }

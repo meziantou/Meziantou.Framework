@@ -14,11 +14,6 @@ public static class SnapshotSettingsSkiaSharpExtensions
         /// serialized as PNG, JPEG, and WebP snapshots.
         /// </summary>
         /// <param name="settings">Optional image comparison settings. When <see langword="null"/>, exact pixel comparison is used.</param>
-        /// <remarks>
-        /// The serializer writes PNG, JPEG and WebP. The comparer is registered for more formats than that on
-        /// purpose: it decodes through <c>SKCodec</c>, so it can also compare BMP, GIF and ICO snapshots that
-        /// reached disk as a <see cref="byte" /> array rather than through this serializer.
-        /// </remarks>
         public void AddSkiaSharp(ImageComparisonSettings? settings = null)
         {
             snapshotSettings.AddConverter(new SKColorHumanReadableConverter());

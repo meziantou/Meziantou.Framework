@@ -54,9 +54,14 @@ public sealed class FixedStringBuilderAttributeAnalyzer : DiagnosticAnalyzer
                 if (!IsCandidate(attributeSyntax.Name))
                     continue;
 
-                var symbolInfo = context.SemanticModel.GetSymbolInfo(attributeSyntax, context.CancellationToken).Symbol as IMethodSymbol;
-                if (symbolInfo is not null &&
-                    (symbolInfo.ContainingType.Name is not "FixedStringBuilderAttribute" || !symbolInfo.ContainingType.ContainingNamespace.IsGlobalNamespace))
+                var symbolInfo = context.SemanticModel.GetSymbolInfo(attributeSyntax, context.CancellationToken);
+
+                // The symbol does not bind when the arguments do not match any constructor, which is exactly what
+                // MFFSG0001 reports, so the candidates are considered too. Without a symbol to check the attribute
+                // against, an unrelated attribute that happens to be named FixedStringBuilder would be reported on.
+                if ((symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault()) is not IMethodSymbol attributeConstructor ||
+                    attributeConstructor.ContainingType.Name is not "FixedStringBuilderAttribute" ||
+                    !attributeConstructor.ContainingType.ContainingNamespace.IsGlobalNamespace)
                 {
                     continue;
                 }

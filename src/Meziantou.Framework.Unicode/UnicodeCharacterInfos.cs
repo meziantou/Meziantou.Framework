@@ -33,7 +33,7 @@ internal static partial class UnicodeCharacterInfos
         var strings = new string[stringCount];
         for (var i = 0; i < strings.Length; i++)
         {
-            strings[i] = ReadString255LengthMax(stream);
+            strings[i] = ReadString(stream);
         }
 
         var entries = new Dictionary<Rune, UnicodeCharacterInfo>(capacity: entryCount);
@@ -92,13 +92,13 @@ internal static partial class UnicodeCharacterInfos
         return values[index];
     }
 
-    private static string ReadString255LengthMax(Stream stream)
+    private static string ReadString(Stream stream)
     {
         var length = ReadByte(stream);
         if (length == 0)
             return "";
 
-        Span<byte> buffer = stackalloc byte[MaxCharacterNameLength];
+        Span<byte> buffer = stackalloc byte[MaxSerializedStringLength];
         stream.ReadExactly(buffer[..length]);
         return Encoding.UTF8.GetString(buffer[..length]);
     }

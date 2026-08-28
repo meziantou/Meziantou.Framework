@@ -8,13 +8,21 @@ public abstract partial class QuerySyntax : QueryNodeOrToken
     /// <summary>Parses a query string into a syntax tree.</summary>
     /// <param name="text">The query string to parse.</param>
     /// <returns>The root node of the parsed syntax tree.</returns>
+    /// <exception cref="QueryTooComplexException">The query nests expressions too deeply to be parsed.</exception>
     public static QuerySyntax Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
         var tokens = Lexer.Tokenize(text).Where(t => t.Kind != QuerySyntaxKind.WhitespaceToken);
         var parser = new Parser(tokens);
-        return parser.Parse();
+        try
+        {
+            return parser.Parse();
+        }
+        catch (InsufficientExecutionStackException ex)
+        {
+            throw new QueryTooComplexException("The query nests expressions too deeply to be parsed", ex);
+        }
     }
 
     public override string ToString()

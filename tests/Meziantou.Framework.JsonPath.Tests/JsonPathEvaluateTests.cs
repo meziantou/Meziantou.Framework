@@ -422,6 +422,208 @@ public sealed class JsonPathEvaluateTests
         Assert.Equal(2, result.Count);
     }
 
+    [Theory]
+    [InlineData("match")]
+    [InlineData("search")]
+    public void Evaluate_Function_CatastrophicBacktrackingPattern_DoesNotThrow(string function)
+    {
+        // '(a|aa)+$' against a non-matching string is the classic exponential-backtracking case. Before
+        // NonBacktracking it spun for the full timeout and then threw RegexMatchTimeoutException straight
+        // out of Evaluate -- including in Lax mode, which documents that errors produce no match.
+        var doc = JsonNode.Parse($$"""[{"s": "{{new string('a', 40)}}b"}]""");
+        var path = JsonPath.Parse($"$[?{function}(@.s, '(a|aa)+$')]");
+
+        var lax = path.Evaluate(doc, JsonPathEvaluationMode.Lax);
+        var strict = path.Evaluate(doc, JsonPathEvaluationMode.Strict);
+
+        Assert.Empty(lax);
+        Assert.Empty(strict);
+    }
+
+    [Fact]
+    public void Evaluate_Function_CatastrophicBacktrackingPattern_CompletesQuickly()
+    {
+        var array = new JsonArray();
+        for (var i = 0; i < 50; i++)
+        {
+            array.Add(new JsonObject { ["s"] = new string('a', 40) + "b" });
+        }
+
+        var path = JsonPath.Parse("$[?match(@.s, '(a|aa)+$')]");
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = path.Evaluate(array);
+        stopwatch.Stop();
+
+        Assert.Empty(result);
+
+        // The old backtracking engine took ~5s per element, so 50 elements would have needed ~250s.
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Evaluation took {stopwatch.Elapsed}.");
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_NonLiteralPattern_IsNotCached()
+    {
+        // The pattern comes from the document, so it differs per node and must bypass the per-AST cache.
+        var doc = JsonNode.Parse("""[{"s": "foo", "p": "f.o"}, {"s": "bar", "p": "z.z"}, {"s": "baz", "p": "b.z"}]""");
+        var path = JsonPath.Parse("$[?match(@.s, @.p)]");
+
+        var result = path.Evaluate(doc);
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("foo", result[0].Value!.AsObject()["s"]!.GetValue<string>());
+        Assert.Equal("baz", result[1].Value!.AsObject()["s"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_CachedRegex_IsStableAcrossReuseAndThreads()
+    {
+        // A parsed JsonPath is documented as reusable and thread-safe, and the regex cache is populated lazily.
+        var doc = JsonNode.Parse("""[{"a": "foo"}, {"a": "bar"}, {"a": "foobar"}]""");
+        var path = JsonPath.Parse("""$[?search(@.a, "foo")]""");
+
+        Assert.Equal(2, path.Evaluate(doc).Count);
+        Assert.Equal(2, path.Evaluate(doc).Count);
+
+        var counts = new int[32];
+        Parallel.For(0, counts.Length, i => counts[i] = path.Evaluate(doc).Count);
+        Assert.All(counts, count => Assert.Equal(2, count));
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_UnusablePatternIsCachedToo()
+    {
+        var doc = JsonNode.Parse("""[{"s": "aa"}, {"s": "bb"}]""");
+        var path = JsonPath.Parse("$[?match(@.s, '(')]");
+
+        Assert.Empty(path.Evaluate(doc));
+        Assert.Empty(path.Evaluate(doc));
+    }
+
+    [Theory]
+    // The pattern is written as it appears inside the JSONPath string literal, so a backslash intended for
+    // the regex engine has to be escaped for the JSONPath lexer first.
+    [InlineData("(")]                  // not a valid pattern at all
+    [InlineData("a{2,1}")]             // invalid quantifier range
+    [InlineData(@"(a)\\1")]            // backreference: not part of I-Regexp, unsupported by NonBacktracking
+    [InlineData("(?=a)b")]             // lookahead: likewise
+    public void Evaluate_Function_UnusablePattern_YieldsNoMatch(string pattern)
+    {
+        var doc = JsonNode.Parse("""[{"s": "aa"}]""");
+        var path = JsonPath.Parse($"$[?match(@.s, '{pattern}')]");
+
+        Assert.Empty(path.Evaluate(doc, JsonPathEvaluationMode.Lax));
+        Assert.Empty(path.Evaluate(doc, JsonPathEvaluationMode.Strict));
+    }
+
+    [Fact]
+    public void Evaluate_Path_IsCorrectForNodesSelectedByAFilter()
+    {
+        // Filter subqueries evaluate without tracking paths. The paths of the nodes the filter *selects*
+        // are still tracked, so this guards against the untracked placeholder leaking into a result.
+        var doc = JsonNode.Parse("""
+            {"items": [{"a": {"b": 1}}, {"a": {"c": 2}}, {"a": {"b": 3}}]}
+            """);
+
+        var existence = JsonPath.Parse("$.items[?@.a.b]").Evaluate(doc);
+        Assert.Equal(2, existence.Count);
+        Assert.Equal("$['items'][0]", existence[0].Path);
+        Assert.Equal("$['items'][2]", existence[1].Path);
+
+        var comparison = JsonPath.Parse("$.items[?@.a.b > 1].a.b").Evaluate(doc);
+        Assert.Single(comparison);
+        Assert.Equal("$['items'][2]['a']['b']", comparison[0].Path);
+
+        var nested = JsonPath.Parse("$..items[?@.a.b == 1]").Evaluate(doc);
+        Assert.Single(nested);
+        Assert.Equal("$['items'][0]", nested[0].Path);
+
+        var absolute = JsonPath.Parse("$.items[?$.items[0].a.b == 1]").Evaluate(doc);
+        Assert.Equal(3, absolute.Count);
+        Assert.Equal("$['items'][0]", absolute[0].Path);
+        Assert.Equal("$['items'][1]", absolute[1].Path);
+        Assert.Equal("$['items'][2]", absolute[2].Path);
+    }
+
+    [Fact]
+    public void Evaluate_Path_IsRenderedLazilyAndCached()
+    {
+        var doc = JsonNode.Parse("""{"store": {"book": [{"title": "A"}, {"title": "B"}]}}""");
+        var result = JsonPath.Parse("$.store.book[*].title").Evaluate(doc);
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("$['store']['book'][0]['title']", result[0].Path);
+        Assert.Equal("$['store']['book'][1]['title']", result[1].Path);
+
+        // Reading twice must return the identical instance, not re-render.
+        Assert.Same(result[0].Path, result[0].Path);
+    }
+
+    [Fact]
+    public void Evaluate_Path_IsCorrectForCustomNavigatorAndEscapedNames()
+    {
+        var doc = JsonNode.Parse("""{"a'b": {"c\\d": [1]}}""");
+        var result = JsonPath.Parse("$..*").Evaluate(doc);
+
+        Assert.Contains(result, m => m.Path == @"$['a\'b']");
+        Assert.Contains(result, m => m.Path == @"$['a\'b']['c\\d']");
+        Assert.Contains(result, m => m.Path == @"$['a\'b']['c\\d'][0]");
+    }
+
+    [Fact]
+    public void Evaluate_DescendantSegment_CyclicNavigator_ThrowsInsteadOfOverflowingTheStack()
+    {
+        var root = CyclicNode.CreateCycle();
+        var path = JsonPath.Parse("$..name");
+
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(root, CyclicNavigator.Instance));
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(root, CyclicNavigator.Instance, JsonPathEvaluationMode.Strict));
+    }
+
+    [Fact]
+    public void Evaluate_DescendantSegment_VeryDeepDocument_ThrowsInsteadOfOverflowingTheStack()
+    {
+        JsonNode node = JsonValue.Create(1);
+        for (var i = 0; i < 20_000; i++)
+        {
+            node = new JsonObject { ["a"] = node };
+        }
+
+        Assert.Throws<JsonPathEvaluationException>(() => JsonPath.Parse("$..a").Evaluate(node));
+    }
+
+    [Fact]
+    public void Evaluate_DescendantSegment_DocumentAtTheSystemTextJsonDepthLimit_Succeeds()
+    {
+        // System.Text.Json's own parsers cap documents at MaxDepth 64, so anything they can produce must
+        // still evaluate. The evaluator's own limit is well above that.
+        JsonNode node = JsonValue.Create(1);
+        for (var i = 0; i < 60; i++)
+        {
+            node = new JsonObject { ["a"] = node };
+        }
+
+        Assert.HasCount(60, JsonPath.Parse("$..a").Evaluate(node));
+    }
+
+    [Fact]
+    public void Evaluate_DeepEquality_VeryDeepDocument_ThrowsInsteadOfOverflowingTheStack()
+    {
+        static JsonNode Build()
+        {
+            JsonNode node = JsonValue.Create(1);
+            for (var i = 0; i < 20_000; i++)
+            {
+                node = new JsonObject { ["a"] = node };
+            }
+
+            return node;
+        }
+
+        var doc = new JsonObject { ["x"] = Build(), ["arr"] = new JsonArray { Build() } };
+
+        Assert.Throws<JsonPathEvaluationException>(() => JsonPath.Parse("$.arr[?@ == $.x]").Evaluate(doc));
+    }
+
     [Fact]
     public void Evaluate_Function_Value()
     {
@@ -882,6 +1084,80 @@ public sealed class JsonPathEvaluateTests
                 return true;
             }
 
+            result = false;
+            return false;
+        }
+    }
+
+    private sealed class CyclicNode
+    {
+        public Dictionary<string, CyclicNode?> Properties { get; } = new(StringComparer.Ordinal);
+
+        public string? Text { get; init; }
+
+        /// <summary>Builds a two-node graph where the child points back at its parent.</summary>
+        public static CyclicNode CreateCycle()
+        {
+            var parent = new CyclicNode();
+            var child = new CyclicNode();
+            parent.Properties["child"] = child;
+            parent.Properties["name"] = new CyclicNode { Text = "root" };
+            child.Properties["parent"] = parent;
+            return parent;
+        }
+    }
+
+    private sealed class CyclicNavigator : JsonPathNavigator<CyclicNode>
+    {
+        public static CyclicNavigator Instance { get; } = new();
+
+        public override JsonPathNodeKind GetKind(CyclicNode? value)
+        {
+            if (value is null)
+                return JsonPathNodeKind.Null;
+
+            return value.Text is null ? JsonPathNodeKind.Object : JsonPathNodeKind.String;
+        }
+
+        public override bool TryGetPropertyValue(CyclicNode? value, string name, out CyclicNode? result)
+        {
+            result = null;
+            return value is not null && value.Properties.TryGetValue(name, out result);
+        }
+
+        public override IEnumerable<JsonPathProperty<CyclicNode>> GetProperties(CyclicNode? value)
+        {
+            if (value is null)
+                yield break;
+
+            foreach (var property in value.Properties)
+            {
+                yield return new JsonPathProperty<CyclicNode>(property.Key, property.Value);
+            }
+        }
+
+        public override int GetArrayLength(CyclicNode? value) => 0;
+
+        public override bool TryGetElement(CyclicNode? value, int index, out CyclicNode? result)
+        {
+            result = null;
+            return false;
+        }
+
+        public override bool TryGetString(CyclicNode? value, out string? result)
+        {
+            result = value?.Text;
+            return result is not null;
+        }
+
+        public override bool TryGetNumber(CyclicNode? value, out double result)
+        {
+            result = 0;
+            return false;
+        }
+
+        public override bool TryGetBoolean(CyclicNode? value, out bool result)
+        {
             result = false;
             return false;
         }

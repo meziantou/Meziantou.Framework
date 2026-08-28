@@ -39,6 +39,51 @@ internal static class RoslynFormatter
         return builder.ToString();
     }
 
+    /// <summary>
+    /// Orders diagnostics so a snapshot does not depend on the order the caller happened to collect them in.
+    /// </summary>
+    /// <remarks>
+    /// The key is culture-independent on purpose. <see cref="Diagnostic.ToString" /> formats the message with
+    /// the current UI culture, so using it as a sort key would leave the order itself machine-dependent - the
+    /// same reason <see cref="AppendDiagnostic" /> does not use it either.
+    /// </remarks>
+    public static IComparer<Diagnostic> DiagnosticComparer { get; } = new OrdinalDiagnosticComparer();
+
+    private sealed class OrdinalDiagnosticComparer : IComparer<Diagnostic>
+    {
+        public int Compare(Diagnostic? x, Diagnostic? y)
+        {
+            if (ReferenceEquals(x, y))
+                return 0;
+
+            if (x is null)
+                return -1;
+
+            if (y is null)
+                return 1;
+
+            // Position first, so the report reads in the order a compiler would emit it.
+            var xSpan = x.Location.GetLineSpan();
+            var ySpan = y.Location.GetLineSpan();
+
+            var result = StringComparer.Ordinal.Compare(xSpan.Path, ySpan.Path);
+            if (result != 0)
+                return result;
+
+            result = xSpan.StartLinePosition.CompareTo(ySpan.StartLinePosition);
+            if (result != 0)
+                return result;
+
+            result = StringComparer.Ordinal.Compare(x.Id, y.Id);
+            if (result != 0)
+                return result;
+
+            return StringComparer.Ordinal.Compare(
+                x.GetMessage(CultureInfo.InvariantCulture),
+                y.GetMessage(CultureInfo.InvariantCulture));
+        }
+    }
+
     /// <summary>Formats a position as <c>line,character</c>, keeping the zero-based values Roslyn exposes.</summary>
     public static string FormatPosition(LinePosition position) => Format(position.Line) + "," + Format(position.Character);
 

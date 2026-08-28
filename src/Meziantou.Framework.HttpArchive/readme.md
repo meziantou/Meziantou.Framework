@@ -15,6 +15,13 @@
 dotnet add package Meziantou.Framework.HttpArchive
 ```
 
+## Nullability
+
+Producers do not always honor the HAR schema: an archive can hold an explicit `null` for any field. The model is
+nullable throughout so those archives still parse, and it is up to the caller to decide what an absent value means.
+A property left out of the JSON keeps its default (`""` for strings, an empty list for collections); only an explicit
+`null` yields `null`.
+
 ## Parse a HAR file
 
 ```c#
@@ -23,9 +30,9 @@ using Meziantou.Framework.HttpArchive;
 await using var stream = File.OpenRead("traffic.har");
 var document = await HarDocument.ParseAsync(stream);
 
-foreach (var entry in document.Log.Entries)
+foreach (var entry in document.Log?.Entries ?? [])
 {
-    Console.WriteLine($"{entry.Request.Method} {entry.Request.Url} -> {entry.Response.Status}");
+    Console.WriteLine($"{entry.Request?.Method} {entry.Request?.Url} -> {entry.Response?.Status}");
 }
 ```
 
@@ -34,28 +41,35 @@ foreach (var entry in document.Log.Entries)
 ```c#
 using Meziantou.Framework.HttpArchive;
 
-var document = new HarDocument();
-document.Log.Version = "1.2";
-document.Log.Creator = new HarCreator
+var document = new HarDocument
 {
-    Name = "MyTool",
-    Version = "1.0.0",
+    Log = new HarLog
+    {
+        Version = "1.2",
+        Creator = new HarCreator
+        {
+            Name = "MyTool",
+            Version = "1.0.0",
+        },
+        Entries =
+        [
+            new HarEntry
+            {
+                StartedDateTime = DateTimeOffset.UtcNow,
+                Request = new HarRequest
+                {
+                    Method = "GET",
+                    Url = "https://example.com/api/data",
+                },
+                Response = new HarResponse
+                {
+                    Status = 200,
+                    StatusText = "OK",
+                },
+            },
+        ],
+    },
 };
-
-document.Log.Entries.Add(new HarEntry
-{
-    StartedDateTime = DateTimeOffset.UtcNow,
-    Request =
-    {
-        Method = "GET",
-        Url = "https://example.com/api/data",
-    },
-    Response =
-    {
-        Status = 200,
-        StatusText = "OK",
-    },
-});
 
 await using var stream = File.Create("output.har");
 await document.WriteToAsync(stream, indented: true);
@@ -67,8 +81,10 @@ await document.WriteToAsync(stream, indented: true);
 using Meziantou.Framework.HttpArchive;
 
 var document = HarDocument.Parse(File.ReadAllText("traffic.har"));
-var entry = document.Log.Entries[0];
+var entry = document.Log!.Entries![0];
 
+// Throws InvalidOperationException when the archived entry has no request/response,
+// or when the request declares no method or URL.
 using var request = entry.ToHttpRequestMessage();
 using var response = entry.ToHttpResponseMessage();
 ```

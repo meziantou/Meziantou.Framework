@@ -29,11 +29,11 @@ namespace Meziantou.Extensions.Logging.InMemory
         public Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry? Find(System.Func<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry, bool> predicate) => throw null;
         public struct Enumerator : System.Collections.Generic.IEnumerator<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry>, System.Collections.IEnumerator, System.IDisposable
         {
-            public Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry Current { get => throw null; }
+            public readonly Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry Current { get => throw null; }
             public Enumerator(Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection collection) { }
             public bool MoveNext() => throw null;
-            public void Dispose() { }
-            public void Reset() { }
+            public readonly void Dispose() { }
+            public readonly void Reset() { }
         }
     }
 

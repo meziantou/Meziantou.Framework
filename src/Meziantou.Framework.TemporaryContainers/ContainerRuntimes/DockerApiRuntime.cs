@@ -299,7 +299,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return new InvalidOperationException(message);
     }
 
-    private static async IAsyncEnumerable<LogEntry> ReadMultiplexedLogsAsync(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
+    internal static async IAsyncEnumerable<LogEntry> ReadMultiplexedLogsAsync(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var buffers = new Dictionary<LogStream, StringBuilder>
         {
@@ -318,6 +318,21 @@ internal sealed class DockerApiRuntime : ContainerRuntime
                 if (parsed is not null)
                     yield return parsed;
             }
+        }
+
+        // The stream ended. Whatever is left was never terminated by a newline, but it is still a log line: a process
+        // that writes its readiness marker with 'printf' and no '\n', or that dies mid-line, would otherwise never be
+        // reported and every wait strategy watching for it would time out.
+        foreach (var (logStream, buffer) in buffers)
+        {
+            if (buffer.Length == 0)
+                continue;
+
+            // TrimEnd mirrors what TryReadLine does for every other line, so the last one is not the only one that can
+            // come out with a trailing CR. It matters when the stream stops between the CR and the LF of a CRLF ending.
+            var parsed = ParseLogLine(logStream, buffer.ToString().TrimEnd('\r'));
+            if (parsed is not null)
+                yield return parsed;
         }
     }
 

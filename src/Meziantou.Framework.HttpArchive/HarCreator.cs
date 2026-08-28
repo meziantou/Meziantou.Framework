@@ -8,11 +8,11 @@ public sealed class HarCreator
 {
     /// <summary>Gets or sets the name of the application that created the log.</summary>
     [JsonPropertyName("name")]
-    public string Name { get; set; } = "";
+    public string? Name { get; set; } = "";
 
     /// <summary>Gets or sets the version of the application that created the log.</summary>
     [JsonPropertyName("version")]
-    public string Version { get; set; } = "";
+    public string? Version { get; set; } = "";
 
     /// <summary>Gets or sets a comment provided by the user or the application.</summary>
     [JsonPropertyName("comment")]

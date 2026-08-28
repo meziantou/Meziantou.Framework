@@ -177,7 +177,10 @@ public sealed record SnapshotSettings
         var suffix = suffixWithoutHash;
         if (shouldAddHashSuffix)
         {
-            var hashInput = $"{context.SourceFilePath}|{context.MethodName}|{context.ClassName}|{context.LineNumber}|{context.Type.Type}|{rawStartPart}|{context.TestContext?.TestName}|{FormatMetadata(context.TestContext?.Metadata)}";
+            // The line number is deliberately not part of the hash: it would rename the snapshot whenever
+            // anything above the assertion moves, and it adds no uniqueness since two assertions in one
+            // test are already separated by the index suffix.
+            var hashInput = $"{context.SourceFilePath}|{context.MethodName}|{context.ClassName}|{context.Type.Type}|{rawStartPart}|{context.TestContext?.TestName}|{FormatMetadata(context.TestContext?.Metadata)}";
             var hash = ToHexSha256(hashInput, length: 8);
             suffix = hasMultipleSnapshots ? "_" + hash + "_" + indexPart + ".verified." + extension : "_" + hash + ".verified." + extension;
         }

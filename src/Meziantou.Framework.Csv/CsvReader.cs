@@ -27,6 +27,7 @@ public class CsvReader
     private bool _hasBufferedChar;
     private char _bufferedChar;
     private bool _endOfStreamReached;
+    private bool _hasParsedRow;
 
     /// <summary>Gets or sets the character used to separate values in a row. Default is a comma (,).</summary>
     public char Separator { get; set; } = DefaultSeparatorCharacter;
@@ -37,10 +38,12 @@ public class CsvReader
     /// <summary>Gets or sets a value indicating whether the first row contains column headers.</summary>
     public bool HasHeaderRow { get; set; }
 
-    /// <summary>Gets the current column number being read (1-based).</summary>
+    /// <summary>Gets the number of characters read since the beginning of the current row.</summary>
+    /// <remarks>This is a character position, not the index of the field being read. It counts every character consumed by the current row, including the characters of a multi-line quoted value, and it is reset to 0 at the start of each row.</remarks>
     public int ColumnNumber { get; private set; }
 
-    /// <summary>Gets the current line number being read (1-based).</summary>
+    /// <summary>Gets the number of line terminators consumed so far.</summary>
+    /// <remarks>This is 0 while the first line is being read, and is incremented as each line ends. Line terminators inside a quoted value are counted, so this tracks the physical line in the input rather than the number of rows returned. See <see cref="RowNumber"/> for the row.</remarks>
     public int LineNumber { get; private set; }
 
     /// <summary>Gets or sets the current row number (0-based).</summary>
@@ -50,6 +53,7 @@ public class CsvReader
     public TextReader BaseReader { get; }
 
     /// <summary>Gets a value indicating whether the end of the stream has been reached.</summary>
+    /// <remarks>Reading this property can block: when the internal buffer is empty it queries the underlying <see cref="TextReader"/> synchronously, even though the rest of this type is asynchronous. Prefer testing whether <see cref="ReadRowAsync"/> returned <see langword="null"/>.</remarks>
     public bool EndOfStream
     {
         get
@@ -132,7 +136,7 @@ public class CsvReader
         {
             var inQuote = false;
             var value = new StringBuilder();
-            var hasCell = false;
+            var hasPendingValue = false;
             ColumnNumber = 0;
             while (true)
             {
@@ -140,12 +144,11 @@ public class CsvReader
                 if (!c.HasValue)
                 {
                     endOfStream = true;
-                    if (hasCell)
+                    if (hasPendingValue)
                     {
                         rowValues.Add(value.ToString());
                     }
 
-                    RowNumber++;
                     break;
                 }
 
@@ -161,19 +164,18 @@ public class CsvReader
                     {
                         if (next == '\n')
                         {
-                            hasCell = true;
+                            hasPendingValue = true;
                             value.Append(c.Value);
                             c = await ReadCharAsync().ConfigureAwait(false);
                             ColumnNumber++;
                             if (!c.HasValue)
                             {
                                 endOfStream = true;
-                                if (hasCell)
+                                if (hasPendingValue)
                                 {
                                     rowValues.Add(value.ToString());
                                 }
 
-                                RowNumber++;
                                 break;
                             }
                         }
@@ -186,7 +188,7 @@ public class CsvReader
                         if (next == Quote)
                         {
                             await ReadCharAsync().ConfigureAwait(false);
-                            hasCell = true;
+                            hasPendingValue = true;
                             value.Append(Quote.Value);
                         }
                         else
@@ -196,13 +198,13 @@ public class CsvReader
                     }
                     else
                     {
-                        hasCell = true;
+                        hasPendingValue = true;
                         value.Append(c.Value);
                     }
                 }
                 else if (c == '\n')
                 {
-                    if (hasCell)
+                    if (hasPendingValue)
                     {
                         rowValues.Add(value.ToString());
                     }
@@ -218,7 +220,7 @@ public class CsvReader
                         ColumnNumber++;
                     }
 
-                    if (hasCell)
+                    if (hasPendingValue)
                     {
                         rowValues.Add(value.ToString());
                     }
@@ -230,11 +232,12 @@ public class CsvReader
                 {
                     if (value.Length == 0)
                     {
+                        hasPendingValue = true;
                         inQuote = true;
                     }
                     else
                     {
-                        hasCell = true;
+                        hasPendingValue = true;
                         value.Append(c.Value);
                     }
                 }
@@ -242,11 +245,11 @@ public class CsvReader
                 {
                     rowValues.Add(value.ToString());
                     value.Clear();
-                    hasCell = false;
+                    hasPendingValue = true;
                 }
                 else
                 {
-                    hasCell = true;
+                    hasPendingValue = true;
                     value.Append(c.Value);
                 }
             }
@@ -254,6 +257,13 @@ public class CsvReader
 
         if (rowValues.Count == 0 && endOfStream)
             return null;
+
+        if (_hasParsedRow)
+        {
+            RowNumber++;
+        }
+
+        _hasParsedRow = true;
 
         var columns = _columns;
         if (HasHeaderRow && columns is null)

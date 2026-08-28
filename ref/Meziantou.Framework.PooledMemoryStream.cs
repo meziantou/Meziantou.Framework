@@ -6,12 +6,12 @@ namespace Meziantou.Framework
 {
     public sealed class PooledMemoryStream : System.Buffers.IBufferWriter<byte>, System.IO.MemoryStream
     {
-        public bool CanRead { get => throw null; }
-        public bool CanSeek { get => throw null; }
-        public bool CanWrite { get => throw null; }
-        public long Length { get => throw null; }
-        public long Position { get => throw null; set { } }
-        public int Capacity { get => throw null; set { } }
+        public override bool CanRead { get => throw null; }
+        public override bool CanSeek { get => throw null; }
+        public override bool CanWrite { get => throw null; }
+        public override long Length { get => throw null; }
+        public override long Position { get => throw null; set { } }
+        public override int Capacity { get => throw null; set { } }
         public PooledMemoryStream(int initialCapacity) { }
         public PooledMemoryStream(Meziantou.Framework.PooledMemoryStreamOptions options) { }
         public PooledMemoryStream(Meziantou.Framework.PooledMemoryStreamOptions options, int initialCapacity) { }

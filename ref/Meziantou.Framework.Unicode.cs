@@ -15,6 +15,10 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeCharacterInfo? GetCharacterInfo(char value) => throw null;
         public static bool TryGetCharacterInfo(System.Text.Rune rune, out Meziantou.Framework.UnicodeCharacterInfo info) => throw null;
         public static bool TryGetCharacterInfo(char value, out Meziantou.Framework.UnicodeCharacterInfo info) => throw null;
+        public static string GetConfusableSkeleton(string value) => throw null;
+        public static bool AreConfusable(string a, string b) => throw null;
+        public static bool IsSingleScript(string value) => throw null;
+        public static bool IsMixedScript(string value) => throw null;
     }
 
     public enum UnicodeBidirectionalCategory
@@ -409,7 +413,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeBlock GetBlock(System.Text.Rune rune) => throw null;
     }
 
-    public readonly struct UnicodeCharacterInfo
+    public readonly struct UnicodeCharacterInfo : System.IEquatable<Meziantou.Framework.UnicodeCharacterInfo>
     {
         public System.Text.Rune Rune { get => throw null; }
         public string Name { get => throw null; }
@@ -433,6 +437,11 @@ namespace Meziantou.Framework
         public bool IsEmojiModifierBase { get => throw null; }
         public bool IsEmojiComponent { get => throw null; }
         public bool IsExtendedPictographic { get => throw null; }
+        public bool Equals(Meziantou.Framework.UnicodeCharacterInfo other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.UnicodeCharacterInfo left, Meziantou.Framework.UnicodeCharacterInfo right) => throw null;
+        public static bool operator !=(Meziantou.Framework.UnicodeCharacterInfo left, Meziantou.Framework.UnicodeCharacterInfo right) => throw null;
     }
 
     public static class UnicodeEmoji
@@ -460,5 +469,191 @@ namespace Meziantou.Framework
         public static bool operator ==(Meziantou.Framework.UnicodeRange left, Meziantou.Framework.UnicodeRange right) => throw null;
         public static bool operator !=(Meziantou.Framework.UnicodeRange left, Meziantou.Framework.UnicodeRange right) => throw null;
         public override string ToString() => throw null;
+    }
+
+    public enum UnicodeScript
+    {
+        Unknown = 0,
+        Adlam = 1,
+        Ahom = 2,
+        AnatolianHieroglyphs = 3,
+        Arabic = 4,
+        Armenian = 5,
+        Avestan = 6,
+        Balinese = 7,
+        Bamum = 8,
+        BassaVah = 9,
+        Batak = 10,
+        Bengali = 11,
+        BeriaErfe = 12,
+        Bhaiksuki = 13,
+        Bopomofo = 14,
+        Brahmi = 15,
+        Braille = 16,
+        Buginese = 17,
+        Buhid = 18,
+        CanadianAboriginal = 19,
+        Carian = 20,
+        CaucasianAlbanian = 21,
+        Chakma = 22,
+        Cham = 23,
+        Cherokee = 24,
+        Chorasmian = 25,
+        Common = 26,
+        Coptic = 27,
+        Cuneiform = 28,
+        Cypriot = 29,
+        CyproMinoan = 30,
+        Cyrillic = 31,
+        Deseret = 32,
+        Devanagari = 33,
+        DivesAkuru = 34,
+        Dogra = 35,
+        Duployan = 36,
+        EgyptianHieroglyphs = 37,
+        Elbasan = 38,
+        Elymaic = 39,
+        Ethiopic = 40,
+        Garay = 41,
+        Georgian = 42,
+        Glagolitic = 43,
+        Gothic = 44,
+        Grantha = 45,
+        Greek = 46,
+        Gujarati = 47,
+        GunjalaGondi = 48,
+        Gurmukhi = 49,
+        GurungKhema = 50,
+        Han = 51,
+        Hangul = 52,
+        HanifiRohingya = 53,
+        Hanunoo = 54,
+        Hatran = 55,
+        Hebrew = 56,
+        Hiragana = 57,
+        ImperialAramaic = 58,
+        Inherited = 59,
+        InscriptionalPahlavi = 60,
+        InscriptionalParthian = 61,
+        Javanese = 62,
+        Kaithi = 63,
+        Kannada = 64,
+        Katakana = 65,
+        KatakanaOrHiragana = 66,
+        Kawi = 67,
+        KayahLi = 68,
+        Kharoshthi = 69,
+        KhitanSmallScript = 70,
+        Khmer = 71,
+        Khojki = 72,
+        Khudawadi = 73,
+        KiratRai = 74,
+        Lao = 75,
+        Latin = 76,
+        Lepcha = 77,
+        Limbu = 78,
+        LinearA = 79,
+        LinearB = 80,
+        Lisu = 81,
+        Lycian = 82,
+        Lydian = 83,
+        Mahajani = 84,
+        Makasar = 85,
+        Malayalam = 86,
+        Mandaic = 87,
+        Manichaean = 88,
+        Marchen = 89,
+        MasaramGondi = 90,
+        Medefaidrin = 91,
+        MeeteiMayek = 92,
+        MendeKikakui = 93,
+        MeroiticCursive = 94,
+        MeroiticHieroglyphs = 95,
+        Miao = 96,
+        Modi = 97,
+        Mongolian = 98,
+        Mro = 99,
+        Multani = 100,
+        Myanmar = 101,
+        Nabataean = 102,
+        NagMundari = 103,
+        Nandinagari = 104,
+        NewTaiLue = 105,
+        Newa = 106,
+        Nko = 107,
+        Nushu = 108,
+        NyiakengPuachueHmong = 109,
+        Ogham = 110,
+        OlChiki = 111,
+        OlOnal = 112,
+        OldHungarian = 113,
+        OldItalic = 114,
+        OldNorthArabian = 115,
+        OldPermic = 116,
+        OldPersian = 117,
+        OldSogdian = 118,
+        OldSouthArabian = 119,
+        OldTurkic = 120,
+        OldUyghur = 121,
+        Oriya = 122,
+        Osage = 123,
+        Osmanya = 124,
+        PahawhHmong = 125,
+        Palmyrene = 126,
+        PauCinHau = 127,
+        PhagsPa = 128,
+        Phoenician = 129,
+        PsalterPahlavi = 130,
+        Rejang = 131,
+        Runic = 132,
+        Samaritan = 133,
+        Saurashtra = 134,
+        Sharada = 135,
+        Shavian = 136,
+        Siddham = 137,
+        Sidetic = 138,
+        SignWriting = 139,
+        Sinhala = 140,
+        Sogdian = 141,
+        SoraSompeng = 142,
+        Soyombo = 143,
+        Sundanese = 144,
+        Sunuwar = 145,
+        SylotiNagri = 146,
+        Syriac = 147,
+        Tagalog = 148,
+        Tagbanwa = 149,
+        TaiLe = 150,
+        TaiTham = 151,
+        TaiViet = 152,
+        TaiYo = 153,
+        Takri = 154,
+        Tamil = 155,
+        Tangsa = 156,
+        Tangut = 157,
+        Telugu = 158,
+        Thaana = 159,
+        Thai = 160,
+        Tibetan = 161,
+        Tifinagh = 162,
+        Tirhuta = 163,
+        Todhri = 164,
+        TolongSiki = 165,
+        Toto = 166,
+        TuluTigalari = 167,
+        Ugaritic = 168,
+        Vai = 169,
+        Vithkuqi = 170,
+        Wancho = 171,
+        WarangCiti = 172,
+        Yezidi = 173,
+        Yi = 174,
+        ZanabazarSquare = 175
+    }
+
+    public static class UnicodeScripts
+    {
+        public static Meziantou.Framework.UnicodeScript GetScript(int codePoint) => throw null;
+        public static Meziantou.Framework.UnicodeScript GetScript(System.Text.Rune rune) => throw null;
     }
 }

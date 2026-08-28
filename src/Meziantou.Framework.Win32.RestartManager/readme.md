@@ -36,6 +36,26 @@ foreach (var process in processes)
 }
 ```
 
+### Find Processes Locking Several Files
+
+Registering resources performs relatively expensive write operations, so checking many files with one
+session is significantly cheaper than calling `GetProcessesLockingFile` in a loop:
+
+```csharp
+using Meziantou.Framework.Win32;
+
+var processes = RestartManager.GetProcessesLockingFiles(
+[
+    @"C:\path\to\file1.txt",
+    @"C:\path\to\file2.txt",
+]);
+
+foreach (var process in processes)
+{
+    Console.WriteLine($"Process {process.ProcessName} (PID: {process.Id}) is locking at least one of the files");
+}
+```
+
 ### Manual Session Management
 
 For more control, you can create and manage a Restart Manager session manually:
@@ -78,6 +98,14 @@ The Restart Manager can shut down and restart applications that are locking reso
 ```csharp
 using var session = RestartManager.CreateSession();
 session.RegisterFile(@"C:\path\to\file.txt");
+
+// A non-zero reboot reason means shutting applications down cannot free the resources,
+// and that a system restart is required instead. Check it before shutting anything down.
+if (session.IsResourcesLocked() && session.RebootReason != RestartManagerRebootReason.None)
+{
+    Console.WriteLine($"A system restart is required: {session.RebootReason}");
+    return;
+}
 
 // Shutdown applications with options
 session.Shutdown(RestartManagerShutdownType.ForceShutdown);

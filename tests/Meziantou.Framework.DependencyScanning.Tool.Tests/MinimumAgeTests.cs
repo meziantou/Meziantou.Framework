@@ -53,7 +53,7 @@ public sealed class MinimumAgeTests
     }
 
     [Fact]
-    public async Task VersionsWithoutPublishDate_AreNotFiltered()
+    public async Task VersionsWithoutPublishDate_AreNotFiltered_WhenTheSourceHasNoDates()
     {
         // Some sources (e.g. Docker) don't expose a publication date; those versions must remain eligible.
         var versions = new[]
@@ -61,7 +61,38 @@ public sealed class MinimumAgeTests
             new PackageVersion("2.0.0", PublishedDate: null),
         };
 
+        var (result, _, location) = await RunUpdateAsync(versions, minimumAge: 7, versionsHavePublicationDates: false);
+
+        Assert.Equal("2.0.0", result);
+        Assert.Equal("2.0.0", location.UpdatedValue);
+    }
+
+    [Fact]
+    public async Task VersionsWithoutPublishDate_AreSkipped_WhenTheSourceNormallyHasDates()
+    {
+        // A missing date from a source that normally reports them means the age could not be verified,
+        // so the version must not silently bypass the filter.
+        var versions = new[]
+        {
+            new PackageVersion("2.0.0", PublishedDate: null),
+            new PackageVersion("1.5.0", Now.UtcDateTime.AddDays(-30)),
+        };
+
         var (result, _, location) = await RunUpdateAsync(versions, minimumAge: 7);
+
+        Assert.Equal("1.5.0", result);
+        Assert.Equal("1.5.0", location.UpdatedValue);
+    }
+
+    [Fact]
+    public async Task VersionsWithoutPublishDate_AreNotFiltered_WhenFilteringIsDisabled()
+    {
+        var versions = new[]
+        {
+            new PackageVersion("2.0.0", PublishedDate: null),
+        };
+
+        var (result, _, location) = await RunUpdateAsync(versions, minimumAge: 0);
 
         Assert.Equal("2.0.0", result);
         Assert.Equal("2.0.0", location.UpdatedValue);
@@ -72,7 +103,7 @@ public sealed class MinimumAgeTests
     {
         var location = new RecordingLocation();
         var dependency = new Dependency("Sample.Package", "1.0.0", DependencyType.NuGet, nameLocation: null, versionLocation: location);
-        var updater = new FakePackageUpdater([new PackageVersion("2.0.0", PublishedDate: null)]);
+        var updater = new FakePackageUpdater([new PackageVersion("2.0.0", PublishedDate: null)], versionsHavePublicationDates: false);
 
         var result = await updater.GetUpdatedVersionAsync(dependency, XunitCancellationToken);
 
@@ -94,12 +125,12 @@ public sealed class MinimumAgeTests
         Assert.Equal("2.0.0", location.UpdatedValue);
     }
 
-    private static async Task<(string? Result, Dependency Dependency, RecordingLocation Location)> RunUpdateAsync(PackageVersion[] versions, int minimumAge)
+    private static async Task<(string? Result, Dependency Dependency, RecordingLocation Location)> RunUpdateAsync(PackageVersion[] versions, int minimumAge, bool versionsHavePublicationDates = true)
     {
         var location = new RecordingLocation();
         var dependency = new Dependency("Sample.Package", "1.0.0", DependencyType.NuGet, nameLocation: null, versionLocation: location);
 
-        var updater = new FakePackageUpdater(versions)
+        var updater = new FakePackageUpdater(versions, versionsHavePublicationDates)
         {
             MinimumAge = minimumAge,
             TimeProvider = new FakeTimeProvider(Now),
@@ -109,9 +140,11 @@ public sealed class MinimumAgeTests
         return (result, dependency, location);
     }
 
-    private sealed class FakePackageUpdater(PackageVersion[] versions) : PackageUpdater
+    private sealed class FakePackageUpdater(PackageVersion[] versions, bool versionsHavePublicationDates = true) : PackageUpdater
     {
         public override VersioningStrategy VersioningStrategy { get; set; } = NuGetVersioningStrategy.Instance;
+
+        protected override bool VersionsHavePublicationDates => versionsHavePublicationDates;
 
         protected override bool IsSupported(Dependency dependency) => true;
 

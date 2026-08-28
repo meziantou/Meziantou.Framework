@@ -10,6 +10,7 @@
     <Compile Include="../../src/Meziantou.Framework.Unicode/UnicodeBlock.cs" Link="UnicodeBlock.cs" />
     <Compile Include="../../src/Meziantou.Framework.Unicode/UnicodeRange.cs" Link="UnicodeRange.cs" />
     <Compile Include="../../src/Meziantou.Framework.Unicode/UnicodeBidirectionalCategory.cs" Link="UnicodeBidirectionalCategory.cs" />
+    <Compile Include="../../src/Meziantou.Framework.Unicode/EmojiProperties.cs" Link="EmojiProperties.cs" />
   </ItemGroup>
 
   <ItemGroup>

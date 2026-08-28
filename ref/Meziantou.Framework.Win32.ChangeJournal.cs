@@ -67,36 +67,36 @@ namespace Meziantou.Framework.Win32
     [System.Flags]
     public enum ChangeJournalFlags
     {
-        None = 0,
-        TrackModifiedRangesEnable = 1
+        None = 0U,
+        TrackModifiedRangesEnable = 1U
     }
 
     [System.Flags]
     public enum ChangeReason
     {
-        BasicInfoChange = 32768,
-        Close = 2147483648,
-        CompressionChange = 131072,
-        DataExtend = 2,
-        DataOverwrite = 1,
-        DataTruncation = 4,
-        ExtendedAttributesChange = 1024,
-        EncryptionChange = 262144,
-        FileCreate = 256,
-        FileDelete = 512,
-        HardLinkChange = 65536,
-        IndexableChange = 16384,
-        NamedDataExtend = 32,
-        NamedDataOverwrite = 16,
-        NamedDataTruncation = 64,
-        ObjectIDChange = 524288,
-        RenameNewName = 8192,
-        RenameOldName = 4096,
-        ReparsePointChange = 1048576,
-        SecurityChange = 2048,
-        StreamChange = 2097152,
-        TransactedChange = 4194304,
-        All = 2155872119
+        BasicInfoChange = 32768U,
+        Close = 2147483648U,
+        CompressionChange = 131072U,
+        DataExtend = 2U,
+        DataOverwrite = 1U,
+        DataTruncation = 4U,
+        ExtendedAttributesChange = 1024U,
+        EncryptionChange = 262144U,
+        FileCreate = 256U,
+        FileDelete = 512U,
+        HardLinkChange = 65536U,
+        IndexableChange = 16384U,
+        NamedDataExtend = 32U,
+        NamedDataOverwrite = 16U,
+        NamedDataTruncation = 64U,
+        ObjectIDChange = 524288U,
+        RenameNewName = 8192U,
+        RenameOldName = 4096U,
+        ReparsePointChange = 1048576U,
+        SecurityChange = 2048U,
+        StreamChange = 2097152U,
+        TransactedChange = 4194304U,
+        All = 2155872119U
     }
 
     public readonly struct FileIdentifier : System.IEquatable<Meziantou.Framework.Win32.FileIdentifier>

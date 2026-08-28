@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 using Xunit.Sdk;
@@ -424,6 +425,47 @@ public sealed partial class SnapshotTests
         Assert.Equal(snapshotType.FileExtension, snapshot.Extension);
         Assert.Equal(expectedBytes, snapshot.Data);
         Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void DefaultSerializer_ReadsTheStreamFromItsCurrentPosition()
+    {
+        var snapshotType = SnapshotType.Png;
+        using var stream = new MemoryStream("stream-binary-data"u8.ToArray());
+        stream.Position = "stream-".Length;
+
+        var data = new SnapshotSettings().Serializers.Serialize(snapshotType, stream);
+
+        var snapshot = Assert.Single(data.Data);
+        Assert.Equal("binary-data"u8.ToArray(), snapshot.Data);
+    }
+
+    [Fact]
+    public void DefaultSerializer_ProducesAnEmptySnapshotForAStreamPositionedAtTheEnd()
+    {
+        // The stream is not rewound, so a caller that has just written to it snapshots nothing. Pinned here
+        // because it is a surprising consequence of reading from the current position.
+        var snapshotType = SnapshotType.Png;
+        using var stream = new MemoryStream();
+        stream.Write("stream-binary-data"u8);
+
+        var data = new SnapshotSettings().Serializers.Serialize(snapshotType, stream);
+
+        var snapshot = Assert.Single(data.Data);
+        Assert.Empty(snapshot.Data);
+    }
+
+    [Fact]
+    public void DefaultSerializer_HandlesNonSeekableStream()
+    {
+        var snapshotType = SnapshotType.Png;
+        var expectedBytes = "stream-binary-data"u8.ToArray();
+        using var stream = new NonSeekableStream(expectedBytes);
+
+        var data = new SnapshotSettings().Serializers.Serialize(snapshotType, stream);
+
+        var snapshot = Assert.Single(data.Data);
+        Assert.Equal(expectedBytes, snapshot.Data);
     }
 
     [Fact]
@@ -1308,6 +1350,74 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
+    public void DefaultSnapshotPath_IsStableWhenTheAssertionMoves()
+    {
+        var settings = new SnapshotSettings();
+        var sourceFilePath = FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs"));
+        var methodName = "SampleTest" + new string('a', 200);
+
+        SnapshotPathContext CreateContext(int lineNumber) => new(
+            sourceFilePath,
+            "SampleTests",
+            methodName,
+            lineNumber,
+            SnapshotType.Default,
+            Index: 0,
+            Extension: "txt",
+            TestContext: null,
+            settings);
+
+        var beforeTheEdit = settings.SnapshotPathStrategy(CreateContext(12));
+        var afterTheEdit = settings.SnapshotPathStrategy(CreateContext(4711));
+
+        Assert.Equal(beforeTheEdit, afterTheEdit);
+        Assert.Matches(SnapshotNameWithHashSuffixRegex(), beforeTheEdit.Name);
+    }
+
+    [GeneratedRegex("_[0-9a-f]{8}\\.verified\\.txt$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex SnapshotNameWithHashSuffixRegex();
+
+    [Fact]
+    public void GitTool_GetGitConfiguration_ReadsTheValueWithoutDeadlocking()
+    {
+        if (ExecutableFinder.GetFullExecutablePath("git") is null)
+            return;
+
+        using var directory = TemporaryDirectory.Create();
+        RunGit(directory.FullPath, "init");
+        RunGit(directory.FullPath, "config", "difftool.sample.cmd", "sample $LOCAL $REMOTE");
+
+        Assert.Equal("sample $LOCAL $REMOTE", TestGitTool.Read(directory.FullPath, "difftool.sample.cmd"));
+        Assert.Null(TestGitTool.Read(directory.FullPath, "difftool.missing.cmd"));
+
+        static void RunGit(string workingDirectory, params string[] arguments)
+        {
+            var psi = new ProcessStartInfo(ExecutableFinder.GetFullExecutablePath("git")!)
+            {
+                WorkingDirectory = workingDirectory,
+                CreateNoWindow = true,
+                UseShellExecute = false,
+            };
+
+            foreach (var argument in arguments)
+            {
+                psi.ArgumentList.Add(argument);
+            }
+
+            using var process = Process.Start(psi)!;
+            process.WaitForExit();
+            Assert.Equal(0, process.ExitCode);
+        }
+    }
+
+    private sealed class TestGitTool : GitTool
+    {
+        public override MergeToolResult? Start(string currentFilePath, string newFilePath) => null;
+
+        public static string? Read(string? workingDirectory, string key) => GetGitConfiguration(workingDirectory, key);
+    }
+
+    [Fact]
     public void Validate_UsesTheComparerRegisteredForTheStoredFormat()
     {
         using var directory = TemporaryDirectory.Create();
@@ -1358,6 +1468,11 @@ public sealed partial class SnapshotTests
             InvocationCount++;
             return expected.Data.AsSpan().SequenceEqual(actual.Data);
         }
+    }
+
+    private sealed class NonSeekableStream(byte[] data) : MemoryStream(data)
+    {
+        public override bool CanSeek => false;
     }
 
     private sealed class FixedAssertionExceptionBuilder : AssertionExceptionBuilder

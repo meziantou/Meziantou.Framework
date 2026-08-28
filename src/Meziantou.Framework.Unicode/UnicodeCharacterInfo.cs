@@ -1,7 +1,7 @@
 namespace Meziantou.Framework;
 
 /// <summary>Represents Unicode character information.</summary>
-public readonly struct UnicodeCharacterInfo
+public readonly struct UnicodeCharacterInfo : IEquatable<UnicodeCharacterInfo>
 {
     private readonly sbyte _decimalDigitValue;
     private readonly sbyte _digitValue;
@@ -102,20 +102,40 @@ public readonly struct UnicodeCharacterInfo
     public Rune? SimpleTitlecaseMapping { get; }
 
     /// <summary>Gets a value indicating whether the character has the Emoji property.</summary>
-    public bool IsEmoji => (_emojiProperties & 0x01) != 0;
+    public bool IsEmoji => HasFlag(EmojiProperties.Emoji);
 
     /// <summary>Gets a value indicating whether the character has the Emoji_Presentation property.</summary>
-    public bool HasEmojiPresentation => (_emojiProperties & 0x02) != 0;
+    public bool HasEmojiPresentation => HasFlag(EmojiProperties.EmojiPresentation);
 
     /// <summary>Gets a value indicating whether the character has the Emoji_Modifier property.</summary>
-    public bool IsEmojiModifier => (_emojiProperties & 0x04) != 0;
+    public bool IsEmojiModifier => HasFlag(EmojiProperties.EmojiModifier);
 
     /// <summary>Gets a value indicating whether the character has the Emoji_Modifier_Base property.</summary>
-    public bool IsEmojiModifierBase => (_emojiProperties & 0x08) != 0;
+    public bool IsEmojiModifierBase => HasFlag(EmojiProperties.EmojiModifierBase);
 
     /// <summary>Gets a value indicating whether the character has the Emoji_Component property.</summary>
-    public bool IsEmojiComponent => (_emojiProperties & 0x10) != 0;
+    public bool IsEmojiComponent => HasFlag(EmojiProperties.EmojiComponent);
 
     /// <summary>Gets a value indicating whether the character has the Extended_Pictographic property.</summary>
-    public bool IsExtendedPictographic => (_emojiProperties & 0x20) != 0;
+    public bool IsExtendedPictographic => HasFlag(EmojiProperties.ExtendedPictographic);
+
+    /// <summary>Determines whether this instance and another describe the same Unicode character.</summary>
+    /// <param name="other">The other character information.</param>
+    /// <returns><see langword="true"/> when both describe the same character; otherwise <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Instances come from a fixed table keyed by <see cref="Rune"/>, so the scalar value identifies the
+    /// entry. <see cref="Name"/> is compared as well so that a <see langword="default"/> instance, which
+    /// carries the scalar value U+0000 and no name, is not equal to the real entry for U+0000.
+    /// </remarks>
+    public bool Equals(UnicodeCharacterInfo other) => Rune == other.Rune && string.Equals(Name, other.Name, StringComparison.Ordinal);
+
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is UnicodeCharacterInfo other && Equals(other);
+
+    public override int GetHashCode() => Rune.GetHashCode();
+
+    public static bool operator ==(UnicodeCharacterInfo left, UnicodeCharacterInfo right) => left.Equals(right);
+
+    public static bool operator !=(UnicodeCharacterInfo left, UnicodeCharacterInfo right) => !left.Equals(right);
+
+    private bool HasFlag(EmojiProperties flag) => ((EmojiProperties)_emojiProperties & flag) != EmojiProperties.None;
 }

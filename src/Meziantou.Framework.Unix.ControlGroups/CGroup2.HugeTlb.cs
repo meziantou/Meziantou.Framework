@@ -1,14 +1,13 @@
 namespace Meziantou.Framework.Unix.ControlGroups;
 
-/// <summary>Extension methods for HugeTLB controller on CGroup2.</summary>
-public partial class CGroup2
+public sealed partial class CGroup2
 {
     /// <summary>Sets the HugeTLB usage limit for a specific page size.</summary>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
     /// <param name="bytes">Maximum usage in bytes, or null for no limit.</param>
     public void SetHugeTlbMax(string pageSize, long? bytes)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
+        ValidateSegment(pageSize, nameof(pageSize));
         if (bytes.HasValue)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(bytes.Value, nameof(bytes));
@@ -21,61 +20,52 @@ public partial class CGroup2
 
     /// <summary>Gets the HugeTLB usage limit for a specific page size.</summary>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
-    /// <returns>The limit in bytes, or null if set to max.</returns>
-    public long? GetHugeTlbMax(string pageSize)
+    /// <returns>
+    /// The limit in bytes, <see cref="CGroupValueState.NotConfigured"/> when there is no limit, or
+    /// <see cref="CGroupValueState.Unavailable"/> when the running kernel does not provide this page size.
+    /// </returns>
+    public CGroupValue<long> GetHugeTlbMax(string pageSize)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
+        ValidateSegment(pageSize, nameof(pageSize));
 
-        if (!TryReadFile($"hugetlb.{pageSize}.max", out var content))
-            return null;
-
-        content = content.Trim();
-        if (content.Equals("max", StringComparison.OrdinalIgnoreCase))
-            return null;
-
-        if (long.TryParse(content, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
-            return value;
-
-        throw UnexpectedContent($"hugetlb.{pageSize}.max", content);
+        return ReadLimit($"hugetlb.{pageSize}.max");
     }
 
     /// <summary>Gets the current HugeTLB usage for a specific page size.</summary>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
-    /// <returns>Current usage in bytes.</returns>
-    public long? GetHugeTlbCurrent(string pageSize)
+    /// <returns>Current usage in bytes, or <see cref="CGroupValueState.Unavailable"/> when the running kernel does not provide this page size.</returns>
+    public CGroupValue<long> GetHugeTlbCurrent(string pageSize)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
+        ValidateSegment(pageSize, nameof(pageSize));
 
-        if (!TryReadFile($"hugetlb.{pageSize}.current", out var content))
-            return null;
-
-        content = content.Trim();
-        if (long.TryParse(content, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
-            return value;
-
-        throw UnexpectedContent($"hugetlb.{pageSize}.current", content);
+        return ReadCount($"hugetlb.{pageSize}.current");
     }
 
     /// <summary>Gets the number of times the HugeTLB limit was hit.</summary>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
-    /// <returns>Number of limit hits.</returns>
-    public long? GetHugeTlbEventsMax(string pageSize)
+    /// <returns>Number of limit hits, or <see cref="CGroupValueState.Unavailable"/> when the running kernel does not provide this page size.</returns>
+    public CGroupValue<long> GetHugeTlbEventsMax(string pageSize)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
+        ValidateSegment(pageSize, nameof(pageSize));
 
-        if (!TryReadFile($"hugetlb.{pageSize}.events", out var content))
-            return null;
+        return ParseHugeTlbEventsMax(ReadFileOrNull($"hugetlb.{pageSize}.events"));
+    }
 
+    /// <summary>Parses the content of a <c>hugetlb.&lt;size&gt;.events</c> interface file.</summary>
+    /// <param name="content">The content of the interface file, or <see langword="null"/> when it does not exist.</param>
+    internal static CGroupValue<long> ParseHugeTlbEventsMax(string? content)
+    {
+        if (content is null)
+            return CGroupValue<long>.Unavailable();
+
+        content = content.Trim();
         foreach (var line in content.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
             var parts = line.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length == 2 && parts[0] == "max")
-            {
-                if (long.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
-                    return value;
-            }
+            if (parts.Length is 2 && parts[0] is "max" && long.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+                return CGroupValue<long>.Configured(value, content);
         }
 
-        return null;
+        return CGroupValue<long>.Invalid(content);
     }
 }

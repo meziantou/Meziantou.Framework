@@ -43,6 +43,21 @@ With the default options, the generated markup is designed to work well with hig
 <pre><code><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">MyClass</span> { }</code></pre>
 ```
 
+## Unknown languages
+
+`Highlight` throws `NotSupportedException` when the language is not recognized. When the
+identifier comes from untrusted input — a Markdown fence, for example — use `TryHighlight` or
+`IsSupported` instead:
+
+```csharp
+if (!SyntaxHighlighter.TryHighlight(code, language, out var html))
+{
+    html = WebUtility.HtmlEncode(code); // render it as plain text
+}
+```
+
+`SyntaxHighlighter.GetSupportedLanguages()` returns every identifier and alias listed below.
+
 ## Supported languages
 
 The package currently supports these language identifiers and common aliases:

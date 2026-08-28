@@ -76,4 +76,114 @@ public sealed class JsonPathParseTests
         var path = JsonPath.Parse(expression);
         Assert.Equal(expression, path.ToString());
     }
+
+    [Theory]
+    // RFC 9535: name-first = ALPHA / "_" / %x80-D7FF / %xE000-10FFFF, so supplementary-plane
+    // code points are valid in a member-name shorthand.
+    [InlineData("$.\U0001D11E")]        // U+1D11E MUSICAL SYMBOL G CLEF
+    [InlineData("$.\U0001F600")]        // U+1F600 GRINNING FACE
+    [InlineData("$.a\U0001D11E")]       // supplementary code point as a name-char
+    [InlineData("$.\U0001D11Eb")]
+    [InlineData("$.\U0010FFFF")]        // highest valid code point
+    [InlineData("$.☺")]            // BMP, already worked
+    [InlineData("$..\U0001D11E")]       // descendant segment
+    public void TryParse_SupplementaryPlaneMemberNameShorthand_ReturnsTrue(string expression)
+    {
+        Assert.True(JsonPath.TryParse(expression, out _));
+    }
+
+    [Fact]
+    public void TryParse_LoneSurrogateInMemberNameShorthand_ReturnsFalse()
+    {
+        // Built from char values rather than InlineData: xUnit serializes theory arguments, which
+        // replaces a lone surrogate with U+FFFD — itself a valid name character, so the test would pass
+        // for the wrong reason.
+        const char High = '\uD834';
+        const char Low = '\uDD1E';
+
+        Assert.False(JsonPath.TryParse("$." + High, out _));            // lone high surrogate
+        Assert.False(JsonPath.TryParse("$." + Low, out _));             // lone low surrogate
+        Assert.False(JsonPath.TryParse("$." + Low + High, out _));      // reversed pair
+        Assert.False(JsonPath.TryParse("$.a" + High, out _));           // lone high surrogate as a name-char
+        Assert.False(JsonPath.TryParse("$." + High + "a", out _));      // high surrogate followed by a non-surrogate
+    }
+
+    [Fact]
+    public void Evaluate_SupplementaryPlaneShorthand_MatchesTheBracketForm()
+    {
+        var doc = System.Text.Json.Nodes.JsonNode.Parse("""{"𝄞":1,"a𝄞":2}""");
+
+        Assert.Equal(1, JsonPath.Parse("$.\U0001D11E").EvaluateValue(doc)!.GetValue<int>());
+        Assert.Equal(1, JsonPath.Parse("$[\"\U0001D11E\"]").EvaluateValue(doc)!.GetValue<int>());
+        Assert.Equal(2, JsonPath.Parse("$.a\U0001D11E").EvaluateValue(doc)!.GetValue<int>());
+    }
+
+    [Theory]
+    [MemberData(nameof(DeeplyNestedExpressions), 5_000)]
+    public void TryParse_DeeplyNestedExpression_ReturnsFalseInsteadOfOverflowingTheStack(string expression)
+    {
+        Assert.False(JsonPath.TryParse(expression, out var result));
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [MemberData(nameof(DeeplyNestedExpressions), 8)]
+    public void TryParse_ModeratelyNestedExpression_StaysWithinTheDepthLimit(string expression)
+    {
+        Assert.True(JsonPath.TryParse(expression, out var result));
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void Parse_ManyConjuncts_IsNotTreatedAsNesting()
+    {
+        // '&&' chains are parsed iteratively, so a flat chain must not consume nesting budget.
+        var expression = "$[?" + string.Join(" && ", Enumerable.Range(0, 500).Select(i => $"@.a{i}")) + "]";
+        Assert.True(JsonPath.TryParse(expression, out _));
+    }
+
+    public static TheoryData<string> DeeplyNestedExpressions(int depth)
+    {
+        return
+        [
+            // paren-expr recursion
+            "$[?" + new string('(', depth) + "@.a" + new string(')', depth) + "]",
+            // nested filter-selector recursion
+            "$[?" + string.Concat(Enumerable.Repeat("@.a[?", depth)) + "@.b" + new string(']', depth) + "]",
+            // nested function-argument recursion
+            "$[?length(" + string.Concat(Enumerable.Repeat("length(", depth)) + "@" + new string(')', depth) + ")==1]",
+        ];
+    }
+
+    [Theory]
+    // RFC 9535 requires exactly 4 HEXDIG in a \u escape; whitespace is not a hex digit.
+    [InlineData("$[\"\\u 041\"]")]
+    [InlineData("$[\"\\u041 \"]")]
+    [InlineData("$['\\u 041']")]
+    [InlineData("$[\"\\u\t041\"]")]
+    [InlineData("$[\"\\u04 1\"]")]
+    public void TryParse_UnicodeEscapeWithWhitespaceInHexDigits_ReturnsFalse(string expression)
+    {
+        Assert.False(JsonPath.TryParse(expression, out var result));
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData("$[\"\\u0041\"]")]
+    [InlineData("$[\"\\u00e9\"]")]
+    [InlineData("$[\"\\u00E9\"]")]
+    [InlineData("$[\"\\uD834\\uDD1E\"]")]
+    public void TryParse_WellFormedUnicodeEscape_ReturnsTrue(string expression)
+    {
+        Assert.True(JsonPath.TryParse(expression, out _));
+    }
+
+    [Fact]
+    public void Parse_UnicodeEscape_IsCaseInsensitiveAndDecodesToTheSameName()
+    {
+        var doc = System.Text.Json.Nodes.JsonNode.Parse("""{"é":1}""");
+        Assert.Equal(1, JsonPath.Parse("$[\"\\u00e9\"]").EvaluateValue(doc)!.GetValue<int>());
+        Assert.Equal(1, JsonPath.Parse("$[\"\\u00E9\"]").EvaluateValue(doc)!.GetValue<int>());
+    }
+
 }

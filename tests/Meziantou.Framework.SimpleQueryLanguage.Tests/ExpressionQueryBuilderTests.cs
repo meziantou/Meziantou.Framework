@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Time.Testing;
+
 namespace Meziantou.Framework.SimpleQueryLanguage.Tests;
 
 public sealed class ExpressionQueryBuilderTests
@@ -177,10 +179,217 @@ public sealed class ExpressionQueryBuilderTests
         Assert.Equal("query", exception.ParamName);
     }
 
+    [Fact]
+    public void StringHandler_MatchesSubstring()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("name", item => item.StringValue);
+        var query = queryBuilder.Build("name:John");
+
+        var items = new[]
+        {
+            new Sample { StringValue = "John Doe" },
+            new Sample { StringValue = "Jane Doe" },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal("John Doe", result[0].StringValue);
+    }
+
+    [Fact]
+    public void StringHandler_NullProperty_DoesNotThrow()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("name", item => item.StringValue);
+        var query = queryBuilder.Build("name:John");
+
+        var items = new[]
+        {
+            new Sample { StringValue = null },
+            new Sample { StringValue = "John Doe" },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal("John Doe", result[0].StringValue);
+    }
+
+    [Fact]
+    public void StringHandler_DoesNotEmitStringComparison()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("name", item => item.StringValue);
+        var query = queryBuilder.Build("name:John");
+
+        // string.Contains(string, StringComparison) is not translatable by Entity Framework Core
+        Assert.DoesNotContain(nameof(StringComparison.OrdinalIgnoreCase), query.Predicate!.ToString());
+    }
+
+    [Fact]
+    public void StringHandler_ExplicitComparisonType_IgnoresCase()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("name", item => item.StringValue, StringComparison.OrdinalIgnoreCase);
+        var query = queryBuilder.Build("name:john");
+
+        var items = new[]
+        {
+            new Sample { StringValue = "John Doe" },
+            new Sample { StringValue = null },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal("John Doe", result[0].StringValue);
+    }
+
+    [Fact]
+    public void DateKeyword_Today_UsesTimeProvider()
+    {
+        var query = CreateDateQueryBuilder(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero)).Build("date:today");
+
+        var items = new[]
+        {
+            new Sample { DateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 3, 14, 8, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 3, 16, 8, 0, 0, DateTimeKind.Utc) },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc), result[0].DateTimeValue);
+    }
+
+    [Fact]
+    public void DateKeyword_ThisMonth_UsesTimeProvider()
+    {
+        var query = CreateDateQueryBuilder(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero)).Build("date:\"this month\"");
+
+        var items = new[]
+        {
+            new Sample { DateTimeValue = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 3, 31, 23, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 2, 28, 8, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc) },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.HasCount(2, result);
+    }
+
+    [Theory]
+    [InlineData("id:10", 1)]
+    [InlineData("id>5", 1)]
+    [InlineData("id<5", 1)]
+    [InlineData("id>=10", 1)]
+    [InlineData("id:5..15", 1)]
+    public void NullableInt32(string query, int expectedCount)
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<int?>("id", item => item.NullableInt32Value);
+
+        var items = new[]
+        {
+            new Sample { NullableInt32Value = 10 },
+            new Sample { NullableInt32Value = 3 },
+            new Sample { NullableInt32Value = null },
+        }.AsQueryable();
+
+        Assert.HasCount(expectedCount, queryBuilder.Build(query).Apply(items).ToList());
+    }
+
+    [Fact]
+    public void TimeSpan_SupportsComparisonOperators()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<TimeSpan>("duration", item => item.TimeSpanValue);
+        var query = queryBuilder.Build("duration>00:05:00");
+
+        var items = new[]
+        {
+            new Sample { TimeSpanValue = TimeSpan.FromMinutes(10) },
+            new Sample { TimeSpanValue = TimeSpan.FromMinutes(1) },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(TimeSpan.FromMinutes(10), result[0].TimeSpanValue);
+    }
+
+    [Fact]
+    public void DateTime_SupportsComparisonOperators()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<DateTime>("date", item => item.DateTimeValue);
+        var query = queryBuilder.Build("date>2026-03-01");
+
+        var items = new[]
+        {
+            new Sample { DateTimeValue = new DateTime(2026, 3, 15, 0, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 2, 15, 0, 0, 0, DateTimeKind.Utc) },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(new DateTime(2026, 3, 15, 0, 0, 0, DateTimeKind.Utc), result[0].DateTimeValue);
+    }
+
+    [Fact]
+    public void Enum_RegistersEqualityOnly()
+    {
+        // Expression.LessThan is not defined for enum types, so registering the handler must not throw
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<DayOfWeek>("day", item => item.DayOfWeekValue);
+
+        var items = new[]
+        {
+            new Sample { DayOfWeekValue = DayOfWeek.Friday },
+            new Sample { DayOfWeekValue = DayOfWeek.Monday },
+        }.AsQueryable();
+        var result = queryBuilder.Build("day:friday").Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(DayOfWeek.Friday, result[0].DayOfWeekValue);
+    }
+
+    [Fact]
+    public void UnorderableType_RegistersEqualityOnly()
+    {
+        var id = Guid.NewGuid();
+
+        // Guid cannot be ordered with <, so registering the handler must not throw
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<Guid>("guid", item => item.GuidValue);
+
+        var items = new[]
+        {
+            new Sample { GuidValue = id },
+            new Sample { GuidValue = Guid.NewGuid() },
+        }.AsQueryable();
+
+        Assert.Single(queryBuilder.Build($"guid:{id}").Apply(items).ToList());
+    }
+
+    private static ExpressionQueryBuilder<Sample> CreateDateQueryBuilder(DateTimeOffset utcNow)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(utcNow);
+
+        var queryBuilder = new ExpressionQueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddHandler<DateTime>("date", item => item.DateTimeValue);
+        return queryBuilder;
+    }
+
     private sealed class Sample
     {
         public int Int32Value { get; set; }
         public long Int64Value { get; set; }
         public string? StringValue { get; set; }
+        public int? NullableInt32Value { get; set; }
+        public TimeSpan TimeSpanValue { get; set; }
+        public DateTime DateTimeValue { get; set; }
+        public DayOfWeek DayOfWeekValue { get; set; }
+        public Guid GuidValue { get; set; }
     }
 }

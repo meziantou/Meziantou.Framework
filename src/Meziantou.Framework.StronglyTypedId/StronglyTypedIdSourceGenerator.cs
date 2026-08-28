@@ -118,6 +118,10 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         {
             var semanticModel = ctx.SemanticModel;
 
+            // Generic types are not supported. The analyzer reports MFSTID0004.
+            if (ctx.TargetSymbol is not INamedTypeSymbol targetSymbol || IsGenericTypeOrNestedInGenericType(targetSymbol))
+                return null;
+
             foreach (var attribute in ctx.Attributes)
             {
                 var attributeSyntax = attribute.ApplicationSyntaxReference!.GetSyntax(cancellationToken);
@@ -149,7 +153,6 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
                 return new AttributeInfo(
                     semanticModel.Compilation,
-                    attributeSyntax,
                     (INamedTypeSymbol)ctx.TargetSymbol,
                     idType,
                     type,
@@ -319,7 +322,35 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         }
 
         Debug.Assert(writer.Indentation == 0);
-        context.AddSource(attribute.TypeName + ".g.cs", writer.ToSourceText());
+        context.AddSource(GetHintName(attribute.PartialTypeContext), writer.ToSourceText());
+    }
+
+    /// <summary>
+    /// Gets the name of the generated file for a type. Roslyn requires the name to be unique within a generator, so the fully-qualified name of the type is used instead of its short name.
+    /// </summary>
+    private static string GetHintName(PartialTypeContext context)
+    {
+        var sb = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(context.Namespace))
+        {
+            sb.Append(context.Namespace);
+            sb.Append('.');
+        }
+
+        AppendTypeNames(sb, context);
+        sb.Append(".g.cs");
+        return sb.ToString();
+
+        static void AppendTypeNames(StringBuilder sb, PartialTypeContext context)
+        {
+            if (context.Parent is not null)
+            {
+                AppendTypeNames(sb, context.Parent);
+                sb.Append('.');
+            }
+
+            sb.Append(context.Name);
+        }
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Disposed manually")]
@@ -382,6 +413,20 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         }
     }
 
+    /// <summary>
+    /// Indicates whether the type is generic or is nested in a generic type. The generated code cannot support those types as an attribute argument cannot use a type parameter (CS0416), so the converters could not be associated with the type.
+    /// </summary>
+    internal static bool IsGenericTypeOrNestedInGenericType(INamedTypeSymbol symbol)
+    {
+        for (var current = symbol; current is not null; current = current.ContainingType)
+        {
+            if (current.Arity > 0)
+                return true;
+        }
+
+        return false;
+    }
+
     internal static IdType GetIdType(Compilation compilation, ITypeSymbol symbol)
     {
         var result = symbol.SpecialType switch
@@ -440,11 +485,10 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
     private sealed class AttributeInfo : IEquatable<AttributeInfo>
     {
-        public AttributeInfo(Compilation compilation, SyntaxNode attributeSyntax, INamedTypeSymbol typeSymbol, IdType idType, ITypeSymbol idTypeSymbol, StronglyTypedIdOptions options)
+        public AttributeInfo(Compilation compilation, INamedTypeSymbol typeSymbol, IdType idType, ITypeSymbol idTypeSymbol, StronglyTypedIdOptions options)
         {
             Debug.Assert(idType != IdType.Unknown);
 
-            AttributeSyntax = attributeSyntax;
             IdType = idType;
             Options = options;
             ApplyOptions();
@@ -608,9 +652,6 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             }
         }
 
-        // Only use to report diagnostic
-        public SyntaxNode AttributeSyntax { get; }
-
         // Info provided by the attribute
         public PartialTypeContext PartialTypeContext { get; }
         public IdType IdType { get; }
@@ -746,6 +787,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 && IsParseDefined_ReadOnlySpan == other.IsParseDefined_ReadOnlySpan
                 && SupportStaticInterfaces == other.SupportStaticInterfaces
                 && SupportIStronglyTypedId == other.SupportIStronglyTypedId
+                && SupportIStronglyTypedId_UnderlyingType == other.SupportIStronglyTypedId_UnderlyingType
                 && SupportIStronglyTypedIdOfT == other.SupportIStronglyTypedIdOfT
                 && SupportIParsable == other.SupportIParsable
                 && SupportISpanParsable == other.SupportISpanParsable
@@ -792,6 +834,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             hashcode.Add(IsParseDefined_String);
             hashcode.Add(IsParseDefined_ReadOnlySpan);
             hashcode.Add(SupportIStronglyTypedId);
+            hashcode.Add(SupportIStronglyTypedId_UnderlyingType);
             hashcode.Add(SupportIStronglyTypedIdOfT);
             hashcode.Add(SupportStaticInterfaces);
             hashcode.Add(SupportIParsable);

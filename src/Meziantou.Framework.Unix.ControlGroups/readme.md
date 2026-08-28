@@ -19,7 +19,7 @@ A .NET library for managing Linux Control Groups v2 (cgroups v2).
 
 ## Requirements
 
-- Linux kernel 4.5+ with cgroup v2 enabled
+- Linux kernel 4.5+ with cgroup v2 enabled. Some APIs need a newer kernel: `AssociateThread`/`GetThreads` need 4.14, `Freeze`/`Unfreeze`/`IsFrozen` need 5.2, and `Kill` needs 5.14. The set of keys reported by `GetMemoryStat` also varies by version — for example `swapcached` needs 5.13 and `kernel` needs 6.0 — and `MemoryStat` reports `null` for anything the running kernel does not emit.
 - cgroup v2 filesystem mounted at `/sys/fs/cgroup` (default on most modern distributions)
 - Appropriate permissions to manage cgroups
 
@@ -46,8 +46,9 @@ var subGroup = myGroup.CreateOrGetChild("worker1");
 ### CPU Control
 
 ```csharp
-// Enable CPU controller
-myGroup.SetControllers("cpu");
+// Enable the CPU controller for the children of the root cgroup, which is where myGroup lives.
+// Controllers are always enabled on the PARENT, never on the cgroup being limited.
+root.SetControllers("cpu");
 
 // Set CPU weight (relative share, 1-10000, default 100)
 myGroup.SetCpuWeight(200); // 2x the default share
@@ -59,8 +60,7 @@ myGroup.SetCpuMax(50_000, 100_000); // 50ms per 100ms period
 myGroup.RemoveCpuMax();
 
 // Get CPU statistics
-var cpuStat = myGroup.GetCpuStat();
-if (cpuStat != null)
+if (myGroup.GetCpuStat().TryGetValue(out var cpuStat))
 {
     Console.WriteLine($"CPU Usage: {cpuStat.UsageMicroseconds} μs");
     Console.WriteLine($"User time: {cpuStat.UserMicroseconds} μs");
@@ -71,8 +71,8 @@ if (cpuStat != null)
 ### Memory Control
 
 ```csharp
-// Enable memory controller
-myGroup.SetControllers("memory");
+// Enable the memory controller on the parent (see the note in "CPU Control")
+root.SetControllers("memory");
 
 // Set hard memory limit (1 GB)
 myGroup.SetMemoryMax(1024L * 1024 * 1024);
@@ -88,11 +88,20 @@ myGroup.SetSwapMax(512L * 1024 * 1024);
 
 // Get current memory usage
 var currentMemory = myGroup.GetMemoryCurrent();
-Console.WriteLine($"Current memory usage: {currentMemory} bytes");
+Console.WriteLine($"Current memory usage: {currentMemory.Value} bytes");
+
+// Get the hard limit. null means "unlimited"; "not enabled" and "unlimited" are different answers
+var max = myGroup.GetMemoryMax();
+Console.WriteLine(max.State switch
+{
+    CGroupValueState.Configured => $"Limited to {max.Value} bytes",
+    CGroupValueState.NotConfigured => "No memory limit",
+    CGroupValueState.Unavailable => "The memory controller is not enabled on the parent cgroup",
+    _ => $"Unexpected memory.max content: '{max.RawValue}'",
+});
 
 // Get detailed memory statistics
-var memoryStat = myGroup.GetMemoryStat();
-if (memoryStat != null)
+if (myGroup.GetMemoryStat().TryGetValue(out var memoryStat))
 {
     Console.WriteLine($"Anonymous memory: {memoryStat.Anon} bytes");
     Console.WriteLine($"File cache: {memoryStat.File} bytes");
@@ -103,8 +112,8 @@ if (memoryStat != null)
 ### IO Control
 
 ```csharp
-// Enable IO controller
-myGroup.SetControllers("io");
+// Enable the IO controller on the parent
+root.SetControllers("io");
 
 // Set default IO weight
 myGroup.SetDefaultIoWeight(200);
@@ -135,26 +144,26 @@ myGroup.RemoveIoMax(8, 0);
 ### PID Control
 
 ```csharp
-// Enable PIDs controller
-myGroup.SetControllers("pids");
+// Enable the PIDs controller on the parent
+root.SetControllers("pids");
 
 // Limit to 100 processes
 myGroup.SetPidsMax(100);
 
 // Get current number of processes
 var currentPids = myGroup.GetPidsCurrent();
-Console.WriteLine($"Current processes: {currentPids}");
+Console.WriteLine($"Current processes: {currentPids.Value}");
 
-// Get limit
+// Get limit (GetValueOrDefault avoids handling every state when a fallback is good enough)
 var maxPids = myGroup.GetPidsMax();
-Console.WriteLine($"Max processes: {maxPids}");
+Console.WriteLine($"Max processes: {maxPids.GetValueOrDefault(long.MaxValue)}");
 ```
 
 ### CPU Affinity (Cpuset)
 
 ```csharp
-// Enable cpuset controller
-myGroup.SetControllers("cpuset");
+// Enable the cpuset controller on the parent
+root.SetControllers("cpuset");
 
 // Restrict to CPUs 0, 1, 2
 myGroup.SetCpusetCpus(0, 1, 2);
@@ -167,7 +176,7 @@ myGroup.SetCpusetMems(0, 1);
 
 // Get effective CPUs (actually granted)
 var effectiveCpus = myGroup.GetCpusetCpusEffective();
-Console.WriteLine($"Effective CPUs: {string.Join(", ", effectiveCpus ?? [])}");
+Console.WriteLine($"Effective CPUs: {string.Join(", ", effectiveCpus.GetValueOrDefault([]))}");
 
 // Set partition type
 myGroup.SetCpusetPartition("isolated");
@@ -182,13 +191,16 @@ myGroup.SetCpusetPartition("isolated");
 // Set HugeTLB limit for 2MB pages
 myGroup.SetHugeTlbMax("2MB", 100 * 1024 * 1024); // 100 MB
 
-// Get current HugeTLB usage
+// Get current HugeTLB usage. Unavailable when the kernel does not provide this page size
 var current = myGroup.GetHugeTlbCurrent("2MB");
-Console.WriteLine($"Current 2MB HugeTLB usage: {current} bytes");
+if (current.IsConfigured)
+{
+    Console.WriteLine($"Current 2MB HugeTLB usage: {current.Value} bytes");
+}
 
 // Get limit hit count
 var limitHits = myGroup.GetHugeTlbEventsMax("2MB");
-Console.WriteLine($"HugeTLB limit hits: {limitHits}");
+Console.WriteLine($"HugeTLB limit hits: {limitHits.GetValueOrDefault(0)}");
 ```
 
 ### Process Management
@@ -251,7 +263,7 @@ Console.WriteLine($"Available: {string.Join(", ", available)}");
 var enabled = myGroup.GetEnabledControllers();
 Console.WriteLine($"Enabled: {string.Join(", ", enabled)}");
 
-// Enable multiple controllers at once
+// Enable multiple controllers at once for myGroup's children
 myGroup.SetControllers("cpu", "memory", "io");
 
 // Disable a controller
@@ -271,15 +283,28 @@ myGroup.Delete();
 
 1. **Permissions**: Managing cgroups typically requires root privileges or appropriate capabilities.
 
-2. **No Internal Process Constraint**: Non-root cgroups can only enable controllers if they don't contain any processes. Move processes to leaf cgroups first.
+2. **Controllers are enabled on the parent**: `SetControllers` writes to `cgroup.subtree_control`, which enables controllers for a cgroup's **children**. To limit `myGroup`, enable the controller on `myGroup.Parent`. Calling `myGroup.SetControllers("cpu")` makes `cpu.*` files appear in `myGroup`'s children, not in `myGroup` itself.
 
-3. **Hierarchical**: Resource limits are hierarchical. A child cgroup can't use more resources than its parent allows.
+3. **No Internal Process Constraint**: Non-root cgroups can only enable controllers if they don't contain any processes. Move processes to leaf cgroups first.
 
-4. **Culture Invariant**: All number parsing and formatting use `CultureInfo.InvariantCulture` for consistency.
+4. **Hierarchical**: Resource limits are hierarchical. A child cgroup can't use more resources than its parent allows.
 
-5. **cgroup v2 Only**: This library only supports cgroup v2. For systems still using cgroup v1, consider upgrading or use v1-specific tools.
+5. **Culture Invariant**: All number parsing and formatting use `CultureInfo.InvariantCulture` for consistency.
 
-6. **Error Handling**: File operations may throw `IOException`, `UnauthorizedAccessException`, or `DirectoryNotFoundException`. Handle these appropriately.
+6. **cgroup v2 Only**: This library only supports cgroup v2. For systems still using cgroup v1, consider upgrading or use v1-specific tools.
+
+7. **Error Handling**: File operations may throw `IOException`, `UnauthorizedAccessException`, or `DirectoryNotFoundException`. Handle these appropriately. Reading a cgroup that no longer exists throws `DirectoryNotFoundException` rather than reporting an absent value, so a stale `CGroup2` instance does not look like a healthy cgroup without controllers.
+
+8. **Reading values**: getters that read a single interface file return `CGroupValue<T>` instead of a nullable value, because "the controller is not enabled" and "there is no limit" are different answers and a caller deciding whether to apply its own limit must not confuse them:
+
+   | `State` | meaning |
+   |---|---|
+   | `Configured` | the file holds a value, available through `Value` |
+   | `NotConfigured` | the file holds no limit (`max`) |
+   | `Unavailable` | the file does not exist: the controller is not enabled on the parent cgroup, or the kernel does not support the feature |
+   | `Invalid` | the file holds content this library does not understand; `RawValue` keeps it for diagnostics |
+
+   Use `switch` over `State` when the cases differ, `TryGetValue` when only a value matters, and `GetValueOrDefault(fallback)` when a fallback is good enough. `Value` throws `InvalidOperationException` when there is no value.
 
 ## Example: Complete Application Resource Limiting
 
@@ -290,14 +315,14 @@ using System.Diagnostics;
 // Create a cgroup for the application
 var appGroup = CGroup2.Root.CreateOrGetChild("myapp");
 
-// Enable controllers
-appGroup.SetControllers("cpu", "memory", "io", "pids");
+// Enable controllers on the parent so they apply to appGroup
+CGroup2.Root.SetControllers("cpu", "memory", "io", "pids");
 
 // Configure limits
 appGroup.SetCpuWeight(100);       // Normal priority
 appGroup.SetCpuMax(200_000, 100_000);    // Max 2 CPUs
 appGroup.SetMemoryMax(2L * 1024 * 1024 * 1024); // 2 GB
-appGroup.SetMemoryHigh(1536L * 1024 * 1024 * 1024); // Start throttling at 1.5 GB
+appGroup.SetMemoryHigh(1536L * 1024 * 1024); // Start throttling at 1.5 GB
 appGroup.SetPidsMax(200);       // Max 200 processes
 
 // Start your application
@@ -311,9 +336,9 @@ while (!process.HasExited)
     var memCurrent = appGroup.GetMemoryCurrent();
     var pidsCurrent = appGroup.GetPidsCurrent();
     
-    Console.WriteLine($"CPU: {cpuStat?.UsageMicroseconds} μs");
-    Console.WriteLine($"Memory: {memCurrent / (1024.0 * 1024):F2} MB");
-    Console.WriteLine($"Processes: {pidsCurrent}");
+    Console.WriteLine($"CPU: {cpuStat.Value.UsageMicroseconds} μs");
+    Console.WriteLine($"Memory: {memCurrent.Value / (1024.0 * 1024):F2} MB");
+    Console.WriteLine($"Processes: {pidsCurrent.Value}");
     
     await Task.Delay(1000);
 }

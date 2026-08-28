@@ -180,7 +180,7 @@ public sealed class QueryBuilder<T>
         else
         {
             // field>=1
-            if (ValueConverter.TryParseValue<TValue>(value, out var parsedValue))
+            if (tryParseValue(value, out var parsedValue))
             {
                 var range = new UnaryRangeSyntax<TValue>(op, parsedValue);
                 return predicate(obj, range);
@@ -224,6 +224,8 @@ public sealed class QueryBuilder<T>
     /// <returns>A compiled query that can be evaluated against objects.</returns>
     public Query<T> Build(string query)
     {
+        ArgumentNullException.ThrowIfNull(query);
+
         var predicate = CreatePredicate(query);
         return new Query<T>(query, predicate);
     }

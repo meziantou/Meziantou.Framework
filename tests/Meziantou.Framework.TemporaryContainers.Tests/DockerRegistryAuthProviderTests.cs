@@ -55,6 +55,44 @@ public sealed class DockerRegistryAuthProviderTests
         Assert.Equal("registry.example.com", payload.ServerAddress);
     }
 
+    [Fact]
+    public async Task GetRegistryAuthHeaderValueAsync_ReturnsNullWhenTheCredentialHelperIsMissing()
+    {
+        var config = new DockerApiModels.AuthConfigFile
+        {
+            CredsStore = MissingHelperName(),
+        };
+
+        var provider = new DockerRegistryAuthProvider(overrideConfiguration: config);
+
+        Assert.Null(await provider.GetRegistryAuthHeaderValueAsync("redis:8", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetRegistryAuthHeaderValueAsync_FallsBackToAuthsWhenTheCredentialHelperIsMissing()
+    {
+        var config = new DockerApiModels.AuthConfigFile
+        {
+            CredsStore = MissingHelperName(),
+            Auths = new Dictionary<string, DockerApiModels.AuthEntry>(StringComparer.Ordinal)
+            {
+                ["https://index.docker.io/v1/"] = new DockerApiModels.AuthEntry
+                {
+                    Auth = Convert.ToBase64String(Encoding.UTF8.GetBytes("john:secret")),
+                },
+            },
+        };
+
+        var provider = new DockerRegistryAuthProvider(overrideConfiguration: config);
+        var header = await provider.GetRegistryAuthHeaderValueAsync("redis:8", CancellationToken.None);
+
+        Assert.NotNull(header);
+        Assert.Equal("john", DecodeHeader(header!).Username);
+    }
+
+    /// <summary>A helper name that cannot resolve to an executable, so 'docker-credential-&lt;name&gt;' is guaranteed to be missing.</summary>
+    private static string MissingHelperName() => "meziantou-tc-missing-" + Guid.NewGuid().ToString("N");
+
     [Theory]
     [InlineData("redis:8", "index.docker.io")]
     [InlineData("library/redis:8", "index.docker.io")]

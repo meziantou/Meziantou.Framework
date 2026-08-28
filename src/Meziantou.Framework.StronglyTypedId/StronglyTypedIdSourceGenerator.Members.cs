@@ -419,8 +419,19 @@ public partial class StronglyTypedIdSourceGenerator
                     {
                         if (isReadOnlySpan)
                         {
-                            writer.WriteLine($"result = new {context.TypeName}(value.ToString());");
-                            writer.WriteLine("return true;");
+                            // The constructor may be defined by the user and may throw when the value is not valid
+                            using (writer.BeginBlock("try"))
+                            {
+                                writer.WriteLine($"result = new {context.TypeName}(value.ToString());");
+                                writer.WriteLine("return true;");
+                            }
+
+                            using (writer.BeginBlock("catch"))
+                            {
+                            }
+
+                            writer.WriteLine("result = default;");
+                            writer.WriteLine("return false;");
                         }
                         else
                         {

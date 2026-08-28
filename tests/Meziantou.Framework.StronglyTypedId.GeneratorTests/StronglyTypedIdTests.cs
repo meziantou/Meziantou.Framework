@@ -180,6 +180,31 @@ public sealed partial class StronglyTypedIdTests
     }
 
     [Fact]
+    public void String_TryParse_ValidatingConstructor_ReturnsFalse()
+    {
+        Assert.False(IdStringValidated.TryParse("", out _));
+    }
+
+    [Fact]
+    public void String_TryParse_ReadOnlySpan_ValidatingConstructor_ReturnsFalse()
+    {
+        Assert.False(IdStringValidated.TryParse("".AsSpan(), out _));
+    }
+
+    [Fact]
+    public void String_TryParse_ValidatingConstructor_ReturnsTrueForValidValue()
+    {
+        Assert.True(IdStringValidated.TryParse("test", out var result));
+        Assert.Equal("test", result.Value);
+    }
+
+    [Fact]
+    public void Int32_TryParse_ValidatingConstructor_ReturnsFalse()
+    {
+        Assert.False(IdInt32Validated.TryParse("-1", out _));
+    }
+
+    [Fact]
     public void String_TryParse_ReadOnlySpan()
     {
         Assert.True(IdString.TryParse("test".AsSpan(), out var value));
@@ -618,6 +643,30 @@ public sealed partial class StronglyTypedIdTests
     {
         public IdCtorDefined(int value)
         {
+            _value = value;
+        }
+    }
+
+    [StronglyTypedId(typeof(string))]
+    private partial struct IdStringValidated
+    {
+        private IdStringValidated(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                throw new ArgumentException("The value cannot be empty", nameof(value));
+
+            _value = value;
+        }
+    }
+
+    [StronglyTypedId(typeof(int))]
+    private partial struct IdInt32Validated
+    {
+        private IdInt32Validated(int value)
+        {
+            if (value < 0)
+                throw new ArgumentOutOfRangeException(nameof(value));
+
             _value = value;
         }
     }

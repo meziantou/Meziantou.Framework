@@ -126,7 +126,7 @@ namespace Meziantou.Framework.Tds.Handler
         public long? AsInt64() => throw null;
         public bool? AsBoolean() => throw null;
         public double? AsDouble() => throw null;
-        public System.Decimal? AsDecimal() => throw null;
+        public decimal? AsDecimal() => throw null;
         public byte[]? AsBinary() => throw null;
         public System.Text.Json.Nodes.JsonObject? AsJson() => throw null;
         public System.Xml.Linq.XDocument? AsXml() => throw null;

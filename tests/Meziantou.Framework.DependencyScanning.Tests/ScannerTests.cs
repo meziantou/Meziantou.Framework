@@ -23,6 +23,12 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
   "devDependencies": {
     "b": "1.2.3",
     "c": null
+  },
+  "peerDependencies": {
+    "d": "3.1.4"
+  },
+  "optionalDependencies": {
+    "e": "4.1.5"
   }
 }
 """;
@@ -37,6 +43,12 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
   "devDependencies": {
     "b": "2.0.0",
     "c": null
+  },
+  "peerDependencies": {
+    "d": "2.0.0"
+  },
+  "optionalDependencies": {
+    "e": "2.0.0"
   }
 }
 """;
@@ -45,7 +57,9 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         var result = await GetDependencies<NpmPackageJsonDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.Npm, "a", "1.0.0", 0, 0),
-            (DependencyType.Npm, "b", "1.2.3", 0, 0));
+            (DependencyType.Npm, "b", "1.2.3", 0, 0),
+            (DependencyType.Npm, "d", "3.1.4", 0, 0),
+            (DependencyType.Npm, "e", "4.1.5", 0, 0));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("package.json", Expected, ignoreNewLines: true);

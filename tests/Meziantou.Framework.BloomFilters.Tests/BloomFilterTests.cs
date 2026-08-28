@@ -251,6 +251,40 @@ public sealed class BloomFilterTests
         Assert.All(unsignedValues, value => Assert.False(filter.MayContain(value)));
     }
 
+    [Theory]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash128))]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash64))]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash3))]
+    [InlineData(nameof(CountingBloomFilter.CreateCrc64))]
+    public void CountingBloomFilter_FalsePositiveRate_StaysNearTarget(string createMethodName)
+    {
+        const int ItemCount = 10_000;
+        const int ProbeCount = 100_000;
+        const double FalsePositiveProbability = 0.01;
+
+        var size = CountingBloomFilterSize.CreateOptimalSize(ItemCount, FalsePositiveProbability);
+        var filter = (ICountingBloomFilter)typeof(CountingBloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size])!;
+        for (var value = 0; value < ItemCount; value++)
+        {
+            filter.Add(value);
+        }
+
+        var falsePositiveCount = 0;
+        for (var value = ItemCount; value < ItemCount + ProbeCount; value++)
+        {
+            if (filter.MayContain(value))
+            {
+                falsePositiveCount++;
+            }
+        }
+
+        Assert.InRange((double)falsePositiveCount / ProbeCount, 0, FalsePositiveProbability * 3);
+
+        // A value inserted once must not be reported as inserted thousands of times. When every hash
+        // reduces to the same counter, this returns the total number of increments issued instead.
+        Assert.InRange(filter.GetEstimatedCount(0), 1, 5);
+    }
+
     [Fact]
     public void CountingBloomFilterSize_CreateOptimalSize_MatchesBloomFilterSize()
     {

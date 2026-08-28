@@ -36,6 +36,7 @@ namespace Meziantou.Framework;
 public sealed class ObjectMethodExecutor
 {
     private readonly object?[]? _parameterDefaultValues;
+    private readonly string _methodName;
     private readonly MethodExecutorAsync? _executorAsync;
     private readonly MethodExecutor? _executor;
 
@@ -54,6 +55,7 @@ public sealed class ObjectMethodExecutor
         ArgumentNullException.ThrowIfNull(methodInfo);
 
         MethodParameters = methodInfo.GetParameters();
+        _methodName = $"{methodInfo.DeclaringType?.FullName}.{methodInfo.Name}";
         MethodReturnType = methodInfo.ReturnType;
 
         var isAwaitable = CoercedAwaitableInfo.IsTypeAwaitable(MethodReturnType, out var coercedAwaitableInfo);
@@ -69,10 +71,13 @@ public sealed class ObjectMethodExecutor
         {
             _executorAsync = GetExecutorAsync(methodInfo, targetTypeInfo, coercedAwaitableInfo);
         }
+        else if (IsAsyncVoidMethod(methodInfo))
+        {
+            _executorAsync = GetAsyncVoidExecutorAsync(methodInfo);
+        }
         else
         {
             _executorAsync = GetExecutorAsyncFromSync(_executor);
-
         }
 
         if (parameterDefaultValues is not null && parameterDefaultValues.Length != MethodParameters.Length)
@@ -133,8 +138,11 @@ public sealed class ObjectMethodExecutor
     /// <param name="target">The object whose method is to be executed.</param>
     /// <param name="parameters">Parameters to pass to the method.</param>
     /// <returns>The method return value.</returns>
+    /// <exception cref="ArgumentException"><paramref name="parameters"/> does not contain one entry per method parameter.</exception>
     public object? Execute(object? target, object?[]? parameters)
     {
+        ValidateParameters(parameters);
+
         Debug.Assert(_executor is not null, "Sync execution is not supported.");
         return _executor(target, parameters);
     }
@@ -158,8 +166,12 @@ public sealed class ObjectMethodExecutor
     /// <param name="target">The object whose method is to be executed.</param>
     /// <param name="parameters">Parameters to pass to the method.</param>
     /// <returns>An object that you can "await" to get the method return value.</returns>
+    /// <exception cref="ArgumentException"><paramref name="parameters"/> does not contain one entry per method parameter.</exception>
+    /// <exception cref="InvalidOperationException">The configured method is an <c>async void</c> method, which cannot be awaited. Use <see cref="Execute"/> instead.</exception>
     public ObjectMethodExecutorAwaitable ExecuteAsync(object? target, object?[]? parameters)
     {
+        ValidateParameters(parameters);
+
         Debug.Assert(_executorAsync is not null, "Async execution is not supported.");
         return _executorAsync(target, parameters);
     }
@@ -403,6 +415,20 @@ public sealed class ObjectMethodExecutor
         return lambda.Compile();
     }
 
+    private static bool IsAsyncVoidMethod(MethodInfo methodInfo)
+    {
+        return methodInfo.ReturnType == typeof(void) && methodInfo.GetCustomAttribute<AsyncStateMachineAttribute>() is not null;
+    }
+
+    private static MethodExecutorAsync GetAsyncVoidExecutorAsync(MethodInfo methodInfo)
+    {
+        var methodName = $"{methodInfo.DeclaringType?.FullName}.{methodInfo.Name}";
+        return delegate
+        {
+            throw new InvalidOperationException($"'{methodName}' is an async void method, so there is no awaitable to observe. Awaiting the result of {nameof(ExecuteAsync)} would return before the method completed, and any exception it throws would be raised on the synchronization context instead of surfacing here. Use {nameof(Execute)} to start it, or change the method to return Task.");
+        };
+    }
+
     private static MethodExecutorAsync GetExecutorAsyncFromSync(MethodExecutor executor)
     {
         return delegate (object? target, object?[]? parameters)
@@ -416,5 +442,15 @@ public sealed class ObjectMethodExecutor
                 (taskAwaiter, action) => ((TaskAwaiter<object?>)taskAwaiter).OnCompleted(action),
                 (taskAwaiter, action) => ((TaskAwaiter<object?>)taskAwaiter).UnsafeOnCompleted(action));
         };
+    }
+
+    private void ValidateParameters(object?[]? parameters)
+    {
+        // The compiled delegate indexes and unboxes the array with no guard, so a wrong-sized array
+        // surfaces as IndexOutOfRangeException or NullReferenceException from generated code with no
+        // useful frame. Check the count here so the caller learns which method it got wrong.
+        var actual = parameters?.Length ?? 0;
+        if (actual != MethodParameters.Length)
+            throw new ArgumentException($"'{_methodName}' takes {MethodParameters.Length} parameter(s), but {actual} were supplied", nameof(parameters));
     }
 }

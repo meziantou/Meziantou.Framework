@@ -12,5 +12,8 @@ namespace Meziantou.Framework.SyntaxHighlighting
     public static class SyntaxHighlighter
     {
         public static string Highlight(string text, string language, Meziantou.Framework.SyntaxHighlighting.HighlightOptions? options = null) => throw null;
+        public static bool TryHighlight(string text, string language, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? html, Meziantou.Framework.SyntaxHighlighting.HighlightOptions? options = null) => throw null;
+        public static bool IsSupported(string language) => throw null;
+        public static System.Collections.Generic.IEnumerable<string> GetSupportedLanguages() => throw null;
     }
 }

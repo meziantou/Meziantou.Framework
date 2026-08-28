@@ -98,15 +98,18 @@ internal class XmlLocation : Location, ILocationLineInfo
             return newValue;
         }
 
+        if (currentValue is null)
+            throw new DependencyScannerException("Current value is null. The file was probably modified since last scan.");
+
+        if (Length < 0 || StartPosition > currentValue.Length || Length > currentValue.Length - StartPosition)
+            throw new DependencyScannerException($"The recorded location does not fit in the current value '{currentValue}'. The file was probably modified since last scan.");
+
         if (oldValue is not null)
         {
-            var slicedCurrentValue = currentValue.AsSpan().Slice(StartPosition, Length);
+            var slicedCurrentValue = currentValue.AsSpan(StartPosition, Length);
             if (!slicedCurrentValue.Equals(oldValue, StringComparison.Ordinal))
                 throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{slicedCurrentValue}'. The file was probably modified since last scan.");
         }
-
-        if (currentValue is null)
-            throw new DependencyScannerException("Current value is null. The file was probably modified since last scan.");
 
         return currentValue
             .Remove(StartPosition, Length)

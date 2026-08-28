@@ -21,6 +21,7 @@
 | Meziantou.Framework | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.svg)](https://www.nuget.org/packages/Meziantou.Framework/) | |
 | Meziantou.Framework.AnsiFormatting | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.AnsiFormatting.svg)](https://www.nuget.org/packages/Meziantou.Framework.AnsiFormatting/) | [readme](src/Meziantou.Framework.AnsiFormatting/readme.md) |
 | Meziantou.Framework.Assertions | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Assertions.svg)](https://www.nuget.org/packages/Meziantou.Framework.Assertions/) | [readme](src/Meziantou.Framework.Assertions/readme.md) |
+| Meziantou.Framework.AtlassianDataFormat | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.AtlassianDataFormat.svg)](https://www.nuget.org/packages/Meziantou.Framework.AtlassianDataFormat/) | [readme](src/Meziantou.Framework.AtlassianDataFormat/readme.md) |
 | Meziantou.Framework.Avatar | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Avatar.svg)](https://www.nuget.org/packages/Meziantou.Framework.Avatar/) | [readme](src/Meziantou.Framework.Avatar/readme.md) |
 | Meziantou.Framework.Bcrypt | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Bcrypt.svg)](https://www.nuget.org/packages/Meziantou.Framework.Bcrypt/) | [readme](src/Meziantou.Framework.Bcrypt/readme.md) |
 | Meziantou.Framework.Bencode | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Bencode.svg)](https://www.nuget.org/packages/Meziantou.Framework.Bencode/) | [readme](src/Meziantou.Framework.Bencode/readme.md) |

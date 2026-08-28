@@ -1,0 +1,1 @@
+{"version":1,"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"bold ","marks":[{"type":"strong"}]},{"type":"text","text":"bold+italic","marks":[{"type":"strong"},{"type":"em"}]},{"type":"text","text":" end","marks":[{"type":"strong"}]}]}]}

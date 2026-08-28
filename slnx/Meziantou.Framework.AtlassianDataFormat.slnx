@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.AtlassianDataFormat/Meziantou.Framework.AtlassianDataFormat.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.AtlassianDataFormat.Tests/Meziantou.Framework.AtlassianDataFormat.Tests.csproj" />
+  </Folder>
+</Solution>

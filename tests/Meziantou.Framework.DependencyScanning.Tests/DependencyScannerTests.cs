@@ -343,6 +343,21 @@ public sealed class DependencyScannerTests
         Assert.Equal(Encoding.UTF8.WebName, encoding.WebName);
     }
 
+    [Theory]
+    [InlineData(new byte[] { 0xEF, 0xBB, 0xBF, (byte)'a' }, 65001)] // UTF-8
+    [InlineData(new byte[] { 0xFF, 0xFE, (byte)'a', 0x00 }, 1200)] // UTF-16LE
+    [InlineData(new byte[] { 0xFE, 0xFF, 0x00, (byte)'a' }, 1201)] // UTF-16BE
+    [InlineData(new byte[] { 0xFF, 0xFE, 0x00, 0x00 }, 12000)] // UTF-32LE
+    [InlineData(new byte[] { 0x00, 0x00, 0xFE, 0xFF }, 12001)] // UTF-32BE
+    public async Task GetEncodingAsync_DetectsBom(byte[] content, int expectedCodePage)
+    {
+        await using var stream = new MemoryStream(content);
+
+        var encoding = await StreamUtilities.GetEncodingAsync(stream, XunitCancellationToken);
+
+        Assert.Equal(expectedCodePage, encoding.CodePage);
+    }
+
     [Fact]
     public async Task CreateReaderAsync_DetectsUtf8Bom_WhenStreamReadsOneByteAtATime()
     {

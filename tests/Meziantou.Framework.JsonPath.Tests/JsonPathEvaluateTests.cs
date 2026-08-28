@@ -460,6 +460,45 @@ public sealed class JsonPathEvaluateTests
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Evaluation took {stopwatch.Elapsed}.");
     }
 
+    [Fact]
+    public void Evaluate_Function_Match_NonLiteralPattern_IsNotCached()
+    {
+        // The pattern comes from the document, so it differs per node and must bypass the per-AST cache.
+        var doc = JsonNode.Parse("""[{"s": "foo", "p": "f.o"}, {"s": "bar", "p": "z.z"}, {"s": "baz", "p": "b.z"}]""");
+        var path = JsonPath.Parse("$[?match(@.s, @.p)]");
+
+        var result = path.Evaluate(doc);
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("foo", result[0].Value!.AsObject()["s"]!.GetValue<string>());
+        Assert.Equal("baz", result[1].Value!.AsObject()["s"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_CachedRegex_IsStableAcrossReuseAndThreads()
+    {
+        // A parsed JsonPath is documented as reusable and thread-safe, and the regex cache is populated lazily.
+        var doc = JsonNode.Parse("""[{"a": "foo"}, {"a": "bar"}, {"a": "foobar"}]""");
+        var path = JsonPath.Parse("""$[?search(@.a, "foo")]""");
+
+        Assert.Equal(2, path.Evaluate(doc).Count);
+        Assert.Equal(2, path.Evaluate(doc).Count);
+
+        var counts = new int[32];
+        Parallel.For(0, counts.Length, i => counts[i] = path.Evaluate(doc).Count);
+        Assert.All(counts, count => Assert.Equal(2, count));
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_UnusablePatternIsCachedToo()
+    {
+        var doc = JsonNode.Parse("""[{"s": "aa"}, {"s": "bb"}]""");
+        var path = JsonPath.Parse("$[?match(@.s, '(')]");
+
+        Assert.Empty(path.Evaluate(doc));
+        Assert.Empty(path.Evaluate(doc));
+    }
+
     [Theory]
     // The pattern is written as it appears inside the JSONPath string literal, so a backslash intended for
     // the regex engine has to be escaped for the JSONPath lexer first.

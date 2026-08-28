@@ -61,6 +61,23 @@ public sealed class PostgreSqlContainerTests
         Assert.Equal(1, Convert.ToInt32(result, CultureInfo.InvariantCulture));
     }
 
+    [Fact]
+    public async Task StartAsync_ConnectionStringWorksWhenThePasswordContainsASeparator()
+    {
+        SkipOnNonCompatibleEnvironments();
+
+        var definition = ContainerDefinition.CreatePostgreSql();
+        definition.Environment.Add("POSTGRES_PASSWORD", "pa;ss=word");
+        await using var container = await StartWithRetryAsync(definition);
+
+        await using var connection = new NpgsqlConnection(container.GetConnectionString());
+        await connection.OpenAsync(XunitCancellationToken);
+        await using var command = new NpgsqlCommand("SELECT 1", connection);
+        var result = await command.ExecuteScalarAsync(XunitCancellationToken);
+
+        Assert.Equal(1, Convert.ToInt32(result, CultureInfo.InvariantCulture));
+    }
+
     private static Task<PostgreSqlContainer> StartWithRetryAsync(PostgreSqlContainerDefinition definition)
     {
         return ContainerTestHelper.StartWithRetryAsync(definition.CreateContainer, XunitCancellationToken);

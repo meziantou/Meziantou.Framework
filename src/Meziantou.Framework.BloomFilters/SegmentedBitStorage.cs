@@ -84,10 +84,10 @@ internal sealed class SegmentedBitStorage
     {
         if ((ulong)bitIndex >= (ulong)BitCount)
         {
-            ThrowInvalidBitIndex(bitIndex);
+            ThrowInvalidBitIndex(bitIndex, BitCount);
         }
 
         [DoesNotReturn]
-        static void ThrowInvalidBitIndex(long bitIndex) => throw new ArgumentOutOfRangeException(nameof(bitIndex), $"Bit index must be between 0 and {long.MaxValue} (inclusive). Actual value: {bitIndex}");
+        static void ThrowInvalidBitIndex(long bitIndex, long bitCount) => throw new ArgumentOutOfRangeException(nameof(bitIndex), $"Bit index must be between 0 and {bitCount - 1} (inclusive). Actual value: {bitIndex}");
     }
 }

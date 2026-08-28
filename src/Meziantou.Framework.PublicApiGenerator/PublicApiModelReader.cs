@@ -22,6 +22,7 @@ internal static class PublicApiModelReader
     private static readonly Lock EnumMetadataCacheLock = new();
     private static readonly Dictionary<string, EnumMetadata?> EnumMetadataCache = new(StringComparer.Ordinal);
     private static readonly ConditionalWeakTable<MetadataReader, StrongBox<bool>> UpdatedMemorySafetyRulesCache = new();
+    private static readonly ConditionalWeakTable<MetadataReader, TypeDefinitionIndex> TypeDefinitionIndexCache = new();
 
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
     {
@@ -336,12 +337,9 @@ internal static class PublicApiModelReader
 
     private static IEnumerable<TypeDefinitionHandle> EnumerateNestedTypes(MetadataReader metadataReader, TypeDefinitionHandle parentTypeHandle)
     {
-        foreach (var typeDefinitionHandle in metadataReader.TypeDefinitions)
+        foreach (var typeDefinitionHandle in metadataReader.GetTypeDefinition(parentTypeHandle).GetNestedTypes())
         {
             var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
-            if (typeDefinition.GetDeclaringType() != parentTypeHandle)
-                continue;
-
             if (!IsExternallyVisibleNested(typeDefinition.Attributes))
                 continue;
 
@@ -1165,7 +1163,7 @@ internal static class PublicApiModelReader
 
     private static bool ContainsPointer(DecodedType type)
     {
-        if (type.Kind == DecodedTypeKind.Pointer)
+        if (type.Kind is DecodedTypeKind.Pointer or DecodedTypeKind.FunctionPointer)
             return true;
 
         if (type.ElementType is not null && ContainsPointer(type.ElementType))
@@ -2208,21 +2206,37 @@ internal static class PublicApiModelReader
             var typeReference = metadataReader.GetTypeReference((TypeReferenceHandle)handle);
             var namespaceName = typeReference.Namespace.IsNil ? string.Empty : metadataReader.GetString(typeReference.Namespace);
             var name = metadataReader.GetString(typeReference.Name);
-            foreach (var candidateHandle in metadataReader.TypeDefinitions)
-            {
-                var candidate = metadataReader.GetTypeDefinition(candidateHandle);
-                var candidateNamespace = candidate.Namespace.IsNil ? string.Empty : metadataReader.GetString(candidate.Namespace);
-                if (string.Equals(candidateNamespace, namespaceName, StringComparison.Ordinal) &&
-                    string.Equals(metadataReader.GetString(candidate.Name), name, StringComparison.Ordinal))
-                {
-                    typeDefinitionHandle = candidateHandle;
-                    return true;
-                }
-            }
+            return GetTypeDefinitionIndex(metadataReader).ByMetadataName.TryGetValue(BuildTypeKey(namespaceName, name), out typeDefinitionHandle);
         }
 
         typeDefinitionHandle = default;
         return false;
+    }
+
+    private static TypeDefinitionIndex GetTypeDefinitionIndex(MetadataReader metadataReader)
+    {
+        return TypeDefinitionIndexCache.GetValue(metadataReader, static reader =>
+        {
+            var byMetadataName = new Dictionary<string, TypeDefinitionHandle>(StringComparer.Ordinal);
+            var byDisplayName = new Dictionary<string, TypeDefinitionHandle>(StringComparer.Ordinal);
+            foreach (var typeDefinitionHandle in reader.TypeDefinitions)
+            {
+                var typeDefinition = reader.GetTypeDefinition(typeDefinitionHandle);
+                var namespaceName = typeDefinition.Namespace.IsNil ? string.Empty : reader.GetString(typeDefinition.Namespace);
+                var metadataName = reader.GetString(typeDefinition.Name);
+
+                // The first definition wins, which is what the previous linear scans did
+                byMetadataName.TryAdd(BuildTypeKey(namespaceName, metadataName), typeDefinitionHandle);
+                byDisplayName.TryAdd(BuildTypeKey(namespaceName, RemoveGenericArity(metadataName)), typeDefinitionHandle);
+            }
+
+            return new TypeDefinitionIndex(byMetadataName, byDisplayName);
+        });
+    }
+
+    private static string BuildTypeKey(string namespaceName, string typeName)
+    {
+        return string.IsNullOrEmpty(namespaceName) ? typeName : namespaceName + "." + typeName;
     }
 
     private static List<string> BuildAttributes(MetadataReader metadataReader, CustomAttributeHandleCollection attributes)
@@ -2682,23 +2696,7 @@ internal static class PublicApiModelReader
 
     private static bool TryResolveTypeDefinitionHandle(MetadataReader metadataReader, string fullTypeName, out TypeDefinitionHandle typeDefinitionHandle)
     {
-        var separator = fullTypeName.LastIndexOf('.', StringComparison.Ordinal);
-        var namespaceName = separator < 0 ? string.Empty : fullTypeName[..separator];
-        var typeName = separator < 0 ? fullTypeName : fullTypeName[(separator + 1)..];
-        foreach (var candidateHandle in metadataReader.TypeDefinitions)
-        {
-            var candidate = metadataReader.GetTypeDefinition(candidateHandle);
-            var candidateNamespace = candidate.Namespace.IsNil ? string.Empty : metadataReader.GetString(candidate.Namespace);
-            if (string.Equals(candidateNamespace, namespaceName, StringComparison.Ordinal) &&
-                string.Equals(RemoveGenericArity(metadataReader.GetString(candidate.Name)), typeName, StringComparison.Ordinal))
-            {
-                typeDefinitionHandle = candidateHandle;
-                return true;
-            }
-        }
-
-        typeDefinitionHandle = default;
-        return false;
+        return GetTypeDefinitionIndex(metadataReader).ByDisplayName.TryGetValue(fullTypeName, out typeDefinitionHandle);
     }
 
     private static bool TryReadObsoleteAttributeArguments(byte[] value, out string message, out bool? isError)
@@ -2830,17 +2828,7 @@ internal static class PublicApiModelReader
         };
     }
 
-    private static string FormatConstant(object? value)
-    {
-        return value switch
-        {
-            null => "null",
-            string text => "\"" + text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"",
-            char character => "'" + character.ToString().Replace("\\", "\\\\", StringComparison.Ordinal).Replace("'", "\\'", StringComparison.Ordinal) + "'",
-            bool boolValue => boolValue ? "true" : "false",
-            _ => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "null",
-        };
-    }
+    private static string FormatConstant(object? value) => CSharpLiteralFormatter.Format(value);
 
     private static void AppendIndentedLine(StringBuilder sb, int indentationLevel, string line)
     {
@@ -2860,6 +2848,10 @@ internal static class PublicApiModelReader
     }
 
     private static string EscapeIdentifier(string identifier) => CSharpIdentifierHelper.EscapeIdentifier(identifier);
+
+    private sealed record TypeDefinitionIndex(
+        Dictionary<string, TypeDefinitionHandle> ByMetadataName,
+        Dictionary<string, TypeDefinitionHandle> ByDisplayName);
 
     private sealed record EnumMetadata(
         bool IsFlags,
@@ -2936,7 +2928,7 @@ internal static class PublicApiModelReader
             var namespaceName = type.Namespace.IsNil ? string.Empty : reader.GetString(type.Namespace);
             var name = RemoveGenericArity(reader.GetString(type.Name));
             return new(
-                string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name,
+                CSharpTypeFormatter.NormalizeWellKnownTypeName(string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name),
                 IsReferenceType: rawTypeKind != ElementTypeValueType,
                 IsTypeParameter: false);
         }
@@ -2947,7 +2939,7 @@ internal static class PublicApiModelReader
             var namespaceName = type.Namespace.IsNil ? string.Empty : reader.GetString(type.Namespace);
             var name = RemoveGenericArity(reader.GetString(type.Name));
             return new(
-                string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name,
+                CSharpTypeFormatter.NormalizeWellKnownTypeName(string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name),
                 IsReferenceType: rawTypeKind != ElementTypeValueType,
                 IsTypeParameter: false);
         }
@@ -3191,7 +3183,15 @@ internal static class PublicApiModelReader
 
         public DecodedType GetByReferenceType(DecodedType elementType) => new(elementType.Name, IsReferenceType: elementType.IsReferenceType, IsTypeParameter: elementType.IsTypeParameter, Kind: DecodedTypeKind.ByReference, ElementType: elementType);
 
-        public DecodedType GetFunctionPointerType(MethodSignature<DecodedType> signature) => new("delegate*", IsReferenceType: false, IsTypeParameter: false);
+        public DecodedType GetFunctionPointerType(MethodSignature<DecodedType> signature)
+        {
+            var isUnmanaged = signature.Header.CallingConvention != SignatureCallingConvention.Default;
+            var name = CSharpTypeFormatter.FormatFunctionPointer(
+                isUnmanaged,
+                [.. signature.ParameterTypes.Select(FormatDecodedTypeWithoutNullable)],
+                FormatDecodedTypeWithoutNullable(signature.ReturnType));
+            return new(name, IsReferenceType: false, IsTypeParameter: false, Kind: DecodedTypeKind.FunctionPointer);
+        }
 
         public DecodedType GetGenericInstantiation(DecodedType genericType, ImmutableArray<DecodedType> typeArguments)
         {
@@ -3263,7 +3263,7 @@ internal static class PublicApiModelReader
             var namespaceName = type.Namespace.IsNil ? string.Empty : reader.GetString(type.Namespace);
             var name = RemoveGenericArity(reader.GetString(type.Name));
             return new(
-                string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name,
+                CSharpTypeFormatter.NormalizeWellKnownTypeName(string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name),
                 IsReferenceType: rawTypeKind != ElementTypeValueType,
                 IsTypeParameter: false);
         }
@@ -3274,7 +3274,7 @@ internal static class PublicApiModelReader
             var namespaceName = type.Namespace.IsNil ? string.Empty : reader.GetString(type.Namespace);
             var name = RemoveGenericArity(reader.GetString(type.Name));
             return new(
-                string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name,
+                CSharpTypeFormatter.NormalizeWellKnownTypeName(string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name),
                 IsReferenceType: rawTypeKind != ElementTypeValueType,
                 IsTypeParameter: false);
         }
@@ -3297,6 +3297,7 @@ internal static class PublicApiModelReader
         Array,
         ByReference,
         Pointer,
+        FunctionPointer,
     }
 
     private sealed record ExtensionPropertyBuilderMetadata(

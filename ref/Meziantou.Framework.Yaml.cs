@@ -968,7 +968,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public static bool TryParseInt32(System.ReadOnlySpan<char> value, out int result) => throw null;
         public static bool TryParseUInt32(System.ReadOnlySpan<char> value, out uint result) => throw null;
         public static bool TryParseUInt64(System.ReadOnlySpan<char> value, out ulong result) => throw null;
-        public static bool TryParseDecimal(System.ReadOnlySpan<char> value, out System.Decimal result) => throw null;
+        public static bool TryParseDecimal(System.ReadOnlySpan<char> value, out decimal result) => throw null;
         public static bool TryParseInt64(System.ReadOnlySpan<char> value, out long result) => throw null;
         public static bool TryParseDouble(System.ReadOnlySpan<char> value, out double result) => throw null;
         #if NET11_0
@@ -981,7 +981,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public static bool TryParseUInt64(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out ulong result) => throw null;
         public static bool TryParseInt64(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out long result) => throw null;
         public static bool TryParseDouble(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out double result) => throw null;
-        public static bool TryParseDecimal(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out System.Decimal result) => throw null;
+        public static bool TryParseDecimal(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out decimal result) => throw null;
         #if NET11_0
         public static bool TryParseIeee754<T>(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out T result) where T : struct, System.Numerics.IFloatingPointIeee754<T> => throw null;
         #endif
@@ -1152,7 +1152,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public void WriteScalar(uint value) { }
         public void WriteScalar(long value) { }
         public void WriteScalar(ulong value) { }
-        public void WriteScalar(System.Decimal value) { }
+        public void WriteScalar(decimal value) { }
         public void WriteScalar(nint value) { }
         public void WriteScalar(nuint value) { }
         public void WriteScalar(char value) { }

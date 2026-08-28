@@ -57,7 +57,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
             var generateResourcesTypeConfiguration = GetMetadataValue("GenerateResourcesType", globalName: null);
 
             var rootNamespace = rootNamespaceConfiguration ?? assemblyName ?? "";
-            var projectDir = projectDirConfiguration ?? assemblyName ?? "";
+            var projectDir = projectDirConfiguration ?? "";
             var defaultResourceName = defaultResourceNameConfiguration ?? ResxGeneratorCommon.ComputeResourceName(rootNamespace, projectDir, resxGroup.Key);
             var defaultNamespace = ResxGeneratorCommon.ComputeNamespace(rootNamespace, projectDir, resxGroup.Key);
 

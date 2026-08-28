@@ -33,7 +33,8 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
             return;
 
         var ns = doc.Root.GetDefaultNamespace();
-        var itemGroups = doc.Descendants(ns + "ItemGroup");
+        // Materialized once: the query below is enumerated five times, and each enumeration walks the whole document
+        var itemGroups = doc.Descendants(ns + "ItemGroup").ToArray();
         foreach (var package in itemGroups.Elements(ns + "PackageReference").Concat(itemGroups.Elements(ns + "PackageDownload")).Concat(itemGroups.Elements(ns + "GlobalPackageReference")))
         {
             var nameAttribute = package.Attribute(IncludeXName);

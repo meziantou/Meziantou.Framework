@@ -62,12 +62,20 @@ internal sealed class DockerRegistryAuthProvider
 
     private static DockerApiModels.AuthConfigFile? LoadConfiguration()
     {
-        var configPath = FullPath.GetFolderPath(Environment.SpecialFolder.UserProfile) / ".docker" / "config.json";
+        var configPath = GetConfigurationDirectory(Environment.GetEnvironmentVariable("DOCKER_CONFIG")) / "config.json";
         if (!File.Exists(configPath))
             return null;
 
         using var stream = File.OpenRead(configPath);
         return JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.AuthConfigFile);
+    }
+
+    /// <summary>The directory the credentials are read from: <c>DOCKER_CONFIG</c> when it is set, <c>~/.docker</c> otherwise. CI systems that isolate credentials into a per-job directory rely on the environment variable.</summary>
+    internal static FullPath GetConfigurationDirectory(string? dockerConfigEnvironmentVariable)
+    {
+        return string.IsNullOrWhiteSpace(dockerConfigEnvironmentVariable)
+            ? FullPath.GetFolderPath(Environment.SpecialFolder.UserProfile) / ".docker"
+            : FullPath.FromPath(dockerConfigEnvironmentVariable);
     }
 
     private static string? GetCredentialHelper(DockerApiModels.AuthConfigFile config, string registry)

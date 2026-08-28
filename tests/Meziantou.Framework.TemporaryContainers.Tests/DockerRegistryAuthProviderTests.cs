@@ -103,6 +103,25 @@ public sealed class DockerRegistryAuthProviderTests
         Assert.Equal(expectedRegistry, DockerRegistryAuthProvider.GetRegistryFromImageName(imageName));
     }
 
+    [Fact]
+    public void GetConfigurationDirectory_UsesDockerConfigWhenSet()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "meziantou-tc-docker-config");
+
+        Assert.Equal(FullPath.FromPath(directory), DockerRegistryAuthProvider.GetConfigurationDirectory(directory));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void GetConfigurationDirectory_FallsBackToTheUserProfileWhenDockerConfigIsNotSet(string? dockerConfig)
+    {
+        var expected = FullPath.GetFolderPath(Environment.SpecialFolder.UserProfile) / ".docker";
+
+        Assert.Equal(expected, DockerRegistryAuthProvider.GetConfigurationDirectory(dockerConfig));
+    }
+
     private static DockerApiModels.RegistryAuthHeader DecodeHeader(string value)
     {
         var json = Encoding.UTF8.GetString(Convert.FromBase64String(value));

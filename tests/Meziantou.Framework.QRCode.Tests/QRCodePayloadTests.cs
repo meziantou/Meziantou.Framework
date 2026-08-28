@@ -172,8 +172,32 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Email("victim@x.com?bcc=attacker@evil.example", "Hi");
 
-        // The '?' is encoded, so the address stays one address and subject= is the first parameter.
-        Assert.Equal("mailto:victim@x.com%3Fbcc%3Dattacker@evil.example?subject=Hi", payload);
+        // The '?' is encoded, so the address stays one address and subject= is the first
+        // parameter. Only the last '@' separates the local part from the domain, so the earlier
+        // one is encoded too.
+        Assert.Equal("mailto:victim%40x.com%3Fbcc%3Dattacker@evil.example?subject=Hi", payload);
+    }
+
+    [Theory]
+    [InlineData("a@b.com", "mailto:a@b.com")]
+    [InlineData("a.b+tag@c.example", "mailto:a.b%2Btag@c.example")]
+    [InlineData("no-at-sign", "mailto:no-at-sign")]
+    [InlineData("a@b@c.com", "mailto:a%40b@c.com")]
+    public void Email_KeepsOnlyTheAddressSeparatorReadable(string address, string expected)
+    {
+        Assert.Equal(expected, QRCodePayload.Email(address));
+    }
+
+    [Theory]
+    [InlineData("+1234567890", "tel:+1234567890")]
+    [InlineData("1234567890", "tel:1234567890")]
+    [InlineData("+1-555-0100", "tel:+1-555-0100")]
+    [InlineData("+1+555", "tel:+1%2B555")]
+    [InlineData("1+555", "tel:1%2B555")]
+    public void Phone_KeepsOnlyTheLeadingPlusReadable(string number, string expected)
+    {
+        // RFC 3966 allows '+' only as the international prefix, so a later one is not structural.
+        Assert.Equal(expected, QRCodePayload.Phone(number));
     }
 
     [Theory]

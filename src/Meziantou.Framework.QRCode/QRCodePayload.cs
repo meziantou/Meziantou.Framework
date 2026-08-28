@@ -202,7 +202,15 @@ public static class QRCodePayload
     /// </remarks>
     private static string EscapeMailAddress(string address)
     {
-        return Uri.EscapeDataString(address).Replace("%40", "@", StringComparison.Ordinal);
+        // An addr-spec has a single '@' between the local part and the domain. Only that one is
+        // left readable; any other '@' is not a separator, so it stays encoded.
+        var separatorIndex = address.AsSpan().LastIndexOf('@');
+        if (separatorIndex < 0)
+        {
+            return Uri.EscapeDataString(address);
+        }
+
+        return Uri.EscapeDataString(address[..separatorIndex]) + "@" + Uri.EscapeDataString(address[(separatorIndex + 1)..]);
     }
 
     /// <summary>
@@ -210,7 +218,14 @@ public static class QRCodePayload
     /// </summary>
     private static string EscapePhoneNumber(string number)
     {
-        return Uri.EscapeDataString(number).Replace("%2B", "+", StringComparison.Ordinal);
+        // RFC 3966 allows '+' only as the leading international prefix, so only a leading one is
+        // left readable; a '+' anywhere else is not structural and stays encoded.
+        if (number is ['+', ..])
+        {
+            return "+" + Uri.EscapeDataString(number[1..]);
+        }
+
+        return Uri.EscapeDataString(number);
     }
 
     /// <summary>

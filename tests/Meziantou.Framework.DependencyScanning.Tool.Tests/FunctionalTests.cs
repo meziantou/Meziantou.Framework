@@ -691,11 +691,24 @@ public sealed class FunctionalTests
 
     [Theory]
     [InlineData("v1.0.0", true)]
+    [InlineData("V1.0.0", true)]
     [InlineData("1.0.0", true)]
     [InlineData("latest", false)]
     public void SemanticVersioningStrategy_PrefixAllowed_IsSupportedVersion(string version, bool expectedResult)
     {
         var strategy = SemanticVersioningStrategy.PrefixAllowed;
+
+        Assert.Equal(expectedResult, strategy.IsSupportedVersion(version));
+    }
+
+    [Theory]
+    [InlineData("1.0.0", true)]
+    [InlineData("v1.0.0", false)]
+    [InlineData("V1.0.0", false)]
+    [InlineData("latest", false)]
+    public void SemanticVersioningStrategy_Strict_IsSupportedVersion(string version, bool expectedResult)
+    {
+        var strategy = SemanticVersioningStrategy.Strict;
 
         Assert.Equal(expectedResult, strategy.IsSupportedVersion(version));
     }

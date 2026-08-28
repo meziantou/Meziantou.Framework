@@ -100,25 +100,25 @@ namespace Meziantou.Framework.Unix.ControlGroups
 
     public sealed class MemoryStat
     {
-        public long Anon { get => throw null; }
-        public long File { get => throw null; }
-        public long Kernel { get => throw null; }
-        public long KernelStack { get => throw null; }
-        public long PageTables { get => throw null; }
-        public long PerCpu { get => throw null; }
-        public long Sock { get => throw null; }
-        public long SwapCached { get => throw null; }
-        public long FileMapped { get => throw null; }
-        public long FileDirty { get => throw null; }
-        public long FileWriteback { get => throw null; }
-        public long InactiveAnon { get => throw null; }
-        public long ActiveAnon { get => throw null; }
-        public long InactiveFile { get => throw null; }
-        public long ActiveFile { get => throw null; }
-        public long Unevictable { get => throw null; }
-        public long SlabReclaimable { get => throw null; }
-        public long SlabUnreclaimable { get => throw null; }
-        public long Slab { get => throw null; }
+        public long? Anon { get => throw null; }
+        public long? File { get => throw null; }
+        public long? Kernel { get => throw null; }
+        public long? KernelStack { get => throw null; }
+        public long? PageTables { get => throw null; }
+        public long? PerCpu { get => throw null; }
+        public long? Sock { get => throw null; }
+        public long? SwapCached { get => throw null; }
+        public long? FileMapped { get => throw null; }
+        public long? FileDirty { get => throw null; }
+        public long? FileWriteback { get => throw null; }
+        public long? InactiveAnon { get => throw null; }
+        public long? ActiveAnon { get => throw null; }
+        public long? InactiveFile { get => throw null; }
+        public long? ActiveFile { get => throw null; }
+        public long? Unevictable { get => throw null; }
+        public long? SlabReclaimable { get => throw null; }
+        public long? SlabUnreclaimable { get => throw null; }
+        public long? Slab { get => throw null; }
         public long? PageSwapIn { get => throw null; }
         public long? PageSwapOut { get => throw null; }
         public long? PageFault { get => throw null; }

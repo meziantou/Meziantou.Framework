@@ -91,26 +91,35 @@ public sealed class CGroup2ParsingTests
     }
 
     [Fact]
-    public void MemoryStat_ShouldReportZeroForKeysTheKernelDoesNotEmit()
+    public void MemoryStat_ShouldReportNullForKeysTheKernelDoesNotEmit()
     {
-        // Documents a known limitation: 'kernel' (Linux 6.0+) and 'swapcached' (5.13+) are non-nullable,
-        // so an older kernel that never reports them is indistinguishable from one reporting zero bytes.
+        // 'kernel' needs Linux 6.0+ and 'swapcached' needs 5.13+, so an older kernel reports neither.
+        // That must be distinguishable from a cgroup genuinely using zero bytes.
         var stat = MemoryStat.Parse("anon 4096\nfile 8192\n");
 
         Assert.Equal(4096, stat.Anon);
-        Assert.Equal(0, stat.Kernel);
-        Assert.Equal(0, stat.SwapCached);
+        Assert.Null(stat.Kernel);
+        Assert.Null(stat.SwapCached);
         Assert.Null(stat.PageFault);
     }
 
     [Fact]
-    public void MemoryStat_ShouldReportZeroForValuesLargerThanInt64()
+    public void MemoryStat_ShouldReportZeroWhenTheKernelReportsZero()
     {
-        // Documents a known limitation: memory.stat counters are u64, but they are parsed into long,
-        // so a value above long.MaxValue silently leaves the field at its default.
-        var stat = MemoryStat.Parse("anon 18446744073709551615\n");
+        var stat = MemoryStat.Parse("anon 0\nkernel 0\n");
 
         Assert.Equal(0, stat.Anon);
+        Assert.Equal(0, stat.Kernel);
+    }
+
+    [Fact]
+    public void MemoryStat_ShouldReportNullForValuesLargerThanInt64()
+    {
+        // Documents a known limitation: memory.stat counters are u64, but they are parsed into long,
+        // so a value above long.MaxValue is treated as if the kernel had not reported it.
+        var stat = MemoryStat.Parse("anon 18446744073709551615\n");
+
+        Assert.Null(stat.Anon);
     }
 
     [Theory]

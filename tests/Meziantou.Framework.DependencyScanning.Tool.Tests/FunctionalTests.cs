@@ -36,6 +36,44 @@ public sealed class FunctionalTests
     }
 
     [Fact]
+    public async Task UpdateDotNetSdk()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        var path = tempDir.CreateEmptyFile("global.json");
+        await File.WriteAllTextAsync(path, """
+            {
+              "sdk": {
+                "version": "8.0.404"
+              }
+            }
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "DotNetSdk"], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        var dependencies = await DependencyScanner.ScanDirectoryAsync(tempDir.FullPath, options: null, XunitCancellationToken);
+        var sdk = Assert.Single(dependencies, static dep => dep.Type is DependencyType.DotNetSdk);
+        Assert.True(SemanticVersion.Parse(sdk.Version!) > SemanticVersion.Parse("8.0.404"));
+    }
+
+    [Theory]
+    [InlineData(DependencyType.NuGet)]
+    [InlineData(DependencyType.Npm)]
+    [InlineData(DependencyType.DockerImage)]
+    [InlineData(DependencyType.GitHubActions)]
+    public async Task UpdatersRequiringAPackageNameIgnoreNamelessDependencies(DependencyType dependencyType)
+    {
+        var dependency = new Dependency(name: null, "1.0.0", dependencyType, nameLocation: null, versionLocation: null);
+
+        foreach (var updater in new PackageUpdater[] { new NuGetPackageUpdater(), new NpmPackageUpdater(), new DockerPackageUpdater(), new GitHubActionsUpdater() })
+        {
+            Assert.Null(await updater.GetUpdatedVersionAsync(dependency, XunitCancellationToken));
+        }
+    }
+
+    [Fact]
     public async Task FilterDependencyType()
     {
         await using var tempDir = TemporaryDirectory.Create();

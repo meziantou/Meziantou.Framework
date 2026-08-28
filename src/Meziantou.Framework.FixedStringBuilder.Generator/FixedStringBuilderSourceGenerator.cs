@@ -104,15 +104,52 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
 
     private static void Generate(SourceProductionContext context, FixedStringTypeInfo target)
     {
-        var hintName = target.FullyQualifiedName
-            .Replace("global::", "", StringComparison.Ordinal)
-            .Replace('<', '_')
-            .Replace('>', '_')
-            .Replace('.', '_')
-            .Replace('+', '_') + ".g.cs";
-
         var source = GenerateSource(target);
-        context.AddSource(hintName, SourceText.From(source, Encoding.UTF8));
+        context.AddSource(ComputeHintName(target.FullyQualifiedName), SourceText.From(source, Encoding.UTF8));
+    }
+
+    /// <summary>
+    /// Computes the name of the generated file for a type. Replacing the characters that cannot appear in a hint
+    /// name is not injective: <c>A.B.C</c> and <c>A.B_C</c> both sanitize to <c>A_B_C</c>. A duplicate hint name
+    /// makes <see cref="SourceProductionContext.AddSource(string, SourceText)"/> throw, which takes down the whole
+    /// generator and leaves every type without its members, so a hash of the original name is appended to keep the
+    /// result unique. The types are generated one at a time, so a shared set of already-used names is not an
+    /// option here: it would make the output depend on the order the types are processed in.
+    /// </summary>
+    private static string ComputeHintName(string fullyQualifiedName)
+    {
+        var name = fullyQualifiedName.Replace("global::", "", StringComparison.Ordinal);
+
+        var sb = new StringBuilder(name.Length + 14);
+        foreach (var c in name)
+        {
+            sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+        }
+
+        sb.Append('.');
+        sb.Append(GetStableHash(name).ToString("x8", CultureInfo.InvariantCulture));
+        sb.Append(".g.cs");
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// FNV-1a. <see cref="string.GetHashCode()"/> is randomized per process, which would make the name of the
+    /// generated files change between builds.
+    /// </summary>
+    private static uint GetStableHash(string value)
+    {
+        unchecked
+        {
+            var hash = 2166136261;
+            foreach (var c in value)
+            {
+                hash ^= c;
+                hash *= 16777619;
+            }
+
+            return hash;
+        }
     }
 
     private static string GenerateSource(FixedStringTypeInfo target)

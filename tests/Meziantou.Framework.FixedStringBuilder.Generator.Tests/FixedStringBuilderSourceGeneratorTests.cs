@@ -182,6 +182,36 @@ public sealed class FixedStringBuilderSourceGeneratorTests
     }
 
     [Fact]
+    public async Task GeneratesBothTypesWhenTheirSanitizedNamesCollide()
+    {
+        // "A.B.C" and "A.B_C" both sanitize to "A_B_C"
+        const string Source = """
+            namespace A.B
+            {
+                [FixedStringBuilderAttribute(4)]
+                public partial struct C;
+            }
+
+            namespace A
+            {
+                [FixedStringBuilderAttribute(4)]
+                public partial struct B_C;
+            }
+            """;
+
+        var (runResult, compilation) = await GenerateAsync(Source);
+        Assert.Empty(runResult.Diagnostics);
+
+        var hintNames = runResult.Results[0].GeneratedSources.Select(static source => source.HintName).ToArray();
+        Assert.HasCount(4, hintNames);
+        Assert.HasCount(hintNames.Length, hintNames.Distinct(StringComparer.Ordinal));
+
+        using var peStream = new MemoryStream();
+        var emitResult = compilation.Emit(peStream);
+        Assert.True(emitResult.Success, string.Join('\n', emitResult.Diagnostics));
+    }
+
+    [Fact]
     public async Task OutputIsCachedWhenAnUnrelatedFileChanges()
     {
         const string Target = """

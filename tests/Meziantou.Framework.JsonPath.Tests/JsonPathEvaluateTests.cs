@@ -423,6 +423,35 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
+    public void Evaluate_Path_IsCorrectForNodesSelectedByAFilter()
+    {
+        // Filter subqueries evaluate without tracking paths. The paths of the nodes the filter *selects*
+        // are still tracked, so this guards against the untracked placeholder leaking into a result.
+        var doc = JsonNode.Parse("""
+            {"items": [{"a": {"b": 1}}, {"a": {"c": 2}}, {"a": {"b": 3}}]}
+            """);
+
+        var existence = JsonPath.Parse("$.items[?@.a.b]").Evaluate(doc);
+        Assert.Equal(2, existence.Count);
+        Assert.Equal("$['items'][0]", existence[0].Path);
+        Assert.Equal("$['items'][2]", existence[1].Path);
+
+        var comparison = JsonPath.Parse("$.items[?@.a.b > 1].a.b").Evaluate(doc);
+        Assert.Single(comparison);
+        Assert.Equal("$['items'][2]['a']['b']", comparison[0].Path);
+
+        var nested = JsonPath.Parse("$..items[?@.a.b == 1]").Evaluate(doc);
+        Assert.Single(nested);
+        Assert.Equal("$['items'][0]", nested[0].Path);
+
+        var absolute = JsonPath.Parse("$.items[?$.items[0].a.b == 1]").Evaluate(doc);
+        Assert.Equal(3, absolute.Count);
+        Assert.Equal("$['items'][0]", absolute[0].Path);
+        Assert.Equal("$['items'][1]", absolute[1].Path);
+        Assert.Equal("$['items'][2]", absolute[2].Path);
+    }
+
+    [Fact]
     public void Evaluate_Path_IsRenderedLazilyAndCached()
     {
         var doc = JsonNode.Parse("""{"store": {"book": [{"title": "A"}, {"title": "B"}]}}""");

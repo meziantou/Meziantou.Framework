@@ -47,6 +47,8 @@ public sealed partial class CGroup2
     /// <returns>The child cgroup.</returns>
     public CGroup2? GetChild(string name)
     {
+        ValidateSegment(name, nameof(name));
+
         if (!Directory.Exists(System.IO.Path.Combine(_path, name)))
             return null;
 
@@ -58,6 +60,8 @@ public sealed partial class CGroup2
     /// <returns>The child cgroup.</returns>
     public CGroup2 CreateOrGetChild(string name)
     {
+        ValidateSegment(name, nameof(name));
+
         var child = new CGroup2(name, this);
         Directory.CreateDirectory(child._path);
         return child;
@@ -479,6 +483,18 @@ public sealed partial class CGroup2
     #endregion
 
     #region Helper Methods
+
+    /// <summary>Ensures a caller-provided value is a single path segment, so it cannot escape the cgroup hierarchy.</summary>
+    /// <param name="value">The value to validate.</param>
+    /// <param name="paramName">The name of the parameter being validated.</param>
+    /// <exception cref="ArgumentException">The value is empty, is a relative path segment, or contains a directory separator.</exception>
+    internal static void ValidateSegment(string value, string paramName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(value, paramName);
+
+        if (value is "." or ".." || value.AsSpan().ContainsAny('/', '\0'))
+            throw new ArgumentException($"'{value}' must be a single path segment and cannot be '.', '..', or contain '/'", paramName);
+    }
 
     private string ReadFile(string fileName)
     {

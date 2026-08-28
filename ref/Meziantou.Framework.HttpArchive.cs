@@ -62,6 +62,11 @@ namespace Meziantou.Framework.HttpArchive
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
     }
 
+    public static class HarContentExtensions
+    {
+        public static bool TryGetRawData(this Meziantou.Framework.HttpArchive.HarContent? content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? rawData) => throw null;
+    }
+
     public sealed class HarCookie
     {
         [System.Text.Json.Serialization.JsonPropertyName("name")]

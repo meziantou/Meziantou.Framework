@@ -123,7 +123,4 @@ public abstract partial class BloomFilter
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static long Reduce(uint hash, ulong range) => (long)(((UInt128)hash * range) >> 32);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static long Reduce(ushort hash, ulong range) => (long)(((UInt128)hash * range) >> 16);
 }

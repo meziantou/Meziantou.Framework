@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
@@ -85,5 +86,12 @@ public class RestartManagerTests
         {
             directory.Delete(recursive: true);
         }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void JoinSession_WithUnknownKey_ReportsTheFailingFunction()
+    {
+        var exception = Assert.Throws<Win32Exception>(() => RestartManager.JoinSession("00000000000000000000000000000000"));
+        Assert.StartsWith("RmJoinSession failed", exception.Message);
     }
 }

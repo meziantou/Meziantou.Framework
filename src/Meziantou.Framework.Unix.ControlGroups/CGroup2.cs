@@ -211,10 +211,11 @@ public sealed partial class CGroup2
         WriteFile("cpu.max", $"{maxStr} {periodMicroseconds.ToString(CultureInfo.InvariantCulture)}");
     }
 
-    /// <summary>Removes the CPU maximum bandwidth limit.</summary>
+    /// <summary>Removes the CPU maximum bandwidth limit. The period is left unchanged.</summary>
     public void RemoveCpuMax()
     {
-        SetCpuMax(null, 100000);
+        // cpu.max accepts "max" on its own, which clears the quota and keeps the configured period.
+        WriteFile("cpu.max", "max");
     }
 
     #endregion
@@ -500,7 +501,11 @@ public sealed partial class CGroup2
     private void WriteFile(string fileName, string content)
     {
         var filePath = System.IO.Path.Combine(_path, fileName);
-        File.WriteAllText(filePath, content);
+
+        // cgroup interface files are only updated by a write(2). File.WriteAllText issues no write at all when
+        // content is empty, and the O_TRUNC implied by FileMode.Create does not clear the value held by kernfs.
+        // Appending a newline (what 'echo' does) keeps clearing a setting from silently doing nothing.
+        File.WriteAllText(filePath, content + "\n");
     }
 
     #endregion

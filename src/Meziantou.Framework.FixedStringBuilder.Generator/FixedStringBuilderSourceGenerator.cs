@@ -362,7 +362,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
 
         AppendLine($"public readonly bool Equals({simpleTypeName} other) => _length == other._length && AsSpan().SequenceEqual(other.AsSpan());");
         AppendLine();
-        AppendLine($"public readonly bool Equals({simpleTypeName} other, StringComparison comparison) => new string(AsSpan()).Equals(new string(other.AsSpan()), comparison);");
+        AppendLine($"public readonly bool Equals({simpleTypeName} other, StringComparison comparison) => AsSpan().Equals(other.AsSpan(), comparison);");
         AppendLine();
         AppendLine($"public static bool operator ==({simpleTypeName} left, {simpleTypeName} right) => left.Equals(right);");
         AppendLine();

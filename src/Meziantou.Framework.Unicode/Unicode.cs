@@ -11,13 +11,15 @@ public static partial class Unicode
     {
         ArgumentNullException.ThrowIfNull(str);
 
-        if (str.Length == 0)
+        var start = IndexOfFirstConfusable(str);
+        if (start < 0)
             return str;
 
-        var sb = new StringBuilder(str.Length);
-        var index = 0;
-        var hasReplacement = false;
+        // Some replacements are longer than their source, so leave a little room to grow.
+        var sb = new StringBuilder(str.Length + 16);
+        sb.Append(str, 0, start);
 
+        var index = start;
         while (index < str.Length)
         {
             if (!Rune.TryGetRuneAt(str, index, out var rune))
@@ -30,20 +32,39 @@ public static partial class Unicode
             if (UnicodeConfusablesData.TryGetReplacement(rune, out var replacement))
             {
                 sb.Append(replacement);
-                hasReplacement = true;
             }
             else
             {
-                sb.Append(rune);
+                // Append from the source string rather than the Rune: there is no
+                // StringBuilder.Append(Rune) overload before .NET 11, so appending the Rune
+                // would box it and allocate a string for every character on net10.0.
+                sb.Append(str, index, rune.Utf16SequenceLength);
             }
 
             index += rune.Utf16SequenceLength;
         }
 
-        if (!hasReplacement)
-            return str;
-
         return sb.ToString();
+    }
+
+    private static int IndexOfFirstConfusable(string str)
+    {
+        var index = 0;
+        while (index < str.Length)
+        {
+            if (!Rune.TryGetRuneAt(str, index, out var rune))
+            {
+                index++;
+                continue;
+            }
+
+            if (UnicodeConfusablesData.TryGetReplacement(rune, out _))
+                return index;
+
+            index += rune.Utf16SequenceLength;
+        }
+
+        return -1;
     }
 
     /// <summary>Replaces a confusable Unicode character using the Unicode confusables table.</summary>

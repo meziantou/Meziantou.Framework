@@ -160,6 +160,45 @@ public sealed class ResxGeneratorTest
     }
 
     [Fact]
+    public async Task InlineTypedValueUsesTheTypeAttribute()
+    {
+        // A typed value that is not a file reference carries its type in the type attribute, not in the value
+        var element = new XElement("root",
+            new XElement("data",
+                new XAttribute("name", "MyColor"),
+                new XAttribute("type", "System.Drawing.Color, System.Drawing"),
+                new XElement("value", "Red")));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("public static global::System.Drawing.Color? @MyColor", fileContent);
+        Assert.DoesNotContain("global::?", fileContent);
+    }
+
+    [Fact]
+    public async Task ResourceWithUnknownTypeIsSkippedInsteadOfBreakingTheCompilation()
+    {
+        var element = new XElement("root",
+            new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")),
+            new XElement("data", new XAttribute("name", "Mystery"), new XAttribute("type", ""), new XElement("value", "?")));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.DoesNotContain("global::?", fileContent);
+        Assert.Contains("@Sample", fileContent);
+    }
+
+    [Fact]
     public async Task GeneratedCodeQualifiesEveryFrameworkTypeReference()
     {
         // A consumer can declare a type or namespace named System, so nothing in the generated code may rely on it

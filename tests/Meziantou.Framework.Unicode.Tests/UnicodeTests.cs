@@ -41,6 +41,33 @@ public sealed class UnicodeTests
     }
 
     [Fact]
+    public void ReplaceConfusablesCharacters_ExpandsMultiCharacterReplacements()
+    {
+        Assert.Equal("c\u0338", Unicode.ReplaceConfusablesCharacters("\u00A2"));
+    }
+
+    [Fact]
+    public void ReplaceConfusablesCharacters_HandlesAstralCodePoints()
+    {
+        Assert.Equal("xAy", Unicode.ReplaceConfusablesCharacters("x\U0001D400y"));
+    }
+
+    [Fact]
+    public void ReplaceConfusablesCharacters_PreservesTheScannedPrefix()
+    {
+        Assert.Equal("abca", Unicode.ReplaceConfusablesCharacters("abc\u0430"));
+    }
+
+    [Fact]
+    public void ReplaceConfusablesCharacters_HandlesEmptyAndLoneSurrogates()
+    {
+        Assert.Same("", Unicode.ReplaceConfusablesCharacters(""));
+        Assert.Same("\uD800", Unicode.ReplaceConfusablesCharacters("\uD800"));
+        Assert.Equal("a\uD800", Unicode.ReplaceConfusablesCharacters("a\uD800"));
+        Assert.Equal("A\uD800", Unicode.ReplaceConfusablesCharacters("\u0410\uD800"));
+    }
+
+    [Fact]
     public void IsConfusableCharacter_ReturnsExpectedValue()
     {
         Assert.True(Unicode.IsConfusableCharacter(new Rune('\u0410')));
@@ -353,6 +380,7 @@ public sealed class UnicodeTests
         Assert.Equal(block.GetHashCode(), UnicodeBlocks.BasicLatin.GetHashCode());
     }
 
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [Theory]
     // Composed vs decomposed forms of the same text.
     [InlineData("caf\u00E9", "cafe\u0301")]
@@ -361,7 +389,6 @@ public sealed class UnicodeTests
     // A precomposed letter whose decomposition is confusable.
     [InlineData("\u00CF", "I\u0308")]
     // Latin diaeresis vs Cyrillic diaeresis.
-    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [InlineData("Zo\u00EB", "Zo\u0451")]
     public void AreConfusable_DetectsConfusableStrings(string a, string b)
     {
@@ -369,10 +396,10 @@ public sealed class UnicodeTests
         Assert.Equal(Unicode.GetConfusableSkeleton(a), Unicode.GetConfusableSkeleton(b));
     }
 
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [Theory]
     [InlineData("paypal", "example")]
     [InlineData("a", "b")]
-    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     [InlineData("", "a")]
     public void AreConfusable_DoesNotReportUnrelatedStrings(string a, string b)
     {
@@ -431,5 +458,137 @@ public sealed class UnicodeTests
         // The paths that answer before normalization is needed still work.
         Assert.Same("", Unicode.GetConfusableSkeleton(""));
         Assert.True(Unicode.AreConfusable("identical", "identical"));
+    }
+
+    [Theory]
+    [InlineData(0x0041, UnicodeScript.Latin)]
+    [InlineData(0x0030, UnicodeScript.Common)]
+    [InlineData(0x0410, UnicodeScript.Cyrillic)]
+    [InlineData(0x03B1, UnicodeScript.Greek)]
+    [InlineData(0x0301, UnicodeScript.Inherited)]
+    [InlineData(0x4E00, UnicodeScript.Han)]
+    [InlineData(0x3042, UnicodeScript.Hiragana)]
+    [InlineData(0x30A2, UnicodeScript.Katakana)]
+    [InlineData(0x1F600, UnicodeScript.Common)]
+    // Unassigned, private use, and the top of the code space have no script.
+    [InlineData(0x0378, UnicodeScript.Unknown)]
+    [InlineData(0xE000, UnicodeScript.Unknown)]
+    [InlineData(0x10FFFF, UnicodeScript.Unknown)]
+    public void GetScript_ReturnsExpectedScript(int codePoint, UnicodeScript expected)
+    {
+        Assert.Equal(expected, UnicodeScripts.GetScript(codePoint));
+        Assert.Equal(expected, UnicodeScripts.GetScript(new Rune(codePoint)));
+    }
+
+    [Fact]
+    public void GetScript_ReturnsUnknownOutsideTheCodeSpace()
+    {
+        Assert.Equal(UnicodeScript.Unknown, UnicodeScripts.GetScript(-1));
+        Assert.Equal(UnicodeScript.Unknown, UnicodeScripts.GetScript(int.MinValue));
+        Assert.Equal(UnicodeScript.Unknown, UnicodeScripts.GetScript(0x110000));
+        Assert.Equal(UnicodeScript.Unknown, UnicodeScripts.GetScript(int.MaxValue));
+    }
+
+    [Fact]
+    public void UnicodeScript_DefaultIsUnknown()
+    {
+        Assert.Equal(UnicodeScript.Unknown, default);
+    }
+
+    [Theory]
+    // Each pair is the last code point of a script range and the first of the next one, so the
+    // binary search is exercised exactly where an off-by-one would show up.
+    [InlineData(0x005A, UnicodeScript.Latin, 0x005B, UnicodeScript.Common)]
+    [InlineData(0x007A, UnicodeScript.Latin, 0x007B, UnicodeScript.Common)]
+    [InlineData(0x00AA, UnicodeScript.Latin, 0x00AB, UnicodeScript.Common)]
+    [InlineData(0x00D6, UnicodeScript.Latin, 0x00D7, UnicodeScript.Common)]
+    [InlineData(0x00F6, UnicodeScript.Latin, 0x00F7, UnicodeScript.Common)]
+    [InlineData(0x0377, UnicodeScript.Greek, 0x0378, UnicodeScript.Unknown)]
+    public void GetScript_IsCorrectAtRangeBoundaries(int last, UnicodeScript lastScript, int next, UnicodeScript nextScript)
+    {
+        Assert.Equal(lastScript, UnicodeScripts.GetScript(last));
+        Assert.Equal(nextScript, UnicodeScripts.GetScript(next));
+    }
+
+    [Fact]
+    public void GetScript_NeverThrowsAcrossTheWholeCodeSpace()
+    {
+        // The binary search decodes offsets from a byte blob, so walk every scalar value once to
+        // prove no input drives it out of the table.
+        var scripts = new HashSet<UnicodeScript>();
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            if (codePoint is >= 0xD800 and <= 0xDFFF)
+                continue;
+
+            scripts.Add(UnicodeScripts.GetScript(codePoint));
+        }
+
+        Assert.Contains(UnicodeScript.Latin, scripts);
+        Assert.Contains(UnicodeScript.Han, scripts);
+        Assert.Contains(UnicodeScript.Unknown, scripts);
+    }
+
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("paypal")]
+    [InlineData("user123")]
+    [InlineData("123 !?")]
+    // Whole words in one script.
+    [InlineData("\u041F\u0440\u0438\u0432\u0435\u0442")]
+    [InlineData("\u0395\u03BB\u03BB\u03AC\u03B4\u03B1")]
+    // Japanese and Korean legitimately combine scripts; the UTS #39 augmented sets cover them.
+    [InlineData("\u65E5\u672C\u8A9E\u3067\u3059")]
+    [InlineData("\u65E5\u672C\u30AB\u30BF\u30AB\u30CA")]
+    [InlineData("\uD55C\uAD6D\uC5B4\u6F22\u5B57")]
+    [InlineData("\u6F22\u5B57\u3105\u3106")]
+    // A prolonged sound mark after katakana.
+    [InlineData("\u30A2\u30FC")]
+    public void IsSingleScript_AcceptsSingleScriptText(string value)
+    {
+        Assert.True(Unicode.IsSingleScript(value));
+        Assert.False(Unicode.IsMixedScript(value));
+    }
+
+    [Theory]
+    // Cyrillic look-alikes with a Latin "l" - the classic homograph.
+    [InlineData("\u0440\u0430\u0443\u0440\u0430l")]
+    // Latin with a Greek beta.
+    [InlineData("a\u03B2c")]
+    // Hiragana and Hangul share no augmented script.
+    [InlineData("\u3053\u3093\u306B\u3061\u306F\uD55C\uAD6D")]
+    public void IsSingleScript_RejectsMixedScriptText(string value)
+    {
+        Assert.False(Unicode.IsSingleScript(value));
+        Assert.True(Unicode.IsMixedScript(value));
+    }
+
+    [Theory]
+    // U+30FC and U+3006 both have Script=Common, which on its own would make them match any
+    // script. Their Script_Extensions are {Hiragana, Katakana} and {Han}, so pairing either with
+    // Latin is mixed. These cases only pass when Script_Extensions is consulted.
+    [InlineData("a\u30FC")]
+    [InlineData("a\u3006")]
+    public void IsSingleScript_UsesScriptExtensionsNotJustScript(string value)
+    {
+        Assert.Equal(UnicodeScript.Common, UnicodeScripts.GetScript(value[1]));
+        Assert.False(Unicode.IsSingleScript(value));
+    }
+
+    [Fact]
+    public void IsSingleScript_ValidatesArguments()
+    {
+        Assert.Throws<ArgumentNullException>(() => Unicode.IsSingleScript(null!));
+        Assert.Throws<ArgumentNullException>(() => Unicode.IsMixedScript(null!));
+    }
+
+    [Fact]
+    public void IsSingleScript_TreatsLoneSurrogatesAsScriptNeutral()
+    {
+        // EnumerateRunes substitutes U+FFFD, whose script is Common, so an ill-formed string is
+        // not reported as mixed on that basis alone.
+        Assert.True(Unicode.IsSingleScript("a\uD800b"));
+        Assert.False(Unicode.IsSingleScript("a\uD800\u0431"));
     }
 }

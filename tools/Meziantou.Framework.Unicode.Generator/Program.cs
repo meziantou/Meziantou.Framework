@@ -1783,18 +1783,6 @@ internal sealed record ScriptExtensionRange(int Start, int End, List<int> Script
 
 internal sealed record PendingRange(int Start, UnicodeDataEntry Entry);
 
-[Flags]
-internal enum EmojiProperties : byte
-{
-    None = 0,
-    Emoji = 1 << 0,
-    EmojiPresentation = 1 << 1,
-    EmojiModifier = 1 << 2,
-    EmojiModifierBase = 1 << 3,
-    EmojiComponent = 1 << 4,
-    ExtendedPictographic = 1 << 5,
-}
-
 internal sealed record UnicodeDataEntry(
     Rune Rune,
     string Name,

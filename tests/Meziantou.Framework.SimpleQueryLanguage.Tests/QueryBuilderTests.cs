@@ -657,6 +657,55 @@ public sealed class QueryBuilderTests
         Assert.Throws<NotSupportedException>(() => query.Evaluate(new() { StringValue = "dummy:10" }));
     }
 
+    [Theory]
+    [InlineData("dummy:10", true)]
+    [InlineData("-dummy:10", false)]
+    [InlineData("NOT dummy:10", false)]
+    public void UnhandledField_HandlerRespectsNegation(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetUnhandledPropertyHandler((obj, key, op, value) => true);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample()));
+    }
+
+    [Theory]
+    [InlineData("size:medium", true)]
+    [InlineData("size>small", true)]
+    [InlineData("size>large", false)]
+    [InlineData("size>=medium", true)]
+    [InlineData("size<large", true)]
+    [InlineData("size<=small", false)]
+    public void RangeHandler_UsesCustomParserForComparisonOperators(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<int>("size", (obj, range) => range.IsInRange(obj.Int32Value), TryParseSize);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { Int32Value = 2 }));
+
+        static bool TryParseSize(string value, out int result)
+        {
+            result = value switch
+            {
+                "small" => 1,
+                "medium" => 2,
+                "large" => 3,
+                _ => 0,
+            };
+
+            return result is not 0;
+        }
+    }
+
+    [Fact]
+    public void Build_NullQuery_ThrowsArgumentNullException()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+
+        var exception = Assert.Throws<ArgumentNullException>(() => queryBuilder.Build(query: null!));
+        Assert.Equal("query", exception.ParamName);
+    }
+
     [Fact]
     public void EmptyQuery()
     {

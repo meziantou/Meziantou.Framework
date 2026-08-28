@@ -168,7 +168,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         ///   Overrides the current thread's CurrentUICulture property for all
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
         public static global::System.Globalization.CultureInfo? Culture { get; set; }
 
         " + AppendNotNullIfNotNull("defaultValue") + @"

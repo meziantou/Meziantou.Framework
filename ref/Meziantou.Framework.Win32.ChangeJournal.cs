@@ -117,6 +117,7 @@ namespace Meziantou.Framework.Win32
 
     public sealed class JournalData
     {
+        public bool IsActive { get => throw null; }
         public ulong ID { get => throw null; }
         public Meziantou.Framework.Win32.Usn FirstUSN { get => throw null; }
         public Meziantou.Framework.Win32.Usn NextUSN { get => throw null; }

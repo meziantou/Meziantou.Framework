@@ -99,7 +99,7 @@ internal static class SnapshotEngine
         {
             var actualFile = actualFiles[0];
             if (expectedFiles.TryGetValue(actualFile.FilePath, out var expectedData) &&
-                settings.Comparers.Get(type).Equals(expectedData, actualFile.Data))
+                GetComparer(settings, type, actualFile.Data).Equals(expectedData, actualFile.Data))
             {
                 return SnapshotComparisonResult.NoDifference;
             }
@@ -112,11 +112,11 @@ internal static class SnapshotEngine
         var missingPaths = actualPaths.Where(path => !expectedPaths.Contains(path)).ToArray();
         var extraPaths = expectedPaths.Where(path => !actualPaths.Contains(path)).ToArray();
 
-        var comparer = settings.Comparers.Get(type);
         var changedPaths = new List<FullPath>();
         foreach (var path in expectedPaths.Intersect(actualPaths))
         {
-            if (!comparer.Equals(expectedFiles[path], actualByPath[path]))
+            var actualData = actualByPath[path];
+            if (!GetComparer(settings, type, actualData).Equals(expectedFiles[path], actualData))
             {
                 changedPaths.Add(path);
             }
@@ -130,6 +130,25 @@ internal static class SnapshotEngine
         var message = BuildMessage(missingPaths, extraPaths, changedPaths);
         var pathsToUpdate = missingPaths.Concat(changedPaths).Distinct().ToArray();
         return new SnapshotComparisonResult(HasDifferences: true, message, FormatSummary(expectedPaths), FormatSummary(actualPaths), [.. changedPaths], missingPaths, extraPaths, pathsToUpdate);
+    }
+
+    /// <summary>
+    /// Resolves the comparer for a snapshot file. A serializer may store a different format than the one that
+    /// was requested - an animated GIF becomes PNG frames, a source generator result becomes C# files - and
+    /// the comparison is about the bytes that ended up on disk, so a comparer registered for the stored format
+    /// wins. The requested type stays as the fallback, so an explicit registration for it still applies when
+    /// nothing is registered for the stored format.
+    /// </summary>
+    private static ISnapshotComparer GetComparer(SnapshotSettings settings, SnapshotType requestedType, SnapshotData data)
+    {
+        if (!string.IsNullOrEmpty(data.Extension))
+        {
+            var storedType = SnapshotType.Create(data.Extension);
+            if (storedType != requestedType && settings.Comparers.TryGet(storedType, out var storedComparer))
+                return storedComparer;
+        }
+
+        return settings.Comparers.Get(requestedType);
     }
 
     private static string BuildMessage(

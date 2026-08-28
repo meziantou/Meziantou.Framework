@@ -168,14 +168,14 @@ public sealed class RoslynSnapshotSerializerTests
     }
 
     [Fact]
-    public void Serialize_DiagnosticCollectionKeepsTheCallerOrder()
+    public void Serialize_DiagnosticCollectionIsSorted()
     {
         var data = CreateSettings().Serializers.Serialize(SnapshotType.Default, ImmutableArray.Create(
             Diagnostic.Create(SampleDescriptor, Location.None, "second"),
             Diagnostic.Create(SampleDescriptor, Location.None, "first"))).Data;
 
         var snapshot = Assert.Single(data);
-        Assert.Equal("warning SG0001: Sample message 'second'\nwarning SG0001: Sample message 'first'\n", GetText(snapshot));
+        Assert.Equal("warning SG0001: Sample message 'first'\nwarning SG0001: Sample message 'second'\n", GetText(snapshot));
     }
 
     [Fact]
@@ -286,5 +286,69 @@ public sealed class RoslynSnapshotSerializerTests
                 }
             });
         }
+    }
+
+    [Fact]
+    public void DiagnosticCollection_IsSortedSoTheOutputIsDeterministic()
+    {
+        var descriptor = new DiagnosticDescriptor("SG0001", "Title", "{0}", "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true);
+        var diagnostics = new[]
+        {
+            Diagnostic.Create(descriptor, Location.None, "zulu"),
+            Diagnostic.Create(descriptor, Location.None, "alpha"),
+            Diagnostic.Create(descriptor, Location.None, "mike"),
+        };
+
+        var settings = new SnapshotSettings();
+        settings.AddRoslyn();
+
+        var snapshot = Assert.Single(settings.Serializers.Serialize(SnapshotType.Default, diagnostics).Data);
+
+        Assert.Equal(
+            """
+            warning SG0001: alpha
+            warning SG0001: mike
+            warning SG0001: zulu
+
+            """.ReplaceLineEndings("\n"),
+            Encoding.UTF8.GetString(snapshot.Data));
+    }
+
+    [Fact]
+    public void DiagnosticCollection_OrderDoesNotDependOnTheInputOrder()
+    {
+        var descriptor = new DiagnosticDescriptor("SG0001", "Title", "{0}", "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true);
+        var settings = new SnapshotSettings();
+        settings.AddRoslyn();
+
+        string Serialize(params string[] messages)
+        {
+            var diagnostics = messages.Select(message => Diagnostic.Create(descriptor, Location.None, message)).ToArray();
+            return Encoding.UTF8.GetString(Assert.Single(settings.Serializers.Serialize(SnapshotType.Default, diagnostics).Data).Data);
+        }
+
+        Assert.Equal(Serialize("zulu", "alpha", "mike"), Serialize("mike", "zulu", "alpha"));
+    }
+
+    [Fact]
+    public void DiagnosticCollection_IsSortedByPositionBeforeId()
+    {
+        var tree = CSharpSyntaxTree.ParseText("class C { }", path: "Sample.cs");
+        var later = new DiagnosticDescriptor("SG0001", "Title", "later", "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true);
+        var earlier = new DiagnosticDescriptor("SG9999", "Title", "earlier", "Usage", DiagnosticSeverity.Warning, isEnabledByDefault: true);
+
+        var diagnostics = new[]
+        {
+            Diagnostic.Create(later, Location.Create(tree, TextSpan.FromBounds(6, 7))),
+            Diagnostic.Create(earlier, Location.Create(tree, TextSpan.FromBounds(0, 5))),
+        };
+
+        var settings = new SnapshotSettings();
+        settings.AddRoslyn();
+
+        var snapshot = Encoding.UTF8.GetString(Assert.Single(settings.Serializers.Serialize(SnapshotType.Default, diagnostics).Data).Data);
+
+        // The lower Id sorts second because position wins over Id.
+        Assert.StartsWith("Sample.cs(1,1): warning SG9999: earlier", snapshot);
     }
 }

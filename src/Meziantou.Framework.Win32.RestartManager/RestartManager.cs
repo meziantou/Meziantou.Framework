@@ -1,12 +1,9 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.System.RestartManager;
-
-#pragma warning disable CA1416 // RestartManager is Windows-only
 
 namespace Meziantou.Framework.Win32;
 
@@ -36,17 +33,17 @@ namespace Meziantou.Framework.Win32;
 /// }
 /// </code>
 /// </example>
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows6.0.6000")]
 public sealed class RestartManager : IDisposable
 {
-    private uint SessionHandle { get; }
+    private readonly RestartManagerSessionHandle _sessionHandle;
 
     /// <summary>Gets the session key for this Restart Manager session.</summary>
     public string SessionKey { get; }
 
     private RestartManager(uint sessionHandle, string sessionKey)
     {
-        SessionHandle = sessionHandle;
+        _sessionHandle = new RestartManagerSessionHandle(sessionHandle);
         SessionKey = sessionKey;
     }
 
@@ -73,7 +70,7 @@ public sealed class RestartManager : IDisposable
     {
         var result = PInvoke.RmJoinSession(out var handle, sessionKey);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
-            throw new Win32Exception((int)result, $"RmStartSession failed ({result})");
+            throw new Win32Exception((int)result, $"RmJoinSession failed ({result})");
 
         return new RestartManager(handle, sessionKey);
     }
@@ -85,9 +82,10 @@ public sealed class RestartManager : IDisposable
     public void RegisterFile(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
+        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
         string[] resources = [path];
-        var result = RegisterResources(SessionHandle, resources);
+        var result = PInvoke.RmRegisterResources(_sessionHandle.SessionHandle, resources, rgApplications: default, rgsServiceNames: default);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
     }
@@ -99,8 +97,9 @@ public sealed class RestartManager : IDisposable
     public void RegisterFiles(string[] paths)
     {
         ArgumentNullException.ThrowIfNull(paths);
+        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
-        var result = RegisterResources(SessionHandle, paths);
+        var result = PInvoke.RmRegisterResources(_sessionHandle.SessionHandle, paths, rgApplications: default, rgsServiceNames: default);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
     }
@@ -110,11 +109,13 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public bool IsResourcesLocked()
     {
+        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
+
         uint arraySize = 1;
         while (true)
         {
             var array = new RM_PROCESS_INFO[arraySize];
-            var result = PInvoke.RmGetList(SessionHandle, out var arrayCount, ref arraySize, array, out _);
+            var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out _);
             if (result is WIN32_ERROR.ERROR_SUCCESS or WIN32_ERROR.ERROR_MORE_DATA)
             {
                 return arrayCount > 0;
@@ -129,11 +130,13 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public IReadOnlyList<Process> GetProcessesLockingResources()
     {
+        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
+
         uint arraySize = 10;
         while (true)
         {
             var array = new RM_PROCESS_INFO[arraySize];
-            var result = PInvoke.RmGetList(SessionHandle, out var arrayCount, ref arraySize, array, out _);
+            var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out _);
             if (result == WIN32_ERROR.ERROR_SUCCESS)
             {
                 var processes = new List<Process>((int)arrayCount);
@@ -173,12 +176,14 @@ public sealed class RestartManager : IDisposable
 
     /// <summary>Shuts down applications and services that are using the registered resources.</summary>
     /// <param name="action">The shutdown options to use.</param>
-    /// <param name="statusCallback">An optional callback to receive progress updates during the shutdown operation.</param>
+    /// <param name="statusCallback">An optional callback to receive progress updates during the shutdown operation. The callback is invoked by native code and must not throw; use <see cref="CancelCurrentTask"/> from another thread to stop the operation instead.</param>
     /// <exception cref="Win32Exception">Thrown when the shutdown operation fails.</exception>
     public void Shutdown(RestartManagerShutdownType action, RestartManagerWriteStatusCallback? statusCallback)
     {
+        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
+
         RM_WRITE_STATUS_CALLBACK? callback = statusCallback is null ? null : statusCallback.Invoke;
-        var result = PInvoke.RmShutdown(SessionHandle, (uint)action, callback);
+        var result = PInvoke.RmShutdown(_sessionHandle.SessionHandle, (uint)action, callback);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
     }
@@ -191,14 +196,32 @@ public sealed class RestartManager : IDisposable
     }
 
     /// <summary>Restarts applications and services that were shut down by the Restart Manager and that were registered for restart.</summary>
-    /// <param name="statusCallback">An optional callback to receive progress updates during the restart operation.</param>
+    /// <param name="statusCallback">An optional callback to receive progress updates during the restart operation. The callback is invoked by native code and must not throw; use <see cref="CancelCurrentTask"/> from another thread to stop the operation instead.</param>
     /// <exception cref="Win32Exception">Thrown when the restart operation fails.</exception>
     public void Restart(RestartManagerWriteStatusCallback? statusCallback)
     {
+        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
+
         RM_WRITE_STATUS_CALLBACK? callback = statusCallback is null ? null : statusCallback.Invoke;
-        var result = PInvoke.RmRestart(SessionHandle, 0, callback);
+        var result = PInvoke.RmRestart(_sessionHandle.SessionHandle, 0, callback);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRestart failed ({result})");
+    }
+
+    /// <summary>Cancels the <see cref="Shutdown(RestartManagerShutdownType)"/> or <see cref="Restart()"/> operation that is currently running on this session.</summary>
+    /// <remarks>
+    /// <see cref="Shutdown(RestartManagerShutdownType)"/> and <see cref="Restart()"/> block until they complete, so this method
+    /// has to be called from another thread while one of them is running. It can only be called by the session that was created
+    /// with <see cref="CreateSession"/>, not by a session joined with <see cref="JoinSession(string)"/>.
+    /// </remarks>
+    /// <exception cref="Win32Exception">Thrown when the cancellation fails.</exception>
+    public void CancelCurrentTask()
+    {
+        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
+
+        var result = PInvoke.RmCancelCurrentTask(_sessionHandle.SessionHandle);
+        if (result != WIN32_ERROR.ERROR_SUCCESS)
+            throw new Win32Exception((int)result, $"RmCancelCurrentTask failed ({result})");
     }
 
     private static unsafe WIN32_ERROR StartSession(out uint handle, Span<char> sessionKeyBuffer)
@@ -212,46 +235,10 @@ public sealed class RestartManager : IDisposable
         }
     }
 
-    private static unsafe WIN32_ERROR RegisterResources(uint sessionHandle, string[] paths)
-    {
-        if (paths.Length == 0)
-            return PInvoke.RmRegisterResources(sessionHandle, 0, (PCWSTR*)null, 0, (RM_UNIQUE_PROCESS*)null, 0, (PCWSTR*)null);
-
-        var handles = new GCHandle[paths.Length];
-        try
-        {
-            var pathPointers = stackalloc PCWSTR[paths.Length];
-            for (var i = 0; i < paths.Length; i++)
-            {
-                handles[i] = GCHandle.Alloc(paths[i], GCHandleType.Pinned);
-                pathPointers[i] = new PCWSTR((char*)handles[i].AddrOfPinnedObject());
-            }
-
-            return PInvoke.RmRegisterResources(sessionHandle, (uint)paths.Length, pathPointers, 0, (RM_UNIQUE_PROCESS*)null, 0, (PCWSTR*)null);
-        }
-        finally
-        {
-            foreach (var handle in handles)
-            {
-                if (handle.IsAllocated)
-                {
-                    handle.Free();
-                }
-            }
-        }
-    }
-
-    /// <summary>Ends the Restart Manager session and releases all resources.</summary>
-    /// <exception cref="Win32Exception">Thrown when ending the session fails.</exception>
-    [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations", Justification = "<Pending>")]
+    /// <summary>Ends the Restart Manager session and releases all resources. Calling this method more than once has no effect.</summary>
     public void Dispose()
     {
-        if (SessionHandle != 0)
-        {
-            var result = PInvoke.RmEndSession(SessionHandle);
-            if (result != WIN32_ERROR.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, $"RmEndSession failed ({result})");
-        }
+        _sessionHandle.Dispose();
     }
 
     /// <summary>Determines whether the specified file is currently locked by any process.</summary>
@@ -275,6 +262,17 @@ public sealed class RestartManager : IDisposable
         restartManager.RegisterFile(path);
         return restartManager.GetProcessesLockingResources();
     }
-}
 
-#pragma warning restore CA1416
+    /// <summary>Gets a list of processes that are currently locking any of the specified files.</summary>
+    /// <param name="paths">An array of full file paths to check.</param>
+    /// <returns>A read-only list of <see cref="Process"/> instances that are locking at least one of the files.</returns>
+    /// <remarks>Prefer this method over calling <see cref="GetProcessesLockingFile(string)"/> in a loop: registering resources performs relatively expensive write operations, so registering all the files in a single session is significantly cheaper.</remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="paths"/> is <see langword="null"/>.</exception>
+    /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
+    public static IReadOnlyList<Process> GetProcessesLockingFiles(string[] paths)
+    {
+        using var restartManager = CreateSession();
+        restartManager.RegisterFiles(paths);
+        return restartManager.GetProcessesLockingResources();
+    }
+}

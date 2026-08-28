@@ -122,6 +122,101 @@ public sealed class ResxGeneratorTest
         Assert.Contains("public static global::System.Drawing.Bitmap? @Image1", fileContent);
     }
 
+    [Theory]
+    [InlineData("He\"llo")]
+    [InlineData(@"a\tb")]
+    [InlineData(@"Path\To")]
+    [InlineData("Line1\nLine2")]
+    public async Task ResourceNamesWithSpecialCharactersAreEscaped(string name)
+    {
+        var element = new XElement("root",
+            new XElement("data", new XAttribute("name", name), new XElement("value", "Value {0}")));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        // The literal must round-trip to the exact key of the resx entry, otherwise the lookup silently returns null
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        var literal = SymbolDisplay.FormatLiteral(name, quote: true);
+        Assert.Contains("GetString(" + literal + ")", fileContent);
+        Assert.Contains(" = " + literal + ";", fileContent);
+    }
+
+    [Fact]
+    public async Task ResourceFileNameWithSpecialCharactersIsEscaped()
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = @"My\Resource""Name",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("new global::System.Resources.ResourceManager(" + SymbolDisplay.FormatLiteral(@"My\Resource""Name", quote: true), fileContent);
+    }
+
+    [Fact]
+    public async Task InlineTypedValueUsesTheTypeAttribute()
+    {
+        // A typed value that is not a file reference carries its type in the type attribute, not in the value
+        var element = new XElement("root",
+            new XElement("data",
+                new XAttribute("name", "MyColor"),
+                new XAttribute("type", "System.Drawing.Color, System.Drawing"),
+                new XElement("value", "Red")));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("public static global::System.Drawing.Color? @MyColor", fileContent);
+        Assert.DoesNotContain("global::?", fileContent);
+    }
+
+    [Fact]
+    public async Task ResourceWithUnknownTypeIsSkippedInsteadOfBreakingTheCompilation()
+    {
+        var element = new XElement("root",
+            new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")),
+            new XElement("data", new XAttribute("name", "Mystery"), new XAttribute("type", ""), new XElement("value", "?")));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.DoesNotContain("global::?", fileContent);
+        Assert.Contains("@Sample", fileContent);
+    }
+
+    [Fact]
+    public async Task GeneratedCodeQualifiesEveryFrameworkTypeReference()
+    {
+        // A consumer can declare a type or namespace named System, so nothing in the generated code may rely on it
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        for (var index = fileContent.IndexOf("System.", StringComparison.Ordinal); index >= 0; index = fileContent.IndexOf("System.", index + 1, StringComparison.Ordinal))
+        {
+            var qualified = index >= 8 && fileContent.AsSpan(index - 8, 8).SequenceEqual("global::".AsSpan());
+            Assert.True(qualified, "Unqualified reference: " + fileContent[Math.Max(0, index - 40)..Math.Min(fileContent.Length, index + 40)]);
+        }
+    }
+
     [Fact]
     public async Task GenerateProperties_WithFormatParameterMetadata()
     {
@@ -307,6 +402,68 @@ public sealed class ResxGeneratorTest
                 Assert.Equal("Folder2.Messages.resx.g.cs", Path.GetFileName(tree.FilePath));
                 Assert.Equal("Test.Folder2", tree.GetRoot(XunitCancellationToken).GetNamespace());
             });
+    }
+
+    [Theory]
+    [InlineData("fr")]
+    [InlineData("fil")]
+    [InlineData("fr-FR")]
+    [InlineData("zh-Hans")]
+    [InlineData("sr-Latn-RS")]
+    [InlineData("es-419")]
+    public async Task SatelliteResxFilesAreGroupedWithTheNeutralFile(string culture)
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+
+        var result = await GenerateFiles(
+            [
+                (FullPath.GetTempPath() / "proj" / "Messages.resx", element.ToString()),
+                (FullPath.GetTempPath() / "proj" / $"Messages.{culture}.resx", element.ToString()),
+            ], new OptionProvider
+            {
+                ProjectDir = FullPath.GetTempPath() / "proj",
+                RootNamespace = "Test",
+            });
+
+        Assert.Equal("Messages.resx.g.cs", result.GeneratedFileName);
+    }
+
+    [Theory]
+    [InlineData("Backup")]
+    [InlineData("v2")]
+    [InlineData("Design")]
+    public async Task NonCultureSuffixesAreTheirOwnResource(string suffix)
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+
+        var result = await GenerateFiles(
+            [
+                (FullPath.GetTempPath() / "proj" / "Messages.resx", element.ToString()),
+                (FullPath.GetTempPath() / "proj" / $"Messages.{suffix}.resx", element.ToString()),
+            ], new OptionProvider
+            {
+                ProjectDir = FullPath.GetTempPath() / "proj",
+                RootNamespace = "Test",
+            });
+
+        var fileNames = result.GeneratedTrees.Select(tree => Path.GetFileName(tree.FilePath)).Order(StringComparer.Ordinal);
+        Assert.Equal(new[] { $"Messages.{suffix}.resx.g.cs", "Messages.resx.g.cs" }.Order(StringComparer.Ordinal), fileNames);
+    }
+
+    [Fact]
+    public async Task GenerationSucceedsWhenProjectDirIsNotProvided()
+    {
+        // The project directory is only set by the props shipped in the package, so a project referencing the
+        // analyzer directly leaves it unset. The assembly name must not be used as a directory in that case.
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var result = await GenerateFiles([(FullPath.GetTempPath() / "elsewhere" / "test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("// ResourceName: test", fileContent);
+        Assert.Equal("test.resx.g.cs", result.GeneratedFileName);
     }
 
     [Fact]

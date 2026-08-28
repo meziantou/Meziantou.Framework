@@ -65,3 +65,10 @@ Full RFC 9535 compliance:
 - **Filter expressions**: comparisons (`==`, `!=`, `<`, `<=`, `>`, `>=`), logical operators (`&&`, `||`, `!`), existence tests, parenthesized grouping
 - **Built-in functions**: `length()`, `count()`, `match()`, `search()`, `value()`
 - **Normalized paths**: canonical path output per RFC 9535 §2.7
+
+## Limits
+
+Filter expressions, nested filter selectors, and function arguments may nest up to 64 levels deep. Beyond that,
+`Parse` throws a `FormatException` and `TryParse` returns `false`. The parser is recursive, so this bound is what
+keeps a hostile or machine-generated expression from exhausting the stack; 64 matches the default `MaxDepth` of
+`System.Text.Json` and is far above any practical query.

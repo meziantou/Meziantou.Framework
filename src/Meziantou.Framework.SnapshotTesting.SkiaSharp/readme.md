@@ -7,18 +7,39 @@
 Call `AddSkiaSharp()` on your `SnapshotSettings` to register the SkiaSharp serializer and comparer:
 
 ```csharp
+using System.Runtime.CompilerServices;
+using Meziantou.Framework.SnapshotTesting;
+using Meziantou.Framework.SnapshotTesting.SkiaSharp;
+
+internal static class SnapshotConfiguration
+{
+    [ModuleInitializer]
+    internal static void Initialize()
+    {
+        SnapshotSettings.Default.AddSkiaSharp();
+    }
+}
+```
+
+Then validate images from your tests:
+
+```csharp
 public sealed class SampleTests
 {
     [Fact]
     public void ValidateImage()
     {
-        SnapshotSettings.Default.AddSkiaSharp();
-
         using var bitmap = SKBitmap.Decode("sample.png");
         Snapshot.Validate(bitmap, SnapshotType.Png);
     }
 }
 ```
+
+> [!IMPORTANT]
+> Register once for the whole test assembly, not inside a test method. `SnapshotSettings.Default` is
+> shared by every test in the process and its collections are not safe for concurrent modification, so
+> calling `AddSkiaSharp()` from a test races against any other test that is serializing a snapshot at
+> the same time. Repeated calls also append a serializer and a converter every time.
 
 Note that SkiaSharp requires the native libraries to be available at runtime. They are included in the `SkiaSharp` package for Windows and macOS. On Linux, add a reference to [`SkiaSharp.NativeAssets.Linux`](https://www.nuget.org/packages/SkiaSharp.NativeAssets.Linux).
 
@@ -27,6 +48,7 @@ Note that SkiaSharp requires the native libraries to be available at runtime. Th
 By default, images are compared pixel-by-pixel (exact comparison). To allow minor rendering differences, configure a [Structural Similarity Index (SSIM)](https://en.wikipedia.org/wiki/Structural_similarity_index_measure) threshold:
 
 ```csharp
+// In the module initializer shown above
 SnapshotSettings.Default.AddSkiaSharp(new ImageComparisonSettings
 {
     SimilarityThreshold = 0.99f, // 0.0 = completely different, 1.0 = identical

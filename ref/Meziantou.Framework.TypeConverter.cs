@@ -45,7 +45,7 @@ namespace Meziantou.Framework
         protected virtual bool TryConvert(System.TimeSpan input, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? value) => throw null;
         protected virtual bool TryConvert(System.Guid input, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? value) => throw null;
         protected virtual bool TryConvert(System.DateTime input, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? value) => throw null;
-        protected virtual bool TryConvert(System.Decimal input, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? value) => throw null;
+        protected virtual bool TryConvert(decimal input, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? value) => throw null;
         protected virtual bool TryConvert(object? input, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? value) => throw null;
         protected virtual bool TryConvertEnum(object? input, System.Type conversionType, System.IFormatProvider? provider, out object? value) => throw null;
         protected virtual bool TryConvert(string? text, System.IFormatProvider? provider, out byte[]? value) => throw null;
@@ -56,7 +56,7 @@ namespace Meziantou.Framework
         protected virtual bool TryConvert(object? input, System.IFormatProvider? provider, out System.Guid value) => throw null;
         protected virtual bool TryConvert(object? input, System.IFormatProvider? provider, out ulong value) => throw null;
         protected virtual bool TryConvert(object? input, System.IFormatProvider? provider, out ushort value) => throw null;
-        protected virtual bool TryConvert(object? input, System.IFormatProvider? provider, out System.Decimal value) => throw null;
+        protected virtual bool TryConvert(object? input, System.IFormatProvider? provider, out decimal value) => throw null;
         protected virtual bool TryConvert(object? input, System.IFormatProvider? provider, out float value) => throw null;
         protected virtual bool TryConvert(object? input, System.IFormatProvider? provider, out double value) => throw null;
         protected virtual bool TryConvert(object? input, System.IFormatProvider? provider, out char value) => throw null;

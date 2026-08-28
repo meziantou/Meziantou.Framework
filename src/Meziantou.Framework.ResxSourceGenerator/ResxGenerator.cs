@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
@@ -56,7 +57,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
             var generateResourcesTypeConfiguration = GetMetadataValue("GenerateResourcesType", globalName: null);
 
             var rootNamespace = rootNamespaceConfiguration ?? assemblyName ?? "";
-            var projectDir = projectDirConfiguration ?? assemblyName ?? "";
+            var projectDir = projectDirConfiguration ?? "";
             var defaultResourceName = defaultResourceNameConfiguration ?? ResxGeneratorCommon.ComputeResourceName(rootNamespace, projectDir, resxGroup.Key);
             var defaultNamespace = ResxGeneratorCommon.ComputeNamespace(rootNamespace, projectDir, resxGroup.Key);
 
@@ -156,7 +157,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
             {
                 if (resourceMan is null)
                 {
-                    resourceMan = new global::System.Resources.ResourceManager(""" + resourceName + @""", typeof(" + className + @").Assembly);
+                    resourceMan = new global::System.Resources.ResourceManager(" + ToLiteral(resourceName) + @", typeof(" + className + @").Assembly);
                 }
 
                 return resourceMan;
@@ -167,7 +168,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         ///   Overrides the current thread's CurrentUICulture property for all
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
         public static global::System.Globalization.CultureInfo? Culture { get; set; }
 
         " + AppendNotNullIfNotNull("defaultValue") + @"
@@ -322,7 +323,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         {
             get
             {
-                return GetString(""" + entry.Name + @""");
+                return GetString(" + ToLiteral(entry.Name) + @");
             }
         }
 ");
@@ -347,7 +348,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         /// " + formatComment + @"
         public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(global::System.Globalization.CultureInfo? provider, " + inParams + @")
         {
-            return GetString(culture: provider, name: """ + entry.Name + @""", args: new object?[] { " + callParams + @" });
+            return GetString(culture: provider, name: " + ToLiteral(entry.Name) + @", args: new object?[] { " + callParams + @" });
         }
 ");
 
@@ -355,23 +356,28 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         /// " + formatComment + @"
         public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(" + inParams + @")
         {
-            return GetString(name: """ + entry.Name + @""", args: new object?[] { " + callParams + @" });
+            return GetString(name: " + ToLiteral(entry.Name) + @", args: new object?[] { " + callParams + @" });
         }
 ");
                         }
                     }
                 }
-                else
+                else if (entry.FullTypeName is string fullTypeName)
                 {
                     sb.AppendLine(@"
-        public static global::" + entry.FullTypeName + "? @" + ToCSharpNameIdentifier(entry.Name) + @"
+        public static global::" + fullTypeName + "? @" + ToCSharpNameIdentifier(entry.Name) + @"
         {
             get
             {
-                return (global::" + entry.FullTypeName + @"?)GetObject(""" + entry.Name + @""");
+                return (global::" + fullTypeName + @"?)GetObject(" + ToLiteral(entry.Name) + @");
             }
         }
 ");
+                }
+                else
+                {
+                    // Emitting the member would produce "global::?" and break the whole compilation
+                    sb.AppendLine("        // Could not determine the type of the resource " + ToCSharpNameIdentifier(entry.Name));
                 }
             }
 
@@ -388,7 +394,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                 if (string.IsNullOrEmpty(entry.Name))
                     continue;
 
-                sb.AppendLine("        public const string @" + ToCSharpNameIdentifier(entry.Name) + " = \"" + entry.Name + "\";");
+                sb.AppendLine("        public const string @" + ToCSharpNameIdentifier(entry.Name) + " = " + ToLiteral(entry.Name) + ";");
             }
 
             sb.AppendLine("    }");
@@ -534,6 +540,15 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         }
 
         return string.Join(Environment.NewLine + "        /// ", elements);
+    }
+
+    /// <summary>
+    /// Formats a value read from the resx file as a C# string literal, quotes included. Resource names and
+    /// resource file names are arbitrary text, so they cannot be concatenated into the generated source as-is.
+    /// </summary>
+    private static string ToLiteral(string value)
+    {
+        return SymbolDisplay.FormatLiteral(value, quote: true);
     }
 
     private static string EscapeCSharpIdentifier(string name)
@@ -700,17 +715,26 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                 if (IsText)
                     return "string";
 
-                if (Value is not null)
+                // A file reference stores the type of the referenced content in its value: "path;type name;encoding"
+                if (IsFileRef && Value is not null)
                 {
                     var parts = Value.Split(';');
                     if (parts.Length > 1)
-                    {
-                        var type = parts[1];
-                        return type.Split(',')[0];
-                    }
+                        return NullIfEmpty(parts[1].Split(',')[0]);
                 }
 
+                // An inline value carries its type in the type attribute:
+                // <data name="Color" type="System.Drawing.Color, System.Drawing"><value>Red</value></data>
+                if (Type is not null)
+                    return NullIfEmpty(Type.Split(',')[0]);
+
                 return null;
+
+                static string? NullIfEmpty(string value)
+                {
+                    var trimmed = value.Trim();
+                    return string.IsNullOrEmpty(trimmed) ? null : trimmed;
+                }
             }
         }
 

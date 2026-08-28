@@ -34,8 +34,10 @@ public partial class TemporaryContainer
             cts.Cancel();
             await task.ConfigureAwait(false);
         }
-        catch (OperationCanceledException)
+        catch
         {
+            // Forwarding logs is best-effort. A pump that faulted must not break the lifecycle operation that stops it,
+            // and it must never keep the container from being removed on dispose.
         }
         finally
         {
@@ -61,6 +63,12 @@ public partial class TemporaryContainer
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            // Expected: the container is stopping.
+        }
+        catch
+        {
+            // The runtime stopped streaming, or the logger itself threw. A logger backed by a test output helper does
+            // that as soon as the test that owns it completes, which is exactly when the container is being disposed.
         }
     }
 }

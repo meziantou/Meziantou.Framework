@@ -1,3 +1,4 @@
+using System.Buffers.Text;
 using System.Text;
 using System.Text.Json;
 using Meziantou.Framework.TemporaryContainers.Internals;
@@ -55,6 +56,69 @@ public sealed class DockerRegistryAuthProviderTests
         Assert.Equal("registry.example.com", payload.ServerAddress);
     }
 
+    [Fact]
+    public async Task GetRegistryAuthHeaderValueAsync_EncodesTheHeaderWithBase64Url()
+    {
+        // This password makes the standard base64 alphabet emit '+' or '/', which base64url rejects.
+        var config = new DockerApiModels.AuthConfigFile
+        {
+            Auths = new Dictionary<string, DockerApiModels.AuthEntry>(StringComparer.Ordinal)
+            {
+                ["https://index.docker.io/v1/"] = new DockerApiModels.AuthEntry
+                {
+                    Username = "john",
+                    Password = "abc>>>def",
+                },
+            },
+        };
+
+        var provider = new DockerRegistryAuthProvider(overrideConfiguration: config);
+        var header = await provider.GetRegistryAuthHeaderValueAsync("redis:8", CancellationToken.None);
+
+        Assert.NotNull(header);
+        Assert.DoesNotContain('+', header);
+        Assert.DoesNotContain('/', header);
+        Assert.Equal("abc>>>def", DecodeHeader(header).Password);
+    }
+
+    [Fact]
+    public async Task GetRegistryAuthHeaderValueAsync_ReturnsNullWhenTheCredentialHelperIsMissing()
+    {
+        var config = new DockerApiModels.AuthConfigFile
+        {
+            CredsStore = MissingHelperName(),
+        };
+
+        var provider = new DockerRegistryAuthProvider(overrideConfiguration: config);
+
+        Assert.Null(await provider.GetRegistryAuthHeaderValueAsync("redis:8", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetRegistryAuthHeaderValueAsync_FallsBackToAuthsWhenTheCredentialHelperIsMissing()
+    {
+        var config = new DockerApiModels.AuthConfigFile
+        {
+            CredsStore = MissingHelperName(),
+            Auths = new Dictionary<string, DockerApiModels.AuthEntry>(StringComparer.Ordinal)
+            {
+                ["https://index.docker.io/v1/"] = new DockerApiModels.AuthEntry
+                {
+                    Auth = Convert.ToBase64String(Encoding.UTF8.GetBytes("john:secret")),
+                },
+            },
+        };
+
+        var provider = new DockerRegistryAuthProvider(overrideConfiguration: config);
+        var header = await provider.GetRegistryAuthHeaderValueAsync("redis:8", CancellationToken.None);
+
+        Assert.NotNull(header);
+        Assert.Equal("john", DecodeHeader(header!).Username);
+    }
+
+    /// <summary>A helper name that cannot resolve to an executable, so 'docker-credential-&lt;name&gt;' is guaranteed to be missing.</summary>
+    private static string MissingHelperName() => "meziantou-tc-missing-" + Guid.NewGuid().ToString("N");
+
     [Theory]
     [InlineData("redis:8", "index.docker.io")]
     [InlineData("library/redis:8", "index.docker.io")]
@@ -65,9 +129,28 @@ public sealed class DockerRegistryAuthProviderTests
         Assert.Equal(expectedRegistry, DockerRegistryAuthProvider.GetRegistryFromImageName(imageName));
     }
 
+    [Fact]
+    public void GetConfigurationDirectory_UsesDockerConfigWhenSet()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "meziantou-tc-docker-config");
+
+        Assert.Equal(FullPath.FromPath(directory), DockerRegistryAuthProvider.GetConfigurationDirectory(directory));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void GetConfigurationDirectory_FallsBackToTheUserProfileWhenDockerConfigIsNotSet(string? dockerConfig)
+    {
+        var expected = FullPath.GetFolderPath(Environment.SpecialFolder.UserProfile) / ".docker";
+
+        Assert.Equal(expected, DockerRegistryAuthProvider.GetConfigurationDirectory(dockerConfig));
+    }
+
     private static DockerApiModels.RegistryAuthHeader DecodeHeader(string value)
     {
-        var json = Encoding.UTF8.GetString(Convert.FromBase64String(value));
+        var json = Encoding.UTF8.GetString(Base64Url.DecodeFromChars(value));
         var payload = JsonSerializer.Deserialize(json, DockerApiJsonContext.Default.RegistryAuthHeader);
         return payload ?? throw new InvalidOperationException("Invalid Docker auth header payload.");
     }

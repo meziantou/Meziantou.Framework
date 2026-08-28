@@ -897,6 +897,25 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public void AttributeInfoDoesNotKeepReferenceToCompilationData()
+    {
+        // AttributeInfo is the value cached by the incremental pipeline. Keeping a syntax node, a symbol or a compilation
+        // would root the whole compilation for the lifetime of the IDE session.
+        var type = typeof(StronglyTypedIdSourceGenerator).GetNestedType("AttributeInfo", BindingFlags.NonPublic);
+        Assert.NotNull(type);
+
+        foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            var keepsCompilationData = typeof(SyntaxNode).IsAssignableFrom(field.FieldType)
+                || typeof(ISymbol).IsAssignableFrom(field.FieldType)
+                || typeof(Compilation).IsAssignableFrom(field.FieldType)
+                || typeof(SyntaxTree).IsAssignableFrom(field.FieldType);
+
+            Assert.False(keepsCompilationData, $"'{field.Name}' keeps a reference to the compilation");
+        }
+    }
+
+    [Fact]
     public async Task TestIncrementalSupport()
     {
         var generator = InstantiateGenerator();

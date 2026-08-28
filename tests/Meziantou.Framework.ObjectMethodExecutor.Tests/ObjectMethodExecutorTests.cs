@@ -203,6 +203,55 @@ public sealed class ObjectMethodExecutorTests
     }
 
     [Fact]
+    public void Execute_ThrowsWhenTooFewParameters()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!);
+
+        var exception = Assert.Throws<ArgumentException>(() => executor.Execute(new Test(), []));
+        Assert.Contains("SyncInt32WithParam", exception.Message);
+    }
+
+    [Fact]
+    public void Execute_ThrowsWhenTooManyParameters()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!);
+
+        Assert.Throws<ArgumentException>(() => executor.Execute(new Test(), [1, 2]));
+    }
+
+    [Fact]
+    public void Execute_ThrowsWhenParametersIsNullAndMethodTakesParameters()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!);
+
+        Assert.Throws<ArgumentException>(() => executor.Execute(new Test(), parameters: null));
+    }
+
+    [Fact]
+    public void Execute_AllowsNullParametersForParameterlessMethod()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32")!);
+
+        Assert.Equal(1, executor.Execute(new Test(), parameters: null));
+    }
+
+    [Fact]
+    public void ExecuteAsync_ThrowsWhenParameterCountIsWrong()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32WithParam")!);
+
+        Assert.Throws<ArgumentException>(() => executor.ExecuteAsync(new Test(), []));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_AllowsNullParametersForParameterlessMethod()
+    {
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32")!);
+
+        Assert.Equal(1, await executor.ExecuteAsync(new Test(), parameters: null));
+    }
+
+    [Fact]
     public async Task AsyncTaskInt32WithParamTests()
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32WithParam")!);

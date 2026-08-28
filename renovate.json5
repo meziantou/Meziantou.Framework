@@ -3,6 +3,23 @@
   "extends": [
     "github>meziantou/renovate-config"
   ],
+  "customManagers": [
+    {
+      // The shared preset only matches the ImageSource.FromRegistry(...) call, so the image named in the XML
+      // documentation right above it was left behind and drifted (postgres was documented as 17 while the code
+      // created an 18 container). Anchored on the 'using the <c>image:tag</c> image' wording so it cannot match
+      // the illustrative <c>redis:8</c> samples or <c>host:port</c> elsewhere in the documentation.
+      "customType": "regex",
+      "description": "Default container images named in the XML documentation of the ContainerDefinition factory methods",
+      "managerFilePatterns": [
+        "/^src/Meziantou\\.Framework\\.TemporaryContainers/Containers/.*Extensions\\.cs$/"
+      ],
+      "matchStrings": [
+        "using the <c>(?<depName>[^<]+):(?<currentValue>[^<@]+)</c> image"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
   "packageRules": [
     {
       "matchPackageNames": [ "/^Microsoft\\.Build\\..*/" ],

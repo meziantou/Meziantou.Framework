@@ -129,4 +129,84 @@ public static partial class Unicode
 
         return TryGetCharacterInfo(rune, out info);
     }
+
+    /// <summary>Computes the skeleton of a string, as defined by Unicode Technical Standard #39.</summary>
+    /// <param name="value">The text to reduce. Must be well-formed UTF-16.</param>
+    /// <returns>The skeleton of <paramref name="value"/>.</returns>
+    /// <exception cref="ArgumentException"><paramref name="value"/> contains an unpaired surrogate.</exception>
+    /// <remarks>
+    /// The skeleton is <c>toNFD(toConfusable(toNFD(X)))</c>. It is a comparison key and nothing more:
+    /// it is not displayable text, and it must not be shown to users or stored in place of the
+    /// original. Two strings are confusable when their skeletons are equal, which is what
+    /// <see cref="AreConfusable(string, string)"/> tests.
+    /// <para>
+    /// Both normalization passes matter. Without the first, a decomposed string is not folded the
+    /// same way as its composed form; without the second, the mapped result is not in a canonical
+    /// form. The confusables table is closed under its own mapping, so a single mapping pass between
+    /// them is sufficient.
+    /// </para>
+    /// </remarks>
+    /// <seealso href="https://unicode.org/reports/tr39/" />
+    public static string GetConfusableSkeleton(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        if (value.Length == 0)
+            return value;
+
+        var decomposed = value.Normalize(NormalizationForm.FormD);
+        var mapped = MapConfusableCharacters(decomposed);
+        return mapped.Normalize(NormalizationForm.FormD);
+    }
+
+    /// <summary>Determines whether two strings are visually confusable, as defined by Unicode Technical Standard #39.</summary>
+    /// <param name="a">The first string. Must be well-formed UTF-16.</param>
+    /// <param name="b">The second string. Must be well-formed UTF-16.</param>
+    /// <returns><see langword="true"/> when both strings have the same skeleton; otherwise <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentException">Either string contains an unpaired surrogate.</exception>
+    /// <remarks>
+    /// This compares whole strings character by character after reduction. It does not consider
+    /// script mixing, so two strings drawn from different scripts that are not individually
+    /// confusable are still reported as not confusable.
+    /// </remarks>
+    /// <seealso href="https://unicode.org/reports/tr39/" />
+    public static bool AreConfusable(string a, string b)
+    {
+        ArgumentNullException.ThrowIfNull(a);
+        ArgumentNullException.ThrowIfNull(b);
+
+        if (string.Equals(a, b, StringComparison.Ordinal))
+            return true;
+
+        return string.Equals(GetConfusableSkeleton(a), GetConfusableSkeleton(b), StringComparison.Ordinal);
+    }
+
+    private static string MapConfusableCharacters(string value)
+    {
+        StringBuilder? sb = null;
+        var index = 0;
+        while (index < value.Length)
+        {
+            if (!Rune.TryGetRuneAt(value, index, out var rune))
+            {
+                sb?.Append(value[index]);
+                index++;
+                continue;
+            }
+
+            if (UnicodeConfusablesData.TryGetReplacement(rune, out var replacement))
+            {
+                sb ??= new StringBuilder(value.Length + 16).Append(value, 0, index);
+                sb.Append(replacement);
+            }
+            else
+            {
+                sb?.Append(value, index, rune.Utf16SequenceLength);
+            }
+
+            index += rune.Utf16SequenceLength;
+        }
+
+        return sb?.ToString() ?? value;
+    }
 }

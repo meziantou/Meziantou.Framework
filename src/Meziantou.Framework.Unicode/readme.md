@@ -11,6 +11,27 @@ var normalized = Unicode.ReplaceConfusablesCharacters(input);
 Console.WriteLine(normalized); // "paypal"
 ```
 
+## Detecting confusable strings
+
+To decide whether two strings look alike, use the [UTS #39](https://unicode.org/reports/tr39/)
+skeleton algorithm rather than comparing the output of `ReplaceConfusablesCharacters`:
+
+```csharp
+Unicode.AreConfusable("paypal", "раураl"); // true  (Cyrillic look-alikes)
+Unicode.AreConfusable("café", "café");     // true  (composed vs decomposed)
+Unicode.AreConfusable("paypal", "example");     // false
+```
+
+`Unicode.GetConfusableSkeleton(string)` exposes the key itself, so it can be stored or indexed
+to find collisions across a set of names:
+
+```csharp
+var skeleton = Unicode.GetConfusableSkeleton(userName);
+```
+
+> The skeleton is a comparison key, not displayable text. Do not show it to users or store it
+> in place of the original string.
+
 This package also exposes Unicode character metadata from the Unicode data table:
 
 ```csharp

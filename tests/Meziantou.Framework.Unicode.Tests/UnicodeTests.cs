@@ -350,4 +350,60 @@ public sealed class UnicodeTests
         Assert.False(block.Equals(null));
         Assert.Equal(block.GetHashCode(), UnicodeBlocks.BasicLatin.GetHashCode());
     }
+
+    [Theory]
+    // Composed vs decomposed forms of the same text.
+    [InlineData("caf\u00E9", "cafe\u0301")]
+    // Latin vs Cyrillic look-alikes.
+    [InlineData("paypal", "\u0440\u0430\u0443\u0440\u0430l")]
+    // A precomposed letter whose decomposition is confusable.
+    [InlineData("\u00CF", "I\u0308")]
+    // Latin diaeresis vs Cyrillic diaeresis.
+    [InlineData("Zo\u00EB", "Zo\u0451")]
+    public void AreConfusable_DetectsConfusableStrings(string a, string b)
+    {
+        Assert.True(Unicode.AreConfusable(a, b));
+        Assert.Equal(Unicode.GetConfusableSkeleton(a), Unicode.GetConfusableSkeleton(b));
+    }
+
+    [Theory]
+    [InlineData("paypal", "example")]
+    [InlineData("a", "b")]
+    [InlineData("", "a")]
+    public void AreConfusable_DoesNotReportUnrelatedStrings(string a, string b)
+    {
+        Assert.False(Unicode.AreConfusable(a, b));
+    }
+
+    [Fact]
+    public void GetConfusableSkeleton_FoldsThroughTheAsciiMappings()
+    {
+        // U+00CF decomposes to I + U+0308, and I maps to l. Dropping the ASCII entries from the
+        // table would silently break this.
+        Assert.Equal("l\u0308", Unicode.GetConfusableSkeleton("\u00CF"));
+    }
+
+    [Fact]
+    public void GetConfusableSkeleton_IsIdempotent()
+    {
+        var skeleton = Unicode.GetConfusableSkeleton("\u0440\u0430\u0443\u0440\u0430l");
+
+        Assert.Equal(skeleton, Unicode.GetConfusableSkeleton(skeleton));
+    }
+
+    [Fact]
+    public void GetConfusableSkeleton_HandlesEmptyAndIdenticalInput()
+    {
+        Assert.Same("", Unicode.GetConfusableSkeleton(""));
+        Assert.True(Unicode.AreConfusable("identical", "identical"));
+    }
+
+    [Fact]
+    public void GetConfusableSkeleton_ValidatesArguments()
+    {
+        Assert.Throws<ArgumentNullException>(() => Unicode.GetConfusableSkeleton(null!));
+        Assert.Throws<ArgumentNullException>(() => Unicode.AreConfusable(null!, "a"));
+        Assert.Throws<ArgumentNullException>(() => Unicode.AreConfusable("a", null!));
+        Assert.Throws<ArgumentException>(() => Unicode.GetConfusableSkeleton("a\uD800"));
+    }
 }

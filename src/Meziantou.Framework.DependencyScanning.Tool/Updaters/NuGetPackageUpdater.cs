@@ -108,9 +108,11 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
         {
             metadata = await metadataResource.GetMetadataAsync(packageName, includePrerelease: true, includeUnlisted: false, cache, NullLogger.Instance, cancellationToken).ConfigureAwait(false);
         }
-        catch
+        catch (FatalProtocolException)
         {
-            // If metadata retrieval fails, fallback to non-metadata version retrieval
+            // The source has no usable metadata resource (a V2 feed, typically): fall back to the plain
+            // version list. Narrow on purpose - a bare catch also swallowed cancellation, and it turned a
+            // transient failure into a silent loss of publication dates, which disables --minimum-age.
         }
 
         if (metadata is null)

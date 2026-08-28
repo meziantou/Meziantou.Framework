@@ -55,7 +55,7 @@ Options:
   --files <files>                      Glob patterns to find files to scan
   --dependency-type <dependency-type>  Dependency types to include. Available values: Unknown, NuGet, Npm, PyPi, DockerImage, GitReference, DotNetSdk, DotNetTargetFramework, GitHubActions, AzureDevOpsVMPool, AzureDevOpsTask, AzureDevOpsTemplate, HelmChart, RubyGem, RenovateConfiguration, SwiftPackage, MSBuildProjectReference, DotNetAssemblyReference
   --upgradable                         Only list dependencies that can be upgraded
-  --minimum-age <minimum-age>          Minimum age in days for package versions to consider for update (default: 7). Use 0 or negative to disable filtering. Not applied to Docker images as registries don't expose publication dates. [default: 7]
+  --minimum-age <minimum-age>          Minimum age in days for package versions to consider for update (default: 7). Use 0 or negative to disable filtering. Versions whose publication date is unknown are skipped, except for Docker images as registries don't expose publication dates at all. [default: 7]
   --format <Json|Text>                 Output format. Available values: Text, Json
   -?, -h, --help                       Show help and usage information
 ```
@@ -74,7 +74,7 @@ Options:
   --files <files>                      Glob patterns to find files to scan
   --dependency-type <dependency-type>  Dependency types to include. Available values: Unknown, NuGet, Npm, PyPi, DockerImage, GitReference, DotNetSdk, DotNetTargetFramework, GitHubActions, AzureDevOpsVMPool, AzureDevOpsTask, AzureDevOpsTemplate, HelmChart, RubyGem, RenovateConfiguration, SwiftPackage, MSBuildProjectReference, DotNetAssemblyReference
   --update-lock-files                  Update lock files when dependencies are updated
-  --minimum-age <minimum-age>          Minimum age in days for package versions to consider for update (default: 7). Use 0 or negative to disable filtering. Not applied to Docker images as registries don't expose publication dates. [default: 7]
+  --minimum-age <minimum-age>          Minimum age in days for package versions to consider for update (default: 7). Use 0 or negative to disable filtering. Versions whose publication date is unknown are skipped, except for Docker images as registries don't expose publication dates at all. [default: 7]
   -?, -h, --help                       Show help and usage information
 ```
 <!-- help -->

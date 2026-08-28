@@ -18,6 +18,9 @@ internal sealed class DockerPackageUpdater : PackageUpdater
 
     protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.DockerImage && dependency.Name is not null;
 
+    // Registries expose no publication date for a tag, so --minimum-age cannot apply here
+    protected override bool VersionsHavePublicationDates => false;
+
     protected override async IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         // Docker registry API doesn't provide simple access to published dates

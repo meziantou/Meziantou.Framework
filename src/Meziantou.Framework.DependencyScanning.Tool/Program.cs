@@ -120,7 +120,7 @@ internal static class Program
 
     private static Option<int> CreateMinimumAgeOption() => new("--minimum-age")
     {
-        Description = "Minimum age in days for package versions to consider for update (default: 7). Use 0 or negative to disable filtering. Not applied to Docker images as registries don't expose publication dates.",
+        Description = "Minimum age in days for package versions to consider for update (default: 7). Use 0 or negative to disable filtering. Versions whose publication date is unknown are skipped, except for Docker images as registries don't expose publication dates at all.",
         DefaultValueFactory = _ => 7,
     };
 

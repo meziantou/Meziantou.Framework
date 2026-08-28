@@ -168,6 +168,15 @@ public sealed class ExpressionQueryBuilderTests
         Assert.Null(query.Predicate);
     }
 
+    [Fact]
+    public void Build_NullQuery_ThrowsArgumentNullException()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+
+        var exception = Assert.Throws<ArgumentNullException>(() => queryBuilder.Build(query: null!));
+        Assert.Equal("query", exception.ParamName);
+    }
+
     private sealed class Sample
     {
         public int Int32Value { get; set; }

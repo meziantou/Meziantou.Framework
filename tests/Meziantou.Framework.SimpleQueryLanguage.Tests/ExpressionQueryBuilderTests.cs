@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Time.Testing;
+
 namespace Meziantou.Framework.SimpleQueryLanguage.Tests;
 
 public sealed class ExpressionQueryBuilderTests
@@ -242,10 +244,55 @@ public sealed class ExpressionQueryBuilderTests
         Assert.Equal("John Doe", result[0].StringValue);
     }
 
+    [Fact]
+    public void DateKeyword_Today_UsesTimeProvider()
+    {
+        var query = CreateDateQueryBuilder(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero)).Build("date:today");
+
+        var items = new[]
+        {
+            new Sample { DateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 3, 14, 8, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 3, 16, 8, 0, 0, DateTimeKind.Utc) },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc), result[0].DateTimeValue);
+    }
+
+    [Fact]
+    public void DateKeyword_ThisMonth_UsesTimeProvider()
+    {
+        var query = CreateDateQueryBuilder(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero)).Build("date:\"this month\"");
+
+        var items = new[]
+        {
+            new Sample { DateTimeValue = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 3, 31, 23, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 2, 28, 8, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc) },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.HasCount(2, result);
+    }
+
+    private static ExpressionQueryBuilder<Sample> CreateDateQueryBuilder(DateTimeOffset utcNow)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(utcNow);
+
+        var queryBuilder = new ExpressionQueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddHandler<DateTime>("date", item => item.DateTimeValue);
+        return queryBuilder;
+    }
+
     private sealed class Sample
     {
         public int Int32Value { get; set; }
         public long Int64Value { get; set; }
         public string? StringValue { get; set; }
+        public DateTime DateTimeValue { get; set; }
     }
 }

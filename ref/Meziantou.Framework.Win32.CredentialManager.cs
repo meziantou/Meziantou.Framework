@@ -45,9 +45,9 @@ namespace Meziantou.Framework.Win32
 
     public enum CredentialPersistence
     {
-        Session = 1,
-        LocalMachine = 2,
-        Enterprise = 3
+        Session = 1U,
+        LocalMachine = 2U,
+        Enterprise = 3U
     }
 
     public sealed class CredentialResult

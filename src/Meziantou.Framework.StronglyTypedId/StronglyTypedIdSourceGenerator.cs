@@ -118,6 +118,10 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         {
             var semanticModel = ctx.SemanticModel;
 
+            // Generic types are not supported. The analyzer reports MFSTID0004.
+            if (ctx.TargetSymbol is not INamedTypeSymbol targetSymbol || IsGenericTypeOrNestedInGenericType(targetSymbol))
+                return null;
+
             foreach (var attribute in ctx.Attributes)
             {
                 var attributeSyntax = attribute.ApplicationSyntaxReference!.GetSyntax(cancellationToken);
@@ -379,6 +383,20 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         {
             writer.WriteLine(GeneratedCodeAttribute);
         }
+    }
+
+    /// <summary>
+    /// Indicates whether the type is generic or is nested in a generic type. The generated code cannot support those types as an attribute argument cannot use a type parameter (CS0416), so the converters could not be associated with the type.
+    /// </summary>
+    internal static bool IsGenericTypeOrNestedInGenericType(INamedTypeSymbol symbol)
+    {
+        for (var current = symbol; current is not null; current = current.ContainingType)
+        {
+            if (current.Arity > 0)
+                return true;
+        }
+
+        return false;
     }
 
     internal static IdType GetIdType(Compilation compilation, ITypeSymbol symbol)

@@ -78,6 +78,43 @@ public sealed class JsonPathParseTests
     }
 
     [Theory]
+    [MemberData(nameof(DeeplyNestedExpressions), 5_000)]
+    public void TryParse_DeeplyNestedExpression_ReturnsFalseInsteadOfOverflowingTheStack(string expression)
+    {
+        Assert.False(JsonPath.TryParse(expression, out var result));
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [MemberData(nameof(DeeplyNestedExpressions), 8)]
+    public void TryParse_ModeratelyNestedExpression_StaysWithinTheDepthLimit(string expression)
+    {
+        Assert.True(JsonPath.TryParse(expression, out var result));
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void Parse_ManyConjuncts_IsNotTreatedAsNesting()
+    {
+        // '&&' chains are parsed iteratively, so a flat chain must not consume nesting budget.
+        var expression = "$[?" + string.Join(" && ", Enumerable.Range(0, 500).Select(i => $"@.a{i}")) + "]";
+        Assert.True(JsonPath.TryParse(expression, out _));
+    }
+
+    public static TheoryData<string> DeeplyNestedExpressions(int depth)
+    {
+        return
+        [
+            // paren-expr recursion
+            "$[?" + new string('(', depth) + "@.a" + new string(')', depth) + "]",
+            // nested filter-selector recursion
+            "$[?" + string.Concat(Enumerable.Repeat("@.a[?", depth)) + "@.b" + new string(']', depth) + "]",
+            // nested function-argument recursion
+            "$[?length(" + string.Concat(Enumerable.Repeat("length(", depth)) + "@" + new string(')', depth) + ")==1]",
+        ];
+    }
+
+    [Theory]
     // RFC 9535 requires exactly 4 HEXDIG in a \u escape; whitespace is not a hex digit.
     [InlineData("$[\"\\u 041\"]")]
     [InlineData("$[\"\\u041 \"]")]
@@ -107,4 +144,5 @@ public sealed class JsonPathParseTests
         Assert.Equal(1, JsonPath.Parse("$[\"\\u00e9\"]").EvaluateValue(doc)!.GetValue<int>());
         Assert.Equal(1, JsonPath.Parse("$[\"\\u00E9\"]").EvaluateValue(doc)!.GetValue<int>());
     }
+
 }

@@ -8,6 +8,8 @@ namespace Meziantou.Framework.SnapshotTesting.MergeTools;
 
 internal abstract class GitTool : MergeTool
 {
+    private const int GitConfigurationTimeoutInMilliseconds = 10_000;
+
     protected static readonly Lazy<string?> GitPath = new(() => ExecutableFinder.GetFullExecutablePath("git"));
 
     protected internal static (string Command, string Arguments) ParseCommandFromConfiguration(string value)
@@ -55,10 +57,44 @@ internal abstract class GitTool : MergeTool
         if (process is null)
             return null;
 
-        process.WaitForExit();
+        // Both pipes must be drained while git is still running. Waiting for exit first deadlocks as soon as
+        // git writes more than a pipe buffer to either stream - stderr carries warnings such as the
+        // safe.directory ownership diagnostics, which is not something this call can rule out.
+        var standardOutput = process.StandardOutput.ReadToEndAsync();
+        var standardError = process.StandardError.ReadToEndAsync();
+
+        // This runs on the failure path of every failing snapshot assertion, so a git that never returns must
+        // not take the test run down with it.
+        if (!process.WaitForExit(GitConfigurationTimeoutInMilliseconds))
+        {
+            TryKill(process);
+            return null;
+        }
+
+        // WaitForExit(int) returns as soon as the process ends, without waiting for the redirected streams.
+        if (!Task.WaitAll([standardOutput, standardError], GitConfigurationTimeoutInMilliseconds))
+            return null;
+
         if (process.ExitCode != 0)
             return null;
 
-        return process.StandardOutput.ReadToEnd().TrimEnd('\0');
+        return standardOutput.Result.TrimEnd('\0');
+    }
+
+    private static void TryKill(Process process)
+    {
+        try
+        {
+            process.Kill(entireProcessTree: true);
+        }
+        catch (InvalidOperationException)
+        {
+        }
+        catch (NotSupportedException)
+        {
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+        }
     }
 }

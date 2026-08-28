@@ -46,7 +46,7 @@ internal static class Program
         var filesOption = CreateFilesOption();
         var dependencyTypesOption = CreateDependencyTypesOption();
         var updateLockFilesOption = new Option<bool>("--update-lock-files") { Description = "Update lock files when dependencies are updated" };
-        var minimumAgeOption = new Option<int>("--minimum-age") { Description = "Minimum age in days for package versions to consider for update (default: 7). Use 0 or negative to disable filtering. Not applied to Docker images as registries don't expose publication dates.", DefaultValueFactory = _ => 7 };
+        var minimumAgeOption = CreateMinimumAgeOption();
 
         var updateCommand = new Command("update")
         {
@@ -80,6 +80,7 @@ internal static class Program
         var filesOption = CreateFilesOption();
         var dependencyTypesOption = CreateDependencyTypesOption();
         var upgradableOption = new Option<bool>("--upgradable") { Description = "Only list dependencies that can be upgraded" };
+        var minimumAgeOption = CreateMinimumAgeOption();
         var formatOption = new Option<OutputFormat>("--format")
         {
             Description = $"Output format. Available values: {nameof(OutputFormat.Text)}, {nameof(OutputFormat.Json)}",
@@ -93,6 +94,7 @@ internal static class Program
         listCommand.Options.Add(filesOption);
         listCommand.Options.Add(dependencyTypesOption);
         listCommand.Options.Add(upgradableOption);
+        listCommand.Options.Add(minimumAgeOption);
         listCommand.Options.Add(formatOption);
 
         listCommand.SetAction((parseResult, cancellationToken) =>
@@ -102,6 +104,7 @@ internal static class Program
                 parseResult.GetValue(filesOption),
                 parseResult.GetValue(dependencyTypesOption),
                 parseResult.GetValue(upgradableOption),
+                parseResult.GetValue(minimumAgeOption),
                 parseResult.GetValue(formatOption),
                 parseResult.InvocationConfiguration.Output,
                 parseResult.InvocationConfiguration.Error,
@@ -110,6 +113,12 @@ internal static class Program
 
         rootCommand.Subcommands.Add(listCommand);
     }
+
+    private static Option<int> CreateMinimumAgeOption() => new("--minimum-age")
+    {
+        Description = "Minimum age in days for package versions to consider for update (default: 7). Use 0 or negative to disable filtering. Not applied to Docker images as registries don't expose publication dates.",
+        DefaultValueFactory = _ => 7,
+    };
 
     private static Option<string?> CreateRootDirectoryOption() => new("--directory") { Description = "Root directory" };
 
@@ -203,7 +212,7 @@ internal static class Program
         return 0;
     }
 
-    private static async Task<int> ListAsync(string? rootDirectory, string[]? filePatterns, DependencyType[]? dependencyTypes, bool upgradable, OutputFormat format, TextWriter output, TextWriter error, CancellationToken cancellationToken)
+    private static async Task<int> ListAsync(string? rootDirectory, string[]? filePatterns, DependencyType[]? dependencyTypes, bool upgradable, int minimumAge, OutputFormat format, TextWriter output, TextWriter error, CancellationToken cancellationToken)
     {
         var globs = CreateGlobs(filePatterns, error);
         if (globs is null)
@@ -217,7 +226,7 @@ internal static class Program
         var filteredDependencies = FilterDependencies(dependencies, dependencyTypeSet);
         if (upgradable)
         {
-            filteredDependencies = await FilterUpgradableDependenciesAsync(filteredDependencies, cancellationToken).ConfigureAwait(false);
+            filteredDependencies = await FilterUpgradableDependenciesAsync(filteredDependencies, minimumAge, cancellationToken).ConfigureAwait(false);
         }
 
         if (format is OutputFormat.Json)
@@ -245,9 +254,10 @@ internal static class Program
         ];
     }
 
-    private static async Task<Dependency[]> FilterUpgradableDependenciesAsync(Dependency[] dependencies, CancellationToken cancellationToken)
+    private static async Task<Dependency[]> FilterUpgradableDependenciesAsync(Dependency[] dependencies, int minimumAge, CancellationToken cancellationToken)
     {
-        var updaters = CreatePackageUpdaters();
+        // Must match what 'update' would do, otherwise a version too recent to be applied is still listed
+        var updaters = CreatePackageUpdaters(minimumAge);
         var upgradableDependencies = new ConcurrentBag<Dependency>();
         await Parallel.ForEachAsync(
             dependencies.Where(static dependency => dependency.VersionLocation?.IsUpdatable is true),

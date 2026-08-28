@@ -1,14 +1,17 @@
 using System.Text.Json.Nodes;
+using Meziantou.Framework.Json.Internals;
 
 namespace Meziantou.Framework.Json;
 
 /// <summary>Represents a single node matched by a JSONPath evaluation.</summary>
 public readonly struct JsonPathMatch
 {
-    internal JsonPathMatch(JsonNode? value, string path)
+    private readonly NormalizedPath _path;
+
+    internal JsonPathMatch(JsonNode? value, NormalizedPath path)
     {
         Value = value;
-        Path = path;
+        _path = path;
     }
 
     /// <summary>
@@ -19,5 +22,6 @@ public readonly struct JsonPathMatch
     /// <summary>
     /// Gets the normalized path of the matched node (e.g. <c>$['store']['book'][0]</c>).
     /// </summary>
-    public string Path { get; }
+    /// <remarks>The path is rendered on first access and cached, so evaluations that never read it do not pay for it.</remarks>
+    public string Path => _path.Value;
 }

@@ -423,6 +423,31 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
+    public void Evaluate_Path_IsRenderedLazilyAndCached()
+    {
+        var doc = JsonNode.Parse("""{"store": {"book": [{"title": "A"}, {"title": "B"}]}}""");
+        var result = JsonPath.Parse("$.store.book[*].title").Evaluate(doc);
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("$['store']['book'][0]['title']", result[0].Path);
+        Assert.Equal("$['store']['book'][1]['title']", result[1].Path);
+
+        // Reading twice must return the identical instance, not re-render.
+        Assert.Same(result[0].Path, result[0].Path);
+    }
+
+    [Fact]
+    public void Evaluate_Path_IsCorrectForCustomNavigatorAndEscapedNames()
+    {
+        var doc = JsonNode.Parse("""{"a'b": {"c\\d": [1]}}""");
+        var result = JsonPath.Parse("$..*").Evaluate(doc);
+
+        Assert.Contains(result, m => m.Path == @"$['a\'b']");
+        Assert.Contains(result, m => m.Path == @"$['a\'b']['c\\d']");
+        Assert.Contains(result, m => m.Path == @"$['a\'b']['c\\d'][0]");
+    }
+
+    [Fact]
     public void Evaluate_DescendantSegment_CyclicNavigator_ThrowsInsteadOfOverflowingTheStack()
     {
         var root = CyclicNode.CreateCycle();

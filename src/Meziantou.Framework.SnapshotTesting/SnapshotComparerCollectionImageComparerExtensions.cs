@@ -4,6 +4,9 @@ public static class SnapshotComparerCollectionImageComparerExtensions
 {
     extension(SnapshotComparerCollection comparers)
     {
+        /// <summary>
+        /// Registers the built-in image comparer for the formats it can decode: BMP, PNG, JPEG and TIFF.
+        /// </summary>
         public void AddImageComparer(ImageComparisonSettings? settings = null)
         {
             ArgumentNullException.ThrowIfNull(comparers);
@@ -13,7 +16,6 @@ public static class SnapshotComparerCollectionImageComparerExtensions
             comparers.Set(SnapshotType.Png, comparer);
             comparers.Set(SnapshotType.Jpeg, comparer);
             comparers.Set(SnapshotType.Tiff, comparer);
-            comparers.Set(SnapshotType.Create("jpg"), comparer);
         }
     }
 }

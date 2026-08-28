@@ -904,11 +904,11 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         var generated = result.GeneratorResult.GeneratedTrees.Single().ToString();
 
         // '<return>' is not a valid documentation tag, the correct one is '<returns>'
-        Assert.False(generated.Contains("<return>", StringComparison.Ordinal));
-        Assert.True(generated.Contains("<returns>", StringComparison.Ordinal));
+        Assert.DoesNotContain("<return>", generated);
+        Assert.Contains("<returns>", generated);
 
         // '<see>' must always carry a 'cref' or a 'langword' attribute
-        Assert.False(generated.Contains("<see>", StringComparison.Ordinal));
+        Assert.DoesNotContain("<see>", generated);
     }
 
     [Fact]

@@ -33,7 +33,7 @@ internal static class JsonPathEvaluator
         var matches = new List<JsonPathMatch>(result.Count);
         foreach (var match in result)
         {
-            matches.Add(new JsonPathMatch(match.Value, match.Path));
+            matches.Add(new JsonPathMatch(match.Value, match.RawPath));
         }
 
         return new JsonPathResult(matches);
@@ -58,7 +58,7 @@ internal static class JsonPathEvaluator
         var matches = new List<JsonPathMatch<TValue>>(currentNodes.Count);
         foreach (var (node, path) in currentNodes)
         {
-            matches.Add(new JsonPathMatch<TValue>(node, NormalizedPathBuilder.Build(path)));
+            matches.Add(new JsonPathMatch<TValue>(node, new NormalizedPath(path)));
         }
 
         return new JsonPathResult<TValue>(matches);

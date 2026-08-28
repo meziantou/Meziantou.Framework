@@ -117,8 +117,8 @@ public sealed class FixedStringBuilderTests
     {
         FixedStringBuilder16 value = "abc";
 
-        Assert.Equal("abc", value.ToString());
-        Assert.Equal("", default(FixedStringBuilder16).ToString());
+        Assert.Equal("abc", value.ToString(null, null));
+        Assert.Equal("", default(FixedStringBuilder16).ToString(null, null));
     }
 
     [Fact]
@@ -126,9 +126,9 @@ public sealed class FixedStringBuilderTests
     {
         FixedStringBuilder16 value = "abc";
 
-        Assert.Equal(3, value.AsSpan().Length);
+        Assert.HasCount(3, value.AsSpan());
         Assert.Equal("abc", value.AsSpan().ToString());
-        Assert.Equal(0, default(FixedStringBuilder16).AsSpan().Length);
+        Assert.Empty(default(FixedStringBuilder16).AsSpan());
     }
 
     [Fact]
@@ -152,7 +152,7 @@ public sealed class FixedStringBuilderTests
 
         Assert.True(a.Equals((object)b));
         Assert.False(a.Equals((object)"abc"));
-        Assert.False(a.Equals(null));
+        Assert.False(a.Equals((object?)null));
     }
 
     [Fact]
@@ -170,7 +170,7 @@ public sealed class FixedStringBuilderTests
     {
         FixedStringBuilder8 value = $"{1,-4}";
 
-        Assert.Equal("1   ", value.ToString());
+        Assert.Equal("1   ", value.ToString(null, null));
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public sealed class FixedStringBuilderTests
     {
         FixedStringBuilder8 value = $"{1234,2}";
 
-        Assert.Equal("1234", value.ToString());
+        Assert.Equal("1234", value.ToString(null, null));
     }
 
     [Fact]
@@ -186,7 +186,7 @@ public sealed class FixedStringBuilderTests
     {
         FixedStringBuilder8 value = $"{255:X2}";
 
-        Assert.Equal("FF", value.ToString());
+        Assert.Equal("FF", value.ToString(null, null));
     }
 
     [Fact]
@@ -194,6 +194,6 @@ public sealed class FixedStringBuilderTests
     {
         FixedStringBuilder8 value = $"{255,4:X2}";
 
-        Assert.Equal("  FF", value.ToString());
+        Assert.Equal("  FF", value.ToString(null, null));
     }
 }

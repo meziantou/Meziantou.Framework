@@ -38,6 +38,7 @@ namespace Meziantou.Framework.Win32;
 public static class LsaPrivateData
 {
     /// <summary>Removes a value from LSA private data storage. Requires administrator privileges.</summary>
+    /// <remarks>Removing a key that does not exist does nothing.</remarks>
     /// <param name="key">The key of the value to remove.</param>
     public static void RemoveValue(string key)
     {
@@ -46,7 +47,7 @@ public static class LsaPrivateData
 
     /// <summary>Stores a value in LSA private data storage. Requires administrator privileges.</summary>
     /// <param name="key">The key under which to store the value. Cannot be null or empty.</param>
-    /// <param name="value">The value to store. If null, the key will be removed.</param>
+    /// <param name="value">The value to store. If null, the key is removed; removing a key that does not exist does nothing.</param>
     public static unsafe void SetValue(string key, string? value)
     {
         ArgumentNullException.ThrowIfNull(key);
@@ -76,6 +77,10 @@ public static class LsaPrivateData
 
             using var lsaPolicyHandle = GetLsaPolicy(in objectAttributes);
             var result = PInvoke.LsaStorePrivateData(lsaPolicyHandle, in secretName, lusSecretData);
+
+            // Removing a key that does not exist is a no-op, so RemoveValue and GetValue agree on what a missing key means
+            if (value is null && result == NTSTATUS.STATUS_OBJECT_NAME_NOT_FOUND)
+                return;
 
             var winErrorCode = PInvoke.LsaNtStatusToWinError(result);
             if (winErrorCode != 0)

@@ -33,6 +33,13 @@ public sealed class LsaPrivateDataTests
     }
 
     [Fact, RunIf(WindowsGroups.Administrator)]
+    public void LsaPrivateData_RemoveUnsetValue()
+    {
+        LsaPrivateData.RemoveValue("LsaPrivateDataTestsUnsetRemove");
+        Assert.Null(LsaPrivateData.GetValue("LsaPrivateDataTestsUnsetRemove"));
+    }
+
+    [Fact, RunIf(WindowsGroups.Administrator)]
     public void LsaPrivateData_SetGetRemoveNonAsciiValue()
     {
         WithLsaLock(() =>

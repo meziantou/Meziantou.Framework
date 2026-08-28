@@ -472,6 +472,47 @@ static Rune ParseSingleRune(string input)
     return new Rune(value);
 }
 
+// Values below come from files downloaded at build time, so they must never be
+// interpolated into generated source without escaping.
+static string EscapeStringLiteral(string value)
+{
+    var sb = new StringBuilder(value.Length);
+    foreach (var c in value)
+    {
+        switch (c)
+        {
+            case '\\':
+                sb.Append("\\\\");
+                break;
+
+            case '"':
+                sb.Append("\\\"");
+                break;
+
+            default:
+                if (char.IsControl(c))
+                {
+                    sb.Append(CultureInfo.InvariantCulture, $"\\u{(int)c:X4}");
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+
+                break;
+        }
+    }
+
+    return sb.ToString();
+}
+
+static string EscapeXmlText(string value)
+{
+    return value.Replace("&", "&amp;", StringComparison.Ordinal)
+        .Replace("<", "&lt;", StringComparison.Ordinal)
+        .Replace(">", "&gt;", StringComparison.Ordinal);
+}
+
 static string EscapeString(string value)
 {
     var sb = new StringBuilder();
@@ -1237,8 +1278,8 @@ async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockR
     {
         var propertyName = ToPropertyName(name);
         var codePointCount = end - start + 1;
-        sb.AppendLine(CultureInfo.InvariantCulture, $"    /// <summary>{name} (U+{start:X4}..U+{end:X4}, {codePointCount:N0} code points).</summary>");
-        sb.AppendLine(CultureInfo.InvariantCulture, $"    public static UnicodeBlock {propertyName} {{ get; }} = UnicodeBlock.CreateInternal(\"{name}\", new UnicodeRange(0x{start:X}, 0x{end:X}));");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"    /// <summary>{EscapeXmlText(name)} (U+{start:X4}..U+{end:X4}, {codePointCount:N0} code points).</summary>");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"    public static UnicodeBlock {propertyName} {{ get; }} = UnicodeBlock.CreateInternal(\"{EscapeStringLiteral(name)}\", new UnicodeRange(0x{start:X}, 0x{end:X}));");
         sb.AppendLine();
     }
 
@@ -1313,7 +1354,12 @@ async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockR
                 sb.Append(c);
             }
         }
-        return sb.ToString();
+
+        var propertyName = sb.ToString();
+        if (propertyName.Length == 0 || !char.IsLetter(propertyName[0]))
+            throw new InvalidOperationException($"Block name '{blockName}' does not yield a valid C# identifier");
+
+        return propertyName;
     }
 }
 

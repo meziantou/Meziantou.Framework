@@ -501,7 +501,11 @@ public sealed partial class CGroup2
     private void WriteFile(string fileName, string content)
     {
         var filePath = System.IO.Path.Combine(_path, fileName);
-        File.WriteAllText(filePath, content);
+
+        // cgroup interface files are only updated by a write(2). File.WriteAllText issues no write at all when
+        // content is empty, and the O_TRUNC implied by FileMode.Create does not clear the value held by kernfs.
+        // Appending a newline (what 'echo' does) keeps clearing a setting from silently doing nothing.
+        File.WriteAllText(filePath, content + "\n");
     }
 
     #endregion

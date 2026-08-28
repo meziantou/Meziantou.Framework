@@ -57,7 +57,7 @@ public sealed class AppleContainerRuntimeAdapterTests
     }
 
     [Fact]
-    public void ResolvesPortMapFromDefinition()
+    public void ResolvesPortMapFromDefinitionWhenTheRuntimeReportsNoBinding()
     {
         var runtime = CreateRuntime();
         var definition = new ContainerDefinition(new RegistryImage("nginx"));
@@ -69,5 +69,33 @@ public sealed class AppleContainerRuntimeAdapterTests
 
         Assert.Equal(8080, map[8080]);
         Assert.Equal(15432, map[5432]);
+    }
+
+    [Fact]
+    public void ResolvesPortMapFromInspectWhenAvailable()
+    {
+        var runtime = CreateRuntime();
+
+        // A container adopted through ReuseId: the definition asks for one mapping, the runtime reports another.
+        var definition = new ContainerDefinition(new RegistryImage("nginx"));
+        definition.Ports.Add(53437, 8080);
+
+        var info = runtime.ParseInspect("""
+            [{
+              "id": "meziantou-tc-app",
+              "status": { "state": "running" },
+              "configuration": {
+                "id": "meziantou-tc-app",
+                "labels": { "meziantou.tc.reuse": "app" },
+                "publishedPorts": [
+                  { "containerPort": 8080, "hostPort": 53432, "proto": "tcp" }
+                ]
+              }
+            }]
+            """);
+
+        Assert.Equal(53432, info.Ports[8080]);
+        Assert.Equal("app", info.Labels["meziantou.tc.reuse"]);
+        Assert.Equal(53432, runtime.ResolvePortMap(info, definition)[8080]);
     }
 }

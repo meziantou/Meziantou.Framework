@@ -53,6 +53,22 @@ public abstract partial class CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private protected bool MayContainHash(Hash128 hash)
+    {
+        var counterCount = (ulong)Counters.CounterCount;
+        var combined = hash.Hash1;
+        for (var i = 0; i < HashCount; i++)
+        {
+            if (Counters.Get(Reduce(combined, counterCount)) == 0)
+                return false;
+
+            combined += hash.Hash2;
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected void AddHash(Hash64 hash) => AddHashCore(hash.Hash1, hash.Hash2);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -60,6 +76,9 @@ public abstract partial class CountingBloomFilter
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected int GetEstimatedCountHash(Hash64 hash) => GetEstimatedCountHashCore(hash.Hash1, hash.Hash2);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private protected bool MayContainHash(Hash64 hash) => MayContainHashCore(hash.Hash1, hash.Hash2);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected void AddHash(Hash32 hash) => AddHashCore32(hash.Hash1, hash.Hash2);
@@ -71,7 +90,10 @@ public abstract partial class CountingBloomFilter
     private protected int GetEstimatedCountHash(Hash32 hash) => GetEstimatedCountHashCore32(hash.Hash1, hash.Hash2);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AddHashCore(ulong hash1, ulong hash2)
+    private protected bool MayContainHash(Hash32 hash) => MayContainHashCore32(hash.Hash1, hash.Hash2);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void AddHashCore(uint hash1, uint hash2)
     {
         var counterCount = (ulong)Counters.CounterCount;
         var combined = hash1;
@@ -86,7 +108,7 @@ public abstract partial class CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void RemoveHashCore(ulong hash1, ulong hash2)
+    private void RemoveHashCore(uint hash1, uint hash2)
     {
         var counterCount = (ulong)Counters.CounterCount;
         var combined = hash1;
@@ -101,7 +123,7 @@ public abstract partial class CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int GetEstimatedCountHashCore(ulong hash1, ulong hash2)
+    private int GetEstimatedCountHashCore(uint hash1, uint hash2)
     {
         var counterCount = (ulong)Counters.CounterCount;
         var combined = hash1;
@@ -116,6 +138,25 @@ public abstract partial class CountingBloomFilter
         }
 
         return result;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool MayContainHashCore(uint hash1, uint hash2)
+    {
+        var counterCount = (ulong)Counters.CounterCount;
+        var combined = hash1;
+        for (var i = 0; i < HashCount; i++)
+        {
+            if (Counters.Get(Reduce(combined, counterCount)) == 0)
+                return false;
+
+            unchecked
+            {
+                combined += hash2;
+            }
+        }
+
+        return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -166,6 +207,28 @@ public abstract partial class CountingBloomFilter
         return result;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool MayContainHashCore32(uint hash1, uint hash2)
+    {
+        var counterCount = (ulong)Counters.CounterCount;
+        var combined = hash1;
+        for (var i = 0; i < HashCount; i++)
+        {
+            if (Counters.Get(Reduce(combined, counterCount)) == 0)
+                return false;
+
+            unchecked
+            {
+                combined += hash2;
+            }
+        }
+
+        return true;
+    }
+
+    // Each Reduce overload shifts by the width of its hash argument, so the accumulator passed in must
+    // keep the width of the hash halves it came from. Widening a 32-bit half to ulong would select the
+    // 64-bit overload and shift the whole hash away, mapping every value to index 0.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static long Reduce(ulong hash, ulong range) => (long)(((UInt128)hash * range) >> 64);
 

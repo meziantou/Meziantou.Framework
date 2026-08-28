@@ -24,8 +24,16 @@ public readonly struct BloomFilterSize
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(falsePositiveProbability, 1);
 
         const double Ln2 = 0.6931471805599453d; // Math.Log(2)
-        var bitCount = (long)Math.Ceiling(-expectedItemCount * Math.Log(falsePositiveProbability) / (Ln2 * Ln2));
-        var hashCount = (int)Math.Ceiling((double)bitCount / expectedItemCount * Ln2);
+        var exactBitCount = Math.Ceiling(-expectedItemCount * Math.Log(falsePositiveProbability) / (Ln2 * Ln2));
+
+        // A double-to-long conversion saturates rather than overflowing, so without this check an
+        // oversized request silently returns long.MaxValue and, because the hash count is derived from
+        // it, a hash count of 1 instead of the correct value.
+        if (exactBitCount >= (double)long.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(expectedItemCount), expectedItemCount, "The optimal size for these parameters exceeds the maximum supported size. Lower expectedItemCount or raise falsePositiveProbability.");
+
+        var bitCount = (long)exactBitCount;
+        var hashCount = (int)Math.Ceiling(exactBitCount / expectedItemCount * Ln2);
 
         return new BloomFilterSize(bitCount, hashCount);
     }

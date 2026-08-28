@@ -760,6 +760,7 @@ internal static class PublicApiModelBuilder
         }
 
         return !parameterType.IsValueType &&
+               !parameterType.IsFunctionPointer &&
                !parameterType.IsGenericParameter &&
                nullabilityInfo.ReadState == NullabilityState.Unknown;
     }
@@ -808,7 +809,7 @@ internal static class PublicApiModelBuilder
 
     private static bool ContainsPointer(Type type)
     {
-        if (type.IsPointer)
+        if (type.IsPointer || type.IsFunctionPointer)
             return true;
 
         if (type.IsByRef || type.IsArray)
@@ -1667,6 +1668,14 @@ internal static class PublicApiModelBuilder
         if (type.IsPointer)
             return FormatType(type.GetElementType()!, nullabilityInfo?.ElementType) + "*";
 
+        if (type.IsFunctionPointer)
+        {
+            return CSharpTypeFormatter.FormatFunctionPointer(
+                type.IsUnmanagedFunctionPointer,
+                [.. type.GetFunctionPointerParameterTypes().Select(parameterType => FormatType(parameterType))],
+                FormatType(type.GetFunctionPointerReturnType()));
+        }
+
         if (type.IsArray)
         {
             var arrayType = FormatType(type.GetElementType()!, nullabilityInfo?.ElementType) + "[" + new string(',', type.GetArrayRank() - 1) + "]";
@@ -1717,6 +1726,12 @@ internal static class PublicApiModelBuilder
 
         if (type == typeof(char))
             return "char";
+
+        if (type == typeof(nint))
+            return "nint";
+
+        if (type == typeof(nuint))
+            return "nuint";
 
         if (type == typeof(string))
             return nullableReference ? "string?" : "string";
@@ -1790,23 +1805,8 @@ internal static class PublicApiModelBuilder
     {
         return value switch
         {
-            null => "null",
-            string text => "\"" + text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"",
-            char character => "'" + (character == '\'' ? "\\'" : character.ToString()) + "'",
-            bool boolean => boolean ? "true" : "false",
-            float floatValue => floatValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "f",
-            double doubleValue => doubleValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "d",
-            decimal decimalValue => decimalValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "m",
-            long longValue => longValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "L",
-            ulong ulongValue => ulongValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "UL",
-            uint uintValue => uintValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "U",
-            short shortValue => shortValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            ushort ushortValue => ushortValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            byte byteValue => byteValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            sbyte sbyteValue => sbyteValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            int intValue => intValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
             Enum enumValue => FormatEnumValue(enumValue.GetType(), enumValue),
-            _ => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "default",
+            _ => CSharpLiteralFormatter.Format(value),
         };
     }
 

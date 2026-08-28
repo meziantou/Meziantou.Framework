@@ -114,6 +114,66 @@ public sealed class BloomFilterTests
         Assert.InRange(filter.GetEstimateCount(), ItemCount * 0.95, ItemCount * 1.05);
     }
 
+    [Theory]
+    [InlineData(nameof(BloomFilter.CreateXXHash32))]
+    [InlineData(nameof(BloomFilter.CreateCrc32))]
+    public void BloomFilter32_FalsePositiveRate_StaysNearTarget(string createMethodName)
+    {
+        const int ItemCount = 10_000;
+        const int ProbeCount = 100_000;
+        const double FalsePositiveProbability = 0.01;
+
+        var size = BloomFilterSize.CreateOptimalSize(ItemCount, FalsePositiveProbability);
+        var filter = (IBloomFilter)typeof(BloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size])!;
+        for (var value = 0; value < ItemCount; value++)
+        {
+            filter.Add(value);
+        }
+
+        var falsePositiveCount = 0;
+        for (var value = ItemCount; value < ItemCount + ProbeCount; value++)
+        {
+            if (filter.MayContain(value))
+            {
+                falsePositiveCount++;
+            }
+        }
+
+        Assert.InRange((double)falsePositiveCount / ProbeCount, 0, FalsePositiveProbability * 3);
+
+        // Too few reachable positions also skews the set-bit count the estimate is derived from.
+        Assert.InRange(filter.GetEstimateCount(), ItemCount * 0.9, ItemCount * 1.1);
+    }
+
+    [Theory]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash32))]
+    [InlineData(nameof(CountingBloomFilter.CreateCrc32))]
+    public void CountingBloomFilter32_FalsePositiveRate_StaysNearTarget(string createMethodName)
+    {
+        const int ItemCount = 10_000;
+        const int ProbeCount = 100_000;
+        const double FalsePositiveProbability = 0.01;
+
+        var size = CountingBloomFilterSize.CreateOptimalSize(ItemCount, FalsePositiveProbability);
+        var filter = (ICountingBloomFilter)typeof(CountingBloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size])!;
+        for (var value = 0; value < ItemCount; value++)
+        {
+            filter.Add(value);
+        }
+
+        var falsePositiveCount = 0;
+        for (var value = ItemCount; value < ItemCount + ProbeCount; value++)
+        {
+            if (filter.MayContain(value))
+            {
+                falsePositiveCount++;
+            }
+        }
+
+        Assert.InRange((double)falsePositiveCount / ProbeCount, 0, FalsePositiveProbability * 3);
+        Assert.InRange(filter.GetEstimatedCount(0), 1, 5);
+    }
+
     [Fact]
     public void XXHash32_AddRange_ThenMayContain_ReturnsTrue()
     {
@@ -251,6 +311,64 @@ public sealed class BloomFilterTests
         Assert.All(unsignedValues, value => Assert.False(filter.MayContain(value)));
     }
 
+    [Theory]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash128))]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash64))]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash3))]
+    [InlineData(nameof(CountingBloomFilter.CreateCrc64))]
+    public void CountingBloomFilter_FalsePositiveRate_StaysNearTarget(string createMethodName)
+    {
+        const int ItemCount = 10_000;
+        const int ProbeCount = 100_000;
+        const double FalsePositiveProbability = 0.01;
+
+        var size = CountingBloomFilterSize.CreateOptimalSize(ItemCount, FalsePositiveProbability);
+        var filter = (ICountingBloomFilter)typeof(CountingBloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size])!;
+        for (var value = 0; value < ItemCount; value++)
+        {
+            filter.Add(value);
+        }
+
+        var falsePositiveCount = 0;
+        for (var value = ItemCount; value < ItemCount + ProbeCount; value++)
+        {
+            if (filter.MayContain(value))
+            {
+                falsePositiveCount++;
+            }
+        }
+
+        Assert.InRange((double)falsePositiveCount / ProbeCount, 0, FalsePositiveProbability * 3);
+
+        // A value inserted once must not be reported as inserted thousands of times. When every hash
+        // reduces to the same counter, this returns the total number of increments issued instead.
+        Assert.InRange(filter.GetEstimatedCount(0), 1, 5);
+    }
+
+    [Theory]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash128))]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash64))]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash32))]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash3))]
+    [InlineData(nameof(CountingBloomFilter.CreateCrc64))]
+    [InlineData(nameof(CountingBloomFilter.CreateCrc32))]
+    public void CountingBloomFilter_MayContain_MatchesGetEstimatedCount(string createMethodName)
+    {
+        const int ItemCount = 1_000;
+
+        var size = CountingBloomFilterSize.CreateOptimalSize(ItemCount, 0.01);
+        var filter = (ICountingBloomFilter)typeof(CountingBloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size])!;
+        for (var value = 0; value < ItemCount; value++)
+        {
+            filter.Add(value);
+        }
+
+        for (var value = 0; value < ItemCount * 5; value++)
+        {
+            Assert.Equal(filter.GetEstimatedCount(value) > 0, filter.MayContain(value));
+        }
+    }
+
     [Fact]
     public void CountingBloomFilterSize_CreateOptimalSize_MatchesBloomFilterSize()
     {
@@ -281,6 +399,30 @@ public sealed class BloomFilterTests
     public void CountingBloomFilterSize_CreateOptimalSize_ValidatesArguments(long expectedItemCount, double falsePositiveProbability)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => CountingBloomFilterSize.CreateOptimalSize(expectedItemCount, falsePositiveProbability));
+    }
+
+    [Theory]
+    [InlineData(2_000_000_000_000_000_000L, 0.01)]
+    [InlineData(long.MaxValue, 0.01)]
+    [InlineData(long.MaxValue, 0.5)]
+    public void CreateOptimalSize_SizeExceedingLongMaxValue_Throws(long expectedItemCount, double falsePositiveProbability)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => BloomFilterSize.CreateOptimalSize(expectedItemCount, falsePositiveProbability));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CountingBloomFilterSize.CreateOptimalSize(expectedItemCount, falsePositiveProbability));
+    }
+
+    [Fact]
+    public void CreateOptimalSize_LargestSupportedItemCount_KeepsHashCountCorrect()
+    {
+        const long ExpectedItemCount = 900_000_000_000_000_000L;
+
+        var size = BloomFilterSize.CreateOptimalSize(ExpectedItemCount, 0.01);
+        var countingSize = CountingBloomFilterSize.CreateOptimalSize(ExpectedItemCount, 0.01);
+
+        Assert.Equal(7, size.HashCount);
+        Assert.Equal(7, countingSize.HashCount);
+        Assert.InRange(size.BitCount, ExpectedItemCount * 9, ExpectedItemCount * 10);
+        Assert.Equal(size.BitCount, countingSize.CounterCount);
     }
 
     private static IEnumerable<object> GetValues()

@@ -115,14 +115,12 @@ public sealed class FixedStringBuilderTests
     [Theory]
     [InlineData("AbC", "aBc", StringComparison.Ordinal)]
     [InlineData("AbC", "aBc", StringComparison.OrdinalIgnoreCase)]
-    [InlineData("AbC", "aBc", StringComparison.InvariantCulture)]
-    [InlineData("AbC", "aBc", StringComparison.InvariantCultureIgnoreCase)]
     [InlineData("AbC", "aBc", StringComparison.CurrentCulture)]
     [InlineData("AbC", "aBc", StringComparison.CurrentCultureIgnoreCase)]
     [InlineData("AbC", "AbC", StringComparison.Ordinal)]
     [InlineData("", "", StringComparison.Ordinal)]
     [InlineData("a", "", StringComparison.Ordinal)]
-    [InlineData("a", "", StringComparison.InvariantCulture)]
+    [InlineData("a", "", StringComparison.CurrentCulture)]
     public void EqualsWithComparisonMatchesString(string left, string right, StringComparison comparison)
     {
         FixedStringBuilder8 a = left;

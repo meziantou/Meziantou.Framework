@@ -60,6 +60,50 @@ public class CsvReaderTests
     }
 
     [Fact]
+    public async Task CsvReader_ColumnNumberCountsCharactersNotFields()
+    {
+        using var sr = new StringReader("A,B,C\nvalue");
+        var reader = new CsvReader(sr);
+
+        Assert.Equal(0, reader.ColumnNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(6, reader.ColumnNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(5, reader.ColumnNumber);
+    }
+
+    [Fact]
+    public async Task CsvReader_LineNumberCountsConsumedLineTerminators()
+    {
+        using var sr = new StringReader("a\nb\nc");
+        var reader = new CsvReader(sr);
+
+        Assert.Equal(0, reader.LineNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(1, reader.LineNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(2, reader.LineNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(2, reader.LineNumber);
+    }
+
+    [Fact]
+    public async Task CsvReader_LineNumberCountsLineTerminatorsInsideQuotedValues()
+    {
+        using var sr = new StringReader("\"a\nb\",c");
+        var reader = new CsvReader(sr);
+
+        await reader.ReadRowAsync();
+
+        Assert.Equal(1, reader.LineNumber);
+    }
+
+    [Fact]
     public async Task CsvReader_MultiLineQuotedValue()
     {
         var sb = new StringBuilder();

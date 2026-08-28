@@ -323,7 +323,35 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         }
 
         Debug.Assert(writer.Indentation == 0);
-        context.AddSource(attribute.TypeName + ".g.cs", writer.ToSourceText());
+        context.AddSource(GetHintName(attribute.PartialTypeContext), writer.ToSourceText());
+    }
+
+    /// <summary>
+    /// Gets the name of the generated file for a type. Roslyn requires the name to be unique within a generator, so the fully-qualified name of the type is used instead of its short name.
+    /// </summary>
+    private static string GetHintName(PartialTypeContext context)
+    {
+        var sb = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(context.Namespace))
+        {
+            sb.Append(context.Namespace);
+            sb.Append('.');
+        }
+
+        AppendTypeNames(sb, context);
+        sb.Append(".g.cs");
+        return sb.ToString();
+
+        static void AppendTypeNames(StringBuilder sb, PartialTypeContext context)
+        {
+            if (context.Parent is not null)
+            {
+                AppendTypeNames(sb, context.Parent);
+                sb.Append('.');
+            }
+
+            sb.Append(context.Name);
+        }
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Disposed manually")]

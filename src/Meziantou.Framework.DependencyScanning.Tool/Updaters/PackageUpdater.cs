@@ -18,10 +18,10 @@ internal abstract class PackageUpdater
 
     public async Task<string?> GetUpdatedVersionAsync(Dependency dependency, CancellationToken cancellationToken)
     {
-        if (dependency.Name is null || !IsSupported(dependency))
+        if (!IsSupported(dependency))
             return null;
 
-        var versioningStrategy = VersioningStrategy ?? throw new InvalidOperationException($"{nameof(VersioningStrategy)} cannot be null");
+        var versioningStrategy = VersioningStrategy;
         if (!versioningStrategy.IsSupportedVersion(dependency.Version))
             return null;
 

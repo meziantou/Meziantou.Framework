@@ -7,6 +7,9 @@ public static class SyntaxHighlighter
 {
     public static string Highlight(string text, string language, HighlightOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(language);
+
         var compiled = LanguageRegistry.Get(language);
         return Tokenizer.Highlight(text, compiled, options ?? HighlightOptions.Default);
     }

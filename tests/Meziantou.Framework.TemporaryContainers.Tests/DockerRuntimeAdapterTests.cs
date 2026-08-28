@@ -212,6 +212,24 @@ public sealed class DockerRuntimeAdapterTests
         Assert.Equal(unchecked((int)3221225786u), container.ExitCode);
     }
 
+    [Theory]
+    [InlineData("Loaded image: repo/app:1.2", "repo/app:1.2")]
+    [InlineData("Loaded image ID: sha256:abc123", "sha256:abc123")]
+    [InlineData("some noise\nLoaded image: repo/app:latest\nmore noise", "repo/app:latest")]
+    [InlineData("  Loaded image: repo/app:latest  ", "repo/app:latest")]
+    public void TryParseLoadedImage_ReadsTheImageReference(string output, string expected)
+    {
+        Assert.Equal(expected, ContainerImageOutputParser.TryParseLoadedImage(output));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("something went wrong")]
+    public void TryParseLoadedImage_ReturnsNullWithoutAMarker(string output)
+    {
+        Assert.Null(ContainerImageOutputParser.TryParseLoadedImage(output));
+    }
+
     /// <summary>Writes a CLI that exits with <paramref name="exitCode"/> whatever it is asked to do, so the outcome of the probe can be forced.</summary>
     private static string CreateStubCli(int exitCode)
     {

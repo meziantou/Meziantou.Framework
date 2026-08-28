@@ -112,6 +112,68 @@ public sealed class UnicodeTests
     }
 
     [Fact]
+    public void UnicodeCharacterInfo_EqualityIsStructural()
+    {
+        Assert.True(Unicode.TryGetCharacterInfo(new Rune('A'), out var a));
+        Assert.True(Unicode.TryGetCharacterInfo(new Rune('A'), out var b));
+        Assert.True(Unicode.TryGetCharacterInfo(new Rune('B'), out var c));
+
+        Assert.Equal(a, b);
+        Assert.True(a == b);
+        Assert.False(a != b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+
+        Assert.NotEqual(a, c);
+        Assert.True(a != c);
+        Assert.NotEqual<object>("not a character", a);
+    }
+
+    [Fact]
+    public void UnicodeCharacterInfo_DefaultIsNotEqualToTheEntryForNull()
+    {
+        Assert.True(Unicode.TryGetCharacterInfo(new Rune(0), out var nul));
+
+        Assert.Equal(new Rune(0), nul.Rune);
+        Assert.Equal(default, default(UnicodeCharacterInfo).Rune);
+        Assert.NotEqual(default, nul);
+    }
+
+    [Fact]
+    public void UnicodeCharacterInfo_HashCodeDistinguishesCharacters()
+    {
+        var seen = new Dictionary<int, Rune>();
+        var collisions = new List<string>();
+        for (var codePoint = 0; codePoint < 1000; codePoint++)
+        {
+            if (!Unicode.TryGetCharacterInfo(new Rune(codePoint), out var info))
+                continue;
+
+            var hash = info.GetHashCode();
+            if (seen.TryGetValue(hash, out var existing))
+            {
+                collisions.Add($"U+{existing.Value:X4} collides with U+{info.Rune.Value:X4}");
+            }
+            else
+            {
+                seen[hash] = info.Rune;
+            }
+        }
+
+        Assert.Empty(collisions);
+    }
+
+    [Fact]
+    public void UnicodeCharacterInfo_DeduplicatesInAHashSet()
+    {
+        Assert.True(Unicode.TryGetCharacterInfo(new Rune('A'), out var a));
+        Assert.True(Unicode.TryGetCharacterInfo(new Rune('A'), out var duplicate));
+
+        var set = new HashSet<UnicodeCharacterInfo> { a, duplicate };
+
+        Assert.Single(set);
+    }
+
+    [Fact]
     public void IsEmoji_ReturnsExpectedValue()
     {
         Assert.True(UnicodeEmoji.IsEmoji(new Rune(0x1F600)));
@@ -165,5 +227,127 @@ public sealed class UnicodeTests
         Assert.True(info.Value.IsExtendedPictographic);
         Assert.False(info.Value.IsEmojiModifier);
         Assert.False(info.Value.IsEmojiModifierBase);
+    }
+
+    [Fact]
+    public void AllCharacters_MatchesGeneratedEntryCount()
+    {
+        Assert.Equal(297334, Unicode.AllCharacters.Count);
+    }
+
+    [Theory]
+    [InlineData(0x4E00, "<CJK Ideograph>")]
+    [InlineData(0xAC00, "<Hangul Syllable>")]
+    [InlineData(0xE000, "<Private Use>")]
+    [InlineData(0x20000, "<CJK Ideograph Extension B>")]
+    [InlineData(0xF0000, "<Plane 15 Private Use>")]
+    public void GetCharacterInfo_ResolvesRangeExpandedCodePoints(int codePoint, string expectedName)
+    {
+        var info = Unicode.GetCharacterInfo(new Rune(codePoint));
+
+        Assert.NotNull(info);
+        Assert.Equal(expectedName, info.Value.Name);
+    }
+
+    [Fact]
+    public void AllCharacters_HaveConsistentBlockAndName()
+    {
+        var failures = new List<string>();
+        foreach (var info in Unicode.AllCharacters)
+        {
+            if (failures.Count >= 10)
+                break;
+
+            if (!ReferenceEquals(UnicodeBlocks.GetBlock(info.Rune), info.Block))
+            {
+                failures.Add($"U+{info.Rune.Value:X4}: block {info.Block.Name} != {UnicodeBlocks.GetBlock(info.Rune).Name}");
+            }
+            else if (!info.Block.Contains(info.Rune))
+            {
+                failures.Add($"U+{info.Rune.Value:X4}: not contained in block {info.Block.Name}");
+            }
+            else if (string.IsNullOrEmpty(info.Name))
+            {
+                failures.Add($"U+{info.Rune.Value:X4}: empty name");
+            }
+        }
+
+        Assert.Empty(failures);
+    }
+
+    [Fact]
+    public void UnicodeRange_RejectsInvalidBounds()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new UnicodeRange(-1, 10));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new UnicodeRange(0x110000, 0x110000));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new UnicodeRange(0, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new UnicodeRange(0, 0x110000));
+        Assert.Throws<ArgumentException>(() => new UnicodeRange(10, 5));
+    }
+
+    [Fact]
+    public void UnicodeRange_LengthAndContainsAreInclusive()
+    {
+        var range = new UnicodeRange(0x40, 0x4F);
+
+        Assert.Equal(16, range.Length);
+        Assert.Equal(1, new UnicodeRange(0x41, 0x41).Length);
+        Assert.True(range.Contains(0x40));
+        Assert.True(range.Contains(0x4F));
+        Assert.True(range.Contains(new Rune(0x45)));
+        Assert.False(range.Contains(0x3F));
+        Assert.False(range.Contains(0x50));
+    }
+
+    [Fact]
+    public void UnicodeRange_EqualityIsStructural()
+    {
+        var a = new UnicodeRange(0, 0x7F);
+        var b = new UnicodeRange(0, 0x7F);
+        var c = new UnicodeRange(0, 0x80);
+
+        Assert.Equal(a, b);
+        Assert.True(a == b);
+        Assert.False(a != b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        Assert.NotEqual(a, c);
+        Assert.True(a != c);
+        Assert.Equal<object>(a, b);
+        Assert.NotEqual<object>("not a range", a);
+    }
+
+    [Fact]
+    public void UnicodeRange_ToStringUsesCodePointNotation()
+    {
+        Assert.Equal("U+0000..U+007F", new UnicodeRange(0, 0x7F).ToString());
+        Assert.Equal("U+10000..U+10FFFF", new UnicodeRange(0x10000, 0x10FFFF).ToString());
+    }
+
+    [Fact]
+    public void UnicodeBlocks_GetBlockMatchesBlockRange()
+    {
+        Assert.Same(UnicodeBlocks.BasicLatin, UnicodeBlocks.GetBlock(0x41));
+        Assert.Same(UnicodeBlocks.BasicLatin, UnicodeBlocks.GetBlock(new Rune('A')));
+        Assert.Same(UnicodeBlocks.Latin1Supplement, UnicodeBlocks.GetBlock(0x80));
+        Assert.Same(UnicodeBlocks.Unknown, UnicodeBlocks.GetBlock(-1));
+        Assert.Same(UnicodeBlocks.Unknown, UnicodeBlocks.GetBlock(0x110000));
+        Assert.Same(UnicodeBlocks.Unknown, UnicodeBlocks.GetBlock(int.MinValue));
+    }
+
+    [Fact]
+    public void UnicodeBlock_ExposesNameRangeAndEquality()
+    {
+        var block = UnicodeBlocks.BasicLatin;
+
+        Assert.Equal("Basic Latin", block.Name);
+        Assert.Equal(new UnicodeRange(0, 0x7F), block.Range);
+        Assert.True(block.Contains(0x41));
+        Assert.True(block.Contains(new Rune('A')));
+        Assert.False(block.Contains(0x80));
+        Assert.Equal("Basic Latin (U+0000..U+007F)", block.ToString());
+        Assert.Equal(block, UnicodeBlocks.BasicLatin);
+        Assert.NotEqual(block, UnicodeBlocks.Latin1Supplement);
+        Assert.False(block.Equals(null));
+        Assert.Equal(block.GetHashCode(), UnicodeBlocks.BasicLatin.GetHashCode());
     }
 }

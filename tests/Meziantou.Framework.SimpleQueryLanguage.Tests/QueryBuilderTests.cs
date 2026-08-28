@@ -1,4 +1,5 @@
 using System.Numerics;
+using Meziantou.Framework.SimpleQueryLanguage.Ranges;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.SimpleQueryLanguage.Tests;
@@ -655,6 +656,116 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build("dummy:10");
 
         Assert.Throws<NotSupportedException>(() => query.Evaluate(new() { StringValue = "dummy:10" }));
+    }
+
+    [Theory]
+    [InlineData("dummy:10", true)]
+    [InlineData("-dummy:10", false)]
+    [InlineData("NOT dummy:10", false)]
+    public void UnhandledField_HandlerRespectsNegation(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetUnhandledPropertyHandler((obj, key, op, value) => true);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample()));
+    }
+
+    [Theory]
+    [InlineData("size:medium", true)]
+    [InlineData("size>small", true)]
+    [InlineData("size>large", false)]
+    [InlineData("size>=medium", true)]
+    [InlineData("size<large", true)]
+    [InlineData("size<=small", false)]
+    public void RangeHandler_UsesCustomParserForComparisonOperators(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<int>("size", (obj, range) => range.IsInRange(obj.Int32Value), TryParseSize);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { Int32Value = 2 }));
+
+        static bool TryParseSize(string value, out int result)
+        {
+            result = value switch
+            {
+                "small" => 1,
+                "medium" => 2,
+                "large" => 3,
+                _ => 0,
+            };
+
+            return result is not 0;
+        }
+    }
+
+    [Fact]
+    public void Build_NullQuery_ThrowsArgumentNullException()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+
+        var exception = Assert.Throws<ArgumentNullException>(() => queryBuilder.Build(query: null!));
+        Assert.Equal("query", exception.ParamName);
+    }
+
+    [Theory]
+    [InlineData("today")]
+    [InlineData("yesterday")]
+    [InlineData("this week")]
+    [InlineData("this month")]
+    [InlineData("last month")]
+    [InlineData("this year")]
+    [InlineData("last year")]
+    public void DateKeyword_OnNonDateHandler_DoesNotMatch(string keyword)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<int>("age", (obj, range) => range.IsInRange(obj.Int32Value));
+        var query = queryBuilder.Build($"age:\"{keyword}\"");
+
+        Assert.False(query.Evaluate(new Sample { Int32Value = 42 }));
+    }
+
+    // 2026-03-15 is a Sunday, so "this week" is 2026-03-09..2026-03-16
+    [Theory]
+    [InlineData("today", true)]
+    [InlineData("yesterday", false)]
+    [InlineData("this week", true)]
+    [InlineData("this month", true)]
+    [InlineData("last month", false)]
+    [InlineData("this year", true)]
+    [InlineData("last year", false)]
+    public void DateKeyword_OnDateTimeHandler_IsSupported(string keyword, bool expectedResult)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+        var query = queryBuilder.Build($"date:\"{keyword}\"");
+
+        Assert.Equal(expectedResult, query.Evaluate(new Sample { DateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) }));
+    }
+
+    [Fact]
+    public void DateKeyword_OnDateTimeHandler_ProducesUtcBounds()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        BinaryRangeSyntax<DateTime>? capturedRange = null;
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) =>
+        {
+            capturedRange = Assert.IsType<BinaryRangeSyntax<DateTime>>(range);
+            return true;
+        });
+
+        queryBuilder.Build("date:today").Evaluate(new Sample());
+
+        Assert.NotNull(capturedRange);
+        Assert.Equal(new DateTime(2026, 3, 15, 0, 0, 0, DateTimeKind.Utc), capturedRange.LowerBound);
+        Assert.Equal(DateTimeKind.Utc, capturedRange.LowerBound.Kind);
+        Assert.Equal(new DateTime(2026, 3, 16, 0, 0, 0, DateTimeKind.Utc), capturedRange.UpperBound);
+        Assert.Equal(DateTimeKind.Utc, capturedRange.UpperBound.Kind);
     }
 
     [Fact]

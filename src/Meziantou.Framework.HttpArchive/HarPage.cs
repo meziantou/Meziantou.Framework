@@ -12,15 +12,15 @@ public sealed class HarPage
 
     /// <summary>Gets or sets the unique identifier of a page. Entries use it to refer to the parent page.</summary>
     [JsonPropertyName("id")]
-    public string Id { get; set; } = "";
+    public string? Id { get; set; } = "";
 
     /// <summary>Gets or sets the page title.</summary>
     [JsonPropertyName("title")]
-    public string Title { get; set; } = "";
+    public string? Title { get; set; } = "";
 
     /// <summary>Gets or sets detailed timing info about the page load.</summary>
     [JsonPropertyName("pageTimings")]
-    public HarPageTimings PageTimings { get; set; } = new();
+    public HarPageTimings? PageTimings { get; set; } = new();
 
     /// <summary>Gets or sets a comment provided by the user or the application.</summary>
     [JsonPropertyName("comment")]

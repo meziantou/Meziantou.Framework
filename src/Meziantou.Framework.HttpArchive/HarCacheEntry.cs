@@ -16,7 +16,7 @@ public sealed class HarCacheEntry
 
     /// <summary>Gets or sets the ETag.</summary>
     [JsonPropertyName("eTag")]
-    public string ETag { get; set; } = "";
+    public string? ETag { get; set; } = "";
 
     /// <summary>Gets or sets the number of times the cache entry has been opened.</summary>
     [JsonPropertyName("hitCount")]

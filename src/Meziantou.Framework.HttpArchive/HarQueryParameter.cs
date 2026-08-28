@@ -8,11 +8,11 @@ public sealed class HarQueryParameter
 {
     /// <summary>Gets or sets the parameter name.</summary>
     [JsonPropertyName("name")]
-    public string Name { get; set; } = "";
+    public string? Name { get; set; } = "";
 
     /// <summary>Gets or sets the parameter value.</summary>
     [JsonPropertyName("value")]
-    public string Value { get; set; } = "";
+    public string? Value { get; set; } = "";
 
     /// <summary>Gets or sets a comment provided by the user or the application.</summary>
     [JsonPropertyName("comment")]

@@ -8,7 +8,7 @@ public sealed class HarDocument
 {
     /// <summary>Gets or sets the log object containing all HAR data.</summary>
     [JsonPropertyName("log")]
-    public HarLog Log { get; set; } = new();
+    public HarLog? Log { get; set; } = new();
 
     /// <summary>Parses a HAR document from a JSON string.</summary>
     /// <param name="json">The JSON string to parse.</param>

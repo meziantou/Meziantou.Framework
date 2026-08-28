@@ -270,9 +270,9 @@ public sealed class HarEntryExtensionsTests
     {
         var document = LoadChromeHar();
 
-        Assert.HasCount(6, document.Log.Entries);
+        Assert.HasCount(6, document.Log!.Entries!);
 
-        foreach (var entry in document.Log.Entries)
+        foreach (var entry in document.Log!.Entries!)
         {
             using var request = entry.ToHttpRequestMessage();
             using var response = entry.ToHttpResponseMessage();
@@ -287,7 +287,7 @@ public sealed class HarEntryExtensionsTests
     {
         var document = LoadChromeHar();
 
-        foreach (var entry in document.Log.Entries)
+        foreach (var entry in document.Log!.Entries!)
         {
             using var response = entry.ToHttpResponseMessage();
             if (response.Content.Headers.TryGetValues("Content-Type", out var values))
@@ -418,9 +418,9 @@ public sealed class HarEntryExtensionsTests
     public async Task RealWorldHar_GzippedEntryHasConsistentContentLength()
     {
         var document = LoadChromeHar();
-        var entry = document.Log.Entries[0];
+        var entry = document.Log!.Entries![0];
 
-        Assert.Equal("648", entry.Response.Headers.Single(h => string.Equals(h.Name, "content-length", StringComparison.OrdinalIgnoreCase)).Value);
+        Assert.Equal("648", entry.Response!.Headers!.Single(h => string.Equals(h.Name, "content-length", StringComparison.OrdinalIgnoreCase)).Value);
 
         using var message = entry.ToHttpResponseMessage();
         var body = await message.Content.ReadAsByteArrayAsync();
@@ -553,9 +553,9 @@ public sealed class HarEntryExtensionsTests
     public async Task RealWorldHar_FormPostKeepsItsBody()
     {
         var document = LoadChromeHar();
-        var entry = document.Log.Entries.Single(e => e.Request.Url.EndsWith("/login", StringComparison.Ordinal));
+        var entry = document.Log!.Entries!.Single(e => e.Request!.Url!.EndsWith("/login", StringComparison.Ordinal));
 
-        Assert.Null(entry.Request.PostData!.Text);
+        Assert.Null(entry.Request!.PostData!.Text);
 
         using var message = entry.ToHttpRequestMessage();
 
@@ -636,13 +636,85 @@ public sealed class HarEntryExtensionsTests
     public void RealWorldHar_DoesNotDuplicateRecordedCookieHeaders()
     {
         var document = LoadChromeHar();
-        var entry = document.Log.Entries[0];
+        var entry = document.Log!.Entries![0];
 
         using var request = entry.ToHttpRequestMessage();
         using var response = entry.ToHttpResponseMessage();
 
         Assert.Equal("session=abc123; theme=dark", Assert.Single(request.Headers.GetValues("Cookie")));
         Assert.Single(response.Headers.GetValues("Set-Cookie"));
+    }
+
+    [Fact]
+    public void ToHttpRequestMessage_NullRequest_Throws()
+    {
+        var entry = new HarEntry { Request = null };
+
+        Assert.Throws<InvalidOperationException>(entry.ToHttpRequestMessage);
+    }
+
+    [Fact]
+    public void ToHttpResponseMessage_NullResponse_Throws()
+    {
+        var entry = new HarEntry { Response = null };
+
+        Assert.Throws<InvalidOperationException>(entry.ToHttpResponseMessage);
+    }
+
+    [Fact]
+    public void ToHttpRequestMessage_NullMethod_Throws()
+    {
+        var request = new HarRequest { Method = null, Url = "https://example.com/" };
+
+        Assert.Throws<InvalidOperationException>(request.ToHttpRequestMessage);
+    }
+
+    [Fact]
+    public void ToHttpRequestMessage_NullUrl_Throws()
+    {
+        var request = new HarRequest { Method = "GET", Url = null };
+
+        Assert.Throws<InvalidOperationException>(request.ToHttpRequestMessage);
+    }
+
+    [Fact]
+    public async Task ToHttpRequestMessage_NullHeadersCookiesAndMimeType()
+    {
+        var request = new HarRequest
+        {
+            Method = "POST",
+            Url = "https://example.com/",
+            HttpVersion = null,
+            Headers = null,
+            Cookies = null,
+            PostData = new HarPostData { MimeType = null, Text = "body" },
+        };
+
+        using var message = request.ToHttpRequestMessage();
+
+        Assert.Equal(new Version(1, 1), message.Version);
+        Assert.NotNull(message.Content);
+        Assert.Null(message.Content.Headers.ContentType);
+        Assert.Equal("body", await message.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ToHttpResponseMessage_NullContentHeadersAndCookies()
+    {
+        var response = new HarResponse
+        {
+            Status = 204,
+            StatusText = null,
+            Content = null,
+            Headers = null,
+            Cookies = null,
+        };
+
+        using var message = response.ToHttpResponseMessage();
+
+        Assert.Equal(HttpStatusCode.NoContent, message.StatusCode);
+        Assert.NotNull(message.Content);
+        Assert.Empty(await message.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken));
     }
 
     private static HarDocument LoadChromeHar()

@@ -1361,16 +1361,23 @@ jobs:
               repositories:
               - repository: dummy
                 name: repo
+                endpoint: myendpoint
                 ref: 'main'
                 type: git
             """);
         var result = await GetDependencies<AzureDevOpsScanner>();
+
+        var dependency = Assert.Single(result, d => d.Type == DependencyType.GitReference);
+        Assert.Equal("dummy", dependency.Metadata["repository"]);
+        Assert.Equal("myendpoint", dependency.Metadata["endpoint"]);
+
         await UpdateDependencies(result, "dummy", "1.2.3");
         AssertFileContentEqual("sample.yml", """
             resources:
               repositories:
               - repository: dummy
                 name: dummy1
+                endpoint: myendpoint
                 ref: '1.2.3'
                 type: git
             """, ignoreNewLines: true);

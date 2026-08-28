@@ -897,6 +897,21 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task GeneratedXmlDocumentationUsesValidTags()
+    {
+        var sourceCode = "[Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))] public partial struct Test { }";
+        var result = await GenerateFiles(sourceCode);
+        var generated = result.GeneratorResult.GeneratedTrees.Single().ToString();
+
+        // '<return>' is not a valid documentation tag, the correct one is '<returns>'
+        Assert.False(generated.Contains("<return>", StringComparison.Ordinal));
+        Assert.True(generated.Contains("<returns>", StringComparison.Ordinal));
+
+        // '<see>' must always carry a 'cref' or a 'langword' attribute
+        Assert.False(generated.Contains("<see>", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task TestIncrementalSupport()
     {
         var generator = InstantiateGenerator();

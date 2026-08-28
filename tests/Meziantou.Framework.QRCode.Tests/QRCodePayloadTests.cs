@@ -64,19 +64,10 @@ public class QRCodePayloadTests
             organization: "ACME", title: "Engineer",
             url: "https://example.com", address: "123 Main St");
 
-        Assert.Equal("""
-            BEGIN:VCARD
-            VERSION:3.0
-            N:Doe;John;;;
-            FN:John Doe
-            TEL:+1234567890
-            EMAIL:john@example.com
-            ORG:ACME
-            TITLE:Engineer
-            URL:https://example.com
-            ADR:;;123 Main St;;;;
-            END:VCARD
-            """, payload, ignoreLineEndingDifferences: true);
+        Assert.Equal(
+            "BEGIN:VCARD\r\nVERSION:3.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\nTEL:+1234567890\r\n" +
+            "EMAIL:john@example.com\r\nORG:ACME\r\nTITLE:Engineer\r\nURL:https://example.com\r\n" +
+            "ADR:;;123 Main St;;;;\r\nEND:VCARD", payload);
     }
 
     [Fact]
@@ -84,19 +75,69 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.VCard("Doe");
 
-        Assert.Equal("""
-            BEGIN:VCARD
-            VERSION:3.0
-            N:Doe;;;;
-            FN:Doe
-            END:VCARD
-            """, payload, ignoreLineEndingDifferences: true);
+        Assert.Equal("BEGIN:VCARD\r\nVERSION:3.0\r\nN:Doe;;;;\r\nFN:Doe\r\nEND:VCARD", payload);
     }
 
     [Fact]
     public void VCard_ThrowsWhenLastNameIsNull()
     {
         Assert.Throws<ArgumentNullException>(() => QRCodePayload.VCard(null!));
+    }
+
+    [Fact]
+    public void VCard_EscapesStructuralCharactersInNames()
+    {
+        // A surname containing ';' previously produced a six-component N: field, so importers
+        // read "Jr" as the given name.
+        var payload = QRCodePayload.VCard("van der Berg; Jr", "Jan");
+
+        Assert.Equal(@"BEGIN:VCARD" + "\r\n" + @"VERSION:3.0" + "\r\n" + @"N:van der Berg\; Jr;Jan;;;" + "\r\n" + @"FN:Jan van der Berg\; Jr" + "\r\nEND:VCARD", payload);
+    }
+
+    [Fact]
+    public void VCard_EscapesCommasAndBackslashes()
+    {
+        var payload = QRCodePayload.VCard("Doe", address: @"1 Main St, Apt \ 2");
+
+        Assert.Contains(@"ADR:;;1 Main St\, Apt \\ 2;;;;", payload);
+    }
+
+    [Theory]
+    [InlineData("a@b.com\r\nTEL:+19999999999")]
+    [InlineData("a@b.com\nURL:https://evil.example")]
+    public void VCard_NewLineInAValueCannotInjectAProperty(string email)
+    {
+        var payload = QRCodePayload.VCard("Doe", "John", email: email);
+
+        // Exactly five content lines: BEGIN, VERSION, N, FN, EMAIL, END.
+        Assert.Equal(5, payload.Split("\r\n").Length - 1);
+        Assert.DoesNotContain("\r\nTEL:", payload);
+        Assert.DoesNotContain("\r\nURL:", payload);
+    }
+
+    [Fact]
+    public void VCard_UsesCarriageReturnLineFeedRegardlessOfPlatform()
+    {
+        var payload = QRCodePayload.VCard("Doe");
+
+        Assert.Equal(4, payload.Split("\r\n").Length - 1);
+        Assert.DoesNotContain("\n", payload.Replace("\r\n", "", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void CalendarEvent_NewLineInSummaryCannotInjectASecondEvent()
+    {
+        var payload = QRCodePayload.CalendarEvent(
+            "Meeting\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Injected",
+            new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc),
+            new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc));
+
+        // The injected text survives as escaped content inside SUMMARY, so it is inert: what
+        // matters is that it never becomes a content line of its own.
+        var lines = payload.Split("\r\n");
+        Assert.Equal(1, lines.Count(line => line is "BEGIN:VEVENT"));
+        Assert.Equal(1, lines.Count(line => line is "END:VEVENT"));
+        Assert.Equal(5, lines.Length);
     }
 
     [Fact]
@@ -199,15 +240,9 @@ public class QRCodePayloadTests
             location: "Room 42",
             description: "Weekly sync");
 
-        Assert.Equal("""
-            BEGIN:VEVENT
-            SUMMARY:Team Meeting
-            DTSTART:20250615T140000Z
-            DTEND:20250615T150000Z
-            LOCATION:Room 42
-            DESCRIPTION:Weekly sync
-            END:VEVENT
-            """, payload, ignoreLineEndingDifferences: true);
+        Assert.Equal(
+            "BEGIN:VEVENT\r\nSUMMARY:Team Meeting\r\nDTSTART:20250615T140000Z\r\nDTEND:20250615T150000Z\r\n" +
+            "LOCATION:Room 42\r\nDESCRIPTION:Weekly sync\r\nEND:VEVENT", payload);
     }
 
     [Fact]
@@ -218,13 +253,7 @@ public class QRCodePayloadTests
             new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc),
             new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc));
 
-        Assert.Equal("""
-            BEGIN:VEVENT
-            SUMMARY:Meeting
-            DTSTART:20250101T090000Z
-            DTEND:20250101T100000Z
-            END:VEVENT
-            """, payload, ignoreLineEndingDifferences: true);
+        Assert.Equal("BEGIN:VEVENT\r\nSUMMARY:Meeting\r\nDTSTART:20250101T090000Z\r\nDTEND:20250101T100000Z\r\nEND:VEVENT", payload);
     }
 
     [Fact]
@@ -567,13 +596,8 @@ public class QRCodePayloadTests
             new DateTime(2025, 3, 1, 11, 0, 0, DateTimeKind.Utc),
             description: "Quarterly review");
 
-        Assert.Equal("""
-            BEGIN:VEVENT
-            SUMMARY:Review
-            DTSTART:20250301T100000Z
-            DTEND:20250301T110000Z
-            DESCRIPTION:Quarterly review
-            END:VEVENT
-            """, payload, ignoreLineEndingDifferences: true);
+        Assert.Equal(
+            "BEGIN:VEVENT\r\nSUMMARY:Review\r\nDTSTART:20250301T100000Z\r\nDTEND:20250301T110000Z\r\n" +
+            "DESCRIPTION:Quarterly review\r\nEND:VEVENT", payload);
     }
 }

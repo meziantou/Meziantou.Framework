@@ -64,58 +64,35 @@ public static class QRCodePayload
         ArgumentNullException.ThrowIfNull(lastName);
 
         var sb = new StringBuilder();
-        sb.AppendLine("BEGIN:VCARD");
-        sb.AppendLine("VERSION:3.0");
+        sb.Append("BEGIN:VCARD").Append(CrLf);
+        sb.Append("VERSION:3.0").Append(CrLf);
         sb.Append("N:");
-        sb.Append(lastName);
+        AppendVCardEscaped(sb, lastName);
         sb.Append(';');
-        sb.Append(firstName);
-        sb.AppendLine(";;;");
+        AppendVCardEscaped(sb, firstName);
+        sb.Append(";;;").Append(CrLf);
 
         sb.Append("FN:");
         if (firstName is not null)
         {
-            sb.Append(firstName);
+            AppendVCardEscaped(sb, firstName);
             sb.Append(' ');
         }
 
-        sb.AppendLine(lastName);
+        AppendVCardEscaped(sb, lastName);
+        sb.Append(CrLf);
 
-        if (phone is not null)
-        {
-            sb.Append("TEL:");
-            sb.AppendLine(phone);
-        }
-
-        if (email is not null)
-        {
-            sb.Append("EMAIL:");
-            sb.AppendLine(email);
-        }
-
-        if (organization is not null)
-        {
-            sb.Append("ORG:");
-            sb.AppendLine(organization);
-        }
-
-        if (title is not null)
-        {
-            sb.Append("TITLE:");
-            sb.AppendLine(title);
-        }
-
-        if (url is not null)
-        {
-            sb.Append("URL:");
-            sb.AppendLine(url);
-        }
+        AppendVCardProperty(sb, "TEL:", phone);
+        AppendVCardProperty(sb, "EMAIL:", email);
+        AppendVCardProperty(sb, "ORG:", organization);
+        AppendVCardProperty(sb, "TITLE:", title);
+        AppendVCardProperty(sb, "URL:", url);
 
         if (address is not null)
         {
             sb.Append("ADR:;;");
-            sb.Append(address);
-            sb.AppendLine(";;;;");
+            AppendVCardEscaped(sb, address);
+            sb.Append(";;;;").Append(CrLf);
         }
 
         sb.Append("END:VCARD");
@@ -214,28 +191,75 @@ public static class QRCodePayload
         ArgumentNullException.ThrowIfNull(summary);
 
         var sb = new StringBuilder();
-        sb.AppendLine("BEGIN:VEVENT");
-        sb.Append("SUMMARY:");
-        sb.AppendLine(summary);
-        sb.Append("DTSTART:");
-        sb.AppendLine(start.ToUniversalTime().ToString("yyyyMMddTHHmmssZ", CultureInfo.InvariantCulture));
-        sb.Append("DTEND:");
-        sb.AppendLine(end.ToUniversalTime().ToString("yyyyMMddTHHmmssZ", CultureInfo.InvariantCulture));
+        sb.Append("BEGIN:VEVENT").Append(CrLf);
+        AppendVCardProperty(sb, "SUMMARY:", summary);
+        sb.Append("DTSTART:").Append(start.ToUniversalTime().ToString("yyyyMMddTHHmmssZ", CultureInfo.InvariantCulture)).Append(CrLf);
+        sb.Append("DTEND:").Append(end.ToUniversalTime().ToString("yyyyMMddTHHmmssZ", CultureInfo.InvariantCulture)).Append(CrLf);
 
-        if (location is not null)
-        {
-            sb.Append("LOCATION:");
-            sb.AppendLine(location);
-        }
-
-        if (description is not null)
-        {
-            sb.Append("DESCRIPTION:");
-            sb.AppendLine(description);
-        }
+        AppendVCardProperty(sb, "LOCATION:", location);
+        AppendVCardProperty(sb, "DESCRIPTION:", description);
 
         sb.Append("END:VEVENT");
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// vCard 3.0 and iCalendar both require CRLF between content lines (RFC 6350 and RFC 5545),
+    /// so the separator is written explicitly instead of through <see cref="StringBuilder.AppendLine()"/>,
+    /// whose separator depends on the platform.
+    /// </summary>
+    private const string CrLf = "\r\n";
+
+    private static void AppendVCardProperty(StringBuilder sb, string name, string? value)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        sb.Append(name);
+        AppendVCardEscaped(sb, value);
+        sb.Append(CrLf);
+    }
+
+    /// <summary>
+    /// Escapes a vCard 3.0 / iCalendar text value per RFC 6350 section 3.4 and RFC 5545 section 3.3.11.
+    /// </summary>
+    /// <remarks>
+    /// Without this, a value containing a new line injects arbitrary properties into the card, and
+    /// the far more common case of a name or address containing <c>;</c> or <c>,</c> silently
+    /// changes which structured component the text lands in.
+    /// </remarks>
+    private static void AppendVCardEscaped(StringBuilder sb, string? value)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        foreach (var c in value)
+        {
+            switch (c)
+            {
+                case '\\':
+                    sb.Append("\\\\");
+                    break;
+                case ';':
+                    sb.Append("\\;");
+                    break;
+                case ',':
+                    sb.Append("\\,");
+                    break;
+                case '\r':
+                    break;
+                case '\n':
+                    sb.Append("\\n");
+                    break;
+                default:
+                    sb.Append(c);
+                    break;
+            }
+        }
     }
 
     /// <summary>

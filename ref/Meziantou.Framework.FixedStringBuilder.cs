@@ -14,11 +14,17 @@ namespace Meziantou.Framework.FixedStringBuilder
         public void Clear() { }
         public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         public void AppendFormatted(string value) { }
+        public void AppendFormatted(string value, string? format) { }
         public void AppendFormatted(string value, int alignment) { }
-        public void AppendFormatted<T>(T value) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(T value, string? format) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(T value, int alignment) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(T value, int alignment, string? format) where T : System.ISpanFormattable { }
+        public void AppendFormatted(string value, int alignment, string? format) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, string? format) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment, string? format) { }
+        public void AppendFormatted<T>(T value) { }
+        public void AppendFormatted<T>(T value, string? format) { }
+        public void AppendFormatted<T>(T value, int alignment) { }
+        public void AppendFormatted<T>(T value, int alignment, string? format) { }
         public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 other) => throw null;
         public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 other, System.StringComparison comparison) => throw null;
         public static bool operator ==(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 right) => throw null;
@@ -44,11 +50,17 @@ namespace Meziantou.Framework.FixedStringBuilder
         public void Clear() { }
         public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         public void AppendFormatted(string value) { }
+        public void AppendFormatted(string value, string? format) { }
         public void AppendFormatted(string value, int alignment) { }
-        public void AppendFormatted<T>(T value) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(T value, string? format) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(T value, int alignment) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(T value, int alignment, string? format) where T : System.ISpanFormattable { }
+        public void AppendFormatted(string value, int alignment, string? format) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, string? format) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment, string? format) { }
+        public void AppendFormatted<T>(T value) { }
+        public void AppendFormatted<T>(T value, string? format) { }
+        public void AppendFormatted<T>(T value, int alignment) { }
+        public void AppendFormatted<T>(T value, int alignment, string? format) { }
         public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 other) => throw null;
         public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 other, System.StringComparison comparison) => throw null;
         public static bool operator ==(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 right) => throw null;
@@ -74,11 +86,17 @@ namespace Meziantou.Framework.FixedStringBuilder
         public void Clear() { }
         public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         public void AppendFormatted(string value) { }
+        public void AppendFormatted(string value, string? format) { }
         public void AppendFormatted(string value, int alignment) { }
-        public void AppendFormatted<T>(T value) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(T value, string? format) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(T value, int alignment) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(T value, int alignment, string? format) where T : System.ISpanFormattable { }
+        public void AppendFormatted(string value, int alignment, string? format) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, string? format) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment, string? format) { }
+        public void AppendFormatted<T>(T value) { }
+        public void AppendFormatted<T>(T value, string? format) { }
+        public void AppendFormatted<T>(T value, int alignment) { }
+        public void AppendFormatted<T>(T value, int alignment, string? format) { }
         public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 other) => throw null;
         public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 other, System.StringComparison comparison) => throw null;
         public static bool operator ==(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 right) => throw null;
@@ -104,11 +122,17 @@ namespace Meziantou.Framework.FixedStringBuilder
         public void Clear() { }
         public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         public void AppendFormatted(string value) { }
+        public void AppendFormatted(string value, string? format) { }
         public void AppendFormatted(string value, int alignment) { }
-        public void AppendFormatted<T>(T value) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(T value, string? format) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(T value, int alignment) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(T value, int alignment, string? format) where T : System.ISpanFormattable { }
+        public void AppendFormatted(string value, int alignment, string? format) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, string? format) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment, string? format) { }
+        public void AppendFormatted<T>(T value) { }
+        public void AppendFormatted<T>(T value, string? format) { }
+        public void AppendFormatted<T>(T value, int alignment) { }
+        public void AppendFormatted<T>(T value, int alignment, string? format) { }
         public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 other) => throw null;
         public readonly bool Equals(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 other, System.StringComparison comparison) => throw null;
         public static bool operator ==(Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 left, Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 right) => throw null;

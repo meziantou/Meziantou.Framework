@@ -140,6 +140,77 @@ public sealed class FixedStringBuilderTests
     }
 
     [Fact]
+    public void InterpolatedHoleSupportsASpan()
+    {
+        ReadOnlySpan<char> span = "World".AsSpan();
+        FixedStringBuilder16 value = $"Hi {span}";
+
+        Assert.Equal("Hi World", value.ToString());
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsASpanWithAlignment()
+    {
+        ReadOnlySpan<char> span = "ab".AsSpan();
+        FixedStringBuilder16 value = $"{span,4}";
+
+        Assert.Equal("  ab", value.ToString());
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsAValueThatIsNotSpanFormattable()
+    {
+        FixedStringBuilder16 value = $"{new NotSpanFormattable()}";
+
+        Assert.Equal("custom", value.ToString());
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsAnEnum()
+    {
+        FixedStringBuilder16 value = $"{DayOfWeek.Monday}";
+
+        Assert.Equal("Monday", value.ToString());
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsAFormattableThatIsNotSpanFormattable()
+    {
+        FixedStringBuilder16 value = $"{new OnlyFormattable():X}";
+
+        Assert.Equal("fmt:X", value.ToString());
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsAStringWithAlignmentAndFormat()
+    {
+        FixedStringBuilder16 value = $"{"ab",4:X}";
+
+        Assert.Equal("  ab", value.ToString());
+    }
+
+    [Fact]
+    public void InterpolatedHoleSupportsANullReference()
+    {
+        object? nullValue = null;
+        FixedStringBuilder16 value = $"[{nullValue}]";
+
+        Assert.Equal("[]", value.ToString());
+    }
+
+    private sealed class NotSpanFormattable
+    {
+        public override string ToString() => "custom";
+    }
+
+    private sealed class OnlyFormattable : IFormattable
+    {
+        public string ToString(string? format, IFormatProvider? formatProvider) => "fmt:" + format;
+
+        public override string ToString() => "fmt:";
+    }
+
+    [Fact]
     public void EqualsSupportsStringComparison()
     {
         FixedStringBuilder8 a = "AbC";

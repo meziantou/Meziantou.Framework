@@ -611,6 +611,32 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task PackagesConfigInvalidXml()
+    {
+        AddFile("packages.config", """<packages><package id="a" version="1.0.0">""");
+
+        var result = await GetDependencies<PackagesConfigDependencyScanner>();
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task PackagesConfigInvalidXmlDoesNotStopTheScan()
+    {
+        AddFile("packages.config", """<packages><package id="a" version="1.0.0">""");
+        AddFile("Chart.yaml", """
+            dependencies:
+              - name: mariadb
+                version: 7.x.x
+                repository: https://example.com/charts
+            """);
+
+        var result = await GetDependencies<HelmChartDependencyScanner>();
+
+        AssertContainDependency(result, (DependencyType.HelmChart, "https://example.com/charts", "7.x.x", 0, 0));
+    }
+
+    [Fact]
     public async Task DockerfileFromDependencies()
     {
         const string Original = """
@@ -1015,6 +1041,33 @@ jobs:
     }
 
     [Fact]
+    public async Task Regex_FirstLine()
+    {
+        const string Original = """
+            image: node:10
+            image: alpine:3
+            """;
+        const string Expected = """
+            image: dummy1:2.0.0
+            image: dummy2:2.0.0
+            """;
+
+        AddFile("custom/sample.yml", Original);
+        var result = await GetDependencies<RegexScanner>([new RegexScanner()
+        {
+            FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobDialect.Standard)),
+            DependencyType = DependencyType.DockerImage,
+            Regex = DockerImageWithVersionRegex(),
+        }]);
+        AssertContainDependency(result,
+            (DependencyType.DockerImage, "node", "10", 1, 13),
+            (DependencyType.DockerImage, "alpine", "3", 2, 15));
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("custom/sample.yml", Expected, ignoreNewLines: false);
+    }
+
+    [Fact]
     public async Task Regex_OptionalVersion()
     {
         const string Original = """
@@ -1042,6 +1095,30 @@ jobs:
 
         await UpdateDependencies(result, "dummy", "v3.0.0");
         AssertFileContentEqual("custom/sample.yml", Expected, ignoreNewLines: false);
+    }
+
+    [Fact]
+    public async Task Regex_LeavesTheSharedStreamOpenForTheNextScanner()
+    {
+        AddFile("package.json", /*lang=json,strict*/ """
+{
+  "dependencies": {
+    "a": "1.0.0"
+  }
+}
+""");
+
+        var result = await GetDependencies<NpmPackageJsonDependencyScanner>([
+            new RegexScanner
+            {
+                FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobDialect.Standard)),
+                DependencyType = DependencyType.DockerImage,
+                Regex = DockerImageWithVersionRegex(),
+            },
+            new NpmPackageJsonDependencyScanner(),
+        ]);
+
+        AssertContainDependency(result, (DependencyType.Npm, "a", "1.0.0", 0, 0));
     }
 
     [Fact]

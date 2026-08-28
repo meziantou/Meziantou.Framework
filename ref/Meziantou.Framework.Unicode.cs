@@ -15,6 +15,8 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeCharacterInfo? GetCharacterInfo(char value) => throw null;
         public static bool TryGetCharacterInfo(System.Text.Rune rune, out Meziantou.Framework.UnicodeCharacterInfo info) => throw null;
         public static bool TryGetCharacterInfo(char value, out Meziantou.Framework.UnicodeCharacterInfo info) => throw null;
+        public static bool IsSingleScript(string value) => throw null;
+        public static bool IsMixedScript(string value) => throw null;
     }
 
     public enum UnicodeBidirectionalCategory

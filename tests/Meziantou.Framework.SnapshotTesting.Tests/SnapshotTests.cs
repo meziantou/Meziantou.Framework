@@ -1338,6 +1338,59 @@ public sealed partial class SnapshotTests
         public static string? Read(string? workingDirectory, string key) => GetGitConfiguration(workingDirectory, key);
     }
 
+    [Fact]
+    public void Validate_UsesTheComparerRegisteredForTheStoredFormat()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var gif = CreateTwoFrameGif();
+
+        // The GIF serializer stores PNG frames, so the comparison is about PNG bytes even though the
+        // assertion asked for SnapshotType.Gif.
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
+            SnapshotPathStrategy = context => directory / ("snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified.png"),
+        };
+        settings.Serializers.AddGifSerializer();
+
+        Snapshot.Validate(gif, SnapshotType.Gif, settings);
+
+        var comparer = new RecordingSnapshotComparer();
+        var compareSettings = settings with { SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow };
+        compareSettings.Comparers.Set(SnapshotType.Png, comparer);
+
+        Snapshot.Validate(gif, SnapshotType.Gif, compareSettings);
+
+        Assert.True(comparer.InvocationCount > 0, "The comparer registered for PNG was not used.");
+    }
+
+    [Fact]
+    public void Validate_FallsBackToTheComparerForTheRequestedType()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var comparer = new RecordingSnapshotComparer();
+        var settings = CreateDeterministicSnapshotSettings(directory, "actual");
+        settings.Comparers.Set(SnapshotType.Default, comparer);
+        File.WriteAllText(directory.GetFullPath("snapshot.verified.txt"), "actual");
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.True(comparer.InvocationCount > 0, "The comparer registered for the requested type was not used.");
+    }
+
+    private sealed class RecordingSnapshotComparer : ISnapshotComparer
+    {
+        public int InvocationCount { get; private set; }
+
+        public bool Equals(SnapshotData expected, SnapshotData actual)
+        {
+            InvocationCount++;
+            return expected.Data.AsSpan().SequenceEqual(actual.Data);
+        }
+    }
+
     private sealed class FixedAssertionExceptionBuilder : AssertionExceptionBuilder
     {
         public override Exception CreateException(string message)

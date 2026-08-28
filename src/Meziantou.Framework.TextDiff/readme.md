@@ -22,6 +22,22 @@ foreach (var entry in result.Entries)
 }
 ````
 
+## Rebuild either side of the diff
+
+`Text` is the chunk from the old text (from the new text for an `Insert`). When a comparison
+option such as `IgnoreCase` makes two *different* chunks compare equal, `OldText` and
+`NewText` give the exact chunk from each side:
+
+````csharp
+var oldText = string.Concat(result.Entries
+    .Where(e => e.Operation is TextDiffOperation.Equal or TextDiffOperation.Delete)
+    .Select(e => e.OldText));
+
+var newText = string.Concat(result.Entries
+    .Where(e => e.Operation is TextDiffOperation.Equal or TextDiffOperation.Insert)
+    .Select(e => e.NewText));
+````
+
 ## Configure chunking and comparison
 
 ````csharp
@@ -34,7 +50,17 @@ var options = new TextDiffOptions
 };
 
 var result = TextDiff.ComputeDiff("Hello   world\r\n", "hello world\n", options);
+// result.HasDifferences == false
 ````
+
+`IgnoreWhitespace` trims the **edges** of each chunk; whitespace inside a chunk stays
+significant. `Chunker = TextChunker.Words` is what makes the two texts above compare equal:
+it puts each run of whitespace in its own chunk, which trimming then reduces to an empty
+one. With the default `TextChunker.Lines`, `"Hello   world"` and `"hello world"` are a
+single chunk each and still differ.
+
+`IgnoreEndOfLine` normalizes line terminators *before* chunking, so the entries of the
+result carry `\n` rather than the original `\r\n`.
 
 ## Compute a hierarchical diff with multiple chunking levels
 
@@ -74,3 +100,19 @@ Available algorithms:
 - `TextDiffAlgorithm.Patience`: best for human-readable output in reviews, even if edits are not always minimal.
 - `TextDiffAlgorithm.Histogram`: good practical choice for large or repetitive texts when performance is important.
 - `TextDiffAlgorithm.HuntSzymanski`: useful for large inputs with relatively sparse matches.
+
+### Cost
+
+All four algorithms trim the common prefix and suffix first, so the cost below is driven by the
+part that actually differs — two revisions of the same file are cheap whatever you pick.
+
+| Algorithm | Cost | Degrades when |
+|---|---|---|
+| `Myers` | `O(D²)`, `D` = edit distance | the two texts have little in common: 50 000 fully different lines take seconds |
+| `Patience` | anchor search, `Myers` on unanchored regions | no chunk is unique, so it falls back to `Myers` |
+| `Histogram` | anchor search, `Myers` on unanchored regions | every shared chunk is very frequent, so it falls back to `Myers` |
+| `HuntSzymanski` | `O(r log n)`, `r` = matching pairs | many duplicate chunks, which makes `r` quadratic |
+
+There is no work limit: a diff of two large, unrelated texts runs to completion however long it
+takes. Character-level diffs reach these sizes quickly, since every character is a chunk — prefer
+`ComputeHierarchyDiff` so the character diff only runs on chunks that already changed.

@@ -55,7 +55,8 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
 
             case ArchiveImage archive:
                 var loadResult = await Cli.RunBufferedAsync(["load", "-i", archive.ArchivePath], cancellationToken).ConfigureAwait(false);
-                return ParseLoadedImage(loadResult.StandardOutput);
+                return ContainerImageOutputParser.TryParseLoadedImage(loadResult.StandardOutput)
+                    ?? throw new InvalidOperationException("Unable to determine the image reference from the load output: " + loadResult.StandardOutput);
 
             case ExistingImage existing:
                 return existing.ImageId;
@@ -218,26 +219,6 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         }
 
         await base.CopyFromContainerAsync(id, source, destination, cancellationToken).ConfigureAwait(false);
-    }
-
-    private static string ParseLoadedImage(string output)
-    {
-        // Output looks like: "Loaded image: repo:tag" or "Loaded image ID: sha256:...".
-        const string Marker = "Loaded image";
-        foreach (var line in output.Split('\n'))
-        {
-            var trimmed = line.Trim();
-            var markerIndex = trimmed.IndexOf(Marker, StringComparison.OrdinalIgnoreCase);
-            if (markerIndex < 0)
-                continue;
-
-            var rest = trimmed[(markerIndex + Marker.Length)..];
-            var colonIndex = rest.IndexOf(':', StringComparison.Ordinal);
-            if (colonIndex >= 0)
-                return rest[(colonIndex + 1)..].Trim();
-        }
-
-        throw new InvalidOperationException("Unable to determine the image reference from the load output: " + output);
     }
 
     private static bool IsContainerId(string value)

@@ -23,6 +23,9 @@ public sealed class SnapshotComparerCollection : IEnumerable<KeyValuePair<Snapsh
         _comparers[type] = comparer;
     }
 
+    /// <summary>Looks up a comparer registered for exactly this type, without falling back to a default.</summary>
+    internal bool TryGet(SnapshotType type, [NotNullWhen(true)] out ISnapshotComparer? comparer) => _comparers.TryGetValue(type, out comparer);
+
     public ISnapshotComparer Get(SnapshotType type)
     {
         if (_comparers.TryGetValue(type, out var comparer))

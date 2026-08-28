@@ -89,9 +89,9 @@ public sealed class TextDiffTests
             JoinLines("A", "A", "B", "C"),
             [
                 new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
-                new TextDiffEntry(TextDiffOperation.Insert, "A\n"),
-                new TextDiffEntry(TextDiffOperation.Equal, "B\n"),
-                new TextDiffEntry(TextDiffOperation.Delete, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "B\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "B\n"),
                 new TextDiffEntry(TextDiffOperation.Equal, "C"),
             ]),
         new(
@@ -137,9 +137,9 @@ public sealed class TextDiffTests
             JoinLines("a", "c", "b", "d"),
             [
                 new TextDiffEntry(TextDiffOperation.Equal, "a\n"),
-                new TextDiffEntry(TextDiffOperation.Insert, "c\n"),
-                new TextDiffEntry(TextDiffOperation.Equal, "b\n"),
-                new TextDiffEntry(TextDiffOperation.Delete, "c\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "b\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "c\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "b\n"),
                 new TextDiffEntry(TextDiffOperation.Equal, "d"),
             ]),
         new(
@@ -375,6 +375,62 @@ public sealed class TextDiffTests
     }
 
     [Fact]
+    public void ComputeDiff_Histogram_ManyAnchors_IsNotQuadraticInTheAnchorCount()
+    {
+        // Rebuilding the occurrence table to consume a single anchor made this input cost O(n * anchors):
+        // it took over 30s at this size and ~11.6s at 20k lines. Collecting every anchor from one pass
+        // brings it to a few tens of milliseconds, so the budget below only trips on a real regression.
+        const int Count = 50_000;
+        var oldLines = new string[Count];
+        var newLines = new string[Count];
+        for (var i = 0; i < Count; i++)
+        {
+            var suffix = i.ToString(CultureInfo.InvariantCulture);
+            oldLines[i] = "u" + suffix;
+            newLines[i] = (i % 2 is 0 ? "u" : "v") + suffix;
+        }
+
+        var oldText = JoinLines(oldLines);
+        var newText = JoinLines(newLines);
+
+        TextDiffResult? result = null;
+        var thread = new Thread(() => result = Diff.ComputeDiff(oldText, newText, new TextDiffOptions { Algorithm = TextDiffAlgorithm.Histogram }));
+        thread.Start();
+
+        Assert.True(thread.Join(TimeSpan.FromSeconds(20)), "The histogram anchor search did not complete in 20s.");
+        Assert.NotNull(result);
+        Assert.Equal(oldText, ReconstructOldText(result));
+        Assert.Equal(newText, ReconstructNewText(result));
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void ComputeDiff_Histogram_HighlyRepetitiveInput_FallsBackToMyers()
+    {
+        // Every token occurs hundreds of times on each side, so the best anchor scores far above
+        // MaxAnchorScore and the region is handed to the fallback algorithm instead of being anchored
+        // on a token that appears everywhere.
+        const int Count = 2_000;
+        var random = new Random(20260827);
+        var oldLines = new string[Count];
+        var newLines = new string[Count];
+        for (var i = 0; i < Count; i++)
+        {
+            oldLines[i] = "line" + random.Next(3).ToString(CultureInfo.InvariantCulture);
+            newLines[i] = "line" + random.Next(3).ToString(CultureInfo.InvariantCulture);
+        }
+
+        var oldText = JoinLines(oldLines);
+        var newText = JoinLines(newLines);
+
+        var result = Diff.ComputeDiff(oldText, newText, new TextDiffOptions { Algorithm = TextDiffAlgorithm.Histogram });
+
+        Assert.True(result.HasDifferences);
+        Assert.Equal(oldText, ReconstructOldText(result));
+        Assert.Equal(newText, ReconstructNewText(result));
+    }
+
+    [Fact]
     public void ComputeDiff_InsertLine()
     {
         var result = Diff.ComputeDiff("line1\nline3", "line1\nline2\nline3");
@@ -472,6 +528,103 @@ public sealed class TextDiffTests
     }
 
     // IgnoreCase tests
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void ComputeDiff_AllAlgorithms_IgnoreOptions_ReconstructsOldAndNewText(TextDiffAlgorithm algorithm)
+    {
+        var random = new Random(20260827);
+
+        foreach (var chunker in new[] { TextChunker.Lines, TextChunker.Words, TextChunker.Characters })
+        {
+            foreach (var ignoreCase in new[] { false, true })
+            {
+                foreach (var ignoreWhitespace in new[] { false, true })
+                {
+                    foreach (var ignoreEndOfLine in new[] { false, true })
+                    {
+                        var options = new TextDiffOptions
+                        {
+                            Algorithm = algorithm,
+                            Chunker = chunker,
+                            IgnoreCase = ignoreCase,
+                            IgnoreWhitespace = ignoreWhitespace,
+                            IgnoreEndOfLine = ignoreEndOfLine,
+                        };
+
+                        for (var iteration = 0; iteration < 10; iteration++)
+                        {
+                            var oldText = CreateNoisyText(random);
+                            var newText = CreateNoisyText(random);
+
+                            var result = Diff.ComputeDiff(oldText, newText, options);
+
+                            // IgnoreEndOfLine normalizes the input before chunking, so that is what the entries carry.
+                            var expectedOld = ignoreEndOfLine ? oldText.ReplaceLineEndings("\n") : oldText;
+                            var expectedNew = ignoreEndOfLine ? newText.ReplaceLineEndings("\n") : newText;
+
+                            Assert.Equal(expectedOld, ReconstructOldText(result));
+                            Assert.Equal(expectedNew, ReconstructNewText(result));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void ComputeDiff_IgnoreCase_EqualEntryKeepsBothSides()
+    {
+        var result = Diff.ComputeDiff("Hello\nWORLD", "hello\nworld", new TextDiffOptions { IgnoreCase = true });
+
+        Assert.False(result.HasDifferences);
+        Assert.Collection(
+            result.Entries,
+            entry =>
+            {
+                Assert.Equal(TextDiffOperation.Equal, entry.Operation);
+                Assert.Equal("Hello\n", entry.OldText);
+                Assert.Equal("hello\n", entry.NewText);
+                Assert.Equal("Hello\n", entry.Text);
+            },
+            entry =>
+            {
+                Assert.Equal(TextDiffOperation.Equal, entry.Operation);
+                Assert.Equal("WORLD", entry.OldText);
+                Assert.Equal("world", entry.NewText);
+                Assert.Equal("WORLD", entry.Text);
+            });
+    }
+
+    [Fact]
+    public void TextDiffEntry_DeleteAndInsert_ExposeOnlyTheirOwnSide()
+    {
+        var result = Diff.ComputeDiff("removed\ncommon", "added\ncommon");
+
+        var deleted = Assert.Single(result.Entries, e => e.Operation == TextDiffOperation.Delete);
+        Assert.Equal("removed\n", deleted.OldText);
+        Assert.Null(deleted.NewText);
+        Assert.Equal("removed\n", deleted.Text);
+
+        var inserted = Assert.Single(result.Entries, e => e.Operation == TextDiffOperation.Insert);
+        Assert.Null(inserted.OldText);
+        Assert.Equal("added\n", inserted.NewText);
+        Assert.Equal("added\n", inserted.Text);
+    }
+
+    [Fact]
+    public void TextDiffEntry_EqualityDistinguishesTheNewSide()
+    {
+        var a = new TextDiffEntry(TextDiffOperation.Equal, "Hello", "hello");
+        var b = new TextDiffEntry(TextDiffOperation.Equal, "Hello", "hello");
+        var c = new TextDiffEntry(TextDiffOperation.Equal, "Hello", "Hello");
+
+        Assert.Equal(a, b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        Assert.NotEqual(a, c);
+        Assert.True(a != c);
+    }
+
     [Fact]
     public void ComputeDiff_IgnoreCase_NoDifferences()
     {
@@ -582,6 +735,32 @@ public sealed class TextDiffTests
         var text = result.ToString();
 
         Assert.Equal("Insertions: 1, Deletions: 1, Equals: 2", text);
+    }
+
+    [Fact]
+    public void ComputeDiff_InvalidAlgorithm_ThrowsWithTheOptionsParamName()
+    {
+        var options = new TextDiffOptions { Algorithm = (TextDiffAlgorithm)99 };
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => Diff.ComputeDiff("a", "b", options));
+        Assert.Equal("options", exception.ParamName);
+    }
+
+    [Fact]
+    public void ComputeHierarchyDiff_InvalidAlgorithm_ThrowsWithTheOptionsParamName()
+    {
+        var options = new TextDiffOptions { Algorithm = (TextDiffAlgorithm)99 };
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(
+            () => Diff.ComputeHierarchyDiff("a", "b", [TextChunker.Lines, TextChunker.Words], options));
+        Assert.Equal("options", exception.ParamName);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    public void ComputeDiff_DefinedAlgorithm_DoesNotThrow(TextDiffAlgorithm algorithm)
+    {
+        var result = Diff.ComputeDiff("a", "b", new TextDiffOptions { Algorithm = algorithm });
+
+        Assert.True(result.HasDifferences);
     }
 
     [Fact]
@@ -766,7 +945,7 @@ public sealed class TextDiffTests
         {
             if (entry.Operation is TextDiffOperation.Equal or TextDiffOperation.Delete)
             {
-                sb.Append(entry.Text);
+                sb.Append(entry.OldText);
             }
         }
 
@@ -780,7 +959,7 @@ public sealed class TextDiffTests
         {
             if (entry.Operation is TextDiffOperation.Equal or TextDiffOperation.Insert)
             {
-                sb.Append(entry.Text);
+                sb.Append(entry.NewText);
             }
         }
 
@@ -827,6 +1006,27 @@ public sealed class TextDiffTests
         }
 
         return lines;
+    }
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    private static string CreateNoisyText(Random random)
+    {
+        var builder = new StringBuilder();
+        var lineCount = random.Next(0, 8);
+        for (var line = 0; line < lineCount; line++)
+        {
+            var wordCount = random.Next(0, 4);
+            for (var word = 0; word < wordCount; word++)
+            {
+                var token = "tok" + random.Next(3).ToString(CultureInfo.InvariantCulture);
+                builder.Append(random.Next(2) is 0 ? token.ToUpperInvariant() : token);
+                builder.Append(' ', random.Next(1, 4));
+            }
+
+            builder.Append(random.Next(2) is 0 ? "\r\n" : "\n");
+        }
+
+        return builder.ToString();
     }
 
     private sealed record DiffCorpusCase(string Name, string OldText, string NewText, bool HasDifferences);

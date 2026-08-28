@@ -114,6 +114,8 @@ public sealed class ExpressionQueryBuilder<T>
     /// <returns>A compiled expression query that can be applied to an <see cref="IQueryable{T}"/>.</returns>
     public ExpressionQuery<T> Build(string query)
     {
+        ArgumentNullException.ThrowIfNull(query);
+
         if (string.IsNullOrWhiteSpace(query))
             return new ExpressionQuery<T>(query, predicate: null);
 

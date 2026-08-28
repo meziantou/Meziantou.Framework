@@ -155,8 +155,8 @@ namespace Meziantou.Framework
         public static string CalendarEvent(string summary, System.DateTime start, System.DateTime end, string? location = null, string? description = null) => throw null;
         public static string MeCard(string lastName, string? firstName = null, string? phone = null, string? email = null, string? organization = null, string? url = null, string? address = null, string? note = null) => throw null;
         public static string OneTimePassword(Meziantou.Framework.OneTimePasswordType type, string secret, string accountName, string? issuer = null, Meziantou.Framework.OneTimePasswordAlgorithm algorithm = 0, int digits = 6, int period = 30, long? counter = null) => throw null;
-        public static string Bitcoin(string address, System.Decimal? amount = null, string? label = null, string? message = null) => throw null;
-        public static string SepaPayment(string beneficiaryName, string iban, System.Decimal amount, string? bic = null, string? remittanceReference = null, string? remittanceText = null, string? information = null) => throw null;
+        public static string Bitcoin(string address, decimal? amount = null, string? label = null, string? message = null) => throw null;
+        public static string SepaPayment(string beneficiaryName, string iban, decimal amount, string? bic = null, string? remittanceReference = null, string? remittanceText = null, string? information = null) => throw null;
     }
 
     public sealed class QRCodePngOptions

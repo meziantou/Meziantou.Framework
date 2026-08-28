@@ -2,6 +2,13 @@
 
 `Meziantou.Framework.HttpArchive` provides a .NET model for the HAR 1.2 (HTTP Archive) format, with parsing, serialization, and helpers to convert HAR entries to `HttpRequestMessage` / `HttpResponseMessage`.
 
+> [!WARNING]
+> **HAR files contain credentials.** An archive records `Authorization` headers, `Cookie` and `Set-Cookie`
+> values, bearer tokens, API keys and complete request bodies exactly as they were sent. Treat a `.har` as a
+> secret: do not attach one to a bug report, support ticket or issue, and do not commit one, without removing
+> the sensitive entries first. This library reads and writes what the file contains and does not redact
+> anything for you.
+
 ## Installation
 
 ```bash

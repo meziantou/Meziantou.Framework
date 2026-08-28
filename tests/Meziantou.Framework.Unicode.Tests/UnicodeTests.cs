@@ -112,6 +112,68 @@ public sealed class UnicodeTests
     }
 
     [Fact]
+    public void UnicodeCharacterInfo_EqualityIsStructural()
+    {
+        Assert.True(Unicode.TryGetCharacterInfo(new Rune('A'), out var a));
+        Assert.True(Unicode.TryGetCharacterInfo(new Rune('A'), out var b));
+        Assert.True(Unicode.TryGetCharacterInfo(new Rune('B'), out var c));
+
+        Assert.Equal(a, b);
+        Assert.True(a == b);
+        Assert.False(a != b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+
+        Assert.NotEqual(a, c);
+        Assert.True(a != c);
+        Assert.NotEqual<object>("not a character", a);
+    }
+
+    [Fact]
+    public void UnicodeCharacterInfo_DefaultIsNotEqualToTheEntryForNull()
+    {
+        Assert.True(Unicode.TryGetCharacterInfo(new Rune(0), out var nul));
+
+        Assert.Equal(new Rune(0), nul.Rune);
+        Assert.Equal(default, default(UnicodeCharacterInfo).Rune);
+        Assert.NotEqual(default, nul);
+    }
+
+    [Fact]
+    public void UnicodeCharacterInfo_HashCodeDistinguishesCharacters()
+    {
+        var seen = new Dictionary<int, Rune>();
+        var collisions = new List<string>();
+        for (var codePoint = 0; codePoint < 1000; codePoint++)
+        {
+            if (!Unicode.TryGetCharacterInfo(new Rune(codePoint), out var info))
+                continue;
+
+            var hash = info.GetHashCode();
+            if (seen.TryGetValue(hash, out var existing))
+            {
+                collisions.Add($"U+{existing.Value:X4} collides with U+{info.Rune.Value:X4}");
+            }
+            else
+            {
+                seen[hash] = info.Rune;
+            }
+        }
+
+        Assert.Empty(collisions);
+    }
+
+    [Fact]
+    public void UnicodeCharacterInfo_DeduplicatesInAHashSet()
+    {
+        Assert.True(Unicode.TryGetCharacterInfo(new Rune('A'), out var a));
+        Assert.True(Unicode.TryGetCharacterInfo(new Rune('A'), out var duplicate));
+
+        var set = new HashSet<UnicodeCharacterInfo> { a, duplicate };
+
+        Assert.Single(set);
+    }
+
+    [Fact]
     public void IsEmoji_ReturnsExpectedValue()
     {
         Assert.True(UnicodeEmoji.IsEmoji(new Rune(0x1F600)));

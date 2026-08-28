@@ -199,4 +199,5 @@ public partial struct ProjectId : IComparable<ProjectId>
 | `MFSTID0001` | StronglyTypedId | Not supported type | Error | ✔️ |
 | `MFSTID0002` | StronglyTypedId | Guid generation strategy is not supported by the target framework | Error | ✔️ |
 | `MFSTID0003` | StronglyTypedId | Guid generation strategy is only applicable to Guid | Warning | ✔️ |
+| `MFSTID0004` | StronglyTypedId | Generic types are not supported | Error | ✔️ |
 <!-- analyzer-rules -->

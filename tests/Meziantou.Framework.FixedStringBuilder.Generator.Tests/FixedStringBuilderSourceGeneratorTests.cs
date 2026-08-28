@@ -219,7 +219,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
             public partial struct FixedStringBuilder10;
             """;
 
-        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
+        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "10.0.0", "ref/net10.0/");
         var references = netcoreRef.Select(static location => MetadataReference.CreateFromFile(location)).ToArray();
 
         Compilation CreateCompilation(string unrelatedSource) => CSharpCompilation.Create(
@@ -249,7 +249,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
 
     private static async Task<(GeneratorDriverRunResult RunResult, Compilation Compilation)> GenerateAsync(string source)
     {
-        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
+        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "10.0.0", "ref/net10.0/");
         var references = netcoreRef.Select(static location => MetadataReference.CreateFromFile(location)).ToArray();
         var compilation = CSharpCompilation.Create(
             "compilation",

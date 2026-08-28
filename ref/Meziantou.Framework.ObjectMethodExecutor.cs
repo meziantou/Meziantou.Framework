@@ -12,6 +12,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.ObjectMethodExecutor Create(System.Reflection.MethodInfo methodInfo, object[]? parameterDefaultValues) => throw null;
         public object? Execute(object? target, object?[]? parameters) => throw null;
         public Meziantou.Framework.ObjectMethodExecutorAwaitable ExecuteAsync(object? target, object?[]? parameters) => throw null;
+        public object? GetDefaultValueForParameter(int index) => throw null;
     }
 
     public readonly struct ObjectMethodExecutorAwaitable

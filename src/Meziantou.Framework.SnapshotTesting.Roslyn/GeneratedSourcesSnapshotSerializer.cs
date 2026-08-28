@@ -32,9 +32,7 @@ internal sealed class GeneratedSourcesSnapshotSerializer : ISnapshotSerializer
         }
 
         var report = new StringBuilder();
-        foreach (var diagnostic in run.Diagnostics
-            .OrderBy(diagnostic => diagnostic.Id, StringComparer.Ordinal)
-            .ThenBy(diagnostic => diagnostic.ToString(), StringComparer.Ordinal))
+        foreach (var diagnostic in run.Diagnostics.OrderBy(static diagnostic => diagnostic, RoslynFormatter.DiagnosticComparer))
         {
             RoslynFormatter.AppendDiagnostic(report, diagnostic);
             report.Append('\n');

@@ -8,10 +8,9 @@ internal sealed class DiagnosticSnapshotSerializer : ISnapshotSerializer
 
     public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
     {
-        // Diagnostics are written in the order they are given. Unlike the generators of a driver run, whose
-        // order is not a contract, an assertion on a list of diagnostics is usually about the order they were
-        // reported in, so this serializer deliberately does not reorder them. A caller whose source does not
-        // guarantee an order is the one that should sort before calling.
+        // Diagnostics are sorted so the snapshot does not depend on the order the caller collected them in.
+        // Roslyn makes no ordering guarantee for most of the APIs that produce them, so keeping the incoming
+        // order would make the snapshot depend on analyzer scheduling.
         IEnumerable<Diagnostic>? diagnostics = value switch
         {
             Diagnostic diagnostic => [diagnostic],
@@ -26,7 +25,7 @@ internal sealed class DiagnosticSnapshotSerializer : ISnapshotSerializer
         }
 
         var report = new StringBuilder();
-        foreach (var diagnostic in diagnostics)
+        foreach (var diagnostic in diagnostics.OrderBy(static diagnostic => diagnostic, RoslynFormatter.DiagnosticComparer))
         {
             RoslynFormatter.AppendDiagnostic(report, diagnostic);
             report.Append('\n');

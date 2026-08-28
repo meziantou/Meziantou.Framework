@@ -11,7 +11,7 @@ internal sealed class DockerPackageUpdater : PackageUpdater
     private static readonly HttpClient HttpClient = new();
     public override VersioningStrategy VersioningStrategy { get; set; } = DockerVersioningStrategy.Instance;
 
-    protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.DockerImage;
+    protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.DockerImage && dependency.Name is not null;
 
     protected override async IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
     {

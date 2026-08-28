@@ -108,4 +108,19 @@ public sealed class PngImageLoaderTests
 
         Assert.Equal([new Argb(0xFF101010u), new Argb(0x80202020u)], image.Pixels.ToArray());
     }
+
+    [Fact]
+    public void Load_StopsInflatingOnceTheImageDataIsLongerThanTheHeaderAllows()
+    {
+        // The header describes a 1x1 RGBA image (5 bytes of filtered image data) while the IDAT inflates to
+        // 64 MiB of zeros. Reading the whole stream would materialize all of it before the size is checked.
+        const int InflatedSize = 64 * 1024 * 1024;
+        var imageData = ImageTestData.CreatePngWithRawImageData(width: 1, height: 1, bitDepth: 8, colorType: 6, new byte[InflatedSize]);
+
+        var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+        Assert.Throws<InvalidDataException>(() => Image.Load(imageData));
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+
+        Assert.True(allocated < 4 * 1024 * 1024, $"Decoding allocated {allocated} bytes for a 1x1 image.");
+    }
 }

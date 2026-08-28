@@ -1,10 +1,6 @@
-using System.Runtime.Versioning;
-
 namespace Meziantou.Framework.Unix.ControlGroups;
 
-/// <summary>Extension methods for cpuset controller on CGroup2.</summary>
-[SupportedOSPlatform("linux")]
-public partial class CGroup2
+public sealed partial class CGroup2
 {
     /// <summary>Sets the CPUs that tasks in this cgroup can use.</summary>
     /// <param name="cpus">Array of CPU numbers (e.g., [0, 1, 2] for CPUs 0-2).</param>
@@ -24,7 +20,7 @@ public partial class CGroup2
     /// <param name="cpuList">CPU list in cgroup format.</param>
     public void SetCpusetCpusRaw(string cpuList)
     {
-        WriteFile("cpuset.cpus", cpuList ?? "");
+        WriteFile("cpuset.cpus", cpuList);
     }
 
     /// <summary>Gets the CPUs that tasks in this cgroup can use.</summary>
@@ -51,10 +47,8 @@ public partial class CGroup2
 
     /// <summary>Sets the memory nodes that tasks in this cgroup can use.</summary>
     /// <param name="nodes">Array of memory node numbers.</param>
-    public void SetCpusetMems(params int[] nodes)
+    public void SetCpusetMems(params ReadOnlySpan<int> nodes)
     {
-        ArgumentNullException.ThrowIfNull(nodes);
-
         if (nodes.Length == 0)
         {
             SetCpusetMemsRaw("");
@@ -69,7 +63,7 @@ public partial class CGroup2
     /// <param name="nodeList">Memory node list in cgroup format.</param>
     public void SetCpusetMemsRaw(string nodeList)
     {
-        WriteFile("cpuset.mems", nodeList ?? "");
+        WriteFile("cpuset.mems", nodeList);
     }
 
     /// <summary>Gets the memory nodes that tasks in this cgroup can use.</summary>

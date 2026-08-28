@@ -359,6 +359,11 @@ internal static class PublicApiModelBuilder
             modifiers.Add("static");
         }
 
+        if (representativeAccessor.DeclaringType?.IsInterface != true)
+        {
+            AddInheritanceModifiers(modifiers, representativeAccessor);
+        }
+
         if (IsRequiredMember(property.CustomAttributes))
         {
             modifiers.Add("required");
@@ -439,6 +444,11 @@ internal static class PublicApiModelBuilder
         if (addMethod.IsStatic)
         {
             modifiers.Add("static");
+        }
+
+        if (addMethod.DeclaringType?.IsInterface != true)
+        {
+            AddInheritanceModifiers(modifiers, addMethod);
         }
 
         // Event accessors cannot be marked as unsafe individually
@@ -677,28 +687,7 @@ internal static class PublicApiModelBuilder
             return modifiers;
         }
 
-        if (method.IsAbstract)
-        {
-            modifiers.Add("abstract");
-            return modifiers;
-        }
-
-        if (method.IsVirtual && !method.IsFinal)
-        {
-            if (method.GetBaseDefinition() == method)
-            {
-                modifiers.Add("virtual");
-            }
-            else
-            {
-                modifiers.Add("override");
-            }
-        }
-        else if (method.IsVirtual && method.IsFinal && method.GetBaseDefinition() != method)
-        {
-            modifiers.Add("sealed");
-            modifiers.Add("override");
-        }
+        AddInheritanceModifiers(modifiers, method);
 
         if (IsLibraryImportMethod(method))
         {
@@ -710,6 +699,26 @@ internal static class PublicApiModelBuilder
         }
 
         return modifiers;
+    }
+
+    private static void AddInheritanceModifiers(List<string> modifiers, MethodInfo method)
+    {
+        if (method.IsAbstract)
+        {
+            modifiers.Add("abstract");
+            return;
+        }
+
+        if (method.IsVirtual && !method.IsFinal)
+        {
+            // A method that is its own base definition introduces the member, otherwise it overrides an inherited one
+            modifiers.Add(method.GetBaseDefinition() == method ? "virtual" : "override");
+        }
+        else if (method.IsVirtual && method.IsFinal && method.GetBaseDefinition() != method)
+        {
+            modifiers.Add("sealed");
+            modifiers.Add("override");
+        }
     }
 
     private static ParameterDeclaration BuildParameterDeclaration(ParameterInfo parameter, bool isExtensionReceiver)

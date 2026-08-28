@@ -1759,6 +1759,49 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task PropertiesAndEvents_InheritanceModifiers()
+    {
+        await Validate("""
+            public abstract class AbstractBase
+            {
+                public abstract int Abstract { get; }
+                public virtual int Virtual { get; set; }
+                public abstract event System.EventHandler AbstractEvent;
+                public virtual event System.EventHandler? VirtualEvent;
+                public abstract void AbstractMethod();
+            }
+
+            public class Impl : AbstractBase
+            {
+                public override int Abstract => 0;
+                public sealed override int Virtual { get => 0; set { } }
+                public override event System.EventHandler AbstractEvent { add { } remove { } }
+                public override void AbstractMethod() { }
+            }
+            """, """
+            #nullable enable
+
+            public abstract class AbstractBase
+            {
+                public abstract int Abstract { get; }
+                public virtual int Virtual { get => throw null; set { } }
+                public abstract event System.EventHandler AbstractEvent;
+                public virtual event System.EventHandler? VirtualEvent;
+                public abstract void AbstractMethod();
+            }
+
+
+            public class Impl : AbstractBase
+            {
+                public override int Abstract { get => throw null; }
+                public sealed override int Virtual { get => throw null; set { } }
+                public override event System.EventHandler AbstractEvent;
+                public override void AbstractMethod() { }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Fields_InstanceAndStaticReadonly()
     {
         await Validate("""

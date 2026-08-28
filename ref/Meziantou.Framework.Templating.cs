@@ -106,8 +106,8 @@ namespace Meziantou.Framework.Templating
     public sealed class IndentedTextWriter : System.IO.TextWriter
     {
         public const string DefaultTabString = "    ";
-        public System.Text.Encoding Encoding { get => throw null; }
-        public string NewLine { get => throw null; set { } }
+        public override System.Text.Encoding Encoding { get => throw null; }
+        public override string NewLine { get => throw null; set { } }
         public int Indent { get => throw null; set { } }
         public System.IO.TextWriter InnerWriter { get => throw null; }
         public IndentedTextWriter(System.IO.TextWriter writer) { }

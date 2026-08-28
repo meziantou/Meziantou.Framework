@@ -6,18 +6,18 @@ namespace Meziantou.Framework.Html
 {
     public sealed class HtmlAttribute : Meziantou.Framework.Html.HtmlNode
     {
-        public string NamespaceURI { get => throw null; set { } }
+        public override string NamespaceURI { get => throw null; set { } }
         public bool IsNamespace { get => throw null; }
         public bool EscapeQuoteChar { get => throw null; set { } }
         public bool IsValueDefined { get => throw null; set { } }
         public char QuoteChar { get => throw null; set { } }
         public char NameQuoteChar { get => throw null; set { } }
         public Meziantou.Framework.Html.HtmlElement? OwnerElement { get => throw null; }
-        public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
-        public int ParentIndex { get => throw null; }
+        public override Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
+        public override int ParentIndex { get => throw null; }
         public Meziantou.Framework.Html.HtmlAttribute? NextSibling { get => throw null; }
         public Meziantou.Framework.Html.HtmlAttribute? PreviousSibling { get => throw null; }
-        public string? Value { get => throw null; set { } }
+        public override string? Value { get => throw null; set { } }
         public override void WriteTo(System.IO.TextWriter writer) { }
         public override void WriteContentTo(System.IO.TextWriter writer) { }
         public override void WriteTo(System.Xml.XmlWriter writer) { }
@@ -79,10 +79,10 @@ namespace Meziantou.Framework.Html
     [System.Diagnostics.DebuggerDisplay("'{Value}'")]
     public sealed class HtmlComment : Meziantou.Framework.Html.HtmlNode
     {
-        public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
-        public string Name { get => throw null; set { } }
-        public string InnerText { get => throw null; set { } }
-        public string? Value { get => throw null; set { } }
+        public override Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
+        public override string Name { get => throw null; set { } }
+        public override string InnerText { get => throw null; set { } }
+        public override string? Value { get => throw null; set { } }
         public override void WriteTo(System.IO.TextWriter writer) { }
         public override void WriteContentTo(System.IO.TextWriter writer) { }
         public override void WriteTo(System.Xml.XmlWriter writer) { }
@@ -105,9 +105,9 @@ namespace Meziantou.Framework.Html
         public Meziantou.Framework.Html.HtmlOptions Options { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyDictionary<string, string> DeclaredNamespaces { get => throw null; }
         public System.Collections.Generic.IReadOnlyDictionary<string, string> DeclaredPrefixes { get => throw null; }
-        public string InnerHtml { get => throw null; set { } }
-        public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
-        public string Name { get => throw null; set { } }
+        public override string InnerHtml { get => throw null; set { } }
+        public override Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
+        public override string Name { get => throw null; set { } }
         public Meziantou.Framework.Html.HtmlElement? BaseElement { get => throw null; set { } }
         public bool IsXhtml { get => throw null; set { } }
         public bool IsValidXmlDocument { get => throw null; }
@@ -172,10 +172,10 @@ namespace Meziantou.Framework.Html
         public bool IsDocumentType { get => throw null; }
         public char CloseChar { get => throw null; set { } }
         public bool IsProcessingInstruction { get => throw null; set { } }
-        public string InnerHtml { get => throw null; set { } }
+        public override string InnerHtml { get => throw null; set { } }
         public bool IsClosed { get => throw null; set { } }
         public bool IsEmpty { get => throw null; set { } }
-        public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
+        public override Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         public bool NoChild { get => throw null; set { } }
         public bool AlwaysClose { get => throw null; set { } }
         public bool DontCloseIfEmpty { get => throw null; set { } }
@@ -271,40 +271,40 @@ namespace Meziantou.Framework.Html
         public const string XhtmlNamespaceURI = "http://www.w3.org/1999/xhtml";
         public static System.Xml.XmlNamespaceManager NamespaceManager { get => throw null; }
         protected string DeclaredNamespaceURI { get => throw null; }
-        public int ParentIndex { get => throw null; }
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> NextSiblings { get => throw null; }
-        public Meziantou.Framework.Html.HtmlNode? NextSibling { get => throw null; }
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> PreviousSiblings { get => throw null; }
-        public Meziantou.Framework.Html.HtmlNode? PreviousSibling { get => throw null; }
-        public Meziantou.Framework.Html.HtmlNodeList ChildNodes { get => throw null; }
-        public Meziantou.Framework.Html.HtmlAttributeList Attributes { get => throw null; }
-        public bool RaisePropertyChanged { get => throw null; set { } }
-        public int StreamOrder { get => throw null; set { } }
-        public Meziantou.Framework.Html.HtmlNodeType NodeType { get; }
+        public virtual int ParentIndex { get => throw null; }
+        public virtual System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> NextSiblings { get => throw null; }
+        public virtual Meziantou.Framework.Html.HtmlNode? NextSibling { get => throw null; }
+        public virtual System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> PreviousSiblings { get => throw null; }
+        public virtual Meziantou.Framework.Html.HtmlNode? PreviousSibling { get => throw null; }
+        public virtual Meziantou.Framework.Html.HtmlNodeList ChildNodes { get => throw null; }
+        public virtual Meziantou.Framework.Html.HtmlAttributeList Attributes { get => throw null; }
+        public virtual bool RaisePropertyChanged { get => throw null; set { } }
+        public virtual int StreamOrder { get => throw null; set { } }
+        public abstract Meziantou.Framework.Html.HtmlNodeType NodeType { get; }
         public int Depth { get => throw null; }
         public string Prefix { get => throw null; set { } }
         public string LocalName { get => throw null; set { } }
         public Meziantou.Framework.Html.HtmlDocument? OwnerDocument { get => throw null; }
-        public string NamespaceURI { get => throw null; set { } }
-        public object? Tag { get => throw null; set { } }
-        public string? Value { get => throw null; set { } }
-        public string Name { get => throw null; set { } }
+        public virtual string NamespaceURI { get => throw null; set { } }
+        public virtual object? Tag { get => throw null; set { } }
+        public virtual string? Value { get => throw null; set { } }
+        public virtual string Name { get => throw null; set { } }
         public Meziantou.Framework.Html.HtmlNode? ParentNode { get => throw null; }
         public Meziantou.Framework.Html.HtmlElement? ParentElement { get => throw null; }
         public string? Id { get => throw null; }
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlError> Errors { get => throw null; }
-        public string OuterHtml { get => throw null; }
-        public string InnerText { get => throw null; set { } }
-        public string InnerHtml { get => throw null; set { } }
-        public string OuterXml { get => throw null; }
-        public string InnerXml { get => throw null; set { } }
+        public virtual System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlError> Errors { get => throw null; }
+        public virtual string OuterHtml { get => throw null; }
+        public virtual string InnerText { get => throw null; set { } }
+        public virtual string InnerHtml { get => throw null; set { } }
+        public virtual string OuterXml { get => throw null; }
+        public virtual string InnerXml { get => throw null; set { } }
         public Meziantou.Framework.Html.HtmlNode? FirstChild { get => throw null; }
         public Meziantou.Framework.Html.HtmlNode? LastChild { get => throw null; }
-        public bool HasAttributes { get => throw null; }
-        public bool HasChildNodes { get => throw null; }
+        public virtual bool HasAttributes { get => throw null; }
+        public virtual bool HasChildNodes { get => throw null; }
         public System.Uri? BaseAddress { get => throw null; }
-        public string? XPathExpression { get => throw null; }
-        public System.Xml.IXmlNamespaceResolver ParentNamespaceResolver { get => throw null; }
+        public virtual string? XPathExpression { get => throw null; }
+        public virtual System.Xml.IXmlNamespaceResolver ParentNamespaceResolver { get => throw null; }
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
         protected HtmlNode(string prefix, string localName, string namespaceURI, Meziantou.Framework.Html.HtmlDocument? ownerDocument) { }
         public override string ToString() => throw null;
@@ -416,21 +416,21 @@ namespace Meziantou.Framework.Html
 
     public sealed class HtmlNodeNavigator : System.Xml.XPath.XPathNavigator
     {
-        public object UnderlyingObject { get => throw null; }
+        public override object UnderlyingObject { get => throw null; }
         public Meziantou.Framework.Html.HtmlNode CurrentNode { get => throw null; set { } }
         public Meziantou.Framework.Html.HtmlNodeNavigatorOptions Options { get => throw null; }
         public Meziantou.Framework.Html.HtmlDocument? Document { get => throw null; }
         public Meziantou.Framework.Html.HtmlNode BaseNode { get => throw null; }
-        public string BaseURI { get => throw null; }
-        public string OuterXml { get => throw null; set { } }
-        public bool IsEmptyElement { get => throw null; }
-        public string LocalName { get => throw null; }
-        public string Name { get => throw null; }
-        public System.Xml.XmlNameTable NameTable { get => throw null; }
-        public string NamespaceURI { get => throw null; }
-        public System.Xml.XPath.XPathNodeType NodeType { get => throw null; }
-        public string Prefix { get => throw null; }
-        public string Value { get => throw null; }
+        public override string BaseURI { get => throw null; }
+        public override string OuterXml { get => throw null; set { } }
+        public override bool IsEmptyElement { get => throw null; }
+        public override string LocalName { get => throw null; }
+        public override string Name { get => throw null; }
+        public override System.Xml.XmlNameTable NameTable { get => throw null; }
+        public override string NamespaceURI { get => throw null; }
+        public override System.Xml.XPath.XPathNodeType NodeType { get => throw null; }
+        public override string Prefix { get => throw null; }
+        public override string Value { get => throw null; }
         public HtmlNodeNavigator(Meziantou.Framework.Html.HtmlDocument? document, Meziantou.Framework.Html.HtmlNode currentNode, Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) { }
         public override System.Xml.XPath.XPathNavigator Clone() => throw null;
         public override bool IsSamePosition(System.Xml.XPath.XPathNavigator other) => throw null;
@@ -571,16 +571,16 @@ namespace Meziantou.Framework.Html
     public sealed class HtmlText : Meziantou.Framework.Html.HtmlNode
     {
         [System.ComponentModel.Browsable(false)]
-        public Meziantou.Framework.Html.HtmlAttributeList Attributes { get => throw null; }
+        public override Meziantou.Framework.Html.HtmlAttributeList Attributes { get => throw null; }
         [System.ComponentModel.Browsable(false)]
-        public Meziantou.Framework.Html.HtmlNodeList ChildNodes { get => throw null; }
-        public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
+        public override Meziantou.Framework.Html.HtmlNodeList ChildNodes { get => throw null; }
+        public override Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         public bool IsWhitespace { get => throw null; }
         public bool IsCData { get => throw null; set { } }
-        public string Name { get => throw null; set { } }
-        public string InnerText { get => throw null; set { } }
-        public string InnerHtml { get => throw null; set { } }
-        public string? Value { get => throw null; set { } }
+        public override string Name { get => throw null; set { } }
+        public override string InnerText { get => throw null; set { } }
+        public override string InnerHtml { get => throw null; set { } }
+        public override string? Value { get => throw null; set { } }
         public override void WriteTo(System.IO.TextWriter writer) { }
         public override void WriteContentTo(System.IO.TextWriter writer) { }
         public override void WriteTo(System.Xml.XmlWriter writer) { }
@@ -591,8 +591,8 @@ namespace Meziantou.Framework.Html
     public sealed class HtmlXPathResult : Meziantou.Framework.Html.HtmlNode
     {
         public object? Result { get => throw null; }
-        public string? Value { get => throw null; set { } }
-        public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
+        public override string? Value { get => throw null; set { } }
+        public override Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         public override void WriteTo(System.IO.TextWriter writer) { }
         public override void WriteContentTo(System.IO.TextWriter writer) { }
         public override void WriteTo(System.Xml.XmlWriter writer) { }
@@ -604,7 +604,7 @@ namespace Meziantou.Framework.Html
         public Meziantou.Framework.Html.HtmlDocument OwnerDocument { get => throw null; }
         public Meziantou.Framework.Html.HtmlNode Parent { get => throw null; }
         public Meziantou.Framework.Html.HtmlNode? Current { get => throw null; }
-        public System.Xml.WriteState WriteState { get => throw null; }
+        public override System.Xml.WriteState WriteState { get => throw null; }
         public HtmlXmlWriter(Meziantou.Framework.Html.HtmlNode parent) { }
         public override void Flush() { }
         public override string? LookupPrefix(string ns) => throw null;

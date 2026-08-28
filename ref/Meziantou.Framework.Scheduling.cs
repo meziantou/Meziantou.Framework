@@ -83,7 +83,7 @@ namespace Meziantou.Framework.Scheduling
         public System.Collections.Generic.IList<int> ByMonthDays { get => throw null; set { } }
         public System.Collections.Generic.IList<int>? BySetPositions { get => throw null; set { } }
         public bool IsForever { get => throw null; }
-        public string Text { get; }
+        public abstract string Text { get; }
         public static Meziantou.Framework.Scheduling.RecurrenceRule Parse(string rrule) => throw null;
         public static Meziantou.Framework.Scheduling.RecurrenceRule Parse(System.ReadOnlySpan<char> rrule) => throw null;
         public static bool TryParse(System.ReadOnlySpan<char> rrule, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.RecurrenceRule? recurrenceRule) => throw null;

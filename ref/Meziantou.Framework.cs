@@ -488,11 +488,11 @@ namespace Meziantou.Framework
 
     public sealed class RestrictedStream : System.IO.Stream
     {
-        public bool CanRead { get => throw null; }
-        public bool CanSeek { get => throw null; }
-        public bool CanWrite { get => throw null; }
-        public long Length { get => throw null; }
-        public long Position { get => throw null; set { } }
+        public override bool CanRead { get => throw null; }
+        public override bool CanSeek { get => throw null; }
+        public override bool CanWrite { get => throw null; }
+        public override long Length { get => throw null; }
+        public override long Position { get => throw null; set { } }
         public RestrictedStream(System.IO.Stream stream, Meziantou.Framework.RestrictedStreamOptions options) { }
         public override void Flush() { }
         public override int Read(byte[] buffer, int offset, int count) => throw null;

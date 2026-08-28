@@ -31,7 +31,7 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
 
     public override async ValueTask ScanAsync(ScanFileContext context)
     {
-        var doc = await XmlUtilities.LoadDocumentWithoutClosingStreamAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
+        var doc = await XmlUtilities.TryLoadDocumentWithoutClosingStream(context.Content, context.CancellationToken).ConfigureAwait(false);
         if (doc is null)
             return;
 

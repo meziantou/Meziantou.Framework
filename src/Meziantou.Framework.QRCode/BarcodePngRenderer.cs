@@ -39,9 +39,22 @@ public static class BarcodePngRenderer
 
         var width = GetTotalDimensionWithQuietZone(barcode.Width, options.QuietZoneModules, options.ModuleWidth, nameof(options.ModuleWidth));
         var height = GetTotalDimension(barcode.Height, options.ModuleHeight, nameof(options.ModuleHeight));
-        var imageData = CreateImageData(barcode, width, height, options);
 
-        PngWriter.WriteRgba(stream, width, height, imageData);
+        PngWriter.WritePalette(stream, width, height, options.LightColor, options.DarkColor, (row, y) =>
+        {
+            var sourceRow = y / options.ModuleHeight;
+            if (sourceRow < 0 || sourceRow >= barcode.Height)
+                return;
+
+            for (var x = 0; x < width; x++)
+            {
+                var sourceColumn = (x / options.ModuleWidth) - options.QuietZoneModules;
+                if (sourceColumn >= 0 && sourceColumn < barcode.Width && barcode[sourceRow, sourceColumn])
+                {
+                    row[x >> 3] |= (byte)(0x80 >> (x & 7));
+                }
+            }
+        });
     }
 
     private static int GetTotalDimensionWithQuietZone(int size, int quietZoneModules, int moduleSize, string parameterName)
@@ -60,38 +73,5 @@ public static class BarcodePngRenderer
             throw new ArgumentOutOfRangeException(parameterName, "The output image dimensions are too large.");
 
         return (int)value;
-    }
-
-    private static byte[] CreateImageData(Barcode barcode, int width, int height, BarcodePngOptions options)
-    {
-        var stride = (width * 4) + 1;
-        var dataLength = (long)stride * height;
-        if (dataLength > int.MaxValue)
-            throw new ArgumentOutOfRangeException(nameof(options), "The output image is too large.");
-
-        var result = new byte[(int)dataLength];
-        for (var row = 0; row < height; row++)
-        {
-            var rowOffset = row * stride;
-            var sourceRow = row / options.ModuleHeight;
-            for (var col = 0; col < width; col++)
-            {
-                var sourceCol = (col / options.ModuleWidth) - options.QuietZoneModules;
-                var isDark = sourceRow >= 0
-                    && sourceRow < barcode.Height
-                    && sourceCol >= 0
-                    && sourceCol < barcode.Width
-                    && barcode[sourceRow, sourceCol];
-
-                var color = isDark ? options.DarkColor : options.LightColor;
-                var pixelOffset = rowOffset + 1 + (col * 4);
-                result[pixelOffset] = color.Red;
-                result[pixelOffset + 1] = color.Green;
-                result[pixelOffset + 2] = color.Blue;
-                result[pixelOffset + 3] = color.Alpha;
-            }
-        }
-
-        return result;
     }
 }

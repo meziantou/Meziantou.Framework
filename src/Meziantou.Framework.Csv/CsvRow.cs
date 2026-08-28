@@ -46,7 +46,7 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
 
     /// <summary>Gets the value of the column with the specified name.</summary>
     /// <param name="columnName">The name of the column.</param>
-    /// <returns>The value of the column, or <see langword="null"/> if the column is not found.</returns>
+    /// <returns>The value of the column, or <see langword="null"/> if the column is not found or the row has no value at the column's index.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="columnName"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">The CSV file has no header row.</exception>
     public virtual string? this[string columnName]
@@ -66,9 +66,9 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
         }
     }
 
-    /// <summary>Gets the value of the specified column.</summary>
+    /// <summary>Gets the value of the specified column, or <see langword="null"/> if the row has no value at the column's index.</summary>
     /// <param name="column">The column.</param>
-    /// <returns>The value of the column.</returns>
+    /// <returns>The value of the column, or <see langword="null"/> if the row has fewer values than the column's index.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="column"/> is <see langword="null"/>.</exception>
     public virtual string? this[CsvColumn column]
     {
@@ -76,15 +76,19 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
         {
             ArgumentNullException.ThrowIfNull(column);
 
-            return this[column.Index];
+            var index = column.Index;
+            if (index < 0 || index >= Values.Count)
+                return null;
+
+            return this[index];
         }
     }
 
-    IEnumerable<string> IReadOnlyDictionary<string, string?>.Keys => Columns is null ? Enumerable.Empty<string>() : Columns.Where(c => c.Name is not null).Select(c => c.Name!);
+    IEnumerable<string> IReadOnlyDictionary<string, string?>.Keys => Columns is null ? [] : Columns.Select(c => c.Name ?? "");
 
     IEnumerable<string> IReadOnlyDictionary<string, string?>.Values => Values;
 
-    int IReadOnlyCollection<KeyValuePair<string, string?>>.Count => Values.Count;
+    int IReadOnlyCollection<KeyValuePair<string, string?>>.Count => Columns?.Count ?? Values.Count;
 
     string? IReadOnlyDictionary<string, string?>.this[string key] => this[key];
 
@@ -98,11 +102,18 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
 
     bool IReadOnlyDictionary<string, string?>.TryGetValue(string key, out string? value)
     {
-        var v = this[key];
-        if (v is not null)
+        ArgumentNullException.ThrowIfNull(key);
+
+        if (Columns is not null)
         {
-            value = v;
-            return true;
+            foreach (var column in Columns)
+            {
+                if (string.Equals(column.Name, key, StringComparison.Ordinal))
+                {
+                    value = this[column];
+                    return true;
+                }
+            }
         }
 
         value = default;

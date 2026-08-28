@@ -89,6 +89,20 @@ public sealed class DependencyScannerTests
     }
 
     [Fact]
+    public async Task ScanDirectory_ScansFilesConcurrently()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("file1.txt");
+        directory.CreateEmptyFile("file2.txt");
+
+        var scanner = new ConcurrencyProbeScanner(expectedConcurrency: 2);
+        var options = new ScannerOptions { DegreeOfParallelism = 2, Scanners = [scanner] };
+        await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, onDependencyFound: _ => { }, XunitCancellationToken);
+
+        Assert.True(scanner.ReachedExpectedConcurrency);
+    }
+
+    [Fact]
     public void DefaultScannersIncludeAllScanners()
     {
         var scanners = new ScannerOptions().Scanners.Select(t => t.GetType()).OrderBy(t => t.FullName, StringComparer.Ordinal).ToArray();
@@ -419,6 +433,30 @@ public sealed class DependencyScannerTests
         }
 
         protected override bool ShouldScanFileCore(CandidateFileContext file) => false;
+    }
+
+    private sealed class ConcurrencyProbeScanner(int expectedConcurrency) : DependencyScanner
+    {
+        private readonly TaskCompletionSource _reachedExpectedConcurrency = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _currentConcurrency;
+
+        public bool ReachedExpectedConcurrency => _reachedExpectedConcurrency.Task.IsCompletedSuccessfully;
+
+        protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [];
+
+        public override async ValueTask ScanAsync(ScanFileContext context)
+        {
+            if (Interlocked.Increment(ref _currentConcurrency) >= expectedConcurrency)
+            {
+                _reachedExpectedConcurrency.TrySetResult();
+            }
+
+            // Wait for the other workers to pick up a file, without blocking the scan forever when they never do
+            await Task.WhenAny(_reachedExpectedConcurrency.Task, Task.Delay(TimeSpan.FromSeconds(5), context.CancellationToken)).ConfigureAwait(false);
+            Interlocked.Decrement(ref _currentConcurrency);
+        }
+
+        protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
     }
 
     private sealed class ScanThrowScanner : DependencyScanner

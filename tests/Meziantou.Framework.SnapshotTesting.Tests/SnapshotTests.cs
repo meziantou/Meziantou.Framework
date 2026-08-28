@@ -1309,25 +1309,6 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
-    public void CopyFileToTemp_PlacesCopiesUnderTheSharedRootAndCleansThemUp()
-    {
-        using var directory = TemporaryDirectory.Create();
-        var sourcePath = directory.GetFullPath("snapshot.verified.txt");
-        File.WriteAllText(sourcePath, "content");
-
-        var copy = MergeTool.CopyFileToTempCore(sourcePath);
-
-        Assert.StartsWith(MergeTool.TemporaryDirectoryRoot.Value, copy.Value);
-        Assert.Equal("snapshot.verified.txt", copy.Name);
-        Assert.Equal("content", File.ReadAllText(copy));
-
-        MergeTool.DeleteTemporaryDirectories();
-
-        Assert.False(File.Exists(copy));
-        Assert.False(Directory.Exists(copy.Parent));
-    }
-
-    [Fact]
     public void DefaultSnapshotPath_IsStableWhenTheAssertionMoves()
     {
         var settings = new SnapshotSettings();

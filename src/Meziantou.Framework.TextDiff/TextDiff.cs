@@ -3,8 +3,8 @@ namespace Meziantou.Framework;
 /// <summary>Computes the differences between two texts.</summary>
 public static class TextDiff
 {
-    private static readonly IEqualityComparer<string> OrdinalWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparer.Ordinal);
-    private static readonly IEqualityComparer<string> OrdinalIgnoreCaseWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparer.OrdinalIgnoreCase);
+    private static readonly IEqualityComparer<string> OrdinalWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparison.Ordinal);
+    private static readonly IEqualityComparer<string> OrdinalIgnoreCaseWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparison.OrdinalIgnoreCase);
 
 
     /// <summary>Computes the differences between <paramref name="oldText"/> and <paramref name="newText"/>.</summary>
@@ -20,13 +20,13 @@ public static class TextDiff
         ArgumentNullException.ThrowIfNull(newText);
 
         options ??= new TextDiffOptions();
+        ValidateOptions(options);
 
         var processedOld = options.IgnoreEndOfLine ? NormalizeLineEndings(oldText) : oldText;
         var processedNew = options.IgnoreEndOfLine ? NormalizeLineEndings(newText) : newText;
 
-        var chunker = options.Chunker ?? TextChunker.Lines;
-        var oldChunks = ToArray(chunker.Chunk(processedOld));
-        var newChunks = ToArray(chunker.Chunk(processedNew));
+        var oldChunks = ToArray(options.Chunker.Chunk(processedOld));
+        var newChunks = ToArray(options.Chunker.Chunk(processedNew));
 
         var comparer = BuildComparer(options);
         var diff = DiffAlgorithmDispatcher.Compute(options.Algorithm, oldChunks, newChunks, comparer);
@@ -60,6 +60,7 @@ public static class TextDiff
         ArgumentNullException.ThrowIfNull(chunkers);
 
         options ??= new TextDiffOptions();
+        ValidateOptions(options);
 
         var chunkerArray = ValidateChunkers(chunkers);
         var processedOld = options.IgnoreEndOfLine ? NormalizeLineEndings(oldText) : oldText;
@@ -67,6 +68,12 @@ public static class TextDiff
 
         var comparer = BuildComparer(options);
         return ComputeHierarchyDiffCore(processedOld, processedNew, chunkerArray, chunkerIndex: 0, options, comparer);
+    }
+
+    private static void ValidateOptions(TextDiffOptions options)
+    {
+        if (!Enum.IsDefined(options.Algorithm))
+            throw new ArgumentOutOfRangeException(nameof(options), options.Algorithm, $"'{nameof(TextDiffOptions.Algorithm)}' is not a valid {nameof(TextDiffAlgorithm)} value.");
     }
 
     private static IEqualityComparer<string> BuildComparer(TextDiffOptions options)
@@ -260,9 +267,9 @@ public static class TextDiff
         return chunkerArray;
     }
 
-    private sealed class WhitespaceTrimmingComparer(StringComparer inner) : IEqualityComparer<string>
+    private sealed class WhitespaceTrimmingComparer(StringComparison comparison) : IEqualityComparer<string>
     {
-        private readonly StringComparison _comparison = inner == StringComparer.OrdinalIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        private readonly StringComparison _comparison = comparison;
 
         public bool Equals(string? x, string? y)
         {

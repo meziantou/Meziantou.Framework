@@ -5,7 +5,6 @@
 namespace Meziantou.Framework.Unix.ControlGroups
 {
     [System.Runtime.Versioning.SupportedOSPlatform("linux")]
-    [System.Runtime.Versioning.SupportedOSPlatform("linux")]
     public sealed class CGroup2
     {
         public string Name { get => throw null; }
@@ -15,7 +14,7 @@ namespace Meziantou.Framework.Unix.ControlGroups
         public void SetCpusetCpusRaw(string cpuList) { }
         public int[]? GetCpusetCpus() => throw null;
         public int[]? GetCpusetCpusEffective() => throw null;
-        public void SetCpusetMems(params int[] nodes) { }
+        public void SetCpusetMems(params System.ReadOnlySpan<int> nodes) { }
         public void SetCpusetMemsRaw(string nodeList) { }
         public int[]? GetCpusetMems() => throw null;
         public int[]? GetCpusetMemsEffective() => throw null;

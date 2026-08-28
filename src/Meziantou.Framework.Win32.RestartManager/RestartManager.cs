@@ -5,8 +5,6 @@ using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.System.RestartManager;
 
-#pragma warning disable CA1416 // RestartManager is Windows-only
-
 namespace Meziantou.Framework.Win32;
 
 /// <summary>Provides a wrapper around the Windows Restart Manager API to detect which processes are locking files and manage application restarts.</summary>
@@ -35,7 +33,7 @@ namespace Meziantou.Framework.Win32;
 /// }
 /// </code>
 /// </example>
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows6.0.6000")]
 public sealed class RestartManager : IDisposable
 {
     private uint SessionHandle { get; }
@@ -72,7 +70,7 @@ public sealed class RestartManager : IDisposable
     {
         var result = PInvoke.RmJoinSession(out var handle, sessionKey);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
-            throw new Win32Exception((int)result, $"RmStartSession failed ({result})");
+            throw new Win32Exception((int)result, $"RmJoinSession failed ({result})");
 
         return new RestartManager(handle, sessionKey);
     }
@@ -172,7 +170,7 @@ public sealed class RestartManager : IDisposable
 
     /// <summary>Shuts down applications and services that are using the registered resources.</summary>
     /// <param name="action">The shutdown options to use.</param>
-    /// <param name="statusCallback">An optional callback to receive progress updates during the shutdown operation.</param>
+    /// <param name="statusCallback">An optional callback to receive progress updates during the shutdown operation. The callback is invoked by native code and must not throw; use <see cref="CancelCurrentTask"/> from another thread to stop the operation instead.</param>
     /// <exception cref="Win32Exception">Thrown when the shutdown operation fails.</exception>
     public void Shutdown(RestartManagerShutdownType action, RestartManagerWriteStatusCallback? statusCallback)
     {
@@ -190,7 +188,7 @@ public sealed class RestartManager : IDisposable
     }
 
     /// <summary>Restarts applications and services that were shut down by the Restart Manager and that were registered for restart.</summary>
-    /// <param name="statusCallback">An optional callback to receive progress updates during the restart operation.</param>
+    /// <param name="statusCallback">An optional callback to receive progress updates during the restart operation. The callback is invoked by native code and must not throw; use <see cref="CancelCurrentTask"/> from another thread to stop the operation instead.</param>
     /// <exception cref="Win32Exception">Thrown when the restart operation fails.</exception>
     public void Restart(RestartManagerWriteStatusCallback? statusCallback)
     {
@@ -198,6 +196,20 @@ public sealed class RestartManager : IDisposable
         var result = PInvoke.RmRestart(SessionHandle, 0, callback);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRestart failed ({result})");
+    }
+
+    /// <summary>Cancels the <see cref="Shutdown(RestartManagerShutdownType)"/> or <see cref="Restart()"/> operation that is currently running on this session.</summary>
+    /// <remarks>
+    /// <see cref="Shutdown(RestartManagerShutdownType)"/> and <see cref="Restart()"/> block until they complete, so this method
+    /// has to be called from another thread while one of them is running. It can only be called by the session that was created
+    /// with <see cref="CreateSession"/>, not by a session joined with <see cref="JoinSession(string)"/>.
+    /// </remarks>
+    /// <exception cref="Win32Exception">Thrown when the cancellation fails.</exception>
+    public void CancelCurrentTask()
+    {
+        var result = PInvoke.RmCancelCurrentTask(SessionHandle);
+        if (result != WIN32_ERROR.ERROR_SUCCESS)
+            throw new Win32Exception((int)result, $"RmCancelCurrentTask failed ({result})");
     }
 
     private static unsafe WIN32_ERROR StartSession(out uint handle, Span<char> sessionKeyBuffer)
@@ -245,6 +257,17 @@ public sealed class RestartManager : IDisposable
         restartManager.RegisterFile(path);
         return restartManager.GetProcessesLockingResources();
     }
-}
 
-#pragma warning restore CA1416
+    /// <summary>Gets a list of processes that are currently locking any of the specified files.</summary>
+    /// <param name="paths">An array of full file paths to check.</param>
+    /// <returns>A read-only list of <see cref="Process"/> instances that are locking at least one of the files.</returns>
+    /// <remarks>Prefer this method over calling <see cref="GetProcessesLockingFile(string)"/> in a loop: registering resources performs relatively expensive write operations, so registering all the files in a single session is significantly cheaper.</remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="paths"/> is <see langword="null"/>.</exception>
+    /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
+    public static IReadOnlyList<Process> GetProcessesLockingFiles(string[] paths)
+    {
+        using var restartManager = CreateSession();
+        restartManager.RegisterFiles(paths);
+        return restartManager.GetProcessesLockingResources();
+    }
+}

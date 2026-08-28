@@ -36,93 +36,108 @@ internal static class RangeSyntax
 
     private static bool TryExpandRangeVariables<T>(string text, TimeProvider timeProvider, [MaybeNullWhen(false)] out RangeSyntax<T> value)
     {
+        // Every keyword below expands to a range of dates, so it cannot be represented for any other type.
+        // Returning false lets the caller fall back to the type's own parser instead of failing the cast.
+        if (typeof(T) != typeof(DateTime) && typeof(T) != typeof(DateTimeOffset) && typeof(T) != typeof(DateOnly))
+        {
+            value = default;
+            return false;
+        }
+
         var span = text.AsSpan().Trim();
         var utcNow = timeProvider.GetUtcNow();
+
         if (span.Equals("today", StringComparison.OrdinalIgnoreCase))
         {
-            var now = utcNow.UtcDateTime;
-            var start = new DateTime(now.Year, now.Month, now.Day);
-            var end = start.AddDays(1);
-            value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);
+            var start = StartOfDay(utcNow);
+            value = Between(start, start.AddDays(1));
             return true;
-
         }
         else if (span.Equals("yesterday", StringComparison.OrdinalIgnoreCase))
         {
-            var now = utcNow.UtcDateTime;
-            var end = new DateTime(now.Year, now.Month, now.Day);
-            var start = end.AddDays(-1);
-            value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);
+            var end = StartOfDay(utcNow);
+            value = Between(end.AddDays(-1), end);
             return true;
         }
-        else if (span.Trim().Equals("this week", StringComparison.OrdinalIgnoreCase))
+        else if (span.Equals("this week", StringComparison.OrdinalIgnoreCase))
         {
-            var now = utcNow;
-            var start = StartOfWeek(now);
-            var end = start.AddDays(7);
-            value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);
+            var start = StartOfWeek(utcNow);
+            value = Between(start, start.AddDays(7));
             return true;
         }
-        else if (span.Trim().Equals("this month", StringComparison.OrdinalIgnoreCase))
+        else if (span.Equals("this month", StringComparison.OrdinalIgnoreCase))
         {
-            var now = utcNow.UtcDateTime;
-            var start = new DateTime(now.Year, now.Month, 1);
-            var end = start.AddMonths(1);
-            value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);
+            var start = StartOfMonth(utcNow);
+            value = Between(start, start.AddMonths(1));
             return true;
         }
-        else if (span.Trim().Equals("last month", StringComparison.OrdinalIgnoreCase))
+        else if (span.Equals("last month", StringComparison.OrdinalIgnoreCase))
         {
-            var now = utcNow.UtcDateTime;
-            var end = new DateTime(now.Year, now.Month, 1);
-            var start = end.AddMonths(-1);
-            value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);
+            var end = StartOfMonth(utcNow);
+            value = Between(end.AddMonths(-1), end);
             return true;
         }
-        else if (span.Trim().Equals("this year", StringComparison.OrdinalIgnoreCase))
+        else if (span.Equals("this year", StringComparison.OrdinalIgnoreCase))
         {
-            var now = utcNow.UtcDateTime;
-            var start = new DateTime(now.Year, 1, 1);
-            var end = new DateTime(now.Year + 1, 1, 1);
-            value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);
+            var start = StartOfYear(utcNow);
+            value = Between(start, start.AddYears(1));
             return true;
         }
-        else if (span.Trim().Equals("last year", StringComparison.OrdinalIgnoreCase))
+        else if (span.Equals("last year", StringComparison.OrdinalIgnoreCase))
         {
-            var now = utcNow.UtcDateTime;
-            var end = new DateTime(now.Year, 1, 1);
-            var start = new DateTime(now.Year - 1, 1, 1);
-            value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);
+            var end = StartOfYear(utcNow);
+            value = Between(end.AddYears(-1), end);
             return true;
         }
 
         value = default;
         return false;
 
-        static T ConvertValue(object value)
+        static RangeSyntax<T> Between(DateTimeOffset lowerBound, DateTimeOffset upperBound)
         {
-            if (typeof(T) == typeof(DateTimeOffset) && value is DateTime dateTime)
-            {
-                return (T)(object)new DateTimeOffset(dateTime, TimeSpan.Zero);
-            }
-            else if (typeof(T) == typeof(DateOnly) && value is DateTime dateTime2)
-            {
-                return (T)(object)DateOnly.FromDateTime(dateTime2);
-            }
-
-            return (T)value;
+            return new BinaryRangeSyntax<T>(ConvertValue(lowerBound), lowerBoundIncluded: true, ConvertValue(upperBound), upperBoundIncluded: false);
         }
+
+        static T ConvertValue(DateTimeOffset value)
+        {
+            if (typeof(T) == typeof(DateTimeOffset))
+                return (T)(object)value;
+
+            if (typeof(T) == typeof(DateOnly))
+                return (T)(object)DateOnly.FromDateTime(value.UtcDateTime);
+
+            // UtcDateTime yields DateTimeKind.Utc, matching what ValueConverter produces for an explicit date
+            return (T)(object)value.UtcDateTime;
+        }
+    }
+
+    private static DateTimeOffset StartOfDay(DateTimeOffset dt)
+    {
+        var utc = dt.UtcDateTime;
+        return new DateTimeOffset(utc.Year, utc.Month, utc.Day, 0, 0, 0, TimeSpan.Zero);
+    }
+
+    private static DateTimeOffset StartOfMonth(DateTimeOffset dt)
+    {
+        var utc = dt.UtcDateTime;
+        return new DateTimeOffset(utc.Year, utc.Month, 1, 0, 0, 0, TimeSpan.Zero);
+    }
+
+    private static DateTimeOffset StartOfYear(DateTimeOffset dt)
+    {
+        var utc = dt.UtcDateTime;
+        return new DateTimeOffset(utc.Year, 1, 1, 0, 0, 0, TimeSpan.Zero);
     }
 
     private static DateTimeOffset StartOfWeek(DateTimeOffset dt)
     {
-        var diff = dt.DayOfWeek - DayOfWeek.Monday;
+        var start = StartOfDay(dt);
+        var diff = start.DayOfWeek - DayOfWeek.Monday;
         if (diff < 0)
         {
             diff += 7;
         }
 
-        dt = dt.AddDays(-1 * diff);
-        return new DateTimeOffset(dt.Year, dt.Month, dt.Day, 0, 0, 0, TimeSpan.Zero);
+        return start.AddDays(-diff);
     }
 }

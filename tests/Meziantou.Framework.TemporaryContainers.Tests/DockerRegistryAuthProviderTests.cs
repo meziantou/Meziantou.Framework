@@ -1,3 +1,4 @@
+using System.Buffers.Text;
 using System.Text;
 using System.Text.Json;
 using Meziantou.Framework.TemporaryContainers.Internals;
@@ -53,6 +54,31 @@ public sealed class DockerRegistryAuthProviderTests
         Assert.Equal("alice", payload.Username);
         Assert.Equal("password", payload.Password);
         Assert.Equal("registry.example.com", payload.ServerAddress);
+    }
+
+    [Fact]
+    public async Task GetRegistryAuthHeaderValueAsync_EncodesTheHeaderWithBase64Url()
+    {
+        // This password makes the standard base64 alphabet emit '+' or '/', which base64url rejects.
+        var config = new DockerApiModels.AuthConfigFile
+        {
+            Auths = new Dictionary<string, DockerApiModels.AuthEntry>(StringComparer.Ordinal)
+            {
+                ["https://index.docker.io/v1/"] = new DockerApiModels.AuthEntry
+                {
+                    Username = "john",
+                    Password = "abc>>>def",
+                },
+            },
+        };
+
+        var provider = new DockerRegistryAuthProvider(overrideConfiguration: config);
+        var header = await provider.GetRegistryAuthHeaderValueAsync("redis:8", CancellationToken.None);
+
+        Assert.NotNull(header);
+        Assert.DoesNotContain('+', header);
+        Assert.DoesNotContain('/', header);
+        Assert.Equal("abc>>>def", DecodeHeader(header).Password);
     }
 
     [Fact]
@@ -124,7 +150,7 @@ public sealed class DockerRegistryAuthProviderTests
 
     private static DockerApiModels.RegistryAuthHeader DecodeHeader(string value)
     {
-        var json = Encoding.UTF8.GetString(Convert.FromBase64String(value));
+        var json = Encoding.UTF8.GetString(Base64Url.DecodeFromChars(value));
         var payload = JsonSerializer.Deserialize(json, DockerApiJsonContext.Default.RegistryAuthHeader);
         return payload ?? throw new InvalidOperationException("Invalid Docker auth header payload.");
     }

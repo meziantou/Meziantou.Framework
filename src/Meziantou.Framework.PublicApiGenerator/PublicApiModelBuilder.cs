@@ -6,13 +6,6 @@ namespace Meziantou.Framework.PublicApiGenerator;
 
 internal static class PublicApiModelBuilder
 {
-    // NullabilityInfoContext is not thread safe: its Create methods use a non-concurrent cache internally and
-    // concurrent calls can throw InvalidOperationException. Each thread gets its own instance so that concurrent
-    // PublicApi.Generate(Assembly) calls cannot collide.
-    [ThreadStatic]
-    private static NullabilityInfoContext? s_nullabilityInfoContext;
-
-    private static NullabilityInfoContext NullabilityInfoContext => s_nullabilityInfoContext ??= new NullabilityInfoContext();
     private static readonly ConditionalWeakTable<Module, StrongBox<bool>> UpdatedMemorySafetyRulesCache = new();
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
     private const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
@@ -330,7 +323,7 @@ internal static class PublicApiModelBuilder
             modifiers.Add("unsafe");
         }
 
-        var fieldNullability = NullabilityInfoContext.Create(field);
+        var fieldNullability = new NullabilityInfoContext().Create(field);
         var fieldType = isByRefField
             ? BuildByRefFieldType(field, fieldNullability)
             : FormatType(field.FieldType, fieldNullability);
@@ -390,9 +383,9 @@ internal static class PublicApiModelBuilder
             ? $"this[{string.Join(", ", indexParameters.Select(static parameter => BuildParameter(parameter, isExtensionReceiver: false)))}]"
             : EscapeIdentifier(property.Name);
         var propertyNullability = property.GetMethod is not null
-            ? NullabilityInfoContext.Create(property.GetMethod.ReturnParameter)
+            ? new NullabilityInfoContext().Create(property.GetMethod.ReturnParameter)
             : property.SetMethod is not null
-                ? NullabilityInfoContext.Create(property.SetMethod.GetParameters().Last())
+                ? new NullabilityInfoContext().Create(property.SetMethod.GetParameters().Last())
                 : null;
         var accessorDeclarations = new List<string>();
 
@@ -441,7 +434,7 @@ internal static class PublicApiModelBuilder
             modifiers.Add("unsafe");
         }
 
-        var eventNullability = NullabilityInfoContext.Create(addMethod.GetParameters().Single());
+        var eventNullability = new NullabilityInfoContext().Create(addMethod.GetParameters().Single());
         AppendIndentedLine(sb, indentationLevel, $"{string.Join(' ', modifiers)} event {FormatType(@event.EventHandlerType!, eventNullability)} {EscapeIdentifier(@event.Name)};");
         return sb.ToString();
     }
@@ -737,7 +730,7 @@ internal static class PublicApiModelBuilder
         }
 
         var parameterType = parameter.ParameterType.IsByRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
-        var parameterNullability = NullabilityInfoContext.Create(parameter);
+        var parameterNullability = new NullabilityInfoContext().Create(parameter);
         sb.Append(FormatType(parameterType, parameterNullability));
         sb.Append(' ');
         sb.Append(EscapeIdentifier(parameter.Name ?? "value"));
@@ -774,7 +767,7 @@ internal static class PublicApiModelBuilder
     private static bool RequiresNullableDisableDirective(ParameterInfo parameter)
     {
         var parameterType = parameter.ParameterType.IsByRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
-        var parameterNullability = NullabilityInfoContext.Create(parameter);
+        var parameterNullability = new NullabilityInfoContext().Create(parameter);
         return RequiresNullableDirectives(parameterType, parameterNullability);
     }
 
@@ -936,7 +929,7 @@ internal static class PublicApiModelBuilder
     {
         var sb = new StringBuilder();
         var receiverParameter = block.ReceiverParameter;
-        var receiverNullability = NullabilityInfoContext.Create(receiverParameter);
+        var receiverNullability = new NullabilityInfoContext().Create(receiverParameter);
         var receiverType = receiverParameter.ParameterType.IsByRef
             ? receiverParameter.ParameterType.GetElementType()!
             : receiverParameter.ParameterType;
@@ -951,7 +944,7 @@ internal static class PublicApiModelBuilder
         else
         {
             var setterValueParameter = block.Setter!.GetParameters()[1];
-            propertyType = FormatType(setterValueParameter.ParameterType, NullabilityInfoContext.Create(setterValueParameter));
+            propertyType = FormatType(setterValueParameter.ParameterType, new NullabilityInfoContext().Create(setterValueParameter));
         }
 
         var accessorDeclarations = new List<string>();
@@ -1042,12 +1035,12 @@ internal static class PublicApiModelBuilder
         var returnType = returnParameter.ParameterType;
         if (!returnType.IsByRef)
         {
-            var returnNullability = NullabilityInfoContext.Create(returnParameter);
+            var returnNullability = new NullabilityInfoContext().Create(returnParameter);
             return FormatType(returnType, returnNullability);
         }
 
         var elementType = returnType.GetElementType()!;
-        var returnNullabilityInfo = NullabilityInfoContext.Create(returnParameter);
+        var returnNullabilityInfo = new NullabilityInfoContext().Create(returnParameter);
         var elementNullability = returnNullabilityInfo.ElementType;
         if (returnParameter.GetRequiredCustomModifiers().Any(static modifier => modifier.FullName == "System.Runtime.InteropServices.InAttribute"))
             return "ref readonly " + FormatType(elementType, elementNullability);
@@ -1338,7 +1331,7 @@ internal static class PublicApiModelBuilder
         var caseTypes = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Where(IsGeneratedUnionCaseConstructor)
             .OrderBy(static constructor => constructor.MetadataToken)
-            .Select(constructor => FormatType(constructor.GetParameters()[0].ParameterType, NullabilityInfoContext.Create(constructor.GetParameters()[0])))
+            .Select(constructor => FormatType(constructor.GetParameters()[0].ParameterType, new NullabilityInfoContext().Create(constructor.GetParameters()[0])))
             .ToArray();
         return "(" + string.Join(", ", caseTypes) + ")";
     }

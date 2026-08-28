@@ -209,6 +209,77 @@ public class QRCodePayloadTests
     }
 
     [Fact]
+    public void Email_AddressCannotInjectQueryParameters()
+    {
+        var payload = QRCodePayload.Email("victim@x.com?bcc=attacker@evil.example", "Hi");
+
+        // The '?' is encoded, so the address stays one address and subject= is the first
+        // parameter. Only the last '@' separates the local part from the domain, so the earlier
+        // one is encoded too.
+        Assert.Equal("mailto:victim%40x.com%3Fbcc%3Dattacker@evil.example?subject=Hi", payload);
+    }
+
+    [Theory]
+    [InlineData("a@b.com", "mailto:a@b.com")]
+    [InlineData("a.b+tag@c.example", "mailto:a.b%2Btag@c.example")]
+    [InlineData("no-at-sign", "mailto:no-at-sign")]
+    [InlineData("a@b@c.com", "mailto:a%40b@c.com")]
+    public void Email_KeepsOnlyTheAddressSeparatorReadable(string address, string expected)
+    {
+        Assert.Equal(expected, QRCodePayload.Email(address));
+    }
+
+    [Theory]
+    [InlineData("+1234567890", "tel:+1234567890")]
+    [InlineData("1234567890", "tel:1234567890")]
+    [InlineData("+1-555-0100", "tel:+1-555-0100")]
+    [InlineData("+1+555", "tel:+1%2B555")]
+    [InlineData("1+555", "tel:1%2B555")]
+    public void Phone_KeepsOnlyTheLeadingPlusReadable(string number, string expected)
+    {
+        // RFC 3966 allows '+' only as the international prefix, so a later one is not structural.
+        Assert.Equal(expected, QRCodePayload.Phone(number));
+    }
+
+    [Theory]
+    [InlineData("a@b.com#fragment")]
+    [InlineData("a@b.com&x=1")]
+    [InlineData("a@b.com ")]
+    public void Email_AddressStructuralCharactersAreEncoded(string address)
+    {
+        var payload = QRCodePayload.Email(address);
+
+        Assert.Equal(1, payload.Count(c => c == ':'));
+        Assert.DoesNotContain("?", payload);
+        Assert.DoesNotContain("#", payload);
+        Assert.DoesNotContain("&", payload);
+    }
+
+    [Fact]
+    public void Bitcoin_AddressCannotInjectQueryParameters()
+    {
+        var payload = QRCodePayload.Bitcoin("addr?amount=999", amount: 0.05m);
+
+        Assert.Equal("bitcoin:addr%3Famount%3D999?amount=0.05", payload);
+    }
+
+    [Fact]
+    public void Sms_NumberCannotShiftTheMessageSeparator()
+    {
+        var payload = QRCodePayload.Sms("+1555:evil", "Hello");
+
+        // Exactly two colons: the scheme separator and the number/message separator.
+        Assert.Equal("smsto:+1555%3Aevil:Hello", payload);
+    }
+
+    [Fact]
+    public void Phone_NumberStructuralCharactersAreEncoded()
+    {
+        Assert.Equal("tel:+1234567890", QRCodePayload.Phone("+1234567890"));
+        Assert.Equal("tel:+1555%3Fx%3D1", QRCodePayload.Phone("+1555?x=1"));
+    }
+
+    [Fact]
     public void Sms_ThrowsWhenNumberIsNull()
     {
         Assert.Throws<ArgumentNullException>(() => QRCodePayload.Sms(null!));

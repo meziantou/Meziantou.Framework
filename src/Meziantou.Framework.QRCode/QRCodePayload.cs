@@ -112,7 +112,7 @@ public static class QRCodePayload
 
         var sb = new StringBuilder();
         sb.Append("mailto:");
-        sb.Append(address);
+        sb.Append(EscapeMailAddress(address));
 
         if (subject is not null || body is not null)
         {
@@ -145,7 +145,7 @@ public static class QRCodePayload
     {
         ArgumentNullException.ThrowIfNull(number);
 
-        return "tel:" + number;
+        return "tel:" + EscapePhoneNumber(number);
     }
 
     /// <summary>
@@ -158,12 +158,51 @@ public static class QRCodePayload
     {
         ArgumentNullException.ThrowIfNull(number);
 
+        // The number is escaped because a ':' in it would shift the recipient/message split.
+        // The message is the trailing free text, so it needs no escaping.
         if (message is not null)
         {
-            return "smsto:" + number + ":" + message;
+            return "smsto:" + EscapePhoneNumber(number) + ":" + message;
         }
 
-        return "smsto:" + number;
+        return "smsto:" + EscapePhoneNumber(number);
+    }
+
+    /// <summary>
+    /// Percent-encodes a mail address, keeping the <c>@</c> readable.
+    /// </summary>
+    /// <remarks>
+    /// The optional parameters were already escaped, but the address was not, so a '?' in it
+    /// started the query string early and let the caller-supplied address inject its own
+    /// parameters - <c>Email("a@b.com?bcc=c@d.com", "Hi")</c> produced a mailto whose bcc won
+    /// and whose intended subject was swallowed into it.
+    /// </remarks>
+    private static string EscapeMailAddress(string address)
+    {
+        // An addr-spec has a single '@' between the local part and the domain. Only that one is
+        // left readable; any other '@' is not a separator, so it stays encoded.
+        var separatorIndex = address.AsSpan().LastIndexOf('@');
+        if (separatorIndex < 0)
+        {
+            return Uri.EscapeDataString(address);
+        }
+
+        return Uri.EscapeDataString(address[..separatorIndex]) + "@" + Uri.EscapeDataString(address[(separatorIndex + 1)..]);
+    }
+
+    /// <summary>
+    /// Percent-encodes a phone number, keeping the leading <c>+</c> that <c>tel:</c> needs.
+    /// </summary>
+    private static string EscapePhoneNumber(string number)
+    {
+        // RFC 3966 allows '+' only as the leading international prefix, so only a leading one is
+        // left readable; a '+' anywhere else is not structural and stays encoded.
+        if (number is ['+', ..])
+        {
+            return "+" + Uri.EscapeDataString(number[1..]);
+        }
+
+        return Uri.EscapeDataString(number);
     }
 
     /// <summary>
@@ -426,7 +465,7 @@ public static class QRCodePayload
 
         var sb = new StringBuilder();
         sb.Append("bitcoin:");
-        sb.Append(address);
+        sb.Append(Uri.EscapeDataString(address));
 
         var separator = '?';
         if (amount is not null)

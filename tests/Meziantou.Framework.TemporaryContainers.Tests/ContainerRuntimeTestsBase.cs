@@ -2,6 +2,7 @@ using System.Net.Sockets;
 using System.Text.Json;
 using Meziantou.Extensions.Logging.Xunit.v3;
 using Meziantou.Xunit;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
@@ -404,6 +405,35 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
             await container.DeleteAsync(XunitCancellationToken);
             Assert.False(await container.ExistsAsync(XunitCancellationToken));
         }, XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_RemovesTheContainerWhenTheLoggerThrows()
+    {
+        var definition = CreateHttpServerDefinition();
+        definition.Logging.Logger = new ThrowingLogger();
+
+        var container = await StartWithRetryAsync(definition);
+        var id = container.Id;
+
+        // Let the forwarding pump reach the logger, so the failure is in flight when the container is disposed.
+        await Task.Delay(TimeSpan.FromSeconds(1), XunitCancellationToken);
+
+        await container.DisposeAsync();
+
+        Assert.False(await Runtime.ExistsAsync(id, XunitCancellationToken));
+    }
+
+    /// <summary>Mimics a logger backed by xunit's test output helper, which throws once the test that owns it has completed.</summary>
+    private sealed class ThrowingLogger : ILogger
+    {
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+            => throw new InvalidOperationException("There is no currently active test.");
     }
 
     [Fact]

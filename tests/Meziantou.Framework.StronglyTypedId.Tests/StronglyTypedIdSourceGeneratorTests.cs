@@ -168,7 +168,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
+        Assert.HasCount(2, result.GeneratorResult.GeneratedTrees);
 
         AssertGeneratedTypes(result, ["A.Test", "B.Test"]);
     }
@@ -192,7 +192,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
+        Assert.HasCount(2, result.GeneratorResult.GeneratedTrees);
 
         AssertGeneratedTypes(result, ["A+Test", "B+Test"]);
     }

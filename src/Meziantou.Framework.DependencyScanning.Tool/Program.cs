@@ -12,6 +12,10 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 
 internal static class Program
 {
+    // Without MatchLeadingDot a '**/*' pattern skips every path segment starting with a dot, which hides
+    // .github/workflows and .config from the scan entirely.
+    private const GlobOptions DefaultGlobOptions = GlobOptions.MatchLeadingDot;
+
     private static readonly char[] DependencyTypeDelimiters = [',', ';', ' '];
     private static readonly JsonSerializerOptions ListJsonSerializerOptions = new()
     {
@@ -393,9 +397,9 @@ internal static class Program
         if (patterns is null || patterns.Length is 0)
         {
             return new GlobCollection(
-                Glob.Parse("**/*", GlobDialect.Standard),
-                Glob.Parse("!**/node_modules/**/*", GlobDialect.Standard),
-                Glob.Parse("!**/.playwright/package/**/*", GlobDialect.Standard));
+                Glob.Parse("**/*", GlobDialect.Standard, DefaultGlobOptions),
+                Glob.Parse("!**/node_modules/**/*", GlobDialect.Standard, DefaultGlobOptions),
+                Glob.Parse("!**/.playwright/package/**/*", GlobDialect.Standard, DefaultGlobOptions));
         }
 
         var parsedPatterns = new List<IGlobEvaluatable>(patterns.Length);
@@ -404,7 +408,7 @@ internal static class Program
             if (string.IsNullOrWhiteSpace(pattern))
                 continue;
 
-            if (!Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase, out var parsedPattern))
+            if (!Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot, out var parsedPattern))
             {
                 error.WriteLine($"Glob pattern '{pattern}' is invalid");
                 return null;

@@ -152,10 +152,14 @@ public sealed class FunctionalTests
         var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "GitHubActions"], console.ConfigureConsole);
         Assert.Equal(0, result);
 
+        // The tool's own listing is what proves the glob fix: before it, the scan reported only the
+        // Dockerfile and the workflow under .github was never visited. This is decided before any network
+        // call, unlike the resulting version - updating an action needs a live GitHub API request, which is
+        // anonymous in CI and routinely rate-limited on shared runner IPs, so it cannot be asserted here.
+        Assert.Contains("GitHubActions:actions/checkout", console.Output);
+
         var dependencies = await DependencyScanner.ScanDirectoryAsync(tempDir.FullPath, options: null, XunitCancellationToken);
-        var gitHubActionsDependency = Assert.Single(dependencies, static dep => dep.Type is DependencyType.GitHubActions);
-        Assert.NotNull(gitHubActionsDependency.Version);
-        Assert.True(GitHubActionsVersioningStrategy.Instance.CompareVersions(gitHubActionsDependency.Version, "v2") >= 0);
+        Assert.Single(dependencies, static dep => dep.Type is DependencyType.GitHubActions);
 
         var dockerDependency = Assert.Single(dependencies, static dep => dep.Type is DependencyType.DockerImage);
         Assert.Equal("1.27.1", dockerDependency.Version);
@@ -229,6 +233,28 @@ public sealed class FunctionalTests
         Assert.Equal("npm", dependency.GetProperty("name").GetString());
         Assert.Equal("8.0.0", dependency.GetProperty("version").GetString());
         Assert.True(dependency.GetProperty("isUpdatable").GetBoolean());
+    }
+
+    [Fact]
+    public async Task DefaultGlobScansDotDirectories()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".github/workflows/sample.yml"), """
+            jobs:
+              test:
+                steps:
+                  - uses: actions/checkout@v2
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["list", "--directory", tempDir.FullPath, "--format", "json"], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        using var json = JsonDocument.Parse(console.Output);
+        var dependency = Assert.Single(json.RootElement.EnumerateArray());
+        Assert.Equal("GitHubActions", dependency.GetProperty("type").GetString());
+        Assert.Equal("actions/checkout", dependency.GetProperty("name").GetString());
     }
 
     [Fact]

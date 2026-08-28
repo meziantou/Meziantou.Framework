@@ -37,6 +37,9 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows5.1.2600")]
 public static class LsaPrivateData
 {
+    // LSA_UNICODE_STRING stores the length as a number of bytes in a ushort, so longer strings would silently wrap
+    private const int MaxLengthInChars = ushort.MaxValue / 2;
+
     /// <summary>Removes a value from LSA private data storage. Requires administrator privileges.</summary>
     /// <remarks>Removing a key that does not exist does nothing.</remarks>
     /// <param name="key">The key of the value to remove.</param>
@@ -50,10 +53,10 @@ public static class LsaPrivateData
     /// <param name="value">The value to store. If null, the key is removed; removing a key that does not exist does nothing.</param>
     public static unsafe void SetValue(string key, string? value)
     {
-        ArgumentNullException.ThrowIfNull(key);
+        ValidateKey(key);
 
-        if (key.Length == 0)
-            throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
+        if (value is not null)
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value.Length, MaxLengthInChars, nameof(value));
 
         var objectAttributes = new LSA_OBJECT_ATTRIBUTES();
         var secretName = new LSA_UNICODE_STRING();
@@ -93,10 +96,7 @@ public static class LsaPrivateData
     /// <returns>The value associated with the key, or null if the key does not exist.</returns>
     public static unsafe string? GetValue(string key)
     {
-        ArgumentNullException.ThrowIfNull(key);
-
-        if (key.Length == 0)
-            throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
+        ValidateKey(key);
 
         var objectAttributes = new LSA_OBJECT_ATTRIBUTES();
         var secretName = new LSA_UNICODE_STRING();
@@ -130,6 +130,16 @@ public static class LsaPrivateData
                 FreeMemory(privateData);
             }
         }
+    }
+
+    private static void ValidateKey(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        if (key.Length == 0)
+            throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
+
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(key.Length, MaxLengthInChars, nameof(key));
     }
 
     private static unsafe LsaCloseSafeHandle GetLsaPolicy(in LSA_OBJECT_ATTRIBUTES objectAttributes)

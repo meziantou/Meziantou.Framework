@@ -175,8 +175,8 @@ internal static class Program
 
         WriteSearchScope(output, globs);
         var dependencies = await ScanDependenciesAsync(rootPath, globs, cancellationToken).ConfigureAwait(false);
-        WriteDependenciesAsText(output, dependencies);
         var filteredDependencies = FilterDependencies(dependencies, dependencyTypeSet);
+        WriteDependenciesAsText(output, filteredDependencies);
 
         var updaters = CreatePackageUpdaters(minimumAge);
 

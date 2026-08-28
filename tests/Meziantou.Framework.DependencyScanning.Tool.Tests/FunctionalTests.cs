@@ -104,6 +104,31 @@ public sealed class FunctionalTests
     }
 
     [Fact]
+    public async Task UpdateListsOnlyTheSelectedDependencyTypes()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("Dockerfile"), """
+            FROM nginx:1.27.1
+            """, XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("package.json"), """
+            {
+            "dependencies": {
+                "npm": "8.0.0"
+              }
+            }
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "Npm"], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        // The listing must match what is about to be updated, not everything that was scanned
+        Assert.Contains("1 dependencies found", console.Output);
+        Assert.DoesNotContain("DockerImage", console.Output);
+    }
+
+    [Fact]
     public async Task FilterDependencyType_DockerImage()
     {
         await using var tempDir = TemporaryDirectory.Create();

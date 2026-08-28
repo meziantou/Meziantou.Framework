@@ -73,6 +73,14 @@ internal static class MicroQREncoder
         return result;
     }
 
+    /// <summary>
+    /// Picks the mask with the highest score, per ISO/IEC 18004 section 7.8.3.2.
+    /// </summary>
+    /// <remarks>
+    /// Micro QR maximises its mask score, unlike standard QR which minimises a penalty. Flipping
+    /// this comparison to match <see cref="MaskEvaluator.FindBestMask"/> would silently degrade
+    /// every Micro QR symbol.
+    /// </remarks>
     private static int FindBestMask(byte[] codewords, int version, ErrorCorrectionLevel ecLevel)
     {
         var bestMask = 0;
@@ -82,7 +90,7 @@ internal static class MicroQREncoder
         {
             var builder = new MicroQRMatrixBuilder(version);
             builder.Build(codewords, ecLevel, mask);
-            var score = MicroQRMatrixBuilder.EvaluateMaskPenalty(builder.Modules, builder.Size);
+            var score = MicroQRMatrixBuilder.EvaluateMaskScore(builder.Modules, builder.Size);
 
             if (score > bestScore)
             {

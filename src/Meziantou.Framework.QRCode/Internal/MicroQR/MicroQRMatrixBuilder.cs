@@ -203,7 +203,15 @@ internal sealed class MicroQRMatrixBuilder
     // Count dark modules in last row and last column (outside finder/timing area).
     // Score = min(darkLastRow, darkLastCol) * 16 + max(darkLastRow, darkLastCol)
     // Best mask = highest score.
-    public static int EvaluateMaskPenalty(bool[,] modules, int size)
+    /// <summary>
+    /// Scores a masked Micro QR symbol per ISO/IEC 18004 section 7.8.3.2.
+    /// </summary>
+    /// <remarks>
+    /// This is a score, not a penalty: Micro QR selects the mask with the <b>highest</b> value,
+    /// which is the opposite of the standard QR rule in <see cref="MaskEvaluator"/>. The score
+    /// favours dark modules along the right and lower edges.
+    /// </remarks>
+    public static int EvaluateMaskScore(bool[,] modules, int size)
     {
         var darkInLastRow = 0;
         var darkInLastCol = 0;

@@ -158,6 +158,65 @@ public class CsvReaderTests
         Assert.Null(await reader.ReadRowAsync());
     }
 
+    [Fact]
+    public async Task CsvReader_RowNumberIsTheZeroBasedIndexOfTheRowJustReturned()
+    {
+        using var sr = new StringReader("a\nb\nc");
+        var reader = new CsvReader(sr);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(0, reader.RowNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(1, reader.RowNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(2, reader.RowNumber);
+    }
+
+    [Fact]
+    public async Task CsvReader_RowNumberDoesNotAdvancePastTheLastRow()
+    {
+        using var sr = new StringReader("a\nb");
+        var reader = new CsvReader(sr);
+
+        await reader.ReadRowAsync();
+        await reader.ReadRowAsync();
+        Assert.Equal(1, reader.RowNumber);
+
+        Assert.Null(await reader.ReadRowAsync());
+        Assert.Equal(1, reader.RowNumber);
+    }
+
+    [Fact]
+    public async Task CsvReader_RowNumberCountsTheHeaderRow()
+    {
+        using var sr = new StringReader("A,B\n1,2\n3,4");
+        var reader = new CsvReader(sr) { HasHeaderRow = true };
+
+        await reader.ReadRowAsync();
+        Assert.Equal(1, reader.RowNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(2, reader.RowNumber);
+    }
+
+    [Fact]
+    public async Task CsvReader_RowNumberIsIndependentOfTheLineTerminator()
+    {
+        using var sr = new StringReader("a\r\nb\rc");
+        var reader = new CsvReader(sr);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(0, reader.RowNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(1, reader.RowNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(2, reader.RowNumber);
+    }
+
     private sealed class TruncatedCarriageReturnReader : TextReader
     {
         private readonly char[] _content = ['"', 'a', '\r'];

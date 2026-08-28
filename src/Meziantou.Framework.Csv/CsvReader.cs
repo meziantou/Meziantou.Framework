@@ -27,6 +27,7 @@ public class CsvReader
     private bool _hasBufferedChar;
     private char _bufferedChar;
     private bool _endOfStreamReached;
+    private bool _hasParsedRow;
 
     /// <summary>Gets or sets the character used to separate values in a row. Default is a comma (,).</summary>
     public char Separator { get; set; } = DefaultSeparatorCharacter;
@@ -145,7 +146,6 @@ public class CsvReader
                         rowValues.Add(value.ToString());
                     }
 
-                    RowNumber++;
                     break;
                 }
 
@@ -173,7 +173,6 @@ public class CsvReader
                                     rowValues.Add(value.ToString());
                                 }
 
-                                RowNumber++;
                                 break;
                             }
                         }
@@ -254,6 +253,13 @@ public class CsvReader
 
         if (rowValues.Count == 0 && endOfStream)
             return null;
+
+        if (_hasParsedRow)
+        {
+            RowNumber++;
+        }
+
+        _hasParsedRow = true;
 
         var columns = _columns;
         if (HasHeaderRow && columns is null)

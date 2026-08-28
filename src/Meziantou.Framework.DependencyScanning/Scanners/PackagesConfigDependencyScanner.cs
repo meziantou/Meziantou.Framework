@@ -35,7 +35,7 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
         if (doc is null)
             return;
 
-        IReadOnlyList<(string Path, XDocument Document)>? csprojs = null;
+        IReadOnlyList<AssociatedProject>? csprojs = null;
         foreach (var package in doc.Descendants(PackageXName))
         {
             var packageNameAttribute = package.Attribute(IdXName);
@@ -54,25 +54,24 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
             {
                 var rootDependency = new DependencyRoot(packageName, version, DependencyType.NuGet);
                 csprojs ??= await LoadAssociatedCsprojAsync(context).ConfigureAwait(false);
-                foreach (var (file, csproj) in csprojs)
+                foreach (var csproj in csprojs)
                 {
-
-                    FindInReferences(context, rootDependency, file, csproj);
-                    FindInImports(context, rootDependency, file, csproj);
-                    FindInErrors(context, rootDependency, file, csproj);
+                    FindInReferences(context, rootDependency, csproj);
+                    FindInImports(context, rootDependency, csproj);
+                    FindInErrors(context, rootDependency, csproj);
                 }
             }
         }
     }
 
-    private static async Task<IReadOnlyList<(string Path, XDocument Document)>> LoadAssociatedCsprojAsync(ScanFileContext context)
+    private static async Task<IReadOnlyList<AssociatedProject>> LoadAssociatedCsprojAsync(ScanFileContext context)
     {
         var directory = Path.GetDirectoryName(context.FullPath);
         if (directory is null)
-            return Array.Empty<(string, XDocument)>();
+            return [];
 
         var files = context.FileSystem.GetFiles(directory, "*.csproj", SearchOption.TopDirectoryOnly);
-        var result = new List<(string, XDocument)>();
+        var result = new List<AssociatedProject>();
         foreach (var file in files)
         {
             var stream = context.FileSystem.OpenRead(file);
@@ -82,7 +81,7 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
                 if (doc is null)
                     continue;
 
-                result.Add((file, doc));
+                result.Add(new AssociatedProject(file, doc));
             }
             finally
             {
@@ -93,44 +92,65 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
         return result;
     }
 
-    private void FindInReferences(ScanFileContext context, DependencyRoot dependency, string csprojPath, XDocument csproj)
+    private void FindInReferences(ScanFileContext context, DependencyRoot dependency, AssociatedProject project)
     {
-        var hints = csproj.Descendants()
-            .Where(element => element.Name.LocalName == "Reference")
-            .Elements()
-            .Where(element => element.Name.LocalName == "HintPath");
-
-        foreach (var hint in hints)
+        foreach (var hint in project.HintPaths)
         {
-            if (FindDependencyInElementValue(context, dependency, csprojPath, hint))
+            if (FindDependencyInElementValue(context, dependency, project.Path, hint))
             {
-                FindDependencyInAssemblyName(context, dependency, csprojPath, hint.Parent?.Attribute(IncludeXName));
+                FindDependencyInAssemblyName(context, dependency, project.Path, hint.Parent?.Attribute(IncludeXName));
             }
         }
     }
 
-    private void FindInImports(ScanFileContext context, DependencyRoot dependency, string file, XDocument doc)
+    private void FindInImports(ScanFileContext context, DependencyRoot dependency, AssociatedProject project)
     {
-        var imports = doc.Descendants().Where(element => element.Name.LocalName == "Import");
-        foreach (var import in imports)
+        foreach (var attribute in project.ImportAttributes)
         {
-            FindDependencyInAttributeValue(context, dependency, file, import.Attribute(ProjectXName));
-            FindDependencyInAttributeValue(context, dependency, file, import.Attribute(ConditionXName));
+            FindDependencyInAttributeValue(context, dependency, project.Path, attribute);
         }
     }
 
-    private void FindInErrors(ScanFileContext context, DependencyRoot dependency, string file, XDocument doc)
+    private void FindInErrors(ScanFileContext context, DependencyRoot dependency, AssociatedProject project)
     {
-        var errors = doc.Descendants()
-            .Where(element => element.Name.LocalName == "Target")
-            .Elements()
-            .Where(element => element.Name.LocalName == "Error");
-
-        foreach (var error in errors)
+        foreach (var attribute in project.ErrorAttributes)
         {
-            FindDependencyInAttributeValue(context, dependency, file, error.Attribute(TextXName));
-            FindDependencyInAttributeValue(context, dependency, file, error.Attribute(ConditionXName));
+            FindDependencyInAttributeValue(context, dependency, project.Path, attribute);
         }
+    }
+
+    /// <summary>
+    /// The elements of a project file that may reference a package, collected once so that they are not
+    /// re-queried for every package declared in the packages.config file.
+    /// </summary>
+    private sealed class AssociatedProject
+    {
+        public AssociatedProject(string path, XDocument document)
+        {
+            Path = path;
+
+            HintPaths = [.. document.Descendants()
+                .Where(element => element.Name.LocalName == "Reference")
+                .Elements()
+                .Where(element => element.Name.LocalName == "HintPath")];
+
+            ImportAttributes = [.. document.Descendants()
+                .Where(element => element.Name.LocalName == "Import")
+                .SelectMany(element => new[] { element.Attribute(ProjectXName), element.Attribute(ConditionXName) })
+                .OfType<XAttribute>()];
+
+            ErrorAttributes = [.. document.Descendants()
+                .Where(element => element.Name.LocalName == "Target")
+                .Elements()
+                .Where(element => element.Name.LocalName == "Error")
+                .SelectMany(element => new[] { element.Attribute(TextXName), element.Attribute(ConditionXName) })
+                .OfType<XAttribute>()];
+        }
+
+        public string Path { get; }
+        public XElement[] HintPaths { get; }
+        public XAttribute[] ImportAttributes { get; }
+        public XAttribute[] ErrorAttributes { get; }
     }
 
     private bool FindDependencyInElementValue(ScanFileContext context, DependencyRoot dependency, string file, XElement element)

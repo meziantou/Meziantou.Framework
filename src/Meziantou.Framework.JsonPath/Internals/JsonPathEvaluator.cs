@@ -1008,7 +1008,7 @@ internal static class JsonPathEvaluator
             return false;
         }
 
-        return IsRegexMatch(str, pattern, anchored: true);
+        return IsRegexMatch(func, str, pattern, anchored: true);
     }
 
     private static bool EvaluateSearchFunction<TValue>(
@@ -1033,7 +1033,7 @@ internal static class JsonPathEvaluator
             return false;
         }
 
-        return IsRegexMatch(str, pattern, anchored: false);
+        return IsRegexMatch(func, str, pattern, anchored: false);
     }
 
     /// <summary>
@@ -1041,11 +1041,35 @@ internal static class JsonPathEvaluator
     /// cannot be evaluated yields LogicalFalse rather than an error, so every failure mode returns
     /// <see langword="false"/> instead of propagating out of <c>Evaluate</c>.
     /// </summary>
+    /// <param name="func">The call being evaluated, used to cache the compiled pattern.</param>
     /// <param name="input">The string to test.</param>
     /// <param name="iRegexp">The I-Regexp pattern.</param>
     /// <param name="anchored">Whether the pattern must match the whole string (<c>match()</c>) or any substring (<c>search()</c>).</param>
     /// <returns><see langword="true"/> when the pattern matches; otherwise, <see langword="false"/>.</returns>
-    private static bool IsRegexMatch(string input, string iRegexp, bool anchored)
+    private static bool IsRegexMatch(FunctionCallExpression func, string input, string iRegexp, bool anchored)
+    {
+        // The pattern is a literal in almost every real query, so translate and compile it once per AST node
+        // rather than once per node visited. A computed pattern falls back to the per-call path.
+        var regex = func.Arguments[1].Kind is FunctionArgumentKind.Literal && func.Arguments[1].Value is string
+            ? func.GetOrCreateRegex(p => CreateRegex(p, anchored)).Regex
+            : CreateRegex(iRegexp, anchored).Regex;
+
+        if (regex is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            return regex.IsMatch(input);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;
+        }
+    }
+
+    private static FunctionCallExpression.RegexCacheEntry CreateRegex(string iRegexp, bool anchored)
     {
         try
         {
@@ -1055,22 +1079,19 @@ internal static class JsonPathEvaluator
                 pattern = $"^(?:{pattern})$";
             }
 
-            return Regex.IsMatch(input, pattern, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, RegexTimeout);
+            return new FunctionCallExpression.RegexCacheEntry(
+                new Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, RegexTimeout));
         }
         catch (ArgumentException)
         {
             // Not a valid .NET pattern.
-            return false;
+            return FunctionCallExpression.RegexCacheEntry.Unusable;
         }
         catch (NotSupportedException)
         {
             // A construct NonBacktracking rejects (backreference, lookaround, atomic group). None of these
             // are part of I-Regexp, so such a pattern is not a valid argument to match()/search() anyway.
-            return false;
-        }
-        catch (RegexMatchTimeoutException)
-        {
-            return false;
+            return FunctionCallExpression.RegexCacheEntry.Unusable;
         }
     }
 

@@ -119,6 +119,29 @@ public sealed class ObjectMethodExecutorTests
     }
 
     [Fact]
+    public async Task DistinctMethodsSharingAnAwaitableType_DoNotInterfere()
+    {
+        var first = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32")!);
+        var second = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32WithParam")!);
+
+        Assert.Equal(1, await first.ExecuteAsync(new Test(), []));
+        Assert.Equal(12, await second.ExecuteAsync(new Test(), [12]));
+        Assert.Equal(1, await first.ExecuteAsync(new Test(), []));
+    }
+
+    [Fact]
+    public async Task DistinctAwaitableTypes_AreNotConfused()
+    {
+        var validator = new Validator();
+
+        Assert.Equal(1, await ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32")!).ExecuteAsync(new Test(), []));
+        Assert.Equal(1, await ObjectMethodExecutor.Create(typeof(Test).GetMethod("ValueTaskInt32")!).ExecuteAsync(new Test(), []));
+        Assert.Equal("s", await ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskString")!).ExecuteAsync(new Test(), []));
+        Assert.Null(await ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTask")!).ExecuteAsync(new Test(), [validator]));
+        Assert.True(validator.HasBeenInvoked);
+    }
+
+    [Fact]
     public async Task FSharpAsync()
     {
         var executor = ObjectMethodExecutor.Create(typeof(FSharpTests.Say).GetMethod("get_int32")!);
@@ -171,6 +194,8 @@ public sealed class ObjectMethodExecutorTests
         }
 
         public Task<int> AsyncTaskInt32() => Task.FromResult(1);
+
+        public Task<string> AsyncTaskString() => Task.FromResult("s");
 
         public async Task<int> AsyncTaskInt32WithParam(int i)
         {

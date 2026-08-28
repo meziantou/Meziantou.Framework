@@ -12,6 +12,11 @@ namespace Meziantou.Framework;
 /// It supports both synchronous and asynchronous methods, including those returning Task, ValueTask,
 /// or any custom awaitable type that implements the awaitable pattern.
 /// </para>
+/// <para>
+/// <see cref="Create(MethodInfo)"/> compiles expression trees and is orders of magnitude more expensive
+/// than a single call to <see cref="Execute"/>. Create one executor per <see cref="MethodInfo"/> and
+/// cache it for the lifetime of the process rather than creating one per invocation.
+/// </para>
 /// </remarks>
 /// <example>
 /// Basic usage with synchronous and asynchronous methods:
@@ -37,6 +42,9 @@ public sealed class ObjectMethodExecutor
     private readonly object?[]? _parameterDefaultValues;
     private readonly MethodExecutorAsync? _executorAsync;
     private readonly MethodExecutor? _executor;
+
+    // Keyed weakly so a cached entry never keeps a plugin's Type (and its AssemblyLoadContext) alive.
+    private static readonly ConditionalWeakTable<Type, AwaitableHelpers> AwaitableHelpersCache = new();
 
     private static readonly ConstructorInfo ObjectMethodExecutorAwaitableConstructor =
         typeof(ObjectMethodExecutorAwaitable).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, [
@@ -263,19 +271,59 @@ public sealed class ObjectMethodExecutor
         }
 
         // Using the method return value, construct an ObjectMethodExecutorAwaitable based on
-        // the info we have about its implementation of the awaitable pattern. Note that all
-        // the funcs/actions we construct here are precompiled, so that only one instance of
-        // each is preserved throughout the lifetime of the ObjectMethodExecutor.
+        // the info we have about its implementation of the awaitable pattern. These funcs/actions
+        // depend only on the awaitable type, so they are compiled once and shared by every
+        // executor for a method returning that type.
 
+        var postCoercionMethodReturnType = coercedAwaitableInfo.CoercerResultType ?? methodInfo.ReturnType;
+        var helpers = GetAwaitableHelpers(postCoercionMethodReturnType, coercedAwaitableInfo.AwaitableInfo);
+
+        // If we need to pass the method call result through a coercer function to get an
+        // awaitable, then do so.
+        var coercedMethodCall = coercedAwaitableInfo.RequiresCoercion
+            ? Expression.Invoke(coercedAwaitableInfo.CoercerExpression!, methodCall)
+            : (Expression)methodCall;
+
+        // return new ObjectMethodExecutorAwaitable(
+        //     (object)coercedMethodCall,
+        //     getAwaiterFunc,
+        //     isCompletedFunc,
+        //     getResultFunc,
+        //     onCompletedFunc,
+        //     unsafeOnCompletedFunc);
+        var returnValueExpression = Expression.New(
+            ObjectMethodExecutorAwaitableConstructor,
+            Expression.Convert(coercedMethodCall, typeof(object)),
+            Expression.Constant(helpers.GetAwaiter),
+            Expression.Constant(helpers.IsCompleted),
+            Expression.Constant(helpers.GetResult),
+            Expression.Constant(helpers.OnCompleted),
+            Expression.Constant(helpers.UnsafeOnCompleted, typeof(Action<object, Action>)));
+
+        var lambda = Expression.Lambda<MethodExecutorAsync>(returnValueExpression, targetParameter, parametersParameter);
+        return lambda.Compile();
+    }
+
+    private static AwaitableHelpers GetAwaitableHelpers(Type awaitableType, AwaitableInfo awaitableInfo)
+    {
+        if (AwaitableHelpersCache.TryGetValue(awaitableType, out var cached))
+            return cached;
+
+        var helpers = CreateAwaitableHelpers(awaitableType, awaitableInfo);
+
+        // If another thread got there first, keep theirs and drop ours.
+        return AwaitableHelpersCache.GetValue(awaitableType, _ => helpers);
+    }
+
+    private static AwaitableHelpers CreateAwaitableHelpers(Type awaitableType, AwaitableInfo awaitableInfo)
+    {
         // var getAwaiterFunc = (object awaitable) =>
         //     (object)((CustomAwaitableType)awaitable).GetAwaiter();
         var customAwaitableParam = Expression.Parameter(typeof(object), "awaitable");
-        var awaitableInfo = coercedAwaitableInfo.AwaitableInfo;
-        var postCoercionMethodReturnType = coercedAwaitableInfo.CoercerResultType ?? methodInfo.ReturnType;
         var getAwaiterFunc = Expression.Lambda<Func<object, object>>(
             Expression.Convert(
                 Expression.Call(
-                    Expression.Convert(customAwaitableParam, postCoercionMethodReturnType),
+                    Expression.Convert(customAwaitableParam, awaitableType),
                     awaitableInfo.GetAwaiterMethod),
                 typeof(object)),
             customAwaitableParam).Compile();
@@ -350,30 +398,21 @@ public sealed class ObjectMethodExecutor
                 unsafeOnCompletedParam2).Compile();
         }
 
-        // If we need to pass the method call result through a coercer function to get an
-        // awaitable, then do so.
-        var coercedMethodCall = coercedAwaitableInfo.RequiresCoercion
-            ? Expression.Invoke(coercedAwaitableInfo.CoercerExpression!, methodCall)
-            : (Expression)methodCall;
+        return new AwaitableHelpers(getAwaiterFunc, isCompletedFunc, getResultFunc, onCompletedFunc, unsafeOnCompletedFunc);
+    }
 
-        // return new ObjectMethodExecutorAwaitable(
-        //     (object)coercedMethodCall,
-        //     getAwaiterFunc,
-        //     isCompletedFunc,
-        //     getResultFunc,
-        //     onCompletedFunc,
-        //     unsafeOnCompletedFunc);
-        var returnValueExpression = Expression.New(
-            ObjectMethodExecutorAwaitableConstructor,
-            Expression.Convert(coercedMethodCall, typeof(object)),
-            Expression.Constant(getAwaiterFunc),
-            Expression.Constant(isCompletedFunc),
-            Expression.Constant(getResultFunc),
-            Expression.Constant(onCompletedFunc),
-            Expression.Constant(unsafeOnCompletedFunc, typeof(Action<object, Action>)));
-
-        var lambda = Expression.Lambda<MethodExecutorAsync>(returnValueExpression, targetParameter, parametersParameter);
-        return lambda.Compile();
+    private sealed class AwaitableHelpers(
+        Func<object, object> getAwaiter,
+        Func<object, bool> isCompleted,
+        Func<object, object> getResult,
+        Action<object, Action> onCompleted,
+        Action<object, Action>? unsafeOnCompleted)
+    {
+        public Func<object, object> GetAwaiter { get; } = getAwaiter;
+        public Func<object, bool> IsCompleted { get; } = isCompleted;
+        public Func<object, object> GetResult { get; } = getResult;
+        public Action<object, Action> OnCompleted { get; } = onCompleted;
+        public Action<object, Action>? UnsafeOnCompleted { get; } = unsafeOnCompleted;
     }
 
     private static MethodExecutorAsync GetExecutorAsyncFromSync(MethodExecutor executor)

@@ -24,8 +24,16 @@ public readonly struct CountingBloomFilterSize
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(falsePositiveProbability, 1);
 
         const double Ln2 = 0.6931471805599453d; // Math.Log(2)
-        var counterCount = (long)Math.Ceiling(-expectedItemCount * Math.Log(falsePositiveProbability) / (Ln2 * Ln2));
-        var hashCount = (int)Math.Ceiling((double)counterCount / expectedItemCount * Ln2);
+        var exactCounterCount = Math.Ceiling(-expectedItemCount * Math.Log(falsePositiveProbability) / (Ln2 * Ln2));
+
+        // A double-to-long conversion saturates rather than overflowing, so without this check an
+        // oversized request silently returns long.MaxValue and, because the hash count is derived from
+        // it, a hash count of 1 instead of the correct value.
+        if (exactCounterCount >= (double)long.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(expectedItemCount), expectedItemCount, "The optimal size for these parameters exceeds the maximum supported size. Lower expectedItemCount or raise falsePositiveProbability.");
+
+        var counterCount = (long)exactCounterCount;
+        var hashCount = (int)Math.Ceiling(exactCounterCount / expectedItemCount * Ln2);
 
         return new CountingBloomFilterSize(counterCount, hashCount);
     }

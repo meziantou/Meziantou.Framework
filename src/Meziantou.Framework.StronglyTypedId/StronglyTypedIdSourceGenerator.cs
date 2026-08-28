@@ -746,6 +746,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 && IsParseDefined_ReadOnlySpan == other.IsParseDefined_ReadOnlySpan
                 && SupportStaticInterfaces == other.SupportStaticInterfaces
                 && SupportIStronglyTypedId == other.SupportIStronglyTypedId
+                && SupportIStronglyTypedId_UnderlyingType == other.SupportIStronglyTypedId_UnderlyingType
                 && SupportIStronglyTypedIdOfT == other.SupportIStronglyTypedIdOfT
                 && SupportIParsable == other.SupportIParsable
                 && SupportISpanParsable == other.SupportISpanParsable
@@ -792,6 +793,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             hashcode.Add(IsParseDefined_String);
             hashcode.Add(IsParseDefined_ReadOnlySpan);
             hashcode.Add(SupportIStronglyTypedId);
+            hashcode.Add(SupportIStronglyTypedId_UnderlyingType);
             hashcode.Add(SupportIStronglyTypedIdOfT);
             hashcode.Add(SupportStaticInterfaces);
             hashcode.Add(SupportIParsable);

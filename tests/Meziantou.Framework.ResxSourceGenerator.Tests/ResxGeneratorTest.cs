@@ -212,9 +212,14 @@ public sealed class ResxGeneratorTest
             ResourceName = "test",
         });
 
+        // Both entries must be reachable: "Hello World" sorts first and keeps the name, "Hello-World" is suffixed
+        Assert.Contains("Hello_World", result.GeneratedFileRoot.GetMemberNames());
+        Assert.Contains("Hello_World1", result.GeneratedFileRoot.GetMemberNames());
+
+        // ...and the key type must agree with the resource type on which entry got which name
         var fileContent = result.GeneratedFileRoot.ToFullString();
-        Assert.Contains("public static string? @Hello_World", fileContent);
-        Assert.Contains("// Skipped 'Hello_World'", fileContent);
+        Assert.Contains("public const string @Hello_World = \"Hello World\";", fileContent);
+        Assert.Contains("public const string @Hello_World1 = \"Hello-World\";", fileContent);
     }
 
     [Theory]
@@ -235,9 +240,12 @@ public sealed class ResxGeneratorTest
             ResourceName = "test",
         });
 
-        var fileContent = result.GeneratedFileRoot.ToFullString();
-        Assert.Contains("// Skipped '" + name + "'", fileContent);
-        Assert.Contains("@Sample", fileContent);
+        // The resource keeps a usable member, and the member the class always declares is untouched
+        var memberNames = result.GeneratedFileRoot.GetMemberNames();
+        Assert.Contains(name, memberNames);
+        Assert.Contains(name + "1", memberNames);
+        Assert.Contains("Sample", memberNames);
+        Assert.Contains("public const string @" + name + " = \"" + name + "\";", result.GeneratedFileRoot.ToFullString());
     }
 
     [Fact]
@@ -253,7 +261,11 @@ public sealed class ResxGeneratorTest
             ResourceName = "test",
         });
 
-        Assert.Contains("public static string? @FormatHello", result.GeneratedFileRoot.ToFullString());
+        // "FormatHello" sorts first and takes the plain name, so Hello's format method is suffixed
+        var memberNames = result.GeneratedFileRoot.GetMemberNames();
+        Assert.Contains("FormatHello", memberNames);
+        Assert.Contains("FormatHello1", memberNames);
+        Assert.Contains("Hello", memberNames);
     }
 
     [Fact]
@@ -700,6 +712,34 @@ file static class Extensions
             .OfType<NamespaceDeclarationSyntax>()
             .Single()
             .Name.WithoutTrivia().ToFullString();
+    }
+
+    public static List<string> GetMemberNames(this SyntaxNode node)
+    {
+        var result = new List<string>();
+        foreach (var member in node.DescendantNodesAndSelf())
+        {
+            switch (member)
+            {
+                case PropertyDeclarationSyntax property:
+                    result.Add(property.Identifier.ValueText);
+                    break;
+
+                case MethodDeclarationSyntax method:
+                    result.Add(method.Identifier.ValueText);
+                    break;
+
+                case FieldDeclarationSyntax field:
+                    foreach (var variable in field.Declaration.Variables)
+                    {
+                        result.Add(variable.Identifier.ValueText);
+                    }
+
+                    break;
+            }
+        }
+
+        return result;
     }
 
     public static bool AreTypesPublic(this SyntaxNode node)

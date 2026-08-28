@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.Reflection;
 using Meziantou.Framework.SimpleQueryLanguage.Binding;
 using Meziantou.Framework.SimpleQueryLanguage.Ranges;
 using Meziantou.Framework.SimpleQueryLanguage.Syntax;
@@ -230,13 +231,34 @@ public sealed class ExpressionQueryBuilder<T>
         return CreateExpression(new BoundTextQuery(node.IsNegated, $"{node.Key}:{node.Value}"));
     }
 
+    /// <summary>
+    /// Determines whether <typeparamref name="TValue"/> can be used with <see cref="Expression.LessThan(Expression, Expression)"/>
+    /// and friends, so the comparison operators are worth registering for it.
+    /// </summary>
     private static bool IsComparisonType<TValue>()
     {
-        return typeof(TValue) == typeof(sbyte) || typeof(TValue) == typeof(short) || typeof(TValue) == typeof(int) || typeof(TValue) == typeof(long) ||
-               typeof(TValue) == typeof(byte) || typeof(TValue) == typeof(ushort) || typeof(TValue) == typeof(uint) || typeof(TValue) == typeof(ulong) ||
-               typeof(TValue) == typeof(Int128) || typeof(TValue) == typeof(UInt128) ||
-               typeof(TValue) == typeof(float) || typeof(TValue) == typeof(double) || typeof(TValue) == typeof(decimal) ||
-               typeof(TValue) == typeof(DateTime) || typeof(TValue) == typeof(DateTimeOffset) || typeof(TValue) == typeof(DateOnly) || typeof(TValue) == typeof(TimeOnly);
+        // Unwrap Nullable<T>: the comparison operators are lifted, so an int? property is still orderable
+        var type = Nullable.GetUnderlyingType(typeof(TValue)) ?? typeof(TValue);
+
+        // Enums are deliberately excluded: Expression.LessThan is not defined for an enum type, it needs both
+        // operands converted to the underlying type first. They keep equality only, as before.
+        if (type.IsEnum)
+            return false;
+
+        // The built-in numeric types implement < with an IL instruction, so there is no operator method to find
+        if (type == typeof(sbyte) || type == typeof(short) || type == typeof(int) || type == typeof(long) ||
+            type == typeof(byte) || type == typeof(ushort) || type == typeof(uint) || type == typeof(ulong) ||
+            type == typeof(nint) || type == typeof(nuint) || type == typeof(char) ||
+            type == typeof(float) || type == typeof(double))
+        {
+            return true;
+        }
+
+        // Everything else that can be ordered exposes an operator method: decimal, DateTime, DateTimeOffset,
+        // DateOnly, TimeOnly, TimeSpan, Half, Int128, UInt128, BigInteger, and any user-defined type.
+        // Probing for it also keeps types that cannot be ordered, such as Guid, out of the comparison path
+        // instead of letting Expression.LessThan throw when the handler is registered.
+        return type.GetMethod("op_LessThan", BindingFlags.Public | BindingFlags.Static) is not null;
     }
 
     private static Expression<Func<T, bool>> CreateComparisonExpression<TValue>(

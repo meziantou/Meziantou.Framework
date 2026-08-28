@@ -105,7 +105,7 @@ public sealed partial class CGroup2
         return string.IsNullOrWhiteSpace(content) ? null : content.Trim();
     }
 
-    private static string ConvertToRanges(ReadOnlySpan<int> numbers)
+    internal static string ConvertToRanges(ReadOnlySpan<int> numbers)
     {
         if (numbers.IsEmpty)
             return "";
@@ -151,7 +151,7 @@ public sealed partial class CGroup2
         }
     }
 
-    private static int[] ParseCpuList(string cpuList)
+    internal static int[] ParseCpuList(string cpuList)
     {
         if (string.IsNullOrWhiteSpace(cpuList))
             return [];

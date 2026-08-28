@@ -424,7 +424,7 @@ namespace Meziantou.Framework.Yaml.Events
 {
     public class AnchorAlias : Meziantou.Framework.Yaml.Events.ParsingEvent
     {
-        public int NestingIncrease { get => throw null; }
+        public override int NestingIncrease { get => throw null; }
         public string Value { get => throw null; }
         public AnchorAlias(string value, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public AnchorAlias(string value) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
@@ -433,7 +433,7 @@ namespace Meziantou.Framework.Yaml.Events
 
     public class DocumentEnd : Meziantou.Framework.Yaml.Events.ParsingEvent
     {
-        public int NestingIncrease { get => throw null; }
+        public override int NestingIncrease { get => throw null; }
         public bool IsImplicit { get => throw null; }
         public DocumentEnd(bool isImplicit, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public DocumentEnd(bool isImplicit) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
@@ -442,7 +442,7 @@ namespace Meziantou.Framework.Yaml.Events
 
     public sealed class DocumentStart : Meziantou.Framework.Yaml.Events.ParsingEvent
     {
-        public int NestingIncrease { get => throw null; }
+        public override int NestingIncrease { get => throw null; }
         public Meziantou.Framework.Yaml.TagDirectiveCollection? Tags { get => throw null; }
         public Meziantou.Framework.Yaml.Tokens.VersionDirective? Version { get => throw null; }
         public bool IsImplicit { get => throw null; }
@@ -455,7 +455,7 @@ namespace Meziantou.Framework.Yaml.Events
 
     public class MappingEnd : Meziantou.Framework.Yaml.Events.ParsingEvent
     {
-        public int NestingIncrease { get => throw null; }
+        public override int NestingIncrease { get => throw null; }
         public MappingEnd(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public MappingEnd() : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public override string ToString() => throw null;
@@ -463,9 +463,9 @@ namespace Meziantou.Framework.Yaml.Events
 
     public sealed class MappingStart : Meziantou.Framework.Yaml.Events.NodeEvent
     {
-        public int NestingIncrease { get => throw null; }
+        public override int NestingIncrease { get => throw null; }
         public bool IsImplicit { get => throw null; }
-        public bool IsCanonical { get => throw null; }
+        public override bool IsCanonical { get => throw null; }
         public Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; }
         public MappingStart(string? anchor, string? tag, bool isImplicit, Meziantou.Framework.Yaml.YamlStyle style, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public MappingStart(string? anchor, string? tag, bool isImplicit, Meziantou.Framework.Yaml.YamlStyle style) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
@@ -477,14 +477,14 @@ namespace Meziantou.Framework.Yaml.Events
     {
         public string? Anchor { get => throw null; }
         public string? Tag { get => throw null; }
-        public bool IsCanonical { get; }
+        public abstract bool IsCanonical { get; }
         protected NodeEvent(string? anchor, string? tag, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         protected NodeEvent(string? anchor, string? tag) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
     }
 
     public abstract class ParsingEvent
     {
-        public int NestingIncrease { get; }
+        public abstract int NestingIncrease { get; }
         public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
         public Meziantou.Framework.Yaml.Mark End { get => throw null; }
         protected ParsingEvent(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) { }
@@ -492,12 +492,12 @@ namespace Meziantou.Framework.Yaml.Events
 
     public sealed class Scalar : Meziantou.Framework.Yaml.Events.NodeEvent
     {
-        public int NestingIncrease { get => throw null; }
+        public override int NestingIncrease { get => throw null; }
         public string Value { get => throw null; }
         public Meziantou.Framework.Yaml.ScalarStyle Style { get => throw null; }
         public bool IsPlainImplicit { get => throw null; }
         public bool IsQuotedImplicit { get => throw null; }
-        public bool IsCanonical { get => throw null; }
+        public override bool IsCanonical { get => throw null; }
         public Scalar(string? anchor, string? tag, string value, Meziantou.Framework.Yaml.ScalarStyle style, bool isPlainImplicit, bool isQuotedImplicit, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public Scalar(string? anchor, string? tag, string value, Meziantou.Framework.Yaml.ScalarStyle style, bool isPlainImplicit, bool isQuotedImplicit) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public Scalar(string value) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
@@ -509,7 +509,7 @@ namespace Meziantou.Framework.Yaml.Events
 
     public class SequenceEnd : Meziantou.Framework.Yaml.Events.ParsingEvent
     {
-        public int NestingIncrease { get => throw null; }
+        public override int NestingIncrease { get => throw null; }
         public SequenceEnd(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public SequenceEnd() : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public override string ToString() => throw null;
@@ -517,9 +517,9 @@ namespace Meziantou.Framework.Yaml.Events
 
     public sealed class SequenceStart : Meziantou.Framework.Yaml.Events.NodeEvent
     {
-        public int NestingIncrease { get => throw null; }
+        public override int NestingIncrease { get => throw null; }
         public bool IsImplicit { get => throw null; }
-        public bool IsCanonical { get => throw null; }
+        public override bool IsCanonical { get => throw null; }
         public Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; }
         public SequenceStart() : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public SequenceStart(string? anchor, string? tag, bool isImplicit, Meziantou.Framework.Yaml.YamlStyle style, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(string), default(string), default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
@@ -529,7 +529,7 @@ namespace Meziantou.Framework.Yaml.Events
 
     public class StreamEnd : Meziantou.Framework.Yaml.Events.ParsingEvent
     {
-        public int NestingIncrease { get => throw null; }
+        public override int NestingIncrease { get => throw null; }
         public StreamEnd(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public StreamEnd() : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public override string ToString() => throw null;
@@ -537,7 +537,7 @@ namespace Meziantou.Framework.Yaml.Events
 
     public sealed class StreamStart : Meziantou.Framework.Yaml.Events.ParsingEvent
     {
-        public int NestingIncrease { get => throw null; }
+        public override int NestingIncrease { get => throw null; }
         public StreamStart() : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public StreamStart(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public override string ToString() => throw null;
@@ -547,8 +547,8 @@ namespace Meziantou.Framework.Yaml.Model
 {
     public abstract class YamlContainer : Meziantou.Framework.Yaml.Model.YamlElement
     {
-        public Meziantou.Framework.Yaml.YamlStyle Style { get; set; }
-        public bool IsImplicit { get; set; }
+        public abstract Meziantou.Framework.Yaml.YamlStyle Style { get; set; }
+        public abstract bool IsImplicit { get; set; }
     }
 
     public class YamlDocument : Meziantou.Framework.Yaml.Model.YamlNode
@@ -562,19 +562,19 @@ namespace Meziantou.Framework.Yaml.Model
 
     public abstract class YamlElement : Meziantou.Framework.Yaml.Model.YamlNode
     {
-        public string? Anchor { get; set; }
-        public string? Tag { get; set; }
-        public bool IsCanonical { get; }
+        public abstract string? Anchor { get; set; }
+        public abstract string? Tag { get; set; }
+        public abstract bool IsCanonical { get; }
     }
 
     public class YamlMapping : Meziantou.Framework.Yaml.Model.YamlContainer, System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement>>, System.Collections.Generic.IDictionary<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement>>, System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement>>, System.Collections.IEnumerable
     {
         public Meziantou.Framework.Yaml.Events.MappingStart MappingStart { get => throw null; set { } }
-        public string? Anchor { get => throw null; set { } }
-        public string? Tag { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; set { } }
-        public bool IsCanonical { get => throw null; }
-        public bool IsImplicit { get => throw null; set { } }
+        public override string? Anchor { get => throw null; set { } }
+        public override string? Tag { get => throw null; set { } }
+        public override Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; set { } }
+        public override bool IsCanonical { get => throw null; }
+        public override bool IsImplicit { get => throw null; set { } }
         public int Count { get => throw null; }
         public bool IsReadOnly { get => throw null; }
         public Meziantou.Framework.Yaml.Model.YamlElement? this[Meziantou.Framework.Yaml.Model.YamlElement key] { get => throw null; set { } }
@@ -626,11 +626,11 @@ namespace Meziantou.Framework.Yaml.Model
     public class YamlSequence : Meziantou.Framework.Yaml.Model.YamlContainer, System.Collections.Generic.ICollection<Meziantou.Framework.Yaml.Model.YamlElement>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Model.YamlElement>, System.Collections.Generic.IList<Meziantou.Framework.Yaml.Model.YamlElement>, System.Collections.IEnumerable
     {
         public Meziantou.Framework.Yaml.Events.SequenceStart SequenceStart { get => throw null; set { } }
-        public string? Anchor { get => throw null; set { } }
-        public string? Tag { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; set { } }
-        public bool IsCanonical { get => throw null; }
-        public bool IsImplicit { get => throw null; set { } }
+        public override string? Anchor { get => throw null; set { } }
+        public override string? Tag { get => throw null; set { } }
+        public override Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; set { } }
+        public override bool IsCanonical { get => throw null; }
+        public override bool IsImplicit { get => throw null; set { } }
         public int Count { get => throw null; }
         public bool IsReadOnly { get => throw null; }
         public Meziantou.Framework.Yaml.Model.YamlElement this[int index] { get => throw null; set { } }
@@ -671,10 +671,10 @@ namespace Meziantou.Framework.Yaml.Model
     public class YamlValue : Meziantou.Framework.Yaml.Model.YamlElement
     {
         public Meziantou.Framework.Yaml.Events.Scalar Scalar { get => throw null; set { } }
-        public string? Anchor { get => throw null; set { } }
-        public string? Tag { get => throw null; set { } }
+        public override string? Anchor { get => throw null; set { } }
+        public override string? Tag { get => throw null; set { } }
         public Meziantou.Framework.Yaml.ScalarStyle Style { get => throw null; set { } }
-        public bool IsCanonical { get => throw null; }
+        public override bool IsCanonical { get => throw null; }
         public bool IsPlainImplicit { get => throw null; set { } }
         public bool IsQuotedImplicit { get => throw null; set { } }
         public string Value { get => throw null; set { } }

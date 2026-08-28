@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <!-- All the tests are skipped when not running on Linux, when cgroup v2 is unavailable, or when running on GitHub Actions -->
-    <MinimumExpectedTests>0</MinimumExpectedTests>
     <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
     <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
   </PropertyGroup>

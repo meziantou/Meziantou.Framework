@@ -34,7 +34,7 @@ namespace Meziantou.AspNetCore.Components
 
     public class LogHighlighterResult : System.IEquatable<Meziantou.AspNetCore.Components.LogHighlighterResult>
     {
-        protected System.Type EqualityContract { get => throw null; }
+        protected virtual System.Type EqualityContract { get => throw null; }
         public int Index { get => throw null; init { } }
         public int Length { get => throw null; init { } }
         public int Priority { get => throw null; init { } }

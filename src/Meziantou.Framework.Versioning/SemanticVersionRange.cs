@@ -37,8 +37,12 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
     {
         MinVersion = minVersion;
         MaxVersion = maxVersion;
-        IsMinInclusive = isMinInclusive;
-        IsMaxInclusive = isMaxInclusive;
+
+        // A bound that is not there cannot be inclusive or exclusive. Normalising the flag keeps
+        // ranges that accept exactly the same versions equal to one another and hashing alike,
+        // e.g. NuGet's "[,]" and "(,)" both describing All.
+        IsMinInclusive = minVersion is not null && isMinInclusive;
+        IsMaxInclusive = maxVersion is not null && isMaxInclusive;
     }
 
     /// <summary>Gets the minimum version bound, or null if there is no lower bound.</summary>
@@ -316,7 +320,14 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
 
         if (commaIndex < 0)
         {
-            // Exact version: [1.0.0]
+            // Exact version: [1.0.0]. Both bounds have to be inclusive: "[1.0.0)", "(1.0.0]" and
+            // "(1.0.0)" describe a range no version can satisfy, so they are typos rather than
+            // ranges and are rejected instead of silently matching nothing.
+            if (!isMinInclusive || !isMaxInclusive)
+            {
+                return false;
+            }
+
             if (!SemanticVersion.TryParse(inner.Trim(), out var exactVersion))
             {
                 return false;
@@ -344,6 +355,26 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         if (!maxPart.IsEmpty)
         {
             if (!SemanticVersion.TryParse(maxPart, out maxVersion))
+            {
+                return false;
+            }
+        }
+
+        if (minVersion2 is not null && maxVersion is not null)
+        {
+            var comparison = minVersion2.CompareTo(maxVersion);
+
+            // An inverted range such as "[2.0.0,1.0.0]" matches nothing; reject it rather than
+            // hand back a range that silently never matches.
+            if (comparison > 0)
+            {
+                return false;
+            }
+
+            // Bounding a single version once inclusively and once exclusively contradicts itself.
+            // NuGet rejects "[1.0.0,1.0.0)" and "(1.0.0,1.0.0]" for the same reason, while
+            // accepting "(1.0.0,1.0.0)" and "[1.0.0,1.0.0]", so this matches its rule exactly.
+            if (comparison is 0 && isMinInclusive != isMaxInclusive)
             {
                 return false;
             }

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
@@ -32,7 +33,7 @@ public sealed class UseCreateParentDirectoryCodeFixProvider : FullPathCodeFixPro
             replacementExpression = SyntaxFactory.InvocationExpression(
                 SyntaxFactory.MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
-                    Parenthesize(instanceExpression.WithoutTrivia()),
+                    instanceExpression.WithoutTrivia().Parenthesize(),
                     SyntaxFactory.IdentifierName("CreateParentDirectory")));
             return true;
         }

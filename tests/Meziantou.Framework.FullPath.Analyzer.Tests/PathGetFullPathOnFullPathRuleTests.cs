@@ -63,4 +63,27 @@ public sealed class PathGetFullPathOnFullPathRuleTests : FullPathAnalyzerTestBas
 
         await CreateAnalyzerTest<PathGetFullPathOnFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_DoesNotOfferCodeFix_WhenTheResultIsAStringReceiver()
+    {
+        var source = """
+            using System;
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static bool M(FullPath fullPath)
+                    {
+                        return {|MFFP0001:Path.GetFullPath(fullPath)|}.StartsWith("C:", StringComparison.Ordinal);
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<PathGetFullPathOnFullPathAnalyzerType, PathGetFullPathOnFullPathCodeFixProviderType>(source, source).RunAsync(XunitCancellationToken);
+    }
 }

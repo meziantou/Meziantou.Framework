@@ -404,6 +404,7 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         "DiagnosticPropertyReportOptions.cs",
         "DiagnosticReporter.cs",
         "EmbeddedAttribute.cs",
+        "ExpressionSyntaxExtensions.cs",
         "GeneratedCodeExtensions.cs",
         "LanguageVersionExtensions.cs",
         "LocalDataFlowAnalysis.cs",

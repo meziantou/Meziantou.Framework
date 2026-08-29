@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -93,7 +94,7 @@ public sealed class PathGetRelativePathWithFullPathCodeFixProvider : CodeFixProv
                 replacementExpression = SyntaxFactory.InvocationExpression(
                     SyntaxFactory.MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        valueExpression.WithoutTrivia(),
+                        valueExpression.WithoutTrivia().Parenthesize(),
                         SyntaxFactory.IdentifierName("MakePathRelativeTo")),
                     SyntaxFactory.ArgumentList(
                     [

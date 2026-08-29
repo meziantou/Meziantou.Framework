@@ -11,7 +11,7 @@ public sealed class PathCombineWithFullPathAnalyzer : DiagnosticAnalyzer
 {
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.PathCombineWithFullPathDiagnosticId,
-        title: "Use '/' operator instead of Path.Combine or Path.Join",
+        title: "Use '/' operator instead of Path.Combine",
         messageFormat: "Use FullPath '/' operations instead of calling Path.{0}",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Info,
@@ -36,7 +36,9 @@ public sealed class PathCombineWithFullPathAnalyzer : DiagnosticAnalyzer
     private static void Analyze(OperationAnalysisContext context, FullPathContext analyzerContext)
     {
         var invocationOperation = (IInvocationOperation)context.Operation;
-        if (invocationOperation.TargetMethod is not { IsStatic: true, Name: "Combine" or "Join" } targetMethod)
+        // Path.Join is deliberately NOT included: it concatenates unconditionally, while the '/' operator
+        // (like Path.Combine) discards everything before a rooted segment
+        if (invocationOperation.TargetMethod is not { IsStatic: true, Name: "Combine" } targetMethod)
             return;
 
         if (!SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, analyzerContext.PathType))

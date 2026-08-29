@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -120,8 +121,8 @@ public sealed class PathGetFullPathWithFullPathBaseCodeFixProvider : CodeFixProv
 
         replacementExpression = SyntaxFactory.BinaryExpression(
             SyntaxKind.DivideExpression,
-            basePathExpression.WithoutTrivia(),
-            pathExpression.WithoutTrivia());
+            basePathExpression.WithoutTrivia().Parenthesize(),
+            pathExpression.WithoutTrivia().Parenthesize());
 
         return true;
     }

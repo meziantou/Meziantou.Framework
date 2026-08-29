@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -91,7 +92,7 @@ public sealed class PathChangeExtensionWithFullPathCodeFixProvider : CodeFixProv
                 replacementExpression = SyntaxFactory.InvocationExpression(
                     SyntaxFactory.MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        fullPathExpression.WithoutTrivia(),
+                        fullPathExpression.WithoutTrivia().Parenthesize(),
                         SyntaxFactory.IdentifierName("ChangeExtension")),
                     SyntaxFactory.ArgumentList(
                     [

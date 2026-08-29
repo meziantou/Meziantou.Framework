@@ -29,7 +29,7 @@ public sealed class InternetCalendarTests
         }
 
         Assert.Fail($"No '{name}' content line in:\n{ics}");
-        return null!;
+        throw new UnreachableException();
     }
 
     private static InternetCalendar CreateCalendarWithEvent(Event @event)

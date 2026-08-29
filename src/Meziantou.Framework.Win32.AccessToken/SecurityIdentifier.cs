@@ -103,10 +103,18 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
     private static unsafe string ConvertSidToStringSid(PSID sid)
     {
         PWSTR result = default;
-        if (PInvoke.ConvertSidToStringSid(sid, &result))
-            return result.ToString();
+        if (!PInvoke.ConvertSidToStringSid(sid, &result))
+            throw new Win32Exception(Marshal.GetLastWin32Error());
 
-        throw new Win32Exception(Marshal.GetLastWin32Error());
+        try
+        {
+            return result.ToString();
+        }
+        finally
+        {
+            // ConvertSidToStringSid allocates the buffer with LocalAlloc
+            PInvoke.LocalFree((HLOCAL)result.Value);
+        }
     }
 
     private static unsafe void LookupName(PSID sid, out string? domain, out string? name)

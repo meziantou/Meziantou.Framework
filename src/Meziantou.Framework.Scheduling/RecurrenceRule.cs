@@ -63,8 +63,8 @@ public abstract class RecurrenceRule : IRecurrenceRule
     /// <summary>Limits occurrences to specific positions in the recurrence set.</summary>
     public IList<int>? BySetPositions { get; set; }
 
-    /// <summary>Gets a value indicating whether the recurrence rule has an end condition.</summary>
-    public bool IsForever => Occurrences.HasValue || EndDate.HasValue;
+    /// <summary>Gets a value indicating whether the recurrence rule never ends.</summary>
+    public bool IsForever => !Occurrences.HasValue && !EndDate.HasValue;
 
     /// <summary>Parses a recurrence rule string according to RFC 5545 format.</summary>
     /// <param name="rrule">The recurrence rule string to parse.</param>

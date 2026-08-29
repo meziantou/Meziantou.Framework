@@ -17,6 +17,28 @@ public partial class RecurrenceRuleTests
             new DateTime(1997, 11, 30, 09, 00, 00));
     }
 
+    [Theory]
+    [InlineData("FREQ=DAILY")]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=-1")]
+    public void IsForever_RuleWithoutEndCondition(string rruleText)
+    {
+        var rrule = RecurrenceRule.Parse(rruleText);
+
+        Assert.True(rrule.IsForever);
+    }
+
+    [Theory]
+    [InlineData("FREQ=DAILY;COUNT=5")]
+    [InlineData("FREQ=DAILY;UNTIL=20000131T140000Z")]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO;COUNT=1")]
+    public void IsForever_RuleWithEndCondition(string rruleText)
+    {
+        var rrule = RecurrenceRule.Parse(rruleText);
+
+        Assert.False(rrule.IsForever);
+    }
+
     [Fact]
     public void Daily_Text01()
     {

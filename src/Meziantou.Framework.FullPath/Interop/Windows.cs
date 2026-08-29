@@ -143,6 +143,10 @@ namespace Meziantou.Framework
 }
 namespace System.IO
 {
+    // Adapted from dotnet/runtime, licensed to the .NET Foundation under one or more agreements.
+    // The .NET Foundation licenses this file to you under the MIT license.
+    // Source: https://github.com/dotnet/runtime/blob/main/src/libraries/Common/src/System/IO/PathInternal.Windows.cs
+    // Only the members this project needs were kept; the rest of the upstream type was dropped.
     internal static partial class PathInternal
     {
         // All paths in Win32 ultimately end up becoming a path to a File object in the Windows object manager. Passed in paths get mapped through

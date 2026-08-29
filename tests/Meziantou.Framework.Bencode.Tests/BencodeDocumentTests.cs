@@ -345,6 +345,48 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public void BencodeWriter_WriteEndDictionaryWhileExpectingValue_LeavesTheDictionaryOpen()
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        var writer = new BencodeWriter(buffer);
+        writer.WriteStartDictionary();
+        writer.WriteUtf8Key("a");
+
+        Assert.Throws<InvalidOperationException>(() => writer.WriteEndDictionary());
+
+        writer.WriteInteger(1);
+        writer.WriteEndDictionary();
+        writer.Complete();
+
+        Assert.Equal("d1:ai1ee", Encoding.ASCII.GetString(buffer.WrittenSpan));
+    }
+
+    [Fact]
+    public void BencodeWriter_WriteEndListWhileInsideADictionary_LeavesTheDictionaryOpen()
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        var writer = new BencodeWriter(buffer);
+        writer.WriteStartDictionary();
+        writer.WriteUtf8Key("a");
+        writer.WriteInteger(1);
+
+        Assert.Throws<InvalidOperationException>(() => writer.WriteEndList());
+
+        writer.WriteEndDictionary();
+        writer.Complete();
+
+        Assert.Equal("d1:ai1ee", Encoding.ASCII.GetString(buffer.WrittenSpan));
+    }
+
+    [Fact]
+    public void BencodeWriter_WriteEndDictionaryWithoutAnOpenContainer_Throws()
+    {
+        var writer = new BencodeWriter(new ArrayBufferWriter<byte>());
+
+        Assert.Throws<InvalidOperationException>(() => writer.WriteEndDictionary());
+    }
+
+    [Fact]
     public void BencodeWriter_WriteMultipleRootValues_Throws()
     {
         var writer = new BencodeWriter(new ArrayBufferWriter<byte>());

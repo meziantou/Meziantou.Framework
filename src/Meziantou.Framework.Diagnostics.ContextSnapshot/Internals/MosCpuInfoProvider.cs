@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using System.Management;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
@@ -22,30 +21,32 @@ internal static class MosCpuInfoProvider
         var processorsCount = 0;
         uint nominalClockSpeed = 0;
         uint maxClockSpeed = 0;
-        uint minClockSpeed = 0;
 
         try
         {
             using var mosProcessor = new ManagementObjectSearcher("SELECT * FROM Win32_Processor");
-            foreach (var moProcessor in mosProcessor.Get().Cast<ManagementObject>())
+            using var processors = mosProcessor.Get();
+            foreach (var moProcessor in processors.Cast<ManagementObject>())
             {
-                var name = moProcessor[Win32ProcessorKeyNames.Name]?.ToString();
-                if (!string.IsNullOrEmpty(name))
+                using (moProcessor)
                 {
-                    processorModelNames.Add(name);
-                    processorsCount++;
-                    physicalCoreCount += (uint)moProcessor[Win32ProcessorKeyNames.NumberOfCores];
-                    logicalCoreCount += (uint)moProcessor[Win32ProcessorKeyNames.NumberOfLogicalProcessors];
-                    maxClockSpeed = (uint)moProcessor[Win32ProcessorKeyNames.MaxClockSpeed];
+                    var name = GetString(moProcessor, Win32ProcessorKeyNames.Name);
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        processorModelNames.Add(name);
+                        processorsCount++;
+                        physicalCoreCount += GetUInt32(moProcessor, Win32ProcessorKeyNames.NumberOfCores);
+                        logicalCoreCount += GetUInt32(moProcessor, Win32ProcessorKeyNames.NumberOfLogicalProcessors);
+                        nominalClockSpeed = Math.Max(nominalClockSpeed, GetUInt32(moProcessor, Win32ProcessorKeyNames.CurrentClockSpeed));
+                        maxClockSpeed = Math.Max(maxClockSpeed, GetUInt32(moProcessor, Win32ProcessorKeyNames.MaxClockSpeed));
+                    }
                 }
             }
         }
-        catch (ManagementException)
+        catch (Exception)
         {
-            return null;
-        }
-        catch (COMException)
-        {
+            // Best-effort fallback: WMI can fail in many ways (service stopped, missing class, missing property)
+            // and none of them are actionable here.
             return null;
         }
 
@@ -54,8 +55,16 @@ internal static class MosCpuInfoProvider
             processorsCount > 0 ? processorsCount : null,
             physicalCoreCount > 0 ? (int?)physicalCoreCount : null,
             logicalCoreCount > 0 ? (int?)logicalCoreCount : null,
-            nominalClockSpeed > 0 && logicalCoreCount > 0 ? Frequency.FromMHz(nominalClockSpeed) : null,
-            minClockSpeed > 0 && logicalCoreCount > 0 ? Frequency.FromMHz(minClockSpeed) : null,
-            maxClockSpeed > 0 && logicalCoreCount > 0 ? Frequency.FromMHz(maxClockSpeed) : null);
+            nominalClockSpeed > 0 ? Frequency.FromMHz(nominalClockSpeed) : null,
+            minFrequency: null,
+            maxClockSpeed > 0 ? Frequency.FromMHz(maxClockSpeed) : null);
     }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private static string? GetString(ManagementObject managementObject, string propertyName)
+        => managementObject[propertyName] as string;
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private static uint GetUInt32(ManagementObject managementObject, string propertyName)
+        => managementObject[propertyName] is uint value ? value : 0;
 }

@@ -43,6 +43,34 @@ public sealed class UseFullPathFactoryAnalyzer : DiagnosticAnalyzer
         if (analyzerContext.GetFullPathFactoryEquivalentTypeName(targetMethod) is not { } declaringTypeName)
             return;
 
+        if (IsConcatenated(invocationOperation))
+            return;
+
         context.ReportDiagnostic(Descriptor, invocationOperation, targetMethod.Name, declaringTypeName);
+    }
+
+    /// <summary>
+    /// Reports whether the result is appended to another string.
+    /// </summary>
+    /// <remarks>
+    /// The FullPath factories normalize the path, which removes the trailing directory separator that
+    /// <c>Path.GetTempPath</c> guarantees. Concatenating onto the result therefore produces a
+    /// different string, so the FullPath equivalent is not a drop-in replacement in that position.
+    /// </remarks>
+    private static bool IsConcatenated(IOperation operation)
+    {
+        var current = operation;
+        while (current.Parent is IConversionOperation { IsImplicit: true } conversionOperation)
+        {
+            current = conversionOperation;
+        }
+
+        return current.Parent switch
+        {
+            IBinaryOperation { OperatorKind: BinaryOperatorKind.Add } => true,
+            ICompoundAssignmentOperation { OperatorKind: BinaryOperatorKind.Add } => true,
+            IInterpolationOperation => true,
+            _ => false,
+        };
     }
 }

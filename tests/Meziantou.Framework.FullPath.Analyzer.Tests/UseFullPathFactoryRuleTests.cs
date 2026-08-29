@@ -197,4 +197,40 @@ public sealed class UseFullPathFactoryRuleTests : FullPathAnalyzerTestBase
 
         await CreateAnalyzerTest<UseFullPathFactoryAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_ForPathGetTempPathInConcatenation()
+    {
+        var source = """
+            using System.IO;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M() => Path.GetTempPath() + "log.txt";
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<UseFullPathFactoryAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_ForPathGetTempPathInInterpolatedString()
+    {
+        var source = """
+            using System.IO;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M() => $"{Path.GetTempPath()}log.txt";
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<UseFullPathFactoryAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
 }

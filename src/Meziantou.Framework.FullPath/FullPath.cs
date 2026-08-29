@@ -268,7 +268,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        return new FullPath(Path.ChangeExtension(_value, extension));
+        return FromPath(Path.ChangeExtension(_value, extension));
     }
 
     /// <summary>Returns a new path with the specified file extension, optionally replacing all trailing extensions.</summary>
@@ -311,12 +311,12 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         }
 
         if (string.IsNullOrEmpty(extension))
-            return new FullPath(current);
+            return FromPath(current);
 
         if (!extension.StartsWith('.', StringComparison.Ordinal))
             extension = "." + extension;
 
-        return new FullPath(current + extension);
+        return FromPath(current + extension);
     }
 
     /// <summary>Returns a new path with the specified name, keeping the same parent directory.</summary>
@@ -328,11 +328,9 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        var parent = Path.GetDirectoryName(_value);
-        if (parent is null)
-            return new FullPath(name);
-
-        return new FullPath(Path.Combine(parent, name));
+        // A null directory name means the path is already a root (such as "/" or @"C:\"), which is its own parent here
+        var parent = Path.GetDirectoryName(_value) ?? _value;
+        return FromPath(Path.Combine(parent, name));
     }
 
     /// <summary>Returns a new path with the specified name, keeping the same parent directory but without changing the extension.</summary>
@@ -344,13 +342,11 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        var parent = Path.GetDirectoryName(_value);
+        // A null directory name means the path is already a root (such as "/" or @"C:\"), which is its own parent here
+        var parent = Path.GetDirectoryName(_value) ?? _value;
         var extension = Path.GetExtension(_value);
         var newName = nameWithoutExtension + extension;
-        if (parent is null)
-            return new FullPath(newName);
-
-        return new FullPath(Path.Combine(parent, newName));
+        return FromPath(Path.Combine(parent, newName));
     }
 
     /// <summary>Gets the path of the system's temporary folder.</summary>

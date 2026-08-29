@@ -73,6 +73,105 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public void ChangeName_NormalizesTheResultingPath()
+    {
+        var root = FullPath.FromPath("test");
+        var path = root / "a" / "b.txt";
+
+        var newPath = path.WithName("../c.txt");
+
+        Assert.Equal(root / "c.txt", newPath);
+        Assert.Equal(FullPath.FromPath(newPath.RawValue), newPath);
+    }
+
+    [Fact]
+    public void ChangeName_EscapingTheRootIsNotReportedAsAChild()
+    {
+        var root = FullPath.FromPath("test");
+        var path = root / "a" / "b.txt";
+
+        var newPath = path.WithName("../../../../etc/passwd");
+
+        Assert.False(newPath.IsChildOf(root));
+        Assert.Equal(FullPath.FromPath(newPath.RawValue), newPath);
+    }
+
+    [Fact]
+    public void ChangeName_RootDirectory()
+    {
+        var root = GetRootDirectory();
+
+        var newPath = root.WithName("temp");
+
+        Assert.Equal(root / "temp", newPath);
+    }
+
+    [Fact]
+    public void ChangeName_EmbeddedNullCharacterIsRejected()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.txt";
+
+        Assert.Throws<ArgumentException>(() => path.WithName("a\0b"));
+    }
+
+    [Fact]
+    public void ChangeNameWithoutExtension_NormalizesTheResultingPath()
+    {
+        var root = FullPath.FromPath("test");
+        var path = root / "a" / "b.txt";
+
+        var newPath = path.WithNameWithoutExtension("../c");
+
+        Assert.Equal(root / "c.txt", newPath);
+    }
+
+    [Fact]
+    public void ChangeNameWithoutExtension_RootDirectory()
+    {
+        var root = GetRootDirectory();
+
+        var newPath = root.WithNameWithoutExtension("temp");
+
+        Assert.Equal(root / "temp", newPath);
+    }
+
+    [Fact]
+    public void ChangeExtension_NormalizesTheResultingPath()
+    {
+        var root = FullPath.FromPath("test");
+        var path = root / "a" / "b.txt";
+
+        var newPath = path.WithExtension("/../../c");
+
+        Assert.Equal(FullPath.FromPath(newPath.RawValue), newPath);
+        Assert.False(newPath.IsChildOf(root / "a"));
+    }
+
+    [Fact]
+    public void ChangeExtension_DotFileKeepsNoTrailingSeparator()
+    {
+        var parent = FullPath.FromPath("test") / "a";
+        var path = parent / ".gitignore";
+
+        var newPath = path.WithExtension(null);
+
+        Assert.Equal(parent, newPath);
+        Assert.Equal(parent.RawValue, newPath.RawValue);
+    }
+
+    [Fact]
+    public void ChangeMultipleExtensions_DotFileKeepsNoTrailingSeparator()
+    {
+        var parent = FullPath.FromPath("test") / "a";
+        var path = parent / ".gitignore";
+
+        var newPath = path.WithExtension(null, replaceAllTrailingExtensions: true);
+
+        Assert.Equal(parent, newPath);
+        Assert.Equal(parent.RawValue, newPath.RawValue);
+    }
+
+    [Fact]
     public void ChangeMultipleExtensions()
     {
         var path = FullPath.FromPath("test") / "a" / "b.tar.gz";

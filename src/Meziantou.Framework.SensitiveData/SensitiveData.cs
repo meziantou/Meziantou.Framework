@@ -256,6 +256,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// Copies the contents of this <see cref="SensitiveData{T}"/> instance to a destination buffer.
     /// </summary>
     /// <param name="destination">The destination buffer which should receive the contents. This buffer must be at least <see cref="GetLength"/> elements in length.</param>
+    /// <returns>The number of elements written to <paramref name="destination"/>, which is always <see cref="GetLength"/>. A larger destination is left untouched past that point.</returns>
     /// <exception cref="ArgumentException"><paramref name="destination"/>'s length is smaller than <see cref="GetLength"/>.</exception>
     /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public int RevealInto(Span<T> destination)

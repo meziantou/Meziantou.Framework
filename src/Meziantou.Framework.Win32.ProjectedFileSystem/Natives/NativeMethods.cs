@@ -24,10 +24,10 @@ internal static class NativeMethods
         return hr;
     }
 
-    internal static HResult PrjStopVirtualizing(IntPtr namespaceVirtualizationContext)
+    // PrjStopVirtualizing has no return value, so there is no status to surface here
+    internal static void PrjStopVirtualizing(IntPtr namespaceVirtualizationContext)
     {
         PInvoke.PrjStopVirtualizing((ProjFs.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT)namespaceVirtualizationContext);
-        return HResult.S_OK;
     }
 
     internal static HResult PrjFillDirEntryBuffer(string fileName, in ProjFs.PRJ_FILE_BASIC_INFO callbacks, IntPtr dirEntryBufferHandle)

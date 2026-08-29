@@ -43,6 +43,54 @@ public sealed class TorrentFileTests
     }
 
     [Fact]
+    public void TryParse_NonUtf8Comment_ReturnsFalse()
+    {
+        var data = new List<byte>("d7:comment2:"u8.ToArray());
+        data.AddRange([0xFF, 0xFE]);
+        data.AddRange("4:infod6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:01234567890123456789ee"u8.ToArray());
+
+        var parsed = TorrentFile.TryParse(data.ToArray(), out var torrent);
+
+        Assert.False(parsed);
+        Assert.Null(torrent);
+    }
+
+    [Fact]
+    public void Parse_NonUtf8Name_ThrowsFormatException()
+    {
+        var data = new List<byte>("d4:infod6:lengthi123e4:name2:"u8.ToArray());
+        data.AddRange([0xFF, 0xFE]);
+        data.AddRange("12:piece lengthi16384e6:pieces20:01234567890123456789ee"u8.ToArray());
+
+        var exception = Assert.Throws<FormatException>(() => TorrentFile.Parse(data.ToArray()));
+        Assert.IsType<DecoderFallbackException>(exception.InnerException);
+    }
+
+    [Fact]
+    public void Parse_NonUtf8PathSegment_ThrowsFormatException()
+    {
+        var data = new List<byte>("d4:infod5:filesld6:lengthi1e4:pathl2:"u8.ToArray());
+        data.AddRange([0xFF, 0xFE]);
+        data.AddRange("eee4:name4:test12:piece lengthi16384e6:pieces20:01234567890123456789ee"u8.ToArray());
+
+        Assert.Throws<FormatException>(() => TorrentFile.Parse(data.ToArray()));
+    }
+
+    [Fact]
+    public void Parse_NonAsciiUtf8Comment_IsStillSupported()
+    {
+        var data = new List<byte>("d7:comment"u8.ToArray());
+        var comment = Encoding.UTF8.GetBytes("caf\u00e9 \u2013 caf\u00e9");
+        data.AddRange(Encoding.ASCII.GetBytes(comment.Length + ":"));
+        data.AddRange(comment);
+        data.AddRange("4:infod6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:01234567890123456789ee"u8.ToArray());
+
+        var torrent = TorrentFile.Parse(data.ToArray());
+
+        Assert.Equal("caf\u00e9 \u2013 caf\u00e9", torrent.Comment);
+    }
+
+    [Fact]
     public async Task WriteToAsync_RoundTrip()
     {
         var torrent = TorrentFile.Parse(SingleFileTorrent);

@@ -266,4 +266,34 @@ public sealed class MarkOfTheWebTests
             File.Delete(path);
         }
     }
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void IsUntrusted_Throws_WhenTheFileDoesNotExist()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".txt");
+
+        Assert.Throws<FileNotFoundException>(() => MarkOfTheWeb.IsUntrusted(path));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void IsUntrusted_Throws_WhenThePathIsADirectory()
+    {
+        var directory = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
+        try
+        {
+            Assert.Throws<FileNotFoundException>(() => MarkOfTheWeb.IsUntrusted(directory.FullName));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetFileZone_ReturnsInvalid_WhenTheFileDoesNotExist()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".txt");
+
+        Assert.Equal(UrlZone.Invalid, MarkOfTheWeb.GetFileZone(path));
+    }
+
 }

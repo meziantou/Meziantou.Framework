@@ -64,10 +64,10 @@ public sealed class BencodeDictionary : BencodeValue, IReadOnlyDictionary<Bencod
         return _lookup.ContainsKey(key);
     }
 
-    public bool TryGetValue(BencodeString key, out BencodeValue value)
+    public bool TryGetValue(BencodeString key, [MaybeNullWhen(false)] out BencodeValue value)
     {
         ArgumentNullException.ThrowIfNull(key);
-        return _lookup.TryGetValue(key, out value!);
+        return _lookup.TryGetValue(key, out value);
     }
 
     public override void WriteTo(BencodeWriter writer, bool canonical)

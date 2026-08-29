@@ -383,6 +383,21 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public void BencodeDictionary_TryGetValue_MissingKey_ReportsNoValue()
+    {
+        var dictionary = new BencodeDictionary
+        {
+            { Utf8Key("a"), new BencodeInteger(1) },
+        };
+
+        Assert.False(dictionary.TryGetValue(Utf8Key("b"), out var missing));
+        Assert.Null(missing);
+
+        Assert.True(dictionary.TryGetValue(Utf8Key("a"), out var found));
+        Assert.Equal(BencodeValueKind.Integer, found.Kind);
+    }
+
+    [Fact]
     public void BencodeWriter_WriteDictionary()
     {
         var buffer = new ArrayBufferWriter<byte>();

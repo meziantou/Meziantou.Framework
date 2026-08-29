@@ -144,6 +144,22 @@ public sealed class TorrentFileTests
     }
 
     [Fact]
+    public void TryParse_ValidContent_ReturnsTheTorrent()
+    {
+        // No null-forgiving operator inside the branch: NotNullWhen(true) must narrow `torrent` here,
+        // otherwise this test does not compile under warnings-as-errors.
+        if (TorrentFile.TryParse(SingleFileTorrent, out var torrent))
+        {
+            Assert.Equal("file.txt", torrent.Info.Name);
+            Assert.Equal(123, torrent.Info.Length);
+        }
+        else
+        {
+            Assert.Fail("Expected the torrent to parse.");
+        }
+    }
+
+    [Fact]
     public async Task WriteToAsync_RoundTrip()
     {
         var torrent = TorrentFile.Parse(SingleFileTorrent);

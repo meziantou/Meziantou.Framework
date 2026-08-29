@@ -61,7 +61,7 @@ public sealed class TorrentFile
         return Parse(buffer.GetBuffer().AsSpan(0, (int)buffer.Length));
     }
 
-    public static bool TryParse(ReadOnlySpan<byte> data, out TorrentFile? result)
+    public static bool TryParse(ReadOnlySpan<byte> data, [NotNullWhen(true)] out TorrentFile? result)
     {
         try
         {

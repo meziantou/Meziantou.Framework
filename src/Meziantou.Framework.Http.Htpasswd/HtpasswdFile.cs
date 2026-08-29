@@ -95,13 +95,21 @@ public sealed class HtpasswdFile
     /// </summary>
     /// <param name="file">The path of the htpasswd file.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static async Task<HtpasswdFile> LoadAsync(string file)
+    public static Task<HtpasswdFile> LoadAsync(string file) => LoadAsync(file, CancellationToken.None);
+
+    /// <summary>
+    /// Loads and parses an htpasswd file from disk.
+    /// </summary>
+    /// <param name="file">The path of the htpasswd file.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static async Task<HtpasswdFile> LoadAsync(string file, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(file);
 
-        await using var stream = File.OpenRead(file);
+        await using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true);
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-        return await LoadAsync(reader).ConfigureAwait(false);
+        return await LoadAsync(reader, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -109,11 +117,19 @@ public sealed class HtpasswdFile
     /// </summary>
     /// <param name="file">The reader containing the htpasswd content.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static async Task<HtpasswdFile> LoadAsync(TextReader file)
+    public static Task<HtpasswdFile> LoadAsync(TextReader file) => LoadAsync(file, CancellationToken.None);
+
+    /// <summary>
+    /// Loads and parses an htpasswd file from a <see cref="TextReader"/>.
+    /// </summary>
+    /// <param name="file">The reader containing the htpasswd content.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static async Task<HtpasswdFile> LoadAsync(TextReader file, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(file);
 
-        var content = await file.ReadToEndAsync().ConfigureAwait(false);
+        var content = await file.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
         return Parse(content);
     }
 

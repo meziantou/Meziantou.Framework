@@ -87,6 +87,29 @@ public sealed class HtpasswdFileTests
     }
 
     [Fact]
+    public void VerifyCredentials_String_ShouldValidateMd5CryptHash()
+    {
+        var htpasswd = HtpasswdFile.Parse("alice:$1$salt1234$HJCsv4hSeVLHo3hVyl4nh0");
+
+        Assert.True(htpasswd.VerifyCredentials("alice", "password"));
+        Assert.False(htpasswd.VerifyCredentials("alice", "invalid"));
+    }
+
+    [Theory]
+    [InlineData("alice:$1$salt1234$HJCsv4hSeVLHo3hVyl4nh1")]
+    [InlineData("alice:$1$salt1235$HJCsv4hSeVLHo3hVyl4nh0")]
+    [InlineData("alice:$1$salt1234$")]
+    [InlineData("alice:$1$salt1234")]
+    [InlineData("alice:$1$toolongsalt$HJCsv4hSeVLHo3hVyl4nh0")]
+    [InlineData("alice:$1$salt1234$HJCsv4hSeVLHo3hVyl4n!0")]
+    public void VerifyCredentials_ShouldRejectAMalformedOrWrongMd5CryptHash(string entry)
+    {
+        var htpasswd = HtpasswdFile.Parse(entry);
+
+        Assert.False(htpasswd.VerifyCredentials("alice", "password"));
+    }
+
+    [Fact]
     public void VerifyCredentials_String_ShouldValidateSha256CryptHash()
     {
         var htpasswd = HtpasswdFile.Parse("alice:$5$rounds=5000$toolongsaltstrin$Un/5jzAHMgOGZ5.mWJpuVolil07guHPvOW8mGRcvxa5");

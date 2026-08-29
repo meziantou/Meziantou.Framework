@@ -169,6 +169,188 @@ public sealed class HstsClientHandlerTests
         Assert.Throws<ArgumentNullException>(() => new HstsClientHandler(new MockHttpMessageHandler(), configuration: null!));
     }
 
+    [Fact]
+    public async Task Redirect_ToHstsHost_IsUpgraded()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("example.com", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: true);
+        var inner = new RecordingHttpMessageHandler(Redirect(HttpStatusCode.Found, "http://example.com/final"));
+        using var client = new HttpClient(new HstsClientHandler(inner, hsts, maxAutomaticRedirections: 50), disposeHandler: true);
+
+        using var response = await client.GetAsync("http://other.example/start", XunitCancellationToken);
+
+        // The inner handler follows redirects below this one, so the hop has to be upgraded here or it goes out in cleartext
+        Assert.Equal(new Uri("http://other.example/start"), inner.Requests[0].Uri);
+        Assert.Equal(new Uri("https://example.com/final"), inner.Requests[1].Uri);
+        Assert.Equal(new Uri("https://example.com/final"), response.RequestMessage!.RequestUri);
+    }
+
+    [Fact]
+    public async Task Redirect_RelativeLocation_IsResolvedAgainstTheCurrentUri()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        var inner = new RecordingHttpMessageHandler(Redirect(HttpStatusCode.Found, "/other"));
+        using var client = new HttpClient(new HstsClientHandler(inner, hsts, maxAutomaticRedirections: 50), disposeHandler: true);
+
+        using var response = await client.GetAsync("http://example.com/start", XunitCancellationToken);
+
+        Assert.Equal(new Uri("http://example.com/other"), inner.Requests[1].Uri);
+    }
+
+    [Fact]
+    public async Task Redirect_FromHttpsToHttp_IsNotFollowed()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        var inner = new RecordingHttpMessageHandler(Redirect(HttpStatusCode.Found, "http://example.com/final"));
+        using var client = new HttpClient(new HstsClientHandler(inner, hsts, maxAutomaticRedirections: 50), disposeHandler: true);
+
+        using var response = await client.GetAsync("https://example.com/start", XunitCancellationToken);
+
+        Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+        Assert.Single(inner.Requests);
+    }
+
+    [Fact]
+    public async Task Redirect_StopsAtTheRedirectionLimit()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        var inner = new RecordingHttpMessageHandler(
+            Redirect(HttpStatusCode.Found, "http://example.com/1"),
+            Redirect(HttpStatusCode.Found, "http://example.com/2"),
+            Redirect(HttpStatusCode.Found, "http://example.com/3"));
+        using var client = new HttpClient(new HstsClientHandler(inner, hsts, maxAutomaticRedirections: 2), disposeHandler: true);
+
+        using var response = await client.GetAsync("http://example.com/start", XunitCancellationToken);
+
+        // The last redirect response is returned instead of being followed
+        Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+        Assert.HasCount(3, inner.Requests);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.MovedPermanently)]
+    [InlineData(HttpStatusCode.Found)]
+    [InlineData(HttpStatusCode.SeeOther)]
+    public async Task Redirect_TurnsPostIntoGetAndDropsTheBody(HttpStatusCode statusCode)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        var inner = new RecordingHttpMessageHandler(Redirect(statusCode, "http://example.com/final"));
+        using var client = new HttpClient(new HstsClientHandler(inner, hsts, maxAutomaticRedirections: 50), disposeHandler: true);
+
+        using var response = await client.PostAsync("http://example.com/start", new StringContent("body"), XunitCancellationToken);
+
+        Assert.Equal(HttpMethod.Get, inner.Requests[1].Method);
+        Assert.Null(inner.Requests[1].Body);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.TemporaryRedirect)]
+    [InlineData(HttpStatusCode.PermanentRedirect)]
+    public async Task Redirect_KeepsTheMethodAndBody(HttpStatusCode statusCode)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        var inner = new RecordingHttpMessageHandler(Redirect(statusCode, "http://example.com/final"));
+        using var client = new HttpClient(new HstsClientHandler(inner, hsts, maxAutomaticRedirections: 50), disposeHandler: true);
+
+        using var response = await client.PostAsync("http://example.com/start", new StringContent("body"), XunitCancellationToken);
+
+        Assert.Equal(HttpMethod.Post, inner.Requests[1].Method);
+        Assert.Equal("body", inner.Requests[1].Body);
+    }
+
+    [Fact]
+    public async Task Redirect_ClearsTheAuthorizationHeader()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        var inner = new RecordingHttpMessageHandler(Redirect(HttpStatusCode.Found, "http://other.example/final"));
+        using var client = new HttpClient(new HstsClientHandler(inner, hsts, maxAutomaticRedirections: 50), disposeHandler: true);
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/start");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "secret");
+
+        using var response = await client.SendAsync(request, XunitCancellationToken);
+
+        Assert.Equal("Bearer secret", inner.Requests[0].Authorization);
+        Assert.Null(inner.Requests[1].Authorization);
+    }
+
+    [Fact]
+    public async Task Redirect_ReadsTheHeaderOfEveryHop()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        var redirect = Redirect(HttpStatusCode.Found, "https://second.example/final");
+        redirect.Headers.TryAddWithoutValidation("Strict-Transport-Security", "max-age=31536000");
+        var final = new HttpResponseMessage(HttpStatusCode.OK);
+        final.Headers.TryAddWithoutValidation("Strict-Transport-Security", "max-age=31536000");
+        var inner = new RecordingHttpMessageHandler(redirect, final);
+        using var client = new HttpClient(new HstsClientHandler(inner, hsts, maxAutomaticRedirections: 50), disposeHandler: true);
+
+        using var response = await client.GetAsync("https://first.example/start", XunitCancellationToken);
+
+        Assert.True(hsts.MustUpgradeRequest("first.example"));
+        Assert.True(hsts.MustUpgradeRequest("second.example"));
+    }
+
+    [Fact]
+    public async Task Redirect_IsNotFollowedWhenTheInnerHandlerDoesNotRedirect()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        var inner = new RecordingHttpMessageHandler(Redirect(HttpStatusCode.Found, "http://example.com/final"));
+
+        // A handler this one cannot take the redirects over from keeps returning the redirect responses as is
+        using var client = new HttpClient(new HstsClientHandler(inner, hsts), disposeHandler: true);
+
+        using var response = await client.GetAsync("http://example.com/start", XunitCancellationToken);
+
+        Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+        Assert.Single(inner.Requests);
+    }
+
+    [Fact]
+    public void Constructor_TakesTheRedirectsOverFromTheInnerHandler()
+    {
+        var inner = new SocketsHttpHandler();
+        Assert.True(inner.AllowAutoRedirect);
+
+        using var handler = new HstsClientHandler(inner, new HstsDomainPolicyCollection(includePreloadDomains: false));
+
+        // Redirects followed by the inner handler would bypass the HSTS upgrade
+        Assert.False(inner.AllowAutoRedirect);
+    }
+
+    [Fact]
+    public void Constructor_KeepsAnInnerHandlerConfiguredNotToRedirect()
+    {
+        var inner = new SocketsHttpHandler { AllowAutoRedirect = false };
+
+        using var handler = new HstsClientHandler(inner, new HstsDomainPolicyCollection(includePreloadDomains: false));
+
+        Assert.False(inner.AllowAutoRedirect);
+    }
+
+    private static HttpResponseMessage Redirect(HttpStatusCode statusCode, string location)
+    {
+        var response = new HttpResponseMessage(statusCode);
+        response.Headers.Location = new Uri(location, UriKind.RelativeOrAbsolute);
+        return response;
+    }
+
+    private sealed class RecordingHttpMessageHandler(params HttpResponseMessage[] responses) : HttpMessageHandler
+    {
+        private readonly Queue<HttpResponseMessage> _responses = new(responses);
+
+        public List<(Uri Uri, HttpMethod Method, string? Authorization, string? Body)> Requests { get; } = [];
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var body = request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken);
+            Requests.Add((request.RequestUri!, request.Method, request.Headers.Authorization?.ToString(), body));
+
+            var response = _responses.Count > 0 ? _responses.Dequeue() : new HttpResponseMessage(HttpStatusCode.OK);
+            response.RequestMessage = request;
+            return response;
+        }
+    }
+
     private sealed class MockHttpMessageHandler(params string[] headerResponses) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

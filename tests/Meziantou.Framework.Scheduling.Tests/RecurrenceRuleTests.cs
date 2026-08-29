@@ -96,11 +96,44 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    public void BySecond_LeapSecond_Allowed()
+    public void BySecond_LeapSecond_IsNormalizedToTheLastSecondOfTheMinute()
     {
         var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYSECOND=60");
         var text = rrule.Text;
-        Assert.Equal("FREQ=DAILY;BYSECOND=60", text);
+        Assert.Equal("FREQ=DAILY;BYSECOND=59", text);
+    }
+
+    [Fact]
+    public void BySecond_LeapSecond_IsDeduplicatedAgainstTheLastSecond()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYSECOND=59,60");
+        var text = rrule.Text;
+        Assert.Equal("FREQ=DAILY;BYSECOND=59", text);
+    }
+
+    [Fact]
+    public void Minutely_LeapSecond_ProducesOccurrences()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MINUTELY;COUNT=3;BYSECOND=60");
+        var startDate = new DateTime(2024, 01, 01, 09, 00, 00);
+        var occurrences = rrule.GetNextOccurrences(startDate);
+
+        AssertOccurrences(occurrences,
+            new DateTime(2024, 01, 01, 09, 00, 59),
+            new DateTime(2024, 01, 01, 09, 01, 59),
+            new DateTime(2024, 01, 01, 09, 02, 59));
+    }
+
+    [Fact]
+    public void Daily_LeapSecond_ProducesOccurrences()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=2;BYSECOND=60");
+        var startDate = new DateTime(2024, 01, 01, 09, 00, 00);
+        var occurrences = rrule.GetNextOccurrences(startDate);
+
+        AssertOccurrences(occurrences,
+            new DateTime(2024, 01, 01, 09, 00, 59),
+            new DateTime(2024, 01, 02, 09, 00, 59));
     }
 
     [Fact]

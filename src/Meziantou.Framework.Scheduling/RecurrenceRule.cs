@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Scheduling;
 /// <item><description>COUNT - Maximum number of occurrences</description></item>
 /// <item><description>UNTIL - End date for the recurrence</description></item>
 /// <item><description>WKST - The day on which the workweek starts</description></item>
-/// <item><description>BYSECOND - Limits occurrences to specific seconds (0-60)</description></item>
+/// <item><description>BYSECOND - Limits occurrences to specific seconds (0-60; 60 denotes a leap second and is normalized to 59)</description></item>
 /// <item><description>BYMINUTE - Limits occurrences to specific minutes (0-59)</description></item>
 /// <item><description>BYHOUR - Limits occurrences to specific hours (0-23)</description></item>
 /// <item><description>BYDAY - Limits occurrences to specific days of the week</description></item>
@@ -45,7 +45,8 @@ public abstract class RecurrenceRule : IRecurrenceRule
     /// <summary>The first day of the week for the recurrence rule.</summary>
     public DayOfWeek WeekStart { get; set; } = DefaultFirstDayOfWeek;
 
-    /// <summary>Limits occurrences to specific seconds (0-60, where 60 represents leap seconds).</summary>
+    /// <summary>Limits occurrences to specific seconds (0-59). A parsed BYSECOND value of 60 denotes a
+    /// leap second, which <see cref="DateTime"/> cannot represent, and is normalized to 59.</summary>
     public IList<int>? BySeconds { get; set; }
 
     /// <summary>Limits occurrences to specific minutes (0-59).</summary>
@@ -381,15 +382,21 @@ public abstract class RecurrenceRule : IRecurrenceRule
             return null;
 
         var seconds = SplitToInt32List(str);
-        foreach (var second in seconds)
+        for (var i = 0; i < seconds.Count; i++)
         {
-            if (second is >= 0 and <= 60)
-                continue;
+            var second = seconds[i];
+            if (second is < 0 or > 60)
+                throw new FormatException($"Second '{second.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 0 and 60.");
 
-            throw new FormatException($"Second '{second.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 0 and 60.");
+            // RFC 5545 allows 60 to denote a leap second. DateTime cannot represent one, so it
+            // is normalized to the last representable second of the minute.
+            if (second is 60)
+                seconds[i] = 59;
         }
 
-        return seconds;
+        // Normalizing may have produced a duplicate (BYSECOND=59,60), which would yield the
+        // same occurrence twice.
+        return seconds.Distinct().ToList();
     }
 
     private static List<int>? ParseByMinutes(Dictionary<string, string> values)

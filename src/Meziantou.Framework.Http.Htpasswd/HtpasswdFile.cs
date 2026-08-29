@@ -569,7 +569,7 @@ public sealed class HtpasswdFile
 
         var passwordBytes = byteCount <= 256
             ? stackalloc byte[byteCount]
-            : (rentedBytes = ArrayPool<byte>.Shared.Rent(byteCount));
+            : (rentedBytes = ArrayPool<byte>.Shared.Rent(byteCount)).AsSpan(0, byteCount);
 
         try
         {
@@ -589,7 +589,7 @@ public sealed class HtpasswdFile
         {
             if (rentedBytes is not null)
             {
-                ArrayPool<byte>.Shared.Return(rentedBytes);
+                ArrayPool<byte>.Shared.Return(rentedBytes, clearArray: true);
             }
         }
     }

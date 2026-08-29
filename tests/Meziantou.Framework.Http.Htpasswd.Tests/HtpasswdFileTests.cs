@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+
 namespace Meziantou.Framework.Http.Tests;
 
 public sealed class HtpasswdFileTests
@@ -127,6 +129,26 @@ public sealed class HtpasswdFileTests
 
         Assert.True(htpasswd.VerifyCredentials("alice", "password"));
         Assert.False(htpasswd.VerifyCredentials("alice", "invalid"));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(255)]
+    [InlineData(256)]
+    [InlineData(257)]
+    [InlineData(300)]
+    [InlineData(1024)]
+    public void VerifyCredentials_ShouldValidateSha1Hash_WhateverThePasswordLength(int length)
+    {
+        var password = new string('a', length);
+#pragma warning disable CA5350 // SHA1 is required to build the htpasswd {SHA} format
+        var hash = Convert.ToBase64String(SHA1.HashData(Encoding.UTF8.GetBytes(password)));
+#pragma warning restore CA5350
+        var htpasswd = HtpasswdFile.Parse($"alice:{{SHA}}{hash}");
+
+        Assert.True(htpasswd.VerifyCredentials("alice", password));
+        Assert.False(htpasswd.VerifyCredentials("alice", password + "b"));
     }
 
     [Fact]

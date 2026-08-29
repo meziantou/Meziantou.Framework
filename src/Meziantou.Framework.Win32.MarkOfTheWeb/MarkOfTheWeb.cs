@@ -104,11 +104,18 @@ public static class MarkOfTheWeb
     /// <param name="zone">The security zone to assign to the file.</param>
     /// <param name="referrerUrl">Optional URL of the page that linked to the file.</param>
     /// <param name="hostUrl">Optional URL of the host from which the file was downloaded.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="zone"/> is not one of <see cref="UrlZone.LocalMachine"/>, <see cref="UrlZone.Intranet"/>, <see cref="UrlZone.Trusted"/>, <see cref="UrlZone.Internet"/>, or <see cref="UrlZone.Untrusted"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="referrerUrl"/> or <paramref name="hostUrl"/> contains a carriage return, a line feed, or a null character.</exception>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public static void SetFileZone(string filePath, UrlZone zone, string? referrerUrl = null, string? hostUrl = null)
     {
         ArgumentNullException.ThrowIfNull(filePath);
+
+        // Windows ignores a ZoneId it cannot interpret, so writing one would report success while leaving
+        // the file effectively unmarked. UrlZone.Invalid is a "could not determine" result, not a zone.
+        if (zone is < UrlZone.LocalMachine or > UrlZone.Untrusted)
+            throw new ArgumentOutOfRangeException(nameof(zone), zone, "The zone must be a defined URL zone other than UrlZone.Invalid.");
+
         EnsureSingleLine(referrerUrl, nameof(referrerUrl));
         EnsureSingleLine(hostUrl, nameof(hostUrl));
 

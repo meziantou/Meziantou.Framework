@@ -37,7 +37,7 @@ public sealed class TorrentFile
         return Parse(root);
     }
 
-    public static bool TryParse(ReadOnlySpan<byte> data, out TorrentFile? result)
+    public static bool TryParse(ReadOnlySpan<byte> data, [NotNullWhen(true)] out TorrentFile? result)
     {
         try
         {

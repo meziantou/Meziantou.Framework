@@ -54,6 +54,12 @@ namespace Meziantou.Framework.Globbing;
 ///         </item>
 ///     </list>
 ///     <para>If the pattern ends with a <c>/</c>, only directories are matched. Otherwise, only files are matched.</para>
+///     <para>
+///         Matching backtracks, so the cost of a single <see cref="IsMatch(ReadOnlySpan{char}, ReadOnlySpan{char}, PathItemType?)"/>
+///         call grows exponentially with the number of <c>*</c> wildcards in one path segment. Ordinary patterns and
+///         file names are unaffected, but a pattern coming from an untrusted source can be made expensive on purpose.
+///         Bound the length and the wildcard count of such patterns before parsing them.
+///     </para>
 /// </summary>
 /// <example>
 /// Parse a glob pattern and check if a path matches:

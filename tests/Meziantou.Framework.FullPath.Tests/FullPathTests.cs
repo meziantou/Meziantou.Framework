@@ -331,12 +331,23 @@ public sealed class FullPathTests
     }
 
     [Fact]
-    public void IsChildOf_UsesTheSameCaseSensitivityAsTheDefaultComparer()
+    [RunIf(TestOperatingSystems.Windows | TestOperatingSystems.MacOS)]
+    public void IsChildOf_IgnoresCaseOnWindowsAndMacOS()
     {
         var rootPath = FullPath.FromPath("test");
         var childPath = FullPath.FromPath("TEST") / "a.txt";
 
-        Assert.Equal(childPath.Parent == rootPath, childPath.IsChildOf(rootPath));
+        Assert.True(childPath.IsChildOf(rootPath));
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Linux)]
+    public void IsChildOf_IsCaseSensitiveOnLinux()
+    {
+        var rootPath = FullPath.FromPath("test");
+        var childPath = FullPath.FromPath("TEST") / "a.txt";
+
+        Assert.False(childPath.IsChildOf(rootPath));
     }
 
     [Theory]
@@ -865,6 +876,32 @@ public sealed class FullPathTests
 
         Assert.True(subDir.TryFindFirstAncestorOrSelf(p => File.Exists(p / fileName), out var result));
         Assert.Equal(tempDir.FullPath, result);
+    }
+
+    [Fact]
+    public async Task TryFindFirstAncestor_ExcludesSelf()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var fileName = Guid.NewGuid().ToString("N");
+        tempDir.CreateEmptyFile(fileName);
+        var subDir = tempDir.CreateDirectory("a");
+
+        // The predicate matches the starting directory itself, which is the only thing that distinguishes the two
+        Assert.True(tempDir.FullPath.TryFindFirstAncestorOrSelf(p => File.Exists(p / fileName), out var withSelf));
+        Assert.Equal(tempDir.FullPath, withSelf);
+        Assert.False(tempDir.FullPath.TryFindFirstAncestor(p => File.Exists(p / fileName), out _));
+
+        Assert.True(subDir.TryFindFirstAncestor(p => File.Exists(p / fileName), out var fromChild));
+        Assert.Equal(tempDir.FullPath, fromChild);
+    }
+
+    [Fact]
+    public async Task TryFindFirstAncestor_NoMatch()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        Assert.False(tempDir.FullPath.TryFindFirstAncestor(p => false, out var result));
+        Assert.True(result.IsEmpty);
     }
 
     [Fact]

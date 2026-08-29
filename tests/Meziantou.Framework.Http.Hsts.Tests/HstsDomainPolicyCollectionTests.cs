@@ -13,6 +13,38 @@ public sealed class HstsDomainPolicyCollectionTests
     }
 
     [Fact]
+    public void HstsCollection_Add_VeryLargeMaxAge_Saturates()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("example.com", TimeSpan.MaxValue, includeSubdomains: false);
+
+        Assert.Equal(DateTimeOffset.MaxValue, Assert.Single(hsts).ExpiresAt);
+        Assert.True(hsts.MustUpgradeRequest("example.com"));
+    }
+
+    [Fact]
+    public void HstsCollection_Add_MaxAgeBeyondTheRepresentableRange_Saturates()
+    {
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.MaxValue.AddYears(-1));
+        var hsts = new HstsDomainPolicyCollection(timeProvider, includePreloadDomains: false);
+
+        // The handler clamps max-age to 100 years before it gets here, but the collection is public
+        hsts.Add("example.com", TimeSpan.FromDays(365 * 100), includeSubdomains: false);
+
+        Assert.Equal(DateTimeOffset.MaxValue, Assert.Single(hsts).ExpiresAt);
+    }
+
+    [Fact]
+    public void HstsCollection_Add_VeryNegativeMaxAge_Saturates()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("example.com", TimeSpan.MinValue, includeSubdomains: false);
+
+        Assert.Equal(DateTimeOffset.MinValue, Assert.Single(hsts).ExpiresAt);
+        Assert.False(hsts.MustUpgradeRequest("example.com"));
+    }
+
+    [Fact]
     public void HstsCollection_Match_IncludeSubdomain_True()
     {
         var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);

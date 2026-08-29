@@ -79,7 +79,14 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     /// <param name="includeSubdomains">If <see langword="true"/>, the policy applies to all subdomains of the host.</param>
     public void Add(string host, TimeSpan maxAge, bool includeSubdomains)
     {
-        Add(host, _timeProvider.GetUtcNow().Add(maxAge), includeSubdomains);
+        // A max-age that would push the expiration date out of range saturates instead of throwing
+        var now = _timeProvider.GetUtcNow();
+        var expiresAt =
+            maxAge >= DateTimeOffset.MaxValue - now ? DateTimeOffset.MaxValue :
+            maxAge <= DateTimeOffset.MinValue - now ? DateTimeOffset.MinValue :
+            now.Add(maxAge);
+
+        Add(host, expiresAt, includeSubdomains);
     }
 
     /// <summary>Adds or updates an HSTS policy for the specified host with an expiration date.</summary>

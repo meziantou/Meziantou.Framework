@@ -75,6 +75,73 @@ public sealed class MediaFileWriteTests
     }
 
     [Fact]
+    public void ReadTags_UnreadableFile_ReturnsIoError()
+    {
+        if (OperatingSystem.IsWindows())
+            return; // Unix file modes only
+
+        var tempFile = Path.GetTempFileName() + ".mp3";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.mp3"), tempFile, overwrite: true);
+            File.SetUnixFileMode(tempFile, UnixFileMode.None);
+
+            var result = MediaFile.ReadTags(tempFile);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(MediaTagError.IoError, result.Error);
+        }
+        finally
+        {
+            File.SetUnixFileMode(tempFile, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void WriteTags_UnwritableFile_ReturnsIoError()
+    {
+        if (OperatingSystem.IsWindows())
+            return; // Unix file modes only
+
+        var tempFile = Path.GetTempFileName() + ".mp3";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.mp3"), tempFile, overwrite: true);
+            File.SetUnixFileMode(tempFile, UnixFileMode.None);
+
+            var result = MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Title" });
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(MediaTagError.IoError, result.Error);
+        }
+        finally
+        {
+            File.SetUnixFileMode(tempFile, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void ReadTags_DirectoryPath_ReturnsIoError()
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        var directoryPath = Path.Combine(directory.FullName, "looks-like-a-file.mp3");
+        Directory.CreateDirectory(directoryPath);
+        try
+        {
+            var result = MediaFile.ReadTags(directoryPath);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(MediaTagError.IoError, result.Error);
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void WriteTags_FailedWrite_LeavesTheOriginalFileUntouched()
     {
         var directory = Directory.CreateTempSubdirectory().FullName;

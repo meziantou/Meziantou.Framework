@@ -18,6 +18,28 @@ public sealed class HtpasswdFileTests
         Assert.Equal(["alice", "bob"], htpasswd.Usernames.OrderBy(value => value, StringComparer.Ordinal));
     }
 
+    [Theory]
+    [InlineData("alice:")]
+    [InlineData("alice:   ")]
+    [InlineData("alice:\t")]
+    public void Parse_ShouldSkipEntryWithEmptyPasswordHash(string content)
+    {
+        var htpasswd = HtpasswdFile.Parse(content);
+
+        Assert.Equal(0, htpasswd.Count);
+        Assert.False(htpasswd.VerifyCredentials("alice", ""));
+    }
+
+    [Fact]
+    public void Parse_ShouldSkipEntryWithEmptyPasswordHash_AndKeepValidEntries()
+    {
+        var htpasswd = HtpasswdFile.Parse("alice:\nbob:{SHA}5en6G6MezRroT3XKqkdPOmY/BfQ=");
+
+        Assert.Equal(["bob"], htpasswd.Usernames);
+        Assert.False(htpasswd.VerifyCredentials("alice", ""));
+        Assert.True(htpasswd.VerifyCredentials("bob", "secret"));
+    }
+
     [Fact]
     public void Parse_Span_ShouldPopulateEntries()
     {

@@ -31,7 +31,24 @@ public sealed class JobObject : IDisposable
     private JobObject(SafeFileHandle jobHandle)
     {
         _jobHandle = jobHandle;
+        CreatedNew = false;
     }
+
+    /// <summary>
+    /// Gets a value indicating whether this instance created the underlying job object.
+    /// </summary>
+    /// <value>
+    /// <see langword="true"/> when the constructor created a new job object;
+    /// <see langword="false"/> when a job object with the requested name already existed and this
+    /// instance attached to it, or when the instance was returned by <see cref="Open"/> or <see cref="TryOpen"/>.
+    /// </value>
+    /// <remarks>
+    /// Job objects share a namespace with events, semaphores, mutexes, waitable timers and file-mapping
+    /// objects, and <c>CreateJobObject</c> returns a handle to the existing object rather than failing when
+    /// the name is taken. Check this property when the caller needs an isolated job: attaching to a job
+    /// created elsewhere means inheriting its limits, its process set and its lifetime.
+    /// </remarks>
+    public bool CreatedNew { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JobObject"/> class. The associated job object will have no name.
@@ -55,6 +72,10 @@ public sealed class JobObject : IDisposable
     /// </summary>
     /// <param name="name">The job object name. May be null.</param>
     /// <param name="inheritHandle">A Boolean value that specifies whether the returned handle is inherited when a new process is created. If this member is <see langword="true" />, the new process inherits the handle.</param>
+    /// <remarks>
+    /// When <paramref name="name"/> matches a job object that already exists, this attaches to that job
+    /// object instead of creating a new one. Inspect <see cref="CreatedNew"/> to tell the two apart.
+    /// </remarks>
     public unsafe JobObject(string? name, bool inheritHandle)
     {
         var atts = new Windows.Win32.Security.SECURITY_ATTRIBUTES
@@ -65,12 +86,14 @@ public sealed class JobObject : IDisposable
         };
 
         _jobHandle = Windows.Win32.PInvoke.CreateJobObject(atts, name);
+        var lastError = Marshal.GetLastWin32Error();
         if (_jobHandle.IsInvalid)
         {
             _jobHandle.Dispose();
-            var lastError = Marshal.GetLastWin32Error();
             throw new Win32Exception(lastError);
         }
+
+        CreatedNew = lastError != (int)WIN32_ERROR.ERROR_ALREADY_EXISTS;
     }
 
     /// <summary>Opens an existing job object.</summary>

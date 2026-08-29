@@ -27,6 +27,7 @@ namespace Meziantou.Framework.Win32
     [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
     public sealed class JobObject : System.IDisposable
     {
+        public bool CreatedNew { get => throw null; }
         public JobObject(string? name) { }
         public JobObject(string? name, bool inheritHandle) { }
         public static Meziantou.Framework.Win32.JobObject Open(Meziantou.Framework.Win32.JobObjectAccessRights desiredAccess, bool inherited, string name) => throw null;

@@ -18,6 +18,20 @@ public sealed class InternetCalendarTests
         return count;
     }
 
+    private static string GetContentLine(string ics, string name)
+    {
+        foreach (var contentLine in ics.Split("\r\n", StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (contentLine.StartsWith(name + ":", StringComparison.Ordinal))
+            {
+                return contentLine;
+            }
+        }
+
+        Assert.Fail($"No '{name}' content line in:\n{ics}");
+        return null!;
+    }
+
     private static InternetCalendar CreateCalendarWithEvent(Event @event)
     {
         var calendar = new InternetCalendar();
@@ -127,5 +141,85 @@ public sealed class InternetCalendarTests
         var ics = calendar.ToIcs();
 
         Assert.Contains(name + ":OOF\r\n", ics);
+    }
+
+    [Fact]
+    public void ToIcs_WritesTheRequiredProductIdentifier()
+    {
+        var calendar = CreateCalendarWithEvent(CreateEvent());
+
+        var ics = calendar.ToIcs();
+
+        Assert.Contains("PRODID:-//Meziantou//Meziantou.Framework.Scheduling//EN\r\n", ics);
+    }
+
+    [Fact]
+    public void ToIcs_WritesAUtcDateTimeWithTheZSuffix()
+    {
+        var @event = new Event
+        {
+            Start = new DateTime(2024, 01, 02, 08, 00, 00, DateTimeKind.Utc),
+            End = new DateTime(2024, 01, 02, 09, 00, 00, DateTimeKind.Utc),
+        };
+        var calendar = CreateCalendarWithEvent(@event);
+
+        var ics = calendar.ToIcs();
+
+        Assert.Equal("DTSTART:20240102T080000Z", GetContentLine(ics, "DTSTART"));
+        Assert.Equal("DTEND:20240102T090000Z", GetContentLine(ics, "DTEND"));
+    }
+
+    [Fact]
+    public void ToIcs_WritesAnUnspecifiedDateTimeAsAFloatingDateTime()
+    {
+        var @event = new Event
+        {
+            Start = new DateTime(2024, 01, 02, 08, 00, 00, DateTimeKind.Unspecified),
+            End = new DateTime(2024, 01, 02, 09, 00, 00, DateTimeKind.Unspecified),
+        };
+        var calendar = CreateCalendarWithEvent(@event);
+
+        var ics = calendar.ToIcs();
+
+        Assert.Equal("DTSTART:20240102T080000", GetContentLine(ics, "DTSTART"));
+        Assert.Equal("DTEND:20240102T090000", GetContentLine(ics, "DTEND"));
+    }
+
+    [Fact]
+    public void ToIcs_WritesALocalDateTimeAsUtc()
+    {
+        var start = new DateTime(2024, 01, 02, 08, 00, 00, DateTimeKind.Local);
+        var @event = new Event
+        {
+            Start = start,
+            End = start.AddHours(1),
+        };
+        var calendar = CreateCalendarWithEvent(@event);
+
+        var ics = calendar.ToIcs();
+
+        Assert.Equal("DTSTART:" + start.ToUniversalTime().ToString("yyyyMMddTHHmmss", CultureInfo.InvariantCulture) + "Z", GetContentLine(ics, "DTSTART"));
+    }
+
+    [Theory]
+    [InlineData(DateTimeKind.Utc)]
+    [InlineData(DateTimeKind.Local)]
+    [InlineData(DateTimeKind.Unspecified)]
+    public void ToIcs_NeverWritesADateTimeWithAUtcOffset(DateTimeKind kind)
+    {
+        var @event = new Event
+        {
+            Start = new DateTime(2024, 01, 02, 08, 00, 00, kind),
+            End = new DateTime(2024, 01, 02, 09, 00, 00, kind),
+        };
+        var calendar = CreateCalendarWithEvent(@event);
+
+        var ics = calendar.ToIcs();
+
+        foreach (var name in new[] { "DTSTART", "DTEND", "CREATED", "LAST-MODIFIED", "DTSTAMP" })
+        {
+            var value = GetContentLine(ics, name)[(name.Length + 1)..];
+            Assert.Matches(@"^\d{8}T\d{6}Z?$", value);
+        }
     }
 }

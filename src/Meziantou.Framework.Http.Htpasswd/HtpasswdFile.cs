@@ -17,6 +17,7 @@ public sealed class HtpasswdFile
     private const int ShaCryptMinRounds = 1000;
     private const int ShaCryptMaxRounds = 999_999_999;
     private const string Sha1Prefix = "{SHA}";
+    private const int MaxPasswordLength = 1024;
     private readonly Dictionary<string, string> _entries;
 
     private HtpasswdFile(Dictionary<string, string> entries)
@@ -121,7 +122,7 @@ public sealed class HtpasswdFile
     /// Verifies a username and password against the current htpasswd entries.
     /// </summary>
     /// <param name="username">The username to verify.</param>
-    /// <param name="password">The plaintext password to verify.</param>
+    /// <param name="password">The plaintext password to verify. A password longer than 1024 characters is always rejected.</param>
     /// <returns><see langword="true"/> if the credentials are valid; otherwise, <see langword="false"/>.</returns>
     public bool VerifyCredentials(string username, string password)
     {
@@ -135,10 +136,15 @@ public sealed class HtpasswdFile
     /// Verifies a username and password against the current htpasswd entries.
     /// </summary>
     /// <param name="username">The username to verify.</param>
-    /// <param name="password">The plaintext password to verify.</param>
+    /// <param name="password">The plaintext password to verify. A password longer than 1024 characters is always rejected.</param>
     /// <returns><see langword="true"/> if the credentials are valid; otherwise, <see langword="false"/>.</returns>
     public bool VerifyCredentials(ReadOnlySpan<char> username, ReadOnlySpan<char> password)
     {
+        // The crypt algorithms hash the password once per password byte, so their cost grows quadratically
+        // with the length of an attacker-supplied value. Apache caps the password at 255 characters.
+        if (password.Length > MaxPasswordLength)
+            return false;
+
         if (!_entries.TryGetValue(username.ToString(), out var expectedPasswordHash))
             return false;
 

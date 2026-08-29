@@ -69,6 +69,26 @@ public sealed class HtpasswdFileTests
     }
 
     [Fact]
+    public void VerifyCredentials_ShouldAcceptAPasswordAtTheMaximumLength()
+    {
+        var password = new string('a', 1024);
+        var hash = Bcrypt.HashPassword(password, workFactor: Bcrypt.MinWorkFactor, version: BcryptVersion.Revision2Y);
+        var htpasswd = HtpasswdFile.Parse($"alice:{hash}");
+
+        Assert.True(htpasswd.VerifyCredentials("alice", password));
+    }
+
+    [Fact]
+    public void VerifyCredentials_ShouldRejectAPasswordAboveTheMaximumLength()
+    {
+        var password = new string('a', 1025);
+        var hash = Bcrypt.HashPassword(password, workFactor: Bcrypt.MinWorkFactor, version: BcryptVersion.Revision2Y);
+        var htpasswd = HtpasswdFile.Parse($"alice:{hash}");
+
+        Assert.False(htpasswd.VerifyCredentials("alice", password));
+    }
+
+    [Fact]
     public void VerifyCredentials_String_ShouldValidateSha1Hash()
     {
         var htpasswd = HtpasswdFile.Parse("alice:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=");

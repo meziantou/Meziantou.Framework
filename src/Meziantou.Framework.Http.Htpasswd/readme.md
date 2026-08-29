@@ -2,6 +2,9 @@
 
 This package parses Apache htpasswd files and verifies credentials.
 
+`VerifyCredentials` rejects any password longer than 1024 characters, because the cost of the crypt algorithms
+grows quadratically with the length of the supplied password.
+
 Supported password formats:
 
 - bcrypt (`$2a$`, `$2b$`, `$2y$`)

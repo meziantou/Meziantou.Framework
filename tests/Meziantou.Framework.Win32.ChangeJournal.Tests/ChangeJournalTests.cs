@@ -84,6 +84,31 @@ public class ChangeJournalTests
         Assert.NotEqual(default, identifier);
     }
 
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetFileIdentifierOfADirectory()
+    {
+        var directory = CreateTemporaryDirectory();
+        Assert.NotEqual(default, FileIdentifier.FromFile(directory));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetEntryOfADirectory()
+    {
+        var directory = CreateTemporaryDirectory();
+
+        var entry = ChangeJournal.GetEntry(directory);
+
+        Assert.Equal(Path.GetFileName(directory), entry.Name);
+        Assert.True(entry.Attributes.HasFlag(FileAttributes.Directory));
+    }
+
+    private static string CreateTemporaryDirectory()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(directory);
+        return directory;
+    }
+
     [Theory]
     [InlineData(0, 0ul)]                    // do not wait, return at the end of the journal
     [InlineData(-1, uint.MaxValue)]         // Timeout.InfiniteTimeSpan

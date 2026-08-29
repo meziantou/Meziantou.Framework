@@ -96,7 +96,7 @@ public sealed class TorrentFile
             if (announceValue is not BencodeString announceText)
                 throw new FormatException("The 'announce' field must be a string.");
 
-            result.Announce = announceText.ToUtf8String();
+            result.Announce = TorrentField.ToText(announceText, "announce");
         }
 
         if (dictionary.TryGetValue(AnnounceListKey, out var announceListValue))
@@ -116,7 +116,7 @@ public sealed class TorrentFile
                     if (urlValue is not BencodeString urlText)
                         throw new FormatException("Each tracker URL must be a string.");
 
-                    urls.Add(urlText.ToUtf8String());
+                    urls.Add(TorrentField.ToText(urlText, "announce-list"));
                 }
 
                 tiers.Add(urls);
@@ -130,7 +130,7 @@ public sealed class TorrentFile
             if (commentValue is not BencodeString commentText)
                 throw new FormatException("The 'comment' field must be a string.");
 
-            result.Comment = commentText.ToUtf8String();
+            result.Comment = TorrentField.ToText(commentText, "comment");
         }
 
         if (dictionary.TryGetValue(CreatedByKey, out var createdByValue))
@@ -138,7 +138,7 @@ public sealed class TorrentFile
             if (createdByValue is not BencodeString createdByText)
                 throw new FormatException("The 'created by' field must be a string.");
 
-            result.CreatedBy = createdByText.ToUtf8String();
+            result.CreatedBy = TorrentField.ToText(createdByText, "created by");
         }
 
         if (dictionary.TryGetValue(CreationDateKey, out var creationDateValue))

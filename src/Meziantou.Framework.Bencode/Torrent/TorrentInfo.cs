@@ -74,7 +74,7 @@ public sealed class TorrentInfo
                     if (segmentValue is not BencodeString segmentString)
                         throw new FormatException("Each path segment must be a bencode string.");
 
-                    path.Add(segmentString.ToUtf8String());
+                    path.Add(TorrentField.ToText(segmentString, "path"));
                 }
 
                 files.Add(new TorrentInfoFile
@@ -193,7 +193,7 @@ public sealed class TorrentInfo
         if (!dictionary.TryGetValue(key, out var value) || value is not BencodeString text)
             throw new FormatException($"The required '{fieldName}' field is missing or not a string.");
 
-        return text.ToUtf8String();
+        return TorrentField.ToText(text, fieldName);
     }
 
     private static BencodeString GetRequiredByteString(BencodeDictionary dictionary, BencodeString key, string fieldName)

@@ -125,6 +125,27 @@ public class ChangeJournalTests
     }
 
     [Fact]
+    public void ChangeReasonAllIsTheUnionOfEveryOtherReason()
+    {
+        var expected = default(ChangeReason);
+        foreach (var reason in Enum.GetValues<ChangeReason>())
+        {
+            if (reason is not ChangeReason.All)
+            {
+                expected |= reason;
+            }
+        }
+
+        Assert.Equal(expected, ChangeReason.All);
+    }
+
+    [Fact]
+    public void ChangeReasonAllMatchesTheNativeReasonMask()
+    {
+        Assert.Equal(0x80FFFF77u, (uint)ChangeReason.All);
+    }
+
+    [Fact]
     public void FileIdentifier128ToString()
     {
         FileIdentifier fileIdentifier = new FileIdentifier(new UInt128(0, 10));

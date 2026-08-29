@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace Meziantou.Framework;
@@ -209,6 +208,9 @@ internal sealed class BcryptImplementation
             if (minorRevision is not ('a' or 'b' or 'x' or 'y') || salt[3] != '$')
                 throw new FormatException("Invalid salt revision");
 
+            if (minorRevision is 'x')
+                throw new NotSupportedException(Bcrypt.Revision2XNotSupportedMessage);
+
             offset = 4;
         }
 
@@ -259,7 +261,7 @@ internal sealed class BcryptImplementation
     {
         var hashBytes = Utf8.GetBytes(hash);
         var computedHashBytes = Utf8.GetBytes(HashPassword(password, hash));
-        return SecureEquals(hashBytes, computedHashBytes);
+        return CryptographicOperations.FixedTimeEquals(hashBytes, computedHashBytes);
     }
 
     private static string HashBytes(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<char> extractedSalt, char minorRevision, int workFactor)
@@ -281,21 +283,6 @@ internal sealed class BcryptImplementation
         result.Append(EncodeBase64(hashed, (BfCryptCiphertext.Length * 4) - 1));
 
         return result.ToString();
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    private static bool SecureEquals(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
-    {
-        if (left.Length != right.Length)
-            return false;
-
-        var diff = 0;
-        for (var i = 0; i < left.Length; i++)
-        {
-            diff |= left[i] ^ right[i];
-        }
-
-        return diff == 0;
     }
 
     // BCrypt uses its own Base64 variant ("./A-Za-z0-9") with no '=' padding.

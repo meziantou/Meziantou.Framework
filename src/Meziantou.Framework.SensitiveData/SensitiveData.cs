@@ -212,6 +212,7 @@ public static partial class SensitiveData
 public sealed unsafe class SensitiveData<T> : IDisposable
     where T : unmanaged
 {
+    [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed through the local returned by Interlocked.Exchange in Dispose")]
     private NativeMemorySafeHandle? _data;
 
     /// <summary>
@@ -234,8 +235,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// <summary>Returns the length (in elements) of this buffer.</summary>
     public int GetLength()
     {
-        ThrowIfDisposed();
-        return _data.Length;
+        return GetHandle().Length;
     }
 
     /// <summary>
@@ -247,8 +247,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     {
         get
         {
-            ThrowIfDisposed();
-            return _data.IsProtected;
+            return GetHandle().IsProtected;
         }
     }
 
@@ -256,23 +255,25 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// Copies the contents of this <see cref="SensitiveData{T}"/> instance to a destination buffer.
     /// </summary>
     /// <param name="destination">The destination buffer which should receive the contents. This buffer must be at least <see cref="GetLength"/> elements in length.</param>
+    /// <returns>The number of elements written to <paramref name="destination"/>, which is always <see cref="GetLength"/>. A larger destination is left untouched past that point.</returns>
     /// <exception cref="ArgumentException"><paramref name="destination"/>'s length is smaller than <see cref="GetLength"/>.</exception>
     /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public int RevealInto(Span<T> destination)
     {
-        ThrowIfDisposed();
-        lock (_data.SyncLock)
+        var data = GetHandle();
+        lock (data.SyncLock)
         {
-            _data.Unprotect();
+            ThrowIfReleased(data);
+            data.Unprotect();
             try
             {
-                var span = _data.GetSpan();
+                var span = data.GetSpan();
                 span.CopyTo(destination);
                 return span.Length;
             }
             finally
             {
-                _data.Protect();
+                data.Protect();
             }
         }
     }
@@ -283,17 +284,18 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public T[] RevealToArray()
     {
-        ThrowIfDisposed();
-        lock (_data.SyncLock)
+        var data = GetHandle();
+        lock (data.SyncLock)
         {
-            _data.Unprotect();
+            ThrowIfReleased(data);
+            data.Unprotect();
             try
             {
-                return _data.GetSpan().ToArray();
+                return data.GetSpan().ToArray();
             }
             finally
             {
-                _data.Protect();
+                data.Protect();
             }
         }
     }
@@ -307,18 +309,19 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     public void RevealAndUse<TArg>(TArg arg, System.Buffers.ReadOnlySpanAction<T, TArg> spanAction)
     {
         ArgumentNullException.ThrowIfNull(spanAction);
-        ThrowIfDisposed();
-        lock (_data.SyncLock)
+        var data = GetHandle();
+        lock (data.SyncLock)
         {
-            _data.Unprotect();
+            ThrowIfReleased(data);
+            data.Unprotect();
             try
             {
-                var span = _data.GetSpan();
+                var span = data.GetSpan();
                 spanAction(span, arg);
             }
             finally
             {
-                _data.Protect();
+                data.Protect();
             }
         }
     }
@@ -328,18 +331,19 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public SensitiveData<T> Clone()
     {
-        ThrowIfDisposed();
-        lock (_data.SyncLock)
+        var data = GetHandle();
+        lock (data.SyncLock)
         {
-            _data.Unprotect();
+            ThrowIfReleased(data);
+            data.Unprotect();
             try
             {
-                var span = _data.GetSpan();
+                var span = data.GetSpan();
                 return new(span);
             }
             finally
             {
-                _data.Protect();
+                data.Protect();
             }
         }
     }
@@ -350,17 +354,35 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// </summary>
     public void Dispose()
     {
-        if (_data is not null)
+        // Claim the handle atomically so two concurrent Dispose calls cannot both release it, and so
+        // a reveal that has not read the field yet observes null and throws instead of racing.
+        var data = Interlocked.Exchange(ref _data, value: null);
+        if (data is null)
+            return;
+
+        // Wait for a reveal in progress on another thread before releasing the memory. Without this,
+        // the buffer is unmapped while that thread still holds a span over it, which is an
+        // AccessViolationException the caller cannot catch rather than an ObjectDisposedException.
+        // Taking the lock also means that once Dispose returns, the contents really have been cleared.
+        lock (data.SyncLock)
         {
-            _data.Dispose();
-            _data = null;
+            data.Dispose();
         }
     }
 
-    [MemberNotNull(nameof(_data))]
-    private void ThrowIfDisposed()
+    private NativeMemorySafeHandle GetHandle()
     {
-        ObjectDisposedException.ThrowIf(_data is null, this);
+        // Read the field once: a concurrent Dispose sets it to null, and re-reading it mid-method
+        // would turn that race into a NullReferenceException.
+        var data = _data;
+        ObjectDisposedException.ThrowIf(data is null, this);
+        return data;
+    }
+
+    // Dispose may have released the handle between GetHandle and the lock being acquired.
+    private void ThrowIfReleased(NativeMemorySafeHandle data)
+    {
+        ObjectDisposedException.ThrowIf(data.IsClosed, this);
     }
 
     private sealed unsafe class NativeMemorySafeHandle : SafeHandle
@@ -375,6 +397,13 @@ public sealed unsafe class SensitiveData<T> : IDisposable
         private bool _unixMemoryLocked;
         private bool _unixMemoryProtected;
         private bool _isProtected;
+
+        // Number of reveals currently in progress. Reveals nest: a callback passed to RevealAndUse can
+        // reach another reveal on the same instance, and Lock is reentrant so the nested call is allowed
+        // straight through. Only the outermost reveal may touch the platform protection - an inner one
+        // that unprotected again would decrypt already-decrypted bytes on Windows, and an inner one that
+        // re-protected on exit would revoke the page while the outer caller still holds a span over it.
+        private int _revealCount;
 
         public NativeMemorySafeHandle()
             : base(invalidHandleValue: Invalid, ownsHandle: true)
@@ -421,10 +450,10 @@ public sealed unsafe class SensitiveData<T> : IDisposable
                 SetHandle((IntPtr)NativeMemory.Alloc(byteCount));
 
                 _xorKey = (IntPtr)NativeMemory.Alloc(byteCount);
-                RandomNumberGenerator.Fill(new Span<byte>((void*)_xorKey, checked((int)byteCount)));
+                FillRandom((byte*)_xorKey, byteCount);
             }
 
-            GetAllocatedByteSpan().Clear();
+            NativeMemory.Clear((void*)handle, _allocatedBytes);
         }
 
         public Span<T> GetSpan()
@@ -436,6 +465,15 @@ public sealed unsafe class SensitiveData<T> : IDisposable
         {
             if (_allocatedBytes == 0)
                 return;
+
+            // An outer reveal is still in progress, so the contents must stay accessible.
+            // The count is only decremented once the platform call below has succeeded, so a
+            // failure to re-protect leaves the count untouched rather than losing a level.
+            if (_revealCount > 1)
+            {
+                _revealCount--;
+                return;
+            }
 
             if (OperatingSystem.IsWindows() && _protectionMode is ProtectionMode.Windows)
             {
@@ -460,12 +498,23 @@ public sealed unsafe class SensitiveData<T> : IDisposable
                 XorWithKey();
                 _isProtected = true;
             }
+
+            _revealCount = 0;
         }
 
         public void Unprotect()
         {
             if (_allocatedBytes == 0)
                 return;
+
+            // The contents are already accessible because an outer reveal is in progress. Unprotecting
+            // again would decrypt already-decrypted bytes on Windows and re-apply the XOR key on the
+            // fallback path, handing the caller ciphertext instead of the secret.
+            if (_revealCount > 0)
+            {
+                _revealCount++;
+                return;
+            }
 
             if (OperatingSystem.IsWindows() && _protectionMode is ProtectionMode.Windows)
             {
@@ -474,15 +523,18 @@ public sealed unsafe class SensitiveData<T> : IDisposable
             }
             else if ((OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) && _protectionMode is ProtectionMode.Unix)
             {
-                if (!_unixMemoryProtected)
-                    return;
-
-                if (!SensitiveData.UnixMemoryProtection.TryProtect(handle, _allocatedBytes, MemoryProtectionReadWrite))
+                // Skip the syscall when a previous Protect failed and left the pages readable,
+                // but still count the reveal so the matching Protect re-applies the protection.
+                if (_unixMemoryProtected)
                 {
-                    ThrowLastPInvokeError();
+                    if (!SensitiveData.UnixMemoryProtection.TryProtect(handle, _allocatedBytes, MemoryProtectionReadWrite))
+                    {
+                        ThrowLastPInvokeError();
+                    }
+
+                    _unixMemoryProtected = false;
                 }
 
-                _unixMemoryProtected = false;
                 _isProtected = false;
             }
             else if (_protectionMode is ProtectionMode.Xor)
@@ -490,6 +542,8 @@ public sealed unsafe class SensitiveData<T> : IDisposable
                 XorWithKey();
                 _isProtected = false;
             }
+
+            _revealCount = 1;
         }
 
         protected override bool ReleaseHandle()
@@ -500,7 +554,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
             switch (_protectionMode)
             {
                 case ProtectionMode.Windows when OperatingSystem.IsWindows():
-                    GetAllocatedByteSpan().Clear();
+                    NativeMemory.Clear((void*)handle, _allocatedBytes);
                     return WindowsHeap.Free(handle);
 
                 case ProtectionMode.Unix when OperatingSystem.IsLinux() || OperatingSystem.IsMacOS():
@@ -511,7 +565,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
 
                     if (!_unixMemoryProtected)
                     {
-                        GetAllocatedByteSpan().Clear();
+                        NativeMemory.Clear((void*)handle, _allocatedBytes);
 
                         if (_unixMemoryLocked)
                         {
@@ -523,11 +577,11 @@ public sealed unsafe class SensitiveData<T> : IDisposable
                     return SensitiveData.UnixMemoryProtection.Free(handle, _allocatedBytes);
 
                 case ProtectionMode.Xor:
-                    GetAllocatedByteSpan().Clear();
+                    NativeMemory.Clear((void*)handle, _allocatedBytes);
 
                     if (_xorKey != IntPtr.Zero)
                     {
-                        new Span<byte>((void*)_xorKey, checked((int)_byteCount)).Clear();
+                        NativeMemory.Clear((void*)_xorKey, _byteCount);
                         NativeMemory.Free((void*)_xorKey);
                         _xorKey = IntPtr.Zero;
                     }
@@ -542,17 +596,25 @@ public sealed unsafe class SensitiveData<T> : IDisposable
 
         private void XorWithKey()
         {
-            var data = new Span<byte>((void*)handle, (int)_allocatedBytes);
-            var key = new ReadOnlySpan<byte>((void*)_xorKey, (int)_allocatedBytes);
-            for (var i = 0; i < data.Length; i++)
+            var data = (byte*)handle;
+            var key = (byte*)_xorKey;
+            for (nuint i = 0; i < _allocatedBytes; i++)
             {
                 data[i] ^= key[i];
             }
         }
 
-        private Span<byte> GetAllocatedByteSpan()
+        // Span is limited to int.MaxValue elements, so the buffer is filled in chunks rather than
+        // narrowing the byte count to int.
+        private static void FillRandom(byte* destination, nuint byteCount)
         {
-            return new Span<byte>((void*)handle, checked((int)_allocatedBytes));
+            while (byteCount > 0)
+            {
+                var chunk = (int)Math.Min(byteCount, (nuint)int.MaxValue);
+                RandomNumberGenerator.Fill(new Span<byte>(destination, chunk));
+                destination += chunk;
+                byteCount -= (nuint)chunk;
+            }
         }
 
         private static void ThrowLastPInvokeError()

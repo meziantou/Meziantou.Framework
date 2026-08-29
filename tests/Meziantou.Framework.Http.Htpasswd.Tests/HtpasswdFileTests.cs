@@ -68,6 +68,29 @@ public sealed class HtpasswdFileTests
         Assert.False(htpasswd.VerifyCredentials("alice", "invalid"));
     }
 
+    [Theory]
+    [InlineData(BcryptVersion.Revision2A)]
+    [InlineData(BcryptVersion.Revision2B)]
+    [InlineData(BcryptVersion.Revision2Y)]
+    public void VerifyCredentials_ShouldValidateTheDocumentedBcryptRevisions(BcryptVersion version)
+    {
+        var hash = Bcrypt.HashPassword("password", workFactor: Bcrypt.MinWorkFactor, version: version);
+        var htpasswd = HtpasswdFile.Parse($"alice:{hash}");
+
+        Assert.True(htpasswd.VerifyCredentials("alice", "password"));
+    }
+
+    [Theory]
+    [InlineData("$2$")]
+    [InlineData("$2x$")]
+    public void VerifyCredentials_ShouldNotRouteUndocumentedBcryptRevisionsToBcrypt(string prefix)
+    {
+        var hash = Bcrypt.HashPassword("password", workFactor: Bcrypt.MinWorkFactor, version: BcryptVersion.Revision2Y);
+        var htpasswd = HtpasswdFile.Parse($"alice:{prefix}{hash[4..]}");
+
+        Assert.False(htpasswd.VerifyCredentials("alice", "password"));
+    }
+
     [Fact]
     public void VerifyCredentials_ShouldAcceptAPasswordAtTheMaximumLength()
     {

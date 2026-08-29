@@ -214,6 +214,55 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public void BencodeString_ToString_ValidUtf8_ReturnsTheText()
+    {
+        var value = new BencodeString("caf\u00e9"u8.ToArray());
+
+        Assert.Equal("caf\u00e9", value.ToString());
+    }
+
+    [Fact]
+    public void BencodeString_ToString_NonUtf8_ReturnsHexadecimalInsteadOfThrowing()
+    {
+        var value = new BencodeString(new byte[] { 0xFF, 0x00, 0x9A });
+
+        Assert.Equal("0xFF009A", value.ToString());
+    }
+
+    [Fact]
+    public void BencodeString_ToString_LongBinaryValue_IsTruncated()
+    {
+        var bytes = new byte[100];
+        Array.Fill(bytes, (byte)0xFF);
+
+        var text = new BencodeString(bytes).ToString();
+
+        Assert.Equal("0x" + new string('F', 64) + "... (100 bytes)", text);
+    }
+
+    [Fact]
+    public void BencodeString_ToUtf8String_NonUtf8_StillThrows()
+    {
+        var value = new BencodeString(new byte[] { 0xFF });
+
+        Assert.Throws<DecoderFallbackException>(() => value.ToUtf8String());
+    }
+
+    [Fact]
+    public void BencodeString_ToString_ParsedBinaryValue_DoesNotThrow()
+    {
+        var data = new List<byte>("d6:pieces20:"u8.ToArray());
+        data.AddRange([0x00, 0x01, 0x02, 0xFF, 0xFE]);
+        data.AddRange("0123456789abcde"u8.ToArray());
+        data.Add((byte)'e');
+
+        var dictionary = Assert.IsType<BencodeDictionary>(BencodeDocument.Parse(data.ToArray()).Root);
+        var pieces = dictionary[new BencodeString("pieces"u8.ToArray())];
+
+        Assert.Equal("0x000102FFFE303132333435363738396162636465", pieces.ToString());
+    }
+
+    [Fact]
     public void BencodeWriter_WriteDictionary()
     {
         var buffer = new ArrayBufferWriter<byte>();

@@ -1,8 +1,12 @@
+using System.Text.Unicode;
+
 namespace Meziantou.Framework.Bencode;
 
 public sealed class BencodeString : BencodeValue, IEquatable<BencodeString>
 {
     private static readonly Encoding Utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    private const int MaxDiagnosticByteCount = 32;
 
     public BencodeString(ReadOnlyMemory<byte> value)
     {
@@ -13,6 +17,8 @@ public sealed class BencodeString : BencodeValue, IEquatable<BencodeString>
 
     public ReadOnlyMemory<byte> Value { get; }
 
+    /// <summary>Decodes the value as UTF-8.</summary>
+    /// <exception cref="DecoderFallbackException">The value is not valid UTF-8. Bencode strings hold arbitrary bytes, so use <see cref="ToString"/> when the value may be binary.</exception>
     public string ToUtf8String()
     {
         return Utf8Encoding.GetString(Value.Span);
@@ -41,5 +47,15 @@ public sealed class BencodeString : BencodeValue, IEquatable<BencodeString>
         writer.WriteString(Value.Span);
     }
 
-    public override string ToString() => ToUtf8String();
+    /// <summary>Returns a representation suitable for diagnostics. Bencode strings hold arbitrary bytes, so a value that is not valid UTF-8 is rendered as hexadecimal instead.</summary>
+    public override string ToString()
+    {
+        var span = Value.Span;
+        if (Utf8.IsValid(span))
+            return Utf8Encoding.GetString(span);
+
+        return span.Length <= MaxDiagnosticByteCount
+            ? "0x" + Convert.ToHexString(span)
+            : $"0x{Convert.ToHexString(span[..MaxDiagnosticByteCount])}... ({span.Length} bytes)";
+    }
 }

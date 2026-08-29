@@ -62,7 +62,7 @@ public sealed class RedundantFromPathCodeFixProvider : FullPathCodeFixProviderBa
         }
 
         // FullPath.FromPath(Path.Combine(path1, path2)) -> FullPath.Combine(path1, path2)
-        if (innerInvocation.TargetMethod.Name is "Combine" or "Join")
+        if (innerInvocation.TargetMethod.Name is "Combine")
         {
             if (expressionSyntax is not InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax fromPathAccess })
                 return false;

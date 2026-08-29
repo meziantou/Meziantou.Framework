@@ -12,6 +12,7 @@ namespace Meziantou.Framework.FixedStringBuilder
         public FixedStringBuilder16(int literalLength, int formattedCount) { }
         public FixedStringBuilder16(string value) { }
         public void Clear() { }
+        public void Clear(bool zeroBuffer) { }
         public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         public void AppendFormatted(string value) { }
         public void AppendFormatted(string value, string? format) { }
@@ -48,6 +49,7 @@ namespace Meziantou.Framework.FixedStringBuilder
         public FixedStringBuilder32(int literalLength, int formattedCount) { }
         public FixedStringBuilder32(string value) { }
         public void Clear() { }
+        public void Clear(bool zeroBuffer) { }
         public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         public void AppendFormatted(string value) { }
         public void AppendFormatted(string value, string? format) { }
@@ -84,6 +86,7 @@ namespace Meziantou.Framework.FixedStringBuilder
         public FixedStringBuilder64(int literalLength, int formattedCount) { }
         public FixedStringBuilder64(string value) { }
         public void Clear() { }
+        public void Clear(bool zeroBuffer) { }
         public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         public void AppendFormatted(string value) { }
         public void AppendFormatted(string value, string? format) { }
@@ -120,6 +123,7 @@ namespace Meziantou.Framework.FixedStringBuilder
         public FixedStringBuilder8(int literalLength, int formattedCount) { }
         public FixedStringBuilder8(string value) { }
         public void Clear() { }
+        public void Clear(bool zeroBuffer) { }
         public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         public void AppendFormatted(string value) { }
         public void AppendFormatted(string value, string? format) { }
@@ -153,6 +157,7 @@ namespace Meziantou.Framework.FixedStringBuilder
         static int MaxLength { get; }
         int Length { get; }
         void Clear();
+        void Clear(bool zeroBuffer);
         System.Span<char> GetUnsafeFullSpan();
     }
 

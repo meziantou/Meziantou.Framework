@@ -14,9 +14,22 @@ public sealed class SecurityProvidersSnapshot
     }
 
     public string? HealthStatus { get; } = Utils.SafeGet(GetHealthStatus);
-    public ImmutableArray<SecurityProviderSnapshot> Antivirus { get; } = Get(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTIVIRUS);
-    public ImmutableArray<SecurityProviderSnapshot> Firewall { get; } = Get(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_FIREWALL);
-    public ImmutableArray<SecurityProviderSnapshot> AntiSpyware { get; } = Get(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTISPYWARE);
+    public ImmutableArray<SecurityProviderSnapshot> Antivirus { get; } = SafeGet(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTIVIRUS);
+    public ImmutableArray<SecurityProviderSnapshot> Firewall { get; } = SafeGet(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_FIREWALL);
+    public ImmutableArray<SecurityProviderSnapshot> AntiSpyware { get; } = SafeGet(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTISPYWARE);
+
+    // Utils.SafeGet cannot be used here: on failure it would return a default ImmutableArray, which throws when enumerated.
+    private static ImmutableArray<SecurityProviderSnapshot> SafeGet(WSC_SECURITY_PROVIDER provider)
+    {
+        try
+        {
+            return Get(provider);
+        }
+        catch
+        {
+            return ImmutableArray<SecurityProviderSnapshot>.Empty;
+        }
+    }
 
     private static ImmutableArray<SecurityProviderSnapshot> Get(WSC_SECURITY_PROVIDER provider)
     {
@@ -32,61 +45,73 @@ public sealed class SecurityProvidersSnapshot
             return ImmutableArray<SecurityProviderSnapshot>.Empty;
 
         var pWSCProductList = (IWSCProductList)wscProductList;
-        var hr = pWSCProductList.Initialize((uint)provider);
-        if (hr != HRESULT.S_OK)
-            return ImmutableArray<SecurityProviderSnapshot>.Empty;
-
-        hr = pWSCProductList.get_Count(out var nProductCount);
-        if (hr != HRESULT.S_OK)
-            return ImmutableArray<SecurityProviderSnapshot>.Empty;
-
-        var products = ImmutableArray.CreateBuilder<SecurityProviderSnapshot>(initialCapacity: (int)nProductCount);
-        for (uint i = 0; i < nProductCount; i++)
+        try
         {
-            string? productName = null;
-            string? productState = null;
-            string? productStatus = null;
-            string? remediationPath = null;
-            string? stateTimestamp = null;
+            var hr = pWSCProductList.Initialize((uint)provider);
+            if (hr != HRESULT.S_OK)
+                return ImmutableArray<SecurityProviderSnapshot>.Empty;
 
-            hr = pWSCProductList.get_Item(i, out var pWscProduct);
-            if (hr == HRESULT.S_OK)
+            hr = pWSCProductList.get_Count(out var nProductCount);
+            if (hr != HRESULT.S_OK)
+                return ImmutableArray<SecurityProviderSnapshot>.Empty;
+
+            var products = ImmutableArray.CreateBuilder<SecurityProviderSnapshot>(initialCapacity: (int)nProductCount);
+            for (uint i = 0; i < nProductCount; i++)
             {
-                pWscProduct.get_ProductName(out productName);
-                hr = pWscProduct.get_ProductState(out var nProductState);
+                string? productName = null;
+                string? productState = null;
+                string? productStatus = null;
+                string? remediationPath = null;
+                string? stateTimestamp = null;
+
+                hr = pWSCProductList.get_Item(i, out var pWscProduct);
                 if (hr == HRESULT.S_OK)
                 {
-                    productState = nProductState switch
+                    try
                     {
-                        WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_ON => "On",
-                        WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_OFF => "Off",
-                        WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_SNOOZED => "Snoozed",
-                        _ => "Expired",
-                    };
-                }
+                        pWscProduct.get_ProductName(out productName);
+                        hr = pWscProduct.get_ProductState(out var nProductState);
+                        if (hr == HRESULT.S_OK)
+                        {
+                            productState = nProductState switch
+                            {
+                                WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_ON => "On",
+                                WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_OFF => "Off",
+                                WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_SNOOZED => "Snoozed",
+                                _ => "Expired",
+                            };
+                        }
 
-                if (provider != WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_FIREWALL)
-                {
-                    hr = pWscProduct.get_SignatureStatus(out var nProductStatus);
-                    if (hr == HRESULT.S_OK)
+                        if (provider != WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_FIREWALL)
+                        {
+                            hr = pWscProduct.get_SignatureStatus(out var nProductStatus);
+                            if (hr == HRESULT.S_OK)
+                            {
+                                productStatus = (nProductStatus == WSC_SECURITY_SIGNATURE_STATUS.WSC_SECURITY_PRODUCT_UP_TO_DATE) ? "Up-to-date" : "Out-of-date";
+                            }
+                        }
+
+                        pWscProduct.get_RemediationPath(out remediationPath);
+                        if (provider == WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTIVIRUS)
+                        {
+                            pWscProduct.get_ProductStateTimestamp(out stateTimestamp);
+                        }
+                    }
+                    finally
                     {
-                        productStatus = (nProductStatus == WSC_SECURITY_SIGNATURE_STATUS.WSC_SECURITY_PRODUCT_UP_TO_DATE) ? "Up-to-date" : "Out-of-date";
+                        Marshal.ReleaseComObject(pWscProduct);
                     }
                 }
 
-                pWscProduct.get_RemediationPath(out remediationPath);
-                if (provider == WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTIVIRUS)
-                {
-                    pWscProduct.get_ProductStateTimestamp(out stateTimestamp);
-                }
+                products.Add(new SecurityProviderSnapshot(productName, remediationPath, productStatus, productState, stateTimestamp));
             }
 
-            products.Add(new SecurityProviderSnapshot(productName, remediationPath, productStatus, productState, stateTimestamp));
-
+            return products.ToImmutable();
+        }
+        finally
+        {
             Marshal.ReleaseComObject(pWSCProductList);
         }
-
-        return products.ToImmutable();
     }
 
     private static string? GetHealthStatus()

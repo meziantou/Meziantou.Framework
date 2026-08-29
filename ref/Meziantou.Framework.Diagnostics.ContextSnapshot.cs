@@ -28,8 +28,8 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
         public bool IsOutputRedirected { get => throw null; }
         public bool IsErrorRedirected { get => throw null; }
         public bool IsInputRedirected { get => throw null; }
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot OutEncoding { get => throw null; }
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot InputEncoding { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot? OutEncoding { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot? InputEncoding { get => throw null; }
         public int BufferHeight { get => throw null; }
         public int BufferWidth { get => throw null; }
         public int LargestWindowHeight { get => throw null; }
@@ -38,13 +38,14 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
         public int WindowWidth { get => throw null; }
         public int WindowTop { get => throw null; }
         public int WindowLeft { get => throw null; }
-        public System.ConsoleColor ForegroundColor { get => throw null; }
-        public System.ConsoleColor BackgroundColor { get => throw null; }
+        public System.ConsoleColor? ForegroundColor { get => throw null; }
+        public System.ConsoleColor? BackgroundColor { get => throw null; }
         public string? Title { get => throw null; }
     }
 
     public sealed class ContextSnapshotBuilder
     {
+        public const string RedactedValue = "***";
         public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddValue(string key, object? value) => throw null;
         public System.Collections.Generic.IReadOnlyDictionary<string, object?> BuildSnapshot() => throw null;
         public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddDefault() => throw null;
@@ -71,7 +72,9 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
         public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddRuntimeFeatures() => throw null;
         public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCommonAppContext() => throw null;
         public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddAppContextData() => throw null;
-        public void AddEnvironmentVariables(System.EnvironmentVariableTarget target = 0) { }
+        public static bool IsSecretEnvironmentVariableName(string name) => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddEnvironmentVariables(System.EnvironmentVariableTarget target = 0) => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddEnvironmentVariables(System.EnvironmentVariableTarget target, System.Func<string, bool> shouldRedact) => throw null;
     }
 
     public sealed class CpuSnapshot

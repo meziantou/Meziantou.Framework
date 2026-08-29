@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Scheduling;
 /// <item><description>COUNT - Maximum number of occurrences</description></item>
 /// <item><description>UNTIL - End date for the recurrence</description></item>
 /// <item><description>WKST - The day on which the workweek starts</description></item>
-/// <item><description>BYSECOND - Limits occurrences to specific seconds (0-60)</description></item>
+/// <item><description>BYSECOND - Limits occurrences to specific seconds (0-60; 60 denotes a leap second and is normalized to 59)</description></item>
 /// <item><description>BYMINUTE - Limits occurrences to specific minutes (0-59)</description></item>
 /// <item><description>BYHOUR - Limits occurrences to specific hours (0-23)</description></item>
 /// <item><description>BYDAY - Limits occurrences to specific days of the week</description></item>
@@ -37,15 +37,38 @@ public abstract class RecurrenceRule : IRecurrenceRule
     public DateTime? EndDate { get; set; }
 
     /// <summary>The number of occurrences before the recurrence ends.</summary>
-    public int? Occurrences { get; set; }
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int? Occurrences
+    {
+        get => field;
+        set
+        {
+            if (value.HasValue)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(value.Value);
+            }
 
-    /// <summary>The interval between occurrences.</summary>
-    public int Interval { get; set; } = 1;
+            field = value;
+        }
+    }
+
+    /// <summary>The interval between occurrences. Must be greater than or equal to 1.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is less than 1.</exception>
+    public int Interval
+    {
+        get => field;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            field = value;
+        }
+    } = 1;
 
     /// <summary>The first day of the week for the recurrence rule.</summary>
     public DayOfWeek WeekStart { get; set; } = DefaultFirstDayOfWeek;
 
-    /// <summary>Limits occurrences to specific seconds (0-60, where 60 represents leap seconds).</summary>
+    /// <summary>Limits occurrences to specific seconds (0-59). A parsed BYSECOND value of 60 denotes a
+    /// leap second, which <see cref="DateTime"/> cannot represent, and is normalized to 59.</summary>
     public IList<int>? BySeconds { get; set; }
 
     /// <summary>Limits occurrences to specific minutes (0-59).</summary>
@@ -63,8 +86,8 @@ public abstract class RecurrenceRule : IRecurrenceRule
     /// <summary>Limits occurrences to specific positions in the recurrence set.</summary>
     public IList<int>? BySetPositions { get; set; }
 
-    /// <summary>Gets a value indicating whether the recurrence rule has an end condition.</summary>
-    public bool IsForever => Occurrences.HasValue || EndDate.HasValue;
+    /// <summary>Gets a value indicating whether the recurrence rule never ends.</summary>
+    public bool IsForever => !Occurrences.HasValue && !EndDate.HasValue;
 
     /// <summary>Parses a recurrence rule string according to RFC 5545 format.</summary>
     /// <param name="rrule">The recurrence rule string to parse.</param>
@@ -218,8 +241,22 @@ public abstract class RecurrenceRule : IRecurrenceRule
 
             // Set general properties
             // Set Interval
-            recurrenceRule.Interval = values.GetValue("INTERVAL", 1);
-            recurrenceRule.Occurrences = values.GetValue("COUNT", null);
+            var interval = values.GetValue("INTERVAL", 1);
+            if (interval < 1)
+            {
+                error = $"INTERVAL value '{interval.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be greater than or equal to 1.";
+                return false;
+            }
+
+            var occurrences = values.GetValue("COUNT", null);
+            if (occurrences < 0)
+            {
+                error = $"COUNT value '{occurrences.Value.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be greater than or equal to 0.";
+                return false;
+            }
+
+            recurrenceRule.Interval = interval;
+            recurrenceRule.Occurrences = occurrences;
             if (values.TryGetNonEmptyValue("UNTIL", out var until))
             {
                 recurrenceRule.EndDate = Utilities.ParseDateTime(until);
@@ -381,15 +418,21 @@ public abstract class RecurrenceRule : IRecurrenceRule
             return null;
 
         var seconds = SplitToInt32List(str);
-        foreach (var second in seconds)
+        for (var i = 0; i < seconds.Count; i++)
         {
-            if (second is >= 0 and <= 60)
-                continue;
+            var second = seconds[i];
+            if (second is < 0 or > 60)
+                throw new FormatException($"Second '{second.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 0 and 60.");
 
-            throw new FormatException($"Second '{second.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 0 and 60.");
+            // RFC 5545 allows 60 to denote a leap second. DateTime cannot represent one, so it
+            // is normalized to the last representable second of the minute.
+            if (second is 60)
+                seconds[i] = 59;
         }
 
-        return seconds;
+        // Normalizing may have produced a duplicate (BYSECOND=59,60), which would yield the
+        // same occurrence twice.
+        return seconds.Distinct().ToList();
     }
 
     private static List<int>? ParseByMinutes(Dictionary<string, string> values)

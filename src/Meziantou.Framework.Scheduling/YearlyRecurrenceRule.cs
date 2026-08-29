@@ -28,20 +28,21 @@ internal sealed class YearlyRecurrenceRule : RecurrenceRule
 
         if (IsEmpty(ByMonthDays) && IsEmpty(ByWeekDays) && IsEmpty(ByMonths) && /*IsEmpty(ByWeekNo) && */IsEmpty(ByYearDays))
         {
+            var current = startDate;
             while (true)
             {
                 if (hasTimeFilters)
                 {
-                    foreach (var occurrence in ExpandByTime(startDate))
+                    foreach (var occurrence in ExpandByTime(current, startDate))
                     {
                         yield return occurrence;
                     }
                 }
                 else
                 {
-                    yield return startDate;
+                    yield return current;
                 }
-                startDate = startDate.AddYears(Interval);
+                current = current.AddYears(Interval);
             }
         }
 
@@ -61,7 +62,7 @@ internal sealed class YearlyRecurrenceRule : RecurrenceRule
             {
                 if (hasTimeFilters)
                 {
-                    foreach (var occurrence in ExpandByTime(date))
+                    foreach (var occurrence in ExpandByTime(date, startDate))
                     {
                         yield return occurrence;
                     }
@@ -76,7 +77,7 @@ internal sealed class YearlyRecurrenceRule : RecurrenceRule
         }
     }
 
-    private IEnumerable<DateTime> ExpandByTime(DateTime date)
+    private IEnumerable<DateTime> ExpandByTime(DateTime date, DateTime lowerBound)
     {
         var hours = IsEmpty(ByHours) ? [date.Hour] : ByHours;
         var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
@@ -90,7 +91,7 @@ internal sealed class YearlyRecurrenceRule : RecurrenceRule
                 foreach (var second in seconds)
                 {
                     var result = dateOnly.AddHours(hour).AddMinutes(minute).AddSeconds(second);
-                    if (result >= date)
+                    if (result >= lowerBound)
                     {
                         yield return result;
                     }

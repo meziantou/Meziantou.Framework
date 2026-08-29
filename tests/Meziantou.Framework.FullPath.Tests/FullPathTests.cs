@@ -14,6 +14,30 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public void FromPath_EmptyString_ReturnsEmpty()
+    {
+        Assert.True(FullPath.FromPath("").IsEmpty);
+        Assert.Equal(FullPath.Empty, FullPath.FromPath(""));
+        Assert.Equal(FullPath.Empty, FullPath.FromPath(string.Empty));
+    }
+
+    [Fact]
+    public void FromPath_EmptyString_IsNotTheCurrentDirectory()
+    {
+        Assert.NotEqual(FullPath.CurrentDirectory(), FullPath.FromPath(""));
+        Assert.Equal(FullPath.CurrentDirectory(), FullPath.FromPath("."));
+    }
+
+    [Fact]
+    public void FromPath_RoundTripsTheStringRepresentation()
+    {
+        Assert.Equal(FullPath.Empty, FullPath.FromPath(FullPath.Empty.Value));
+
+        var path = FullPath.FromPath("test");
+        Assert.Equal(path, FullPath.FromPath(path.Value));
+    }
+
+    [Fact]
     public void Properties()
     {
         var path = FullPath.FromPath("test") / "a" / "b.txt";
@@ -46,6 +70,105 @@ public sealed class FullPathTests
         var path = FullPath.FromPath("test") / "a" / "b.txt";
         var newPath = path.WithNameWithoutExtension("c");
         Assert.Equal(FullPath.FromPath("test") / "a" / "c.txt", newPath);
+    }
+
+    [Fact]
+    public void ChangeName_NormalizesTheResultingPath()
+    {
+        var root = FullPath.FromPath("test");
+        var path = root / "a" / "b.txt";
+
+        var newPath = path.WithName("../c.txt");
+
+        Assert.Equal(root / "c.txt", newPath);
+        Assert.Equal(FullPath.FromPath(newPath.RawValue), newPath);
+    }
+
+    [Fact]
+    public void ChangeName_EscapingTheRootIsNotReportedAsAChild()
+    {
+        var root = FullPath.FromPath("test");
+        var path = root / "a" / "b.txt";
+
+        var newPath = path.WithName("../../../../etc/passwd");
+
+        Assert.False(newPath.IsChildOf(root));
+        Assert.Equal(FullPath.FromPath(newPath.RawValue), newPath);
+    }
+
+    [Fact]
+    public void ChangeName_RootDirectory()
+    {
+        var root = GetRootDirectory();
+
+        var newPath = root.WithName("temp");
+
+        Assert.Equal(root / "temp", newPath);
+    }
+
+    [Fact]
+    public void ChangeName_EmbeddedNullCharacterIsRejected()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.txt";
+
+        Assert.Throws<ArgumentException>(() => path.WithName("a\0b"));
+    }
+
+    [Fact]
+    public void ChangeNameWithoutExtension_NormalizesTheResultingPath()
+    {
+        var root = FullPath.FromPath("test");
+        var path = root / "a" / "b.txt";
+
+        var newPath = path.WithNameWithoutExtension("../c");
+
+        Assert.Equal(root / "c.txt", newPath);
+    }
+
+    [Fact]
+    public void ChangeNameWithoutExtension_RootDirectory()
+    {
+        var root = GetRootDirectory();
+
+        var newPath = root.WithNameWithoutExtension("temp");
+
+        Assert.Equal(root / "temp", newPath);
+    }
+
+    [Fact]
+    public void ChangeExtension_NormalizesTheResultingPath()
+    {
+        var root = FullPath.FromPath("test");
+        var path = root / "a" / "b.txt";
+
+        var newPath = path.WithExtension("/../../c");
+
+        Assert.Equal(FullPath.FromPath(newPath.RawValue), newPath);
+        Assert.False(newPath.IsChildOf(root / "a"));
+    }
+
+    [Fact]
+    public void ChangeExtension_DotFileKeepsNoTrailingSeparator()
+    {
+        var parent = FullPath.FromPath("test") / "a";
+        var path = parent / ".gitignore";
+
+        var newPath = path.WithExtension(null);
+
+        Assert.Equal(parent, newPath);
+        Assert.Equal(parent.RawValue, newPath.RawValue);
+    }
+
+    [Fact]
+    public void ChangeMultipleExtensions_DotFileKeepsNoTrailingSeparator()
+    {
+        var parent = FullPath.FromPath("test") / "a";
+        var path = parent / ".gitignore";
+
+        var newPath = path.WithExtension(null, replaceAllTrailingExtensions: true);
+
+        Assert.Equal(parent, newPath);
+        Assert.Equal(parent.RawValue, newPath.RawValue);
     }
 
     [Fact]
@@ -203,6 +326,13 @@ public sealed class FullPathTests
     public void FromPath_ExtendedPrefixIsRemovedOnWindows()
     {
         Assert.Equal(@"C:\temp\a.txt", FullPath.FromPath(@"\\?\C:\temp\a.txt").RawValue);
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Windows)]
+    public void FromPath_ExtendedUncPrefixIsConvertedBackToAUncPath()
+    {
+        Assert.Equal(@"\\server\share\folder\file.txt", FullPath.FromPath(@"\\?\UNC\server\share\folder\file.txt").RawValue);
     }
 
     [Fact]
@@ -392,6 +522,20 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public async Task ResolveSymlink_CycleThroughADirectoryLink()
+    {
+        // The links reference each other through a directory component, so the walk alternates between resolving a
+        // link and consuming a component that is not one
+        await using var temp = TemporaryDirectory.Create();
+        var a = temp.GetFullPath("a");
+        var b = temp.GetFullPath("b");
+        CreateSymlink(a, Path.Combine("b", "c"), isDirectory: true);
+        CreateSymlink(b, "a", isDirectory: true);
+
+        Assert.Throws<IOException>(() => { a.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out _); });
+    }
+
+    [Fact]
     public async Task ResolveSymlink_ResolveAllSymbolicLinks()
     {
         await using var temp = TemporaryDirectory.Create();
@@ -484,6 +628,21 @@ public sealed class FullPathTests
         {
             Assert.Equal(".tmp", path.Extension);
             Assert.True(File.Exists(path.Value));
+        }
+        finally
+        {
+            File.Delete(path.Value);
+        }
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void CreateTempFile_IsOnlyAccessibleByTheCurrentUser()
+    {
+        var path = FullPath.CreateTempFile(prefix: null);
+        try
+        {
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(path.Value));
         }
         finally
         {
@@ -687,8 +846,22 @@ public sealed class FullPathTests
     {
         var path = FullPath.FromPath(@"C:\temp\test.txt");
         var extended = path.ToWindowsExtendedPath();
-        var doubleExtended = FullPath.FromPath(extended).ToWindowsExtendedPath();
-        Assert.Equal(extended, doubleExtended);
+
+        // FromPath removes the device prefix, so the round-trip has to give back the original path. Asserting only
+        // that ToWindowsExtendedPath is idempotent would compare two identical expressions and could never fail.
+        Assert.Equal(path, FullPath.FromPath(extended));
+        Assert.Equal(extended, FullPath.FromPath(extended).ToWindowsExtendedPath());
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Windows)]
+    public void ToWindowsExtendedPath_UNCPath_RoundTrips()
+    {
+        var path = FullPath.FromPath(@"\\server\share\folder\file.txt");
+        var extended = path.ToWindowsExtendedPath();
+
+        Assert.Equal(@"\\?\UNC\server\share\folder\file.txt", extended);
+        Assert.Equal(path, FullPath.FromPath(extended));
     }
 
     [Fact]

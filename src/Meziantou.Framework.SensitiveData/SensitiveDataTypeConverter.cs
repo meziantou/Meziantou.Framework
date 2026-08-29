@@ -5,10 +5,12 @@ namespace Meziantou.Framework;
 [SuppressMessage("Usage", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated dynamically")]
 internal sealed class SensitiveDataTypeConverter : TypeConverter
 {
-    private readonly Type _type;
+    private readonly Type? _type;
 
+    // Used when the converter is activated without the type it describes. There is nothing to
+    // identify the element type with, so assuming SensitiveData<char> would hand a caller asking
+    // about SensitiveData<byte> an instance of the wrong type; refuse instead.
     public SensitiveDataTypeConverter()
-        : this(typeof(SensitiveData<char>))
     {
     }
 
@@ -35,7 +37,11 @@ internal sealed class SensitiveDataTypeConverter : TypeConverter
 
     public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
     {
-        throw new InvalidOperationException();
+        // Converting away from SensitiveData is never supported: the whole point of the type is that
+        // its contents do not leak into a string. NotSupportedException is what TypeConverter
+        // documents for a conversion it cannot perform, and what callers that probe a converter
+        // defensively catch.
+        throw new NotSupportedException($"Cannot convert '{typeof(SensitiveData<char>)}' to '{destinationType}'. Revealing the contents has to be explicit.");
     }
 
     public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
@@ -43,7 +49,11 @@ internal sealed class SensitiveDataTypeConverter : TypeConverter
         if (value is string str)
         {
             if (!IsSupportedType)
-                throw new NotSupportedException($"Cannot convert a string to '{_type}'. Only '{typeof(SensitiveData<char>)}' can be created from a string.");
+            {
+                throw new NotSupportedException(_type is null
+                    ? $"Cannot convert a string without knowing the type being described. Only '{typeof(SensitiveData<char>)}' can be created from a string."
+                    : $"Cannot convert a string to '{_type}'. Only '{typeof(SensitiveData<char>)}' can be created from a string.");
+            }
 
             return SensitiveData.Create(str);
         }

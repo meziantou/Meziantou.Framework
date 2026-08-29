@@ -301,4 +301,78 @@ public sealed class Mp4Tests
         payload.CopyTo(atom, 8);
         return atom;
     }
+
+    [Fact]
+    public void ReadTags_DeeplyNestedAtoms_ReturnsErrorInsteadOfOverflowingTheStack()
+    {
+        // An atom size of 0 means "extends to the end of the file", so every 8 bytes adds a nesting level
+        var file = new MemoryStream();
+        file.Write(CreateAtom("ftyp", new byte[8]));
+        for (var i = 0; i < 100_000; i++)
+        {
+            file.Write([0, 0, 0, 0]);
+            file.Write("moov"u8);
+        }
+
+        using var stream = new MemoryStream(file.ToArray());
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp4);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.CorruptFile, result.Error);
+    }
+
+    [Fact]
+    public void ReadTags_NestingUpToTheSupportedDepth_IsStillParsed()
+    {
+        // moov > udta > meta > ilst > ©nam > data is the deepest path a real file uses
+        var result = MediaFile.ReadTags(GetTestFilePath("all_fields.m4a"));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("All Fields Title", result.Value.Title);
+    }
+
+    [Fact]
+    public void WriteTags_WritesTheMetaHandlerBox()
+    {
+        var tempFile = Path.GetTempFileName() + ".m4a";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.m4a"), tempFile, overwrite: true);
+
+            var writeResult = MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Handler Title" });
+            Assert.True(writeResult.IsSuccess);
+
+            var written = File.ReadAllBytes(tempFile);
+            var meta = IndexOfAtomType(written, "meta");
+            Assert.True(meta >= 0, "No meta atom in the written file.");
+
+            // meta payload: version/flags(4), then the handler box, then ilst
+            var handler = meta + 8;
+            Assert.Equal(33u, BinaryPrimitives.ReadUInt32BigEndian(written.AsSpan(handler, 4)));
+            Assert.Equal("hdlr", Encoding.Latin1.GetString(written, handler + 4, 4));
+            Assert.Equal("mdir", Encoding.Latin1.GetString(written, handler + 16, 4));
+            Assert.Equal("ilst", Encoding.Latin1.GetString(written, handler + 33 + 4, 4));
+
+            // The tags are still readable through the library itself
+            var readResult = MediaFile.ReadTags(tempFile);
+            Assert.True(readResult.IsSuccess);
+            Assert.Equal("Handler Title", readResult.Value.Title);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    private static int IndexOfAtomType(byte[] data, string atomType)
+    {
+        var needle = Encoding.Latin1.GetBytes(atomType);
+        for (var i = 4; i + 4 <= data.Length; i++)
+        {
+            if (data.AsSpan(i, 4).SequenceEqual(needle))
+                return i;
+        }
+
+        return -1;
+    }
 }

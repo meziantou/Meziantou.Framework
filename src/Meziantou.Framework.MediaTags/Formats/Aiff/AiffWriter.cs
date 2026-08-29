@@ -29,6 +29,10 @@ internal sealed class AiffWriter : IMediaTagWriter
                 var chunkSize = BinaryPrimitives.ReadInt32BigEndian(chunkHeader[4..]);
                 var dataPos = inputStream.Position;
 
+                // See AiffReader: a negative size would move the cursor backwards and loop forever.
+                if (chunkSize < 0 || chunkSize > inputStream.Length - dataPos)
+                    break;
+
                 existingChunks.Add((chunkId, chunkSize, dataPos));
 
                 var nextPos = dataPos + chunkSize;
@@ -45,7 +49,9 @@ internal sealed class AiffWriter : IMediaTagWriter
             // Copy existing chunks except ID3
             foreach (var (id, size, dataPos) in existingChunks)
             {
-                if (id is "ID3 " or "id3 " or "NAME" or "AUTH" or "ANNO" or "(c) ")
+                // Drop every chunk AiffReader can source a tag from, otherwise the stale chunk is read
+                // back in preference to the ID3 tag written below. Keep in sync with AiffReader.ReadTags.
+                if (id is "ID3 " or "id3 " or "NAME" or "AUTH" or "ANNO" or "(c) " or "ISRC")
                     continue;
 
                 // Write chunk header

@@ -136,6 +136,60 @@ public sealed class FixedStringBuilderSourceGeneratorTests
     }
 
     [Fact]
+    public async Task ClearCanZeroTheBuffer()
+    {
+        const string Source = """
+            namespace Meziantou.Framework.FixedStringBuilder
+            {
+                public interface IFixedString
+                {
+                    global::System.Span<char> GetUnsafeFullSpan();
+                }
+
+                public interface IFixedString<T> : IFixedString where T : IFixedString<T>
+                {
+                    void Clear();
+                    void Clear(bool zeroBuffer);
+                    static abstract implicit operator T(string value);
+                }
+            }
+
+            [FixedStringBuilderAttribute(4)]
+            public partial struct FixedStringBuilder4
+            {
+            }
+
+            public static class Harness
+            {
+                public static string ClearAndGetBuffer(bool zeroBuffer)
+                {
+                    FixedStringBuilder4 value = "abcd";
+                    value.Clear(zeroBuffer);
+                    return new string(((Meziantou.Framework.FixedStringBuilder.IFixedString)value).GetUnsafeFullSpan());
+                }
+            }
+            """;
+
+        var (runResult, compilation) = await GenerateAsync(Source);
+        Assert.Empty(runResult.Diagnostics);
+
+        var generatedCode = string.Join('\n', runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
+        Assert.Contains("public void Clear(bool zeroBuffer)", generatedCode);
+        Assert.Contains("AsUnsafeFullSpan().Clear();", generatedCode);
+
+        using var peStream = new MemoryStream();
+        var emitResult = compilation.Emit(peStream);
+        var diagnostics = string.Join('\n', emitResult.Diagnostics);
+        Assert.True(emitResult.Success, diagnostics);
+
+        var assembly = Assembly.Load(peStream.ToArray());
+        var method = assembly.GetType("Harness")?.GetMethod("ClearAndGetBuffer", BindingFlags.Public | BindingFlags.Static);
+        Assert.NotNull(method);
+        Assert.Equal("abcd", (string?)method!.Invoke(null, [false]));
+        Assert.Equal("\0\0\0\0", (string?)method!.Invoke(null, [true]));
+    }
+
+    [Fact]
     public async Task AnalyzerReportsMissingValue()
     {
         const string Source = """

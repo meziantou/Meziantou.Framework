@@ -34,7 +34,7 @@ internal sealed class HourlyRecurrenceRule : RecurrenceRule
             {
                 if (hasTimeFilters)
                 {
-                    foreach (var occurrence in ExpandByTime(current))
+                    foreach (var occurrence in ExpandByTime(current, startDate))
                     {
                         yield return occurrence;
                     }
@@ -51,7 +51,7 @@ internal sealed class HourlyRecurrenceRule : RecurrenceRule
         // ReSharper disable once FunctionNeverReturns (UNTIL & COUNT are handled by GetNextOccurrences)
     }
 
-    private IEnumerable<DateTime> ExpandByTime(DateTime date)
+    private IEnumerable<DateTime> ExpandByTime(DateTime date, DateTime lowerBound)
     {
         var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
         var seconds = IsEmpty(BySeconds) ? [date.Second] : BySeconds;
@@ -62,7 +62,7 @@ internal sealed class HourlyRecurrenceRule : RecurrenceRule
             foreach (var second in seconds)
             {
                 var result = dateHour.AddMinutes(minute).AddSeconds(second);
-                if (result >= date)
+                if (result >= lowerBound)
                 {
                     yield return result;
                 }

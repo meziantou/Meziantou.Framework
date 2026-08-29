@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace Meziantou.Framework.Http;
@@ -15,14 +16,23 @@ public sealed class HtpasswdFile
     private const int ShaCryptSaltMaxLength = 16;
     private const int ShaCryptDefaultRounds = 5000;
     private const int ShaCryptMinRounds = 1000;
-    private const int ShaCryptMaxRounds = 999_999_999;
+    // The format allows up to 999_999_999 rounds. Computing that many takes hours, so a hash asking for
+    // more rounds than we are willing to compute is rejected instead of being verified.
+    private const int ShaCryptMaxRounds = 10_000_000;
     private const string Sha1Prefix = "{SHA}";
+    private const int MaxPasswordLength = 1024;
+    private static readonly string[] BcryptPrefixes = ["$2a$", "$2b$", "$2y$"];
     private readonly Dictionary<string, string> _entries;
+    private readonly bool _allowPlaintextPasswords;
 
-    private HtpasswdFile(Dictionary<string, string> entries)
+    private HtpasswdFile(Dictionary<string, string> entries, bool allowPlaintextPasswords)
     {
         _entries = entries;
+        _allowPlaintextPasswords = allowPlaintextPasswords;
     }
+
+    /// <summary>Gets a value indicating whether entries whose format is not recognized are compared as plaintext passwords.</summary>
+    public bool AllowPlaintextPasswords => _allowPlaintextPasswords;
 
     /// <summary>Gets the list of usernames in the file.</summary>
     public ICollection<string> Usernames => _entries.Keys;
@@ -30,13 +40,23 @@ public sealed class HtpasswdFile
     /// <summary>Gets the number of entries in the file.</summary>
     public int Count => _entries.Count;
 
-    /// <summary>Parses the content of an htpasswd file.</summary>
+    /// <summary>Parses the content of an htpasswd file. Entries whose format is not recognized are rejected.</summary>
     /// <param name="content">The text content of the htpasswd file.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static HtpasswdFile Parse(string content)
+    public static HtpasswdFile Parse(string content) => Parse(content, allowPlaintextPasswords: false);
+
+    /// <summary>Parses the content of an htpasswd file.</summary>
+    /// <param name="content">The text content of the htpasswd file.</param>
+    /// <param name="allowPlaintextPasswords">
+    /// <see langword="true"/> to compare an entry whose format is not recognized against the password as plaintext;
+    /// <see langword="false"/> to reject it. Enabling this also accepts hashes the library does not implement, such as
+    /// traditional DES crypt, as plaintext passwords.
+    /// </param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static HtpasswdFile Parse(string content, bool allowPlaintextPasswords)
     {
         ArgumentNullException.ThrowIfNull(content);
-        return Parse(content.AsSpan());
+        return Parse(content.AsSpan(), allowPlaintextPasswords);
     }
 
     /// <summary>
@@ -44,7 +64,18 @@ public sealed class HtpasswdFile
     /// </summary>
     /// <param name="content">The text content of the htpasswd file.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static HtpasswdFile Parse(ReadOnlySpan<char> content)
+    public static HtpasswdFile Parse(ReadOnlySpan<char> content) => Parse(content, allowPlaintextPasswords: false);
+
+    /// <summary>
+    /// Parses the content of an htpasswd file.
+    /// </summary>
+    /// <param name="content">The text content of the htpasswd file.</param>
+    /// <param name="allowPlaintextPasswords">
+    /// <see langword="true"/> to compare an entry whose format is not recognized against the password as plaintext;
+    /// <see langword="false"/> to reject it.
+    /// </param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static HtpasswdFile Parse(ReadOnlySpan<char> content, bool allowPlaintextPasswords)
     {
         var entries = new Dictionary<string, string>(StringComparer.Ordinal);
 
@@ -79,49 +110,93 @@ public sealed class HtpasswdFile
             if (separatorIndex <= 0)
                 continue;
 
-            var username = line[..separatorIndex].Trim();
+            var username = line[..separatorIndex];
             if (username.IsEmpty)
                 continue;
 
-            var passwordHash = line[(separatorIndex + 1)..].Trim();
-            entries[username.ToString()] = passwordHash.ToString();
+            var passwordHash = line[(separatorIndex + 1)..];
+            if (passwordHash.IsEmpty)
+                continue;
+
+            entries.TryAdd(username.ToString(), passwordHash.ToString());
         }
 
-        return new HtpasswdFile(entries);
+        return new HtpasswdFile(entries, allowPlaintextPasswords);
     }
+
+    /// <summary>
+    /// Loads and parses an htpasswd file from disk. Entries whose format is not recognized are rejected.
+    /// </summary>
+    /// <param name="file">The path of the htpasswd file.</param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static Task<HtpasswdFile> LoadAsync(string file) => LoadAsync(file, allowPlaintextPasswords: false, CancellationToken.None);
+
+    /// <summary>
+    /// Loads and parses an htpasswd file from disk. Entries whose format is not recognized are rejected.
+    /// </summary>
+    /// <param name="file">The path of the htpasswd file.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static Task<HtpasswdFile> LoadAsync(string file, CancellationToken cancellationToken) => LoadAsync(file, allowPlaintextPasswords: false, cancellationToken);
 
     /// <summary>
     /// Loads and parses an htpasswd file from disk.
     /// </summary>
     /// <param name="file">The path of the htpasswd file.</param>
+    /// <param name="allowPlaintextPasswords">
+    /// <see langword="true"/> to compare an entry whose format is not recognized against the password as plaintext;
+    /// <see langword="false"/> to reject it. Enabling this also accepts hashes the library does not implement, such as
+    /// traditional DES crypt, as plaintext passwords.
+    /// </param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static async Task<HtpasswdFile> LoadAsync(string file)
+    public static async Task<HtpasswdFile> LoadAsync(string file, bool allowPlaintextPasswords, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(file);
 
-        await using var stream = File.OpenRead(file);
+        await using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true);
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-        return await LoadAsync(reader).ConfigureAwait(false);
+        return await LoadAsync(reader, allowPlaintextPasswords, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Loads and parses an htpasswd file from a <see cref="TextReader"/>. Entries whose format is not recognized are rejected.
+    /// </summary>
+    /// <param name="file">The reader containing the htpasswd content.</param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static Task<HtpasswdFile> LoadAsync(TextReader file) => LoadAsync(file, allowPlaintextPasswords: false, CancellationToken.None);
+
+    /// <summary>
+    /// Loads and parses an htpasswd file from a <see cref="TextReader"/>. Entries whose format is not recognized are rejected.
+    /// </summary>
+    /// <param name="file">The reader containing the htpasswd content.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static Task<HtpasswdFile> LoadAsync(TextReader file, CancellationToken cancellationToken) => LoadAsync(file, allowPlaintextPasswords: false, cancellationToken);
 
     /// <summary>
     /// Loads and parses an htpasswd file from a <see cref="TextReader"/>.
     /// </summary>
     /// <param name="file">The reader containing the htpasswd content.</param>
+    /// <param name="allowPlaintextPasswords">
+    /// <see langword="true"/> to compare an entry whose format is not recognized against the password as plaintext;
+    /// <see langword="false"/> to reject it.
+    /// </param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static async Task<HtpasswdFile> LoadAsync(TextReader file)
+    public static async Task<HtpasswdFile> LoadAsync(TextReader file, bool allowPlaintextPasswords, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(file);
 
-        var content = await file.ReadToEndAsync().ConfigureAwait(false);
-        return Parse(content);
+        var content = await file.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+        return Parse(content, allowPlaintextPasswords);
     }
 
     /// <summary>
     /// Verifies a username and password against the current htpasswd entries.
     /// </summary>
     /// <param name="username">The username to verify.</param>
-    /// <param name="password">The plaintext password to verify.</param>
+    /// <param name="password">The plaintext password to verify. A password longer than 1024 characters is always rejected.</param>
     /// <returns><see langword="true"/> if the credentials are valid; otherwise, <see langword="false"/>.</returns>
     public bool VerifyCredentials(string username, string password)
     {
@@ -135,15 +210,20 @@ public sealed class HtpasswdFile
     /// Verifies a username and password against the current htpasswd entries.
     /// </summary>
     /// <param name="username">The username to verify.</param>
-    /// <param name="password">The plaintext password to verify.</param>
+    /// <param name="password">The plaintext password to verify. A password longer than 1024 characters is always rejected.</param>
     /// <returns><see langword="true"/> if the credentials are valid; otherwise, <see langword="false"/>.</returns>
     public bool VerifyCredentials(ReadOnlySpan<char> username, ReadOnlySpan<char> password)
     {
+        // The crypt algorithms hash the password once per password byte, so their cost grows quadratically
+        // with the length of an attacker-supplied value. Apache caps the password at 255 characters.
+        if (password.Length > MaxPasswordLength)
+            return false;
+
         if (!_entries.TryGetValue(username.ToString(), out var expectedPasswordHash))
             return false;
 
         var expectedPasswordHashSpan = expectedPasswordHash.AsSpan();
-        if (expectedPasswordHashSpan.StartsWith("$2", StringComparison.Ordinal))
+        if (IsBcryptHash(expectedPasswordHashSpan))
             return Bcrypt.Verify(password, expectedPasswordHashSpan);
 
         if (expectedPasswordHashSpan.StartsWith(Sha1Prefix, StringComparison.Ordinal))
@@ -161,8 +241,31 @@ public sealed class HtpasswdFile
         if (expectedPasswordHashSpan.StartsWith(Sha512CryptPrefix, StringComparison.Ordinal))
             return VerifyShaCrypt(password, expectedPasswordHashSpan, useSha512: true);
 
-        return password.SequenceEqual(expectedPasswordHashSpan);
+        if (!_allowPlaintextPasswords)
+            return false;
+
+        return FixedTimeEquals(password, expectedPasswordHashSpan);
     }
+
+    private static bool IsBcryptHash(ReadOnlySpan<char> hash)
+    {
+        foreach (var prefix in BcryptPrefixes)
+        {
+            if (hash.StartsWith(prefix, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Compares two values in an amount of time that does not depend on where they start to differ.</summary>
+    /// <remarks>
+    /// The spans are reinterpreted as bytes rather than encoded, so no buffer is needed on the verification path.
+    /// As with <see cref="CryptographicOperations.FixedTimeEquals(System.ReadOnlySpan{byte}, System.ReadOnlySpan{byte})"/>,
+    /// a length difference is still observable.
+    /// </remarks>
+    private static bool FixedTimeEquals(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
+        => CryptographicOperations.FixedTimeEquals(MemoryMarshal.AsBytes(left), MemoryMarshal.AsBytes(right));
 
     private static bool VerifyMd5Crypt(ReadOnlySpan<char> password, ReadOnlySpan<char> expectedHash, string prefix)
     {
@@ -170,7 +273,7 @@ public sealed class HtpasswdFile
             return false;
 
         var computedHash = CreateMd5CryptHash(password, salt, prefix);
-        return expectedHash.SequenceEqual(computedHash.AsSpan());
+        return FixedTimeEquals(expectedHash, computedHash.AsSpan());
     }
 
     private static bool VerifyShaCrypt(ReadOnlySpan<char> password, ReadOnlySpan<char> expectedHash, bool useSha512)
@@ -182,7 +285,7 @@ public sealed class HtpasswdFile
             return false;
 
         var computedHash = CreateShaCryptHash(password, salt, rounds, roundsCustom, useSha512);
-        return expectedHash.SequenceEqual(computedHash.AsSpan());
+        return FixedTimeEquals(expectedHash, computedHash.AsSpan());
     }
 
     private static bool TryParseMd5CryptHash(ReadOnlySpan<char> hash, string prefix, out ReadOnlySpan<char> salt, out ReadOnlySpan<char> checksum)
@@ -230,7 +333,9 @@ public sealed class HtpasswdFile
             if (!int.TryParse(roundsText, NumberStyles.None, CultureInfo.InvariantCulture, out rounds))
                 return false;
 
-            rounds = Math.Clamp(rounds, ShaCryptMinRounds, ShaCryptMaxRounds);
+            if (rounds is < ShaCryptMinRounds or > ShaCryptMaxRounds)
+                return false;
+
             roundsCustom = true;
             remaining = remaining[(roundsSeparatorIndex + 1)..];
         }
@@ -537,7 +642,7 @@ public sealed class HtpasswdFile
 
         var passwordBytes = byteCount <= 256
             ? stackalloc byte[byteCount]
-            : (rentedBytes = ArrayPool<byte>.Shared.Rent(byteCount));
+            : (rentedBytes = ArrayPool<byte>.Shared.Rent(byteCount)).AsSpan(0, byteCount);
 
         try
         {
@@ -551,13 +656,13 @@ public sealed class HtpasswdFile
             Span<char> base64 = stackalloc char[28];
             _ = Convert.TryToBase64Chars(hashBytes, base64, out var charsWritten);
 
-            return expectedHash.SequenceEqual(base64[..charsWritten]);
+            return FixedTimeEquals(expectedHash, base64[..charsWritten]);
         }
         finally
         {
             if (rentedBytes is not null)
             {
-                ArrayPool<byte>.Shared.Return(rentedBytes);
+                ArrayPool<byte>.Shared.Return(rentedBytes, clearArray: true);
             }
         }
     }

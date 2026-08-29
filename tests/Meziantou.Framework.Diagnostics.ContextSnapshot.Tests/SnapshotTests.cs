@@ -1,5 +1,6 @@
 #pragma warning disable CA1869
 
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -37,6 +38,61 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public void PathEnvironmentVariableIsSplitOnThePlatformSeparator()
+    {
+        var builder = new ContextSnapshotBuilder();
+        builder.AddEnvironmentVariables(EnvironmentVariableTarget.Process);
+        var snapshot = builder.BuildSnapshot();
+
+        var variables = Assert.IsType<ImmutableSortedDictionary<string, object>>(snapshot["EnvironmentVariables.Process"]);
+        var expected = Environment.GetEnvironmentVariable("PATH")!.Split(Path.PathSeparator);
+
+        // Windows names the variable "Path" and the snapshot dictionary compares keys ordinally.
+        var pathKey = variables.Keys.Single(key => string.Equals(key, "PATH", StringComparison.OrdinalIgnoreCase));
+
+        Assert.Equal(expected, Assert.IsType<ImmutableArray<string>>(variables[pathKey]));
+    }
+
+    [Fact]
+    public void SecretShapedEnvironmentVariablesAreRedactedByDefault()
+    {
+        Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", "super-secret");
+        Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_PLAIN", "visible");
+        try
+        {
+            var builder = new ContextSnapshotBuilder();
+            builder.AddEnvironmentVariables(EnvironmentVariableTarget.Process);
+            var variables = Assert.IsType<ImmutableSortedDictionary<string, object>>(builder.BuildSnapshot()["EnvironmentVariables.Process"]);
+
+            Assert.Equal(ContextSnapshotBuilder.RedactedValue, variables["CONTEXTSNAPSHOT_TEST_API_TOKEN"]);
+            Assert.Equal("visible", variables["CONTEXTSNAPSHOT_TEST_PLAIN"]);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", value: null);
+            Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_PLAIN", value: null);
+        }
+    }
+
+    [Fact]
+    public void EnvironmentVariableRedactionCanBeOverridden()
+    {
+        Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", "super-secret");
+        try
+        {
+            var builder = new ContextSnapshotBuilder();
+            builder.AddEnvironmentVariables(EnvironmentVariableTarget.Process, _ => false);
+            var variables = Assert.IsType<ImmutableSortedDictionary<string, object>>(builder.BuildSnapshot()["EnvironmentVariables.Process"]);
+
+            Assert.Equal("super-secret", variables["CONTEXTSNAPSHOT_TEST_API_TOKEN"]);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", value: null);
+        }
+    }
+
+    [Fact]
     public void SpecialFolderShouldContainsAllValues()
     {
         var snapshot = new SpecialFolderSnapshot();
@@ -59,6 +115,39 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
         Assert.NotEqual(0, snapshot.LogicalCoreCount);
         Assert.NotEqual(0, snapshot.PhysicalCoreCount);
         Assert.NotEqual(0, snapshot.MaxFrequency);
+    }
+
+    [Fact]
+    public void ProcCpuInfoParserReadsAppendedFrequencies()
+    {
+        // /proc/cpuinfo blocks are separated by a blank line and the file ends with one. The frequencies
+        // are appended as an extra section, which must not be mistaken for another logical core.
+        var content = "processor\t: 0\nphysical id\t: 0\ncpu cores\t: 2\nmodel name\t: Intel(R) Core(TM) i7 CPU @ 3.20GHz\n\n"
+                    + "processor\t: 1\nphysical id\t: 0\ncpu cores\t: 2\nmodel name\t: Intel(R) Core(TM) i7 CPU @ 3.20GHz\n\n"
+                    + "\nmin freq\t:800\nmax freq\t:3200";
+
+        var cpuInfo = ProcCpuInfoParser.ParseOutput(content);
+
+        Assert.Equal("Intel(R) Core(TM) i7 CPU @ 3.20GHz", cpuInfo.ProcessorName);
+        Assert.Equal(1, cpuInfo.PhysicalProcessorCount);
+        Assert.Equal(2, cpuInfo.PhysicalCoreCount);
+        Assert.Equal(2, cpuInfo.LogicalCoreCount);
+        Assert.Equal(Frequency.FromMHz(800), cpuInfo.MinFrequency);
+        Assert.Equal(Frequency.FromMHz(3200), cpuInfo.MaxFrequency);
+    }
+
+    [Fact]
+    public void ProcCpuInfoParserReadsFrequenciesConvertedFromKiloHertz()
+    {
+        // cpuinfo_min_freq / cpuinfo_max_freq are in kHz; the provider converts them to the MHz form the parser expects.
+        var minFrequency = new Frequency(800000, FrequencyUnit.KHz);
+        var maxFrequency = new Frequency(3200000, FrequencyUnit.KHz);
+        var content = $"model name\t: CPU\n\n\nmin freq\t:{minFrequency.ToMHz()}\nmax freq\t:{maxFrequency.ToMHz()}";
+
+        var cpuInfo = ProcCpuInfoParser.ParseOutput(content);
+
+        Assert.Equal(Frequency.FromMHz(800), cpuInfo.MinFrequency);
+        Assert.Equal(Frequency.FromMHz(3200), cpuInfo.MaxFrequency);
     }
 
     [Fact]

@@ -99,10 +99,23 @@ internal sealed class Mp4Writer : IMediaTagWriter
 
     private static byte[] BuildMetaAtomData(byte[] content)
     {
-        // meta atom has 4 bytes version/flags before children
-        var result = new byte[4 + content.Length];
-        content.CopyTo(result, 4);
+        // meta atom has 4 bytes version/flags, then a handler box, then the children. The handler box
+        // declares the metadata as iTunes-style: readers such as iTunes and ffmpeg use it to recognise
+        // the ilst box, and without it they report the file as having no tags at all.
+        var handlerAtom = BuildHandlerAtom();
+        var result = new byte[4 + handlerAtom.Length + content.Length];
+        handlerAtom.CopyTo(result, 4);
+        content.CopyTo(result, 4 + handlerAtom.Length);
         return result;
+    }
+
+    private static byte[] BuildHandlerAtom()
+    {
+        // hdlr payload: version/flags(4) + predefined(4) + handler type(4) + reserved(12) + empty name(1)
+        var data = new byte[25];
+        Encoding.Latin1.GetBytes("mdir", data.AsSpan(8, 4));
+        Encoding.Latin1.GetBytes("appl", data.AsSpan(12, 4));
+        return BuildAtom("hdlr", data);
     }
 
     private static byte[] BuildIlstData(MediaTagInfo tags)

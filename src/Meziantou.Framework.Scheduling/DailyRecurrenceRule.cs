@@ -15,6 +15,7 @@ internal sealed class DailyRecurrenceRule : RecurrenceRule
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
         var hasTimeFilters = !IsEmpty(ByHours) || !IsEmpty(ByMinutes) || !IsEmpty(BySeconds);
+        var current = startDate;
 
         while (true)
         {
@@ -22,7 +23,7 @@ internal sealed class DailyRecurrenceRule : RecurrenceRule
 
             if (!IsEmpty(ByMonths))
             {
-                if (!ByMonths.Contains(startDate.Month))
+                if (!ByMonths.Contains(current.Month))
                 {
                     b = false;
                 }
@@ -30,7 +31,7 @@ internal sealed class DailyRecurrenceRule : RecurrenceRule
 
             if (!IsEmpty(ByMonthDays))
             {
-                if (!ByMonthDays.Contains(startDate.Day))
+                if (!ByMonthDays.Contains(current.Day))
                 {
                     b = false;
                 }
@@ -38,7 +39,7 @@ internal sealed class DailyRecurrenceRule : RecurrenceRule
 
             if (!IsEmpty(ByWeekDays))
             {
-                if (!ByWeekDays.Contains(startDate.DayOfWeek))
+                if (!ByWeekDays.Contains(current.DayOfWeek))
                 {
                     b = false;
                 }
@@ -48,24 +49,24 @@ internal sealed class DailyRecurrenceRule : RecurrenceRule
             {
                 if (hasTimeFilters)
                 {
-                    foreach (var occurrence in ExpandByTime(startDate))
+                    foreach (var occurrence in ExpandByTime(current, startDate))
                     {
                         yield return occurrence;
                     }
                 }
                 else
                 {
-                    yield return startDate;
+                    yield return current;
                 }
             }
 
-            startDate = startDate.AddDays(Interval);
+            current = current.AddDays(Interval);
         }
 
         // ReSharper disable once FunctionNeverReturns (UNTIL & COUNT are handled by GetNextOccurrences)
     }
 
-    private IEnumerable<DateTime> ExpandByTime(DateTime date)
+    private IEnumerable<DateTime> ExpandByTime(DateTime date, DateTime lowerBound)
     {
         var hours = IsEmpty(ByHours) ? [date.Hour] : ByHours;
         var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
@@ -79,7 +80,7 @@ internal sealed class DailyRecurrenceRule : RecurrenceRule
                 foreach (var second in seconds)
                 {
                     var result = dateOnly.AddHours(hour).AddMinutes(minute).AddSeconds(second);
-                    if (result >= date)
+                    if (result >= lowerBound)
                     {
                         yield return result;
                     }

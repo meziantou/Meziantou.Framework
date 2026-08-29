@@ -15,6 +15,10 @@ namespace Meziantou.Framework.Scheduling;
 /// </example>
 public sealed class InternetCalendar
 {
+    /// <summary>iCalendar requires CRLF between content lines (RFC 5545 section 3.1), which
+    /// <see cref="TextWriter.WriteLine()"/> does not guarantee: it emits <see cref="Environment.NewLine"/>.</summary>
+    private const string CrLf = "\r\n";
+
     /// <summary>Gets additional custom properties for the calendar.</summary>
     public IDictionary<string, string> AdditionalProperties { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -65,64 +69,124 @@ public sealed class InternetCalendar
         END:VCALENDAR
         */
 
-        writer.WriteLine("BEGIN:VCALENDAR");
+        WriteLine(writer, "BEGIN:VCALENDAR");
         if (!string.IsNullOrEmpty(Version))
-            writer.WriteLine("VERSION:" + Version);
+            WriteTextProperty(writer, "VERSION", Version);
 
-        foreach (var additionalProperty in AdditionalProperties)
-        {
-            if (string.IsNullOrEmpty(additionalProperty.Key))
-                continue;
-
-            writer.Write(additionalProperty.Key);
-            writer.Write(":");
-            writer.WriteLine(additionalProperty.Value);
-        }
+        WriteAdditionalProperties(writer, AdditionalProperties);
 
         foreach (var @event in Events)
         {
-            writer.WriteLine("BEGIN:VEVENT");
+            WriteLine(writer, "BEGIN:VEVENT");
             if (!string.IsNullOrEmpty(@event.Id))
-                writer.WriteLine("UID:" + @event.Id);
+                WriteTextProperty(writer, "UID", @event.Id);
 
-            writer.WriteLine("STATUS:" + Utilities.StatusToString(@event.Status));
+            WriteLine(writer, "STATUS:" + Utilities.StatusToString(@event.Status));
             if ((@event.Organizer?.Address) is not null)
-                writer.WriteLine("ORGANIZER:" + @event.Organizer.Address);
+                WriteLine(writer, "ORGANIZER:" + @event.Organizer.Address);
 
             foreach (var attendee in @event.Attendees)
             {
                 if (attendee is null)
                     continue;
 
-                writer.WriteLine("ATTENDEE:" + attendee.Address);
+                WriteLine(writer, "ATTENDEE:" + attendee.Address);
             }
 
-            writer.WriteLine("CREATED:" + Utilities.DateTimeToString(@event.Created));
-            writer.WriteLine("LAST-MODIFIED:" + Utilities.DateTimeToString(@event.LastModified));
-            writer.WriteLine("DTSTAMP:" + Utilities.DateTimeToString(@event.DateTimeStamp));
-            writer.WriteLine("DTSTART:" + Utilities.DateTimeToString(@event.Start));
-            writer.WriteLine("DTEND:" + Utilities.DateTimeToString(@event.End));
+            WriteLine(writer, "CREATED:" + Utilities.DateTimeToString(@event.Created));
+            WriteLine(writer, "LAST-MODIFIED:" + Utilities.DateTimeToString(@event.LastModified));
+            WriteLine(writer, "DTSTAMP:" + Utilities.DateTimeToString(@event.DateTimeStamp));
+            WriteLine(writer, "DTSTART:" + Utilities.DateTimeToString(@event.Start));
+            WriteLine(writer, "DTEND:" + Utilities.DateTimeToString(@event.End));
             if (@event.RecurrenceRule is not null)
-                writer.WriteLine("RRULE:" + @event.RecurrenceRule.Text);
+                WriteLine(writer, "RRULE:" + @event.RecurrenceRule.Text);
 
             if (!string.IsNullOrEmpty(@event.Summary))
-                writer.WriteLine("SUMMARY:" + @event.Summary);
+                WriteTextProperty(writer, "SUMMARY", @event.Summary);
 
-            foreach (var additionalProperty in @event.AdditionalProperties)
-            {
-                if (string.IsNullOrEmpty(additionalProperty.Key))
-                    continue;
+            WriteAdditionalProperties(writer, @event.AdditionalProperties);
 
-                writer.Write(additionalProperty.Key);
-                writer.Write(":");
-                writer.WriteLine(additionalProperty.Value);
-            }
-
-            writer.WriteLine("DESCRIPTION:\\n");
-            writer.WriteLine("END:VEVENT");
+            WriteLine(writer, "DESCRIPTION:\\n");
+            WriteLine(writer, "END:VEVENT");
         }
 
-        writer.WriteLine("END:VCALENDAR");
+        WriteLine(writer, "END:VCALENDAR");
+    }
+
+    private static void WriteAdditionalProperties(TextWriter writer, IDictionary<string, string> properties)
+    {
+        foreach (var additionalProperty in properties)
+        {
+            // A name outside the iCalendar grammar cannot be written as a content line, and a
+            // name carrying a line break would start an attacker-chosen property.
+            if (!IsValidPropertyName(additionalProperty.Key))
+                continue;
+
+            // RFC 5545 section 3.8.8.2: the default value type of a non-standard property is TEXT.
+            WriteTextProperty(writer, additionalProperty.Key, additionalProperty.Value);
+        }
+    }
+
+    /// <summary>Writes a content line whose value is escaped as an iCalendar TEXT value.</summary>
+    private static void WriteTextProperty(TextWriter writer, string name, string? value)
+    {
+        writer.Write(name);
+        writer.Write(':');
+        WriteEscaped(writer, value);
+        writer.Write(CrLf);
+    }
+
+    /// <summary>Writes a content line whose value is already in its final form.</summary>
+    private static void WriteLine(TextWriter writer, string line)
+    {
+        writer.Write(line);
+        writer.Write(CrLf);
+    }
+
+    /// <summary>Escapes an iCalendar TEXT value per RFC 5545 section 3.3.11.</summary>
+    private static void WriteEscaped(TextWriter writer, string? value)
+    {
+        if (value is null)
+            return;
+
+        foreach (var c in value)
+        {
+            switch (c)
+            {
+                case '\\':
+                    writer.Write("\\\\");
+                    break;
+                case ';':
+                    writer.Write("\\;");
+                    break;
+                case ',':
+                    writer.Write("\\,");
+                    break;
+                case '\r':
+                    break;
+                case '\n':
+                    writer.Write("\\n");
+                    break;
+                default:
+                    writer.Write(c);
+                    break;
+            }
+        }
+    }
+
+    /// <summary>An iCalendar property name is ALPHA / DIGIT / "-" (RFC 5545 section 3.1).</summary>
+    private static bool IsValidPropertyName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+            return false;
+
+        foreach (var c in name)
+        {
+            if (!char.IsAsciiLetterOrDigit(c) && c is not '-')
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>Converts the calendar to an iCalendar format string.</summary>

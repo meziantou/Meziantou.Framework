@@ -321,7 +321,7 @@ public sealed class ContextSnapshotBuilder
             {
                 var key = (string)entry.Key;
                 if (string.Equals(key, "PATH", StringComparison.OrdinalIgnoreCase))
-                    return KeyValuePair.Create<string, object>(key, ((string)entry.Value!).Split(';').ToImmutableArray());
+                    return KeyValuePair.Create<string, object>(key, ((string)entry.Value!).Split(Path.PathSeparator).ToImmutableArray());
 
                 return KeyValuePair.Create<string, object>(key, entry.Value!);
             }

@@ -22,7 +22,7 @@ internal sealed class BencodePipeReaderDecoder
         var decoder = new BencodePipeReaderDecoder(reader);
         try
         {
-            var value = await decoder.ParseValueAsync(cancellationToken).ConfigureAwait(false);
+            var value = await decoder.ParseValueAsync(depth: 0, cancellationToken).ConfigureAwait(false);
             await decoder.EnsureNoTrailingDataAsync(cancellationToken).ConfigureAwait(false);
             return value;
         }
@@ -32,15 +32,15 @@ internal sealed class BencodePipeReaderDecoder
         }
     }
 
-    private async ValueTask<BencodeValue> ParseValueAsync(CancellationToken cancellationToken)
+    private async ValueTask<BencodeValue> ParseValueAsync(int depth, CancellationToken cancellationToken)
     {
         var token = await PeekByteAsync(cancellationToken).ConfigureAwait(false);
         return token switch
         {
             (byte)'i' => await ParseIntegerAsync(cancellationToken).ConfigureAwait(false),
             >= (byte)'0' and <= (byte)'9' => await ParseStringAsync(cancellationToken).ConfigureAwait(false),
-            (byte)'l' => await ParseListAsync(cancellationToken).ConfigureAwait(false),
-            (byte)'d' => await ParseDictionaryAsync(cancellationToken).ConfigureAwait(false),
+            (byte)'l' => await ParseListAsync(depth, cancellationToken).ConfigureAwait(false),
+            (byte)'d' => await ParseDictionaryAsync(depth, cancellationToken).ConfigureAwait(false),
             null => throw new FormatException("Unexpected end of bencode data."),
             _ => throw new FormatException($"Invalid bencode token '{(char)token.GetValueOrDefault()}' at position {_position}."),
         };
@@ -112,8 +112,9 @@ internal sealed class BencodePipeReaderDecoder
         return new BencodeString(stringBytes);
     }
 
-    private async ValueTask<BencodeList> ParseListAsync(CancellationToken cancellationToken)
+    private async ValueTask<BencodeList> ParseListAsync(int depth, CancellationToken cancellationToken)
     {
+        EnsureDepth(depth);
         Consume(1); // l
         var result = new BencodeList();
         while (true)
@@ -128,12 +129,13 @@ internal sealed class BencodePipeReaderDecoder
                 return result;
             }
 
-            result.Add(await ParseValueAsync(cancellationToken).ConfigureAwait(false));
+            result.Add(await ParseValueAsync(depth + 1, cancellationToken).ConfigureAwait(false));
         }
     }
 
-    private async ValueTask<BencodeDictionary> ParseDictionaryAsync(CancellationToken cancellationToken)
+    private async ValueTask<BencodeDictionary> ParseDictionaryAsync(int depth, CancellationToken cancellationToken)
     {
+        EnsureDepth(depth);
         Consume(1); // d
         var result = new BencodeDictionary();
         while (true)
@@ -149,7 +151,7 @@ internal sealed class BencodePipeReaderDecoder
             }
 
             var key = await ParseStringAsync(cancellationToken).ConfigureAwait(false);
-            var value = await ParseValueAsync(cancellationToken).ConfigureAwait(false);
+            var value = await ParseValueAsync(depth + 1, cancellationToken).ConfigureAwait(false);
             try
             {
                 result.Add(key, value);
@@ -249,6 +251,12 @@ internal sealed class BencodePipeReaderDecoder
         var span = writer.GetSpan(1);
         span[0] = value;
         writer.Advance(1);
+    }
+
+    private static void EnsureDepth(int depth)
+    {
+        if (depth >= BencodeDecoder.MaxDepth)
+            throw new FormatException($"Bencode data is nested too deeply. The maximum supported depth is {BencodeDecoder.MaxDepth}.");
     }
 
     private static bool IsValidInteger(ReadOnlySpan<byte> value)

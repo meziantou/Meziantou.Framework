@@ -23,4 +23,9 @@ internal sealed class MatchAllEndsWithSegment : Segment
     }
 
     public override bool IsRecursiveMatchAll => true;
+
+    public override string ToString()
+    {
+        return "**/*" + _suffix;
+    }
 }

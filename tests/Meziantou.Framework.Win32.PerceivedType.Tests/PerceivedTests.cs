@@ -76,4 +76,46 @@ public class PerceivedTests
 
         Assert.True(Perceived.IsExtensionCached(".png"));
     }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetPerceivedType_PreservesTheExtensionAsWritten()
+    {
+        var perceived = Perceived.GetPerceivedType("report.CasingSample");
+
+        Assert.Equal(".CasingSample", perceived.Extension);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetPerceivedType_IsCaseInsensitiveAndReturnsTheSameInstance()
+    {
+        var first = Perceived.GetPerceivedType("a.InstanceSample");
+        var second = Perceived.GetPerceivedType("b.INSTANCESAMPLE");
+
+        Assert.Same(first, second);
+    }
+
+    [Theory, RunIf(TestOperatingSystems.Windows)]
+    [InlineData("readme")]
+    [InlineData("")]
+    public void GetPerceivedType_ReturnsUnspecifiedWhenThereIsNoExtension(string fileName)
+    {
+        var perceived = Perceived.GetPerceivedType(fileName);
+
+        Assert.Equal(PerceivedType.Unspecified, perceived.PerceivedType);
+        Assert.Empty(perceived.Extension);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetPerceivedType_AcceptsAFullPath()
+    {
+        var perceived = Perceived.GetPerceivedType(@"C:\dir.d\sub\file.txt");
+
+        Assert.Equal(PerceivedType.Text, perceived.PerceivedType);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetPerceivedType_Null_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() => Perceived.GetPerceivedType(fileName: null!));
+    }
 }

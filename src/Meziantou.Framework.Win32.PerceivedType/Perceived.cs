@@ -28,8 +28,6 @@ public sealed class Perceived
     private const int MaximumCachedExtensionLength = 24;
     private const int MaximumCacheSize = 4096;
 
-    private static object SyncObject { get; } = new object();
-
     private Perceived(string extension, PerceivedType perceivedType, PerceivedTypeSource perceivedTypeSource)
     {
         Extension = extension;
@@ -98,10 +96,7 @@ public sealed class Perceived
         ArgumentNullException.ThrowIfNull(extension);
 
         var perceived = new Perceived(extension, type, PerceivedTypeSource.HardCoded);
-        lock (SyncObject)
-        {
-            PerceivedTypes[perceived.Extension] = perceived;
-        }
+        PerceivedTypes[perceived.Extension] = perceived;
 
         return perceived;
     }
@@ -122,47 +117,26 @@ public sealed class Perceived
     /// <param name="fileName">The file name. May not be null..</param>
     /// <returns>An instance of the PerceivedType type.</returns>
     [SupportedOSPlatform("windows5.1.2600")]
-    public static unsafe Perceived GetPerceivedType(string fileName)
+    public static Perceived GetPerceivedType(string fileName)
     {
         ArgumentNullException.ThrowIfNull(fileName);
 
-        var extension = Path.GetExtension(fileName) ?? throw new ArgumentException("The extension cannot be determined from the file name", nameof(fileName));
-
-        extension = extension.ToUpperInvariant();
+        var extension = Path.GetExtension(fileName);
         if (PerceivedTypes.TryGetValue(extension, out var ptype))
             return ptype;
 
         if (!IsSupportedPlatform())
             throw new PlatformNotSupportedException("PerceivedType is only supported on Windows");
 
-        lock (SyncObject)
-        {
-            var type = PerceivedType.Unknown;
-            var source = PerceivedTypeSource.Undefined;
-            if (!PerceivedTypes.TryGetValue(extension, out ptype))
-            {
-                source = PerceivedTypeSource.Undefined;
-                var hr = PInvoke.AssocGetPerceivedType(extension, out var perceivedType, out var flag);
-                if (hr.Failed)
-                {
-                    type = PerceivedType.Unspecified;
-                    source = PerceivedTypeSource.Undefined;
-                }
-                else
-                {
-                    type = (PerceivedType)perceivedType;
-                    source = (PerceivedTypeSource)flag;
-                }
+        var hr = PInvoke.AssocGetPerceivedType(extension, out var perceivedType, out var flag);
+        var perceived = hr.Failed
+            ? new Perceived(extension, PerceivedType.Unspecified, PerceivedTypeSource.Undefined)
+            : new Perceived(extension, (PerceivedType)perceivedType, (PerceivedTypeSource)flag);
 
-                ptype = new Perceived(extension, type, source);
-                if (ShouldCache(extension, PerceivedTypes.Count))
-                {
-                    PerceivedTypes.TryAdd(extension, ptype);
-                }
-            }
+        if (!ShouldCache(extension, PerceivedTypes.Count))
+            return perceived;
 
-            return ptype;
-        }
+        return PerceivedTypes.GetOrAdd(extension, perceived);
     }
 
     /// <summary>

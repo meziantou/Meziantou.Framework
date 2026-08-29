@@ -356,11 +356,24 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
             }
         }
 
-        // An inverted range such as "[2.0.0,1.0.0]" matches nothing; reject it rather than hand
-        // back a range that silently never matches.
-        if (minVersion2 is not null && maxVersion is not null && minVersion2 > maxVersion)
+        if (minVersion2 is not null && maxVersion is not null)
         {
-            return false;
+            var comparison = minVersion2.CompareTo(maxVersion);
+
+            // An inverted range such as "[2.0.0,1.0.0]" matches nothing; reject it rather than
+            // hand back a range that silently never matches.
+            if (comparison > 0)
+            {
+                return false;
+            }
+
+            // Bounding a single version once inclusively and once exclusively contradicts itself.
+            // NuGet rejects "[1.0.0,1.0.0)" and "(1.0.0,1.0.0]" for the same reason, while
+            // accepting "(1.0.0,1.0.0)" and "[1.0.0,1.0.0]", so this matches its rule exactly.
+            if (comparison is 0 && isMinInclusive != isMaxInclusive)
+            {
+                return false;
+            }
         }
 
         result = new SemanticVersionRange(minVersion2, maxVersion, isMinInclusive, isMaxInclusive);

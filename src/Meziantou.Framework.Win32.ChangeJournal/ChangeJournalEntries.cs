@@ -33,16 +33,19 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
     {
         if (header is { MajorVersion: 2, MinorVersion: 0 })
         {
+            EnsureRecordHoldsItsStructure(header, Marshal.SizeOf<USN_RECORD_V2>());
             var entry = Marshal.PtrToStructure<USN_RECORD_V2>(bufferPointer);
             return new ChangeJournalEntryVersion2or3(entry, GetFileName(bufferPointer, header, entry.FileNameOffset, entry.FileNameLength));
         }
         else if (header is { MajorVersion: 3, MinorVersion: 0 })
         {
+            EnsureRecordHoldsItsStructure(header, Marshal.SizeOf<USN_RECORD_V3>());
             var entry = Marshal.PtrToStructure<USN_RECORD_V3>(bufferPointer);
             return new ChangeJournalEntryVersion2or3(entry, GetFileName(bufferPointer, header, entry.FileNameOffset, entry.FileNameLength));
         }
         else if (header is { MajorVersion: 4, MinorVersion: 0 })
         {
+            EnsureRecordHoldsItsStructure(header, Marshal.SizeOf<USN_RECORD_V4>());
             var entry = Marshal.PtrToStructure<USN_RECORD_V4>(bufferPointer);
             var extendOffset = Marshal.OffsetOf<USN_RECORD_V4>(nameof(USN_RECORD_V4.Extents));
 
@@ -64,6 +67,14 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
         {
             throw new NotSupportedException($"Record version {header.MajorVersion}.{header.MinorVersion} is not supported");
         }
+    }
+
+    private static void EnsureRecordHoldsItsStructure(USN_RECORD_COMMON_HEADER header, int structureLength)
+    {
+        // The versioned structure is read out of the record, so the record has to be at least that long. The record has already
+        // been checked to fit in the buffer it came from, so this is what keeps that read inside the record as well.
+        if (header.RecordLength < structureLength)
+            throw new InvalidDataException($"The change journal returned a version {header.MajorVersion}.{header.MinorVersion} record of length {header.RecordLength}, which is smaller than the {structureLength}-byte structure it declares");
     }
 
     private static string GetFileName(IntPtr bufferPointer, USN_RECORD_COMMON_HEADER header, ushort fileNameOffset, ushort fileNameLength)

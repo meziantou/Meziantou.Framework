@@ -82,4 +82,33 @@ important.log
         Assert.False(globs.IsMatch("important.log"));
         Assert.True(globs.IsMatch("trace.log"));
     }
+
+    [Theory]
+    [InlineData("\u0085")]
+    [InlineData("\u2028")]
+    [InlineData("\u2029")]
+    public async Task ParseGitIgnoreAndLoadGitIgnoreAgreeOnLineBreaks(string character)
+    {
+        var content = "a" + character + "b.txt";
+
+        var parsed = GlobCollection.ParseGitIgnore(content.AsSpan());
+        var loaded = await GlobCollection.LoadGitIgnoreAsync(new StringReader(content));
+
+        Assert.Equal(loaded.Count, parsed.Count);
+        Assert.Equal(1, parsed.Count);
+        Assert.True(parsed.IsMatch(content));
+        Assert.True(loaded.IsMatch(content));
+    }
+
+    [Fact]
+    public async Task ParseGitIgnoreAndLoadGitIgnoreAgreeOnCarriageReturns()
+    {
+        var content = "*.log\r\n!important.log\r\n";
+
+        var parsed = GlobCollection.ParseGitIgnore(content.AsSpan());
+        var loaded = await GlobCollection.LoadGitIgnoreAsync(new StringReader(content));
+
+        Assert.Equal(loaded.Count, parsed.Count);
+        Assert.Equal(2, parsed.Count);
+    }
 }

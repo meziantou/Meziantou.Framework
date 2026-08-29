@@ -164,7 +164,7 @@ public class GlobParserTests
         var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
         var text = glob.ToString();
 
-        Assert.False(text.Contains("Meziantou.Framework.Globbing", StringComparison.Ordinal));
+        Assert.DoesNotContain("Meziantou.Framework.Globbing", text);
 
         // The text must parse back into a glob that matches exactly the same paths.
         var roundTripped = Glob.Parse(text, GlobDialect.Standard, GlobOptions.MatchLeadingDot);

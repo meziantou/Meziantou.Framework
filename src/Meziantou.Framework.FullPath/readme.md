@@ -15,7 +15,7 @@ FullPath filePath1 = rootPath / "temp" / "meziantou.txt";
 FullPath backupFilePath = filePath1 + ".bak";
 
 // Compare path
-// Comparisons are case-insensitive on Windows and case-sensitive on other operating systems by default
+// Comparisons are case-insensitive on Windows, macOS, iOS and tvOS, and case-sensitive elsewhere by default
 _ = filePath == rootPath;
 _ = filePath.Equals(rootPath, ignoreCase: false);
 

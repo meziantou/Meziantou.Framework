@@ -3,7 +3,7 @@ namespace Meziantou.Framework;
 /// <summary>Provides comparison and equality operations for <see cref="FullPath"/> values.</summary>
 public sealed class FullPathComparer : IComparer<FullPath>, IEqualityComparer<FullPath>
 {
-    /// <summary>Gets the default comparer for the current operating system (case-insensitive on Windows/macOS, case-sensitive on Linux).</summary>
+    /// <summary>Gets the default comparer for the current operating system (case-insensitive on Windows, macOS, iOS and tvOS, case-sensitive elsewhere).</summary>
     public static FullPathComparer Default { get; }
 
     /// <summary>Gets a case-sensitive comparer.</summary>

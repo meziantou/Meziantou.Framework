@@ -14,7 +14,7 @@ namespace Meziantou.Framework;
 /// FullPath rootPath = FullPath.FromPath("demo");
 /// FullPath filePath = rootPath / "temp" / "file.txt";
 ///
-/// // Compare paths (case-sensitive on Linux, case-insensitive on Windows)
+/// // Compare paths (case-insensitive on Windows, macOS, iOS and tvOS, case-sensitive elsewhere)
 /// bool areEqual = filePath == rootPath;
 ///
 /// // Get relative path

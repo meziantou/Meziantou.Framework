@@ -196,7 +196,39 @@ static async Task<(List<Data> entries, string fileUrl, string commit, DateTimeOf
     if (duplicatedDomains.Count > 0)
         throw new InvalidOperationException("Duplicated domains: " + string.Join(", ", duplicatedDomains));
 
+    // The names of the small buckets are interpolated into C# string literals, so a name containing a quote
+    // or a backslash would emit source that does not compile, or worse compiles into something else. A
+    // preload entry outside the character set of a host name is data to reject, not to escape.
+    var invalidDomains = entries.Where(e => !IsValidHostName(e.Name)).Select(e => e.Name).ToList();
+    if (invalidDomains.Count > 0)
+        throw new InvalidOperationException("Invalid domain names: " + string.Join(", ", invalidDomains));
+
     return (entries, fileUrl, sha, commitDate);
+}
+
+static bool IsValidHostName(string name)
+{
+    if (name.Length is 0 or > 253 || name[0] is '.' or '-' || name[^1] is '.' or '-')
+        return false;
+
+    var previousWasDot = false;
+    foreach (var c in name)
+    {
+        if (c is '.')
+        {
+            if (previousWasDot)
+                return false;
+
+            previousWasDot = true;
+            continue;
+        }
+
+        previousWasDot = false;
+        if (!char.IsAsciiLetterOrDigit(c) && c is not ('-' or '_'))
+            return false;
+    }
+
+    return true;
 }
 
 internal sealed class Data

@@ -362,10 +362,15 @@ internal static class GlobParser
         }
     }
 
-    private static Glob CreateGlob(List<Segment> segments, List<bool> matchLeadingDot, bool exclude, bool ignoreCase, GlobMatchType matchType, bool optimizeRecursiveWildcards, bool pathSeparatorAware)
+    // canSkipLeadingDotChecks is settings.MatchLeadingDot. The rewrites below collapse a '**' and the segments that
+    // follow it into a single segment that jumps to the end of the path, which skips the per-segment
+    // CanMatchLeadingDot checks Glob.IsMatchCore would otherwise run - that is why each one records 'true' in
+    // matchLeadingDot. They are only sound when leading dots are allowed everywhere, so do not loosen this gate
+    // without giving the rewritten segments a way to reject a segment that starts with a dot.
+    private static Glob CreateGlob(List<Segment> segments, List<bool> matchLeadingDot, bool exclude, bool ignoreCase, GlobMatchType matchType, bool canSkipLeadingDotChecks, bool pathSeparatorAware)
     {
         // Optimize segments
-        if (optimizeRecursiveWildcards && segments.Count >= 3)
+        if (canSkipLeadingDotChecks && segments.Count >= 3)
         {
             for (var i = segments.Count - 3; i >= 0; i--)
             {
@@ -402,7 +407,7 @@ internal static class GlobParser
             }
         }
 
-        if (optimizeRecursiveWildcards && segments.Count >= 2)
+        if (canSkipLeadingDotChecks && segments.Count >= 2)
         {
             if (segments[^2] is RecursiveMatchAllSegment && segments[^1] is MatchAllSegment) // **/*
             {

@@ -234,15 +234,16 @@ internal sealed class BcryptImplementation
         byte[] passwordBytes;
         if (minorRevision >= 'a')
         {
-            // For the 'a' revision and later, the password is null-terminated. This allows for correct handling of passwords that contain embedded null characters.
-            // For the 'b', 'x', and 'y' revisions, the password is not null-terminated, and any embedded null characters are treated as part of the password.
+            // The 'a' revision and later append a NUL terminator to the password before it is used as key material.
+            // Unlike the C implementations, the password is not truncated at an embedded NUL: .NET strings are not
+            // NUL-terminated, so every byte of the password takes part in the hash.
             passwordBytes = new byte[Utf8.GetByteCount(password) + 1];
             Utf8.GetBytes(password, passwordBytes);
             passwordBytes[^1] = 0; // Null terminator
         }
         else
         {
-            // For the original '2' revision, the password is not null-terminated, and any embedded null characters are treated as part of the password.
+            // The original '2' revision uses the password as-is, with no NUL terminator.
             passwordBytes = Utf8.GetBytes(password);
         }
 
@@ -257,7 +258,7 @@ internal sealed class BcryptImplementation
         return Verify(password.AsSpan(), hash.AsSpan());
     }
 
-    public static unsafe bool Verify(ReadOnlySpan<char> password, ReadOnlySpan<char> hash)
+    public static bool Verify(ReadOnlySpan<char> password, ReadOnlySpan<char> hash)
     {
         var hashBytes = Utf8.GetBytes(hash);
         var computedHashBytes = Utf8.GetBytes(HashPassword(password, hash));
@@ -412,6 +413,12 @@ internal sealed class BcryptImplementation
 
     private static uint StreamToWord(ReadOnlySpan<byte> data, ref int offset)
     {
+        // Only a legacy '$2$' hash combined with an empty password can produce empty key material: every other
+        // revision appends a NUL terminator. The C implementations read out of bounds here, so no reference
+        // result exists; treat the stream as zero bytes so hashing stays total instead of throwing.
+        if (data.IsEmpty)
+            return 0;
+
         uint word = 0;
         for (var i = 0; i < 4; i++)
         {

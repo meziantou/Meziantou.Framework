@@ -37,7 +37,11 @@ internal sealed class SensitiveDataTypeConverter : TypeConverter
 
     public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
     {
-        throw new InvalidOperationException();
+        // Converting away from SensitiveData is never supported: the whole point of the type is that
+        // its contents do not leak into a string. NotSupportedException is what TypeConverter
+        // documents for a conversion it cannot perform, and what callers that probe a converter
+        // defensively catch.
+        throw new NotSupportedException($"Cannot convert '{typeof(SensitiveData<char>)}' to '{destinationType}'. Revealing the contents has to be explicit.");
     }
 
     public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)

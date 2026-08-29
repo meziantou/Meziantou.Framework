@@ -9,6 +9,9 @@ public sealed class TorrentInfo
     private static readonly BencodeString LengthKey = CreateKey("length");
     private static readonly BencodeString FilesKey = CreateKey("files");
     private static readonly BencodeString PathKey = CreateKey("path");
+    private static readonly BencodeString[] ModelledKeys = [NameKey, PieceLengthKey, PiecesKey, PrivateKey, LengthKey, FilesKey];
+
+    private BencodeDictionary? _source;
 
     public string Name { get; set; } = "";
 
@@ -87,6 +90,7 @@ public sealed class TorrentInfo
             info.Files = files;
         }
 
+        info._source = dictionary;
         info.Validate();
         return info;
     }
@@ -95,21 +99,21 @@ public sealed class TorrentInfo
     {
         Validate();
 
-        var dictionary = new BencodeDictionary
+        var modelled = new List<KeyValuePair<BencodeString, BencodeValue>>
         {
-            { NameKey, new BencodeString(Encoding.UTF8.GetBytes(Name)) },
-            { PieceLengthKey, new BencodeInteger(PieceLength) },
-            { PiecesKey, new BencodeString(Pieces.ToArray()) },
+            new(NameKey, new BencodeString(Encoding.UTF8.GetBytes(Name))),
+            new(PieceLengthKey, new BencodeInteger(PieceLength)),
+            new(PiecesKey, new BencodeString(Pieces.ToArray())),
         };
 
         if (IsPrivate)
         {
-            dictionary.Add(PrivateKey, new BencodeInteger(1));
+            modelled.Add(new(PrivateKey, new BencodeInteger(1)));
         }
 
         if (Length.HasValue)
         {
-            dictionary.Add(LengthKey, new BencodeInteger(Length.Value));
+            modelled.Add(new(LengthKey, new BencodeInteger(Length.Value)));
         }
         else if (Files is not null)
         {
@@ -127,10 +131,10 @@ public sealed class TorrentInfo
                 });
             }
 
-            dictionary.Add(FilesKey, files);
+            modelled.Add(new(FilesKey, files));
         }
 
-        return dictionary;
+        return TorrentDictionaryMerge.Merge(_source, modelled, ModelledKeys);
     }
 
     private void Validate()

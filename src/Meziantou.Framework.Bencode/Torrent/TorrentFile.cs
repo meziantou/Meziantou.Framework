@@ -10,6 +10,9 @@ public sealed class TorrentFile
     private static readonly BencodeString CommentKey = CreateKey("comment");
     private static readonly BencodeString CreatedByKey = CreateKey("created by");
     private static readonly BencodeString CreationDateKey = CreateKey("creation date");
+    private static readonly BencodeString[] ModelledKeys = [InfoKey, AnnounceKey, AnnounceListKey, CommentKey, CreatedByKey, CreationDateKey];
+
+    private BencodeDictionary? _source;
 
     public string? Announce { get; set; }
 
@@ -128,6 +131,8 @@ public sealed class TorrentFile
             Info = TorrentInfo.Parse(infoDictionary),
         };
 
+        result._source = dictionary;
+
         if (dictionary.TryGetValue(AnnounceKey, out var announceValue))
         {
             if (announceValue is not BencodeString announceText)
@@ -201,14 +206,14 @@ public sealed class TorrentFile
         if (Info is null)
             throw new FormatException("Torrent file must contain a non-null info object.");
 
-        var dictionary = new BencodeDictionary
+        var modelled = new List<KeyValuePair<BencodeString, BencodeValue>>
         {
-            { InfoKey, Info.ToBencodeDictionary() },
+            new(InfoKey, Info.ToBencodeDictionary()),
         };
 
         if (Announce is not null)
         {
-            dictionary.Add(AnnounceKey, new BencodeString(Encoding.UTF8.GetBytes(Announce)));
+            modelled.Add(new(AnnounceKey, new BencodeString(Encoding.UTF8.GetBytes(Announce))));
         }
 
         if (AnnounceList is not null)
@@ -231,25 +236,25 @@ public sealed class TorrentFile
                 tiers.Add(tierValues);
             }
 
-            dictionary.Add(AnnounceListKey, tiers);
+            modelled.Add(new(AnnounceListKey, tiers));
         }
 
         if (Comment is not null)
         {
-            dictionary.Add(CommentKey, new BencodeString(Encoding.UTF8.GetBytes(Comment)));
+            modelled.Add(new(CommentKey, new BencodeString(Encoding.UTF8.GetBytes(Comment))));
         }
 
         if (CreatedBy is not null)
         {
-            dictionary.Add(CreatedByKey, new BencodeString(Encoding.UTF8.GetBytes(CreatedBy)));
+            modelled.Add(new(CreatedByKey, new BencodeString(Encoding.UTF8.GetBytes(CreatedBy))));
         }
 
         if (CreationDate.HasValue)
         {
-            dictionary.Add(CreationDateKey, new BencodeInteger(CreationDate.Value.ToUnixTimeSeconds()));
+            modelled.Add(new(CreationDateKey, new BencodeInteger(CreationDate.Value.ToUnixTimeSeconds())));
         }
 
-        return dictionary;
+        return TorrentDictionaryMerge.Merge(_source, modelled, ModelledKeys);
     }
 
     private static BencodeString CreateKey(string value) => new(Encoding.UTF8.GetBytes(value));

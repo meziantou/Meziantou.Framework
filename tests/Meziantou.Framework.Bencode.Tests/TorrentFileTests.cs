@@ -243,6 +243,89 @@ public sealed class TorrentFileTests
         Assert.Equal(SHA1.HashData(SingleFileInfo), torrent.GetInfoHashSha1());
     }
 
+    [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash is SHA-1.")]
+    [Fact]
+    public void ToUtf8ByteArray_PreservesKeysTheModelDoesNotRepresent()
+    {
+        var content = Encoding.ASCII.GetBytes("d8:announce14:https://t.test5:nodesll4:hosti1eee4:infod6:lengthi123e6:md5sum4:abcd4:name8:file.txt12:piece lengthi16384e6:pieces20:012345678901234567896:source9:MyTrackere8:url-listl20:https://seed.test/abee");
+        var original = TorrentFile.Parse(content);
+
+        var roundTrip = TorrentFile.Parse(original.ToUtf8ByteArray());
+
+        Assert.Equal(original.GetInfoHashSha1(), roundTrip.GetInfoHashSha1());
+
+        var root = Assert.IsType<BencodeDictionary>(BencodeDocument.Parse(original.ToUtf8ByteArray()).Root);
+        Assert.Contains(Key("url-list"), root);
+        Assert.Contains(Key("nodes"), root);
+
+        var info = Assert.IsType<BencodeDictionary>(root[Key("info")]);
+        Assert.Equal("MyTracker", Assert.IsType<BencodeString>(info[Key("source")]).ToUtf8String());
+        Assert.Equal("abcd", Assert.IsType<BencodeString>(info[Key("md5sum")]).ToUtf8String());
+    }
+
+    [Fact]
+    public void ToUtf8ByteArray_ModelledFieldsStillWinOverTheParsedValue()
+    {
+        var original = TorrentFile.Parse(SingleFileTorrent);
+        original.Comment = "replaced";
+        original.Info.Name = "renamed.txt";
+
+        var roundTrip = TorrentFile.Parse(original.ToUtf8ByteArray());
+
+        Assert.Equal("replaced", roundTrip.Comment);
+        Assert.Equal("renamed.txt", roundTrip.Info.Name);
+        Assert.Equal("https://t.test", roundTrip.Announce);
+    }
+
+    [Fact]
+    public void ToUtf8ByteArray_ClearedFieldIsRemoved()
+    {
+        var original = TorrentFile.Parse(SingleFileTorrent);
+        Assert.NotNull(original.CreationDate);
+        original.CreationDate = null;
+
+        var root = Assert.IsType<BencodeDictionary>(BencodeDocument.Parse(original.ToUtf8ByteArray()).Root);
+
+        Assert.DoesNotContain(Key("creation date"), root);
+        Assert.Contains(Key("announce"), root);
+    }
+
+    [Fact]
+    public void ToUtf8ByteArray_ConstructedTorrent_WritesOnlyModelledKeys()
+    {
+        var torrent = new TorrentFile
+        {
+            Announce = "https://t.test",
+            Info = new TorrentInfo
+            {
+                Name = "file.txt",
+                PieceLength = 16384,
+                Pieces = "01234567890123456789"u8.ToArray(),
+                Length = 123,
+            },
+        };
+
+        var root = Assert.IsType<BencodeDictionary>(BencodeDocument.Parse(torrent.ToUtf8ByteArray()).Root);
+
+        Assert.Equal(2, root.Count);
+        Assert.Contains(Key("announce"), root);
+        Assert.Contains(Key("info"), root);
+    }
+
+    [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash is SHA-1.")]
+    [Fact]
+    public async Task WriteToAsync_UbuntuTorrent_KeepsTheInfoHash()
+    {
+        await using var stream = OpenUbuntuTorrentResourceStream();
+        var torrent = await TorrentFile.ParseAsync(stream);
+
+        var roundTrip = TorrentFile.Parse(torrent.ToUtf8ByteArray());
+
+        Assert.Equal(Convert.FromHexString("e1fc140a6391357fa1cf08ddb70274f9c05eb88b"), roundTrip.GetInfoHashSha1());
+    }
+
+    private static BencodeString Key(string value) => new(Encoding.UTF8.GetBytes(value));
+
     [Fact]
     public void ToArray_BothLengthAndFiles_Throws()
     {

@@ -67,6 +67,7 @@ public static partial class Bcrypt
     /// <param name="salt">The BCrypt salt string.</param>
     /// <returns>The BCrypt hash string.</returns>
     /// <exception cref="ArgumentException"><paramref name="password"/> cannot be encoded as UTF-8 because it contains an unpaired surrogate.</exception>
+    /// <exception cref="FormatException"><paramref name="salt"/> is not a valid BCrypt salt: bad revision, a work factor outside <see cref="MinWorkFactor"/>..<see cref="MaxWorkFactor"/>, or a malformed payload.</exception>
     public static string HashPassword(string password, string salt)
     {
         ArgumentNullException.ThrowIfNull(password);
@@ -80,6 +81,7 @@ public static partial class Bcrypt
     /// <param name="salt">The BCrypt salt string.</param>
     /// <returns>The BCrypt hash string.</returns>
     /// <exception cref="ArgumentException"><paramref name="password"/> cannot be encoded as UTF-8 because it contains an unpaired surrogate.</exception>
+    /// <exception cref="FormatException"><paramref name="salt"/> is not a valid BCrypt salt: bad revision, a work factor outside <see cref="MinWorkFactor"/>..<see cref="MaxWorkFactor"/>, or a malformed payload.</exception>
     public static string HashPassword(ReadOnlySpan<char> password, ReadOnlySpan<char> salt)
     {
         return BcryptImplementation.HashPassword(password, salt);

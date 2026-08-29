@@ -208,9 +208,11 @@ public sealed class AccessToken : IDisposable
         var luidNameLen = 0u;
         PInvoke.LookupPrivilegeName(lpSystemName: null, in luid, lpName: null, ref luidNameLen);
 
+        // The first call reports the buffer size including the terminating null character,
+        // whereas a successful call updates luidNameLen to the length excluding it.
         Span<char> name = new char[luidNameLen];
         if (PInvoke.LookupPrivilegeName(lpSystemName: null, in luid, name, ref luidNameLen))
-            return new string(name);
+            return new string(name[..(int)luidNameLen]);
 
         throw new Win32Exception(Marshal.GetLastWin32Error());
     }

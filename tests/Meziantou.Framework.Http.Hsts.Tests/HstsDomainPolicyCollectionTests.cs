@@ -1,3 +1,4 @@
+using Meziantou.Xunit;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.Http.Hsts.Tests;
@@ -176,6 +177,83 @@ public sealed class HstsDomainPolicyCollectionTests
         Assert.True(hsts.MustUpgradeRequest("xn--vt3a.jp"));
         Assert.True(hsts.MustUpgradeRequest(new Uri("http://跳.jp").IdnHost));
         Assert.True(hsts.MustUpgradeRequest(new Uri("http://sub.αβ.net").IdnHost));
+    }
+
+    [Theory]
+    [InlineData("跳.jp")]
+    [InlineData("xn--vt3a.jp")]
+    public void HstsCollection_Match_UnicodeAndPunycodeAreInterchangeable(string addedHost)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add(addedHost, DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+
+        // https://datatracker.ietf.org/doc/html/rfc6797#section-10
+        Assert.True(hsts.MustUpgradeRequest("跳.jp"));
+        Assert.True(hsts.MustUpgradeRequest("xn--vt3a.jp"));
+    }
+
+    [Fact]
+    public void HstsCollection_Add_StoresTheCanonicalizedHost()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("跳.jp", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+
+        Assert.Equal("xn--vt3a.jp", Assert.Single(hsts).Host);
+    }
+
+    [Theory]
+    [InlineData("跳.jp")]
+    [InlineData("xn--vt3a.jp")]
+    public void HstsCollection_Remove_AcceptsEitherForm(string removedHost)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("跳.jp", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+
+        Assert.True(hsts.Remove(removedHost));
+        Assert.Empty(hsts);
+    }
+
+    [Fact]
+    public void HstsCollection_Match_UnicodeSubdomainOfAnInternationalizedDomain()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("跳.jp", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: true);
+
+        Assert.True(hsts.MustUpgradeRequest("sub.跳.jp"));
+        Assert.True(hsts.MustUpgradeRequest("sub.xn--vt3a.jp"));
+    }
+
+    [Fact]
+    public void HstsCollection_Match_PreloadedDomainInItsUnicodeForm()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);
+
+        // The preload list stores Punycode names; the Unicode form of the same domain must match them
+        Assert.True(hsts.MustUpgradeRequest("跳.jp"));
+        Assert.True(hsts.MustUpgradeRequest("sub.αβ.net"));
+    }
+
+    [Fact]
+    public void HstsCollection_Match_UnconvertibleHostDoesNotThrow()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+
+        // A name that cannot be canonicalized cannot match a policy, but a lookup must not fail the request
+        Assert.False(hsts.MustUpgradeRequest("\u0080.example"));
+        Assert.False(hsts.Remove("\u0080.example"));
+    }
+
+    [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void HstsCollection_Add_RejectsAnUnconvertibleHost()
+    {
+        // IDNA validation follows the platform: ICU rejects a disallowed code point, while the managed
+        // fallback used in globalization-invariant mode encodes it instead. Add throws whenever the
+        // conversion fails, so only the strict mode reaches the exception.
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+
+        Assert.Throws<ArgumentException>(() => hsts.Add("\u0080.example", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false));
+        Assert.Empty(hsts);
     }
 
     [Fact]

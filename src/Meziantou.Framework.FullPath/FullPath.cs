@@ -435,9 +435,15 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     public static FullPath CurrentDirectory() => FromPath(Environment.CurrentDirectory);
 
     /// <summary>Creates a <see cref="FullPath"/> from a string path by converting it to an absolute path.</summary>
-    /// <param name="path">The path to convert. Can be relative or absolute.</param>
+    /// <param name="path">The path to convert. Can be relative or absolute. An empty string returns <see cref="Empty"/>.</param>
     public static FullPath FromPath(string path)
     {
+        // A path that resolves to nothing already returns Empty below; an empty input is the same case, and
+        // Path.GetFullPath would throw before reaching it. Environment.GetFolderPath returns "" for a folder
+        // that is not defined on the platform, which makes this a routine input rather than a caller error.
+        if (path is { Length: 0 })
+            return Empty;
+
         // '\' is a regular file name character on Unix, so a path such as @"\\?\a" is a relative file name there, not a device path
         if (OperatingSystem.IsWindows() && PathInternal.IsExtended(path))
         {

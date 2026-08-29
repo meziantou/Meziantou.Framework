@@ -81,8 +81,12 @@ internal sealed class RaggedSegment : Segment
                     while (!pathReader.IsEndOfCurrentSegment)
                     {
                         pathReader.ConsumeInSegment(1);
-                        if (Match(ref pathReader, remainingPatternSegments))
+                        copyReader = pathReader;
+                        if (Match(ref copyReader, remainingPatternSegments))
+                        {
+                            pathReader = copyReader;
                             return true;
+                        }
                     }
 
                     return false;

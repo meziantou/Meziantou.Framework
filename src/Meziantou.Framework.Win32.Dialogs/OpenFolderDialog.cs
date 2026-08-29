@@ -39,11 +39,14 @@ public sealed class OpenFolderDialog
     /// <returns>A <see cref="DialogResult"/> indicating whether the user clicked OK, Cancel, or if the operation was aborted.</returns>
     public DialogResult ShowDialog(IntPtr owner) // IWin32Window
     {
+        SelectedPath = null;
+
         var hwndOwner = owner != IntPtr.Zero ? owner : (IntPtr)PInvoke.GetActiveWindow();
         var dialog = (IFileOpenDialog)new NativeFileOpenDialog();
         Configure(dialog);
 
         var hr = dialog.Show(hwndOwner);
+        LastHResult = hr;
         if (hr == NativeMethods.ERROR_CANCELLED)
             return DialogResult.Cancel;
 
@@ -73,7 +76,22 @@ public sealed class OpenFolderDialog
     public string? InitialDirectory { get; set; }
 
     /// <summary>Gets the path of the folder selected by the user. This property is populated after <see cref="ShowDialog()"/> returns <see cref="DialogResult.OK"/>.</summary>
-    public string? SelectedPath { get; set; }
+    /// <remarks>
+    /// Each call to <see cref="ShowDialog()"/> resets this property, so it always reflects the most
+    /// recent call and is <see langword="null"/> when that call did not return
+    /// <see cref="DialogResult.OK"/>.
+    /// </remarks>
+    public string? SelectedPath { get; private set; }
+
+    /// <summary>Gets the HRESULT returned by the last call to <see cref="ShowDialog()"/>.</summary>
+    /// <remarks>
+    /// <see cref="ShowDialog()"/> reports every failure as <see cref="DialogResult.Abort"/>, which
+    /// says nothing about the cause. This property carries the underlying HRESULT so the caller can
+    /// log it or turn it into an exception with
+    /// <see cref="System.Runtime.InteropServices.Marshal.GetExceptionForHR(int)"/>. It is <c>0</c>
+    /// until the dialog has been shown.
+    /// </remarks>
+    public int LastHResult { get; private set; }
 
     /// <summary>Gets or sets a value indicating whether to change the current working directory to the selected folder.</summary>
     /// <value>

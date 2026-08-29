@@ -82,7 +82,6 @@ internal static partial class WindowsHeap
         if (hHeap == IntPtr.Zero)
         {
             Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-            Environment.FailFast("Couldn't get heap information.");
         }
 
         return hHeap;

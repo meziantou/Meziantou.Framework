@@ -306,6 +306,11 @@ internal static class GlobParser
                     segments.Add(MatchAllSegment.Instance);
                     matchLeadingDot.Add(settings.MatchLeadingDot);
                 }
+                else
+                {
+                    // A gitignore entry without a trailing '/' matches a file or a directory with that name.
+                    matchType = GlobMatchType.Any;
+                }
             }
             else
             {
@@ -313,6 +318,14 @@ internal static class GlobParser
                 {
                     matchType = GlobMatchType.Directory;
                 }
+            }
+
+            // '.' and '..' normalization can remove every segment (".", "./", "a/.."). Such a pattern cannot match
+            // anything, and a Glob without any segment is not usable, so reject it instead of returning it.
+            if (segments.Count == 0)
+            {
+                errorMessage = "the pattern does not contain any segment";
+                return false;
             }
 
             errorMessage = null;

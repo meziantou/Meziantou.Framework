@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Scheduling;
 
 internal static class Utilities
 {
-    public const string DateTimeFormat = "yyyyMMddTHHmmsszzz";
+    public const string FloatingDateTimeFormat = "yyyyMMddTHHmmss";
     public const string UtcDateTimeFormat = "yyyyMMddTHHmmssZ";
 
     public static DateTime ParseDateTime(string str)
@@ -54,14 +54,21 @@ internal static class Utilities
         };
     }
 
+    /// <summary>Formats a date-time using one of the forms defined in RFC 5545 section 3.3.5.</summary>
     public static string DateTimeToString(DateTime dt)
     {
-        if (dt.Kind is DateTimeKind.Utc)
+        return dt.Kind switch
         {
-            return dt.ToString(UtcDateTimeFormat, CultureInfo.InvariantCulture);
-        }
+            // Form 2: a date-time in UTC.
+            DateTimeKind.Utc => dt.ToString(UtcDateTimeFormat, CultureInfo.InvariantCulture),
 
-        return dt.ToString(DateTimeFormat, CultureInfo.InvariantCulture);
+            // A local time is only meaningful to a reader that also knows the offset, and the
+            // output carries no TZID parameter to convey it, so it is written as UTC.
+            DateTimeKind.Local => dt.ToUniversalTime().ToString(UtcDateTimeFormat, CultureInfo.InvariantCulture),
+
+            // Form 1: a floating date-time, interpreted in the reader's own time zone.
+            _ => dt.ToString(FloatingDateTimeFormat, CultureInfo.InvariantCulture),
+        };
     }
 
     public static string StatusToString(EventStatus status)

@@ -34,4 +34,24 @@ bin/
         Assert.True(globs.IsMatch("#literal"));
         Assert.True(globs.IsMatch("!literal"));
     }
+
+    [Fact]
+    public void GitIgnoreEntryWithoutTrailingSlashMatchesADirectory()
+    {
+        var globs = GlobCollection.ParseGitIgnore("node_modules\n".AsSpan());
+
+        Assert.True(globs.IsMatch("", "node_modules", PathItemType.Directory));
+        Assert.True(globs.IsMatch("src", "node_modules", PathItemType.Directory));
+        Assert.True(globs.IsMatch("", "node_modules", PathItemType.File));
+        Assert.True(((IGlobEvaluatable)globs).CanMatchDirectories);
+    }
+
+    [Fact]
+    public void GitIgnoreEntryWithTrailingSlashDoesNotMatchAFile()
+    {
+        var globs = GlobCollection.ParseGitIgnore("bin/\n".AsSpan());
+
+        Assert.True(globs.IsMatch("bin/test.txt"));
+        Assert.False(globs.IsMatch("", "bin", PathItemType.File));
+    }
 }

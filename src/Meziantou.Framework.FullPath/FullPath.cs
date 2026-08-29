@@ -512,13 +512,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     }
 
     /// <summary>Combines a <see cref="FullPath"/> with multiple relative paths.</summary>
-    public static FullPath Combine(FullPath rootPath, params string[] paths)
-    {
-        if (rootPath.IsEmpty)
-            return FromPath(Path.Combine(paths));
-
-        return FromPath(Path.Combine(rootPath._value, Path.Combine(paths)));
-    }
+    public static FullPath Combine(FullPath rootPath, params string[] paths) => Combine(rootPath, (ReadOnlySpan<string>)paths);
 
     /// <summary>Combines a <see cref="FullPath"/> with a span of relative paths.</summary>
     public static FullPath Combine(FullPath rootPath, params ReadOnlySpan<string> paths)
@@ -526,7 +520,17 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (rootPath.IsEmpty)
             return FromPath(Path.Combine(paths));
 
-        return FromPath(Path.Combine([rootPath._value, .. paths]));
+        // A collection expression containing a spread has no compile-time length, so Roslyn cannot use an inline array
+        // and falls back to a heap string[] - the very allocation the span signature exists to avoid. Dispatching the
+        // common lengths to the fixed-arity Path.Combine overloads keeps them array-free.
+        return paths.Length switch
+        {
+            0 => rootPath,
+            1 => FromPath(Path.Combine(rootPath._value, paths[0])),
+            2 => FromPath(Path.Combine(rootPath._value, paths[0], paths[1])),
+            3 => FromPath(Path.Combine(rootPath._value, paths[0], paths[1], paths[2])),
+            _ => FromPath(Path.Combine([rootPath._value, .. paths])),
+        };
     }
 
     /// <summary>Combines a <see cref="FullPath"/> with three relative paths.</summary>

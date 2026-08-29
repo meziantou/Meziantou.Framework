@@ -144,8 +144,14 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
     public bool HasMetadata => Metadata != EmptyArray;
 
     /// <summary>Formats the semantic version as a string.</summary>
+    /// <param name="format">The format to use. Only the general format (<see langword="null"/>, an empty string, or <c>"G"</c>) is supported.</param>
+    /// <param name="formatProvider">Ignored. A semantic version has no culture-sensitive representation.</param>
+    /// <exception cref="FormatException"><paramref name="format"/> is not a supported format.</exception>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
+        if (!string.IsNullOrEmpty(format) && !format.Equals("G", StringComparison.OrdinalIgnoreCase))
+            throw new FormatException($"The '{format}' format specifier is not supported");
+
         var sb = new StringBuilder();
         sb.Append(Major);
         sb.Append('.');

@@ -393,6 +393,31 @@ public class SemanticVersionRangeTests
         Assert.Equal(range1.GetHashCode(), range2.GetHashCode());
     }
 
+    [Theory]
+    [InlineData("(,)")]
+    [InlineData("[,]")]
+    [InlineData("[,)")]
+    [InlineData("(,]")]
+    public void UnboundedRanges_AreEqualToAll(string input)
+    {
+        var range = SemanticVersionRange.ParseNuGet(input);
+
+        Assert.Equal(SemanticVersionRange.All, range);
+        Assert.Equal(SemanticVersionRange.All.GetHashCode(), range.GetHashCode());
+        Assert.False(range.IsMinInclusive);
+        Assert.False(range.IsMaxInclusive);
+    }
+
+    [Fact]
+    public void MissingUpperBound_IsNotInclusive()
+    {
+        var range = SemanticVersionRange.ParseNuGet("[1.0.0,]");
+
+        Assert.Equal(SemanticVersionRange.GreaterThanOrEqual(SemanticVersion.Parse("1.0.0")), range);
+        Assert.True(range.IsMinInclusive);
+        Assert.False(range.IsMaxInclusive);
+    }
+
     [Fact]
     public void Equality_DifferentRange_AreNotEqual()
     {

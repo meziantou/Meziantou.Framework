@@ -322,6 +322,83 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public void FullPathComparer_CaseSensitive()
+    {
+        var lower = FullPath.FromPath("test") / "a.txt";
+        var upper = FullPath.FromPath("test") / "A.TXT";
+
+        Assert.True(FullPathComparer.CaseSensitive.IsCaseSensitive);
+        Assert.False(FullPathComparer.CaseSensitive.Equals(lower, upper));
+        Assert.NotEqual(0, FullPathComparer.CaseSensitive.Compare(lower, upper));
+    }
+
+    [Fact]
+    public void FullPathComparer_CaseInsensitive()
+    {
+        var lower = FullPath.FromPath("test") / "a.txt";
+        var upper = FullPath.FromPath("test") / "A.TXT";
+
+        Assert.False(FullPathComparer.CaseInsensitive.IsCaseSensitive);
+        Assert.True(FullPathComparer.CaseInsensitive.Equals(lower, upper));
+        Assert.Equal(0, FullPathComparer.CaseInsensitive.Compare(lower, upper));
+        Assert.Equal(FullPathComparer.CaseInsensitive.GetHashCode(lower), FullPathComparer.CaseInsensitive.GetHashCode(upper));
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Windows | TestOperatingSystems.MacOS)]
+    public void FullPathComparer_DefaultIgnoresCaseOnWindowsAndMacOS()
+    {
+        // Compared through the comparer rather than Assert.Equal: FullPath converts implicitly to string, so
+        // Assert.Equal would bind to the string overload and compare ordinally instead of using FullPath equality.
+        Assert.False(FullPathComparer.Default.IsCaseSensitive);
+        Assert.True(FullPathComparer.Default.Equals(FullPath.FromPath("test") / "a.txt", FullPath.FromPath("test") / "A.TXT"));
+        Assert.True((FullPath.FromPath("test") / "a.txt") == (FullPath.FromPath("test") / "A.TXT"));
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Linux)]
+    public void FullPathComparer_DefaultIsCaseSensitiveOnLinux()
+    {
+        Assert.True(FullPathComparer.Default.IsCaseSensitive);
+        Assert.False(FullPathComparer.Default.Equals(FullPath.FromPath("test") / "a.txt", FullPath.FromPath("test") / "A.TXT"));
+        Assert.False((FullPath.FromPath("test") / "a.txt") == (FullPath.FromPath("test") / "A.TXT"));
+    }
+
+    [Fact]
+    public void FullPathComparer_Compare()
+    {
+        var a = FullPath.FromPath("test") / "a.txt";
+        var b = FullPath.FromPath("test") / "b.txt";
+
+        Assert.True(FullPathComparer.CaseSensitive.Compare(a, b) < 0);
+        Assert.True(FullPathComparer.CaseSensitive.Compare(b, a) > 0);
+        Assert.Equal(0, FullPathComparer.CaseSensitive.Compare(a, a));
+    }
+
+    [Fact]
+    public void FullPathComparer_Empty()
+    {
+        Assert.Equal(0, FullPathComparer.Default.GetHashCode(FullPath.Empty));
+        Assert.Equal(0, FullPathComparer.CaseSensitive.GetHashCode(FullPath.Empty));
+        Assert.Equal(0, FullPathComparer.CaseInsensitive.GetHashCode(FullPath.Empty));
+        Assert.True(FullPathComparer.Default.Equals(FullPath.Empty, FullPath.Empty));
+        Assert.False(FullPathComparer.Default.Equals(FullPath.Empty, FullPath.FromPath("test")));
+    }
+
+    [Fact]
+    public void EqualsAndCompareTo_IgnoreCase()
+    {
+        var lower = FullPath.FromPath("test") / "a.txt";
+        var upper = FullPath.FromPath("test") / "A.TXT";
+
+        Assert.True(lower.Equals(upper, ignoreCase: true));
+        Assert.False(lower.Equals(upper, ignoreCase: false));
+        Assert.Equal(lower.GetHashCode(ignoreCase: true), upper.GetHashCode(ignoreCase: true));
+        Assert.Equal(0, lower.CompareTo(upper, ignoreCase: true));
+        Assert.NotEqual(0, lower.CompareTo(upper, ignoreCase: false));
+    }
+
+    [Fact]
     [RunIf(TestOperatingSystems.Windows)]
     public void FromPath_ExtendedPrefixIsRemovedOnWindows()
     {

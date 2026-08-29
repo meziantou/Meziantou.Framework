@@ -32,8 +32,11 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     // Upper bound on the number of arguments accepted from the pipe. The message is
     // sender-controlled, so the count is validated before allocating from it.
     private const int MaxArgumentCount = 64 * 1024;
+    private readonly Lock _lock = new();
     private NamedPipeServerStream? _server;
     private Mutex? _mutex;
+    private bool _disposed;
+    private bool _started;
 
     /// <summary>
     /// Occurs when another instance of the application attempts to start.
@@ -68,13 +71,19 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     /// </remarks>
     public bool StartApplication()
     {
-        if (TryAcquireMutex())
-        {
-            StartNamedPipeServer();
-            return true;
-        }
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-        return false;
+        // Starting twice would acquire the re-entrant mutex again and leak the first
+        // pipe server, so a successful start is remembered and replayed.
+        if (_started)
+            return true;
+
+        if (!TryAcquireMutex())
+            return false;
+
+        _started = true;
+        StartNamedPipeServer();
+        return true;
     }
 
     private void StartNamedPipeServer()
@@ -85,15 +94,29 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("The communication with the first instance is only supported on Windows");
 
-        _server = new NamedPipeServerStream(
+        var server = new NamedPipeServerStream(
                 PipeName,
                 PipeDirection.In,
                 NamedPipeServerStream.MaxAllowedServerInstances,
                 PipeTransmissionMode.Message,
                 PipeOptions.CurrentUserOnly);
+
+        lock (_lock)
+        {
+            if (_disposed)
+            {
+                // Dispose ran while this listener was being created. Publishing it would
+                // leave a live pipe server behind for the lifetime of the process.
+                server.Dispose();
+                return;
+            }
+
+            _server = server;
+        }
+
         try
         {
-            _server.BeginWaitForConnection(Listen, state: null);
+            server.BeginWaitForConnection(Listen, state: server);
         }
         catch (ObjectDisposedException)
         {
@@ -103,9 +126,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
 
     private void Listen(IAsyncResult ar)
     {
-        var server = _server;
-        if (server is null)
-            return;
+        var server = (NamedPipeServerStream)ar.AsyncState!;
 
         try
         {
@@ -241,7 +262,22 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     /// </summary>
     public void Dispose()
     {
-        _mutex?.Dispose();
-        _server?.Dispose();
+        Mutex? mutex;
+        NamedPipeServerStream? server;
+
+        lock (_lock)
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            mutex = _mutex;
+            server = _server;
+            _mutex = null;
+            _server = null;
+        }
+
+        mutex?.Dispose();
+        server?.Dispose();
     }
 }

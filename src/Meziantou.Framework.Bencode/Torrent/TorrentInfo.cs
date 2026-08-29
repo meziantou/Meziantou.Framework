@@ -138,6 +138,8 @@ public sealed class TorrentInfo
         if (string.IsNullOrEmpty(Name))
             throw new FormatException("Torrent info must contain a non-empty name.");
 
+        ValidatePathSegment(Name, "name");
+
         if (PieceLength <= 0)
             throw new FormatException("Torrent info must contain a positive piece length.");
 
@@ -173,11 +175,23 @@ public sealed class TorrentInfo
 
                 foreach (var segment in file.Path)
                 {
-                    if (string.IsNullOrEmpty(segment))
-                        throw new FormatException("Path segments cannot be null or empty.");
+                    ValidatePathSegment(segment, "path");
                 }
             }
         }
+    }
+
+    /// <summary>Rejects the segments BEP 3 forbids, because clients build a file path out of these values.</summary>
+    private static void ValidatePathSegment(string segment, string fieldName)
+    {
+        if (string.IsNullOrEmpty(segment))
+            throw new FormatException($"The '{fieldName}' field cannot contain a null or empty segment.");
+
+        if (segment is "." or "..")
+            throw new FormatException($"The '{fieldName}' field cannot contain a '.' or '..' segment.");
+
+        if (segment.AsSpan().ContainsAny('/', '\\'))
+            throw new FormatException($"The '{fieldName}' field cannot contain a directory separator.");
     }
 
     private static long GetRequiredInteger(BencodeDictionary dictionary, BencodeString key, string fieldName)

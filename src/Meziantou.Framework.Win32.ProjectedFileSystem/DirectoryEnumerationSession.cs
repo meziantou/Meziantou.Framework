@@ -48,7 +48,11 @@ internal sealed class DirectoryEnumerationSession : IDisposable
 
     internal void Reset()
     {
+        // Clear the field so the next GetNextEntry call creates a fresh enumerator.
+        // A disposed iterator keeps returning false from MoveNext, which would make
+        // every entry disappear after a restart scan.
         _current = null;
         _enumerator?.Dispose();
+        _enumerator = null;
     }
 }

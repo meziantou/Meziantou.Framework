@@ -19,6 +19,9 @@ public sealed class InternetCalendar
     /// <see cref="TextWriter.WriteLine()"/> does not guarantee: it emits <see cref="Environment.NewLine"/>.</summary>
     private const string CrLf = "\r\n";
 
+    /// <summary>The product identifier written as PRODID, in the FPI form suggested by RFC 5545 section 3.7.3.</summary>
+    private const string ProductIdentifier = "-//Meziantou//Meziantou.Framework.Scheduling//EN";
+
     /// <summary>Gets additional custom properties for the calendar.</summary>
     public IDictionary<string, string> AdditionalProperties { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -72,6 +75,9 @@ public sealed class InternetCalendar
         WriteLine(writer, "BEGIN:VCALENDAR");
         if (!string.IsNullOrEmpty(Version))
             WriteTextProperty(writer, "VERSION", Version);
+
+        // PRODID is REQUIRED in a VCALENDAR (RFC 5545 section 3.6).
+        WriteLine(writer, "PRODID:" + ProductIdentifier);
 
         WriteAdditionalProperties(writer, AdditionalProperties);
 

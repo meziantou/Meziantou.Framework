@@ -98,7 +98,8 @@ public sealed class RestartManager : IDisposable
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
         string[] resources = [path];
-        var result = PInvoke.RmRegisterResources(_sessionHandle.SessionHandle, resources, rgApplications: default, rgsServiceNames: default);
+        using var handleScope = new SafeHandleValue(_sessionHandle);
+        var result = PInvoke.RmRegisterResources((uint)handleScope.Value, resources, rgApplications: default, rgsServiceNames: default);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
     }
@@ -114,7 +115,8 @@ public sealed class RestartManager : IDisposable
         ThrowIfContainsNull(paths);
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
-        var result = PInvoke.RmRegisterResources(_sessionHandle.SessionHandle, paths, rgApplications: default, rgsServiceNames: default);
+        using var handleScope = new SafeHandleValue(_sessionHandle);
+        var result = PInvoke.RmRegisterResources((uint)handleScope.Value, paths, rgApplications: default, rgsServiceNames: default);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
     }
@@ -128,9 +130,10 @@ public sealed class RestartManager : IDisposable
 
         // A single-element buffer is enough here. ERROR_MORE_DATA already means more than one process is
         // affected, and arrayCount reports the total number needed in both cases, so there is nothing to retry.
+        using var handleScope = new SafeHandleValue(_sessionHandle);
         uint arraySize = 1;
         var array = new RM_PROCESS_INFO[arraySize];
-        var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out var rebootReason);
+        var result = PInvoke.RmGetList((uint)handleScope.Value, out var arrayCount, ref arraySize, array, out var rebootReason);
         if (result is WIN32_ERROR.ERROR_SUCCESS or WIN32_ERROR.ERROR_MORE_DATA)
         {
             RebootReason = (RestartManagerRebootReason)rebootReason;
@@ -177,11 +180,12 @@ public sealed class RestartManager : IDisposable
     {
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
+        using var handleScope = new SafeHandleValue(_sessionHandle);
         uint arraySize = 10;
         while (true)
         {
             var array = new RM_PROCESS_INFO[arraySize];
-            var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out var rebootReason);
+            var result = PInvoke.RmGetList((uint)handleScope.Value, out var arrayCount, ref arraySize, array, out var rebootReason);
             if (result == WIN32_ERROR.ERROR_SUCCESS)
             {
                 RebootReason = (RestartManagerRebootReason)rebootReason;
@@ -212,7 +216,8 @@ public sealed class RestartManager : IDisposable
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
         RM_WRITE_STATUS_CALLBACK? callback = statusCallback is null ? null : statusCallback.Invoke;
-        var result = PInvoke.RmShutdown(_sessionHandle.SessionHandle, (uint)action, callback);
+        using var handleScope = new SafeHandleValue(_sessionHandle);
+        var result = PInvoke.RmShutdown((uint)handleScope.Value, (uint)action, callback);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
     }
@@ -232,7 +237,8 @@ public sealed class RestartManager : IDisposable
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
         RM_WRITE_STATUS_CALLBACK? callback = statusCallback is null ? null : statusCallback.Invoke;
-        var result = PInvoke.RmRestart(_sessionHandle.SessionHandle, 0, callback);
+        using var handleScope = new SafeHandleValue(_sessionHandle);
+        var result = PInvoke.RmRestart((uint)handleScope.Value, 0, callback);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRestart failed ({result})");
     }
@@ -248,7 +254,8 @@ public sealed class RestartManager : IDisposable
     {
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
-        var result = PInvoke.RmCancelCurrentTask(_sessionHandle.SessionHandle);
+        using var handleScope = new SafeHandleValue(_sessionHandle);
+        var result = PInvoke.RmCancelCurrentTask((uint)handleScope.Value);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmCancelCurrentTask failed ({result})");
     }

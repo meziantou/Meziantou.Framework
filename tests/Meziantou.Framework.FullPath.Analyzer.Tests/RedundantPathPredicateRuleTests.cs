@@ -65,4 +65,42 @@ public sealed class RedundantPathPredicateRuleTests : FullPathAnalyzerTestBase
 
         await CreateAnalyzerTest<RedundantPathPredicateAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_WhenTheResultIsAReceiver()
+    {
+        var source = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        return {|MFFP0018:Path.IsPathRooted(fullPath)|}.ToString();
+                    }
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        return (!fullPath.IsEmpty).ToString();
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<RedundantPathPredicateAnalyzerType, RedundantPathPredicateCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
 }

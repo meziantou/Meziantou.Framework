@@ -236,4 +236,42 @@ public sealed class PathCombineWithFullPathRuleTests : FullPathAnalyzerTestBase
 
         await CreateAnalyzerTest<PathCombineWithFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForCoalesceOperand()
+    {
+        var source = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath root, string name)
+                    {
+                        return {|MFFP0004:Path.Combine(root, name ?? "default")|};
+                    }
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath root, string name)
+                    {
+                        return root / (name ?? "default");
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<PathCombineWithFullPathAnalyzerType, PathCombineWithFullPathCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
 }

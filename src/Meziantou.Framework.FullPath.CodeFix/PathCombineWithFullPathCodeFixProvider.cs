@@ -110,7 +110,7 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
             return false;
         }
 
-        replacementExpression = expression.WithoutTrivia();
+        replacementExpression = expression.WithoutTrivia().Parenthesize();
         for (var i = fullPathIndex + 1; i < invocationOperation.Arguments.Length; i++)
         {
             var nextOperation = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[i].Value, fullPathType);
@@ -120,7 +120,7 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
                 return false;
             }
 
-            replacementExpression = SyntaxFactory.BinaryExpression(SyntaxKind.DivideExpression, replacementExpression, nextExpression.WithoutTrivia());
+            replacementExpression = SyntaxFactory.BinaryExpression(SyntaxKind.DivideExpression, replacementExpression, nextExpression.WithoutTrivia().Parenthesize());
         }
 
         return true;

@@ -69,7 +69,9 @@ public abstract class FullPathCodeFixProviderBase : CodeFixProvider
         if (!TryGetReplacementExpression(semanticModel, expressionSyntax, analyzerContext, cancellationToken, out var replacementExpression))
             return document;
 
-        replacementExpression = replacementExpression.WithTriviaFrom(expressionSyntax).WithAdditionalAnnotations(Formatter.Annotation);
+        replacementExpression = ParenthesizeForContext(replacementExpression, expressionSyntax)
+            .WithTriviaFrom(expressionSyntax)
+            .WithAdditionalAnnotations(Formatter.Annotation);
         var newRoot = root.ReplaceNode(expressionSyntax, replacementExpression);
         return document.WithSyntaxRoot(newRoot);
     }
@@ -86,7 +88,7 @@ public abstract class FullPathCodeFixProviderBase : CodeFixProvider
     {
         ExpressionSyntax result = SyntaxFactory.MemberAccessExpression(
             SyntaxKind.SimpleMemberAccessExpression,
-            Parenthesize(fullPathExpression.WithoutTrivia()),
+            fullPathExpression.WithoutTrivia().Parenthesize(),
             SyntaxFactory.IdentifierName("IsEmpty"));
 
         if (negate)
@@ -97,15 +99,22 @@ public abstract class FullPathCodeFixProviderBase : CodeFixProvider
         return result;
     }
 
-    /// <summary>Wraps the expression in parentheses unless it can already be used as the target of a member access.</summary>
-    private protected static ExpressionSyntax Parenthesize(ExpressionSyntax expression)
+    /// <summary>
+    /// Parenthesizes the replacement when the syntax it replaces sits in a position that binds tighter than it,
+    /// so that <c>!path.IsEmpty</c> substituted into <c>Path.IsPathRooted(p).ToString()</c> does not become
+    /// <c>!p.IsEmpty.ToString()</c>.
+    /// </summary>
+    private static ExpressionSyntax ParenthesizeForContext(ExpressionSyntax replacement, ExpressionSyntax replaced)
     {
-        return expression switch
+        var needsParentheses = replaced.Parent switch
         {
-            IdentifierNameSyntax or MemberAccessExpressionSyntax or InvocationExpressionSyntax or ElementAccessExpressionSyntax
-                or ParenthesizedExpressionSyntax or ThisExpressionSyntax or BaseExpressionSyntax or LiteralExpressionSyntax
-                or PredefinedTypeSyntax or QualifiedNameSyntax => expression,
-            _ => SyntaxFactory.ParenthesizedExpression(expression),
+            MemberAccessExpressionSyntax memberAccess => memberAccess.Expression == replaced,
+            ElementAccessExpressionSyntax elementAccess => elementAccess.Expression == replaced,
+            ConditionalAccessExpressionSyntax conditionalAccess => conditionalAccess.Expression == replaced,
+            PostfixUnaryExpressionSyntax => true,
+            _ => false,
         };
+
+        return needsParentheses ? replacement.Parenthesize() : replacement;
     }
 }

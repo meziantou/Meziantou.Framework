@@ -120,8 +120,8 @@ public sealed class PathGetFullPathWithFullPathBaseCodeFixProvider : CodeFixProv
 
         replacementExpression = SyntaxFactory.BinaryExpression(
             SyntaxKind.DivideExpression,
-            basePathExpression.WithoutTrivia(),
-            pathExpression.WithoutTrivia());
+            basePathExpression.WithoutTrivia().Parenthesize(),
+            pathExpression.WithoutTrivia().Parenthesize());
 
         return true;
     }

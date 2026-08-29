@@ -32,7 +32,7 @@ public sealed class UseCreateParentDirectoryCodeFixProvider : FullPathCodeFixPro
             replacementExpression = SyntaxFactory.InvocationExpression(
                 SyntaxFactory.MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
-                    Parenthesize(instanceExpression.WithoutTrivia()),
+                    instanceExpression.WithoutTrivia().Parenthesize(),
                     SyntaxFactory.IdentifierName("CreateParentDirectory")));
             return true;
         }

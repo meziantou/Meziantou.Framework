@@ -89,7 +89,7 @@ public sealed class PathGetDirectoryNameWithFullPathCodeFixProvider : CodeFixPro
             {
                 replacementExpression = SyntaxFactory.MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
-                    fullPathExpression.WithoutTrivia(),
+                    fullPathExpression.WithoutTrivia().Parenthesize(),
                     SyntaxFactory.IdentifierName("Parent"));
                 return true;
             }

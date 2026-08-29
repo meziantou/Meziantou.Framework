@@ -89,7 +89,7 @@ public sealed class PathGetFileNameWithoutExtensionWithFullPathCodeFixProvider :
             {
                 replacementExpression = SyntaxFactory.MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
-                    fullPathExpression.WithoutTrivia(),
+                    fullPathExpression.WithoutTrivia().Parenthesize(),
                     SyntaxFactory.IdentifierName("NameWithoutExtension"));
                 return true;
             }

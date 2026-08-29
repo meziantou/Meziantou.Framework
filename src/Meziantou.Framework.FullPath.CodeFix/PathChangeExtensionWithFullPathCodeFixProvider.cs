@@ -91,7 +91,7 @@ public sealed class PathChangeExtensionWithFullPathCodeFixProvider : CodeFixProv
                 replacementExpression = SyntaxFactory.InvocationExpression(
                     SyntaxFactory.MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        fullPathExpression.WithoutTrivia(),
+                        fullPathExpression.WithoutTrivia().Parenthesize(),
                         SyntaxFactory.IdentifierName("ChangeExtension")),
                     SyntaxFactory.ArgumentList(
                     [

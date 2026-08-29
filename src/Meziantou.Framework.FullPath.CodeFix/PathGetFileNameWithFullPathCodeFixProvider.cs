@@ -89,7 +89,7 @@ public sealed class PathGetFileNameWithFullPathCodeFixProvider : CodeFixProvider
             {
                 replacementExpression = SyntaxFactory.MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
-                    fullPathExpression.WithoutTrivia(),
+                    fullPathExpression.WithoutTrivia().Parenthesize(),
                     SyntaxFactory.IdentifierName("Name"));
                 return true;
             }

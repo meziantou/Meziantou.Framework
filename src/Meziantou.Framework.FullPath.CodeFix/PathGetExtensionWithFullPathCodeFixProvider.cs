@@ -89,7 +89,7 @@ public sealed class PathGetExtensionWithFullPathCodeFixProvider : CodeFixProvide
             {
                 replacementExpression = SyntaxFactory.MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
-                    fullPathExpression.WithoutTrivia(),
+                    fullPathExpression.WithoutTrivia().Parenthesize(),
                     SyntaxFactory.IdentifierName("Extension"));
                 return true;
             }

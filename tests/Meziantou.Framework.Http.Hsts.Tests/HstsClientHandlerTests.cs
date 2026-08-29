@@ -170,6 +170,40 @@ public sealed class HstsClientHandlerTests
     }
 
     [Fact]
+    public async Task Header_IsReadWhenTheInnerHandlerDoesNotSetRequestMessage()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        using var client = new HttpClient(new HstsClientHandler(new NoRequestMessageHttpMessageHandler("max-age=31536000"), hsts), disposeHandler: true);
+
+        using var response = await client.GetAsync("https://example.com", XunitCancellationToken);
+
+        // A handler that builds its own response, such as a cache or a test double, may leave RequestMessage unset
+        Assert.Null(response.RequestMessage);
+        Assert.True(hsts.MustUpgradeRequest("example.com"));
+    }
+
+    [Fact]
+    public async Task Header_IsIgnoredForIPAddress_WhenTheInnerHandlerDoesNotSetRequestMessage()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        using var client = new HttpClient(new HstsClientHandler(new NoRequestMessageHttpMessageHandler("max-age=31536000"), hsts), disposeHandler: true);
+
+        using var response = await client.GetAsync("https://127.0.0.1", XunitCancellationToken);
+
+        Assert.False(hsts.MustUpgradeRequest("127.0.0.1"));
+    }
+
+    private sealed class NoRequestMessageHttpMessageHandler(string header) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK);
+            response.Headers.TryAddWithoutValidation("Strict-Transport-Security", header);
+            return Task.FromResult(response);
+        }
+    }
+
+    [Fact]
     public async Task Redirect_ToHstsHost_IsUpgraded()
     {
         var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);

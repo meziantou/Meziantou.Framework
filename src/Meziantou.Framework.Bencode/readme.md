@@ -23,7 +23,7 @@ var dictionary = (BencodeDictionary)document.Root;
 var cow = (BencodeString)dictionary[new BencodeString("cow"u8.ToArray())];
 Console.WriteLine(cow.ToUtf8String()); // moo
 
-var encoded = dictionary.ToArray();
+var encoded = dictionary.ToUtf8ByteArray(); // d3:cow3:moo4:spam4:eggse
 
 await using var stream = File.Create("output.bencode");
 await dictionary.WriteToAsync(stream);

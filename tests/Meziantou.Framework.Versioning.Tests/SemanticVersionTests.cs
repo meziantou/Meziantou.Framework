@@ -139,6 +139,29 @@ public class SemanticVersionTests
         Assert.Equal(version, semanticVersion.ToString());
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("G")]
+    [InlineData("g")]
+    public void ToString_SupportedFormats_ReturnTheGeneralFormat(string? format)
+    {
+        var version = SemanticVersion.Parse("1.0.0-alpha.1+build");
+
+        Assert.Equal("1.0.0-alpha.1+build", version.ToString(format, formatProvider: null));
+    }
+
+    [Theory]
+    [InlineData("X")]
+    [InlineData("zzz")]
+    [InlineData(" ")]
+    public void ToString_UnsupportedFormat_ShouldThrowFormatException(string format)
+    {
+        var version = SemanticVersion.Parse("1.0.0");
+
+        Assert.Throws<FormatException>(() => version.ToString(format, formatProvider: null));
+    }
+
     [Fact]
     public void Constructor_WithInvalidPrerelease_ShouldThrowException()
     {

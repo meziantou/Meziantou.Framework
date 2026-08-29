@@ -254,6 +254,7 @@ public sealed class ChangeJournal : IDisposable
     /// <summary>Enables range tracking for the change journal.</summary>
     /// <param name="chunkSize">The granularity of tracked ranges.</param>
     /// <param name="fileSizeThreshold">The file size threshold to start tracking ranges for files with equal or larger size.</param>
+    /// <remarks>Range tracking is reflected by <see cref="JournalData.Flags"/>, <see cref="JournalData.RangeTrackChunkSize"/> and <see cref="JournalData.RangeTrackFileSizeThreshold"/> on <see cref="Data"/>.</remarks>
     public void EnableTrackModifiedRanges(ulong chunkSize, long fileSizeThreshold)
     {
         var trackData = new USN_TRACK_MODIFIED_RANGES
@@ -263,5 +264,6 @@ public sealed class ChangeJournal : IDisposable
             FileSizeThreshold = fileSizeThreshold,
         };
         Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.TrackModifiedRanges, ref trackData, initialBufferLength: 0);
+        RefreshJournalData();
     }
 }

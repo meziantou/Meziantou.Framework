@@ -225,6 +225,21 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public async Task ParseAsync_CancelPendingRead_StopsTheParse()
+    {
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
+        await pipe.Writer.WriteAsync("l"u8.ToArray());
+
+        pipe.Reader.CancelPendingRead();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => parseTask.WaitAsync(TimeSpan.FromSeconds(30)));
+
+        await pipe.Writer.CompleteAsync();
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
     public async Task ParseAsync_UnterminatedIntegerDigits_AreRejectedInsteadOfBuffered()
     {
         var pipe = new Pipe();
@@ -236,6 +251,22 @@ public sealed class BencodeDocumentTests
         await pipe.Writer.WriteAsync(digits);
 
         await Assert.ThrowsAsync<FormatException>(() => parseTask.WaitAsync(TimeSpan.FromSeconds(30)));
+
+        await pipe.Writer.CompleteAsync();
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task ParseAsync_CancellationToken_StopsTheParse()
+    {
+        using var cts = new CancellationTokenSource();
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader, cts.Token).AsTask();
+        await pipe.Writer.WriteAsync("l"u8.ToArray());
+
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => parseTask.WaitAsync(TimeSpan.FromSeconds(30)));
 
         await pipe.Writer.CompleteAsync();
         await pipe.Reader.CompleteAsync();

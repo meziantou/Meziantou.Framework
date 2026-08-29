@@ -21,6 +21,24 @@ public sealed class HtpasswdFileTests
     }
 
     [Fact]
+    public void Parse_ShouldNotTrimThePasswordField()
+    {
+        var htpasswd = HtpasswdFile.Parse("alice: {SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=");
+
+        Assert.False(htpasswd.VerifyCredentials("alice", "password"));
+    }
+
+    [Fact]
+    public void Parse_ShouldNotTrimTheUsername()
+    {
+        var htpasswd = HtpasswdFile.Parse("  bob :{SHA}N/omUzCtg+qoee+x4ttjgIls9jk=");
+
+        Assert.Equal(["bob "], htpasswd.Usernames);
+        Assert.True(htpasswd.VerifyCredentials("bob ", "pwd"));
+        Assert.False(htpasswd.VerifyCredentials("bob", "pwd"));
+    }
+
+    [Fact]
     public void Parse_DuplicateUsername_ShouldKeepTheFirstEntry()
     {
         var htpasswd = HtpasswdFile.Parse("""

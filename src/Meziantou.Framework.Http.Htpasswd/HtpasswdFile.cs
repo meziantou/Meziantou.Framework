@@ -109,11 +109,11 @@ public sealed class HtpasswdFile
             if (separatorIndex <= 0)
                 continue;
 
-            var username = line[..separatorIndex].Trim();
+            var username = line[..separatorIndex];
             if (username.IsEmpty)
                 continue;
 
-            var passwordHash = line[(separatorIndex + 1)..].Trim();
+            var passwordHash = line[(separatorIndex + 1)..];
             if (passwordHash.IsEmpty)
                 continue;
 

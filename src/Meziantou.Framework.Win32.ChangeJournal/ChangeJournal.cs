@@ -86,7 +86,19 @@ public sealed class ChangeJournal : IDisposable
         if (handle.IsInvalid)
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
-        return new ChangeJournal(handle, unprivileged);
+        try
+        {
+            return new ChangeJournal(handle, unprivileged);
+        }
+        catch
+        {
+            // The constructor queries the journal, which fails on a volume that has no change journal support and while a
+            // deletion started by Delete(waitForCompletion: false) is still running. Ownership of the handle only passes to
+            // the caller once there is an instance to dispose, so it has to be closed here instead of waiting for the
+            // finalizer to reclaim an open volume handle.
+            handle.Dispose();
+            throw;
+        }
     }
 
     /// <summary>Gets change journal entries with the specified filter criteria.</summary>

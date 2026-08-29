@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
 public sealed class ProjectedFileSystemTests
@@ -378,6 +380,10 @@ public sealed class ProjectedFileSystemTests
     /// PrjStopVirtualizing only waits for callbacks that returned synchronously. A callback that
     /// handed back ERROR_IO_PENDING still has a PrjCompleteCommand to make, and making it against
     /// a context the driver has already destroyed is undefined behaviour.
+    ///
+    /// The assertion is on how long Stop blocked rather than on it still running at some instant:
+    /// the provider is released on a timer, so a Stop that drains correctly cannot return before
+    /// that timer fires, while a Stop that ignores pending commands returns almost immediately.
     /// </summary>
     [ProjectedFileSystemFact]
     public async Task StopWaitsForCommandsThatReturnedIoPending()
@@ -392,13 +398,23 @@ public sealed class ProjectedFileSystemTests
             var read = Task.Run(() => File.ReadAllBytes(Path.Combine(fullPath, "gated.bin")));
             await vfs.Entered.WaitAsync(TimeSpan.FromSeconds(30));
 
+            // Entering the provider happens just before ExecuteCallback registers the command, so
+            // let that settle: otherwise this races the registration instead of testing the drain.
+            await Task.Delay(TimeSpan.FromSeconds(1));
+
+            var holdFor = TimeSpan.FromSeconds(2);
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(holdFor);
+                vfs.Release();
+            });
+
+            var start = Stopwatch.GetTimestamp();
             var stop = Task.Run(vfs.Stop);
+            await stop.WaitAsync(TimeSpan.FromSeconds(60));
+            var elapsed = Stopwatch.GetElapsedTime(start);
 
-            // The provider has not produced the content yet, so Stop has nothing to drain to
-            Assert.NotSame(stop, await Task.WhenAny(stop, Task.Delay(TimeSpan.FromMilliseconds(500))));
-
-            vfs.Release();
-            await stop.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(elapsed >= holdFor / 2, $"Stop returned after {elapsed} without waiting for the pending command");
 
             // The read itself may fail once the instance is stopped; only Stop ordering matters here
             try { await read.WaitAsync(TimeSpan.FromSeconds(30)); } catch (IOException) { }

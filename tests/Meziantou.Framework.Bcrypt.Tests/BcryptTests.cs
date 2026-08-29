@@ -48,7 +48,6 @@ public sealed class BcryptTests
     [Theory]
     [InlineData(BcryptVersion.Revision2A, "$2a$")]
     [InlineData(BcryptVersion.Revision2B, "$2b$")]
-    [InlineData(BcryptVersion.Revision2X, "$2x$")]
     [InlineData(BcryptVersion.Revision2Y, "$2y$")]
     public void HashPassword_WithRevision_GeneratesExpectedPrefix(BcryptVersion version, string expectedPrefix)
     {
@@ -94,12 +93,67 @@ public sealed class BcryptTests
     }
 
     [Theory]
-    [InlineData("a", "$2x$12$DB3BUbYa/SsEL7kCOVji0OauTkPkB5Y1OeyfxJHM7jvMrbml5sgD2")]
     [InlineData("a", "$2y$12$DB3BUbYa/SsEL7kCOVji0OauTkPkB5Y1OeyfxJHM7jvMrbml5sgD2")]
     [InlineData("a", "$2b$12$DB3BUbYa/SsEL7kCOVji0OauTkPkB5Y1OeyfxJHM7jvMrbml5sgD2")]
     public void Verify_KnownHash_WithDifferentPrefixes(string password, string hash)
     {
         Assert.True(Bcrypt.Verify(password, hash));
+    }
+
+    [Fact]
+    public void Revision2X_IsRejectedEverywhereItWouldProduceAWrongResult()
+    {
+        const string Hash2X = "$2x$12$DB3BUbYa/SsEL7kCOVji0OauTkPkB5Y1OeyfxJHM7jvMrbml5sgD2";
+        const string Salt2X = "$2x$12$DB3BUbYa/SsEL7kCOVji0Oau";
+
+        Assert.Throws<NotSupportedException>(() => Bcrypt.GenerateSalt(12, BcryptVersion.Revision2X));
+        Assert.Throws<NotSupportedException>(() => Bcrypt.HashPassword("a", workFactor: 12, BcryptVersion.Revision2X));
+        Assert.Throws<NotSupportedException>(() => Bcrypt.HashPassword("a", Salt2X));
+        Assert.Throws<NotSupportedException>(() => Bcrypt.Verify("a", Hash2X));
+        Assert.Throws<NotSupportedException>(() => Bcrypt.Verify("a".AsSpan(), Hash2X.AsSpan()));
+    }
+
+    [Fact]
+    public void Revision2X_RemainsParseableSoExistingHashesCanBeFound()
+    {
+        const string Hash2X = "$2x$12$DB3BUbYa/SsEL7kCOVji0OauTkPkB5Y1OeyfxJHM7jvMrbml5sgD2";
+
+        Assert.True(Bcrypt.TryParseHash(Hash2X, out var info));
+        Assert.Equal(BcryptVersion.Revision2X, info.Version);
+        Assert.Equal(12, info.WorkFactor);
+        Assert.True(Bcrypt.NeedsRehash(Hash2X, workFactor: 12, version: BcryptVersion.Revision2B));
+    }
+
+    [Fact]
+    public void TryParseHash_NonCanonicalTrailingCharacter_ReturnsFalse()
+    {
+        const string Password = "abc";
+        var hash = Bcrypt.HashPassword(Password, "$2b$06$DCq7YPn5Rq63x1Lad4cll.");
+
+        Assert.True(Bcrypt.TryParseHash(hash, out _));
+        Assert.True(Bcrypt.Verify(Password, hash));
+
+        // The 22nd salt character contributes only 2 bits, so '.' and '/' decode to the same salt bytes.
+        // TryParseHash used to accept the alternative spelling that Verify can never match.
+        var nonCanonicalSalt = string.Concat(hash.AsSpan(0, 28), "/", hash.AsSpan(29));
+        Assert.False(Bcrypt.TryParseHash(nonCanonicalSalt, out _));
+        Assert.False(Bcrypt.Verify(Password, nonCanonicalSalt));
+
+        // The trailing digest character carries 2 unused bits for the same reason.
+        var nonCanonicalDigest = string.Concat(hash.AsSpan(0, hash.Length - 1), "/");
+        Assert.False(Bcrypt.TryParseHash(nonCanonicalDigest, out _));
+        Assert.False(Bcrypt.Verify(Password, nonCanonicalDigest));
+    }
+
+    [Theory]
+    [InlineData("$2b$06$DCq7YPn5Rq63x1Lad4cll/")]
+    [InlineData("$2b$06$DCq7YPn5Rq63x1Lad4c!!.")]
+    [InlineData("$2b$06$DCq7YPn5Rq63x1Lad4cl*.")]
+    public void HashPassword_MalformedSalt_ThrowsFormatException(string salt)
+    {
+        // These used to escape as ArgumentException naming private parameters ("saltBytes").
+        Assert.Throws<FormatException>(() => Bcrypt.HashPassword("abc", salt));
+        Assert.Throws<FormatException>(() => Bcrypt.HashPassword("abc".AsSpan(), salt.AsSpan()));
     }
 
     [Fact]
@@ -119,6 +173,36 @@ public sealed class BcryptTests
         Assert.False(Bcrypt.Verify(differentInFirst72Bytes, hash72));
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("a")]
+    [InlineData("password")]
+    public void HashPassword_LegacyRevision2_RoundTrips(string password)
+    {
+        const string Salt = "$2$06$DCq7YPn5Rq63x1Lad4cll.";
+
+        var hash = Bcrypt.HashPassword(password, Salt);
+
+        Assert.StartsWith("$2$06$", hash);
+        Assert.HasCount(59, hash);
+        Assert.True(Bcrypt.Verify(password, hash));
+    }
+
+    [Fact]
+    public void Verify_EmptyPasswordAgainstLegacyRevision2Hash_DoesNotThrow()
+    {
+        // An empty password used to throw ArgumentNullException here: the '$2$' revision appends no NUL
+        // terminator, so it is the only revision that can produce zero-length key material.
+        // Zero-length key material yields the same all-zero key schedule as the single NUL byte the 'a'
+        // revision appends, so this digest matches the well-known '$2a$06$' vector for an empty password.
+        const string Hash = "$2$06$DCq7YPn5Rq63x1Lad4cll.TV4S6ytwfsfvkgY8jIucDrjc8deX1s.";
+
+        Assert.True(Bcrypt.TryParseHash(Hash, out _));
+        Assert.True(Bcrypt.Verify("", Hash));
+        Assert.True(Bcrypt.Verify("".AsSpan(), Hash.AsSpan()));
+        Assert.False(Bcrypt.Verify("not-empty", Hash));
+    }
+
     [Fact]
     public void Verify_InvalidLengthHash_ReturnsFalse()
     {
@@ -130,6 +214,72 @@ public sealed class BcryptTests
     }
 
     [Fact]
+    public void Verify_PasswordWithUnpairedSurrogate_ReturnsFalse()
+    {
+        // Unpaired surrogates used to escape as EncoderFallbackException from a method returning bool.
+        const string Hash = "$2b$04$2Siw3Nv3Q/gTOIPetAyPr.GNj3aO0lb1E5E9UumYGKjP9BYqlNWJe";
+
+        foreach (var password in UnpairedSurrogatePasswords())
+        {
+            Assert.False(Bcrypt.Verify(password, Hash));
+            Assert.False(Bcrypt.Verify(password.AsSpan(), Hash.AsSpan()));
+        }
+    }
+
+    [Fact]
+    public void HashPassword_PasswordWithUnpairedSurrogate_ThrowsArgumentException()
+    {
+        var salt = Bcrypt.GenerateSalt(4);
+
+        foreach (var password in UnpairedSurrogatePasswords())
+        {
+            // Guard against the inputs silently becoming encodable and making the assertions below vacuous.
+            Assert.Throws<EncoderFallbackException>(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true).GetByteCount(password));
+
+            Assert.Equal("password", Assert.Throws<ArgumentException>(() => Bcrypt.HashPassword(password, workFactor: 4)).ParamName);
+            Assert.Equal("password", Assert.Throws<ArgumentException>(() => Bcrypt.HashPassword(password, salt)).ParamName);
+        }
+    }
+
+    [Fact]
+    public void Verify_UnpairedSurrogateAgainstUnsupportedRevision_StillReportsTheRevision()
+    {
+        // The hash is validated before the password is encoded, so an unsupported revision fails loudly
+        // even when the password is itself invalid: the revision is a property of stored data and the
+        // caller needs to learn about it.
+        const string Hash2X = "$2x$12$DB3BUbYa/SsEL7kCOVji0OauTkPkB5Y1OeyfxJHM7jvMrbml5sgD2";
+
+        foreach (var password in UnpairedSurrogatePasswords())
+        {
+            Assert.Throws<NotSupportedException>(() => Bcrypt.Verify(password, Hash2X));
+        }
+    }
+
+    // Built in code rather than through [InlineData]: xunit round-trips theory data through UTF-8,
+    // which replaces unpaired surrogates with U+FFFD and would make these tests vacuous.
+    private static string[] UnpairedSurrogatePasswords() =>
+    [
+        "\ud800",
+        "\udc00",
+        "ab\ud800cd",
+        "ab\udc00cd",
+        "trailing\ud83d",
+    ];
+
+    [Theory]
+    [InlineData("caf\u00e9")]
+    [InlineData("\u4f60\u597d\u4e16\u754c")]
+    [InlineData("\ud83d\ude00 emoji")]
+    [InlineData("\u00ff\u00ffabc")]
+    public void HashPassword_NonAsciiPassword_RoundTrips(string password)
+    {
+        var hash = Bcrypt.HashPassword(password, workFactor: 4);
+
+        Assert.True(Bcrypt.Verify(password, hash));
+        Assert.False(Bcrypt.Verify(password + "x", hash));
+    }
+
+    [Fact]
     public void NeedsRehash_ReturnsExpectedValue()
     {
         var hash = Bcrypt.HashPassword("password", workFactor: 6, version: BcryptVersion.Revision2A);
@@ -137,6 +287,129 @@ public sealed class BcryptTests
         Assert.False(Bcrypt.NeedsRehash(hash, workFactor: 6, version: BcryptVersion.Revision2A));
         Assert.True(Bcrypt.NeedsRehash(hash, workFactor: 7, version: BcryptVersion.Revision2A));
         Assert.True(Bcrypt.NeedsRehash(hash, workFactor: 6, version: BcryptVersion.Revision2B));
+    }
+
+    [Theory]
+    [InlineData(Bcrypt.MinWorkFactor - 1)]
+    [InlineData(Bcrypt.MaxWorkFactor + 1)]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void GenerateSalt_WorkFactorOutOfRange_Throws(int workFactor)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => Bcrypt.GenerateSalt(workFactor));
+    }
+
+    [Fact]
+    public void GenerateSalt_UnsupportedVersion_Throws()
+    {
+        Assert.Throws<NotSupportedException>(() => Bcrypt.GenerateSalt(version: BcryptVersion.Revision2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Bcrypt.GenerateSalt(version: (BcryptVersion)99));
+    }
+
+    [Fact]
+    public void GenerateSalt_ProducesDistinctSaltsOfExpectedShape()
+    {
+        var salts = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = 0; i < 32; i++)
+        {
+            var salt = Bcrypt.GenerateSalt(4);
+
+            Assert.StartsWith("$2b$04$", salt);
+            Assert.HasCount(29, salt);
+            Assert.True(salts.Add(salt), "GenerateSalt returned a duplicate salt");
+        }
+    }
+
+    [Fact]
+    public void NeedsRehash_InvalidHash_ThrowsFormatException()
+    {
+        Assert.Throws<FormatException>(() => Bcrypt.NeedsRehash("not-a-hash"));
+        Assert.Throws<FormatException>(() => Bcrypt.NeedsRehash("not-a-hash".AsSpan()));
+    }
+
+    [Theory]
+    [InlineData(Bcrypt.MinWorkFactor - 1)]
+    [InlineData(Bcrypt.MaxWorkFactor + 1)]
+    public void NeedsRehash_WorkFactorOutOfRange_Throws(int workFactor)
+    {
+        var hash = Bcrypt.HashPassword("password", workFactor: 4);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => Bcrypt.NeedsRehash(hash, workFactor));
+    }
+
+    [Fact]
+    public void NullArguments_Throw()
+    {
+        const string Hash = "$2b$04$2Siw3Nv3Q/gTOIPetAyPr.GNj3aO0lb1E5E9UumYGKjP9BYqlNWJe";
+
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.HashPassword(password: null!));
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.HashPassword(password: null!, salt: "$2b$04$2Siw3Nv3Q/gTOIPetAyPr."));
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.HashPassword(password: "a", salt: null!));
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.Verify(password: null!, hash: Hash));
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.Verify(password: "a", hash: null!));
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.ParseHash(hash: null!));
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.NeedsRehash(hash: null!));
+
+        Assert.False(Bcrypt.TryParseHash(null, out _));
+    }
+
+    [Fact]
+    public void BcryptHashInfo_EqualityMembers()
+    {
+        var info = new BcryptHashInfo(BcryptVersion.Revision2B, 11);
+        var same = new BcryptHashInfo(BcryptVersion.Revision2B, 11);
+        var otherVersion = new BcryptHashInfo(BcryptVersion.Revision2A, 11);
+        var otherWorkFactor = new BcryptHashInfo(BcryptVersion.Revision2B, 12);
+
+        Assert.Equal(BcryptVersion.Revision2B, info.Version);
+        Assert.Equal(11, info.WorkFactor);
+
+        Assert.Equal(same, info);
+        Assert.Equal((object)same, (object)info);
+        Assert.True(info == same);
+        Assert.False(info != same);
+        Assert.Equal(info.GetHashCode(), same.GetHashCode());
+
+        Assert.NotEqual(otherVersion, info);
+        Assert.NotEqual(otherWorkFactor, info);
+        Assert.True(info != otherVersion);
+        Assert.True(info != otherWorkFactor);
+
+        object differentType = "not a BcryptHashInfo";
+        Assert.False(info.Equals(differentType));
+        Assert.False(info.Equals(null));
+    }
+
+    [Fact]
+    public void HashPassword_MultiByteCharacterStraddlingTheLimit_IsTruncatedMidCharacter()
+    {
+        // Only the first 72 UTF-8 bytes are used. 'e' with an acute accent and 'e' with a circumflex
+        // share their first UTF-8 byte (0xC3), which lands at byte 71 here, so the two passwords
+        // are indistinguishable. This pins the behaviour rather than endorsing it.
+        const string Salt = "$2b$04$xnFVhJsTzsFBTeP3PpgbMe";
+
+        var acute = new string('a', 71) + "\u00e9zzz";
+        var circumflex = new string('a', 71) + "\u00eazzz";
+
+        Assert.Equal(Bcrypt.HashPassword(acute, Salt), Bcrypt.HashPassword(circumflex, Salt));
+        Assert.True(Bcrypt.Verify(circumflex, Bcrypt.HashPassword(acute, Salt)));
+    }
+
+    [Fact]
+    public void HashPassword_IsSafeToUseConcurrently()
+    {
+        // Bcrypt is a static facade over per-call BcryptImplementation state.
+        var passwords = Enumerable.Range(0, 32).Select(i => $"password-{i}").ToArray();
+
+        var hashes = new string[passwords.Length];
+        Parallel.For(0, passwords.Length, i => hashes[i] = Bcrypt.HashPassword(passwords[i], workFactor: 4));
+
+        for (var i = 0; i < passwords.Length; i++)
+        {
+            Assert.True(Bcrypt.Verify(passwords[i], hashes[i]));
+        }
+
+        Assert.HasCount(passwords.Length, hashes.Distinct(StringComparer.Ordinal).ToArray());
     }
 
     [Fact]

@@ -46,7 +46,6 @@ internal abstract class GitTool : MergeTool
         var psi = new ProcessStartInfo(gitPath)
         {
             Arguments = "config --get --null " + key,
-            RedirectStandardError = true,
             RedirectStandardOutput = true,
             WorkingDirectory = workingDirectory,
             CreateNoWindow = true,
@@ -57,11 +56,10 @@ internal abstract class GitTool : MergeTool
         if (process is null)
             return null;
 
-        // Both pipes must be drained while git is still running. Waiting for exit first deadlocks as soon as
-        // git writes more than a pipe buffer to either stream - stderr carries warnings such as the
-        // safe.directory ownership diagnostics, which is not something this call can rule out.
+        // The pipe must be drained while git is still running. Waiting for exit first deadlocks as soon as git
+        // writes more than a pipe buffer. Only stdout is redirected: stderr carries warnings such as the
+        // safe.directory ownership diagnostics that nothing here reads, so it is left inherited.
         var standardOutput = process.StandardOutput.ReadToEndAsync();
-        var standardError = process.StandardError.ReadToEndAsync();
 
         // This runs on the failure path of every failing snapshot assertion, so a git that never returns must
         // not take the test run down with it.
@@ -71,8 +69,8 @@ internal abstract class GitTool : MergeTool
             return null;
         }
 
-        // WaitForExit(int) returns as soon as the process ends, without waiting for the redirected streams.
-        if (!Task.WaitAll([standardOutput, standardError], GitConfigurationTimeoutInMilliseconds))
+        // WaitForExit(int) returns as soon as the process ends, without waiting for the redirected stream.
+        if (!standardOutput.Wait(GitConfigurationTimeoutInMilliseconds))
             return null;
 
         if (process.ExitCode != 0)

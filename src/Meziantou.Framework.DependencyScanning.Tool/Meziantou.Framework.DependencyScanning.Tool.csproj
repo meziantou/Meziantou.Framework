@@ -4,11 +4,12 @@
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Version>2.0.7</Version>
+    <Version>2.0.8</Version>
     <Description>CLI tool to update dependencies in source repositories</Description>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NuGet.Configuration" Version="7.9.0" />
     <PackageReference Include="NuGet.Protocol" Version="7.9.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.11" />
   </ItemGroup>

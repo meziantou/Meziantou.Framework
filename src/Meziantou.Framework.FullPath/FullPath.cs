@@ -268,7 +268,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        return new FullPath(Path.ChangeExtension(_value, extension));
+        return FromPath(Path.ChangeExtension(_value, extension));
     }
 
     /// <summary>Returns a new path with the specified file extension, optionally replacing all trailing extensions.</summary>
@@ -311,12 +311,12 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         }
 
         if (string.IsNullOrEmpty(extension))
-            return new FullPath(current);
+            return FromPath(current);
 
         if (!extension.StartsWith('.', StringComparison.Ordinal))
             extension = "." + extension;
 
-        return new FullPath(current + extension);
+        return FromPath(current + extension);
     }
 
     /// <summary>Returns a new path with the specified name, keeping the same parent directory.</summary>
@@ -328,11 +328,9 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        var parent = Path.GetDirectoryName(_value);
-        if (parent is null)
-            return new FullPath(name);
-
-        return new FullPath(Path.Combine(parent, name));
+        // A null directory name means the path is already a root (such as "/" or @"C:\"), which is its own parent here
+        var parent = Path.GetDirectoryName(_value) ?? _value;
+        return FromPath(Path.Combine(parent, name));
     }
 
     /// <summary>Returns a new path with the specified name, keeping the same parent directory but without changing the extension.</summary>
@@ -344,13 +342,11 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         if (IsEmpty)
             return Empty;
 
-        var parent = Path.GetDirectoryName(_value);
+        // A null directory name means the path is already a root (such as "/" or @"C:\"), which is its own parent here
+        var parent = Path.GetDirectoryName(_value) ?? _value;
         var extension = Path.GetExtension(_value);
         var newName = nameWithoutExtension + extension;
-        if (parent is null)
-            return new FullPath(newName);
-
-        return new FullPath(Path.Combine(parent, newName));
+        return FromPath(Path.Combine(parent, newName));
     }
 
     /// <summary>Gets the path of the system's temporary folder.</summary>
@@ -435,9 +431,19 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     public static FullPath CurrentDirectory() => FromPath(Environment.CurrentDirectory);
 
     /// <summary>Creates a <see cref="FullPath"/> from a string path by converting it to an absolute path.</summary>
-    /// <param name="path">The path to convert. Can be relative or absolute.</param>
+    /// <param name="path">The path to convert. Can be relative or absolute. An empty string returns <see cref="Empty"/>.</param>
     public static FullPath FromPath(string path)
     {
+        // A path that resolves to nothing already returns Empty below; an empty input is the same case, and
+        // Path.GetFullPath would throw before reaching it. Environment.GetFolderPath returns "" for a folder
+        // that is not defined on the platform, which makes this a routine input rather than a caller error.
+        //
+        // Empty rather than CurrentDirectory: "" means "no path", not "the current directory". Resolving it against
+        // the current directory would turn an undefined special folder into a real, writable location. "." is the
+        // spelling for the current directory, and Path.GetFullPath("") throws rather than treating the two alike.
+        if (path is { Length: 0 })
+            return Empty;
+
         // '\' is a regular file name character on Unix, so a path such as @"\\?\a" is a relative file name there, not a device path
         if (OperatingSystem.IsWindows() && PathInternal.IsExtended(path))
         {
@@ -668,12 +674,16 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                     string? resultPath = null;
                     var current = this;
                     var hasSymLink = false;
-                    var componentDepth = 0;
+
+                    // Counts every link resolved by this walk, not just consecutive ones. Resetting it per component
+                    // would let two links that reference each other through a directory alternate forever, because
+                    // each resolution is separated by a component that is not itself a link.
+                    var resolvedLinkCount = 0;
                     while (!current.IsEmpty)
                     {
                         if (Symlink.TryGetSymLinkTarget(current._value, out path))
                         {
-                            if (++componentDepth > MaxSymbolicLinkDepth)
+                            if (++resolvedLinkCount > MaxSymbolicLinkDepth)
                                 throw CreateTooManyLevelsOfSymbolicLinksException();
 
                             current = FromPath(path);
@@ -692,7 +702,6 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                             }
 
                             current = current.Parent;
-                            componentDepth = 0;
                         }
                     }
 

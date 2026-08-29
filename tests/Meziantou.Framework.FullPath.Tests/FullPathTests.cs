@@ -14,6 +14,30 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public void FromPath_EmptyString_ReturnsEmpty()
+    {
+        Assert.True(FullPath.FromPath("").IsEmpty);
+        Assert.Equal(FullPath.Empty, FullPath.FromPath(""));
+        Assert.Equal(FullPath.Empty, FullPath.FromPath(string.Empty));
+    }
+
+    [Fact]
+    public void FromPath_EmptyString_IsNotTheCurrentDirectory()
+    {
+        Assert.NotEqual(FullPath.CurrentDirectory(), FullPath.FromPath(""));
+        Assert.Equal(FullPath.CurrentDirectory(), FullPath.FromPath("."));
+    }
+
+    [Fact]
+    public void FromPath_RoundTripsTheStringRepresentation()
+    {
+        Assert.Equal(FullPath.Empty, FullPath.FromPath(FullPath.Empty.Value));
+
+        var path = FullPath.FromPath("test");
+        Assert.Equal(path, FullPath.FromPath(path.Value));
+    }
+
+    [Fact]
     public void Properties()
     {
         var path = FullPath.FromPath("test") / "a" / "b.txt";
@@ -46,6 +70,105 @@ public sealed class FullPathTests
         var path = FullPath.FromPath("test") / "a" / "b.txt";
         var newPath = path.WithNameWithoutExtension("c");
         Assert.Equal(FullPath.FromPath("test") / "a" / "c.txt", newPath);
+    }
+
+    [Fact]
+    public void ChangeName_NormalizesTheResultingPath()
+    {
+        var root = FullPath.FromPath("test");
+        var path = root / "a" / "b.txt";
+
+        var newPath = path.WithName("../c.txt");
+
+        Assert.Equal(root / "c.txt", newPath);
+        Assert.Equal(FullPath.FromPath(newPath.RawValue), newPath);
+    }
+
+    [Fact]
+    public void ChangeName_EscapingTheRootIsNotReportedAsAChild()
+    {
+        var root = FullPath.FromPath("test");
+        var path = root / "a" / "b.txt";
+
+        var newPath = path.WithName("../../../../etc/passwd");
+
+        Assert.False(newPath.IsChildOf(root));
+        Assert.Equal(FullPath.FromPath(newPath.RawValue), newPath);
+    }
+
+    [Fact]
+    public void ChangeName_RootDirectory()
+    {
+        var root = GetRootDirectory();
+
+        var newPath = root.WithName("temp");
+
+        Assert.Equal(root / "temp", newPath);
+    }
+
+    [Fact]
+    public void ChangeName_EmbeddedNullCharacterIsRejected()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.txt";
+
+        Assert.Throws<ArgumentException>(() => path.WithName("a\0b"));
+    }
+
+    [Fact]
+    public void ChangeNameWithoutExtension_NormalizesTheResultingPath()
+    {
+        var root = FullPath.FromPath("test");
+        var path = root / "a" / "b.txt";
+
+        var newPath = path.WithNameWithoutExtension("../c");
+
+        Assert.Equal(root / "c.txt", newPath);
+    }
+
+    [Fact]
+    public void ChangeNameWithoutExtension_RootDirectory()
+    {
+        var root = GetRootDirectory();
+
+        var newPath = root.WithNameWithoutExtension("temp");
+
+        Assert.Equal(root / "temp", newPath);
+    }
+
+    [Fact]
+    public void ChangeExtension_NormalizesTheResultingPath()
+    {
+        var root = FullPath.FromPath("test");
+        var path = root / "a" / "b.txt";
+
+        var newPath = path.WithExtension("/../../c");
+
+        Assert.Equal(FullPath.FromPath(newPath.RawValue), newPath);
+        Assert.False(newPath.IsChildOf(root / "a"));
+    }
+
+    [Fact]
+    public void ChangeExtension_DotFileKeepsNoTrailingSeparator()
+    {
+        var parent = FullPath.FromPath("test") / "a";
+        var path = parent / ".gitignore";
+
+        var newPath = path.WithExtension(null);
+
+        Assert.Equal(parent, newPath);
+        Assert.Equal(parent.RawValue, newPath.RawValue);
+    }
+
+    [Fact]
+    public void ChangeMultipleExtensions_DotFileKeepsNoTrailingSeparator()
+    {
+        var parent = FullPath.FromPath("test") / "a";
+        var path = parent / ".gitignore";
+
+        var newPath = path.WithExtension(null, replaceAllTrailingExtensions: true);
+
+        Assert.Equal(parent, newPath);
+        Assert.Equal(parent.RawValue, newPath.RawValue);
     }
 
     [Fact]
@@ -388,6 +511,20 @@ public sealed class FullPathTests
         Assert.Equal(b, immediate);
 
         Assert.Throws<IOException>(() => { a.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.FinalTarget, out _); });
+        Assert.Throws<IOException>(() => { a.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out _); });
+    }
+
+    [Fact]
+    public async Task ResolveSymlink_CycleThroughADirectoryLink()
+    {
+        // The links reference each other through a directory component, so the walk alternates between resolving a
+        // link and consuming a component that is not one
+        await using var temp = TemporaryDirectory.Create();
+        var a = temp.GetFullPath("a");
+        var b = temp.GetFullPath("b");
+        CreateSymlink(a, Path.Combine("b", "c"), isDirectory: true);
+        CreateSymlink(b, "a", isDirectory: true);
+
         Assert.Throws<IOException>(() => { a.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out _); });
     }
 

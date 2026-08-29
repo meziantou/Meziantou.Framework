@@ -67,7 +67,10 @@ public sealed class RedundantFromPathAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        if (innerMethod.Name is "Combine" or "Join")
+        // Path.Join is deliberately NOT included: it concatenates unconditionally, while FullPath.Combine
+        // (like Path.Combine) discards everything before a rooted segment. It also has ReadOnlySpan<char>
+        // overloads that FullPath.Combine does not provide.
+        if (innerMethod.Name is "Combine")
         {
             context.ReportDiagnostic(Descriptor, invocationOperation, "FullPath.Combine");
         }

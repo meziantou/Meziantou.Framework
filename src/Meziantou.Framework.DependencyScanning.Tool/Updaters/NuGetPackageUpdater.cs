@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using NuGet.Common;
+using NuGet.Configuration;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
@@ -8,7 +9,7 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 
 internal sealed class NuGetPackageUpdater : PackageUpdater
 {
-    private const string NuGetOrgSource = "https://api.nuget.org/v3/index.json";
+    private static readonly PackageSource NuGetOrgSource = new("https://api.nuget.org/v3/index.json");
     public override VersioningStrategy VersioningStrategy { get; set; } = NuGetVersioningStrategy.Instance;
 
     protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.NuGet && dependency.Name is not null;
@@ -20,7 +21,7 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
             yield break;
 
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(dependencyLocation), dependency.Name);
-        IReadOnlyList<string> sources;
+        IReadOnlyList<PackageSource> sources;
         if (resolution.PackageSources.Count > 0)
         {
             sources = resolution.PackageSources;
@@ -81,10 +82,13 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
         }
     }
 
-    private static async IAsyncEnumerable<PackageVersion> GetVersionsFromSourceWithMetadataAsync(string sourceUrl, string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<PackageVersion> GetVersionsFromSourceWithMetadataAsync(PackageSource source, string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         using var cache = new SourceCacheContext { NoCache = true };
-        var repository = Repository.Factory.GetCoreV3(sourceUrl);
+
+        // The PackageSource overload carries the credentials, client certificates and protocol settings
+        // declared in the configuration file, so authenticated private feeds work.
+        var repository = Repository.Factory.GetCoreV3(source);
         var metadataResource = await repository.GetResourceAsync<PackageMetadataResource>(cancellationToken).ConfigureAwait(false);
 
         if (metadataResource is null)

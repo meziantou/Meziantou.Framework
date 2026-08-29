@@ -130,4 +130,26 @@ public sealed class UseCreateParentDirectoryRuleTests : FullPathAnalyzerTestBase
 
         await CreateAnalyzerTest<DirectoryGetParentWithFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_ForCreateDirectoryWithUnixFileMode()
+    {
+        var source = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static void M(FullPath fullPath)
+                    {
+                        Directory.CreateDirectory(fullPath.Parent, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<UseCreateParentDirectoryAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
 }

@@ -21,7 +21,7 @@ public sealed class UseCreateParentDirectoryCodeFixProvider : FullPathCodeFixPro
         CancellationToken cancellationToken,
         out ExpressionSyntax replacementExpression)
     {
-        if (semanticModel.GetOperation(expressionSyntax, cancellationToken) is IInvocationOperation { Arguments.Length: > 0 } invocationOperation &&
+        if (semanticModel.GetOperation(expressionSyntax, cancellationToken) is IInvocationOperation { Arguments.Length: 1 } invocationOperation &&
             invocationOperation.TargetMethod is { IsStatic: true, Name: "CreateDirectory" } targetMethod &&
             SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, analyzerContext.DirectoryType) &&
             analyzerContext.UnwrapToFullPath(invocationOperation.Arguments[0].Value) is IPropertyReferenceOperation { Property.Name: "Parent", Instance: { } instance } property &&

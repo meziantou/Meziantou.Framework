@@ -46,7 +46,7 @@ public static class MarkOfTheWeb
 
     /// <summary>Gets the security zone of a file using the Windows Security Manager COM API.</summary>
     /// <param name="filePath">The path to the file to query.</param>
-    /// <returns>The <see cref="UrlZone"/> of the file, or <see cref="UrlZone.Invalid"/> if the zone cannot be determined.</returns>
+    /// <returns>The <see cref="UrlZone"/> of the file, or <see cref="UrlZone.Invalid"/> if the zone cannot be determined, which includes a full path of 260 characters or more.</returns>
     [SupportedOSPlatform("windows")]
     public static UrlZone GetFileZone(string filePath)
     {
@@ -56,6 +56,8 @@ public static class MarkOfTheWeb
             return UrlZone.Invalid;
 
         filePath = Path.GetFullPath(filePath);
+        if (filePath.Length >= MaxPathLength)
+            return UrlZone.Invalid;
 
         try
         {
@@ -161,7 +163,8 @@ public static class MarkOfTheWeb
     /// Files outside of the Local Machine, Trusted, and Intranet zones are considered untrusted.
     /// </summary>
     /// <param name="filePath">The path to the file to check.</param>
-    /// <returns><see langword="true"/> if the file is from an untrusted zone (Internet or Restricted); otherwise, <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> if the file is from an untrusted zone (Internet or Restricted), or if its zone cannot be determined; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>Returns <see langword="true"/> when the full path is 260 characters or more, because the zone of such a file cannot be read.</remarks>
     [SupportedOSPlatform("windows")]
     public static bool IsUntrusted(string filePath)
     {
@@ -171,6 +174,11 @@ public static class MarkOfTheWeb
             return false;
 
         filePath = Path.GetFullPath(filePath);
+
+        // The zone cannot be read for such a path, so report the file as untrusted rather than
+        // vouching for it. Same choice as when the security manager cannot be created below.
+        if (filePath.Length >= MaxPathLength)
+            return true;
 
         var hr = PInvoke.CoInternetCreateSecurityManager(pSP: null, out var securityManager, dwReserved: 0);
         if (hr.Failed || securityManager is null)
@@ -194,4 +202,11 @@ public static class MarkOfTheWeb
             Marshal.ReleaseComObject(securityManager);
         }
     }
+
+    // MapUrlToZone stops reading the file once the path reaches MAX_PATH and answers
+    // URLZONE_UNTRUSTED, so the zone it reports for a longer path was never read from the file at
+    // all -- an unmarked local file comes back as Restricted. Neither the extended-length form nor a
+    // file URL avoids this: urlmon rejects the former outright and the latter loses the mark on
+    // names that are not pure ASCII, so the only honest answer is that the zone is unknown.
+    private const int MaxPathLength = 260;
 }

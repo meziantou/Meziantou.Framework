@@ -266,4 +266,65 @@ public sealed class MarkOfTheWebTests
             File.Delete(path);
         }
     }
+
+    // MapUrlToZone answers URLZONE_UNTRUSTED for any path of MAX_PATH characters or more without
+    // reading the file, so an unmarked local file used to be reported as Restricted and untrusted.
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetFileZone_ReturnsInvalid_WhenThePathReachesMaxPath()
+    {
+        var directory = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
+        try
+        {
+            var path = CreateFileWithPathLength(directory, length: 260);
+
+            Assert.Equal(UrlZone.Invalid, MarkOfTheWeb.GetFileZone(path));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void IsUntrusted_ReturnsTrue_WhenThePathReachesMaxPath()
+    {
+        var directory = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
+        try
+        {
+            var path = CreateFileWithPathLength(directory, length: 260);
+
+            Assert.True(MarkOfTheWeb.IsUntrusted(path));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetFileZone_StillResolvesTheZone_JustBelowMaxPath()
+    {
+        var directory = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
+        try
+        {
+            var path = CreateFileWithPathLength(directory, length: 259);
+
+            Assert.Equal(UrlZone.LocalMachine, MarkOfTheWeb.GetFileZone(path));
+            Assert.False(MarkOfTheWeb.IsUntrusted(path));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    private static string CreateFileWithPathLength(DirectoryInfo directory, int length)
+    {
+        var name = new string('a', length - directory.FullName.Length - 1 - ".txt".Length) + ".txt";
+        var path = Path.Combine(directory.FullName, name);
+        Assert.HasCount(length, path);
+
+        File.WriteAllText(path, "");
+        return path;
+    }
 }

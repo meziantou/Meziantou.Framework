@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <IsTrimmable>false</IsTrimmable>
+    <IsTrimmable>true</IsTrimmable>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>3.0.2</Version>
     <Description>FullPath makes it easier to deal with paths</Description>

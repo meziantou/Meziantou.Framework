@@ -32,6 +32,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.DnsClient\Meziantou.Framework.DnsClient.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.DnsFilter\Meziantou.Framework.DnsFilter.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.FixedStringBuilder\Meziantou.Framework.FixedStringBuilder.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Globbing\Meziantou.Framework.Globbing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http\Meziantou.Framework.Http.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching\Meziantou.Framework.Http.Caching.csproj" />
@@ -95,6 +96,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.DnsClient" />
     <TrimmerRootAssembly Include="Meziantou.Framework.DnsFilter" />
     <TrimmerRootAssembly Include="Meziantou.Framework.FixedStringBuilder" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.FullPath" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Globbing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.Caching" />

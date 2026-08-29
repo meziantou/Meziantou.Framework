@@ -25,6 +25,8 @@ namespace Meziantou.Framework.Win32;
 /// </example>
 public static class MarkOfTheWeb
 {
+    private static readonly UTF8Encoding ZoneIdentifierEncoding = new(encoderShouldEmitUTF8Identifier: false);
+
     /// <summary>Removes the Mark of the Web zone information from a file by deleting the Zone.Identifier alternate data stream.</summary>
     /// <param name="filePath">The path to the file from which to remove the zone information.</param>
     public static void RemoveFileZone(string filePath)
@@ -81,6 +83,10 @@ public static class MarkOfTheWeb
     /// <summary>Gets the raw content of the Zone.Identifier alternate data stream from a file.</summary>
     /// <param name="filePath">The path to the file to read.</param>
     /// <returns>The content of the Zone.Identifier stream, or <see langword="null"/> if the file does not have zone information.</returns>
+    /// <remarks>
+    /// Windows and web browsers write the stream as ASCII. A byte order mark, if present, takes precedence,
+    /// so streams written as UTF-16 by earlier versions of this library are still decoded correctly.
+    /// </remarks>
     public static string? GetFileZoneContent(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
@@ -90,7 +96,9 @@ public static class MarkOfTheWeb
 
         try
         {
-            return File.ReadAllText(adsPath, Encoding.Unicode);
+            // File.ReadAllText honors a byte order mark when there is one and falls back to the
+            // requested encoding otherwise. UTF-8 is a superset of the ASCII that Windows writes.
+            return File.ReadAllText(adsPath, Encoding.UTF8);
         }
         catch (FileNotFoundException)
         {
@@ -121,7 +129,10 @@ public static class MarkOfTheWeb
 
         filePath = Path.GetFullPath(filePath);
         var adsPath = filePath + ":Zone.Identifier";
-        using var writer = new StreamWriter(adsPath, append: false, Encoding.Unicode);
+
+        // Windows and web browsers write the stream as ASCII. UTF-8 without a byte order mark produces
+        // the same bytes for the ASCII that URLs are normally made of, while still preserving the rest.
+        using var writer = new StreamWriter(adsPath, append: false, ZoneIdentifierEncoding);
         writer.WriteLine("[ZoneTransfer]");
         writer.WriteLine("ZoneId=" + ((int)zone).ToString(CultureInfo.InvariantCulture));
         if (referrerUrl is not null)

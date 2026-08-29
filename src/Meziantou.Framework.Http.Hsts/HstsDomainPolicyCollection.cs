@@ -3,6 +3,7 @@ using System.Collections;
 using System.Runtime.InteropServices;
 using System.IO.Compression;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace Meziantou.Framework.Http;
 
@@ -22,6 +23,18 @@ namespace Meziantou.Framework.Http;
 /// }
 /// </code>
 /// </example>
+/// <remarks>
+/// <para>
+/// Host names are IDNA-canonicalized to their Punycode form and then matched with an ordinal, case-insensitive
+/// comparison, so an internationalized domain matches whichever of its two forms is used. The preload list stores
+/// Punycode names, and <see cref="HstsClientHandler"/> looks policies up with <see cref="Uri.IdnHost"/>, which is
+/// already in that form; an ASCII host name is never converted.
+/// </para>
+/// <para>
+/// <see cref="HstsDomainPolicy.Host"/> reports the canonicalized name, which may differ from the one that was
+/// passed to <see cref="Add(string, DateTimeOffset, bool)"/>.
+/// </para>
+/// </remarks>
 public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainPolicy>
 {
     private readonly Lock _lock = new();
@@ -87,7 +100,7 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     }
 
     /// <summary>Adds or updates an HSTS policy for the specified host with a maximum age.</summary>
-    /// <param name="host">The domain host name.</param>
+    /// <param name="host">The domain host name. An internationalized domain may be given in either its Unicode or its Punycode form.</param>
     /// <param name="maxAge">The duration for which the HSTS policy should be in effect.</param>
     /// <param name="includeSubdomains">If <see langword="true"/>, the policy applies to all subdomains of the host.</param>
     public void Add(string host, TimeSpan maxAge, bool includeSubdomains)
@@ -103,14 +116,15 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     }
 
     /// <summary>Adds or updates an HSTS policy for the specified host with an expiration date.</summary>
-    /// <param name="host">The domain host name.</param>
+    /// <param name="host">The domain host name. An internationalized domain may be given in either its Unicode or its Punycode form.</param>
     /// <param name="expiresAt">The date and time when the HSTS policy expires.</param>
     /// <param name="includeSubdomains">If <see langword="true"/>, the policy applies to all subdomains of the host.</param>
+    /// <exception cref="ArgumentException"><paramref name="host"/> contains an empty label, or cannot be converted to its Punycode form.</exception>
     public void Add(string host, DateTimeOffset expiresAt, bool includeSubdomains)
     {
         ArgumentNullException.ThrowIfNull(host);
 
-        host = NormalizeHost(host);
+        host = NormalizeHostForStorage(host);
         if (HasEmptyLabel(host))
             throw new ArgumentException($"The host name '{host}' contains an empty label.", nameof(host));
 
@@ -143,7 +157,7 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     }
 
     /// <summary>Removes the HSTS policy for the specified host, including a policy from the preload list.</summary>
-    /// <param name="host">The domain host name.</param>
+    /// <param name="host">The domain host name. An internationalized domain may be given in either its Unicode or its Punycode form.</param>
     /// <returns><see langword="true"/> if a policy was removed; otherwise, <see langword="false"/>.</returns>
     public bool Remove(string host)
     {
@@ -167,7 +181,7 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
 
     private bool TryGetDictionary(string host, [NotNullWhen(true)] out ConcurrentDictionary<string, HstsDomainPolicy>? dictionary, [NotNullWhen(true)] out string? key)
     {
-        key = NormalizeHost(host);
+        key = NormalizeHostForLookup(host);
         var partCount = CountSegments(key);
         var policies = _policies;
         if (partCount > policies.Length)
@@ -187,14 +201,56 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
         => host.Length == 0 || host[0] == '.' || host.Contains("..", StringComparison.Ordinal);
 
     // A fully-qualified domain name may end with a dot; it designates the same host
-    private static string NormalizeHost(string host)
+    private static string TrimTrailingDots(string host)
     {
         var trimmed = host.AsSpan().TrimEnd('.');
         return trimmed.Length == host.Length ? host : trimmed.ToString();
     }
 
+    // https://datatracker.ietf.org/doc/html/rfc6797#section-10
+    // Policies are stored under the IDNA-canonicalized host name. A name that cannot be canonicalized would be
+    // stored in a form no lookup can produce, so it is rejected rather than kept as a policy that never matches.
+    private static string NormalizeHostForStorage(string host)
+    {
+        var trimmed = TrimTrailingDots(host);
+        if (Ascii.IsValid(trimmed))
+            return trimmed;
+
+        try
+        {
+            return CreateIdnMapping().GetAscii(trimmed);
+        }
+        catch (ArgumentException ex)
+        {
+            throw new ArgumentException($"The host name '{host}' cannot be converted to its Punycode form.", nameof(host), ex);
+        }
+    }
+
+    // The same canonicalization on the lookup side, where a name that cannot be canonicalized simply matches
+    // nothing instead of throwing.
+    private static string NormalizeHostForLookup(string host)
+    {
+        var trimmed = TrimTrailingDots(host);
+        if (Ascii.IsValid(trimmed))
+            return trimmed;
+
+        try
+        {
+            return CreateIdnMapping().GetAscii(trimmed);
+        }
+        catch (ArgumentException)
+        {
+            return trimmed;
+        }
+    }
+
+    // IdnMapping does not document its instance members as thread safe, and lookups run concurrently. The
+    // instance is tiny and only allocated for a non-ASCII name, which never happens on the HstsClientHandler
+    // path because Uri.IdnHost is already ASCII.
+    private static IdnMapping CreateIdnMapping() => new();
+
     /// <summary>Determines whether an HTTP request to the specified host should be upgraded to HTTPS based on HSTS policies.</summary>
-    /// <param name="host">The domain host name to check.</param>
+    /// <param name="host">The domain host name to check. An internationalized domain may be given in either its Unicode or its Punycode form.</param>
     /// <returns><see langword="true"/> if the request should be upgraded to HTTPS; otherwise, <see langword="false"/>.</returns>
     public bool MustUpgradeRequest(string host)
     {
@@ -203,11 +259,32 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     }
 
     /// <summary>Determines whether an HTTP request to the specified host should be upgraded to HTTPS based on HSTS policies.</summary>
-    /// <param name="host">The domain host name to check.</param>
+    /// <param name="host">The domain host name to check. An internationalized domain may be given in either its Unicode or its Punycode form.</param>
     /// <returns><see langword="true"/> if the request should be upgraded to HTTPS; otherwise, <see langword="false"/>.</returns>
     public bool MustUpgradeRequest(ReadOnlySpan<char> host)
     {
         host = host.TrimEnd('.');
+
+        // HstsClientHandler passes Uri.IdnHost, which is already ASCII, so the request path never converts and
+        // never allocates. Only a caller passing an internationalized name in its Unicode form pays for it.
+        if (!Ascii.IsValid(host))
+        {
+            try
+            {
+                return MustUpgradeRequestCore(CreateIdnMapping().GetAscii(host.ToString()));
+            }
+            catch (ArgumentException)
+            {
+                // A name that cannot be canonicalized cannot match a policy
+                return false;
+            }
+        }
+
+        return MustUpgradeRequestCore(host);
+    }
+
+    private bool MustUpgradeRequestCore(ReadOnlySpan<char> host)
+    {
         var policies = _policies;
         var now = _timeProvider.GetUtcNow();
 

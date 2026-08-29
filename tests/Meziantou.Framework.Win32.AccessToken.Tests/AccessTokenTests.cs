@@ -59,17 +59,17 @@ public sealed class AccessTokenTests
         _output.WriteLine("IsElevatedToken: " + token.IsElevated());
         _output.WriteLine("IsRestricted: " + token.IsRestricted());
         _output.WriteLine("MandatoryIntegrityLevel: " + token.GetMandatoryIntegrityLevel()?.Sid);
-        foreach (var group in token.EnumerateGroups() ?? [])
+        foreach (var group in token.EnumerateGroups())
         {
             _output.WriteLine($"Group: {group.Sid} ({group.Attributes})");
         }
 
-        foreach (var group in token.EnumerateRestrictedSid() ?? [])
+        foreach (var group in token.EnumerateRestrictedSid())
         {
             _output.WriteLine($"Restricted Group: {group.Sid} ({group.Attributes})");
         }
 
-        foreach (var privilege in token.EnumeratePrivileges() ?? [])
+        foreach (var privilege in token.EnumeratePrivileges())
         {
             _output.WriteLine($"Privilege: {privilege.Name} ({privilege.Attributes})");
         }
@@ -95,7 +95,7 @@ public sealed class AccessTokenTests
                 return false;
 
             var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
-            foreach (var group in accessToken.EnumerateGroups() ?? [])
+            foreach (var group in accessToken.EnumerateGroups())
             {
                 if (group.Attributes.HasFlag(GroupSidAttributes.SE_GROUP_ENABLED) && group.Sid == adminSid)
                     return true;

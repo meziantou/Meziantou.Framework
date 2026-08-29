@@ -134,6 +134,26 @@ public class SemanticVersionTests
     }
 
     [Theory]
+    // Numeric identifiers compare numerically, whatever their magnitude
+    [InlineData("1.0.0-2", "1.0.0-10")]
+    [InlineData("1.0.0-99999999999", "1.0.0-100000000000")]
+    [InlineData("1.0.0-2147483647", "1.0.0-2147483648")] // Straddles int.MaxValue
+    [InlineData("1.0.0-9999999999999999999999", "1.0.0-10000000000000000000000")]
+    [InlineData("1.0.0-alpha.9", "1.0.0-alpha.100000000000")]
+    // A numeric identifier always has lower precedence than an alphanumeric one
+    [InlineData("1.0.0-100000000000", "1.0.0-alpha")]
+    [InlineData("1.0.0-100000000000", "1.0.0-Alpha")]
+    public void Operator_NumericPrereleaseIdentifiers_CompareByValue(string lowerString, string greaterString)
+    {
+        var lower = SemanticVersion.Parse(lowerString);
+        var greater = SemanticVersion.Parse(greaterString);
+
+        Assert.True(lower < greater);
+        Assert.True(greater > lower);
+        Assert.NotEqual(lower, greater);
+    }
+
+    [Theory]
     [InlineData("1.2.3", "1.2.3")]
     [InlineData("1.0.0+left", "1.0.0+right")]
     [InlineData("1.0.0-alpha+left", "1.0.0-alpha+right")]

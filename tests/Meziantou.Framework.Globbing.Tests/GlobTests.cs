@@ -802,6 +802,27 @@ public class GlobTests
     }
 
     [Theory]
+    [InlineData("*a*?b", "abbcb")]
+    [InlineData("*b*a?", "baaaa")]
+    [InlineData("*a*[a-c]", "abba")]
+    [InlineData("*a*b*c", "axxbxxc")]
+    [InlineData("*[ab]*?", "acca")]
+    public void SegmentWithSeveralWildcardsTriesEverySplitPoint(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("*a*b*c", "axxbxxd")]
+    [InlineData("*a*b*c", "axxcxxb")]
+    public void SegmentWithSeveralWildcardsStillRejectsNonMatchingPaths(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+    }
+
+    [Theory]
     [InlineData("**", "a.txt")]
     [InlineData("**", "src/a.txt")]
     [InlineData("src/**", "src/a.txt")]

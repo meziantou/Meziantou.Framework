@@ -254,4 +254,78 @@ public sealed class FlacTests
         Assert.False(result.IsSuccess);
         Assert.Equal(MediaTagError.UnsupportedFormat, result.Error);
     }
+
+    [Fact]
+    public void WriteTags_FileWithLeadingId3Tag_KeepsTheAudioStream()
+    {
+        var tempFile = Path.GetTempFileName() + ".flac";
+        try
+        {
+            var original = File.ReadAllBytes(GetTestFilePath("basic.flac"));
+            File.WriteAllBytes(tempFile, [.. CreateId3v2Tag(paddingSize: 100), .. original]);
+
+            Assert.Equal(MediaFormat.Flac, MediaFile.DetectFormat(tempFile));
+
+            var writeResult = MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "New Title" });
+            Assert.True(writeResult.IsSuccess);
+
+            var written = File.ReadAllBytes(tempFile);
+
+            // The ID3v2 tag is preserved and the FLAC signature still follows it
+            const int TagLength = 110;
+            Assert.Equal("ID3"u8.ToArray(), written.AsSpan(0, 3).ToArray());
+            Assert.Equal("fLaC"u8.ToArray(), written.AsSpan(TagLength, 4).ToArray());
+
+            // The audio frames are byte-for-byte what they were
+            var originalAudio = original.AsSpan(FindAudioStart(original, streamStart: 0)).ToArray();
+            var writtenAudio = written.AsSpan(FindAudioStart(written, streamStart: TagLength)).ToArray();
+            Assert.Equal(originalAudio, writtenAudio);
+
+            var readResult = MediaFile.ReadTags(tempFile);
+            Assert.True(readResult.IsSuccess);
+            Assert.Equal("New Title", readResult.Value.Title);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void WriteTags_NotAFlacFile_ReturnsError()
+    {
+        using var input = new MemoryStream([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]);
+        using var output = new MemoryStream();
+
+        var result = MediaFile.WriteTags(input, output, new MediaTagInfo { Title = "Title" }, MediaFormat.Flac);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.CorruptFile, result.Error);
+        Assert.Equal(0, output.Length);
+    }
+
+    private static byte[] CreateId3v2Tag(int paddingSize)
+    {
+        var tag = new byte[10 + paddingSize];
+        tag[0] = (byte)'I';
+        tag[1] = (byte)'D';
+        tag[2] = (byte)'3';
+        tag[3] = 4;
+        tag[9] = (byte)paddingSize; // Synchsafe size, small enough to fit in the last byte
+        return tag;
+    }
+
+    private static int FindAudioStart(byte[] flac, int streamStart)
+    {
+        // Walk the metadata blocks from just after the "fLaC" signature to the first audio frame
+        var offset = streamStart + 4;
+        while (true)
+        {
+            var isLast = (flac[offset] & 0x80) != 0;
+            var blockSize = (flac[offset + 1] << 16) | (flac[offset + 2] << 8) | flac[offset + 3];
+            offset += 4 + blockSize;
+            if (isLast)
+                return offset;
+        }
+    }
 }

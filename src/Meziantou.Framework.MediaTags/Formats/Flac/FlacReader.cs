@@ -1,5 +1,3 @@
-using Meziantou.Framework.MediaTags.Formats.Id3v2;
-
 namespace Meziantou.Framework.MediaTags.Formats.Flac;
 
 internal sealed class FlacReader : IMediaTagReader
@@ -91,41 +89,10 @@ internal sealed class FlacReader : IMediaTagReader
 
     private static bool TrySeekAfterFlacMagic(Stream stream)
     {
-        if (!stream.CanSeek)
+        if (!FlacStreamLocator.TryGetStreamStart(stream, out var streamStart))
             return false;
 
-        stream.Position = 0;
-        if (TryReadFlacMagic(stream))
-            return true;
-
-        stream.Position = 0;
-        Span<byte> id3Header = stackalloc byte[3];
-        if (stream.ReadAtLeast(id3Header, id3Header.Length, throwOnEndOfStream: false) < id3Header.Length)
-            return false;
-
-        if (id3Header is not [(byte)'I', (byte)'D', (byte)'3'])
-            return false;
-
-        if (!Id3v2TagLocator.TryGetAudioDataOffsets(stream, 0, out var primaryOffset, out var secondaryOffset))
-            return false;
-
-        return TryReadFlacMagicAtOffset(stream, primaryOffset)
-            || (secondaryOffset >= 0 && TryReadFlacMagicAtOffset(stream, secondaryOffset));
-    }
-
-    private static bool TryReadFlacMagic(Stream stream)
-    {
-        Span<byte> magic = stackalloc byte[4];
-        return stream.ReadAtLeast(magic, magic.Length, throwOnEndOfStream: false) == magic.Length
-            && magic is [(byte)'f', (byte)'L', (byte)'a', (byte)'C'];
-    }
-
-    private static bool TryReadFlacMagicAtOffset(Stream stream, long offset)
-    {
-        if (offset < 0 || stream.Length < offset + 4)
-            return false;
-
-        stream.Position = offset;
-        return TryReadFlacMagic(stream);
+        stream.Position = streamStart + 4;
+        return true;
     }
 }

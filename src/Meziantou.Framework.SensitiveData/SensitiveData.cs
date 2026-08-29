@@ -421,10 +421,10 @@ public sealed unsafe class SensitiveData<T> : IDisposable
                 SetHandle((IntPtr)NativeMemory.Alloc(byteCount));
 
                 _xorKey = (IntPtr)NativeMemory.Alloc(byteCount);
-                RandomNumberGenerator.Fill(new Span<byte>((void*)_xorKey, checked((int)byteCount)));
+                FillRandom((byte*)_xorKey, byteCount);
             }
 
-            GetAllocatedByteSpan().Clear();
+            NativeMemory.Clear((void*)handle, _allocatedBytes);
         }
 
         public Span<T> GetSpan()
@@ -500,7 +500,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
             switch (_protectionMode)
             {
                 case ProtectionMode.Windows when OperatingSystem.IsWindows():
-                    GetAllocatedByteSpan().Clear();
+                    NativeMemory.Clear((void*)handle, _allocatedBytes);
                     return WindowsHeap.Free(handle);
 
                 case ProtectionMode.Unix when OperatingSystem.IsLinux() || OperatingSystem.IsMacOS():
@@ -511,7 +511,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
 
                     if (!_unixMemoryProtected)
                     {
-                        GetAllocatedByteSpan().Clear();
+                        NativeMemory.Clear((void*)handle, _allocatedBytes);
 
                         if (_unixMemoryLocked)
                         {
@@ -523,11 +523,11 @@ public sealed unsafe class SensitiveData<T> : IDisposable
                     return SensitiveData.UnixMemoryProtection.Free(handle, _allocatedBytes);
 
                 case ProtectionMode.Xor:
-                    GetAllocatedByteSpan().Clear();
+                    NativeMemory.Clear((void*)handle, _allocatedBytes);
 
                     if (_xorKey != IntPtr.Zero)
                     {
-                        new Span<byte>((void*)_xorKey, checked((int)_byteCount)).Clear();
+                        NativeMemory.Clear((void*)_xorKey, _byteCount);
                         NativeMemory.Free((void*)_xorKey);
                         _xorKey = IntPtr.Zero;
                     }
@@ -542,17 +542,25 @@ public sealed unsafe class SensitiveData<T> : IDisposable
 
         private void XorWithKey()
         {
-            var data = new Span<byte>((void*)handle, (int)_allocatedBytes);
-            var key = new ReadOnlySpan<byte>((void*)_xorKey, (int)_allocatedBytes);
-            for (var i = 0; i < data.Length; i++)
+            var data = (byte*)handle;
+            var key = (byte*)_xorKey;
+            for (nuint i = 0; i < _allocatedBytes; i++)
             {
                 data[i] ^= key[i];
             }
         }
 
-        private Span<byte> GetAllocatedByteSpan()
+        // Span is limited to int.MaxValue elements, so the buffer is filled in chunks rather than
+        // narrowing the byte count to int.
+        private static void FillRandom(byte* destination, nuint byteCount)
         {
-            return new Span<byte>((void*)handle, checked((int)_allocatedBytes));
+            while (byteCount > 0)
+            {
+                var chunk = (int)Math.Min(byteCount, (nuint)int.MaxValue);
+                RandomNumberGenerator.Fill(new Span<byte>(destination, chunk));
+                destination += chunk;
+                byteCount -= (nuint)chunk;
+            }
         }
 
         private static void ThrowLastPInvokeError()

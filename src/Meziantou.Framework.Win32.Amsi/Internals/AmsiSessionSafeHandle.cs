@@ -4,7 +4,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Meziantou.Framework.Win32;
 
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows10.0.10240")]
 internal sealed class AmsiSessionSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
 {
     private readonly AmsiContextSafeHandle? _context;

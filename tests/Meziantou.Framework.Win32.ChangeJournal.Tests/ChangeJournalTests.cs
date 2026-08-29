@@ -127,16 +127,16 @@ public class ChangeJournalTests
     [Fact]
     public void ChangeReasonAllIsTheUnionOfEveryOtherReason()
     {
-        var expected = default(ChangeReason);
+        var union = default(ChangeReason);
         foreach (var reason in Enum.GetValues<ChangeReason>())
         {
             if (reason is not ChangeReason.All)
             {
-                expected |= reason;
+                union |= reason;
             }
         }
 
-        Assert.Equal(expected, ChangeReason.All);
+        Assert.Equal(ChangeReason.All, union);
     }
 
     [Fact]

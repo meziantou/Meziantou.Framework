@@ -91,6 +91,9 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
         ArgumentNullException.ThrowIfNull(host);
 
         host = NormalizeHost(host);
+        if (HasEmptyLabel(host))
+            throw new ArgumentException($"The host name '{host}' contains an empty label.", nameof(host));
+
         var partCount = CountSegments(host);
         ConcurrentDictionary<string, HstsDomainPolicy> dictionary;
         lock (_lock)
@@ -157,6 +160,11 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
         dictionary = policies[partCount - 1];
         return true;
     }
+
+    // An empty label counts as a segment, so the policy would go to a bucket the suffix walk never reads for
+    // that host and would silently never match. Such a host name is not valid anyway: Uri rejects it.
+    private static bool HasEmptyLabel(string host)
+        => host.Length == 0 || host[0] == '.' || host.Contains("..", StringComparison.Ordinal);
 
     // A fully-qualified domain name may end with a dot; it designates the same host
     private static string NormalizeHost(string host)

@@ -7,4 +7,8 @@
     <Description>SingleInstance allows to ensure only one instance of an application runs. Following instances can notify the main instance before closing.</Description>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.SingleInstance.Tests" />
+  </ItemGroup>
+
 </Project>

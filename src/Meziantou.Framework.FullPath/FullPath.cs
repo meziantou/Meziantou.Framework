@@ -668,12 +668,16 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                     string? resultPath = null;
                     var current = this;
                     var hasSymLink = false;
-                    var componentDepth = 0;
+
+                    // Counts every link resolved by this walk, not just consecutive ones. Resetting it per component
+                    // would let two links that reference each other through a directory alternate forever, because
+                    // each resolution is separated by a component that is not itself a link.
+                    var resolvedLinkCount = 0;
                     while (!current.IsEmpty)
                     {
                         if (Symlink.TryGetSymLinkTarget(current._value, out path))
                         {
-                            if (++componentDepth > MaxSymbolicLinkDepth)
+                            if (++resolvedLinkCount > MaxSymbolicLinkDepth)
                                 throw CreateTooManyLevelsOfSymbolicLinksException();
 
                             current = FromPath(path);
@@ -692,7 +696,6 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                             }
 
                             current = current.Parent;
-                            componentDepth = 0;
                         }
                     }
 

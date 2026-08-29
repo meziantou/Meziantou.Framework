@@ -151,11 +151,14 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         return new SemanticVersionRange(minVersion: null, version, isMinInclusive: false, isMaxInclusive: false);
     }
 
+    /// <summary>Formats the range using NuGet interval notation, which <see cref="TryParseNuGet(string?, out SemanticVersionRange?)"/> can read back.</summary>
     public override string ToString()
     {
         if (MinVersion is null && MaxVersion is null)
         {
-            return "*";
+            // "*" reads better but belongs to the npm grammar, and TryParseNuGet cannot parse it,
+            // which would make the unbounded range the one range ToString could not round-trip.
+            return "(, )";
         }
 
         if (MinVersion is not null && MaxVersion is not null && MinVersion.Equals(MaxVersion) && IsMinInclusive && IsMaxInclusive)

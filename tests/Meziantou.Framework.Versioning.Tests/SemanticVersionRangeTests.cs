@@ -359,9 +359,26 @@ public class SemanticVersionRangeTests
     }
 
     [Fact]
-    public void ToString_All_ReturnsWildcard()
+    public void ToString_All_ReturnsUnboundedInterval()
     {
-        Assert.Equal("*", SemanticVersionRange.All.ToString());
+        Assert.Equal("(, )", SemanticVersionRange.All.ToString());
+    }
+
+    [Theory]
+    [InlineData("*")]
+    [InlineData("[1.0.0]")]
+    [InlineData("[1.0.0, 2.0.0]")]
+    [InlineData("[1.0.0, 2.0.0)")]
+    [InlineData("(1.0.0, 2.0.0)")]
+    [InlineData("(1.0.0, )")]
+    [InlineData("(, 2.0.0)")]
+    [InlineData("[1.0.0-alpha.1+build, 2.0.0]")]
+    public void ToString_RoundTripsThroughParseNuGet(string input)
+    {
+        var range = input is "*" ? SemanticVersionRange.All : SemanticVersionRange.ParseNuGet(input);
+
+        Assert.True(SemanticVersionRange.TryParseNuGet(range.ToString(), out var roundTripped));
+        Assert.Equal(range, roundTripped);
     }
 
     [Fact]

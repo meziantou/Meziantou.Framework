@@ -125,6 +125,38 @@ public sealed class BcryptTests
     }
 
     [Fact]
+    public void TryParseHash_NonCanonicalTrailingCharacter_ReturnsFalse()
+    {
+        const string Password = "abc";
+        var hash = Bcrypt.HashPassword(Password, "$2b$06$DCq7YPn5Rq63x1Lad4cll.");
+
+        Assert.True(Bcrypt.TryParseHash(hash, out _));
+        Assert.True(Bcrypt.Verify(Password, hash));
+
+        // The 22nd salt character contributes only 2 bits, so '.' and '/' decode to the same salt bytes.
+        // TryParseHash used to accept the alternative spelling that Verify can never match.
+        var nonCanonicalSalt = string.Concat(hash.AsSpan(0, 28), "/", hash.AsSpan(29));
+        Assert.False(Bcrypt.TryParseHash(nonCanonicalSalt, out _));
+        Assert.False(Bcrypt.Verify(Password, nonCanonicalSalt));
+
+        // The trailing digest character carries 2 unused bits for the same reason.
+        var nonCanonicalDigest = string.Concat(hash.AsSpan(0, hash.Length - 1), "/");
+        Assert.False(Bcrypt.TryParseHash(nonCanonicalDigest, out _));
+        Assert.False(Bcrypt.Verify(Password, nonCanonicalDigest));
+    }
+
+    [Theory]
+    [InlineData("$2b$06$DCq7YPn5Rq63x1Lad4cll/")]
+    [InlineData("$2b$06$DCq7YPn5Rq63x1Lad4c!!.")]
+    [InlineData("$2b$06$DCq7YPn5Rq63x1Lad4cl*.")]
+    public void HashPassword_MalformedSalt_ThrowsFormatException(string salt)
+    {
+        // These used to escape as ArgumentException naming private parameters ("saltBytes").
+        Assert.Throws<FormatException>(() => Bcrypt.HashPassword("abc", salt));
+        Assert.Throws<FormatException>(() => Bcrypt.HashPassword("abc".AsSpan(), salt.AsSpan()));
+    }
+
+    [Fact]
     public void HashPassword_PasswordsLongerThan72Bytes_AreTruncated()
     {
         const string Salt = "$2b$04$xnFVhJsTzsFBTeP3PpgbMe";

@@ -376,6 +376,13 @@ public sealed unsafe class SensitiveData<T> : IDisposable
         private bool _unixMemoryProtected;
         private bool _isProtected;
 
+        // Number of reveals currently in progress. Reveals nest: a callback passed to RevealAndUse can
+        // reach another reveal on the same instance, and Lock is reentrant so the nested call is allowed
+        // straight through. Only the outermost reveal may touch the platform protection - an inner one
+        // that unprotected again would decrypt already-decrypted bytes on Windows, and an inner one that
+        // re-protected on exit would revoke the page while the outer caller still holds a span over it.
+        private int _revealCount;
+
         public NativeMemorySafeHandle()
             : base(invalidHandleValue: Invalid, ownsHandle: true)
         {
@@ -437,6 +444,15 @@ public sealed unsafe class SensitiveData<T> : IDisposable
             if (_allocatedBytes == 0)
                 return;
 
+            // An outer reveal is still in progress, so the contents must stay accessible.
+            // The count is only decremented once the platform call below has succeeded, so a
+            // failure to re-protect leaves the count untouched rather than losing a level.
+            if (_revealCount > 1)
+            {
+                _revealCount--;
+                return;
+            }
+
             if (OperatingSystem.IsWindows() && _protectionMode is ProtectionMode.Windows)
             {
                 WindowsHeap.ProtectMemory(handle, _allocatedBytes);
@@ -460,12 +476,23 @@ public sealed unsafe class SensitiveData<T> : IDisposable
                 XorWithKey();
                 _isProtected = true;
             }
+
+            _revealCount = 0;
         }
 
         public void Unprotect()
         {
             if (_allocatedBytes == 0)
                 return;
+
+            // The contents are already accessible because an outer reveal is in progress. Unprotecting
+            // again would decrypt already-decrypted bytes on Windows and re-apply the XOR key on the
+            // fallback path, handing the caller ciphertext instead of the secret.
+            if (_revealCount > 0)
+            {
+                _revealCount++;
+                return;
+            }
 
             if (OperatingSystem.IsWindows() && _protectionMode is ProtectionMode.Windows)
             {
@@ -474,15 +501,18 @@ public sealed unsafe class SensitiveData<T> : IDisposable
             }
             else if ((OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) && _protectionMode is ProtectionMode.Unix)
             {
-                if (!_unixMemoryProtected)
-                    return;
-
-                if (!SensitiveData.UnixMemoryProtection.TryProtect(handle, _allocatedBytes, MemoryProtectionReadWrite))
+                // Skip the syscall when a previous Protect failed and left the pages readable,
+                // but still count the reveal so the matching Protect re-applies the protection.
+                if (_unixMemoryProtected)
                 {
-                    ThrowLastPInvokeError();
+                    if (!SensitiveData.UnixMemoryProtection.TryProtect(handle, _allocatedBytes, MemoryProtectionReadWrite))
+                    {
+                        ThrowLastPInvokeError();
+                    }
+
+                    _unixMemoryProtected = false;
                 }
 
-                _unixMemoryProtected = false;
                 _isProtected = false;
             }
             else if (_protectionMode is ProtectionMode.Xor)
@@ -490,6 +520,8 @@ public sealed unsafe class SensitiveData<T> : IDisposable
                 XorWithKey();
                 _isProtected = false;
             }
+
+            _revealCount = 1;
         }
 
         protected override bool ReleaseHandle()

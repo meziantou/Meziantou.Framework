@@ -54,6 +54,27 @@ public sealed class SingleInstanceTests
         Assert.False(singleInstance.NotifyFirstInstance(["a", "b"]));
     }
 
+    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void TestSingleInstance_DefaultConfigurationDoesNotThrowOnNonWindows()
+    {
+        using var singleInstance = new SingleInstance(Guid.NewGuid());
+
+        Assert.False(singleInstance.StartServer);
+        Assert.True(singleInstance.StartApplication());
+        Assert.False(singleInstance.NotifyFirstInstance(["a", "b"]));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void TestSingleInstance_StartServerExplicitlyEnabledThrowsOnNonWindows()
+    {
+        using var singleInstance = new SingleInstance(Guid.NewGuid())
+        {
+            StartServer = true,
+        };
+
+        Assert.Throws<PlatformNotSupportedException>(() => _ = singleInstance.StartApplication());
+    }
+
     [Fact]
     public void TestSingleInstance()
     {

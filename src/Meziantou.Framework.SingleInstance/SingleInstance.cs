@@ -47,9 +47,12 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
 
     /// <summary>Gets or sets a value indicating whether to start a named pipe server to receive notifications from other instances.</summary>
     /// <value>
-    /// <see langword="true"/> to start the server; otherwise, <see langword="false"/>. The default is <see langword="true"/>.
+    /// <see langword="true"/> to start the server; otherwise, <see langword="false"/>. The default is <see langword="true"/> on Windows, and <see langword="false"/> on every other operating system.
     /// </value>
-    public bool StartServer { get; set; } = true;
+    /// <remarks>
+    /// Communication between instances is only supported on Windows. Setting this property to <see langword="true"/> on another operating system makes <see cref="StartApplication"/> throw a <see cref="PlatformNotSupportedException"/>.
+    /// </remarks>
+    public bool StartServer { get; set; } = OperatingSystem.IsWindows();
 
     /// <summary>Gets or sets the timeout for connecting to the first instance when notifying it.</summary>
     /// <value>The connection timeout. The default is 3 seconds.</value>
@@ -68,6 +71,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     /// <remarks>
     /// If this method returns <see langword="true"/>, the application should continue running and can receive notifications from other instances through the <see cref="NewInstance"/> event.
     /// If this method returns <see langword="false"/>, the application should call <see cref="NotifyFirstInstance"/> to notify the first instance and then exit.
+    /// Ensuring a single instance is supported on every operating system; only the communication between instances is Windows-only.
     /// </remarks>
     public bool StartApplication()
     {
@@ -220,13 +224,16 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="args"/> is <see langword="null"/>.</exception>
     /// <remarks>
-    /// This method is only supported on Windows. The first instance must have <see cref="StartServer"/> set to <see langword="true"/> to receive notifications.
+    /// This method is only supported on Windows and returns <see langword="false"/> on every other operating system. The first instance must have <see cref="StartServer"/> set to <see langword="true"/> to receive notifications.
     /// The method will timeout after <see cref="ClientConnectionTimeout"/> if the first instance is not responding.
     /// Failing to reach the first instance is reported by returning <see langword="false"/> instead of throwing.
     /// </remarks>
     public bool NotifyFirstInstance(string[] args)
     {
         ArgumentNullException.ThrowIfNull(args);
+
+        if (!OperatingSystem.IsWindows())
+            return false;
 
         try
         {

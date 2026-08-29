@@ -59,6 +59,35 @@ public sealed class HtpasswdFileTests
     }
 
     [Fact]
+    public async Task LoadAsync_TextReader_ShouldObserveTheCancellationToken()
+    {
+        using var reader = new StringReader("alice:password");
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => HtpasswdFile.LoadAsync(reader, cts.Token));
+    }
+
+    [Fact]
+    public async Task LoadAsync_String_ShouldObserveTheCancellationToken()
+    {
+        var filePath = Path.GetTempFileName();
+
+        try
+        {
+            File.WriteAllText(filePath, "alice:password");
+            using var cts = new CancellationTokenSource();
+            await cts.CancelAsync();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => HtpasswdFile.LoadAsync(filePath, cts.Token));
+        }
+        finally
+        {
+            File.Delete(filePath);
+        }
+    }
+
+    [Fact]
     public void VerifyCredentials_String_ShouldValidateBcryptHash()
     {
         var hash = Bcrypt.HashPassword("password", workFactor: Bcrypt.MinWorkFactor, version: BcryptVersion.Revision2Y);

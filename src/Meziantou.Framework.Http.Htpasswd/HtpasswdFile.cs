@@ -15,7 +15,9 @@ public sealed class HtpasswdFile
     private const int ShaCryptSaltMaxLength = 16;
     private const int ShaCryptDefaultRounds = 5000;
     private const int ShaCryptMinRounds = 1000;
-    private const int ShaCryptMaxRounds = 999_999_999;
+    // The format allows up to 999_999_999 rounds. Computing that many takes hours, so a hash asking for
+    // more rounds than we are willing to compute is rejected instead of being verified.
+    private const int ShaCryptMaxRounds = 10_000_000;
     private const string Sha1Prefix = "{SHA}";
     private readonly Dictionary<string, string> _entries;
 
@@ -230,7 +232,9 @@ public sealed class HtpasswdFile
             if (!int.TryParse(roundsText, NumberStyles.None, CultureInfo.InvariantCulture, out rounds))
                 return false;
 
-            rounds = Math.Clamp(rounds, ShaCryptMinRounds, ShaCryptMaxRounds);
+            if (rounds is < ShaCryptMinRounds or > ShaCryptMaxRounds)
+                return false;
+
             roundsCustom = true;
             remaining = remaining[(roundsSeparatorIndex + 1)..];
         }

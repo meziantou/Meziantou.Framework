@@ -95,6 +95,17 @@ public sealed class HtpasswdFileTests
         Assert.False(htpasswd.VerifyCredentials("alice", "invalid"));
     }
 
+    [Theory]
+    [InlineData("$5$rounds=999$toolongsaltstrin$Un/5jzAHMgOGZ5.mWJpuVolil07guHPvOW8mGRcvxa5")]
+    [InlineData("$5$rounds=10000001$toolongsaltstrin$Un/5jzAHMgOGZ5.mWJpuVolil07guHPvOW8mGRcvxa5")]
+    [InlineData("$5$rounds=999999999$toolongsaltstrin$Un/5jzAHMgOGZ5.mWJpuVolil07guHPvOW8mGRcvxa5")]
+    public void VerifyCredentials_ShouldRejectShaCryptRoundsOutsideTheSupportedRange(string hash)
+    {
+        var htpasswd = HtpasswdFile.Parse($"alice:{hash}");
+
+        Assert.False(htpasswd.VerifyCredentials("alice", "This is just a test"));
+    }
+
     [Fact]
     public void VerifyCredentials_String_ShouldValidateSha512CryptHash()
     {

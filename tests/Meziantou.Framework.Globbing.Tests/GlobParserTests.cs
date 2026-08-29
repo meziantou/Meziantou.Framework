@@ -28,9 +28,34 @@ public class GlobParserTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
+    [InlineData(".")]
+    [InlineData("./")]
+    [InlineData("./.")]
+    [InlineData("a/..")]
+    [InlineData("a/../")]
     public void InvalidPatterns(string? content)
     {
         Assert.Throws<ArgumentException>(() => Glob.Parse(content!, GlobDialect.Standard));
+    }
+
+    [Theory]
+    [InlineData(".")]
+    [InlineData("./")]
+    [InlineData("a/..")]
+    public void PatternsWithoutAnySegmentAreRejected(string pattern)
+    {
+        Assert.False(Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.None, out var result));
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData("a/./b")]
+    [InlineData("a/b/../c")]
+    [InlineData("./a")]
+    public void PatternsThatStillHaveSegmentsAfterNormalizationAreAccepted(string pattern)
+    {
+        Assert.True(Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.None, out var result));
+        Assert.NotNull(result);
     }
 
     [Fact]

@@ -441,6 +441,10 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         // A path that resolves to nothing already returns Empty below; an empty input is the same case, and
         // Path.GetFullPath would throw before reaching it. Environment.GetFolderPath returns "" for a folder
         // that is not defined on the platform, which makes this a routine input rather than a caller error.
+        //
+        // Empty rather than CurrentDirectory: "" means "no path", not "the current directory". Resolving it against
+        // the current directory would turn an undefined special folder into a real, writable location. "." is the
+        // spelling for the current directory, and Path.GetFullPath("") throws rather than treating the two alike.
         if (path is { Length: 0 })
             return Empty;
 

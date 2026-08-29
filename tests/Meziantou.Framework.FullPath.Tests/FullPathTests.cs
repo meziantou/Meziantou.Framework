@@ -22,6 +22,22 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public void FromPath_EmptyString_IsNotTheCurrentDirectory()
+    {
+        Assert.NotEqual(FullPath.CurrentDirectory(), FullPath.FromPath(""));
+        Assert.Equal(FullPath.CurrentDirectory(), FullPath.FromPath("."));
+    }
+
+    [Fact]
+    public void FromPath_RoundTripsTheStringRepresentation()
+    {
+        Assert.Equal(FullPath.Empty, FullPath.FromPath(FullPath.Empty.Value));
+
+        var path = FullPath.FromPath("test");
+        Assert.Equal(path, FullPath.FromPath(path.Value));
+    }
+
+    [Fact]
     public void Properties()
     {
         var path = FullPath.FromPath("test") / "a" / "b.txt";

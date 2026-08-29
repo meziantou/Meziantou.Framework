@@ -228,7 +228,7 @@ internal ref struct PathReader
 
     public readonly bool IsPathSeparator()
     {
-        if (!_pathSeparatorAware)
+        if (!_pathSeparatorAware || CurrentText.IsEmpty)
             return false;
 
         var c = CurrentText[0];

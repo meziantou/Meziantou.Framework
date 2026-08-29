@@ -2174,4 +2174,37 @@ public sealed class RoslynHelperTests
             }
         }
     }
+
+    [Theory]
+    // Primary expressions are already valid as a member-access target or a binary operand
+    [InlineData("value", "value")]
+    [InlineData("a.b", "a.b")]
+    [InlineData("M()", "M()")]
+    [InlineData("a[0]", "a[0]")]
+    [InlineData("(a)", "(a)")]
+    [InlineData("this", "this")]
+    [InlineData("\"literal\"", "\"literal\"")]
+    [InlineData("int", "int")]
+    // Everything else binds looser and has to be wrapped
+    [InlineData("a ? b : c", "(a ? b : c)")]
+    [InlineData("a ?? b", "(a ?? b)")]
+    [InlineData("(string)a", "((string)a)")]
+    [InlineData("a + b", "(a + b)")]
+    [InlineData("a as string", "(a as string)")]
+    [InlineData("await a", "(await a)")]
+    [InlineData("-a", "(-a)")]
+    public void Parenthesize_WrapsOnlyNonPrimaryExpressions(string expression, string expected)
+    {
+        var actual = SyntaxFactory.ParseExpression(expression).Parenthesize();
+
+        Assert.Equal(expected, actual.ToFullString());
+    }
+
+    [Fact]
+    public void Parenthesize_IsIdempotent()
+    {
+        var once = SyntaxFactory.ParseExpression("a ? b : c").Parenthesize();
+
+        Assert.Equal("(a ? b : c)", once.Parenthesize().ToFullString());
+    }
 }

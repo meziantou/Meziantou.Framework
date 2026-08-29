@@ -1,17 +1,24 @@
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_ENABLE_WARNINGS
+#pragma warning disable
+#endif
+#nullable enable
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Meziantou.Framework.Analyzers.FullPath;
+namespace Meziantou.Framework.Roslyn;
 
-internal static class ExpressionSyntaxExtensions
+#if !MEZIANTOU_FRAMEWORK_ROSLYN_DISABLE_EMBEDDEDATTRIBUTE
+[Microsoft.CodeAnalysis.Embedded]
+#endif
+internal static partial class ExpressionSyntaxExtensions
 {
     /// <summary>
     /// Wraps the expression in parentheses unless it is already a primary expression.
     /// </summary>
     /// <remarks>
-    /// Generated code appends to the expression, either as the target of a member access or as an operand of the
-    /// <c>/</c> operator. Both bind tighter than most expressions, so an operand such as <c>a ? b : c</c> has to be
-    /// parenthesized to keep the meaning of the original code.
+    /// Generated code usually appends to an expression, either as the target of a member access or as an operand of a
+    /// binary operator. Both bind tighter than most expressions, so an operand such as <c>a ? b : c</c> has to be
+    /// parenthesized to preserve the meaning of the original code.
     /// </remarks>
     public static ExpressionSyntax Parenthesize(this ExpressionSyntax expression)
     {

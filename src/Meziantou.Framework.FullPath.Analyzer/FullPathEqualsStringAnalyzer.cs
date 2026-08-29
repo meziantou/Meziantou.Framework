@@ -53,8 +53,10 @@ public sealed class FullPathEqualsStringAnalyzer : DiagnosticAnalyzer
         if (invocationOperation.Instance is not { } instance || !analyzerContext.IsFullPathType(instance.Type))
             return;
 
-        // An 'object' argument may hold a boxed FullPath at run time, a string never can
-        if (analyzerContext.UnwrapToFullPath(invocationOperation.Arguments[0].Value).Type?.SpecialType != SpecialType.System_String)
+        // An 'object' argument may hold a boxed FullPath at run time, a string never can.
+        // Only the conversion to 'object' is unwrapped: UnwrapToFullPath would also strip 'Value', 'RawValue',
+        // 'ToString()' and the explicit cast, hiding the string argument behind the FullPath it came from.
+        if (invocationOperation.Arguments[0].Value.UnwrapImplicitConversions().Type?.SpecialType != SpecialType.System_String)
             return;
 
         context.ReportDiagnostic(Descriptor, invocationOperation);

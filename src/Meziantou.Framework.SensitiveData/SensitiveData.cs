@@ -227,13 +227,41 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// The newly-returned <see cref="SensitiveData{T}"/> instance maintains its own copy of the data separate from <paramref name="contents"/>.
     /// </remarks>
     internal SensitiveData(ReadOnlySpan<T> contents)
+        : this(contents, forceXorProtection: false)
+    {
+    }
+
+    private SensitiveData(ReadOnlySpan<T> contents, bool forceXorProtection)
     {
         // Use unmanaged memory so the data remains at a stable address
         // and can be cleared during Dispose.
         _data = new NativeMemorySafeHandle();
-        _data.Allocate(contents.Length);
+        _data.Allocate(contents.Length, forceXorProtection);
         contents.CopyTo(_data.GetSpan());
         _data.Protect();
+    }
+
+    /// <summary>
+    /// Creates an instance that uses the XOR fallback protection whatever the platform.
+    /// Windows, Linux and macOS all select one of the other modes, so without this the fallback
+    /// is executed by no test on any platform CI runs on.
+    /// </summary>
+    internal static SensitiveData<T> CreateWithXorProtection(ReadOnlySpan<T> contents) => new(contents, forceXorProtection: true);
+
+    /// <summary>
+    /// Copies the bytes as they are stored while protected, so tests can assert the contents are
+    /// really transformed at rest rather than only that <see cref="IsProtected"/> was set.
+    /// Returns <see langword="false"/> under the Unix protection, where the pages are
+    /// <c>PROT_NONE</c> and reading them would fault instead of returning anything.
+    /// </summary>
+    internal bool TryGetBytesAtRest(out byte[] bytes)
+    {
+        var data = _data;
+        ObjectDisposedException.ThrowIf(data is null, this);
+        lock (data.SyncLock)
+        {
+            return data.TryCopyBytesAtRest(out bytes);
+        }
     }
 
     /// <summary>Returns the length (in elements) of this buffer.</summary>
@@ -423,7 +451,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
 
         public override bool IsInvalid => handle == Invalid;
 
-        public void Allocate(int count)
+        public void Allocate(int count, bool forceXorProtection)
         {
             Length = count;
             var byteCount = (nuint)count * (nuint)sizeof(T);
@@ -432,7 +460,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
             if (byteCount == 0)
                 return;
 
-            if (OperatingSystem.IsWindows())
+            if (!forceXorProtection && OperatingSystem.IsWindows())
             {
                 _protectionMode = ProtectionMode.Windows;
                 _allocatedBytes = WindowsHeap.GetAlignedSize(byteCount);
@@ -440,7 +468,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
                 if (handle == IntPtr.Zero)
                     ThrowOutOfMemory();
             }
-            else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+            else if (!forceXorProtection && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()))
             {
                 _protectionMode = ProtectionMode.Unix;
                 _allocatedBytes = SensitiveData.UnixMemoryProtection.GetAlignedSize(byteCount);
@@ -463,6 +491,19 @@ public sealed unsafe class SensitiveData<T> : IDisposable
         public Span<T> GetSpan()
         {
             return new Span<T>((void*)handle, Length);
+        }
+
+        public bool TryCopyBytesAtRest(out byte[] bytes)
+        {
+            // Reading PROT_NONE pages faults, so the Unix protection cannot be observed this way.
+            if (_protectionMode is ProtectionMode.Unix)
+            {
+                bytes = [];
+                return false;
+            }
+
+            bytes = new ReadOnlySpan<byte>((void*)handle, checked((int)_allocatedBytes)).ToArray();
+            return true;
         }
 
         public void Protect()

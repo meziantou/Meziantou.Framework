@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
 using Windows.Win32;
@@ -43,20 +44,35 @@ public sealed class OpenFolderDialog
 
         var hwndOwner = owner != IntPtr.Zero ? owner : (IntPtr)PInvoke.GetActiveWindow();
         var dialog = (IFileOpenDialog)new NativeFileOpenDialog();
-        Configure(dialog);
+        try
+        {
+            Configure(dialog);
 
-        var hr = dialog.Show(hwndOwner);
-        LastHResult = hr;
-        if (hr == NativeMethods.ERROR_CANCELLED)
-            return DialogResult.Cancel;
+            var hr = dialog.Show(hwndOwner);
+            LastHResult = hr;
+            if (hr == NativeMethods.ERROR_CANCELLED)
+                return DialogResult.Cancel;
 
-        if (hr != NativeMethods.S_OK)
-            return DialogResult.Abort;
+            if (hr != NativeMethods.S_OK)
+                return DialogResult.Abort;
 
-        dialog.GetResult(out var item);
-        item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out var path);
-        SelectedPath = path;
-        return DialogResult.OK;
+            dialog.GetResult(out var item);
+            try
+            {
+                item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out var path);
+                SelectedPath = path;
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(item);
+            }
+
+            return DialogResult.OK;
+        }
+        finally
+        {
+            Marshal.ReleaseComObject(dialog);
+        }
     }
 
     /// <summary>Gets or sets the title text displayed in the dialog's title bar.</summary>

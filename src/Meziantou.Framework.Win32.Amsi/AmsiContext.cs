@@ -1,4 +1,4 @@
-using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Win32;
@@ -28,25 +28,19 @@ public sealed class AmsiContext : IDisposable
     /// <summary>Creates a new AMSI context for the specified application.</summary>
     /// <param name="applicationName">The name of the application that will use the AMSI context.</param>
     /// <returns>A new <see cref="AmsiContext"/> instance.</returns>
-    /// <exception cref="Win32Exception">Thrown when the AMSI context cannot be initialized.</exception>
+    /// <exception cref="COMException">Thrown when the AMSI context cannot be initialized.</exception>
     public static AmsiContext Create(string applicationName)
     {
-        var result = Amsi.AmsiInitialize(applicationName, out var context);
-        if (result != 0)
-            throw new Win32Exception(result);
-
+        Amsi.AmsiInitialize(applicationName, out var context).ThrowOnFailure();
         return new AmsiContext(context);
     }
 
     /// <summary>Creates a new AMSI session for correlating multiple scan requests.</summary>
     /// <returns>A new <see cref="AmsiSession"/> instance.</returns>
-    /// <exception cref="Win32Exception">Thrown when the AMSI session cannot be opened.</exception>
+    /// <exception cref="COMException">Thrown when the AMSI session cannot be opened.</exception>
     public AmsiSession CreateSession()
     {
-        var result = Amsi.AmsiOpenSession(_handle, out var session);
-        if (result != 0)
-            throw new Win32Exception(result);
-
+        Amsi.AmsiOpenSession(_handle, out var session).ThrowOnFailure();
         return new AmsiSession(this, session);
     }
 
@@ -54,13 +48,10 @@ public sealed class AmsiContext : IDisposable
     /// <param name="payload">The string content to scan.</param>
     /// <param name="contentName">The name or identifier of the content being scanned.</param>
     /// <returns><see langword="true"/> if the content is detected as malware; otherwise, <see langword="false"/>.</returns>
-    /// <exception cref="Win32Exception">Thrown when the scan operation fails.</exception>
+    /// <exception cref="COMException">Thrown when the scan operation fails.</exception>
     public bool IsMalware(string payload, string contentName)
     {
-        var returnValue = Amsi.AmsiScanString(_handle, payload, contentName, DefaultSession, out var result);
-        if (returnValue != 0)
-            throw new Win32Exception(returnValue);
-
+        Amsi.AmsiScanString(_handle, payload, contentName, DefaultSession, out var result).ThrowOnFailure();
         return Amsi.AmsiResultIsMalware(result);
     }
 
@@ -68,13 +59,10 @@ public sealed class AmsiContext : IDisposable
     /// <param name="payload">The byte buffer to scan.</param>
     /// <param name="contentName">The name or identifier of the content being scanned.</param>
     /// <returns><see langword="true"/> if the content is detected as malware; otherwise, <see langword="false"/>.</returns>
-    /// <exception cref="Win32Exception">Thrown when the scan operation fails.</exception>
+    /// <exception cref="COMException">Thrown when the scan operation fails.</exception>
     public bool IsMalware(byte[] payload, string contentName)
     {
-        var returnValue = Amsi.AmsiScanBuffer(_handle, payload, (uint)payload.Length, contentName, DefaultSession, out var result);
-        if (returnValue != 0)
-            throw new Win32Exception(returnValue);
-
+        Amsi.AmsiScanBuffer(_handle, payload, (uint)payload.Length, contentName, DefaultSession, out var result).ThrowOnFailure();
         return Amsi.AmsiResultIsMalware(result);
     }
 

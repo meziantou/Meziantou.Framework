@@ -1,5 +1,6 @@
 using System.Runtime.Versioning;
 using Windows.Win32;
+using Windows.Win32.Foundation;
 using Windows.Win32.System.Antimalware;
 
 namespace Meziantou.Framework.Win32;
@@ -13,10 +14,13 @@ internal static partial class Amsi
         return result >= AmsiResult.AMSI_RESULT_DETECTED;
     }
 
-    internal static int AmsiInitialize(string appName, out AmsiContextSafeHandle amsiContext)
+    internal static HRESULT AmsiInitialize(string appName, out AmsiContextSafeHandle amsiContext)
     {
         var result = PInvoke.AmsiInitialize(appName, out var context);
-        amsiContext = new AmsiContextSafeHandle((nint)context);
+
+        // Only take ownership of the handle the call actually produced: on failure the out parameter
+        // carries no handle the caller is allowed to pass back to AmsiUninitialize.
+        amsiContext = result.Failed ? new AmsiContextSafeHandle() : new AmsiContextSafeHandle((nint)context);
         return result;
     }
 
@@ -25,14 +29,14 @@ internal static partial class Amsi
         PInvoke.AmsiUninitialize((HAMSICONTEXT)amsiContext);
     }
 
-    internal static int AmsiOpenSession(AmsiContextSafeHandle amsiContext, out AmsiSessionSafeHandle session)
+    internal static HRESULT AmsiOpenSession(AmsiContextSafeHandle amsiContext, out AmsiSessionSafeHandle session)
     {
         var contextAddRef = false;
         try
         {
             amsiContext.DangerousAddRef(ref contextAddRef);
             var result = PInvoke.AmsiOpenSession((HAMSICONTEXT)amsiContext.DangerousGetHandle(), out var nativeSession);
-            session = new AmsiSessionSafeHandle(amsiContext, (nint)nativeSession);
+            session = result.Failed ? new AmsiSessionSafeHandle() : new AmsiSessionSafeHandle(amsiContext, (nint)nativeSession);
             return result;
         }
         finally
@@ -48,7 +52,7 @@ internal static partial class Amsi
         PInvoke.AmsiCloseSession((HAMSICONTEXT)amsiContext.DangerousGetHandle(), (HAMSISESSION)session);
     }
 
-    internal static int AmsiScanString(AmsiContextSafeHandle amsiContext, string payload, string contentName, AmsiSessionSafeHandle session, out AmsiResult result)
+    internal static HRESULT AmsiScanString(AmsiContextSafeHandle amsiContext, string payload, string contentName, AmsiSessionSafeHandle session, out AmsiResult result)
     {
         var contextAddRef = false;
         var sessionAddRef = false;
@@ -74,7 +78,7 @@ internal static partial class Amsi
         }
     }
 
-    internal static int AmsiScanBuffer(AmsiContextSafeHandle amsiContext, byte[] buffer, uint length, string contentName, AmsiSessionSafeHandle session, out AmsiResult result)
+    internal static HRESULT AmsiScanBuffer(AmsiContextSafeHandle amsiContext, byte[] buffer, uint length, string contentName, AmsiSessionSafeHandle session, out AmsiResult result)
     {
         var contextAddRef = false;
         var sessionAddRef = false;

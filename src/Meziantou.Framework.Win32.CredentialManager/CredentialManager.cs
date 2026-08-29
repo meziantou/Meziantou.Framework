@@ -288,29 +288,38 @@ public static class CredentialManager
             flags |= CREDUI_FLAGS.CREDUI_FLAGS_DO_NOT_PERSIST;
         }
 
-        fixed (char* targetPtr = target)
-        fixed (char* userIdPtr = userId)
-        fixed (char* passwordPtr = userPassword)
+        try
         {
-            var error = (WIN32_ERROR)PInvoke.CredUICmdLinePromptForCredentials(targetPtr, (SecHandle*)null, 0u, userIdPtr, (uint)userId.Length, passwordPtr, (uint)userPassword.Length, &save, flags);
-            if (error is WIN32_ERROR.ERROR_INVALID_FLAGS or WIN32_ERROR.ERROR_INVALID_PARAMETER or WIN32_ERROR.ERROR_NO_SUCH_LOGON_SESSION)
-                throw new Win32Exception((int)error);
-
-            fixed (char* userBuilder = new char[(int)PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1])
-            fixed (char* domainBuilder = new char[(int)PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1])
+            fixed (char* targetPtr = target)
+            fixed (char* userIdPtr = userId)
+            fixed (char* passwordPtr = userPassword)
             {
-                var credentialSaved = saveCredential == CredentialSaveOption.Hidden ? CredentialSaveOption.Hidden : (save ? CredentialSaveOption.Selected : CredentialSaveOption.Unselected);
+                var error = (WIN32_ERROR)PInvoke.CredUICmdLinePromptForCredentials(targetPtr, (SecHandle*)null, 0u, userIdPtr, (uint)userId.Length, passwordPtr, (uint)userPassword.Length, &save, flags);
+                if (error is WIN32_ERROR.ERROR_INVALID_FLAGS or WIN32_ERROR.ERROR_INVALID_PARAMETER or WIN32_ERROR.ERROR_NO_SUCH_LOGON_SESSION)
+                    throw new Win32Exception((int)error);
 
-                error = PInvoke.CredUIParseUserName(new PWSTR(userIdPtr), userBuilder, PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1, domainBuilder, PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1);
-                return error switch
+                fixed (char* userBuilder = new char[(int)PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1])
+                fixed (char* domainBuilder = new char[(int)PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1])
                 {
-                    WIN32_ERROR.NO_ERROR or WIN32_ERROR.DNS_ERROR_RCODE_NO_ERROR => new CredentialResult(new PWSTR(userBuilder).ToString(), new PWSTR(passwordPtr).ToString(), new PWSTR(domainBuilder).ToString(), credentialSaved),
-                    WIN32_ERROR.ERROR_INVALID_ACCOUNT_NAME => new CredentialResult(new PWSTR(userIdPtr).ToString(), new PWSTR(passwordPtr).ToString(), domain: null, credentialSaved),
-                    WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER => throw new Win32Exception((int)error, "Insufficient buffer"),
-                    WIN32_ERROR.ERROR_INVALID_PARAMETER => throw new Win32Exception((int)error, "Invalid parameter"),
-                    _ => throw new Win32Exception((int)error),
-                };
+                    var credentialSaved = saveCredential == CredentialSaveOption.Hidden ? CredentialSaveOption.Hidden : (save ? CredentialSaveOption.Selected : CredentialSaveOption.Unselected);
+
+                    error = PInvoke.CredUIParseUserName(new PWSTR(userIdPtr), userBuilder, PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1, domainBuilder, PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1);
+                    return error switch
+                    {
+                        WIN32_ERROR.NO_ERROR or WIN32_ERROR.DNS_ERROR_RCODE_NO_ERROR => new CredentialResult(new PWSTR(userBuilder).ToString(), new PWSTR(passwordPtr).ToString(), new PWSTR(domainBuilder).ToString(), credentialSaved),
+                        WIN32_ERROR.ERROR_INVALID_ACCOUNT_NAME => new CredentialResult(new PWSTR(userIdPtr).ToString(), new PWSTR(passwordPtr).ToString(), domain: null, credentialSaved),
+                        WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER => throw new Win32Exception((int)error, "Insufficient buffer"),
+                        WIN32_ERROR.ERROR_INVALID_PARAMETER => throw new Win32Exception((int)error, "Invalid parameter"),
+                        _ => throw new Win32Exception((int)error),
+                    };
+                }
             }
+        }
+        finally
+        {
+            // The password the user typed is still sitting in these buffers.
+            Array.Clear(userId);
+            Array.Clear(userPassword);
         }
     }
 
@@ -504,10 +513,18 @@ public static class CredentialManager
         }
         finally
         {
-            //mimic SecureZeroMem function to make sure buffer is zeroed out. SecureZeroMem is not an exported function, neither is RtlSecureZeroMemory
-            var zeroBytes = new byte[outCredSize];
-            Marshal.Copy(zeroBytes, 0, (nint)outCredBuffer, (int)outCredSize);
-            FreeCoTaskMem((nint)outCredBuffer);
+            // The password also lives in these managed buffers, so scrubbing only the unmanaged one would leave
+            // copies behind. The returned string cannot be scrubbed; that is inherent to the string-based API.
+            usernameBuf.Clear();
+            domainBuf.Clear();
+            passwordBuf.Clear();
+
+            if (outCredBuffer is not null)
+            {
+                //mimic SecureZeroMem function to make sure buffer is zeroed out. SecureZeroMem is not an exported function, neither is RtlSecureZeroMemory
+                NativeMemory.Clear(outCredBuffer, outCredSize);
+                FreeCoTaskMem((nint)outCredBuffer);
+            }
         }
 
         static string ToStringZero(ReadOnlySpan<char> buffer)

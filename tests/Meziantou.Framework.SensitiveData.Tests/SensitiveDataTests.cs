@@ -158,6 +158,15 @@ public sealed class SensitiveDataTests
     }
 
     [Fact]
+    public void ConverterActivatedWithoutADescribedType_RefusesToGuessTheElementType()
+    {
+        var converter = new SensitiveDataTypeConverter();
+
+        Assert.False(converter.CanConvertFrom(typeof(string)));
+        Assert.Throws<NotSupportedException>(() => converter.ConvertFromString("bar"));
+    }
+
+    [Fact]
     public void CannotConvertFromStringToNonCharElementType()
     {
         var converter = TypeDescriptor.GetConverter(typeof(SensitiveData<byte>));

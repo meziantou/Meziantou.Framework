@@ -18,20 +18,21 @@ internal sealed class MonthlyRecurrenceRule : RecurrenceRule
 
         if (IsEmpty(ByMonthDays) && IsEmpty(ByWeekDays))
         {
+            var current = startDate;
             while (true)
             {
                 if (hasTimeFilters)
                 {
-                    foreach (var occurrence in ExpandByTime(startDate))
+                    foreach (var occurrence in ExpandByTime(current, startDate))
                     {
                         yield return occurrence;
                     }
                 }
                 else
                 {
-                    yield return startDate;
+                    yield return current;
                 }
-                startDate = startDate.AddMonths(Interval);
+                current = current.AddMonths(Interval);
             }
         }
 
@@ -59,7 +60,7 @@ internal sealed class MonthlyRecurrenceRule : RecurrenceRule
                 {
                     if (hasTimeFilters)
                     {
-                        foreach (var occurrence in ExpandByTime(date))
+                        foreach (var occurrence in ExpandByTime(date, startDate))
                         {
                             yield return occurrence;
                         }
@@ -77,7 +78,7 @@ internal sealed class MonthlyRecurrenceRule : RecurrenceRule
         // ReSharper disable once IteratorNeverReturns
     }
 
-    private IEnumerable<DateTime> ExpandByTime(DateTime date)
+    private IEnumerable<DateTime> ExpandByTime(DateTime date, DateTime lowerBound)
     {
         var hours = IsEmpty(ByHours) ? [date.Hour] : ByHours;
         var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
@@ -91,7 +92,7 @@ internal sealed class MonthlyRecurrenceRule : RecurrenceRule
                 foreach (var second in seconds)
                 {
                     var result = dateOnly.AddHours(hour).AddMinutes(minute).AddSeconds(second);
-                    if (result >= date)
+                    if (result >= lowerBound)
                     {
                         yield return result;
                     }

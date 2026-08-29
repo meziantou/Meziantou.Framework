@@ -664,6 +664,15 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    [RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void ToWindowsExtendedPath_ThrowsOnNonWindows()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.txt";
+
+        Assert.Throws<PlatformNotSupportedException>(path.ToWindowsExtendedPath);
+    }
+
+    [Fact]
     [RunIf(TestOperatingSystems.Windows)]
     public void ToWindowsExtendedPath_RegularPath()
     {

@@ -756,9 +756,15 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <para>UNC paths are converted to <c>\\?\UNC\server\share</c> format.</para>
     /// <para>If the path already uses a device path syntax (<c>\\?\</c>, <c>\\.\</c>, or <c>\??\</c>), it is returned as-is.</para>
     /// </remarks>
+    /// <exception cref="PlatformNotSupportedException">The current operating system is not Windows.</exception>
     [SupportedOSPlatform("windows")]
     public string ToWindowsExtendedPath()
     {
+        // EnsureExtendedPrefix treats any '/'-rooted path as partially qualified and returns it unchanged, so without
+        // this check the method would silently hand back something that is not an extended path.
+        if (!OperatingSystem.IsWindows())
+            throw new PlatformNotSupportedException("Extended-length paths are only supported on Windows.");
+
         if (IsEmpty)
             return "";
 

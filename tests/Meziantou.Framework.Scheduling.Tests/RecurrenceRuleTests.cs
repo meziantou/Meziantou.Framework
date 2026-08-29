@@ -54,6 +54,33 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
+    public void Monthly_ByMonthKeepsOnlyTheListedMonths()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;BYMONTH=1;BYMONTHDAY=15");
+        var startDate = new DateTime(2024, 01, 01, 00, 00, 00);
+        var occurrences = rrule.GetNextOccurrences(startDate);
+
+        AssertOccurrencesStartWith(occurrences,
+            new DateTime(2024, 01, 15, 00, 00, 00),
+            new DateTime(2025, 01, 15, 00, 00, 00),
+            new DateTime(2026, 01, 15, 00, 00, 00));
+    }
+
+    [Fact]
+    public void Monthly_ByMonthWithSeveralMonths()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;BYMONTH=3,6;BYMONTHDAY=1");
+        var startDate = new DateTime(2024, 01, 01, 00, 00, 00);
+        var occurrences = rrule.GetNextOccurrences(startDate);
+
+        AssertOccurrencesStartWith(occurrences,
+            new DateTime(2024, 03, 01, 00, 00, 00),
+            new DateTime(2024, 06, 01, 00, 00, 00),
+            new DateTime(2025, 03, 01, 00, 00, 00),
+            new DateTime(2025, 06, 01, 00, 00, 00));
+    }
+
+    [Fact]
     public void Yearly_Text01()
     {
         var rrule = RecurrenceRule.Parse("FREQ=YEARLY;UNTIL=20000131T140000Z;BYYEARDAY=1,-1;BYMONTH=1;BYDAY=TU,WE;BYMONTHDAY=2");

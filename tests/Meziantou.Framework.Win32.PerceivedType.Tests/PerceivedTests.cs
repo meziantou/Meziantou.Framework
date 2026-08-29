@@ -46,4 +46,34 @@ public class PerceivedTests
         var perceived = Perceived.GetPerceivedType(".unknown_extension");
         Assert.Equal(PerceivedType.Unspecified, perceived.PerceivedType);
     }
+
+    [Theory]
+    [InlineData(".txt", 0, true)]
+    [InlineData(".appxmanifest", 4095, true)]
+    [InlineData(".txt", 4096, false)]
+    [InlineData(".txt", 5000, false)]
+    [InlineData(".this_extension_is_far_too_long", 0, false)]
+    public void ShouldCache_LimitsLengthAndCount(string extension, int currentCount, bool expected)
+    {
+        Assert.Equal(expected, Perceived.ShouldCache(extension, currentCount));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetPerceivedType_DoesNotCacheAnAbsurdlyLongExtension()
+    {
+        var extension = "." + new string('a', 512);
+
+        var perceived = Perceived.GetPerceivedType("file" + extension);
+
+        Assert.Equal(PerceivedType.Unspecified, perceived.PerceivedType);
+        Assert.False(Perceived.IsExtensionCached(extension));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetPerceivedType_CachesAnOrdinaryExtension()
+    {
+        Perceived.GetPerceivedType(".png");
+
+        Assert.True(Perceived.IsExtensionCached(".png"));
+    }
 }

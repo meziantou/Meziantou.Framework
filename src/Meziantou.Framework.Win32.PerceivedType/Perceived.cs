@@ -23,6 +23,11 @@ public sealed class Perceived
 {
     private static readonly ConcurrentDictionary<string, Perceived> PerceivedTypes = new(StringComparer.OrdinalIgnoreCase);
 
+    // The cache is keyed by a value derived from the caller's argument, and file names often come from untrusted
+    // sources. Without these limits a process that classifies arbitrary file names grows the cache forever.
+    private const int MaximumCachedExtensionLength = 24;
+    private const int MaximumCacheSize = 4096;
+
     private static object SyncObject { get; } = new object();
 
     private Perceived(string extension, PerceivedType perceivedType, PerceivedTypeSource perceivedTypeSource)
@@ -150,7 +155,10 @@ public sealed class Perceived
                 }
 
                 ptype = new Perceived(extension, type, source);
-                PerceivedTypes.TryAdd(extension, ptype);
+                if (ShouldCache(extension, PerceivedTypes.Count))
+                {
+                    PerceivedTypes.TryAdd(extension, ptype);
+                }
             }
 
             return ptype;
@@ -171,5 +179,20 @@ public sealed class Perceived
     private static bool IsSupportedPlatform()
     {
         return OperatingSystem.IsWindows();
+    }
+
+    /// <summary>Determines whether a type resolved through the operating system is worth remembering.</summary>
+    /// <remarks>
+    /// Extensions registered explicitly through <see cref="AddPerceived(string, PerceivedType)"/> are never subject
+    /// to these limits. Refusing to cache only makes a later lookup slower; it never changes the result.
+    /// </remarks>
+    internal static bool ShouldCache(string extension, int currentCount)
+    {
+        return extension.Length <= MaximumCachedExtensionLength && currentCount < MaximumCacheSize;
+    }
+
+    internal static bool IsExtensionCached(string extension)
+    {
+        return PerceivedTypes.ContainsKey(extension);
     }
 }

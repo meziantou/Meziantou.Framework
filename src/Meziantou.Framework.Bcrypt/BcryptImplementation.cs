@@ -232,22 +232,32 @@ internal sealed class BcryptImplementation
 
 
         byte[] passwordBytes;
-        if (minorRevision >= 'a')
+        try
         {
-            // The 'a' revision and later append a NUL terminator to the password before it is used as key material.
-            // Unlike the C implementations, the password is not truncated at an embedded NUL: .NET strings are not
-            // NUL-terminated, so every byte of the password takes part in the hash.
-            passwordBytes = new byte[Utf8.GetByteCount(password) + 1];
-            Utf8.GetBytes(password, passwordBytes);
-            passwordBytes[^1] = 0; // Null terminator
+            passwordBytes = GetPasswordBytes(password, minorRevision);
         }
-        else
+        catch (EncoderFallbackException ex)
         {
-            // The original '2' revision uses the password as-is, with no NUL terminator.
-            passwordBytes = Utf8.GetBytes(password);
+            throw new ArgumentException("The password cannot be encoded as UTF-8. It contains an unpaired surrogate.", nameof(password), ex);
         }
 
         return HashBytes(passwordBytes, salt.Slice(offset + 3, 22), minorRevision, workFactor);
+    }
+
+    private static byte[] GetPasswordBytes(ReadOnlySpan<char> password, char minorRevision)
+    {
+        // The original '2' revision uses the password as-is, with no NUL terminator.
+        if (minorRevision < 'a')
+            return Utf8.GetBytes(password);
+
+        // The 'a' revision and later append a NUL terminator to the password before it is used as key material.
+        // Unlike the C implementations, the password is not truncated at an embedded NUL: .NET strings are not
+        // NUL-terminated, so every byte of the password takes part in the hash.
+        var passwordBytes = new byte[Utf8.GetByteCount(password) + 1];
+        Utf8.GetBytes(password, passwordBytes);
+        passwordBytes[^1] = 0; // Null terminator
+
+        return passwordBytes;
     }
 
     public static bool Verify(string password, string hash)
@@ -260,8 +270,22 @@ internal sealed class BcryptImplementation
 
     public static bool Verify(ReadOnlySpan<char> password, ReadOnlySpan<char> hash)
     {
+        string computedHash;
+        try
+        {
+            computedHash = HashPassword(password, hash);
+        }
+        catch (ArgumentException ex) when (ex.InnerException is EncoderFallbackException)
+        {
+            // A password that cannot be encoded as UTF-8 can never have produced a stored hash, so report
+            // a mismatch instead of letting the exception escape a method that returns bool. This is
+            // deliberately checked after HashPassword has validated the hash itself, so an unsupported
+            // revision still fails loudly even when the password is also invalid.
+            return false;
+        }
+
         var hashBytes = Utf8.GetBytes(hash);
-        var computedHashBytes = Utf8.GetBytes(HashPassword(password, hash));
+        var computedHashBytes = Utf8.GetBytes(computedHash);
         return CryptographicOperations.FixedTimeEquals(hashBytes, computedHashBytes);
     }
 

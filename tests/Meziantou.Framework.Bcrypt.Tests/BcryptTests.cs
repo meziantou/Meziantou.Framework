@@ -182,6 +182,72 @@ public sealed class BcryptTests
     }
 
     [Fact]
+    public void Verify_PasswordWithUnpairedSurrogate_ReturnsFalse()
+    {
+        // Unpaired surrogates used to escape as EncoderFallbackException from a method returning bool.
+        const string Hash = "$2b$04$2Siw3Nv3Q/gTOIPetAyPr.GNj3aO0lb1E5E9UumYGKjP9BYqlNWJe";
+
+        foreach (var password in UnpairedSurrogatePasswords())
+        {
+            Assert.False(Bcrypt.Verify(password, Hash));
+            Assert.False(Bcrypt.Verify(password.AsSpan(), Hash.AsSpan()));
+        }
+    }
+
+    [Fact]
+    public void HashPassword_PasswordWithUnpairedSurrogate_ThrowsArgumentException()
+    {
+        var salt = Bcrypt.GenerateSalt(4);
+
+        foreach (var password in UnpairedSurrogatePasswords())
+        {
+            // Guard against the inputs silently becoming encodable and making the assertions below vacuous.
+            Assert.Throws<EncoderFallbackException>(() => new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true).GetByteCount(password));
+
+            Assert.Equal("password", Assert.Throws<ArgumentException>(() => Bcrypt.HashPassword(password, workFactor: 4)).ParamName);
+            Assert.Equal("password", Assert.Throws<ArgumentException>(() => Bcrypt.HashPassword(password, salt)).ParamName);
+        }
+    }
+
+    [Fact]
+    public void Verify_UnpairedSurrogateAgainstUnsupportedRevision_StillReportsTheRevision()
+    {
+        // The hash is validated before the password is encoded, so an unsupported revision fails loudly
+        // even when the password is itself invalid: the revision is a property of stored data and the
+        // caller needs to learn about it.
+        const string Hash2X = "$2x$12$DB3BUbYa/SsEL7kCOVji0OauTkPkB5Y1OeyfxJHM7jvMrbml5sgD2";
+
+        foreach (var password in UnpairedSurrogatePasswords())
+        {
+            Assert.Throws<NotSupportedException>(() => Bcrypt.Verify(password, Hash2X));
+        }
+    }
+
+    // Built in code rather than through [InlineData]: xunit round-trips theory data through UTF-8,
+    // which replaces unpaired surrogates with U+FFFD and would make these tests vacuous.
+    private static string[] UnpairedSurrogatePasswords() =>
+    [
+        "\ud800",
+        "\udc00",
+        "ab\ud800cd",
+        "ab\udc00cd",
+        "trailing\ud83d",
+    ];
+
+    [Theory]
+    [InlineData("caf\u00e9")]
+    [InlineData("\u4f60\u597d\u4e16\u754c")]
+    [InlineData("\ud83d\ude00 emoji")]
+    [InlineData("\u00ff\u00ffabc")]
+    public void HashPassword_NonAsciiPassword_RoundTrips(string password)
+    {
+        var hash = Bcrypt.HashPassword(password, workFactor: 4);
+
+        Assert.True(Bcrypt.Verify(password, hash));
+        Assert.False(Bcrypt.Verify(password + "x", hash));
+    }
+
+    [Fact]
     public void NeedsRehash_ReturnsExpectedValue()
     {
         var hash = Bcrypt.HashPassword("password", workFactor: 6, version: BcryptVersion.Revision2A);

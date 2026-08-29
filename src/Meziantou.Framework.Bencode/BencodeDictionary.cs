@@ -23,6 +23,12 @@ public sealed class BencodeDictionary : BencodeValue, IReadOnlyDictionary<Bencod
 
     public override BencodeValueKind Kind => BencodeValueKind.Dictionary;
 
+    /// <summary>Offset of the bytes this dictionary was decoded from, when it came from <see cref="BencodeDocument.Parse(ReadOnlySpan{byte})"/>.</summary>
+    internal int SourceOffset { get; set; }
+
+    /// <summary>Length of the bytes this dictionary was decoded from, or <c>0</c> when it was not decoded from a buffer.</summary>
+    internal int SourceLength { get; set; }
+
     public int Count => _entries.Count;
 
     public IEnumerable<BencodeString> Keys => _entries.Select(entry => entry.Key);

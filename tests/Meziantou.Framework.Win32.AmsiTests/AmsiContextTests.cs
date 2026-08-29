@@ -76,4 +76,48 @@ public class AmsiContextTests
         session1.Dispose();
         session2.Dispose();
     }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void UsingADisposedContextThrows()
+    {
+        var context = AmsiContext.Create("MyApplication");
+        context.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => context.IsMalware("0000", "EICAR"));
+        Assert.Throws<ObjectDisposedException>(() => context.IsMalware([0, 0, 0, 0], "EICAR"));
+        Assert.Throws<ObjectDisposedException>(context.CreateSession);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void UsingADisposedSessionThrows()
+    {
+        using var context = AmsiContext.Create("MyApplication");
+        var session = context.CreateSession();
+        session.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => session.IsMalware("0000", "EICAR"));
+        Assert.Throws<ObjectDisposedException>(() => session.IsMalware([0, 0, 0, 0], "EICAR"));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void UsingASessionWhoseContextIsDisposedThrows()
+    {
+        var context = AmsiContext.Create("MyApplication");
+        using var session = context.CreateSession();
+        context.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => session.IsMalware("0000", "EICAR"));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void DisposingTwiceIsSafe()
+    {
+        var context = AmsiContext.Create("MyApplication");
+        var session = context.CreateSession();
+
+        session.Dispose();
+        session.Dispose();
+        context.Dispose();
+        context.Dispose();
+    }
 }

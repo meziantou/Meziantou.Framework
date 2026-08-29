@@ -20,6 +20,16 @@ public sealed class AmsiContext : IDisposable
 
     private static readonly AmsiSessionSafeHandle DefaultSession = new();
 
+    private bool _disposed;
+
+    /// <summary>Gets a value indicating whether this context has been disposed.</summary>
+    /// <remarks>
+    /// Tracked separately from the handle: a session holds a reference on the handle, so
+    /// <see cref="System.Runtime.InteropServices.SafeHandle.IsClosed"/> stays <see langword="false"/>
+    /// after <see cref="Dispose"/> until every session is closed.
+    /// </remarks>
+    internal bool IsDisposed => _disposed;
+
     private AmsiContext(AmsiContextSafeHandle context)
     {
         _handle = context;
@@ -38,8 +48,10 @@ public sealed class AmsiContext : IDisposable
     /// <summary>Creates a new AMSI session for correlating multiple scan requests.</summary>
     /// <returns>A new <see cref="AmsiSession"/> instance.</returns>
     /// <exception cref="COMException">Thrown when the AMSI session cannot be opened.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown when the context has been disposed.</exception>
     public AmsiSession CreateSession()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         Amsi.AmsiOpenSession(_handle, out var session).ThrowOnFailure();
         return new AmsiSession(this, session);
     }
@@ -49,8 +61,10 @@ public sealed class AmsiContext : IDisposable
     /// <param name="contentName">The name or identifier of the content being scanned.</param>
     /// <returns><see langword="true"/> if the content is detected as malware; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="COMException">Thrown when the scan operation fails.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown when the context has been disposed.</exception>
     public bool IsMalware(string payload, string contentName)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         Amsi.AmsiScanString(_handle, payload, contentName, DefaultSession, out var result).ThrowOnFailure();
         return Amsi.AmsiResultIsMalware(result);
     }
@@ -60,14 +74,17 @@ public sealed class AmsiContext : IDisposable
     /// <param name="contentName">The name or identifier of the content being scanned.</param>
     /// <returns><see langword="true"/> if the content is detected as malware; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="COMException">Thrown when the scan operation fails.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown when the context has been disposed.</exception>
     public bool IsMalware(byte[] payload, string contentName)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         Amsi.AmsiScanBuffer(_handle, payload, (uint)payload.Length, contentName, DefaultSession, out var result).ThrowOnFailure();
         return Amsi.AmsiResultIsMalware(result);
     }
 
     public void Dispose()
     {
+        _disposed = true;
         _handle.Dispose();
     }
 }

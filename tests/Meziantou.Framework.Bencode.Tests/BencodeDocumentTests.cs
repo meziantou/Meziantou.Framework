@@ -102,6 +102,20 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public void ReadmeSample_ParseThenEncodeADictionary()
+    {
+        var data = "d3:cow3:moo4:spam4:eggse"u8.ToArray();
+        var document = BencodeDocument.Parse(data);
+
+        var dictionary = (BencodeDictionary)document.Root;
+        var cow = (BencodeString)dictionary[new BencodeString("cow"u8.ToArray())];
+        Assert.Equal("moo", cow.ToUtf8String());
+
+        var encoded = dictionary.ToUtf8ByteArray();
+        Assert.Equal("d3:cow3:moo4:spam4:eggse", Encoding.ASCII.GetString(encoded));
+    }
+
+    [Fact]
     public void BencodeValueToArray_CanonicalFalse_PreservesInsertionOrder()
     {
         BencodeValue value = new BencodeDictionary

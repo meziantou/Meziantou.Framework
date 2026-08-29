@@ -16,3 +16,4 @@ ConvertSidToStringSid
 CreateWellKnownSid
 LookupAccountSid
 LocalFree
+GetLengthSid

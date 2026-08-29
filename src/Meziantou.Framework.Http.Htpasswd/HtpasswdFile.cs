@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace Meziantou.Framework.Http;
@@ -180,8 +181,17 @@ public sealed class HtpasswdFile
         if (expectedPasswordHashSpan.StartsWith(Sha512CryptPrefix, StringComparison.Ordinal))
             return VerifyShaCrypt(password, expectedPasswordHashSpan, useSha512: true);
 
-        return password.SequenceEqual(expectedPasswordHashSpan);
+        return FixedTimeEquals(password, expectedPasswordHashSpan);
     }
+
+    /// <summary>Compares two values in an amount of time that does not depend on where they start to differ.</summary>
+    /// <remarks>
+    /// The spans are reinterpreted as bytes rather than encoded, so no buffer is needed on the verification path.
+    /// As with <see cref="CryptographicOperations.FixedTimeEquals(System.ReadOnlySpan{byte}, System.ReadOnlySpan{byte})"/>,
+    /// a length difference is still observable.
+    /// </remarks>
+    private static bool FixedTimeEquals(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
+        => CryptographicOperations.FixedTimeEquals(MemoryMarshal.AsBytes(left), MemoryMarshal.AsBytes(right));
 
     private static bool IsBcryptHash(ReadOnlySpan<char> hash)
     {
@@ -200,7 +210,7 @@ public sealed class HtpasswdFile
             return false;
 
         var computedHash = CreateMd5CryptHash(password, salt, prefix);
-        return expectedHash.SequenceEqual(computedHash.AsSpan());
+        return FixedTimeEquals(expectedHash, computedHash.AsSpan());
     }
 
     private static bool VerifyShaCrypt(ReadOnlySpan<char> password, ReadOnlySpan<char> expectedHash, bool useSha512)
@@ -212,7 +222,7 @@ public sealed class HtpasswdFile
             return false;
 
         var computedHash = CreateShaCryptHash(password, salt, rounds, roundsCustom, useSha512);
-        return expectedHash.SequenceEqual(computedHash.AsSpan());
+        return FixedTimeEquals(expectedHash, computedHash.AsSpan());
     }
 
     private static bool TryParseMd5CryptHash(ReadOnlySpan<char> hash, string prefix, out ReadOnlySpan<char> salt, out ReadOnlySpan<char> checksum)
@@ -583,7 +593,7 @@ public sealed class HtpasswdFile
             Span<char> base64 = stackalloc char[28];
             _ = Convert.TryToBase64Chars(hashBytes, base64, out var charsWritten);
 
-            return expectedHash.SequenceEqual(base64[..charsWritten]);
+            return FixedTimeEquals(expectedHash, base64[..charsWritten]);
         }
         finally
         {

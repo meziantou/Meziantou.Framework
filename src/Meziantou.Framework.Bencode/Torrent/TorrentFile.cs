@@ -21,20 +21,44 @@ public sealed class TorrentFile
 
     public DateTimeOffset? CreationDate { get; set; }
 
-    public TorrentInfo Info { get; set; } = new();
+    private TorrentInfo _info = new();
+    private ReadOnlyMemory<byte> _infoBytes;
+
+    /// <summary>The metainfo dictionary. Replacing it discards the parsed bytes, so the info-hash is recomputed from the model.</summary>
+    public TorrentInfo Info
+    {
+        get => _info;
+        set
+        {
+            _info = value;
+            _infoBytes = default;
+        }
+    }
 
     public static TorrentFile Parse(ReadOnlySpan<byte> data)
     {
         var root = BencodeDocument.Parse(data).Root;
-        return Parse(root);
+        var result = Parse(root);
+
+        if (root is BencodeDictionary rootDictionary
+            && rootDictionary.TryGetValue(InfoKey, out var infoValue)
+            && infoValue is BencodeDictionary { SourceLength: > 0 } infoDictionary)
+        {
+            result._infoBytes = data.Slice(infoDictionary.SourceOffset, infoDictionary.SourceLength).ToArray();
+        }
+
+        return result;
     }
 
     public static async ValueTask<TorrentFile> ParseAsync(Stream stream, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
 
-        var root = (await BencodeDocument.ParseAsync(stream, cancellationToken).ConfigureAwait(false)).Root;
-        return Parse(root);
+        // The whole file is buffered so the info dictionary can be hashed from the bytes it was parsed from.
+        // The decoded model is the same size anyway, so this does not change the order of memory used.
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+        return Parse(buffer.GetBuffer().AsSpan(0, (int)buffer.Length));
     }
 
     public static bool TryParse(ReadOnlySpan<byte> data, out TorrentFile? result)
@@ -65,17 +89,30 @@ public sealed class TorrentFile
         await stream.WriteAsync(data.AsMemory(), cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Computes the BitTorrent v1 info-hash.</summary>
+    /// <remarks>For a parsed torrent this hashes the exact bytes the 'info' dictionary was read from, so keys this model does not represent still contribute to the hash.</remarks>
     [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash requires SHA-1.")]
     public byte[] GetInfoHashSha1()
     {
-        var data = Info.ToBencodeDictionary().ToUtf8ByteArray(canonical: true);
-        return SHA1.HashData(data);
+        return SHA1.HashData(GetInfoBytes().Span);
     }
 
+    /// <summary>Computes the SHA-256 of the 'info' dictionary.</summary>
+    /// <remarks>For a parsed torrent this hashes the exact bytes the 'info' dictionary was read from, so keys this model does not represent still contribute to the hash.</remarks>
     public byte[] GetInfoHashSha256()
     {
-        var data = Info.ToBencodeDictionary().ToUtf8ByteArray(canonical: true);
-        return SHA256.HashData(data);
+        return SHA256.HashData(GetInfoBytes().Span);
+    }
+
+    /// <summary>Returns the bytes to hash: the ones the torrent was parsed from when available, otherwise a canonical encoding of the model.</summary>
+    /// <remarks>
+    /// Re-encoding a parsed torrent would drop every 'info' key this model does not represent ('source', 'md5sum',
+    /// an explicit 'private 0', the BitTorrent v2 keys), and dropping any of them changes the hash, which is the
+    /// torrent's identity.
+    /// </remarks>
+    private ReadOnlyMemory<byte> GetInfoBytes()
+    {
+        return _infoBytes.IsEmpty ? Info.ToBencodeDictionary().ToUtf8ByteArray(canonical: true) : _infoBytes;
     }
 
     private static TorrentFile Parse(BencodeValue root)

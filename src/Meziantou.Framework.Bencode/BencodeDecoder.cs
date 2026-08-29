@@ -110,6 +110,7 @@ internal static class BencodeDecoder
     private static BencodeDictionary ParseDictionary(ReadOnlySpan<byte> data, ref int index, int depth)
     {
         EnsureDepth(depth);
+        var start = index;
         index++; // d
         var result = new BencodeDictionary();
 
@@ -121,6 +122,8 @@ internal static class BencodeDecoder
             if (data[index] == (byte)'e')
             {
                 index++;
+                result.SourceOffset = start;
+                result.SourceLength = index - start;
                 return result;
             }
 

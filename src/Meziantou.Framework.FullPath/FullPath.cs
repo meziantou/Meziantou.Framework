@@ -447,7 +447,12 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         // '\' is a regular file name character on Unix, so a path such as @"\\?\a" is a relative file name there, not a device path
         if (OperatingSystem.IsWindows() && PathInternal.IsExtended(path))
         {
-            path = path[PathInternal.DevicePrefixLength..];
+            // The extended form of a UNC path is @"\\?\UNC\server\share". Dropping the 4-character device prefix would
+            // leave the relative @"UNC\server\share", which Path.GetFullPath would then resolve against the current
+            // directory, so restore the @"\\" prefix instead. This is the inverse of PathInternal.EnsureExtendedPrefix.
+            path = path.StartsWith(PathInternal.UncExtendedPathPrefix, StringComparison.OrdinalIgnoreCase)
+                ? string.Concat(PathInternal.UncPathPrefix, path.AsSpan(PathInternal.UncExtendedPathPrefix.Length))
+                : path[PathInternal.DevicePrefixLength..];
         }
 
         var fullPath = Path.GetFullPath(path);

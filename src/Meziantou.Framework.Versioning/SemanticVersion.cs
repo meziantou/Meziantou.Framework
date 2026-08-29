@@ -63,17 +63,19 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         if (prereleaseLabel is not null)
         {
             var index = 0;
-            PrereleaseLabels = ReadPrereleaseIdentifiers(prereleaseLabel.AsSpan(), ref index);
-            if (index != prereleaseLabel.Length)
+            if (!TryReadPrereleaseIdentifiers(prereleaseLabel.AsSpan(), ref index, out var labels) || index != prereleaseLabel.Length)
                 throw new ArgumentException("Value is not valid", nameof(prereleaseLabel));
+
+            PrereleaseLabels = labels;
         }
 
         if (metadata is not null)
         {
             var index = 0;
-            Metadata = TryReadMetadataIdentifiers(metadata.AsSpan(), ref index);
-            if (index != metadata.Length)
+            if (!TryReadMetadataIdentifiers(metadata.AsSpan(), ref index, out var labels) || index != metadata.Length)
                 throw new ArgumentException("Value is not valid", nameof(metadata));
+
+            Metadata = labels;
         }
     }
 
@@ -284,14 +286,20 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         if (!TryReadNumber(versionString, ref index, out var patch))
             return false;
 
-        if (!TryReadPrerelease(versionString, ref index, out var prereleaseLabels))
+        IReadOnlyList<string>? prereleaseLabels = null;
+        if (index < versionString.Length && versionString[index] == '-')
         {
-            prereleaseLabels = null;
+            index++;
+            if (!TryReadPrereleaseIdentifiers(versionString, ref index, out prereleaseLabels))
+                return false;
         }
 
-        if (!TryReadMetadata(versionString, ref index, out var metadata))
+        IReadOnlyList<string>? metadata = null;
+        if (index < versionString.Length && versionString[index] == '+')
         {
-            metadata = null;
+            index++;
+            if (!TryReadMetadataIdentifiers(versionString, ref index, out metadata))
+                return false;
         }
 
         // Should be at the end of the string
@@ -325,76 +333,53 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return false;
     }
 
-    private static bool TryReadPrerelease(ReadOnlySpan<char> versionString, ref int index, [NotNullWhen(returnValue: true)] out IReadOnlyList<string>? labels)
-    {
-        if (index < versionString.Length && versionString[index] == '-')
-        {
-            index++;
-
-            labels = ReadPrereleaseIdentifiers(versionString, ref index);
-            return true;
-        }
-
-        labels = null;
-        return false;
-    }
-
-    private static IReadOnlyList<string> ReadPrereleaseIdentifiers(ReadOnlySpan<char> versionString, ref int index)
+    // A prerelease or metadata section is one or more dot-separated identifiers, and every one of
+    // them must be non-empty. Returns false on an empty section ("1.2.3-") or an empty identifier
+    // ("1.2.3-alpha." / "1.2.3-alpha..beta") rather than silently skipping it.
+    private static bool TryReadPrereleaseIdentifiers(ReadOnlySpan<char> versionString, ref int index, [NotNullWhen(returnValue: true)] out IReadOnlyList<string>? labels)
     {
         ReadOnlyList<string>? result = null;
         while (true)
         {
-            if (TryReadPrereleaseIdentifier(versionString, ref index, out var label))
+            if (!TryReadPrereleaseIdentifier(versionString, ref index, out var label))
             {
-                result ??= [];
-                result.Add(label);
+                labels = null;
+                return false;
             }
+
+            result ??= [];
+            result.Add(label);
 
             if (!TryReadDot(versionString, ref index))
                 break;
         }
 
-        if (result is null)
-            return EmptyArray;
-
         result.Freeze();
-        return result;
+        labels = result;
+        return true;
     }
 
-    private static bool TryReadMetadata(ReadOnlySpan<char> versionString, ref int index, [NotNullWhen(returnValue: true)] out IReadOnlyList<string>? labels)
-    {
-        if (index < versionString.Length && versionString[index] == '+')
-        {
-            index++;
-
-            labels = TryReadMetadataIdentifiers(versionString, ref index);
-            return true;
-        }
-
-        labels = null;
-        return false;
-    }
-
-    private static IReadOnlyList<string> TryReadMetadataIdentifiers(ReadOnlySpan<char> versionString, ref int index)
+    private static bool TryReadMetadataIdentifiers(ReadOnlySpan<char> versionString, ref int index, [NotNullWhen(returnValue: true)] out IReadOnlyList<string>? labels)
     {
         ReadOnlyList<string>? result = null;
         while (true)
         {
-            if (TryReadMetadataIdentifier(versionString, ref index, out var label))
+            if (!TryReadMetadataIdentifier(versionString, ref index, out var label))
             {
-                result ??= [];
-                result.Add(label);
+                labels = null;
+                return false;
             }
+
+            result ??= [];
+            result.Add(label);
 
             if (!TryReadDot(versionString, ref index))
                 break;
         }
 
-        if (result is null)
-            return EmptyArray;
-
         result.Freeze();
-        return result;
+        labels = result;
+        return true;
     }
 
     private static bool IsPrereleaseIdentifier(ReadOnlySpan<char> label)

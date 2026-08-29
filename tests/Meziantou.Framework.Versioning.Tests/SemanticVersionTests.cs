@@ -34,6 +34,15 @@ public class SemanticVersionTests
     [InlineData("1.0.0-01")] // No leading 0
     [InlineData("1.0.0-beta.01")] // No leading 0
     [InlineData("1.0.0+é")] // Invalid character
+    [InlineData("1.2.3-")] // Prerelease section must contain at least one identifier
+    [InlineData("1.2.3-.")] // Prerelease identifiers must not be empty
+    [InlineData("1.2.3-alpha.")] // Trailing dot leaves an empty identifier
+    [InlineData("1.2.3-alpha..beta")] // Empty identifier between two dots
+    [InlineData("1.2.3+")] // Metadata section must contain at least one identifier
+    [InlineData("1.2.3+build.")] // Trailing dot leaves an empty identifier
+    [InlineData("1.2.3+a..b")] // Empty identifier between two dots
+    [InlineData("1.2.3+.-")] // Metadata identifiers must not be empty
+    [InlineData("1.2.3-alpha.+build")] // Empty prerelease identifier before the metadata section
     public void TryParse_ShouldNotParseVersion(string version)
     {
         Assert.False(SemanticVersion.TryParse(version, out _));
@@ -151,6 +160,27 @@ public class SemanticVersionTests
         Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: [""], metadata: null));
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData(".")]
+    [InlineData("alpha.")]
+    [InlineData("alpha..beta")]
+    public void Constructor_WithInvalidPrereleaseString_ShouldThrowException(string prereleaseLabel)
+    {
+        Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(".")]
+    [InlineData("build.")]
+    [InlineData("a..b")]
+    [InlineData("label./")]
+    public void Constructor_WithInvalidMetadataString_ShouldThrowException(string metadata)
+    {
+        Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata));
+    }
+
     [Fact]
     public void Constructor_WithEmptyMetadata_ShouldThrowException()
     {
@@ -161,12 +191,6 @@ public class SemanticVersionTests
     public void Constructor_WithInvalidMetadata_ShouldThrowException()
     {
         Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: ["/"]));
-    }
-
-    [Fact]
-    public void Constructor_WithInvalidMetadataString_ShouldThrowException()
-    {
-        Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: "label./"));
     }
 
     [Fact]

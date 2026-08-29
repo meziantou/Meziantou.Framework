@@ -144,6 +144,22 @@ public sealed class TorrentFileTests
     }
 
     [Fact]
+    public void TryParse_ValidContent_ReturnsTheTorrent()
+    {
+        // No null-forgiving operator inside the branch: NotNullWhen(true) must narrow `torrent` here,
+        // otherwise this test does not compile under warnings-as-errors.
+        if (TorrentFile.TryParse(SingleFileTorrent, out var torrent))
+        {
+            Assert.Equal("file.txt", torrent.Info.Name);
+            Assert.Equal(123, torrent.Info.Length);
+        }
+        else
+        {
+            Assert.Fail("Expected the torrent to parse.");
+        }
+    }
+
+    [Fact]
     public async Task WriteToAsync_RoundTrip()
     {
         var torrent = TorrentFile.Parse(SingleFileTorrent);
@@ -166,6 +182,81 @@ public sealed class TorrentFileTests
 
         Assert.Equal(SHA1.HashData(SingleFileInfo), torrent.GetInfoHashSha1());
         Assert.Equal(SHA256.HashData(SingleFileInfo), torrent.GetInfoHashSha256());
+    }
+
+    [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash is SHA-1.")]
+    [Theory]
+    [InlineData("d6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:012345678901234567896:source9:MyTrackere")]
+    [InlineData("d6:lengthi123e6:md5sum32:000102030405060708090a0b0c0d0e0f4:name8:file.txt12:piece lengthi16384e6:pieces20:01234567890123456789e")]
+    [InlineData("d6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:012345678901234567897:privatei0ee")]
+    public void GetInfoHash_UsesTheBytesTheInfoDictionaryWasParsedFrom(string info)
+    {
+        var infoBytes = Encoding.ASCII.GetBytes(info);
+        var torrent = TorrentFile.Parse(Encoding.ASCII.GetBytes("d8:announce14:https://t.test4:info" + info + "e"));
+
+        Assert.Equal(SHA1.HashData(infoBytes), torrent.GetInfoHashSha1());
+        Assert.Equal(SHA256.HashData(infoBytes), torrent.GetInfoHashSha256());
+    }
+
+    [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash is SHA-1.")]
+    [Fact]
+    public void GetInfoHash_NonCanonicalKeyOrder_UsesTheOriginalOrder()
+    {
+        var info = "d4:name8:file.txt6:lengthi123e12:piece lengthi16384e6:pieces20:01234567890123456789e";
+        var torrent = TorrentFile.Parse(Encoding.ASCII.GetBytes("d4:info" + info + "e"));
+
+        Assert.Equal(SHA1.HashData(Encoding.ASCII.GetBytes(info)), torrent.GetInfoHashSha1());
+    }
+
+    [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash is SHA-1.")]
+    [Fact]
+    public async Task GetInfoHashAsync_MatchesTheSynchronousParse()
+    {
+        var info = "d6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:012345678901234567896:source9:MyTrackere";
+        var content = Encoding.ASCII.GetBytes("d8:announce14:https://t.test4:info" + info + "e");
+
+        await using var stream = new MemoryStream(content);
+        var torrent = await TorrentFile.ParseAsync(stream);
+
+        Assert.Equal(SHA1.HashData(Encoding.ASCII.GetBytes(info)), torrent.GetInfoHashSha1());
+    }
+
+    [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash is SHA-1.")]
+    [Fact]
+    public void GetInfoHash_ConstructedTorrent_UsesTheCanonicalEncoding()
+    {
+        var torrent = new TorrentFile
+        {
+            Info = new TorrentInfo
+            {
+                Name = "file.txt",
+                PieceLength = 16384,
+                Pieces = "01234567890123456789"u8.ToArray(),
+                Length = 123,
+            },
+        };
+
+        Assert.Equal(SHA1.HashData(SingleFileInfo), torrent.GetInfoHashSha1());
+    }
+
+    [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash is SHA-1.")]
+    [Fact]
+    public void GetInfoHash_AfterReplacingInfo_UsesTheNewInfo()
+    {
+        var info = "d6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:012345678901234567896:source9:MyTrackere";
+        var torrent = TorrentFile.Parse(Encoding.ASCII.GetBytes("d4:info" + info + "e"));
+
+        Assert.Equal(SHA1.HashData(Encoding.ASCII.GetBytes(info)), torrent.GetInfoHashSha1());
+
+        torrent.Info = new TorrentInfo
+        {
+            Name = "file.txt",
+            PieceLength = 16384,
+            Pieces = "01234567890123456789"u8.ToArray(),
+            Length = 123,
+        };
+
+        Assert.Equal(SHA1.HashData(SingleFileInfo), torrent.GetInfoHashSha1());
     }
 
     [Fact]

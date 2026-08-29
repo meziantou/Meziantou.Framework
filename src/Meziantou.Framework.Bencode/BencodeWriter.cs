@@ -60,9 +60,7 @@ public sealed class BencodeWriter
 
     public void WriteEndList()
     {
-        var state = PopContainer(ContainerKind.List);
-        WriteByte((byte)'e');
-        CompleteRootContainerIfNeeded(state);
+        EndContainer(ContainerKind.List);
     }
 
     public void WriteStartDictionary()
@@ -93,12 +91,7 @@ public sealed class BencodeWriter
 
     public void WriteEndDictionary()
     {
-        var state = PopContainer(ContainerKind.Dictionary);
-        if (!state.ExpectingDictionaryKey)
-            throw new InvalidOperationException("Cannot end a dictionary while expecting a value for the last key.");
-
-        WriteByte((byte)'e');
-        CompleteRootContainerIfNeeded(state);
+        EndContainer(ContainerKind.Dictionary);
     }
 
     public void Complete()
@@ -141,18 +134,30 @@ public sealed class BencodeWriter
         return false;
     }
 
-    private ContainerState PopContainer(ContainerKind expectedContainerKind)
+    private void EndContainer(ContainerKind expectedContainerKind)
     {
+        // Every check runs before the writer state is touched, so a rejected call leaves the container open
+        // and the caller can recover from the InvalidOperationException.
         if (_containers.Count == 0)
-            throw new InvalidOperationException($"Cannot end a {expectedContainerKind.ToString().ToLowerInvariant()} because no container is open.");
+            throw new InvalidOperationException($"Cannot end a {Describe(expectedContainerKind)} because no container is open.");
 
         var state = _containers[^1];
         if (state.Kind != expectedContainerKind)
-            throw new InvalidOperationException($"Cannot end a {expectedContainerKind.ToString().ToLowerInvariant()} while inside a {state.Kind.ToString().ToLowerInvariant()}.");
+            throw new InvalidOperationException($"Cannot end a {Describe(expectedContainerKind)} while inside a {Describe(state.Kind)}.");
+
+        if (state.Kind is ContainerKind.Dictionary && !state.ExpectingDictionaryKey)
+            throw new InvalidOperationException("Cannot end a dictionary while expecting a value for the last key.");
 
         _containers.RemoveAt(_containers.Count - 1);
-        return state;
+        WriteByte((byte)'e');
+
+        if (_containers.Count == 0)
+        {
+            _isComplete = true;
+        }
     }
+
+    private static string Describe(ContainerKind kind) => kind.ToString().ToLowerInvariant();
 
     private ContainerState GetCurrentContainer()
     {
@@ -160,17 +165,6 @@ public sealed class BencodeWriter
             throw new InvalidOperationException("No container is currently open.");
 
         return _containers[^1];
-    }
-
-    private void CompleteRootContainerIfNeeded(ContainerState state)
-    {
-        if (_containers.Count != 0)
-            return;
-
-        if (state.Kind is ContainerKind.Dictionary && !state.ExpectingDictionaryKey)
-            throw new InvalidOperationException("Cannot complete a dictionary with a missing value.");
-
-        _isComplete = true;
     }
 
     private void WriteStringCore(ReadOnlySpan<byte> value)

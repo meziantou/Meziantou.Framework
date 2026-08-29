@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Bencode
         public BencodeDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue>> entries) { }
         public void Add(Meziantou.Framework.Bencode.BencodeString key, Meziantou.Framework.Bencode.BencodeValue value) { }
         public bool ContainsKey(Meziantou.Framework.Bencode.BencodeString key) => throw null;
-        public bool TryGetValue(Meziantou.Framework.Bencode.BencodeString key, out Meziantou.Framework.Bencode.BencodeValue value) => throw null;
+        public bool TryGetValue(Meziantou.Framework.Bencode.BencodeString key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Meziantou.Framework.Bencode.BencodeValue value) => throw null;
         public override void WriteTo(Meziantou.Framework.Bencode.BencodeWriter writer, bool canonical) { }
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue>> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
@@ -116,7 +116,7 @@ namespace Meziantou.Framework.Bencode.Torrent
         public Meziantou.Framework.Bencode.Torrent.TorrentInfo Info { get => throw null; set { } }
         public static Meziantou.Framework.Bencode.Torrent.TorrentFile Parse(System.ReadOnlySpan<byte> data) => throw null;
         public static System.Threading.Tasks.ValueTask<Meziantou.Framework.Bencode.Torrent.TorrentFile> ParseAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static bool TryParse(System.ReadOnlySpan<byte> data, out Meziantou.Framework.Bencode.Torrent.TorrentFile? result) => throw null;
+        public static bool TryParse(System.ReadOnlySpan<byte> data, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Bencode.Torrent.TorrentFile? result) => throw null;
         public byte[] ToUtf8ByteArray(bool canonical = true) => throw null;
         public System.Threading.Tasks.ValueTask WriteToAsync(System.IO.Stream stream, bool canonical = true, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public byte[] GetInfoHashSha1() => throw null;

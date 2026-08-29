@@ -221,6 +221,7 @@ public sealed class CredentialManagerTests
     // 1024 bytes, the size this used to hard-code, is not enough for a long user name plus a password.
     [Theory, RunIf(TestOperatingSystems.Windows)]
     [InlineData(400, 200)]
+    [InlineData(513, 256)]
     [SupportedOSPlatform("windows6.0.6000")]
     public unsafe void CredentialManager_AuthenticationBuffer_RoundTripsLongCredentials(int userLength, int passwordLength)
     {

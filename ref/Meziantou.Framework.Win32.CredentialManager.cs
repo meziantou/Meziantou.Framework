@@ -34,7 +34,7 @@ namespace Meziantou.Framework.Win32
         public static void DeleteCredential(string applicationName, Meziantou.Framework.Win32.CredentialType type) { }
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Win32.Credential> EnumerateCredentials() => throw null;
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Win32.Credential> EnumerateCredentials(string? filter) => throw null;
-        public static Meziantou.Framework.Win32.CredentialResult PromptForCredentialsConsole(string target, string? userName = null, Meziantou.Framework.Win32.CredentialSaveOption saveCredential = 0) => throw null;
+        public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentialsConsole(string target, string? userName = null, Meziantou.Framework.Win32.CredentialSaveOption saveCredential = 0) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
         public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentials(nint owner, string? messageText, string? captionText, string? userName, Meziantou.Framework.Win32.CredentialSaveOption saveCredential) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]

@@ -10,8 +10,10 @@ namespace Meziantou.Framework.Win32
         public string ApplicationName { get => throw null; }
         public string? UserName { get => throw null; }
         public string? Password { get => throw null; }
+        public System.ReadOnlyMemory<byte> Secret { get => throw null; }
         public string? Comment { get => throw null; }
         public Credential(Meziantou.Framework.Win32.CredentialType credentialType, string applicationName, string? userName, string? password, string? comment) { }
+        public Credential(Meziantou.Framework.Win32.CredentialType credentialType, string applicationName, string? userName, System.ReadOnlyMemory<byte> secret, string? comment) { }
         public override string ToString() => throw null;
     }
 

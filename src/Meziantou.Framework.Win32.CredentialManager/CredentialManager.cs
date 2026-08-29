@@ -67,13 +67,13 @@ public static class CredentialManager
         Debug.Assert(applicationName is not null);
 
         var userName = credential->UserName.ToString();
-        string? secret = null;
-        if (credential->CredentialBlob is not null)
-        {
-            secret = Marshal.PtrToStringUni((nint)credential->CredentialBlob, (int)(credential->CredentialBlobSize / UnicodeEncoding.CharSize));
-        }
-
         var comment = credential->Comment.ToString();
+        if (credential->CredentialBlob is null)
+            return new Credential((CredentialType)credential->Type, applicationName, userName, password: null, comment);
+
+        // Keep the blob verbatim. It is only text by convention: for Generic credentials the writing application
+        // decides the layout, so decoding it as UTF-16 here would lose a trailing odd byte and mangle binary data.
+        var secret = new ReadOnlySpan<byte>(credential->CredentialBlob, (int)credential->CredentialBlobSize).ToArray();
         return new Credential((CredentialType)credential->Type, applicationName, userName, secret, comment);
     }
 

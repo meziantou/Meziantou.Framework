@@ -122,26 +122,31 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
         var userNameLen = 256u;
         var domainNameLen = 256u;
 
-        fixed (char* userName = new char[userNameLen])
-        fixed (char* domainName = new char[domainNameLen])
+        // LookupAccountSid reports the required sizes when a buffer is too small, so retry once with them
+        for (var attempt = 0; ; attempt++)
         {
-            SID_NAME_USE sidType;
-            if (PInvoke.LookupAccountSid(lpSystemName: null, sid, userName, &userNameLen, domainName, &domainNameLen, &sidType) != 0)
+            fixed (char* userName = new char[userNameLen])
+            fixed (char* domainName = new char[domainNameLen])
             {
-                name = new string(userName, 0, (int)userNameLen);
-                domain = new string(domainName, 0, (int)domainNameLen);
-                return;
-            }
+                SID_NAME_USE sidType;
+                if (PInvoke.LookupAccountSid(lpSystemName: null, sid, userName, &userNameLen, domainName, &domainNameLen, &sidType) != 0)
+                {
+                    name = new string(userName, 0, (int)userNameLen);
+                    domain = new string(domainName, 0, (int)domainNameLen);
+                    return;
+                }
 
-            var error = Marshal.GetLastWin32Error();
-            if (error == (int)WIN32_ERROR.ERROR_NONE_MAPPED)
-            {
-                domain = default;
-                name = default;
-                return;
-            }
+                var error = Marshal.GetLastWin32Error();
+                if (error == (int)WIN32_ERROR.ERROR_NONE_MAPPED)
+                {
+                    domain = default;
+                    name = default;
+                    return;
+                }
 
-            throw new Win32Exception(error);
+                if (error != (int)WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER || attempt > 0)
+                    throw new Win32Exception(error);
+            }
         }
     }
 

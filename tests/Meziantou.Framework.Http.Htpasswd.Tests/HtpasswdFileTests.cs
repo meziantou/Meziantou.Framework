@@ -339,6 +339,35 @@ public sealed class HtpasswdFileTests
     }
 
     [Fact]
+    public void VerifyCredentials_Span_ShouldLookUpAUsernameThatIsNotBackedByItsOwnString()
+    {
+        var htpasswd = HtpasswdFile.Parse("alice:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=");
+        var username = "xxaliceyy".AsSpan(2, 5);
+
+        Assert.True(htpasswd.VerifyCredentials(username, "password"));
+        Assert.False(htpasswd.VerifyCredentials(username, "invalid"));
+    }
+
+    [Fact]
+    public void VerifyCredentials_Span_ShouldNotAllocateWhileLookingUpTheUsername()
+    {
+        var htpasswd = HtpasswdFile.Parse("alice:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=");
+        var username = "xxaliceyy".AsSpan(2, 5);
+        for (var i = 0; i < 100; i++)
+        {
+            _ = htpasswd.VerifyCredentials(username, "invalid");
+        }
+
+        var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 100; i++)
+        {
+            _ = htpasswd.VerifyCredentials(username, "invalid");
+        }
+
+        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - allocatedBefore);
+    }
+
+    [Fact]
     public void VerifyCredentials_Span_ShouldValidatePlaintextPassword()
     {
         var htpasswd = HtpasswdFile.Parse("alice:password", allowPlaintextPasswords: true);

@@ -23,11 +23,13 @@ public sealed class HtpasswdFile
     private const int MaxPasswordLength = 1024;
     private static readonly string[] BcryptPrefixes = ["$2a$", "$2b$", "$2y$"];
     private readonly Dictionary<string, string> _entries;
+    private readonly Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> _entriesLookup;
     private readonly bool _allowPlaintextPasswords;
 
     private HtpasswdFile(Dictionary<string, string> entries, bool allowPlaintextPasswords)
     {
         _entries = entries;
+        _entriesLookup = entries.GetAlternateLookup<ReadOnlySpan<char>>();
         _allowPlaintextPasswords = allowPlaintextPasswords;
     }
 
@@ -219,7 +221,7 @@ public sealed class HtpasswdFile
         if (password.Length > MaxPasswordLength)
             return false;
 
-        if (!_entries.TryGetValue(username.ToString(), out var expectedPasswordHash))
+        if (!_entriesLookup.TryGetValue(username, out var expectedPasswordHash))
             return false;
 
         var expectedPasswordHashSpan = expectedPasswordHash.AsSpan();

@@ -61,8 +61,19 @@ public abstract class ProjectedFileSystemBase : IDisposable
     /// <summary>Gets the root folder path where the virtual file system is mounted.</summary>
     public string RootFolder { get; }
 
+    private int _bufferSize = 4096; // 4kB
+
     /// <summary>Gets or sets the buffer size used for reading file data. Default is 4096 bytes.</summary>
-    protected int BufferSize { get; set; } = 4096; // 4kB
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the value is zero or negative.</exception>
+    protected int BufferSize
+    {
+        get => _bufferSize;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            _bufferSize = value;
+        }
+    }
 
     /// <summary>Initializes a new instance of the <see cref="ProjectedFileSystemBase"/> class.</summary>
     /// <param name="rootFolder">The root folder path where the virtual file system will be mounted.</param>

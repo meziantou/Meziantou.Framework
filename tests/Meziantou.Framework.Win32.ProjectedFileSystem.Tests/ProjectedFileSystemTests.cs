@@ -304,4 +304,30 @@ public sealed class ProjectedFileSystemTests
             try { Directory.Delete(fullPath, recursive: true); } catch { }
         }
     }
+
+    [Fact]
+    public void BufferSizeRejectsZeroAndNegativeValues()
+    {
+        // The constructor only resolves the path, so this needs no ProjFS instance
+        using var vfs = new BufferSizeVirtualFileSystem(Path.GetTempPath());
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => vfs.SetBufferSize(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => vfs.SetBufferSize(-1));
+
+        vfs.SetBufferSize(8192);
+        Assert.Equal(8192, vfs.GetBufferSize());
+    }
+
+    private sealed class BufferSizeVirtualFileSystem : ProjectedFileSystemBase
+    {
+        public BufferSizeVirtualFileSystem(string rootFolder) : base(rootFolder) { }
+
+        public void SetBufferSize(int value) => BufferSize = value;
+        public int GetBufferSize() => BufferSize;
+
+        protected override ValueTask<IEnumerable<ProjectedFileSystemEntry>> GetEntriesAsync(string path)
+            => ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([]);
+
+        protected override ValueTask<Stream?> OpenReadAsync(string path) => ValueTask.FromResult<Stream?>(null);
+    }
 }

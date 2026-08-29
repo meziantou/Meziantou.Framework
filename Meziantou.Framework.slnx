@@ -281,6 +281,7 @@
     <Project Path="tests/Meziantou.Framework.Win32.MarkOfTheWeb.Tests/Meziantou.Framework.Win32.MarkOfTheWeb.Tests.csproj" Id="32b027e9-ec12-4d92-81ba-21ee158a24ec" />
     <Project Path="tests/Meziantou.Framework.Win32.PerceivedType.Tests/Meziantou.Framework.Win32.PerceivedType.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Win32.RecentDocuments.Tests/Meziantou.Framework.Win32.RecentDocuments.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.RestartManager.Tests/Meziantou.Framework.Win32.RestartManager.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Yaml.AotSmoke/Meziantou.Framework.Yaml.AotSmoke.csproj" />

@@ -28,7 +28,12 @@ jobs:
         uses: ./.github/actions/setup-dotnet
       - run: |
           dotnet run --project tools/Meziantou.Framework.Http.Hsts.Generator
-          if ($LASTEXITCODE -ne 0) {
+          # The generator reports its result through the exit code: 0 when the files were already up to
+          # date, 1 when it updated them. Any other code is a failure and must not be committed.
+          if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1) {
+            throw "The HSTS preload generator failed with exit code $LASTEXITCODE"
+          }
+          if ($LASTEXITCODE -eq 1) {
             git config --global user.email "git@meziantou.net"
             git config --global user.name "meziantou"
             git checkout -b update-hsts-preload

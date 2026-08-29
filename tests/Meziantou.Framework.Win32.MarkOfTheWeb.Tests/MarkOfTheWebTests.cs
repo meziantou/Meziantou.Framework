@@ -52,6 +52,39 @@ public sealed class MarkOfTheWebTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void RemoveFileZone_DoesNothing_WhenTheFileHasNoZoneInformation()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            MarkOfTheWeb.RemoveFileZone(path);
+
+            Assert.Null(MarkOfTheWeb.GetFileZoneContent(path));
+            Assert.True(File.Exists(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void RemoveFileZone_DoesNothing_WhenTheDirectoryDoesNotExist()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), "missing.txt");
+
+        MarkOfTheWeb.RemoveFileZone(path);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetFileZoneContent_ReturnsNull_WhenTheDirectoryDoesNotExist()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), "missing.txt");
+
+        Assert.Null(MarkOfTheWeb.GetFileZoneContent(path));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetFileZoneContent_ReadsTheAsciiStreamWrittenByWindowsAndBrowsers()
     {
         var path = Path.GetTempFileName();

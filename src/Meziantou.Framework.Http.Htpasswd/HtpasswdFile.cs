@@ -114,6 +114,9 @@ public sealed class HtpasswdFile
                 continue;
 
             var passwordHash = line[(separatorIndex + 1)..].Trim();
+            if (passwordHash.IsEmpty)
+                continue;
+
             entries[username.ToString()] = passwordHash.ToString();
         }
 

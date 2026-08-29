@@ -306,6 +306,11 @@ internal static class GlobParser
                     segments.Add(MatchAllSegment.Instance);
                     matchLeadingDot.Add(settings.MatchLeadingDot);
                 }
+                else
+                {
+                    // A gitignore entry without a trailing '/' matches a file or a directory with that name.
+                    matchType = GlobMatchType.Any;
+                }
             }
             else
             {

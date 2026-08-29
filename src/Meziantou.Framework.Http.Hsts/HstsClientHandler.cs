@@ -96,7 +96,7 @@ public sealed class HstsClientHandler : DelegatingHandler
             UpgradeRequest(request);
 
             var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            ProcessStrictTransportSecurityHeader(response);
+            ProcessStrictTransportSecurityHeader(request, response);
 
             if (remainingRedirections <= 0)
                 return response;
@@ -130,13 +130,15 @@ public sealed class HstsClientHandler : DelegatingHandler
         }
     }
 
-    private void ProcessStrictTransportSecurityHeader(HttpResponseMessage response)
+    private void ProcessStrictTransportSecurityHeader(HttpRequestMessage request, HttpResponseMessage response)
     {
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
         // Note: The Strict-Transport-Security header is ignored by the browser when your site has only been accessed using HTTP.
         // Once your site is accessed over HTTPS with no certificate errors, the browser knows your site is HTTPS-capable and
         // will honor the Strict-Transport-Security header.
-        var responseUri = response.RequestMessage?.RequestUri;
+        // The response URI is the one the request ended on; an inner handler that does not set RequestMessage
+        // leaves the request itself as the best available source
+        var responseUri = response.RequestMessage?.RequestUri ?? request.RequestUri;
         if (responseUri?.Scheme == Uri.UriSchemeHttps && !IsIPAddress(responseUri) && response.Headers.TryGetValues("Strict-Transport-Security", out var headers))
         {
             // https://datatracker.ietf.org/doc/html/rfc6797#section-8.1

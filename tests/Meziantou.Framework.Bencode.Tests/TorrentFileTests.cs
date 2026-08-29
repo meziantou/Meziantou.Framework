@@ -260,6 +260,107 @@ public sealed class TorrentFileTests
     }
 
     [Fact]
+    public void Parse_ExtensionFields()
+    {
+        var content = Encoding.ASCII.GetBytes("d8:encoding5:UTF-84:infod6:lengthi123e6:md5sum4:abcd4:name8:file.txt12:piece lengthi16384e6:pieces20:012345678901234567896:source9:MyTrackere5:nodesll9:127.0.0.1i6881eel4:hosti1eee9:publisher7:someone13:publisher-url19:https://pub.test/ab8:url-listl20:https://seed.test/abee");
+
+        var torrent = TorrentFile.Parse(content);
+
+        Assert.Equal(["https://seed.test/ab"], torrent.UrlList);
+        Assert.Equal("UTF-8", torrent.Encoding);
+        Assert.Equal("someone", torrent.Publisher);
+        Assert.Equal("https://pub.test/ab", torrent.PublisherUrl);
+        Assert.Equal("MyTracker", torrent.Info.Source);
+        Assert.Equal("abcd", torrent.Info.Md5Sum);
+
+        Assert.NotNull(torrent.Nodes);
+        Assert.Equal(2, torrent.Nodes.Count);
+        Assert.Equal("127.0.0.1", torrent.Nodes[0].Host);
+        Assert.Equal(6881, torrent.Nodes[0].Port);
+        Assert.Equal("host", torrent.Nodes[1].Host);
+        Assert.Equal(1, torrent.Nodes[1].Port);
+    }
+
+    [Fact]
+    public void Parse_UrlListAsASingleString_IsReadAsAOneItemList()
+    {
+        var content = Encoding.ASCII.GetBytes("d4:infod6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:01234567890123456789e8:url-list20:https://seed.test/abe");
+
+        var torrent = TorrentFile.Parse(content);
+
+        Assert.Equal(["https://seed.test/ab"], torrent.UrlList);
+    }
+
+    [Fact]
+    public void Parse_HttpSeeds()
+    {
+        var content = Encoding.ASCII.GetBytes("d9:httpseedsl20:https://seed.test/abe4:infod6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:01234567890123456789ee");
+
+        var torrent = TorrentFile.Parse(content);
+
+        Assert.Equal(["https://seed.test/ab"], torrent.HttpSeeds);
+    }
+
+    [Fact]
+    public void Parse_PerFileMd5Sum()
+    {
+        var content = Encoding.ASCII.GetBytes("d4:infod5:filesld6:lengthi1e6:md5sum4:abcd4:pathl8:file.bineee4:name4:test12:piece lengthi16384e6:pieces20:01234567890123456789ee");
+
+        var torrent = TorrentFile.Parse(content);
+
+        Assert.NotNull(torrent.Info.Files);
+        Assert.Equal("abcd", torrent.Info.Files[0].Md5Sum);
+    }
+
+    [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash is SHA-1.")]
+    [Fact]
+    public void RoundTrip_ExtensionFields_ArePreserved()
+    {
+        var content = Encoding.ASCII.GetBytes("d8:encoding5:UTF-89:httpseedsl20:https://seed.test/cde4:infod6:lengthi123e6:md5sum4:abcd4:name8:file.txt12:piece lengthi16384e6:pieces20:012345678901234567896:source9:MyTrackere5:nodesll9:127.0.0.1i6881eee9:publisher7:someone13:publisher-url19:https://pub.test/ab8:url-listl20:https://seed.test/abee");
+        var original = TorrentFile.Parse(content);
+        Assert.NotNull(original.UrlList);
+        Assert.NotNull(original.HttpSeeds);
+
+        var roundTrip = TorrentFile.Parse(original.ToUtf8ByteArray());
+
+        Assert.Equal(original.UrlList, roundTrip.UrlList);
+        Assert.Equal(original.HttpSeeds, roundTrip.HttpSeeds);
+        Assert.Equal(original.Encoding, roundTrip.Encoding);
+        Assert.Equal(original.Publisher, roundTrip.Publisher);
+        Assert.Equal(original.PublisherUrl, roundTrip.PublisherUrl);
+        Assert.Equal(original.Info.Source, roundTrip.Info.Source);
+        Assert.Equal(original.Info.Md5Sum, roundTrip.Info.Md5Sum);
+        Assert.Equal(original.GetInfoHashSha1(), roundTrip.GetInfoHashSha1());
+
+        Assert.NotNull(roundTrip.Nodes);
+        Assert.Equal("127.0.0.1", roundTrip.Nodes[0].Host);
+        Assert.Equal(6881, roundTrip.Nodes[0].Port);
+    }
+
+    [Theory]
+    [InlineData("8:url-listi1e")]
+    [InlineData("9:httpseeds20:https://seed.test/ab")]
+    [InlineData("5:nodesl9:127.0.0.1e")]
+    [InlineData("5:nodesll9:127.0.0.1i70000eee")]
+    [InlineData("5:nodesll9:127.0.0.14:portee")]
+    [InlineData("8:encodingi1e")]
+    public void Parse_MalformedExtensionField_Throws(string field)
+    {
+        var content = Encoding.ASCII.GetBytes("d" + field + "4:infod6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:01234567890123456789ee");
+
+        Assert.Throws<FormatException>(() => TorrentFile.Parse(content));
+    }
+
+    [Fact]
+    public void ToUtf8ByteArray_NodePortOutOfRange_Throws()
+    {
+        var torrent = TorrentFile.Parse(SingleFileTorrent);
+        torrent.Nodes = [new TorrentNode { Host = "127.0.0.1", Port = 70000 }];
+
+        Assert.Throws<FormatException>(() => torrent.ToUtf8ByteArray());
+    }
+
+    [Fact]
     public void ToArray_BothLengthAndFiles_Throws()
     {
         var torrent = new TorrentFile

@@ -308,18 +308,57 @@ public sealed class ContextSnapshotBuilder
         return this;
     }
 
-    /// <summary>Adds environment variables for the specified target scope.</summary>
-    public void AddEnvironmentVariables(EnvironmentVariableTarget target = EnvironmentVariableTarget.Process)
+    /// <summary>The value substituted for environment variables whose name looks like it holds a secret.</summary>
+    public const string RedactedValue = "***";
+
+    private static readonly string[] SecretNameFragments = ["TOKEN", "SECRET", "PASSWORD", "PASSWD", "PWD", "APIKEY", "API_KEY", "ACCESS_KEY", "PRIVATE_KEY", "CREDENTIAL", "SESSION"];
+
+    /// <summary>
+    /// Determines whether the value of an environment variable is replaced by <see cref="RedactedValue"/>.
+    /// Defaults to a name-based match on fragments such as <c>TOKEN</c>, <c>SECRET</c> and <c>PASSWORD</c>.
+    /// </summary>
+    /// <remarks>
+    /// Name-based redaction is best-effort. It cannot recognise a secret stored under an unremarkable name,
+    /// so it reduces accidental disclosure rather than guaranteeing a snapshot is safe to publish.
+    /// </remarks>
+    public static bool IsSecretEnvironmentVariableName(string name)
     {
-        AddValue("EnvironmentVariables." + target, GetEnvironmentVariables(target));
-
-        static ImmutableSortedDictionary<string, object> GetEnvironmentVariables(EnvironmentVariableTarget target)
+        foreach (var fragment in SecretNameFragments)
         {
-            return Environment.GetEnvironmentVariables(target).Cast<DictionaryEntry>().Select(item => Parse(item)).ToImmutableSortedDictionary();
+            if (name.Contains(fragment, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
 
-            static KeyValuePair<string, object> Parse(DictionaryEntry entry)
+        return false;
+    }
+
+    /// <summary>Adds environment variables for the specified target scope, redacting values whose name looks like a secret.</summary>
+    public ContextSnapshotBuilder AddEnvironmentVariables(EnvironmentVariableTarget target = EnvironmentVariableTarget.Process)
+        => AddEnvironmentVariables(target, IsSecretEnvironmentVariableName);
+
+    /// <summary>Adds environment variables for the specified target scope.</summary>
+    /// <param name="target">The scope to read the variables from.</param>
+    /// <param name="shouldRedact">
+    /// Called with each variable name. When it returns <see langword="true"/> the value is replaced by
+    /// <see cref="RedactedValue"/>. Pass <c>_ => false</c> to capture every value verbatim.
+    /// </param>
+    public ContextSnapshotBuilder AddEnvironmentVariables(EnvironmentVariableTarget target, Func<string, bool> shouldRedact)
+    {
+        ArgumentNullException.ThrowIfNull(shouldRedact);
+
+        AddValue("EnvironmentVariables." + target, GetEnvironmentVariables(target, shouldRedact));
+        return this;
+
+        static ImmutableSortedDictionary<string, object> GetEnvironmentVariables(EnvironmentVariableTarget target, Func<string, bool> shouldRedact)
+        {
+            return Environment.GetEnvironmentVariables(target).Cast<DictionaryEntry>().Select(item => Parse(item, shouldRedact)).ToImmutableSortedDictionary();
+
+            static KeyValuePair<string, object> Parse(DictionaryEntry entry, Func<string, bool> shouldRedact)
             {
                 var key = (string)entry.Key;
+                if (shouldRedact(key))
+                    return KeyValuePair.Create<string, object>(key, RedactedValue);
+
                 if (string.Equals(key, "PATH", StringComparison.OrdinalIgnoreCase))
                     return KeyValuePair.Create<string, object>(key, ((string)entry.Value!).Split(Path.PathSeparator).ToImmutableArray());
 

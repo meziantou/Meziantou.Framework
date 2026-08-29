@@ -208,8 +208,23 @@ public sealed class Glob : IGlobEvaluatable
             if (patternSegment is RecursiveMatchAllSegment)
             {
                 var remainingPatternSegments = patternSegments[(i + 1)..];
-                if (remainingPatternSegments.IsEmpty) // Last segment
-                    return false; // Match only files
+                if (remainingPatternSegments.IsEmpty)
+                {
+                    // A trailing '**' matches the rest of the path. It must consume at least one segment, so 'a/**'
+                    // matches the content of 'a' but not 'a' itself.
+                    if (pathReader.IsEndOfPath)
+                        return false;
+
+                    while (!pathReader.IsEndOfPath)
+                    {
+                        if (!CanMatchLeadingDot(pathReader, matchLeadingDot[i]))
+                            return false;
+
+                        pathReader.ConsumeSegment();
+                    }
+
+                    return true;
+                }
 
                 var remainingAnchors = anchors[(i + 1)..];
                 var remainingMatchLeadingDot = matchLeadingDot[(i + 1)..];

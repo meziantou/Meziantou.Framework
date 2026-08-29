@@ -42,6 +42,59 @@ public sealed class TorrentFileTests
         Assert.Null(torrent);
     }
 
+    [Theory]
+    [InlineData("l2:..4:.ssh6:id_rsae")]
+    [InlineData("l1:.6:id_rsae")]
+    [InlineData("l3:a/be")]
+    [InlineData("l4:a\\\\be")]
+    public void Parse_UnsafePathSegment_Throws(string pathList)
+    {
+        Assert.Throws<FormatException>(() => TorrentFile.Parse(MultiFileTorrent(pathList)));
+    }
+
+    [Theory]
+    [InlineData("2:..")]
+    [InlineData("1:.")]
+    [InlineData("3:a/b")]
+    public void Parse_UnsafeName_Throws(string name)
+    {
+        Assert.Throws<FormatException>(() => TorrentFile.Parse(MultiFileTorrent("l8:file.bine", name)));
+    }
+
+    [Theory]
+    [InlineData("l7:a:b.mp3e", "a:b.mp3")]
+    [InlineData("l3:..ae", "..a")]
+    [InlineData("l7:sub dir8:file.bine", "sub dir")]
+    public void Parse_LegitimatePathSegment_IsAccepted(string pathList, string expectedFirstSegment)
+    {
+        var torrent = TorrentFile.Parse(MultiFileTorrent(pathList));
+
+        Assert.NotNull(torrent.Info.Files);
+        Assert.Equal(expectedFirstSegment, torrent.Info.Files[0].Path[0]);
+    }
+
+    [Fact]
+    public void ToUtf8ByteArray_UnsafePathSegment_Throws()
+    {
+        var torrent = new TorrentFile
+        {
+            Info = new TorrentInfo
+            {
+                Name = "test",
+                PieceLength = 16,
+                Pieces = "01234567890123456789"u8.ToArray(),
+                Files = [new TorrentInfoFile { Length = 1, Path = ["..", "escaped.bin"] }],
+            },
+        };
+
+        Assert.Throws<FormatException>(() => torrent.ToUtf8ByteArray());
+    }
+
+    private static byte[] MultiFileTorrent(string pathList, string name = "4:test")
+    {
+        return Encoding.ASCII.GetBytes($"d4:infod5:filesld6:lengthi1e4:path{pathList}ee4:name{name}12:piece lengthi16384e6:pieces20:01234567890123456789ee");
+    }
+
     [Fact]
     public void TryParse_NonUtf8Comment_ReturnsFalse()
     {

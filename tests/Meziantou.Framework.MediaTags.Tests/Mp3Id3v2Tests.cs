@@ -305,4 +305,41 @@ public sealed class Mp3Id3v2Tests
         destination[2] = (byte)((value >> 7) & 0x7F);
         destination[3] = (byte)(value & 0x7F);
     }
+
+    [Fact]
+    public void ReadTags_TagSizeBeyondEndOfStream_DoesNotAllocateTheDeclaredSize()
+    {
+        // An ID3v2 header and nothing else, declaring the largest tag a synchsafe integer can express (256 MB)
+        var header = new byte[10];
+        header[0] = (byte)'I';
+        header[1] = (byte)'D';
+        header[2] = (byte)'3';
+        header[3] = 4;
+        WriteSynchsafeInteger(header.AsSpan(6, 4), 0x0FFF_FFFF);
+
+        using var stream = new MemoryStream(header);
+
+        // Read once so the measured read is not paying for JIT and first-use initialization
+        MediaFile.ReadTags(stream, MediaFormat.Mp3);
+
+        var before = GC.GetTotalAllocatedBytes(precise: true);
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp3);
+        var allocated = GC.GetTotalAllocatedBytes(precise: true) - before;
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.Title);
+        Assert.True(allocated < 1024 * 1024, $"Reading a {stream.Length} byte file allocated {allocated} bytes.");
+    }
+
+    [Fact]
+    public void ReadTags_TagSizeMatchingTheStream_IsStillParsed()
+    {
+        var mp3 = CreateId3v24WithTextFrame("TIT2", "Bounded Title");
+
+        using var stream = new MemoryStream(mp3);
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp3);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Bounded Title", result.Value.Title);
+    }
 }

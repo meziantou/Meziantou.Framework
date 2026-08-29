@@ -215,14 +215,16 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
     }
 
     /// <summary>Compares the current version to a specified object and returns an integer that indicates their relative position in the sort order.</summary>
+    /// <returns>A positive value if <paramref name="obj"/> is <see langword="null"/>, as every instance is greater than <see langword="null"/>; otherwise the result of comparing the two versions.</returns>
+    /// <exception cref="ArgumentException"><paramref name="obj"/> is neither <see langword="null"/> nor a <see cref="SemanticVersion"/>.</exception>
     public int CompareTo(object? obj)
     {
-        if (obj is SemanticVersion semver)
+        return obj switch
         {
-            return CompareTo(semver);
-        }
-
-        throw new ArgumentException("Argument must be an instance of " + nameof(SemanticVersion), nameof(obj));
+            null => 1,
+            SemanticVersion semver => CompareTo(semver),
+            _ => throw new ArgumentException("Argument must be an instance of " + nameof(SemanticVersion), nameof(obj)),
+        };
     }
 
     /// <summary>Compares the current version to a specified semantic version and returns an integer that indicates their relative position in the sort order.</summary>

@@ -64,6 +64,22 @@ public class SemanticVersionTests
     }
 
     [Fact]
+    public void CompareTo_Object_Null_ReturnsPositive()
+    {
+        var version = SemanticVersion.Parse("1.0.0");
+
+        Assert.True(version.CompareTo(obj: null) > 0);
+    }
+
+    [Fact]
+    public void CompareTo_Object_UnrelatedType_ShouldThrowException()
+    {
+        var version = SemanticVersion.Parse("1.0.0");
+
+        Assert.Throws<ArgumentException>(() => version.CompareTo(obj: "1.0.0"));
+    }
+
+    [Fact]
     public void PropertiesAreSet()
     {
         var version = SemanticVersion.Parse("1.2.3-beta.1+label");

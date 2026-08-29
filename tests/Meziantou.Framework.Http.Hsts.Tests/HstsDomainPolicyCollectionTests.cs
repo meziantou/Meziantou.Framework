@@ -81,6 +81,60 @@ public sealed class HstsDomainPolicyCollectionTests
     }
 
     [Fact]
+    public void HstsCollection_ExpiredPolicy_IsDroppedOnLookup()
+    {
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.Parse("2024-01-01T00:00:00Z", CultureInfo.InvariantCulture));
+        var hsts = new HstsDomainPolicyCollection(timeProvider, includePreloadDomains: false);
+        hsts.Add("example.com", TimeSpan.FromDays(30), includeSubdomains: true);
+
+        timeProvider.Advance(TimeSpan.FromDays(31));
+        Assert.False(hsts.MustUpgradeRequest("example.com"));
+
+        // Otherwise a process that talks to many hosts keeps every policy it has ever learned
+        Assert.Empty(hsts);
+    }
+
+    [Fact]
+    public void HstsCollection_ExpiredPolicy_IsDroppedWithoutHidingAMoreSpecificOne()
+    {
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.Parse("2024-01-01T00:00:00Z", CultureInfo.InvariantCulture));
+        var hsts = new HstsDomainPolicyCollection(timeProvider, includePreloadDomains: false);
+        hsts.Add("example.com", TimeSpan.FromDays(30), includeSubdomains: true);
+        hsts.Add("foo.example.com", TimeSpan.FromDays(90), includeSubdomains: true);
+
+        timeProvider.Advance(TimeSpan.FromDays(31));
+
+        Assert.True(hsts.MustUpgradeRequest("foo.example.com"));
+        Assert.Equal("foo.example.com", Assert.Single(hsts).Host);
+    }
+
+    [Fact]
+    public void HstsCollection_RenewedPolicy_IsNotDroppedByAConcurrentLookup()
+    {
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.Parse("2024-01-01T00:00:00Z", CultureInfo.InvariantCulture));
+        var hsts = new HstsDomainPolicyCollection(timeProvider, includePreloadDomains: false);
+        hsts.Add("example.com", TimeSpan.FromDays(30), includeSubdomains: true);
+
+        timeProvider.Advance(TimeSpan.FromDays(31));
+        hsts.Add("example.com", TimeSpan.FromDays(30), includeSubdomains: true);
+
+        Assert.True(hsts.MustUpgradeRequest("example.com"));
+        Assert.Single(hsts);
+    }
+
+    [Fact]
+    public void HstsCollection_PreloadedPolicy_IsNotDroppedOnLookup()
+    {
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.Parse("2024-01-01T00:00:00Z", CultureInfo.InvariantCulture));
+        var hsts = new HstsDomainPolicyCollection(timeProvider, includePreloadDomains: true);
+
+        timeProvider.Advance(TimeSpan.FromDays(365 * 100));
+
+        Assert.True(hsts.MustUpgradeRequest("github.com"));
+        Assert.Contains(hsts, policy => policy.Host == "github.com");
+    }
+
+    [Fact]
     public void HstsCollection_Match_PreloadedInternationalizedDomain()
     {
         var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);

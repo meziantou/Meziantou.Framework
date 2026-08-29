@@ -196,6 +196,9 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
             {
                 if (hsts.ExpiresAt < now)
                 {
+                    // The policy is dead, so drop it instead of keeping every host the process has ever seen.
+                    // The compare-and-remove leaves a policy added concurrently for the same host in place.
+                    dictionary.TryRemove(new KeyValuePair<string, HstsDomainPolicy>(hsts.Host, hsts));
                     continue;
                 }
 

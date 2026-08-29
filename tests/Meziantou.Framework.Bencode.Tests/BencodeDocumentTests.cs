@@ -163,6 +163,28 @@ public sealed class BencodeDocumentTests
 
         var exception = await Assert.ThrowsAsync<FormatException>(() => parseTask);
         Assert.Contains("nested too deeply", exception.Message);
+    }
+
+    [Fact]
+    public async Task ParseAsync_DeclaredStringLengthIsNotAllocatedBeforeTheDataArrives()
+    {
+        var pipe = new Pipe();
+        await pipe.Writer.WriteAsync("2000000000:"u8.ToArray());
+        await pipe.Writer.CompleteAsync();
+
+        // Every byte is already buffered, so the parse runs synchronously on this thread and the counter is reliable.
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        try
+        {
+            await BencodeDocument.ParseAsync(pipe.Reader);
+            Assert.Fail("Expected a FormatException.");
+        }
+        catch (FormatException)
+        {
+        }
+
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.True(allocated < 1024 * 1024, $"An 11-byte document allocated {allocated} bytes.");
 
         await pipe.Reader.CompleteAsync();
     }
@@ -200,6 +222,90 @@ public sealed class BencodeDocumentTests
         {
             await Assert.ThrowsAsync<FormatException>(async () => await BencodeDocument.ParseAsync(stream));
         }
+    }
+
+    [Fact]
+    public async Task ParseAsync_UnterminatedIntegerDigits_AreRejectedInsteadOfBuffered()
+    {
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
+
+        var digits = new byte[1024];
+        Array.Fill(digits, (byte)'1');
+        await pipe.Writer.WriteAsync("i"u8.ToArray());
+        await pipe.Writer.WriteAsync(digits);
+
+        await Assert.ThrowsAsync<FormatException>(() => parseTask.WaitAsync(TimeSpan.FromSeconds(30)));
+
+        await pipe.Writer.CompleteAsync();
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task ParseAsync_UnterminatedStringLengthDigits_AreRejectedInsteadOfBuffered()
+    {
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
+
+        var digits = new byte[1024];
+        Array.Fill(digits, (byte)'1');
+        await pipe.Writer.WriteAsync(digits);
+
+        await Assert.ThrowsAsync<FormatException>(() => parseTask.WaitAsync(TimeSpan.FromSeconds(30)));
+
+        await pipe.Writer.CompleteAsync();
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task ParseAsync_StringSpanningMultipleReads_IsReadCompletely()
+    {
+        var payload = new byte[300_000];
+        for (var i = 0; i < payload.Length; i++)
+        {
+            payload[i] = (byte)(i % 256);
+        }
+
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
+
+        await pipe.Writer.WriteAsync(Encoding.ASCII.GetBytes(payload.Length + ":"));
+        for (var offset = 0; offset < payload.Length; offset += 10_000)
+        {
+            await pipe.Writer.WriteAsync(payload.AsMemory(offset, Math.Min(10_000, payload.Length - offset)));
+        }
+
+        await pipe.Writer.CompleteAsync();
+
+        var value = Assert.IsType<BencodeString>((await parseTask).Root);
+        Assert.True(value.Value.Span.SequenceEqual(payload));
+
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task ParseAsync_TruncatedStringData_Throws()
+    {
+        var pipe = new Pipe();
+        await pipe.Writer.WriteAsync("10:abc"u8.ToArray());
+        await pipe.Writer.CompleteAsync();
+
+        await Assert.ThrowsAsync<FormatException>(async () => await BencodeDocument.ParseAsync(pipe.Reader));
+
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task ParseAsync_EmptyString_IsSupported()
+    {
+        var pipe = new Pipe();
+        await pipe.Writer.WriteAsync("0:"u8.ToArray());
+        await pipe.Writer.CompleteAsync();
+
+        var value = Assert.IsType<BencodeString>((await BencodeDocument.ParseAsync(pipe.Reader)).Root);
+        Assert.True(value.Value.IsEmpty);
+
+        await pipe.Reader.CompleteAsync();
     }
 
     [Fact]

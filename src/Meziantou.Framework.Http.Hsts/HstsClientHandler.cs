@@ -1,6 +1,14 @@
+using System.Net;
+
 namespace Meziantou.Framework.Http;
 
 /// <summary>An HTTP message handler that automatically upgrades HTTP requests to HTTPS based on HSTS (HTTP Strict Transport Security) policies.</summary>
+/// <remarks>
+/// The handler follows redirects itself so that every hop is checked against the HSTS policies. When the inner
+/// handler is a <see cref="SocketsHttpHandler"/> or an <see cref="HttpClientHandler"/> configured to follow
+/// redirects, the constructor turns its <c>AllowAutoRedirect</c> off and takes the redirects over; an inner
+/// handler already configured not to follow them keeps returning the redirect responses as is.
+/// </remarks>
 /// <example>
 /// <code>
 /// var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
@@ -15,6 +23,10 @@ public sealed class HstsClientHandler : DelegatingHandler
     private const long MaxMaxAgeInSeconds = 100L * 365 * 24 * 60 * 60;
 
     private readonly HstsDomainPolicyCollection _configuration;
+
+    // 0 means this handler does not follow redirects, because the inner handler was already configured not to
+    // follow them or is not a type the redirects can be taken over from.
+    private readonly int _maxAutomaticRedirections;
 
     /// <summary>Initializes a new instance of the <see cref="HstsClientHandler"/> class with the default HSTS policy collection.</summary>
     /// <param name="innerHandler">The inner HTTP message handler to delegate requests to.</param>
@@ -32,6 +44,44 @@ public sealed class HstsClientHandler : DelegatingHandler
         ArgumentNullException.ThrowIfNull(configuration);
 
         _configuration = configuration;
+        _maxAutomaticRedirections = TakeOverAutomaticRedirections(innerHandler);
+    }
+
+    // The inner handler follows redirects below this handler, so the requests it derives from a redirect
+    // response never go through the HSTS upgrade and reach an HSTS host in cleartext. Take the redirects over
+    // when the inner handler was going to follow them anyway, so that every hop is checked; a handler
+    // explicitly configured not to follow them keeps that behavior.
+    private static int TakeOverAutomaticRedirections(HttpMessageHandler? handler)
+    {
+        while (handler is DelegatingHandler delegatingHandler)
+        {
+            handler = delegatingHandler.InnerHandler;
+        }
+
+        switch (handler)
+        {
+            case SocketsHttpHandler socketsHttpHandler when socketsHttpHandler.AllowAutoRedirect:
+                socketsHttpHandler.AllowAutoRedirect = false;
+                return socketsHttpHandler.MaxAutomaticRedirections;
+
+            case HttpClientHandler httpClientHandler when httpClientHandler.AllowAutoRedirect:
+                httpClientHandler.AllowAutoRedirect = false;
+                return httpClientHandler.MaxAutomaticRedirections;
+
+            default:
+                return 0;
+        }
+    }
+
+    // internal for tests: the redirect loop cannot be reached through a mock inner handler, as the public
+    // constructors only take the redirects over from the handler types that would have followed them
+    internal HstsClientHandler(HttpMessageHandler innerHandler, HstsDomainPolicyCollection configuration, int maxAutomaticRedirections)
+        : base(innerHandler)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        _configuration = configuration;
+        _maxAutomaticRedirections = maxAutomaticRedirections;
     }
 
     /// <summary>Sends an HTTP request, upgrading to HTTPS if required by HSTS policy, and processes the Strict-Transport-Security response header.</summary>
@@ -39,6 +89,31 @@ public sealed class HstsClientHandler : DelegatingHandler
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>The HTTP response message.</returns>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var remainingRedirections = _maxAutomaticRedirections;
+        while (true)
+        {
+            UpgradeRequest(request);
+
+            var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            ProcessStrictTransportSecurityHeader(response);
+
+            if (remainingRedirections <= 0)
+                return response;
+
+            var location = GetUriForRedirect(request, response);
+            if (location is null)
+                return response;
+
+            remainingRedirections--;
+            PrepareRedirect(request, response, location);
+
+            // Release the connection before issuing the next request
+            response.Dispose();
+        }
+    }
+
+    private void UpgradeRequest(HttpRequestMessage request)
     {
         // Use IdnHost: the preload list stores internationalized domains in their Punycode form
         if (request.RequestUri?.Scheme == Uri.UriSchemeHttp && _configuration.MustUpgradeRequest(request.RequestUri.IdnHost))
@@ -53,9 +128,10 @@ public sealed class HstsClientHandler : DelegatingHandler
 
             request.RequestUri = builder.Uri;
         }
+    }
 
-        var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
-
+    private void ProcessStrictTransportSecurityHeader(HttpResponseMessage response)
+    {
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
         // Note: The Strict-Transport-Security header is ignored by the browser when your site has only been accessed using HTTP.
         // Once your site is accessed over HTTPS with no certificate errors, the browser knows your site is HTTPS-capable and
@@ -79,8 +155,63 @@ public sealed class HstsClientHandler : DelegatingHandler
                 }
             }
         }
+    }
 
-        return response;
+    private static Uri? GetUriForRedirect(HttpRequestMessage request, HttpResponseMessage response)
+    {
+        if (request.RequestUri is null || !IsRedirect(response.StatusCode))
+            return null;
+
+        var location = response.Headers.Location;
+        if (location is null)
+            return null;
+
+        // A relative Location is resolved against the URI of the request that produced the response
+        if (!location.IsAbsoluteUri)
+        {
+            location = new Uri(request.RequestUri, location);
+        }
+
+        if (location.Scheme != Uri.UriSchemeHttp && location.Scheme != Uri.UriSchemeHttps)
+            return null;
+
+        // An established secure connection is never downgraded, matching SocketsHttpHandler
+        if (request.RequestUri.Scheme == Uri.UriSchemeHttps && location.Scheme != Uri.UriSchemeHttps)
+            return null;
+
+        return location;
+    }
+
+    private static bool IsRedirect(HttpStatusCode statusCode) => statusCode is
+        HttpStatusCode.MultipleChoices or
+        HttpStatusCode.MovedPermanently or
+        HttpStatusCode.Found or
+        HttpStatusCode.SeeOther or
+        HttpStatusCode.TemporaryRedirect or
+        HttpStatusCode.PermanentRedirect;
+
+    private static void PrepareRedirect(HttpRequestMessage request, HttpResponseMessage response, Uri location)
+    {
+        // 300, 301 and 302 turn a POST into a GET; 303 turns any method other than GET and HEAD into a GET.
+        // The body is dropped with the method. 307 and 308 keep both.
+        var dropBody = response.StatusCode switch
+        {
+            HttpStatusCode.MultipleChoices or HttpStatusCode.MovedPermanently or HttpStatusCode.Found => request.Method == HttpMethod.Post,
+            HttpStatusCode.SeeOther => request.Method != HttpMethod.Get && request.Method != HttpMethod.Head,
+            _ => false,
+        };
+
+        if (dropBody)
+        {
+            request.Method = HttpMethod.Get;
+            request.Content?.Dispose();
+            request.Content = null;
+        }
+
+        // The credentials were granted to the origin that answered, not to the one it points at
+        request.Headers.Authorization = null;
+
+        request.RequestUri = location;
     }
 
     // https://datatracker.ietf.org/doc/html/rfc6797#section-8.1

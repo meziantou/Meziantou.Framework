@@ -212,6 +212,29 @@ public sealed class HtpasswdFileTests
         Assert.False(htpasswd.VerifyCredentials("alice", "invalid"));
     }
 
+    [Theory]
+    [InlineData("Xassword")]
+    [InlineData("passworX")]
+    [InlineData("passwor")]
+    [InlineData("passwordX")]
+    [InlineData("")]
+    public void VerifyCredentials_ShouldRejectAWrongPlaintextPassword_WhereverItDiffers(string candidate)
+    {
+        var htpasswd = HtpasswdFile.Parse("alice:password");
+
+        Assert.False(htpasswd.VerifyCredentials("alice", candidate));
+    }
+
+    [Theory]
+    [InlineData("$apr1$salt1234$k3J5yKYW6TlGmTytnkXbQ1")]
+    [InlineData("$apr1$salt1234$X3J5yKYW6TlGmTytnkXbQ0")]
+    public void VerifyCredentials_ShouldRejectAnApr1HashThatDiffersInASingleCharacter(string hash)
+    {
+        var htpasswd = HtpasswdFile.Parse($"alice:{hash}");
+
+        Assert.False(htpasswd.VerifyCredentials("alice", "password"));
+    }
+
     [Fact]
     public void VerifyCredentials_Span_ShouldValidatePlaintextPassword()
     {

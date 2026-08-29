@@ -217,6 +217,14 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public void JsonDeserialize_InvalidPathThrowsJsonException()
+    {
+        var exception = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FullPath>("\"a\\u0000b\""));
+
+        Assert.IsAssignableTo<ArgumentException>(exception.InnerException);
+    }
+
+    [Fact]
     public void JsonSerialize_RoundTripEmpty()
     {
         var value = FullPath.Empty;

@@ -12,7 +12,17 @@ public sealed class FullPathJsonConverter : JsonConverter<FullPath>
         if (string.IsNullOrEmpty(path))
             return FullPath.Empty;
 
-        return FullPath.FromPath(path);
+        try
+        {
+            return FullPath.FromPath(path);
+        }
+        catch (Exception ex) when (ex is ArgumentException or PathTooLongException or NotSupportedException)
+        {
+            // System.Text.Json only translates InvalidOperationException from a converter, so these would otherwise
+            // escape Deserialize and defeat a caller that catches JsonException. The path is left out of the message
+            // because it comes from the payload and may be sensitive; it is available on the inner exception.
+            throw new JsonException("The JSON value cannot be converted to a FullPath.", ex);
+        }
     }
 
     public override void Write(Utf8JsonWriter writer, FullPath value, JsonSerializerOptions options)

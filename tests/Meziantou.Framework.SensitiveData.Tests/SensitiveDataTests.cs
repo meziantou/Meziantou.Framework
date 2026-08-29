@@ -154,7 +154,8 @@ public sealed class SensitiveDataTests
     public void TypeConverterToStringDoesNotRevealValue()
     {
         using var data = SensitiveData.Create("foo");
-        Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetConverter(typeof(SensitiveData<char>)).ConvertToString(data));
+        var exception = Assert.Throws<NotSupportedException>(() => TypeDescriptor.GetConverter(typeof(SensitiveData<char>)).ConvertToString(data));
+        Assert.DoesNotContain("foo", exception.Message, ignoreCase: true);
     }
 
     [Fact]

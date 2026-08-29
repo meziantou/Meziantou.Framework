@@ -212,6 +212,7 @@ public static partial class SensitiveData
 public sealed unsafe class SensitiveData<T> : IDisposable
     where T : unmanaged
 {
+    [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed through the local returned by Interlocked.Exchange in Dispose")]
     private NativeMemorySafeHandle? _data;
 
     /// <summary>
@@ -234,8 +235,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// <summary>Returns the length (in elements) of this buffer.</summary>
     public int GetLength()
     {
-        ThrowIfDisposed();
-        return _data.Length;
+        return GetHandle().Length;
     }
 
     /// <summary>
@@ -247,8 +247,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     {
         get
         {
-            ThrowIfDisposed();
-            return _data.IsProtected;
+            return GetHandle().IsProtected;
         }
     }
 
@@ -260,19 +259,20 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public int RevealInto(Span<T> destination)
     {
-        ThrowIfDisposed();
-        lock (_data.SyncLock)
+        var data = GetHandle();
+        lock (data.SyncLock)
         {
-            _data.Unprotect();
+            ThrowIfReleased(data);
+            data.Unprotect();
             try
             {
-                var span = _data.GetSpan();
+                var span = data.GetSpan();
                 span.CopyTo(destination);
                 return span.Length;
             }
             finally
             {
-                _data.Protect();
+                data.Protect();
             }
         }
     }
@@ -283,17 +283,18 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public T[] RevealToArray()
     {
-        ThrowIfDisposed();
-        lock (_data.SyncLock)
+        var data = GetHandle();
+        lock (data.SyncLock)
         {
-            _data.Unprotect();
+            ThrowIfReleased(data);
+            data.Unprotect();
             try
             {
-                return _data.GetSpan().ToArray();
+                return data.GetSpan().ToArray();
             }
             finally
             {
-                _data.Protect();
+                data.Protect();
             }
         }
     }
@@ -307,18 +308,19 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     public void RevealAndUse<TArg>(TArg arg, System.Buffers.ReadOnlySpanAction<T, TArg> spanAction)
     {
         ArgumentNullException.ThrowIfNull(spanAction);
-        ThrowIfDisposed();
-        lock (_data.SyncLock)
+        var data = GetHandle();
+        lock (data.SyncLock)
         {
-            _data.Unprotect();
+            ThrowIfReleased(data);
+            data.Unprotect();
             try
             {
-                var span = _data.GetSpan();
+                var span = data.GetSpan();
                 spanAction(span, arg);
             }
             finally
             {
-                _data.Protect();
+                data.Protect();
             }
         }
     }
@@ -328,18 +330,19 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public SensitiveData<T> Clone()
     {
-        ThrowIfDisposed();
-        lock (_data.SyncLock)
+        var data = GetHandle();
+        lock (data.SyncLock)
         {
-            _data.Unprotect();
+            ThrowIfReleased(data);
+            data.Unprotect();
             try
             {
-                var span = _data.GetSpan();
+                var span = data.GetSpan();
                 return new(span);
             }
             finally
             {
-                _data.Protect();
+                data.Protect();
             }
         }
     }
@@ -350,17 +353,35 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// </summary>
     public void Dispose()
     {
-        if (_data is not null)
+        // Claim the handle atomically so two concurrent Dispose calls cannot both release it, and so
+        // a reveal that has not read the field yet observes null and throws instead of racing.
+        var data = Interlocked.Exchange(ref _data, value: null);
+        if (data is null)
+            return;
+
+        // Wait for a reveal in progress on another thread before releasing the memory. Without this,
+        // the buffer is unmapped while that thread still holds a span over it, which is an
+        // AccessViolationException the caller cannot catch rather than an ObjectDisposedException.
+        // Taking the lock also means that once Dispose returns, the contents really have been cleared.
+        lock (data.SyncLock)
         {
-            _data.Dispose();
-            _data = null;
+            data.Dispose();
         }
     }
 
-    [MemberNotNull(nameof(_data))]
-    private void ThrowIfDisposed()
+    private NativeMemorySafeHandle GetHandle()
     {
-        ObjectDisposedException.ThrowIf(_data is null, this);
+        // Read the field once: a concurrent Dispose sets it to null, and re-reading it mid-method
+        // would turn that race into a NullReferenceException.
+        var data = _data;
+        ObjectDisposedException.ThrowIf(data is null, this);
+        return data;
+    }
+
+    // Dispose may have released the handle between GetHandle and the lock being acquired.
+    private void ThrowIfReleased(NativeMemorySafeHandle data)
+    {
+        ObjectDisposedException.ThrowIf(data.IsClosed, this);
     }
 
     private sealed unsafe class NativeMemorySafeHandle : SafeHandle

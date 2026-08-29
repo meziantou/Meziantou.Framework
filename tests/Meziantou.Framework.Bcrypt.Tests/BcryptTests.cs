@@ -119,6 +119,36 @@ public sealed class BcryptTests
         Assert.False(Bcrypt.Verify(differentInFirst72Bytes, hash72));
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("a")]
+    [InlineData("password")]
+    public void HashPassword_LegacyRevision2_RoundTrips(string password)
+    {
+        const string Salt = "$2$06$DCq7YPn5Rq63x1Lad4cll.";
+
+        var hash = Bcrypt.HashPassword(password, Salt);
+
+        Assert.StartsWith("$2$06$", hash);
+        Assert.HasCount(59, hash);
+        Assert.True(Bcrypt.Verify(password, hash));
+    }
+
+    [Fact]
+    public void Verify_EmptyPasswordAgainstLegacyRevision2Hash_DoesNotThrow()
+    {
+        // An empty password used to throw ArgumentNullException here: the '$2$' revision appends no NUL
+        // terminator, so it is the only revision that can produce zero-length key material.
+        // Zero-length key material yields the same all-zero key schedule as the single NUL byte the 'a'
+        // revision appends, so this digest matches the well-known '$2a$06$' vector for an empty password.
+        const string Hash = "$2$06$DCq7YPn5Rq63x1Lad4cll.TV4S6ytwfsfvkgY8jIucDrjc8deX1s.";
+
+        Assert.True(Bcrypt.TryParseHash(Hash, out _));
+        Assert.True(Bcrypt.Verify("", Hash));
+        Assert.True(Bcrypt.Verify("".AsSpan(), Hash.AsSpan()));
+        Assert.False(Bcrypt.Verify("not-empty", Hash));
+    }
+
     [Fact]
     public void Verify_InvalidLengthHash_ReturnsFalse()
     {

@@ -23,6 +23,7 @@ namespace Meziantou.Framework.Win32;
 /// MarkOfTheWeb.RemoveFileZone(path);
 /// </code>
 /// </example>
+[SupportedOSPlatform("windows")]
 public static class MarkOfTheWeb
 {
     private static readonly UTF8Encoding ZoneIdentifierEncoding = new(encoderShouldEmitUTF8Identifier: false);
@@ -47,7 +48,6 @@ public static class MarkOfTheWeb
     /// <summary>Gets the security zone of a file using the Windows Security Manager COM API.</summary>
     /// <param name="filePath">The path to the file to query.</param>
     /// <returns>The <see cref="UrlZone"/> of the file, or <see cref="UrlZone.Invalid"/> if the zone cannot be determined.</returns>
-    [SupportedOSPlatform("windows")]
     public static UrlZone GetFileZone(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
@@ -164,7 +164,6 @@ public static class MarkOfTheWeb
     /// <param name="filePath">The path to the file to check.</param>
     /// <returns><see langword="true"/> if the file is from an untrusted zone (Internet or Restricted); otherwise, <see langword="false"/>.</returns>
     /// <exception cref="FileNotFoundException"><paramref name="filePath"/> does not point to an existing file. A directory is not a file.</exception>
-    [SupportedOSPlatform("windows")]
     public static bool IsUntrusted(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);

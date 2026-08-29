@@ -301,6 +301,8 @@ public sealed class AccessToken : IDisposable
         using var safeHandleValue = new SafeHandleValue(_token);
         if (!PInvoke.AdjustTokenPrivileges((HANDLE)safeHandleValue.Value, DisableAllPrivileges: true, NewState: null, BufferLength: 0, PreviousState: null, &returnSize))
             throw new Win32Exception(Marshal.GetLastWin32Error());
+
+        ThrowIfNotAllPrivilegesAssigned();
     }
 
     /// <summary>Removes a privilege from this token.</summary>
@@ -341,6 +343,19 @@ public sealed class AccessToken : IDisposable
         using var safeHandleValue = new SafeHandleValue(_token);
         if (!PInvoke.AdjustTokenPrivileges((HANDLE)safeHandleValue.Value, DisableAllPrivileges: false, &tp, 0, PreviousState: null, &returnSize))
             throw new Win32Exception(Marshal.GetLastWin32Error());
+
+        ThrowIfNotAllPrivilegesAssigned();
+    }
+
+    /// <remarks>
+    /// AdjustTokenPrivileges returns a non-zero value even when it assigned none of the requested
+    /// privileges, and reports the partial failure through GetLastError instead.
+    /// </remarks>
+    private static void ThrowIfNotAllPrivilegesAssigned()
+    {
+        var error = Marshal.GetLastWin32Error();
+        if (error is not (int)WIN32_ERROR.ERROR_SUCCESS)
+            throw new Win32Exception(error);
     }
 
     /// <summary>Creates a duplicate of this token with the specified impersonation level.</summary>

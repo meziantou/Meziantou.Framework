@@ -62,6 +62,39 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public void ProcCpuInfoParserReadsAppendedFrequencies()
+    {
+        // /proc/cpuinfo blocks are separated by a blank line and the file ends with one. The frequencies
+        // are appended as an extra section, which must not be mistaken for another logical core.
+        var content = "processor\t: 0\nphysical id\t: 0\ncpu cores\t: 2\nmodel name\t: Intel(R) Core(TM) i7 CPU @ 3.20GHz\n\n"
+                    + "processor\t: 1\nphysical id\t: 0\ncpu cores\t: 2\nmodel name\t: Intel(R) Core(TM) i7 CPU @ 3.20GHz\n\n"
+                    + "\nmin freq\t:800\nmax freq\t:3200";
+
+        var cpuInfo = ProcCpuInfoParser.ParseOutput(content);
+
+        Assert.Equal("Intel(R) Core(TM) i7 CPU @ 3.20GHz", cpuInfo.ProcessorName);
+        Assert.Equal(1, cpuInfo.PhysicalProcessorCount);
+        Assert.Equal(2, cpuInfo.PhysicalCoreCount);
+        Assert.Equal(2, cpuInfo.LogicalCoreCount);
+        Assert.Equal(Frequency.FromMHz(800), cpuInfo.MinFrequency);
+        Assert.Equal(Frequency.FromMHz(3200), cpuInfo.MaxFrequency);
+    }
+
+    [Fact]
+    public void ProcCpuInfoParserReadsFrequenciesConvertedFromKiloHertz()
+    {
+        // cpuinfo_min_freq / cpuinfo_max_freq are in kHz; the provider converts them to the MHz form the parser expects.
+        var minFrequency = new Frequency(800000, FrequencyUnit.KHz);
+        var maxFrequency = new Frequency(3200000, FrequencyUnit.KHz);
+        var content = $"model name\t: CPU\n\n\nmin freq\t:{minFrequency.ToMHz()}\nmax freq\t:{maxFrequency.ToMHz()}";
+
+        var cpuInfo = ProcCpuInfoParser.ParseOutput(content);
+
+        Assert.Equal(Frequency.FromMHz(800), cpuInfo.MinFrequency);
+        Assert.Equal(Frequency.FromMHz(3200), cpuInfo.MaxFrequency);
+    }
+
+    [Fact]
     public unsafe void CountProcessorsWalksVariableSizedEntries()
     {
         var buffer = new List<byte>();

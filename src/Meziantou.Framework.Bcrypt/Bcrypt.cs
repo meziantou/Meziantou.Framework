@@ -44,6 +44,7 @@ public static partial class Bcrypt
     /// <param name="workFactor">The BCrypt work factor. Must be between <see cref="MinWorkFactor"/> and <see cref="MaxWorkFactor"/>.</param>
     /// <param name="version">The BCrypt revision to generate.</param>
     /// <returns>The BCrypt hash string.</returns>
+    /// <exception cref="ArgumentException"><paramref name="password"/> cannot be encoded as UTF-8 because it contains an unpaired surrogate.</exception>
     public static string HashPassword(string password, int workFactor = DefaultWorkFactor, BcryptVersion version = BcryptVersion.Revision2B)
     {
         ArgumentNullException.ThrowIfNull(password);
@@ -55,6 +56,7 @@ public static partial class Bcrypt
     /// <param name="workFactor">The BCrypt work factor. Must be between <see cref="MinWorkFactor"/> and <see cref="MaxWorkFactor"/>.</param>
     /// <param name="version">The BCrypt revision to generate.</param>
     /// <returns>The BCrypt hash string.</returns>
+    /// <exception cref="ArgumentException"><paramref name="password"/> cannot be encoded as UTF-8 because it contains an unpaired surrogate.</exception>
     public static string HashPassword(ReadOnlySpan<char> password, int workFactor = DefaultWorkFactor, BcryptVersion version = BcryptVersion.Revision2B)
     {
         return HashPassword(password, GenerateSalt(workFactor, version));
@@ -64,6 +66,7 @@ public static partial class Bcrypt
     /// <param name="password">The password to hash.</param>
     /// <param name="salt">The BCrypt salt string.</param>
     /// <returns>The BCrypt hash string.</returns>
+    /// <exception cref="ArgumentException"><paramref name="password"/> cannot be encoded as UTF-8 because it contains an unpaired surrogate.</exception>
     public static string HashPassword(string password, string salt)
     {
         ArgumentNullException.ThrowIfNull(password);
@@ -76,6 +79,7 @@ public static partial class Bcrypt
     /// <param name="password">The password to hash.</param>
     /// <param name="salt">The BCrypt salt string.</param>
     /// <returns>The BCrypt hash string.</returns>
+    /// <exception cref="ArgumentException"><paramref name="password"/> cannot be encoded as UTF-8 because it contains an unpaired surrogate.</exception>
     public static string HashPassword(ReadOnlySpan<char> password, ReadOnlySpan<char> salt)
     {
         return BcryptImplementation.HashPassword(password, salt);
@@ -86,6 +90,7 @@ public static partial class Bcrypt
     /// <param name="hash">The BCrypt hash string.</param>
     /// <returns><see langword="true"/> if the password matches; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="NotSupportedException"><paramref name="hash"/> uses the <c>$2x$</c> revision, which cannot be verified correctly.</exception>
+    /// <remarks>A <paramref name="password"/> that cannot be encoded as UTF-8 reports a mismatch rather than throwing.</remarks>
     public static bool Verify(string password, string hash)
     {
         ArgumentNullException.ThrowIfNull(password);
@@ -99,6 +104,7 @@ public static partial class Bcrypt
     /// <param name="hash">The BCrypt hash string.</param>
     /// <returns><see langword="true"/> if the password matches; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="NotSupportedException"><paramref name="hash"/> uses the <c>$2x$</c> revision, which cannot be verified correctly.</exception>
+    /// <remarks>A <paramref name="password"/> that cannot be encoded as UTF-8 reports a mismatch rather than throwing.</remarks>
     public static bool Verify(ReadOnlySpan<char> password, ReadOnlySpan<char> hash)
     {
         if (!TryParseHash(hash, out _))

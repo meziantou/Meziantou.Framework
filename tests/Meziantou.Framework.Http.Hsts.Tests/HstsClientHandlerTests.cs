@@ -77,6 +77,50 @@ public sealed class HstsClientHandlerTests
         Assert.True(hsts.MustUpgradeRequest("foo.example.com"));
     }
 
+    [Theory]
+    [InlineData("max-age = 31536000")]
+    [InlineData("max-age =31536000")]
+    [InlineData("max-age= 31536000")]
+    public async Task WhitespaceAroundTheDirectiveSeparator_IsAccepted(string headerResponse)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        using var client = new HttpClient(new HstsClientHandler(new MockHttpMessageHandler(headerResponse), hsts), disposeHandler: true);
+
+        using var response = await client.GetAsync("https://example.com", XunitCancellationToken);
+        Assert.True(hsts.MustUpgradeRequest("example.com"));
+    }
+
+    [Theory]
+    [InlineData("max-age=31536000; max-age=0")]
+    [InlineData("max-age=0; max-age=31536000")]
+    [InlineData("max-age=31536000; includeSubDomains; includeSubDomains")]
+    public async Task RepeatedDirective_IsIgnored(string headerResponse)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("example.com", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+        using var client = new HttpClient(new HstsClientHandler(new MockHttpMessageHandler(headerResponse), hsts), disposeHandler: true);
+
+        using var response = await client.GetAsync("https://example.com", XunitCancellationToken);
+
+        // https://datatracker.ietf.org/doc/html/rfc6797#section-6.1
+        // The whole header field is ignored, so the policy already in the collection is left alone
+        Assert.True(hsts.MustUpgradeRequest("example.com"));
+        Assert.False(hsts.MustUpgradeRequest("sub.example.com"));
+    }
+
+    [Fact]
+    public async Task IncludeSubDomainsWithAValue_IsIgnored()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        using var client = new HttpClient(new HstsClientHandler(new MockHttpMessageHandler("max-age=31536000; includeSubDomains="), hsts), disposeHandler: true);
+
+        using var response = await client.GetAsync("https://example.com", XunitCancellationToken);
+
+        // includeSubDomains is valueless; the malformed directive is skipped but the header stays usable
+        Assert.True(hsts.MustUpgradeRequest("example.com"));
+        Assert.False(hsts.MustUpgradeRequest("sub.example.com"));
+    }
+
     [Fact]
     public async Task VeryLargeMaxAge_IsClamped()
     {

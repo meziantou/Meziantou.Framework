@@ -98,9 +98,19 @@ public sealed class HstsClientHandler : DelegatingHandler
         foreach (var part in header.Split(';'))
         {
             var directive = header[part].Trim();
-            if (directive.StartsWith("max-age=", StringComparison.OrdinalIgnoreCase))
+            if (directive.IsEmpty)
+                continue;
+
+            // The name and the value may be separated by optional whitespace around the '='
+            var separator = directive.IndexOf('=');
+            var name = separator < 0 ? directive : directive[..separator].TrimEnd();
+            var value = separator < 0 ? [] : directive[(separator + 1)..].TrimStart();
+
+            if (name.Equals("max-age", StringComparison.OrdinalIgnoreCase))
             {
-                var value = directive["max-age=".Length..].Trim();
+                // A repeated directive makes the whole header field invalid
+                if (hasMaxAge)
+                    return false;
 
                 // The directive value may be a quoted-string
                 if (value.Length >= 2 && value[0] == '"' && value[^1] == '"')
@@ -115,8 +125,11 @@ public sealed class HstsClientHandler : DelegatingHandler
                 maxAge = TimeSpan.FromSeconds(Math.Min(seconds, MaxMaxAgeInSeconds));
                 hasMaxAge = true;
             }
-            else if (directive.Equals("includeSubDomains", StringComparison.OrdinalIgnoreCase))
+            else if (separator < 0 && name.Equals("includeSubDomains", StringComparison.OrdinalIgnoreCase))
             {
+                if (includeSubdomains)
+                    return false;
+
                 includeSubdomains = true;
             }
         }

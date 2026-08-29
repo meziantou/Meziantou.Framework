@@ -105,6 +105,108 @@ public sealed class SensitiveDataTests
         Assert.Equal(new byte[] { 1, 2, 3, 4 }, bytes.RevealToArray());
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(15)]
+    [InlineData(16)]
+    [InlineData(17)]
+    [InlineData(31)]
+    public void XorProtection_RoundTripsVariousLengths(int length)
+    {
+        var expected = new byte[length];
+        for (var i = 0; i < expected.Length; i++)
+        {
+            expected[i] = (byte)i;
+        }
+
+        using var data = SensitiveData<byte>.CreateWithXorProtection(expected);
+        Assert.True(data.IsProtected);
+        Assert.Equal(expected, data.RevealToArray());
+        Assert.True(data.IsProtected);
+    }
+
+    [Fact]
+    public void XorProtection_StoresTransformedBytesAtRest()
+    {
+        var plaintext = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+
+        using var data = SensitiveData<byte>.CreateWithXorProtection(plaintext);
+
+        Assert.True(data.TryGetBytesAtRest(out var atRest));
+        Assert.NotEqual(plaintext, atRest);
+        Assert.Equal(plaintext, data.RevealToArray());
+    }
+
+    [Fact]
+    public void DefaultProtection_StoresTransformedBytesAtRest()
+    {
+        var plaintext = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+
+        using var data = SensitiveData.Create(plaintext);
+
+        // The Unix protection makes the pages unreadable, so there is nothing to compare against.
+        if (!data.TryGetBytesAtRest(out var atRest))
+            return;
+
+        Assert.NotEqual(plaintext, atRest);
+        Assert.Equal(plaintext, data.RevealToArray());
+    }
+
+    [Fact]
+    public void RevealInto_DestinationTooSmall_ThrowsAndLeavesTheInstanceUsable()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        Assert.Throws<ArgumentException>(() => data.RevealInto(new char[2]));
+
+        Assert.True(data.IsProtected);
+        Assert.Equal("foo", data.RevealToString());
+    }
+
+    [Fact]
+    public void Create_FromReadOnlySpan()
+    {
+        ReadOnlySpan<byte> buffer = [1, 2, 3, 4, 5];
+
+        using var data = SensitiveData.Create(buffer);
+
+        Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, data.RevealToArray());
+    }
+
+    [Fact]
+    public void ConcurrentReveals_AllReturnTheSecret()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        var results = new string[8];
+        var threads = new Thread[results.Length];
+        for (var i = 0; i < threads.Length; i++)
+        {
+            var index = i;
+            threads[index] = new Thread(() =>
+            {
+                for (var iteration = 0; iteration < 200; iteration++)
+                {
+                    results[index] = data.RevealToString();
+                }
+            });
+        }
+
+        foreach (var thread in threads)
+        {
+            thread.Start();
+        }
+
+        foreach (var thread in threads)
+        {
+            Assert.True(thread.Join(TimeSpan.FromSeconds(30)));
+        }
+
+        Assert.All(results, result => Assert.Equal("foo", result));
+        Assert.True(data.IsProtected);
+    }
+
     [Fact]
     [SuppressMessage("Design", "MA0150:Do not call the default object.ToString explicitly")]
     public void ToStringDoesNotRevealValue()

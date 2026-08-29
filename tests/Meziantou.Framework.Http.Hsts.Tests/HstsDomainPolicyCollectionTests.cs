@@ -1,3 +1,4 @@
+using Meziantou.Xunit;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.Http.Hsts.Tests;
@@ -222,6 +223,41 @@ public sealed class HstsDomainPolicyCollectionTests
             var partCount = Random.Shared.Next(1, 16);
             return string.Join('.', Enumerable.Range(0, partCount).Select(_ => Guid.NewGuid().ToString("N").ToLowerInvariant()));
         }
+    }
+
+    [Fact]
+    public void HstsDomainPolicy_ToString_UsesTheInvariantFormat()
+    {
+        var policy = CreatePolicyExpiringOn2030();
+
+        Assert.Equal("example.com; expires=2030-03-04T05:06:07.0000000+00:00; includeSubdomains", policy.ToString());
+    }
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("fr-FR")]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void HstsDomainPolicy_ToString_DoesNotDependOnTheCulture(string culture)
+    {
+        var policy = CreatePolicyExpiringOn2030();
+
+        var previousCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
+            Assert.Equal("example.com; expires=2030-03-04T05:06:07.0000000+00:00; includeSubdomains", policy.ToString());
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+        }
+    }
+
+    private static HstsDomainPolicy CreatePolicyExpiringOn2030()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("example.com", new DateTimeOffset(2030, 3, 4, 5, 6, 7, TimeSpan.Zero), includeSubdomains: true);
+        return Assert.Single(hsts);
     }
 
     [Fact]

@@ -26,7 +26,8 @@ public sealed class HstsDomainPolicy
 
     public override string ToString()
     {
-        var result = Host + "; expires=" + ExpiresAt;
+        // The date is part of a diagnostic string that ends up in logs, so it must not depend on the culture
+        var result = Host + "; expires=" + ExpiresAt.ToString("O", CultureInfo.InvariantCulture);
         if (IncludeSubdomains)
         {
             result += "; includeSubdomains";

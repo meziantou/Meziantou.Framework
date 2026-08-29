@@ -207,6 +207,12 @@ public static partial class Bcrypt
                 return false;
         }
 
+        // The 22nd salt character and the last digest character each carry fewer than 6 significant bits.
+        // Only the canonical spelling survives the decode/encode round trip Verify performs, so reject the
+        // others here instead of reporting a hash as valid that Verify could never accept.
+        if (!BcryptImplementation.IsCanonicalFinalChar(payload[21]) || !BcryptImplementation.IsCanonicalFinalChar(payload[^1]))
+            return false;
+
         result = new BcryptHashInfo(version, workFactor);
         return true;
     }

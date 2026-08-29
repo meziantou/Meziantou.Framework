@@ -230,6 +230,16 @@ internal sealed class BcryptImplementation
         if (salt.Length < offset + 3 + 22)
             throw new FormatException("Invalid salt length");
 
+        var saltPayload = salt.Slice(offset + 3, 22);
+        foreach (var c in saltPayload)
+        {
+            if (Char64(c) < 0)
+                throw new FormatException("Invalid salt characters");
+        }
+
+        if (!IsCanonicalFinalChar(saltPayload[^1]))
+            throw new FormatException("Invalid salt: the last character carries bits that cannot round-trip");
+
 
         byte[] passwordBytes;
         try
@@ -241,7 +251,7 @@ internal sealed class BcryptImplementation
             throw new ArgumentException("The password cannot be encoded as UTF-8. It contains an unpaired surrogate.", nameof(password), ex);
         }
 
-        return HashBytes(passwordBytes, salt.Slice(offset + 3, 22), minorRevision, workFactor);
+        return HashBytes(passwordBytes, saltPayload, minorRevision, workFactor);
     }
 
     private static byte[] GetPasswordBytes(ReadOnlySpan<char> password, char minorRevision)
@@ -317,7 +327,7 @@ internal sealed class BcryptImplementation
         if (length <= 0 || length > value.Length)
             throw new ArgumentException("Invalid length", nameof(length));
 
-        var encodedSize = (int)Math.Ceiling((length * 4d) / 3d);
+        var encodedSize = ((length * 4) + 2) / 3;
         var encoded = new char[encodedSize];
 
         var position = 0;
@@ -367,7 +377,7 @@ internal sealed class BcryptImplementation
             var c1 = Char64(encoded[position++]);
             var c2 = Char64(encoded[position++]);
             if (c1 == -1 || c2 == -1)
-                break;
+                throw new FormatException("Invalid BCrypt base64 character");
 
             result[outputLength] = (byte)((c1 << 2) | ((c2 & 0x30) >> 4));
             if (++outputLength >= maximumBytes || position >= sourceLength)
@@ -375,7 +385,7 @@ internal sealed class BcryptImplementation
 
             var c3 = Char64(encoded[position++]);
             if (c3 == -1)
-                break;
+                throw new FormatException("Invalid BCrypt base64 character");
 
             result[outputLength] = (byte)(((c2 & 0x0f) << 4) | ((c3 & 0x3c) >> 2));
             if (++outputLength >= maximumBytes || position >= sourceLength)
@@ -383,7 +393,7 @@ internal sealed class BcryptImplementation
 
             var c4 = Char64(encoded[position++]);
             if (c4 == -1)
-                break;
+                throw new FormatException("Invalid BCrypt base64 character");
 
             result[outputLength] = (byte)(((c3 & 0x03) << 6) | c4);
             outputLength++;
@@ -397,12 +407,22 @@ internal sealed class BcryptImplementation
         return resized;
     }
 
-    private static int Char64(char character)
+    internal static int Char64(char character)
     {
-        if (character < 0 || character >= Index64.Length)
+        if (character >= Index64.Length)
             return -1;
 
         return Index64[character];
+    }
+
+    /// <summary>
+    /// The last character of an encoded salt or digest carries fewer than 6 significant bits, so only the
+    /// spelling whose trailing bits are zero survives a decode/encode round trip.
+    /// </summary>
+    internal static bool IsCanonicalFinalChar(char character)
+    {
+        var value = Char64(character);
+        return value >= 0 && value % 4 == 0;
     }
 
     private void Encipher(Span<uint> blockArray, int offset)

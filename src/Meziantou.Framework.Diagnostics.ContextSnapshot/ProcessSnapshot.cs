@@ -13,7 +13,7 @@ public class ProcessSnapshot
         StartTime = process.StartTime;
 
         MainModule = process.MainModule is null ? null : new ProcessModuleSnapshot(process.MainModule);
-        Modules = process.Modules.Cast<ProcessModule>().Select(module => new ProcessModuleSnapshot(module)).ToImmutableArray();
+        Modules = GetModules(process);
 
         UserProcessorTime = process.UserProcessorTime;
         TotalProcessorTime = process.TotalProcessorTime;
@@ -53,4 +53,19 @@ public class ProcessSnapshot
     public long PeakVirtualMemorySize64 { get; }
     public long PeakPagedMemorySize64 { get; }
     public ProcessPriorityClass PriorityClass { get; }
+
+    private static ImmutableArray<ProcessModuleSnapshot> GetModules(Process process)
+    {
+        var modules = process.Modules;
+        var result = ImmutableArray.CreateBuilder<ProcessModuleSnapshot>(initialCapacity: modules.Count);
+        foreach (ProcessModule module in modules)
+        {
+            using (module)
+            {
+                result.Add(new ProcessModuleSnapshot(module));
+            }
+        }
+
+        return result.ToImmutable();
+    }
 }

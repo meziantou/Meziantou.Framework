@@ -752,6 +752,55 @@ public class GlobTests
         AssertEnumerateFiles(directory, Glob.Parse("*.cs", GlobDialect.Posix), ["Program.cs", "src/Program.cs"]);
     }
 
+    [Theory]
+    [InlineData("*?a", "ab")]
+    [InlineData("*.md?", "readme.md")]
+    [InlineData("v*.?", "v1.")]
+    [InlineData("***[ab]", "aaac")]
+    [InlineData("*[!a]b", "ab")]
+    [InlineData("*[a-c]d", "abe")]
+    [InlineData("*?a*?b", "ab")]
+    public void SingleCharacterSubSegmentDoesNotReadPastTheEndOfTheSegment(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("*?a", "aba")]
+    [InlineData("*.md?", "readme.mdx")]
+    [InlineData("v*.?", "v1.2")]
+    [InlineData("***[ab]", "aaab")]
+    [InlineData("*[!a]b", "acb")]
+    [InlineData("*[a-c]d", "abd")]
+    [InlineData("*[ab]c", "ac")]
+    public void SingleCharacterSubSegmentStillMatchesWhenTheSegmentIsLongEnough(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("*[!a]a", "aa/a")]
+    [InlineData("*[!a]*a", "aa/a")]
+    [InlineData("*[!a-c]a", "aa/a")]
+    [InlineData("*?a", "aa/a")]
+    public void SingleCharacterSubSegmentDoesNotMatchAPathSeparator(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+    }
+
+    [Fact]
+    public void EnumerateFiles_TrailingAnyCharacterAfterWildcard()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("readme.md");
+        directory.CreateEmptyFile("readme.mdx");
+
+        AssertEnumerateFiles(directory, Glob.Parse("*.md?", GlobDialect.Standard), ["readme.mdx"]);
+    }
+
     private static void AssertEnumerateFiles(TemporaryDirectory directory, IGlobEvaluatable glob, string[] expectedResult)
     {
         var items = glob.EnumerateFiles(directory.FullPath)

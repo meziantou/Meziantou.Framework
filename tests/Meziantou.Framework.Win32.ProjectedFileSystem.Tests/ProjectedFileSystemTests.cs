@@ -304,4 +304,42 @@ public sealed class ProjectedFileSystemTests
             try { Directory.Delete(fullPath, recursive: true); } catch { }
         }
     }
+
+    /// <summary>
+    /// Verifies that Stop does not tear the instance down while a callback that returned
+    /// ERROR_IO_PENDING is still outstanding.
+    ///
+    /// PrjStopVirtualizing only waits for callbacks that returned synchronously. A callback that
+    /// handed back ERROR_IO_PENDING still has a PrjCompleteCommand to make, and making it against
+    /// a context the driver has already destroyed is undefined behaviour.
+    /// </summary>
+    [ProjectedFileSystemFact]
+    public async Task StopWaitsForCommandsThatReturnedIoPending()
+    {
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            using var vfs = new GatedVirtualFileSystem(fullPath);
+            vfs.Start(options: null);
+
+            var read = Task.Run(() => File.ReadAllBytes(Path.Combine(fullPath, "gated.bin")));
+            await vfs.Entered.WaitAsync(TimeSpan.FromSeconds(30));
+
+            var stop = Task.Run(vfs.Stop);
+
+            // The provider has not produced the content yet, so Stop has nothing to drain to
+            Assert.NotSame(stop, await Task.WhenAny(stop, Task.Delay(TimeSpan.FromMilliseconds(500))));
+
+            vfs.Release();
+            await stop.WaitAsync(TimeSpan.FromSeconds(30));
+
+            // The read itself may fail once the instance is stopped; only Stop ordering matters here
+            try { await read.WaitAsync(TimeSpan.FromSeconds(30)); } catch (IOException) { }
+        }
+        finally
+        {
+            try { Directory.Delete(fullPath, recursive: true); } catch { }
+        }
+    }
 }

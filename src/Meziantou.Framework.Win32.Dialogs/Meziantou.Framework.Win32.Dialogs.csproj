@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Version>3.0.0</Version>
     <Description>Provide an OpenFolderDialog that uses Vista+ design</Description>
   </PropertyGroup>

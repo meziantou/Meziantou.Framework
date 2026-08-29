@@ -236,6 +236,36 @@ public sealed class HstsDomainPolicyCollectionTests
         Assert.True(hsts.MustUpgradeRequest("other.com."));
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData(".")]
+    [InlineData(".com")]
+    [InlineData("..com")]
+    [InlineData("a..com")]
+    [InlineData("a..b.com")]
+    public void HstsCollection_Add_RejectsAnEmptyLabel(string host)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+
+        // Uri rejects these host names, and stored as is they would land in a bucket no lookup reads
+        Assert.Throws<ArgumentException>(() => hsts.Add(host, DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: true));
+        Assert.Empty(hsts);
+    }
+
+    [Theory]
+    [InlineData("com")]
+    [InlineData("example.com")]
+    [InlineData("example.com.")]
+    [InlineData("a.b.c.example.com")]
+    [InlineData("xn--vt3a.jp")]
+    public void HstsCollection_Add_AcceptsAWellFormedHost(string host)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add(host, DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: true);
+
+        Assert.True(hsts.MustUpgradeRequest(host));
+    }
+
     [Fact]
     public void HstsCollection_Remove()
     {

@@ -636,6 +636,21 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    [RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void CreateTempFile_IsOnlyAccessibleByTheCurrentUser()
+    {
+        var path = FullPath.CreateTempFile(prefix: null);
+        try
+        {
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(path.Value));
+        }
+        finally
+        {
+            File.Delete(path.Value);
+        }
+    }
+
+    [Fact]
     public void CreateTempFile_WithFolderPrefixSuffix()
     {
         using var tempDirectory = TemporaryDirectory.Create();

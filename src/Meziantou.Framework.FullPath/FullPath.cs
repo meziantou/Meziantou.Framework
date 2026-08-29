@@ -382,6 +382,21 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         prefix ??= string.Empty;
         suffix ??= string.Empty;
 
+        var options = new FileStreamOptions
+        {
+            Mode = FileMode.CreateNew,
+            Access = FileAccess.ReadWrite,
+            Share = FileShare.None,
+        };
+
+        if (!OperatingSystem.IsWindows())
+        {
+            // FileStream would otherwise create the file with 0666 & ~umask, which leaves it readable by every local
+            // user when the temporary folder is shared (Path.GetTempPath is /tmp on most Linux systems).
+            // Path.GetTempFileName uses mkstemp and creates with 0600, so match that.
+            options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        }
+
         IOException? lastException = null;
         for (var attempt = 0; attempt < 10; attempt++)
         {
@@ -389,7 +404,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
             try
             {
-                using var stream = File.Open(filePath.Value, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+                using var stream = File.Open(filePath.Value, options);
                 return filePath;
             }
             catch (IOException ex)

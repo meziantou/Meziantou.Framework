@@ -104,6 +104,62 @@ public sealed class SensitiveDataTests
     }
 
     [Fact]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The instance is disposed by the other thread the test starts")]
+    public void Dispose_DuringRevealOnAnotherThread_LetsTheRevealFinish()
+    {
+        var expected = new string('a', 4096);
+        var data = SensitiveData.Create(expected);
+        using var revealStarted = new ManualResetEventSlim();
+
+        var disposeThread = new Thread(() =>
+        {
+            revealStarted.Wait();
+            data.Dispose();
+        });
+
+        disposeThread.Start();
+
+        string? revealed = null;
+        data.RevealAndUse(arg: 0, (span, _) =>
+        {
+            revealStarted.Set();
+
+            // Give the other thread time to reach Dispose while this span is still alive.
+            Thread.Sleep(100);
+            revealed = new string(span);
+        });
+
+        Assert.True(disposeThread.Join(TimeSpan.FromSeconds(30)));
+        Assert.Equal(expected, revealed);
+        Assert.Throws<ObjectDisposedException>(() => data.RevealToString());
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The instance is disposed by the threads the test starts")]
+    public void Dispose_ConcurrentCalls_ReleaseTheBufferExactlyOnce()
+    {
+        var data = SensitiveData.Create("foo");
+
+        var threads = new Thread[8];
+        for (var i = 0; i < threads.Length; i++)
+        {
+            threads[i] = new Thread(data.Dispose);
+        }
+
+        foreach (var thread in threads)
+        {
+            thread.Start();
+        }
+
+        foreach (var thread in threads)
+        {
+            Assert.True(thread.Join(TimeSpan.FromSeconds(30)));
+        }
+
+        Assert.Throws<ObjectDisposedException>(() => data.RevealToString());
+    }
+
+    [Fact]
     public void UnixPaths_CanRevealStringAndByteArray()
     {
         if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())

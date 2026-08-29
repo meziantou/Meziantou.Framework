@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace Meziantou.Framework.Tests;
@@ -54,6 +55,16 @@ public sealed class SensitiveDataTests
         {
             expected[i] = (byte)i;
         }
+
+        using var data = SensitiveData.Create(expected);
+        Assert.Equal(expected, data.RevealToArray());
+    }
+
+    [Fact]
+    public void RevealToArray_BufferLargerThanOneMegabyte()
+    {
+        var expected = new byte[8 * 1024 * 1024];
+        RandomNumberGenerator.Fill(expected);
 
         using var data = SensitiveData.Create(expected);
         Assert.Equal(expected, data.RevealToArray());

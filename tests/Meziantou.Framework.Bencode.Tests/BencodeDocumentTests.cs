@@ -189,6 +189,37 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public async Task ParseAsync_CancelPendingRead_StopsTheParse()
+    {
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
+        await pipe.Writer.WriteAsync("l"u8.ToArray());
+
+        pipe.Reader.CancelPendingRead();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => parseTask.WaitAsync(TimeSpan.FromSeconds(30)));
+
+        await pipe.Writer.CompleteAsync();
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task ParseAsync_CancellationToken_StopsTheParse()
+    {
+        using var cts = new CancellationTokenSource();
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader, cts.Token).AsTask();
+        await pipe.Writer.WriteAsync("l"u8.ToArray());
+
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => parseTask.WaitAsync(TimeSpan.FromSeconds(30)));
+
+        await pipe.Writer.CompleteAsync();
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
     public void Parse_InvalidData_Throws()
     {
         var data = Encoding.ASCII.GetBytes("i-0e");

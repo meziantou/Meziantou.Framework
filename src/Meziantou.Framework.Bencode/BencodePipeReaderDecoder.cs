@@ -223,6 +223,9 @@ internal sealed class BencodePipeReaderDecoder
             _buffer = readResult.Buffer;
             _hasPendingReadResult = true;
 
+            if (readResult.IsCanceled)
+                throw new OperationCanceledException("The bencode read was canceled.");
+
             if (!_buffer.IsEmpty)
                 return true;
 

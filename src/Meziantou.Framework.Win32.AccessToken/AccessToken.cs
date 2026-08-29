@@ -136,20 +136,7 @@ public sealed class AccessToken : IDisposable
     /// <returns>A collection of <see cref="TokenGroupEntry"/> objects representing the groups, or <see langword="null"/> if not available.</returns>
     public IEnumerable<TokenGroupEntry>? EnumerateGroups()
     {
-        return GetTokenInformation<TOKEN_GROUPS, IReadOnlyList<TokenGroupEntry>>(
-            TOKEN_INFORMATION_CLASS.TokenGroups,
-            (handle, groups) =>
-            {
-                var list = new TokenGroupEntry[groups.GroupCount];
-                var index = 0;
-                foreach (var group in ReadArray<TOKEN_GROUPS, SID_AND_ATTRIBUTES>(handle, nameof(TOKEN_GROUPS.Groups), groups.GroupCount))
-                {
-                    list[index] = new TokenGroupEntry(new SecurityIdentifier(group.Sid), (GroupSidAttributes)group.Attributes);
-                    index++;
-                }
-
-                return list;
-            });
+        return EnumerateGroups(TOKEN_INFORMATION_CLASS.TokenGroups);
     }
 
     /// <summary>Enumerates the restricted SIDs in the token.</summary>
@@ -157,8 +144,13 @@ public sealed class AccessToken : IDisposable
     /// <remarks>Restricted SIDs are used to limit the token's access to resources beyond the standard access checks.</remarks>
     public IEnumerable<TokenGroupEntry>? EnumerateRestrictedSid()
     {
+        return EnumerateGroups(TOKEN_INFORMATION_CLASS.TokenRestrictedSids);
+    }
+
+    private IReadOnlyList<TokenGroupEntry>? EnumerateGroups(TOKEN_INFORMATION_CLASS informationClass)
+    {
         return GetTokenInformation<TOKEN_GROUPS, IReadOnlyList<TokenGroupEntry>>(
-            TOKEN_INFORMATION_CLASS.TokenRestrictedSids,
+            informationClass,
             (handle, groups) =>
             {
                 var list = new TokenGroupEntry[groups.GroupCount];

@@ -136,9 +136,130 @@ public class SemanticVersionRangeTests
     [InlineData("[1.0.0")]
     [InlineData("1.0.0]")]
     [InlineData("[invalid]")]
+    [InlineData("[1.0.0)")] // A single version needs two inclusive bounds
+    [InlineData("(1.0.0]")]
+    [InlineData("(1.0.0)")]
+    [InlineData("[2.0.0,1.0.0]")] // Inverted bounds
+    [InlineData("(2.0.0,1.0.0)")]
+    [InlineData("[1.0.1,1.0.0]")]
+    [InlineData("[1.0.0,1.0.0)")] // One inclusive and one exclusive bound on a single version
+    [InlineData("(1.0.0,1.0.0]")]
     public void ParseNuGet_InvalidFormats_ThrowsFormatException(string input)
     {
         Assert.Throws<FormatException>(() => SemanticVersionRange.ParseNuGet(input));
+    }
+
+    // The strings below are fed to both this library and NuGet's own range parser. NuGet.Versioning
+    // is the reference implementation of this syntax, so any disagreement is either a bug here or a
+    // deliberate difference that belongs in ParseNuGet_KnownDivergencesFromNuGetVersioning.
+    public static TheoryData<string> NuGetRangeSyntax()
+    {
+        return
+        [
+            // Valid forms
+            "1.0.0",
+            "[1.0.0]",
+            "[1.0.0,)",
+            "(1.0.0,)",
+            "(,1.0.0]",
+            "(,1.0.0)",
+            "[1.0.0,2.0.0]",
+            "[1.0.0,2.0.0)",
+            "(1.0.0,2.0.0)",
+            "(1.0.0,2.0.0]",
+            "[1.0.0-alpha,2.0.0)",
+            "[1.0.0+build]",
+            "[1.0.0,1.0.0]",
+            "(1.0.0,1.0.0)",
+            // A single version cannot carry one inclusive and one exclusive bound
+            "[1.0.0)",
+            "(1.0.0]",
+            "(1.0.0)",
+            "[1.0.0,1.0.0)",
+            "(1.0.0,1.0.0]",
+            // Inverted bounds
+            "[2.0.0,1.0.0]",
+            "(2.0.0,1.0.0)",
+            "[1.0.1,1.0.0]",
+            // Malformed
+            "",
+            "[",
+            "]",
+            "[1.0.0",
+            "1.0.0]",
+            "[invalid]",
+            "[1.0.0,2.0.0",
+        ];
+    }
+
+    [Theory]
+    [MemberData(nameof(NuGetRangeSyntax))]
+    public void ParseNuGet_AcceptsTheSameStringsAsNuGetVersioning(string input)
+    {
+        var mine = SemanticVersionRange.TryParseNuGet(input, out _);
+        var reference = NuGet.Versioning.VersionRange.TryParse(input, out _);
+
+        Assert.Equal(reference, mine);
+    }
+
+    [Theory]
+    [MemberData(nameof(NuGetRangeSyntax))]
+    public void ParseNuGet_ProducesTheSameBoundsAsNuGetVersioning(string input)
+    {
+        if (!NuGet.Versioning.VersionRange.TryParse(input, out var reference))
+        {
+            return;
+        }
+
+        var range = SemanticVersionRange.ParseNuGet(input);
+
+        Assert.Equal(reference.MinVersion?.ToFullString(), range.MinVersion?.ToString());
+        Assert.Equal(reference.MaxVersion?.ToFullString(), range.MaxVersion?.ToString());
+        Assert.Equal(reference.IsMinInclusive, range.IsMinInclusive);
+        Assert.Equal(reference.IsMaxInclusive, range.IsMaxInclusive);
+    }
+
+    [Theory]
+    [MemberData(nameof(NuGetRangeSyntax))]
+    public void ParseNuGet_SatisfiesTheSameVersionsAsNuGetVersioning(string input)
+    {
+        if (!NuGet.Versioning.VersionRange.TryParse(input, out var reference))
+        {
+            return;
+        }
+
+        var range = SemanticVersionRange.ParseNuGet(input);
+        string[] versions =
+        [
+            "0.9.0", "1.0.0", "1.0.0-alpha", "1.0.0-beta.2", "1.0.0+build",
+            "1.0.1", "1.5.0", "1.9.9", "2.0.0-rc.1", "2.0.0", "2.0.1", "10.0.0",
+        ];
+
+        // Comparing the two sets of matched versions rather than asserting one version at a time
+        // means a failure names every version the two parsers disagree about.
+        var expected = versions.Where(version => reference.Satisfies(NuGet.Versioning.NuGetVersion.Parse(version))).ToArray();
+        var actual = versions.Where(version => range.Satisfies(SemanticVersion.Parse(version))).ToArray();
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    // NuGet accepts version formats that are not Semantic Versioning 2.0.0. This library parses
+    // semantic versions only, so it rejects them by design.
+    [InlineData("1.0.0.0")] // Four-part version
+    [InlineData("[1.0.0.0,)")]
+    [InlineData("[1.0,)")] // Two-part version
+    [InlineData("*")] // Floating version
+    [InlineData("1.*")]
+    // NuGet's parser wants whitespace around an omitted bound; this one does not care.
+    [InlineData("(,)")]
+    [InlineData("(,]")]
+    public void ParseNuGet_KnownDivergencesFromNuGetVersioning(string input)
+    {
+        var mine = SemanticVersionRange.TryParseNuGet(input, out _);
+        var reference = NuGet.Versioning.VersionRange.TryParse(input, out _);
+
+        Assert.NotEqual(reference, mine);
     }
 
     [Fact]

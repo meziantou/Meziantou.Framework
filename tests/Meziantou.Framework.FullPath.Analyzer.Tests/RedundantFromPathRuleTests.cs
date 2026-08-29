@@ -137,4 +137,49 @@ public sealed class RedundantFromPathRuleTests : FullPathAnalyzerTestBase
 
         await CreateAnalyzerTest<RedundantFromPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_ForFromPathWithPathJoin()
+    {
+        var source = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static FullPath M(string path1, string path2)
+                    {
+                        return FullPath.FromPath(Path.Join(path1, path2));
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<RedundantFromPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_ForFromPathWithPathJoinOverSpans()
+    {
+        var source = """
+            using System;
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static FullPath M(string path1, string path2)
+                    {
+                        return FullPath.FromPath(Path.Join(path1.AsSpan(), path2.AsSpan()));
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<RedundantFromPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
 }

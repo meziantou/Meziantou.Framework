@@ -28,8 +28,8 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
         public bool IsOutputRedirected { get => throw null; }
         public bool IsErrorRedirected { get => throw null; }
         public bool IsInputRedirected { get => throw null; }
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot OutEncoding { get => throw null; }
-        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot InputEncoding { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot? OutEncoding { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot? InputEncoding { get => throw null; }
         public int BufferHeight { get => throw null; }
         public int BufferWidth { get => throw null; }
         public int LargestWindowHeight { get => throw null; }
@@ -38,8 +38,8 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
         public int WindowWidth { get => throw null; }
         public int WindowTop { get => throw null; }
         public int WindowLeft { get => throw null; }
-        public System.ConsoleColor ForegroundColor { get => throw null; }
-        public System.ConsoleColor BackgroundColor { get => throw null; }
+        public System.ConsoleColor? ForegroundColor { get => throw null; }
+        public System.ConsoleColor? BackgroundColor { get => throw null; }
         public string? Title { get => throw null; }
     }
 

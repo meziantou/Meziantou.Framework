@@ -17,6 +17,7 @@ public sealed class HtpasswdFile
     private const int ShaCryptMinRounds = 1000;
     private const int ShaCryptMaxRounds = 999_999_999;
     private const string Sha1Prefix = "{SHA}";
+    private static readonly string[] BcryptPrefixes = ["$2a$", "$2b$", "$2y$"];
     private readonly Dictionary<string, string> _entries;
 
     private HtpasswdFile(Dictionary<string, string> entries)
@@ -143,7 +144,7 @@ public sealed class HtpasswdFile
             return false;
 
         var expectedPasswordHashSpan = expectedPasswordHash.AsSpan();
-        if (expectedPasswordHashSpan.StartsWith("$2", StringComparison.Ordinal))
+        if (IsBcryptHash(expectedPasswordHashSpan))
             return Bcrypt.Verify(password, expectedPasswordHashSpan);
 
         if (expectedPasswordHashSpan.StartsWith(Sha1Prefix, StringComparison.Ordinal))
@@ -162,6 +163,17 @@ public sealed class HtpasswdFile
             return VerifyShaCrypt(password, expectedPasswordHashSpan, useSha512: true);
 
         return password.SequenceEqual(expectedPasswordHashSpan);
+    }
+
+    private static bool IsBcryptHash(ReadOnlySpan<char> hash)
+    {
+        foreach (var prefix in BcryptPrefixes)
+        {
+            if (hash.StartsWith(prefix, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
     }
 
     private static bool VerifyMd5Crypt(ReadOnlySpan<char> password, ReadOnlySpan<char> expectedHash, string prefix)

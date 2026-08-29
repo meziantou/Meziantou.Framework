@@ -139,6 +139,129 @@ public sealed class BcryptTests
         Assert.True(Bcrypt.NeedsRehash(hash, workFactor: 6, version: BcryptVersion.Revision2B));
     }
 
+    [Theory]
+    [InlineData(Bcrypt.MinWorkFactor - 1)]
+    [InlineData(Bcrypt.MaxWorkFactor + 1)]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void GenerateSalt_WorkFactorOutOfRange_Throws(int workFactor)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => Bcrypt.GenerateSalt(workFactor));
+    }
+
+    [Fact]
+    public void GenerateSalt_UnsupportedVersion_Throws()
+    {
+        Assert.Throws<NotSupportedException>(() => Bcrypt.GenerateSalt(version: BcryptVersion.Revision2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Bcrypt.GenerateSalt(version: (BcryptVersion)99));
+    }
+
+    [Fact]
+    public void GenerateSalt_ProducesDistinctSaltsOfExpectedShape()
+    {
+        var salts = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = 0; i < 32; i++)
+        {
+            var salt = Bcrypt.GenerateSalt(4);
+
+            Assert.StartsWith("$2b$04$", salt);
+            Assert.HasCount(29, salt);
+            Assert.True(salts.Add(salt), "GenerateSalt returned a duplicate salt");
+        }
+    }
+
+    [Fact]
+    public void NeedsRehash_InvalidHash_ThrowsFormatException()
+    {
+        Assert.Throws<FormatException>(() => Bcrypt.NeedsRehash("not-a-hash"));
+        Assert.Throws<FormatException>(() => Bcrypt.NeedsRehash("not-a-hash".AsSpan()));
+    }
+
+    [Theory]
+    [InlineData(Bcrypt.MinWorkFactor - 1)]
+    [InlineData(Bcrypt.MaxWorkFactor + 1)]
+    public void NeedsRehash_WorkFactorOutOfRange_Throws(int workFactor)
+    {
+        var hash = Bcrypt.HashPassword("password", workFactor: 4);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => Bcrypt.NeedsRehash(hash, workFactor));
+    }
+
+    [Fact]
+    public void NullArguments_Throw()
+    {
+        const string Hash = "$2b$04$2Siw3Nv3Q/gTOIPetAyPr.GNj3aO0lb1E5E9UumYGKjP9BYqlNWJe";
+
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.HashPassword(password: null!));
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.HashPassword(password: null!, salt: "$2b$04$2Siw3Nv3Q/gTOIPetAyPr."));
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.HashPassword(password: "a", salt: null!));
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.Verify(password: null!, hash: Hash));
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.Verify(password: "a", hash: null!));
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.ParseHash(hash: null!));
+        Assert.Throws<ArgumentNullException>(() => Bcrypt.NeedsRehash(hash: null!));
+
+        Assert.False(Bcrypt.TryParseHash(null, out _));
+    }
+
+    [Fact]
+    public void BcryptHashInfo_EqualityMembers()
+    {
+        var info = new BcryptHashInfo(BcryptVersion.Revision2B, 11);
+        var same = new BcryptHashInfo(BcryptVersion.Revision2B, 11);
+        var otherVersion = new BcryptHashInfo(BcryptVersion.Revision2A, 11);
+        var otherWorkFactor = new BcryptHashInfo(BcryptVersion.Revision2B, 12);
+
+        Assert.Equal(BcryptVersion.Revision2B, info.Version);
+        Assert.Equal(11, info.WorkFactor);
+
+        Assert.Equal(same, info);
+        Assert.Equal((object)same, (object)info);
+        Assert.True(info == same);
+        Assert.False(info != same);
+        Assert.Equal(info.GetHashCode(), same.GetHashCode());
+
+        Assert.NotEqual(otherVersion, info);
+        Assert.NotEqual(otherWorkFactor, info);
+        Assert.True(info != otherVersion);
+        Assert.True(info != otherWorkFactor);
+
+        object differentType = "not a BcryptHashInfo";
+        Assert.False(info.Equals(differentType));
+        Assert.False(info.Equals(null));
+    }
+
+    [Fact]
+    public void HashPassword_MultiByteCharacterStraddlingTheLimit_IsTruncatedMidCharacter()
+    {
+        // Only the first 72 UTF-8 bytes are used. 'e' with an acute accent and 'e' with a circumflex
+        // share their first UTF-8 byte (0xC3), which lands at byte 71 here, so the two passwords
+        // are indistinguishable. This pins the behaviour rather than endorsing it.
+        const string Salt = "$2b$04$xnFVhJsTzsFBTeP3PpgbMe";
+
+        var acute = new string('a', 71) + "\u00e9zzz";
+        var circumflex = new string('a', 71) + "\u00eazzz";
+
+        Assert.Equal(Bcrypt.HashPassword(acute, Salt), Bcrypt.HashPassword(circumflex, Salt));
+        Assert.True(Bcrypt.Verify(circumflex, Bcrypt.HashPassword(acute, Salt)));
+    }
+
+    [Fact]
+    public void HashPassword_IsSafeToUseConcurrently()
+    {
+        // Bcrypt is a static facade over per-call BcryptImplementation state.
+        var passwords = Enumerable.Range(0, 32).Select(i => $"password-{i}").ToArray();
+
+        var hashes = new string[passwords.Length];
+        Parallel.For(0, passwords.Length, i => hashes[i] = Bcrypt.HashPassword(passwords[i], workFactor: 4));
+
+        for (var i = 0; i < passwords.Length; i++)
+        {
+            Assert.True(Bcrypt.Verify(passwords[i], hashes[i]));
+        }
+
+        Assert.HasCount(passwords.Length, hashes.Distinct(StringComparer.Ordinal).ToArray());
+    }
+
     [Fact]
     public void SpanOverloads_Work()
     {

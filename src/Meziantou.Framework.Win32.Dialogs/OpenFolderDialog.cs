@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Win32;
 ///     InitialDirectory = @"C:\Users",
 ///     OkButtonLabel = "Select Folder"
 /// };
-/// 
+///
 /// if (dialog.ShowDialog() == DialogResult.OK)
 /// {
 ///     Console.WriteLine($"Selected folder: {dialog.SelectedPath}");
@@ -71,7 +71,7 @@ public sealed class OpenFolderDialog
 
     /// <summary>Gets or sets a value indicating whether to change the current working directory to the selected folder.</summary>
     /// <value>
-    /// <see langword="true"/> to change the current directory to the selected folder; 
+    /// <see langword="true"/> to change the current directory to the selected folder;
     /// <see langword="false"/> to preserve the current working directory. The default is <see langword="false"/>.
     /// </value>
     public bool ChangeCurrentDirectory { get; set; }

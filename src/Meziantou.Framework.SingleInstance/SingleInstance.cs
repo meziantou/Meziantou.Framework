@@ -28,6 +28,10 @@ namespace Meziantou.Framework;
 public sealed class SingleInstance(Guid applicationId) : IDisposable
 {
     private const byte NotifyInstanceMessageType = 1;
+
+    // Upper bound on the number of arguments accepted from the pipe. The message is
+    // sender-controlled, so the count is validated before allocating from it.
+    private const int MaxArgumentCount = 64 * 1024;
     private NamedPipeServerStream? _server;
     private Mutex? _mutex;
 
@@ -36,7 +40,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     /// </summary>
     public event EventHandler<SingleInstanceEventArgs>? NewInstance;
 
-    private string PipeName { get; } = OperatingSystem.IsWindows() ? $"Local\\Pipe_{applicationId}_{GetSessionId().ToString(CultureInfo.InvariantCulture)}" : null!;
+    internal string PipeName { get; } = OperatingSystem.IsWindows() ? $"Local\\Pipe_{applicationId}_{GetSessionId().ToString(CultureInfo.InvariantCulture)}" : null!;
 
     /// <summary>Gets or sets a value indicating whether to start a named pipe server to receive notifications from other instances.</summary>
     /// <value>
@@ -106,32 +110,68 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         try
         {
             server.EndWaitForConnection(ar);
-            StartNamedPipeServer();
-
-            using var binaryReader = new BinaryReader(server);
-            if (binaryReader.ReadByte() == NotifyInstanceMessageType)
-            {
-                var processId = binaryReader.ReadInt32();
-                var argCount = binaryReader.ReadInt32();
-                if (argCount >= 0)
-                {
-                    var args = new string[argCount];
-                    for (var i = 0; i < argCount; i++)
-                    {
-                        args[i] = binaryReader.ReadString();
-                    }
-
-                    NewInstance?.Invoke(this, new SingleInstanceEventArgs(processId, args));
-                }
-            }
         }
-        catch (ObjectDisposedException)
+        catch (Exception)
         {
+            // The server was disposed while waiting, or the connection failed. Do not re-arm:
+            // the application is either shutting down or the pipe is unusable.
+            server.Dispose();
+            return;
+        }
+
+        // Re-arm before reading, so a malformed or truncated message cannot stop the
+        // application from accepting notifications from later instances.
+        try
+        {
+            StartNamedPipeServer();
+        }
+        catch (Exception)
+        {
+            // Keep handling the current connection even if the next listener could not start.
+        }
+
+        SingleInstanceEventArgs? eventArgs;
+        try
+        {
+            eventArgs = ReadNotification(server);
+        }
+        catch (Exception)
+        {
+            // Truncated, malformed, or hostile message. This runs on a thread pool thread,
+            // so letting the exception escape would terminate the process.
+            eventArgs = null;
         }
         finally
         {
             server.Dispose();
         }
+
+        // Raised outside the catch above so an exception thrown by a subscriber is not
+        // silently swallowed as if it were a protocol error.
+        if (eventArgs is not null)
+        {
+            NewInstance?.Invoke(this, eventArgs);
+        }
+    }
+
+    private static SingleInstanceEventArgs? ReadNotification(NamedPipeServerStream server)
+    {
+        using var binaryReader = new BinaryReader(server);
+        if (binaryReader.ReadByte() != NotifyInstanceMessageType)
+            return null;
+
+        var processId = binaryReader.ReadInt32();
+        var argCount = binaryReader.ReadInt32();
+        if (argCount is < 0 or > MaxArgumentCount)
+            return null;
+
+        var args = new string[argCount];
+        for (var i = 0; i < argCount; i++)
+        {
+            args[i] = binaryReader.ReadString();
+        }
+
+        return new SingleInstanceEventArgs(processId, args);
     }
 
     private bool TryAcquireMutex()

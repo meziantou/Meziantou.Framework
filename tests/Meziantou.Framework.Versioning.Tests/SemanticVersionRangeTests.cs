@@ -343,10 +343,75 @@ public class SemanticVersionRangeTests
     }
 
     [Theory]
+    // A prerelease or metadata label may contain 'x', 'X' or '*' without being a wildcard
+    [InlineData(">=1.0.0-exp", "[1.0.0-exp, )")]
+    [InlineData(">=1.0.0-max", "[1.0.0-max, )")]
+    [InlineData(">=1.0.0-rc.x", "[1.0.0-rc.x, )")]
+    [InlineData("<2.0.0-beta.x", "(, 2.0.0-beta.x)")]
+    [InlineData(">=1.0.0-alpha+x", "[1.0.0-alpha+x, )")]
+    [InlineData(">=1.0.0-x.7.z.92", "[1.0.0-x.7.z.92, )")]
+    // Tilde, caret and hyphen ranges keep the prerelease on their lower bound
+    [InlineData("^1.2.3-beta", "[1.2.3-beta, 2.0.0)")]
+    [InlineData("~1.2.3-beta", "[1.2.3-beta, 1.3.0)")]
+    [InlineData("^1.2.3+meta", "[1.2.3+meta, 2.0.0)")]
+    [InlineData("1.0.0-alpha - 2.0.0", "[1.0.0-alpha, 2.0.0]")]
+    [InlineData("1.0.0 - 2.0.0-rc.1", "[1.0.0, 2.0.0-rc.1]")]
+    // A literal zero major is not a wildcard major
+    [InlineData("0.x", "[0.0.0, 1.0.0)")]
+    [InlineData("0.*", "[0.0.0, 1.0.0)")]
+    [InlineData("0.X", "[0.0.0, 1.0.0)")]
+    [InlineData("0.0.x", "[0.0.0, 0.1.0)")]
+    [InlineData("^0.x", "[0.0.0, 1.0.0)")]
+    // Components after a wildcard are wildcards too: npm reads "1.x.2" as "1.x"
+    [InlineData("1.x.2", "[1.0.0, 2.0.0)")]
+    public void ParseNpm_ProducesRange(string input, string expected)
+    {
+        Assert.Equal(expected, SemanticVersionRange.ParseNpm(input).ToString());
+    }
+
+    [Theory]
+    [InlineData("x.x")]
+    [InlineData("*.*")]
+    [InlineData("x")]
+    [InlineData("*")]
+    public void ParseNpm_WildcardMajor_MatchesEveryVersion(string input)
+    {
+        Assert.Equal(SemanticVersionRange.All, SemanticVersionRange.ParseNpm(input));
+    }
+
+    [Fact]
+    public void ParseNpm_CaretWithPrerelease_IncludesThatPrerelease()
+    {
+        var range = SemanticVersionRange.ParseNpm("^1.2.3-beta");
+
+        Assert.True(range.Satisfies(SemanticVersion.Parse("1.2.3-beta")));
+        Assert.True(range.Satisfies(SemanticVersion.Parse("1.2.3")));
+        Assert.False(range.Satisfies(SemanticVersion.Parse("1.2.3-alpha")));
+    }
+
+    [Fact]
+    public void ParseNpm_ZeroMajorXRange_DoesNotMatchEveryVersion()
+    {
+        var range = SemanticVersionRange.ParseNpm("0.x");
+
+        Assert.True(range.Satisfies(SemanticVersion.Parse("0.9.9")));
+        Assert.False(range.Satisfies(SemanticVersion.Parse("5.0.0")));
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("invalid")]
     [InlineData(">")]
     [InlineData(">=")]
+    [InlineData("~1.2.3.4")] // A version has at most three components
+    [InlineData("~1.2.3.junk")]
+    [InlineData("^1.2.3.4")]
+    [InlineData("1.2.3.4")]
+    [InlineData("~1.2.")] // Every component must be present
+    [InlineData("~1..2")]
+    [InlineData("1.2-beta")] // A label needs a complete major.minor.patch
+    [InlineData("^1.x-beta")]
+    [InlineData(">=1.x")] // A wildcard carries no meaning next to a comparison operator
     public void ParseNpm_InvalidFormats_ThrowsFormatException(string input)
     {
         Assert.Throws<FormatException>(() => SemanticVersionRange.ParseNpm(input));

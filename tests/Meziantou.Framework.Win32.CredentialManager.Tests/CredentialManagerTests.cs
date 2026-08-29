@@ -195,6 +195,36 @@ public sealed class CredentialManagerTests
         Assert.Empty(credentials);
     }
 
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_ToString_DoesNotExposeThePassword()
+    {
+        using var context = new IsolatedContext();
+        var credentialName = context.GetCredentialName();
+        CredentialManager.WriteCredential(credentialName, "John", "Pa$$w0rd", "Test", CredentialPersistence.Session);
+        try
+        {
+            var cred = CredentialManager.ReadCredential(credentialName);
+            Assert.NotNull(cred);
+            Assert.Equal("Pa$$w0rd", cred.Password);
+
+            var text = cred.ToString();
+            Assert.DoesNotContain("Pa$$w0rd", text);
+            Assert.Contains("Password: ******", text);
+            Assert.Contains("UserName: John", text);
+        }
+        finally
+        {
+            CredentialManager.DeleteCredential(credentialName);
+        }
+    }
+
+    [Fact]
+    public void Credential_ToString_WithoutPassword_DoesNotShowTheMask()
+    {
+        var cred = new Credential(CredentialType.Generic, "App", "John", password: null, "Test");
+        Assert.Equal("CredentialType: Generic, ApplicationName: App, UserName: John, Password: , Comment: Test", cred.ToString());
+    }
+
     private sealed class IsolatedContext : IDisposable
     {
         private readonly Mutex? _mutex;

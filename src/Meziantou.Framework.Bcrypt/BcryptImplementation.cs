@@ -209,6 +209,9 @@ internal sealed class BcryptImplementation
             if (minorRevision is not ('a' or 'b' or 'x' or 'y') || salt[3] != '$')
                 throw new FormatException("Invalid salt revision");
 
+            if (minorRevision is 'x')
+                throw new NotSupportedException(Bcrypt.Revision2XNotSupportedMessage);
+
             offset = 4;
         }
 

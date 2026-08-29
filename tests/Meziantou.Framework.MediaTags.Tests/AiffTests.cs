@@ -58,6 +58,58 @@ public sealed class AiffTests
     }
 
     [Fact]
+    public void WriteTags_FileWithExistingIsrcChunk_WritesTheNewIsrc()
+    {
+        var tempFile = Path.GetTempFileName() + ".aiff";
+        try
+        {
+            File.WriteAllBytes(tempFile, CreateAiffWithIsrcChunk("OLDISRC00000"));
+            Assert.Equal("OLDISRC00000", MediaFile.ReadTags(tempFile).Value.Isrc);
+
+            var writeResult = MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Title", Isrc = "NEWISRC99999" });
+            Assert.True(writeResult.IsSuccess);
+
+            var readResult = MediaFile.ReadTags(tempFile);
+            Assert.True(readResult.IsSuccess);
+            Assert.Equal("NEWISRC99999", readResult.Value.Isrc);
+            Assert.Equal("Title", readResult.Value.Title);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    private static byte[] CreateAiffWithIsrcChunk(string isrc)
+    {
+        var body = new MemoryStream();
+        WriteChunk(body, "COMM", new byte[18]);
+        WriteChunk(body, "ISRC", Encoding.ASCII.GetBytes(isrc));
+        WriteChunk(body, "SSND", new byte[16]);
+
+        var result = new MemoryStream();
+        result.Write("FORM"u8);
+        var formSize = new byte[4];
+        BinaryPrimitives.WriteInt32BigEndian(formSize, (int)body.Length + 4);
+        result.Write(formSize);
+        result.Write("AIFF"u8);
+        body.Position = 0;
+        body.CopyTo(result);
+        return result.ToArray();
+
+        static void WriteChunk(Stream stream, string id, byte[] data)
+        {
+            var header = new byte[8];
+            Encoding.ASCII.GetBytes(id, header);
+            BinaryPrimitives.WriteInt32BigEndian(header.AsSpan(4), data.Length);
+            stream.Write(header);
+            stream.Write(data);
+            if (data.Length % 2 != 0)
+                stream.WriteByte(0);
+        }
+    }
+
+    [Fact]
     public void WriteTags_PreservesFormHeader()
     {
         var tempFile = Path.GetTempFileName() + ".aiff";

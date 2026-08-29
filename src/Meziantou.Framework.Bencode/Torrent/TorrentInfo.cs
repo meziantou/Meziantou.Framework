@@ -9,6 +9,8 @@ public sealed class TorrentInfo
     private static readonly BencodeString LengthKey = CreateKey("length");
     private static readonly BencodeString FilesKey = CreateKey("files");
     private static readonly BencodeString PathKey = CreateKey("path");
+    private static readonly BencodeString SourceKey = CreateKey("source");
+    private static readonly BencodeString Md5SumKey = CreateKey("md5sum");
 
     public string Name { get; set; } = "";
 
@@ -21,6 +23,12 @@ public sealed class TorrentInfo
     public long? Length { get; set; }
 
     public IReadOnlyList<TorrentInfoFile>? Files { get; set; }
+
+    /// <summary>The 'source' key many private trackers add to make the info-hash unique to them.</summary>
+    public string? Source { get; set; }
+
+    /// <summary>The 'md5sum' of a single-file torrent's content, when the torrent carries one.</summary>
+    public string? Md5Sum { get; set; }
 
     internal static TorrentInfo Parse(BencodeDictionary dictionary)
     {
@@ -43,6 +51,22 @@ public sealed class TorrentInfo
                 throw new FormatException("The 'private' field must be an integer.");
 
             info.IsPrivate = privateInteger.Value != 0;
+        }
+
+        if (dictionary.TryGetValue(SourceKey, out var sourceValue))
+        {
+            if (sourceValue is not BencodeString sourceText)
+                throw new FormatException("The 'source' field must be a string.");
+
+            info.Source = TorrentField.ToText(sourceText, "source");
+        }
+
+        if (dictionary.TryGetValue(Md5SumKey, out var md5Value))
+        {
+            if (md5Value is not BencodeString md5Text)
+                throw new FormatException("The 'md5sum' field must be a string.");
+
+            info.Md5Sum = TorrentField.ToText(md5Text, "md5sum");
         }
 
         if (dictionary.TryGetValue(LengthKey, out var lengthValue))
@@ -77,11 +101,21 @@ public sealed class TorrentInfo
                     path.Add(TorrentField.ToText(segmentString, "path"));
                 }
 
-                files.Add(new TorrentInfoFile
+                var file = new TorrentInfoFile
                 {
                     Length = fileLength,
                     Path = path,
-                });
+                };
+
+                if (fileDictionary.TryGetValue(Md5SumKey, out var fileMd5Value))
+                {
+                    if (fileMd5Value is not BencodeString fileMd5Text)
+                        throw new FormatException("The 'md5sum' field must be a string.");
+
+                    file.Md5Sum = TorrentField.ToText(fileMd5Text, "md5sum");
+                }
+
+                files.Add(file);
             }
 
             info.Files = files;
@@ -107,6 +141,16 @@ public sealed class TorrentInfo
             dictionary.Add(PrivateKey, new BencodeInteger(1));
         }
 
+        if (Source is not null)
+        {
+            dictionary.Add(SourceKey, new BencodeString(Encoding.UTF8.GetBytes(Source)));
+        }
+
+        if (Md5Sum is not null)
+        {
+            dictionary.Add(Md5SumKey, new BencodeString(Encoding.UTF8.GetBytes(Md5Sum)));
+        }
+
         if (Length.HasValue)
         {
             dictionary.Add(LengthKey, new BencodeInteger(Length.Value));
@@ -120,11 +164,18 @@ public sealed class TorrentInfo
                     throw new FormatException("Torrent file entries cannot be null.");
 
                 var path = new BencodeList(file.Path.Select(segment => (BencodeValue)new BencodeString(Encoding.UTF8.GetBytes(segment))));
-                files.Add(new BencodeDictionary
+                var fileDictionary = new BencodeDictionary
                 {
                     { LengthKey, new BencodeInteger(file.Length) },
                     { PathKey, path },
-                });
+                };
+
+                if (file.Md5Sum is not null)
+                {
+                    fileDictionary.Add(Md5SumKey, new BencodeString(Encoding.UTF8.GetBytes(file.Md5Sum)));
+                }
+
+                files.Add(fileDictionary);
             }
 
             dictionary.Add(FilesKey, files);

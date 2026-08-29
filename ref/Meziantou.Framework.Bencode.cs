@@ -113,6 +113,12 @@ namespace Meziantou.Framework.Bencode.Torrent
         public string? Comment { get => throw null; set { } }
         public string? CreatedBy { get => throw null; set { } }
         public System.DateTimeOffset? CreationDate { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<string>? UrlList { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<string>? HttpSeeds { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Bencode.Torrent.TorrentNode>? Nodes { get => throw null; set { } }
+        public string? Encoding { get => throw null; set { } }
+        public string? Publisher { get => throw null; set { } }
+        public string? PublisherUrl { get => throw null; set { } }
         public Meziantou.Framework.Bencode.Torrent.TorrentInfo Info { get => throw null; set { } }
         public static Meziantou.Framework.Bencode.Torrent.TorrentFile Parse(System.ReadOnlySpan<byte> data) => throw null;
         public static System.Threading.Tasks.ValueTask<Meziantou.Framework.Bencode.Torrent.TorrentFile> ParseAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;
@@ -131,11 +137,20 @@ namespace Meziantou.Framework.Bencode.Torrent
         public bool IsPrivate { get => throw null; set { } }
         public long? Length { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Bencode.Torrent.TorrentInfoFile>? Files { get => throw null; set { } }
+        public string? Source { get => throw null; set { } }
+        public string? Md5Sum { get => throw null; set { } }
     }
 
     public sealed class TorrentInfoFile
     {
         public System.Collections.Generic.IReadOnlyList<string> Path { get => throw null; set { } }
         public long Length { get => throw null; set { } }
+        public string? Md5Sum { get => throw null; set { } }
+    }
+
+    public sealed class TorrentNode
+    {
+        public string Host { get => throw null; set { } }
+        public int Port { get => throw null; set { } }
     }
 }

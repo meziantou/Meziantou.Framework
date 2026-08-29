@@ -10,6 +10,12 @@ public sealed class TorrentFile
     private static readonly BencodeString CommentKey = CreateKey("comment");
     private static readonly BencodeString CreatedByKey = CreateKey("created by");
     private static readonly BencodeString CreationDateKey = CreateKey("creation date");
+    private static readonly BencodeString UrlListKey = CreateKey("url-list");
+    private static readonly BencodeString HttpSeedsKey = CreateKey("httpseeds");
+    private static readonly BencodeString NodesKey = CreateKey("nodes");
+    private static readonly BencodeString EncodingKey = CreateKey("encoding");
+    private static readonly BencodeString PublisherKey = CreateKey("publisher");
+    private static readonly BencodeString PublisherUrlKey = CreateKey("publisher-url");
 
     public string? Announce { get; set; }
 
@@ -20,6 +26,25 @@ public sealed class TorrentFile
     public string? CreatedBy { get; set; }
 
     public DateTimeOffset? CreationDate { get; set; }
+
+    /// <summary>Web seed URLs from the 'url-list' key (BEP 19).</summary>
+    /// <remarks>BEP 19 allows a bare string as well as a list; both are read into this list, and it is always written back as a list.</remarks>
+    public IReadOnlyList<string>? UrlList { get; set; }
+
+    /// <summary>Web seed URLs from the 'httpseeds' key (BEP 17).</summary>
+    public IReadOnlyList<string>? HttpSeeds { get; set; }
+
+    /// <summary>DHT bootstrap nodes from the 'nodes' key (BEP 5).</summary>
+    public IReadOnlyList<TorrentNode>? Nodes { get; set; }
+
+    /// <summary>The 'encoding' key naming the code page the text fields were written with.</summary>
+    public string? Encoding { get; set; }
+
+    public string? Publisher { get; set; }
+
+    /// <summary>The 'publisher-url' key. Kept as text because the metainfo value is not guaranteed to be a well-formed URI.</summary>
+    [SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "The value comes from the torrent and may not parse as a Uri; 'announce' is exposed the same way.")]
+    public string? PublisherUrl { get; set; }
 
     private TorrentInfo _info = new();
     private ReadOnlyMemory<byte> _infoBytes;
@@ -178,6 +203,57 @@ public sealed class TorrentFile
             result.CreatedBy = TorrentField.ToText(createdByText, "created by");
         }
 
+        if (dictionary.TryGetValue(UrlListKey, out var urlListValue))
+        {
+            // BEP 19 allows either a single URL or a list of them.
+            result.UrlList = urlListValue switch
+            {
+                BencodeString single => [TorrentField.ToText(single, "url-list")],
+                BencodeList list => ReadStringList(list, "url-list"),
+                _ => throw new FormatException("The 'url-list' field must be a string or a list of strings."),
+            };
+        }
+
+        if (dictionary.TryGetValue(HttpSeedsKey, out var httpSeedsValue))
+        {
+            if (httpSeedsValue is not BencodeList httpSeeds)
+                throw new FormatException("The 'httpseeds' field must be a list.");
+
+            result.HttpSeeds = ReadStringList(httpSeeds, "httpseeds");
+        }
+
+        if (dictionary.TryGetValue(NodesKey, out var nodesValue))
+        {
+            if (nodesValue is not BencodeList nodes)
+                throw new FormatException("The 'nodes' field must be a list.");
+
+            result.Nodes = ReadNodes(nodes);
+        }
+
+        if (dictionary.TryGetValue(EncodingKey, out var encodingValue))
+        {
+            if (encodingValue is not BencodeString encodingText)
+                throw new FormatException("The 'encoding' field must be a string.");
+
+            result.Encoding = TorrentField.ToText(encodingText, "encoding");
+        }
+
+        if (dictionary.TryGetValue(PublisherKey, out var publisherValue))
+        {
+            if (publisherValue is not BencodeString publisherText)
+                throw new FormatException("The 'publisher' field must be a string.");
+
+            result.Publisher = TorrentField.ToText(publisherText, "publisher");
+        }
+
+        if (dictionary.TryGetValue(PublisherUrlKey, out var publisherUrlValue))
+        {
+            if (publisherUrlValue is not BencodeString publisherUrlText)
+                throw new FormatException("The 'publisher-url' field must be a string.");
+
+            result.PublisherUrl = TorrentField.ToText(publisherUrlText, "publisher-url");
+        }
+
         if (dictionary.TryGetValue(CreationDateKey, out var creationDateValue))
         {
             if (creationDateValue is not BencodeInteger creationDateInteger)
@@ -208,7 +284,7 @@ public sealed class TorrentFile
 
         if (Announce is not null)
         {
-            dictionary.Add(AnnounceKey, new BencodeString(Encoding.UTF8.GetBytes(Announce)));
+            dictionary.Add(AnnounceKey, ToBencodeString(Announce));
         }
 
         if (AnnounceList is not null)
@@ -225,7 +301,7 @@ public sealed class TorrentFile
                     if (string.IsNullOrEmpty(url))
                         throw new FormatException("Announce-list URLs cannot be null or empty.");
 
-                    tierValues.Add(new BencodeString(Encoding.UTF8.GetBytes(url)));
+                    tierValues.Add(ToBencodeString(url));
                 }
 
                 tiers.Add(tierValues);
@@ -236,12 +312,12 @@ public sealed class TorrentFile
 
         if (Comment is not null)
         {
-            dictionary.Add(CommentKey, new BencodeString(Encoding.UTF8.GetBytes(Comment)));
+            dictionary.Add(CommentKey, ToBencodeString(Comment));
         }
 
         if (CreatedBy is not null)
         {
-            dictionary.Add(CreatedByKey, new BencodeString(Encoding.UTF8.GetBytes(CreatedBy)));
+            dictionary.Add(CreatedByKey, ToBencodeString(CreatedBy));
         }
 
         if (CreationDate.HasValue)
@@ -249,8 +325,110 @@ public sealed class TorrentFile
             dictionary.Add(CreationDateKey, new BencodeInteger(CreationDate.Value.ToUnixTimeSeconds()));
         }
 
+        if (UrlList is not null)
+        {
+            dictionary.Add(UrlListKey, WriteStringList(UrlList, "url-list"));
+        }
+
+        if (HttpSeeds is not null)
+        {
+            dictionary.Add(HttpSeedsKey, WriteStringList(HttpSeeds, "httpseeds"));
+        }
+
+        if (Nodes is not null)
+        {
+            var nodes = new BencodeList();
+            foreach (var node in Nodes)
+            {
+                if (node is null)
+                    throw new FormatException("Nodes cannot be null.");
+
+                if (string.IsNullOrEmpty(node.Host))
+                    throw new FormatException("A node host cannot be null or empty.");
+
+                if (node.Port is < 0 or > 65535)
+                    throw new FormatException("A node port is out of range.");
+
+                nodes.Add(new BencodeList([ToBencodeString(node.Host), new BencodeInteger(node.Port)]));
+            }
+
+            dictionary.Add(NodesKey, nodes);
+        }
+
+        if (Encoding is not null)
+        {
+            dictionary.Add(EncodingKey, ToBencodeString(Encoding));
+        }
+
+        if (Publisher is not null)
+        {
+            dictionary.Add(PublisherKey, ToBencodeString(Publisher));
+        }
+
+        if (PublisherUrl is not null)
+        {
+            dictionary.Add(PublisherUrlKey, ToBencodeString(PublisherUrl));
+        }
+
         return dictionary;
     }
 
-    private static BencodeString CreateKey(string value) => new(Encoding.UTF8.GetBytes(value));
+    private static BencodeList WriteStringList(IReadOnlyList<string> values, string fieldName)
+    {
+        var result = new BencodeList();
+        foreach (var value in values)
+        {
+            if (string.IsNullOrEmpty(value))
+                throw new FormatException($"A '{fieldName}' entry cannot be null or empty.");
+
+            result.Add(ToBencodeString(value));
+        }
+
+        return result;
+    }
+
+    private static List<string> ReadStringList(BencodeList list, string fieldName)
+    {
+        var result = new List<string>(list.Count);
+        foreach (var value in list)
+        {
+            if (value is not BencodeString text)
+                throw new FormatException($"Each '{fieldName}' entry must be a string.");
+
+            result.Add(TorrentField.ToText(text, fieldName));
+        }
+
+        return result;
+    }
+
+    private static List<TorrentNode> ReadNodes(BencodeList list)
+    {
+        var result = new List<TorrentNode>(list.Count);
+        foreach (var value in list)
+        {
+            if (value is not BencodeList { Count: 2 } node)
+                throw new FormatException("Each 'nodes' entry must be a list holding a host and a port.");
+
+            if (node[0] is not BencodeString host)
+                throw new FormatException("The host of a 'nodes' entry must be a string.");
+
+            if (node[1] is not BencodeInteger port)
+                throw new FormatException("The port of a 'nodes' entry must be an integer.");
+
+            if (port.Value is < 0 or > 65535)
+                throw new FormatException("The port of a 'nodes' entry is out of range.");
+
+            result.Add(new TorrentNode
+            {
+                Host = TorrentField.ToText(host, "nodes"),
+                Port = (int)port.Value,
+            });
+        }
+
+        return result;
+    }
+
+    private static BencodeString CreateKey(string value) => ToBencodeString(value);
+
+    private static BencodeString ToBencodeString(string value) => new(System.Text.Encoding.UTF8.GetBytes(value));
 }

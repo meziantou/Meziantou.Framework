@@ -54,6 +54,45 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public void SecretShapedEnvironmentVariablesAreRedactedByDefault()
+    {
+        Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", "super-secret");
+        Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_PLAIN", "visible");
+        try
+        {
+            var builder = new ContextSnapshotBuilder();
+            builder.AddEnvironmentVariables(EnvironmentVariableTarget.Process);
+            var variables = Assert.IsType<ImmutableSortedDictionary<string, object>>(builder.BuildSnapshot()["EnvironmentVariables.Process"]);
+
+            Assert.Equal(ContextSnapshotBuilder.RedactedValue, variables["CONTEXTSNAPSHOT_TEST_API_TOKEN"]);
+            Assert.Equal("visible", variables["CONTEXTSNAPSHOT_TEST_PLAIN"]);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", value: null);
+            Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_PLAIN", value: null);
+        }
+    }
+
+    [Fact]
+    public void EnvironmentVariableRedactionCanBeOverridden()
+    {
+        Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", "super-secret");
+        try
+        {
+            var builder = new ContextSnapshotBuilder();
+            builder.AddEnvironmentVariables(EnvironmentVariableTarget.Process, _ => false);
+            var variables = Assert.IsType<ImmutableSortedDictionary<string, object>>(builder.BuildSnapshot()["EnvironmentVariables.Process"]);
+
+            Assert.Equal("super-secret", variables["CONTEXTSNAPSHOT_TEST_API_TOKEN"]);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", value: null);
+        }
+    }
+
+    [Fact]
     public void SpecialFolderShouldContainsAllValues()
     {
         var snapshot = new SpecialFolderSnapshot();

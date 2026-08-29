@@ -1,5 +1,6 @@
 #pragma warning disable CA1869
 
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -34,6 +35,19 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
         builder.AddAppContextData();
         var snapshot = builder.BuildSnapshot();
         Assert.NotEmpty(snapshot);
+    }
+
+    [Fact]
+    public void PathEnvironmentVariableIsSplitOnThePlatformSeparator()
+    {
+        var builder = new ContextSnapshotBuilder();
+        builder.AddEnvironmentVariables(EnvironmentVariableTarget.Process);
+        var snapshot = builder.BuildSnapshot();
+
+        var variables = Assert.IsType<ImmutableSortedDictionary<string, object>>(snapshot["EnvironmentVariables.Process"]);
+        var expected = Environment.GetEnvironmentVariable("PATH")!.Split(Path.PathSeparator);
+
+        Assert.Equal(expected, Assert.IsType<ImmutableArray<string>>(variables["PATH"]));
     }
 
     [Fact]

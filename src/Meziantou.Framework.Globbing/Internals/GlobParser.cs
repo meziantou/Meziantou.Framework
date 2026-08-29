@@ -315,6 +315,14 @@ internal static class GlobParser
                 }
             }
 
+            // '.' and '..' normalization can remove every segment (".", "./", "a/.."). Such a pattern cannot match
+            // anything, and a Glob without any segment is not usable, so reject it instead of returning it.
+            if (segments.Count == 0)
+            {
+                errorMessage = "the pattern does not contain any segment";
+                return false;
+            }
+
             errorMessage = null;
             result = CreateGlob(segments, matchLeadingDot, exclude, settings.IgnoreCase, matchType, settings.MatchLeadingDot, settings.PathSeparatorAware);
             return true;

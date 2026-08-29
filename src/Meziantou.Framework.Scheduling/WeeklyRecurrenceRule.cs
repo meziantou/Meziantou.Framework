@@ -53,7 +53,7 @@ internal sealed class WeeklyRecurrenceRule : RecurrenceRule
                     {
                         if (hasTimeFilters)
                         {
-                            foreach (var occurrence in ExpandByTime(next))
+                            foreach (var occurrence in ExpandByTime(next, startDate))
                             {
                                 yield return occurrence;
                             }
@@ -70,7 +70,7 @@ internal sealed class WeeklyRecurrenceRule : RecurrenceRule
         }
     }
 
-    private IEnumerable<DateTime> ExpandByTime(DateTime date)
+    private IEnumerable<DateTime> ExpandByTime(DateTime date, DateTime lowerBound)
     {
         var hours = IsEmpty(ByHours) ? [date.Hour] : ByHours;
         var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
@@ -84,7 +84,7 @@ internal sealed class WeeklyRecurrenceRule : RecurrenceRule
                 foreach (var second in seconds)
                 {
                     var result = dateOnly.AddHours(hour).AddMinutes(minute).AddSeconds(second);
-                    if (result >= date)
+                    if (result >= lowerBound)
                     {
                         yield return result;
                     }

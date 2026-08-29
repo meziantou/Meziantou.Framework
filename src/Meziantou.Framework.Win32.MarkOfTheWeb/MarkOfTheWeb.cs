@@ -104,10 +104,13 @@ public static class MarkOfTheWeb
     /// <param name="zone">The security zone to assign to the file.</param>
     /// <param name="referrerUrl">Optional URL of the page that linked to the file.</param>
     /// <param name="hostUrl">Optional URL of the host from which the file was downloaded.</param>
+    /// <exception cref="ArgumentException"><paramref name="referrerUrl"/> or <paramref name="hostUrl"/> contains a carriage return, a line feed, or a null character.</exception>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public static void SetFileZone(string filePath, UrlZone zone, string? referrerUrl = null, string? hostUrl = null)
     {
         ArgumentNullException.ThrowIfNull(filePath);
+        EnsureSingleLine(referrerUrl, nameof(referrerUrl));
+        EnsureSingleLine(hostUrl, nameof(hostUrl));
 
         filePath = Path.GetFullPath(filePath);
         var adsPath = filePath + ":Zone.Identifier";
@@ -123,6 +126,15 @@ public static class MarkOfTheWeb
         {
             writer.WriteLine("HostUrl=" + hostUrl);
         }
+    }
+
+    // Zone.Identifier is an INI-shaped stream and Windows resolves a repeated key to its last occurrence.
+    // A URL containing a line break would let the caller append arbitrary entries, including a second
+    // ZoneId that silently overrides the requested zone.
+    private static void EnsureSingleLine(string? url, string parameterName)
+    {
+        if (url is not null && url.AsSpan().ContainsAny('\r', '\n', '\0'))
+            throw new ArgumentException("The URL cannot contain a carriage return, a line feed, or a null character.", parameterName);
     }
 
     /// <summary>

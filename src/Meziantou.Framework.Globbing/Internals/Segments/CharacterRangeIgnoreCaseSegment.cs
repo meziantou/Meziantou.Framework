@@ -18,6 +18,9 @@ internal sealed class CharacterRangeIgnoreCaseSegment : Segment
 
     public override bool IsMatch(ref PathReader pathReader)
     {
+        if (pathReader.IsEndOfCurrentSegment)
+            return false;
+
         var c = pathReader.CurrentText[0];
         if (CharacterRangeSegment.IsAsciiUpper(c))
         {

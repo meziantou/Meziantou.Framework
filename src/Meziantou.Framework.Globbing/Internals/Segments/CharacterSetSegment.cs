@@ -17,6 +17,9 @@ internal sealed class CharacterSetSegment : Segment
 
     public override bool IsMatch(ref PathReader pathReader)
     {
+        if (pathReader.IsEndOfCurrentSegment)
+            return false;
+
         var c = pathReader.CurrentText[0];
         var result = _matcher.IsMatch(c);
         if (result)

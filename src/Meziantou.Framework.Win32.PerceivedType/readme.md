@@ -68,7 +68,9 @@ The `PerceivedTypeSource` enum indicates where the perceived type information co
 - `GdiPlus` - Supported by GDI+
 - `WmSdk` - Supported by Windows Media SDK
 - `ZipFolder` - Supported by Windows compressed folders
-- `Mime` - Determined through MIME content types
+
+`Mime` is also declared, but `PERCEIVEDFLAG` has no MIME value, so Windows never reports it.
+It is obsolete and kept only so the enum stays source and binary compatible.
 
 ## Platform Support
 

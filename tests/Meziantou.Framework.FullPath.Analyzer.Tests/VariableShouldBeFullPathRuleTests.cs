@@ -168,4 +168,48 @@ public sealed class VariableShouldBeFullPathRuleTests : FullPathAnalyzerTestBase
 
         await CreateAnalyzerTest<VariableShouldBeFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_WhenTheVariableIsUsedAsAString()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static int M(FullPath fullPath)
+                    {
+                        string path = fullPath;
+                        return path.Length;
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<VariableShouldBeFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_WhenTheVariableIsSliced()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        string path = fullPath;
+                        return path.Substring(1);
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<VariableShouldBeFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
 }

@@ -77,6 +77,11 @@ public sealed class VariableShouldBeFullPathAnalyzer : DiagnosticAnalyzer
             case IArgumentOperation { Parameter.RefKind: not RefKind.None, Value: ILocalReferenceOperation argumentReference }:
                 Disqualify(candidates, argumentReference.Local);
                 break;
+
+            // Reading the variable through a string member that FullPath does not have
+            case ILocalReferenceOperation localReference when analyzerContext.IsReceiverOfStringOnlyMember(localReference):
+                Disqualify(candidates, localReference.Local);
+                break;
         }
 
         foreach (var childOperation in operation.ChildOperations)

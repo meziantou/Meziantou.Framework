@@ -48,6 +48,26 @@ internal sealed class FullPathContext(Compilation compilation)
         return false;
     }
 
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="operation"/> is the receiver of a <see cref="string"/>
+    /// member that <c>FullPath</c> does not expose, so that retyping the symbol to <c>FullPath</c> would not compile.
+    /// </summary>
+    public bool IsReceiverOfStringOnlyMember(IOperation operation)
+    {
+        var member = operation.Parent switch
+        {
+            IInvocationOperation invocationOperation when invocationOperation.Instance == operation => (ISymbol)invocationOperation.TargetMethod,
+            IPropertyReferenceOperation propertyReferenceOperation when propertyReferenceOperation.Instance == operation => propertyReferenceOperation.Property,
+            _ => null,
+        };
+
+        if (member?.ContainingType?.SpecialType != SpecialType.System_String)
+            return false;
+
+        // object members such as ToString or Equals exist on FullPath too and stay valid
+        return FullPathType is { } fullPathType && fullPathType.GetMembers(member.Name).IsEmpty;
+    }
+
     [MemberNotNullWhen(true, nameof(FullPathType))]
     public bool IsValid => FullPathType is not null;
 

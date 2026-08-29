@@ -41,10 +41,12 @@ public sealed class ParameterShouldBeFullPathAnalyzer : DiagnosticAnalyzer
             var candidateCache = new ConcurrentDictionary<ISymbol, bool>(SymbolEqualityComparer.Default);
             var arguments = new ConcurrentBag<ArgumentUsage>();
             var excludedMethods = new ConcurrentBag<IMethodSymbol>();
+            var excludedParameters = new ConcurrentBag<IParameterSymbol>();
 
             context.RegisterOperationAction(context => AnalyzeInvocation(context, analyzerContext, candidateCache, arguments), OperationKind.Invocation);
             context.RegisterOperationAction(context => excludedMethods.Add(((IMethodReferenceOperation)context.Operation).Method.OriginalDefinition), OperationKind.MethodReference);
-            context.RegisterCompilationEndAction(context => Report(context, arguments, excludedMethods));
+            context.RegisterOperationAction(context => AnalyzeParameterReference(context, analyzerContext, excludedParameters), OperationKind.ParameterReference);
+            context.RegisterCompilationEndAction(context => Report(context, arguments, excludedMethods, excludedParameters));
         });
     }
 
@@ -68,9 +70,33 @@ public sealed class ParameterShouldBeFullPathAnalyzer : DiagnosticAnalyzer
         }
     }
 
-    private static void Report(CompilationAnalysisContext context, ConcurrentBag<ArgumentUsage> arguments, ConcurrentBag<IMethodSymbol> excludedMethods)
+    /// <summary>
+    /// Excludes a parameter whose own body usage would not survive a change of declared type.
+    /// </summary>
+    private static void AnalyzeParameterReference(OperationAnalysisContext context, FullPathContext analyzerContext, ConcurrentBag<IParameterSymbol> excludedParameters)
+    {
+        var operation = (IParameterReferenceOperation)context.Operation;
+        if (operation.Parameter.Type.SpecialType != SpecialType.System_String)
+            return;
+
+        var isWritten = operation.Parent switch
+        {
+            ISimpleAssignmentOperation assignmentOperation => assignmentOperation.Target == operation,
+            ICompoundAssignmentOperation compoundAssignmentOperation => compoundAssignmentOperation.Target == operation,
+            IIncrementOrDecrementOperation incrementOrDecrementOperation => incrementOrDecrementOperation.Target == operation,
+            _ => false,
+        };
+
+        if (isWritten || analyzerContext.IsReceiverOfStringOnlyMember(operation))
+        {
+            excludedParameters.Add(operation.Parameter.OriginalDefinition);
+        }
+    }
+
+    private static void Report(CompilationAnalysisContext context, ConcurrentBag<ArgumentUsage> arguments, ConcurrentBag<IMethodSymbol> excludedMethods, ConcurrentBag<IParameterSymbol> excludedParameters)
     {
         var excluded = new HashSet<ISymbol>(excludedMethods, SymbolEqualityComparer.Default);
+        var excludedParameterSet = new HashSet<ISymbol>(excludedParameters, SymbolEqualityComparer.Default);
 
         // For each parameter: null when never seen, true while every argument was a FullPath, false otherwise
         var states = new Dictionary<ISymbol, bool?[]>(SymbolEqualityComparer.Default);
@@ -98,6 +124,9 @@ public sealed class ParameterShouldBeFullPathAnalyzer : DiagnosticAnalyzer
                     continue;
 
                 var parameter = method.Parameters[i];
+                if (excludedParameterSet.Contains(parameter))
+                    continue;
+
                 var location = parameter.GetFirstSourceLocation();
                 if (location is null)
                     continue;

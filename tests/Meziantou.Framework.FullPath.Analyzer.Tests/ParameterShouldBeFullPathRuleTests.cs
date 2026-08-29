@@ -279,4 +279,58 @@ public sealed class ParameterShouldBeFullPathRuleTests : FullPathAnalyzerTestBas
 
         await CreateAnalyzerTest<ParameterShouldBeFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_WhenTheParameterIsReassigned()
+    {
+        var source = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static void M(FullPath value)
+                    {
+                        Process(value);
+                    }
+
+                    private static void Process(string path)
+                    {
+                        path = Path.GetFullPath(path);
+                        System.Console.WriteLine(path);
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<ParameterShouldBeFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_WhenTheParameterIsUsedAsAString()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static void M(FullPath value)
+                    {
+                        Process(value);
+                    }
+
+                    private static void Process(string path)
+                    {
+                        System.Console.WriteLine(path.Length);
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<ParameterShouldBeFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
 }

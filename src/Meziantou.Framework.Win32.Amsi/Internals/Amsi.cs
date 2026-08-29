@@ -9,11 +9,6 @@ namespace Meziantou.Framework.Win32;
 #pragma warning disable CA1416 // The containing APIs are Windows-only.
 internal static partial class Amsi
 {
-    internal static bool AmsiResultIsMalware(AmsiResult result)
-    {
-        return result >= AmsiResult.AMSI_RESULT_DETECTED;
-    }
-
     internal static HRESULT AmsiInitialize(string appName, out AmsiContextSafeHandle amsiContext)
     {
         var result = PInvoke.AmsiInitialize(appName, out var context);

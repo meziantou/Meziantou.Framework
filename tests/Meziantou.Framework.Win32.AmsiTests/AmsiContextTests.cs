@@ -120,4 +120,52 @@ public class AmsiContextTests
         context.Dispose();
         context.Dispose();
     }
+
+    [Theory]
+    [InlineData(AmsiResult.Clean, false)]
+    [InlineData(AmsiResult.NotDetected, false)]
+    [InlineData((AmsiResult)32767, false)]
+    [InlineData(AmsiResult.BlockedByAdminStart, false)]
+    [InlineData(AmsiResult.BlockedByAdminEnd, false)]
+    [InlineData(AmsiResult.Detected, true)]
+    [InlineData((AmsiResult)40000, true)]
+    public void IsMalware_MatchesTheDocumentedThreshold(AmsiResult result, bool expected)
+    {
+        Assert.Equal(expected, result.IsMalware());
+    }
+
+    [Theory]
+    [InlineData(AmsiResult.Clean, false)]
+    [InlineData(AmsiResult.NotDetected, false)]
+    [InlineData((AmsiResult)16383, false)]
+    [InlineData(AmsiResult.BlockedByAdminStart, true)]
+    [InlineData((AmsiResult)18000, true)]
+    [InlineData(AmsiResult.BlockedByAdminEnd, true)]
+    [InlineData((AmsiResult)20480, false)]
+    [InlineData(AmsiResult.Detected, false)]
+    public void IsBlockedByAdmin_CoversTheWholeAdminRange(AmsiResult result, bool expected)
+    {
+        Assert.Equal(expected, result.IsBlockedByAdmin());
+    }
+
+    [Theory]
+    [InlineData(AmsiResult.Clean, false)]
+    [InlineData(AmsiResult.NotDetected, false)]
+    [InlineData(AmsiResult.BlockedByAdminStart, true)]
+    [InlineData(AmsiResult.BlockedByAdminEnd, true)]
+    [InlineData(AmsiResult.Detected, true)]
+    public void ShouldBlock_CoversMalwareAndAdminPolicy(AmsiResult result, bool expected)
+    {
+        Assert.Equal(expected, result.ShouldBlock());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ScanReportsTheRawProviderResult()
+    {
+        using var context = AmsiContext.Create("MyApplication");
+        Assert.False(context.Scan("0000", "EICAR").ShouldBlock());
+
+        using var session = context.CreateSession();
+        Assert.False(session.Scan([0, 0, 0, 0], "EICAR").ShouldBlock());
+    }
 }

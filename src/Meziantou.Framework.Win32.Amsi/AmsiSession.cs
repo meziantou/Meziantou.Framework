@@ -33,11 +33,10 @@ public sealed class AmsiSession : IDisposable
     /// <returns><see langword="true"/> if the content is detected as malware; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="COMException">Thrown when the scan operation fails.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when the session or its context has been disposed.</exception>
+    /// <remarks>Content blocked by administrator policy is not reported as malware. Use <see cref="Scan(string, string)"/> and <see cref="AmsiResultExtensions.ShouldBlock"/> to cover that case.</remarks>
     public bool IsMalware(string payload, string contentName)
     {
-        ThrowIfDisposed();
-        Amsi.AmsiScanString(_context._handle, payload, contentName, _sessionHandle, out var result).ThrowOnFailure();
-        return Amsi.AmsiResultIsMalware(result);
+        return Scan(payload, contentName).IsMalware();
     }
 
     /// <summary>Scans a byte buffer for malware within this session.</summary>
@@ -46,11 +45,36 @@ public sealed class AmsiSession : IDisposable
     /// <returns><see langword="true"/> if the content is detected as malware; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="COMException">Thrown when the scan operation fails.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when the session or its context has been disposed.</exception>
+    /// <remarks>Content blocked by administrator policy is not reported as malware. Use <see cref="Scan(string, string)"/> and <see cref="AmsiResultExtensions.ShouldBlock"/> to cover that case.</remarks>
     public bool IsMalware(byte[] payload, string contentName)
+    {
+        return Scan(payload, contentName).IsMalware();
+    }
+
+    /// <summary>Scans a string for malware within this session.</summary>
+    /// <param name="payload">The string content to scan.</param>
+    /// <param name="contentName">The name or identifier of the content being scanned.</param>
+    /// <returns>The result reported by the antimalware provider.</returns>
+    /// <exception cref="COMException">Thrown when the scan operation fails.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown when the session or its context has been disposed.</exception>
+    public AmsiResult Scan(string payload, string contentName)
+    {
+        ThrowIfDisposed();
+        Amsi.AmsiScanString(_context._handle, payload, contentName, _sessionHandle, out var result).ThrowOnFailure();
+        return result;
+    }
+
+    /// <summary>Scans a byte buffer for malware within this session.</summary>
+    /// <param name="payload">The byte buffer to scan.</param>
+    /// <param name="contentName">The name or identifier of the content being scanned.</param>
+    /// <returns>The result reported by the antimalware provider.</returns>
+    /// <exception cref="COMException">Thrown when the scan operation fails.</exception>
+    /// <exception cref="ObjectDisposedException">Thrown when the session or its context has been disposed.</exception>
+    public AmsiResult Scan(byte[] payload, string contentName)
     {
         ThrowIfDisposed();
         Amsi.AmsiScanBuffer(_context._handle, payload, (uint)payload.Length, contentName, _sessionHandle, out var result).ThrowOnFailure();
-        return Amsi.AmsiResultIsMalware(result);
+        return result;
     }
 
     private void ThrowIfDisposed()

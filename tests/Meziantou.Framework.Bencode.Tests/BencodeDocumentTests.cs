@@ -127,6 +127,68 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public void Parse_DeeplyNestedLists_ThrowsInsteadOfOverflowingTheStack()
+    {
+        var data = new byte[200_000];
+        Array.Fill(data, (byte)'l');
+
+        var exception = Assert.Throws<FormatException>(() => BencodeDocument.Parse(data));
+        Assert.Contains("nested too deeply", exception.Message);
+    }
+
+    [Fact]
+    public async Task ParseAsync_DeeplyNestedLists_ThrowsInsteadOfOverflowingTheStack()
+    {
+        var data = new byte[200_000];
+        Array.Fill(data, (byte)'l');
+
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
+        await pipe.Writer.WriteAsync(data);
+        await pipe.Writer.CompleteAsync();
+
+        var exception = await Assert.ThrowsAsync<FormatException>(() => parseTask);
+        Assert.Contains("nested too deeply", exception.Message);
+
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Theory]
+    [InlineData(64, true)]
+    [InlineData(65, false)]
+    public void Parse_NestingDepthBoundary(int depth, bool expectedSuccess)
+    {
+        var data = Encoding.ASCII.GetBytes(new string('l', depth) + new string('e', depth));
+
+        if (expectedSuccess)
+        {
+            Assert.IsType<BencodeList>(BencodeDocument.Parse(data).Root);
+        }
+        else
+        {
+            Assert.Throws<FormatException>(() => BencodeDocument.Parse(data));
+        }
+    }
+
+    [Theory]
+    [InlineData(64, true)]
+    [InlineData(65, false)]
+    public async Task ParseAsync_NestingDepthBoundary(int depth, bool expectedSuccess)
+    {
+        var data = Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("d1:a", depth)) + "1:b" + new string('e', depth));
+
+        await using var stream = new MemoryStream(data);
+        if (expectedSuccess)
+        {
+            Assert.IsType<BencodeDictionary>((await BencodeDocument.ParseAsync(stream)).Root);
+        }
+        else
+        {
+            await Assert.ThrowsAsync<FormatException>(async () => await BencodeDocument.ParseAsync(stream));
+        }
+    }
+
+    [Fact]
     public void Parse_InvalidData_Throws()
     {
         var data = Encoding.ASCII.GetBytes("i-0e");

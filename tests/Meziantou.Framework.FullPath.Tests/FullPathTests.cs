@@ -515,6 +515,20 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public async Task ResolveSymlink_CycleThroughADirectoryLink()
+    {
+        // The links reference each other through a directory component, so the walk alternates between resolving a
+        // link and consuming a component that is not one
+        await using var temp = TemporaryDirectory.Create();
+        var a = temp.GetFullPath("a");
+        var b = temp.GetFullPath("b");
+        CreateSymlink(a, Path.Combine("b", "c"), isDirectory: true);
+        CreateSymlink(b, "a", isDirectory: true);
+
+        Assert.Throws<IOException>(() => { a.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out _); });
+    }
+
+    [Fact]
     public async Task ResolveSymlink_ResolveAllSymbolicLinks()
     {
         await using var temp = TemporaryDirectory.Create();

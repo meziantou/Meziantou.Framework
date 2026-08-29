@@ -68,14 +68,15 @@ internal sealed class FullPathContext(Compilation compilation)
 
     /// <summary>
     /// Walks <paramref name="operation"/> and reports whether it contains at least one <see langword="return"/> with a
-    /// value, and whether every such value is a <c>FullPath</c>. Nested local functions are not walked.
+    /// value, and whether every such value is a <c>FullPath</c>. Nested local functions and lambdas are not walked.
     /// </summary>
     public void AnalyzeReturnOperations(IOperation operation, ref bool hasReturnValue, ref bool allReturnsAreFullPath)
     {
         if (!allReturnsAreFullPath)
             return;
 
-        if (operation is ILocalFunctionOperation)
+        // A lambda or a local function has its own return statements; they are not the enclosing member's
+        if (operation is ILocalFunctionOperation or IAnonymousFunctionOperation)
             return;
 
         if (operation is IReturnOperation returnOperation && returnOperation.ReturnedValue is not null)

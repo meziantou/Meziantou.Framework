@@ -112,4 +112,53 @@ public sealed class MethodShouldReturnFullPathRuleTests : FullPathAnalyzerTestBa
 
         await CreateAnalyzerTest<MethodShouldReturnFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_WhenTheMethodContainsALambdaReturningAnotherType()
+    {
+        var source = """
+            using System.Collections.Generic;
+            using System.Linq;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string {|MFFP0011:M|}(FullPath root, IEnumerable<string> names)
+                    {
+                        var first = names.First(n => n.Length > 0);
+                        return root / first;
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<MethodShouldReturnFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_NoDiagnostic_WhenOnlyALambdaReturnsFullPathValues()
+    {
+        var source = """
+            using System;
+            using System.Collections.Generic;
+            using System.Linq;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath root, IEnumerable<string> names)
+                    {
+                        var paths = names.Select(n => root / n).ToList();
+                        throw new InvalidOperationException(string.Join(", ", paths));
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<MethodShouldReturnFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
 }

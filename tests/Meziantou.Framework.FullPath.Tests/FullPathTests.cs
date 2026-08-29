@@ -226,6 +226,49 @@ public sealed class FullPathTests
         Assert.Equal(expected, actual);
     }
 
+    [Fact]
+    public void Combine_AllOverloadsAgree()
+    {
+        var root = FullPath.FromPath("test");
+        var expected = root / "a" / "b" / "c";
+        string[] parts = ["a", "b", "c"];
+        string[] rootedParts = ["test", "a", "b", "c"];
+
+        Assert.Equal(expected, FullPath.Combine("test", "a", "b", "c"));
+        Assert.Equal(expected, FullPath.Combine(rootedParts));
+        Assert.Equal(expected, FullPath.Combine((ReadOnlySpan<string>)rootedParts));
+        Assert.Equal(expected, FullPath.Combine(root, "a", "b", "c"));
+        Assert.Equal(expected, FullPath.Combine(root, parts));
+        Assert.Equal(expected, FullPath.Combine(root, (ReadOnlySpan<string>)parts));
+    }
+
+    [Fact]
+    public void Combine_ShorterOverloadsAgree()
+    {
+        var root = FullPath.FromPath("test");
+
+        Assert.Equal(root / "a", FullPath.Combine("test", "a"));
+        Assert.Equal(root / "a", FullPath.Combine(root, "a"));
+        Assert.Equal(root / "a" / "b", FullPath.Combine("test", "a", "b"));
+        Assert.Equal(root / "a" / "b", FullPath.Combine(root, "a", "b"));
+    }
+
+    [Fact]
+    public void Combine_EmptyRootResolvesAgainstTheCurrentDirectory()
+    {
+        // Documents current behaviour: every FullPath-rooted overload falls back to FromPath, which resolves a
+        // relative path against Environment.CurrentDirectory rather than propagating Empty or throwing.
+        var cwd = FullPath.CurrentDirectory();
+        string[] parts = ["a", "b"];
+
+        Assert.Equal(cwd / "a", FullPath.Combine(FullPath.Empty, "a"));
+        Assert.Equal(cwd / "a" / "b", FullPath.Combine(FullPath.Empty, "a", "b"));
+        Assert.Equal(cwd / "a" / "b" / "c", FullPath.Combine(FullPath.Empty, "a", "b", "c"));
+        Assert.Equal(cwd / "a" / "b", FullPath.Combine(FullPath.Empty, parts));
+        Assert.Equal(cwd / "a" / "b", FullPath.Combine(FullPath.Empty, (ReadOnlySpan<string>)parts));
+        Assert.Equal(cwd / "a", FullPath.Empty / "a");
+    }
+
     [Theory]
     [InlineData("a", "a")]
     [InlineData("a b", "a b")]

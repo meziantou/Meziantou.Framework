@@ -32,7 +32,7 @@ public static partial class Bcrypt
     /// <param name="version">The BCrypt revision to generate.</param>
     /// <returns>A BCrypt salt string.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="workFactor"/> is outside the supported range.</exception>
-    /// <exception cref="NotSupportedException"><paramref name="version"/> is <see cref="BcryptVersion.Revision2"/>, which cannot be generated.</exception>
+    /// <exception cref="NotSupportedException"><paramref name="version"/> is <see cref="BcryptVersion.Revision2"/> or <see cref="BcryptVersion.Revision2X"/>, neither of which can be generated.</exception>
     public static string GenerateSalt(int workFactor = DefaultWorkFactor, BcryptVersion version = BcryptVersion.Revision2B)
     {
         var minorRevision = ToMinorRevision(version);
@@ -85,6 +85,7 @@ public static partial class Bcrypt
     /// <param name="password">The plaintext password.</param>
     /// <param name="hash">The BCrypt hash string.</param>
     /// <returns><see langword="true"/> if the password matches; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="NotSupportedException"><paramref name="hash"/> uses the <c>$2x$</c> revision, which cannot be verified correctly.</exception>
     public static bool Verify(string password, string hash)
     {
         ArgumentNullException.ThrowIfNull(password);
@@ -97,6 +98,7 @@ public static partial class Bcrypt
     /// <param name="password">The plaintext password.</param>
     /// <param name="hash">The BCrypt hash string.</param>
     /// <returns><see langword="true"/> if the password matches; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="NotSupportedException"><paramref name="hash"/> uses the <c>$2x$</c> revision, which cannot be verified correctly.</exception>
     public static bool Verify(ReadOnlySpan<char> password, ReadOnlySpan<char> hash)
     {
         if (!TryParseHash(hash, out _))
@@ -238,13 +240,18 @@ public static partial class Bcrypt
         return hashInfo.WorkFactor != workFactor || hashInfo.Version != version;
     }
 
+    internal const string Revision2XNotSupportedMessage =
+        "The '$2x$' revision is not supported. It exists to reproduce the crypt_blowfish sign-extension bug, " +
+        "which this implementation does not emulate. Treating it as '$2b$' would silently mis-verify any password " +
+        "containing a byte with the high bit set. Use ParseHash to detect '$2x$' hashes and re-hash those passwords.";
+
     private static char ToMinorRevision(BcryptVersion version)
     {
         return version switch
         {
             BcryptVersion.Revision2A => 'a',
             BcryptVersion.Revision2B => 'b',
-            BcryptVersion.Revision2X => 'x',
+            BcryptVersion.Revision2X => throw new NotSupportedException(Revision2XNotSupportedMessage),
             BcryptVersion.Revision2Y => 'y',
             BcryptVersion.Revision2 => throw new NotSupportedException("Generating salts for the legacy '$2$' revision is not supported."),
             _ => throw new ArgumentOutOfRangeException(nameof(version), version, "Unsupported BCrypt version"),

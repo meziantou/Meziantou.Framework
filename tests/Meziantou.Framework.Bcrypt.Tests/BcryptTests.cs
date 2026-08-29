@@ -48,7 +48,6 @@ public sealed class BcryptTests
     [Theory]
     [InlineData(BcryptVersion.Revision2A, "$2a$")]
     [InlineData(BcryptVersion.Revision2B, "$2b$")]
-    [InlineData(BcryptVersion.Revision2X, "$2x$")]
     [InlineData(BcryptVersion.Revision2Y, "$2y$")]
     public void HashPassword_WithRevision_GeneratesExpectedPrefix(BcryptVersion version, string expectedPrefix)
     {
@@ -94,12 +93,35 @@ public sealed class BcryptTests
     }
 
     [Theory]
-    [InlineData("a", "$2x$12$DB3BUbYa/SsEL7kCOVji0OauTkPkB5Y1OeyfxJHM7jvMrbml5sgD2")]
     [InlineData("a", "$2y$12$DB3BUbYa/SsEL7kCOVji0OauTkPkB5Y1OeyfxJHM7jvMrbml5sgD2")]
     [InlineData("a", "$2b$12$DB3BUbYa/SsEL7kCOVji0OauTkPkB5Y1OeyfxJHM7jvMrbml5sgD2")]
     public void Verify_KnownHash_WithDifferentPrefixes(string password, string hash)
     {
         Assert.True(Bcrypt.Verify(password, hash));
+    }
+
+    [Fact]
+    public void Revision2X_IsRejectedEverywhereItWouldProduceAWrongResult()
+    {
+        const string Hash2X = "$2x$12$DB3BUbYa/SsEL7kCOVji0OauTkPkB5Y1OeyfxJHM7jvMrbml5sgD2";
+        const string Salt2X = "$2x$12$DB3BUbYa/SsEL7kCOVji0Oau";
+
+        Assert.Throws<NotSupportedException>(() => Bcrypt.GenerateSalt(12, BcryptVersion.Revision2X));
+        Assert.Throws<NotSupportedException>(() => Bcrypt.HashPassword("a", workFactor: 12, BcryptVersion.Revision2X));
+        Assert.Throws<NotSupportedException>(() => Bcrypt.HashPassword("a", Salt2X));
+        Assert.Throws<NotSupportedException>(() => Bcrypt.Verify("a", Hash2X));
+        Assert.Throws<NotSupportedException>(() => Bcrypt.Verify("a".AsSpan(), Hash2X.AsSpan()));
+    }
+
+    [Fact]
+    public void Revision2X_RemainsParseableSoExistingHashesCanBeFound()
+    {
+        const string Hash2X = "$2x$12$DB3BUbYa/SsEL7kCOVji0OauTkPkB5Y1OeyfxJHM7jvMrbml5sgD2";
+
+        Assert.True(Bcrypt.TryParseHash(Hash2X, out var info));
+        Assert.Equal(BcryptVersion.Revision2X, info.Version);
+        Assert.Equal(12, info.WorkFactor);
+        Assert.True(Bcrypt.NeedsRehash(Hash2X, workFactor: 12, version: BcryptVersion.Revision2B));
     }
 
     [Fact]

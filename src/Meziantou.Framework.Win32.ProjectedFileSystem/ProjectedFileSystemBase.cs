@@ -493,7 +493,6 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     private HResult GetDirectoryEnumerationCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, in Guid enumerationId, string searchExpression, IntPtr dirEntryBufferHandle)
     {
-        _ = searchExpression;
         if (!_activeEnumerations.TryGetValue(enumerationId, out var session))
         {
             return HResult.E_INVALIDARG;
@@ -507,6 +506,12 @@ public abstract class ProjectedFileSystemBase : IDisposable
         ProjectedFileSystemEntry? entry;
         while ((entry = session.GetNextEntry()) is not null)
         {
+            // ProjFS does not filter the entries the provider supplies, so an unfiltered
+            // entry here would be returned to a caller that asked for a narrower pattern.
+            // Skipped entries must not be re-enqueued: they were never offered to the buffer.
+            if (!MatchesSearchExpression(entry.Name, searchExpression))
+                continue;
+
             var info = new ProjFs.PRJ_FILE_BASIC_INFO
             {
                 FileSize = entry.Length,
@@ -522,6 +527,15 @@ public abstract class ProjectedFileSystemBase : IDisposable
         }
 
         return HResult.S_OK;
+    }
+
+    private static bool MatchesSearchExpression(string fileName, string searchExpression)
+    {
+        // ProjFS passes an empty expression when the caller did not ask for one
+        if (string.IsNullOrEmpty(searchExpression))
+            return true;
+
+        return FileNameMatch(fileName, searchExpression);
     }
 
     private HResult GetPlaceholderInfoCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData)

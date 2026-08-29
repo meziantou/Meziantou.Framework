@@ -146,6 +146,31 @@ public class GlobParserTests
             item => Assert.IsType<CharacterRangeSegment>(item));
     }
 
+    [Theory]
+    [InlineData("a/**/b")]
+    [InlineData("a/**/*.txt")]
+    [InlineData("a/**/*")]
+    [InlineData("**/b/c")]
+    [InlineData("a*")]
+    [InlineData("*.txt")]
+    [InlineData("*file*")]
+    [InlineData("a/b")]
+    [InlineData("a/**/b/c")]
+    [InlineData("{a,b}.cs")]
+    [InlineData("[a-z].cs")]
+    [InlineData("p?th/a")]
+    public void ToStringRoundTripsToAnEquivalentPattern(string pattern)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        var text = glob.ToString();
+
+        Assert.False(text.Contains("Meziantou.Framework.Globbing", StringComparison.Ordinal));
+
+        // The text must parse back into a glob that matches exactly the same paths.
+        var roundTripped = Glob.Parse(text, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.Equal(text, roundTripped.ToString());
+    }
+
     [Fact]
     public void OptimizeSingleCharSet2()
     {

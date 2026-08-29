@@ -177,8 +177,12 @@ public static partial class SensitiveData
 /// taken while the buffer is unprotected contains them in clear.
 /// </description></item>
 /// <item><description>
-/// Other platforms: the buffer is combined with a random key of the same length. The key lives in the same
-/// process, so this only guards against casual inspection.
+/// Every other platform, which includes Android, iOS, tvOS, Mac Catalyst, FreeBSD and WebAssembly: the buffer
+/// is combined with a random key of the same length. The key lives in the same process, so this only guards
+/// against casual inspection. Note that <c>OperatingSystem.IsLinux()</c> returns <see langword="false"/> on
+/// Android and <c>OperatingSystem.IsMacOS()</c> returns <see langword="false"/> on iOS and Mac Catalyst, so
+/// those platforms take this path rather than the <c>mmap</c> one above even though they support the syscalls
+/// it uses.
 /// </description></item>
 /// </list>
 /// <para>

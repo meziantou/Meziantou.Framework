@@ -205,7 +205,7 @@ public static class CredentialManager
     }
 
     /// <summary>Enumerates all credentials from the Windows Credential Manager.</summary>
-    /// <returns>A read-only list of credentials.</returns>
+    /// <returns>A read-only list of credentials, or an empty list when the credential set is empty.</returns>
     public static IReadOnlyList<Credential> EnumerateCredentials()
     {
         return EnumerateCredentials(filter: null);
@@ -213,7 +213,7 @@ public static class CredentialManager
 
     /// <summary>Enumerates credentials from the Windows Credential Manager that match the specified filter.</summary>
     /// <param name="filter">A filter string that supports wildcards. Pass <see langword="null"/> or "*" to enumerate all credentials.</param>
-    /// <returns>A read-only list of credentials matching the filter.</returns>
+    /// <returns>A read-only list of credentials matching the filter, or an empty list when no credential matches.</returns>
     public static unsafe IReadOnlyList<Credential> EnumerateCredentials(string? filter)
     {
         var count = 0u;
@@ -226,6 +226,11 @@ public static class CredentialManager
                 if (!ret)
                 {
                     var lastError = Marshal.GetLastWin32Error();
+
+                    // CredEnumerate reports an empty result set as a failure. This is not an error for the caller.
+                    if (lastError == (int)WIN32_ERROR.ERROR_NOT_FOUND)
+                        return [];
+
                     throw new Win32Exception(lastError);
                 }
 
@@ -233,7 +238,6 @@ public static class CredentialManager
                 for (uint i = 0; i < count; i++)
                 {
                     result[i] = ReadCredential(credentials[i]);
-
                 }
 
                 return result;

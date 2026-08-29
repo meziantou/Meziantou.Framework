@@ -316,7 +316,14 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
 
         if (commaIndex < 0)
         {
-            // Exact version: [1.0.0]
+            // Exact version: [1.0.0]. Both bounds have to be inclusive: "[1.0.0)", "(1.0.0]" and
+            // "(1.0.0)" describe a range no version can satisfy, so they are typos rather than
+            // ranges and are rejected instead of silently matching nothing.
+            if (!isMinInclusive || !isMaxInclusive)
+            {
+                return false;
+            }
+
             if (!SemanticVersion.TryParse(inner.Trim(), out var exactVersion))
             {
                 return false;
@@ -347,6 +354,13 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
             {
                 return false;
             }
+        }
+
+        // An inverted range such as "[2.0.0,1.0.0]" matches nothing; reject it rather than hand
+        // back a range that silently never matches.
+        if (minVersion2 is not null && maxVersion is not null && minVersion2 > maxVersion)
+        {
+            return false;
         }
 
         result = new SemanticVersionRange(minVersion2, maxVersion, isMinInclusive, isMaxInclusive);

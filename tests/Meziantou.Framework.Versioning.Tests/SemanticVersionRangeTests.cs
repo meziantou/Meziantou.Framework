@@ -136,6 +136,12 @@ public class SemanticVersionRangeTests
     [InlineData("[1.0.0")]
     [InlineData("1.0.0]")]
     [InlineData("[invalid]")]
+    [InlineData("[1.0.0)")] // A single version needs two inclusive bounds
+    [InlineData("(1.0.0]")]
+    [InlineData("(1.0.0)")]
+    [InlineData("[2.0.0,1.0.0]")] // Inverted bounds
+    [InlineData("(2.0.0,1.0.0)")]
+    [InlineData("[1.0.1,1.0.0]")]
     public void ParseNuGet_InvalidFormats_ThrowsFormatException(string input)
     {
         Assert.Throws<FormatException>(() => SemanticVersionRange.ParseNuGet(input));

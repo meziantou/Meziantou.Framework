@@ -17,7 +17,21 @@ public sealed class AccessTokenTests
     {
         using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
         PrintToken(token);
-        var owner = token.GetOwner();
+
+        Assert.Equal(TokenType.TokenPrimary, token.GetTokenType());
+        Assert.NotEqual(TokenElevationType.Unknown, token.GetElevationType());
+        Assert.NotNull(token.GetOwner());
+        Assert.NotNull(token.GetMandatoryIntegrityLevel());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void EnumerateGroupsContainsTheEveryoneGroup()
+    {
+        using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+        var groups = token.EnumerateGroups();
+
+        Assert.NotNull(groups);
+        Assert.Contains(groups, group => group.Sid == SecurityIdentifier.FromWellKnown(WellKnownSidType.WinWorldSid));
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
@@ -46,6 +60,22 @@ public sealed class AccessTokenTests
     public void FromWellKnownTest()
     {
         _output.WriteLine("WellKnownSID " + SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLowLabelSid));
+
+        Assert.Equal("S-1-16-4096", SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLowLabelSid).Sid);
+        Assert.Equal("S-1-5-32-544", SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid).Sid);
+        Assert.Equal("S-1-1-0", SecurityIdentifier.FromWellKnown(WellKnownSidType.WinWorldSid).Sid);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SecurityIdentifiersWithTheSameSidAreEqual()
+    {
+        var sid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
+        var other = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
+
+        Assert.Equal(sid, other);
+        Assert.True(sid == other);
+        Assert.Equal(sid.GetHashCode(), other.GetHashCode());
+        Assert.NotEqual(sid, SecurityIdentifier.FromWellKnown(WellKnownSidType.WinWorldSid));
     }
 
     private void PrintToken(AccessToken? token)

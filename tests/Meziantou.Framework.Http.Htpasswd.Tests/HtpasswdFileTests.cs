@@ -20,6 +20,21 @@ public sealed class HtpasswdFileTests
         Assert.Equal(["alice", "bob"], htpasswd.Usernames.OrderBy(value => value, StringComparer.Ordinal));
     }
 
+    [Fact]
+    public void Parse_DuplicateUsername_ShouldKeepTheFirstEntry()
+    {
+        var htpasswd = HtpasswdFile.Parse("""
+            alice:{SHA}4JlqN8E9RMOwYHSTnUP6N1m9MsE=
+            bob:{SHA}5en6G6MezRroT3XKqkdPOmY/BfQ=
+            alice:{SHA}NS94KaI4SwAcwSsMJhPHVkVKH2o=
+            """);
+
+        Assert.Equal(2, htpasswd.Count);
+        Assert.True(htpasswd.VerifyCredentials("alice", "first"));
+        Assert.False(htpasswd.VerifyCredentials("alice", "second"));
+        Assert.True(htpasswd.VerifyCredentials("bob", "secret"));
+    }
+
     [Theory]
     [InlineData("alice:")]
     [InlineData("alice:   ")]

@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Win32;
 /// // Get perceived type for a file
 /// var perceived = Perceived.GetPerceivedType(".txt");
 /// Console.WriteLine(perceived.PerceivedType); // Output: Text
-/// Console.WriteLine(perceived.PerceivedTypeSource); // Output: SoftCoded or HardCoded
+/// Console.WriteLine(perceived.PerceivedTypeSource); // Output: SoftCoded, NativeSupport
 ///
 /// // Add custom perceived types
 /// Perceived.AddPerceived(".myext", PerceivedType.Text);
@@ -44,7 +44,7 @@ public sealed class Perceived
         AddPerceived(".ashx", PerceivedType.Text);
         AddPerceived(".asmx", PerceivedType.Text);
         AddPerceived(".bat", PerceivedType.Text);
-        AddPerceived(".class", PerceivedType.Text);
+        AddPerceived(".class", PerceivedType.Application);
         AddPerceived(".cmd", PerceivedType.Text);
         AddPerceived(".cs", PerceivedType.Text);
         AddPerceived(".cshtml", PerceivedType.Text);
@@ -114,7 +114,7 @@ public sealed class Perceived
     public PerceivedTypeSource PerceivedTypeSource { get; }
 
     /// <summary>Gets a file's perceived type based on its extension.</summary>
-    /// <param name="fileName">The file name. May not be null..</param>
+    /// <param name="fileName">The file name. May not be null.</param>
     /// <returns>An instance of the PerceivedType type.</returns>
     [SupportedOSPlatform("windows5.1.2600")]
     public static Perceived GetPerceivedType(string fileName)

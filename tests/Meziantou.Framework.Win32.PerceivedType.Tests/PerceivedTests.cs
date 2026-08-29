@@ -118,4 +118,12 @@ public class PerceivedTests
     {
         Assert.Throws<ArgumentNullException>(() => Perceived.GetPerceivedType(fileName: null!));
     }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void AddDefaultPerceivedTypes_TreatsCompiledJavaClassesAsApplications()
+    {
+        Perceived.AddDefaultPerceivedTypes();
+
+        Assert.Equal(PerceivedType.Application, Perceived.GetPerceivedType("Program.class").PerceivedType);
+    }
 }

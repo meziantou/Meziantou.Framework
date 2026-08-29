@@ -43,6 +43,17 @@ public sealed class SingleInstanceTests
         }
     }
 
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void TestSingleInstance_NotifyFirstInstanceReturnsFalseWhenNobodyIsListening()
+    {
+        using var singleInstance = new SingleInstance(Guid.NewGuid())
+        {
+            ClientConnectionTimeout = TimeSpan.FromMilliseconds(200),
+        };
+
+        Assert.False(singleInstance.NotifyFirstInstance(["a", "b"]));
+    }
+
     [Fact]
     public void TestSingleInstance()
     {

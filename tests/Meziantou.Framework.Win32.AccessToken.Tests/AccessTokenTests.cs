@@ -55,6 +55,23 @@ public sealed class AccessTokenTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void EnumeratePrivilegesReturnsNamesWithoutTerminatingNullCharacter()
+    {
+        using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+        var privileges = token.EnumeratePrivileges();
+
+        Assert.NotNull(privileges);
+        Assert.NotEmpty(privileges);
+        foreach (var privilege in privileges)
+        {
+            Assert.DoesNotContain('\0', privilege.Name);
+        }
+
+        // SeChangeNotifyPrivilege is granted to Everyone by default, so the name must match the constant exactly
+        Assert.Contains(privileges, privilege => string.Equals(privilege.Name, Privileges.SE_CHANGE_NOTIFY_NAME, StringComparison.Ordinal));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void FromWellKnownTest()
     {
         _output.WriteLine("WellKnownSID " + SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLowLabelSid));

@@ -83,6 +83,12 @@ public sealed class PathGetDirectoryNameWithFullPathCodeFixProvider : CodeFixPro
             SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, pathType) &&
             invocationOperation.Arguments.Length == 1)
         {
+            if (!ResultStaysCompilable(invocationOperation))
+            {
+                replacementExpression = null!;
+                return false;
+            }
+
             var fullPathOperation = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[0].Value, fullPathType);
             if (SymbolEqualityComparer.Default.Equals(fullPathOperation.Type, fullPathType) &&
                 fullPathOperation.Syntax is ExpressionSyntax fullPathExpression)
@@ -97,5 +103,30 @@ public sealed class PathGetDirectoryNameWithFullPathCodeFixProvider : CodeFixPro
 
         replacementExpression = null!;
         return false;
+    }
+
+    /// <summary>
+    /// Reports whether replacing the invocation with a FullPath-typed expression leaves the surrounding code valid.
+    /// </summary>
+    /// <remarks>
+    /// FullPath converts implicitly to string, so a string-typed slot keeps compiling. A receiver position does not,
+    /// because the members being invoked belong to string, and a 'var' initializer would change the inferred type.
+    /// </remarks>
+    private static bool ResultStaysCompilable(IOperation operation)
+    {
+        var current = operation;
+        while (current.Parent is IConversionOperation { IsImplicit: true } conversionOperation)
+        {
+            current = conversionOperation;
+        }
+
+        return current.Parent switch
+        {
+            IInvocationOperation invocationOperation => invocationOperation.Instance != current,
+            IPropertyReferenceOperation propertyReferenceOperation => propertyReferenceOperation.Instance != current,
+            IArrayElementReferenceOperation arrayElementReferenceOperation => arrayElementReferenceOperation.ArrayReference != current,
+            IVariableInitializerOperation { Syntax.Parent: VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax { Type.IsVar: true } } } => false,
+            _ => true,
+        };
     }
 }

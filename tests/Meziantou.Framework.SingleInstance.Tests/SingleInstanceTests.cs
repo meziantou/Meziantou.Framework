@@ -123,6 +123,32 @@ public sealed class SingleInstanceTests
         }
     }
 
+    [Fact]
+    public void TestSingleInstance_StartApplicationAfterDisposeThrows()
+    {
+        var singleInstance = new SingleInstance(Guid.NewGuid())
+        {
+            StartServer = false,
+        };
+        Assert.True(singleInstance.StartApplication());
+        singleInstance.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => _ = singleInstance.StartApplication());
+    }
+
+    [Fact]
+    public void TestSingleInstance_DisposeIsIdempotent()
+    {
+        var singleInstance = new SingleInstance(Guid.NewGuid())
+        {
+            StartServer = false,
+        };
+        Assert.True(singleInstance.StartApplication());
+
+        singleInstance.Dispose();
+        singleInstance.Dispose();
+    }
+
     private static async Task SendRawMessageAsync(string pipeName, byte[] payload)
     {
         using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out);

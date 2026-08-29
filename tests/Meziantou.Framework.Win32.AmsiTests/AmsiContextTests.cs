@@ -159,7 +159,8 @@ public class AmsiContextTests
         Assert.Equal(expected, result.ShouldBlock());
     }
 
-    [Fact, RunIf(TestOperatingSystems.Windows)]
+    // Performs a real scan, so it needs a provider that is ready: hosted CI agents do not have one.
+    [Fact, RunIf(TestOperatingSystems.Windows), SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public void ScanReportsTheRawProviderResult()
     {
         using var context = AmsiContext.Create("MyApplication");

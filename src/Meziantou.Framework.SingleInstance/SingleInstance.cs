@@ -9,14 +9,18 @@ namespace Meziantou.Framework;
 /// <code>
 /// var applicationId = new Guid("dfae4e70-179f-4726-aa98-00a832315f5a");
 /// using var singleInstance = new SingleInstance(applicationId);
+///
+/// // Subscribe before calling StartApplication, otherwise a notification raised
+/// // between the server starting and the handler being attached is dropped.
+/// singleInstance.NewInstance += (sender, e) =>
+/// {
+///     // Handle notification from another instance
+///     Console.WriteLine($"New instance started with {e.Arguments.Length} arguments");
+/// };
+///
 /// if (singleInstance.StartApplication())
 /// {
 ///     // This is the first instance
-///     singleInstance.NewInstance += (sender, e) =>
-///     {
-///         // Handle notification from another instance
-///         Console.WriteLine($"New instance started with {e.Arguments.Length} arguments");
-///     };
 /// }
 /// else
 /// {

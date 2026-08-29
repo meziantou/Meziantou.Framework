@@ -169,6 +169,26 @@ public class SemanticVersionTests
         Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: "label./"));
     }
 
+    [Theory]
+    [InlineData(-1, 0, 0)]
+    [InlineData(0, -1, 0)]
+    [InlineData(0, 0, -1)]
+    [InlineData(int.MinValue, int.MinValue, int.MinValue)]
+    public void Constructor_WithNegativeComponent_ShouldThrowException(int major, int minor, int patch)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SemanticVersion(major, minor, patch));
+    }
+
+    [Fact]
+    public void NextVersion_AtMaxValue_ShouldThrowOverflowException()
+    {
+        var version = new SemanticVersion(int.MaxValue, int.MaxValue, int.MaxValue);
+
+        Assert.Throws<OverflowException>(() => version.NextMajorVersion());
+        Assert.Throws<OverflowException>(() => version.NextMinorVersion());
+        Assert.Throws<OverflowException>(() => version.NextPatchVersion());
+    }
+
     [Fact]
     public void NextPatchVersion_ShouldRemovePrereleaseTag()
     {

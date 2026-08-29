@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Meziantou.Framework;
+using NuGet.Configuration;
 using NuGet.Versioning;
 
 namespace Meziantou.Framework.DependencyScanning.Tool.Tests;
@@ -12,6 +13,8 @@ public sealed class FunctionalTests
     {
         _testOutputHelper = testOutputHelper;
     }
+
+    private static string[] Urls(IReadOnlyList<PackageSource> sources) => [.. sources.Select(source => source.Source)];
 
     [Fact]
     public async Task UpdateNuGetPackage()
@@ -332,8 +335,8 @@ public sealed class FunctionalTests
 
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Package.Id");
 
-        Assert.Equal(["https://feed1/v3/index.json"], resolution.PackageSources);
-        Assert.Equal(["https://feed1/v3/index.json"], resolution.AllConfiguredSources);
+        Assert.Equal(["https://feed1/v3/index.json"], Urls(resolution.PackageSources));
+        Assert.Equal(["https://feed1/v3/index.json"], Urls(resolution.AllConfiguredSources));
         Assert.False(resolution.HasSourceMappings);
     }
 
@@ -379,8 +382,8 @@ public sealed class FunctionalTests
 
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Package.Id");
 
-        Assert.Equal(["https://child/v3/index.json"], resolution.PackageSources);
-        Assert.Equal(["https://child/v3/index.json"], resolution.AllConfiguredSources);
+        Assert.Equal(["https://child/v3/index.json"], Urls(resolution.PackageSources));
+        Assert.Equal(["https://child/v3/index.json"], Urls(resolution.AllConfiguredSources));
     }
 
     [Fact]
@@ -413,8 +416,8 @@ public sealed class FunctionalTests
 
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Package.Id");
 
-        Assert.Equal(["https://feed3/v3/index.json"], resolution.PackageSources);
-        Assert.Equal(["https://feed3/v3/index.json"], resolution.AllConfiguredSources);
+        Assert.Equal(["https://feed3/v3/index.json"], Urls(resolution.PackageSources));
+        Assert.Equal(["https://feed3/v3/index.json"], Urls(resolution.AllConfiguredSources));
     }
 
     [Fact]
@@ -443,7 +446,7 @@ public sealed class FunctionalTests
 
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Library");
 
-        Assert.Equal(["https://private/v3/index.json"], resolution.PackageSources);
+        Assert.Equal(["https://private/v3/index.json"], Urls(resolution.PackageSources));
         Assert.True(resolution.HasSourceMappings);
     }
 
@@ -475,8 +478,8 @@ public sealed class FunctionalTests
         var newtonsoft = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Newtonsoft.Json");
 
         // 'Contoso.*' is more specific than '*', so the public feed must not be queried for it
-        Assert.Equal(["https://private/v3/index.json"], contoso.PackageSources);
-        Assert.Equal(["https://api.nuget.org/v3/index.json"], newtonsoft.PackageSources);
+        Assert.Equal(["https://private/v3/index.json"], Urls(contoso.PackageSources));
+        Assert.Equal(["https://api.nuget.org/v3/index.json"], Urls(newtonsoft.PackageSources));
     }
 
     [Fact]
@@ -506,8 +509,8 @@ public sealed class FunctionalTests
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Library");
         var other = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Other");
 
-        Assert.Equal(["https://exact/v3/index.json"], resolution.PackageSources);
-        Assert.Equal(["https://prefix/v3/index.json"], other.PackageSources);
+        Assert.Equal(["https://exact/v3/index.json"], Urls(resolution.PackageSources));
+        Assert.Equal(["https://prefix/v3/index.json"], Urls(other.PackageSources));
     }
 
     [Fact]
@@ -537,8 +540,8 @@ public sealed class FunctionalTests
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Library");
 
         Assert.Equal(2, resolution.PackageSources.Count);
-        Assert.Contains("https://first/v3/index.json", resolution.PackageSources);
-        Assert.Contains("https://second/v3/index.json", resolution.PackageSources);
+        Assert.Contains("https://first/v3/index.json", Urls(resolution.PackageSources));
+        Assert.Contains("https://second/v3/index.json", Urls(resolution.PackageSources));
     }
 
     [Fact]
@@ -564,7 +567,7 @@ public sealed class FunctionalTests
         var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Newtonsoft.Json");
 
         Assert.Empty(resolution.PackageSources);
-        Assert.Equal(["https://private/v3/index.json"], resolution.AllConfiguredSources);
+        Assert.Equal(["https://private/v3/index.json"], Urls(resolution.AllConfiguredSources));
         Assert.True(resolution.HasSourceMappings);
     }
 
@@ -636,7 +639,116 @@ public sealed class FunctionalTests
         var newtonsoftResolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Newtonsoft.Json");
 
         Assert.Empty(contosoResolution.PackageSources);
-        Assert.Equal(["https://api.nuget.org/v3/index.json"], newtonsoftResolution.PackageSources);
+        Assert.Equal(["https://api.nuget.org/v3/index.json"], Urls(newtonsoftResolution.PackageSources));
+    }
+
+    [Fact]
+    public async Task NuGetPackageSourceResolver_PackageSourceMapping_PackageIdIsCaseInsensitive()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var projectFile = tempDir.CreateEmptyFile("a.csproj");
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="nuget" value="https://api.nuget.org/v3/index.json" />
+                <add key="private" value="https://private/v3/index.json" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="nuget">
+                  <package pattern="*" />
+                </packageSource>
+                <packageSource key="private">
+                  <package pattern="Contoso.*" />
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "CONTOSO.library");
+
+        // Package ids are case-insensitive on every platform, so the public feed must not be queried
+        Assert.Equal(["https://private/v3/index.json"], Urls(resolution.PackageSources));
+    }
+
+    [Fact]
+    public async Task NuGetPackageSourceResolver_PackageSourceMapping_OnlyThePrefixBeforeTheWildcardMatters()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var projectFile = tempDir.CreateEmptyFile("a.csproj");
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="nuget" value="https://api.nuget.org/v3/index.json" />
+                <add key="private" value="https://private/v3/index.json" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="nuget">
+                  <package pattern="*" />
+                </packageSource>
+                <packageSource key="private">
+                  <package pattern="Contoso.*.Extensions" />
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Contoso.Library");
+
+        // NuGet ignores everything after the first '*', so 'Contoso.*.Extensions' behaves like 'Contoso.*'
+        Assert.Equal(["https://private/v3/index.json"], Urls(resolution.PackageSources));
+    }
+
+    [Fact]
+    public async Task NuGetPackageSourceResolver_DisabledPackageSourceIsIgnored()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var projectFile = tempDir.CreateEmptyFile("a.csproj");
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="enabled" value="https://enabled/v3/index.json" />
+                <add key="disabled" value="https://disabled/v3/index.json" />
+              </packageSources>
+              <disabledPackageSources>
+                <add key="disabled" value="true" />
+              </disabledPackageSources>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Package.Id");
+
+        Assert.Equal(["https://enabled/v3/index.json"], Urls(resolution.PackageSources));
+        Assert.Equal(["https://enabled/v3/index.json"], Urls(resolution.AllConfiguredSources));
+    }
+
+    [Fact]
+    public async Task NuGetPackageSourceResolver_RelativeSourceIsResolvedAgainstTheConfigFile()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var srcDirectory = tempDir.GetFullPath("src");
+        Directory.CreateDirectory(srcDirectory);
+
+        var projectFile = srcDirectory / "a.csproj";
+        await File.WriteAllTextAsync(projectFile, "<Project />", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("nuget.config"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <packageSources>
+                <add key="local" value="./packages" />
+              </packageSources>
+            </configuration>
+            """, XunitCancellationToken);
+
+        var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(projectFile), "Package.Id");
+
+        var source = Assert.Single(resolution.PackageSources);
+        Assert.Equal(tempDir.GetFullPath("packages"), FullPath.FromPath(source.Source));
     }
 
     [Fact]

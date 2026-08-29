@@ -11,7 +11,9 @@ namespace Meziantou.Framework.Http
         public static Meziantou.Framework.Http.HtpasswdFile Parse(string content) => throw null;
         public static Meziantou.Framework.Http.HtpasswdFile Parse(System.ReadOnlySpan<char> content) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Http.HtpasswdFile> LoadAsync(string file) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Http.HtpasswdFile> LoadAsync(string file, System.Threading.CancellationToken cancellationToken) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Http.HtpasswdFile> LoadAsync(System.IO.TextReader file) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Http.HtpasswdFile> LoadAsync(System.IO.TextReader file, System.Threading.CancellationToken cancellationToken) => throw null;
         public bool VerifyCredentials(string username, string password) => throw null;
         public bool VerifyCredentials(System.ReadOnlySpan<char> username, System.ReadOnlySpan<char> password) => throw null;
     }

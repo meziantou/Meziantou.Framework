@@ -303,6 +303,35 @@ public sealed class Mp4Tests
     }
 
     [Fact]
+    public void ReadTags_DeeplyNestedAtoms_ReturnsErrorInsteadOfOverflowingTheStack()
+    {
+        // An atom size of 0 means "extends to the end of the file", so every 8 bytes adds a nesting level
+        var file = new MemoryStream();
+        file.Write(CreateAtom("ftyp", new byte[8]));
+        for (var i = 0; i < 100_000; i++)
+        {
+            file.Write([0, 0, 0, 0]);
+            file.Write("moov"u8);
+        }
+
+        using var stream = new MemoryStream(file.ToArray());
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp4);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.CorruptFile, result.Error);
+    }
+
+    [Fact]
+    public void ReadTags_NestingUpToTheSupportedDepth_IsStillParsed()
+    {
+        // moov > udta > meta > ilst > ©nam > data is the deepest path a real file uses
+        var result = MediaFile.ReadTags(GetTestFilePath("all_fields.m4a"));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("All Fields Title", result.Value.Title);
+    }
+
+    [Fact]
     public void WriteTags_WritesTheMetaHandlerBox()
     {
         var tempFile = Path.GetTempFileName() + ".m4a";

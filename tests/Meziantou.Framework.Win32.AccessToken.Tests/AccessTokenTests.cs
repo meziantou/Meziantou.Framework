@@ -55,6 +55,25 @@ public sealed class AccessTokenTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void DisposeCanBeCalledMoreThanOnce()
+    {
+        var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+        token.Dispose();
+        token.Dispose();
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void UsingADisposedTokenThrowsObjectDisposedException()
+    {
+        var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+        token.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => _ = token.IsRestricted());
+        Assert.Throws<ObjectDisposedException>(() => _ = token.GetTokenType());
+        Assert.Throws<ObjectDisposedException>(() => _ = token.GetOwner());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void FromWellKnownTest()
     {
         _output.WriteLine("WellKnownSID " + SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLowLabelSid));

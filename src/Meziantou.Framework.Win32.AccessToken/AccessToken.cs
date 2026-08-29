@@ -42,11 +42,20 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows5.1.2600")]
 public sealed class AccessToken : IDisposable
 {
-    private SafeFileHandle _token;
+    private readonly SafeFileHandle _token;
 
     private AccessToken(SafeFileHandle token)
     {
         _token = token ?? throw new ArgumentNullException(nameof(token));
+    }
+
+    private SafeFileHandle Token
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(_token.IsClosed, this);
+            return _token;
+        }
     }
 
     /// <summary>Determines whether the token is restricted.</summary>
@@ -57,7 +66,7 @@ public sealed class AccessToken : IDisposable
     /// </remarks>
     public bool IsRestricted()
     {
-        return PInvoke.IsTokenRestricted(_token);
+        return PInvoke.IsTokenRestricted(Token);
     }
 
     /// <summary>Gets the type of the token (primary or impersonation).</summary>
@@ -66,7 +75,7 @@ public sealed class AccessToken : IDisposable
     {
         TokenType result;
         uint returnedLength;
-        using var safeHandleValue = new SafeHandleValue(_token);
+        using var safeHandleValue = new SafeHandleValue(Token);
         if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenType, &result, (uint)sizeof(TokenType), &returnedLength))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
@@ -83,7 +92,7 @@ public sealed class AccessToken : IDisposable
     {
         TokenElevationType result;
         uint returnedLength;
-        using var safeHandleValue = new SafeHandleValue(_token);
+        using var safeHandleValue = new SafeHandleValue(Token);
         if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenElevationType, &result, (uint)sizeof(TokenElevationType), &returnedLength))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
@@ -234,7 +243,7 @@ public sealed class AccessToken : IDisposable
         where T : unmanaged
     {
         uint returnedLength;
-        using var safeHandleValue = new SafeHandleValue(_token);
+        using var safeHandleValue = new SafeHandleValue(Token);
         if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, type, TokenInformation: null, 0u, &returnedLength))
         {
             var errorCode = Marshal.GetLastWin32Error();
@@ -298,7 +307,7 @@ public sealed class AccessToken : IDisposable
     public unsafe void DisableAllPrivileges()
     {
         uint returnSize = 0;
-        using var safeHandleValue = new SafeHandleValue(_token);
+        using var safeHandleValue = new SafeHandleValue(Token);
         if (!PInvoke.AdjustTokenPrivileges((HANDLE)safeHandleValue.Value, DisableAllPrivileges: true, NewState: null, BufferLength: 0, PreviousState: null, &returnSize))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
@@ -340,7 +349,7 @@ public sealed class AccessToken : IDisposable
         };
 
         uint returnSize = 0;
-        using var safeHandleValue = new SafeHandleValue(_token);
+        using var safeHandleValue = new SafeHandleValue(Token);
         if (!PInvoke.AdjustTokenPrivileges((HANDLE)safeHandleValue.Value, DisableAllPrivileges: false, &tp, 0, PreviousState: null, &returnSize))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
@@ -364,7 +373,7 @@ public sealed class AccessToken : IDisposable
     /// <exception cref="Win32Exception">The token could not be duplicated.</exception>
     public AccessToken Duplicate(SecurityImpersonationLevel impersonationLevel)
     {
-        if (!PInvoke.DuplicateToken(_token, (SECURITY_IMPERSONATION_LEVEL)impersonationLevel, out var duplicateTokenHandle))
+        if (!PInvoke.DuplicateToken(Token, (SECURITY_IMPERSONATION_LEVEL)impersonationLevel, out var duplicateTokenHandle))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         return new AccessToken(duplicateTokenHandle);
@@ -374,7 +383,6 @@ public sealed class AccessToken : IDisposable
     public void Dispose()
     {
         _token.Dispose();
-        _token = null!;
     }
 
     /// <summary>Opens the access token associated with the current process.</summary>

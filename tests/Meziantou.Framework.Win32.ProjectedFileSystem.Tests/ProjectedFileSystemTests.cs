@@ -305,6 +305,72 @@ public sealed class ProjectedFileSystemTests
         }
     }
 
+    /// <summary>
+    /// Verifies that re-enumerating a directory on an already-open handle keeps returning the provider entries.
+    ///
+    /// ProjFS sets PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN whenever an application restarts an enumeration on a
+    /// handle it already holds (Explorer refreshing a folder, a FindFirstFile loop rescanning, an indexer).
+    /// The session must start a new enumerator in that case; reusing a disposed one silently yields no entries.
+    ///
+    /// The .NET Directory APIs open a fresh handle per call, so this has to go through NtQueryDirectoryFile
+    /// to reach the restart-scan path at all.
+    /// </summary>
+    [ProjectedFileSystemFact]
+    public void RestartScanKeepsReturningEntries()
+    {
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            using var vfs = new SampleVirtualFileSystem(fullPath);
+            vfs.Start(options: null);
+
+            using var directory = NativeDirectoryEnumerator.Open(fullPath);
+
+            // Every scan restarts the enumeration on the same handle
+            for (var scan = 1; scan <= 3; scan++)
+            {
+                var entries = directory.FullScan();
+                Assert.Equal(["a", "b", "folder"], entries.Where(name => name is not "." and not "..").Order(StringComparer.Ordinal));
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(fullPath, recursive: true); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// Verifies that the provider filters its entries with the search expression ProjFS passes down.
+    ///
+    /// ProjFS applies the expression to the entries it owns (".", "..", on-disk placeholders) but leaves the
+    /// provider responsible for its own, which is what PrjFileNameMatch exists for. Without that filtering a
+    /// caller asking for "*.txt" is handed every entry in the directory.
+    ///
+    /// Directory.GetFiles re-filters client-side, so it hides the bug; the raw enumeration does not.
+    /// </summary>
+    [ProjectedFileSystemFact]
+    public void SearchExpressionFiltersProviderEntries()
+    {
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            using var vfs = new UnsortedEntriesVirtualFileSystem(fullPath);
+            vfs.Start(options: null);
+
+            using var directory = NativeDirectoryEnumerator.Open(fullPath);
+
+            // "banana" is a directory with no extension, so it must not come back
+            var matches = directory.FullScan("*.txt").Order(StringComparer.Ordinal);
+            Assert.Equal(["apple.txt", "mango.txt", "yellow.txt", "zebra.txt"], matches);
+        }
+        finally
+        {
+            try { Directory.Delete(fullPath, recursive: true); } catch { }
+        }
+    }
+
     [Fact]
     public void BufferSizeRejectsZeroAndNegativeValues()
     {

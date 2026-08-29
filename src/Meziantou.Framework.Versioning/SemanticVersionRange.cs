@@ -37,8 +37,12 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
     {
         MinVersion = minVersion;
         MaxVersion = maxVersion;
-        IsMinInclusive = isMinInclusive;
-        IsMaxInclusive = isMaxInclusive;
+
+        // A bound that is not there cannot be inclusive or exclusive. Normalising the flag keeps
+        // ranges that accept exactly the same versions equal to one another and hashing alike,
+        // e.g. NuGet's "[,]" and "(,)" both describing All.
+        IsMinInclusive = minVersion is not null && isMinInclusive;
+        IsMaxInclusive = maxVersion is not null && isMaxInclusive;
     }
 
     /// <summary>Gets the minimum version bound, or null if there is no lower bound.</summary>

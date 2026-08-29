@@ -30,7 +30,7 @@ public static class MediaFile
             using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             return ReadTagsCore(stream, format.Value);
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.IoError, ex.Message);
         }
@@ -97,7 +97,7 @@ public static class MediaFile
                 DeleteIfExists(tempPath);
             }
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return MediaTagResult.Failure(MediaTagError.IoError, ex.Message);
         }
@@ -168,7 +168,7 @@ public static class MediaFile
             if (format is not null)
                 return format;
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // Fall through to extension-based detection
         }

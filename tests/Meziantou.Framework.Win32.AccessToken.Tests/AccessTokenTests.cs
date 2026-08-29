@@ -43,6 +43,21 @@ public sealed class AccessTokenTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void IsAdministratorReturnsTrueWhenTheCurrentTokenHasTheAdministratorsGroupEnabled()
+    {
+        using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+        var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
+        var hasEnabledAdministratorsGroup = (token.EnumerateGroups() ?? [])
+            .Any(group => group.Attributes.HasFlag(GroupSidAttributes.SE_GROUP_ENABLED) && group.Sid == adminSid);
+
+        // Only meaningful when the test process is elevated; on a UAC-filtered token the group is deny-only
+        if (hasEnabledAdministratorsGroup)
+        {
+            Assert.True(IsAdministrator());
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void FromWellKnownTest()
     {
         _output.WriteLine("WellKnownSID " + SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLowLabelSid));
@@ -81,7 +96,10 @@ public sealed class AccessTokenTests
         if (token is null)
             return false;
 
-        if (!IsAdministrator(token) && token.GetElevationType() == TokenElevationType.Limited)
+        if (IsAdministrator(token))
+            return true;
+
+        if (token.GetElevationType() == TokenElevationType.Limited)
         {
             using var linkedToken = token.GetLinkedToken();
             return IsAdministrator(linkedToken);

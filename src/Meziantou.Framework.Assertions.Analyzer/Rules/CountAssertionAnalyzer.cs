@@ -20,7 +20,7 @@ public sealed class CountAssertionAnalyzer : DiagnosticAnalyzer
     public static readonly DiagnosticDescriptor UseHasCountDescriptor = new(
         id: RuleIdentifiers.UseHasCountAssertionDiagnosticId,
         title: "Use specialized count assertions",
-        messageFormat: "Use a specialized count assertion method",
+        messageFormat: "Use Assert.{0}(expected, actual) to report the actual count",
         category: "Assertions",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -53,7 +53,7 @@ public sealed class CountAssertionAnalyzer : DiagnosticAnalyzer
         }
         else
         {
-            context.ReportDiagnostic(UseHasCountDescriptor, match.CountOperation);
+            context.ReportDiagnostic(UseHasCountDescriptor, match.CountOperation, match.AssertionMethodName);
         }
     }
 }

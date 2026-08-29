@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis.Testing;
 using CountAssertionAnalyzerType = Meziantou.Framework.Analyzers.Assertions.CountAssertionAnalyzer;
 using CountAssertionCodeFixProviderType = Meziantou.Framework.Analyzers.Assertions.CountAssertionCodeFixProvider;
 
@@ -1213,5 +1214,37 @@ public sealed class CountAssertionRuleTests : AssertionsAnalyzerTestBase
             """;
 
         await CreateCodeFixTest<CountAssertionAnalyzerType, CountAssertionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Theory]
+    [InlineData("Assert.Equal(3, {|#0:collection.Count|});", "HasCount")]
+    [InlineData("Assert.NotEqual(3, {|#0:collection.Count|});", "DoesNotHaveCount")]
+    [InlineData("Assert.True({|#0:collection.Count|} < 3);", "HasCountLessThan")]
+    [InlineData("Assert.True({|#0:collection.Count|} <= 3);", "HasCountLessThanOrEqual")]
+    [InlineData("Assert.True({|#0:collection.Count|} > 3);", "HasCountGreaterThan")]
+    [InlineData("Assert.True({|#0:collection.Count|} >= 3);", "HasCountGreaterThanOrEqual")]
+    public async Task Analyzer_MessageIndicatesTheAssertionMethodToUse(string assertion, string expectedAssertionMethodName)
+    {
+        var source = $$"""
+            using System.Collections.Generic;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection)
+                {
+                    {{assertion}}
+                }
+            }
+            """;
+
+        var test = CreateAnalyzerTest<CountAssertionAnalyzerType>(source);
+        test.ExpectedDiagnostics.Add(new DiagnosticResult(CountAssertionAnalyzerType.UseHasCountDescriptor)
+            .WithLocation(0)
+            .WithMessage($"Use Assert.{expectedAssertionMethodName}(expected, actual) to report the actual count"));
+
+        await test.RunAsync(XunitCancellationToken);
     }
 }

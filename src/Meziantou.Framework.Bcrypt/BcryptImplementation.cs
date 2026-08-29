@@ -224,7 +224,7 @@ internal sealed class BcryptImplementation
 
         var workFactor = (tens * 10) + ones;
 
-        if (workFactor is < 1 or > Bcrypt.MaxWorkFactor)
+        if (workFactor is < Bcrypt.MinWorkFactor or > Bcrypt.MaxWorkFactor)
             throw new FormatException("Salt rounds out of range");
 
         if (salt.Length < offset + 3 + 22)
@@ -546,8 +546,6 @@ internal sealed class BcryptImplementation
             throw new ArgumentException("Bad salt length", nameof(saltBytes));
 
         var rounds = 1u << workFactor;
-        if (rounds < 1)
-            throw new ArgumentException("Bad number of rounds", nameof(workFactor));
 
         var cdata = new uint[BfCryptCiphertext.Length];
         Array.Copy(BfCryptCiphertext, cdata, BfCryptCiphertext.Length);
@@ -555,7 +553,7 @@ internal sealed class BcryptImplementation
         InitializeKey();
         EksKey(saltBytes, inputBytes);
 
-        for (var i = 0; i != rounds; i++)
+        for (var i = 0u; i < rounds; i++)
         {
             Key(inputBytes);
             Key(saltBytes);

@@ -213,6 +213,33 @@ public sealed class BcryptTests
         Assert.False(Bcrypt.Verify("dEe6XfVGrrfSH", Hash[..^10]));
     }
 
+    [Theory]
+    [InlineData("$2b$00$DCq7YPn5Rq63x1Lad4cll.")]
+    [InlineData("$2b$01$DCq7YPn5Rq63x1Lad4cll.")]
+    [InlineData("$2b$03$DCq7YPn5Rq63x1Lad4cll.")]
+    [InlineData("$2b$32$DCq7YPn5Rq63x1Lad4cll.")]
+    [InlineData("$2b$xx$DCq7YPn5Rq63x1Lad4cll.")]
+    public void HashPassword_SaltWithWorkFactorOutOfRange_ThrowsFormatException(string salt)
+    {
+        // Work factors 1 to 3 used to pass the salt parser and then fail inside CryptRaw with
+        // ArgumentException naming a private parameter ("workFactor").
+        Assert.Throws<FormatException>(() => Bcrypt.HashPassword("abc", salt));
+        Assert.Throws<FormatException>(() => Bcrypt.HashPassword("abc".AsSpan(), salt.AsSpan()));
+    }
+
+    [Theory]
+    [InlineData(Bcrypt.MinWorkFactor)]
+    [InlineData(Bcrypt.MinWorkFactor + 1)]
+    public void HashPassword_SaltAtMinimumWorkFactor_Succeeds(int workFactor)
+    {
+        var salt = Bcrypt.GenerateSalt(workFactor);
+
+        var hash = Bcrypt.HashPassword("abc", salt);
+
+        Assert.True(Bcrypt.Verify("abc", hash));
+        Assert.Equal(workFactor, Bcrypt.ParseHash(hash).WorkFactor);
+    }
+
     [Fact]
     public void Verify_PasswordWithUnpairedSurrogate_ReturnsFalse()
     {

@@ -24,7 +24,7 @@ public sealed class JournalData
         AllocationDelta = nativeData.AllocationDelta;
         MinSupportedMajorVersion = nativeData.MinSupportedMajorVersion;
         MaxSupportedMajorVersion = nativeData.MaxSupportedMajorVersion;
-        Flags = (ChangeJournalFlags) nativeData.Flags;
+        Flags = (ChangeJournalFlags)nativeData.Flags;
         RangeTrackChunkSize = nativeData.RangeTrackChunkSize;
         RangeTrackFileSizeThreshold = nativeData.RangeTrackFileSizeThreshold;
     }

@@ -97,6 +97,12 @@ public class RestartManagerTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void JoinSession_WithNullKey_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => RestartManager.JoinSession(sessionKey: null!));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetProcessesLockingFiles()
     {
         var unlockedPath = Path.GetTempFileName();

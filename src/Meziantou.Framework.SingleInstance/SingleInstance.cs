@@ -161,15 +161,16 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     /// <remarks>
     /// This method is only supported on Windows. The first instance must have <see cref="StartServer"/> set to <see langword="true"/> to receive notifications.
     /// The method will timeout after <see cref="ClientConnectionTimeout"/> if the first instance is not responding.
+    /// Failing to reach the first instance is reported by returning <see langword="false"/> instead of throwing.
     /// </remarks>
     public bool NotifyFirstInstance(string[] args)
     {
         ArgumentNullException.ThrowIfNull(args);
 
-        using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
         try
         {
-            client.Connect((int)ClientConnectionTimeout.TotalMilliseconds);
+            using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
+            client.Connect(GetConnectionTimeoutInMilliseconds());
 
             // type, process id, arg length, arg1, arg2, ...
             using var ms = new MemoryStream();
@@ -192,8 +193,28 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         }
         catch (TimeoutException)
         {
+            // The first instance did not accept the connection in time
             return false;
         }
+        catch (IOException)
+        {
+            // The first instance stopped listening while the message was being sent
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // The pipe exists but is not accessible from this process
+            return false;
+        }
+    }
+
+    private int GetConnectionTimeoutInMilliseconds()
+    {
+        if (ClientConnectionTimeout == Timeout.InfiniteTimeSpan)
+            return Timeout.Infinite;
+
+        var milliseconds = ClientConnectionTimeout.TotalMilliseconds;
+        return milliseconds <= 0 ? 0 : (int)Math.Min(milliseconds, int.MaxValue);
     }
 
     /// <summary>

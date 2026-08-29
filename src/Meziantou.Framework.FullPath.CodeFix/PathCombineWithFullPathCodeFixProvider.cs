@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -79,7 +80,7 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
         out ExpressionSyntax replacementExpression)
     {
         if (semanticModel.GetOperation(expressionSyntax, cancellationToken) is not IInvocationOperation invocationOperation ||
-            invocationOperation.TargetMethod is not { IsStatic: true, Name: "Combine" or "Join" } targetMethod ||
+            invocationOperation.TargetMethod is not { IsStatic: true, Name: "Combine" } targetMethod ||
             !SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, pathType) ||
             invocationOperation.Arguments.Length == 0)
         {
@@ -103,6 +104,17 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
             return false;
         }
 
+        // Arguments before the FullPath are discarded by the rewrite, because Path.Combine already discards
+        // everything before a rooted segment. Dropping them is only safe when evaluating them does nothing.
+        for (var i = 0; i < fullPathIndex; i++)
+        {
+            if (!IsSideEffectFree(invocationOperation.Arguments[i].Value))
+            {
+                replacementExpression = null!;
+                return false;
+            }
+        }
+
         var startOperation = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[fullPathIndex].Value, fullPathType);
         if (startOperation.Syntax is not ExpressionSyntax expression)
         {
@@ -124,5 +136,17 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
         }
 
         return true;
+    }
+
+    /// <summary>Reports whether evaluating the operation can be skipped without changing the program.</summary>
+    private static bool IsSideEffectFree(IOperation operation)
+    {
+        return operation.UnwrapImplicitConversions() switch
+        {
+            ILiteralOperation or INameOfOperation or IDefaultValueOperation => true,
+            ILocalReferenceOperation or IParameterReferenceOperation => true,
+            IFieldReferenceOperation { Instance: var instance } => instance is null || IsSideEffectFree(instance),
+            _ => false,
+        };
     }
 }

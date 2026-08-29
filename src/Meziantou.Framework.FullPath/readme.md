@@ -55,7 +55,7 @@ System.IO.File.WriteAllText(filePath, content);
 | `MFFP0001` | FullPath | Use FullPath directly instead of Path.GetFullPath | Info | ✔️ |
 | `MFFP0002` | FullPath | Use the right FullPath operand directly | Info | ✔️ |
 | `MFFP0003` | FullPath | Use '/' with a FullPath base instead of Path.GetFullPath | Info | ✔️ |
-| `MFFP0004` | FullPath | Use '/' operator instead of Path.Combine or Path.Join | Info | ✔️ |
+| `MFFP0004` | FullPath | Use '/' operator instead of Path.Combine | Info | ✔️ |
 | `MFFP0005` | FullPath | Use FullPath.Name instead of Path.GetFileName | Info | ✔️ |
 | `MFFP0006` | FullPath | Use FullPath.NameWithoutExtension instead of Path.GetFileNameWithoutExtension | Info | ✔️ |
 | `MFFP0007` | FullPath | Use FullPath.Extension instead of Path.GetExtension | Info | ✔️ |

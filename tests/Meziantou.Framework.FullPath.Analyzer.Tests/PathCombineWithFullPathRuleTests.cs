@@ -120,7 +120,7 @@ public sealed class PathCombineWithFullPathRuleTests : FullPathAnalyzerTestBase
     }
 
     [Fact]
-    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForPathJoinWithFullPath()
+    public async Task Analyzer_DoesNotReportDiagnostic_ForPathJoinWithFullPath()
     {
         var source = """
             using System.IO;
@@ -132,29 +132,13 @@ public sealed class PathCombineWithFullPathRuleTests : FullPathAnalyzerTestBase
                 {
                     public static string M(FullPath fullPath)
                     {
-                        return {|MFFP0004:Path.Join(fullPath, "value1", "value2")|};
+                        return Path.Join(fullPath, "value1", "value2");
                     }
                 }
             }
             """;
 
-        var fixedSource = """
-            using System.IO;
-            using Meziantou.Framework;
-
-            namespace Sample
-            {
-                public static class TestClass
-                {
-                    public static string M(FullPath fullPath)
-                    {
-                        return fullPath / "value1" / "value2";
-                    }
-                }
-            }
-            """;
-
-        await CreateCodeFixTest<PathCombineWithFullPathAnalyzerType, PathCombineWithFullPathCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateAnalyzerTest<PathCombineWithFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -273,5 +257,29 @@ public sealed class PathCombineWithFullPathRuleTests : FullPathAnalyzerTestBase
             """;
 
         await CreateCodeFixTest<PathCombineWithFullPathAnalyzerType, PathCombineWithFullPathCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotOfferCodeFix_WhenADiscardedArgumentHasSideEffects()
+    {
+        var source = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string GetBaseDirectory() => "base";
+
+                    public static string M(FullPath fullPath)
+                    {
+                        return {|MFFP0004:Path.Combine(GetBaseDirectory(), fullPath, "value")|};
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<PathCombineWithFullPathAnalyzerType, PathCombineWithFullPathCodeFixProviderType>(source, source).RunAsync(XunitCancellationToken);
     }
 }

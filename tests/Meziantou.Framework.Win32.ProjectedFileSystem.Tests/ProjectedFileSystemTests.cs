@@ -339,4 +339,35 @@ public sealed class ProjectedFileSystemTests
             try { Directory.Delete(fullPath, recursive: true); } catch { }
         }
     }
+
+    /// <summary>
+    /// Verifies that the provider filters its entries with the search expression ProjFS passes down.
+    ///
+    /// ProjFS applies the expression to the entries it owns (".", "..", on-disk placeholders) but leaves the
+    /// provider responsible for its own, which is what PrjFileNameMatch exists for. Without that filtering a
+    /// caller asking for "*.txt" is handed every entry in the directory.
+    ///
+    /// Directory.GetFiles re-filters client-side, so it hides the bug; the raw enumeration does not.
+    /// </summary>
+    [ProjectedFileSystemFact]
+    public void SearchExpressionFiltersProviderEntries()
+    {
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            using var vfs = new UnsortedEntriesVirtualFileSystem(fullPath);
+            vfs.Start(options: null);
+
+            using var directory = NativeDirectoryEnumerator.Open(fullPath);
+
+            // "banana" is a directory with no extension, so it must not come back
+            var matches = directory.FullScan("*.txt").Order(StringComparer.Ordinal);
+            Assert.Equal(["apple.txt", "mango.txt", "yellow.txt", "zebra.txt"], matches);
+        }
+        finally
+        {
+            try { Directory.Delete(fullPath, recursive: true); } catch { }
+        }
+    }
 }

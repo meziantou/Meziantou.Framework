@@ -40,11 +40,12 @@ internal sealed partial class NativeDirectoryEnumerator : IDisposable
     }
 
     /// <summary>Restarts the enumeration and reads it to completion, returning every name the driver reports.</summary>
-    public List<string> FullScan()
+    /// <param name="searchExpression">The pattern to pass to the driver, or <see langword="null"/> to enumerate everything.</param>
+    public List<string> FullScan(string? searchExpression = null)
     {
         var names = new List<string>();
         var restart = true;
-        while (Query(restart, names))
+        while (Query(restart, searchExpression, names))
         {
             restart = false;
         }
@@ -53,13 +54,28 @@ internal sealed partial class NativeDirectoryEnumerator : IDisposable
     }
 
     /// <summary>Reads one batch of entries. Returns <see langword="false"/> once the enumeration is exhausted.</summary>
-    private unsafe bool Query(bool restartScan, List<string> names)
+    private unsafe bool Query(bool restartScan, string? searchExpression, List<string> names)
     {
         var buffer = Marshal.AllocHGlobal(BufferSize);
+        var searchExpressionPtr = searchExpression is null ? IntPtr.Zero : Marshal.StringToHGlobalUni(searchExpression);
+        var unicodeStringPtr = IntPtr.Zero;
         try
         {
+            if (searchExpression is not null)
+            {
+                var unicodeString = new UNICODE_STRING
+                {
+                    Length = checked((ushort)(searchExpression.Length * sizeof(char))),
+                    MaximumLength = checked((ushort)(searchExpression.Length * sizeof(char))),
+                    Buffer = searchExpressionPtr,
+                };
+
+                unicodeStringPtr = Marshal.AllocHGlobal(Marshal.SizeOf<UNICODE_STRING>());
+                Marshal.StructureToPtr(unicodeString, unicodeStringPtr, fDeleteOld: false);
+            }
+
             var status = NtQueryDirectoryFile(_handle, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, out _, buffer, BufferSize,
-                FileDirectoryInformation, returnSingleEntry: false, IntPtr.Zero, restartScan);
+                FileDirectoryInformation, returnSingleEntry: false, unicodeStringPtr, restartScan);
 
             // STATUS_NO_MORE_FILES and any other non-success status end the enumeration
             if (status != 0)
@@ -83,12 +99,29 @@ internal sealed partial class NativeDirectoryEnumerator : IDisposable
         finally
         {
             Marshal.FreeHGlobal(buffer);
+            if (unicodeStringPtr != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(unicodeStringPtr);
+            }
+
+            if (searchExpressionPtr != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(searchExpressionPtr);
+            }
         }
     }
 
     public void Dispose()
     {
         _handle.Dispose();
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct UNICODE_STRING
+    {
+        public ushort Length;
+        public ushort MaximumLength;
+        public IntPtr Buffer;
     }
 
     [StructLayout(LayoutKind.Sequential)]

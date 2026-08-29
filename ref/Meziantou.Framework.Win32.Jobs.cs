@@ -135,16 +135,16 @@ namespace Meziantou.Framework.Win32
     public sealed class JobObjectLimits
     {
         public Meziantou.Framework.Win32.JobObjectLimitFlags Flags { get => throw null; set { } }
-        public long PerProcessUserTimeLimit { get => throw null; set { } }
-        public long PerJobUserTimeLimit { get => throw null; set { } }
-        public nuint MinimumWorkingSetSize { get => throw null; set { } }
-        public nuint MaximumWorkingSetSize { get => throw null; set { } }
-        public uint ActiveProcessLimit { get => throw null; set { } }
-        public nuint Affinity { get => throw null; set { } }
-        public uint PriorityClass { get => throw null; set { } }
-        public uint SchedulingClass { get => throw null; set { } }
-        public nuint ProcessMemoryLimit { get => throw null; set { } }
-        public nuint JobMemoryLimit { get => throw null; set { } }
+        public long? PerProcessUserTimeLimit { get => throw null; set { } }
+        public long? PerJobUserTimeLimit { get => throw null; set { } }
+        public nuint? MinimumWorkingSetSize { get => throw null; set { } }
+        public nuint? MaximumWorkingSetSize { get => throw null; set { } }
+        public uint? ActiveProcessLimit { get => throw null; set { } }
+        public nuint? Affinity { get => throw null; set { } }
+        public uint? PriorityClass { get => throw null; set { } }
+        public uint? SchedulingClass { get => throw null; set { } }
+        public nuint? ProcessMemoryLimit { get => throw null; set { } }
+        public nuint? JobMemoryLimit { get => throw null; set { } }
     }
 
     public sealed class JobObjectMemoryAccountingInformation : System.IEquatable<Meziantou.Framework.Win32.JobObjectMemoryAccountingInformation>

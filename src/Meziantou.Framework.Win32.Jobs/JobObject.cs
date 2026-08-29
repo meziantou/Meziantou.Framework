@@ -175,18 +175,18 @@ public sealed class JobObject : IDisposable
         {
             BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION
             {
-                ActiveProcessLimit = limits.ActiveProcessLimit,
-                Affinity = limits.Affinity,
-                MaximumWorkingSetSize = limits.MaximumWorkingSetSize,
-                MinimumWorkingSetSize = limits.MinimumWorkingSetSize,
-                PerJobUserTimeLimit = limits.PerJobUserTimeLimit,
-                PerProcessUserTimeLimit = limits.PerProcessUserTimeLimit,
-                PriorityClass = limits.PriorityClass,
-                SchedulingClass = limits.SchedulingClass,
-                LimitFlags = limits.InternalFlags,
+                ActiveProcessLimit = limits.ActiveProcessLimit.GetValueOrDefault(),
+                Affinity = limits.Affinity.GetValueOrDefault(),
+                MaximumWorkingSetSize = limits.MaximumWorkingSetSize.GetValueOrDefault(),
+                MinimumWorkingSetSize = limits.MinimumWorkingSetSize.GetValueOrDefault(),
+                PerJobUserTimeLimit = limits.PerJobUserTimeLimit.GetValueOrDefault(),
+                PerProcessUserTimeLimit = limits.PerProcessUserTimeLimit.GetValueOrDefault(),
+                PriorityClass = limits.PriorityClass.GetValueOrDefault(),
+                SchedulingClass = limits.SchedulingClass.GetValueOrDefault(),
+                LimitFlags = limits.ComputeLimitFlags(),
             },
-            ProcessMemoryLimit = limits.ProcessMemoryLimit,
-            JobMemoryLimit = limits.JobMemoryLimit,
+            ProcessMemoryLimit = limits.ProcessMemoryLimit.GetValueOrDefault(),
+            JobMemoryLimit = limits.JobMemoryLimit.GetValueOrDefault(),
         };
 
         using var handleScope = new SafeHandleValue(_jobHandle);

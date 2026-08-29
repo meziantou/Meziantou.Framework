@@ -90,7 +90,7 @@ public sealed class HtpasswdFile
             if (passwordHash.IsEmpty)
                 continue;
 
-            entries[username.ToString()] = passwordHash.ToString();
+            entries.TryAdd(username.ToString(), passwordHash.ToString());
         }
 
         return new HtpasswdFile(entries);

@@ -195,6 +195,16 @@ public sealed class CredentialManagerTests
         Assert.Empty(credentials);
     }
 
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_ReadCredential_NullApplicationName_Throws()
+    {
+        var ex = Assert.Throws<ArgumentNullException>(() => CredentialManager.ReadCredential(null!));
+        Assert.Equal("applicationName", ex.ParamName);
+
+        ex = Assert.Throws<ArgumentNullException>(() => CredentialManager.ReadCredential(null!, CredentialType.DomainPassword));
+        Assert.Equal("applicationName", ex.ParamName);
+    }
+
     private sealed class IsolatedContext : IDisposable
     {
         private readonly Mutex? _mutex;

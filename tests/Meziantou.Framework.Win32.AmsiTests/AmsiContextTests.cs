@@ -38,4 +38,40 @@ public class AmsiContextTests
         Assert.True(session.IsMalware(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "EICAR"));
         Assert.False(session.IsMalware("0000", "EICAR"));
     }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void DisposingTheContextBeforeTheSessionIsSafe()
+    {
+        var context = AmsiContext.Create("MyApplication");
+        var session = context.CreateSession();
+
+        context.Dispose();
+        session.Dispose();
+
+        // Closing a session against an uninitialized context corrupts the provider state, so assert AMSI still works.
+        using var other = AmsiContext.Create("MyApplication");
+        Assert.False(other.IsMalware("0000", "EICAR"));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void DisposingTheSessionBeforeTheContextIsSafe()
+    {
+        var context = AmsiContext.Create("MyApplication");
+        var session = context.CreateSession();
+
+        session.Dispose();
+        context.Dispose();
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SeveralSessionsCanOutliveTheContext()
+    {
+        var context = AmsiContext.Create("MyApplication");
+        var session1 = context.CreateSession();
+        var session2 = context.CreateSession();
+
+        context.Dispose();
+        session1.Dispose();
+        session2.Dispose();
+    }
 }

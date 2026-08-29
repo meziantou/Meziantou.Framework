@@ -44,7 +44,6 @@ public sealed class AmsiContext : IDisposable
     public AmsiSession CreateSession()
     {
         var result = Amsi.AmsiOpenSession(_handle, out var session);
-        session.Context = _handle;
         if (result != 0)
             throw new Win32Exception(result);
 

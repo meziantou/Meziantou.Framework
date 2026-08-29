@@ -71,7 +71,10 @@ public class ChangeJournalTests
             var file = Path.GetTempFileName();
             var drive = Path.GetPathRoot(file) ?? throw new InvalidOperationException("Cannot determine drive root");
             using var changeJournal = ChangeJournal.Open(new DriveInfo(drive), unprivileged: true);
-            var entries = changeJournal.GetEntries(ChangeReason.FileCreate, returnOnlyOnClose: false, TimeSpan.FromSeconds(10)).ToList();
+
+            // TimeSpan.Zero stops at the end of the journal. Any other value keeps the read waiting for a new record,
+            // so enumerating to the end would never return.
+            var entries = changeJournal.GetEntries(ChangeReason.FileCreate, returnOnlyOnClose: false, TimeSpan.Zero).ToList();
             Assert.NotEmpty(entries);
         });
     }
@@ -97,6 +100,19 @@ public class ChangeJournalTests
     {
         var options = new ReadChangeJournalOptions(initialUSN: null, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.FromMilliseconds(milliseconds), unprivileged: false);
         Assert.Equal(expected, options.TimeoutInSeconds);
+    }
+
+    [Theory]
+    [InlineData(0, 0ul)]                    // do not wait, so the control code must not be asked for new data
+    [InlineData(-1, 1ul)]                   // Timeout.InfiniteTimeSpan
+    [InlineData(500, 1ul)]
+    [InlineData(30_000, 1ul)]
+    public void ReadOptions_AsksForNewDataOnlyWhenTheReadIsMeantToWait(int milliseconds, ulong expected)
+    {
+        // FSCTL_READ_USN_JOURNAL ignores its timeout while BytesToWaitFor is 0, so a read that is meant to wait has to
+        // ask for at least one byte of new data.
+        var options = new ReadChangeJournalOptions(initialUSN: null, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.FromMilliseconds(milliseconds), unprivileged: false);
+        Assert.Equal(expected, options.BytesToWaitFor);
     }
 
     [Theory]

@@ -28,4 +28,12 @@ internal sealed class ReadChangeJournalOptions(Usn? initialUSN, ChangeReason rea
         { Ticks: < 0 } => InfiniteTimeoutInSeconds,
         var value => (ulong)Math.Max(1, Math.Ceiling(value.TotalSeconds)),
     };
+
+    /// <summary>
+    /// Gets the value passed to <c>FSCTL_READ_USN_JOURNAL</c> as <c>BytesToWaitFor</c>, which is the amount of new data the
+    /// read waits for once it reaches the end of the journal. The control code ignores <see cref="TimeoutInSeconds"/> entirely
+    /// while this is <c>0</c>, so a read that is meant to wait has to ask for at least one byte. Asking for a single byte
+    /// makes the read return as soon as anything is appended rather than after a fixed amount of new data.
+    /// </summary>
+    public ulong BytesToWaitFor => TimeoutInSeconds is 0 ? 0ul : 1ul;
 }

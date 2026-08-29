@@ -92,8 +92,13 @@ public sealed class ChangeJournal : IDisposable
     /// <summary>Gets change journal entries with the specified filter criteria.</summary>
     /// <param name="reasonFilter">A filter that specifies which types of changes to include.</param>
     /// <param name="returnOnlyOnClose">If <see langword="true"/>, returns only entries with the Close reason flag set.</param>
-    /// <param name="timeout">The time to wait for new entries before returning.</param>
+    /// <param name="timeout">The time to wait for new entries once the end of the journal is reached. Use <see cref="TimeSpan.Zero"/> to stop there instead of waiting.</param>
     /// <returns>A collection of change journal entries matching the filter criteria.</returns>
+    /// <remarks>
+    /// A non-zero <paramref name="timeout"/> makes the enumeration wait for a matching entry rather than end, so it never completes on
+    /// its own. The wait happens inside a synchronous call to the driver and cannot be cancelled, which means a thread enumerating with
+    /// a non-zero timeout stays blocked until an entry matches the filter.
+    /// </remarks>
     public IEnumerable<ChangeJournalEntry> GetEntries(ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
     {
         return new ChangeJournalEntries(this, new ReadChangeJournalOptions(initialUSN: null, reasonFilter, returnOnlyOnClose, timeout, _unprivileged));
@@ -103,8 +108,13 @@ public sealed class ChangeJournal : IDisposable
     /// <param name="currentUSN">The USN to start reading from.</param>
     /// <param name="reasonFilter">A filter that specifies which types of changes to include.</param>
     /// <param name="returnOnlyOnClose">If <see langword="true"/>, returns only entries with the Close reason flag set.</param>
-    /// <param name="timeout">The time to wait for new entries before returning.</param>
+    /// <param name="timeout">The time to wait for new entries once the end of the journal is reached. Use <see cref="TimeSpan.Zero"/> to stop there instead of waiting.</param>
     /// <returns>A collection of change journal entries matching the filter criteria.</returns>
+    /// <remarks>
+    /// A non-zero <paramref name="timeout"/> makes the enumeration wait for a matching entry rather than end, so it never completes on
+    /// its own. The wait happens inside a synchronous call to the driver and cannot be cancelled, which means a thread enumerating with
+    /// a non-zero timeout stays blocked until an entry matches the filter.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="currentUSN"/> is outside the valid range.</exception>
     public IEnumerable<ChangeJournalEntry> GetEntries(Usn currentUSN, ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
     {

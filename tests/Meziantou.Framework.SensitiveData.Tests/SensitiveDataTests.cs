@@ -93,6 +93,85 @@ public sealed class SensitiveDataTests
     }
 
     [Fact]
+    public void RevealAndUse_NestedRevealLeavesTheOuterSpanReadable()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        string? nested = null;
+        string? outerAfterNested = null;
+        data.RevealAndUse(arg: data, (span, secret) =>
+        {
+            nested = secret.RevealToString();
+            outerAfterNested = new string(span);
+        });
+
+        Assert.Equal("foo", nested);
+        Assert.Equal("foo", outerAfterNested);
+        Assert.True(data.IsProtected);
+    }
+
+    [Fact]
+    public void RevealInto_NestedInsideRevealAndUse_CopiesTheSecret()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        var buffer = new char[3];
+        data.RevealAndUse(arg: data, (span, secret) => secret.RevealInto(buffer));
+
+        Assert.Equal("foo", new string(buffer));
+    }
+
+    [Fact]
+    public void RevealAndUse_NestedReveals_RestoreProtectionOnlyAtTheOutermostLevel()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        data.RevealAndUse(arg: data, (outerSpan, secret) =>
+        {
+            Assert.False(secret.IsProtected);
+            secret.RevealAndUse(arg: secret, (middleSpan, middle) =>
+            {
+                middle.RevealAndUse(arg: middle, static (innerSpan, inner) =>
+                {
+                    Assert.False(inner.IsProtected);
+                    Assert.Equal("foo", new string(innerSpan));
+                });
+
+                Assert.False(middle.IsProtected);
+                Assert.Equal("foo", new string(middleSpan));
+            });
+
+            Assert.False(secret.IsProtected);
+            Assert.Equal("foo", new string(outerSpan));
+        });
+
+        Assert.True(data.IsProtected);
+        Assert.Equal("foo", data.RevealToString());
+    }
+
+    [Fact]
+    public void Clone_InsideRevealAndUse_ProducesAnIndependentCopy()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        SensitiveData<char>? clone = null;
+        data.RevealAndUse(arg: data, (span, secret) =>
+        {
+            clone = secret.Clone();
+            Assert.Equal("foo", new string(span));
+        });
+
+        Assert.NotNull(clone);
+        using (clone)
+        {
+            Assert.Equal("foo", clone.RevealToString());
+        }
+
+        Assert.True(data.IsProtected);
+        Assert.Equal("foo", data.RevealToString());
+    }
+
+    [Fact]
     public void Clone_CreatesIndependentCopy()
     {
         var original = SensitiveData.Create("foo");

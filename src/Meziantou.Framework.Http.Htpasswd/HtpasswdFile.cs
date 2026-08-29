@@ -19,11 +19,16 @@ public sealed class HtpasswdFile
     private const int ShaCryptMaxRounds = 999_999_999;
     private const string Sha1Prefix = "{SHA}";
     private readonly Dictionary<string, string> _entries;
+    private readonly bool _allowPlaintextPasswords;
 
-    private HtpasswdFile(Dictionary<string, string> entries)
+    private HtpasswdFile(Dictionary<string, string> entries, bool allowPlaintextPasswords)
     {
         _entries = entries;
+        _allowPlaintextPasswords = allowPlaintextPasswords;
     }
+
+    /// <summary>Gets a value indicating whether entries whose format is not recognized are compared as plaintext passwords.</summary>
+    public bool AllowPlaintextPasswords => _allowPlaintextPasswords;
 
     /// <summary>Gets the list of usernames in the file.</summary>
     public ICollection<string> Usernames => _entries.Keys;
@@ -31,13 +36,23 @@ public sealed class HtpasswdFile
     /// <summary>Gets the number of entries in the file.</summary>
     public int Count => _entries.Count;
 
-    /// <summary>Parses the content of an htpasswd file.</summary>
+    /// <summary>Parses the content of an htpasswd file. Entries whose format is not recognized are rejected.</summary>
     /// <param name="content">The text content of the htpasswd file.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static HtpasswdFile Parse(string content)
+    public static HtpasswdFile Parse(string content) => Parse(content, allowPlaintextPasswords: false);
+
+    /// <summary>Parses the content of an htpasswd file.</summary>
+    /// <param name="content">The text content of the htpasswd file.</param>
+    /// <param name="allowPlaintextPasswords">
+    /// <see langword="true"/> to compare an entry whose format is not recognized against the password as plaintext;
+    /// <see langword="false"/> to reject it. Enabling this also accepts hashes the library does not implement, such as
+    /// traditional DES crypt, as plaintext passwords.
+    /// </param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static HtpasswdFile Parse(string content, bool allowPlaintextPasswords)
     {
         ArgumentNullException.ThrowIfNull(content);
-        return Parse(content.AsSpan());
+        return Parse(content.AsSpan(), allowPlaintextPasswords);
     }
 
     /// <summary>
@@ -45,7 +60,18 @@ public sealed class HtpasswdFile
     /// </summary>
     /// <param name="content">The text content of the htpasswd file.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static HtpasswdFile Parse(ReadOnlySpan<char> content)
+    public static HtpasswdFile Parse(ReadOnlySpan<char> content) => Parse(content, allowPlaintextPasswords: false);
+
+    /// <summary>
+    /// Parses the content of an htpasswd file.
+    /// </summary>
+    /// <param name="content">The text content of the htpasswd file.</param>
+    /// <param name="allowPlaintextPasswords">
+    /// <see langword="true"/> to compare an entry whose format is not recognized against the password as plaintext;
+    /// <see langword="false"/> to reject it.
+    /// </param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static HtpasswdFile Parse(ReadOnlySpan<char> content, bool allowPlaintextPasswords)
     {
         var entries = new Dictionary<string, string>(StringComparer.Ordinal);
 
@@ -88,7 +114,7 @@ public sealed class HtpasswdFile
             entries[username.ToString()] = passwordHash.ToString();
         }
 
-        return new HtpasswdFile(entries);
+        return new HtpasswdFile(entries, allowPlaintextPasswords);
     }
 
     /// <summary>
@@ -96,13 +122,24 @@ public sealed class HtpasswdFile
     /// </summary>
     /// <param name="file">The path of the htpasswd file.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static async Task<HtpasswdFile> LoadAsync(string file)
+    public static Task<HtpasswdFile> LoadAsync(string file) => LoadAsync(file, allowPlaintextPasswords: false);
+
+    /// <summary>
+    /// Loads and parses an htpasswd file from disk.
+    /// </summary>
+    /// <param name="file">The path of the htpasswd file.</param>
+    /// <param name="allowPlaintextPasswords">
+    /// <see langword="true"/> to compare an entry whose format is not recognized against the password as plaintext;
+    /// <see langword="false"/> to reject it.
+    /// </param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static async Task<HtpasswdFile> LoadAsync(string file, bool allowPlaintextPasswords)
     {
         ArgumentNullException.ThrowIfNull(file);
 
         await using var stream = File.OpenRead(file);
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-        return await LoadAsync(reader).ConfigureAwait(false);
+        return await LoadAsync(reader, allowPlaintextPasswords).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -110,12 +147,23 @@ public sealed class HtpasswdFile
     /// </summary>
     /// <param name="file">The reader containing the htpasswd content.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static async Task<HtpasswdFile> LoadAsync(TextReader file)
+    public static Task<HtpasswdFile> LoadAsync(TextReader file) => LoadAsync(file, allowPlaintextPasswords: false);
+
+    /// <summary>
+    /// Loads and parses an htpasswd file from a <see cref="TextReader"/>.
+    /// </summary>
+    /// <param name="file">The reader containing the htpasswd content.</param>
+    /// <param name="allowPlaintextPasswords">
+    /// <see langword="true"/> to compare an entry whose format is not recognized against the password as plaintext;
+    /// <see langword="false"/> to reject it.
+    /// </param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static async Task<HtpasswdFile> LoadAsync(TextReader file, bool allowPlaintextPasswords)
     {
         ArgumentNullException.ThrowIfNull(file);
 
         var content = await file.ReadToEndAsync().ConfigureAwait(false);
-        return Parse(content);
+        return Parse(content, allowPlaintextPasswords);
     }
 
     /// <summary>
@@ -161,6 +209,9 @@ public sealed class HtpasswdFile
 
         if (expectedPasswordHashSpan.StartsWith(Sha512CryptPrefix, StringComparison.Ordinal))
             return VerifyShaCrypt(password, expectedPasswordHashSpan, useSha512: true);
+
+        if (!_allowPlaintextPasswords)
+            return false;
 
         return FixedTimeEquals(password, expectedPasswordHashSpan);
     }

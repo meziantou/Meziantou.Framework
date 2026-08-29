@@ -9,7 +9,7 @@ Supported password formats:
 - SHA-256 crypt (`$5$`)
 - SHA-512 crypt (`$6$`)
 - SHA-1 (`{SHA}`)
-- plaintext
+- plaintext (opt-in, see [Plaintext passwords](#plaintext-passwords))
 
 ```csharp
 var htpasswd = HtpasswdFile.Parse("""
@@ -20,3 +20,16 @@ var htpasswd = HtpasswdFile.Parse("""
 var isAliceValid = htpasswd.VerifyCredentials("alice", "password");
 var isBobValid = htpasswd.VerifyCredentials("bob", "password");
 ```
+
+## Plaintext passwords
+
+An entry whose format is not recognized is rejected. Pass `allowPlaintextPasswords: true` to compare it against the
+supplied password as plaintext instead:
+
+```csharp
+var htpasswd = HtpasswdFile.Parse("alice:password", allowPlaintextPasswords: true);
+```
+
+Enabling this also makes hashes the library does not implement, such as traditional DES crypt (`htpasswd -d`), match
+when the stored hash itself is supplied as the password. Leave it disabled unless the file really does contain
+plaintext passwords.

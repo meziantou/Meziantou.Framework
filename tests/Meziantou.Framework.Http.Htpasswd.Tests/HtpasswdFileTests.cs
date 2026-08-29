@@ -40,7 +40,7 @@ public sealed class HtpasswdFileTests
         {
             File.WriteAllText(filePath, "alice:password");
 
-            var htpasswd = await HtpasswdFile.LoadAsync(filePath);
+            var htpasswd = await HtpasswdFile.LoadAsync(filePath, allowPlaintextPasswords: true);
 
             Assert.True(htpasswd.VerifyCredentials("alice", "password"));
         }
@@ -55,7 +55,7 @@ public sealed class HtpasswdFileTests
     {
         using var reader = new StringReader("alice:password");
 
-        var htpasswd = await HtpasswdFile.LoadAsync(reader);
+        var htpasswd = await HtpasswdFile.LoadAsync(reader, allowPlaintextPasswords: true);
 
         Assert.True(htpasswd.VerifyCredentials("alice", "password"));
     }
@@ -134,7 +134,7 @@ public sealed class HtpasswdFileTests
     [InlineData("")]
     public void VerifyCredentials_ShouldRejectAWrongPlaintextPassword_WhereverItDiffers(string candidate)
     {
-        var htpasswd = HtpasswdFile.Parse("alice:password");
+        var htpasswd = HtpasswdFile.Parse("alice:password", allowPlaintextPasswords: true);
 
         Assert.False(htpasswd.VerifyCredentials("alice", candidate));
     }
@@ -149,10 +149,38 @@ public sealed class HtpasswdFileTests
         Assert.False(htpasswd.VerifyCredentials("alice", "password"));
     }
 
+    [Theory]
+    [InlineData("password")]
+    [InlineData("abJnggxhB/yWI")]
+    public void VerifyCredentials_ShouldRejectAnUnrecognizedFormatByDefault(string candidate)
+    {
+        var htpasswd = HtpasswdFile.Parse("alice:abJnggxhB/yWI");
+
+        Assert.False(htpasswd.AllowPlaintextPasswords);
+        Assert.False(htpasswd.VerifyCredentials("alice", candidate));
+    }
+
+    [Fact]
+    public void VerifyCredentials_ShouldStillValidateHashedEntries_WhenPlaintextIsDisabled()
+    {
+        var htpasswd = HtpasswdFile.Parse("alice:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=");
+
+        Assert.True(htpasswd.VerifyCredentials("alice", "password"));
+    }
+
+    [Fact]
+    public void VerifyCredentials_ShouldCompareAnUnrecognizedFormatAsPlaintext_WhenEnabled()
+    {
+        var htpasswd = HtpasswdFile.Parse("alice:abJnggxhB/yWI", allowPlaintextPasswords: true);
+
+        Assert.True(htpasswd.AllowPlaintextPasswords);
+        Assert.True(htpasswd.VerifyCredentials("alice", "abJnggxhB/yWI"));
+    }
+
     [Fact]
     public void VerifyCredentials_Span_ShouldValidatePlaintextPassword()
     {
-        var htpasswd = HtpasswdFile.Parse("alice:password");
+        var htpasswd = HtpasswdFile.Parse("alice:password", allowPlaintextPasswords: true);
 
         Assert.True(htpasswd.VerifyCredentials("alice".AsSpan(), "password".AsSpan()));
         Assert.False(htpasswd.VerifyCredentials("alice".AsSpan(), "invalid".AsSpan()));

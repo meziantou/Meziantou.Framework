@@ -243,7 +243,7 @@ public class ChangeJournalTests
         // The name and extent guards would reject these records too, but only after the structure has been read out of them.
         // Matching the message is what proves the length was rejected first.
         var exception = Assert.Throws<InvalidDataException>(() => ParseRecord(buffer));
-        Assert.True(exception.Message.Contains("smaller than the", StringComparison.Ordinal), exception.Message);
+        Assert.Contains("smaller than the", exception.Message);
     }
 
     [Fact]

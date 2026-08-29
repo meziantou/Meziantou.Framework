@@ -189,16 +189,15 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
 
     private bool IsLastMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
     {
-        var match = false;
-        foreach (var glob in _globs)
+        // The last pattern that matches decides, so walk backwards and stop at the first hit.
+        for (var i = _globs.Length - 1; i >= 0; i--)
         {
+            var glob = _globs[i];
             if (glob.IsMatch(directory, filename, itemType))
-            {
-                match = glob.Mode is GlobMode.Include;
-            }
+                return glob.Mode is GlobMode.Include;
         }
 
-        return match;
+        return false;
     }
 
     /// <summary>Determines whether a directory should be recursed into when enumerating files.</summary>

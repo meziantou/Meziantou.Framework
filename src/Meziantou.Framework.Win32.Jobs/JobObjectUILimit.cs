@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Win32.Natives;
+namespace Meziantou.Framework.Win32;
 
 /// <summary>Defines UI restrictions for processes in a job object.</summary>
 [Flags]

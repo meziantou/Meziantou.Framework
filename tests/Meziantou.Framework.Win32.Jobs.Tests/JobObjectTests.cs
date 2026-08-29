@@ -139,7 +139,7 @@ public class JobObjectTests
     public void SetUILimits()
     {
         using var job = new JobObject();
-        job.SetUIRestrictions(Natives.JobObjectUILimit.ReadClipboard);
+        job.SetUIRestrictions(JobObjectUILimit.ReadClipboard);
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]

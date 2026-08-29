@@ -37,7 +37,7 @@ namespace Meziantou.Framework.Win32
         public void AssignProcess(System.Diagnostics.Process process) { }
         public void AssignProcess(nint processHandle) { }
         public void SetLimits(Meziantou.Framework.Win32.JobObjectLimits limits) { }
-        public void SetUIRestrictions(Meziantou.Framework.Win32.Natives.JobObjectUILimit limits) { }
+        public void SetUIRestrictions(Meziantou.Framework.Win32.JobObjectUILimit limits) { }
         public void SetCpuRateHardCap(int cpuRate) { }
         public Meziantou.Framework.Win32.JobObjectCpuHardCap GetCpuRateHardCap() => throw null;
         public void DisableCpuRateHardCap() { }
@@ -165,9 +165,7 @@ namespace Meziantou.Framework.Win32
         NoAdmin = 1,
         RestrictedToken = 2
     }
-}
-namespace Meziantou.Framework.Win32.Natives
-{
+
     [System.Flags]
     public enum JobObjectUILimit
     {

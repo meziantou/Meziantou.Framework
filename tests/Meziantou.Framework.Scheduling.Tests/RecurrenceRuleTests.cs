@@ -221,6 +221,60 @@ public partial class RecurrenceRuleTests
             new DateTime(2021, 1, 1, 9, 0, 30));
     }
 
+    [Theory]
+    [InlineData("FREQ=DAILY;INTERVAL=0")]
+    [InlineData("FREQ=DAILY;INTERVAL=-1")]
+    [InlineData("FREQ=WEEKLY;INTERVAL=0;BYDAY=MO")]
+    [InlineData("FREQ=MONTHLY;INTERVAL=-2")]
+    public void Parse_RejectsAnIntervalBelowOne(string rruleText)
+    {
+        Assert.False(RecurrenceRule.TryParse(rruleText, out _, out var error));
+        Assert.NotNull(error);
+        Assert.Contains("INTERVAL", error);
+        Assert.Throws<FormatException>(() => RecurrenceRule.Parse(rruleText));
+    }
+
+    [Theory]
+    [InlineData("FREQ=DAILY;COUNT=-1")]
+    [InlineData("FREQ=DAILY;COUNT=-5")]
+    public void Parse_RejectsANegativeCount(string rruleText)
+    {
+        Assert.False(RecurrenceRule.TryParse(rruleText, out _, out var error));
+        Assert.NotNull(error);
+        Assert.Contains("COUNT", error);
+    }
+
+    [Theory]
+    [InlineData("FREQ=DAILY;INTERVAL=1")]
+    [InlineData("FREQ=DAILY;INTERVAL=2")]
+    [InlineData("FREQ=DAILY;COUNT=0")]
+    [InlineData("FREQ=DAILY;COUNT=1")]
+    public void Parse_AcceptsValidIntervalAndCount(string rruleText)
+    {
+        Assert.True(RecurrenceRule.TryParse(rruleText, out _, out _));
+    }
+
+    [Fact]
+    public void Interval_SetterRejectsValuesBelowOne()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => rrule.Interval = 0);
+        Assert.Throws<ArgumentOutOfRangeException>(() => rrule.Interval = -1);
+        Assert.Equal(1, rrule.Interval);
+    }
+
+    [Fact]
+    public void Occurrences_SetterRejectsNegativeValues()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => rrule.Occurrences = -1);
+
+        rrule.Occurrences = null;
+        Assert.Null(rrule.Occurrences);
+    }
+
     [Fact]
     public void ByMinute_Daily_ParseAndSerialize()
     {

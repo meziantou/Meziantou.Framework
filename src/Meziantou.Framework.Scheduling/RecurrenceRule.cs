@@ -37,10 +37,32 @@ public abstract class RecurrenceRule : IRecurrenceRule
     public DateTime? EndDate { get; set; }
 
     /// <summary>The number of occurrences before the recurrence ends.</summary>
-    public int? Occurrences { get; set; }
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int? Occurrences
+    {
+        get => field;
+        set
+        {
+            if (value.HasValue)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(value.Value);
+            }
 
-    /// <summary>The interval between occurrences.</summary>
-    public int Interval { get; set; } = 1;
+            field = value;
+        }
+    }
+
+    /// <summary>The interval between occurrences. Must be greater than or equal to 1.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is less than 1.</exception>
+    public int Interval
+    {
+        get => field;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            field = value;
+        }
+    } = 1;
 
     /// <summary>The first day of the week for the recurrence rule.</summary>
     public DayOfWeek WeekStart { get; set; } = DefaultFirstDayOfWeek;
@@ -218,8 +240,22 @@ public abstract class RecurrenceRule : IRecurrenceRule
 
             // Set general properties
             // Set Interval
-            recurrenceRule.Interval = values.GetValue("INTERVAL", 1);
-            recurrenceRule.Occurrences = values.GetValue("COUNT", null);
+            var interval = values.GetValue("INTERVAL", 1);
+            if (interval < 1)
+            {
+                error = $"INTERVAL value '{interval.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be greater than or equal to 1.";
+                return false;
+            }
+
+            var occurrences = values.GetValue("COUNT", null);
+            if (occurrences < 0)
+            {
+                error = $"COUNT value '{occurrences.Value.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be greater than or equal to 0.";
+                return false;
+            }
+
+            recurrenceRule.Interval = interval;
+            recurrenceRule.Occurrences = occurrences;
             if (values.TryGetNonEmptyValue("UNTIL", out var until))
             {
                 recurrenceRule.EndDate = Utilities.ParseDateTime(until);

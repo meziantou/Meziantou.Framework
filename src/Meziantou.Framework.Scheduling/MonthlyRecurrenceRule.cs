@@ -41,7 +41,7 @@ internal sealed class MonthlyRecurrenceRule : RecurrenceRule
             var b = true;
             if (!IsEmpty(ByMonths))
             {
-                if (ByMonths.Contains(startOfMonth.Month))
+                if (!ByMonths.Contains(startOfMonth.Month))
                 {
                     b = false;
                 }

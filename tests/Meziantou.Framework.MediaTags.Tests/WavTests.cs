@@ -109,4 +109,28 @@ public sealed class WavTests
         Assert.True(result.IsSuccess);
         Assert.Null(result.Value.Title);
     }
+
+    [Fact]
+    public void ReadTags_DeeplyNestedListChunks_ReturnsErrorInsteadOfOverflowingTheStack()
+    {
+        // Each LIST chunk declares the rest of the file as its payload, so every 12 bytes adds a nesting level
+        const int Levels = 100_000;
+        var file = new MemoryStream();
+        file.Write("RIFF"u8);
+        file.Write([0, 0, 0, 0]);
+        file.Write("WAVE"u8);
+        for (var i = 0; i < Levels; i++)
+        {
+            file.Write("LIST"u8);
+            var size = (Levels - i - 1) * 12 + 4;
+            file.Write([(byte)size, (byte)(size >> 8), (byte)(size >> 16), (byte)(size >> 24)]);
+            file.Write("INFO"u8);
+        }
+
+        using var stream = new MemoryStream(file.ToArray());
+        var result = MediaFile.ReadTags(stream, MediaFormat.Wav);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.CorruptFile, result.Error);
+    }
 }

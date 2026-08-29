@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Collections;
 using System.Runtime.InteropServices;
 using System.IO.Compression;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.Http;
@@ -56,19 +55,33 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
 
     private static void Load(ConcurrentDictionary<string, HstsDomainPolicy> dictionary, int entryCount, string resourceName)
     {
-        using var stream = typeof(HstsDomainPolicyCollection).Assembly.GetManifestResourceStream(resourceName);
-        Debug.Assert(stream is not null);
+        // The resource and the entry count come from the generated file: a mismatch means the package was
+        // built from an inconsistent tree, so say which resource is at fault instead of failing inside the
+        // decompression stream.
+        using var stream = typeof(HstsDomainPolicyCollection).Assembly.GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException($"The embedded resource '{resourceName}' is missing from the assembly.");
+
         using var gz = new GZipStream(stream, CompressionMode.Decompress);
         using var reader = new BinaryReader(gz);
         for (var i = 0; i < entryCount; i++)
         {
-            var name = reader.ReadString();
-            var includeSubdomains = reader.ReadBoolean();
+            string name;
+            bool includeSubdomains;
+            try
+            {
+                name = reader.ReadString();
+                includeSubdomains = reader.ReadBoolean();
 
-            // The duration in the source data is the max-age the domain must serve to qualify for the
-            // preload list, not a lifetime for the entry itself. The list is compiled into the assembly,
-            // so its entries stay valid until the package is updated.
-            _ = reader.ReadInt32();
+                // The duration in the source data is the max-age the domain must serve to qualify for the
+                // preload list, not a lifetime for the entry itself. The list is compiled into the assembly,
+                // so its entries stay valid until the package is updated.
+                _ = reader.ReadInt32();
+            }
+            catch (Exception ex) when (ex is EndOfStreamException or InvalidDataException)
+            {
+                throw new InvalidOperationException($"The embedded resource '{resourceName}' does not contain the expected {entryCount} entries; reading entry {i} failed.", ex);
+            }
+
             dictionary.TryAdd(name, new(name, DateTimeOffset.MaxValue, includeSubdomains, isPreloaded: true));
         }
     }

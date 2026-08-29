@@ -325,8 +325,8 @@ public class QRCodeTests
     [Fact]
     public void Create_Kanji_E040Range()
     {
-        // Kanji character in the 0xE040-0xEBBF Shift JIS range
-        var qr = QRCode.Create("纊", ErrorCorrectionLevel.L);
+        // U+6F3E is Shift JIS 0xE040, the first value of the second range Kanji mode accepts.
+        var qr = QRCode.Create("漾", ErrorCorrectionLevel.L);
 
         Assert.Equal(1, qr.Version);
         Snapshot.Validate(RenderAsSvg(qr), SnapshotType.Svg);
@@ -613,5 +613,310 @@ public class QRCodeTests
             Assert.True(version >= previousVersion, $"Payload of {length} bytes selected version {version} after version {previousVersion}.");
             previousVersion = version;
         }
+    }
+
+    // ───── Symbol structure (ISO/IEC 18004) ─────
+
+    /// <summary>
+    /// Alignment pattern centre coordinates for versions 1 to 40 (ISO/IEC 18004 Annex E).
+    /// </summary>
+    private static readonly int[][] AlignmentPatternPositions =
+    [
+        [], [6, 18], [6, 22], [6, 26], [6, 30],
+        [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50],
+        [6, 30, 54], [6, 32, 58], [6, 34, 62], [6, 26, 46, 66], [6, 26, 48, 70],
+        [6, 26, 50, 74], [6, 30, 54, 78], [6, 30, 56, 82], [6, 30, 58, 86], [6, 34, 62, 90],
+        [6, 28, 50, 72, 94], [6, 26, 50, 74, 98], [6, 30, 54, 78, 102], [6, 28, 54, 80, 106], [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114], [6, 34, 62, 90, 118], [6, 26, 50, 74, 98, 122], [6, 30, 54, 78, 102, 126], [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134], [6, 34, 60, 86, 112, 138], [6, 30, 58, 86, 114, 142], [6, 34, 62, 90, 118, 146], [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154], [6, 28, 54, 80, 106, 132, 158], [6, 32, 58, 84, 110, 136, 162], [6, 26, 54, 82, 110, 138, 166], [6, 30, 58, 86, 114, 142, 170],
+    ];
+
+    public static TheoryData<int> AllVersions()
+    {
+        var data = new TheoryData<int>();
+        for (var version = 1; version <= 40; version++)
+        {
+            data.Add(version);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(AllVersions))]
+    public void Create_PlacesTheThreeFinderPatternsAndTheirSeparators(int version)
+    {
+        var qr = CreateWithVersion(version, ErrorCorrectionLevel.M);
+        var size = qr.Size;
+
+        foreach (var (row, column) in new[] { (0, 0), (0, size - 7), (size - 7, 0) })
+        {
+            AssertFinderPattern(qr, row, column);
+        }
+
+        // The separator is the light band between a finder pattern and the rest of the symbol.
+        for (var i = 0; i <= 7; i++)
+        {
+            Assert.False(qr[7, i], $"Separator module (7, {i}) is dark.");
+            Assert.False(qr[i, 7], $"Separator module ({i}, 7) is dark.");
+            Assert.False(qr[7, size - 1 - i], $"Separator module (7, {size - 1 - i}) is dark.");
+            Assert.False(qr[i, size - 8], $"Separator module ({i}, {size - 8}) is dark.");
+            Assert.False(qr[size - 8, i], $"Separator module ({size - 8}, {i}) is dark.");
+            Assert.False(qr[size - 1 - i, 7], $"Separator module ({size - 1 - i}, 7) is dark.");
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AllVersions))]
+    public void Create_PlacesTheTimingPatterns(int version)
+    {
+        var qr = CreateWithVersion(version, ErrorCorrectionLevel.M);
+
+        for (var i = 8; i < qr.Size - 8; i++)
+        {
+            Assert.Equal(i % 2 == 0, qr[6, i], $"Horizontal timing module at column {i} is wrong.");
+            Assert.Equal(i % 2 == 0, qr[i, 6], $"Vertical timing module at row {i} is wrong.");
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AllVersions))]
+    public void Create_PlacesTheDarkModule(int version)
+    {
+        var qr = CreateWithVersion(version, ErrorCorrectionLevel.M);
+
+        Assert.True(qr[(4 * version) + 9, 8]);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllVersions))]
+    public void Create_PlacesTheAlignmentPatterns(int version)
+    {
+        var qr = CreateWithVersion(version, ErrorCorrectionLevel.M);
+        var positions = AlignmentPatternPositions[version - 1];
+
+        foreach (var centerRow in positions)
+        {
+            foreach (var centerColumn in positions)
+            {
+                // The three corners are taken by the finder patterns.
+                var isCorner = (centerRow <= 8 && centerColumn <= 8) ||
+                               (centerRow <= 8 && centerColumn >= qr.Size - 9) ||
+                               (centerRow >= qr.Size - 9 && centerColumn <= 8);
+                if (isCorner)
+                {
+                    continue;
+                }
+
+                for (var row = -2; row <= 2; row++)
+                {
+                    for (var column = -2; column <= 2; column++)
+                    {
+                        var expected = Math.Abs(row) == 2 || Math.Abs(column) == 2 || (row == 0 && column == 0);
+                        if (expected != qr[centerRow + row, centerColumn + column])
+                        {
+                            Assert.Fail($"Alignment pattern centred on ({centerRow}, {centerColumn}) is wrong at offset ({row}, {column}).");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AllVersionsAndErrorCorrectionLevels))]
+    public void Create_WritesTwoIdenticalFormatInformationCopies(int version, ErrorCorrectionLevel ecLevel)
+    {
+        var qr = CreateWithVersion(version, ecLevel);
+
+        Assert.Equal(ReadFormatInformation(qr, secondCopy: false), ReadFormatInformation(qr, secondCopy: true));
+    }
+
+    [Theory]
+    [MemberData(nameof(AllVersionsAndErrorCorrectionLevels))]
+    public void Create_FormatInformationEncodesTheErrorCorrectionLevelAndAValidMask(int version, ErrorCorrectionLevel ecLevel)
+    {
+        var qr = CreateWithVersion(version, ecLevel);
+        var formatInformation = ReadFormatInformation(qr, secondCopy: false) ^ FormatInformationMask;
+
+        Assert.True(IsValidBch15_5(formatInformation), $"Format information 0x{formatInformation:X4} is not a valid BCH(15,5) code word.");
+
+        var expectedIndicator = ecLevel switch
+        {
+            ErrorCorrectionLevel.L => 0b01,
+            ErrorCorrectionLevel.M => 0b00,
+            ErrorCorrectionLevel.Q => 0b11,
+            _ => 0b10,
+        };
+
+        Assert.Equal(expectedIndicator, (formatInformation >> 13) & 0b11);
+        Assert.InRange((formatInformation >> 10) & 0b111, 0, 7);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllVersions))]
+    public void Create_WritesVersionInformationFromVersion7Onwards(int version)
+    {
+        var qr = CreateWithVersion(version, ErrorCorrectionLevel.M);
+        if (version < 7)
+        {
+            // Below version 7 those modules carry data, so there is nothing to check beyond the
+            // absence of a reserved block; the format information tests cover the rest.
+            return;
+        }
+
+        var bottomLeft = ReadVersionInformation(qr, topRight: false);
+        var topRight = ReadVersionInformation(qr, topRight: true);
+
+        Assert.Equal(bottomLeft, topRight);
+        Assert.Equal(version, bottomLeft >> 12);
+        Assert.True(IsValidGolay18_6(bottomLeft), $"Version information 0x{bottomLeft:X5} is not a valid Golay(18,6) code word.");
+    }
+
+    [Fact]
+    public void CreateMicroQR_PlacesASingleFinderPatternAndTheTimingPatterns()
+    {
+        var qr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
+
+        AssertFinderPattern(qr, 0, 0);
+
+        // Micro QR runs its timing patterns along the top row and the leftmost column.
+        for (var i = 8; i < qr.Size; i++)
+        {
+            Assert.Equal(i % 2 == 0, qr[0, i], $"Horizontal timing module at column {i} is wrong.");
+            Assert.Equal(i % 2 == 0, qr[i, 0], $"Vertical timing module at row {i} is wrong.");
+        }
+
+        // There is no second or third finder pattern, so the other corners carry data.
+        for (var i = 0; i <= 7; i++)
+        {
+            Assert.False(qr[7, i], $"Separator module (7, {i}) is dark.");
+            Assert.False(qr[i, 7], $"Separator module ({i}, 7) is dark.");
+        }
+    }
+
+    private static void AssertFinderPattern(QRCode qr, int row, int column)
+    {
+        for (var r = 0; r < 7; r++)
+        {
+            for (var c = 0; c < 7; c++)
+            {
+                var expected = r is 0 or 6 || c is 0 or 6 || (r is >= 2 and <= 4 && c is >= 2 and <= 4);
+                if (expected != qr[row + r, column + c])
+                {
+                    Assert.Fail($"Finder pattern at ({row}, {column}) is wrong at offset ({r}, {c}).");
+                }
+            }
+        }
+    }
+
+    /// <summary>The value the 15 format information bits are XORed with before being written.</summary>
+    private const int FormatInformationMask = 0b101_0100_0001_0010;
+
+    /// <summary>BCH(15,5) generator polynomial x^10 + x^8 + x^5 + x^4 + x^2 + x + 1.</summary>
+    private const int Bch15_5Generator = 0b101_0011_0111;
+
+    /// <summary>Golay(18,6) generator polynomial x^12 + x^11 + x^10 + x^9 + x^8 + x^5 + x^2 + 1.</summary>
+    private const int Golay18_6Generator = 0b1_1111_0010_0101;
+
+    /// <summary>
+    /// Reads the 15 format information bits, most significant bit first.
+    /// </summary>
+    private static int ReadFormatInformation(QRCode qr, bool secondCopy)
+    {
+        var size = qr.Size;
+        var positions = new List<(int Row, int Column)>(15);
+        if (secondCopy)
+        {
+            for (var i = 0; i < 7; i++)
+            {
+                positions.Add((size - 1 - i, 8));
+            }
+
+            for (var i = 0; i < 8; i++)
+            {
+                positions.Add((8, size - 8 + i));
+            }
+        }
+        else
+        {
+            for (var column = 0; column <= 5; column++)
+            {
+                positions.Add((8, column));
+            }
+
+            positions.Add((8, 7));
+            positions.Add((8, 8));
+            positions.Add((7, 8));
+
+            for (var row = 5; row >= 0; row--)
+            {
+                positions.Add((row, 8));
+            }
+        }
+
+        var value = 0;
+        foreach (var (row, column) in positions)
+        {
+            value = (value << 1) | (qr[row, column] ? 1 : 0);
+        }
+
+        return value;
+    }
+
+    /// <summary>
+    /// Reads the 18 version information bits. Bit <c>i</c> sits at row <c>size - 11 + (i % 3)</c>
+    /// and column <c>i / 3</c> in the bottom-left block, transposed in the top-right block.
+    /// </summary>
+    private static int ReadVersionInformation(QRCode qr, bool topRight)
+    {
+        var value = 0;
+        for (var i = 17; i >= 0; i--)
+        {
+            var row = qr.Size - 11 + (i % 3);
+            var column = i / 3;
+            var bit = topRight ? qr[column, row] : qr[row, column];
+            value = (value << 1) | (bit ? 1 : 0);
+        }
+
+        return value;
+    }
+
+    private static bool IsValidBch15_5(int value)
+    {
+        for (var bit = 14; bit >= 10; bit--)
+        {
+            if ((value & (1 << bit)) != 0)
+            {
+                value ^= Bch15_5Generator << (bit - 10);
+            }
+        }
+
+        return value == 0;
+    }
+
+    private static bool IsValidGolay18_6(int value)
+    {
+        for (var bit = 17; bit >= 12; bit--)
+        {
+            if ((value & (1 << bit)) != 0)
+            {
+                value ^= Golay18_6Generator << (bit - 12);
+            }
+        }
+
+        return value == 0;
+    }
+
+    private static QRCode CreateWithVersion(int version, ErrorCorrectionLevel ecLevel)
+    {
+        var payload = new byte[ByteCapacities[version - 1][(int)ecLevel]];
+        for (var i = 0; i < payload.Length; i++)
+        {
+            payload[i] = (byte)('0' + (i % 10));
+        }
+
+        return QRCode.Create(payload, ecLevel);
     }
 }

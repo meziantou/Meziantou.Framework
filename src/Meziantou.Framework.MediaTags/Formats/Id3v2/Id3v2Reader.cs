@@ -24,7 +24,14 @@ internal static class Id3v2Reader
             return false;
         }
 
-        // Read tag data
+        // Read tag data. The declared size comes from the file and reaches 256 MB, so it must be checked
+        // against the bytes that are actually there before it is used as an allocation size.
+        if (stream.CanSeek && header.TagSize > stream.Length - stream.Position)
+        {
+            stream.Position = originalPosition;
+            return false;
+        }
+
         var tagData = new byte[header.TagSize];
         if (stream.ReadAtLeast(tagData, header.TagSize, throwOnEndOfStream: false) < header.TagSize)
         {

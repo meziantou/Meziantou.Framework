@@ -4,6 +4,13 @@ namespace Meziantou.Framework.MediaTags.Formats.Mp4;
 
 internal sealed class Mp4Atom
 {
+    /// <summary>The maximum number of nested container atoms a file may contain.</summary>
+    /// <remarks>
+    /// Reading is recursive, so an unbounded nesting depth would overflow the stack, which cannot be caught.
+    /// Real files nest a handful of levels (moov/trak/mdia/minf/stbl/stsd); this limit is far above any legitimate use.
+    /// </remarks>
+    public const int MaxDepth = 32;
+
     public long Position { get; set; }
     public long Size { get; set; }
     public string Type { get; set; } = "";
@@ -15,6 +22,14 @@ internal sealed class Mp4Atom
     /// </summary>
     public static List<Mp4Atom> ReadAtoms(Stream stream, long endPosition, bool recurse = true)
     {
+        return ReadAtoms(stream, endPosition, recurse, depth: 0);
+    }
+
+    private static List<Mp4Atom> ReadAtoms(Stream stream, long endPosition, bool recurse, int depth)
+    {
+        if (depth >= MaxDepth)
+            throw new InvalidDataException($"MP4 atoms are nested too deeply. The maximum supported depth is {MaxDepth}.");
+
         var atoms = new List<Mp4Atom>();
         Span<byte> headerBuf = stackalloc byte[16]; // Reuse for both header and extended size
 
@@ -64,11 +79,11 @@ internal sealed class Mp4Atom
                         break;
 
                     stream.Seek(4, SeekOrigin.Current);
-                    atom.Children.AddRange(ReadAtoms(stream, atomEnd, recurse: true));
+                    atom.Children.AddRange(ReadAtoms(stream, atomEnd, recurse: true, depth + 1));
                 }
                 else
                 {
-                    atom.Children.AddRange(ReadAtoms(stream, atomEnd, recurse: true));
+                    atom.Children.AddRange(ReadAtoms(stream, atomEnd, recurse: true, depth + 1));
                 }
             }
             else if (dataSize > 0 && dataSize <= 10 * 1024 * 1024) // Max 10MB for single atom data

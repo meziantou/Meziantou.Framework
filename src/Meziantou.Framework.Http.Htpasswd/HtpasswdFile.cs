@@ -15,8 +15,11 @@ public sealed class HtpasswdFile
     private const int ShaCryptSaltMaxLength = 16;
     private const int ShaCryptDefaultRounds = 5000;
     private const int ShaCryptMinRounds = 1000;
-    private const int ShaCryptMaxRounds = 999_999_999;
+    // The format allows up to 999_999_999 rounds. Computing that many takes hours, so a hash asking for
+    // more rounds than we are willing to compute is rejected instead of being verified.
+    private const int ShaCryptMaxRounds = 10_000_000;
     private const string Sha1Prefix = "{SHA}";
+    private static readonly string[] BcryptPrefixes = ["$2a$", "$2b$", "$2y$"];
     private readonly Dictionary<string, string> _entries;
 
     private HtpasswdFile(Dictionary<string, string> entries)
@@ -95,13 +98,21 @@ public sealed class HtpasswdFile
     /// </summary>
     /// <param name="file">The path of the htpasswd file.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static async Task<HtpasswdFile> LoadAsync(string file)
+    public static Task<HtpasswdFile> LoadAsync(string file) => LoadAsync(file, CancellationToken.None);
+
+    /// <summary>
+    /// Loads and parses an htpasswd file from disk.
+    /// </summary>
+    /// <param name="file">The path of the htpasswd file.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static async Task<HtpasswdFile> LoadAsync(string file, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(file);
 
-        await using var stream = File.OpenRead(file);
+        await using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true);
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-        return await LoadAsync(reader).ConfigureAwait(false);
+        return await LoadAsync(reader, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -109,11 +120,19 @@ public sealed class HtpasswdFile
     /// </summary>
     /// <param name="file">The reader containing the htpasswd content.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static async Task<HtpasswdFile> LoadAsync(TextReader file)
+    public static Task<HtpasswdFile> LoadAsync(TextReader file) => LoadAsync(file, CancellationToken.None);
+
+    /// <summary>
+    /// Loads and parses an htpasswd file from a <see cref="TextReader"/>.
+    /// </summary>
+    /// <param name="file">The reader containing the htpasswd content.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static async Task<HtpasswdFile> LoadAsync(TextReader file, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(file);
 
-        var content = await file.ReadToEndAsync().ConfigureAwait(false);
+        var content = await file.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
         return Parse(content);
     }
 
@@ -143,7 +162,7 @@ public sealed class HtpasswdFile
             return false;
 
         var expectedPasswordHashSpan = expectedPasswordHash.AsSpan();
-        if (expectedPasswordHashSpan.StartsWith("$2", StringComparison.Ordinal))
+        if (IsBcryptHash(expectedPasswordHashSpan))
             return Bcrypt.Verify(password, expectedPasswordHashSpan);
 
         if (expectedPasswordHashSpan.StartsWith(Sha1Prefix, StringComparison.Ordinal))
@@ -162,6 +181,17 @@ public sealed class HtpasswdFile
             return VerifyShaCrypt(password, expectedPasswordHashSpan, useSha512: true);
 
         return password.SequenceEqual(expectedPasswordHashSpan);
+    }
+
+    private static bool IsBcryptHash(ReadOnlySpan<char> hash)
+    {
+        foreach (var prefix in BcryptPrefixes)
+        {
+            if (hash.StartsWith(prefix, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
     }
 
     private static bool VerifyMd5Crypt(ReadOnlySpan<char> password, ReadOnlySpan<char> expectedHash, string prefix)
@@ -230,7 +260,9 @@ public sealed class HtpasswdFile
             if (!int.TryParse(roundsText, NumberStyles.None, CultureInfo.InvariantCulture, out rounds))
                 return false;
 
-            rounds = Math.Clamp(rounds, ShaCryptMinRounds, ShaCryptMaxRounds);
+            if (rounds is < ShaCryptMinRounds or > ShaCryptMaxRounds)
+                return false;
+
             roundsCustom = true;
             remaining = remaining[(roundsSeparatorIndex + 1)..];
         }
@@ -537,7 +569,7 @@ public sealed class HtpasswdFile
 
         var passwordBytes = byteCount <= 256
             ? stackalloc byte[byteCount]
-            : (rentedBytes = ArrayPool<byte>.Shared.Rent(byteCount));
+            : (rentedBytes = ArrayPool<byte>.Shared.Rent(byteCount)).AsSpan(0, byteCount);
 
         try
         {
@@ -557,7 +589,7 @@ public sealed class HtpasswdFile
         {
             if (rentedBytes is not null)
             {
-                ArrayPool<byte>.Shared.Return(rentedBytes);
+                ArrayPool<byte>.Shared.Return(rentedBytes, clearArray: true);
             }
         }
     }

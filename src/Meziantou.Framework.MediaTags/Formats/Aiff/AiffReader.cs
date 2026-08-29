@@ -34,6 +34,12 @@ internal sealed class AiffReader : IMediaTagReader
                 var chunkSize = BinaryPrimitives.ReadInt32BigEndian(chunkHeader[4..]);
                 var chunkDataStart = stream.Position;
 
+                // A chunk size is stored in a signed field, so a malformed file can declare a negative
+                // size (which would move the cursor backwards and loop forever) or a size far beyond the
+                // end of the file (which would allocate a buffer that can never be filled).
+                if (chunkSize < 0 || chunkSize > stream.Length - chunkDataStart)
+                    break;
+
                 if (chunkId is "ID3 " or "id3 ")
                 {
                     var chunkData = new byte[chunkSize];

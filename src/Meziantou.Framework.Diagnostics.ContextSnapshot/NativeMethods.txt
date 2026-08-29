@@ -2,3 +2,4 @@ GetLogicalProcessorInformationEx
 PowerReadFriendlyName
 PowerGetActiveScheme
 WscGetSecurityProviderHealth
+LocalFree

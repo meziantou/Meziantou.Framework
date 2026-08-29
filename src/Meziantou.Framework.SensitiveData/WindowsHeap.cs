@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Windows.Win32;
@@ -81,8 +82,11 @@ internal static partial class WindowsHeap
         var hHeap = (IntPtr.Size == 8) ? PInvoke.HeapCreate((HEAP_FLAGS)0, 0, 0) : PInvoke.GetProcessHeap();
         if (hHeap == IntPtr.Zero)
         {
+            // GetHRForLastWin32Error returns 0x80070000 | lastError, which is negative as an int even
+            // when lastError is 0, so ThrowExceptionForHR always throws. It is not annotated
+            // [DoesNotReturn], so say out loud that returning a null heap handle cannot happen.
             Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-            Environment.FailFast("Couldn't get heap information.");
+            throw new UnreachableException();
         }
 
         return hHeap;

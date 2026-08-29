@@ -4,6 +4,13 @@ namespace Meziantou.Framework.MediaTags.Formats.Wav;
 
 internal sealed class RiffChunk
 {
+    /// <summary>The maximum number of nested LIST chunks a file may contain.</summary>
+    /// <remarks>
+    /// Reading is recursive, so an unbounded nesting depth would overflow the stack, which cannot be caught.
+    /// Real files nest a level or two; this limit is far above any legitimate use.
+    /// </remarks>
+    public const int MaxDepth = 32;
+
     public string Id { get; set; } = "";
     public int Size { get; set; }
     public long DataPosition { get; set; }
@@ -12,6 +19,14 @@ internal sealed class RiffChunk
 
     public static List<RiffChunk> ReadChunks(Stream stream, long endPosition)
     {
+        return ReadChunks(stream, endPosition, depth: 0);
+    }
+
+    private static List<RiffChunk> ReadChunks(Stream stream, long endPosition, int depth)
+    {
+        if (depth >= MaxDepth)
+            throw new InvalidDataException($"RIFF chunks are nested too deeply. The maximum supported depth is {MaxDepth}.");
+
         var chunks = new List<RiffChunk>();
         Span<byte> header = stackalloc byte[8];
         Span<byte> listType = stackalloc byte[4];
@@ -46,7 +61,7 @@ internal sealed class RiffChunk
                         break;
 
                     chunk.Id = "LIST-" + Encoding.ASCII.GetString(listType);
-                    chunk.SubChunks.AddRange(ReadChunks(stream, chunkEnd));
+                    chunk.SubChunks.AddRange(ReadChunks(stream, chunkEnd, depth + 1));
                 }
             }
             else if (size > 0 && size <= 10 * 1024 * 1024)

@@ -29,6 +29,10 @@ internal sealed class AiffWriter : IMediaTagWriter
                 var chunkSize = BinaryPrimitives.ReadInt32BigEndian(chunkHeader[4..]);
                 var dataPos = inputStream.Position;
 
+                // See AiffReader: a negative size would move the cursor backwards and loop forever.
+                if (chunkSize < 0 || chunkSize > inputStream.Length - dataPos)
+                    break;
+
                 existingChunks.Add((chunkId, chunkSize, dataPos));
 
                 var nextPos = dataPos + chunkSize;

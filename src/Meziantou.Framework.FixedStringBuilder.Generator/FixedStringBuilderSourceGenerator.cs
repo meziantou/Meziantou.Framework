@@ -269,6 +269,32 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine("public void Clear() => _length = 0;");
         AppendLine();
 
+        AppendLine("/// <summary>");
+        AppendLine("/// Resets this string to an empty string, optionally overwriting the underlying buffer with zeros.");
+        AppendLine("/// </summary>");
+        AppendLine("/// <param name=\"zeroBuffer\">");
+        AppendLine("/// <see langword=\"true\"/> to overwrite the whole underlying buffer with <c>\'\\0\'</c>, so the characters that were");
+        AppendLine("/// written can no longer be read; <see langword=\"false\"/> to only reset the length, as <see cref=\"Clear()\"/> does.");
+        AppendLine("/// </param>");
+        AppendLine("/// <remarks>");
+        AppendLine("/// The whole buffer is overwritten, not only the characters up to <see cref=\"Length\"/>: a previous longer");
+        AppendLine("/// value can still be present after <see cref=\"Length\"/>.");
+        AppendLine("/// </remarks>");
+        AppendLine("public void Clear(bool zeroBuffer)");
+        AppendLine("{");
+        indent++;
+        AppendLine("if (zeroBuffer)");
+        AppendLine("{");
+        indent++;
+        AppendLine("AsUnsafeFullSpan().Clear();");
+        indent--;
+        AppendLine("}");
+        AppendLine();
+        AppendLine("_length = 0;");
+        indent--;
+        AppendLine("}");
+        AppendLine();
+
         AppendLine("public void AppendLiteral(ReadOnlySpan<char> value)");
         AppendLine("{");
         indent++;

@@ -1,5 +1,6 @@
 #pragma warning disable CA1869
 
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -34,6 +35,61 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
         builder.AddAppContextData();
         var snapshot = builder.BuildSnapshot();
         Assert.NotEmpty(snapshot);
+    }
+
+    [Fact]
+    public void PathEnvironmentVariableIsSplitOnThePlatformSeparator()
+    {
+        var builder = new ContextSnapshotBuilder();
+        builder.AddEnvironmentVariables(EnvironmentVariableTarget.Process);
+        var snapshot = builder.BuildSnapshot();
+
+        var variables = Assert.IsType<ImmutableSortedDictionary<string, object>>(snapshot["EnvironmentVariables.Process"]);
+        var expected = Environment.GetEnvironmentVariable("PATH")!.Split(Path.PathSeparator);
+
+        // Windows names the variable "Path" and the snapshot dictionary compares keys ordinally.
+        var pathKey = variables.Keys.Single(key => string.Equals(key, "PATH", StringComparison.OrdinalIgnoreCase));
+
+        Assert.Equal(expected, Assert.IsType<ImmutableArray<string>>(variables[pathKey]));
+    }
+
+    [Fact]
+    public void SecretShapedEnvironmentVariablesAreRedactedByDefault()
+    {
+        Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", "super-secret");
+        Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_PLAIN", "visible");
+        try
+        {
+            var builder = new ContextSnapshotBuilder();
+            builder.AddEnvironmentVariables(EnvironmentVariableTarget.Process);
+            var variables = Assert.IsType<ImmutableSortedDictionary<string, object>>(builder.BuildSnapshot()["EnvironmentVariables.Process"]);
+
+            Assert.Equal(ContextSnapshotBuilder.RedactedValue, variables["CONTEXTSNAPSHOT_TEST_API_TOKEN"]);
+            Assert.Equal("visible", variables["CONTEXTSNAPSHOT_TEST_PLAIN"]);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", value: null);
+            Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_PLAIN", value: null);
+        }
+    }
+
+    [Fact]
+    public void EnvironmentVariableRedactionCanBeOverridden()
+    {
+        Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", "super-secret");
+        try
+        {
+            var builder = new ContextSnapshotBuilder();
+            builder.AddEnvironmentVariables(EnvironmentVariableTarget.Process, _ => false);
+            var variables = Assert.IsType<ImmutableSortedDictionary<string, object>>(builder.BuildSnapshot()["EnvironmentVariables.Process"]);
+
+            Assert.Equal("super-secret", variables["CONTEXTSNAPSHOT_TEST_API_TOKEN"]);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", value: null);
+        }
     }
 
     [Fact]

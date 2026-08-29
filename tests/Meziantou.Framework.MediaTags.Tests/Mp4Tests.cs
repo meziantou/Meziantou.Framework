@@ -330,4 +330,49 @@ public sealed class Mp4Tests
         Assert.True(result.IsSuccess);
         Assert.Equal("All Fields Title", result.Value.Title);
     }
+
+    [Fact]
+    public void WriteTags_WritesTheMetaHandlerBox()
+    {
+        var tempFile = Path.GetTempFileName() + ".m4a";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.m4a"), tempFile, overwrite: true);
+
+            var writeResult = MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Handler Title" });
+            Assert.True(writeResult.IsSuccess);
+
+            var written = File.ReadAllBytes(tempFile);
+            var meta = IndexOfAtomType(written, "meta");
+            Assert.True(meta >= 0, "No meta atom in the written file.");
+
+            // meta payload: version/flags(4), then the handler box, then ilst
+            var handler = meta + 8;
+            Assert.Equal(33u, BinaryPrimitives.ReadUInt32BigEndian(written.AsSpan(handler, 4)));
+            Assert.Equal("hdlr", Encoding.Latin1.GetString(written, handler + 4, 4));
+            Assert.Equal("mdir", Encoding.Latin1.GetString(written, handler + 16, 4));
+            Assert.Equal("ilst", Encoding.Latin1.GetString(written, handler + 33 + 4, 4));
+
+            // The tags are still readable through the library itself
+            var readResult = MediaFile.ReadTags(tempFile);
+            Assert.True(readResult.IsSuccess);
+            Assert.Equal("Handler Title", readResult.Value.Title);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    private static int IndexOfAtomType(byte[] data, string atomType)
+    {
+        var needle = Encoding.Latin1.GetBytes(atomType);
+        for (var i = 4; i + 4 <= data.Length; i++)
+        {
+            if (data.AsSpan(i, 4).SequenceEqual(needle))
+                return i;
+        }
+
+        return -1;
+    }
 }

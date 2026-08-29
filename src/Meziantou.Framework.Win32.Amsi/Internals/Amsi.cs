@@ -4,8 +4,7 @@ using Windows.Win32.System.Antimalware;
 
 namespace Meziantou.Framework.Win32;
 
-[SupportedOSPlatform("windows")]
-#pragma warning disable CA1416 // The containing APIs are Windows-only.
+[SupportedOSPlatform("windows10.0.10240")]
 internal static partial class Amsi
 {
     internal static bool AmsiResultIsMalware(AmsiResult result)
@@ -51,4 +50,3 @@ internal static partial class Amsi
         return returnValue;
     }
 }
-#pragma warning restore CA1416

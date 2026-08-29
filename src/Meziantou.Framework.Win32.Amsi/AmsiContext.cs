@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Win32;
 /// }
 /// </code>
 /// </example>
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows10.0.10240")]
 public sealed class AmsiContext : IDisposable
 {
     internal readonly AmsiContextSafeHandle _handle;

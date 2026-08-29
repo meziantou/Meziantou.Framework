@@ -128,7 +128,7 @@ internal static partial class Symlink
             return false;
         }
 
-        internal static string GetSingleSymbolicLinkTarget(string path)
+        internal static string? GetSingleSymbolicLinkTarget(string path)
         {
             using var handle =
                 Interop.Kernel32.CreateFile(path,
@@ -138,6 +138,12 @@ internal static partial class Symlink
                 Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT | // Open the reparse point, not its target
                 Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS);   // Permit opening of directories
                                                                                // https://docs.microsoft.com/en-us/windows-hardware/drivers/ifs/fsctl-get-reparse-point
+
+            // The link can be deleted, renamed, or have its access denied between the IsSymbolicLink probe and this
+            // open. Report that as "no target" so the caller returns false, instead of letting DeviceIoControl fail
+            // with ERROR_INVALID_HANDLE and throw a Win32Exception out of a Try method.
+            if (handle.IsInvalid)
+                return null;
 
             var sizeHeader = Marshal.SizeOf<Interop.Kernel32.REPARSE_DATA_BUFFER_SYMLINK>();
             var bufferSize = sizeHeader + Interop.Kernel32.MAX_PATH;
@@ -210,7 +216,10 @@ internal static partial class Symlink
                         return target;
                     }
 
-                    if (bufferSize < buffer.Length)
+                    // The next iteration rents a buffer of at least bufferSize. If that does not exceed the buffer we
+                    // just used, ArrayPool returns the same bucket size and the call repeats identically, so the loop
+                    // would spin forever on a reparse buffer whose header declares a length it does not deliver.
+                    if (bufferSize <= buffer.Length)
                     {
                         throw new InvalidDataException($"FSCTL_GET_REPARSE_POINT did not return sufficient data ({bufferSize.ToString(CultureInfo.InvariantCulture)}) when provided buffer ({buffer.Length}).");
                     }

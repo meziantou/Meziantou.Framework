@@ -230,7 +230,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
 
         try
         {
-            using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
+            using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out, PipeOptions.CurrentUserOnly);
             client.Connect(GetConnectionTimeoutInMilliseconds());
 
             // type, process id, arg length, arg1, arg2, ...

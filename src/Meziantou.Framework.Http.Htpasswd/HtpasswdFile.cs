@@ -16,8 +16,11 @@ public sealed class HtpasswdFile
     private const int ShaCryptSaltMaxLength = 16;
     private const int ShaCryptDefaultRounds = 5000;
     private const int ShaCryptMinRounds = 1000;
-    private const int ShaCryptMaxRounds = 999_999_999;
+    // The format allows up to 999_999_999 rounds. Computing that many takes hours, so a hash asking for
+    // more rounds than we are willing to compute is rejected instead of being verified.
+    private const int ShaCryptMaxRounds = 10_000_000;
     private const string Sha1Prefix = "{SHA}";
+    private static readonly string[] BcryptPrefixes = ["$2a$", "$2b$", "$2y$"];
     private readonly Dictionary<string, string> _entries;
     private readonly bool _allowPlaintextPasswords;
 
@@ -118,11 +121,19 @@ public sealed class HtpasswdFile
     }
 
     /// <summary>
-    /// Loads and parses an htpasswd file from disk.
+    /// Loads and parses an htpasswd file from disk. Entries whose format is not recognized are rejected.
     /// </summary>
     /// <param name="file">The path of the htpasswd file.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static Task<HtpasswdFile> LoadAsync(string file) => LoadAsync(file, allowPlaintextPasswords: false);
+    public static Task<HtpasswdFile> LoadAsync(string file) => LoadAsync(file, allowPlaintextPasswords: false, CancellationToken.None);
+
+    /// <summary>
+    /// Loads and parses an htpasswd file from disk. Entries whose format is not recognized are rejected.
+    /// </summary>
+    /// <param name="file">The path of the htpasswd file.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static Task<HtpasswdFile> LoadAsync(string file, CancellationToken cancellationToken) => LoadAsync(file, allowPlaintextPasswords: false, cancellationToken);
 
     /// <summary>
     /// Loads and parses an htpasswd file from disk.
@@ -130,24 +141,34 @@ public sealed class HtpasswdFile
     /// <param name="file">The path of the htpasswd file.</param>
     /// <param name="allowPlaintextPasswords">
     /// <see langword="true"/> to compare an entry whose format is not recognized against the password as plaintext;
-    /// <see langword="false"/> to reject it.
+    /// <see langword="false"/> to reject it. Enabling this also accepts hashes the library does not implement, such as
+    /// traditional DES crypt, as plaintext passwords.
     /// </param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static async Task<HtpasswdFile> LoadAsync(string file, bool allowPlaintextPasswords)
+    public static async Task<HtpasswdFile> LoadAsync(string file, bool allowPlaintextPasswords, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(file);
 
-        await using var stream = File.OpenRead(file);
+        await using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true);
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-        return await LoadAsync(reader, allowPlaintextPasswords).ConfigureAwait(false);
+        return await LoadAsync(reader, allowPlaintextPasswords, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Loads and parses an htpasswd file from a <see cref="TextReader"/>.
+    /// Loads and parses an htpasswd file from a <see cref="TextReader"/>. Entries whose format is not recognized are rejected.
     /// </summary>
     /// <param name="file">The reader containing the htpasswd content.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static Task<HtpasswdFile> LoadAsync(TextReader file) => LoadAsync(file, allowPlaintextPasswords: false);
+    public static Task<HtpasswdFile> LoadAsync(TextReader file) => LoadAsync(file, allowPlaintextPasswords: false, CancellationToken.None);
+
+    /// <summary>
+    /// Loads and parses an htpasswd file from a <see cref="TextReader"/>. Entries whose format is not recognized are rejected.
+    /// </summary>
+    /// <param name="file">The reader containing the htpasswd content.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
+    public static Task<HtpasswdFile> LoadAsync(TextReader file, CancellationToken cancellationToken) => LoadAsync(file, allowPlaintextPasswords: false, cancellationToken);
 
     /// <summary>
     /// Loads and parses an htpasswd file from a <see cref="TextReader"/>.
@@ -157,12 +178,13 @@ public sealed class HtpasswdFile
     /// <see langword="true"/> to compare an entry whose format is not recognized against the password as plaintext;
     /// <see langword="false"/> to reject it.
     /// </param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A parsed <see cref="HtpasswdFile"/> instance.</returns>
-    public static async Task<HtpasswdFile> LoadAsync(TextReader file, bool allowPlaintextPasswords)
+    public static async Task<HtpasswdFile> LoadAsync(TextReader file, bool allowPlaintextPasswords, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(file);
 
-        var content = await file.ReadToEndAsync().ConfigureAwait(false);
+        var content = await file.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
         return Parse(content, allowPlaintextPasswords);
     }
 
@@ -192,7 +214,7 @@ public sealed class HtpasswdFile
             return false;
 
         var expectedPasswordHashSpan = expectedPasswordHash.AsSpan();
-        if (expectedPasswordHashSpan.StartsWith("$2", StringComparison.Ordinal))
+        if (IsBcryptHash(expectedPasswordHashSpan))
             return Bcrypt.Verify(password, expectedPasswordHashSpan);
 
         if (expectedPasswordHashSpan.StartsWith(Sha1Prefix, StringComparison.Ordinal))
@@ -214,6 +236,17 @@ public sealed class HtpasswdFile
             return false;
 
         return FixedTimeEquals(password, expectedPasswordHashSpan);
+    }
+
+    private static bool IsBcryptHash(ReadOnlySpan<char> hash)
+    {
+        foreach (var prefix in BcryptPrefixes)
+        {
+            if (hash.StartsWith(prefix, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>Compares two values in an amount of time that does not depend on where they start to differ.</summary>
@@ -291,7 +324,9 @@ public sealed class HtpasswdFile
             if (!int.TryParse(roundsText, NumberStyles.None, CultureInfo.InvariantCulture, out rounds))
                 return false;
 
-            rounds = Math.Clamp(rounds, ShaCryptMinRounds, ShaCryptMaxRounds);
+            if (rounds is < ShaCryptMinRounds or > ShaCryptMaxRounds)
+                return false;
+
             roundsCustom = true;
             remaining = remaining[(roundsSeparatorIndex + 1)..];
         }

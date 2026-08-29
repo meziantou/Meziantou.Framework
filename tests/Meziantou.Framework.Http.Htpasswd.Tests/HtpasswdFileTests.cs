@@ -61,6 +61,35 @@ public sealed class HtpasswdFileTests
     }
 
     [Fact]
+    public async Task LoadAsync_TextReader_ShouldObserveTheCancellationToken()
+    {
+        using var reader = new StringReader("alice:password");
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => HtpasswdFile.LoadAsync(reader, cts.Token));
+    }
+
+    [Fact]
+    public async Task LoadAsync_String_ShouldObserveTheCancellationToken()
+    {
+        var filePath = Path.GetTempFileName();
+
+        try
+        {
+            File.WriteAllText(filePath, "alice:password");
+            using var cts = new CancellationTokenSource();
+            await cts.CancelAsync();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => HtpasswdFile.LoadAsync(filePath, cts.Token));
+        }
+        finally
+        {
+            File.Delete(filePath);
+        }
+    }
+
+    [Fact]
     public void VerifyCredentials_String_ShouldValidateBcryptHash()
     {
         var hash = Bcrypt.HashPassword("password", workFactor: Bcrypt.MinWorkFactor, version: BcryptVersion.Revision2Y);
@@ -68,6 +97,29 @@ public sealed class HtpasswdFileTests
 
         Assert.True(htpasswd.VerifyCredentials("alice", "password"));
         Assert.False(htpasswd.VerifyCredentials("alice", "invalid"));
+    }
+
+    [Theory]
+    [InlineData(BcryptVersion.Revision2A)]
+    [InlineData(BcryptVersion.Revision2B)]
+    [InlineData(BcryptVersion.Revision2Y)]
+    public void VerifyCredentials_ShouldValidateTheDocumentedBcryptRevisions(BcryptVersion version)
+    {
+        var hash = Bcrypt.HashPassword("password", workFactor: Bcrypt.MinWorkFactor, version: version);
+        var htpasswd = HtpasswdFile.Parse($"alice:{hash}");
+
+        Assert.True(htpasswd.VerifyCredentials("alice", "password"));
+    }
+
+    [Theory]
+    [InlineData("$2$")]
+    [InlineData("$2x$")]
+    public void VerifyCredentials_ShouldNotRouteUndocumentedBcryptRevisionsToBcrypt(string prefix)
+    {
+        var hash = Bcrypt.HashPassword("password", workFactor: Bcrypt.MinWorkFactor, version: BcryptVersion.Revision2Y);
+        var htpasswd = HtpasswdFile.Parse($"alice:{prefix}{hash[4..]}");
+
+        Assert.False(htpasswd.VerifyCredentials("alice", "password"));
     }
 
     [Fact]
@@ -109,12 +161,46 @@ public sealed class HtpasswdFileTests
     }
 
     [Fact]
+    public void VerifyCredentials_String_ShouldValidateMd5CryptHash()
+    {
+        var htpasswd = HtpasswdFile.Parse("alice:$1$salt1234$HJCsv4hSeVLHo3hVyl4nh0");
+
+        Assert.True(htpasswd.VerifyCredentials("alice", "password"));
+        Assert.False(htpasswd.VerifyCredentials("alice", "invalid"));
+    }
+
+    [Theory]
+    [InlineData("alice:$1$salt1234$HJCsv4hSeVLHo3hVyl4nh1")]
+    [InlineData("alice:$1$salt1235$HJCsv4hSeVLHo3hVyl4nh0")]
+    [InlineData("alice:$1$salt1234$")]
+    [InlineData("alice:$1$salt1234")]
+    [InlineData("alice:$1$toolongsalt$HJCsv4hSeVLHo3hVyl4nh0")]
+    [InlineData("alice:$1$salt1234$HJCsv4hSeVLHo3hVyl4n!0")]
+    public void VerifyCredentials_ShouldRejectAMalformedOrWrongMd5CryptHash(string entry)
+    {
+        var htpasswd = HtpasswdFile.Parse(entry);
+
+        Assert.False(htpasswd.VerifyCredentials("alice", "password"));
+    }
+
+    [Fact]
     public void VerifyCredentials_String_ShouldValidateSha256CryptHash()
     {
         var htpasswd = HtpasswdFile.Parse("alice:$5$rounds=5000$toolongsaltstrin$Un/5jzAHMgOGZ5.mWJpuVolil07guHPvOW8mGRcvxa5");
 
         Assert.True(htpasswd.VerifyCredentials("alice", "This is just a test"));
         Assert.False(htpasswd.VerifyCredentials("alice", "invalid"));
+    }
+
+    [Theory]
+    [InlineData("$5$rounds=999$toolongsaltstrin$Un/5jzAHMgOGZ5.mWJpuVolil07guHPvOW8mGRcvxa5")]
+    [InlineData("$5$rounds=10000001$toolongsaltstrin$Un/5jzAHMgOGZ5.mWJpuVolil07guHPvOW8mGRcvxa5")]
+    [InlineData("$5$rounds=999999999$toolongsaltstrin$Un/5jzAHMgOGZ5.mWJpuVolil07guHPvOW8mGRcvxa5")]
+    public void VerifyCredentials_ShouldRejectShaCryptRoundsOutsideTheSupportedRange(string hash)
+    {
+        var htpasswd = HtpasswdFile.Parse($"alice:{hash}");
+
+        Assert.False(htpasswd.VerifyCredentials("alice", "This is just a test"));
     }
 
     [Fact]

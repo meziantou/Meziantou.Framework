@@ -154,6 +154,55 @@ public sealed class FixedStringBuilderTests
     }
 
     [Fact]
+    public void ClearWithZeroBufferErasesTheBuffer()
+    {
+        FixedStringBuilder8 value = "abcdefgh";
+        value.Clear(zeroBuffer: true);
+
+        Assert.Equal(0, value.Length);
+        Assert.Equal("", value.ToString(null, null));
+
+        var fullSpan = ((IFixedString)value).GetUnsafeFullSpan();
+        Assert.Equal(new string('\0', 8), fullSpan.ToString());
+    }
+
+    [Fact]
+    public void ClearWithZeroBufferErasesTheCharactersAfterTheCurrentLength()
+    {
+        FixedStringBuilder8 value = "abcdefgh";
+        value.Clear();
+        value.AppendLiteral("ab");
+        value.Clear(zeroBuffer: true);
+
+        var fullSpan = ((IFixedString)value).GetUnsafeFullSpan();
+        Assert.Equal(new string('\0', 8), fullSpan.ToString());
+    }
+
+    [Fact]
+    public void ClearWithoutZeroBufferKeepsTheBuffer()
+    {
+        FixedStringBuilder8 value = "abcdefgh";
+        value.Clear(zeroBuffer: false);
+
+        Assert.Equal(0, value.Length);
+
+        var fullSpan = ((IFixedString)value).GetUnsafeFullSpan();
+        Assert.Equal("abcdefgh", fullSpan.ToString());
+    }
+
+    [Fact]
+    public void ClearWithZeroBufferCanBeCalledThroughTheInterface()
+    {
+        FixedStringBuilder8 value = "abcdefgh";
+        Clear(ref value);
+
+        Assert.Equal(0, value.Length);
+        Assert.Equal(new string('\0', 8), ((IFixedString)value).GetUnsafeFullSpan().ToString());
+
+        static void Clear<T>(ref T value) where T : IFixedString => value.Clear(zeroBuffer: true);
+    }
+
+    [Fact]
     public void InterpolatedHoleSupportsASpan()
     {
         ReadOnlySpan<char> span = "World".AsSpan();

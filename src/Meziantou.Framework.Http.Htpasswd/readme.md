@@ -6,10 +6,14 @@ Supported password formats:
 
 - bcrypt (`$2a$`, `$2b$`, `$2y$`)
 - Apache MD5 (`$apr1$`)
+- MD5 crypt (`$1$`)
 - SHA-256 crypt (`$5$`)
 - SHA-512 crypt (`$6$`)
 - SHA-1 (`{SHA}`)
 - plaintext (opt-in, see [Plaintext passwords](#plaintext-passwords))
+
+`{SHA}` and plaintext entries are unsalted, so they are only there to read existing files. Use bcrypt for
+new ones.
 
 ```csharp
 var htpasswd = HtpasswdFile.Parse("""

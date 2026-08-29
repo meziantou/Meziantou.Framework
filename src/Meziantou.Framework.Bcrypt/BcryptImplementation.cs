@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace Meziantou.Framework;
@@ -209,6 +208,9 @@ internal sealed class BcryptImplementation
             if (minorRevision is not ('a' or 'b' or 'x' or 'y') || salt[3] != '$')
                 throw new FormatException("Invalid salt revision");
 
+            if (minorRevision is 'x')
+                throw new NotSupportedException(Bcrypt.Revision2XNotSupportedMessage);
+
             offset = 4;
         }
 
@@ -232,15 +234,16 @@ internal sealed class BcryptImplementation
         byte[] passwordBytes;
         if (minorRevision >= 'a')
         {
-            // For the 'a' revision and later, the password is null-terminated. This allows for correct handling of passwords that contain embedded null characters.
-            // For the 'b', 'x', and 'y' revisions, the password is not null-terminated, and any embedded null characters are treated as part of the password.
+            // The 'a' revision and later append a NUL terminator to the password before it is used as key material.
+            // Unlike the C implementations, the password is not truncated at an embedded NUL: .NET strings are not
+            // NUL-terminated, so every byte of the password takes part in the hash.
             passwordBytes = new byte[Utf8.GetByteCount(password) + 1];
             Utf8.GetBytes(password, passwordBytes);
             passwordBytes[^1] = 0; // Null terminator
         }
         else
         {
-            // For the original '2' revision, the password is not null-terminated, and any embedded null characters are treated as part of the password.
+            // The original '2' revision uses the password as-is, with no NUL terminator.
             passwordBytes = Utf8.GetBytes(password);
         }
 
@@ -255,11 +258,11 @@ internal sealed class BcryptImplementation
         return Verify(password.AsSpan(), hash.AsSpan());
     }
 
-    public static unsafe bool Verify(ReadOnlySpan<char> password, ReadOnlySpan<char> hash)
+    public static bool Verify(ReadOnlySpan<char> password, ReadOnlySpan<char> hash)
     {
         var hashBytes = Utf8.GetBytes(hash);
         var computedHashBytes = Utf8.GetBytes(HashPassword(password, hash));
-        return SecureEquals(hashBytes, computedHashBytes);
+        return CryptographicOperations.FixedTimeEquals(hashBytes, computedHashBytes);
     }
 
     private static string HashBytes(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<char> extractedSalt, char minorRevision, int workFactor)
@@ -281,21 +284,6 @@ internal sealed class BcryptImplementation
         result.Append(EncodeBase64(hashed, (BfCryptCiphertext.Length * 4) - 1));
 
         return result.ToString();
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    private static bool SecureEquals(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
-    {
-        if (left.Length != right.Length)
-            return false;
-
-        var diff = 0;
-        for (var i = 0; i < left.Length; i++)
-        {
-            diff |= left[i] ^ right[i];
-        }
-
-        return diff == 0;
     }
 
     // BCrypt uses its own Base64 variant ("./A-Za-z0-9") with no '=' padding.
@@ -425,6 +413,12 @@ internal sealed class BcryptImplementation
 
     private static uint StreamToWord(ReadOnlySpan<byte> data, ref int offset)
     {
+        // Only a legacy '$2$' hash combined with an empty password can produce empty key material: every other
+        // revision appends a NUL terminator. The C implementations read out of bounds here, so no reference
+        // result exists; treat the stream as zero bytes so hashing stays total instead of throwing.
+        if (data.IsEmpty)
+            return 0;
+
         uint word = 0;
         for (var i = 0; i < 4; i++)
         {

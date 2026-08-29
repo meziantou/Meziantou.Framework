@@ -45,7 +45,9 @@ public sealed class UseCreateParentDirectoryAnalyzer : DiagnosticAnalyzer
         if (!SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, analyzerContext.DirectoryType))
             return;
 
-        if (invocationOperation.Arguments.Length == 0)
+        // CreateParentDirectory() takes no options, so the Directory.CreateDirectory(path, unixCreateMode)
+        // overload cannot be rewritten without dropping the requested mode
+        if (invocationOperation.Arguments.Length != 1)
             return;
 
         // CreateParentDirectory returns void, so the DirectoryInfo must not be used

@@ -22,6 +22,14 @@ string str = sb.ToString();
 
 If a value does not fit in the configured capacity, operations throw `ArgumentException`.
 
+`Clear()` only resets the length: the characters stay in the underlying buffer. Use `Clear(zeroBuffer: true)` to also
+overwrite the whole buffer with `'\0'`.
+
+````csharp
+FixedStringBuilder16 sb = $"secret";
+sb.Clear(zeroBuffer: true);
+````
+
 ## Create a custom fixed-capacity type
 
 The package `Meziantou.Framework.FixedStringBuilder.Generator` includes a source generator. Declare a partial struct with `FixedStringBuilderAttribute`:

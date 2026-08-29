@@ -108,4 +108,88 @@ public sealed class FullPathEqualsStringRuleTests : FullPathAnalyzerTestBase
 
         await CreateAnalyzerTest<FullPathEqualsStringAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_ForEqualsWithFullPathValue()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static bool M(FullPath fullPath, FullPath other)
+                    {
+                        return {|MFFP0016:fullPath.Equals(other.Value)|};
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<FullPathEqualsStringAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_ForEqualsWithFullPathRawValue()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static bool M(FullPath fullPath, FullPath other)
+                    {
+                        return {|MFFP0016:fullPath.Equals(other.RawValue)|};
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<FullPathEqualsStringAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_ForEqualsWithFullPathToString()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static bool M(FullPath fullPath, FullPath other)
+                    {
+                        return {|MFFP0016:fullPath.Equals(other.ToString())|};
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<FullPathEqualsStringAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_ForEqualsWithFullPathExplicitCast()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static bool M(FullPath fullPath, FullPath other)
+                    {
+                        return {|MFFP0016:fullPath.Equals((string)other)|};
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<FullPathEqualsStringAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
 }

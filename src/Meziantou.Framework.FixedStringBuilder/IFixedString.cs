@@ -26,6 +26,20 @@ public interface IFixedString : ISpanFormattable
     void Clear();
 
     /// <summary>
+    /// Resets this string to an empty string, optionally overwriting the underlying buffer with zeros.
+    /// </summary>
+    /// <param name="zeroBuffer">
+    /// <see langword="true"/> to overwrite the whole underlying buffer with <c>'\0'</c>, so the characters that
+    /// were written can no longer be read through <see cref="GetUnsafeFullSpan"/>; <see langword="false"/> to only
+    /// reset the length, as <see cref="Clear()"/> does.
+    /// </param>
+    /// <remarks>
+    /// The whole buffer is overwritten, not only the characters up to <see cref="Length"/>: a previous longer value
+    /// can still be present after <see cref="Length"/>.
+    /// </remarks>
+    void Clear(bool zeroBuffer);
+
+    /// <summary>
     /// Returns a span of all the characters up to <see cref="MaxLength"/>.
     /// </summary>
     /// <returns>A span of characters that contains the characters of this string.</returns>

@@ -68,10 +68,12 @@ public static class MediaFile
 
         try
         {
-            var tempPath = filePath + ".tmp";
+            // Write through a symbolic link instead of replacing the link with a regular file
+            var targetPath = ResolveLinkTarget(filePath);
+            var tempPath = targetPath + ".tmp";
             try
             {
-                using (var inputStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var inputStream = new FileStream(targetPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (var outputStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
                 {
                     var result = WriteTagsCore(inputStream, outputStream, tags, format.Value);
@@ -81,22 +83,60 @@ public static class MediaFile
                     }
                 }
 
-                File.Delete(filePath);
-                File.Move(tempPath, filePath);
+                CopyFilePermissions(targetPath, tempPath);
+
+                // Moving with overwrite replaces the file in one step. Deleting the original first
+                // leaves no file at all if the process stops between the two operations.
+                File.Move(tempPath, targetPath, overwrite: true);
                 return MediaTagResult.Success();
             }
-            catch
+            finally
             {
-                if (File.Exists(tempPath))
-                {
-                    try { File.Delete(tempPath); } catch { /* best effort cleanup */ }
-                }
-                throw;
+                // Runs for a failed result as well as for an exception; after a successful move
+                // there is no temporary file left to remove.
+                DeleteIfExists(tempPath);
             }
         }
         catch (IOException ex)
         {
             return MediaTagResult.Failure(MediaTagError.IoError, ex.Message);
+        }
+    }
+
+    private static string ResolveLinkTarget(string filePath)
+    {
+        try
+        {
+            return File.ResolveLinkTarget(filePath, returnFinalTarget: true)?.FullName ?? filePath;
+        }
+        catch (IOException)
+        {
+            return filePath;
+        }
+    }
+
+    private static void CopyFilePermissions(string sourcePath, string destinationPath)
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        // A new file gets the default permissions, which can be more permissive than the original
+        File.SetUnixFileMode(destinationPath, File.GetUnixFileMode(sourcePath));
+    }
+
+    private static void DeleteIfExists(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+            // Best effort cleanup
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Best effort cleanup
         }
     }
 

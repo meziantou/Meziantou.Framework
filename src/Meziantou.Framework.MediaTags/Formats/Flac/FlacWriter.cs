@@ -8,6 +8,16 @@ internal sealed class FlacWriter : IMediaTagWriter
         {
             inputStream.Position = 0;
 
+            // The FLAC signature is not always at the start of the file: some taggers prepend an ID3v2
+            // tag, and FlacReader reads those files. Writing from offset 0 regardless would copy the tag
+            // header in place of the signature and parse the tag as metadata blocks, destroying the audio.
+            if (!FlacStreamLocator.TryGetStreamStart(inputStream, out var streamStart))
+                return MediaTagResult.Failure(MediaTagError.CorruptFile, "Not a FLAC file.");
+
+            // Copy anything preceding the signature verbatim
+            inputStream.Position = 0;
+            CopyBytes(inputStream, outputStream, streamStart);
+
             // Copy "fLaC" magic
             Span<byte> magic = stackalloc byte[4];
             if (inputStream.ReadAtLeast(magic, 4, throwOnEndOfStream: false) < 4)
@@ -17,7 +27,7 @@ internal sealed class FlacWriter : IMediaTagWriter
 
             // Read all existing metadata blocks (preserve non-tag blocks)
             var preservedBlocks = new List<FlacMetadataBlock>();
-            long audioDataStart = 4;
+            var audioDataStart = streamStart + 4;
             Span<byte> blockHeader = stackalloc byte[4];
 
             while (true)
@@ -89,6 +99,23 @@ internal sealed class FlacWriter : IMediaTagWriter
         catch (Exception ex)
         {
             return MediaTagResult.Failure(MediaTagError.IoError, ex.Message);
+        }
+    }
+
+    private static void CopyBytes(Stream source, Stream destination, long count)
+    {
+        if (count <= 0)
+            return;
+
+        var buffer = new byte[(int)Math.Min(count, 8192)];
+        while (count > 0)
+        {
+            var read = source.Read(buffer, 0, (int)Math.Min(count, buffer.Length));
+            if (read == 0)
+                break;
+
+            destination.Write(buffer, 0, read);
+            count -= read;
         }
     }
 

@@ -36,6 +36,33 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
+    public void GetNextOccurrence_ReturnsTheFirstOccurrence()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+        var startDate = new DateTime(2024, 01, 01, 09, 00, 00);
+
+        Assert.Equal(startDate, rrule.GetNextOccurrence(startDate));
+    }
+
+    [Fact]
+    public void GetNextOccurrence_ReturnsNullWhenTheRuleIsExhausted()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=0");
+        var startDate = new DateTime(2024, 01, 01, 09, 00, 00);
+
+        Assert.Null(rrule.GetNextOccurrence(startDate));
+    }
+
+    [Fact]
+    public void GetNextOccurrence_ReturnsNullWhenTheEndDateHasPassed()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20230101T000000Z");
+        var startDate = new DateTime(2024, 01, 01, 09, 00, 00);
+
+        Assert.Null(rrule.GetNextOccurrence(startDate));
+    }
+
+    [Fact]
     public void Weekly_Text01()
     {
         var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;UNTIL=20000131T140000Z;BYMONTH=1;BYDAY=TU,WE");

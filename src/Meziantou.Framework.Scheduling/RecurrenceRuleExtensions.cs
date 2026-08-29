@@ -8,6 +8,10 @@ public static class RecurrenceRuleExtensions
     public static DateTime? GetNextOccurrence(this IRecurrenceRule recurrenceRule, DateTime startDate)
     {
         ArgumentNullException.ThrowIfNull(recurrenceRule);
-        return recurrenceRule.GetNextOccurrences(startDate).FirstOrDefault();
+
+        foreach (var occurrence in recurrenceRule.GetNextOccurrences(startDate))
+            return occurrence;
+
+        return null;
     }
 }

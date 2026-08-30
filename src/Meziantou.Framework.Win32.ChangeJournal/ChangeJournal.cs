@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
@@ -142,10 +143,10 @@ public sealed class ChangeJournal : IDisposable
                 {
                     // The record must fit in what was actually read. Without this the record could claim any length, and the
                     // file name bound inside GetBufferedEntry would be checked against a length the buffer does not have.
-                    if (returnedSize < Marshal.SizeOf<USN_RECORD_COMMON_HEADER>())
+                    if (returnedSize < sizeof(USN_RECORD_COMMON_HEADER))
                         throw new InvalidDataException($"The change journal returned {returnedSize} bytes, which is too short to hold a record header");
 
-                    var header = Marshal.PtrToStructure<USN_RECORD_COMMON_HEADER>((nint)bufferPointer);
+                    var header = Unsafe.ReadUnaligned<USN_RECORD_COMMON_HEADER>(bufferPointer);
                     if (header.RecordLength > returnedSize)
                         throw new InvalidDataException($"The change journal returned a record of length {header.RecordLength}, which does not fit in the {returnedSize} bytes that were read");
 

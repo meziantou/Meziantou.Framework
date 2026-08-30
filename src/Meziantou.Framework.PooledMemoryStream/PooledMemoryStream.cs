@@ -30,6 +30,10 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     private long _capacity;
     private bool _isOpen;
 
+    // Mirrors MemoryStream: the byte[] ReadAsync overload hands back the previous task when the count matches, so a
+    // sequence of same-sized reads doesn't allocate a Task each time.
+    private Task<int>? _lastReadTask;
+
     // Cursor caching the last located segment so sequential access doesn't re-walk from segment 0 every call.
     // _cursorStart is the logical offset at which segment _cursorIndex begins (sum of Used of earlier segments).
     private int _cursorIndex;
@@ -100,6 +104,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         {
             EnsureOpen();
             ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, Array.MaxLength);
 
             _position = value;
         }
@@ -111,7 +116,10 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         get
         {
             EnsureOpen();
-            return (int)_capacity;
+
+            // _capacity is a long and can exceed int.MaxValue by up to one block on a stream near Array.MaxLength.
+            // Clamp rather than wrap to a negative value; a getter that throws would be worse.
+            return _capacity > int.MaxValue ? int.MaxValue : (int)_capacity;
         }
         set
         {
@@ -144,6 +152,8 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     public override long Seek(long offset, SeekOrigin loc)
     {
         EnsureOpen();
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, Array.MaxLength);
+
         var newPosition = loc switch
         {
             SeekOrigin.Begin => offset,
@@ -154,6 +164,8 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
         if (newPosition < 0)
             throw new IOException("An attempt was made to move the position before the beginning of the stream.");
+
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(newPosition, Array.MaxLength, nameof(offset));
 
         _position = newPosition;
         return newPosition;
@@ -213,7 +225,9 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
         try
         {
-            return Task.FromResult(Read(buffer, offset, count));
+            var read = Read(buffer, offset, count);
+            var lastTask = _lastReadTask;
+            return lastTask is not null && lastTask.Result == read ? lastTask : (_lastReadTask = Task.FromResult(read));
         }
         catch (Exception ex)
         {
@@ -333,14 +347,23 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     }
 
     /// <inheritdoc />
-    public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+    public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
     {
+        // Validate before entering the state machine so bad arguments throw synchronously, as MemoryStream does.
         ValidateCopyToArguments(destination, bufferSize);
         EnsureOpen();
-        cancellationToken.ThrowIfCancellationRequested();
-        if (_position >= _length)
-            return;
 
+        if (cancellationToken.IsCancellationRequested)
+            return Task.FromCanceled(cancellationToken);
+
+        if (_position >= _length)
+            return Task.CompletedTask;
+
+        return CopyToAsyncCore(destination, cancellationToken);
+    }
+
+    private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
+    {
         Locate(_position, out var segmentIndex, out var offset);
         var remaining = _length - _position;
         while (remaining > 0)
@@ -485,8 +508,8 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         if (source.IsEmpty)
             return;
 
-        var endPosition = _position + source.Length;
-        if (endPosition > Array.MaxLength)
+        // Subtract rather than add: _position + source.Length can overflow long for a far-out position.
+        if (_position > Array.MaxLength - source.Length)
             throw new IOException("Stream was too long.");
 
         if (_position > _length)
@@ -587,11 +610,11 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
     private void EnsureCapacityAtLeast(long target)
     {
+        // Compose the reservation out of configured tiers instead of rounding the whole thing up to the next one:
+        // GetContiguousBlockSize(70_000) is 1 MiB, so a 70 KB reservation used to allocate 15x what was asked for.
         while (_capacity < target)
         {
-            var remaining = target - _capacity;
-            var desired = Math.Max((int)Math.Min(remaining, Array.MaxLength), _options.GetBlockSize(_capacity));
-            AddSegment(_options.GetContiguousBlockSize(desired));
+            AddSegment(_options.GetReservationBlockSize(target - _capacity));
         }
     }
 
@@ -651,7 +674,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
             return Array.Empty<byte>();
 
         if (_segments.Count == 1)
-            return _segments[0].Array;
+            return ClearTail(_segments[0].Array);
 
         var size = _options.GetContiguousBlockSize((int)_length);
         var array = PooledBufferPool.Shared.Rent(size);
@@ -664,6 +687,15 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         _segments.Add(new Segment(array) { Used = (int)_length });
         _capacity = array.Length;
         ResetCursor();
+        return ClearTail(array);
+    }
+
+    // GetBuffer/TryGetBuffer hand out the whole array, not just [0, Length). Arrays come from a pool shared by every
+    // instance, so the region past Length would otherwise expose whatever its previous tenant wrote.
+    private byte[] ClearTail(byte[] array)
+    {
+        var length = (int)_length;
+        Array.Clear(array, length, array.Length - length);
         return array;
     }
 

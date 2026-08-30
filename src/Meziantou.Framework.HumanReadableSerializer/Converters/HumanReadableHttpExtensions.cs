@@ -54,7 +54,8 @@ public static class HumanReadableHttpExtensions
 
         if (requestOptions is not null && requestOptions.OmitProtocolVersion)
         {
-            options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.Version), new HumanReadableIgnoreAttribute { Condition = HumanReadableIgnoreCondition.Always });
+            options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.Version), new HumanReadableIgnoreAttribute { Condition = HumanReadableIgnoreCondition.WhenWritingDefault });
+            options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.VersionPolicy), new HumanReadableIgnoreAttribute { Condition = HumanReadableIgnoreCondition.WhenWritingDefault });
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete

@@ -4,14 +4,13 @@
 
 namespace Meziantou.Framework.Win32
 {
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public static class MarkOfTheWeb
     {
         public static void RemoveFileZone(string filePath) { }
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public static Meziantou.Framework.Win32.UrlZone GetFileZone(string filePath) => throw null;
         public static string? GetFileZoneContent(string filePath) => throw null;
         public static void SetFileZone(string filePath, Meziantou.Framework.Win32.UrlZone zone, string? referrerUrl = null, string? hostUrl = null) { }
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public static bool IsUntrusted(string filePath) => throw null;
     }
 

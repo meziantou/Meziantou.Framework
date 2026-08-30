@@ -17,11 +17,12 @@ namespace Meziantou.Framework.Win32;
 ///     Console.WriteLine("File is locked");
 /// }
 ///
-/// // Get processes locking a file
+/// // Get processes locking a file. The caller owns the returned Process instances.
 /// var processes = RestartManager.GetProcessesLockingFile(@"C:\path\to\file.txt");
 /// foreach (var process in processes)
 /// {
 ///     Console.WriteLine($"{process.ProcessName} (PID: {process.Id})");
+///     process.Dispose();
 /// }
 ///
 /// // Manual session management
@@ -98,13 +99,15 @@ public sealed class RestartManager : IDisposable
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
         string[] resources = [path];
-        var result = PInvoke.RmRegisterResources(_sessionHandle.SessionHandle, resources, rgApplications: default, rgsServiceNames: default);
+        using var handleScope = new SafeHandleValue(_sessionHandle);
+        var result = PInvoke.RmRegisterResources((uint)handleScope.Value, resources, rgApplications: default, rgsServiceNames: default);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
     }
 
     /// <summary>Registers multiple files to be monitored by the Restart Manager session.</summary>
     /// <param name="paths">An array of full file paths to register.</param>
+    /// <remarks>The Restart Manager persists registrations to the registry, so a single session can only hold a bounded number of paths. Registering a very large set fails with a <see cref="Win32Exception"/> for ERROR_WRITE_FAULT (29) rather than a dedicated error; split such sets across several sessions.</remarks>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="paths"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="paths"/> contains a <see langword="null"/> element.</exception>
     /// <exception cref="Win32Exception">Thrown when the registration fails.</exception>
@@ -114,7 +117,8 @@ public sealed class RestartManager : IDisposable
         ThrowIfContainsNull(paths);
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
-        var result = PInvoke.RmRegisterResources(_sessionHandle.SessionHandle, paths, rgApplications: default, rgsServiceNames: default);
+        using var handleScope = new SafeHandleValue(_sessionHandle);
+        var result = PInvoke.RmRegisterResources((uint)handleScope.Value, paths, rgApplications: default, rgsServiceNames: default);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
     }
@@ -128,9 +132,10 @@ public sealed class RestartManager : IDisposable
 
         // A single-element buffer is enough here. ERROR_MORE_DATA already means more than one process is
         // affected, and arrayCount reports the total number needed in both cases, so there is nothing to retry.
+        using var handleScope = new SafeHandleValue(_sessionHandle);
         uint arraySize = 1;
         var array = new RM_PROCESS_INFO[arraySize];
-        var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out var rebootReason);
+        var result = PInvoke.RmGetList((uint)handleScope.Value, out var arrayCount, ref arraySize, array, out var rebootReason);
         if (result is WIN32_ERROR.ERROR_SUCCESS or WIN32_ERROR.ERROR_MORE_DATA)
         {
             RebootReason = (RestartManagerRebootReason)rebootReason;
@@ -141,7 +146,7 @@ public sealed class RestartManager : IDisposable
     }
 
     /// <summary>Gets a list of processes that are currently locking the registered resources.</summary>
-    /// <returns>A read-only list of <see cref="Process"/> instances that are locking the registered resources.</returns>
+    /// <returns>A read-only list of <see cref="Process"/> instances that are locking the registered resources. The caller owns the returned instances and should dispose them.</returns>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public IReadOnlyList<Process> GetProcessesLockingResources()
     {
@@ -177,11 +182,12 @@ public sealed class RestartManager : IDisposable
     {
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
+        using var handleScope = new SafeHandleValue(_sessionHandle);
         uint arraySize = 10;
         while (true)
         {
             var array = new RM_PROCESS_INFO[arraySize];
-            var result = PInvoke.RmGetList(_sessionHandle.SessionHandle, out var arrayCount, ref arraySize, array, out var rebootReason);
+            var result = PInvoke.RmGetList((uint)handleScope.Value, out var arrayCount, ref arraySize, array, out var rebootReason);
             if (result == WIN32_ERROR.ERROR_SUCCESS)
             {
                 RebootReason = (RestartManagerRebootReason)rebootReason;
@@ -196,7 +202,7 @@ public sealed class RestartManager : IDisposable
     }
 
     /// <summary>Shuts down applications and services that are using the registered resources.</summary>
-    /// <param name="action">The shutdown options to use.</param>
+    /// <param name="action">The shutdown options to use. The Restart Manager documents this parameter as taking one or more of the defined options, so pass at least one flag.</param>
     /// <exception cref="Win32Exception">Thrown when the shutdown operation fails.</exception>
     public void Shutdown(RestartManagerShutdownType action)
     {
@@ -204,7 +210,7 @@ public sealed class RestartManager : IDisposable
     }
 
     /// <summary>Shuts down applications and services that are using the registered resources.</summary>
-    /// <param name="action">The shutdown options to use.</param>
+    /// <param name="action">The shutdown options to use. The Restart Manager documents this parameter as taking one or more of the defined options, so pass at least one flag.</param>
     /// <param name="statusCallback">An optional callback to receive progress updates during the shutdown operation. The callback is invoked by native code and must not throw; use <see cref="CancelCurrentTask"/> from another thread to stop the operation instead.</param>
     /// <exception cref="Win32Exception">Thrown when the shutdown operation fails.</exception>
     public void Shutdown(RestartManagerShutdownType action, RestartManagerWriteStatusCallback? statusCallback)
@@ -212,7 +218,8 @@ public sealed class RestartManager : IDisposable
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
         RM_WRITE_STATUS_CALLBACK? callback = statusCallback is null ? null : statusCallback.Invoke;
-        var result = PInvoke.RmShutdown(_sessionHandle.SessionHandle, (uint)action, callback);
+        using var handleScope = new SafeHandleValue(_sessionHandle);
+        var result = PInvoke.RmShutdown((uint)handleScope.Value, (uint)action, callback);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
     }
@@ -232,7 +239,8 @@ public sealed class RestartManager : IDisposable
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
         RM_WRITE_STATUS_CALLBACK? callback = statusCallback is null ? null : statusCallback.Invoke;
-        var result = PInvoke.RmRestart(_sessionHandle.SessionHandle, 0, callback);
+        using var handleScope = new SafeHandleValue(_sessionHandle);
+        var result = PInvoke.RmRestart((uint)handleScope.Value, 0, callback);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRestart failed ({result})");
     }
@@ -248,7 +256,8 @@ public sealed class RestartManager : IDisposable
     {
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
-        var result = PInvoke.RmCancelCurrentTask(_sessionHandle.SessionHandle);
+        using var handleScope = new SafeHandleValue(_sessionHandle);
+        var result = PInvoke.RmCancelCurrentTask((uint)handleScope.Value);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmCancelCurrentTask failed ({result})");
     }
@@ -330,7 +339,7 @@ public sealed class RestartManager : IDisposable
 
     /// <summary>Gets a list of processes that are currently locking the specified file.</summary>
     /// <param name="path">The full path of the file to check.</param>
-    /// <returns>A read-only list of <see cref="Process"/> instances that are locking the file.</returns>
+    /// <returns>A read-only list of <see cref="Process"/> instances that are locking the file. The caller owns the returned instances and should dispose them.</returns>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public static IReadOnlyList<Process> GetProcessesLockingFile(string path)
     {
@@ -341,8 +350,8 @@ public sealed class RestartManager : IDisposable
 
     /// <summary>Gets a list of processes that are currently locking any of the specified files.</summary>
     /// <param name="paths">An array of full file paths to check.</param>
-    /// <returns>A read-only list of <see cref="Process"/> instances that are locking at least one of the files.</returns>
-    /// <remarks>Prefer this method over calling <see cref="GetProcessesLockingFile(string)"/> in a loop: registering resources performs relatively expensive write operations, so registering all the files in a single session is significantly cheaper.</remarks>
+    /// <returns>A read-only list of <see cref="Process"/> instances that are locking at least one of the files. The caller owns the returned instances and should dispose them.</returns>
+    /// <remarks>Prefer this method over calling <see cref="GetProcessesLockingFile(string)"/> in a loop: registering resources performs relatively expensive write operations, so registering all the files in a single session is significantly cheaper, though a session can only hold a bounded number of paths - see <see cref="RegisterFiles(string[])"/>.</remarks>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="paths"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="paths"/> contains a <see langword="null"/> element.</exception>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>

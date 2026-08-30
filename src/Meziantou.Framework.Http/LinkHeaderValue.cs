@@ -80,13 +80,25 @@ public sealed class LinkHeaderValue
                 break;
 
             if (value[0] is not '<')
-                break;
+            {
+                // Not a link-value. Ignore it and resume at the next one rather than dropping the rest
+                // of the header: RFC 7230 section 7 requires empty list elements to be ignored.
+                value = SkipToNextLinkValue(value);
+                continue;
+            }
 
             // Remove the first '<'
             value = value[1..];
-            var index = value.IndexOf('>');
-            if (index == -1)
-                break;
+
+            // A URI-Reference cannot contain '<', so one appearing before the closing '>' means the
+            // current link-value is unterminated and that '<' starts the next one. Commas are legal
+            // inside a URI, so they cannot be used to delimit the target here.
+            var index = value.IndexOfAny('>', '<');
+            if (index == -1 || value[index] is '<')
+            {
+                value = SkipToNextLinkValue(value);
+                continue;
+            }
 
             var targetLink = value[..index].ToString();
             value = value[(index + 1)..];
@@ -222,6 +234,38 @@ public sealed class LinkHeaderValue
         {
             var index = value.IndexOfAnyExcept(' ', '\t');
             return index == -1 ? [] : value[index..];
+        }
+
+        // Resumes after the next ',' that is not inside a quoted string, so a malformed link-value
+        // only discards itself instead of everything that follows it.
+        static ReadOnlySpan<char> SkipToNextLinkValue(ReadOnlySpan<char> value)
+        {
+            var inQuotes = false;
+            for (var i = 0; i < value.Length; i++)
+            {
+                var c = value[i];
+                if (inQuotes)
+                {
+                    if (c is '\\')
+                    {
+                        i++;
+                    }
+                    else if (c is '"')
+                    {
+                        inQuotes = false;
+                    }
+                }
+                else if (c is '"')
+                {
+                    inQuotes = true;
+                }
+                else if (c is ',')
+                {
+                    return value[(i + 1)..];
+                }
+            }
+
+            return [];
         }
     }
 

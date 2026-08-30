@@ -3312,6 +3312,24 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_DuplicateCteName_ReturnsAQueryEngineError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    WITH c AS (SELECT Id FROM customers), c AS (SELECT Id FROM customers)
+                    SELECT Id FROM c
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "Duplicate common table expression name 'c'");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_InvalidQuery_ReturnsServerError()
     {
         var invalidQueryTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);

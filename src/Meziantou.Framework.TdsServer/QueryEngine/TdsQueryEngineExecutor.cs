@@ -277,7 +277,13 @@ internal sealed class TdsQueryEngineExecutor
                 query = ApplyColumnList(query, cte.ColumnList, scopeName: "CTE");
             }
 
-            result.Add(cteName, new TdsQueryRoot(cteName, query));
+            // The SQL parser only reports syntax errors, and a repeated CTE name is a semantic one, so the
+            // statement parses and lands here. Dictionary.Add would throw ArgumentException straight out of the
+            // engine, past the catch in ExecuteAsync.
+            if (!result.TryAdd(cteName, new TdsQueryRoot(cteName, query)))
+            {
+                throw new TdsQueryEngineException($"Duplicate common table expression name '{cteName}'.");
+            }
         }
 
         return result;

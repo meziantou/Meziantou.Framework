@@ -118,6 +118,14 @@ ref partial struct ValueStringBuilder
         }
     }
 
+    /// <summary>
+    /// Returns the characters written so far and disposes this instance, returning the rented buffer to the pool.
+    /// </summary>
+    /// <remarks>
+    /// This method is destructive. After it returns, the builder is reset to its default state: <see cref="Length"/>
+    /// and <see cref="Capacity"/> are 0, a second call returns an empty string, and appending starts a new buffer.
+    /// Use <see cref="AsSpan()"/> to read the content without disposing the builder.
+    /// </remarks>
     public override string ToString()
     {
         var s = _chars.Slice(0, _pos).ToString();

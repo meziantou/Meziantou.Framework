@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Meziantou.Framework.ChromiumTracing.Tests;
@@ -77,7 +78,57 @@ public sealed partial class WriterTests
         });
     }
 
+    [Fact]
+    public async Task WriteEventAsyncThrowsWhenTheEventIsNull()
+    {
+        await using var writer = ChromiumTracingWriter.Create(Stream.Null);
+
+        await Assert.ThrowsAsync<ArgumentNullException>(() => writer.WriteEventAsync(tracingEvent: null!));
+    }
+
+    [Fact]
+    public async Task AFailedWriteKeepsTheDocumentValid()
+    {
+        using var stream = new MemoryStream();
+        await using (var writer = ChromiumTracingWriter.Create(stream, streamOwned: false))
+        {
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent { Name = "before" });
+
+            await Assert.ThrowsAsync<NotSupportedException>(() => writer.WriteEventAsync(new ChromiumTracingInstantEvent
+            {
+                Name = "unserializable",
+                Arguments = new Dictionary<string, object?>(StringComparer.Ordinal) { ["value"] = new UnserializableArgument() },
+            }));
+
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent { Name = "after" });
+        }
+
+        using var document = JsonDocument.Parse(stream.ToArray());
+        Assert.Equal(2, document.RootElement.GetArrayLength());
+        Assert.Equal("before", document.RootElement[0].GetProperty("name").GetString());
+        Assert.Equal("after", document.RootElement[1].GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task AFailedFirstWriteKeepsTheDocumentValid()
+    {
+        using var stream = new MemoryStream();
+        await using (var writer = ChromiumTracingWriter.Create(stream, streamOwned: false))
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(() => writer.WriteEventAsync(new ChromiumTracingInstantEvent
+            {
+                Name = "unserializable",
+                Arguments = new Dictionary<string, object?>(StringComparer.Ordinal) { ["value"] = new UnserializableArgument() },
+            }));
+        }
+
+        using var document = JsonDocument.Parse(stream.ToArray());
+        Assert.Equal(0, document.RootElement.GetArrayLength());
+    }
+
     private sealed record CustomPayload(int Value);
+
+    private sealed class UnserializableArgument;
 
     [JsonSerializable(typeof(CustomPayload))]
     private sealed partial class CustomJsonContext : JsonSerializerContext

@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -181,20 +182,19 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "The json options are guarantee to contains the TypeResolver for events")]
     public async Task WriteEventAsync(ChromiumTracingEvent tracingEvent, CancellationToken cancellationToken = default)
     {
-        if (tracingEvent is null)
-            return;
+        ArgumentNullException.ThrowIfNull(tracingEvent);
 
-        if (_hasItems)
+        // Serialize the event before writing anything to the stream. Writing the item separator first would
+        // leave it dangling when the serialization fails, which makes the whole document unparsable.
+        var buffer = new ArrayBufferWriter<byte>();
+        buffer.Write(_hasItems ? ArrayItemSeparator : ArrayStart);
+        using (var jsonWriter = new Utf8JsonWriter(buffer))
         {
-            await _stream.WriteAsync(ArrayItemSeparator, cancellationToken).ConfigureAwait(false);
-        }
-        else
-        {
-            await _stream.WriteAsync(ArrayStart, cancellationToken).ConfigureAwait(false);
-            _hasItems = true;
+            JsonSerializer.Serialize(jsonWriter, tracingEvent, tracingEvent.GetType(), _jsonSerializerOptions);
         }
 
-        await JsonSerializer.SerializeAsync(_stream, tracingEvent, tracingEvent.GetType(), _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+        await _stream.WriteAsync(buffer.WrittenMemory, cancellationToken).ConfigureAwait(false);
+        _hasItems = true;
     }
 
     private static JsonSerializerOptions CreateSerializerOptions(JsonSerializerContext serializerContext)

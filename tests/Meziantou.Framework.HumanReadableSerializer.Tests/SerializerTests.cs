@@ -1150,6 +1150,26 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void DateTimeOffset_NegativeOffset() => AssertSerialization(new DateTimeOffset(2123, 4, 5, 6, 7, 8, TimeSpan.FromHours(-5)), "2123-04-05T06:07:08-05:00");
 
     [Fact]
+    public void DateTime_Milliseconds() => AssertSerialization(new DateTime(2123, 4, 5, 6, 7, 8, 9, DateTimeKind.Utc), "2123-04-05T06:07:08.0090000Z");
+
+    [Fact]
+    public void DateTime_SubMillisecondTicks() => AssertSerialization(new DateTime(2123, 4, 5, 6, 7, 8, DateTimeKind.Utc).AddTicks(5000), "2123-04-05T06:07:08.0005000Z");
+
+    [Fact]
+    public void DateTime_SingleTick() => AssertSerialization(new DateTime(2123, 4, 5, 6, 7, 8, DateTimeKind.Utc).AddTicks(1), "2123-04-05T06:07:08.0000001Z");
+
+    [Fact]
+    public void DateTimeOffset_SubMillisecondTicks() => AssertSerialization(new DateTimeOffset(2123, 4, 5, 6, 7, 8, TimeSpan.Zero).AddTicks(5000), "2123-04-05T06:07:08.0005000+00:00");
+
+    [Fact]
+    public void DateTime_ValuesDifferingBySubMillisecondTicksAreNotSerializedIdentically()
+    {
+        var value = new DateTime(2123, 4, 5, 6, 7, 8, DateTimeKind.Utc);
+
+        Assert.NotEqual(HumanReadableSerializer.Serialize(value), HumanReadableSerializer.Serialize(value.AddTicks(1)));
+    }
+
+    [Fact]
     public void Timespan_HoursMinutesSeconds() => AssertSerialization(new TimeSpan(1, 2, 3), "01:02:03");
 
     [Fact]
@@ -1752,6 +1772,43 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void InfiniteLoop_SelfReferencingCollection()
+    {
+        var value = new List<object>();
+        value.Add(value);
+
+        Assert.Throws<HumanReadableSerializerException>(() => HumanReadableSerializer.Serialize(value));
+    }
+
+    [Fact]
+    public void InfiniteLoop_CollectionsAlternatingWithObjects()
+    {
+        var value = new Recursive2();
+        value.Items.Add(value);
+
+        Assert.Throws<HumanReadableSerializerException>(() => HumanReadableSerializer.Serialize(value));
+    }
+
+    [Fact]
+    public void NestedCollectionsWithinMaxDepthAreSerialized()
+    {
+        object value = 1;
+        for (var i = 0; i < 8; i++)
+        {
+            value = new List<object> { value };
+        }
+
+        AssertSerialization(new Validation
+        {
+            Subject = value,
+            Options = new HumanReadableSerializerOptions { MaxDepth = 8 },
+            Expected = """
+                - - - - - - - - 1
+                """,
+        });
+    }
+
+    [Fact]
     public void Attributes()
     {
         AssertSerialization(new Validation
@@ -1782,6 +1839,31 @@ public sealed partial class SerializerTests : SerializerTestsBase
         var options = new HumanReadableSerializerOptions();
         AssertSerialization("", options, "");
         Assert.Throws<InvalidOperationException>(() => options.Converters.Add(new DummyConverter()));
+    }
+
+    [Fact]
+    public void MaxDepthViolationDoesNotConsumeDepthBudget()
+    {
+        var options = new HumanReadableSerializerOptions { MaxDepth = 1 };
+        var writer = new HumanReadableTextWriter(options);
+
+        writer.StartObject();
+        writer.WritePropertyName("a");
+        Assert.Throws<HumanReadableSerializerException>(writer.StartObject);
+        writer.WriteValue("1");
+        writer.EndObject();
+
+        // The failed StartObject must not have left the depth inflated, so an unrelated
+        // object written afterwards is still within the budget.
+        writer.StartObject();
+        writer.WritePropertyName("b");
+        writer.WriteValue("2");
+        writer.EndObject();
+
+        Assert.Equal("""
+            a: 1
+              b: 2
+            """, writer.ToString(), ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -2422,6 +2504,11 @@ public sealed partial class SerializerTests : SerializerTestsBase
     private sealed class Recursive
     {
         public Recursive Prop => this;
+    }
+
+    private sealed class Recursive2
+    {
+        public List<Recursive2> Items { get; } = [];
     }
 
     private sealed class ClassWithAttributes

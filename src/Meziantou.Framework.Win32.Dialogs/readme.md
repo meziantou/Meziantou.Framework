@@ -16,18 +16,24 @@ This library provides an `OpenFolderDialog` class that uses the native Windows I
 
 ## Usage
 
+Basic usage:
+
 ````c#
 using Meziantou.Framework.Win32;
 
-// Basic usage
 var dialog = new OpenFolderDialog();
 var result = dialog.ShowDialog();
 if (result == DialogResult.OK)
 {
     Console.WriteLine($"Selected folder: {dialog.SelectedPath}");
 }
+````
 
-// Advanced usage with all options
+Advanced usage with all options:
+
+````c#
+using Meziantou.Framework.Win32;
+
 var dialog = new OpenFolderDialog
 {
     Title = "Select a folder",
@@ -41,14 +47,19 @@ if (result == DialogResult.OK)
 {
     Console.WriteLine($"Selected folder: {dialog.SelectedPath}");
 }
+````
 
-// Show dialog with owner window (WPF example)
+Show the dialog with an owner window (WPF example):
+
+````c#
+using Meziantou.Framework.Win32;
+
 var dialog = new OpenFolderDialog
 {
     Title = "Sample Open Folder dialog",
     OkButtonLabel = "Select Folder"
 };
+
 var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
 var result = dialog.ShowDialog(hwnd);
 ````
-

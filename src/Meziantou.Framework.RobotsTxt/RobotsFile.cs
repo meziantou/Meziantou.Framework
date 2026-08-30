@@ -191,6 +191,11 @@ public sealed class RobotsFile
         private List<RobotsRule>? _currentRules;
         private TimeSpan? _currentCrawlDelay;
 
+        // Whether the current group has moved past its User-agent lines into its body. Crawl-delay
+        // is part of the body but is not stored in _currentRules, so the count of rules alone
+        // cannot tell a continued group from a new one.
+        private bool _currentGroupHasBody;
+
         // Completed data.
         private List<RobotsGroup>? _groups;
         private List<string>? _sitemaps;
@@ -249,8 +254,9 @@ public sealed class RobotsFile
 
             if (directive.Equals("User-agent", StringComparison.OrdinalIgnoreCase))
             {
-                // A User-agent line after rules have started means a new group.
-                if (_currentRules is { Count: > 0 })
+                // Consecutive User-agent lines share one group; a User-agent line that follows the
+                // group's body starts a new one.
+                if (_currentGroupHasBody)
                     FlushGroup();
 
                 _currentAgents ??= [];
@@ -258,16 +264,22 @@ public sealed class RobotsFile
             }
             else if (directive.Equals("Allow", StringComparison.OrdinalIgnoreCase))
             {
+                _currentGroupHasBody = true;
                 _currentRules ??= [];
                 _currentRules.Add(new RobotsRule(RobotsRuleKind.Allow, value.ToString()));
             }
             else if (directive.Equals("Disallow", StringComparison.OrdinalIgnoreCase))
             {
+                _currentGroupHasBody = true;
                 _currentRules ??= [];
                 _currentRules.Add(new RobotsRule(RobotsRuleKind.Disallow, value.ToString()));
             }
             else if (directive.Equals("Crawl-delay", StringComparison.OrdinalIgnoreCase))
             {
+                // The line belongs to the group body whether or not its value parses, so grouping
+                // does not depend on the validity of the delay.
+                _currentGroupHasBody = true;
+
                 if (TryParseCrawlDelay(value, out var crawlDelay))
                 {
                     _currentCrawlDelay = crawlDelay;
@@ -316,9 +328,7 @@ public sealed class RobotsFile
         {
             if (_currentAgents is null or { Count: 0 })
             {
-                _currentAgents = null;
-                _currentRules = null;
-                _currentCrawlDelay = null;
+                ResetGroup();
                 return;
             }
 
@@ -328,9 +338,15 @@ public sealed class RobotsFile
                 (IReadOnlyList<RobotsRule>?)_currentRules ?? [],
                 _currentCrawlDelay));
 
+            ResetGroup();
+        }
+
+        private void ResetGroup()
+        {
             _currentAgents = null;
             _currentRules = null;
             _currentCrawlDelay = null;
+            _currentGroupHasBody = false;
         }
 
         private static ReadOnlySpan<char> StripComment(ReadOnlySpan<char> line)

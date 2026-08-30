@@ -1215,4 +1215,42 @@ public sealed class UrlPatternTests
         Assert.NotNull(result);
         Assert.Equal("css/styles/main.css", result.Pathname.Groups["path"]);
     }
+
+    [Fact]
+    public void IsMatch_ComponentWithATrailingNewLine_ShouldNotMatch()
+    {
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Pathname = "/admin" })
+            .IsMatch(new UrlPatternInit { Pathname = "/admin\n" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Hostname = "example.com" })
+            .IsMatch(new UrlPatternInit { Hostname = "example.com\n" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Protocol = "https" })
+            .IsMatch(new UrlPatternInit { Protocol = "https\n" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Search = "a=1" })
+            .IsMatch(new UrlPatternInit { Search = "a=1\n" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Hash = "top" })
+            .IsMatch(new UrlPatternInit { Hash = "top\n" }));
+    }
+
+    [Fact]
+    public void IsMatch_TrailingNewLineAfterAGroupsFixedSuffix_ShouldNotMatch()
+    {
+        // The group itself is "[^/]+?", which matches "123\n" in JavaScript too, so the
+        // newline has to be rejected by the trailing literal rather than by the group.
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id/edit" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Pathname = "/books/123/edit" }));
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Pathname = "/books/123/edit\n" }));
+    }
+
+    [Fact]
+    public void IsMatch_ComponentWithALeadingNewLine_ShouldNotMatch()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/admin" });
+
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Pathname = "\n/admin" }));
+    }
 }

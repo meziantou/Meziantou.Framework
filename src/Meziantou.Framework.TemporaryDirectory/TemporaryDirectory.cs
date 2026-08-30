@@ -48,7 +48,9 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <remarks>
     /// The directory is created under the system temp path in a "MezTD" subdirectory.
     /// The directory name includes a timestamp and GUID to ensure uniqueness.
+    /// On Unix, the directories are created so that only the current user can access them.
     /// </remarks>
+    /// <exception cref="UnauthorizedAccessException">The "MezTD" directory already exists and is accessible to other users.</exception>
     public static TemporaryDirectory Create()
     {
         return Create(FullPath.Combine(Path.GetTempPath(), "MezTD"));
@@ -59,10 +61,13 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <returns>A new <see cref="TemporaryDirectory"/> instance.</returns>
     /// <remarks>
     /// The directory name includes a timestamp (yyyyMMdd_HHmmss) and GUID to ensure uniqueness.
+    /// On Unix, the directories are created so that only the current user can access them.
     /// </remarks>
+    /// <exception cref="UnauthorizedAccessException"><paramref name="rootDirectory"/> already exists and is accessible to other users.</exception>
     public static TemporaryDirectory Create(FullPath rootDirectory)
     {
         var folderName = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture) + "_" + Guid.NewGuid().ToString("N");
+        TemporaryPaths.EnsureRootDirectory(rootDirectory);
         var path = CreateUniqueDirectory(rootDirectory / folderName);
         return new TemporaryDirectory(path);
     }
@@ -171,7 +176,7 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     private static FullPath CreateUniqueDirectory(FullPath folderPath)
     {
         // The folder name includes a GUID, so it is unique and cannot collide with an existing directory.
-        Directory.CreateDirectory(folderPath);
+        TemporaryPaths.CreateDirectory(folderPath);
         return folderPath;
     }
 

@@ -142,6 +142,42 @@ public sealed partial class InMemoryLoggerTests
     }
 
     [Fact]
+    public void TryGetParameterValue_DoesNotReturnClrMembersOfTheState()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("plain message");
+
+        var log = logger.Logs.Informations.Single();
+
+        // Count and the indexer belong to FormattedLogValues, not to the logged message
+        Assert.False(log.TryGetParameterValue("Count", out var count));
+        Assert.Null(count);
+        Assert.False(log.TryGetParameterValue("Item", out var item));
+        Assert.Null(item);
+        Assert.Empty(log.GetAllParameterValues("Count"));
+    }
+
+    [Fact]
+    public void TryGetParameterValue_DoesNotReturnClrMembersOfADictionaryScope()
+    {
+        using var provider = new InMemoryLoggerProvider(new LoggerExternalScopeProvider());
+        var logger = provider.CreateLogger("my_category");
+        using (logger.BeginScope(new Dictionary<string, object?>(StringComparer.Ordinal) { ["Age"] = 52 }))
+        {
+            logger.LogInformation("Test");
+        }
+
+        var log = provider.Logs.Informations.Single();
+        Assert.True(log.TryGetParameterValue("Age", out var age));
+        Assert.Equal(52, age);
+        Assert.False(log.TryGetParameterValue("Comparer", out var comparer));
+        Assert.Null(comparer);
+        Assert.False(log.TryGetParameterValue("Keys", out var keys));
+        Assert.Null(keys);
+    }
+
+    [Fact]
     public void WithScope_Parallel()
     {
         using var provider = new InMemoryLoggerProvider(new LoggerExternalScopeProvider());

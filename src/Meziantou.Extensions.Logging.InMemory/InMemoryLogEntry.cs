@@ -157,12 +157,18 @@ public sealed class InMemoryLogEntry
                 }
             }
         }
-
-        var property = owner.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
-        if (property is not null)
+        else
         {
-            result = property.GetValue(owner);
-            return true;
+            // Reflection only applies to POCO and anonymous-type scopes such as BeginScope(new { UserId = 1 }).
+            // It must not run for key/value states: their own CLR members (Count, Keys, Comparer, the indexer, ...)
+            // are not log parameters, and reporting them would make a lookup succeed for a name that was never logged.
+            // Indexers are skipped as well, since GetValue would need index arguments.
+            var property = owner.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
+            if (property is not null && property.GetIndexParameters().Length is 0)
+            {
+                result = property.GetValue(owner);
+                return true;
+            }
         }
 
         result = null;

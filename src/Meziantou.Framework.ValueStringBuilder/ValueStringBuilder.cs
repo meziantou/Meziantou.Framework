@@ -99,7 +99,7 @@ ref partial struct ValueStringBuilder
 
     public readonly ReadOnlySpan<char> AsSpan() => _chars.Slice(0, _pos);
     public readonly ReadOnlySpan<char> AsSpan(int start) => _chars.Slice(start, _pos - start);
-    public readonly ReadOnlySpan<char> AsSpan(int start, int length) => _chars.Slice(start, length);
+    public readonly ReadOnlySpan<char> AsSpan(int start, int length) => _chars.Slice(0, _pos).Slice(start, length);
 
     public void Insert(int index, char value, int count)
     {

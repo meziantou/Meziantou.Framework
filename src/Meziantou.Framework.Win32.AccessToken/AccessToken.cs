@@ -46,7 +46,7 @@ public sealed class AccessToken : IDisposable
 
     private AccessToken(SafeFileHandle token)
     {
-        _token = token ?? throw new ArgumentNullException(nameof(token));
+        _token = token;
     }
 
     private SafeFileHandle Token

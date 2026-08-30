@@ -40,6 +40,9 @@ public enum ChangeReason : uint
     /// <summary>The file or directory's indexing state changed.</summary>
     IndexableChange = 0x00004000,
 
+    /// <summary>The file or directory's integrity status changed.</summary>
+    IntegrityChange = 0x00800000,
+
     /// <summary>A named data stream was extended.</summary>
     NamedDataExtend = 0x00000020,
 
@@ -71,5 +74,10 @@ public enum ChangeReason : uint
     TransactedChange = 0x00400000,
 
     /// <summary>All change reasons combined.</summary>
-    All = BasicInfoChange | Close | CompressionChange | DataExtend | DataOverwrite | DataTruncation | ExtendedAttributesChange | EncryptionChange | FileCreate | FileDelete | HardLinkChange | IndexableChange | NamedDataExtend | NamedDataOverwrite | NamedDataTruncation | ObjectIDChange | RenameNewName | RenameOldName | ReparsePointChange | StreamChange | SecurityChange | TransactedChange,
+    /// <remarks>
+    ///     This is passed to <c>FSCTL_READ_USN_JOURNAL</c> as its <c>ReasonMask</c>, and the change journal only returns a record
+    ///     when at least one of the requested bits is set on it. A reason missing from this list is therefore filtered out by the
+    ///     driver rather than merely losing its name, so every reason above has to be part of it.
+    /// </remarks>
+    All = BasicInfoChange | Close | CompressionChange | DataExtend | DataOverwrite | DataTruncation | ExtendedAttributesChange | EncryptionChange | FileCreate | FileDelete | HardLinkChange | IndexableChange | IntegrityChange | NamedDataExtend | NamedDataOverwrite | NamedDataTruncation | ObjectIDChange | RenameNewName | RenameOldName | ReparsePointChange | StreamChange | SecurityChange | TransactedChange,
 }

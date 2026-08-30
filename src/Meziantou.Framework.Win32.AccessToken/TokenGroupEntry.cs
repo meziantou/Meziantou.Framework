@@ -9,7 +9,7 @@ public sealed class TokenGroupEntry
 {
     internal TokenGroupEntry(SecurityIdentifier sid, GroupSidAttributes attributes)
     {
-        Sid = sid ?? throw new ArgumentNullException(nameof(sid));
+        Sid = sid;
         Attributes = attributes;
     }
 

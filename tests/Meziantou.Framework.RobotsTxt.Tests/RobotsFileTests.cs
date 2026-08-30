@@ -182,16 +182,16 @@ public sealed class RobotsFileTests
     [InlineData("\r")]
     public void Parse_BlankLineSeparatesGroups_ForEveryLineEnding(string newLine)
     {
-        var content = string.Join(newLine, "User-agent: A", "Crawl-delay: 5", "", "User-agent: B", "Disallow: /");
+        // Group A has no body directive, so only the blank line can end it.
+        var content = string.Join(newLine, "User-agent: A", "", "User-agent: B", "Crawl-delay: 5", "Disallow: /");
 
         var robots = RobotsFile.Parse(content);
 
         Assert.Equal(2, robots.Groups.Count);
         Assert.Equal(["A"], robots.Groups[0].UserAgents);
         Assert.Equal(["B"], robots.Groups[1].UserAgents);
-        Assert.True(robots.IsAllowed("A", "/x"));
-        Assert.False(robots.IsAllowed("B", "/x"));
-        Assert.Null(robots.GetCrawlDelay("B"));
+        Assert.Null(robots.GetCrawlDelay("A"));
+        Assert.Equal(TimeSpan.FromSeconds(5), robots.GetCrawlDelay("B"));
     }
 
     [Theory]
@@ -225,7 +225,7 @@ public sealed class RobotsFileTests
     [Fact]
     public async Task Parse_AgreesWithParseAsync_OnIdenticalContent()
     {
-        const string Content = "User-agent: A\nCrawl-delay: 5\n\nUser-agent: B\nDisallow: /\n";
+        const string Content = "User-agent: A\n\nUser-agent: B\nDisallow: /\n";
         using var reader = new StringReader(Content);
 
         var synchronous = RobotsFile.Parse(Content);
@@ -234,7 +234,6 @@ public sealed class RobotsFileTests
         Assert.Equal(synchronous.Groups.Count, asynchronous.Groups.Count);
         Assert.Equal(synchronous.IsAllowed("A", "/x"), asynchronous.IsAllowed("A", "/x"));
         Assert.Equal(synchronous.IsAllowed("B", "/x"), asynchronous.IsAllowed("B", "/x"));
-        Assert.Equal(synchronous.GetCrawlDelay("B"), asynchronous.GetCrawlDelay("B"));
     }
 
     [Fact]
@@ -245,6 +244,86 @@ public sealed class RobotsFileTests
         Assert.Equal(2, robots.Groups.Count);
         Assert.Equal(["A"], robots.Groups[0].UserAgents);
         Assert.Equal(["B"], robots.Groups[1].UserAgents);
+    }
+
+    [Fact]
+    public void Parse_UserAgentAfterCrawlDelay_StartsANewGroup()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: A
+            Crawl-delay: 5
+            User-agent: B
+            Disallow: /
+            """);
+
+        Assert.Equal(2, robots.Groups.Count);
+        Assert.Equal(["A"], robots.Groups[0].UserAgents);
+        Assert.Equal(["B"], robots.Groups[1].UserAgents);
+        Assert.Equal(TimeSpan.FromSeconds(5), robots.GetCrawlDelay("A"));
+        Assert.Null(robots.GetCrawlDelay("B"));
+        Assert.True(robots.IsAllowed("A", "/anything"));
+        Assert.False(robots.IsAllowed("B", "/anything"));
+    }
+
+    [Fact]
+    public void Parse_UserAgentAfterInvalidCrawlDelay_StartsANewGroup()
+    {
+        // Grouping is structural: it must not depend on whether the delay value parses.
+        var robots = RobotsFile.Parse("""
+            User-agent: A
+            Crawl-delay: notanumber
+            User-agent: B
+            Disallow: /
+            """);
+
+        Assert.Equal(2, robots.Groups.Count);
+        Assert.True(robots.IsAllowed("A", "/anything"));
+        Assert.False(robots.IsAllowed("B", "/anything"));
+    }
+
+    [Fact]
+    public void Parse_ConsecutiveUserAgents_StillShareOneGroup()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: A
+            User-agent: B
+            Crawl-delay: 5
+            Disallow: /
+            """);
+
+        var group = Assert.Single(robots.Groups);
+        Assert.Equal(["A", "B"], group.UserAgents);
+        Assert.Equal(TimeSpan.FromSeconds(5), group.CrawlDelay);
+    }
+
+    [Fact]
+    public void Parse_SitemapInsideAGroup_DoesNotStartANewGroup()
+    {
+        // Sitemap is a file-level record, not part of a group body.
+        var robots = RobotsFile.Parse("""
+            User-agent: A
+            Sitemap: https://example.com/sitemap.xml
+            User-agent: B
+            Disallow: /
+            """);
+
+        var group = Assert.Single(robots.Groups);
+        Assert.Equal(["A", "B"], group.UserAgents);
+        Assert.Equal(["https://example.com/sitemap.xml"], robots.Sitemaps);
+    }
+
+    [Fact]
+    public void Parse_UnknownDirectiveBetweenUserAgents_DoesNotStartANewGroup()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: A
+            Host: example.com
+            User-agent: B
+            Disallow: /
+            """);
+
+        var group = Assert.Single(robots.Groups);
+        Assert.Equal(["A", "B"], group.UserAgents);
     }
 
     // -------------------------------------------------------------------------
@@ -474,6 +553,54 @@ public sealed class RobotsFileTests
 
         var error = Assert.Single(robots.ParseErrors);
         Assert.Equal(RobotsParseErrorKind.InvalidCrawlDelay, error.Kind);
+    }
+
+    [Theory]
+    [InlineData("1e300")]
+    [InlineData("1E20")]
+    [InlineData("Infinity")]
+    [InlineData("-Infinity")]
+    [InlineData("NaN")]
+    [InlineData("922337203686")]
+    public void ParseErrors_CrawlDelayOutOfRange_RecordsErrorInsteadOfThrowing(string value)
+    {
+        var robots = RobotsFile.Parse($"User-agent: *\nCrawl-delay: {value}\nDisallow: /");
+
+        var error = Assert.Single(robots.ParseErrors);
+        Assert.Equal(RobotsParseErrorKind.InvalidCrawlDelay, error.Kind);
+        Assert.Null(robots.GetCrawlDelay("Bot"));
+    }
+
+    [Fact]
+    public void Parse_CrawlDelayAtTheUpperBound_IsAccepted()
+    {
+        var robots = RobotsFile.Parse("User-agent: *\nCrawl-delay: 922337203685\nDisallow: /");
+
+        Assert.Empty(robots.ParseErrors);
+        Assert.Equal(TimeSpan.FromSeconds(922_337_203_685d), robots.GetCrawlDelay("Bot"));
+    }
+
+    [Theory]
+    [InlineData("1,000")]
+    [InlineData("(5)")]
+    [InlineData("$5")]
+    public void ParseErrors_CrawlDelayIsNotANumericLiteral_RecordsError(string value)
+    {
+        // NumberStyles.Any used to read these as durations: "1,000" became 1000 seconds.
+        var robots = RobotsFile.Parse($"User-agent: *\nCrawl-delay: {value}\nDisallow: /");
+
+        var error = Assert.Single(robots.ParseErrors);
+        Assert.Equal(RobotsParseErrorKind.InvalidCrawlDelay, error.Kind);
+    }
+
+    [Fact]
+    public async Task ParseAsync_CrawlDelayOutOfRange_DoesNotFaultTheTask()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("User-agent: *\nCrawl-delay: 1e300\nDisallow: /\n"));
+
+        var robots = await RobotsFile.ParseAsync(stream, cancellationToken: XunitCancellationToken);
+
+        Assert.Equal(RobotsParseErrorKind.InvalidCrawlDelay, Assert.Single(robots.ParseErrors).Kind);
     }
 
     [Fact]

@@ -90,6 +90,37 @@ public class RestartManagerTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void RegisterFiles_WithNullPath_ThrowsArgumentException()
+    {
+        using var session = RestartManager.CreateSession();
+
+        var exception = Assert.Throws<ArgumentException>(() => session.RegisterFiles([@"C:\does-not-matter.txt", null!]));
+        Assert.Equal("paths", exception.ParamName);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void RegisterFiles_WithNullPath_DoesNotSilentlySkipTheRemainingPaths()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                using var session = RestartManager.CreateSession();
+
+                Assert.Throws<ArgumentException>(() => session.RegisterFiles([path, null!]));
+
+                // Nothing was registered, so the locked file must not be reported as locked by this session.
+                Assert.False(session.IsResourcesLocked());
+            }
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void JoinSession_WithUnknownKey_ReportsTheFailingFunction()
     {
         var exception = Assert.Throws<Win32Exception>(() => RestartManager.JoinSession("00000000000000000000000000000000"));

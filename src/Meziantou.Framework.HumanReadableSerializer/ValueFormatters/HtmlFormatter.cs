@@ -43,8 +43,11 @@ internal sealed class HtmlFormatter : ValueFormatter
             doc.WriteTo(stringWriter);
             writer.WriteValue(stringWriter.ToString());
         }
-        catch
+        catch (Exception ex) when (ex is not HumanReadableSerializerException)
         {
+            // The value could not be parsed or reformatted: fall back to the raw text.
+            // HumanReadableSerializerException is this library's own signal (for example
+            // MaxDepth) and must not be turned into a silent formatting fallback.
             writer.WriteValue(value);
         }
     }

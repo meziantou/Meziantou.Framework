@@ -75,9 +75,12 @@ public sealed class RestartManager : IDisposable
     /// <summary>Joins an existing Restart Manager session using the specified session key.</summary>
     /// <param name="sessionKey">The session key of an existing Restart Manager session.</param>
     /// <returns>A <see cref="RestartManager"/> instance representing the joined session.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="sessionKey"/> is <see langword="null"/>.</exception>
     /// <exception cref="Win32Exception">Thrown when joining the session fails.</exception>
     public static RestartManager JoinSession(string sessionKey)
     {
+        ArgumentNullException.ThrowIfNull(sessionKey);
+
         var result = PInvoke.RmJoinSession(out var handle, sessionKey);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmJoinSession failed ({result})");
@@ -103,10 +106,12 @@ public sealed class RestartManager : IDisposable
     /// <summary>Registers multiple files to be monitored by the Restart Manager session.</summary>
     /// <param name="paths">An array of full file paths to register.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="paths"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="paths"/> contains a <see langword="null"/> element.</exception>
     /// <exception cref="Win32Exception">Thrown when the registration fails.</exception>
     public void RegisterFiles(string[] paths)
     {
         ArgumentNullException.ThrowIfNull(paths);
+        ThrowIfContainsNull(paths);
         ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
         var result = PInvoke.RmRegisterResources(_sessionHandle.SessionHandle, paths, rgApplications: default, rgsServiceNames: default);
@@ -248,6 +253,15 @@ public sealed class RestartManager : IDisposable
             throw new Win32Exception((int)result, $"RmCancelCurrentTask failed ({result})");
     }
 
+    // A null entry is marshalled as a NULL pointer, which the Restart Manager accepts silently: it reports
+    // ERROR_SUCCESS and simply does not monitor that path, so the caller would be told the file is not locked.
+    private static void ThrowIfContainsNull(string[] paths)
+    {
+        var index = Array.IndexOf(paths, null);
+        if (index >= 0)
+            throw new ArgumentException($"The path at index {index} is null", nameof(paths));
+    }
+
     private static Process? TryGetProcess(RM_UNIQUE_PROCESS uniqueProcess)
     {
         Process process;
@@ -330,6 +344,7 @@ public sealed class RestartManager : IDisposable
     /// <returns>A read-only list of <see cref="Process"/> instances that are locking at least one of the files.</returns>
     /// <remarks>Prefer this method over calling <see cref="GetProcessesLockingFile(string)"/> in a loop: registering resources performs relatively expensive write operations, so registering all the files in a single session is significantly cheaper.</remarks>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="paths"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="paths"/> contains a <see langword="null"/> element.</exception>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public static IReadOnlyList<Process> GetProcessesLockingFiles(string[] paths)
     {

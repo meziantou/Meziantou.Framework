@@ -34,9 +34,6 @@ struct SafeHandleValue : IDisposable
         {
             ObjectDisposedException.ThrowIf(!HasValue, _safeHandle);
 
-            if (!HasValue)
-                throw new InvalidOperationException("Handle must have a value");
-
             return field;
         }
         private set;

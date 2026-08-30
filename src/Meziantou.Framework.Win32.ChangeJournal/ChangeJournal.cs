@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
@@ -86,14 +87,31 @@ public sealed class ChangeJournal : IDisposable
         if (handle.IsInvalid)
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
-        return new ChangeJournal(handle, unprivileged);
+        try
+        {
+            return new ChangeJournal(handle, unprivileged);
+        }
+        catch
+        {
+            // The constructor queries the journal, which fails on a volume that has no change journal support and while a
+            // deletion started by Delete(waitForCompletion: false) is still running. Ownership of the handle only passes to
+            // the caller once there is an instance to dispose, so it has to be closed here instead of waiting for the
+            // finalizer to reclaim an open volume handle.
+            handle.Dispose();
+            throw;
+        }
     }
 
     /// <summary>Gets change journal entries with the specified filter criteria.</summary>
     /// <param name="reasonFilter">A filter that specifies which types of changes to include.</param>
     /// <param name="returnOnlyOnClose">If <see langword="true"/>, returns only entries with the Close reason flag set.</param>
-    /// <param name="timeout">The time to wait for new entries before returning.</param>
+    /// <param name="timeout">The time to wait for new entries once the end of the journal is reached. Use <see cref="TimeSpan.Zero"/> to stop there instead of waiting.</param>
     /// <returns>A collection of change journal entries matching the filter criteria.</returns>
+    /// <remarks>
+    /// A non-zero <paramref name="timeout"/> makes the enumeration wait for a matching entry rather than end, so it never completes on
+    /// its own. The wait happens inside a synchronous call to the driver and cannot be cancelled, which means a thread enumerating with
+    /// a non-zero timeout stays blocked until an entry matches the filter.
+    /// </remarks>
     public IEnumerable<ChangeJournalEntry> GetEntries(ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
     {
         return new ChangeJournalEntries(this, new ReadChangeJournalOptions(initialUSN: null, reasonFilter, returnOnlyOnClose, timeout, _unprivileged));
@@ -103,8 +121,13 @@ public sealed class ChangeJournal : IDisposable
     /// <param name="currentUSN">The USN to start reading from.</param>
     /// <param name="reasonFilter">A filter that specifies which types of changes to include.</param>
     /// <param name="returnOnlyOnClose">If <see langword="true"/>, returns only entries with the Close reason flag set.</param>
-    /// <param name="timeout">The time to wait for new entries before returning.</param>
+    /// <param name="timeout">The time to wait for new entries once the end of the journal is reached. Use <see cref="TimeSpan.Zero"/> to stop there instead of waiting.</param>
     /// <returns>A collection of change journal entries matching the filter criteria.</returns>
+    /// <remarks>
+    /// A non-zero <paramref name="timeout"/> makes the enumeration wait for a matching entry rather than end, so it never completes on
+    /// its own. The wait happens inside a synchronous call to the driver and cannot be cancelled, which means a thread enumerating with
+    /// a non-zero timeout stays blocked until an entry matches the filter.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="currentUSN"/> is outside the valid range.</exception>
     public IEnumerable<ChangeJournalEntry> GetEntries(Usn currentUSN, ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
     {
@@ -117,10 +140,11 @@ public sealed class ChangeJournal : IDisposable
     /// <summary>Gets the change journal entry for a specific file or directory by path.</summary>
     /// <param name="path">The path to the file or directory.</param>
     /// <returns>The change journal entry for the specified file or directory.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public static ChangeJournalEntryVersion2or3 GetEntry(string path)
     {
-        using var handle = File.OpenHandle(path);
+        using var handle = FileHandleHelper.OpenFileOrDirectory(path);
         return GetEntry(handle);
     }
 
@@ -140,7 +164,15 @@ public sealed class ChangeJournal : IDisposable
             {
                 if (PInvoke.DeviceIoControl((HANDLE)handleScope.Value, PInvoke.FSCTL_READ_FILE_USN_DATA, lpInBuffer: null, 0, bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null))
                 {
-                    var header = Marshal.PtrToStructure<USN_RECORD_COMMON_HEADER>((nint)bufferPointer);
+                    // The record must fit in what was actually read. Without this the record could claim any length, and the
+                    // file name bound inside GetBufferedEntry would be checked against a length the buffer does not have.
+                    if (returnedSize < sizeof(USN_RECORD_COMMON_HEADER))
+                        throw new InvalidDataException($"The change journal returned {returnedSize} bytes, which is too short to hold a record header");
+
+                    var header = Unsafe.ReadUnaligned<USN_RECORD_COMMON_HEADER>(bufferPointer);
+                    if (header.RecordLength > returnedSize)
+                        throw new InvalidDataException($"The change journal returned a record of length {header.RecordLength}, which does not fit in the {returnedSize} bytes that were read");
+
                     return (ChangeJournalEntryVersion2or3)ChangeJournalEntries.GetBufferedEntry((nint)bufferPointer, header);
                 }
             }
@@ -254,6 +286,7 @@ public sealed class ChangeJournal : IDisposable
     /// <summary>Enables range tracking for the change journal.</summary>
     /// <param name="chunkSize">The granularity of tracked ranges.</param>
     /// <param name="fileSizeThreshold">The file size threshold to start tracking ranges for files with equal or larger size.</param>
+    /// <remarks>Range tracking is reflected by <see cref="JournalData.Flags"/>, <see cref="JournalData.RangeTrackChunkSize"/> and <see cref="JournalData.RangeTrackFileSizeThreshold"/> on <see cref="Data"/>.</remarks>
     public void EnableTrackModifiedRanges(ulong chunkSize, long fileSizeThreshold)
     {
         var trackData = new USN_TRACK_MODIFIED_RANGES
@@ -263,5 +296,6 @@ public sealed class ChangeJournal : IDisposable
             FileSizeThreshold = fileSizeThreshold,
         };
         Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.TrackModifiedRanges, ref trackData, initialBufferLength: 0);
+        RefreshJournalData();
     }
 }

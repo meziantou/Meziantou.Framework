@@ -320,7 +320,14 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
 
         if (commaIndex < 0)
         {
-            // Exact version: [1.0.0]
+            // Exact version: [1.0.0]. Both bounds have to be inclusive: "[1.0.0)", "(1.0.0]" and
+            // "(1.0.0)" describe a range no version can satisfy, so they are typos rather than
+            // ranges and are rejected instead of silently matching nothing.
+            if (!isMinInclusive || !isMaxInclusive)
+            {
+                return false;
+            }
+
             if (!SemanticVersion.TryParse(inner.Trim(), out var exactVersion))
             {
                 return false;
@@ -348,6 +355,26 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         if (!maxPart.IsEmpty)
         {
             if (!SemanticVersion.TryParse(maxPart, out maxVersion))
+            {
+                return false;
+            }
+        }
+
+        if (minVersion2 is not null && maxVersion is not null)
+        {
+            var comparison = minVersion2.CompareTo(maxVersion);
+
+            // An inverted range such as "[2.0.0,1.0.0]" matches nothing; reject it rather than
+            // hand back a range that silently never matches.
+            if (comparison > 0)
+            {
+                return false;
+            }
+
+            // Bounding a single version once inclusively and once exclusively contradicts itself.
+            // NuGet rejects "[1.0.0,1.0.0)" and "(1.0.0,1.0.0]" for the same reason, while
+            // accepting "(1.0.0,1.0.0)" and "[1.0.0,1.0.0]", so this matches its rule exactly.
+            if (comparison is 0 && isMinInclusive != isMaxInclusive)
             {
                 return false;
             }
@@ -462,6 +489,7 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         var isMaxInclusive = false;
 
         // Split by spaces for multiple constraints
+        var constraintCount = 0;
         foreach (var segment in SplitBySpace(value))
         {
             var part = segment.Trim();
@@ -474,9 +502,13 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
             {
                 return false;
             }
+
+            constraintCount++;
         }
 
-        if (minVersion is null && maxVersion is null)
+        // A constraint can legitimately leave both bounds open ("x.x" matches everything), so the
+        // number of constraints read is what tells us whether anything was understood.
+        if (constraintCount == 0)
         {
             return false;
         }
@@ -492,37 +524,39 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         var leftPart = value[..hyphenIndex].Trim();
         var rightPart = value[(hyphenIndex + 3)..].Trim(); // Skip " - "
 
-        if (!TryParseNpmPartialVersion(leftPart, out var leftMajor, out var leftMinor, out var leftPatch, out _))
+        if (!TryParseNpmPartialVersion(leftPart, out var left) || left.Major is null)
         {
             return false;
         }
 
-        if (!TryParseNpmPartialVersion(rightPart, out var rightMajor, out var rightMinor, out var rightPatch, out _))
+        if (!TryParseNpmPartialVersion(rightPart, out var right) || right.Major is null)
         {
             return false;
         }
 
-        var minVersion = new SemanticVersion(leftMajor, leftMinor ?? 0, leftPatch ?? 0);
+        // LowerBound keeps any prerelease and metadata labels: "1.0.0-alpha - 2.0.0" starts at
+        // 1.0.0-alpha, not at 1.0.0.
+        var minVersion = left.LowerBound;
 
         SemanticVersion maxVersion;
         bool isMaxInclusive;
 
-        if (rightPatch.HasValue)
+        if (right.Patch is not null)
         {
             // Full version on right: <=X.Y.Z
-            maxVersion = new SemanticVersion(rightMajor, rightMinor ?? 0, rightPatch.Value);
+            maxVersion = right.LowerBound;
             isMaxInclusive = true;
         }
-        else if (rightMinor.HasValue)
+        else if (right.Minor is { } rightMinor)
         {
             // Partial minor: <X.(Y+1).0
-            maxVersion = new SemanticVersion(rightMajor, rightMinor.Value + 1, 0);
+            maxVersion = new SemanticVersion(right.Major.Value, rightMinor + 1, 0);
             isMaxInclusive = false;
         }
         else
         {
             // Only major: <(X+1).0.0
-            maxVersion = new SemanticVersion(rightMajor + 1, 0, 0);
+            maxVersion = new SemanticVersion(right.Major.Value + 1, 0, 0);
             isMaxInclusive = false;
         }
 
@@ -547,12 +581,6 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         if (part.StartsWith("^".AsSpan(), StringComparison.Ordinal))
         {
             return TryParseCaretRange(part[1..].Trim(), ref minVersion, ref maxVersion, ref isMinInclusive, ref isMaxInclusive);
-        }
-
-        // Handle X-range patterns (1.x, 1.2.x, 1.*, etc.)
-        if (IsXRange(part))
-        {
-            return TryParseXRange(part, ref minVersion, ref maxVersion, ref isMinInclusive, ref isMaxInclusive);
         }
 
         // Parse operator and version
@@ -586,6 +614,22 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         }
 
         var versionPart = part[versionStart..].Trim();
+
+        // Only look for an X-range once the operator has been stripped, and only in the numeric
+        // core of the version: a prerelease or metadata label may legitimately contain an 'x'
+        // (">=1.0.0-exp"), and treating that as a wildcard rejects a perfectly valid constraint.
+        if (IsXRange(versionPart))
+        {
+            // npm only gives a wildcard a meaning of its own when it stands without a comparison
+            // operator, so ">=1.x" stays unsupported rather than being guessed at.
+            if (op is not NpmOperator.Exact)
+            {
+                return false;
+            }
+
+            return TryParseXRange(versionPart, ref minVersion, ref maxVersion, ref isMinInclusive, ref isMaxInclusive);
+        }
+
         if (!SemanticVersion.TryParse(versionPart, out var version))
         {
             return false;
@@ -641,23 +685,23 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         // ~1 := >=1.0.0 <2.0.0
         // ~0.2.3 := >=0.2.3 <0.3.0
 
-        if (!TryParseNpmPartialVersion(versionPart, out var major, out var minor, out var patch, out _))
+        if (!TryParseNpmPartialVersion(versionPart, out var partial) || partial.Major is null)
         {
             return false;
         }
 
-        minVersion = new SemanticVersion(major, minor ?? 0, patch ?? 0);
+        minVersion = partial.LowerBound;
         isMinInclusive = true;
 
-        if (minor.HasValue)
+        if (partial.Minor is { } minor)
         {
             // ~1.2.3 or ~1.2 -> <1.3.0
-            maxVersion = new SemanticVersion(major, minor.Value + 1, 0);
+            maxVersion = new SemanticVersion(partial.Major.Value, minor + 1, 0);
         }
         else
         {
-            // ~1 -> <2.0.0
-            maxVersion = new SemanticVersion(major + 1, 0, 0);
+            // ~1 or ~1.x -> <2.0.0
+            maxVersion = new SemanticVersion(partial.Major.Value + 1, 0, 0);
         }
 
         isMaxInclusive = false;
@@ -681,57 +725,48 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         // ^1.x := >=1.0.0 <2.0.0
         // ^0.x := >=0.0.0 <1.0.0
 
-        if (!TryParseNpmPartialVersion(versionPart, out var major, out var minor, out var patch, out _))
+        if (!TryParseNpmPartialVersion(versionPart, out var partial) || partial.Major is not { } major)
         {
             return false;
         }
 
-        minVersion = new SemanticVersion(major, minor ?? 0, patch ?? 0);
+        minVersion = partial.LowerBound;
         isMinInclusive = true;
 
-        if (major != 0)
+        maxVersion = (major, partial.Minor, partial.Patch) switch
         {
-            // ^1.x.x -> <2.0.0
-            maxVersion = new SemanticVersion(major + 1, 0, 0);
-        }
-        else if (minor.HasValue && minor.Value != 0)
-        {
-            // ^0.2.x -> <0.3.0
-            maxVersion = new SemanticVersion(0, minor.Value + 1, 0);
-        }
-        else if (patch.HasValue)
-        {
-            // ^0.0.3 -> <0.0.4
-            maxVersion = new SemanticVersion(0, 0, patch.Value + 1);
-        }
-        else if (minor.HasValue)
-        {
-            // ^0.0 -> <0.1.0
-            maxVersion = new SemanticVersion(0, 1, 0);
-        }
-        else
-        {
-            // ^0 -> <1.0.0
-            maxVersion = new SemanticVersion(1, 0, 0);
-        }
+            ( > 0, _, _) => new SemanticVersion(major + 1, 0, 0),            // ^1.2.3 -> <2.0.0
+            (0, > 0 and { } minor, _) => new SemanticVersion(0, minor + 1, 0), // ^0.2.3 -> <0.3.0
+            (0, _, { } patch) => new SemanticVersion(0, 0, patch + 1),       // ^0.0.3 -> <0.0.4
+            (0, not null, null) => new SemanticVersion(0, 1, 0),             // ^0.0 -> <0.1.0
+            _ => new SemanticVersion(1, 0, 0),                               // ^0 or ^0.x -> <1.0.0
+        };
 
         isMaxInclusive = false;
 
         return true;
     }
 
-    private static bool IsXRange(ReadOnlySpan<char> part)
+    private static bool IsXRange(ReadOnlySpan<char> version)
     {
-        // Check if the part contains 'x', 'X', or '*' as a version component
-        foreach (var c in part)
+        // A wildcard is a whole component of the numeric core. Scanning the raw characters instead
+        // would treat the 'x' in a label such as "1.0.0-exp" as a wildcard.
+        foreach (var component in new PartEnumerable(GetVersionCore(version)))
         {
-            if (c is 'x' or 'X' or '*')
+            if (component is "x" or "X" or "*")
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    // The numeric "major.minor.patch" part, without the prerelease or metadata labels.
+    private static ReadOnlySpan<char> GetVersionCore(ReadOnlySpan<char> version)
+    {
+        var labelIndex = version.IndexOfAny('-', '+');
+        return labelIndex < 0 ? version : version[..labelIndex];
     }
 
     private static bool TryParseXRange(
@@ -746,20 +781,16 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         // 1.* := >=1.0.0 <2.0.0
         // * := any version (handled separately)
 
-        if (!TryParseNpmPartialVersion(part, out var major, out var minor, out var patch, out var hasWildcard))
+        if (!TryParseNpmPartialVersion(part, out var partial) || !partial.HasWildcard)
         {
             return false;
         }
 
-        if (!hasWildcard)
+        // The major itself is a wildcard ("x", "x.x", "*"): every version matches. This is
+        // distinct from a literal zero major such as "0.x", which the caller must not confuse
+        // with it.
+        if (partial.Major is not { } major)
         {
-            return false;
-        }
-
-        // Full wildcard case
-        if (major == 0 && !minor.HasValue && !patch.HasValue && hasWildcard)
-        {
-            // This shouldn't happen as "*" is handled earlier, but just in case
             minVersion = null;
             maxVersion = null;
             isMinInclusive = false;
@@ -767,13 +798,13 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
             return true;
         }
 
-        minVersion = new SemanticVersion(major, minor ?? 0, patch ?? 0);
+        minVersion = partial.LowerBound;
         isMinInclusive = true;
 
-        if (minor.HasValue && !patch.HasValue)
+        if (partial.Minor is { } minor)
         {
             // 1.2.x -> <1.3.0
-            maxVersion = new SemanticVersion(major, minor.Value + 1, 0);
+            maxVersion = new SemanticVersion(major, minor + 1, 0);
         }
         else
         {
@@ -786,17 +817,24 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         return true;
     }
 
-    private static bool TryParseNpmPartialVersion(
-        ReadOnlySpan<char> value,
-        out int major,
-        out int? minor,
-        out int? patch,
-        out bool hasWildcard)
+    // A version with optional trailing components, as npm range syntax allows: "1", "1.2", "1.2.3",
+    // "1.x" and "1.2.3-beta.1" are all accepted. A null component is one that was absent or was a
+    // wildcard; HasWildcard tells the two apart.
+    [StructLayout(LayoutKind.Auto)]
+    private readonly struct NpmPartialVersion(int? major, int? minor, int? patch, bool hasWildcard, SemanticVersion lowerBound)
     {
-        major = 0;
-        minor = null;
-        patch = null;
-        hasWildcard = false;
+        public int? Major { get; } = major;
+        public int? Minor { get; } = minor;
+        public int? Patch { get; } = patch;
+        public bool HasWildcard { get; } = hasWildcard;
+
+        /// <summary>The lowest version the partial version denotes, keeping any prerelease and metadata labels.</summary>
+        public SemanticVersion LowerBound { get; } = lowerBound;
+    }
+
+    private static bool TryParseNpmPartialVersion(ReadOnlySpan<char> value, out NpmPartialVersion result)
+    {
+        result = default;
 
         value = value.Trim();
         if (value.IsEmpty)
@@ -810,89 +848,79 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
             value = value[1..];
         }
 
-        var parts = new PartEnumerable(value);
+        // The prerelease and metadata labels are kept aside rather than discarded, so that the
+        // lower bound of "^1.2.3-beta" is 1.2.3-beta and not 1.2.3.
+        var core = GetVersionCore(value);
+        var labels = value[core.Length..];
+
+        // The component enumerator does not yield a trailing empty component, so "1.2." has to be
+        // rejected here; an empty component anywhere else is caught in the loop below.
+        if (core.IsEmpty || core[^1] is '.')
+        {
+            return false;
+        }
+
+        int? major = null;
+        int? minor = null;
+        int? patch = null;
+        var hasWildcard = false;
         var partIndex = 0;
 
-        foreach (var part in parts)
+        foreach (var component in new PartEnumerable(core))
         {
-            if (part.IsEmpty)
+            // A version has at most three components, and every one of them must be present.
+            if (partIndex > 2 || component.IsEmpty)
             {
                 return false;
             }
 
-            var isWildcard = part is "x" or "X" or "*";
-            if (isWildcard)
+            if (component is "x" or "X" or "*")
             {
                 hasWildcard = true;
             }
-
-            switch (partIndex)
+            else if (!TryParseInt(component, out var number))
             {
-                case 0:
-                    if (isWildcard)
-                    {
-                        major = 0;
-                        hasWildcard = true;
-                    }
-                    else if (!TryParseInt(part, out major))
-                    {
-                        return false;
-                    }
-
-                    break;
-                case 1:
-                    if (isWildcard)
-                    {
-                        hasWildcard = true;
-                    }
-                    else if (TryParseInt(part, out var minorValue))
-                    {
-                        minor = minorValue;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-
-                    break;
-                case 2:
-                    if (isWildcard)
-                    {
-                        hasWildcard = true;
-                    }
-                    else
-                    {
-                        // Handle prerelease/metadata suffix: "3-alpha" or "3+build"
-                        var patchPart = part;
-                        var dashIndex = patchPart.IndexOfAny(['-', '+']);
-                        if (dashIndex >= 0)
-                        {
-                            patchPart = patchPart[..dashIndex];
-                        }
-
-                        if (TryParseInt(patchPart, out var patchValue))
-                        {
-                            patch = patchValue;
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                    }
-
-                    break;
+                return false;
+            }
+            else if (!hasWildcard)
+            {
+                // Everything after the first wildcard is a wildcard too: npm reads "1.x.2" as "1.x".
+                switch (partIndex)
+                {
+                    case 0:
+                        major = number;
+                        break;
+                    case 1:
+                        minor = number;
+                        break;
+                    default:
+                        patch = number;
+                        break;
+                }
             }
 
             partIndex++;
-
-            // Stop after patch version
-            if (partIndex > 2)
-            {
-                break;
-            }
         }
 
-        return partIndex >= 1;
+        if (partIndex is 0)
+        {
+            return false;
+        }
+
+        SemanticVersion lowerBound;
+        if (labels.IsEmpty)
+        {
+            lowerBound = new SemanticVersion(major ?? 0, minor ?? 0, patch ?? 0);
+        }
+        else if (patch is null || !SemanticVersion.TryParse(value, out lowerBound!))
+        {
+            // Labels only attach to a complete "major.minor.patch", and the whole thing has to be a
+            // valid semantic version. Delegating that check keeps one definition of what is valid.
+            return false;
+        }
+
+        result = new NpmPartialVersion(major, minor, patch, hasWildcard, lowerBound);
+        return true;
     }
 
     private static bool TryParseInt(ReadOnlySpan<char> value, out int result)

@@ -9,55 +9,66 @@ namespace Meziantou.Framework.Win32.Natives;
 
 internal static class Win32DeviceControl
 {
+    /// <summary>
+    ///     Size to grow to when the caller asked for no output buffer at all but the control code turns out to want one, so that
+    ///     doubling has something to work from.
+    /// </summary>
+    private const int MinimumOutputBufferLength = 1024;
+
+    /// <summary>
+    ///     Upper bound on the output buffer, so a driver that keeps reporting ERROR_MORE_DATA cannot grow it without limit.
+    /// </summary>
+    private const int MaximumOutputBufferLength = 1024 * 1024;
+
     [SupportedOSPlatform("windows5.1.2600")]
     internal static unsafe Span<byte> ControlWithInput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure, int initialBufferLength) where TStructure : unmanaged
     {
-        uint returnedSize;
-        bool controlResult;
+        var structureLength = (uint)Marshal.SizeOf<TStructure>();
+        byte[] buffer = initialBufferLength is 0 ? [] : new byte[initialBufferLength];
 
-        var buffer = initialBufferLength is 0 ? Array.Empty<byte>() : new byte[initialBufferLength];
         fixed (void* structurePointer = &structure)
         {
             using var handleScope = new SafeHandleValue(handle);
-            fixed (void* bufferPointer = buffer)
+            while (true)
             {
-                controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, structurePointer, (uint)Marshal.SizeOf(structure), bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
-            }
+                uint returnedSize;
+                bool controlResult;
+                fixed (void* bufferPointer = buffer)
+                {
+                    controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, structurePointer, structureLength, bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
+                }
 
-            if (!controlResult)
-            {
+                if (controlResult)
+                    return buffer.AsSpan(0, (int)returnedSize);
+
                 var errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == (int)WIN32_ERROR.ERROR_MORE_DATA)
-                {
-                    buffer = new byte[returnedSize];
-                    fixed (void* bufferPointer = buffer)
-                    {
-                        controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, structurePointer, (uint)Marshal.SizeOf(structure), bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
-                    }
-
-                    if (!controlResult)
-                        throw new Win32Exception(Marshal.GetLastWin32Error());
-                }
-                else
-                {
+                if (errorCode is not (int)WIN32_ERROR.ERROR_MORE_DATA || buffer.Length >= MaximumOutputBufferLength)
                     throw new Win32Exception(errorCode);
-                }
+
+                // ERROR_MORE_DATA reports the number of bytes written, not the number required, so it is never larger than the
+                // buffer that just proved too small. Grow geometrically instead of trusting returnedSize to be large enough.
+                buffer = new byte[Math.Min(Math.Max(buffer.Length * 2, MinimumOutputBufferLength), MaximumOutputBufferLength)];
             }
         }
-
-        return buffer.AsSpan(0, (int)returnedSize);
     }
 
     [SupportedOSPlatform("windows5.1.2600")]
     internal static unsafe void ControlWithOutput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure) where TStructure : unmanaged
     {
+        var structureLength = (uint)Marshal.SizeOf<TStructure>();
         fixed (void* pStructure = &structure)
         {
             uint returnedSize = 0;
             using var handleScope = new SafeHandleValue(handle);
-            var controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, lpInBuffer: null, 0u, pStructure, (uint)Marshal.SizeOf<TStructure>(), &returnedSize, lpOverlapped: null);
+            var controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, lpInBuffer: null, 0u, pStructure, structureLength, &returnedSize, lpOverlapped: null);
             if (!controlResult)
                 throw new Win32Exception(Marshal.GetLastWin32Error());
+
+            // A driver that does not know the whole structure fills in only the prefix it does know and reports how much it
+            // wrote. Ignoring that would hand back a structure whose newer fields are zero, which is indistinguishable from a
+            // driver that really did report zero for them.
+            if (returnedSize < structureLength)
+                throw new InvalidDataException($"The device returned {returnedSize.ToString(CultureInfo.InvariantCulture)} bytes for a {structureLength.ToString(CultureInfo.InvariantCulture)}-byte structure");
         }
     }
 }

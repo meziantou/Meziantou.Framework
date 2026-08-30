@@ -19,7 +19,7 @@ internal sealed class ProjFSSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
 
     protected override bool ReleaseHandle()
     {
-        var result = NativeMethods.PrjStopVirtualizing(handle);
-        return result.IsSuccess;
+        NativeMethods.PrjStopVirtualizing(handle);
+        return true;
     }
 }

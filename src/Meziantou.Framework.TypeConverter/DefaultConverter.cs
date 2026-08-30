@@ -67,21 +67,13 @@ public class DefaultConverter : IConverter
 
     private static bool NormalizeHexString(ref string? s)
     {
-        if (s is null)
-            return false;
-
-        switch (s)
+        if (s is ['0', 'x' or 'X', .. var rest])
         {
-            case ['x' or 'X', .. var rest]:
-                s = rest;
-                return true;
-            case ['0', 'x' or 'X', .. var rest]:
-                s = rest;
-                return true;
-
-            default:
-                return false;
+            s = rest;
+            return true;
         }
+
+        return false;
     }
 
     private static void GetBytes(decimal d, byte[] buffer)
@@ -468,12 +460,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return ulong.TryParse(s, styles, provider, out value);
     }
@@ -501,12 +489,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return ushort.TryParse(s, styles, provider, out value);
     }
@@ -534,14 +518,15 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
         if (NormalizeHexString(ref s))
         {
-            styles |= NumberStyles.AllowHexSpecifier;
+            // Hexadecimal notation is not supported by floating-point types
+            value = 0;
+            return false;
         }
 
-        return decimal.TryParse(s, styles, provider, out value);
+        return decimal.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out value);
     }
 
     protected virtual bool TryConvert(object? input, IFormatProvider? provider, out float value)
@@ -567,14 +552,15 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
         if (NormalizeHexString(ref s))
         {
-            styles |= NumberStyles.AllowHexSpecifier;
+            // Hexadecimal notation is not supported by floating-point types
+            value = 0;
+            return false;
         }
 
-        return float.TryParse(s, styles, provider, out value);
+        return float.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out value);
     }
 
     protected virtual bool TryConvert(object? input, IFormatProvider? provider, out double value)
@@ -600,14 +586,15 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
         if (NormalizeHexString(ref s))
         {
-            styles |= NumberStyles.AllowHexSpecifier;
+            // Hexadecimal notation is not supported by floating-point types
+            value = 0;
+            return false;
         }
 
-        return double.TryParse(s, styles, provider, out value);
+        return double.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out value);
     }
 
     protected virtual bool TryConvert(object? input, IFormatProvider? provider, out char value)
@@ -687,12 +674,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return uint.TryParse(s, styles, provider, out value);
     }
@@ -720,12 +703,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return byte.TryParse(s, styles, provider, out value);
     }
@@ -753,12 +732,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return sbyte.TryParse(s, styles, provider, out value);
     }
@@ -798,12 +773,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return short.TryParse(s, styles, provider, out value);
     }
@@ -843,12 +814,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return int.TryParse(s, styles, provider, out value);
     }
@@ -888,12 +855,8 @@ public class DefaultConverter : IConverter
             }
         }
 
-        var styles = NumberStyles.Integer;
         var s = Convert.ToString(input, provider);
-        if (NormalizeHexString(ref s))
-        {
-            styles |= NumberStyles.AllowHexSpecifier;
-        }
+        var styles = NormalizeHexString(ref s) ? NumberStyles.HexNumber : NumberStyles.Integer;
 
         return long.TryParse(s, styles, provider, out value);
     }

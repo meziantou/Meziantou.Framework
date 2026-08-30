@@ -325,4 +325,115 @@ public class DefaultConverterTests_StringTo
         Assert.True(converted);
         Assert.False(value);
     }
+
+    [Theory]
+    [InlineData("0x1F", 31)]
+    [InlineData("0X1F", 31)]
+    [InlineData("0x0", 0)]
+    [InlineData("0xff", 255)]
+    public void TryConvert_HexStringToInt32(string text, int expected)
+    {
+        var converter = new DefaultConverter();
+        var cultureInfo = CultureInfo.InvariantCulture;
+        var converted = converter.TryChangeType(text, cultureInfo, out int value);
+        Assert.True(converted);
+        Assert.Equal(expected, value);
+    }
+
+    [Theory]
+    [InlineData("0x1F", 31L)]
+    [InlineData("0xFFFFFFFFFF", 1099511627775L)]
+    public void TryConvert_HexStringToInt64(string text, long expected)
+    {
+        var converter = new DefaultConverter();
+        var cultureInfo = CultureInfo.InvariantCulture;
+        var converted = converter.TryChangeType(text, cultureInfo, out long value);
+        Assert.True(converted);
+        Assert.Equal(expected, value);
+    }
+
+    [Theory]
+    [InlineData("0x0A")]
+    [InlineData("0x7F")]
+    public void TryConvert_HexStringToByte(string text)
+    {
+        var converter = new DefaultConverter();
+        var cultureInfo = CultureInfo.InvariantCulture;
+        var converted = converter.TryChangeType(text, cultureInfo, out byte value);
+        Assert.True(converted);
+        Assert.Equal(Convert.ToByte(text[2..], fromBase: 16), value);
+    }
+
+    // A string starting with 'x' or '0x' used to combine NumberStyles.AllowHexSpecifier with
+    // NumberStyles.Integer, which the BCL rejects with an ArgumentException.
+    [Theory]
+    [InlineData("xyz")]
+    [InlineData("X-Men")]
+    [InlineData("x")]
+    [InlineData("0x")]
+    [InlineData("0xZZ")]
+    public void TryConvert_StringStartingWithX_DoesNotThrow(string text)
+    {
+        var converter = new DefaultConverter();
+        var cultureInfo = CultureInfo.InvariantCulture;
+
+        Assert.False(converter.TryChangeType(text, cultureInfo, out int _));
+        Assert.False(converter.TryChangeType(text, cultureInfo, out long _));
+        Assert.False(converter.TryChangeType(text, cultureInfo, out short _));
+        Assert.False(converter.TryChangeType(text, cultureInfo, out byte _));
+        Assert.False(converter.TryChangeType(text, cultureInfo, out sbyte _));
+        Assert.False(converter.TryChangeType(text, cultureInfo, out uint _));
+        Assert.False(converter.TryChangeType(text, cultureInfo, out ulong _));
+        Assert.False(converter.TryChangeType(text, cultureInfo, out ushort _));
+        Assert.False(converter.TryChangeType(text, cultureInfo, out float _));
+        Assert.False(converter.TryChangeType(text, cultureInfo, out double _));
+        Assert.False(converter.TryChangeType(text, cultureInfo, out decimal _));
+        Assert.False(converter.TryChangeType(text, cultureInfo, out int? _));
+    }
+
+    // Hexadecimal notation is not supported by the floating-point types
+    [Fact]
+    public void TryConvert_HexStringToDouble_ReturnsFalse()
+    {
+        var converter = new DefaultConverter();
+        var cultureInfo = CultureInfo.InvariantCulture;
+        var converted = converter.TryChangeType("0x1F", cultureInfo, out double _);
+        Assert.False(converted);
+    }
+
+    // A word starting with 'x' is no longer treated as a hexadecimal literal
+    [Fact]
+    public void TryConvert_StringWithoutHexPrefix_IsNotParsedAsHexadecimal()
+    {
+        var converter = new DefaultConverter();
+        var cultureInfo = CultureInfo.InvariantCulture;
+        Assert.False(converter.TryChangeType("xA", cultureInfo, out byte _));
+    }
+
+    // These used to reach the TypeDescriptor fallback because NumberStyles.Integer
+    // rejects the decimal separator, the thousands separator and the exponent
+    [Theory]
+    [InlineData("1.5e3", 1500d)]
+    [InlineData("42.24", 42.24d)]
+    [InlineData("-0.5", -0.5d)]
+    public void TryConvert_StringToDouble_SupportsFloatingPointNotation(string text, double expected)
+    {
+        var converter = new DefaultConverter();
+        var cultureInfo = CultureInfo.InvariantCulture;
+        var converted = converter.TryChangeType(text, cultureInfo, out double value);
+        Assert.True(converted);
+        Assert.Equal(expected, value);
+    }
+
+    [Theory]
+    [InlineData("42.24")]
+    [InlineData("1,234.56")]
+    public void TryConvert_StringToDecimal_SupportsSeparators(string text)
+    {
+        var converter = new DefaultConverter();
+        var cultureInfo = CultureInfo.InvariantCulture;
+        var converted = converter.TryChangeType(text, cultureInfo, out decimal value);
+        Assert.True(converted);
+        Assert.Equal(decimal.Parse(text, NumberStyles.Float | NumberStyles.AllowThousands, cultureInfo), value);
+    }
 }

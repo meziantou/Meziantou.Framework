@@ -41,10 +41,11 @@ public static class Slug
 
         var sb = new StringBuilder(Math.Min(text.Length, maximumLength));
         var budget = maximumLength;
+        int trailingSeparatorStart;
         string slug;
         while (true)
         {
-            var completed = AppendSlug(sb, text, options, separator, budget);
+            var completed = AppendSlug(sb, text, options, separator, budget, out trailingSeparatorStart);
             slug = sb.ToString().Normalize(NormalizationForm.FormC);
             if (completed)
                 break;
@@ -64,10 +65,11 @@ public static class Slug
             budget = extendedBudget;
         }
 
-        // Trimmed on the decomposed buffer, so a separator that is itself decomposed is still recognized.
-        if (!options.CanEndWithSeparator && separator.Length > 0 && EndsWith(sb, separator))
+        // Only a separator AppendSlug emitted is trimmed. A character that came from the input is content, even
+        // when it matches the separator, so CanEndWithSeparator never deletes something the caller typed.
+        if (!options.CanEndWithSeparator && separator.Length > 0 && trailingSeparatorStart >= 0)
         {
-            sb.Length -= separator.Length;
+            sb.Length = trailingSeparatorStart;
             slug = sb.ToString().Normalize(NormalizationForm.FormC);
         }
 
@@ -75,10 +77,18 @@ public static class Slug
     }
 
     /// <summary>Rebuilds the slug into <paramref name="sb"/>, using at most <paramref name="budget"/> characters.</summary>
+    /// <param name="trailingSeparatorStart">
+    /// The offset of the separator this method emitted at the end of <paramref name="sb"/>, or -1 when the buffer does
+    /// not end with one. A separator character that came from the input is content and never reported here.
+    /// </param>
     /// <returns><see langword="true"/> if the whole text was consumed; otherwise, <see langword="false"/>.</returns>
-    private static bool AppendSlug(StringBuilder sb, string text, SlugOptions options, string separator, int budget)
+    private static bool AppendSlug(StringBuilder sb, string text, SlugOptions options, string separator, int budget, out int trailingSeparatorStart)
     {
         sb.Clear();
+
+        // Offset of the most recent separator this method emitted. It is not cleared when more characters are
+        // appended, so that dropping a character below still leaves it describing the buffer correctly.
+        var lastSeparatorStart = -1;
         var usesDefaultReplace = options.UsesDefaultReplace;
         Span<char> transformed = stackalloc char[MaxUtf16CharsPerRune];
         var characterStart = 0;
@@ -114,6 +124,7 @@ public static class Slug
                     if (isCombiningMark)
                         sb.Length = characterStart;
 
+                    trailingSeparatorStart = TrailingSeparatorStart(sb, lastSeparatorStart, separator);
                     return false;
                 }
 
@@ -123,31 +134,35 @@ public static class Slug
             {
                 // Combining marks attached to a disallowed character are dropped silently instead of
                 // producing a separator. A slug never starts with a separator, and separators are never repeated.
-                if (sb.Length == 0 || EndsWith(sb, separator))
+                if (sb.Length == 0 || EndsWithEmittedSeparator(sb, lastSeparatorStart, separator))
                     continue;
 
                 if (sb.Length + separator.Length > budget)
+                {
+                    trailingSeparatorStart = TrailingSeparatorStart(sb, lastSeparatorStart, separator);
                     return false;
+                }
 
+                lastSeparatorStart = sb.Length;
                 sb.Append(separator);
                 characterStart = sb.Length;
             }
         }
 
+        trailingSeparatorStart = TrailingSeparatorStart(sb, lastSeparatorStart, separator);
         return true;
     }
 
-    private static bool EndsWith(StringBuilder stringBuilder, string suffix)
+    /// <summary>Determines whether <paramref name="sb"/> ends with the separator emitted at <paramref name="lastSeparatorStart"/>.</summary>
+    private static bool EndsWithEmittedSeparator(StringBuilder sb, int lastSeparatorStart, string separator)
     {
-        if (stringBuilder.Length < suffix.Length)
-            return false;
-
-        for (var index = 0; index < suffix.Length; index++)
-        {
-            if (stringBuilder[stringBuilder.Length - 1 - index] != suffix[suffix.Length - 1 - index])
-                return false;
-        }
-
-        return true;
+        return lastSeparatorStart >= 0 && lastSeparatorStart + separator.Length == sb.Length;
     }
+
+    /// <summary>Returns the offset of the emitted separator at the end of <paramref name="sb"/>, or -1 when there is none.</summary>
+    private static int TrailingSeparatorStart(StringBuilder sb, int lastSeparatorStart, string separator)
+    {
+        return EndsWithEmittedSeparator(sb, lastSeparatorStart, separator) ? lastSeparatorStart : -1;
+    }
+
 }

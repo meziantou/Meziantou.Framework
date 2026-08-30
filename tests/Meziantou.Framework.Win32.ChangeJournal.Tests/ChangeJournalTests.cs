@@ -74,7 +74,10 @@ public class ChangeJournalTests
             var file = Path.GetTempFileName();
             var drive = Path.GetPathRoot(file) ?? throw new InvalidOperationException("Cannot determine drive root");
             using var changeJournal = ChangeJournal.Open(new DriveInfo(drive), unprivileged: true);
-            var entries = changeJournal.GetEntries(ChangeReason.FileCreate, returnOnlyOnClose: false, TimeSpan.FromSeconds(10)).ToList();
+
+            // TimeSpan.Zero stops at the end of the journal. Any other value keeps the read waiting for a new record,
+            // so enumerating to the end would never return.
+            var entries = changeJournal.GetEntries(ChangeReason.FileCreate, returnOnlyOnClose: false, TimeSpan.Zero).ToList();
             Assert.NotEmpty(entries);
         });
     }
@@ -85,6 +88,31 @@ public class ChangeJournalTests
         var file = Path.GetTempFileName();
         var identifier = FileIdentifier.FromFile(file);
         Assert.NotEqual(default, identifier);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetFileIdentifierOfADirectory()
+    {
+        var directory = CreateTemporaryDirectory();
+        Assert.NotEqual(default, FileIdentifier.FromFile(directory));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetEntryOfADirectory()
+    {
+        var directory = CreateTemporaryDirectory();
+
+        var entry = ChangeJournal.GetEntry(directory);
+
+        Assert.Equal(Path.GetFileName(directory), entry.Name);
+        Assert.True(entry.Attributes.HasFlag(FileAttributes.Directory));
+    }
+
+    private static string CreateTemporaryDirectory()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(directory);
+        return directory;
     }
 
     [Theory]
@@ -100,6 +128,19 @@ public class ChangeJournalTests
     {
         var options = new ReadChangeJournalOptions(initialUSN: null, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.FromMilliseconds(milliseconds), unprivileged: false);
         Assert.Equal(expected, options.TimeoutInSeconds);
+    }
+
+    [Theory]
+    [InlineData(0, 0ul)]                    // do not wait, so the control code must not be asked for new data
+    [InlineData(-1, 1ul)]                   // Timeout.InfiniteTimeSpan
+    [InlineData(500, 1ul)]
+    [InlineData(30_000, 1ul)]
+    public void ReadOptions_AsksForNewDataOnlyWhenTheReadIsMeantToWait(int milliseconds, ulong expected)
+    {
+        // FSCTL_READ_USN_JOURNAL ignores its timeout while BytesToWaitFor is 0, so a read that is meant to wait has to
+        // ask for at least one byte of new data.
+        var options = new ReadChangeJournalOptions(initialUSN: null, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.FromMilliseconds(milliseconds), unprivileged: false);
+        Assert.Equal(expected, options.BytesToWaitFor);
     }
 
     [Theory]
@@ -125,6 +166,27 @@ public class ChangeJournalTests
         var usns = new List<Usn> { new(30), new(10), new(20) };
         usns.Sort();
         Assert.Equal([new Usn(10), new Usn(20), new Usn(30)], usns);
+    }
+
+    [Fact]
+    public void ChangeReasonAllIsTheUnionOfEveryOtherReason()
+    {
+        var union = default(ChangeReason);
+        foreach (var reason in Enum.GetValues<ChangeReason>())
+        {
+            if (reason is not ChangeReason.All)
+            {
+                union |= reason;
+            }
+        }
+
+        Assert.Equal(ChangeReason.All, union);
+    }
+
+    [Fact]
+    public void ChangeReasonAllMatchesTheNativeReasonMask()
+    {
+        Assert.Equal(0x80FFFF77u, (uint)ChangeReason.All);
     }
 
     [Fact]

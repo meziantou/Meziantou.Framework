@@ -72,6 +72,7 @@ namespace Meziantou.Extensions.Logging.InMemory
         public InMemoryLoggerProvider(System.TimeProvider? timeProvider, Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection? logs) { }
         public InMemoryLoggerProvider(System.TimeProvider? timeProvider, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider) { }
         public InMemoryLoggerProvider(System.TimeProvider? timeProvider, Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection? logs, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider) { }
+        public static Meziantou.Extensions.Logging.InMemory.InMemoryLoggerProvider Create(Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection? logs = null, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider = null, System.TimeProvider? timeProvider = null) => throw null;
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => throw null;
         public Microsoft.Extensions.Logging.ILogger<T> CreateLogger<T>() => throw null;
         public void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider) { }

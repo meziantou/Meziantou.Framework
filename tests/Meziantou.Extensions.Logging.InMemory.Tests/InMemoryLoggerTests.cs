@@ -216,6 +216,37 @@ public sealed partial class InMemoryLoggerTests
     }
 
     [Fact]
+    public void Create_AcceptsNullForEveryArgument()
+    {
+        // Each of these is a compile error when written against the constructors, because a bare null
+        // cannot be resolved between InMemoryLogCollection, IExternalScopeProvider and TimeProvider
+        using var all = InMemoryLoggerProvider.Create(null, null, null);
+        using var scopeOnly = InMemoryLoggerProvider.Create(scopeProvider: null);
+        using var timeOnly = InMemoryLoggerProvider.Create(timeProvider: null);
+
+        all.CreateLogger("my_category").LogInformation("Test");
+        Assert.Equal("Test", Assert.Single(all.Logs).Message);
+    }
+
+    [Fact]
+    public void Create_UsesTheSuppliedArguments()
+    {
+        var logs = new InMemoryLogCollection();
+        using var provider = InMemoryLoggerProvider.Create(logs, NullExternalScopeProvider.Instance, new CustomTimeProvider());
+
+        var logger = provider.CreateLogger("my_category");
+        using (logger.BeginScope(new Dictionary<string, object?>(StringComparer.Ordinal) { ["Ignored"] = 1 }))
+        {
+            logger.LogInformation("Test");
+        }
+
+        Assert.Same(logs, provider.Logs);
+        var log = Assert.Single(logs);
+        Assert.Equal(new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero), log.CreatedAt);
+        Assert.Empty(log.Scopes);
+    }
+
+    [Fact]
     public void WithTimeProvider()
     {
         using var provider = new InMemoryLoggerProvider(new CustomTimeProvider());

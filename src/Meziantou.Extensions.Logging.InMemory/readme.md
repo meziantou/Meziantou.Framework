@@ -16,6 +16,17 @@ Assert.Empty(loggerProvider.Logs.Errors);
 Assert.Single(loggerProvider.Logs, log => log.Message.Contains("test") && log.EventId.Id == 1);
 ```
 
+`InMemoryLoggerProvider` also has a `Create` method. Prefer it whenever an argument is `null`: the
+constructor overloads take three independently nullable types (`InMemoryLogCollection`,
+`IExternalScopeProvider`, `TimeProvider`), so a bare `null` cannot be resolved to one of them.
+
+```c#
+// Ambiguous, does not compile:
+//var provider = new InMemoryLoggerProvider(null);
+
+using var provider = InMemoryLoggerProvider.Create(scopeProvider: null, timeProvider: timeProvider);
+```
+
 If you are using a `WebApplicationFactory`:
 
 ```c#

@@ -90,6 +90,22 @@ public sealed class InMemoryLoggerProvider : ILoggerProvider, ISupportExternalSc
         _scopeProvider = new MutableExternalScopeProvider(scopeProvider ?? new LoggerExternalScopeProvider());
     }
 
+    /// <summary>Creates a new <see cref="InMemoryLoggerProvider"/>.</summary>
+    /// <param name="logs">The log collection to use, or <see langword="null"/> to create a new collection.</param>
+    /// <param name="scopeProvider">The external scope provider to use, or <see langword="null"/> to create a new instance.</param>
+    /// <param name="timeProvider">The time provider to use for timestamping log entries, or <see langword="null"/> to use the system time provider.</param>
+    /// <returns>A new instance of <see cref="InMemoryLoggerProvider"/>.</returns>
+    /// <remarks>
+    /// Prefer this over the constructors whenever an argument is <see langword="null"/>. The constructor
+    /// overloads take three independently nullable types, so a bare <see langword="null"/> cannot be
+    /// resolved to one of them and the call fails to compile. The parameter order matches
+    /// <see cref="InMemoryLogger.CreateLogger(string, InMemoryLogCollection?, IExternalScopeProvider?, TimeProvider?)"/>.
+    /// </remarks>
+    public static InMemoryLoggerProvider Create(InMemoryLogCollection? logs = null, IExternalScopeProvider? scopeProvider = null, TimeProvider? timeProvider = null)
+    {
+        return new InMemoryLoggerProvider(timeProvider, logs, scopeProvider);
+    }
+
     /// <summary>Creates a new logger instance with the specified category name.</summary>
     /// <param name="categoryName">The category name for messages produced by the logger.</param>
     /// <returns>A new instance of <see cref="ILogger"/>.</returns>

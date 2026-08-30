@@ -34,7 +34,7 @@ job.SetLimits(new JobObjectLimits()
 });
 
 // Restrict UI features
-job.SetUIRestrictions(Natives.JobObjectUILimit.ReadClipboard);
+job.SetUIRestrictions(JobObjectUILimit.ReadClipboard);
 
 // Limit CPU
 job.SetCpuRateHardCap(2000); // 20% of the CPU

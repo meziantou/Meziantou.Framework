@@ -1215,4 +1215,59 @@ public sealed class UrlPatternTests
         Assert.NotNull(result);
         Assert.Equal("css/styles/main.css", result.Pathname.Groups["path"]);
     }
+
+    [Theory]
+    [InlineData("HTTPS")]
+    [InlineData("https:")]
+    [InlineData("HTTPS:")]
+    public void IsMatch_InitInput_CanonicalizesTheProtocol(string protocol)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Protocol = protocol }));
+    }
+
+    [Fact]
+    public void IsMatch_InitInput_CanonicalizesTheHostname()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = "example.com" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Hostname = "EXAMPLE.com" }));
+    }
+
+    [Fact]
+    public void IsMatch_InitInput_StripsTheSearchAndHashPrefixes()
+    {
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Search = "a=1" })
+            .IsMatch(new UrlPatternInit { Search = "?a=1" }));
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Hash = "top" })
+            .IsMatch(new UrlPatternInit { Hash = "#top" }));
+    }
+
+    [Fact]
+    public void Match_InitInput_CanonicalizesTheInputAndReportsItUnchanged()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https", Hostname = "example.com" });
+
+        var result = pattern.Match(new UrlPatternInit { Protocol = "HTTPS:", Hostname = "EXAMPLE.com" });
+
+        Assert.NotNull(result);
+        Assert.Equal("https", result.Protocol.Input);
+        Assert.Equal("example.com", result.Hostname.Input);
+
+        // Inputs reports what the caller supplied, not the canonicalized form
+        var suppliedInit = Assert.Single(result.Inputs).Init;
+        Assert.NotNull(suppliedInit);
+        Assert.Equal("HTTPS:", suppliedInit.Protocol);
+        Assert.Equal("EXAMPLE.com", suppliedInit.Hostname);
+    }
+
+    [Fact]
+    public void IsMatch_InitInput_StillRejectsAValueThatDoesNotMatch()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https" });
+
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Protocol = "http" }));
+    }
 }

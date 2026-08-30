@@ -416,19 +416,32 @@ public sealed class UrlPattern
 
     private UrlPatternResult? MatchInit(UrlPatternInit init)
     {
-        var protocol = init.Protocol ?? "";
-        var username = init.Username ?? "";
-        var password = init.Password ?? "";
-        var hostname = init.Hostname ?? "";
-        var port = init.Port ?? "";
-        var pathname = init.Pathname ?? "";
-        var search = init.Search ?? "";
-        var hash = init.Hash ?? "";
+        var (protocol, username, password, hostname, port, pathname, search, hash) = CanonicalizeInitComponents(init);
 
-        return MatchComponents(protocol, username, password, hostname, port, pathname, search, hash, originalInput: null);
+        return MatchComponents(protocol, username, password, hostname, port, pathname, search, hash, originalInput: null, originalInit: init);
     }
 
-    private UrlPatternResult? MatchComponents(string protocol, string username, string password, string hostname, string port, string pathname, string search, string hash, string? originalInput)
+    /// <summary>Canonicalizes the components of an init used as a match input.</summary>
+    /// <remarks>
+    /// The pattern is canonicalized when it is compiled, so an init used as an input has to be
+    /// canonicalized the same way for the two to be comparable. A <see cref="Uri"/> input already
+    /// arrives canonical, which is why <see cref="MatchUrl"/> does not go through this.
+    /// <see href="https://urlpattern.spec.whatwg.org/#canon-processing-for-init">WHATWG URL Pattern Spec - URLPatternInit processing</see>
+    /// </remarks>
+    private static (string Protocol, string Username, string Password, string Hostname, string Port, string Pathname, string Search, string Hash) CanonicalizeInitComponents(UrlPatternInit init)
+    {
+        return (
+            CanonicalizeProtocol(init.Protocol ?? ""),
+            init.Username ?? "",
+            init.Password ?? "",
+            CanonicalizeHostname(init.Hostname ?? ""),
+            init.Port ?? "",
+            init.Pathname ?? "",
+            CanonicalizeSearch(init.Search ?? ""),
+            CanonicalizeHash(init.Hash ?? ""));
+    }
+
+    private UrlPatternResult? MatchComponents(string protocol, string username, string password, string hostname, string port, string pathname, string search, string hash, string? originalInput, UrlPatternInit? originalInit = null)
     {
         var protocolMatch = _protocolComponent.RegularExpression.Match(protocol);
         if (!protocolMatch.Success)
@@ -462,9 +475,10 @@ public sealed class UrlPattern
         if (!hashMatch.Success)
             return null;
 
+        // The result reports the input as it was supplied, not as it was canonicalized for matching
         var input = originalInput is not null
             ? new UrlPatternInput(originalInput)
-            : new UrlPatternInput(new UrlPatternInit
+            : new UrlPatternInput(originalInit ?? new UrlPatternInit
             {
                 Protocol = protocol,
                 Username = username,
@@ -529,14 +543,7 @@ public sealed class UrlPattern
 
     private bool IsMatchInit(UrlPatternInit init)
     {
-        var protocol = init.Protocol ?? "";
-        var username = init.Username ?? "";
-        var password = init.Password ?? "";
-        var hostname = init.Hostname ?? "";
-        var port = init.Port ?? "";
-        var pathname = init.Pathname ?? "";
-        var search = init.Search ?? "";
-        var hash = init.Hash ?? "";
+        var (protocol, username, password, hostname, port, pathname, search, hash) = CanonicalizeInitComponents(init);
 
         return IsMatchComponents(protocol, username, password, hostname, port, pathname, search, hash);
     }

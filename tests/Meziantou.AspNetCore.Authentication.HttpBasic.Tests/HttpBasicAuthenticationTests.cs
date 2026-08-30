@@ -1,10 +1,18 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
+using Microsoft.Net.Http.Headers;
 
 namespace Meziantou.AspNetCore.Authentication.HttpBasic.Tests;
 
@@ -127,6 +135,23 @@ public sealed class HttpBasicAuthenticationTests
         });
     }
 
+    [Fact]
+    public async Task Challenge_PreservesChallengeWrittenByAnotherScheme()
+    {
+        await using var application = await TestApplication.CreateWithSecondSchemeAsync(options =>
+        {
+            options.Realm = "My API";
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("myName", "myPassword", username, password);
+        });
+
+        await application.SendAndAssert("/", username: null, password: null, response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+            var challenges = response.Headers.WwwAuthenticate.Select(value => $"{value.Scheme} {value.Parameter}").ToArray();
+            Assert.Equal(["Bearer realm=\"api\"", "Basic realm=\"My API\", charset=\"UTF-8\""], challenges);
+        });
+    }
+
     private static IdentityUser CreateIdentityUser(string id, string username, string password)
     {
         var user = new IdentityUser
@@ -159,6 +184,26 @@ public sealed class HttpBasicAuthenticationTests
 
         var identity = new ClaimsIdentity(claims, authenticationType: HttpBasicAuthenticationDefaults.AuthenticationScheme);
         return new ClaimsPrincipal(identity);
+    }
+
+    private sealed class FakeBearerAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+    {
+        public FakeBearerAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
+            : base(options, logger, encoder)
+        {
+        }
+
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        {
+            return Task.FromResult(AuthenticateResult.NoResult());
+        }
+
+        protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+        {
+            Response.StatusCode = StatusCodes.Status401Unauthorized;
+            Response.Headers[HeaderNames.WWWAuthenticate] = StringValues.Concat(Response.Headers[HeaderNames.WWWAuthenticate], "Bearer realm=\"api\"");
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class TestApplication : IAsyncDisposable
@@ -218,6 +263,33 @@ public sealed class HttpBasicAuthenticationTests
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapGet("/", (ClaimsPrincipal user) => $"{user.Identity?.Name}|{user.FindFirstValue(ClaimTypes.NameIdentifier)}")
+                .RequireAuthorization();
+            await app.StartAsync(XunitCancellationToken);
+
+            var client = app.GetTestClient();
+            return new TestApplication(app, client);
+        }
+
+        public static async Task<TestApplication> CreateWithSecondSchemeAsync(Action<HttpBasicAuthenticationOptions> configureOptions)
+        {
+            ArgumentNullException.ThrowIfNull(configureOptions);
+
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseTestServer();
+            builder.Services.AddAuthentication("Bearer")
+                            .AddScheme<AuthenticationSchemeOptions, FakeBearerAuthenticationHandler>("Bearer", displayName: null, _ => { })
+                            .AddHttpBasic(HttpBasicAuthenticationDefaults.AuthenticationScheme, configureOptions);
+            builder.Services.AddAuthorization(options =>
+            {
+                options.DefaultPolicy = new AuthorizationPolicyBuilder("Bearer", HttpBasicAuthenticationDefaults.AuthenticationScheme)
+                    .RequireAuthenticatedUser()
+                    .Build();
+            });
+
+            var app = builder.Build();
+            app.UseAuthentication();
+            app.UseAuthorization();
+            app.MapGet("/", (ClaimsPrincipal user) => user.Identity?.Name ?? "anonymous")
                 .RequireAuthorization();
             await app.StartAsync(XunitCancellationToken);
 

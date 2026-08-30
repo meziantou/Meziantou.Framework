@@ -10,6 +10,10 @@ internal
 #endif
 ref partial struct ValueStringBuilder
 {
+    /// <summary>
+    /// Appends a Unicode scalar value, encoded as one character or as a surrogate pair.
+    /// </summary>
+    /// <param name="rune">The scalar value to append.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Append(Rune rune)
     {

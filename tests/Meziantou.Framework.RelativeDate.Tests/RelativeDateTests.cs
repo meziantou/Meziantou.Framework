@@ -73,6 +73,54 @@ public class RelativeDateTests
         }
     }
 
+    // Swapping LocalizationProvider.Current is process-wide, so this test must not run beside any other
+    [Fact(DisableParallelization = true)]
+    public void CustomProvider_ValueContainingABrace_DoesNotThrow()
+    {
+        var result = FormatWithProvider(new StubLocalizationProvider("{oops} {0}"), TimeSpan.FromHours(-2));
+        Assert.Equal("{oops} 2", result);
+    }
+
+    // Swapping LocalizationProvider.Current is process-wide, so this test must not run beside any other
+    [Fact(DisableParallelization = true)]
+    public void CustomProvider_EmptyValue_FallsBackToTheNeutralCulture()
+    {
+        var provider = new StubLocalizationProvider(value: "", neutralValue: "{0} hours ago");
+        Assert.Equal("2 hours ago", FormatWithProvider(provider, TimeSpan.FromHours(-2)));
+    }
+
+    // Swapping LocalizationProvider.Current is process-wide, so this test must not run beside any other
+    [Fact(DisableParallelization = true)]
+    public void CustomProvider_EmptyValue_FallsBackToTheNeutralCulture_WithoutACount()
+    {
+        var provider = new StubLocalizationProvider(value: "", neutralValue: "yesterday");
+        Assert.Equal("yesterday", FormatWithProvider(provider, TimeSpan.FromHours(-30)));
+    }
+
+    private static string FormatWithProvider(ILocalizationProvider provider, TimeSpan offset)
+    {
+        var now = new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero);
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(now);
+
+        var previous = LocalizationProvider.Current;
+        try
+        {
+            LocalizationProvider.Current = provider;
+            return RelativeDate.Get(now + offset, timeProvider).ToString(format: null, CultureInfo.GetCultureInfo("fr"));
+        }
+        finally
+        {
+            LocalizationProvider.Current = previous;
+        }
+    }
+
+    private sealed class StubLocalizationProvider(string value, string? neutralValue = null) : ILocalizationProvider
+    {
+        public string GetString(string name, CultureInfo? culture)
+            => culture is not null && culture.Equals(CultureInfo.InvariantCulture) ? neutralValue ?? "" : value;
+    }
+
 #if !INVARIANT_GLOBALIZATION_MODE_ENABLED
     private static readonly string[] LocalizedCultures = ["de", "es", "fr", "it", "ja", "ko", "nl", "pt", "tr", "zh-Hans"];
 

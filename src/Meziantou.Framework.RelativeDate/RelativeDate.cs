@@ -200,9 +200,22 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
         }
     }
 
-    private static string GetString(string name, CultureInfo? culture) => LocalizationProvider.Current.GetString(name, culture);
+    private static string GetString(string name, CultureInfo? culture)
+    {
+        var value = LocalizationProvider.Current.GetString(name, culture);
 
-    private static string GetString(string name, CultureInfo? culture, int value) => string.Format(culture, LocalizationProvider.Current.GetString(name, culture), value);
+        // An empty value means the provider has no string for that culture: rendering nothing at all is never useful, so ask for the neutral one
+        if (string.IsNullOrEmpty(value))
+            return LocalizationProvider.Current.GetString(name, CultureInfo.InvariantCulture);
+
+        return value;
+    }
+
+    private static string GetString(string name, CultureInfo? culture, int value)
+    {
+        // The placeholder is substituted instead of going through string.Format, so a brace in a provider's value cannot throw FormatException
+        return GetString(name, culture).Replace("{0}", value.ToString(culture), StringComparison.Ordinal);
+    }
 
     int IComparable.CompareTo(object? obj)
     {

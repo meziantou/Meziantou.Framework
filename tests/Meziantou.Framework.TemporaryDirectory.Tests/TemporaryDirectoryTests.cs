@@ -262,6 +262,68 @@ public class TemporaryDirectoryTests
     }
 
     [Fact]
+    public void DeleteErrorIsNullWhenTheDirectoryIsDeleted()
+    {
+        var dir = TemporaryDirectory.Create();
+        dir.CreateTextFile("a.txt", "content");
+        dir.Dispose();
+
+        Assert.Null(dir.DeleteError);
+        Assert.False(Directory.Exists(dir.FullPath));
+    }
+
+    [Fact]
+    public void DeleteErrorReportsADirectoryThatCouldNotBeDeleted()
+    {
+        if (OperatingSystem.IsWindows())
+            return; // relies on Unix directory permissions to make the deletion fail
+
+        using var parent = TemporaryDirectory.Create();
+        var root = parent.CreateDirectory("root");
+        var dir = TemporaryDirectory.Create(root);
+
+        // Removing the write permission on the parent prevents the directory from being unlinked.
+        File.SetUnixFileMode(root.Value, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        try
+        {
+            dir.Dispose();
+
+            Assert.NotNull(dir.DeleteError);
+            Assert.True(Directory.Exists(dir.FullPath));
+        }
+        finally
+        {
+            File.SetUnixFileMode(root.Value, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+    }
+
+    [Fact]
+    public void DeleteErrorReportsAFileThatCouldNotBeDeletedAfterEveryAttempt()
+    {
+        if (OperatingSystem.IsWindows())
+            return; // relies on Unix directory permissions to make the deletion fail
+
+        using var parent = TemporaryDirectory.Create();
+        var root = parent.CreateDirectory("root");
+        var file = TemporaryFile.Create(root / "temp.txt");
+
+        // Unlinking a file needs the write permission on its parent directory. The deletion fails with
+        // UnauthorizedAccessException, which is the exception the retry loop swallows until it runs out of attempts.
+        File.SetUnixFileMode(root.Value, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        try
+        {
+            file.Dispose();
+
+            Assert.IsType<UnauthorizedAccessException>(file.DeleteError);
+            Assert.True(File.Exists(file.FullPath));
+        }
+        finally
+        {
+            File.SetUnixFileMode(root.Value, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+    }
+
+    [Fact]
     public void TemporaryFileCreateWithFullPath()
     {
         var fullPath = FullPath.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".tmp");

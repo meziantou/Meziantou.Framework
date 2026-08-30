@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Win32;
 public enum PrivilegeAttribute : uint
 {
     /// <summary>The privilege is disabled.</summary>
-    Disabled,
+    Disabled = 0,
 
     /// <summary>The privilege is enabled.</summary>
     Enabled = TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_ENABLED,

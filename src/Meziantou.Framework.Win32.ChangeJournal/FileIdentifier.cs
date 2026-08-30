@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Meziantou.Framework.Win32.Natives;
 using Microsoft.Win32.SafeHandles;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -36,11 +37,12 @@ public readonly struct FileIdentifier : IEquatable<FileIdentifier>
     /// <summary>Gets the file identifier for the specified file or directory path.</summary>
     /// <param name="path">The path to the file or directory.</param>
     /// <returns>The file identifier for the specified file or directory.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     [SupportedOSPlatform("windows6.0.6000")]
     public unsafe static FileIdentifier FromFile(string path)
     {
-        using var handle = File.OpenHandle(path);
+        using var handle = FileHandleHelper.OpenFileOrDirectory(path);
         return FromFile(handle);
     }
 

@@ -61,8 +61,19 @@ public abstract class ProjectedFileSystemBase : IDisposable
     /// <summary>Gets the root folder path where the virtual file system is mounted.</summary>
     public string RootFolder { get; }
 
+    private int _bufferSize = 4096; // 4kB
+
     /// <summary>Gets or sets the buffer size used for reading file data. Default is 4096 bytes.</summary>
-    protected int BufferSize { get; set; } = 4096; // 4kB
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the value is zero or negative.</exception>
+    protected int BufferSize
+    {
+        get => _bufferSize;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            _bufferSize = value;
+        }
+    }
 
     /// <summary>Initializes a new instance of the <see cref="ProjectedFileSystemBase"/> class.</summary>
     /// <param name="rootFolder">The root folder path where the virtual file system will be mounted.</param>
@@ -561,10 +572,16 @@ public abstract class ProjectedFileSystemBase : IDisposable
                     new ProjFSSafeHandle(namespaceVirtualizationContext, ownHandle: false),
                     filePathName, // Use the full relative path from the callback, not just the entry name
                     in info,
-                    (uint)Marshal.SizeOf(info));
+                    PlaceholderInfoSize);
 #pragma warning restore CA2000
         return hr;
     }
+
+    // The size the driver expects is the unmanaged size of the struct that gets pinned and
+    // handed to PrjWritePlaceholderInfo, so take it with sizeof rather than Marshal.SizeOf:
+    // that boxes on every call and reports the marshaled size, which is not guaranteed to
+    // agree with the layout the span is built over.
+    private static unsafe uint PlaceholderInfoSize => (uint)sizeof(ProjFs.PRJ_PLACEHOLDER_INFO);
 
     private HResult GetFileDataCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, ulong byteOffset, uint length)
     {

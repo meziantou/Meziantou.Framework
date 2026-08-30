@@ -187,6 +187,14 @@ public sealed class CredentialManagerTests
         Assert.StartsWith("Only CredentialType.Generic and CredentialType.DomainPassword is supported", ex.Message);
     }
 
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_Enumerate_NoMatch_ReturnsEmpty()
+    {
+        using var context = new IsolatedContext();
+        var credentials = CredentialManager.EnumerateCredentials(context.GetCredentialName("*"));
+        Assert.Empty(credentials);
+    }
+
     private sealed class IsolatedContext : IDisposable
     {
         private readonly Mutex? _mutex;

@@ -28,9 +28,34 @@ public class GlobParserTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
+    [InlineData(".")]
+    [InlineData("./")]
+    [InlineData("./.")]
+    [InlineData("a/..")]
+    [InlineData("a/../")]
     public void InvalidPatterns(string? content)
     {
         Assert.Throws<ArgumentException>(() => Glob.Parse(content!, GlobDialect.Standard));
+    }
+
+    [Theory]
+    [InlineData(".")]
+    [InlineData("./")]
+    [InlineData("a/..")]
+    public void PatternsWithoutAnySegmentAreRejected(string pattern)
+    {
+        Assert.False(Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.None, out var result));
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData("a/./b")]
+    [InlineData("a/b/../c")]
+    [InlineData("./a")]
+    public void PatternsThatStillHaveSegmentsAfterNormalizationAreAccepted(string pattern)
+    {
+        Assert.True(Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.None, out var result));
+        Assert.NotNull(result);
     }
 
     [Fact]
@@ -144,6 +169,31 @@ public class GlobParserTests
             item => Assert.IsType<CharacterRangeSegment>(item),
             item => Assert.IsType<LiteralSegment>(item),
             item => Assert.IsType<CharacterRangeSegment>(item));
+    }
+
+    [Theory]
+    [InlineData("a/**/b")]
+    [InlineData("a/**/*.txt")]
+    [InlineData("a/**/*")]
+    [InlineData("**/b/c")]
+    [InlineData("a*")]
+    [InlineData("*.txt")]
+    [InlineData("*file*")]
+    [InlineData("a/b")]
+    [InlineData("a/**/b/c")]
+    [InlineData("{a,b}.cs")]
+    [InlineData("[a-z].cs")]
+    [InlineData("p?th/a")]
+    public void ToStringRoundTripsToAnEquivalentPattern(string pattern)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        var text = glob.ToString();
+
+        Assert.DoesNotContain("Meziantou.Framework.Globbing", text);
+
+        // The text must parse back into a glob that matches exactly the same paths.
+        var roundTripped = Glob.Parse(text, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.Equal(text, roundTripped.ToString());
     }
 
     [Fact]

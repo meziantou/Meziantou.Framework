@@ -7,9 +7,15 @@ public static class RecentDocuments
 {
     /// <summary>Notifies the system that an item has been accessed, for the purposes of tracking those items used most recently and most frequently.</summary>
     /// <param name="path">The path to the document that has been accessed.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
     [SupportedOSPlatform("windows5.1.2600")]
     public static unsafe void AddToRecentDocuments(string path)
     {
+        // A null pointer makes SHAddToRecentDocs clear all usage data on all items, so an unvalidated
+        // null path would silently erase the recent documents instead of adding one.
+        ArgumentException.ThrowIfNullOrEmpty(path);
+
         fixed (char* p = path)
         {
             Windows.Win32.PInvoke.SHAddToRecentDocs((uint)Windows.Win32.UI.Shell.SHARD.SHARD_PATHW, p);

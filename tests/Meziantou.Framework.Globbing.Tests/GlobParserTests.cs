@@ -196,6 +196,32 @@ public class GlobParserTests
         Assert.Equal(text, roundTripped.ToString());
     }
 
+    [Theory]
+    [InlineData("a/**/b")]
+    [InlineData("a/**/b/c")]
+    [InlineData("a/**/*")]
+    [InlineData("a/**/*.txt")]
+    public void RecursiveWildcardIsNotOptimizedWhenLeadingDotsMustBeExcluded(string pattern)
+    {
+        // The optimized segments jump to the end of the path and skip the per-segment leading-dot checks, so they
+        // are only sound when GlobOptions.MatchLeadingDot is set.
+        var optimized = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot)._segments;
+        var notOptimized = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.None)._segments;
+
+        Assert.Contains(notOptimized, item => item is RecursiveMatchAllSegment);
+        Assert.DoesNotContain(optimized, item => item is RecursiveMatchAllSegment);
+    }
+
+    [Theory]
+    [InlineData("a/**/b", "a/.hidden/b")]
+    [InlineData("a/**/b/c", "a/.hidden/b/c")]
+    [InlineData("a/**/*.txt", "a/.hidden/b.txt")]
+    public void RecursiveWildcardDoesNotCrossADotSegmentWithoutMatchLeadingDot(string pattern, string path)
+    {
+        Assert.False(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.None).IsMatch(path));
+        Assert.True(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot).IsMatch(path));
+    }
+
     [Fact]
     public void OptimizeSingleCharSet2()
     {

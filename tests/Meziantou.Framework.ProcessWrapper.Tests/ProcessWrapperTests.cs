@@ -229,6 +229,38 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteBufferedAsync_WhenMultiByteCharacterIsSplitAcrossReads_DecodesTheWholeCharacter()
+    {
+        // Each byte of "\u00e9" is delivered by a separate read, so the first read holds nothing but the
+        // start of the character. Those bytes must stay buffered in the decoder instead of being dropped.
+        var bytes = Encoding.UTF8.GetBytes("\u00e9\n");
+        using var outputStream = new SingleByteReadStream(bytes);
+        using var fakeProcess = FakeProcess.Create(0, outputStream, Stream.Null);
+
+        var processResult = await ProcessWrapper.Create("dummy")
+            .WithProcessFactory(new FakeProcessFactory(fakeProcess))
+            .ExecuteBufferedAsync();
+
+        Assert.Equal("\u00e9", processResult.Output.StandardOutput.Single().Text);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithOutputStream_StringBuilder_WhenMultiByteCharacterIsSplitAcrossReads_DecodesTheWholeCharacter()
+    {
+        var bytes = Encoding.UTF8.GetBytes("\u00e9");
+        using var outputStream = new SingleByteReadStream(bytes);
+        using var fakeProcess = FakeProcess.Create(0, outputStream, Stream.Null);
+        var stringBuilder = new StringBuilder();
+
+        await ProcessWrapper.Create("dummy")
+            .WithProcessFactory(new FakeProcessFactory(fakeProcess))
+            .WithOutputStream(stringBuilder)
+            .ExecuteAsync();
+
+        Assert.Equal("\u00e9", stringBuilder.ToString());
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WithOutputEncoding_UsesConfiguredEncoding()
     {
         var sb = new StringBuilder();
@@ -2011,6 +2043,48 @@ public class ProcessWrapperTests
             ArgumentNullException.ThrowIfNull(processStartInfo);
             Count++;
         }
+    }
+
+    /// <summary>A stream that returns a single byte per read, so multi-byte characters are split across reads.</summary>
+    private sealed class SingleByteReadStream(byte[] bytes) : Stream
+    {
+        private int _position;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => bytes.Length;
+
+        public override long Position
+        {
+            get => _position;
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            if (_position >= bytes.Length || count == 0)
+                return 0;
+
+            buffer[offset] = bytes[_position];
+            _position++;
+            return 1;
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 
     private sealed record CreatedProcessInfo(string FileName, string WorkingDirectory, IReadOnlyList<string> Arguments);

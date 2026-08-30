@@ -99,13 +99,16 @@ public abstract class OutputTarget
 
             lock (_syncObject)
             {
+                // GetCharCount does not consume the bytes, only GetChars does. Returning early when the
+                // buffer holds nothing but the start of a multi-byte character would drop those bytes
+                // instead of leaving them buffered in the decoder for the next call.
                 var charCount = _decoder.GetCharCount(write, flush: false);
-                if (charCount == 0)
-                    return;
-
-                var chars = new char[charCount];
+                var chars = charCount == 0 ? [] : new char[charCount];
                 var charsRead = _decoder.GetChars(write, chars, flush: false);
-                stringBuilder.Append(chars, 0, charsRead);
+                if (charsRead > 0)
+                {
+                    stringBuilder.Append(chars, 0, charsRead);
+                }
             }
         }
 
@@ -202,13 +205,16 @@ public abstract class OutputTarget
 
             lock (_syncObject)
             {
+                // GetCharCount does not consume the bytes, only GetChars does. Returning early when the
+                // buffer holds nothing but the start of a multi-byte character would drop those bytes
+                // instead of leaving them buffered in the decoder for the next call.
                 var charCount = _decoder.GetCharCount(write, flush: false);
-                if (charCount == 0)
-                    return;
-
-                var chars = new char[charCount];
+                var chars = charCount == 0 ? [] : new char[charCount];
                 var charsRead = _decoder.GetChars(write, chars, flush: false);
-                DispatchLines(chars.AsSpan(0, charsRead));
+                if (charsRead > 0)
+                {
+                    DispatchLines(chars.AsSpan(0, charsRead));
+                }
             }
         }
 

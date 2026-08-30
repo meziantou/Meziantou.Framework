@@ -1,10 +1,13 @@
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Text;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
 
 [Collection("CredentialManagerTests")]
-public sealed class CredentialManagerTests
+public sealed partial class CredentialManagerTests
 {
     [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CredentialManager_01()
@@ -281,6 +284,48 @@ public sealed class CredentialManagerTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_TryDeleteCredential()
+    {
+        using var context = new IsolatedContext();
+        var credentialName = context.GetCredentialName();
+        CredentialManager.WriteCredential(credentialName, "John", "Doe", CredentialPersistence.Session);
+
+        Assert.True(CredentialManager.TryDeleteCredential(credentialName));
+        Assert.Null(CredentialManager.ReadCredential(credentialName));
+
+        Assert.False(CredentialManager.TryDeleteCredential(credentialName));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_TryDeleteCredential_DomainPassword()
+    {
+        using var context = new IsolatedContext();
+        var credentialName = context.GetCredentialName();
+        CredentialManager.WriteCredential(credentialName, "John", "Doe", "Test", CredentialPersistence.Session, CredentialType.DomainPassword);
+
+        Assert.False(CredentialManager.TryDeleteCredential(credentialName, CredentialType.Generic));
+        Assert.True(CredentialManager.TryDeleteCredential(credentialName, CredentialType.DomainPassword));
+        Assert.False(CredentialManager.TryDeleteCredential(credentialName, CredentialType.DomainPassword));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_DeleteCredential_WhenMissing_Throws()
+    {
+        using var context = new IsolatedContext();
+        Assert.Throws<Win32Exception>(() => CredentialManager.DeleteCredential(context.GetCredentialName()));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_ReadCredential_NullApplicationName_Throws()
+    {
+        var ex = Assert.Throws<ArgumentNullException>(() => CredentialManager.ReadCredential(null!));
+        Assert.Equal("applicationName", ex.ParamName);
+
+        ex = Assert.Throws<ArgumentNullException>(() => CredentialManager.ReadCredential(null!, CredentialType.DomainPassword));
+        Assert.Equal("applicationName", ex.ParamName);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CredentialManager_LimitComment_TooLong()
     {
         using var context = new IsolatedContext();
@@ -296,6 +341,112 @@ public sealed class CredentialManagerTests
         var ex = Assert.Throws<ArgumentOutOfRangeException>(() => CredentialManager.WriteCredential(context.GetCredentialName(), "John", new string('a', 1281), CredentialPersistence.Session));
         Assert.Equal("secret", ex.ParamName);
         Assert.StartsWith("The secret message has exceeded 2560 bytes.", ex.Message);
+    }
+
+    [Theory, RunIf(TestOperatingSystems.Windows)]
+    [InlineData(new byte[] { 0xDE, 0xAD, 0xBE, 0xEF, 0x01, 0x02, 0x03 })] // odd length
+    [InlineData(new byte[] { 0x00, 0xD8, 0x41, 0x00 })] // unpaired high surrogate
+    [InlineData(new byte[] { 0x00 })]
+    public void CredentialManager_Secret_RoundTripsBinaryBlobs(byte[] blob)
+    {
+        using var context = new IsolatedContext();
+        var credentialName = context.GetCredentialName();
+        WriteRawCredential(credentialName, "svc", blob);
+        try
+        {
+            var cred = CredentialManager.ReadCredential(credentialName);
+            Assert.NotNull(cred);
+            Assert.Equal(blob, cred.Secret.ToArray());
+        }
+        finally
+        {
+            CredentialManager.DeleteCredential(credentialName);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_Secret_MatchesPasswordForTextSecrets()
+    {
+        using var context = new IsolatedContext();
+        var credentialName = context.GetCredentialName();
+        CredentialManager.WriteCredential(credentialName, "John", "Pa$$w0rd", CredentialPersistence.Session);
+        try
+        {
+            var cred = CredentialManager.ReadCredential(credentialName);
+            Assert.NotNull(cred);
+            Assert.Equal("Pa$$w0rd", cred.Password);
+            Assert.Equal(Encoding.Unicode.GetBytes("Pa$$w0rd"), cred.Secret.ToArray());
+        }
+        finally
+        {
+            CredentialManager.DeleteCredential(credentialName);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_Secret_IsEmptyWhenTheCredentialHasNoBlob()
+    {
+        using var context = new IsolatedContext();
+        var credentialName = context.GetCredentialName();
+        CredentialManager.WriteCredential(credentialName, "John", "Doe", "Test", CredentialPersistence.Session, CredentialType.DomainPassword);
+        try
+        {
+            var cred = CredentialManager.ReadCredential(credentialName, CredentialType.DomainPassword);
+            Assert.NotNull(cred);
+            Assert.Null(cred.Password); // Domain Passwords can not be read back using CredRead API
+            Assert.True(cred.Secret.IsEmpty);
+        }
+        finally
+        {
+            CredentialManager.DeleteCredential(credentialName, CredentialType.DomainPassword);
+        }
+    }
+
+    /// <summary>Stores a credential whose blob is arbitrary bytes, the way another application could.</summary>
+    private static unsafe void WriteRawCredential(string targetName, string userName, byte[] blob)
+    {
+        fixed (byte* blobPtr = blob)
+        fixed (char* targetNamePtr = targetName)
+        fixed (char* userNamePtr = userName)
+        {
+            var credential = new NativeMethods.CREDENTIALW
+            {
+                Type = 1, // CRED_TYPE_GENERIC
+                Persist = 1, // CRED_PERSIST_SESSION
+                TargetName = targetNamePtr,
+                UserName = userNamePtr,
+                CredentialBlob = blobPtr,
+                CredentialBlobSize = (uint)blob.Length,
+            };
+
+            if (!NativeMethods.CredWriteW(in credential, Flags: 0))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
+    }
+
+    private static unsafe partial class NativeMethods
+    {
+        [StructLayout(LayoutKind.Sequential)]
+        public struct CREDENTIALW
+        {
+            public uint Flags;
+            public uint Type;
+            public char* TargetName;
+            public char* Comment;
+            public long LastWritten;
+            public uint CredentialBlobSize;
+            public byte* CredentialBlob;
+            public uint Persist;
+            public uint AttributeCount;
+            public nint Attributes;
+            public char* TargetAlias;
+            public char* UserName;
+        }
+
+        [LibraryImport("advapi32.dll", SetLastError = true)]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool CredWriteW(in CREDENTIALW credential, uint Flags);
     }
 
     private sealed class IsolatedContext : IDisposable

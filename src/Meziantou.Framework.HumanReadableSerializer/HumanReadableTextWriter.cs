@@ -203,9 +203,12 @@ public sealed class HumanReadableTextWriter
 
     private void IncrementDepth()
     {
+        // Only increment once the limit is known to be respected. Incrementing first would leave
+        // the depth permanently inflated when a caller catches the exception and keeps writing.
+        if (_depth >= _options.MaxDepth)
+            throw new HumanReadableSerializerException($"Current depth ({_depth + 1}) is equal to or larger than the maximum allowed depth of {_options.MaxDepth}. Cannot write the next object or array");
+
         _depth++;
-        if (_depth > _options.MaxDepth)
-            throw new HumanReadableSerializerException($"Current depth ({_depth}) is equal to or larger than the maximum allowed depth of {_options.MaxDepth}. Cannot write the next object or array");
     }
 
     /// <summary>Starts writing an object.</summary>
@@ -240,6 +243,7 @@ public sealed class HumanReadableTextWriter
     /// <summary>Starts writing an array.</summary>
     public void StartArray()
     {
+        IncrementDepth();
         if (_text.Length > 0 && _context != WriterContext.ArrayItemStart)
         {
             WriteNewLine();
@@ -255,6 +259,7 @@ public sealed class HumanReadableTextWriter
     /// <summary>Ends writing an array.</summary>
     public void EndArray()
     {
+        _depth--;
         _scopes.Pop().Dispose();
     }
 

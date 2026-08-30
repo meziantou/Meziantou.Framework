@@ -84,9 +84,10 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     public override string ToString() => ToString(format: null, formatProvider: null);
 
     /// <summary>Formats the relative date using the specified format and culture.</summary>
-    /// <param name="format">The format string (currently not used).</param>
+    /// <param name="format">The format string. Only <see langword="null"/>, an empty string and <c>"G"</c> are supported; the output does not vary between them.</param>
     /// <param name="formatProvider">An <see cref="IFormatProvider"/> that supplies culture-specific formatting information, typically a <see cref="CultureInfo"/>.</param>
     /// <returns>A localized relative date string.</returns>
+    /// <exception cref="FormatException"><paramref name="format"/> is not <see langword="null"/>, empty or <c>"G"</c>.</exception>
     /// <remarks>
     /// The method returns strings like:
     /// <list type="bullet">
@@ -107,6 +108,9 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     /// </remarks>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
+        if (!string.IsNullOrEmpty(format) && !string.Equals(format, "G", StringComparison.Ordinal))
+            throw new FormatException($"The '{format}' format string is not supported");
+
         var now = TimeProvider.GetUtcNow().UtcDateTime;
 
         var delta = now - DateTime;

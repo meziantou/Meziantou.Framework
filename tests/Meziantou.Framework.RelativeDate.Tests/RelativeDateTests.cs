@@ -73,6 +73,38 @@ public class RelativeDateTests
         }
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("G")]
+    public void ToString_AcceptsTheSupportedFormats(string? format)
+    {
+        Assert.Equal("2 hours ago", CreateTwoHoursAgo().ToString(format, CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData("g")]
+    [InlineData("garbage")]
+    [InlineData("R")]
+    public void ToString_Throws_ForAnUnsupportedFormat(string format)
+    {
+        Assert.Throws<FormatException>(() => CreateTwoHoursAgo().ToString(format, CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void CompositeFormatting_Throws_ForAnUnsupportedFormat()
+    {
+        var date = CreateTwoHoursAgo();
+        Assert.Throws<FormatException>(() => string.Format(CultureInfo.InvariantCulture, "{0:garbage}", date));
+    }
+
+    private static RelativeDate CreateTwoHoursAgo()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        return RelativeDate.Get(new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc), timeProvider);
+    }
+
 #if !INVARIANT_GLOBALIZATION_MODE_ENABLED
     private static readonly string[] LocalizedCultures = ["de", "es", "fr", "it", "ja", "ko", "nl", "pt", "tr", "zh-Hans"];
 

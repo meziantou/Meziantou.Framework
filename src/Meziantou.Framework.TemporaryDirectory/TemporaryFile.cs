@@ -47,6 +47,7 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
     {
         var rootDirectory = FullPath.Combine(Path.GetTempPath(), "MezTF");
         var fileName = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture) + "_" + Guid.NewGuid().ToString("N") + ".tmp";
+        TemporaryPaths.EnsureRootDirectory(rootDirectory);
         return CreateInRoot(rootDirectory, fileName, ownedDirectory: default);
     }
 
@@ -64,6 +65,7 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
         if (Path.IsPathRooted(fileNameOrPath))
             return Create(FullPath.FromPath(fileNameOrPath));
 
+        TemporaryPaths.EnsureRootDirectory(FullPath.GetTempPath() / "MezTF");
         var rootDirectory = FullPath.GetTempPath() / "MezTF" / CreateUniqueFolderName();
         return CreateInRoot(rootDirectory, fileNameOrPath, ownedDirectory: rootDirectory);
     }
@@ -94,8 +96,7 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
 
     private static void CreateFile(FullPath filePath)
     {
-        filePath.CreateParentDirectory();
-        using var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write);
+        TemporaryPaths.CreateFile(filePath);
     }
 
     /// <summary>Deletes the temporary file.</summary>

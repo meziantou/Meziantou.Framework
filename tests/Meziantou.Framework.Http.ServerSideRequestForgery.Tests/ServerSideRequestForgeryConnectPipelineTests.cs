@@ -269,6 +269,105 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             options);
     }
 
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_ProbesTheProxyOnceForABurstOfConnections()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        var proxy = new CountingWebProxy(new Uri("http://proxy.invalid:8080"));
+        using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = proxy };
+
+        for (var i = 0; i < 5; i++)
+        {
+            ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+                handler,
+                new Uri("https://example.com/"),
+                new DnsEndPoint("example.com", 443),
+                options);
+        }
+
+        // The two reserved probe destinations are resolved once and reused; only the real request URI is asked every time.
+        Assert.Equal(2, proxy.ProbeQueryCount);
+        Assert.Equal(5, proxy.RequestQueryCount);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_StillDetectsTheProxyOnACachedProbeResult()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        var proxy = new CountingWebProxy(new Uri("http://proxy.invalid:8080"));
+        using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = proxy };
+
+        // Populate the cache with a connection that is not to the proxy.
+        ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            new Uri("https://example.com/"),
+            new DnsEndPoint("example.com", 443),
+            options);
+
+        // A later connection that does target the proxy must still be rejected off the cached probe result.
+        var exception = Assert.Throws<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            new Uri("https://example.com/"),
+            new DnsEndPoint("proxy.invalid", 8080),
+            options));
+
+        Assert.Contains("targets a proxy", exception.Message);
+        Assert.Equal(2, proxy.ProbeQueryCount);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_DoesNotShareProbeResultsBetweenProxies()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        var first = new CountingWebProxy(new Uri("http://proxy-one.invalid:8080"));
+        var second = new CountingWebProxy(new Uri("http://proxy-two.invalid:9090"));
+
+        using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = first };
+        ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            new Uri("https://example.com/"),
+            new DnsEndPoint("example.com", 443),
+            options);
+
+        handler.Proxy = second;
+        Assert.Throws<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            new Uri("https://example.com/"),
+            new DnsEndPoint("proxy-two.invalid", 9090),
+            options));
+
+        Assert.Equal(2, first.ProbeQueryCount);
+        Assert.Equal(2, second.ProbeQueryCount);
+    }
+
+    private sealed class CountingWebProxy(Uri proxyUri) : IWebProxy
+    {
+        private int _probeQueryCount;
+        private int _requestQueryCount;
+
+        public ICredentials? Credentials { get; set; }
+
+        public int ProbeQueryCount => _probeQueryCount;
+
+        public int RequestQueryCount => _requestQueryCount;
+
+        public Uri? GetProxy(Uri destination)
+        {
+            if (destination.Host.EndsWith(".invalid", StringComparison.OrdinalIgnoreCase))
+            {
+                Interlocked.Increment(ref _probeQueryCount);
+                return proxyUri;
+            }
+
+            // Mirrors the case the probes exist for: the proxy reports nothing for the real destination, so its
+            // own address is only visible through a destination that is certainly not it.
+            Interlocked.Increment(ref _requestQueryCount);
+            return null;
+        }
+
+        public bool IsBypassed(Uri host) => false;
+    }
+
     private static ServerSideRequestForgeryOptions CreateProxyTestOptions()
     {
         var options = new ServerSideRequestForgeryOptions();

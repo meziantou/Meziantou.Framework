@@ -1,4 +1,6 @@
 using System.CommandLine;
+using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Meziantou.Framework.Templating.Tool.Tests")]
@@ -143,6 +145,13 @@ internal static partial class Program
             await error.WriteLineAsync(ex.Message.AsMemory(), cancellationToken);
             return 1;
         }
+        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+        {
+            // The template threw while running. Report it against the template file instead of
+            // letting a reflection stack trace escape as if the tool itself had crashed.
+            await error.WriteLineAsync(FormatTemplateRuntimeError(ex.InnerException, inputPath).AsMemory(), cancellationToken);
+            return 1;
+        }
 
         if (resolvedLineEnding is not null)
         {
@@ -159,6 +168,31 @@ internal static partial class Program
         outputPath.CreateParentDirectory();
         await File.WriteAllTextAsync(outputPath, result, resolvedOutputEncoding, cancellationToken).ConfigureAwait(false);
         return 0;
+    }
+
+    /// <summary>
+    /// Formats an exception thrown by the template itself as a diagnostic pointing at the template
+    /// file, using the location the <c>#line</c> directives map the failing frame back to.
+    /// </summary>
+    private static string FormatTemplateRuntimeError(Exception exception, FullPath inputPath)
+    {
+        foreach (var frame in new StackTrace(exception, fNeedFileInfo: true).GetFrames())
+        {
+            var fileName = frame.GetFileName();
+            if (string.IsNullOrEmpty(fileName) || FullPath.FromPath(fileName) != inputPath)
+                continue;
+
+            var line = frame.GetFileLineNumber();
+            if (line <= 0)
+                break;
+
+            var column = frame.GetFileColumnNumber();
+            return column > 0
+                ? string.Create(CultureInfo.InvariantCulture, $"{inputPath}({line},{column}): error: {exception.Message}")
+                : string.Create(CultureInfo.InvariantCulture, $"{inputPath}({line}): error: {exception.Message}");
+        }
+
+        return string.Create(CultureInfo.InvariantCulture, $"{inputPath}: error: {exception.Message}");
     }
 
     private static bool TryResolveLineEnding(string? value, out string? lineEnding)

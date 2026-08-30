@@ -219,4 +219,20 @@ public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(1, result);
         Assert.Contains("template.txt(2,4)", console.Error);
     }
+
+    [Fact]
+    public async Task TemplateThrowsAtRuntime_ReturnsDiagnosticWithInputPathAndPosition()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = await temp.CreateTextFileAsync("template.txt", "line1\n<% throw new System.InvalidOperationException(\"boom\"); %>", XunitCancellationToken);
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(["--input", inputPath.ToString()], console.ConfigureConsole);
+
+        Assert.Equal(1, result);
+        Assert.Equal(string.Empty, console.Output);
+        Assert.Contains("template.txt(2", console.Error, ignoreCase: false);
+        Assert.Contains("error: boom", console.Error, ignoreCase: false);
+        Assert.DoesNotContain("System.Reflection", console.Error, ignoreCase: false);
+    }
 }

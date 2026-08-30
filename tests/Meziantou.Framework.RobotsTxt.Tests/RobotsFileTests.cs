@@ -405,6 +405,54 @@ public sealed class RobotsFileTests
         Assert.Equal(RobotsParseErrorKind.InvalidCrawlDelay, error.Kind);
     }
 
+    [Theory]
+    [InlineData("1e300")]
+    [InlineData("1E20")]
+    [InlineData("Infinity")]
+    [InlineData("-Infinity")]
+    [InlineData("NaN")]
+    [InlineData("922337203686")]
+    public void ParseErrors_CrawlDelayOutOfRange_RecordsErrorInsteadOfThrowing(string value)
+    {
+        var robots = RobotsFile.Parse($"User-agent: *\nCrawl-delay: {value}\nDisallow: /");
+
+        var error = Assert.Single(robots.ParseErrors);
+        Assert.Equal(RobotsParseErrorKind.InvalidCrawlDelay, error.Kind);
+        Assert.Null(robots.GetCrawlDelay("Bot"));
+    }
+
+    [Fact]
+    public void Parse_CrawlDelayAtTheUpperBound_IsAccepted()
+    {
+        var robots = RobotsFile.Parse("User-agent: *\nCrawl-delay: 922337203685\nDisallow: /");
+
+        Assert.Empty(robots.ParseErrors);
+        Assert.Equal(TimeSpan.FromSeconds(922_337_203_685d), robots.GetCrawlDelay("Bot"));
+    }
+
+    [Theory]
+    [InlineData("1,000")]
+    [InlineData("(5)")]
+    [InlineData("$5")]
+    public void ParseErrors_CrawlDelayIsNotANumericLiteral_RecordsError(string value)
+    {
+        // NumberStyles.Any used to read these as durations: "1,000" became 1000 seconds.
+        var robots = RobotsFile.Parse($"User-agent: *\nCrawl-delay: {value}\nDisallow: /");
+
+        var error = Assert.Single(robots.ParseErrors);
+        Assert.Equal(RobotsParseErrorKind.InvalidCrawlDelay, error.Kind);
+    }
+
+    [Fact]
+    public async Task ParseAsync_CrawlDelayOutOfRange_DoesNotFaultTheTask()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("User-agent: *\nCrawl-delay: 1e300\nDisallow: /\n"));
+
+        var robots = await RobotsFile.ParseAsync(stream, cancellationToken: XunitCancellationToken);
+
+        Assert.Equal(RobotsParseErrorKind.InvalidCrawlDelay, Assert.Single(robots.ParseErrors).Kind);
+    }
+
     [Fact]
     public void ParseErrors_MultipleErrors_AllRecorded()
     {

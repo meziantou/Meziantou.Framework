@@ -126,6 +126,31 @@ public sealed class DiffToolsTests
     }
 
     [Fact]
+    public void GetArguments_EscapesAQuoteInThePath()
+    {
+        var resolvedTool = new ResolvedTool(DiffTool.VisualStudioCode, "diff", DiffTools.GetLaunchArguments(DiffTool.VisualStudioCode), supportsText: true, []);
+        using var scope = new EnvironmentVariableScope("DiffEngine_TargetOnLeft", null);
+
+        // A quote is a legal file name character on Linux and macOS. Unescaped, everything after it would
+        // reach the diff tool as extra arguments.
+        var arguments = resolvedTool.GetArguments("/tmp/a\" --wait --extensionDevelopmentPath=/evil \"x.txt", "/tmp/verified.txt");
+
+        Assert.Equal("--diff \"/tmp/a\\\" --wait --extensionDevelopmentPath=/evil \\\"x.txt\" \"/tmp/verified.txt\"", arguments);
+    }
+
+    [Fact]
+    public void GetArguments_EscapesBackslashesBeforeTheClosingQuote()
+    {
+        var resolvedTool = new ResolvedTool(DiffTool.Meld, "diff", DiffTools.GetLaunchArguments(DiffTool.Meld), supportsText: true, []);
+        using var scope = new EnvironmentVariableScope("DiffEngine_TargetOnLeft", null);
+
+        // A trailing backslash would otherwise escape the quote that closes the argument.
+        var arguments = resolvedTool.GetArguments("C:\\dir\\", "C:\\other\\");
+
+        Assert.Equal("\"C:\\dir\\\\\" \"C:\\other\\\\\"", arguments);
+    }
+
+    [Fact]
     public void EveryDiffToolHasLaunchArguments()
     {
         foreach (var tool in Enum.GetValues<DiffTool>())

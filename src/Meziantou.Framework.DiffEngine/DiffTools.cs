@@ -504,44 +504,92 @@ public static class DiffTools
         return trimmed[0] == '.' ? trimmed : "." + trimmed;
     }
 
-    private static string StandardLeftArguments(string temp, string target) => $"\"{target}\" \"{temp}\"";
-    private static string StandardRightArguments(string temp, string target) => $"\"{temp}\" \"{target}\"";
+    private static string StandardLeftArguments(string temp, string target) => $"{Quote(target)} {Quote(temp)}";
+    private static string StandardRightArguments(string temp, string target) => $"{Quote(temp)} {Quote(target)}";
 
-    private static string RiderLeftArguments(string temp, string target) => $"diff \"{target}\" \"{temp}\"";
-    private static string RiderRightArguments(string temp, string target) => $"diff \"{temp}\" \"{target}\"";
+    private static string RiderLeftArguments(string temp, string target) => $"diff {Quote(target)} {Quote(temp)}";
+    private static string RiderRightArguments(string temp, string target) => $"diff {Quote(temp)} {Quote(target)}";
 
-    private static string VimLeftArguments(string temp, string target) => $"-d \"{target}\" \"{temp}\"";
-    private static string VimRightArguments(string temp, string target) => $"-d \"{temp}\" \"{target}\"";
+    private static string VimLeftArguments(string temp, string target) => $"-d {Quote(target)} {Quote(temp)}";
+    private static string VimRightArguments(string temp, string target) => $"-d {Quote(temp)} {Quote(target)}";
 
-    private static string VisualStudioCodeLeftArguments(string temp, string target) => $"--diff \"{target}\" \"{temp}\"";
-    private static string VisualStudioCodeRightArguments(string temp, string target) => $"--diff \"{temp}\" \"{target}\"";
+    private static string VisualStudioCodeLeftArguments(string temp, string target) => $"--diff {Quote(target)} {Quote(temp)}";
+    private static string VisualStudioCodeRightArguments(string temp, string target) => $"--diff {Quote(temp)} {Quote(target)}";
 
     private static string VisualStudioLeftArguments(string temp, string target)
     {
         var tempTitle = Path.GetFileName(temp);
         var targetTitle = Path.GetFileName(target);
-        return $"/diff \"{target}\" \"{temp}\" \"{targetTitle}\" \"{tempTitle}\"";
+        return $"/diff {Quote(target)} {Quote(temp)} {Quote(targetTitle)} {Quote(tempTitle)}";
     }
 
     private static string VisualStudioRightArguments(string temp, string target)
     {
         var tempTitle = Path.GetFileName(temp);
         var targetTitle = Path.GetFileName(target);
-        return $"/diff \"{temp}\" \"{target}\" \"{tempTitle}\" \"{targetTitle}\"";
+        return $"/diff {Quote(temp)} {Quote(target)} {Quote(tempTitle)} {Quote(targetTitle)}";
     }
 
     private static string WinMergeLeftArguments(string temp, string target)
     {
         var tempTitle = Path.GetFileName(temp);
         var targetTitle = Path.GetFileName(target);
-        return $"/u /wr /e \"{target}\" \"{temp}\" /dl \"{targetTitle}\" /dr \"{tempTitle}\" /cfg Backup/EnableFile=0";
+        return $"/u /wr /e {Quote(target)} {Quote(temp)} /dl {Quote(targetTitle)} /dr {Quote(tempTitle)} /cfg Backup/EnableFile=0";
     }
 
     private static string WinMergeRightArguments(string temp, string target)
     {
         var tempTitle = Path.GetFileName(temp);
         var targetTitle = Path.GetFileName(target);
-        return $"/u /wl /e \"{temp}\" \"{target}\" /dl \"{tempTitle}\" /dr \"{targetTitle}\" /cfg Backup/EnableFile=0";
+        return $"/u /wl /e {Quote(temp)} {Quote(target)} /dl {Quote(tempTitle)} /dr {Quote(targetTitle)} /cfg Backup/EnableFile=0";
+    }
+
+    /// <summary>
+    /// Quotes a path for <see cref="System.Diagnostics.ProcessStartInfo.Arguments"/>. A quote is legal in a file
+    /// name on Linux and macOS, and an unescaped one would end the argument early and turn the rest of the path
+    /// into extra arguments for the diff tool.
+    /// </summary>
+    /// <remarks>
+    /// Escaping follows the rules <see cref="System.Diagnostics.ProcessStartInfo.Arguments"/> is parsed with on
+    /// every platform, described in
+    /// <see href="https://learn.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way">Everyone quotes command line arguments the wrong way</see>.
+    /// The value is always quoted, so paths without special characters keep the command line they had before.
+    /// </remarks>
+    private static string Quote(string path)
+    {
+        var sb = new StringBuilder(path.Length + 2);
+        sb.Append('"');
+
+        for (var i = 0; i < path.Length; i++)
+        {
+            var backslashes = 0;
+            while (i < path.Length && path[i] == '\\')
+            {
+                i++;
+                backslashes++;
+            }
+
+            if (i == path.Length)
+            {
+                // Backslashes that would otherwise escape the closing quote.
+                sb.Append('\\', backslashes * 2);
+                break;
+            }
+
+            if (path[i] == '"')
+            {
+                sb.Append('\\', (backslashes * 2) + 1);
+            }
+            else
+            {
+                sb.Append('\\', backslashes);
+            }
+
+            sb.Append(path[i]);
+        }
+
+        sb.Append('"');
+        return sb.ToString();
     }
 
     private static PlatformSettings Windows(string[] executableNames, params string[] searchDirectories) => new(executableNames, searchDirectories);

@@ -380,6 +380,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
                 else
                 {
                     result = default;
+                    parsedLength = 0;
                     return false;
                 }
             }
@@ -404,6 +405,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
                 case 'P':
                     result = isI ? ByteSizeUnit.PebiByte : ByteSizeUnit.PetaByte;
+                    return true;
+
+                case 'E':
+                    result = isI ? ByteSizeUnit.ExbiByte : ByteSizeUnit.ExaByte;
                     return true;
             }
         }
@@ -684,6 +689,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
                 else
                 {
                     result = default;
+                    parsedLength = 0;
                     return false;
                 }
             }
@@ -708,6 +714,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
                 case 'P':
                     result = isI ? ByteSizeUnit.PebiByte : ByteSizeUnit.PetaByte;
+                    return true;
+
+                case 'E':
+                    result = isI ? ByteSizeUnit.ExbiByte : ByteSizeUnit.ExaByte;
                     return true;
             }
         }

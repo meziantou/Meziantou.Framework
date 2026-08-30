@@ -71,7 +71,7 @@ public class InMemoryLogger : IInMemoryLogger
         return _scopeProvider.Push(state);
     }
 
-    public bool IsEnabled(LogLevel logLevel) => true;
+    public bool IsEnabled(LogLevel logLevel) => logLevel is not LogLevel.None;
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {

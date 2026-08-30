@@ -93,7 +93,113 @@ public class RelativeDateTests
         }
     }
 
+    private static RelativeDate CreateDate(DateTime dateTime)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 0, 0, 0, TimeSpan.Zero));
+        return RelativeDate.Get(dateTime, timeProvider);
+    }
+
+    [Fact]
+    public void IComparable_CompareTo_ReturnsPositive_ForNull()
+    {
+        // null sorts first, even against the smallest representable date
+        var date = (IComparable)CreateDate(new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        Assert.Equal(1, date.CompareTo(obj: null));
+    }
+
+    [Theory]
+    [InlineData(42)]
+    [InlineData("string")]
+    public void IComparable_CompareTo_Throws_ForAnotherType(object value)
+    {
+        var date = (IComparable)CreateDate(new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        Assert.Throws<ArgumentException>(() => date.CompareTo(value));
+    }
+
+    [Fact]
+    public void NonGenericSort_OrdersByDate()
+    {
+        var min = CreateDate(new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        var middle = CreateDate(new DateTime(2018, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+        var max = CreateDate(new DateTime(2018, 1, 3, 0, 0, 0, DateTimeKind.Utc));
+
+        var items = new object[] { max, min, middle };
+        Array.Sort(items);
+
+        Assert.Equal(new object[] { min, middle, max }, items);
+    }
+
+    [Fact]
+    public void ComparisonOperators_AreConsistent()
+    {
+        var earlier = CreateDate(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        var later = CreateDate(new DateTime(2018, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+        var sameAsEarlier = CreateDate(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
+        Assert.True(earlier < later);
+        Assert.True(earlier <= later);
+        Assert.False(earlier > later);
+        Assert.False(earlier >= later);
+        Assert.True(later > earlier);
+        Assert.True(later >= earlier);
+
+        Assert.True(earlier == sameAsEarlier);
+        Assert.False(earlier != sameAsEarlier);
+        Assert.True(earlier <= sameAsEarlier);
+        Assert.True(earlier >= sameAsEarlier);
+        Assert.Equal(0, earlier.CompareTo(sameAsEarlier));
+        Assert.Equal(earlier.GetHashCode(), sameAsEarlier.GetHashCode());
+        Assert.True(earlier.Equals((object)sameAsEarlier));
+        // Assigned first so the analyzer does not rewrite this into Assert.NotEqual, which would not exercise Equals(object)
+        var equalsAnotherType = earlier.Equals("not a relative date");
+        Assert.False(equalsAnotherType);
+    }
+
 #if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    [Fact]
+    public void LocalDateTime_IsInterpretedInTheTimeProviderTimeZone()
+    {
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        timeProvider.SetLocalTimeZone(timeZone);
+
+        // 10:00 UTC expressed as a wall clock reading in the provider's time zone
+        var local = DateTime.SpecifyKind(TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc), timeZone), DateTimeKind.Local);
+
+        var result = RelativeDate.Get(local, timeProvider).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.Equal("2 hours ago", result);
+    }
+
+    [Fact]
+    public void LocalDateTime_SkippedByAForwardDstTransition_DoesNotThrow()
+    {
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris");
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 3, 25, 12, 0, 0, TimeSpan.Zero));
+        timeProvider.SetLocalTimeZone(timeZone);
+
+        // 02:30 does not exist in Paris on 2018-03-25: the clock jumps from 02:00 to 03:00
+        var invalid = DateTime.SpecifyKind(new DateTime(2018, 3, 25, 2, 30, 0), DateTimeKind.Local);
+        Assert.True(timeZone.IsInvalidTime(DateTime.SpecifyKind(invalid, DateTimeKind.Unspecified)));
+
+        // Read against the standard-time offset (UTC+1), so 02:30 becomes 01:30 UTC
+        var result = RelativeDate.Get(invalid, timeProvider).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.Equal("10 hours ago", result);
+    }
+
+    [Fact]
+    public void UtcDateTime_IgnoresTheTimeProviderTimeZone()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        timeProvider.SetLocalTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo"));
+
+        var result = RelativeDate.Get(new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc), timeProvider).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.Equal("2 hours ago", result);
+    }
+
     private static readonly string[] LocalizedCultures = ["de", "es", "fr", "it", "ja", "ko", "nl", "pt", "tr", "zh-Hans"];
 
     /// <summary>Offsets from "now" reaching every branch of <see cref="RelativeDate.ToString(string, IFormatProvider)"/>, in both directions.</summary>
@@ -169,6 +275,74 @@ public class RelativeDateTests
             // A resource that formats a count must keep its placeholder
             Assert.Equal(neutralValue.Contains("{0}", StringComparison.Ordinal), localizedValue.Contains("{0}", StringComparison.Ordinal));
         }
+    }
+
+    [Fact]
+    public void FormatProvider_ExposingACultureFromGetFormat_IsHonored()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var date = RelativeDate.Get(new DateTime(2018, 6, 14, 6, 0, 0, DateTimeKind.Utc), timeProvider);
+
+        Assert.Equal("hier", date.ToString(format: null, new CultureFormatProvider(CultureInfo.GetCultureInfo("fr"))));
+    }
+
+    // Ambient culture is restored in a finally block, but a leak would be observed by anything running beside this test
+    [Fact(DisableParallelization = true)]
+    public void NoFormatProvider_UsesTheCurrentUICulture()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var date = RelativeDate.Get(new DateTime(2018, 6, 14, 6, 0, 0, DateTimeKind.Utc), timeProvider);
+
+        var previousCulture = CultureInfo.CurrentCulture;
+        var previousUICulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
+            Assert.Equal("hier", date.ToString());
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+            CultureInfo.CurrentUICulture = previousUICulture;
+        }
+    }
+
+    // Swaps both LocalizationProvider.Current and the ambient culture, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public void NoFormatProvider_PassesTheResolvedCultureToTheProvider()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var date = RelativeDate.Get(new DateTime(2018, 6, 14, 6, 0, 0, DateTimeKind.Utc), timeProvider);
+
+        var previousProvider = LocalizationProvider.Current;
+        var previousUICulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            LocalizationProvider.Current = new CultureEchoLocalizationProvider();
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
+
+            // Without resolution the provider receives null and has to guess the culture itself
+            Assert.Equal("fr", date.ToString());
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousUICulture;
+            LocalizationProvider.Current = previousProvider;
+        }
+    }
+
+    private sealed class CultureFormatProvider(CultureInfo culture) : IFormatProvider
+    {
+        public object? GetFormat(Type? formatType) => formatType == typeof(CultureInfo) ? culture : null;
+    }
+
+    private sealed class CultureEchoLocalizationProvider : ILocalizationProvider
+    {
+        public string GetString(string name, CultureInfo? culture) => culture?.Name ?? "<null>";
     }
 
     private static string GetDigits(string value) => string.Concat(value.Where(char.IsAsciiDigit));

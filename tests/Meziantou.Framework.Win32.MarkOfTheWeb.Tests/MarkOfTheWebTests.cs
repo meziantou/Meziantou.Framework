@@ -51,6 +51,74 @@ public sealed class MarkOfTheWebTests
         File.Delete(path);
     }
 
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetFileZoneContent_ReadsTheAsciiStreamWrittenByWindowsAndBrowsers()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            const string Content = "[ZoneTransfer]\r\nZoneId=3\r\nHostUrl=https://example.com/file.txt\r\n";
+            File.WriteAllBytes(path + ":Zone.Identifier", Encoding.ASCII.GetBytes(Content));
+
+            Assert.Equal(Content, MarkOfTheWeb.GetFileZoneContent(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetFileZoneContent_ReadsTheUtf16StreamWrittenByEarlierVersions()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            const string Content = "[ZoneTransfer]\r\nZoneId=3\r\n";
+            File.WriteAllBytes(path + ":Zone.Identifier", [.. Encoding.Unicode.GetPreamble(), .. Encoding.Unicode.GetBytes(Content)]);
+
+            Assert.Equal(Content, MarkOfTheWeb.GetFileZoneContent(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetFileZone_WritesTheStreamAsAsciiWithoutAByteOrderMark()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            MarkOfTheWeb.SetFileZone(path, UrlZone.Internet, hostUrl: "https://example.com/file.txt");
+
+            var bytes = File.ReadAllBytes(path + ":Zone.Identifier");
+            Assert.All(bytes, b => b is >= 0x09 and <= 0x7F);
+            Assert.Equal("[ZoneTransfer]\nZoneId=3\nHostUrl=https://example.com/file.txt\n", Encoding.ASCII.GetString(bytes).ReplaceLineEndings("\n"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetFileZone_PreservesNonAsciiCharactersInUrls()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            MarkOfTheWeb.SetFileZone(path, UrlZone.Internet, hostUrl: "https://example.com/café.txt");
+
+            Assert.Contains("café.txt", MarkOfTheWeb.GetFileZoneContent(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Theory, RunIf(TestOperatingSystems.Windows)]
     [InlineData("https://example.com/\r\nZoneId=0")]
     [InlineData("https://example.com/\nZoneId=0")]

@@ -22,7 +22,7 @@ public sealed class RestartManagerProcessInfo
     /// <summary>Gets the identifier of the process.</summary>
     public int ProcessId { get; }
 
-    /// <summary>Gets the time at which the process started. Windows recycles process identifiers, so only the combination of <see cref="ProcessId"/> and <see cref="StartTime"/> identifies a process.</summary>
+    /// <summary>Gets the time at which the process started, expressed in local time (<see cref="DateTimeKind.Local"/>). Windows recycles process identifiers, so only the combination of <see cref="ProcessId"/> and <see cref="StartTime"/> identifies a process.</summary>
     public DateTime StartTime { get; }
 
     /// <summary>Gets the friendly name of the application.</summary>

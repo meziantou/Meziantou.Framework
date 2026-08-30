@@ -125,6 +125,45 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public void Position_AboveArrayMaxLength_Throws()
+    {
+        using var stream = new PooledMemoryStream();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = (long)Array.MaxLength + 1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = long.MaxValue);
+        Assert.Equal(0, stream.Position);
+
+        stream.Position = Array.MaxLength;
+        Assert.Equal(Array.MaxLength, stream.Position);
+    }
+
+    [Fact]
+    public void Seek_AboveArrayMaxLength_Throws()
+    {
+        using var stream = new PooledMemoryStream();
+        stream.Write(CreateData(100));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(long.MaxValue, SeekOrigin.Begin));
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek((long)Array.MaxLength + 1, SeekOrigin.Begin));
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(Array.MaxLength, SeekOrigin.End));
+    }
+
+    [Fact]
+    public void WriteAtFarPosition_Throws_InsteadOfAllocatingForever()
+    {
+        // Regression: Position was unbounded and WriteCore guarded with "_position + count > Array.MaxLength",
+        // which overflows to a negative value near long.MaxValue. The guard passed and the write fell into an
+        // unbounded zero-fill loop that never returned.
+        using var stream = new PooledMemoryStream();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = long.MaxValue);
+
+        stream.Position = Array.MaxLength;
+        Assert.Throws<IOException>(() => stream.WriteByte(1));
+        Assert.Throws<IOException>(() => stream.Write(CreateData(10)));
+    }
+
+    [Fact]
     public void Overwrite_InTheMiddle()
     {
         using var stream = new PooledMemoryStream(SmallTiers());
@@ -202,6 +241,24 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Theory]
+    [InlineData(1)]
+    [InlineData(100)]
+    [InlineData(4097)]
+    [InlineData(5000)]
+    [InlineData(70_000)]
+    [InlineData(1024 * 1024)]
+    public void Constructor_WithInitialCapacity_ComposesTiersInsteadOfRoundingUp(int initialCapacity)
+    {
+        using var stream = new PooledMemoryStream(initialCapacity);
+
+        // The reservation is built from configured tiers, so the excess stays below the smallest tier (4 KiB by
+        // default). It used to round the whole request up to the next tier: 70_000 reserved 1 MiB.
+        Assert.True(stream.Capacity >= initialCapacity);
+        Assert.True(stream.Capacity - initialCapacity < 4096);
+        Assert.Equal(0, stream.Length);
+    }
+
+    [Theory]
     [InlineData(10)]
     [InlineData(1000)]
     [InlineData(100_000)]
@@ -224,6 +281,47 @@ public sealed class PooledMemoryStreamTests
         using var target = new MemoryStream();
         stream.WriteTo(target);
         Assert.Equal(data, target.ToArray());
+    }
+
+    [Fact]
+    public void GetBuffer_DoesNotExposeBytesLeftByAnotherStream()
+    {
+        // Unique tier size so this test owns its pool bucket and deterministically rents the same array back.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4111] };
+
+        using (var first = new PooledMemoryStream(options))
+        {
+            first.Write(CreateData(4111, seed: 77));
+        }
+
+        using var second = new PooledMemoryStream(options);
+        var data = CreateData(10, seed: 1);
+        second.Write(data);
+
+        var buffer = second.GetBuffer();
+        Assert.Equal(data, buffer.AsSpan(0, data.Length).ToArray());
+        Assert.Equal(new byte[buffer.Length - data.Length], buffer.AsSpan(data.Length).ToArray());
+    }
+
+    [Fact]
+    public void GetBuffer_AfterConsolidatingSegments_DoesNotExposeBytesLeftByAnotherStream()
+    {
+        // Both streams consolidate into the same 4139-byte bucket, so the second one rents the first one's array.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [16, 4139] };
+
+        using (var first = new PooledMemoryStream(options))
+        {
+            first.Write(CreateData(300, seed: 55));
+            first.GetBuffer();
+        }
+
+        using var second = new PooledMemoryStream(options);
+        var data = CreateData(20, seed: 2);
+        second.Write(data);
+
+        var buffer = second.GetBuffer();
+        Assert.Equal(data, buffer.AsSpan(0, data.Length).ToArray());
+        Assert.Equal(new byte[buffer.Length - data.Length], buffer.AsSpan(data.Length).ToArray());
     }
 
     [Fact]

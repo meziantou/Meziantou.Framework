@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>2.0.0</Version>
     <IsTrimmable>true</IsTrimmable>
+    <IsAotCompatible>true</IsAotCompatible>
     <Description>Classes to generate a tracing file that can be opened by Chromium browsers and other tools</Description>
   </PropertyGroup>
 

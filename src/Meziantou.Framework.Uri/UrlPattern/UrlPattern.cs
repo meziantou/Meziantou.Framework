@@ -769,15 +769,10 @@ public sealed class UrlPattern
 
     private static string CanonicalizePathname(string value)
     {
-        if (string.IsNullOrEmpty(value))
-            return value;
-
-        // Ensure starts with /
-        if (!value.StartsWith('/', StringComparison.Ordinal))
-        {
-            value = "/" + value;
-        }
-
+        // The callback runs on every fixed-text part of the pattern, not once on the whole pathname,
+        // so it must not add a leading "/": that would insert a separator in front of any literal
+        // that follows a group, turning "/books/:id.json" into "/books/:id/.json".
+        // The spec avoids the same trap by prefixing "/-" before parsing and stripping it afterwards.
         return value;
     }
 

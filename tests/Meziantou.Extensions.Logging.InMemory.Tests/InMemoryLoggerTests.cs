@@ -314,6 +314,56 @@ public sealed partial class InMemoryLoggerTests
     }
 
     [Fact]
+    public void Count_TracksTheNumberOfEntries()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        Assert.Equal(0, logger.Logs.Count);
+
+        logger.LogInformation("first");
+        Assert.Equal(1, logger.Logs.Count);
+
+        // Past the first chunk boundary
+        for (var i = 0; i < 50; i++)
+        {
+            logger.LogInformation("Entry {Index}", i);
+        }
+
+        Assert.Equal(51, logger.Logs.Count);
+        Assert.HasCount(51, logger.Logs);
+    }
+
+    [Fact]
+    public void Clear_RemovesEveryEntry()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        for (var i = 0; i < 50; i++)
+        {
+            logger.LogInformation("Entry {Index}", i);
+        }
+
+        logger.Logs.Clear();
+
+        Assert.Equal(0, logger.Logs.Count);
+        Assert.Empty(logger.Logs);
+        Assert.Empty(logger.Logs.Informations);
+        Assert.Null(logger.Logs.Find(_ => true));
+        Assert.Empty(logger.Logs.ToString());
+    }
+
+    [Fact]
+    public void Clear_LeavesTheCollectionUsable()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        logger.LogInformation("before");
+
+        logger.Logs.Clear();
+        logger.LogInformation("after");
+
+        Assert.Equal(1, logger.Logs.Count);
+        Assert.Equal("after", Assert.Single(logger.Logs).Message);
+    }
+
+    [Fact]
     public void WithTimeProvider()
     {
         using var provider = new InMemoryLoggerProvider(new CustomTimeProvider());

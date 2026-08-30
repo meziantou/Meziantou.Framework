@@ -823,6 +823,28 @@ public class GlobTests
     }
 
     [Theory]
+    [InlineData("**/b.txt", "b.txt")]
+    [InlineData("**/b.txt", "a/b.txt")]
+    [InlineData("**/b.txt", "a/nested/b.txt")]
+    [InlineData("a/**/b.txt", "a/b.txt")]
+    [InlineData("a/**/b.txt", "a/nested/b.txt")]
+    public void RecursiveWildcardFollowedByASingleSegmentMatchesAtEveryDepth(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("**/b.txt", "c.txt")]
+    [InlineData("**/b.txt", "a/c.txt")]
+    [InlineData("a/**/b.txt", "c/b.txt")]
+    public void RecursiveWildcardFollowedByASingleSegmentStillRejectsOtherPaths(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+    }
+
+    [Theory]
     [InlineData("**", "a.txt")]
     [InlineData("**", "src/a.txt")]
     [InlineData("src/**", "src/a.txt")]

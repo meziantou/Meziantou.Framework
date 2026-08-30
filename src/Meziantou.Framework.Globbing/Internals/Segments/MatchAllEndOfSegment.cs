@@ -17,4 +17,9 @@ internal sealed class MatchAllEndOfSegment : Segment
 
         return true;
     }
+
+    public override string ToString()
+    {
+        return "*";
+    }
 }

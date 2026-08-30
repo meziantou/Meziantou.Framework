@@ -777,13 +777,29 @@ public class Template
     /// <returns>The Run method information.</returns>
     protected virtual MethodInfo FindMethod(Assembly assembly)
     {
-        var type = assembly.GetType(ClassName);
-        System.Diagnostics.Debug.Assert(type != null);
+        ArgumentNullException.ThrowIfNull(assembly);
 
-        var methodInfo = type.GetMethod(RunMethodName);
-        System.Diagnostics.Debug.Assert(methodInfo != null);
+        var type = assembly.GetType(ClassName)
+            ?? throw new TemplateException($"Type '{ClassName}' was not found in the generated assembly.");
+
+        // A class member block can declare its own overload of the run method, which makes
+        // Type.GetMethod(name) throw AmbiguousMatchException. Identify the generated one by its
+        // first parameter instead: it is always the output parameter.
+        var methodInfo = Array.Find(
+            type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly),
+            IsRunMethod)
+            ?? throw new TemplateException($"Method '{RunMethodName}' was not found in the generated assembly.");
 
         return methodInfo;
+
+        bool IsRunMethod(MethodInfo method)
+        {
+            if (!string.Equals(method.Name, RunMethodName, StringComparison.Ordinal))
+                return false;
+
+            var parameters = method.GetParameters();
+            return parameters.Length > 0 && string.Equals(parameters[0].Name, OutputParameterName, StringComparison.Ordinal);
+        }
     }
 
     /// <summary>Creates a string writer for capturing template output.</summary>

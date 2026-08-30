@@ -26,6 +26,7 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
     // Set when this instance created a directory for the sole purpose of holding the file.
     // Disposing must then remove that directory, not just the file.
     private readonly FullPath _ownedDirectory;
+    private bool _disposed;
 
     /// <summary>Gets the full path to the temporary file.</summary>
     /// <value>The absolute path to the temporary file.</value>
@@ -105,6 +106,10 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
     /// </remarks>
     public void Dispose()
     {
+        if (_disposed)
+            return;
+
+        _disposed = true;
         if (_ownedDirectory.IsEmpty)
         {
             IOUtilities.Delete(new FileInfo(FullPath));
@@ -122,6 +127,10 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
     /// </remarks>
     public ValueTask DisposeAsync()
     {
+        if (_disposed)
+            return ValueTask.CompletedTask;
+
+        _disposed = true;
         if (_ownedDirectory.IsEmpty)
             return IOUtilities.DeleteAsync(new FileInfo(FullPath), CancellationToken.None);
 

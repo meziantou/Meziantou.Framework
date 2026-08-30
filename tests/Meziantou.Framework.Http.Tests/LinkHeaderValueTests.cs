@@ -45,6 +45,17 @@ public sealed class LinkHeaderValueTests
         Assert.Equal("b", LinkHeaderValue.Parse("<a>; rel=prev, <b>;rel=next").GetLinkUrl("Next"));
     }
 
+    [Theory]
+    [InlineData("rel")]
+    [InlineData("REL")]
+    [InlineData("Rel")]
+    public void GetParameterValue_IsCaseInsensitive(string parameterName)
+    {
+        var link = Assert.Single(LinkHeaderValue.Parse("<a>; Rel=next; TITLE=hello"));
+        Assert.Equal("next", link.GetParameterValue(parameterName));
+        Assert.Equal("hello", link.GetParameterValue("Title"));
+    }
+
     private sealed class CustomHttpHeaders : HttpHeaders
     {
     }

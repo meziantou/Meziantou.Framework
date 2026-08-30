@@ -15,6 +15,22 @@ public class RelativeDateTests
         Assert.Throws<ArgumentException>(() => new RelativeDate(default, timeProvider).ToString());
     }
 
+    [Fact]
+    public void DefaultInstance_ToString_FallsBackToTheSystemTimeProvider()
+    {
+        // A default instance carries no TimeProvider and holds DateTime.MinValue, so it renders as a very distant past date
+        var result = default(RelativeDate).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.EndsWith(" years ago", result);
+    }
+
+    [Fact]
+    public void DefaultInstance_FromArray_ToString_FallsBackToTheSystemTimeProvider()
+    {
+        var dates = new RelativeDate[1];
+        var result = dates[0].ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.EndsWith(" years ago", result);
+    }
+
     [Theory]
     [MemberData(nameof(RelativeDate_ToString_Data))]
     public void RelativeDate_ToString(string dateTimeStr, string nowStr, string expectedValueEn, string expectedValueFr)

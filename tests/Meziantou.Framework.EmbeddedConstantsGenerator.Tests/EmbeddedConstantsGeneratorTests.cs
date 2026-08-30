@@ -199,6 +199,41 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         Assert.Contains("MFECG0005", string.Join('\n', result.Output));
     }
 
+    [Fact]
+    public async Task GenerateOnBuild_OutputPathCannotBeWritten_ReportsDiagnosticInsteadOfUnhandledException()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("unwritable-output-path");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("unwritable-output-path/Sample.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net10.0</TargetFramework>
+                <EmbeddedConstantsNamespace>Generated</EmbeddedConstantsNamespace>
+                <EmbeddedConstantsOutputPath>Generated/EmbeddedConstants.g.cs</EmbeddedConstantsOutputPath>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="{{EmbeddedConstantsGeneratorPackageFixture.PackageName}}" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
+                <EmbeddedConstant Include="Assets/sample.txt" Kind="Text" />
+              </ItemGroup>
+            </Project>
+            """);
+        temporaryDirectory.CreateTextFile("unwritable-output-path/Assets/sample.txt", "Hello");
+
+        // The generated file path is an existing directory, so writing it throws inside the task
+        Directory.CreateDirectory(projectDirectory / "Generated" / "EmbeddedConstants.g.cs");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 1);
+
+        var output = string.Join('\n', result.Output);
+        Assert.Contains("MFECG0011", output);
+        Assert.DoesNotContain("MSB4018", output);
+    }
+
     private static string CreateProjectFile(EmbeddedConstantsGeneratorPackageFixture fixture, string embeddedConstants)
     {
         return $$"""

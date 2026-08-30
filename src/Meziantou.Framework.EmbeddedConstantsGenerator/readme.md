@@ -95,3 +95,4 @@ Text files larger than 1 MiB are rejected to avoid producing impractically large
 | `MFECG0007` | Embedded constant text file is not valid UTF-8 |
 | `MFECG0008` | Embedded constant text file is too large |
 | `MFECG0009` | Embedded constants visibility is invalid |
+| `MFECG0011` | The embedded constants could not be computed or written |

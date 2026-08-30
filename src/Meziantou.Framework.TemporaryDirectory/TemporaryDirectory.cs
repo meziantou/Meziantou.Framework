@@ -36,6 +36,13 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
 {
     private bool _disposed;
 
+    /// <summary>Gets the exception that prevented the deletion, or <see langword="null"/> when the deletion succeeded or has not run yet.</summary>
+    /// <remarks>
+    /// Disposing never throws, so this is how a caller observes that the directory could not be deleted.
+    /// It is set when disposal completes, so it must be read after the <see langword="using"/> block.
+    /// </remarks>
+    public Exception? DeleteError { get; private set; }
+
     /// <summary>Gets the full path to the temporary directory.</summary>
     /// <value>The absolute path to the temporary directory where files and subdirectories can be created.</value>
     /// <remarks>The path remains readable after the instance is disposed, even though the directory no longer exists.</remarks>
@@ -180,7 +187,14 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
             return;
 
         _disposed = true;
-        IOUtilities.Delete(new DirectoryInfo(FullPath));
+        try
+        {
+            IOUtilities.Delete(new DirectoryInfo(FullPath));
+        }
+        catch (Exception ex)
+        {
+            DeleteError = ex;
+        }
     }
 
     /// <summary>Asynchronously deletes the temporary directory and all its contents.</summary>
@@ -192,7 +206,14 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
             return;
 
         _disposed = true;
-        await IOUtilities.DeleteAsync(new DirectoryInfo(FullPath), CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            await IOUtilities.DeleteAsync(new DirectoryInfo(FullPath), CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            DeleteError = ex;
+        }
     }
 
     /// <summary>Combines the temporary directory path with a relative path using the / operator.</summary>

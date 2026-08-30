@@ -28,6 +28,13 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
     private readonly FullPath _ownedDirectory;
     private bool _disposed;
 
+    /// <summary>Gets the exception that prevented the deletion, or <see langword="null"/> when the deletion succeeded or has not run yet.</summary>
+    /// <remarks>
+    /// Disposing never throws, so this is how a caller observes that the file could not be deleted.
+    /// It is set when disposal completes, so it must be read after the <see langword="using"/> block.
+    /// </remarks>
+    public Exception? DeleteError { get; private set; }
+
     /// <summary>Gets the full path to the temporary file.</summary>
     /// <value>The absolute path to the temporary file.</value>
     public FullPath FullPath { get; }
@@ -110,13 +117,20 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
             return;
 
         _disposed = true;
-        if (_ownedDirectory.IsEmpty)
+        try
         {
-            IOUtilities.Delete(new FileInfo(FullPath));
+            if (_ownedDirectory.IsEmpty)
+            {
+                IOUtilities.Delete(new FileInfo(FullPath));
+            }
+            else
+            {
+                IOUtilities.Delete(new DirectoryInfo(_ownedDirectory));
+            }
         }
-        else
+        catch (Exception ex)
         {
-            IOUtilities.Delete(new DirectoryInfo(_ownedDirectory));
+            DeleteError = ex;
         }
     }
 
@@ -131,10 +145,20 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
             return ValueTask.CompletedTask;
 
         _disposed = true;
-        if (_ownedDirectory.IsEmpty)
-            return IOUtilities.DeleteAsync(new FileInfo(FullPath), CancellationToken.None);
+        return DeleteAsync();
 
-        return IOUtilities.DeleteAsync(new DirectoryInfo(_ownedDirectory), CancellationToken.None);
+        async ValueTask DeleteAsync()
+        {
+            try
+            {
+                var target = _ownedDirectory.IsEmpty ? (FileSystemInfo)new FileInfo(FullPath) : new DirectoryInfo(_ownedDirectory);
+                await IOUtilities.DeleteAsync(target, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                DeleteError = ex;
+            }
+        }
     }
 
     /// <summary>Implicitly converts a <see cref="TemporaryFile"/> to a <see cref="FullPath"/>.</summary>

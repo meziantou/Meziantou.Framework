@@ -7,6 +7,7 @@ namespace Meziantou.Framework
     [System.Diagnostics.DebuggerDisplay("{FullPath}")]
     public sealed class TemporaryDirectory : System.IAsyncDisposable, System.IDisposable
     {
+        public System.Exception? DeleteError { get => throw null; }
         public Meziantou.Framework.FullPath FullPath { get => throw null; }
         public static Meziantou.Framework.TemporaryDirectory Create() => throw null;
         public static Meziantou.Framework.TemporaryDirectory Create(Meziantou.Framework.FullPath rootDirectory) => throw null;
@@ -28,6 +29,7 @@ namespace Meziantou.Framework
     [System.Diagnostics.DebuggerDisplay("{FullPath}")]
     public sealed class TemporaryFile : System.IAsyncDisposable, System.IDisposable
     {
+        public System.Exception? DeleteError { get => throw null; }
         public Meziantou.Framework.FullPath FullPath { get => throw null; }
         public static Meziantou.Framework.TemporaryFile Create() => throw null;
         public static Meziantou.Framework.TemporaryFile Create(string fileNameOrPath) => throw null;

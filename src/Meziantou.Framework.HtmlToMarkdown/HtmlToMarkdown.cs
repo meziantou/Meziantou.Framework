@@ -6,6 +6,11 @@ namespace Meziantou.Framework;
 /// <summary>Converts HTML fragments to Markdown text.</summary>
 public static class HtmlToMarkdown
 {
+    // An HtmlParser holds only its configuration; each parse builds its own document, so a
+    // single instance is shared across calls. Constructing one costs more than parsing a
+    // small fragment, which made it a significant share of the cost of converting one.
+    private static readonly HtmlParser Parser = new();
+
     /// <summary>Converts an HTML fragment to Markdown using default options.</summary>
     /// <param name="html">The HTML fragment to convert.</param>
     /// <returns>The converted Markdown text.</returns>
@@ -23,8 +28,7 @@ public static class HtmlToMarkdown
         if (string.IsNullOrWhiteSpace(html))
             return "";
 
-        var parser = new HtmlParser();
-        var document = parser.ParseDocument("<body>" + html + "</body>");
+        var document = Parser.ParseDocument("<body>" + html + "</body>");
         var state = new ConversionState(options);
         var result = ConvertChildNodes(document.Body!, state);
         return result.Trim('\n', '\r');

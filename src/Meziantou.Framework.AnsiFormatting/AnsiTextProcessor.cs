@@ -7,6 +7,8 @@ public static class AnsiTextProcessor
     private const char EscapeCharacter = '\u001b';
     // Sequences shorter than this are processed using a stack-allocated buffer to avoid renting an array.
     private const int StackAllocThreshold = 512;
+    // The longest SGR parameter is 38:2:<color-space>:r:g:b
+    private const int MaxSgrSubParameters = 6;
 
     public static string RemoveAnsiSequences(string value)
     {
@@ -194,27 +196,78 @@ public static class AnsiTextProcessor
             return [0];
 
         var values = new List<int>();
-        var segmentStart = 0;
-
-        for (var i = 0; i <= sequenceContent.Length; i++)
+        foreach (var parameterRange in sequenceContent.Split(';'))
         {
-            if (i < sequenceContent.Length && sequenceContent[i] != ';')
-                continue;
-
-            var segment = sequenceContent[segmentStart..i];
-            if (segment.IsEmpty)
-            {
-                values.Add(0);
-            }
-            else if (int.TryParse(segment, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
-            {
-                values.Add(value);
-            }
-
-            segmentStart = i + 1;
+            AddSgrParameter(values, sequenceContent[parameterRange]);
         }
 
         return values;
+    }
+
+    /// <summary>
+    /// Normalizes a single ';'-delimited SGR parameter, which may carry ':'-delimited sub-parameters
+    /// (ITU T.416), into the flat form the rest of the parser consumes.
+    /// </summary>
+    private static void AddSgrParameter(List<int> values, ReadOnlySpan<char> parameter)
+    {
+        Span<int> parts = stackalloc int[MaxSgrSubParameters];
+        var count = 0;
+
+        foreach (var partRange in parameter.Split(':'))
+        {
+            if (count >= parts.Length)
+                return; // More sub-parameters than any SGR parameter uses: ignore the whole parameter
+
+            var part = parameter[partRange];
+            if (part.IsEmpty)
+            {
+                parts[count++] = 0;
+            }
+            else if (int.TryParse(part, NumberStyles.None, CultureInfo.InvariantCulture, out var value))
+            {
+                parts[count++] = value;
+            }
+            else
+            {
+                return; // Not a value this parser understands: ignore it rather than reset the style
+            }
+        }
+
+        // No sub-parameters: the classic ';'-only form, which the rest of the parser reads directly.
+        if (count is 1)
+        {
+            values.Add(parts[0]);
+            return;
+        }
+
+        // Sub-parameters belong to the parameter that introduces them. Only the extended-color
+        // parameters consume them; for anything else (for example 4:3, curly underline) the base
+        // parameter is applied and the sub-parameters are ignored.
+        if (parts[0] is not (38 or 48))
+        {
+            values.Add(parts[0]);
+            return;
+        }
+
+        // 38:5:n and 48:5:n
+        if (count is 3 && parts[1] is 5)
+        {
+            values.Add(parts[0]);
+            values.Add(parts[1]);
+            values.Add(parts[2]);
+            return;
+        }
+
+        // 38:2:r:g:b, and 38:2:<color-space>:r:g:b which carries an extra leading id to skip
+        if (parts[1] is 2 && count is 5 or 6)
+        {
+            var red = count is 6 ? 3 : 2;
+            values.Add(parts[0]);
+            values.Add(parts[1]);
+            values.Add(parts[red]);
+            values.Add(parts[red + 1]);
+            values.Add(parts[red + 2]);
+        }
     }
 
     private static AnsiStyle ApplySgr(AnsiStyle style, List<int> parameters)

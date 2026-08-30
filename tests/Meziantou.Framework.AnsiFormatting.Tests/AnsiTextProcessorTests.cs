@@ -162,6 +162,104 @@ public class AnsiTextProcessorTests
         Assert.True(run.Style.Underline);
     }
 
+    [Theory]
+    [InlineData("\u001b[38:5:208mA", 208)]
+    [InlineData("\u001b[38:5:0mA", 0)]
+    [InlineData("\u001b[38:5:255mA", 255)]
+    public void ParseTextWithAnsiStyles_ColonIndexedForeground(string input, int expectedIndex)
+    {
+        var style = SingleColonRunStyle(input);
+        Assert.NotNull(style.Foreground);
+        Assert.Equal(AnsiTextProcessor.AnsiColorKind.Indexed, style.Foreground.Kind);
+        Assert.Equal(expectedIndex, style.Foreground.IndexedValue);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_ColonIndexedBackground()
+    {
+        var style = SingleColonRunStyle("\u001b[48:5:208mA");
+        Assert.NotNull(style.Background);
+        Assert.Equal(208, style.Background.IndexedValue);
+    }
+
+    [Theory]
+    [InlineData("\u001b[38:2:10:20:30mA")]
+    [InlineData("\u001b[38:2::10:20:30mA")]
+    [InlineData("\u001b[38:2:1:10:20:30mA")]
+    public void ParseTextWithAnsiStyles_ColonRgbForeground(string input)
+    {
+        var style = SingleColonRunStyle(input);
+        Assert.NotNull(style.Foreground);
+        Assert.Equal(AnsiTextProcessor.AnsiColorKind.Rgb, style.Foreground.Kind);
+        Assert.Equal(10, style.Foreground.Red);
+        Assert.Equal(20, style.Foreground.Green);
+        Assert.Equal(30, style.Foreground.Blue);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_ColonRgbBackground()
+    {
+        var style = SingleColonRunStyle("\u001b[48:2:10:20:30mA");
+        Assert.NotNull(style.Background);
+        Assert.Equal(AnsiTextProcessor.AnsiColorKind.Rgb, style.Background.Kind);
+        Assert.Equal(10, style.Background.Red);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_ColonSubParametersOfOtherParametersAreIgnored()
+    {
+        // 4:3 is a curly underline: the underline applies, the style variant is not modelled
+        var style = SingleColonRunStyle("\u001b[4:3mA");
+        Assert.True(style.Underline);
+        Assert.False(style.Italic);
+        Assert.False(style.Bold);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_ColonParameterMixedWithClassicParameters()
+    {
+        var style = SingleColonRunStyle("\u001b[1;38:5:208;4mA");
+        Assert.True(style.Bold);
+        Assert.True(style.Underline);
+        Assert.NotNull(style.Foreground);
+        Assert.Equal(208, style.Foreground.IndexedValue);
+    }
+
+    [Theory]
+    [InlineData("\u001b[38:5:300mA")]
+    [InlineData("\u001b[38:2:300:1:1mA")]
+    [InlineData("\u001b[38:9:1mA")]
+    [InlineData("\u001b[38:5mA")]
+    [InlineData("\u001b[38:2:1:2mA")]
+    [InlineData("\u001b[38:2:1:2:3:4:5mA")]
+    public void ParseTextWithAnsiStyles_InvalidColonExtendedColorIsIgnored(string input)
+    {
+        var style = SingleColonRunStyle(input);
+        Assert.Null(style.Foreground);
+        Assert.Null(style.Background);
+    }
+
+    [Theory]
+    [InlineData("\u001b[ 4m")]
+    [InlineData("\u001b[+4m")]
+    [InlineData("\u001b[-4m")]
+    public void ParseTextWithAnsiStyles_NonDigitSgrParametersAreIgnored(string sequence)
+    {
+        // ECMA-48 parameter bytes are digits, ';' and ':' only
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles("\u001b[1m" + sequence + "A");
+
+        var run = Assert.Single(parsed.Runs);
+        Assert.True(run.Style.Bold);
+        Assert.False(run.Style.Underline);
+    }
+
+    private static AnsiTextProcessor.AnsiStyle SingleColonRunStyle(string input)
+    {
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles(input);
+        Assert.Equal("A", parsed.Text);
+        return Assert.Single(parsed.Runs).Style;
+    }
+
     [Fact]
     public void RemoveAnsiSequences_MultipleSequencesInRow()
     {

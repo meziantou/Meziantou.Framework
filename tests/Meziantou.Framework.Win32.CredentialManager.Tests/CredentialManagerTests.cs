@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
@@ -193,6 +194,60 @@ public sealed class CredentialManagerTests
         using var context = new IsolatedContext();
         var credentials = CredentialManager.EnumerateCredentials(context.GetCredentialName("*"));
         Assert.Empty(credentials);
+    }
+
+    // The credential prompts need a UI, so the dialogs themselves cannot be tested. The two buffer helpers behind
+    // them can: CredPackAuthenticationBuffer and CredUnPackAuthenticationBuffer are documented as a pair, so
+    // GetInputBuffer's output is exactly what GetCredentialsFromOutputBuffer expects.
+    [Theory, RunIf(TestOperatingSystems.Windows)]
+    [InlineData("john", "Pa$$w0rd")]
+    [InlineData("john", "")]
+    [InlineData("CONTOSO\\john", "Pa$$w0rd")]
+    [SupportedOSPlatform("windows6.0.6000")]
+    public unsafe void CredentialManager_AuthenticationBuffer_RoundTrips(string user, string password)
+    {
+        CredentialManager.GetInputBuffer(user, password, out var buffer, out var size);
+        Assert.NotEqual(IntPtr.Zero, (IntPtr)buffer);
+
+        // GetCredentialsFromOutputBuffer zeroes and frees the buffer it is given.
+        Assert.True(CredentialManager.GetCredentialsFromOutputBuffer(buffer, size, out var actualUser, out var actualPassword, out var actualDomain));
+
+        var (expectedDomain, expectedUser) = user.Split('\\') is [var d, var u] ? (d, u) : ("", user);
+        Assert.Equal(expectedUser, actualUser);
+        Assert.Equal(expectedDomain, actualDomain);
+        Assert.Equal(password, actualPassword);
+    }
+
+    // 1024 bytes, the size this used to hard-code, is not enough for a long user name plus a password.
+    [Theory, RunIf(TestOperatingSystems.Windows)]
+    [InlineData(400, 200)]
+    [InlineData(513, 256)]
+    [SupportedOSPlatform("windows6.0.6000")]
+    public unsafe void CredentialManager_AuthenticationBuffer_RoundTripsLongCredentials(int userLength, int passwordLength)
+    {
+        var user = new string('u', userLength);
+        var password = new string('p', passwordLength);
+
+        CredentialManager.GetInputBuffer(user, password, out var buffer, out var size);
+        Assert.NotEqual(IntPtr.Zero, (IntPtr)buffer);
+        Assert.True(size > 1024, $"expected the packed buffer to exceed 1024 bytes, was {size}");
+
+        Assert.True(CredentialManager.GetCredentialsFromOutputBuffer(buffer, size, out var actualUser, out var actualPassword, out _));
+        Assert.Equal(user, actualUser);
+        Assert.Equal(password, actualPassword);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    [SupportedOSPlatform("windows6.0.6000")]
+    public unsafe void CredentialManager_GetInputBuffer_NoUserName_PacksNothing()
+    {
+        CredentialManager.GetInputBuffer(user: null, password: "Pa$$w0rd", out var buffer, out var size);
+        Assert.Equal(IntPtr.Zero, (IntPtr)buffer);
+        Assert.Equal(0u, size);
+
+        CredentialManager.GetInputBuffer(user: "", password: "Pa$$w0rd", out buffer, out size);
+        Assert.Equal(IntPtr.Zero, (IntPtr)buffer);
+        Assert.Equal(0u, size);
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]

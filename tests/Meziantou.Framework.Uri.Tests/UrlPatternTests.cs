@@ -1215,4 +1215,86 @@ public sealed class UrlPatternTests
         Assert.NotNull(result);
         Assert.Equal("css/styles/main.css", result.Pathname.Groups["path"]);
     }
+
+    [Fact]
+    public void Create_WithBaseUrl_InheritsTheSearchAndTheHash()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { BaseUrl = "https://example.com/foo?a=1#h" });
+
+        Assert.Equal("/foo", pattern.Pathname);
+        Assert.Equal("a=1", pattern.Search);
+        Assert.Equal("h", pattern.Hash);
+        Assert.True(pattern.IsMatch("https://example.com/foo?a=1#h"));
+        Assert.False(pattern.IsMatch("https://example.com/foo?other=1#h"));
+        Assert.False(pattern.IsMatch("https://example.com/foo?a=1#other"));
+    }
+
+    [Fact]
+    public void Create_WithBaseUrl_DoesNotInheritAComponentLessSpecificThanTheInit()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Protocol = "https",
+            BaseUrl = "https://example.com:8443/base",
+        });
+
+        Assert.Equal("*", pattern.Hostname);
+        Assert.Equal("*", pattern.Port);
+        Assert.Equal("*", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://other.example/anything"));
+    }
+
+    [Fact]
+    public void Create_WithBaseUrl_DoesNotInheritThePathnameWhenThePortIsSpecified()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Port = "8443",
+            BaseUrl = "https://example.com:8443/base",
+        });
+
+        Assert.Equal("*", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com:8443/anything"));
+    }
+
+    [Theory]
+    [InlineData("https://example.com/x/:id", "https://example.com/x/:id", "https://example.com/x/anything")]
+    [InlineData("https://example.com/a(b)", "https://example.com/a(b)", "https://example.com/aXb")]
+    public void Create_WithBaseUrl_TreatsThePathAsLiteralText(string baseUrl, string literalUrl, string patternishUrl)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { BaseUrl = baseUrl });
+
+        Assert.True(pattern.IsMatch(literalUrl));
+        Assert.False(pattern.IsMatch(patternishUrl));
+    }
+
+    [Fact]
+    public void Create_WithBaseUrl_TreatsTheHostAsLiteralText()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { BaseUrl = "https://a.example.com/" });
+
+        Assert.True(pattern.IsMatch("https://a.example.com/"));
+        Assert.False(pattern.IsMatch("https://axexample.com/"));
+    }
+
+    [Fact]
+    public void Create_WithBaseUrl_StillResolvesARelativePathname()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "books/:id",
+            BaseUrl = "https://example.com/base/index.html",
+        });
+
+        Assert.Equal("/base/books/:id", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com/base/books/42"));
+    }
+
+    [Fact]
+    public void IsMatch_WithBaseUrlOnTheInput_InheritsWithoutEscaping()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/x/*" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { BaseUrl = "https://example.com/x/a(b)" }));
+    }
 }

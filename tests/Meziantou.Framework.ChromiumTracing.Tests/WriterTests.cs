@@ -277,6 +277,65 @@ public sealed partial class WriterTests
     }
 
     [Fact]
+    public async Task TheTimestampDoesNotDependOnTheOffset()
+    {
+        var utc = new DateTimeOffset(2024, 5, 6, 7, 8, 9, TimeSpan.Zero);
+
+        using var stream = new MemoryStream();
+        await using (var writer = ChromiumTracingWriter.Create(stream, streamOwned: false))
+        {
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent { Name = "utc", Timestamp = utc, ThreadTimestamp = utc });
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent { Name = "positive", Timestamp = utc.ToOffset(TimeSpan.FromHours(2)), ThreadTimestamp = utc.ToOffset(TimeSpan.FromHours(2)) });
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent { Name = "negative", Timestamp = utc.ToOffset(TimeSpan.FromHours(-5)), ThreadTimestamp = utc.ToOffset(TimeSpan.FromHours(-5)) });
+        }
+
+        using var document = JsonDocument.Parse(stream.ToArray());
+        var timestamps = document.RootElement.EnumerateArray().Select(element => element.GetProperty("ts").GetInt64()).ToList();
+        var threadTimestamps = document.RootElement.EnumerateArray().Select(element => element.GetProperty("tts").GetInt64()).ToList();
+
+        Assert.Equal(utc.UtcTicks / 10, timestamps[0]);
+        Assert.Equal(new[] { timestamps[0], timestamps[0], timestamps[0] }, timestamps);
+        Assert.Equal(new[] { timestamps[0], timestamps[0], timestamps[0] }, threadTimestamps);
+    }
+
+    [Fact]
+    public void SettingTheClockSyncNameToNullIsANoOp()
+    {
+        var tracingEvent = new ChromiumTracingClockSyncEvent { Name = null };
+
+        Assert.Equal("clock_sync", tracingEvent.Name);
+    }
+
+    [Fact]
+    public void SettingTheClockSyncNameToItsOwnValueIsANoOp()
+    {
+        var tracingEvent = new ChromiumTracingClockSyncEvent { Name = "clock_sync" };
+
+        Assert.Equal("clock_sync", tracingEvent.Name);
+    }
+
+    [Fact]
+    public void SettingTheClockSyncNameToAnotherValueThrows()
+    {
+        Assert.Throws<ArgumentException>(() => new ChromiumTracingClockSyncEvent { Name = "other" });
+    }
+
+    [Fact]
+    public void CopyingTheNameBetweenEventsWorksForEveryEventType()
+    {
+        // Name is virtual on the base type, so anything that copies it across events must not break on a single type
+        foreach (var eventType in typeof(ChromiumTracingWriter).Assembly.GetTypes().Where(type => !type.IsAbstract && type.IsAssignableTo(typeof(ChromiumTracingEvent))))
+        {
+            var source = (ChromiumTracingEvent)Activator.CreateInstance(eventType)!;
+            var destination = (ChromiumTracingEvent)Activator.CreateInstance(eventType)!;
+
+            destination.Name = source.Name;
+
+            Assert.Equal(source.Name, destination.Name);
+        }
+    }
+
+    [Fact]
     public async Task EveryEventTypeIsWrittenWithItsDocumentedPhase()
     {
         // The phase codes and property names are the wire format: they must not change silently.

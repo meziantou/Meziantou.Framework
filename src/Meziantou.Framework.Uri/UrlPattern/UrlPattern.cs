@@ -402,16 +402,28 @@ public sealed class UrlPattern
 
     private UrlPatternResult? MatchUrl(Uri url, string originalInput)
     {
-        var protocol = url.Scheme;
-        var username = Uri.UnescapeDataString(url.UserInfo.Split(':').FirstOrDefault() ?? "");
-        var password = url.UserInfo.Contains(':', StringComparison.Ordinal) ? Uri.UnescapeDataString(url.UserInfo[(url.UserInfo.IndexOf(':', StringComparison.Ordinal) + 1)..]) : "";
-        var hostname = url.Host;
-        var port = url.IsDefaultPort ? "" : url.Port.ToString(CultureInfo.InvariantCulture);
-        var pathname = url.AbsolutePath;
-        var search = url.Query.TrimStart('?');
-        var hash = url.Fragment.TrimStart('#');
+        var (protocol, username, password, hostname, port, pathname, search, hash) = GetUrlComponents(url);
 
         return MatchComponents(protocol, username, password, hostname, port, pathname, search, hash, originalInput);
+    }
+
+    /// <summary>Splits the URL into the eight component values that are matched against the pattern.</summary>
+    private static (string Protocol, string Username, string Password, string Hostname, string Port, string Pathname, string Search, string Hash) GetUrlComponents(Uri url)
+    {
+        var userInfo = url.UserInfo;
+        var separatorIndex = userInfo.IndexOf(':', StringComparison.Ordinal);
+        var username = separatorIndex == -1 ? userInfo : userInfo[..separatorIndex];
+        var password = separatorIndex == -1 ? "" : userInfo[(separatorIndex + 1)..];
+
+        return (
+            url.Scheme,
+            Uri.UnescapeDataString(username),
+            Uri.UnescapeDataString(password),
+            url.Host,
+            url.IsDefaultPort ? "" : url.Port.ToString(CultureInfo.InvariantCulture),
+            url.AbsolutePath,
+            url.Query.TrimStart('?'),
+            url.Fragment.TrimStart('#'));
     }
 
     private UrlPatternResult? MatchInit(UrlPatternInit init)
@@ -515,14 +527,7 @@ public sealed class UrlPattern
 
     private bool IsMatchUrl(Uri url)
     {
-        var protocol = url.Scheme;
-        var username = Uri.UnescapeDataString(url.UserInfo.Split(':').FirstOrDefault() ?? "");
-        var password = url.UserInfo.Contains(':', StringComparison.Ordinal) ? Uri.UnescapeDataString(url.UserInfo[(url.UserInfo.IndexOf(':', StringComparison.Ordinal) + 1)..]) : "";
-        var hostname = url.Host;
-        var port = url.IsDefaultPort ? "" : url.Port.ToString(CultureInfo.InvariantCulture);
-        var pathname = url.AbsolutePath;
-        var search = url.Query.TrimStart('?');
-        var hash = url.Fragment.TrimStart('#');
+        var (protocol, username, password, hostname, port, pathname, search, hash) = GetUrlComponents(url);
 
         return IsMatchComponents(protocol, username, password, hostname, port, pathname, search, hash);
     }

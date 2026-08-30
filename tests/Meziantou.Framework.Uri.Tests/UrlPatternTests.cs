@@ -670,6 +670,22 @@ public sealed class UrlPatternTests
         Assert.True(pattern.IsMatch("https://user:secret@example.com/path"));
     }
 
+    [Theory]
+    // url, expected username, expected password
+    [InlineData("https://example.com/path", "", "")]
+    [InlineData("https://john@example.com/path", "john", "")]
+    [InlineData("https://john:secret@example.com/path", "john", "secret")]
+    [InlineData("https://:secret@example.com/path", "", "secret")]
+    [InlineData("https://john:pa:ss@example.com/path", "john", "pa:ss")]
+    public void Match_SplitsTheUserInfoIntoUsernameAndPassword(string url, string expectedUsername, string expectedPassword)
+    {
+        var result = UrlPattern.Create(new UrlPatternInit()).Match(url);
+
+        Assert.NotNull(result);
+        Assert.Equal(expectedUsername, result.Username.Input);
+        Assert.Equal(expectedPassword, result.Password.Input);
+    }
+
     // Trailing slash handling
     [Fact]
     public void IsMatch_TrailingSlash()

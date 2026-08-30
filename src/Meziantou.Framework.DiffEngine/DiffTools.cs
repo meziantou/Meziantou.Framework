@@ -418,10 +418,13 @@ public static class DiffTools
                 {
                     try
                     {
+                        // Order by name so the newest version wins deterministically. Last-write time looks like a
+                        // proxy for "newest" but a directory's timestamp changes whenever its direct children do,
+                        // so an update to an older version would promote it above a newer one.
                         nextRoots.AddRange(
                             Directory
                                 .EnumerateDirectories(root, segment)
-                                .OrderByDescending(Directory.GetLastWriteTimeUtc));
+                                .OrderByDescending(Path.GetFileName, StringComparer.OrdinalIgnoreCase));
                     }
                     catch (DirectoryNotFoundException)
                     {

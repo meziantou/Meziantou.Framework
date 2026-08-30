@@ -43,7 +43,8 @@ static partial class IOUtilities
 
         try
         {
-            if (fileSystemInfo is DirectoryInfo directoryInfo)
+            // A reparse point is deleted as a link. Enumerating it would delete the content of its target instead.
+            if (fileSystemInfo is DirectoryInfo directoryInfo && !fileSystemInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
             {
                 foreach (var childInfo in directoryInfo.GetFileSystemInfos())
                 {
@@ -140,32 +141,34 @@ static partial class IOUtilities
         if (!fileSystemInfo.Exists)
             return;
 
-        if (fileSystemInfo is DirectoryInfo directoryInfo)
-        {
-            foreach (var childInfo in directoryInfo.GetFileSystemInfos())
-            {
-                if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                {
-                    try
-                    {
-                        await RetryOnSharingViolationAsync(() => childInfo.Delete(), cancellationToken).ConfigureAwait(false);
-                    }
-                    catch (FileNotFoundException)
-                    {
-                    }
-                    catch (DirectoryNotFoundException)
-                    {
-                    }
-                }
-                else
-                {
-                    await DeleteAsync(childInfo, cancellationToken).ConfigureAwait(false);
-                }
-            }
-        }
-
         try
         {
+            // A reparse point is deleted as a link. Enumerating it would delete the content of its target instead.
+            if (fileSystemInfo is DirectoryInfo directoryInfo && !fileSystemInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
+            {
+                foreach (var childInfo in directoryInfo.GetFileSystemInfos())
+                {
+                    if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    {
+                        try
+                        {
+                            await RetryOnSharingViolationAsync(() => RemoveReadOnlyAttribute(childInfo), cancellationToken).ConfigureAwait(false);
+                            await RetryOnSharingViolationAsync(() => childInfo.Delete(), cancellationToken).ConfigureAwait(false);
+                        }
+                        catch (FileNotFoundException)
+                        {
+                        }
+                        catch (DirectoryNotFoundException)
+                        {
+                        }
+                    }
+                    else
+                    {
+                        await DeleteAsync(childInfo, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+            }
+
             await RetryOnSharingViolationAsync(() => RemoveReadOnlyAttribute(fileSystemInfo), cancellationToken).ConfigureAwait(false);
             await RetryOnSharingViolationAsync(() => DeleteFileSystemInfo(fileSystemInfo), cancellationToken).ConfigureAwait(false);
         }

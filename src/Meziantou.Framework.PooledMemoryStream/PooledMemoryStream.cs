@@ -112,7 +112,10 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         get
         {
             EnsureOpen();
-            return (int)_capacity;
+
+            // _capacity is a long and can exceed int.MaxValue by up to one block on a stream near Array.MaxLength.
+            // Clamp rather than wrap to a negative value; a getter that throws would be worse.
+            return _capacity > int.MaxValue ? int.MaxValue : (int)_capacity;
         }
         set
         {

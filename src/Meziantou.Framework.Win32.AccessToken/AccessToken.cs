@@ -67,7 +67,7 @@ public sealed class AccessToken : IDisposable
         TokenType result;
         uint returnedLength;
         using var safeHandleValue = new SafeHandleValue(_token);
-        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenType, &result, (uint)IntPtr.Size, &returnedLength))
+        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenType, &result, (uint)sizeof(TokenType), &returnedLength))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         return result;
@@ -84,7 +84,7 @@ public sealed class AccessToken : IDisposable
         TokenElevationType result;
         uint returnedLength;
         using var safeHandleValue = new SafeHandleValue(_token);
-        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenElevationType, &result, (uint)IntPtr.Size, &returnedLength))
+        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenElevationType, &result, (uint)sizeof(TokenElevationType), &returnedLength))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         return result;

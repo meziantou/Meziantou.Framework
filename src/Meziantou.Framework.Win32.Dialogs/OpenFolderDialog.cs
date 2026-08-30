@@ -1,6 +1,9 @@
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using Meziantou.Framework.Win32.Natives;
 using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.UI.Shell;
+using Windows.Win32.UI.Shell.Common;
 
 namespace Meziantou.Framework.Win32;
 
@@ -27,6 +30,12 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows6.0.6000")]
 public sealed class OpenFolderDialog
 {
+    /// <summary>S_OK.</summary>
+    private const int Ok = 0;
+
+    /// <summary>HRESULT_FROM_WIN32(ERROR_CANCELLED), returned by Show when the user dismisses the dialog.</summary>
+    private const int ErrorCancelled = unchecked((int)0x800704C7);
+
     /// <summary>Shows the folder selection dialog.</summary>
     /// <returns>A <see cref="DialogResult"/> indicating whether the user clicked OK, Cancel, or if the operation was aborted.</returns>
     public DialogResult ShowDialog()
@@ -39,21 +48,38 @@ public sealed class OpenFolderDialog
     /// <returns>A <see cref="DialogResult"/> indicating whether the user clicked OK, Cancel, or if the operation was aborted.</returns>
     public DialogResult ShowDialog(IntPtr owner) // IWin32Window
     {
-        var hwndOwner = owner != IntPtr.Zero ? owner : (IntPtr)PInvoke.GetActiveWindow();
-        var dialog = (IFileOpenDialog)new NativeFileOpenDialog();
-        Configure(dialog);
+        SelectedPath = null;
 
-        var hr = dialog.Show(hwndOwner);
-        if (hr == NativeMethods.ERROR_CANCELLED)
-            return DialogResult.Cancel;
+        var hwndOwner = owner != IntPtr.Zero ? new HWND(owner) : PInvoke.GetActiveWindow();
+        var dialog = (IFileOpenDialog)new FileOpenDialog();
+        try
+        {
+            Configure(dialog);
 
-        if (hr != NativeMethods.S_OK)
-            return DialogResult.Abort;
+            var hr = dialog.Show(hwndOwner);
+            LastHResult = hr;
+            if (hr == ErrorCancelled)
+                return DialogResult.Cancel;
 
-        dialog.GetResult(out var item);
-        item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out var path);
-        SelectedPath = path;
-        return DialogResult.OK;
+            if (hr != Ok)
+                return DialogResult.Abort;
+
+            dialog.GetResult(out var item);
+            try
+            {
+                SelectedPath = GetFileSystemPath(item);
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(item);
+            }
+
+            return DialogResult.OK;
+        }
+        finally
+        {
+            Marshal.ReleaseComObject(dialog);
+        }
     }
 
     /// <summary>Gets or sets the title text displayed in the dialog's title bar.</summary>
@@ -73,7 +99,22 @@ public sealed class OpenFolderDialog
     public string? InitialDirectory { get; set; }
 
     /// <summary>Gets the path of the folder selected by the user. This property is populated after <see cref="ShowDialog()"/> returns <see cref="DialogResult.OK"/>.</summary>
-    public string? SelectedPath { get; set; }
+    /// <remarks>
+    /// Each call to <see cref="ShowDialog()"/> resets this property, so it always reflects the most
+    /// recent call and is <see langword="null"/> when that call did not return
+    /// <see cref="DialogResult.OK"/>.
+    /// </remarks>
+    public string? SelectedPath { get; private set; }
+
+    /// <summary>Gets the HRESULT returned by the last call to <see cref="ShowDialog()"/>.</summary>
+    /// <remarks>
+    /// <see cref="ShowDialog()"/> reports every failure as <see cref="DialogResult.Abort"/>, which
+    /// says nothing about the cause. This property carries the underlying HRESULT so the caller can
+    /// log it or turn it into an exception with
+    /// <see cref="System.Runtime.InteropServices.Marshal.GetExceptionForHR(int)"/>. It is <c>0</c>
+    /// until the dialog has been shown.
+    /// </remarks>
+    public int LastHResult { get; private set; }
 
     /// <summary>Gets or sets a value indicating whether to change the current working directory to the selected folder.</summary>
     /// <value>
@@ -125,8 +166,8 @@ public sealed class OpenFolderDialog
 
         static bool TryParse(string value, [NotNullWhen(true)] out IShellItem? item)
         {
-            var hr = PInvoke.SHCreateItemFromParsingName(value, null, out IShellItem? result);
-            item = (int)hr == NativeMethods.S_OK ? result : null;
+            var hr = PInvoke.SHCreateItemFromParsingName(value, null, out IShellItem result);
+            item = hr == Ok ? result : null;
             return item is not null;
         }
 
@@ -145,14 +186,29 @@ public sealed class OpenFolderDialog
         }
     }
 
-    internal static FOS CreateOptions(bool changeCurrentDirectory)
+    internal static FILEOPENDIALOGOPTIONS CreateOptions(bool changeCurrentDirectory)
     {
-        var result = FOS.FOS_FORCEFILESYSTEM | FOS.FOS_PICKFOLDERS;
+        var result = FILEOPENDIALOGOPTIONS.FOS_FORCEFILESYSTEM | FILEOPENDIALOGOPTIONS.FOS_PICKFOLDERS;
         if (!changeCurrentDirectory)
         {
-            result |= FOS.FOS_NOCHANGEDIR;
+            result |= FILEOPENDIALOGOPTIONS.FOS_NOCHANGEDIR;
         }
 
         return result;
+    }
+
+    /// <summary>Reads the file system path out of a shell item and frees the buffer the shell allocated for it.</summary>
+    internal static unsafe string GetFileSystemPath(IShellItem item)
+    {
+        PWSTR name = default;
+        try
+        {
+            item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, &name);
+            return name.ToString();
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem((IntPtr)name.Value);
+        }
     }
 }

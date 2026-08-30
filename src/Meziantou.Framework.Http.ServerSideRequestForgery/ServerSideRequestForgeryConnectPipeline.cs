@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery;
@@ -8,6 +9,12 @@ internal static class ServerSideRequestForgeryConnectPipeline
 {
     // Reserved TLD (RFC2606): never a real destination, so a proxy returned for it is the handler's proxy address.
     private static readonly Uri[] ProxyProbeUris = [new("https://ssrf-proxy-probe.invalid/"), new("http://ssrf-proxy-probe.invalid/")];
+
+    // Short enough that a proxy reconfiguration takes effect promptly, long enough to cover a burst of connections.
+    // The window is not attacker-controlled: it bounds how long a change the application makes takes to be observed.
+    internal const long ProxyProbeCacheDurationMs = 1000;
+
+    private static readonly ConditionalWeakTable<IWebProxy, ProxyProbeCache> ProxyProbeCaches = [];
 
     internal static void Configure(SocketsHttpHandler handler, ServerSideRequestForgeryOptions options, IDnsIpAddressResolver dnsIpAddressResolver)
     {
@@ -42,14 +49,14 @@ internal static class ServerSideRequestForgeryConnectPipeline
 
         if (!IsAllowedScheme(requestUri, options))
         {
-            Log.RejectedUnsafeScheme(logger, requestUri, requestUri.Scheme);
+            Log.RejectedUnsafeScheme(logger, FormatRequestOrigin(requestUri), requestUri.Scheme);
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("unsafe_scheme");
             throw new ServerSideRequestForgeryException($"The URI scheme '{requestUri.Scheme}' is not allowed.");
         }
 
         if (!HostsMatch(dnsEndPoint.Host, requestUri.IdnHost))
         {
-            Log.RejectedHostMismatch(logger, requestUri, dnsEndPoint.Host, requestUri.IdnHost);
+            Log.RejectedHostMismatch(logger, FormatRequestOrigin(requestUri), dnsEndPoint.Host, requestUri.IdnHost);
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("host_mismatch");
             throw new ServerSideRequestForgeryException("The host resolved for the connection does not match the request URI authority.");
         }
@@ -66,7 +73,17 @@ internal static class ServerSideRequestForgeryConnectPipeline
         return FilterSafeAddresses(requestUri, resolvedAddresses, options, logger);
     }
 
-    internal static async ValueTask<IPAddress> SelectIpAddressAsync(Uri requestUri, List<IPAddress> safeAddresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
+    internal static ValueTask<IPAddress> SelectIpAddressAsync(Uri requestUri, List<IPAddress> safeAddresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
+    {
+        return SelectIpAddressAsync(requestUri, safeAddresses, options, reportStrategyFailure: true, cancellationToken);
+    }
+
+    // reportStrategyFailure: whether a strategy that has no candidate left is a rejection worth reporting. It is on
+    // the first selection, where it means the policy refused every validated address. It is not once a connect has
+    // already failed: the caller then re-asks over the addresses that remain, and running out of them is an ordinary
+    // connection failure, not an SSRF rejection. Reporting it there would put a Warning and a rejected_requests
+    // increment on every unreachable host.
+    private static async ValueTask<IPAddress> SelectIpAddressAsync(Uri requestUri, List<IPAddress> safeAddresses, ServerSideRequestForgeryOptions options, bool reportStrategyFailure, CancellationToken cancellationToken)
     {
         var logger = options.Logger;
         IPAddress selectedAddress;
@@ -74,16 +91,16 @@ internal static class ServerSideRequestForgeryConnectPipeline
         {
             selectedAddress = await options.ResolutionStrategy.ResolveAsync(safeAddresses, options, cancellationToken).ConfigureAwait(false);
         }
-        catch (ServerSideRequestForgeryException ex)
+        catch (ServerSideRequestForgeryException ex) when (reportStrategyFailure)
         {
-            Log.RejectedResolutionStrategyFailure(logger, requestUri, ex.Message);
+            Log.RejectedResolutionStrategyFailure(logger, FormatRequestOrigin(requestUri), ex.Message);
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("resolution_strategy_failure");
             throw;
         }
 
         if (!safeAddresses.Exists(address => address.Equals(selectedAddress)))
         {
-            Log.RejectedSelectedAddressNotInSafeSet(logger, requestUri);
+            Log.RejectedSelectedAddressNotInSafeSet(logger, FormatRequestOrigin(requestUri));
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("selected_address_not_validated");
             throw new ServerSideRequestForgeryException("The resolution strategy selected an address that was not part of the validated safe set.");
         }
@@ -117,7 +134,7 @@ internal static class ServerSideRequestForgeryConnectPipeline
             IPAddress selectedAddress;
             try
             {
-                selectedAddress = await SelectIpAddressAsync(requestUri, remainingAddresses, options, cancellationToken).ConfigureAwait(false);
+                selectedAddress = await SelectIpAddressAsync(requestUri, remainingAddresses, options, reportStrategyFailure: lastConnectException is null, cancellationToken).ConfigureAwait(false);
             }
             catch (ServerSideRequestForgeryException) when (lastConnectException is not null)
             {
@@ -181,14 +198,14 @@ internal static class ServerSideRequestForgeryConnectPipeline
 
         if (safeAddresses.Count == 0)
         {
-            Log.RejectedAllResolvedAddressesUnsafe(logger, requestUri);
+            Log.RejectedAllResolvedAddressesUnsafe(logger, FormatRequestOrigin(requestUri));
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("all_resolved_addresses_unsafe");
             throw new ServerSideRequestForgeryException("No safe IP addresses were found after validation.");
         }
 
         if (hasUnsafeAddress && options.DisallowMixedSafeAndUnsafeIpAddresses)
         {
-            Log.RejectedMixedResolvedAddresses(logger, requestUri);
+            Log.RejectedMixedResolvedAddresses(logger, FormatRequestOrigin(requestUri));
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("mixed_addresses_disallowed");
             throw new ServerSideRequestForgeryException("The hostname resolved to a mix of safe and unsafe IP addresses.");
         }
@@ -217,7 +234,7 @@ internal static class ServerSideRequestForgeryConnectPipeline
         if (!IsConnectionToAProxy(handler, requestUri, dnsEndPoint))
             return;
 
-        Log.RejectedProxyConnection(options.Logger, requestUri, dnsEndPoint.Host);
+        Log.RejectedProxyConnection(options.Logger, FormatRequestOrigin(requestUri), dnsEndPoint.Host);
         ServerSideRequestForgeryMetrics.IncrementRejectedRequest("proxy_connection");
         throw new ServerSideRequestForgeryException("The connection targets a proxy. The request's real destination is established by the proxy and is not visible here, so it cannot be validated. Set SocketsHttpHandler.UseProxy to false, or send requests that need SSRF protection through a handler that does not use a proxy.");
     }
@@ -237,13 +254,53 @@ internal static class ServerSideRequestForgeryConnectPipeline
         if (ProxyAddressMatchesEndPoint(proxy, requestUri, dnsEndPoint, unknownMeansProxied: true))
             return true;
 
-        foreach (var probeUri in ProxyProbeUris)
+        foreach (var probeAddress in GetProbeProxyAddresses(proxy))
         {
-            if (ProxyAddressMatchesEndPoint(proxy, probeUri, dnsEndPoint, unknownMeansProxied: false))
+            if (probeAddress is not null && MatchesEndPoint(probeAddress, dnsEndPoint))
                 return true;
         }
 
         return false;
+    }
+
+    // The probe destinations are constant, so the answer depends only on the proxy, not on the request. Resolving
+    // them per connection is what costs: a PAC-backed proxy evaluates the script for every lookup, and WinHTTP
+    // caches by URL, so the reserved probe destinations are a permanent cache miss while the real request URI is
+    // not. Caching them per proxy instance for a short window collapses that cost across a burst of connections.
+    private static Uri?[] GetProbeProxyAddresses(IWebProxy proxy)
+    {
+        var cache = ProxyProbeCaches.GetOrCreateValue(proxy);
+        var cachedAddresses = cache.TryGet();
+        if (cachedAddresses is not null)
+            return cachedAddresses;
+
+        var addresses = new Uri?[ProxyProbeUris.Length];
+        for (var i = 0; i < ProxyProbeUris.Length; i++)
+        {
+            addresses[i] = TryGetProxyAddress(proxy, ProxyProbeUris[i]);
+        }
+
+        cache.Set(addresses);
+        return addresses;
+    }
+
+    /// <summary>Resolves the proxy address for a probe destination, or <see langword="null"/> when the proxy does not apply to it.</summary>
+    private static Uri? TryGetProxyAddress(IWebProxy proxy, Uri destination)
+    {
+        Uri? proxyUri;
+        try
+        {
+            proxyUri = proxy.GetProxy(destination);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // A probe destination the proxy dislikes tells us nothing and must not fail an ordinary request.
+            return null;
+        }
+
+        // IWebProxy reports "no proxy for this destination" either by returning null (HttpClient.DefaultProxy)
+        // or by returning the destination itself (WebProxy when the address is bypassed).
+        return proxyUri == destination ? null : proxyUri;
     }
 
     private static bool ProxyAddressMatchesEndPoint(IWebProxy proxy, Uri destination, DnsEndPoint dnsEndPoint, bool unknownMeansProxied)
@@ -256,7 +313,7 @@ internal static class ServerSideRequestForgeryConnectPipeline
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // A proxy that cannot answer for the real request is treated as one that applies, so the connection
-            // fails closed. A probe destination it dislikes tells us nothing and must not fail an ordinary request.
+            // fails closed.
             return unknownMeansProxied;
         }
 
@@ -265,8 +322,34 @@ internal static class ServerSideRequestForgeryConnectPipeline
         if (proxyUri is null || proxyUri == destination)
             return false;
 
+        return MatchesEndPoint(proxyUri, dnsEndPoint);
+    }
+
+    private static bool MatchesEndPoint(Uri proxyUri, DnsEndPoint dnsEndPoint)
+    {
         return proxyUri.Port == dnsEndPoint.Port
             && string.Equals(NormalizeHost(proxyUri.IdnHost), NormalizeHost(dnsEndPoint.Host), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed class ProxyProbeCache
+    {
+        private Uri?[]? _addresses;
+        private long _expiresAt;
+
+        public Uri?[]? TryGet()
+        {
+            var addresses = Volatile.Read(ref _addresses);
+            if (addresses is null || Environment.TickCount64 >= Volatile.Read(ref _expiresAt))
+                return null;
+
+            return addresses;
+        }
+
+        public void Set(Uri?[] addresses)
+        {
+            Volatile.Write(ref _expiresAt, Environment.TickCount64 + ProxyProbeCacheDurationMs);
+            Volatile.Write(ref _addresses, addresses);
+        }
     }
 
     private static bool IsAllowedScheme(Uri requestUri, ServerSideRequestForgeryOptions options)
@@ -287,6 +370,18 @@ internal static class ServerSideRequestForgeryConnectPipeline
         }
 
         return host.TrimEnd('.');
+    }
+
+    /// <summary>Formats the destination for a log message, keeping only the parts that identify it.</summary>
+    /// <remarks>
+    /// The full <see cref="Uri"/> must never reach a log: <see cref="Uri.ToString"/> keeps the userinfo and the
+    /// query string, so a rejected request carrying basic-auth credentials, a bearer token or a signed-URL
+    /// signature would write that secret at Warning level. The origin is what identifies the destination, and it
+    /// is the only part a rejection needs.
+    /// </remarks>
+    internal static string FormatRequestOrigin(Uri requestUri)
+    {
+        return $"{requestUri.Scheme}://{requestUri.IdnHost}:{requestUri.Port}";
     }
 
     private static IPAddress NormalizeAddress(IPAddress address)

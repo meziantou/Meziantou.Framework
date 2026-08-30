@@ -22,9 +22,11 @@ public sealed class GenerateEmbeddedConstantsTask : Microsoft.Build.Utilities.Ta
 
     public string? ProjectDirectory { get; set; }
 
+    public int MaxBinaryFileSize { get; set; } = EmbeddedConstantsGeneratorTask.DefaultMaxBinaryFileBytes;
+
     public override bool Execute()
     {
-        var options = new EmbeddedConstantsGeneratorTask.GeneratorOptions(Namespace, ClassName, ClassVisibility, MemberVisibility, ProjectDirectory);
+        var options = new EmbeddedConstantsGeneratorTask.GeneratorOptions(Namespace, ClassName, ClassVisibility, MemberVisibility, ProjectDirectory, MaxBinaryFileSize);
         var files = EmbeddedConstants
             .Select(item => new EmbeddedConstantsGeneratorTask.InputFile(
                 item.ItemSpec,

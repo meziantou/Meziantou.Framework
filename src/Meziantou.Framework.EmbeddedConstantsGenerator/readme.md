@@ -47,6 +47,7 @@ internal static partial class EmbeddedFiles
 | `EmbeddedConstantsClassName` | `EmbeddedConstants` | Name of the generated class |
 | `EmbeddedConstantsClassVisibility` | `internal` | Generated class visibility: `internal` or `public` |
 | `EmbeddedConstantsMemberVisibility` | `public` | Generated member visibility: `internal` or `public` |
+| `EmbeddedConstantsMaxBinaryFileSize` | `1048576` (1 MiB) | Largest binary file that may be embedded, in bytes |
 | `EmbeddedConstantsOutputPath` | `$(IntermediateOutputPath)\Meziantou.Framework.EmbeddedConstantsGenerator\EmbeddedConstants.g.cs` | Generated C# file path |
 
 The prefixed forms `Meziantou_EmbeddedConstantsNamespace`, `Meziantou_EmbeddedConstantsClassName`, `Meziantou_EmbeddedConstantsClassVisibility`, `Meziantou_EmbeddedConstantsMemberVisibility`, and `Meziantou_EmbeddedConstantsOutputPath` are also supported and take precedence over the shorter aliases.
@@ -80,7 +81,9 @@ If two implicit names collide, the generator tries a path-based name. Remaining 
 
 Text files must be valid UTF-8. An optional UTF-8 BOM is ignored. Binary files are embedded as-is.
 
-Text files larger than 1 MiB are rejected to avoid producing impractically large generated source. Binary files are emitted as byte arrays and should also be kept reasonably small.
+Text files larger than 1 MiB are rejected to avoid producing impractically large generated source.
+
+Binary files are emitted as byte arrays, which cost about six characters of C# per byte. A 4 MiB asset produces roughly 26 MiB of generated source and takes about a minute to compile, so binary files larger than 1 MiB are rejected too. Raise `EmbeddedConstantsMaxBinaryFileSize` if you really need a larger one, or use `EmbeddedResource` instead. Files marked as `Both` are bound by the text limit, because they also produce a `const string`.
 
 ## MSBuild Errors
 
@@ -95,3 +98,4 @@ Text files larger than 1 MiB are rejected to avoid producing impractically large
 | `MFECG0007` | Embedded constant text file is not valid UTF-8 |
 | `MFECG0008` | Embedded constant text file is too large |
 | `MFECG0009` | Embedded constants visibility is invalid |
+| `MFECG0012` | Embedded constant binary file is too large |

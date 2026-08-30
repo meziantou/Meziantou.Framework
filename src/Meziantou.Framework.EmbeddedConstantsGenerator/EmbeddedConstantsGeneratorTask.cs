@@ -4,6 +4,7 @@ namespace Meziantou.Framework.EmbeddedConstantsGenerator;
 internal static class EmbeddedConstantsGeneratorTask
 {
     internal const int MaxTextFileBytes = 1024 * 1024;
+    internal const int DefaultMaxBinaryFileBytes = 1024 * 1024;
 
     private static readonly UTF8Encoding Utf8NoBomThrowOnInvalidBytes = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
@@ -97,7 +98,7 @@ internal static class EmbeddedConstantsGeneratorTask
         var validFiles = new List<EmbeddedFile>(files.Count);
         foreach (var file in files)
         {
-            var embeddedFile = EmbeddedFile.Create(file);
+            var embeddedFile = EmbeddedFile.Create(file, options.MaxBinaryFileBytes);
             errors.AddRange(embeddedFile.Errors);
             if (embeddedFile.Errors.Count == 0)
             {
@@ -462,13 +463,14 @@ internal static class EmbeddedConstantsGeneratorTask
 
     internal sealed class GeneratorOptions
     {
-        public GeneratorOptions(string ns, string className, string classVisibility, string memberVisibility, string? projectDirectory)
+        public GeneratorOptions(string ns, string className, string classVisibility, string memberVisibility, string? projectDirectory, int maxBinaryFileBytes = DefaultMaxBinaryFileBytes)
         {
             Namespace = ns;
             ClassName = className;
             ClassVisibility = classVisibility.ToLowerInvariant();
             MemberVisibility = memberVisibility.ToLowerInvariant();
             ProjectDirectory = projectDirectory;
+            MaxBinaryFileBytes = maxBinaryFileBytes;
         }
 
         public string Namespace { get; }
@@ -476,6 +478,7 @@ internal static class EmbeddedConstantsGeneratorTask
         public string ClassVisibility { get; }
         public string MemberVisibility { get; }
         public string? ProjectDirectory { get; }
+        public int MaxBinaryFileBytes { get; }
 
         public void AddErrors(List<ValidationError> errors)
         {
@@ -544,7 +547,7 @@ internal static class EmbeddedConstantsGeneratorTask
         public byte[] Bytes { get; }
         public IReadOnlyList<ValidationError> Errors { get; }
 
-        public static EmbeddedFile Create(InputFile file)
+        public static EmbeddedFile Create(InputFile file, int maxBinaryFileBytes)
         {
             var errors = new List<ValidationError>();
             if (string.IsNullOrWhiteSpace(file.Kind))
@@ -572,6 +575,13 @@ internal static class EmbeddedConstantsGeneratorTask
 
             if (kind == EmbeddedConstantKind.Binary)
             {
+                // Every byte costs six characters of generated source, so a large file makes the build unusable
+                if (bytes.Length > maxBinaryFileBytes)
+                {
+                    errors.Add(ValidationError.BinaryFileTooLarge(file.FullPath, maxBinaryFileBytes));
+                    return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, text: null, Array.Empty<byte>(), errors);
+                }
+
                 return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, text: null, bytes, errors);
             }
 
@@ -673,6 +683,11 @@ internal static class EmbeddedConstantsGeneratorTask
         public static ValidationError TextFileTooLarge(string filePath, int maxSize)
         {
             return new ValidationError("MFECG0008", string.Create(CultureInfo.InvariantCulture, $"Embedded constant text file is too large to embed as a const string. The maximum supported text file size is {maxSize} bytes."), filePath);
+        }
+
+        public static ValidationError BinaryFileTooLarge(string filePath, int maxSize)
+        {
+            return new ValidationError("MFECG0012", string.Create(CultureInfo.InvariantCulture, $"Embedded constant binary file is too large to embed as a byte array. The maximum supported binary file size is {maxSize} bytes. Raise the 'EmbeddedConstantsMaxBinaryFileSize' property, or use EmbeddedResource for assets this size."), filePath);
         }
 
         public static ValidationError InvalidVisibility(string visibility)

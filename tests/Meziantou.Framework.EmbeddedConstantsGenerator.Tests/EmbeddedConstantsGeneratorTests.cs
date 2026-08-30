@@ -199,6 +199,27 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         Assert.Contains("MFECG0005", string.Join('\n', result.Output));
     }
 
+    [Fact]
+    public async Task GenerateOnBuild_BinaryFileTooLarge_FailsBuildUntilTheLimitIsRaised()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("large-binary");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("large-binary/Sample.csproj", CreateProjectFile(fixture, """
+                <EmbeddedConstant Include="Assets/large.bin" Kind="Binary" />
+            """));
+        CreateBinaryFile(projectDirectory / "Assets" / "large.bin", new byte[(1024 * 1024) + 1]);
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 1);
+
+        Assert.Contains("MFECG0012", string.Join('\n', result.Output));
+
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo", "/p:EmbeddedConstantsMaxBinaryFileSize=4194304"], expectedExitCode: 0);
+    }
+
     private static string CreateProjectFile(EmbeddedConstantsGeneratorPackageFixture fixture, string embeddedConstants)
     {
         return $$"""

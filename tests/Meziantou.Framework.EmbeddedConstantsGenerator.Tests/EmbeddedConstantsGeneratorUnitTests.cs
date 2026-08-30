@@ -68,6 +68,40 @@ public sealed class EmbeddedConstantsGeneratorUnitTests
     }
 
     [Fact]
+    public async Task Create_BinaryFileExceedsMaximumSize_ReportsError()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        File.WriteAllBytes(temporaryDirectory.FullPath / "big.bin", new byte[Generator.DefaultMaxBinaryFileBytes + 1]);
+
+        var result = Generator.Create(CreateOptions(temporaryDirectory.FullPath), [TextFile(temporaryDirectory, "big.bin", kind: "Binary")]);
+
+        Assert.Equal(["MFECG0012"], ErrorCodes(result));
+    }
+
+    [Fact]
+    public async Task Create_BinaryFileExceedsMaximumSizeButTheLimitIsRaised_Succeeds()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        File.WriteAllBytes(temporaryDirectory.FullPath / "big.bin", new byte[Generator.DefaultMaxBinaryFileBytes + 1]);
+
+        var options = CreateOptions(temporaryDirectory.FullPath, maxBinaryFileBytes: Generator.DefaultMaxBinaryFileBytes * 2);
+        var result = Generator.Create(options, [TextFile(temporaryDirectory, "big.bin", kind: "Binary")]);
+
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public async Task Create_BinaryFileAtTheMaximumSize_Succeeds()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        File.WriteAllBytes(temporaryDirectory.FullPath / "exact.bin", new byte[Generator.DefaultMaxBinaryFileBytes]);
+
+        var result = Generator.Create(CreateOptions(temporaryDirectory.FullPath), [TextFile(temporaryDirectory, "exact.bin", kind: "Binary")]);
+
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
     public async Task GenerateSource_TextWithCharactersThatNeedEscaping_ProducesAValidLiteral()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
@@ -145,9 +179,9 @@ public sealed class EmbeddedConstantsGeneratorUnitTests
         Assert.True(source.IndexOf("AppleText", StringComparison.Ordinal) < source.IndexOf("ZebraText", StringComparison.Ordinal));
     }
 
-    private static Options CreateOptions(string projectDirectory, string ns = "Demo", string className = "EmbeddedFiles", string classVisibility = "internal", string memberVisibility = "public")
+    private static Options CreateOptions(string projectDirectory, string ns = "Demo", string className = "EmbeddedFiles", string classVisibility = "internal", string memberVisibility = "public", int maxBinaryFileBytes = Generator.DefaultMaxBinaryFileBytes)
     {
-        return new Options(ns, className, classVisibility, memberVisibility, projectDirectory);
+        return new Options(ns, className, classVisibility, memberVisibility, projectDirectory, maxBinaryFileBytes);
     }
 
     private static InputFile TextFile(TemporaryDirectory temporaryDirectory, string relativePath, string kind = "Text", string? name = null)

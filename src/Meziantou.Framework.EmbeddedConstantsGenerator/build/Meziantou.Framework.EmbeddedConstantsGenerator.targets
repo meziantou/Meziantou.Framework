@@ -7,12 +7,14 @@
     <Meziantou_EmbeddedConstantsClassVisibility Condition="'$(Meziantou_EmbeddedConstantsClassVisibility)' == '' and '$(EmbeddedConstantsClassVisibility)' != ''">$(EmbeddedConstantsClassVisibility)</Meziantou_EmbeddedConstantsClassVisibility>
     <Meziantou_EmbeddedConstantsMemberVisibility Condition="'$(Meziantou_EmbeddedConstantsMemberVisibility)' == '' and '$(EmbeddedConstantsMemberVisibility)' != ''">$(EmbeddedConstantsMemberVisibility)</Meziantou_EmbeddedConstantsMemberVisibility>
     <Meziantou_EmbeddedConstantsOutputPath Condition="'$(Meziantou_EmbeddedConstantsOutputPath)' == '' and '$(EmbeddedConstantsOutputPath)' != ''">$(EmbeddedConstantsOutputPath)</Meziantou_EmbeddedConstantsOutputPath>
+    <Meziantou_EmbeddedConstantsMaxBinaryFileSize Condition="'$(Meziantou_EmbeddedConstantsMaxBinaryFileSize)' == '' and '$(EmbeddedConstantsMaxBinaryFileSize)' != ''">$(EmbeddedConstantsMaxBinaryFileSize)</Meziantou_EmbeddedConstantsMaxBinaryFileSize>
 
     <Meziantou_EmbeddedConstantsNamespace Condition="'$(Meziantou_EmbeddedConstantsNamespace)' == '' and '$(RootNamespace)' != ''">$(RootNamespace)</Meziantou_EmbeddedConstantsNamespace>
     <Meziantou_EmbeddedConstantsNamespace Condition="'$(Meziantou_EmbeddedConstantsNamespace)' == ''">$(MSBuildProjectName)</Meziantou_EmbeddedConstantsNamespace>
     <Meziantou_EmbeddedConstantsClassName Condition="'$(Meziantou_EmbeddedConstantsClassName)' == ''">EmbeddedConstants</Meziantou_EmbeddedConstantsClassName>
     <Meziantou_EmbeddedConstantsClassVisibility Condition="'$(Meziantou_EmbeddedConstantsClassVisibility)' == ''">internal</Meziantou_EmbeddedConstantsClassVisibility>
     <Meziantou_EmbeddedConstantsMemberVisibility Condition="'$(Meziantou_EmbeddedConstantsMemberVisibility)' == ''">public</Meziantou_EmbeddedConstantsMemberVisibility>
+    <Meziantou_EmbeddedConstantsMaxBinaryFileSize Condition="'$(Meziantou_EmbeddedConstantsMaxBinaryFileSize)' == ''">1048576</Meziantou_EmbeddedConstantsMaxBinaryFileSize>
     <Meziantou_EmbeddedConstantsOutputPath Condition="'$(Meziantou_EmbeddedConstantsOutputPath)' == ''">$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'Meziantou.Framework.EmbeddedConstantsGenerator', 'EmbeddedConstants.g.cs'))</Meziantou_EmbeddedConstantsOutputPath>
 
     <_EmbeddedConstantsGeneratedCodePath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(Meziantou_EmbeddedConstantsOutputPath)'))</_EmbeddedConstantsGeneratedCodePath>
@@ -34,7 +36,8 @@
                                    ClassName="$(Meziantou_EmbeddedConstantsClassName)"
                                    ClassVisibility="$(Meziantou_EmbeddedConstantsClassVisibility)"
                                    MemberVisibility="$(Meziantou_EmbeddedConstantsMemberVisibility)"
-                                   ProjectDirectory="$(MSBuildProjectDirectory)" />
+                                   ProjectDirectory="$(MSBuildProjectDirectory)"
+                                   MaxBinaryFileSize="$(Meziantou_EmbeddedConstantsMaxBinaryFileSize)" />
 
     <ItemGroup>
       <Compile Include="$(_EmbeddedConstantsGeneratedCodePath)" AutoGen="true" DesignTime="true" Visible="false" />

@@ -111,17 +111,17 @@ public sealed class HtmlSanitizer
             {
                 switch (parent.ChildNodes[i])
                 {
+                    // Blocked elements, and elements whose content is raw text rather than markup, are removed with
+                    // their content. The content of a raw text element (script, style, title, textarea, …) is
+                    // written back verbatim, so neither keeping it nor promoting it to the parent can be made safe.
+                    // This is checked before ValidElements on purpose: adding such an element to the allow list
+                    // would otherwise write its content straight through without ever sanitizing it.
+                    case HtmlElement element when BlockedElements.Contains(element.Name) || HasRawTextContent(element):
+                        element.Remove();
+                        break;
+
                     case HtmlElement element when !IsValidNode(element.Name):
                     {
-                        // Blocked elements, and elements whose content is raw text rather than markup, are removed
-                        // with their content. The content of a raw text element (script, style, title, textarea, …)
-                        // is written back verbatim, so promoting it to the parent would re-inject markup.
-                        if (BlockedElements.Contains(element.Name) || HasRawTextContent(element))
-                        {
-                            element.Remove();
-                            break;
-                        }
-
                         // The element is not allowed but its content is, so only the tag is dropped.
                         var promotedCount = element.ChildNodes.Count;
                         element.Remove(keepChildren: true);

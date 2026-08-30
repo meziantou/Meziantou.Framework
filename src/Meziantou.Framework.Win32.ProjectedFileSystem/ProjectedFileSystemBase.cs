@@ -606,7 +606,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
                 while (bytesToSkip > 0)
                 {
                     var toRead = (int)Math.Min(bytesToSkip, skipBuffer.Length);
-                    var skipped = stream.Read(skipBuffer, 0, toRead);
+                    var skipped = await stream.ReadAsync(skipBuffer.AsMemory(0, toRead)).ConfigureAwait(false);
                     if (skipped == 0)
                         break;
                     bytesToSkip -= skipped;
@@ -656,7 +656,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
                 }
 
                 // Stream.Read may return fewer bytes than requested, so fill the whole chunk before writing it
-                var read = stream.ReadAtLeast(data.AsSpan(0, (int)writeLength), (int)writeLength, throwOnEndOfStream: false);
+                var read = await stream.ReadAtLeastAsync(data.AsMemory(0, (int)writeLength), (int)writeLength, throwOnEndOfStream: false).ConfigureAwait(false);
                 if (read < writeLength)
                 {
                     // The stream ended before supplying the range ProjFS asked for. Returning success here

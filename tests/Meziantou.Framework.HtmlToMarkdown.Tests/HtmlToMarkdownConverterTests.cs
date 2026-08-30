@@ -3619,4 +3619,45 @@ public sealed class HtmlToMarkdownConverterTests
             ```
             """);
     }
+
+    // --- Option validation ---
+
+    [Theory]
+    [InlineData('`')]
+    [InlineData('~')]
+    public void Options_ValidCodeBlockFenceCharacterIsAccepted(char value)
+    {
+        var options = new HtmlToMarkdownOptions { CodeBlockFenceCharacter = value };
+
+        Assert.Equal(value, options.CodeBlockFenceCharacter);
+    }
+
+    [Theory]
+    [InlineData('x')]
+    [InlineData('\'')]
+    [InlineData(' ')]
+    public void Options_InvalidCodeBlockFenceCharacterThrows(char value)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HtmlToMarkdownOptions { CodeBlockFenceCharacter = value });
+    }
+
+    [Theory]
+    [InlineData('-')]
+    [InlineData('*')]
+    [InlineData('+')]
+    public void Options_ValidUnorderedListMarkerIsAccepted(char value)
+    {
+        var options = new HtmlToMarkdownOptions { UnorderedListMarker = value };
+
+        Assert.Equal(value, options.UnorderedListMarker);
+    }
+
+    [Theory]
+    [InlineData('Z')]
+    [InlineData('.')]
+    [InlineData(' ')]
+    public void Options_InvalidUnorderedListMarkerThrows(char value)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HtmlToMarkdownOptions { UnorderedListMarker = value });
+    }
 }

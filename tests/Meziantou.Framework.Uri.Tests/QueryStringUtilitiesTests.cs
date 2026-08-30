@@ -43,4 +43,25 @@ public sealed class QueryStringUtilitiesTests
         var actual = QueryStringUtilities.RemoveQueryString(uri, "a");
         Assert.Equal("http://www.example.com/?b=2#hash", actual);
     }
+
+    [Fact]
+    public void AddQueryString_NullValue_AppendsNothing()
+    {
+        Assert.Equal("http://www.example.com/", QueryStringUtilities.AddQueryString("http://www.example.com/", "a", value: null));
+    }
+
+    [Fact]
+    public void AddQueryString_NullTupleCollection_ReturnsTheUriUnchanged()
+    {
+        Assert.Equal("http://www.example.com/", QueryStringUtilities.AddQueryString("http://www.example.com/", (IEnumerable<(string Name, string? Value)>?)null));
+    }
+
+    [Fact]
+    public void AddQueryString_NullCollection_ThrowsForTheDocumentedParameter()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(
+            () => QueryStringUtilities.AddQueryString("http://www.example.com/", (IEnumerable<(string Name, StringValues Value)>)null!));
+
+        Assert.Equal("queryString", exception.ParamName);
+    }
 }

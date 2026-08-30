@@ -31,7 +31,24 @@ public sealed class JobObject : IDisposable
     private JobObject(SafeFileHandle jobHandle)
     {
         _jobHandle = jobHandle;
+        CreatedNew = false;
     }
+
+    /// <summary>
+    /// Gets a value indicating whether this instance created the underlying job object.
+    /// </summary>
+    /// <value>
+    /// <see langword="true"/> when the constructor created a new job object;
+    /// <see langword="false"/> when a job object with the requested name already existed and this
+    /// instance attached to it, or when the instance was returned by <see cref="Open"/> or <see cref="TryOpen"/>.
+    /// </value>
+    /// <remarks>
+    /// Job objects share a namespace with events, semaphores, mutexes, waitable timers and file-mapping
+    /// objects, and <c>CreateJobObject</c> returns a handle to the existing object rather than failing when
+    /// the name is taken. Check this property when the caller needs an isolated job: attaching to a job
+    /// created elsewhere means inheriting its limits, its process set and its lifetime.
+    /// </remarks>
+    public bool CreatedNew { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JobObject"/> class. The associated job object will have no name.
@@ -55,6 +72,10 @@ public sealed class JobObject : IDisposable
     /// </summary>
     /// <param name="name">The job object name. May be null.</param>
     /// <param name="inheritHandle">A Boolean value that specifies whether the returned handle is inherited when a new process is created. If this member is <see langword="true" />, the new process inherits the handle.</param>
+    /// <remarks>
+    /// When <paramref name="name"/> matches a job object that already exists, this attaches to that job
+    /// object instead of creating a new one. Inspect <see cref="CreatedNew"/> to tell the two apart.
+    /// </remarks>
     public unsafe JobObject(string? name, bool inheritHandle)
     {
         var atts = new Windows.Win32.Security.SECURITY_ATTRIBUTES
@@ -65,12 +86,14 @@ public sealed class JobObject : IDisposable
         };
 
         _jobHandle = Windows.Win32.PInvoke.CreateJobObject(atts, name);
+        var lastError = Marshal.GetLastWin32Error();
         if (_jobHandle.IsInvalid)
         {
             _jobHandle.Dispose();
-            var lastError = Marshal.GetLastWin32Error();
             throw new Win32Exception(lastError);
         }
+
+        CreatedNew = lastError != (int)WIN32_ERROR.ERROR_ALREADY_EXISTS;
     }
 
     /// <summary>Opens an existing job object.</summary>
@@ -175,18 +198,18 @@ public sealed class JobObject : IDisposable
         {
             BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION
             {
-                ActiveProcessLimit = limits.ActiveProcessLimit,
-                Affinity = limits.Affinity,
-                MaximumWorkingSetSize = limits.MaximumWorkingSetSize,
-                MinimumWorkingSetSize = limits.MinimumWorkingSetSize,
-                PerJobUserTimeLimit = limits.PerJobUserTimeLimit,
-                PerProcessUserTimeLimit = limits.PerProcessUserTimeLimit,
-                PriorityClass = limits.PriorityClass,
-                SchedulingClass = limits.SchedulingClass,
-                LimitFlags = limits.InternalFlags,
+                ActiveProcessLimit = limits.ActiveProcessLimit.GetValueOrDefault(),
+                Affinity = limits.Affinity.GetValueOrDefault(),
+                MaximumWorkingSetSize = limits.MaximumWorkingSetSize.GetValueOrDefault(),
+                MinimumWorkingSetSize = limits.MinimumWorkingSetSize.GetValueOrDefault(),
+                PerJobUserTimeLimit = limits.PerJobUserTimeLimit.GetValueOrDefault(),
+                PerProcessUserTimeLimit = limits.PerProcessUserTimeLimit.GetValueOrDefault(),
+                PriorityClass = limits.PriorityClass.GetValueOrDefault(),
+                SchedulingClass = limits.SchedulingClass.GetValueOrDefault(),
+                LimitFlags = limits.ComputeLimitFlags(),
             },
-            ProcessMemoryLimit = limits.ProcessMemoryLimit,
-            JobMemoryLimit = limits.JobMemoryLimit,
+            ProcessMemoryLimit = limits.ProcessMemoryLimit.GetValueOrDefault(),
+            JobMemoryLimit = limits.JobMemoryLimit.GetValueOrDefault(),
         };
 
         using var handleScope = new SafeHandleValue(_jobHandle);
@@ -244,8 +267,13 @@ public sealed class JobObject : IDisposable
         }
     }
 
-    /// <summary>Get the job's CPU rate limit enabled status and value.</summary>
-    /// <returns>Bool indicating if CPU rate control is enabled and the job's CPU rate limit.</returns>
+    /// <summary>Get the job's CPU rate control policy and the values that belong to it.</summary>
+    /// <returns>
+    /// A <see cref="JobObjectCpuHardCap"/> describing the active policy. Windows stores the rate, the
+    /// weight and the min/max pair in a union, so only the members matching
+    /// <see cref="JobObjectCpuHardCap.Mode"/> carry a meaningful value.
+    /// </returns>
+    /// <exception cref="Win32Exception">The operation failed.</exception>
     public unsafe JobObjectCpuHardCap GetCpuRateHardCap()
     {
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
@@ -257,12 +285,40 @@ public sealed class JobObject : IDisposable
             throw new Win32Exception(err);
         }
 
-        var cpuRateEnabled = restriction.ControlFlags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE);
-
-        return new JobObjectCpuHardCap
+        var mode = restriction.ControlFlags switch
         {
-            Enabled = cpuRateEnabled,
-            Rate = (int)restriction.Anonymous.CpuRate,
+            var flags when !flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE) => JobObjectCpuRateControlMode.Disabled,
+            var flags when flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_WEIGHT_BASED) => JobObjectCpuRateControlMode.Weight,
+            var flags when flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE) => JobObjectCpuRateControlMode.MinMaxRate,
+            _ => JobObjectCpuRateControlMode.HardCap,
+        };
+
+        return mode switch
+        {
+            JobObjectCpuRateControlMode.Weight => new JobObjectCpuHardCap
+            {
+                Enabled = true,
+                Mode = mode,
+                Weight = (int)restriction.Anonymous.Weight,
+            },
+            JobObjectCpuRateControlMode.MinMaxRate => new JobObjectCpuHardCap
+            {
+                Enabled = true,
+                Mode = mode,
+                MinRate = restriction.Anonymous.Anonymous.MinRate,
+                MaxRate = restriction.Anonymous.Anonymous.MaxRate,
+            },
+            JobObjectCpuRateControlMode.HardCap => new JobObjectCpuHardCap
+            {
+                Enabled = true,
+                Mode = mode,
+                Rate = (int)restriction.Anonymous.CpuRate,
+            },
+            _ => new JobObjectCpuHardCap
+            {
+                Enabled = false,
+                Mode = JobObjectCpuRateControlMode.Disabled,
+            },
         };
     }
 

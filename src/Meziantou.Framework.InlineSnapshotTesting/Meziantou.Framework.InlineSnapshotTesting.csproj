@@ -5,7 +5,7 @@
     <Description>Enables verification of objects using inline snapshots</Description>
     <DefineConstants>$(DefineConstants);MEZIANTOU_INLINE_SNAPSHOT_TESTING</DefineConstants>
 
-    <Version>6.0.5</Version>
+    <Version>6.0.6</Version>
   </PropertyGroup>
 
   <ItemGroup>

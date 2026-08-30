@@ -62,6 +62,56 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void Flags_AreReplacedNotAccumulated()
+    {
+        var limits = new JobObjectLimits { Flags = JobObjectLimitFlags.KillOnJobClose };
+        limits.Flags = JobObjectLimitFlags.SilentBreakawayOk;
+
+        Assert.Equal(JobObjectLimitFlags.SilentBreakawayOk, limits.Flags);
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "ping",
+            Arguments = "127.0.0.1 -n 100",
+            UseShellExecute = true,
+            CreateNoWindow = true,
+        };
+
+        using var process = Process.Start(psi);
+        Assert.NotNull(process);
+        Assert.False(process.WaitForExit(500)); // Ensure process is started
+
+        using (var job = new JobObject())
+        {
+            job.SetLimits(limits);
+            job.AssignProcess(process);
+        }
+
+        // KillOnJobClose was replaced before SetLimits, so closing the job must leave the process alive
+        Assert.False(process.WaitForExit(1000));
+        process.Kill();
+        process.WaitForExit();
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ActiveProcessLimit_UnsetAppliesNoLimit()
+    {
+        using var job = new JobObject();
+        job.SetLimits(new JobObjectLimits { Flags = JobObjectLimitFlags.SilentBreakawayOk });
+
+        job.AssignProcess(Process.GetCurrentProcess());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ActiveProcessLimit_ZeroIsAnExplicitLimit()
+    {
+        using var job = new JobObject();
+        job.SetLimits(new JobObjectLimits { ActiveProcessLimit = 0 });
+
+        Assert.Throws<Win32Exception>(() => job.AssignProcess(Process.GetCurrentProcess()));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CreateAndOpenJobObject()
     {
         var objectName = Guid.NewGuid().ToString("N");
@@ -69,6 +119,31 @@ public class JobObjectTests
 
         using (JobObject.Open(JobObjectAccessRights.AllAccess, inherited: true, objectName))
         {
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CreatedNew_DistinguishesCreateFromAttach()
+    {
+        using (var unnamed = new JobObject())
+        {
+            Assert.True(unnamed.CreatedNew);
+        }
+
+        var objectName = Guid.NewGuid().ToString("N");
+        using var first = new JobObject(objectName);
+        Assert.True(first.CreatedNew);
+
+        using var second = new JobObject(objectName);
+        Assert.False(second.CreatedNew);
+
+        using var opened = JobObject.Open(JobObjectAccessRights.Query, inherited: false, objectName);
+        Assert.False(opened.CreatedNew);
+
+        Assert.True(JobObject.TryOpen(JobObjectAccessRights.Query, inherited: false, objectName, out var tryOpened));
+        using (tryOpened)
+        {
+            Assert.False(tryOpened.CreatedNew);
         }
     }
 
@@ -124,15 +199,49 @@ public class JobObjectTests
 
         cap = job.GetCpuRateHardCap();
         Assert.False(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.Disabled, cap.Mode);
 
         job.SetCpuRateHardCap(7654);
         cap = job.GetCpuRateHardCap();
         Assert.True(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.HardCap, cap.Mode);
         Assert.Equal(7654, cap.Rate);
 
         job.DisableCpuRateHardCap();
         cap = job.GetCpuRateHardCap();
         Assert.False(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.Disabled, cap.Mode);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CpuRateWeight_IsReportedAsWeight()
+    {
+        using var job = new JobObject();
+        job.SetCpuRateWeight(5);
+
+        var cap = job.GetCpuRateHardCap();
+        Assert.True(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.Weight, cap.Mode);
+        Assert.Equal(5, cap.Weight);
+
+        // The weight lives in the same union as the hard cap rate, so Rate must not report it
+        Assert.Equal(0, cap.Rate);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CpuRateMinMax_IsReportedAsRange()
+    {
+        using var job = new JobObject();
+        job.SetCpuRate(minRate: 1000, maxRate: 3000);
+
+        var cap = job.GetCpuRateHardCap();
+        Assert.True(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.MinMaxRate, cap.Mode);
+        Assert.Equal(1000, cap.MinRate);
+        Assert.Equal(3000, cap.MaxRate);
+
+        // Reading CpuRate here used to yield 196609000: MaxRate and MinRate reinterpreted as one uint
+        Assert.Equal(0, cap.Rate);
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]

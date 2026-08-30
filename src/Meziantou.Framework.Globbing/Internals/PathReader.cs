@@ -142,11 +142,9 @@ internal ref struct PathReader
         }
         else
         {
+            // When the text holds no separator, index is -1 and the slice starts at 0, which keeps the whole text.
             var index = CurrentText.LastIndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            if (index >= -1)
-            {
-                CurrentText = CurrentText[(index + 1)..];
-            }
+            CurrentText = CurrentText[(index + 1)..];
         }
 
         _currentSegmentLength = CurrentText.Length;
@@ -230,7 +228,7 @@ internal ref struct PathReader
 
     public readonly bool IsPathSeparator()
     {
-        if (!_pathSeparatorAware)
+        if (!_pathSeparatorAware || CurrentText.IsEmpty)
             return false;
 
         var c = CurrentText[0];

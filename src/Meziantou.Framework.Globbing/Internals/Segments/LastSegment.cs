@@ -16,4 +16,9 @@ internal sealed class LastSegment : Segment
     }
 
     public override bool IsRecursiveMatchAll => true;
+
+    public override string ToString()
+    {
+        return "**/" + _innerSegment.ToString();
+    }
 }

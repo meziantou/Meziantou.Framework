@@ -10,7 +10,7 @@ internal sealed class MatchAnyCharacterSegment : Segment
 
     public override bool IsMatch(ref PathReader pathReader)
     {
-        if (pathReader.IsPathSeparator())
+        if (pathReader.IsEndOfCurrentSegment)
             return false;
 
         pathReader.ConsumeInSegment(1);

@@ -290,9 +290,12 @@ public sealed class RobotsFile
                 else
                 {
                     line = content[..nl];
+                    var isCarriageReturn = content[nl] == '\r';
                     content = content[(nl + 1)..];
-                    // Skip the '\n' after '\r'.
-                    if (!content.IsEmpty && content[0] == '\n')
+                    // Skip the '\n' of a "\r\n" pair. Only a '\r' can be followed by a '\n'
+                    // belonging to the same line break; consuming it unconditionally would
+                    // swallow the empty line in "\n\n".
+                    if (isCarriageReturn && !content.IsEmpty && content[0] == '\n')
                         content = content[1..];
                 }
 
@@ -304,8 +307,18 @@ public sealed class RobotsFile
         {
             _lineNumber++;
 
+            var line = rawLine.AsSpan();
+
+            // A UTF-8 BOM that was decoded rather than consumed shows up as U+FEFF at the very
+            // start of the file. It is a format character, not whitespace, so Trim() leaves it
+            // glued to the first directive and the whole file parses as unknown directives.
+            // Only the first character of the first line can be a BOM; U+FEFF anywhere else is
+            // a zero-width no-break space and is left alone.
+            if (_lineNumber == 1 && !line.IsEmpty && line[0] == '\uFEFF')
+                line = line[1..];
+
             // Strip inline comments and trim whitespace.
-            var trimmed = StripComment(rawLine.AsSpan()).Trim();
+            var trimmed = StripComment(line).Trim();
 
             if (trimmed.IsEmpty)
             {

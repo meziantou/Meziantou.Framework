@@ -212,7 +212,7 @@ public static class HtmlToMarkdown
 
     private static string ConvertOrderedList(IElement element, ConversionState state)
     {
-        var start = int.TryParse(element.GetAttribute("start"), System.Globalization.CultureInfo.InvariantCulture, out var s) ? s : 1;
+        var start = ParseListStart(element.GetAttribute("start"));
         var isLoose = IsLooseList(element);
         var items = new List<string>();
         var index = start;
@@ -225,10 +225,27 @@ public static class HtmlToMarkdown
             var indent = new string(' ', marker.Length);
             var content = ConvertListItemContent(li, state);
             items.Add(PrefixLines(content, marker, indent, ""));
-            index++;
+            if (index < MaximumListStart)
+                index++;
         }
 
         return string.Join(isLoose ? "\n\n" : "\n", items);
+    }
+
+    // CommonMark allows an ordered list marker of at most nine digits.
+    private const int MaximumListStart = 999_999_999;
+
+    /// <summary>
+    /// Parses the start attribute of an ordered list. Values that cannot produce a valid
+    /// Markdown list marker fall back to 1, because emitting them would turn the list into
+    /// a plain paragraph.
+    /// </summary>
+    private static int ParseListStart(string? value)
+    {
+        if (!int.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var start))
+            return 1;
+
+        return start is < 0 or > MaximumListStart ? 1 : start;
     }
 
     /// <summary>

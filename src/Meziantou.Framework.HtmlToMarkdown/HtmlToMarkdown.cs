@@ -367,8 +367,10 @@ public static class HtmlToMarkdown
                 else if (lastWasDt)
                     sb.Append('\n');
 
-                sb.Append(":   ");
-                sb.Append(ConvertInlineContent(child, state).Trim());
+                // Convert as blocks so multiple paragraphs keep their separation, and
+                // indent continuation lines so they stay part of the definition.
+                var definition = ConvertChildNodes(child, state).Trim();
+                sb.Append(PrefixLines(definition, ":   ", "    ", ""));
                 lastWasDt = false;
                 isFirst = false;
             }

@@ -3619,4 +3619,31 @@ public sealed class HtmlToMarkdownConverterTests
             ```
             """);
     }
+
+    // --- Definition list blocks ---
+
+    [Fact]
+    public void DefinitionList_DefinitionWithMultipleParagraphs()
+    {
+        AssertHtmlToMarkdown(
+            "<dl><dt>t</dt><dd><p>a</p><p>b</p></dd></dl>",
+            """
+            t
+            :   a
+
+                b
+            """);
+    }
+
+    [Fact]
+    public void DefinitionList_DefinitionWithList()
+    {
+        AssertHtmlToMarkdown(
+            "<dl><dt>t</dt><dd><ul><li>a</li><li>b</li></ul></dd></dl>",
+            """
+            t
+            :   - a
+                - b
+            """);
+    }
 }

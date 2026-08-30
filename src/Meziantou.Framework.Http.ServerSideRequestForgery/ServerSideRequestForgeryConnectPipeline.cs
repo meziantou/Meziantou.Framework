@@ -60,7 +60,17 @@ internal static class ServerSideRequestForgeryConnectPipeline
         return FilterSafeAddresses(requestUri, resolvedAddresses, options, logger);
     }
 
-    internal static async ValueTask<IPAddress> SelectIpAddressAsync(Uri requestUri, List<IPAddress> safeAddresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
+    internal static ValueTask<IPAddress> SelectIpAddressAsync(Uri requestUri, List<IPAddress> safeAddresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
+    {
+        return SelectIpAddressAsync(requestUri, safeAddresses, options, reportStrategyFailure: true, cancellationToken);
+    }
+
+    // reportStrategyFailure: whether a strategy that has no candidate left is a rejection worth reporting. It is on
+    // the first selection, where it means the policy refused every validated address. It is not once a connect has
+    // already failed: the caller then re-asks over the addresses that remain, and running out of them is an ordinary
+    // connection failure, not an SSRF rejection. Reporting it there would put a Warning and a rejected_requests
+    // increment on every unreachable host.
+    private static async ValueTask<IPAddress> SelectIpAddressAsync(Uri requestUri, List<IPAddress> safeAddresses, ServerSideRequestForgeryOptions options, bool reportStrategyFailure, CancellationToken cancellationToken)
     {
         var logger = options.Logger;
         IPAddress selectedAddress;
@@ -68,7 +78,7 @@ internal static class ServerSideRequestForgeryConnectPipeline
         {
             selectedAddress = await options.ResolutionStrategy.ResolveAsync(safeAddresses, options, cancellationToken).ConfigureAwait(false);
         }
-        catch (ServerSideRequestForgeryException ex)
+        catch (ServerSideRequestForgeryException ex) when (reportStrategyFailure)
         {
             Log.RejectedResolutionStrategyFailure(logger, FormatRequestOrigin(requestUri), ex.Message);
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("resolution_strategy_failure");
@@ -111,7 +121,7 @@ internal static class ServerSideRequestForgeryConnectPipeline
             IPAddress selectedAddress;
             try
             {
-                selectedAddress = await SelectIpAddressAsync(requestUri, remainingAddresses, options, cancellationToken).ConfigureAwait(false);
+                selectedAddress = await SelectIpAddressAsync(requestUri, remainingAddresses, options, reportStrategyFailure: lastConnectException is null, cancellationToken).ConfigureAwait(false);
             }
             catch (ServerSideRequestForgeryException) when (lastConnectException is not null)
             {

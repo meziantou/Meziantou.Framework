@@ -124,6 +124,82 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     }
 
     [Fact]
+    public async Task ConnectCallback_DoesNotReportAnSsrfRejectionWhenTheStrategyRunsOutAfterAConnectFailure()
+    {
+        using var server = new LoopbackHttpServer();
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            ResolutionStrategy = IpAddressResolutionStrategy.Ipv6Only,
+            Logger = loggerProvider.CreateLogger("ssrf-test"),
+        };
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+        options.SafeIpNetworks.Add(IPNetwork.Parse("::1/128"));
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.IPv6Loopback, IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        // Both addresses passed validation. Ipv6Only picks ::1, the server listens on the IPv4 loopback only so
+        // that connect fails, and the strategy is then asked again over the IPv4 address it excludes. Running out
+        // of candidates there is an unreachable host, not an SSRF rejection.
+        var rejectedRequestCount = await CountRejectedRequestsAsync(
+            "resolution_strategy_failure",
+            () => Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri($"http://example.invalid:{server.Port}/"), TestContext.Current.CancellationToken)));
+
+        Assert.Equal(0, rejectedRequestCount);
+        Assert.Empty(loggerProvider.Logs.Warnings);
+        Assert.Equal(0, server.AcceptedConnectionCount);
+    }
+
+    private static async Task<long> CountRejectedRequestsAsync(string expectedReasonTag, Func<Task> action)
+    {
+        var context = Guid.NewGuid();
+        var rejectedRequestCount = 0L;
+        var previousContext = MeterTestContext.Value;
+        MeterTestContext.Value = context;
+        try
+        {
+            using var listener = new MeterListener();
+            listener.InstrumentPublished = (instrument, meterListener) =>
+            {
+                if (instrument.Meter.Name == ServerSideRequestForgeryMetrics.MeterName && instrument.Name == ServerSideRequestForgeryMetrics.RejectedRequestsCounterName)
+                {
+                    meterListener.EnableMeasurementEvents(instrument);
+                }
+            };
+            listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
+            {
+                _ = instrument;
+                _ = state;
+                if (MeterTestContext.Value != context)
+                {
+                    return;
+                }
+
+                foreach (var tag in tags)
+                {
+                    if (string.Equals(tag.Key, ServerSideRequestForgeryMetrics.ReasonTagName, StringComparison.Ordinal) && string.Equals(tag.Value?.ToString(), expectedReasonTag, StringComparison.Ordinal))
+                    {
+                        Interlocked.Add(ref rejectedRequestCount, measurement);
+                        break;
+                    }
+                }
+            });
+            listener.Start();
+
+            await action();
+        }
+        finally
+        {
+            MeterTestContext.Value = previousContext;
+        }
+
+        return rejectedRequestCount;
+    }
+
+    [Fact]
     public async Task ConnectCallback_SurfacesRejectionAsInnerExceptionOfHttpRequestException()
     {
         var options = new ServerSideRequestForgeryOptions();

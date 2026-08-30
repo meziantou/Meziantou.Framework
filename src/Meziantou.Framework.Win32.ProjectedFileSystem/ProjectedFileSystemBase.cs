@@ -655,9 +655,15 @@ public abstract class ProjectedFileSystemBase : IDisposable
                     }
                 }
 
-                var read = stream.Read(data, 0, (int)writeLength);
-                if (read == 0)
-                    break;
+                // Stream.Read may return fewer bytes than requested, so fill the whole chunk before writing it
+                var read = stream.ReadAtLeast(data.AsSpan(0, (int)writeLength), (int)writeLength, throwOnEndOfStream: false);
+                if (read < writeLength)
+                {
+                    // The stream ended before supplying the range ProjFS asked for. Returning success here
+                    // would let ProjFS zero-fill the remainder and hand the caller silently corrupt content,
+                    // so fail the read instead.
+                    return HResult.ERROR_HANDLE_EOF;
+                }
 
                 Marshal.Copy(data, 0, writeBuffer, read);
 

@@ -106,6 +106,66 @@ public sealed class HttpOptionsTests : SerializerTestsBase
     }
 
     [Fact]
+    public void RequestHeadersAreSerializedWithoutExclusionsOrTransformers()
+    {
+        using var httpContent = new HttpRequestMessage(HttpMethod.Get, "http://example.com/foo")
+        {
+            Headers =
+            {
+                { "X-Custom", "value" },
+            },
+        };
+
+        // OmitProtocolVersion is pinned so the expectation does not depend on how the
+        // protocol-version properties are filtered.
+        var httpOptions = new HumanReadableHttpOptions
+        {
+            RequestMessageOptions = new HumanReadableHttpRequestMessageOptions { OmitProtocolVersion = false },
+        };
+        var serializerOptions = new HumanReadableSerializerOptions().AddHttpConverters(httpOptions);
+
+        AssertSerialization(httpContent, serializerOptions, """
+            Method: GET
+            RequestUri: http://example.com/foo
+            Version: 1.1
+            VersionPolicy: RequestVersionOrLower
+            Headers:
+              X-Custom: value
+            Content: <null>
+            """);
+    }
+
+    [Fact]
+    public void RequestHeadersAreExcludedWhenConfigured()
+    {
+        using var httpContent = new HttpRequestMessage(HttpMethod.Get, "http://example.com/foo")
+        {
+            Headers =
+            {
+                { "X-Custom", "value" },
+                { "X-Secret", "value" },
+            },
+        };
+
+        var httpOptions = new HumanReadableHttpOptions
+        {
+            RequestMessageOptions = new HumanReadableHttpRequestMessageOptions { OmitProtocolVersion = false },
+        };
+        httpOptions.RequestMessageOptions.ExcludedHeaderNames.Add("X-Secret");
+        var serializerOptions = new HumanReadableSerializerOptions().AddHttpConverters(httpOptions);
+
+        AssertSerialization(httpContent, serializerOptions, """
+            Method: GET
+            RequestUri: http://example.com/foo
+            Version: 1.1
+            VersionPolicy: RequestVersionOrLower
+            Headers:
+              X-Custom: value
+            Content: <null>
+            """);
+    }
+
+    [Fact]
     public void RemoveExcludedHeaders()
     {
         using var httpContent = new HttpResponseMessage()

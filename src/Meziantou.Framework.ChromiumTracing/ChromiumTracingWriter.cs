@@ -35,6 +35,7 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly SemaphoreSlim _semaphore = new(initialCount: 1, maxCount: 1);
     private bool _hasItems;
+    private bool _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="ChromiumTracingWriter"/> class with the specified stream.</summary>
     /// <param name="stream">The stream to write trace events to.</param>
@@ -157,25 +158,37 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
         return new ChromiumTracingWriter(gzip, streamOwned: true, serializerContext);
     }
 
-    /// <summary>Finalizes the JSON array and disposes the underlying stream if owned.</summary>
+    /// <summary>Finalizes the JSON array and disposes the underlying stream if owned. Subsequent calls do nothing.</summary>
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
     public async ValueTask DisposeAsync()
     {
-        await _semaphore.WaitAsync().ConfigureAwait(false);
+        if (_disposed)
+            return;
+
+        _disposed = true;
+
         try
         {
-            await _stream.WriteAsync(_hasItems ? ArrayEnd : ArrayEmpty).ConfigureAwait(false);
+            await _semaphore.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                await _stream.WriteAsync(_hasItems ? ArrayEnd : ArrayEmpty).ConfigureAwait(false);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
         finally
         {
-            _semaphore.Release();
-        }
+            // The stream must be released even when the closing bracket could not be written,
+            // otherwise a failure at the very end leaks the file handle and its buffered content.
+            _semaphore.Dispose();
 
-        _semaphore.Dispose();
-
-        if (_streamOwned)
-        {
-            await _stream.DisposeAsync().ConfigureAwait(false);
+            if (_streamOwned)
+            {
+                await _stream.DisposeAsync().ConfigureAwait(false);
+            }
         }
     }
 
@@ -187,6 +200,7 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     public async Task WriteEventAsync(ChromiumTracingEvent tracingEvent, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(tracingEvent);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         // Serialize the event before writing anything to the stream. Writing the item separator first would
         // leave it dangling when the serialization fails, which makes the whole document unparsable.

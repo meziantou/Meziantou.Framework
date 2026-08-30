@@ -44,6 +44,28 @@ public sealed class ByteSizeTests
     }
 
     [Theory]
+    [InlineData(-10L, "", "-10B")]
+    [InlineData(-1_500L, "", "-1.5kB")]
+    [InlineData(-1_500_000_000L, "", "-1.5GB")]
+    [InlineData(-1_024L, "gi", "-1kiB")]
+    [InlineData(-1_073_741_824L, "gi", "-1GiB")]
+    [InlineData(long.MinValue, "gi", "-8EiB")]
+    public void ToString_NegativeValue_UsesScaledUnit(long length, string format, string expectedValue)
+    {
+        Assert.Equal(expectedValue, new ByteSize(length).ToString(format, CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData(1_500L, "", "1.5kB")]
+    [InlineData(1_500_000_000L, "", "1.5GB")]
+    [InlineData(1_073_741_824L, "gi", "1GiB")]
+    public void ToString_NegativeValue_MatchesPositiveApartFromTheSign(long length, string format, string expectedValue)
+    {
+        Assert.Equal(expectedValue, new ByteSize(length).ToString(format, CultureInfo.InvariantCulture));
+        Assert.Equal("-" + expectedValue, new ByteSize(-length).ToString(format, CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
     [InlineData("1", 1L)]
     [InlineData("1b", 1L)]
     [InlineData("1B", 1L)]

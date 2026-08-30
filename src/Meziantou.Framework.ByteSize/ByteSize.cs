@@ -241,24 +241,30 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return true;
     }
 
+    // The unit is chosen from the magnitude so negative sizes scale like positive ones.
+    // Negating long.MinValue overflows, but the unchecked wrap-around reinterpreted as
+    // ulong is exactly its magnitude (2^63), so no value needs a special case.
+    private ulong Magnitude => Value < 0 ? unchecked((ulong)(-Value)) : (ulong)Value;
+
     private ByteSizeUnit FindBestUnit()
     {
-        if (Value >= (long)ByteSizeUnit.ExaByte)
+        var magnitude = Magnitude;
+        if (magnitude >= (ulong)ByteSizeUnit.ExaByte)
             return ByteSizeUnit.ExaByte;
 
-        if (Value >= (long)ByteSizeUnit.PetaByte)
+        if (magnitude >= (ulong)ByteSizeUnit.PetaByte)
             return ByteSizeUnit.PetaByte;
 
-        else if (Value >= (long)ByteSizeUnit.TeraByte)
+        if (magnitude >= (ulong)ByteSizeUnit.TeraByte)
             return ByteSizeUnit.TeraByte;
 
-        else if (Value >= (long)ByteSizeUnit.GigaByte)
+        if (magnitude >= (ulong)ByteSizeUnit.GigaByte)
             return ByteSizeUnit.GigaByte;
 
-        else if (Value >= (long)ByteSizeUnit.MegaByte)
+        if (magnitude >= (ulong)ByteSizeUnit.MegaByte)
             return ByteSizeUnit.MegaByte;
 
-        else if (Value >= (long)ByteSizeUnit.KiloByte)
+        if (magnitude >= (ulong)ByteSizeUnit.KiloByte)
             return ByteSizeUnit.KiloByte;
 
         return ByteSizeUnit.Byte;
@@ -266,22 +272,23 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
     private ByteSizeUnit FindBestUnitI()
     {
-        if (Value >= (long)ByteSizeUnit.ExbiByte)
+        var magnitude = Magnitude;
+        if (magnitude >= (ulong)ByteSizeUnit.ExbiByte)
             return ByteSizeUnit.ExbiByte;
 
-        if (Value >= (long)ByteSizeUnit.PebiByte)
+        if (magnitude >= (ulong)ByteSizeUnit.PebiByte)
             return ByteSizeUnit.PebiByte;
 
-        if (Value >= (long)ByteSizeUnit.TebiByte)
+        if (magnitude >= (ulong)ByteSizeUnit.TebiByte)
             return ByteSizeUnit.TebiByte;
 
-        if (Value >= (long)ByteSizeUnit.GibiByte)
+        if (magnitude >= (ulong)ByteSizeUnit.GibiByte)
             return ByteSizeUnit.GibiByte;
 
-        if (Value >= (long)ByteSizeUnit.MebiByte)
+        if (magnitude >= (ulong)ByteSizeUnit.MebiByte)
             return ByteSizeUnit.MebiByte;
 
-        if (Value >= (long)ByteSizeUnit.KibiByte)
+        if (magnitude >= (ulong)ByteSizeUnit.KibiByte)
             return ByteSizeUnit.KibiByte;
 
         return ByteSizeUnit.Byte;

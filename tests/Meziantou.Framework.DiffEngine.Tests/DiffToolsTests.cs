@@ -68,6 +68,72 @@ public sealed class DiffToolsTests
         Assert.Equal("--diff \"verified.txt\" \"received.txt\"", tool.GetArguments("received.txt", "verified.txt"));
     }
 
+    private const string TempFile = "/tmp/received.txt";
+    private const string TargetFile = "/tmp/verified.txt";
+
+    private const string StandardRight = "\"/tmp/received.txt\" \"/tmp/verified.txt\"";
+    private const string StandardLeft = "\"/tmp/verified.txt\" \"/tmp/received.txt\"";
+    private const string RiderRight = "diff \"/tmp/received.txt\" \"/tmp/verified.txt\"";
+    private const string RiderLeft = "diff \"/tmp/verified.txt\" \"/tmp/received.txt\"";
+    private const string VimRight = "-d \"/tmp/received.txt\" \"/tmp/verified.txt\"";
+    private const string VimLeft = "-d \"/tmp/verified.txt\" \"/tmp/received.txt\"";
+    private const string VisualStudioCodeRight = "--diff \"/tmp/received.txt\" \"/tmp/verified.txt\"";
+    private const string VisualStudioCodeLeft = "--diff \"/tmp/verified.txt\" \"/tmp/received.txt\"";
+    private const string VisualStudioRight = "/diff \"/tmp/received.txt\" \"/tmp/verified.txt\" \"received.txt\" \"verified.txt\"";
+    private const string VisualStudioLeft = "/diff \"/tmp/verified.txt\" \"/tmp/received.txt\" \"verified.txt\" \"received.txt\"";
+    private const string WinMergeRight = "/u /wl /e \"/tmp/received.txt\" \"/tmp/verified.txt\" /dl \"received.txt\" /dr \"verified.txt\" /cfg Backup/EnableFile=0";
+    private const string WinMergeLeft = "/u /wr /e \"/tmp/verified.txt\" \"/tmp/received.txt\" /dl \"verified.txt\" /dr \"received.txt\" /cfg Backup/EnableFile=0";
+
+    [Theory]
+    [InlineData(DiffTool.MsWordDiff, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.MsExcelDiff, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.BeyondCompare, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.P4Merge, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.Kaleidoscope, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.DeltaWalker, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.WinMerge, WinMergeRight, WinMergeLeft)]
+    [InlineData(DiffTool.TortoiseMerge, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.TortoiseGitMerge, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.TortoiseGitIDiff, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.TortoiseIDiff, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.KDiff3, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.TkDiff, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.Guiffy, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.ExamDiff, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.Diffinity, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.Rider, RiderRight, RiderLeft)]
+    [InlineData(DiffTool.Vim, VimRight, VimLeft)]
+    [InlineData(DiffTool.Neovim, VimRight, VimLeft)]
+    [InlineData(DiffTool.AraxisMerge, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.Meld, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.SublimeMerge, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.VisualStudioCode, VisualStudioCodeRight, VisualStudioCodeLeft)]
+    [InlineData(DiffTool.VisualStudio, VisualStudioRight, VisualStudioLeft)]
+    [InlineData(DiffTool.Cursor, VisualStudioCodeRight, VisualStudioCodeLeft)]
+    public void GetArguments_ProducesTheExpectedCommandLine(DiffTool tool, string expectedRight, string expectedLeft)
+    {
+        var resolvedTool = new ResolvedTool(tool, "diff", DiffTools.GetLaunchArguments(tool), supportsText: true, []);
+
+        using (new EnvironmentVariableScope("DiffEngine_TargetOnLeft", null))
+        {
+            Assert.Equal(expectedRight, resolvedTool.GetArguments(TempFile, TargetFile));
+        }
+
+        using (new EnvironmentVariableScope("DiffEngine_TargetOnLeft", "true"))
+        {
+            Assert.Equal(expectedLeft, resolvedTool.GetArguments(TempFile, TargetFile));
+        }
+    }
+
+    [Fact]
+    public void EveryDiffToolHasLaunchArguments()
+    {
+        foreach (var tool in Enum.GetValues<DiffTool>())
+        {
+            _ = DiffTools.GetLaunchArguments(tool);
+        }
+    }
+
     private static string GetVisualStudioCodeExecutableName()
     {
         return OperatingSystem.IsWindows() ? "code.cmd" : "code";

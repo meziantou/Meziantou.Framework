@@ -238,6 +238,17 @@ public static class DiffTools
         return resolvedTool is not null;
     }
 
+    internal static LaunchArguments GetLaunchArguments(DiffTool tool)
+    {
+        foreach (var definition in Definitions)
+        {
+            if (definition.Tool == tool)
+                return definition.LaunchArguments;
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(tool), tool, message: null);
+    }
+
     private static List<ResolvedTool> ResolveAvailableTools()
     {
         var result = new List<ResolvedTool>();

@@ -123,9 +123,9 @@ public sealed class AccessToken : IDisposable
             });
 
     /// <summary>Gets the mandatory integrity level of the token.</summary>
-    /// <returns>A <see cref="TokenEntry"/> containing the integrity level SID, or <see langword="null"/> if not available.</returns>
+    /// <returns>A <see cref="TokenEntry"/> containing the integrity level SID.</returns>
     /// <remarks>The mandatory integrity level (e.g., Low, Medium, High, System) determines what resources the token can access.</remarks>
-    public TokenEntry? GetMandatoryIntegrityLevel()
+    public TokenEntry GetMandatoryIntegrityLevel()
     {
         return GetTokenInformation<TOKEN_MANDATORY_LABEL, TokenEntry>(
             TOKEN_INFORMATION_CLASS.TokenIntegrityLevel,
@@ -133,8 +133,8 @@ public sealed class AccessToken : IDisposable
     }
 
     /// <summary>Gets the owner security identifier (SID) of the token.</summary>
-    /// <returns>The <see cref="SecurityIdentifier"/> of the token owner, or <see langword="null"/> if not available.</returns>
-    public SecurityIdentifier? GetOwner()
+    /// <returns>The <see cref="SecurityIdentifier"/> of the token owner.</returns>
+    public SecurityIdentifier GetOwner()
     {
         return GetTokenInformation<TOKEN_OWNER, SecurityIdentifier>(
             TOKEN_INFORMATION_CLASS.TokenOwner,
@@ -142,21 +142,21 @@ public sealed class AccessToken : IDisposable
     }
 
     /// <summary>Enumerates all groups (security identifiers) associated with the token.</summary>
-    /// <returns>A collection of <see cref="TokenGroupEntry"/> objects representing the groups, or <see langword="null"/> if not available.</returns>
-    public IEnumerable<TokenGroupEntry>? EnumerateGroups()
+    /// <returns>A collection of <see cref="TokenGroupEntry"/> objects representing the groups.</returns>
+    public IEnumerable<TokenGroupEntry> EnumerateGroups()
     {
         return EnumerateGroups(TOKEN_INFORMATION_CLASS.TokenGroups);
     }
 
     /// <summary>Enumerates the restricted SIDs in the token.</summary>
-    /// <returns>A collection of <see cref="TokenGroupEntry"/> objects representing the restricted SIDs, or <see langword="null"/> if not available.</returns>
+    /// <returns>A collection of <see cref="TokenGroupEntry"/> objects representing the restricted SIDs.</returns>
     /// <remarks>Restricted SIDs are used to limit the token's access to resources beyond the standard access checks.</remarks>
-    public IEnumerable<TokenGroupEntry>? EnumerateRestrictedSid()
+    public IEnumerable<TokenGroupEntry> EnumerateRestrictedSid()
     {
         return EnumerateGroups(TOKEN_INFORMATION_CLASS.TokenRestrictedSids);
     }
 
-    private IReadOnlyList<TokenGroupEntry>? EnumerateGroups(TOKEN_INFORMATION_CLASS informationClass)
+    private IReadOnlyList<TokenGroupEntry> EnumerateGroups(TOKEN_INFORMATION_CLASS informationClass)
     {
         return GetTokenInformation<TOKEN_GROUPS, IReadOnlyList<TokenGroupEntry>>(
             informationClass,
@@ -175,8 +175,8 @@ public sealed class AccessToken : IDisposable
     }
 
     /// <summary>Enumerates all privileges held by the token.</summary>
-    /// <returns>A collection of <see cref="TokenPrivilegeEntry"/> objects representing the privileges, or <see langword="null"/> if not available.</returns>
-    public IEnumerable<TokenPrivilegeEntry>? EnumeratePrivileges()
+    /// <returns>A collection of <see cref="TokenPrivilegeEntry"/> objects representing the privileges.</returns>
+    public IEnumerable<TokenPrivilegeEntry> EnumeratePrivileges()
     {
         return GetTokenInformation<TOKEN_PRIVILEGES, IReadOnlyList<TokenPrivilegeEntry>>(
             TOKEN_INFORMATION_CLASS.TokenPrivileges,
@@ -227,13 +227,13 @@ public sealed class AccessToken : IDisposable
         static T Identity(T arg) => arg;
     }
 
-    private TResult? GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<T, TResult> func)
+    private TResult GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<T, TResult> func)
         where T : unmanaged
     {
         return GetTokenInformation<T, TResult>(type, (_, arg) => func(arg));
     }
 
-    private unsafe TResult? GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<IntPtr, T, TResult> func)
+    private unsafe TResult GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<IntPtr, T, TResult> func)
         where T : unmanaged
     {
         uint returnedLength;
@@ -271,7 +271,8 @@ public sealed class AccessToken : IDisposable
             }
         }
 
-        return default;
+        // The sizing call above asks for zero bytes, so it only succeeds if the information class carries no data
+        throw new InvalidOperationException(FormattableString.Invariant($"GetTokenInformation({type}) returned no data"));
     }
 
     /// <summary>Enables a privilege for this token.</summary>

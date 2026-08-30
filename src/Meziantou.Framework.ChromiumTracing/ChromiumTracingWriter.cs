@@ -179,6 +179,7 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>A task that represents the asynchronous write operation.</returns>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "The json options are guarantee to contains the TypeResolver for events")]
+    [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling", Justification = "The options only use source-generated resolvers, so a type that is not registered fails with NotSupportedException instead of falling back to reflection")]
     public async Task WriteEventAsync(ChromiumTracingEvent tracingEvent, CancellationToken cancellationToken = default)
     {
         if (tracingEvent is null)
@@ -231,7 +232,27 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     [JsonSerializable(typeof(ChromiumTracingObjectCreatedEvent))]
     [JsonSerializable(typeof(ChromiumTracingObjectDestroyedEvent))]
     [JsonSerializable(typeof(ChromiumTracingObjectSnapshotEvent))]
+    // Values in ChromiumTracingEvent.Arguments are resolved by their runtime type. Without these,
+    // only the types that happen to appear on the event properties can be used as argument values.
+    [JsonSerializable(typeof(bool))]
+    [JsonSerializable(typeof(byte))]
+    [JsonSerializable(typeof(char))]
+    [JsonSerializable(typeof(DateTime))]
+    [JsonSerializable(typeof(DateTimeOffset))]
+    [JsonSerializable(typeof(decimal))]
+    [JsonSerializable(typeof(double))]
+    [JsonSerializable(typeof(float))]
+    [JsonSerializable(typeof(Guid))]
+    [JsonSerializable(typeof(int))]
     [JsonSerializable(typeof(long))]
+    [JsonSerializable(typeof(sbyte))]
+    [JsonSerializable(typeof(short))]
+    [JsonSerializable(typeof(string))]
+    [JsonSerializable(typeof(TimeSpan))]
+    [JsonSerializable(typeof(uint))]
+    [JsonSerializable(typeof(ulong))]
+    [JsonSerializable(typeof(ushort))]
+    [JsonSerializable(typeof(Uri))]
     private sealed partial class SourceGenerationContext : JsonSerializerContext
     {
     }

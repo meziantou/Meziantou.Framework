@@ -844,6 +844,59 @@ public class GlobTests
         Assert.False(glob.IsMatch(path));
     }
 
+    [Theory]
+    [InlineData("**", "a.txt")]
+    [InlineData("**", "src/a.txt")]
+    [InlineData("src/**", "src/a.txt")]
+    [InlineData("src/**", "src/nested/a.txt")]
+    [InlineData("src/**/**", "src/nested/a.txt")]
+    public void TrailingRecursiveWildcardMatchesTheRestOfThePath(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("src/**", "src")]
+    [InlineData("src/**", "other/a.txt")]
+    [InlineData("src/**", "srcx/a.txt")]
+    public void TrailingRecursiveWildcardRequiresAtLeastOneSegment(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("src/**", "src/.hidden")]
+    [InlineData("src/**", "src/.hidden/a.txt")]
+    [InlineData("**", ".hidden")]
+    public void TrailingRecursiveWildcardHonorsLeadingDot(string pattern, string path)
+    {
+        Assert.False(Glob.Parse(pattern, GlobDialect.Standard).IsMatch(path));
+        Assert.True(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot).IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData(GlobDialect.Git)]
+    [InlineData(GlobDialect.MSBuild)]
+    public void TrailingRecursiveWildcardMatchesTheRestOfThePathInEveryDialect(GlobDialect dialect)
+    {
+        var glob = Glob.Parse("src/**", dialect, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch("src/a.txt"));
+        Assert.True(glob.IsMatch("src/nested/a.txt"));
+    }
+
+    [Fact]
+    public void EnumerateFiles_TrailingRecursiveWildcard()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("src/a.txt");
+        directory.CreateEmptyFile("src/nested/b.txt");
+        directory.CreateEmptyFile("other/c.txt");
+
+        AssertEnumerateFiles(directory, Glob.Parse("src/**", GlobDialect.Standard), ["src/a.txt", "src/nested/b.txt"]);
+    }
+
     private static void AssertEnumerateFiles(TemporaryDirectory directory, IGlobEvaluatable glob, string[] expectedResult)
     {
         var items = glob.EnumerateFiles(directory.FullPath)

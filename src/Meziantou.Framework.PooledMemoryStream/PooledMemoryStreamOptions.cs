@@ -68,9 +68,21 @@ public sealed class PooledMemoryStreamOptions
     /// <summary>
     /// Gets or sets a value indicating whether buffers are cleared (zeroed) when returned to the pool. This is slower
     /// but ensures previously written data cannot be observed by another stream that later rents the same array.
-    /// Defaults to <see langword="false"/>. Note that <see cref="PooledMemoryStream"/> never exposes bytes that were
-    /// not explicitly written, so this option is only relevant for defense-in-depth scenarios.
+    /// Defaults to <see langword="false"/>.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The members bounded by <see cref="PooledMemoryStream.Length"/> never expose unwritten bytes, and
+    /// <see cref="PooledMemoryStream.GetBuffer"/> zeroes the region past <see cref="PooledMemoryStream.Length"/>
+    /// before handing the array out, so it cannot surface data left by an unrelated stream either. The one region
+    /// that stays uninitialized is the span returned by the <see cref="System.Buffers.IBufferWriter{T}"/> members,
+    /// which is the usual contract for a buffer writer.
+    /// </para>
+    /// <para>
+    /// The pool is process-wide and clearing happens on return, so this setting governs the data this stream hands
+    /// back to other streams. It does not clean the arrays this stream rents from them.
+    /// </para>
+    /// </remarks>
     public bool ClearOnReturn
     {
         get => _clearOnReturn;
@@ -99,6 +111,23 @@ public sealed class PooledMemoryStreamOptions
         }
 
         return sizes[^1];
+    }
+
+    /// <summary>
+    /// Returns the block size to use when reserving <paramref name="remaining"/> more bytes of capacity: the largest
+    /// tier that fits, or the smallest tier when less than that is left. Reservations are composed of several blocks
+    /// rather than rounded up to a single larger tier, which keeps the over-allocation below the smallest tier.
+    /// </summary>
+    internal int GetReservationBlockSize(long remaining)
+    {
+        var sizes = _bufferSizes;
+        for (var i = sizes.Length - 1; i >= 0; i--)
+        {
+            if (remaining >= sizes[i])
+                return sizes[i];
+        }
+
+        return sizes[0];
     }
 
     /// <summary>

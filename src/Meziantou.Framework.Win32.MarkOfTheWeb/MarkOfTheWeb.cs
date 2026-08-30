@@ -23,6 +23,7 @@ namespace Meziantou.Framework.Win32;
 /// MarkOfTheWeb.RemoveFileZone(path);
 /// </code>
 /// </example>
+[SupportedOSPlatform("windows")]
 public static class MarkOfTheWeb
 {
     private static readonly UTF8Encoding ZoneIdentifierEncoding = new(encoderShouldEmitUTF8Identifier: false);
@@ -47,7 +48,6 @@ public static class MarkOfTheWeb
     /// <summary>Gets the security zone of a file using the Windows Security Manager COM API.</summary>
     /// <param name="filePath">The path to the file to query.</param>
     /// <returns>The <see cref="UrlZone"/> of the file, or <see cref="UrlZone.Invalid"/> if the zone cannot be determined.</returns>
-    [SupportedOSPlatform("windows")]
     public static UrlZone GetFileZone(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
@@ -73,9 +73,10 @@ public static class MarkOfTheWeb
                 Marshal.ReleaseComObject(securityManager);
             }
         }
-        catch
+        catch (Exception exception) when (exception is COMException or ArgumentException or PlatformNotSupportedException)
         {
-            // Ignore errors
+            // The security manager could not answer for this path. Anything else is a real failure
+            // and is left to propagate rather than being reported as an undeterminable zone.
         }
 
         return UrlZone.Invalid;
@@ -162,13 +163,15 @@ public static class MarkOfTheWeb
     /// </summary>
     /// <param name="filePath">The path to the file to check.</param>
     /// <returns><see langword="true"/> if the file is from an untrusted zone (Internet or Restricted); otherwise, <see langword="false"/>.</returns>
-    [SupportedOSPlatform("windows")]
+    /// <exception cref="FileNotFoundException"><paramref name="filePath"/> does not point to an existing file. A directory is not a file.</exception>
     public static bool IsUntrusted(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
 
+        // Answering "not untrusted" for a path that was never examined would let a typo pass a gate
+        // written as: if (MarkOfTheWeb.IsUntrusted(path)) return;
         if (!File.Exists(filePath))
-            return false;
+            throw new FileNotFoundException("File not found", filePath);
 
         filePath = Path.GetFullPath(filePath);
 

@@ -24,6 +24,8 @@ if (RestartManager.IsFileLocked(path))
 
 Get a list of all processes that have locks on a specific file:
 
+The caller owns the returned `Process` instances and should dispose them.
+
 ```csharp
 using Meziantou.Framework.Win32;
 
@@ -33,6 +35,7 @@ var processes = RestartManager.GetProcessesLockingFile(path);
 foreach (var process in processes)
 {
     Console.WriteLine($"Process {process.ProcessName} (PID: {process.Id}) is locking the file");
+    process.Dispose();
 }
 ```
 
@@ -40,6 +43,9 @@ foreach (var process in processes)
 
 Registering resources performs relatively expensive write operations, so checking many files with one
 session is significantly cheaper than calling `GetProcessesLockingFile` in a loop:
+
+Registrations are persisted to the registry, so one session can only hold a bounded number of paths. A very
+large set fails with `ERROR_WRITE_FAULT` (29) and should be split across several sessions.
 
 ```csharp
 using Meziantou.Framework.Win32;
@@ -53,6 +59,7 @@ var processes = RestartManager.GetProcessesLockingFiles(
 foreach (var process in processes)
 {
     Console.WriteLine($"Process {process.ProcessName} (PID: {process.Id}) is locking at least one of the files");
+    process.Dispose();
 }
 ```
 
@@ -78,6 +85,7 @@ if (session.IsResourcesLocked())
     foreach (var process in processes)
     {
         Console.WriteLine($"Locked by: {process.ProcessName}");
+        process.Dispose();
     }
 }
 ```

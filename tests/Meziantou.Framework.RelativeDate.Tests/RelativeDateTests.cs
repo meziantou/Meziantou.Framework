@@ -15,6 +15,22 @@ public class RelativeDateTests
         Assert.Throws<ArgumentException>(() => new RelativeDate(default, timeProvider).ToString());
     }
 
+    [Fact]
+    public void DefaultInstance_ToString_FallsBackToTheSystemTimeProvider()
+    {
+        // A default instance carries no TimeProvider and holds DateTime.MinValue, so it renders as a very distant past date
+        var result = default(RelativeDate).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.EndsWith(" years ago", result);
+    }
+
+    [Fact]
+    public void DefaultInstance_FromArray_ToString_FallsBackToTheSystemTimeProvider()
+    {
+        var dates = new RelativeDate[1];
+        var result = dates[0].ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.EndsWith(" years ago", result);
+    }
+
     [Theory]
     [MemberData(nameof(RelativeDate_ToString_Data))]
     public void RelativeDate_ToString(string dateTimeStr, string nowStr, string expectedValueEn, string expectedValueFr)
@@ -50,6 +66,8 @@ public class RelativeDateTests
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 00:01:00Z", "a minute ago", "il y a une minute" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 00:10:00Z", "10 minutes ago", "il y a 10 minutes" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 01:00:00Z", "an hour ago", "il y a une heure" };
+            yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 01:30:00Z", "an hour ago", "il y a une heure" };
+            yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 01:59:00Z", "an hour ago", "il y a une heure" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 02:00:00Z", "2 hours ago", "il y a 2 heures" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/02 00:00:00Z", "yesterday", "hier" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/03 00:00:00Z", "2 days ago", "il y a 2 jours" };
@@ -62,6 +80,8 @@ public class RelativeDateTests
             yield return new object[] { "2018/01/01 00:00:25Z", "2018/01/01 00:00:00Z", "in 25 seconds", "dans 25 secondes" };
             yield return new object[] { "2018/01/01 00:10:00Z", "2018/01/01 00:00:00Z", "in 10 minutes", "dans 10 minutes" };
             yield return new object[] { "2018/01/01 01:00:00Z", "2018/01/01 00:00:00Z", "in an hour", "dans une heure" };
+            yield return new object[] { "2018/01/01 01:30:00Z", "2018/01/01 00:00:00Z", "in an hour", "dans une heure" };
+            yield return new object[] { "2018/01/01 01:59:00Z", "2018/01/01 00:00:00Z", "in an hour", "dans une heure" };
             yield return new object[] { "2018/01/01 00:01:00Z", "2018/01/01 00:00:00Z", "in a minute", "dans une minute" };
             yield return new object[] { "2018/01/01 02:00:00Z", "2018/01/01 00:00:00Z", "in 2 hours", "dans 2 heures" };
             yield return new object[] { "2018/01/02 00:00:00Z", "2018/01/01 00:00:00Z", "tomorrow", "demain" };
@@ -71,6 +91,69 @@ public class RelativeDateTests
             yield return new object[] { "2019/01/01 00:00:00Z", "2018/01/01 00:00:00Z", "in one year", "dans un an" };
             yield return new object[] { "2021/01/01 00:00:00Z", "2018/01/01 00:00:00Z", "in 3 years", "dans 3 ans" };
         }
+    }
+
+    private static RelativeDate CreateDate(DateTime dateTime)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 0, 0, 0, TimeSpan.Zero));
+        return RelativeDate.Get(dateTime, timeProvider);
+    }
+
+    [Fact]
+    public void IComparable_CompareTo_ReturnsPositive_ForNull()
+    {
+        // null sorts first, even against the smallest representable date
+        var date = (IComparable)CreateDate(new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        Assert.Equal(1, date.CompareTo(obj: null));
+    }
+
+    [Theory]
+    [InlineData(42)]
+    [InlineData("string")]
+    public void IComparable_CompareTo_Throws_ForAnotherType(object value)
+    {
+        var date = (IComparable)CreateDate(new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        Assert.Throws<ArgumentException>(() => date.CompareTo(value));
+    }
+
+    [Fact]
+    public void NonGenericSort_OrdersByDate()
+    {
+        var min = CreateDate(new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        var middle = CreateDate(new DateTime(2018, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+        var max = CreateDate(new DateTime(2018, 1, 3, 0, 0, 0, DateTimeKind.Utc));
+
+        var items = new object[] { max, min, middle };
+        Array.Sort(items);
+
+        Assert.Equal(new object[] { min, middle, max }, items);
+    }
+
+    [Fact]
+    public void ComparisonOperators_AreConsistent()
+    {
+        var earlier = CreateDate(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        var later = CreateDate(new DateTime(2018, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+        var sameAsEarlier = CreateDate(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
+        Assert.True(earlier < later);
+        Assert.True(earlier <= later);
+        Assert.False(earlier > later);
+        Assert.False(earlier >= later);
+        Assert.True(later > earlier);
+        Assert.True(later >= earlier);
+
+        Assert.True(earlier == sameAsEarlier);
+        Assert.False(earlier != sameAsEarlier);
+        Assert.True(earlier <= sameAsEarlier);
+        Assert.True(earlier >= sameAsEarlier);
+        Assert.Equal(0, earlier.CompareTo(sameAsEarlier));
+        Assert.Equal(earlier.GetHashCode(), sameAsEarlier.GetHashCode());
+        Assert.True(earlier.Equals((object)sameAsEarlier));
+        // Assigned first so the analyzer does not rewrite this into Assert.NotEqual, which would not exercise Equals(object)
+        var equalsAnotherType = earlier.Equals("not a relative date");
+        Assert.False(equalsAnotherType);
     }
 
     [Fact]
@@ -96,6 +179,49 @@ public class RelativeDateTests
     }
 
 #if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    [Fact]
+    public void LocalDateTime_IsInterpretedInTheTimeProviderTimeZone()
+    {
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        timeProvider.SetLocalTimeZone(timeZone);
+
+        // 10:00 UTC expressed as a wall clock reading in the provider's time zone
+        var local = DateTime.SpecifyKind(TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc), timeZone), DateTimeKind.Local);
+
+        var result = RelativeDate.Get(local, timeProvider).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.Equal("2 hours ago", result);
+    }
+
+    [Fact]
+    public void LocalDateTime_SkippedByAForwardDstTransition_DoesNotThrow()
+    {
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris");
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 3, 25, 12, 0, 0, TimeSpan.Zero));
+        timeProvider.SetLocalTimeZone(timeZone);
+
+        // 02:30 does not exist in Paris on 2018-03-25: the clock jumps from 02:00 to 03:00
+        var invalid = DateTime.SpecifyKind(new DateTime(2018, 3, 25, 2, 30, 0), DateTimeKind.Local);
+        Assert.True(timeZone.IsInvalidTime(DateTime.SpecifyKind(invalid, DateTimeKind.Unspecified)));
+
+        // Read against the standard-time offset (UTC+1), so 02:30 becomes 01:30 UTC
+        var result = RelativeDate.Get(invalid, timeProvider).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.Equal("10 hours ago", result);
+    }
+
+    [Fact]
+    public void UtcDateTime_IgnoresTheTimeProviderTimeZone()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        timeProvider.SetLocalTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo"));
+
+        var result = RelativeDate.Get(new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc), timeProvider).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.Equal("2 hours ago", result);
+    }
+
     private static readonly string[] LocalizedCultures = ["de", "es", "fr", "it", "ja", "ko", "nl", "pt", "tr", "zh-Hans"];
 
     /// <summary>Offsets from "now" reaching every branch of <see cref="RelativeDate.ToString(string, IFormatProvider)"/>, in both directions.</summary>

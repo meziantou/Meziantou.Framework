@@ -145,6 +145,82 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     }
 
     [Fact]
+    public async Task ConnectCallback_DoesNotReportAnSsrfRejectionWhenTheStrategyRunsOutAfterAConnectFailure()
+    {
+        using var server = new LoopbackHttpServer();
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            ResolutionStrategy = IpAddressResolutionStrategy.Ipv6Only,
+            Logger = loggerProvider.CreateLogger("ssrf-test"),
+        };
+        options.SafeSchemes.Add(Uri.UriSchemeHttp);
+        options.SafeIpNetworks.Add(IPNetwork.Parse("::1/128"));
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.0/8"));
+
+        using var handler = new SocketsHttpHandler();
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.IPv6Loopback, IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler);
+
+        // Both addresses passed validation. Ipv6Only picks ::1, the server listens on the IPv4 loopback only so
+        // that connect fails, and the strategy is then asked again over the IPv4 address it excludes. Running out
+        // of candidates there is an unreachable host, not an SSRF rejection.
+        var rejectedRequestCount = await CountRejectedRequestsAsync(
+            "resolution_strategy_failure",
+            () => Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri($"http://example.invalid:{server.Port}/"), TestContext.Current.CancellationToken)));
+
+        Assert.Equal(0, rejectedRequestCount);
+        Assert.Empty(loggerProvider.Logs.Warnings);
+        Assert.Equal(0, server.AcceptedConnectionCount);
+    }
+
+    private static async Task<long> CountRejectedRequestsAsync(string expectedReasonTag, Func<Task> action)
+    {
+        var context = Guid.NewGuid();
+        var rejectedRequestCount = 0L;
+        var previousContext = MeterTestContext.Value;
+        MeterTestContext.Value = context;
+        try
+        {
+            using var listener = new MeterListener();
+            listener.InstrumentPublished = (instrument, meterListener) =>
+            {
+                if (instrument.Meter.Name == ServerSideRequestForgeryMetrics.MeterName && instrument.Name == ServerSideRequestForgeryMetrics.RejectedRequestsCounterName)
+                {
+                    meterListener.EnableMeasurementEvents(instrument);
+                }
+            };
+            listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
+            {
+                _ = instrument;
+                _ = state;
+                if (MeterTestContext.Value != context)
+                {
+                    return;
+                }
+
+                foreach (var tag in tags)
+                {
+                    if (string.Equals(tag.Key, ServerSideRequestForgeryMetrics.ReasonTagName, StringComparison.Ordinal) && string.Equals(tag.Value?.ToString(), expectedReasonTag, StringComparison.Ordinal))
+                    {
+                        Interlocked.Add(ref rejectedRequestCount, measurement);
+                        break;
+                    }
+                }
+            });
+            listener.Start();
+
+            await action();
+        }
+        finally
+        {
+            MeterTestContext.Value = previousContext;
+        }
+
+        return rejectedRequestCount;
+    }
+
+    [Fact]
     public async Task ConnectCallback_SurfacesRejectionAsInnerExceptionOfHttpRequestException()
     {
         var options = new ServerSideRequestForgeryOptions();
@@ -641,6 +717,38 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     }
 
     [Fact]
+    public async Task ResolveAndSelectIpAddressAsync_DoesNotLogUserInfoOrQueryString()
+    {
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            Logger = loggerProvider.CreateLogger("ssrf-test"),
+        };
+
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://alice:s3cr3t@example.com/path?token=abcdef"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: options,
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Loopback]),
+            cancellationToken: CancellationToken.None).AsTask());
+
+        var warning = Assert.Single(loggerProvider.Logs.Warnings);
+        Assert.DoesNotContain("s3cr3t", warning.Message);
+        Assert.DoesNotContain("alice", warning.Message);
+        Assert.DoesNotContain("abcdef", warning.Message);
+        Assert.DoesNotContain("token", warning.Message);
+        Assert.Contains("https://example.com:443", warning.Message);
+    }
+
+    [Fact]
+    public void FormatRequestOrigin_KeepsOnlyTheDestination()
+    {
+        Assert.Equal("https://example.com:443", ServerSideRequestForgeryConnectPipeline.FormatRequestOrigin(new Uri("https://alice:s3cr3t@example.com/path?token=abcdef")));
+        Assert.Equal("http://example.com:8080", ServerSideRequestForgeryConnectPipeline.FormatRequestOrigin(new Uri("http://example.com:8080/")));
+        Assert.Equal("https://xn--dj-kia8a.example:443", ServerSideRequestForgeryConnectPipeline.FormatRequestOrigin(new Uri("https://déjà.example/")));
+    }
+
+    [Fact]
     public async Task ResolveAndSelectIpAddressAsync_LogsHostMismatchRejectionReason()
     {
         using var loggerProvider = new InMemoryLoggerProvider();
@@ -805,16 +913,6 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         }
     }
 
-    private sealed class FakeDnsIpAddressResolver(IReadOnlyList<IPAddress> addresses) : IDnsIpAddressResolver
-    {
-        public ValueTask<IReadOnlyList<IPAddress>> ResolveAsync(string host, CancellationToken cancellationToken)
-        {
-            _ = host;
-            _ = cancellationToken;
-            return ValueTask.FromResult(addresses);
-        }
-    }
-
     private sealed class FirstAddressStrategy : IpAddressResolutionStrategy
     {
         protected internal override ValueTask<IPAddress> ResolveAsync(IReadOnlyList<IPAddress> addresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
@@ -875,75 +973,6 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             _ = cancellationToken;
             LastSeenOptions = options;
             return ValueTask.FromResult(addresses[0]);
-        }
-    }
-
-    private sealed class LoopbackHttpServer : IDisposable
-    {
-        private const string Response = "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok";
-
-        private readonly TcpListener _listener;
-        private readonly CancellationTokenSource _cancellationTokenSource = new();
-        private int _acceptedConnectionCount;
-
-        public LoopbackHttpServer()
-        {
-            _listener = new TcpListener(IPAddress.Loopback, port: 0);
-            _listener.Start();
-            Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
-            _ = Task.Run(() => AcceptLoopAsync(_cancellationTokenSource.Token));
-        }
-
-        public int Port { get; }
-
-        public int AcceptedConnectionCount => Volatile.Read(ref _acceptedConnectionCount);
-
-        private async Task AcceptLoopAsync(CancellationToken cancellationToken)
-        {
-            try
-            {
-                while (!cancellationToken.IsCancellationRequested)
-                {
-                    using var client = await _listener.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
-                    Interlocked.Increment(ref _acceptedConnectionCount);
-
-                    using var stream = client.GetStream();
-                    await ReadRequestHeadersAsync(stream, cancellationToken).ConfigureAwait(false);
-                    await stream.WriteAsync(Encoding.ASCII.GetBytes(Response), cancellationToken).ConfigureAwait(false);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (SocketException)
-            {
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-        }
-
-        private static async Task ReadRequestHeadersAsync(NetworkStream stream, CancellationToken cancellationToken)
-        {
-            var buffer = new byte[4096];
-            var count = 0;
-            while (count < buffer.Length)
-            {
-                var read = await stream.ReadAsync(buffer.AsMemory(count), cancellationToken).ConfigureAwait(false);
-                if (read == 0)
-                    break;
-
-                count += read;
-                if (Encoding.ASCII.GetString(buffer, 0, count).Contains("\r\n\r\n", StringComparison.Ordinal))
-                    break;
-            }
-        }
-
-        public void Dispose()
-        {
-            _cancellationTokenSource.Cancel();
-            _listener.Dispose();
-            _cancellationTokenSource.Dispose();
         }
     }
 }

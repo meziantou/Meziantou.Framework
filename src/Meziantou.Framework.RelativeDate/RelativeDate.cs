@@ -34,20 +34,35 @@ namespace Meziantou.Framework;
 [StructLayout(LayoutKind.Auto)]
 public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IEquatable<RelativeDate>, IFormattable
 {
-    private TimeProvider TimeProvider { get; }
+    /// <remarks>
+    /// Null on a default instance. A struct cannot intercept its own zero-initialization, so every read must fall back to <see cref="System.TimeProvider.System"/>.
+    /// </remarks>
+    private TimeProvider? TimeProvider { get; }
     private DateTime DateTime { get; }
 
     /// <summary>Initializes a new instance of the <see cref="RelativeDate"/> struct with the specified date and time provider.</summary>
     /// <param name="dateTime">The date and time. Must have <see cref="DateTimeKind.Local"/> or <see cref="DateTimeKind.Utc"/>.</param>
-    /// <param name="timeProvider">The time provider to use for calculating the relative time. If <see langword="null"/>, <see cref="TimeProvider.System"/> is used.</param>
+    /// <param name="timeProvider">The time provider to use for calculating the relative time. If <see langword="null"/>, <see cref="TimeProvider.System"/> is used. A <see cref="DateTimeKind.Local"/> <paramref name="dateTime"/> is interpreted in this provider's <see cref="TimeProvider.LocalTimeZone"/>.</param>
     /// <exception cref="ArgumentException"><paramref name="dateTime"/> has <see cref="DateTimeKind.Unspecified"/>.</exception>
     public RelativeDate(DateTime dateTime, TimeProvider? timeProvider)
     {
         if (dateTime.Kind == DateTimeKind.Unspecified)
             throw new ArgumentException("Cannot determine if the argument is a local datetime or UTC datetime", nameof(dateTime));
 
-        DateTime = dateTime.ToUniversalTime();
         TimeProvider = timeProvider ?? TimeProvider.System;
+        DateTime = dateTime.Kind is DateTimeKind.Local ? ToUniversalTime(dateTime, TimeProvider.LocalTimeZone) : dateTime;
+
+        static DateTime ToUniversalTime(DateTime dateTime, TimeZoneInfo timeZone)
+        {
+            // ConvertTimeToUtc rejects a Local kind unless the zone is TimeZoneInfo.Local
+            var unspecified = DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified);
+
+            // ConvertTimeToUtc throws on a time skipped by a forward DST transition, where DateTime.ToUniversalTime returns the standard-time reading
+            if (timeZone.IsInvalidTime(unspecified))
+                return DateTime.SpecifyKind(unspecified - timeZone.BaseUtcOffset, DateTimeKind.Utc);
+
+            return TimeZoneInfo.ConvertTimeToUtc(unspecified, timeZone);
+        }
     }
 
     /// <summary>Initializes a new instance of the <see cref="RelativeDate"/> struct with the specified date and system time provider.</summary>
@@ -98,8 +113,8 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     /// <item><description>"X seconds ago" / "in X seconds" - for &lt;1 minute</description></item>
     /// <item><description>"a minute ago" / "in a minute" - for 1-2 minutes</description></item>
     /// <item><description>"X minutes ago" / "in X minutes" - for &lt;45 minutes</description></item>
-    /// <item><description>"an hour ago" / "in an hour" - for 45-90 minutes</description></item>
-    /// <item><description>"X hours ago" / "in X hours" - for &lt;24 hours</description></item>
+    /// <item><description>"an hour ago" / "in an hour" - for 45-120 minutes</description></item>
+    /// <item><description>"X hours ago" / "in X hours" - for 2-24 hours</description></item>
     /// <item><description>"yesterday" / "tomorrow" - for 24-48 hours</description></item>
     /// <item><description>"X days ago" / "in X days" - for &lt;30 days</description></item>
     /// <item><description>"one month ago" / "in one month" - for 30-60 days</description></item>
@@ -110,7 +125,8 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     /// </remarks>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
-        var now = TimeProvider.GetUtcNow().UtcDateTime;
+        // TimeProvider is null on a default instance: structs cannot intercept their own zero-initialization
+        var now = (TimeProvider ?? TimeProvider.System).GetUtcNow().UtcDateTime;
 
         var delta = now - DateTime;
         var culture = formatProvider as CultureInfo;
@@ -131,7 +147,7 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
             if (delta < TimeSpan.FromMinutes(45))
                 return GetString("InManyMinutes", culture, delta.Minutes);
 
-            if (delta < TimeSpan.FromMinutes(90))
+            if (delta < TimeSpan.FromMinutes(120))
                 return GetString("InAnHour", culture);
 
             if (delta < TimeSpan.FromHours(24))
@@ -175,7 +191,7 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
         if (delta < TimeSpan.FromMinutes(45))
             return GetString("ManyMinutesAgo", culture, delta.Minutes);
 
-        if (delta < TimeSpan.FromMinutes(90))
+        if (delta < TimeSpan.FromMinutes(120))
             return GetString("AnHourAgo", culture);
 
         if (delta < TimeSpan.FromHours(24))
@@ -207,13 +223,12 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
 
     private static string GetString(string name, CultureInfo? culture, int value) => string.Format(culture, LocalizationProvider.Current.GetString(name, culture), value);
 
-    int IComparable.CompareTo(object? obj)
+    int IComparable.CompareTo(object? obj) => obj switch
     {
-        if (obj is RelativeDate rd)
-            return CompareTo(rd);
-
-        return CompareTo(default);
-    }
+        null => 1,
+        RelativeDate rd => CompareTo(rd),
+        _ => throw new ArgumentException($"Object must be of type {nameof(RelativeDate)}", nameof(obj)),
+    };
 
     /// <summary>Compares this instance to another <see cref="RelativeDate"/> and returns an integer that indicates their relative order.</summary>
     /// <param name="other">The <see cref="RelativeDate"/> to compare with this instance.</param>

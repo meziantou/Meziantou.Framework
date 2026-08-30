@@ -6,7 +6,7 @@
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.HtmlToMarkdownTool</RootNamespace>
 
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Description>CLI to convert HTML to Markdown using Meziantou.Framework.HtmlToMarkdown</Description>
   </PropertyGroup>
 

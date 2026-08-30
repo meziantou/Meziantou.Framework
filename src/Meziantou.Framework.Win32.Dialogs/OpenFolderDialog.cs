@@ -1,7 +1,9 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using Meziantou.Framework.Win32.Natives;
 using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.UI.Shell;
+using Windows.Win32.UI.Shell.Common;
 
 namespace Meziantou.Framework.Win32;
 
@@ -14,7 +16,7 @@ namespace Meziantou.Framework.Win32;
 ///     InitialDirectory = @"C:\Users",
 ///     OkButtonLabel = "Select Folder"
 /// };
-/// 
+///
 /// if (dialog.ShowDialog() == DialogResult.OK)
 /// {
 ///     Console.WriteLine($"Selected folder: {dialog.SelectedPath}");
@@ -28,6 +30,12 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows6.0.6000")]
 public sealed class OpenFolderDialog
 {
+    /// <summary>S_OK.</summary>
+    private const int Ok = 0;
+
+    /// <summary>HRESULT_FROM_WIN32(ERROR_CANCELLED), returned by Show when the user dismisses the dialog.</summary>
+    private const int ErrorCancelled = unchecked((int)0x800704C7);
+
     /// <summary>Shows the folder selection dialog.</summary>
     /// <returns>A <see cref="DialogResult"/> indicating whether the user clicked OK, Cancel, or if the operation was aborted.</returns>
     public DialogResult ShowDialog()
@@ -42,25 +50,24 @@ public sealed class OpenFolderDialog
     {
         SelectedPath = null;
 
-        var hwndOwner = owner != IntPtr.Zero ? owner : (IntPtr)PInvoke.GetActiveWindow();
-        var dialog = (IFileOpenDialog)new NativeFileOpenDialog();
+        var hwndOwner = owner != IntPtr.Zero ? new HWND(owner) : PInvoke.GetActiveWindow();
+        var dialog = (IFileOpenDialog)new FileOpenDialog();
         try
         {
             Configure(dialog);
 
             var hr = dialog.Show(hwndOwner);
             LastHResult = hr;
-            if (hr == NativeMethods.ERROR_CANCELLED)
+            if (hr == ErrorCancelled)
                 return DialogResult.Cancel;
 
-            if (hr != NativeMethods.S_OK)
+            if (hr != Ok)
                 return DialogResult.Abort;
 
             dialog.GetResult(out var item);
             try
             {
-                item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out var path);
-                SelectedPath = path;
+                SelectedPath = GetFileSystemPath(item);
             }
             finally
             {
@@ -111,7 +118,7 @@ public sealed class OpenFolderDialog
 
     /// <summary>Gets or sets a value indicating whether to change the current working directory to the selected folder.</summary>
     /// <value>
-    /// <see langword="true"/> to change the current directory to the selected folder; 
+    /// <see langword="true"/> to change the current directory to the selected folder;
     /// <see langword="false"/> to preserve the current working directory. The default is <see langword="false"/>.
     /// </value>
     public bool ChangeCurrentDirectory { get; set; }
@@ -159,8 +166,8 @@ public sealed class OpenFolderDialog
 
         static bool TryParse(string value, [NotNullWhen(true)] out IShellItem? item)
         {
-            var hr = PInvoke.SHCreateItemFromParsingName(value, null, out IShellItem? result);
-            item = (int)hr == NativeMethods.S_OK ? result : null;
+            var hr = PInvoke.SHCreateItemFromParsingName(value, null, out IShellItem result);
+            item = hr == Ok ? result : null;
             return item is not null;
         }
 
@@ -179,14 +186,29 @@ public sealed class OpenFolderDialog
         }
     }
 
-    internal static FOS CreateOptions(bool changeCurrentDirectory)
+    internal static FILEOPENDIALOGOPTIONS CreateOptions(bool changeCurrentDirectory)
     {
-        var result = FOS.FOS_FORCEFILESYSTEM | FOS.FOS_PICKFOLDERS;
+        var result = FILEOPENDIALOGOPTIONS.FOS_FORCEFILESYSTEM | FILEOPENDIALOGOPTIONS.FOS_PICKFOLDERS;
         if (!changeCurrentDirectory)
         {
-            result |= FOS.FOS_NOCHANGEDIR;
+            result |= FILEOPENDIALOGOPTIONS.FOS_NOCHANGEDIR;
         }
 
         return result;
+    }
+
+    /// <summary>Reads the file system path out of a shell item and frees the buffer the shell allocated for it.</summary>
+    internal static unsafe string GetFileSystemPath(IShellItem item)
+    {
+        PWSTR name = default;
+        try
+        {
+            item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, &name);
+            return name.ToString();
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem((IntPtr)name.Value);
+        }
     }
 }

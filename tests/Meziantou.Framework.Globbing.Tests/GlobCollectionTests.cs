@@ -54,4 +54,81 @@ bin/
         Assert.True(globs.IsMatch("bin/test.txt"));
         Assert.False(globs.IsMatch("", "bin", PathItemType.File));
     }
+
+    [Fact]
+    public void GitIgnoreResolvesAPathAgainstTheLastMatchingPattern()
+    {
+        var globs = GlobCollection.ParseGitIgnore("""
+*.log
+!important.log
+important.log
+""".AsSpan());
+
+        Assert.True(globs.IsMatch("important.log"));
+        Assert.True(globs.IsMatch("trace.log"));
+    }
+
+    [Fact]
+    public void GitIgnoreNegationAfterAMatchReIncludesThePath()
+    {
+        var globs = GlobCollection.ParseGitIgnore("""
+*.log
+!important.log
+""".AsSpan());
+
+        Assert.False(globs.IsMatch("important.log"));
+        Assert.True(globs.IsMatch("trace.log"));
+    }
+
+    [Fact]
+    public void GitIgnoreOrderMatters()
+    {
+        var globs = GlobCollection.ParseGitIgnore("""
+!important.log
+*.log
+""".AsSpan());
+
+        Assert.True(globs.IsMatch("important.log"));
+    }
+
+    [Fact]
+    public void HandBuiltCollectionKeepsAnyExcludeWins()
+    {
+        GlobCollection globs = [
+            Glob.Parse("!important.log", GlobDialect.Standard),
+            Glob.Parse("*.log", GlobDialect.Standard),
+        ];
+
+        Assert.False(globs.IsMatch("important.log"));
+        Assert.True(globs.IsMatch("trace.log"));
+    }
+
+    [Theory]
+    [InlineData("\u0085")]
+    [InlineData("\u2028")]
+    [InlineData("\u2029")]
+    public async Task ParseGitIgnoreAndLoadGitIgnoreAgreeOnLineBreaks(string character)
+    {
+        var content = "a" + character + "b.txt";
+
+        var parsed = GlobCollection.ParseGitIgnore(content.AsSpan());
+        var loaded = await GlobCollection.LoadGitIgnoreAsync(new StringReader(content));
+
+        Assert.Equal(loaded.Count, parsed.Count);
+        Assert.Equal(1, parsed.Count);
+        Assert.True(parsed.IsMatch(content));
+        Assert.True(loaded.IsMatch(content));
+    }
+
+    [Fact]
+    public async Task ParseGitIgnoreAndLoadGitIgnoreAgreeOnCarriageReturns()
+    {
+        var content = "*.log\r\n!important.log\r\n";
+
+        var parsed = GlobCollection.ParseGitIgnore(content.AsSpan());
+        var loaded = await GlobCollection.LoadGitIgnoreAsync(new StringReader(content));
+
+        Assert.Equal(loaded.Count, parsed.Count);
+        Assert.Equal(2, parsed.Count);
+    }
 }

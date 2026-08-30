@@ -68,9 +68,20 @@ public sealed class PooledMemoryStreamOptions
     /// <summary>
     /// Gets or sets a value indicating whether buffers are cleared (zeroed) when returned to the pool. This is slower
     /// but ensures previously written data cannot be observed by another stream that later rents the same array.
-    /// Defaults to <see langword="false"/>. Note that <see cref="PooledMemoryStream"/> never exposes bytes that were
-    /// not explicitly written, so this option is only relevant for defense-in-depth scenarios.
+    /// Defaults to <see langword="false"/>.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The members bounded by <see cref="PooledMemoryStream.Length"/> never expose unwritten bytes.
+    /// <see cref="PooledMemoryStream.GetBuffer"/> is not bounded by it: it returns the whole underlying array, and the
+    /// bytes past <see cref="PooledMemoryStream.Length"/> can still hold data written by an unrelated stream that
+    /// rented the same array earlier. Enable this option when callers may look at that region.
+    /// </para>
+    /// <para>
+    /// The pool is process-wide and clearing happens on return, so this setting governs the data this stream hands
+    /// back to other streams. It does not clean the arrays this stream rents from them.
+    /// </para>
+    /// </remarks>
     public bool ClearOnReturn
     {
         get => _clearOnReturn;

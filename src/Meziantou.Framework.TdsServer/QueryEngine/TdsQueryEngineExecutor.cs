@@ -1907,6 +1907,15 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var conditionExpression = ParseBooleanExpression(argumentTexts[0]);
+        if (ContainsSubquery(conditionExpression))
+        {
+            // The condition is re-parsed here, detached from the statement being translated, so there is no
+            // query execution context to resolve a query root against and no CTE scope to look one up in.
+            // Reject it with an error that names the limitation instead of throwing out of the engine.
+            throw new TdsQueryEngineException("IIF does not support a subquery in its condition.");
+        }
+
+        // Safe now that subqueries are rejected: the context and the CTE scope are only reached from a subquery.
         var condition = BuildBoolean(
             conditionExpression,
             aliases,
@@ -2627,6 +2636,24 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         return selectExpression.Expression;
+    }
+
+    private static bool ContainsSubquery(SqlCodeObject node)
+    {
+        if (node is SqlQueryExpression or SqlExistsBooleanExpression or SqlInBooleanExpressionQueryValue)
+        {
+            return true;
+        }
+
+        foreach (var child in node.Children)
+        {
+            if (ContainsSubquery(child))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static SqlBooleanExpression ParseBooleanExpression(string expressionText)

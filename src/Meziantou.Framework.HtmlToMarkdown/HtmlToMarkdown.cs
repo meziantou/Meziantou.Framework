@@ -26,13 +26,57 @@ public static class HtmlToMarkdown
         var parser = new HtmlParser();
         var document = parser.ParseDocument("<body>" + html + "</body>");
         var state = new ConversionState(options);
-        var result = ConvertChildNodes(document.Body!, state);
+        var body = document.Body!;
+        ConvertDescendants(body, state);
+        var result = ConvertChildNodes(body, state);
         return result.Trim('\n', '\r');
     }
 
     // =========================================================================
     // Core traversal
     // =========================================================================
+
+    /// <summary>
+    /// Converts every descendant of <paramref name="root"/> bottom-up using an explicit
+    /// stack, so that deeply nested documents cannot overflow the call stack. Every node
+    /// is converted before any of its ancestors, and the result is recorded in
+    /// <paramref name="state"/> for the ancestor to read back.
+    /// </summary>
+    private static void ConvertDescendants(INode root, ConversionState state)
+    {
+        var stack = new Stack<(INode Node, bool ChildrenConverted)>();
+        PushChildren(stack, root);
+
+        while (stack.Count > 0)
+        {
+            var (node, childrenConverted) = stack.Pop();
+            if (childrenConverted)
+            {
+                state.SetConverted(node, ConvertNode(node, state));
+                continue;
+            }
+
+            stack.Push((node, ChildrenConverted: true));
+            if (!IsOpaqueElement(node))
+                PushChildren(stack, node);
+        }
+
+        static void PushChildren(Stack<(INode Node, bool ChildrenConverted)> stack, INode parent)
+        {
+            foreach (var child in parent.ChildNodes)
+                stack.Push((child, ChildrenConverted: false));
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether an element is converted from its raw text or outer
+    /// HTML. The descendants of such an element are never read back, so the traversal does
+    /// not need to convert them.
+    /// </summary>
+    private static bool IsOpaqueElement(INode node)
+    {
+        return node is IElement el && el.LocalName is "pre" or "code" or "script" or "style" or "noscript";
+    }
 
     private static string ConvertNode(INode node, ConversionState state)
     {
@@ -79,7 +123,7 @@ public static class HtmlToMarkdown
             "code" => ConvertInlineCode(element),
             "a" => ConvertLink(element, state),
             "img" => ConvertImage(element),
-            "br" => ConvertBreak(state),
+            "br" => ConvertBreak(element, state),
             "input" => ConvertInput(element),
 
             "script" or "style" or "noscript" => "",
@@ -114,13 +158,13 @@ public static class HtmlToMarkdown
             if (IsBlockElement(child))
             {
                 FlushInlineBuffer(inlineBuf, blocks);
-                var block = ConvertNode(child, state);
+                var block = state.GetConverted(child);
                 if (!string.IsNullOrEmpty(block))
                     blocks.Add(block);
             }
             else
             {
-                inlineBuf.Append(ConvertNode(child, state));
+                inlineBuf.Append(state.GetConverted(child));
             }
         }
 
@@ -137,7 +181,7 @@ public static class HtmlToMarkdown
         var sb = new StringBuilder();
         foreach (var child in parent.ChildNodes)
         {
-            sb.Append(ConvertNode(child, state));
+            sb.Append(state.GetConverted(child));
         }
         return sb.ToString();
     }
@@ -252,7 +296,7 @@ public static class HtmlToMarkdown
                 if (inline.Length > 0)
                     parts.Add((PostProcessLineStart(inline), false));
 
-                var block = ConvertNode(child, state);
+                var block = state.GetConverted(child);
                 if (!string.IsNullOrEmpty(block))
                 {
                     var isList = child is IElement el && el.LocalName is "ul" or "ol";
@@ -261,7 +305,7 @@ public static class HtmlToMarkdown
             }
             else
             {
-                inlineBuf.Append(ConvertNode(child, state));
+                inlineBuf.Append(state.GetConverted(child));
             }
         }
 
@@ -386,7 +430,7 @@ public static class HtmlToMarkdown
         // Collapse redundant nesting: <strong><strong>x</strong></strong>
         var onlyChild = GetSingleSignificantChild(element);
         if (onlyChild is IElement childEl && childEl.LocalName is "strong" or "b")
-            return ConvertStrong(childEl, state);
+            return state.GetConverted(childEl);
 
         var content = ConvertInlineContent(element, state);
         var marker = state.Options.EmphasisMarker == EmphasisMarker.Asterisk ? "**" : "__";
@@ -397,7 +441,7 @@ public static class HtmlToMarkdown
     {
         var onlyChild = GetSingleSignificantChild(element);
         if (onlyChild is IElement childEl && childEl.LocalName is "em" or "i")
-            return ConvertEmphasis(childEl, state);
+            return state.GetConverted(childEl);
 
         var content = ConvertInlineContent(element, state);
         var marker = state.Options.EmphasisMarker == EmphasisMarker.Asterisk ? "*" : "_";
@@ -472,11 +516,25 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string ConvertBreak(ConversionState state)
+    private static string ConvertBreak(IElement element, ConversionState state)
     {
-        if (state.InTableCell)
+        if (IsInTableCell(element))
             return "<br>";
         return state.Options.LineBreakStyle == LineBreakStyle.Backslash ? "\\\n" : "  \n";
+    }
+
+    /// <summary>
+    /// Determines whether an element is inside a table cell by walking its ancestors.
+    /// </summary>
+    private static bool IsInTableCell(IElement element)
+    {
+        for (var parent = element.ParentElement; parent is not null; parent = parent.ParentElement)
+        {
+            if (parent.LocalName is "td" or "th")
+                return true;
+        }
+
+        return false;
     }
 
     private static string ConvertInput(IElement element)
@@ -522,8 +580,6 @@ public static class HtmlToMarkdown
     private static List<(string Content, string? Align)> ExtractTableRow(IElement tr, ConversionState state)
     {
         var cells = new List<(string Content, string? Align)>();
-        var prevInTableCell = state.InTableCell;
-        state.InTableCell = true;
 
         foreach (var cell in tr.Children)
         {
@@ -535,7 +591,6 @@ public static class HtmlToMarkdown
             }
         }
 
-        state.InTableCell = prevInTableCell;
         return cells;
     }
 
@@ -1065,12 +1120,17 @@ public static class HtmlToMarkdown
 
     private sealed class ConversionState
     {
+        private readonly Dictionary<INode, string> _converted = [];
+
         public HtmlToMarkdownOptions Options { get; }
-        public bool InTableCell { get; set; }
 
         public ConversionState(HtmlToMarkdownOptions options)
         {
             Options = options;
         }
+
+        public void SetConverted(INode node, string markdown) => _converted[node] = markdown;
+
+        public string GetConverted(INode node) => _converted.TryGetValue(node, out var markdown) ? markdown : "";
     }
 }

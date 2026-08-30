@@ -229,8 +229,12 @@ ref partial struct ValueStringBuilder
 
         const uint ArrayMaxLength = 0x7FFFFFC7;
 
+        // Add as uint and clamp: _pos + additionalCapacityBeyondPos overflows int for a builder close to the
+        // maximum array length, and the negative result used to reach Rent as an out-of-range argument.
+        var requiredCapacity = Math.Min((uint)_pos + (uint)additionalCapacityBeyondPos, ArrayMaxLength);
+
         var newCapacity = (int)Math.Max(
-            (uint)(_pos + additionalCapacityBeyondPos),
+            requiredCapacity,
             Math.Min((uint)_chars.Length * 2, ArrayMaxLength));
 
         var poolArray = ArrayPool<char>.Shared.Rent(newCapacity);

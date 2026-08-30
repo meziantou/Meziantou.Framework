@@ -240,6 +240,7 @@ public sealed class HumanReadableTextWriter
     /// <summary>Starts writing an array.</summary>
     public void StartArray()
     {
+        IncrementDepth();
         if (_text.Length > 0 && _context != WriterContext.ArrayItemStart)
         {
             WriteNewLine();
@@ -255,6 +256,7 @@ public sealed class HumanReadableTextWriter
     /// <summary>Ends writing an array.</summary>
     public void EndArray()
     {
+        _depth--;
         _scopes.Pop().Dispose();
     }
 

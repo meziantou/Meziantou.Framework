@@ -95,8 +95,8 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     /// <item><description>"X seconds ago" / "in X seconds" - for &lt;1 minute</description></item>
     /// <item><description>"a minute ago" / "in a minute" - for 1-2 minutes</description></item>
     /// <item><description>"X minutes ago" / "in X minutes" - for &lt;45 minutes</description></item>
-    /// <item><description>"an hour ago" / "in an hour" - for 45-90 minutes</description></item>
-    /// <item><description>"X hours ago" / "in X hours" - for &lt;24 hours</description></item>
+    /// <item><description>"an hour ago" / "in an hour" - for 45-120 minutes</description></item>
+    /// <item><description>"X hours ago" / "in X hours" - for 2-24 hours</description></item>
     /// <item><description>"yesterday" / "tomorrow" - for 24-48 hours</description></item>
     /// <item><description>"X days ago" / "in X days" - for &lt;30 days</description></item>
     /// <item><description>"one month ago" / "in one month" - for 30-60 days</description></item>
@@ -128,7 +128,7 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
             if (delta < TimeSpan.FromMinutes(45))
                 return GetString("InManyMinutes", culture, delta.Minutes);
 
-            if (delta < TimeSpan.FromMinutes(90))
+            if (delta < TimeSpan.FromMinutes(120))
                 return GetString("InAnHour", culture);
 
             if (delta < TimeSpan.FromHours(24))
@@ -172,7 +172,7 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
         if (delta < TimeSpan.FromMinutes(45))
             return GetString("ManyMinutesAgo", culture, delta.Minutes);
 
-        if (delta < TimeSpan.FromMinutes(90))
+        if (delta < TimeSpan.FromMinutes(120))
             return GetString("AnHourAgo", culture);
 
         if (delta < TimeSpan.FromHours(24))

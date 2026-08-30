@@ -592,11 +592,11 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
     private void EnsureCapacityAtLeast(long target)
     {
+        // Compose the reservation out of configured tiers instead of rounding the whole thing up to the next one:
+        // GetContiguousBlockSize(70_000) is 1 MiB, so a 70 KB reservation used to allocate 15x what was asked for.
         while (_capacity < target)
         {
-            var remaining = target - _capacity;
-            var desired = Math.Max((int)Math.Min(remaining, Array.MaxLength), _options.GetBlockSize(_capacity));
-            AddSegment(_options.GetContiguousBlockSize(desired));
+            AddSegment(_options.GetReservationBlockSize(target - _capacity));
         }
     }
 

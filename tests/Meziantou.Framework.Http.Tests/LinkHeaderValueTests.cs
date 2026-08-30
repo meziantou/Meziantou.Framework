@@ -45,6 +45,23 @@ public sealed class LinkHeaderValueTests
         Assert.Equal("b", LinkHeaderValue.Parse("<a>; rel=prev, <b>;rel=next").GetLinkUrl("Next"));
     }
 
+    [Fact]
+    public void Parse_ThrowsArgumentNullExceptionOnNullArguments()
+    {
+        Assert.Equal("httpResponse", Assert.Throws<ArgumentNullException>(() => LinkHeaderValue.Parse((HttpResponseMessage)null!)).ParamName);
+        Assert.Equal("headers", Assert.Throws<ArgumentNullException>(() => LinkHeaderValue.Parse((HttpHeaders)null!)).ParamName);
+        Assert.Equal("value", Assert.Throws<ArgumentNullException>(() => LinkHeaderValue.Parse((string)null!)).ParamName);
+    }
+
+    [Fact]
+    public void Parse_ReadsLinkHeadersFromAResponseMessage()
+    {
+        using var response = new HttpResponseMessage();
+        response.Headers.Add("Link", "<https://example.com/2>; rel=\"next\"");
+
+        Assert.Equal("https://example.com/2", LinkHeaderValue.Parse(response).GetLinkUrl("next"));
+    }
+
     private sealed class CustomHttpHeaders : HttpHeaders
     {
     }

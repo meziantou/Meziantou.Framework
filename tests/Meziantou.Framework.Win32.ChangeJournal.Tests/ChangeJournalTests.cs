@@ -223,6 +223,29 @@ public class ChangeJournalTests
         Assert.Throws<InvalidDataException>(() => ParseRecord(buffer));
     }
 
+    [Theory]
+    [InlineData(2, 40)]     // USN_RECORD_V2 is 64 bytes
+    [InlineData(3, 70)]     // USN_RECORD_V3 is 80 bytes
+    [InlineData(4, 40)]     // USN_RECORD_V4 is 80 bytes
+    public void GetBufferedEntry_RejectsARecordSmallerThanTheStructureItDeclares(int majorVersion, int recordLength)
+    {
+        var buffer = majorVersion switch
+        {
+            2 => CreateVersion2Record("test.txt"),
+            3 => CreateVersion3Record("example.log"),
+            _ => CreateVersion4Record(extentCount: 0),
+        };
+
+        // A record only long enough for the common header still gets marshalled as its full versioned structure, which reads
+        // past the record unless the length is checked against that structure.
+        BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(0), (uint)recordLength);
+
+        // The name and extent guards would reject these records too, but only after the structure has been read out of them.
+        // Matching the message is what proves the length was rejected first.
+        var exception = Assert.Throws<InvalidDataException>(() => ParseRecord(buffer));
+        Assert.Contains("smaller than the", exception.Message);
+    }
+
     [Fact]
     public void GetBufferedEntry_RejectsAnUnsupportedRecordVersion()
     {

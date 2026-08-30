@@ -127,6 +127,19 @@ public sealed class HttpBasicAuthenticationTests
         });
     }
 
+    [Fact]
+    public async Task AspNetCoreIdentity_CustomSchemeWithoutLockoutArgument()
+    {
+        var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
+        await using var application = await TestApplication.CreateWithIdentityAsync([user], options => options.Realm = "My API", authenticationScheme: "MyBasicScheme");
+
+        await application.SendAndAssert("/", "myName", "myPassword", async response =>
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("myName|user-id", await response.Content.ReadAsStringAsync(XunitCancellationToken));
+        });
+    }
+
     private static IdentityUser CreateIdentityUser(string id, string username, string password)
     {
         var user = new IdentityUser
@@ -199,7 +212,7 @@ public sealed class HttpBasicAuthenticationTests
             return new TestApplication(app, client);
         }
 
-        public static async Task<TestApplication> CreateWithIdentityAsync(IReadOnlyCollection<IdentityUser> users, Action<HttpBasicAuthenticationOptions> configureOptions)
+        public static async Task<TestApplication> CreateWithIdentityAsync(IReadOnlyCollection<IdentityUser> users, Action<HttpBasicAuthenticationOptions> configureOptions, string? authenticationScheme = null)
         {
             ArgumentNullException.ThrowIfNull(users);
             ArgumentNullException.ThrowIfNull(configureOptions);
@@ -210,8 +223,17 @@ public sealed class HttpBasicAuthenticationTests
             builder.Services.AddSingleton<IUserStore<IdentityUser>>(sp => sp.GetRequiredService<InMemoryIdentityUserStore>());
             builder.Services.AddIdentityCore<IdentityUser>()
                             .AddSignInManager();
-            builder.Services.AddAuthentication(HttpBasicAuthenticationDefaults.AuthenticationScheme)
-                            .AddHttpBasicIdentity<IdentityUser>(configureOptions);
+
+            var authenticationBuilder = builder.Services.AddAuthentication(authenticationScheme ?? HttpBasicAuthenticationDefaults.AuthenticationScheme);
+            if (authenticationScheme is null)
+            {
+                authenticationBuilder.AddHttpBasicIdentity<IdentityUser>(configureOptions);
+            }
+            else
+            {
+                authenticationBuilder.AddHttpBasicIdentity<IdentityUser>(authenticationScheme, configureOptions);
+            }
+
             builder.Services.AddAuthorization();
 
             var app = builder.Build();

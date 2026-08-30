@@ -1594,6 +1594,91 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(packetSize, options.PacketSize);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(511)]
+    [InlineData(65534)]
+    public void TdsServerOptions_MaxMessageSize_SmallerThanAPacket_Throws(int maxMessageSize)
+    {
+        var options = new TdsServerOptions();
+
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() => options.MaxMessageSize = maxMessageSize);
+    }
+
+    [Theory]
+    [InlineData(65535)]
+    [InlineData(1024 * 1024)]
+    [InlineData(int.MaxValue)]
+    public void TdsServerOptions_MaxMessageSize_AtLeastAPacket_IsAccepted(int maxMessageSize)
+    {
+        var options = new TdsServerOptions
+        {
+            MaxMessageSize = maxMessageSize,
+        };
+
+        Assert.Equal(maxMessageSize, options.MaxMessageSize);
+    }
+
+    [Fact]
+    public void TdsServerOptions_MaxMessageSize_DefaultsToDefaultMaxMessageSize()
+    {
+        var options = new TdsServerOptions();
+
+        Assert.Equal(TdsServerOptions.DefaultMaxMessageSize, options.MaxMessageSize);
+    }
+
+    [Fact]
+    public async Task TdsServer_MessageLargerThanMaxMessageSize_IsRejectedBeforeAuthentication()
+    {
+        var options = new TdsServerOptions
+        {
+            MaxMessageSize = TdsServerOptions.MaximumPacketSize,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+        await server.StartAsync();
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var client = new TcpClient();
+        await client.ConnectAsync(IPAddress.Loopback, server.Ports[0], cancellationTokenSource.Token);
+        using var stream = client.GetStream();
+
+        // PRELOGIN packets that never set the end-of-message bit. The server has to buffer the whole message
+        // before it can parse anything, so without a limit this grows a single buffer without bound, and it
+        // does so on the first read of the connection: no credentials are involved.
+        var header = new byte[8];
+        header[0] = 0x12; // PRELOGIN
+        header[1] = 0x00; // not the end of the message
+        header[2] = 0xFF;
+        header[3] = 0xFF;
+        var body = new byte[TdsServerOptions.MaximumPacketSize - 8];
+
+        var connectionClosed = false;
+        try
+        {
+            for (var i = 0; i < 256 && !connectionClosed; i++)
+            {
+                await stream.WriteAsync(header, cancellationTokenSource.Token);
+                await stream.WriteAsync(body, cancellationTokenSource.Token);
+                await stream.FlushAsync(cancellationTokenSource.Token);
+            }
+
+            var buffer = new byte[1];
+            connectionClosed = await stream.ReadAsync(buffer, cancellationTokenSource.Token) == 0;
+        }
+        catch (IOException)
+        {
+            connectionClosed = true;
+        }
+
+        Assert.True(connectionClosed, "The server should close the connection instead of buffering a message larger than MaxMessageSize.");
+    }
+
     [Fact]
     public async Task SqlClient_QueryError_WithAVeryLongMessage_IsTruncatedInsteadOfOverflowingTheToken()
     {

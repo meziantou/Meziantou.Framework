@@ -39,6 +39,35 @@ public class AnsiTextProcessorTests
     }
 
     [Theory]
+    [InlineData(8)]
+    [InlineData(100)]
+    [InlineData(511)]
+    [InlineData(512)]
+    [InlineData(513)]
+    [InlineData(5000)]
+    public void RemoveAnsiSequences_LengthsAroundStackAllocThreshold(int inputLength)
+    {
+        var expected = new string('a', inputLength - 8);
+        var input = "\u001b[31m" + expected + "\u001b[0m";
+        Assert.Equal(expected, AnsiTextProcessor.RemoveAnsiSequences(input));
+        Assert.Equal(expected, AnsiTextProcessor.RemoveAnsiSequences(input.AsSpan()));
+    }
+
+    [Fact]
+    public void AnsiStyle_None_IsCached()
+    {
+        Assert.Same(AnsiTextProcessor.AnsiStyle.None, AnsiTextProcessor.AnsiStyle.None);
+    }
+
+    [Fact]
+    public void AnsiStyle_None_EqualsAnEquivalentInstance()
+    {
+        var constructed = new AnsiTextProcessor.AnsiStyle(Foreground: null, Background: null, Bold: false, Italic: false, Underline: false, Inverse: false);
+        Assert.Equal(AnsiTextProcessor.AnsiStyle.None, constructed);
+        Assert.NotSame(AnsiTextProcessor.AnsiStyle.None, constructed);
+    }
+
+    [Theory]
     [InlineData("\x1b[31mRed Text\x1b[0m")]
     [InlineData("\x1b[1;31mBold Red Text\x1b[0m")]
     [InlineData("Normal \x1b[4mUnderlined\x1b[0m Text")]

@@ -34,8 +34,11 @@ namespace Meziantou.Framework;
 [DebuggerDisplay("{FullPath}")]
 public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
 {
+    private bool _disposed;
+
     /// <summary>Gets the full path to the temporary directory.</summary>
     /// <value>The absolute path to the temporary directory where files and subdirectories can be created.</value>
+    /// <remarks>The path remains readable after the instance is disposed, even though the directory no longer exists.</remarks>
     public FullPath FullPath { get; }
 
     private TemporaryDirectory(FullPath path)
@@ -75,6 +78,7 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <summary>Gets the full path for a relative path within the temporary directory.</summary>
     /// <param name="relativePath">The relative path (can include subdirectories).</param>
     /// <returns>The absolute <see cref="FullPath"/> combining the temporary directory and the relative path.</returns>
+    /// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
     /// <example>
     /// <code>
     /// using var tempDir = TemporaryDirectory.Create();
@@ -83,6 +87,7 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// </example>
     public FullPath GetFullPath(string relativePath)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         return FullPath.Combine(FullPath, relativePath);
     }
 
@@ -168,15 +173,25 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     }
 
     /// <summary>Deletes the temporary directory and all its contents.</summary>
+    /// <remarks>Disposing an already disposed instance does nothing, so it cannot delete a directory recreated at the same path.</remarks>
     public void Dispose()
     {
+        if (_disposed)
+            return;
+
+        _disposed = true;
         IOUtilities.Delete(new DirectoryInfo(FullPath));
     }
 
     /// <summary>Asynchronously deletes the temporary directory and all its contents.</summary>
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
+    /// <remarks>Disposing an already disposed instance does nothing, so it cannot delete a directory recreated at the same path.</remarks>
     public async ValueTask DisposeAsync()
     {
+        if (_disposed)
+            return;
+
+        _disposed = true;
         await IOUtilities.DeleteAsync(new DirectoryInfo(FullPath), CancellationToken.None).ConfigureAwait(false);
     }
 
@@ -227,7 +242,12 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
 
     /// <summary>Opens the temporary directory in Windows Explorer.</summary>
     /// <remarks>This method is only available on Windows platforms.</remarks>
+    /// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
-    public void OpenInExplorer() => FullPath.OpenInExplorer();
+    public void OpenInExplorer()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        FullPath.OpenInExplorer();
+    }
 }

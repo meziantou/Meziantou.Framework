@@ -262,6 +262,58 @@ public sealed partial class InMemoryLoggerTests
     }
 
     [Fact]
+    public void EntriesKeepTheirOrderAcrossChunkBoundaries()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        // Chunks hold 16, then 32, then 64 entries, so this spans three of them
+        for (var i = 0; i < 100; i++)
+        {
+            logger.LogInformation("Entry {Index}", i);
+        }
+
+        Assert.HasCount(100, logger.Logs);
+        Assert.Equal(Enumerable.Range(0, 100).Cast<object?>(), logger.Logs.Select(log =>
+        {
+            Assert.True(log.TryGetParameterValue("Index", out var index));
+            return index;
+        }));
+    }
+
+    [Fact]
+    public async Task CanEnumerateWhileAnotherThreadLogs()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        var writer = Task.Run(() =>
+        {
+            for (var i = 0; i < 200_000; i++)
+            {
+                logger.LogInformation("Test");
+            }
+        });
+
+        // A smoke test: the window this guards is a few instructions wide, so it does not reliably
+        // reproduce on its own. It does catch a reader walking the chunks being broken outright.
+        var missing = 0;
+        do
+        {
+            foreach (var log in logger.Logs)
+            {
+                if (log is null)
+                {
+                    missing++;
+                }
+            }
+        }
+        while (!writer.IsCompleted);
+
+        await writer;
+
+        Assert.Equal(0, missing);
+        Assert.HasCount(200_000, logger.Logs);
+    }
+
+    [Fact]
     public void WithTimeProvider()
     {
         using var provider = new InMemoryLoggerProvider(new CustomTimeProvider());

@@ -127,6 +127,59 @@ public sealed class HttpBasicAuthenticationTests
         });
     }
 
+    [Fact]
+    public async Task EmptyUsername_IsPassedToTheCredentialValidator()
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("", "api-token", username, password);
+        });
+
+        await application.SendAndAssert("/", "", "api-token", response =>
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task EmptyUsernameAndPassword_IsPassedToTheCredentialValidator()
+    {
+        string? observedUsername = null;
+        string? observedPassword = null;
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, username, password) =>
+            {
+                observedUsername = username;
+                observedPassword = password;
+                return ValueTask.FromResult<ClaimsPrincipal?>(null);
+            };
+        });
+
+        await application.SendAndAssert("/", "", "", response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+
+        Assert.Equal("", observedUsername);
+        Assert.Equal("", observedPassword);
+    }
+
+    [Fact]
+    public async Task CredentialsWithoutSeparator_AreStillRejected()
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, _, _) => throw new InvalidOperationException("The validator must not run for malformed credentials");
+        });
+
+        var payload = Convert.ToBase64String(Encoding.UTF8.GetBytes("no-separator-here"));
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/");
+        request.Headers.TryAddWithoutValidation("Authorization", "Basic " + payload);
+        using var response = await application.Client.SendAsync(request, XunitCancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     private static IdentityUser CreateIdentityUser(string id, string username, string password)
     {
         var user = new IdentityUser

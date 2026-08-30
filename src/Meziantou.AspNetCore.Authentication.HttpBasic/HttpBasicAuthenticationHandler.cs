@@ -49,8 +49,10 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
             return InvalidBase64CredentialsResult;
         }
 
+        // RFC 7617 defines userid as *<TEXT excluding ":">, so an empty user-id is well-formed.
+        // Whether it is acceptable is the credential validator's decision, not the parser's.
         var separatorIndex = credentials.IndexOf(':', StringComparison.Ordinal);
-        if (separatorIndex <= 0)
+        if (separatorIndex < 0)
             return InvalidCredentialsFormatResult;
 
         var username = credentials[..separatorIndex];

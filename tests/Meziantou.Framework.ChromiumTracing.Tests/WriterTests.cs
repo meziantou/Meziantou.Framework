@@ -77,6 +77,43 @@ public sealed partial class WriterTests
         });
     }
 
+    [Fact]
+    public void SettingTheClockSyncNameToNullIsANoOp()
+    {
+        var tracingEvent = new ChromiumTracingClockSyncEvent { Name = null };
+
+        Assert.Equal("clock_sync", tracingEvent.Name);
+    }
+
+    [Fact]
+    public void SettingTheClockSyncNameToItsOwnValueIsANoOp()
+    {
+        var tracingEvent = new ChromiumTracingClockSyncEvent { Name = "clock_sync" };
+
+        Assert.Equal("clock_sync", tracingEvent.Name);
+    }
+
+    [Fact]
+    public void SettingTheClockSyncNameToAnotherValueThrows()
+    {
+        Assert.Throws<ArgumentException>(() => new ChromiumTracingClockSyncEvent { Name = "other" });
+    }
+
+    [Fact]
+    public void CopyingTheNameBetweenEventsWorksForEveryEventType()
+    {
+        // Name is virtual on the base type, so anything that copies it across events must not break on a single type
+        foreach (var eventType in typeof(ChromiumTracingWriter).Assembly.GetTypes().Where(type => !type.IsAbstract && type.IsAssignableTo(typeof(ChromiumTracingEvent))))
+        {
+            var source = (ChromiumTracingEvent)Activator.CreateInstance(eventType)!;
+            var destination = (ChromiumTracingEvent)Activator.CreateInstance(eventType)!;
+
+            destination.Name = source.Name;
+
+            Assert.Equal(source.Name, destination.Name);
+        }
+    }
+
     private sealed record CustomPayload(int Value);
 
     [JsonSerializable(typeof(CustomPayload))]

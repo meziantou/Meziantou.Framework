@@ -3022,6 +3022,27 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_XmlDataType_WithADtd_IsRejected()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        // A few hundred bytes of nested internal entities expand into megabytes, once per row, and the query
+        // cannot be cancelled. XDocument.Parse allows that by default, so the engine has to opt out.
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT CAST('<?xml version="1.0"?><!DOCTYPE root [<!ENTITY a "aaaaaaaaaa"><!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">]><root>&b;</root>' AS XML) AS Bomb
+                    FROM xml_docs
+                    WHERE Id = 1
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "could not be parsed");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_XmlMethod_Query_ReturnsXmlFragment()
     {
         var queryEngineOptions = CreateQueryEngineOptions();

@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Xml;
 using Meziantou.Framework.Tds.Handler;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -33,6 +34,36 @@ public sealed class TdsServerProtocolTests
 
         Assert.NotNull(json);
         Assert.Equal(42, json!["value"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public void TdsQueryParameter_AsXml_WithADtd_Throws()
+    {
+        // The value comes straight off the wire. XDocument.Parse would expand internal entities up to ten
+        // million characters, so a handler calling AsXml on a small parameter could allocate megabytes.
+        var parameter = new TdsQueryParameter
+        {
+            Name = "@xml",
+            Value = """<?xml version="1.0"?><!DOCTYPE root [<!ENTITY a "aaaaaaaaaa"><!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">]><root>&b;</root>""",
+            Type = TdsColumnType.NVarChar,
+        };
+
+        _ = Assert.Throws<XmlException>(parameter.AsXml);
+    }
+
+    [Fact]
+    public void TdsQueryParameter_AsXml_WithoutADtd_ReturnsTheDocument()
+    {
+        var parameter = new TdsQueryParameter
+        {
+            Name = "@xml",
+            Value = """<root><item id="1">Alpha</item></root>""",
+            Type = TdsColumnType.NVarChar,
+        };
+
+        var document = parameter.AsXml();
+
+        Assert.Equal("Alpha", document?.Root?.Element("item")?.Value);
     }
 
     [Fact]

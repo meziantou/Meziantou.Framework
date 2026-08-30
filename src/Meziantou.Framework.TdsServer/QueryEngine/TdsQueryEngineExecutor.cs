@@ -35,6 +35,12 @@ internal sealed class TdsQueryEngineExecutor
         public IDictionary<string, IQueryable> ResolvedQueryRoots { get; }
     }
 
+    private static readonly XmlReaderSettings XmlReaderSettings = new()
+    {
+        DtdProcessing = DtdProcessing.Prohibit,
+        XmlResolver = null,
+    };
+
     private readonly TdsQueryEngineOptions _options;
     private readonly FrozenDictionary<string, TdsQueryRoot> _queryRoots;
     private readonly FrozenDictionary<string, Delegate> _storedProcedures;
@@ -2458,13 +2464,13 @@ internal sealed class TdsQueryEngineExecutor
             return false;
         }
 
-        _ = XDocument.Parse(xmlValue.Value, LoadOptions.PreserveWhitespace);
+        _ = ParseXml(xmlValue.Value);
         return true;
     }
 
     private static void ValidateXmlAgainstSchema(string xml, XmlSchemaSet schemaSet, string? schemaCollectionName)
     {
-        var document = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
+        var document = ParseXml(xml);
         string? validationError = null;
         document.Validate(schemaSet, (_, args) =>
         {
@@ -2477,16 +2483,37 @@ internal sealed class TdsQueryEngineExecutor
         }
     }
 
+    /// <summary>Parses an XML value with DTD processing disabled.</summary>
+    /// <remarks>
+    /// <see cref="XDocument.Parse(string, LoadOptions)"/> defaults to <see cref="DtdProcessing.Parse"/> with a
+    /// ten-million-character entity budget, so a few hundred bytes of nested internal entities expand into
+    /// megabytes. XML values reach this engine from client SQL and are parsed once per row, which turns that
+    /// budget into an arbitrary amount of server CPU. External entities were never resolved, so this only
+    /// removes the expansion.
+    /// </remarks>
+    private static XDocument ParseXml(string xml)
+    {
+        try
+        {
+            using var reader = XmlReader.Create(new StringReader(xml), XmlReaderSettings);
+            return XDocument.Load(reader, LoadOptions.PreserveWhitespace);
+        }
+        catch (XmlException ex)
+        {
+            throw new TdsQueryEngineException($"The XML value could not be parsed: {ex.Message}");
+        }
+    }
+
     private static XPathNavigator CreateXmlContextNavigator(string xml)
     {
-        var document = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
+        var document = ParseXml(xml);
         return document.Root?.CreateNavigator()
             ?? throw new TdsQueryEngineException("Cannot evaluate XML query on an empty document.");
     }
 
     private static void EnsureXmlConstraint(string xml, SqlXmlDocumentConstraint documentConstraint)
     {
-        _ = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
+        _ = ParseXml(xml);
         if (documentConstraint == SqlXmlDocumentConstraint.None)
         {
             return;

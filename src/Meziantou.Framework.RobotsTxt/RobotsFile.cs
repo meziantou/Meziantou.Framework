@@ -268,9 +268,9 @@ public sealed class RobotsFile
             }
             else if (directive.Equals("Crawl-delay", StringComparison.OrdinalIgnoreCase))
             {
-                if (double.TryParse(value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var seconds) && seconds >= 0)
+                if (TryParseCrawlDelay(value, out var crawlDelay))
                 {
-                    _currentCrawlDelay = TimeSpan.FromSeconds(seconds);
+                    _currentCrawlDelay = crawlDelay;
                 }
                 else
                 {
@@ -337,6 +337,30 @@ public sealed class RobotsFile
         {
             var hash = line.IndexOf('#');
             return hash < 0 ? line : line[..hash];
+        }
+
+        // TimeSpan.MaxValue is a little over 922_337_203_685.47 seconds. Rounded down to a whole
+        // second it is still ~29_227 years, which is far beyond any meaningful crawl delay, and it
+        // keeps TimeSpan.FromSeconds safely inside Int64 ticks.
+        private const double MaxCrawlDelaySeconds = 922_337_203_685d;
+
+        private static bool TryParseCrawlDelay(ReadOnlySpan<char> value, out TimeSpan crawlDelay)
+        {
+            // NumberStyles.Float rather than NumberStyles.Any: a duration has no thousands
+            // separator, no currency symbol and no accounting parentheses, so "1,000" and "(5)"
+            // are malformed rather than 1000 seconds and -5 seconds.
+            // The upper bound also rejects NaN and infinity, which fail every comparison and would
+            // otherwise make TimeSpan.FromSeconds throw out of this deliberately lenient parser.
+            if (double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds)
+                && seconds >= 0
+                && seconds <= MaxCrawlDelaySeconds)
+            {
+                crawlDelay = TimeSpan.FromSeconds(seconds);
+                return true;
+            }
+
+            crawlDelay = default;
+            return false;
         }
     }
 }

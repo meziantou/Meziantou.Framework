@@ -100,6 +100,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         {
             EnsureOpen();
             ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, Array.MaxLength);
 
             _position = value;
         }
@@ -144,6 +145,8 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     public override long Seek(long offset, SeekOrigin loc)
     {
         EnsureOpen();
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, Array.MaxLength);
+
         var newPosition = loc switch
         {
             SeekOrigin.Begin => offset,
@@ -154,6 +157,8 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
         if (newPosition < 0)
             throw new IOException("An attempt was made to move the position before the beginning of the stream.");
+
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(newPosition, Array.MaxLength, nameof(offset));
 
         _position = newPosition;
         return newPosition;
@@ -485,8 +490,8 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         if (source.IsEmpty)
             return;
 
-        var endPosition = _position + source.Length;
-        if (endPosition > Array.MaxLength)
+        // Subtract rather than add: _position + source.Length can overflow long for a far-out position.
+        if (_position > Array.MaxLength - source.Length)
             throw new IOException("Stream was too long.");
 
         if (_position > _length)

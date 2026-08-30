@@ -18,10 +18,7 @@ public class TemporaryDirectoryTests
 
             Assert.HasCount(Iterations, dirs.Select(dir => dir.FullPath).Distinct());
 
-            foreach (var dir in dirs)
-            {
-                Assert.All(dirs, dir => Assert.True(Directory.Exists(dir.FullPath)));
-            }
+            Assert.All(dirs, dir => Assert.True(Directory.Exists(dir.FullPath)));
         }
         finally
         {
@@ -77,6 +74,73 @@ public class TemporaryDirectoryTests
         await using var dir = TemporaryDirectory.Create();
         var path = dir / "subdir" / "file.txt";
         Assert.Equal(dir.GetFullPath("subdir/file.txt"), path);
+    }
+
+    [Fact]
+    public void CreateTextFileReturnsThePathAndWritesTheContent()
+    {
+        using var dir = TemporaryDirectory.Create();
+
+        var path = dir.CreateTextFile("a.txt", "content");
+
+        Assert.Equal(dir.GetFullPath("a.txt"), path);
+        Assert.Equal("content", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public async Task CreateTextFileAsyncReturnsThePathAndWritesTheContent()
+    {
+        await using var dir = TemporaryDirectory.Create();
+
+        var path = await dir.CreateTextFileAsync("a.txt", "content", XunitCancellationToken);
+
+        Assert.Equal(dir.GetFullPath("a.txt"), path);
+        Assert.Equal("content", await File.ReadAllTextAsync(path, XunitCancellationToken));
+    }
+
+    [Fact]
+    public void CreateEmptyFileReturnsThePathAndCreatesAnEmptyFile()
+    {
+        using var dir = TemporaryDirectory.Create();
+
+        var path = dir.CreateEmptyFile("a.txt");
+
+        Assert.Equal(dir.GetFullPath("a.txt"), path);
+        Assert.Empty(File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void CreateDirectoryReturnsThePathAndCreatesTheDirectory()
+    {
+        using var dir = TemporaryDirectory.Create();
+
+        var path = dir.CreateDirectory("sub/nested");
+
+        Assert.Equal(dir.GetFullPath("sub/nested"), path);
+        Assert.True(Directory.Exists(path));
+    }
+
+    [Fact]
+    public void CreateFileCreatesTheParentDirectories()
+    {
+        using var dir = TemporaryDirectory.Create();
+
+        var path = dir.CreateTextFile("sub/nested/a.txt", "content");
+
+        Assert.True(File.Exists(path));
+        Assert.True(Directory.Exists(dir.GetFullPath("sub/nested")));
+    }
+
+    [Fact]
+    public void CreateUnderAnExplicitRootDirectory()
+    {
+        using var parent = TemporaryDirectory.Create();
+        var root = parent.GetFullPath("root");
+
+        using var dir = TemporaryDirectory.Create(root);
+
+        Assert.Equal(root, dir.FullPath.Parent);
+        Assert.True(Directory.Exists(dir.FullPath));
     }
 
     [Fact]

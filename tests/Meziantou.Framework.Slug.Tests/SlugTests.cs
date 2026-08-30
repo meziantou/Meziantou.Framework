@@ -94,10 +94,10 @@ public class SlugTests
 
     [Theory]
     [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
-    [InlineData(1, "")]
-    [InlineData(2, "\uAC00")]
-    [InlineData(3, "\uAC00")]
-    [InlineData(4, "\uAC00\uAC01")]
+    [InlineData(1, "\uAC00")]
+    [InlineData(2, "\uAC00\uAC01")]
+    [InlineData(3, "\uAC00\uAC01\uAC02")]
+    [InlineData(4, "\uAC00\uAC01\uAC02")]
     [InlineData(5, "\uAC00\uAC01\uAC02")]
     public void Slug_MaximumLength_DoesNotSplitHangulSyllables(int maximumLength, string expected)
     {
@@ -348,9 +348,9 @@ public class SlugTests
 
     [Theory]
     [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
-    [InlineData(1, "")]
-    [InlineData(2, "\u00E9")]
-    [InlineData(3, "\u00E9\u00E9")]
+    [InlineData(1, "\u00E9")]
+    [InlineData(2, "\u00E9\u00E9")]
+    [InlineData(3, "\u00E9\u00E9\u00E9")]
     [InlineData(5, "\u00E9\u00E9\u00E9\u00E9")]
     [InlineData(9, "\u00E9\u00E9\u00E9\u00E9")]
     public void Slug_MaximumLength_AppliesToTheComposedSlug(int maximumLength, string expected)
@@ -383,10 +383,10 @@ public class SlugTests
         var options = new SlugOptions { MaximumLength = 4 };
         options.AllowedRanges.Clear();
 
-        var slug = Slug.Create("\u00E9\u00E9\u00E9\u00E9", options);
+        var slug = Slug.Create("\u00E9\u00E9\u00E9\u00E9\u00E9", options);
 
         Assert.DoesNotContain('e', slug);
-        Assert.Equal("\u00E9\u00E9\u00E9", slug);
+        Assert.Equal("\u00E9\u00E9\u00E9\u00E9", slug);
     }
 
     [Fact]
@@ -415,6 +415,45 @@ public class SlugTests
                     Assert.HasCountLessThanOrEqual(maximumLength, slug, $"[{input}] with limit {maximumLength} and separator '{separator}'");
                     Assert.Equal(slug, slug.Normalize(NormalizationForm.FormC));
                 }
+            }
+        }
+    }
+
+    [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Slug_MaximumLength_IsFilled_NotMerelyRespected()
+    {
+        string[] texts =
+        [
+            "\u00E9\u00E9\u00E9\u00E9\u00E9\u00E9",
+            "\u1EC7\u1EC7\u1EC7\u1EC7",
+            "Ti\u1EBFng Vi\u1EC7t",
+            "\uAC00\uAC01\uAC02",
+            "caf\u00E9 cr\u00E8me br\u00FBl\u00E9e",
+        ];
+
+        foreach (var text in texts)
+        {
+            for (var maximumLength = 1; maximumLength <= 20; maximumLength++)
+            {
+                var options = new SlugOptions { MaximumLength = maximumLength };
+                options.AllowedRanges.Clear();
+
+                var slug = Slug.Create(text, options);
+
+                // The longest prefix of the input whose composed form still fits the limit.
+                var longestThatFits = "";
+                for (var take = 1; take <= text.Length; take++)
+                {
+                    var candidate = text[..take].Normalize(NormalizationForm.FormC);
+                    if (candidate.Length > maximumLength)
+                        break;
+
+                    longestThatFits = candidate;
+                }
+
+                Assert.HasCountLessThanOrEqual(maximumLength, slug, $"[{text}] with limit {maximumLength} exceeded the limit");
+                Assert.Equal(longestThatFits, slug);
             }
         }
     }

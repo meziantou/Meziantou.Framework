@@ -45,6 +45,25 @@ public sealed class LinkHeaderValueTests
         Assert.Equal("b", LinkHeaderValue.Parse("<a>; rel=prev, <b>;rel=next").GetLinkUrl("Next"));
     }
 
+    [Theory]
+    [InlineData("<a>;;rel=b")]
+    [InlineData("<a>; ; rel=b")]
+    [InlineData("<a>;=ignored;rel=b")]
+    public void Parse_SkipsEmptyParameterNames(string header)
+    {
+        var link = Assert.Single(LinkHeaderValue.Parse(header));
+        Assert.Equal(["rel"], link.Parameters.Select(p => p.Key));
+        Assert.Equal("b", link.Rel);
+    }
+
+    [Fact]
+    public void Parse_KeepsValuelessParameters()
+    {
+        var link = Assert.Single(LinkHeaderValue.Parse("<a>; rel=b; abc"));
+        Assert.Equal(["rel", "abc"], link.Parameters.Select(p => p.Key));
+        Assert.Empty(link.GetParameterValue("abc")!);
+    }
+
     private sealed class CustomHttpHeaders : HttpHeaders
     {
     }

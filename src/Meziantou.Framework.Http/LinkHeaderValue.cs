@@ -203,7 +203,12 @@ public sealed class LinkHeaderValue
                     }
                 }
 
-                parameters.Add(KeyValuePair.Create(ToLowerInvariantString(parameterName), parameterValue));
+                // A separator right after ';' yields no name at all (";;" or ";=value"). Skip it rather
+                // than recording a phantom parameter that callers enumerating Parameters would see.
+                if (!parameterName.IsEmpty)
+                {
+                    parameters.Add(KeyValuePair.Create(ToLowerInvariantString(parameterName), parameterValue));
+                }
 
                 value = ConsumeOptionalWhiteSpaces(value);
             }

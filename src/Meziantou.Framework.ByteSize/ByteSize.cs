@@ -8,10 +8,11 @@ namespace Meziantou.Framework;
 /// // Create an instance
 /// var size = new ByteSize(1024);
 /// var size2 = ByteSize.FromKiloBytes(10);
-/// var size3 = ByteSize.Parse("10MB");
+/// var size3 = ByteSize.Parse("10MB", CultureInfo.InvariantCulture);
 ///
 /// // Format with automatic unit selection
-/// Console.WriteLine(size.ToString()); // "1kiB"
+/// Console.WriteLine(size.ToString()); // "1.024kB" - decimal units
+/// Console.WriteLine(size.ToString("gi")); // "1kiB" - binary units
 ///
 /// // Format with specific unit
 /// Console.WriteLine(size.ToString("MB")); // "0.001024MB"

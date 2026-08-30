@@ -85,7 +85,7 @@ public class RelativeDateTests
     [Fact(DisableParallelization = true)]
     public void CustomProvider_EmptyValue_FallsBackToTheNeutralCulture()
     {
-        var provider = new StubLocalizationProvider(value: "", neutralValue: "{0} hours ago");
+        var provider = new EmptyThenNeutralLocalizationProvider("{0} hours ago");
         Assert.Equal("2 hours ago", FormatWithProvider(provider, TimeSpan.FromHours(-2)));
     }
 
@@ -93,7 +93,7 @@ public class RelativeDateTests
     [Fact(DisableParallelization = true)]
     public void CustomProvider_EmptyValue_FallsBackToTheNeutralCulture_WithoutACount()
     {
-        var provider = new StubLocalizationProvider(value: "", neutralValue: "yesterday");
+        var provider = new EmptyThenNeutralLocalizationProvider("yesterday");
         Assert.Equal("yesterday", FormatWithProvider(provider, TimeSpan.FromHours(-30)));
     }
 
@@ -107,7 +107,8 @@ public class RelativeDateTests
         try
         {
             LocalizationProvider.Current = provider;
-            return RelativeDate.Get(now + offset, timeProvider).ToString(format: null, CultureInfo.GetCultureInfo("fr"));
+            // Any culture works: the stubs key off the call order rather than the culture, so this holds under InvariantGlobalization too
+            return RelativeDate.Get(now + offset, timeProvider).ToString(format: null, CultureInfo.InvariantCulture);
         }
         finally
         {
@@ -115,10 +116,17 @@ public class RelativeDateTests
         }
     }
 
-    private sealed class StubLocalizationProvider(string value, string? neutralValue = null) : ILocalizationProvider
+    private sealed class StubLocalizationProvider(string value) : ILocalizationProvider
     {
-        public string GetString(string name, CultureInfo? culture)
-            => culture is not null && culture.Equals(CultureInfo.InvariantCulture) ? neutralValue ?? "" : value;
+        public string GetString(string name, CultureInfo? culture) => value;
+    }
+
+    /// <summary>Returns an empty string the first time a resource is asked for and the neutral value afterwards, mirroring a provider that only carries the neutral resource.</summary>
+    private sealed class EmptyThenNeutralLocalizationProvider(string neutralValue) : ILocalizationProvider
+    {
+        private readonly HashSet<string> _asked = new(StringComparer.Ordinal);
+
+        public string GetString(string name, CultureInfo? culture) => _asked.Add(name) ? "" : neutralValue;
     }
 
 #if !INVARIANT_GLOBALIZATION_MODE_ENABLED

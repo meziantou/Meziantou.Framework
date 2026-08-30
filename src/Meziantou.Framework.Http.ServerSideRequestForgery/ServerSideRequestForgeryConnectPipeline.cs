@@ -16,6 +16,12 @@ internal static class ServerSideRequestForgeryConnectPipeline
         ArgumentNullException.ThrowIfNull(options.ResolutionStrategy);
         ArgumentNullException.ThrowIfNull(dnsIpAddressResolver);
 
+        // Assigning the callback would discard the existing one, and the connection would no longer be established
+        // the way the caller configured it. Silently dropping it is worse than refusing: nothing would report that
+        // the custom transport had stopped running.
+        if (handler.ConnectCallback is not null)
+            throw new InvalidOperationException("The handler already has a ConnectCallback, which SSRF protection would replace. Remove it, or configure SSRF protection on a handler that does not define one.");
+
         handler.ConnectCallback = (context, cancellationToken) => ConnectGuardingAgainstProxyAsync(handler, context, options, dnsIpAddressResolver, cancellationToken);
     }
 

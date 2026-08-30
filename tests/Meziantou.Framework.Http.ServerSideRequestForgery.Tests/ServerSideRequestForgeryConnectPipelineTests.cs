@@ -18,6 +18,27 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         Assert.NotNull(handler.ConnectCallback);
     }
 
+    [Fact]
+    public void ConfigureSsrf_ThrowsWhenTheHandlerAlreadyHasAConnectCallback()
+    {
+        using var handler = new SocketsHttpHandler
+        {
+            ConnectCallback = (context, cancellationToken) => throw new InvalidOperationException("should never run"),
+        };
+
+        Assert.Throws<InvalidOperationException>(() => handler.ConfigureSsrf(new ServerSideRequestForgeryOptions(), new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")])));
+    }
+
+    [Fact]
+    public void ConfigureSsrf_ThrowsWhenCalledTwiceOnTheSameHandler()
+    {
+        using var handler = new SocketsHttpHandler();
+        var resolver = new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")]);
+        handler.ConfigureSsrf(new ServerSideRequestForgeryOptions(), resolver);
+
+        Assert.Throws<InvalidOperationException>(() => handler.ConfigureSsrf(new ServerSideRequestForgeryOptions(), resolver));
+    }
+
     [Theory]
     [InlineData(AddressFamily.InterNetwork)]
     [InlineData(AddressFamily.InterNetworkV6)]

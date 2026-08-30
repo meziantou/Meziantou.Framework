@@ -277,6 +277,45 @@ public sealed partial class WriterTests
     }
 
     [Fact]
+    public async Task CreateFromAStreamTakesOwnershipOfIt()
+    {
+        var stream = new MemoryStream();
+
+        await using (var writer = ChromiumTracingWriter.Create(stream))
+        {
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent { Name = "sample" });
+        }
+
+        Assert.False(stream.CanWrite);
+    }
+
+    [Fact]
+    public async Task TheConstructorDoesNotTakeOwnershipOfTheStream()
+    {
+        using var stream = new MemoryStream();
+
+        await using (var writer = new ChromiumTracingWriter(stream))
+        {
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent { Name = "sample" });
+        }
+
+        Assert.True(stream.CanWrite);
+    }
+
+    [Fact]
+    public async Task CreateGzipFromAStreamDoesNotTakeOwnershipOfIt()
+    {
+        using var stream = new MemoryStream();
+
+        await using (var writer = ChromiumTracingWriter.CreateGzip(stream))
+        {
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent { Name = "sample" });
+        }
+
+        Assert.True(stream.CanWrite);
+    }
+
+    [Fact]
     public async Task TheTimestampDoesNotDependOnTheOffset()
     {
         var utc = new DateTimeOffset(2024, 5, 6, 7, 8, 9, TimeSpan.Zero);

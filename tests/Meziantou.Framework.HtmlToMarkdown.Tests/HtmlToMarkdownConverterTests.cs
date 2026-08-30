@@ -3619,4 +3619,88 @@ public sealed class HtmlToMarkdownConverterTests
             ```
             """);
     }
+
+    // --- Code block info string validation ---
+
+    [Fact]
+    public void CodeBlock_DataLanguageWithNewlineCannotEscapeTheFence()
+    {
+        AssertHtmlToMarkdown(
+            "<pre><code data-language=\"x&#10;```&#10;# PWNED\">hi</code></pre>",
+            """
+            ```
+            hi
+            ```
+            """);
+    }
+
+    [Fact]
+    public void CodeBlock_ClassLanguageWithNewlineCannotEscapeTheFence()
+    {
+        // A newline separates class names, so the class list here is
+        // "language-c", "```" and "evil": the language is c and nothing escapes the fence.
+        AssertHtmlToMarkdown(
+            "<pre><code class=\"language-c&#10;```&#10;evil\">hi</code></pre>",
+            """
+            ```c
+            hi
+            ```
+            """);
+    }
+
+    [Fact]
+    public void CodeBlock_ClassLanguageWithBacktickIsDropped()
+    {
+        AssertHtmlToMarkdown(
+            """<pre><code class="language-a`b">hi</code></pre>""",
+            """
+            ```
+            hi
+            ```
+            """);
+    }
+
+    [Fact]
+    public void CodeBlock_NonAsciiLanguageIsPreserved()
+    {
+        AssertHtmlToMarkdown(
+            """<pre><code class="language-föö">hi</code></pre>""",
+            """
+            ```föö
+            hi
+            ```
+            """);
+    }
+
+    [Fact]
+    public void CodeBlock_LanguageWithBacktickIsDropped()
+    {
+        AssertHtmlToMarkdown(
+            """<pre><code data-language="a`b">hi</code></pre>""",
+            """
+            ```
+            hi
+            ```
+            """);
+    }
+
+    [Theory]
+    [InlineData("go")]
+    [InlineData("c#")]
+    [InlineData("f#")]
+    [InlineData("c++")]
+    [InlineData("objective-c")]
+    [InlineData("asp.net")]
+    [InlineData("shell_session")]
+    [InlineData("html5")]
+    public void CodeBlock_ValidLanguagesArePreserved(string language)
+    {
+        AssertHtmlToMarkdown(
+            $"""<pre><code data-language="{language}">hi</code></pre>""",
+            $"""
+            ```{language}
+            hi
+            ```
+            """);
+    }
 }

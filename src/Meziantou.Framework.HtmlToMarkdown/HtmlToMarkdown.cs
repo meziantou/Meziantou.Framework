@@ -638,18 +638,40 @@ public static class HtmlToMarkdown
         var classes = element.GetAttribute("class");
         if (classes is not null)
         {
-            foreach (var cls in classes.Split(' '))
+            // The class attribute is separated by any whitespace, not only spaces.
+            foreach (var cls in classes.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
             {
                 if (cls.StartsWith("language-", StringComparison.Ordinal))
-                    return cls["language-".Length..];
+                    return SanitizeLanguage(cls["language-".Length..]);
             }
         }
 
         var dataLang = element.GetAttribute("data-language");
         if (!string.IsNullOrEmpty(dataLang))
-            return dataLang;
+            return SanitizeLanguage(dataLang);
 
         return null;
+    }
+
+    /// <summary>
+    /// Validates the info string of a fenced code block. The value comes from the document
+    /// and is copied onto the opening fence, so one containing a line break or a fence
+    /// character would end the code block early and let the rest of the attribute be
+    /// interpreted as Markdown. Letters and digits are accepted, including non-ASCII ones,
+    /// and anything outside the accepted set drops the info string.
+    /// </summary>
+    private static string? SanitizeLanguage(string language)
+    {
+        if (language.Length == 0)
+            return null;
+
+        foreach (var c in language)
+        {
+            if (!char.IsLetterOrDigit(c) && c is not ('-' or '+' or '_' or '.' or '#'))
+                return null;
+        }
+
+        return language;
     }
 
     // =========================================================================

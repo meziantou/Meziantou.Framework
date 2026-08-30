@@ -54,4 +54,52 @@ bin/
         Assert.True(globs.IsMatch("bin/test.txt"));
         Assert.False(globs.IsMatch("", "bin", PathItemType.File));
     }
+
+    [Fact]
+    public void GitIgnoreResolvesAPathAgainstTheLastMatchingPattern()
+    {
+        var globs = GlobCollection.ParseGitIgnore("""
+*.log
+!important.log
+important.log
+""".AsSpan());
+
+        Assert.True(globs.IsMatch("important.log"));
+        Assert.True(globs.IsMatch("trace.log"));
+    }
+
+    [Fact]
+    public void GitIgnoreNegationAfterAMatchReIncludesThePath()
+    {
+        var globs = GlobCollection.ParseGitIgnore("""
+*.log
+!important.log
+""".AsSpan());
+
+        Assert.False(globs.IsMatch("important.log"));
+        Assert.True(globs.IsMatch("trace.log"));
+    }
+
+    [Fact]
+    public void GitIgnoreOrderMatters()
+    {
+        var globs = GlobCollection.ParseGitIgnore("""
+!important.log
+*.log
+""".AsSpan());
+
+        Assert.True(globs.IsMatch("important.log"));
+    }
+
+    [Fact]
+    public void HandBuiltCollectionKeepsAnyExcludeWins()
+    {
+        GlobCollection globs = [
+            Glob.Parse("!important.log", GlobDialect.Standard),
+            Glob.Parse("*.log", GlobDialect.Standard),
+        ];
+
+        Assert.False(globs.IsMatch("important.log"));
+        Assert.True(globs.IsMatch("trace.log"));
+    }
 }

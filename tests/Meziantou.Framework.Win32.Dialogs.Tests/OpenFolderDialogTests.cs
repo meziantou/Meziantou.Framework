@@ -76,5 +76,25 @@ public class OpenFolderDialogTests
         Assert.NotNull(item);
     }
 
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SelectedPath_IsNullBeforeTheDialogHasBeenShown()
+    {
+        var dialog = new OpenFolderDialog { InitialDirectory = @"C:\Windows" };
+
+        Assert.Null(dialog.SelectedPath);
+        Assert.Equal(0, dialog.LastHResult);
+    }
+
+    [Fact]
+    public void SelectedPath_IsNotPubliclySettable()
+    {
+        // ShowDialog resets SelectedPath on every call, so a caller must not be able to seed it
+        // and read back a value the user never chose.
+        var setter = typeof(OpenFolderDialog).GetProperty(nameof(OpenFolderDialog.SelectedPath))!.SetMethod;
+
+        Assert.NotNull(setter);
+        Assert.False(setter.IsPublic);
+    }
+
     private static string GetFileSystemPath(IShellItem item) => OpenFolderDialog.GetFileSystemPath(item);
 }

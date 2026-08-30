@@ -6,7 +6,9 @@ internal sealed partial class ContentSecurityPolicyFormatter : HttpHeaderValueFo
 {
     public override string FormatHeaderValue(string headerName, string headerValue)
     {
-        if (string.Equals(headerName, "Content-Security-Policy", StringComparison.OrdinalIgnoreCase))
+        // Covers Content-Security-Policy and Content-Security-Policy-Report-Only, which carries
+        // nonces with the same syntax.
+        if (headerName.StartsWith("Content-Security-Policy", StringComparison.OrdinalIgnoreCase))
             headerValue = ContentSecurityPolicyNonceRegex.Replace(headerValue, "[redacted]");
 
         return headerValue;

@@ -227,9 +227,18 @@ public abstract class ProjectedFileSystemBase : IDisposable
         if (_instanceHandle is null)
             return;
 
-        _callbacks = default;
+        // Stop virtualizing before dropping the callback table: the driver can still be
+        // invoking those delegates until PrjStopVirtualizing returns.
         _instanceHandle.Dispose();
         _instanceHandle = null;
+        _callbacks = default;
+
+        foreach (var enumeration in _activeEnumerations.Values)
+        {
+            enumeration.Dispose();
+        }
+
+        _activeEnumerations.Clear();
 
         if (_instanceContextHandle.IsAllocated)
         {
@@ -484,8 +493,11 @@ public abstract class ProjectedFileSystemBase : IDisposable
     private HResult EndDirectoryEnumerationCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, in Guid enumerationId)
     {
         _ = callbackData;
-        if (_activeEnumerations.TryRemove(enumerationId, out _))
+        if (_activeEnumerations.TryRemove(enumerationId, out var session))
+        {
+            session.Dispose();
             return HResult.S_OK;
+        }
 
         return HResult.E_INVALIDARG;
     }
@@ -606,7 +618,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
                 while (bytesToSkip > 0)
                 {
                     var toRead = (int)Math.Min(bytesToSkip, skipBuffer.Length);
-                    var skipped = stream.Read(skipBuffer, 0, toRead);
+                    var skipped = await stream.ReadAsync(skipBuffer.AsMemory(0, toRead)).ConfigureAwait(false);
                     if (skipped == 0)
                         break;
                     bytesToSkip -= skipped;
@@ -655,9 +667,15 @@ public abstract class ProjectedFileSystemBase : IDisposable
                     }
                 }
 
-                var read = stream.Read(data, 0, (int)writeLength);
-                if (read == 0)
-                    break;
+                // Stream.Read may return fewer bytes than requested, so fill the whole chunk before writing it
+                var read = await stream.ReadAtLeastAsync(data.AsMemory(0, (int)writeLength), (int)writeLength, throwOnEndOfStream: false).ConfigureAwait(false);
+                if (read < writeLength)
+                {
+                    // The stream ended before supplying the range ProjFS asked for. Returning success here
+                    // would let ProjFS zero-fill the remainder and hand the caller silently corrupt content,
+                    // so fail the read instead.
+                    return HResult.ERROR_HANDLE_EOF;
+                }
 
                 Marshal.Copy(data, 0, writeBuffer, read);
 

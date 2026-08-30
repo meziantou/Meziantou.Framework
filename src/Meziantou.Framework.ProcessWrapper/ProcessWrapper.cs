@@ -175,6 +175,12 @@ public sealed class ProcessWrapper
     public static ProcessPipeline operator |(ProcessWrapper left, ProcessWrapper right) => ProcessPipeline.Create(left, right);
 
     /// <summary>Returns the command line representation of this process configuration.</summary>
+    /// <remarks>
+    /// The executable path and the arguments are always included, regardless of the verbosity set by
+    /// <see cref="WithLogVerbosity(ProcessLogVerbosity)"/>. Use <see cref="ProcessResult.ToString()"/> or the
+    /// message of <see cref="ProcessExecutionException"/> when the rendering has to honor that verbosity, for
+    /// example to keep a secret passed as an argument out of the logs.
+    /// </remarks>
     public override string ToString()
     {
         return ProcessCommandLineFormatter.Format(_startInfo.FileName, _startInfo.ArgumentList);

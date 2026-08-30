@@ -72,10 +72,11 @@ public sealed class PooledMemoryStreamOptions
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The members bounded by <see cref="PooledMemoryStream.Length"/> never expose unwritten bytes.
-    /// <see cref="PooledMemoryStream.GetBuffer"/> is not bounded by it: it returns the whole underlying array, and the
-    /// bytes past <see cref="PooledMemoryStream.Length"/> can still hold data written by an unrelated stream that
-    /// rented the same array earlier. Enable this option when callers may look at that region.
+    /// The members bounded by <see cref="PooledMemoryStream.Length"/> never expose unwritten bytes, and
+    /// <see cref="PooledMemoryStream.GetBuffer"/> zeroes the region past <see cref="PooledMemoryStream.Length"/>
+    /// before handing the array out, so it cannot surface data left by an unrelated stream either. The one region
+    /// that stays uninitialized is the span returned by the <see cref="System.Buffers.IBufferWriter{T}"/> members,
+    /// which is the usual contract for a buffer writer.
     /// </para>
     /// <para>
     /// The pool is process-wide and clearing happens on return, so this setting governs the data this stream hands

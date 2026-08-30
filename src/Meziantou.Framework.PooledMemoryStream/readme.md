@@ -63,5 +63,5 @@ using var stream = new PooledMemoryStream(options);
 ## Notes
 
 - The byte arrays (including the array returned by `GetBuffer()` / `TryGetBuffer()`, and the spans/memory returned by the `IBufferWriter<byte>` members) are owned by the stream and are returned to the shared pool on `Dispose`. **Do not use them after the stream is disposed.**
-- `GetBuffer()` returns the whole underlying array, not just the first `Length` bytes. Because arrays come from a pool shared by every instance, the region past `Length` may still contain data written by an unrelated stream. Read only `[0, Length)`, or set `ClearOnReturn = true` so buffers are zeroed before they go back to the pool.
+- `GetBuffer()` returns the whole underlying array, not just the first `Length` bytes. Only `[0, Length)` is meaningful; the rest is zeroed before the array is handed out, so it never exposes data written by another stream. The spans returned by the `IBufferWriter<byte>` members are uninitialized, as usual for a buffer writer.
 - The instance is not thread-safe (like `MemoryStream`); the shared pool is.

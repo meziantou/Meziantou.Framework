@@ -651,7 +651,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
             return Array.Empty<byte>();
 
         if (_segments.Count == 1)
-            return _segments[0].Array;
+            return ClearTail(_segments[0].Array);
 
         var size = _options.GetContiguousBlockSize((int)_length);
         var array = PooledBufferPool.Shared.Rent(size);
@@ -664,6 +664,15 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         _segments.Add(new Segment(array) { Used = (int)_length });
         _capacity = array.Length;
         ResetCursor();
+        return ClearTail(array);
+    }
+
+    // GetBuffer/TryGetBuffer hand out the whole array, not just [0, Length). Arrays come from a pool shared by every
+    // instance, so the region past Length would otherwise expose whatever its previous tenant wrote.
+    private byte[] ClearTail(byte[] array)
+    {
+        var length = (int)_length;
+        Array.Clear(array, length, array.Length - length);
         return array;
     }
 

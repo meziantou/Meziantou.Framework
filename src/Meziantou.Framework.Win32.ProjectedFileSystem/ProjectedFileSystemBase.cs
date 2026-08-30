@@ -227,9 +227,18 @@ public abstract class ProjectedFileSystemBase : IDisposable
         if (_instanceHandle is null)
             return;
 
-        _callbacks = default;
+        // Stop virtualizing before dropping the callback table: the driver can still be
+        // invoking those delegates until PrjStopVirtualizing returns.
         _instanceHandle.Dispose();
         _instanceHandle = null;
+        _callbacks = default;
+
+        foreach (var enumeration in _activeEnumerations.Values)
+        {
+            enumeration.Dispose();
+        }
+
+        _activeEnumerations.Clear();
 
         if (_instanceContextHandle.IsAllocated)
         {
@@ -484,8 +493,11 @@ public abstract class ProjectedFileSystemBase : IDisposable
     private HResult EndDirectoryEnumerationCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, in Guid enumerationId)
     {
         _ = callbackData;
-        if (_activeEnumerations.TryRemove(enumerationId, out _))
+        if (_activeEnumerations.TryRemove(enumerationId, out var session))
+        {
+            session.Dispose();
             return HResult.S_OK;
+        }
 
         return HResult.E_INVALIDARG;
     }

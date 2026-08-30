@@ -118,10 +118,11 @@ public sealed class ChangeJournal : IDisposable
     /// <summary>Gets the change journal entry for a specific file or directory by path.</summary>
     /// <param name="path">The path to the file or directory.</param>
     /// <returns>The change journal entry for the specified file or directory.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public static ChangeJournalEntryVersion2or3 GetEntry(string path)
     {
-        using var handle = File.OpenHandle(path);
+        using var handle = FileHandleHelper.OpenFileOrDirectory(path);
         return GetEntry(handle);
     }
 

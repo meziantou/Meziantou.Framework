@@ -29,6 +29,41 @@ public class AnsiTextProcessorTests
     }
 
     [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(208)]
+    [InlineData(255)]
+    public void AnsiColor_FromIndexed_InRange(int value)
+    {
+        var color = AnsiTextProcessor.AnsiColor.FromIndexed(value);
+        Assert.Equal(AnsiTextProcessor.AnsiColorKind.Indexed, color.Kind);
+        Assert.Equal(value, color.IndexedValue);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(256)]
+    [InlineData(300)]
+    [InlineData(int.MinValue)]
+    [InlineData(int.MaxValue)]
+    public void AnsiColor_FromIndexed_OutOfRange(int value)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => AnsiTextProcessor.AnsiColor.FromIndexed(value));
+    }
+
+    [Theory]
+    [InlineData("\u001b[38;5;300mA")]
+    [InlineData("\u001b[48;5;300mA")]
+    public void ParseTextWithAnsiStyles_OutOfRangeIndexedColorDoesNotThrow(string input)
+    {
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles(input);
+        Assert.Equal("A", parsed.Text);
+        var run = Assert.Single(parsed.Runs);
+        Assert.Null(run.Style.Foreground);
+        Assert.Null(run.Style.Background);
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("Hello World")]
     [InlineData("No escape sequences here")]

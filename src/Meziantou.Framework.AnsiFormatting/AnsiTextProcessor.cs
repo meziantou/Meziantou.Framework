@@ -379,6 +379,9 @@ public static class AnsiTextProcessor
     {
         public static AnsiColor FromIndexed(int value)
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 255);
+
             return new AnsiColor(AnsiColorKind.Indexed, Red: 0, Green: 0, Blue: 0, IndexedValue: (byte)value);
         }
 

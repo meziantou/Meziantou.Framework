@@ -73,9 +73,10 @@ public static class MarkOfTheWeb
                 Marshal.ReleaseComObject(securityManager);
             }
         }
-        catch
+        catch (Exception exception) when (exception is COMException or ArgumentException or PlatformNotSupportedException)
         {
-            // Ignore errors
+            // The security manager could not answer for this path. Anything else is a real failure
+            // and is left to propagate rather than being reported as an undeterminable zone.
         }
 
         return UrlZone.Invalid;

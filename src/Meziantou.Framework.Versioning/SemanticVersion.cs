@@ -32,8 +32,13 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
     private static readonly IReadOnlyList<string> EmptyArray = Array.Empty<string>();
 
     /// <summary>Creates a new semantic version with the specified major, minor, and patch numbers.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="major"/>, <paramref name="minor"/> or <paramref name="patch"/> is negative.</exception>
     public SemanticVersion(int major, int minor, int patch)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(major);
+        ArgumentOutOfRangeException.ThrowIfNegative(minor);
+        ArgumentOutOfRangeException.ThrowIfNegative(patch);
+
         Major = major;
         Minor = minor;
         Patch = patch;

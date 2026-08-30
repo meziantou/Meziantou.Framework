@@ -18,6 +18,9 @@ public enum UrlZone
     /// <summary>Internet zone - sites on the Internet that are not in other zones.</summary>
     Internet = 3,
 
-    /// <summary>Restricted Sites zone - sites that are explicitly untrusted and potentially unsafe.</summary>
+    /// <summary>
+    /// Restricted Sites zone - sites that are explicitly untrusted and potentially unsafe.
+    /// Windows names this zone "Restricted Sites"; it is the <c>URLZONE_UNTRUSTED</c> value, zone identifier 4.
+    /// </summary>
     Untrusted = 4,
 }

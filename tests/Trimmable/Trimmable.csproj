@@ -72,6 +72,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStopwatch\Meziantou.Framework.ValueStopwatch.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStringBuilder\Meziantou.Framework.ValueStringBuilder.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.CredentialManager\Meziantou.Framework.Win32.CredentialManager.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Yaml\Meziantou.Framework.Yaml.csproj" />
   </ItemGroup>
 
@@ -136,6 +137,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.ValueStopwatch" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ValueStringBuilder" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Versioning" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Win32.CredentialManager" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Yaml" />
   </ItemGroup>
 </Project>

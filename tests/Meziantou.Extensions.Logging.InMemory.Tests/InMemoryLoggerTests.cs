@@ -22,6 +22,28 @@ public sealed partial class InMemoryLoggerTests
         Assert.Equal("[sample] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]", log.ToString());
     }
 
+    [Theory]
+    [InlineData(LogLevel.Trace)]
+    [InlineData(LogLevel.Debug)]
+    [InlineData(LogLevel.Information)]
+    [InlineData(LogLevel.Warning)]
+    [InlineData(LogLevel.Error)]
+    [InlineData(LogLevel.Critical)]
+    public void IsEnabled_ReturnsTrueForEveryLevelThatCanBeLogged(LogLevel logLevel)
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        Assert.True(logger.IsEnabled(logLevel));
+    }
+
+    [Fact]
+    public void IsEnabled_ReturnsFalseForNone()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        Assert.False(logger.IsEnabled(LogLevel.None));
+    }
+
     [Fact]
     public void CreateTypedLogger()
     {

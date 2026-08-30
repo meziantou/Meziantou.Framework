@@ -51,6 +51,8 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
     /// <remarks>
     /// If <paramref name="fileNameOrPath"/> is not rooted, it is created under the system temp path in a "MezTF" subdirectory.
     /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="fileNameOrPath"/> is <see langword="null"/>, empty, or contains only white-space characters.</exception>
+    /// <exception cref="IOException">The file already exists.</exception>
     public static TemporaryFile Create(string fileNameOrPath)
     {
         if (string.IsNullOrWhiteSpace(fileNameOrPath))
@@ -66,6 +68,12 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
     /// <summary>Creates a new temporary file at the specified path.</summary>
     /// <param name="filePath">The full path where the temporary file will be created.</param>
     /// <returns>A new <see cref="TemporaryFile"/> instance.</returns>
+    /// <remarks>
+    /// The file must not already exist. An existing file is never adopted, so disposing the returned instance
+    /// cannot delete data that it did not create.
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="filePath"/> is empty.</exception>
+    /// <exception cref="IOException">The file already exists.</exception>
     public static TemporaryFile Create(FullPath filePath)
     {
         if (filePath.IsEmpty)

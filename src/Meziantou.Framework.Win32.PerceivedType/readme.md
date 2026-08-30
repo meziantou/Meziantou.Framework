@@ -14,7 +14,7 @@ using Meziantou.Framework.Win32;
 // Get perceived type for a file extension
 var perceived = Perceived.GetPerceivedType(".txt");
 Console.WriteLine(perceived.PerceivedType); // Text
-Console.WriteLine(perceived.PerceivedTypeSource); // SoftCoded or HardCoded
+Console.WriteLine(perceived.PerceivedTypeSource); // SoftCoded, NativeSupport
 
 // Works with various file types
 var image = Perceived.GetPerceivedType(".jpg");
@@ -41,7 +41,10 @@ Perceived.AddDefaultPerceivedTypes();
 
 ### Perceived Types
 
-The library supports the following perceived types:
+The library supports the following perceived types. Which extension maps to which type is
+decided by Windows and by the file associations registered on the machine, so the examples
+below are illustrative rather than guaranteed: an extension with no registered handler
+reports `Unspecified`.
 
 - `Text` - Text files (.txt, .cs, .html, .xml, etc.)
 - `Image` - Image files (.jpg, .png, .gif, etc.)
@@ -68,7 +71,9 @@ The `PerceivedTypeSource` enum indicates where the perceived type information co
 - `GdiPlus` - Supported by GDI+
 - `WmSdk` - Supported by Windows Media SDK
 - `ZipFolder` - Supported by Windows compressed folders
-- `Mime` - Determined through MIME content types
+
+`Mime` is also declared, but `PERCEIVEDFLAG` has no MIME value, so Windows never reports it.
+It is obsolete and kept only so the enum stays source and binary compatible.
 
 ## Platform Support
 

@@ -62,6 +62,56 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void Flags_AreReplacedNotAccumulated()
+    {
+        var limits = new JobObjectLimits { Flags = JobObjectLimitFlags.KillOnJobClose };
+        limits.Flags = JobObjectLimitFlags.SilentBreakawayOk;
+
+        Assert.Equal(JobObjectLimitFlags.SilentBreakawayOk, limits.Flags);
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "ping",
+            Arguments = "127.0.0.1 -n 100",
+            UseShellExecute = true,
+            CreateNoWindow = true,
+        };
+
+        using var process = Process.Start(psi);
+        Assert.NotNull(process);
+        Assert.False(process.WaitForExit(500)); // Ensure process is started
+
+        using (var job = new JobObject())
+        {
+            job.SetLimits(limits);
+            job.AssignProcess(process);
+        }
+
+        // KillOnJobClose was replaced before SetLimits, so closing the job must leave the process alive
+        Assert.False(process.WaitForExit(1000));
+        process.Kill();
+        process.WaitForExit();
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ActiveProcessLimit_UnsetAppliesNoLimit()
+    {
+        using var job = new JobObject();
+        job.SetLimits(new JobObjectLimits { Flags = JobObjectLimitFlags.SilentBreakawayOk });
+
+        job.AssignProcess(Process.GetCurrentProcess());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ActiveProcessLimit_ZeroIsAnExplicitLimit()
+    {
+        using var job = new JobObject();
+        job.SetLimits(new JobObjectLimits { ActiveProcessLimit = 0 });
+
+        Assert.Throws<Win32Exception>(() => job.AssignProcess(Process.GetCurrentProcess()));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CreateAndOpenJobObject()
     {
         var objectName = Guid.NewGuid().ToString("N");
@@ -69,6 +119,31 @@ public class JobObjectTests
 
         using (JobObject.Open(JobObjectAccessRights.AllAccess, inherited: true, objectName))
         {
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CreatedNew_DistinguishesCreateFromAttach()
+    {
+        using (var unnamed = new JobObject())
+        {
+            Assert.True(unnamed.CreatedNew);
+        }
+
+        var objectName = Guid.NewGuid().ToString("N");
+        using var first = new JobObject(objectName);
+        Assert.True(first.CreatedNew);
+
+        using var second = new JobObject(objectName);
+        Assert.False(second.CreatedNew);
+
+        using var opened = JobObject.Open(JobObjectAccessRights.Query, inherited: false, objectName);
+        Assert.False(opened.CreatedNew);
+
+        Assert.True(JobObject.TryOpen(JobObjectAccessRights.Query, inherited: false, objectName, out var tryOpened));
+        using (tryOpened)
+        {
+            Assert.False(tryOpened.CreatedNew);
         }
     }
 
@@ -124,22 +199,91 @@ public class JobObjectTests
 
         cap = job.GetCpuRateHardCap();
         Assert.False(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.Disabled, cap.Mode);
 
         job.SetCpuRateHardCap(7654);
         cap = job.GetCpuRateHardCap();
         Assert.True(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.HardCap, cap.Mode);
         Assert.Equal(7654, cap.Rate);
 
         job.DisableCpuRateHardCap();
         cap = job.GetCpuRateHardCap();
         Assert.False(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.Disabled, cap.Mode);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CpuRateWeight_IsReportedAsWeight()
+    {
+        using var job = new JobObject();
+        job.SetCpuRateWeight(5);
+
+        var cap = job.GetCpuRateHardCap();
+        Assert.True(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.Weight, cap.Mode);
+        Assert.Equal(5, cap.Weight);
+
+        // The weight lives in the same union as the hard cap rate, so Rate must not report it
+        Assert.Equal(0, cap.Rate);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CpuRateMinMax_IsReportedAsRange()
+    {
+        using var job = new JobObject();
+        job.SetCpuRate(minRate: 1000, maxRate: 3000);
+
+        var cap = job.GetCpuRateHardCap();
+        Assert.True(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.MinMaxRate, cap.Mode);
+        Assert.Equal(1000, cap.MinRate);
+        Assert.Equal(3000, cap.MaxRate);
+
+        // Reading CpuRate here used to yield 196609000: MaxRate and MinRate reinterpreted as one uint
+        Assert.Equal(0, cap.Rate);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetCpuRate_OutOfRangeValues()
+    {
+        using var job = new JobObject();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateHardCap(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateHardCap(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateHardCap(10_001));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateWeight(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateWeight(10));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(-1, 3000));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(0, 3000));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(1000, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(70_000, 3000));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(1000, 10_001));
+
+        // Windows rejects an inverted range, so reject it before the P/Invoke
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(3000, 1000));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetCpuRate_BoundaryValuesAreAccepted()
+    {
+        using var job = new JobObject();
+
+        job.SetCpuRateHardCap(1);
+        job.SetCpuRateHardCap(10_000);
+        job.SetCpuRateWeight(1);
+        job.SetCpuRateWeight(9);
+        job.SetCpuRate(1, 10_000);
+        job.SetCpuRate(10_000, 10_000);
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
     public void SetUILimits()
     {
         using var job = new JobObject();
-        job.SetUIRestrictions(Natives.JobObjectUILimit.ReadClipboard);
+        job.SetUIRestrictions(JobObjectUILimit.ReadClipboard);
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
@@ -169,9 +313,30 @@ public class JobObjectTests
     {
         using var job = new JobObject();
         job.AssignProcess(Process.GetCurrentProcess());
-        var info = job.GetBasicAndIoAccountingInformation();
-        Assert.NotEqual(TimeSpan.Zero, info.BasicInfo.TotalUserTime);
-        Assert.NotEqual((ulong)0, info.IoInfo.ReadOperationCount);
+
+        // A job only accounts for I/O performed after a process joins it, so the counters are
+        // still zero right after AssignProcess. Perform I/O and assert the counters moved,
+        // instead of depending on whatever the runtime happens to do in the meantime.
+        var before = job.GetBasicAndIoAccountingInformation();
+
+        var path = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllBytes(path, new byte[64 * 1024]);
+            _ = File.ReadAllBytes(path);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+
+        var after = job.GetBasicAndIoAccountingInformation();
+
+        Assert.NotEqual(TimeSpan.Zero, after.BasicInfo.TotalUserTime);
+        Assert.True(after.IoInfo.ReadOperationCount > before.IoInfo.ReadOperationCount, "The job should have accounted for the read operations");
+        Assert.True(after.IoInfo.WriteOperationCount > before.IoInfo.WriteOperationCount, "The job should have accounted for the write operations");
+        Assert.True(after.IoInfo.ReadTransferCount >= before.IoInfo.ReadTransferCount + (64 * 1024), "The job should have accounted for the bytes read");
+        Assert.True(after.IoInfo.WriteTransferCount >= before.IoInfo.WriteTransferCount + (64 * 1024), "The job should have accounted for the bytes written");
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]

@@ -42,11 +42,20 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows5.1.2600")]
 public sealed class AccessToken : IDisposable
 {
-    private SafeFileHandle _token;
+    private readonly SafeFileHandle _token;
 
     private AccessToken(SafeFileHandle token)
     {
-        _token = token ?? throw new ArgumentNullException(nameof(token));
+        _token = token;
+    }
+
+    private SafeFileHandle Token
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(_token.IsClosed, this);
+            return _token;
+        }
     }
 
     /// <summary>Determines whether the token is restricted.</summary>
@@ -57,7 +66,7 @@ public sealed class AccessToken : IDisposable
     /// </remarks>
     public bool IsRestricted()
     {
-        return PInvoke.IsTokenRestricted(_token);
+        return PInvoke.IsTokenRestricted(Token);
     }
 
     /// <summary>Gets the type of the token (primary or impersonation).</summary>
@@ -66,8 +75,8 @@ public sealed class AccessToken : IDisposable
     {
         TokenType result;
         uint returnedLength;
-        using var safeHandleValue = new SafeHandleValue(_token);
-        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenType, &result, (uint)IntPtr.Size, &returnedLength))
+        using var safeHandleValue = new SafeHandleValue(Token);
+        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenType, &result, (uint)sizeof(TokenType), &returnedLength))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         return result;
@@ -83,8 +92,8 @@ public sealed class AccessToken : IDisposable
     {
         TokenElevationType result;
         uint returnedLength;
-        using var safeHandleValue = new SafeHandleValue(_token);
-        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenElevationType, &result, (uint)IntPtr.Size, &returnedLength))
+        using var safeHandleValue = new SafeHandleValue(Token);
+        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenElevationType, &result, (uint)sizeof(TokenElevationType), &returnedLength))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         return result;
@@ -114,9 +123,9 @@ public sealed class AccessToken : IDisposable
             });
 
     /// <summary>Gets the mandatory integrity level of the token.</summary>
-    /// <returns>A <see cref="TokenEntry"/> containing the integrity level SID, or <see langword="null"/> if not available.</returns>
+    /// <returns>A <see cref="TokenEntry"/> containing the integrity level SID.</returns>
     /// <remarks>The mandatory integrity level (e.g., Low, Medium, High, System) determines what resources the token can access.</remarks>
-    public TokenEntry? GetMandatoryIntegrityLevel()
+    public TokenEntry GetMandatoryIntegrityLevel()
     {
         return GetTokenInformation<TOKEN_MANDATORY_LABEL, TokenEntry>(
             TOKEN_INFORMATION_CLASS.TokenIntegrityLevel,
@@ -124,8 +133,8 @@ public sealed class AccessToken : IDisposable
     }
 
     /// <summary>Gets the owner security identifier (SID) of the token.</summary>
-    /// <returns>The <see cref="SecurityIdentifier"/> of the token owner, or <see langword="null"/> if not available.</returns>
-    public SecurityIdentifier? GetOwner()
+    /// <returns>The <see cref="SecurityIdentifier"/> of the token owner.</returns>
+    public SecurityIdentifier GetOwner()
     {
         return GetTokenInformation<TOKEN_OWNER, SecurityIdentifier>(
             TOKEN_INFORMATION_CLASS.TokenOwner,
@@ -133,32 +142,24 @@ public sealed class AccessToken : IDisposable
     }
 
     /// <summary>Enumerates all groups (security identifiers) associated with the token.</summary>
-    /// <returns>A collection of <see cref="TokenGroupEntry"/> objects representing the groups, or <see langword="null"/> if not available.</returns>
-    public IEnumerable<TokenGroupEntry>? EnumerateGroups()
+    /// <returns>A collection of <see cref="TokenGroupEntry"/> objects representing the groups.</returns>
+    public IEnumerable<TokenGroupEntry> EnumerateGroups()
     {
-        return GetTokenInformation<TOKEN_GROUPS, IReadOnlyList<TokenGroupEntry>>(
-            TOKEN_INFORMATION_CLASS.TokenGroups,
-            (handle, groups) =>
-            {
-                var list = new TokenGroupEntry[groups.GroupCount];
-                var index = 0;
-                foreach (var group in ReadArray<TOKEN_GROUPS, SID_AND_ATTRIBUTES>(handle, nameof(TOKEN_GROUPS.Groups), groups.GroupCount))
-                {
-                    list[index] = new TokenGroupEntry(new SecurityIdentifier(group.Sid), (GroupSidAttributes)group.Attributes);
-                    index++;
-                }
-
-                return list;
-            });
+        return EnumerateGroups(TOKEN_INFORMATION_CLASS.TokenGroups);
     }
 
     /// <summary>Enumerates the restricted SIDs in the token.</summary>
-    /// <returns>A collection of <see cref="TokenGroupEntry"/> objects representing the restricted SIDs, or <see langword="null"/> if not available.</returns>
+    /// <returns>A collection of <see cref="TokenGroupEntry"/> objects representing the restricted SIDs.</returns>
     /// <remarks>Restricted SIDs are used to limit the token's access to resources beyond the standard access checks.</remarks>
-    public IEnumerable<TokenGroupEntry>? EnumerateRestrictedSid()
+    public IEnumerable<TokenGroupEntry> EnumerateRestrictedSid()
+    {
+        return EnumerateGroups(TOKEN_INFORMATION_CLASS.TokenRestrictedSids);
+    }
+
+    private IReadOnlyList<TokenGroupEntry> EnumerateGroups(TOKEN_INFORMATION_CLASS informationClass)
     {
         return GetTokenInformation<TOKEN_GROUPS, IReadOnlyList<TokenGroupEntry>>(
-            TOKEN_INFORMATION_CLASS.TokenRestrictedSids,
+            informationClass,
             (handle, groups) =>
             {
                 var list = new TokenGroupEntry[groups.GroupCount];
@@ -174,8 +175,8 @@ public sealed class AccessToken : IDisposable
     }
 
     /// <summary>Enumerates all privileges held by the token.</summary>
-    /// <returns>A collection of <see cref="TokenPrivilegeEntry"/> objects representing the privileges, or <see langword="null"/> if not available.</returns>
-    public IEnumerable<TokenPrivilegeEntry>? EnumeratePrivileges()
+    /// <returns>A collection of <see cref="TokenPrivilegeEntry"/> objects representing the privileges.</returns>
+    public IEnumerable<TokenPrivilegeEntry> EnumeratePrivileges()
     {
         return GetTokenInformation<TOKEN_PRIVILEGES, IReadOnlyList<TokenPrivilegeEntry>>(
             TOKEN_INFORMATION_CLASS.TokenPrivileges,
@@ -226,17 +227,17 @@ public sealed class AccessToken : IDisposable
         static T Identity(T arg) => arg;
     }
 
-    private TResult? GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<T, TResult> func)
+    private TResult GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<T, TResult> func)
         where T : unmanaged
     {
         return GetTokenInformation<T, TResult>(type, (_, arg) => func(arg));
     }
 
-    private unsafe TResult? GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<IntPtr, T, TResult> func)
+    private unsafe TResult GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<IntPtr, T, TResult> func)
         where T : unmanaged
     {
         uint returnedLength;
-        using var safeHandleValue = new SafeHandleValue(_token);
+        using var safeHandleValue = new SafeHandleValue(Token);
         if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, type, TokenInformation: null, 0u, &returnedLength))
         {
             var errorCode = Marshal.GetLastWin32Error();
@@ -270,7 +271,8 @@ public sealed class AccessToken : IDisposable
             }
         }
 
-        return default;
+        // The sizing call above asks for zero bytes, so it only succeeds if the information class carries no data
+        throw new InvalidOperationException(FormattableString.Invariant($"GetTokenInformation({type}) returned no data"));
     }
 
     /// <summary>Enables a privilege for this token.</summary>
@@ -300,9 +302,11 @@ public sealed class AccessToken : IDisposable
     public unsafe void DisableAllPrivileges()
     {
         uint returnSize = 0;
-        using var safeHandleValue = new SafeHandleValue(_token);
+        using var safeHandleValue = new SafeHandleValue(Token);
         if (!PInvoke.AdjustTokenPrivileges((HANDLE)safeHandleValue.Value, DisableAllPrivileges: true, NewState: null, BufferLength: 0, PreviousState: null, &returnSize))
             throw new Win32Exception(Marshal.GetLastWin32Error());
+
+        ThrowIfNotAllPrivilegesAssigned();
     }
 
     /// <summary>Removes a privilege from this token.</summary>
@@ -340,9 +344,22 @@ public sealed class AccessToken : IDisposable
         };
 
         uint returnSize = 0;
-        using var safeHandleValue = new SafeHandleValue(_token);
+        using var safeHandleValue = new SafeHandleValue(Token);
         if (!PInvoke.AdjustTokenPrivileges((HANDLE)safeHandleValue.Value, DisableAllPrivileges: false, &tp, 0, PreviousState: null, &returnSize))
             throw new Win32Exception(Marshal.GetLastWin32Error());
+
+        ThrowIfNotAllPrivilegesAssigned();
+    }
+
+    /// <remarks>
+    /// AdjustTokenPrivileges returns a non-zero value even when it assigned none of the requested
+    /// privileges, and reports the partial failure through GetLastError instead.
+    /// </remarks>
+    private static void ThrowIfNotAllPrivilegesAssigned()
+    {
+        var error = Marshal.GetLastWin32Error();
+        if (error is not (int)WIN32_ERROR.ERROR_SUCCESS)
+            throw new Win32Exception(error);
     }
 
     /// <summary>Creates a duplicate of this token with the specified impersonation level.</summary>
@@ -351,7 +368,7 @@ public sealed class AccessToken : IDisposable
     /// <exception cref="Win32Exception">The token could not be duplicated.</exception>
     public AccessToken Duplicate(SecurityImpersonationLevel impersonationLevel)
     {
-        if (!PInvoke.DuplicateToken(_token, (SECURITY_IMPERSONATION_LEVEL)impersonationLevel, out var duplicateTokenHandle))
+        if (!PInvoke.DuplicateToken(Token, (SECURITY_IMPERSONATION_LEVEL)impersonationLevel, out var duplicateTokenHandle))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         return new AccessToken(duplicateTokenHandle);
@@ -361,7 +378,6 @@ public sealed class AccessToken : IDisposable
     public void Dispose()
     {
         _token.Dispose();
-        _token = null!;
     }
 
     /// <summary>Opens the access token associated with the current process.</summary>

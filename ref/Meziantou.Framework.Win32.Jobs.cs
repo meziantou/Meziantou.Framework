@@ -27,6 +27,7 @@ namespace Meziantou.Framework.Win32
     [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
     public sealed class JobObject : System.IDisposable
     {
+        public bool CreatedNew { get => throw null; }
         public JobObject(string? name) { }
         public JobObject(string? name, bool inheritHandle) { }
         public static Meziantou.Framework.Win32.JobObject Open(Meziantou.Framework.Win32.JobObjectAccessRights desiredAccess, bool inherited, string name) => throw null;
@@ -37,7 +38,7 @@ namespace Meziantou.Framework.Win32
         public void AssignProcess(System.Diagnostics.Process process) { }
         public void AssignProcess(nint processHandle) { }
         public void SetLimits(Meziantou.Framework.Win32.JobObjectLimits limits) { }
-        public void SetUIRestrictions(Meziantou.Framework.Win32.Natives.JobObjectUILimit limits) { }
+        public void SetUIRestrictions(Meziantou.Framework.Win32.JobObjectUILimit limits) { }
         public void SetCpuRateHardCap(int cpuRate) { }
         public Meziantou.Framework.Win32.JobObjectCpuHardCap GetCpuRateHardCap() => throw null;
         public void DisableCpuRateHardCap() { }
@@ -100,10 +101,32 @@ namespace Meziantou.Framework.Win32
         public bool Equals(Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation? other) => throw null;
     }
 
-    public struct JobObjectCpuHardCap
+    public readonly struct JobObjectCpuHardCap : System.IEquatable<Meziantou.Framework.Win32.JobObjectCpuHardCap>
     {
-        public bool Enabled { readonly get => throw null; set { } }
-        public int Rate { readonly get => throw null; set { } }
+        public bool Enabled { get => throw null; init { } }
+        public Meziantou.Framework.Win32.JobObjectCpuRateControlMode Mode { get => throw null; init { } }
+        public int Rate { get => throw null; init { } }
+        public int Weight { get => throw null; init { } }
+        public int MinRate { get => throw null; init { } }
+        public int MaxRate { get => throw null; init { } }
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator !=(Meziantou.Framework.Win32.JobObjectCpuHardCap left, Meziantou.Framework.Win32.JobObjectCpuHardCap right) => throw null;
+        public static bool operator ==(Meziantou.Framework.Win32.JobObjectCpuHardCap left, Meziantou.Framework.Win32.JobObjectCpuHardCap right) => throw null;
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public bool Equals(Meziantou.Framework.Win32.JobObjectCpuHardCap other) => throw null;
+    }
+
+    public enum JobObjectCpuRateControlMode
+    {
+        Disabled = 0,
+        HardCap = 1,
+        Weight = 2,
+        MinMaxRate = 3
     }
 
     public sealed class JobObjectIoCounters : System.IEquatable<Meziantou.Framework.Win32.JobObjectIoCounters>
@@ -135,16 +158,16 @@ namespace Meziantou.Framework.Win32
     public sealed class JobObjectLimits
     {
         public Meziantou.Framework.Win32.JobObjectLimitFlags Flags { get => throw null; set { } }
-        public long PerProcessUserTimeLimit { get => throw null; set { } }
-        public long PerJobUserTimeLimit { get => throw null; set { } }
-        public nuint MinimumWorkingSetSize { get => throw null; set { } }
-        public nuint MaximumWorkingSetSize { get => throw null; set { } }
-        public uint ActiveProcessLimit { get => throw null; set { } }
-        public nuint Affinity { get => throw null; set { } }
-        public uint PriorityClass { get => throw null; set { } }
-        public uint SchedulingClass { get => throw null; set { } }
-        public nuint ProcessMemoryLimit { get => throw null; set { } }
-        public nuint JobMemoryLimit { get => throw null; set { } }
+        public long? PerProcessUserTimeLimit { get => throw null; set { } }
+        public long? PerJobUserTimeLimit { get => throw null; set { } }
+        public nuint? MinimumWorkingSetSize { get => throw null; set { } }
+        public nuint? MaximumWorkingSetSize { get => throw null; set { } }
+        public uint? ActiveProcessLimit { get => throw null; set { } }
+        public nuint? Affinity { get => throw null; set { } }
+        public uint? PriorityClass { get => throw null; set { } }
+        public uint? SchedulingClass { get => throw null; set { } }
+        public nuint? ProcessMemoryLimit { get => throw null; set { } }
+        public nuint? JobMemoryLimit { get => throw null; set { } }
     }
 
     public sealed class JobObjectMemoryAccountingInformation : System.IEquatable<Meziantou.Framework.Win32.JobObjectMemoryAccountingInformation>
@@ -165,9 +188,7 @@ namespace Meziantou.Framework.Win32
         NoAdmin = 1,
         RestrictedToken = 2
     }
-}
-namespace Meziantou.Framework.Win32.Natives
-{
+
     [System.Flags]
     public enum JobObjectUILimit
     {

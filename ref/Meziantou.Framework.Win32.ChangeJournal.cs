@@ -86,6 +86,7 @@ namespace Meziantou.Framework.Win32
         FileDelete = 512U,
         HardLinkChange = 65536U,
         IndexableChange = 16384U,
+        IntegrityChange = 8388608U,
         NamedDataExtend = 32U,
         NamedDataOverwrite = 16U,
         NamedDataTruncation = 64U,
@@ -96,7 +97,7 @@ namespace Meziantou.Framework.Win32
         SecurityChange = 2048U,
         StreamChange = 2097152U,
         TransactedChange = 4194304U,
-        All = 2155872119U
+        All = 2164260727U
     }
 
     public readonly struct FileIdentifier : System.IEquatable<Meziantou.Framework.Win32.FileIdentifier>

@@ -31,11 +31,43 @@ own, but leaves the HTTP/3 gap below open, so prefer the handler.
 
 - Validates request scheme against `SafeSchemes`.
 - Resolves DNS on every connection attempt to avoid TOCTOU vulnerabilities.
-- Validates each resolved address against `UnsafeIpNetworks` and `SafeIpNetworks`.
+- Validates each resolved address against `UnsafeIpNetworks`, unless `SafeIpNetworks` already matches it.
 - Optionally rejects mixed safe/unsafe DNS responses.
 - Uses `IpAddressResolutionStrategy` to select the final address (`Ipv4Only`, `Ipv6Only`, `PreferIpv4`, `Random`, `RoundRobin`).
 - Rejects connections that target an HTTP proxy.
 - Rejects requests that would be sent over HTTP/3, whose QUIC connection cannot be validated.
+
+## Configuration
+
+The collections start populated, and the example above adds to those defaults rather than replacing them:
+
+- `SafeSchemes` already contains `https` and `wss`.
+- `UnsafeIpNetworks` already contains the loopback, private, link-local, carrier-grade NAT, multicast and reserved
+  ranges, plus the IPv6 transition ranges that embed an IPv4 address.
+- `SafeIpNetworks` starts empty.
+
+Call `Clear()` first to define a set from scratch:
+
+```csharp
+options.SafeSchemes.Clear();
+options.SafeSchemes.Add("https");
+```
+
+`SafeIpNetworks` takes precedence: an address it matches is allowed even when `UnsafeIpNetworks` also matches it.
+That is how you reach a specific internal host without dropping the range it sits in — and why a broad entry there
+silently re-opens whatever part of the deny list it covers.
+
+## Errors
+
+A rejected request surfaces as an `HttpRequestException` with a `ServerSideRequestForgeryException` as its
+`InnerException`, because the runtime wraps anything thrown from `ConnectCallback`. Catch it accordingly:
+
+```csharp
+catch (HttpRequestException ex) when (ex.InnerException is ServerSideRequestForgeryException ssrf)
+```
+
+The HTTP/3 rejection is thrown before the request reaches the inner handler, so that one arrives as a
+`ServerSideRequestForgeryException` directly.
 
 ## Proxies
 

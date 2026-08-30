@@ -232,6 +232,100 @@ public sealed class RobotsFileTests
         Assert.NotNull(robots.GetGroup("GOOGLEBOT"));
     }
 
+    [Fact]
+    public void GetGroup_WithoutDuplicates_ReturnsTheParsedGroupInstance()
+    {
+        var robots = RobotsFile.Parse("User-agent: *\nDisallow: /\n");
+
+        Assert.Same(robots.Groups[0], robots.GetGroup("Bot"));
+    }
+
+    [Fact]
+    public void GetGroup_DuplicateNamedGroups_AreMerged()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: Googlebot
+            Disallow: /a
+
+            User-agent: Googlebot
+            Disallow: /b
+            """);
+
+        Assert.False(robots.IsAllowed("Googlebot", "/a"));
+        Assert.False(robots.IsAllowed("Googlebot", "/b"));
+    }
+
+    [Fact]
+    public void GetGroup_DuplicateCatchAllGroups_AreMerged()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow: /x
+
+            User-agent: *
+            Disallow: /y
+            """);
+
+        Assert.False(robots.IsAllowed("Bot", "/x"));
+        Assert.False(robots.IsAllowed("Bot", "/y"));
+    }
+
+    [Fact]
+    public void GetGroup_DuplicateGroups_KeepTheFirstCrawlDelay()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: Googlebot
+            Disallow: /a
+            Crawl-delay: 5
+
+            User-agent: Googlebot
+            Disallow: /b
+            Crawl-delay: 20
+            """);
+
+        Assert.Equal(TimeSpan.FromSeconds(5), robots.GetCrawlDelay("Googlebot"));
+    }
+
+    [Fact]
+    public void GetGroup_DuplicateGroups_UnionTheUserAgentTokens()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: Googlebot
+            User-agent: Bingbot
+            Disallow: /a
+
+            User-agent: googlebot
+            Disallow: /b
+            """);
+
+        var group = robots.GetGroup("Googlebot");
+
+        Assert.NotNull(group);
+        Assert.Equal(["Googlebot", "Bingbot"], group.UserAgents);
+        Assert.Equal(2, group.Rules.Count);
+    }
+
+    [Fact]
+    public void GetGroup_ExactMatchWinsOverADuplicatedCatchAll()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow: /all
+
+            User-agent: Googlebot
+            Disallow: /google
+
+            User-agent: *
+            Disallow: /everything
+            """);
+
+        Assert.True(robots.IsAllowed("Googlebot", "/all"));
+        Assert.True(robots.IsAllowed("Googlebot", "/everything"));
+        Assert.False(robots.IsAllowed("Googlebot", "/google"));
+        Assert.False(robots.IsAllowed("OtherBot", "/all"));
+        Assert.False(robots.IsAllowed("OtherBot", "/everything"));
+    }
+
     // -------------------------------------------------------------------------
     // IsAllowed
     // -------------------------------------------------------------------------

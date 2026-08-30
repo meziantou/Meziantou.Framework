@@ -111,6 +111,46 @@ public class ValueStringBuilderTests
     }
 
     [Fact]
+    public void AppendRuneSupportsBasicMultilingualPlaneRunes()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 4);
+        sb.Append(new Rune('a'));
+        sb.Append(new Rune(0x00E9));
+        sb.Append(new Rune(0xFFFD));
+
+        Assert.Equal("a\u00E9\uFFFD", sb.AsSpan().ToString());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void AppendRuneGrowsAtBufferBoundaries(int fillCount)
+    {
+        Span<char> initialBuffer = stackalloc char[4];
+        using var sb = new ValueStringBuilder(initialBuffer);
+        sb.Append('x', fillCount);
+
+        sb.Append(new Rune('a'));
+        sb.Append(new Rune(0x1F600));
+
+        Assert.Equal(new string('x', fillCount) + "a\U0001F600", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendRuneFillsTheBufferExactly()
+    {
+        Span<char> initialBuffer = stackalloc char[2];
+        using var sb = new ValueStringBuilder(initialBuffer);
+
+        sb.Append(new Rune(0x1F600));
+
+        Assert.Equal("\U0001F600", sb.AsSpan().ToString());
+        Assert.Equal(2, sb.Length);
+    }
+
+    [Fact]
     public void AppendSpanFormattableUsesTryFormat()
     {
         Span<char> initialBuffer = stackalloc char[16];

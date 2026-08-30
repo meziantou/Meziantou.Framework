@@ -15,7 +15,8 @@ ref partial struct ValueStringBuilder
     {
         var pos = _pos;
         var chars = _chars;
-        if ((uint)(pos + 1) < (uint)chars.Length && (uint)pos < (uint)chars.Length)
+        // Two free characters are needed for a surrogate pair; pos < chars.Length follows from pos + 1 < chars.Length.
+        if ((uint)(pos + 1) < (uint)chars.Length)
         {
             if (rune.Value <= 0xFFFF)
             {

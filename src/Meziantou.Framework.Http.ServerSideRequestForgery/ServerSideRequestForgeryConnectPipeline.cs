@@ -49,14 +49,14 @@ internal static class ServerSideRequestForgeryConnectPipeline
 
         if (!IsAllowedScheme(requestUri, options))
         {
-            Log.RejectedUnsafeScheme(logger, requestUri, requestUri.Scheme);
+            Log.RejectedUnsafeScheme(logger, FormatRequestOrigin(requestUri), requestUri.Scheme);
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("unsafe_scheme");
             throw new ServerSideRequestForgeryException($"The URI scheme '{requestUri.Scheme}' is not allowed.");
         }
 
         if (!HostsMatch(dnsEndPoint.Host, requestUri.IdnHost))
         {
-            Log.RejectedHostMismatch(logger, requestUri, dnsEndPoint.Host, requestUri.IdnHost);
+            Log.RejectedHostMismatch(logger, FormatRequestOrigin(requestUri), dnsEndPoint.Host, requestUri.IdnHost);
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("host_mismatch");
             throw new ServerSideRequestForgeryException("The host resolved for the connection does not match the request URI authority.");
         }
@@ -73,7 +73,17 @@ internal static class ServerSideRequestForgeryConnectPipeline
         return FilterSafeAddresses(requestUri, resolvedAddresses, options, logger);
     }
 
-    internal static async ValueTask<IPAddress> SelectIpAddressAsync(Uri requestUri, List<IPAddress> safeAddresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
+    internal static ValueTask<IPAddress> SelectIpAddressAsync(Uri requestUri, List<IPAddress> safeAddresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
+    {
+        return SelectIpAddressAsync(requestUri, safeAddresses, options, reportStrategyFailure: true, cancellationToken);
+    }
+
+    // reportStrategyFailure: whether a strategy that has no candidate left is a rejection worth reporting. It is on
+    // the first selection, where it means the policy refused every validated address. It is not once a connect has
+    // already failed: the caller then re-asks over the addresses that remain, and running out of them is an ordinary
+    // connection failure, not an SSRF rejection. Reporting it there would put a Warning and a rejected_requests
+    // increment on every unreachable host.
+    private static async ValueTask<IPAddress> SelectIpAddressAsync(Uri requestUri, List<IPAddress> safeAddresses, ServerSideRequestForgeryOptions options, bool reportStrategyFailure, CancellationToken cancellationToken)
     {
         var logger = options.Logger;
         IPAddress selectedAddress;
@@ -81,16 +91,16 @@ internal static class ServerSideRequestForgeryConnectPipeline
         {
             selectedAddress = await options.ResolutionStrategy.ResolveAsync(safeAddresses, options, cancellationToken).ConfigureAwait(false);
         }
-        catch (ServerSideRequestForgeryException ex)
+        catch (ServerSideRequestForgeryException ex) when (reportStrategyFailure)
         {
-            Log.RejectedResolutionStrategyFailure(logger, requestUri, ex.Message);
+            Log.RejectedResolutionStrategyFailure(logger, FormatRequestOrigin(requestUri), ex.Message);
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("resolution_strategy_failure");
             throw;
         }
 
         if (!safeAddresses.Exists(address => address.Equals(selectedAddress)))
         {
-            Log.RejectedSelectedAddressNotInSafeSet(logger, requestUri);
+            Log.RejectedSelectedAddressNotInSafeSet(logger, FormatRequestOrigin(requestUri));
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("selected_address_not_validated");
             throw new ServerSideRequestForgeryException("The resolution strategy selected an address that was not part of the validated safe set.");
         }
@@ -124,7 +134,7 @@ internal static class ServerSideRequestForgeryConnectPipeline
             IPAddress selectedAddress;
             try
             {
-                selectedAddress = await SelectIpAddressAsync(requestUri, remainingAddresses, options, cancellationToken).ConfigureAwait(false);
+                selectedAddress = await SelectIpAddressAsync(requestUri, remainingAddresses, options, reportStrategyFailure: lastConnectException is null, cancellationToken).ConfigureAwait(false);
             }
             catch (ServerSideRequestForgeryException) when (lastConnectException is not null)
             {
@@ -188,14 +198,14 @@ internal static class ServerSideRequestForgeryConnectPipeline
 
         if (safeAddresses.Count == 0)
         {
-            Log.RejectedAllResolvedAddressesUnsafe(logger, requestUri);
+            Log.RejectedAllResolvedAddressesUnsafe(logger, FormatRequestOrigin(requestUri));
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("all_resolved_addresses_unsafe");
             throw new ServerSideRequestForgeryException("No safe IP addresses were found after validation.");
         }
 
         if (hasUnsafeAddress && options.DisallowMixedSafeAndUnsafeIpAddresses)
         {
-            Log.RejectedMixedResolvedAddresses(logger, requestUri);
+            Log.RejectedMixedResolvedAddresses(logger, FormatRequestOrigin(requestUri));
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("mixed_addresses_disallowed");
             throw new ServerSideRequestForgeryException("The hostname resolved to a mix of safe and unsafe IP addresses.");
         }
@@ -224,7 +234,7 @@ internal static class ServerSideRequestForgeryConnectPipeline
         if (!IsConnectionToAProxy(handler, requestUri, dnsEndPoint))
             return;
 
-        Log.RejectedProxyConnection(options.Logger, requestUri, dnsEndPoint.Host);
+        Log.RejectedProxyConnection(options.Logger, FormatRequestOrigin(requestUri), dnsEndPoint.Host);
         ServerSideRequestForgeryMetrics.IncrementRejectedRequest("proxy_connection");
         throw new ServerSideRequestForgeryException("The connection targets a proxy. The request's real destination is established by the proxy and is not visible here, so it cannot be validated. Set SocketsHttpHandler.UseProxy to false, or send requests that need SSRF protection through a handler that does not use a proxy.");
     }
@@ -360,6 +370,18 @@ internal static class ServerSideRequestForgeryConnectPipeline
         }
 
         return host.TrimEnd('.');
+    }
+
+    /// <summary>Formats the destination for a log message, keeping only the parts that identify it.</summary>
+    /// <remarks>
+    /// The full <see cref="Uri"/> must never reach a log: <see cref="Uri.ToString"/> keeps the userinfo and the
+    /// query string, so a rejected request carrying basic-auth credentials, a bearer token or a signed-URL
+    /// signature would write that secret at Warning level. The origin is what identifies the destination, and it
+    /// is the only part a rejection needs.
+    /// </remarks>
+    internal static string FormatRequestOrigin(Uri requestUri)
+    {
+        return $"{requestUri.Scheme}://{requestUri.IdnHost}:{requestUri.Port}";
     }
 
     private static IPAddress NormalizeAddress(IPAddress address)

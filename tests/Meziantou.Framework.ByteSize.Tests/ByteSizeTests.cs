@@ -149,6 +149,42 @@ public sealed class ByteSizeTests
     }
 
     [Theory]
+    [InlineData(9_007_199_254_740_993L, "9007199254740993B")]
+    [InlineData(long.MaxValue, "9223372036854775807B")]
+    [InlineData(long.MinValue, "-9223372036854775808B")]
+    public void ToString_ByteUnit_IsExactAndRoundTrips(long value, string expected)
+    {
+        var size = new ByteSize(value);
+
+        Assert.Equal(expected, size.ToString("B", CultureInfo.InvariantCulture));
+        Assert.Equal(expected, size.ToString(ByteSizeUnit.Byte, CultureInfo.InvariantCulture));
+        Assert.Equal(size, ByteSize.Parse(expected, CultureInfo.InvariantCulture));
+
+        Span<char> chars = stackalloc char[64];
+        Assert.True(size.TryFormat(chars, out var charsWritten, "B", CultureInfo.InvariantCulture));
+        Assert.Equal(expected, chars[..charsWritten].ToString());
+
+        Span<byte> bytes = stackalloc byte[64];
+        Assert.True(size.TryFormat(bytes, out var bytesWritten, "B", CultureInfo.InvariantCulture));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(bytes[..bytesWritten]));
+    }
+
+    [Fact]
+    public void ToString_ByteUnit_HonorsTheNumericPrecision()
+    {
+        Assert.Equal("10.00B", new ByteSize(10).ToString("B2", CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData(0L)]
+    [InlineData(3L)]
+    [InlineData(-1L)]
+    public void GetValue_UndefinedUnit_ThrowsArgumentOutOfRangeException(long unit)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => _ = new ByteSize(10).GetValue((ByteSizeUnit)unit));
+    }
+
+    [Theory]
     [InlineData("1", 1L)]
     [InlineData("1b", 1L)]
     [InlineData("1B", 1L)]

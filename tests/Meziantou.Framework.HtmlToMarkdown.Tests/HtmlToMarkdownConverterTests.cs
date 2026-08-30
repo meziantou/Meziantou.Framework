@@ -3653,4 +3653,31 @@ public sealed class HtmlToMarkdownConverterTests
             "<p>&copy; 2026</p>",
             "© 2026");
     }
+
+    // --- Deeply nested documents (must not overflow the call stack) ---
+
+    // The recursive traversal this replaced overflowed the stack at a nesting depth of
+    // about 10,000. The depth here stays well past that while keeping the test cheap:
+    // the cost of these cases is dominated by AngleSharp's own parsing of deep documents.
+    private const int NestingDepthBeyondStackLimit = 20_000;
+
+    [Fact]
+    public void DeeplyNestedElements_DoesNotOverflowTheStack()
+    {
+        var html = string.Concat(Enumerable.Repeat("<div>", NestingDepthBeyondStackLimit))
+            + "text"
+            + string.Concat(Enumerable.Repeat("</div>", NestingDepthBeyondStackLimit));
+
+        AssertHtmlToMarkdown(html, "text");
+    }
+
+    [Fact]
+    public void DeeplyNestedEmphasis_DoesNotOverflowTheStack()
+    {
+        var html = string.Concat(Enumerable.Repeat("<b>", NestingDepthBeyondStackLimit))
+            + "text"
+            + string.Concat(Enumerable.Repeat("</b>", NestingDepthBeyondStackLimit));
+
+        AssertHtmlToMarkdown(html, "**text**");
+    }
 }

@@ -62,7 +62,7 @@ namespace Meziantou.Extensions.Logging.InMemory
         public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
     }
 
-    public sealed class InMemoryLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, System.IDisposable
+    public sealed class InMemoryLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ISupportExternalScope, System.IDisposable
     {
         public Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection Logs { get => throw null; }
         public InMemoryLoggerProvider(Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection? logs) { }
@@ -74,6 +74,7 @@ namespace Meziantou.Extensions.Logging.InMemory
         public InMemoryLoggerProvider(System.TimeProvider? timeProvider, Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection? logs, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider) { }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => throw null;
         public Microsoft.Extensions.Logging.ILogger<T> CreateLogger<T>() => throw null;
+        public void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider) { }
         public void Dispose() { }
     }
 }

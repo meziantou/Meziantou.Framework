@@ -29,6 +29,7 @@ public static class MarkOfTheWeb
 
     /// <summary>Removes the Mark of the Web zone information from a file by deleting the Zone.Identifier alternate data stream.</summary>
     /// <param name="filePath">The path to the file from which to remove the zone information.</param>
+    /// <remarks>Does nothing when the file carries no zone information, or when the file or its directory does not exist.</remarks>
     public static void RemoveFileZone(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
@@ -38,7 +39,7 @@ public static class MarkOfTheWeb
         {
             File.Delete(adsPath);
         }
-        catch (FileNotFoundException)
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
         {
         }
     }
@@ -82,7 +83,7 @@ public static class MarkOfTheWeb
 
     /// <summary>Gets the raw content of the Zone.Identifier alternate data stream from a file.</summary>
     /// <param name="filePath">The path to the file to read.</param>
-    /// <returns>The content of the Zone.Identifier stream, or <see langword="null"/> if the file does not have zone information.</returns>
+    /// <returns>The content of the Zone.Identifier stream, or <see langword="null"/> if the file does not have zone information, or if the file or its directory does not exist.</returns>
     /// <remarks>
     /// Windows and web browsers write the stream as ASCII. A byte order mark, if present, takes precedence,
     /// so streams written as UTF-16 by earlier versions of this library are still decoded correctly.
@@ -100,7 +101,7 @@ public static class MarkOfTheWeb
             // requested encoding otherwise. UTF-8 is a superset of the ASCII that Windows writes.
             return File.ReadAllText(adsPath, Encoding.UTF8);
         }
-        catch (FileNotFoundException)
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
         {
         }
 

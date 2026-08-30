@@ -167,6 +167,58 @@ public sealed class EmbeddedConstantsGeneratorUnitTests
     }
 
     [Fact]
+    public async Task Create_ImplicitNamesCollideOutsideTheProjectDirectory_ReportsErrorInsteadOfUsingTheAbsolutePath()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("project");
+        var outsideDirectory = temporaryDirectory.CreateDirectory("outside");
+        File.WriteAllText(projectDirectory / "shared.txt", "inside");
+        File.WriteAllText(outsideDirectory / "shared.txt", "outside");
+
+        var result = Generator.Create(
+            CreateOptions(projectDirectory),
+            [
+                new InputFile(projectDirectory / "shared.txt", "Text", null, projectDirectory),
+                new InputFile(outsideDirectory / "shared.txt", "Text", null, projectDirectory),
+            ]);
+
+        var error = Assert.Single(result.Errors);
+        Assert.Equal("MFECG0005", error.Code);
+
+        // Both files keep the colliding name instead of one being renamed after its absolute path
+        Assert.Contains("'SharedText'", error.Message);
+    }
+
+    [Fact]
+    public async Task Create_MemberNameMatchesTheClassName_ReportsError()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        temporaryDirectory.CreateTextFile("Foo.txt", "x");
+
+        var result = Generator.Create(CreateOptions(temporaryDirectory.FullPath, className: "FooText"), [TextFile(temporaryDirectory, "Foo.txt")]);
+
+        var error = Assert.Single(result.Errors);
+        Assert.Equal("MFECG0013", error.Code);
+    }
+
+    [Fact]
+    public async Task Create_DuplicateMemberName_NamesTheFilesInvolved()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        temporaryDirectory.CreateTextFile("p.txt", "p");
+        temporaryDirectory.CreateTextFile("q.txt", "q");
+
+        var result = Generator.Create(
+            CreateOptions(temporaryDirectory.FullPath),
+            [TextFile(temporaryDirectory, "p.txt", name: "Same"), TextFile(temporaryDirectory, "q.txt", name: "Same")]);
+
+        var error = Assert.Single(result.Errors);
+        Assert.Contains("p.txt", error.Message);
+        Assert.Contains("q.txt", error.Message);
+        Assert.NotNull(error.FilePath);
+    }
+
+    [Fact]
     public async Task Create_ExplicitNamesNormaliseToTheSameIdentifier_ReportsError()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();

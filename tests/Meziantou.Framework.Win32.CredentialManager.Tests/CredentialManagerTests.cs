@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.Versioning;
 using Meziantou.Xunit;
 
@@ -278,6 +279,38 @@ public sealed class CredentialManagerTests
     {
         var cred = new Credential(CredentialType.Generic, "App", "John", password: null, "Test");
         Assert.Equal("CredentialType: Generic, ApplicationName: App, UserName: John, Password: , Comment: Test", cred.ToString());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_TryDeleteCredential()
+    {
+        using var context = new IsolatedContext();
+        var credentialName = context.GetCredentialName();
+        CredentialManager.WriteCredential(credentialName, "John", "Doe", CredentialPersistence.Session);
+
+        Assert.True(CredentialManager.TryDeleteCredential(credentialName));
+        Assert.Null(CredentialManager.ReadCredential(credentialName));
+
+        Assert.False(CredentialManager.TryDeleteCredential(credentialName));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_TryDeleteCredential_DomainPassword()
+    {
+        using var context = new IsolatedContext();
+        var credentialName = context.GetCredentialName();
+        CredentialManager.WriteCredential(credentialName, "John", "Doe", "Test", CredentialPersistence.Session, CredentialType.DomainPassword);
+
+        Assert.False(CredentialManager.TryDeleteCredential(credentialName, CredentialType.Generic));
+        Assert.True(CredentialManager.TryDeleteCredential(credentialName, CredentialType.DomainPassword));
+        Assert.False(CredentialManager.TryDeleteCredential(credentialName, CredentialType.DomainPassword));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_DeleteCredential_WhenMissing_Throws()
+    {
+        using var context = new IsolatedContext();
+        Assert.Throws<Win32Exception>(() => CredentialManager.DeleteCredential(context.GetCredentialName()));
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]

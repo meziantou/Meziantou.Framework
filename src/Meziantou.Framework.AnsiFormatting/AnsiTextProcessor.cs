@@ -5,6 +5,7 @@ namespace Meziantou.Framework;
 public static class AnsiTextProcessor
 {
     private const char EscapeCharacter = '\u001b';
+    private const char BellCharacter = '\u0007';
     // Sequences shorter than this are processed using a stack-allocated buffer to avoid renting an array.
     private const int StackAllocThreshold = 512;
     // The longest SGR parameter is 38:2:<color-space>:r:g:b
@@ -49,7 +50,7 @@ public static class AnsiTextProcessor
             escapeIndex += i;
 
             // Only a sequence that reaches its terminator is one RemoveAnsiSequences would strip.
-            if (escapeIndex + 1 < value.Length && value[escapeIndex + 1] == '[' && FindCsiTerminator(value, escapeIndex + 2) >= 0)
+            if (FindSequenceEnd(value, escapeIndex) >= 0)
                 return true;
 
             i = escapeIndex + 1;
@@ -117,10 +118,11 @@ public static class AnsiTextProcessor
 
                 var escapeIndex = searchFrom + relativeIndex;
 
-                // A removable sequence is a CSI: ESC '[' ... <terminator in 0x40-0x7E>
-                if (escapeIndex + 1 < value.Length && value[escapeIndex + 1] == '[')
+                // Removable sequences are CSI (ESC '[' ... <terminator in 0x40-0x7E>)
+                // and OSC (ESC ']' ... BEL or ST).
+                if (escapeIndex + 1 < value.Length && value[escapeIndex + 1] is '[' or ']')
                 {
-                    var terminator = FindCsiTerminator(value, escapeIndex + 2);
+                    var terminator = FindSequenceEnd(value, escapeIndex);
                     if (terminator >= 0)
                     {
                         var segment = value[copiedFrom..escapeIndex];
@@ -137,7 +139,7 @@ public static class AnsiTextProcessor
                     break;
                 }
 
-                // Lone ESC (not part of a CSI sequence): kept as-is.
+                // Lone ESC (not the start of a CSI or OSC sequence): kept as-is.
                 searchFrom = escapeIndex + 1;
             }
 
@@ -164,8 +166,21 @@ public static class AnsiTextProcessor
         if (index >= text.Length || text[index] != EscapeCharacter)
             return false;
 
-        if (index + 1 >= text.Length || text[index + 1] != '[')
+        if (index + 1 >= text.Length)
             return false;
+
+        if (text[index + 1] is '[')
+            return TryConsumeCsiSequence(text, ref index, out sgrParameters);
+
+        if (text[index + 1] is ']')
+            return TryConsumeOscSequence(text, ref index);
+
+        return false;
+    }
+
+    private static bool TryConsumeCsiSequence(string text, ref int index, out List<int>? sgrParameters)
+    {
+        sgrParameters = null;
 
         var sequenceStart = index;
         index += 2;
@@ -190,6 +205,17 @@ public static class AnsiTextProcessor
 
         index = sequenceStart;
         return false;
+    }
+
+    // OSC sequences carry no styling, so they are consumed and dropped from the text.
+    private static bool TryConsumeOscSequence(string text, ref int index)
+    {
+        var terminator = FindOscTerminator(text, index + 2);
+        if (terminator < 0)
+            return false;
+
+        index = terminator + 1;
+        return true;
     }
 
     private static List<int> ParseSgrParameters(ReadOnlySpan<char> sequenceContent)
@@ -399,6 +425,38 @@ public static class AnsiTextProcessor
         }
 
         return style;
+    }
+
+    /// <summary>
+    /// Returns the index of the last character of the sequence introduced at <paramref name="escapeIndex"/>,
+    /// or -1 when the introducer is unknown or the sequence is cut off before its terminator.
+    /// </summary>
+    private static int FindSequenceEnd(ReadOnlySpan<char> value, int escapeIndex)
+    {
+        if (escapeIndex + 1 >= value.Length)
+            return -1;
+
+        return value[escapeIndex + 1] switch
+        {
+            '[' => FindCsiTerminator(value, escapeIndex + 2),
+            ']' => FindOscTerminator(value, escapeIndex + 2),
+            _ => -1,
+        };
+    }
+
+    // OSC sequences are terminated by BEL, or by ST which is written as ESC '\'.
+    private static int FindOscTerminator(ReadOnlySpan<char> value, int start)
+    {
+        for (var i = start; i < value.Length; i++)
+        {
+            if (value[i] is BellCharacter)
+                return i;
+
+            if (value[i] is EscapeCharacter && i + 1 < value.Length && value[i + 1] is '\\')
+                return i + 1;
+        }
+
+        return -1;
     }
 
     private static int FindCsiTerminator(ReadOnlySpan<char> value, int start)

@@ -137,10 +137,66 @@ public class AnsiTextProcessorTests
     [InlineData("\u001b[?25lHidden cursor\u001b[?25h")]
     [InlineData("Text with\u001b[A cursor up")]
     [InlineData("\u001b[1m\u001b[31m\u001b[4mBold\u001b[0m")]
+    [InlineData("\u001b]0;window title\u0007hello")]
+    [InlineData("\u001b]8;;https://example.com\u001b\\click me\u001b]8;;\u001b\\")]
+    [InlineData("\u001b]8;;https://example.com")]
+    [InlineData("\u001b]")]
+    [InlineData("\u001b]0;no terminator here")]
     public void ContainsAnsiSequences_AgreesWithRemoveAnsiSequences(string input)
     {
         var removeChangedTheText = !string.Equals(AnsiTextProcessor.RemoveAnsiSequences(input), input, StringComparison.Ordinal);
         Assert.Equal(removeChangedTheText, AnsiTextProcessor.ContainsAnsiSequences(input));
+    }
+
+    [Theory]
+    [InlineData("\u001b]0;window title\u0007hello", "hello")]
+    [InlineData("\u001b]8;;https://example.com\u001b\\click me\u001b]8;;\u001b\\", "click me")]
+    [InlineData("a\u001b]52;c;Zm9v\u0007b", "ab")]
+    [InlineData("\u001b[31m\u001b]0;t\u0007red\u001b[0m", "red")]
+    [InlineData("\u001b]0;a\u0007\u001b]0;b\u0007x", "x")]
+    public void RemoveAnsiSequences_OscSequences(string input, string expected)
+    {
+        Assert.Equal(expected, AnsiTextProcessor.RemoveAnsiSequences(input));
+        Assert.Equal(expected, AnsiTextProcessor.RemoveAnsiSequences(input.AsSpan()));
+        Assert.True(AnsiTextProcessor.ContainsAnsiSequences(input));
+    }
+
+    [Theory]
+    [InlineData("\u001b]")]
+    [InlineData("\u001b]8;;https://example.com")]
+    [InlineData("\u001b]0;window title")]
+    [InlineData("text\u001b]0;cut off")]
+    public void RemoveAnsiSequences_IncompleteOscSequenceIsKept(string input)
+    {
+        Assert.Equal(input, AnsiTextProcessor.RemoveAnsiSequences(input));
+        Assert.False(AnsiTextProcessor.ContainsAnsiSequences(input));
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_OscSequenceIsRemovedAndCarriesNoStyle()
+    {
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles("\u001b[1m\u001b]8;;https://example.com\u001b\\link\u001b]8;;\u001b\\");
+
+        Assert.Equal("link", parsed.Text);
+        var run = Assert.Single(parsed.Runs);
+        Assert.True(run.Style.Bold);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_OscSequenceWithBellTerminator()
+    {
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles("a\u001b]0;title\u0007b");
+
+        Assert.Equal("ab", parsed.Text);
+        Assert.Equal(AnsiTextProcessor.AnsiStyle.None, Assert.Single(parsed.Runs).Style);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_IncompleteOscSequenceIsKept()
+    {
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles("a\u001b]0;cut off");
+
+        Assert.Equal("a\u001b]0;cut off", parsed.Text);
     }
 
     [Theory]

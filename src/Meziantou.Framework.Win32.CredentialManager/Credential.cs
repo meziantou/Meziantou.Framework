@@ -35,6 +35,6 @@ public sealed class Credential
 
     public override string ToString()
     {
-        return $"CredentialType: {CredentialType}, ApplicationName: {ApplicationName}, UserName: {UserName}, Password: {Password}, Comment: {Comment}";
+        return $"CredentialType: {CredentialType}, ApplicationName: {ApplicationName}, UserName: {UserName}, Password: {(Password is null ? "" : "******")}, Comment: {Comment}";
     }
 }

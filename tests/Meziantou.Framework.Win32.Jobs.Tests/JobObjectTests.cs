@@ -62,6 +62,56 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void Flags_AreReplacedNotAccumulated()
+    {
+        var limits = new JobObjectLimits { Flags = JobObjectLimitFlags.KillOnJobClose };
+        limits.Flags = JobObjectLimitFlags.SilentBreakawayOk;
+
+        Assert.Equal(JobObjectLimitFlags.SilentBreakawayOk, limits.Flags);
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "ping",
+            Arguments = "127.0.0.1 -n 100",
+            UseShellExecute = true,
+            CreateNoWindow = true,
+        };
+
+        using var process = Process.Start(psi);
+        Assert.NotNull(process);
+        Assert.False(process.WaitForExit(500)); // Ensure process is started
+
+        using (var job = new JobObject())
+        {
+            job.SetLimits(limits);
+            job.AssignProcess(process);
+        }
+
+        // KillOnJobClose was replaced before SetLimits, so closing the job must leave the process alive
+        Assert.False(process.WaitForExit(1000));
+        process.Kill();
+        process.WaitForExit();
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ActiveProcessLimit_UnsetAppliesNoLimit()
+    {
+        using var job = new JobObject();
+        job.SetLimits(new JobObjectLimits { Flags = JobObjectLimitFlags.SilentBreakawayOk });
+
+        job.AssignProcess(Process.GetCurrentProcess());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ActiveProcessLimit_ZeroIsAnExplicitLimit()
+    {
+        using var job = new JobObject();
+        job.SetLimits(new JobObjectLimits { ActiveProcessLimit = 0 });
+
+        Assert.Throws<Win32Exception>(() => job.AssignProcess(Process.GetCurrentProcess()));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CreateAndOpenJobObject()
     {
         var objectName = Guid.NewGuid().ToString("N");

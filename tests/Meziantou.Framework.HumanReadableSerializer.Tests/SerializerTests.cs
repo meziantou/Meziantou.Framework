@@ -1752,6 +1752,43 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void InfiniteLoop_SelfReferencingCollection()
+    {
+        var value = new List<object>();
+        value.Add(value);
+
+        Assert.Throws<HumanReadableSerializerException>(() => HumanReadableSerializer.Serialize(value));
+    }
+
+    [Fact]
+    public void InfiniteLoop_CollectionsAlternatingWithObjects()
+    {
+        var value = new Recursive2();
+        value.Items.Add(value);
+
+        Assert.Throws<HumanReadableSerializerException>(() => HumanReadableSerializer.Serialize(value));
+    }
+
+    [Fact]
+    public void NestedCollectionsWithinMaxDepthAreSerialized()
+    {
+        object value = 1;
+        for (var i = 0; i < 8; i++)
+        {
+            value = new List<object> { value };
+        }
+
+        AssertSerialization(new Validation
+        {
+            Subject = value,
+            Options = new HumanReadableSerializerOptions { MaxDepth = 8 },
+            Expected = """
+                - - - - - - - - 1
+                """,
+        });
+    }
+
+    [Fact]
     public void Attributes()
     {
         AssertSerialization(new Validation
@@ -2422,6 +2459,11 @@ public sealed partial class SerializerTests : SerializerTestsBase
     private sealed class Recursive
     {
         public Recursive Prop => this;
+    }
+
+    private sealed class Recursive2
+    {
+        public List<Recursive2> Items { get; } = [];
     }
 
     private sealed class ClassWithAttributes

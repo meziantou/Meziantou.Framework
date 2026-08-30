@@ -245,6 +245,7 @@ namespace Meziantou.Framework.ChromiumTracing
         public static Meziantou.Framework.ChromiumTracing.ChromiumTracingWriter CreateGzip(System.IO.Stream stream, System.Text.Json.Serialization.JsonSerializerContext? serializerContext, System.IO.Compression.CompressionLevel compressionLevel = 1) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "The json options are guarantee to contains the TypeResolver for events")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling", Justification = "The options only use source-generated resolvers, so a type that is not registered fails with NotSupportedException instead of falling back to reflection")]
         public System.Threading.Tasks.Task WriteEventAsync(Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent tracingEvent, System.Threading.CancellationToken cancellationToken = null) => throw null;
     }
 }

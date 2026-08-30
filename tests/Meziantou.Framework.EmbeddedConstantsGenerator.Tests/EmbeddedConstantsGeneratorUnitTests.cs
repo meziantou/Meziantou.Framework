@@ -120,7 +120,7 @@ public sealed class EmbeddedConstantsGeneratorUnitTests
     }
 
     [Fact]
-    public async Task Create_TextFileStartsWithByteOrderMark_RemovesIt()
+    public async Task Create_TextFileStartsWithByteOrderMark_RemovesItFromTheTextMember()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
         File.WriteAllBytes(temporaryDirectory.FullPath / "bom.txt", [0xEF, 0xBB, 0xBF, (byte)'{', (byte)'}']);
@@ -129,6 +129,23 @@ public sealed class EmbeddedConstantsGeneratorUnitTests
         var source = Generator.GenerateSource(result.Options, result.Entries);
 
         Assert.Contains("""public const string BomText = "{}";""", source);
+    }
+
+    [Theory]
+    [InlineData("Binary")]
+    [InlineData("Both")]
+    public async Task Create_FileStartsWithByteOrderMark_ByteMemberKeepsIt(string kind)
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        File.WriteAllBytes(temporaryDirectory.FullPath / "bom.json", [0xEF, 0xBB, 0xBF, (byte)'{', (byte)'}']);
+
+        var result = Generator.Create(CreateOptions(temporaryDirectory.FullPath), [TextFile(temporaryDirectory, "bom.json", kind: kind)]);
+        Assert.Empty(result.Errors);
+
+        var source = Generator.GenerateSource(result.Options, result.Entries);
+
+        // The byte member is the file, byte for byte, whichever Kind asked for it
+        Assert.Contains("0xEF, 0xBB, 0xBF, 0x7B, 0x7D", source);
     }
 
     [Fact]

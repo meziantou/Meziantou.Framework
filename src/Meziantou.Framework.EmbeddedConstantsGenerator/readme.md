@@ -79,7 +79,9 @@ If two implicit names collide, the generator tries a path-based name. Remaining 
 
 ## Text Encoding
 
-Text files must be valid UTF-8. An optional UTF-8 BOM is ignored. Binary files are embedded as-is.
+Text files must be valid UTF-8. An optional UTF-8 BOM is stripped from the generated `const string`.
+
+Byte members always mirror the file exactly, for every `Kind`. A file marked as `Both` whose content starts with a BOM therefore produces a `Text` member without the BOM and a `Bytes` member with it.
 
 Text files larger than 1 MiB are rejected to avoid producing impractically large generated source.
 

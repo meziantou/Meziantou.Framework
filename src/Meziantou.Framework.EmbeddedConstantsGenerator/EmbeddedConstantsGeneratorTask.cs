@@ -573,15 +573,15 @@ internal static class EmbeddedConstantsGeneratorTask
                 return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, text: null, Array.Empty<byte>(), errors);
             }
 
+            // Every byte costs six characters of generated source, so a large file makes the build unusable
+            if (kind.HasFlag(EmbeddedConstantKind.Binary) && bytes.Length > maxBinaryFileBytes)
+            {
+                errors.Add(ValidationError.BinaryFileTooLarge(file.FullPath, maxBinaryFileBytes));
+                return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, text: null, Array.Empty<byte>(), errors);
+            }
+
             if (kind == EmbeddedConstantKind.Binary)
             {
-                // Every byte costs six characters of generated source, so a large file makes the build unusable
-                if (bytes.Length > maxBinaryFileBytes)
-                {
-                    errors.Add(ValidationError.BinaryFileTooLarge(file.FullPath, maxBinaryFileBytes));
-                    return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, text: null, Array.Empty<byte>(), errors);
-                }
-
                 return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, text: null, bytes, errors);
             }
 
@@ -595,7 +595,9 @@ internal static class EmbeddedConstantsGeneratorTask
             try
             {
                 var content = Utf8NoBomThrowOnInvalidBytes.GetString(textBytes, 0, textBytes.Length);
-                return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, content, textBytes, errors);
+
+                // The byte member mirrors the file exactly. Only the text member drops the byte order mark.
+                return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, content, bytes, errors);
             }
             catch (DecoderFallbackException)
             {

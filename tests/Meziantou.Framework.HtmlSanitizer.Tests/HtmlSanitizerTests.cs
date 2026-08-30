@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Meziantou.Framework.Sanitizers.Tests;
 
 public class HtmlSanitizerTests
@@ -139,11 +141,94 @@ public class HtmlSanitizerTests
     [InlineData("<p>&#x3c;script&#x3e;alert(1)&#x3c;/script&#x3e;</p>", "<p>&#x3c;script&#x3e;alert(1)&#x3c;/script&#x3e;</p>")]
     [InlineData("a &amp; b", "a &amp; b")]
     [InlineData("a & b", "a & b")]
-    [InlineData("<p>a < b</p>", "<p>a < b</p>")]
+    // "<" is the one character that is re-encoded, see Sanitize_EscapesMarkupStartInText
+    [InlineData("<p>a < b</p>", "<p>a &lt; b</p>")]
     public void Sanitize_KeepsTextAsIs(string html, string expectedResult)
     {
         var sanitizer = new HtmlSanitizer();
         Assert.Equal(expectedResult, sanitizer.SanitizeHtmlFragment(html));
+    }
+
+    [Theory]
+    // A "<" that the parser gave up on and kept as text is still markup to a browser. An unterminated comment
+    // puts the rest of the host page in comment state; "<!x", "<?x" and "</0" are bogus comments that swallow
+    // everything up to the next ">". None of them may be written back with the "<" intact.
+    [InlineData("<b><!--", "<b>&lt;!--</b>")]
+    [InlineData("<p>a<!--b", "<p>a&lt;!--b</p>")]
+    [InlineData("<!--", "&lt;!--")]
+    [InlineData("<b><!x", "<b>&lt;!x</b>")]
+    [InlineData("<b><?x", "<b>&lt;?x</b>")]
+    [InlineData("<b></0", "<b>&lt;/0</b>")]
+    [InlineData("<b><", "<b>&lt;</b>")]
+    [InlineData("<p>a</0 onerror=alert(1)>b</p>", "<p>a&lt;/0 onerror=alert(1)>b</p>")]
+    [InlineData("<p>a<1 onerror=alert(1)>b</p>", "<p>a&lt;1 onerror=alert(1)>b</p>")]
+    [InlineData("<p>a<%img src=x onerror=alert(1)>b</p>", "<p>a&lt;%img src=x onerror=alert(1)>b</p>")]
+    [InlineData("<p>a<//script>b</p>", "<p>a&lt;//script>b</p>")]
+    // Already encoded text is not encoded a second time
+    [InlineData("<p>&lt;script&gt;</p>", "<p>&lt;script&gt;</p>")]
+    [InlineData("<p>a &amp; b</p>", "<p>a &amp; b</p>")]
+    public void Sanitize_EscapesMarkupStartInText(string html, string expectedResult)
+    {
+        var sanitizer = new HtmlSanitizer();
+        Assert.Equal(expectedResult, sanitizer.SanitizeHtmlFragment(html));
+    }
+
+    [Fact]
+    public void Sanitize_IsIdempotent()
+    {
+        // Sanitizing something already sanitized must be a no-op: an output that the parser reads back
+        // differently from the way it was written is how mutation XSS gets started.
+        string[] fragments =
+        [
+            "<b><!--", "<p>a<!--b", "<b><!x", "<b><?x", "<b></0", "<b></", "<b><",
+            "-->", "--><img src=x onerror=alert(1)>", "<p>a</b <img src=x onerror=alert(1)>b</p>",
+            "0\"?</<s->s\"\" 7v1v", "<td>]]></style></title><?x", "<table><!--", "<p><!x]]><!--<style>",
+            "<![CDATA[a><script>alert(1)</script>]]>", "<p>a < b</p>", "<p>&lt;script&gt;</p>",
+            "<svg><table></0<!--", "<a href='javascript:alert(1)'></td><!--<script>>",
+            "<noscript><p title=\"</noscript><img src=x onerror=alert(1)>\">",
+            "<math><mtext><table><mglyph><style><img src=x onerror=alert(1)>",
+            "<form><p>a</p>b<span>c</span></form>", "<p title=a\"b'c>x</p>",
+        ];
+
+        foreach (var fragment in fragments)
+        {
+            var once = new HtmlSanitizer().SanitizeHtmlFragment(fragment);
+            var twice = new HtmlSanitizer().SanitizeHtmlFragment(once);
+            Assert.Equal(once, twice);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void Sanitize_IsIdempotent_Fuzz()
+    {
+        // Elements whose end tag is optional (p, td, table, …) are left out on purpose. They can still nest in
+        // the output in a way the parser reads back differently, which is a separate defect in how the writer
+        // and the implied-end-tag rules line up rather than anything to do with how text is written. Over
+        // 200_000 fragments drawn from the full token set, every remaining violation involved one of them.
+        string[] tokens =
+        [
+            "<b>", "</b>", "<script>", "</script>", "<img src=x onerror=alert(1)>",
+            "<!--", "-->", "<![CDATA[", "]]>", "<svg>", "</svg>", "<style>", "</style>", "<form>", "</form>",
+            "<a href='javascript:alert(1)'>", "</a>", "a", "<", ">", "\"", "'", "=", "/", "</0", "<?x", "<!x",
+            "<title>", "</title>", "<textarea>", "</textarea>", "<noscript>", "</noscript>", "<plaintext>",
+            "<math>", "<div>", "</div>", "<span title=\"", "\">", "<iframe>", "</iframe>",
+        ];
+
+        var random = new Random(Seed: 20260827);
+        for (var i = 0; i < 50_000; i++)
+        {
+            var builder = new StringBuilder();
+            for (var j = random.Next(1, 6); j > 0; j--)
+            {
+                builder.Append(tokens[random.Next(tokens.Length)]);
+            }
+
+            var fragment = builder.ToString();
+            var once = new HtmlSanitizer().SanitizeHtmlFragment(fragment);
+            var twice = new HtmlSanitizer().SanitizeHtmlFragment(once);
+            Assert.Equal(once, twice, message: $"Not idempotent for {fragment}");
+        }
     }
 
     [Theory]

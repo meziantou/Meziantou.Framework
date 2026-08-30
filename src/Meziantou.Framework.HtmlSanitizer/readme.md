@@ -64,6 +64,25 @@ var result = sanitizer.SanitizeHtmlFragment("<img srcset='https://example.com/im
 // Result: "<img srcset='https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w'>"
 ```
 
+### Text
+
+Text keeps the entities it was written with, so already encoded markup stays encoded and is not encoded a
+second time. A literal `<` is re-encoded as `&lt;`, because a `<` the parser gave up on is still markup to a
+browser — an unterminated `<!--` would put the rest of the page in comment state.
+
+```csharp
+var sanitizer = new HtmlSanitizer();
+
+sanitizer.SanitizeHtmlFragment("<p>&lt;script&gt;</p>");
+// Result: "<p>&lt;script&gt;</p>"
+
+sanitizer.SanitizeHtmlFragment("<p>a < b</p>");
+// Result: "<p>a &lt; b</p>"
+
+sanitizer.SanitizeHtmlFragment("<b><!--");
+// Result: "<b>&lt;!--</b>"
+```
+
 ### Keeping Comments
 
 Comments are removed by default: downlevel-hidden conditional comments (`<!--[if IE]><script>...</script><![endif]-->`)

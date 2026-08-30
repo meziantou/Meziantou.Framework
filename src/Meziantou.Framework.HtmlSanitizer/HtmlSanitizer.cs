@@ -147,6 +147,14 @@ public sealed class HtmlSanitizer
                         text.IsCData = false;
                         text.Value = EscapeText(text.Value);
                         break;
+
+                    case HtmlText text:
+                        // A "<" this parser kept as text is not necessarily text to a browser. An unterminated
+                        // "<!--" puts it in comment state for the rest of the page, and "<!x", "<?x" or "</0" start
+                        // a bogus comment that swallows everything up to the next ">". Text is written back exactly
+                        // as it was read, so the "<" would reach the browser intact.
+                        text.Value = EscapeTagStart(text.Value);
+                        break;
                 }
             }
         }
@@ -184,6 +192,16 @@ public sealed class HtmlSanitizer
     {
         var options = element.OwnerDocument?.Options.GetElementReadOptions(element.Name) ?? HtmlElementReadOptions.None;
         return (options & HtmlElementReadOptions.InnerRaw) == HtmlElementReadOptions.InnerRaw;
+    }
+
+    // Only "<" is escaped: a text node keeps the entities of the source, so escaping "&" as well would turn an
+    // already encoded "&lt;" into a visible "&lt;".
+    private static string? EscapeTagStart(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        return text.Replace("<", "&lt;", StringComparison.Ordinal);
     }
 
     private static string EscapeText(string? text)

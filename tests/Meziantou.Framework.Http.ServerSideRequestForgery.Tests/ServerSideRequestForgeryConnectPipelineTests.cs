@@ -501,6 +501,38 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     }
 
     [Fact]
+    public async Task ResolveAndSelectIpAddressAsync_DoesNotLogUserInfoOrQueryString()
+    {
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            Logger = loggerProvider.CreateLogger("ssrf-test"),
+        };
+
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://alice:s3cr3t@example.com/path?token=abcdef"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: options,
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Loopback]),
+            cancellationToken: CancellationToken.None).AsTask());
+
+        var warning = Assert.Single(loggerProvider.Logs.Warnings);
+        Assert.DoesNotContain("s3cr3t", warning.Message);
+        Assert.DoesNotContain("alice", warning.Message);
+        Assert.DoesNotContain("abcdef", warning.Message);
+        Assert.DoesNotContain("token", warning.Message);
+        Assert.Contains("https://example.com:443", warning.Message);
+    }
+
+    [Fact]
+    public void FormatRequestOrigin_KeepsOnlyTheDestination()
+    {
+        Assert.Equal("https://example.com:443", ServerSideRequestForgeryConnectPipeline.FormatRequestOrigin(new Uri("https://alice:s3cr3t@example.com/path?token=abcdef")));
+        Assert.Equal("http://example.com:8080", ServerSideRequestForgeryConnectPipeline.FormatRequestOrigin(new Uri("http://example.com:8080/")));
+        Assert.Equal("https://xn--dj-kia8a.example:443", ServerSideRequestForgeryConnectPipeline.FormatRequestOrigin(new Uri("https://déjà.example/")));
+    }
+
+    [Fact]
     public async Task ResolveAndSelectIpAddressAsync_LogsHostMismatchRejectionReason()
     {
         using var loggerProvider = new InMemoryLoggerProvider();

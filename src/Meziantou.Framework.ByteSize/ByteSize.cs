@@ -538,19 +538,48 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
         // Convert number
         if (long.TryParse(s, NumberStyles.Integer, provider, out var resultLong))
-        {
-            result = From(resultLong, unit);
-            return true;
-        }
+            return TryFrom(resultLong, unit, out result);
 
         if (double.TryParse(s, NumberStyles.Float, provider, out var resultDouble))
-        {
-            result = From(resultDouble, unit);
-            return true;
-        }
+            return TryFrom(resultDouble, unit, out result);
 
         result = default;
         return false;
+    }
+
+    // Text is untrusted input, so a size that does not fit in a long must be reported as a
+    // parse failure. Multiplying it out and letting it wrap would make TryParse return true
+    // with a negative value, which silently defeats any "size <= limit" check on the result.
+    private static bool TryFrom(long value, ByteSizeUnit unit, out ByteSize result)
+    {
+        var scaled = (Int128)value * (long)unit;
+        if (scaled < long.MinValue || scaled > long.MaxValue)
+        {
+            result = default;
+            return false;
+        }
+
+        result = new ByteSize((long)scaled);
+        return true;
+    }
+
+    private static bool TryFrom(double value, ByteSizeUnit unit, out ByteSize result)
+    {
+        // long.MinValue and long.MaxValue + 1 are both exactly representable as double, so
+        // this is the exact representable range of a long. Written as a negated condition so
+        // NaN - which compares false against everything - is rejected too.
+        const double MinInclusive = -9223372036854775808d;
+        const double MaxExclusive = 9223372036854775808d;
+
+        var scaled = value * (long)unit;
+        if (!(scaled >= MinInclusive && scaled < MaxExclusive))
+        {
+            result = default;
+            return false;
+        }
+
+        result = new ByteSize((long)scaled);
+        return true;
     }
 
     /// <summary>Tries to format the value as UTF-8 into the provided span of bytes.</summary>
@@ -686,16 +715,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
         // Convert number from UTF-8
         if (System.Buffers.Text.Utf8Parser.TryParse(utf8Text, out long resultLong, out var bytesConsumed) && bytesConsumed == utf8Text.Length)
-        {
-            result = From(resultLong, unit);
-            return true;
-        }
+            return TryFrom(resultLong, unit, out result);
 
         if (System.Buffers.Text.Utf8Parser.TryParse(utf8Text, out double resultDouble, out bytesConsumed) && bytesConsumed == utf8Text.Length)
-        {
-            result = From(resultDouble, unit);
-            return true;
-        }
+            return TryFrom(resultDouble, unit, out result);
 
         result = default;
         return false;

@@ -356,4 +356,32 @@ public sealed class ByteSizeTests
             Assert.Equal(size, ByteSize.Parse(System.Text.Encoding.UTF8.GetBytes(formatted).AsSpan()));
         }
     }
+
+    [Theory]
+    [InlineData("99999999999PB")]
+    [InlineData("10000EB")]
+    [InlineData("9223372036854775808B")]
+    [InlineData("-99999999999999999999B")]
+    [InlineData("1e30MB")]
+    [InlineData("NaN")]
+    [InlineData("Infinity")]
+    [InlineData("-Infinity")]
+    public void TryParse_ValueDoesNotFitInLong_ReturnsFalse(string str)
+    {
+        Assert.False(ByteSize.TryParse(str, CultureInfo.InvariantCulture, out _));
+        Assert.False(ByteSize.TryParse(str.AsSpan(), CultureInfo.InvariantCulture, out _));
+        Assert.False(ByteSize.TryParse(System.Text.Encoding.UTF8.GetBytes(str).AsSpan(), out _));
+
+        Assert.Throws<FormatException>(() => ByteSize.Parse(str, CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData("9223372036854775807B", long.MaxValue)]
+    [InlineData("-9223372036854775808B", long.MinValue)]
+    [InlineData("9223PB", 9_223_000_000_000_000_000L)]
+    public void TryParse_ValueAtTheEdgeOfLong_StillSucceeds(string str, long expected)
+    {
+        Assert.True(ByteSize.TryParse(str, CultureInfo.InvariantCulture, out var result));
+        Assert.Equal(expected, result.Value);
+    }
 }

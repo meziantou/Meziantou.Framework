@@ -27,18 +27,8 @@ namespace Meziantou.Framework;
 /// </summary>
 public class DefaultConverter : IConverter
 {
-    private static readonly MethodInfo EnumTryParseMethodInfo = GetEnumTryParseMethodInfo();
-
     /// <summary>Gets or sets the format to use when converting byte arrays to strings.</summary>
     public ByteArrayToStringFormat ByteArrayToStringFormat { get; set; } = ByteArrayToStringFormat.Base64;
-
-    private static MethodInfo GetEnumTryParseMethodInfo()
-    {
-        // Enum.TryParse<T>(string value, bool ignoreCase, out T value)
-        return typeof(Enum)
-            .GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .First(m => string.Equals(m.Name, nameof(Enum.TryParse), StringComparison.Ordinal) && m.IsGenericMethod && m.GetParameters().Length == 3);
-    }
 
     /// <summary>Attempts to convert an input value to the specified type.</summary>
     /// <param name="input">The value to convert.</param>
@@ -125,15 +115,6 @@ public class DefaultConverter : IConverter
             return string.IsNullOrWhiteSpace(s);
 
         return false;
-    }
-
-    private static bool EnumTryParse(Type type, string? input, out object? value)
-    {
-        var mi = EnumTryParseMethodInfo.MakeGenericMethod(type);
-        object?[] args = [input, true, Enum.ToObject(type, 0)];
-        var b = (bool)mi.Invoke(null, args)!;
-        value = args[2];
-        return b;
     }
 
     private static string ToHexa(byte[]? bytes)
@@ -294,7 +275,7 @@ public class DefaultConverter : IConverter
     /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     protected virtual bool TryConvertEnum(object? input, Type conversionType, IFormatProvider? provider, out object? value)
     {
-        return EnumTryParse(conversionType, Convert.ToString(input, provider), out value);
+        return Enum.TryParse(conversionType, Convert.ToString(input, provider), ignoreCase: true, out value);
     }
 
     /// <summary>Converts a string to a byte array, supporting Base64 and hexadecimal formats.</summary>

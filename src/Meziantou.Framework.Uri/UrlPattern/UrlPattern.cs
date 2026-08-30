@@ -236,6 +236,9 @@ public sealed class UrlPattern
         processedInit.Search ??= "*";
         processedInit.Hash ??= "*";
 
+        // Normalize the port before comparing it to the default port, so that "0443" collapses like "443"
+        processedInit.Port = CanonicalizePort(processedInit.Port);
+
         // If protocol is a special scheme and port matches its default port, set port to empty string
         if (SpecialSchemes.Contains(processedInit.Protocol) &&
             DefaultPorts.TryGetValue(processedInit.Protocol, out var defaultPort) &&
@@ -752,19 +755,21 @@ public sealed class UrlPattern
 
     private static string CanonicalizePort(string value)
     {
-        // Validate that port is numeric or empty
         if (string.IsNullOrEmpty(value))
             return value;
 
+        // Anything that is not a plain number is a pattern ("*", ":p", "80{80}?") and is matched as written
         foreach (var c in value)
         {
-            if (!char.IsDigit(c))
-            {
+            if (!char.IsAsciiDigit(c))
                 return value;
-            }
         }
 
-        return value;
+        // "0443" and "443" are the same port
+        if (!ushort.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var port))
+            return value;
+
+        return port.ToString(CultureInfo.InvariantCulture);
     }
 
     private static string CanonicalizePathname(string value)

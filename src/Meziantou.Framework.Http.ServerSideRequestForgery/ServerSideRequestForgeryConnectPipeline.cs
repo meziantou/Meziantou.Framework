@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery;
@@ -8,6 +9,12 @@ internal static class ServerSideRequestForgeryConnectPipeline
 {
     // Reserved TLD (RFC2606): never a real destination, so a proxy returned for it is the handler's proxy address.
     private static readonly Uri[] ProxyProbeUris = [new("https://ssrf-proxy-probe.invalid/"), new("http://ssrf-proxy-probe.invalid/")];
+
+    // Short enough that a proxy reconfiguration takes effect promptly, long enough to cover a burst of connections.
+    // The window is not attacker-controlled: it bounds how long a change the application makes takes to be observed.
+    internal const long ProxyProbeCacheDurationMs = 1000;
+
+    private static readonly ConditionalWeakTable<IWebProxy, ProxyProbeCache> ProxyProbeCaches = [];
 
     internal static void Configure(SocketsHttpHandler handler, ServerSideRequestForgeryOptions options, IDnsIpAddressResolver dnsIpAddressResolver)
     {
@@ -231,13 +238,53 @@ internal static class ServerSideRequestForgeryConnectPipeline
         if (ProxyAddressMatchesEndPoint(proxy, requestUri, dnsEndPoint, unknownMeansProxied: true))
             return true;
 
-        foreach (var probeUri in ProxyProbeUris)
+        foreach (var probeAddress in GetProbeProxyAddresses(proxy))
         {
-            if (ProxyAddressMatchesEndPoint(proxy, probeUri, dnsEndPoint, unknownMeansProxied: false))
+            if (probeAddress is not null && MatchesEndPoint(probeAddress, dnsEndPoint))
                 return true;
         }
 
         return false;
+    }
+
+    // The probe destinations are constant, so the answer depends only on the proxy, not on the request. Resolving
+    // them per connection is what costs: a PAC-backed proxy evaluates the script for every lookup, and WinHTTP
+    // caches by URL, so the reserved probe destinations are a permanent cache miss while the real request URI is
+    // not. Caching them per proxy instance for a short window collapses that cost across a burst of connections.
+    private static Uri?[] GetProbeProxyAddresses(IWebProxy proxy)
+    {
+        var cache = ProxyProbeCaches.GetOrCreateValue(proxy);
+        var cachedAddresses = cache.TryGet();
+        if (cachedAddresses is not null)
+            return cachedAddresses;
+
+        var addresses = new Uri?[ProxyProbeUris.Length];
+        for (var i = 0; i < ProxyProbeUris.Length; i++)
+        {
+            addresses[i] = TryGetProxyAddress(proxy, ProxyProbeUris[i]);
+        }
+
+        cache.Set(addresses);
+        return addresses;
+    }
+
+    /// <summary>Resolves the proxy address for a probe destination, or <see langword="null"/> when the proxy does not apply to it.</summary>
+    private static Uri? TryGetProxyAddress(IWebProxy proxy, Uri destination)
+    {
+        Uri? proxyUri;
+        try
+        {
+            proxyUri = proxy.GetProxy(destination);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // A probe destination the proxy dislikes tells us nothing and must not fail an ordinary request.
+            return null;
+        }
+
+        // IWebProxy reports "no proxy for this destination" either by returning null (HttpClient.DefaultProxy)
+        // or by returning the destination itself (WebProxy when the address is bypassed).
+        return proxyUri == destination ? null : proxyUri;
     }
 
     private static bool ProxyAddressMatchesEndPoint(IWebProxy proxy, Uri destination, DnsEndPoint dnsEndPoint, bool unknownMeansProxied)
@@ -250,7 +297,7 @@ internal static class ServerSideRequestForgeryConnectPipeline
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // A proxy that cannot answer for the real request is treated as one that applies, so the connection
-            // fails closed. A probe destination it dislikes tells us nothing and must not fail an ordinary request.
+            // fails closed.
             return unknownMeansProxied;
         }
 
@@ -259,8 +306,34 @@ internal static class ServerSideRequestForgeryConnectPipeline
         if (proxyUri is null || proxyUri == destination)
             return false;
 
+        return MatchesEndPoint(proxyUri, dnsEndPoint);
+    }
+
+    private static bool MatchesEndPoint(Uri proxyUri, DnsEndPoint dnsEndPoint)
+    {
         return proxyUri.Port == dnsEndPoint.Port
             && string.Equals(NormalizeHost(proxyUri.IdnHost), NormalizeHost(dnsEndPoint.Host), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed class ProxyProbeCache
+    {
+        private Uri?[]? _addresses;
+        private long _expiresAt;
+
+        public Uri?[]? TryGet()
+        {
+            var addresses = Volatile.Read(ref _addresses);
+            if (addresses is null || Environment.TickCount64 >= Volatile.Read(ref _expiresAt))
+                return null;
+
+            return addresses;
+        }
+
+        public void Set(Uri?[] addresses)
+        {
+            Volatile.Write(ref _expiresAt, Environment.TickCount64 + ProxyProbeCacheDurationMs);
+            Volatile.Write(ref _addresses, addresses);
+        }
     }
 
     private static bool IsAllowedScheme(Uri requestUri, ServerSideRequestForgeryOptions options)

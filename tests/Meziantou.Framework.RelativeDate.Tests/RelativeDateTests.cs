@@ -66,6 +66,8 @@ public class RelativeDateTests
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 00:01:00Z", "a minute ago", "il y a une minute" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 00:10:00Z", "10 minutes ago", "il y a 10 minutes" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 01:00:00Z", "an hour ago", "il y a une heure" };
+            yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 01:30:00Z", "an hour ago", "il y a une heure" };
+            yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 01:59:00Z", "an hour ago", "il y a une heure" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 02:00:00Z", "2 hours ago", "il y a 2 heures" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/02 00:00:00Z", "yesterday", "hier" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/03 00:00:00Z", "2 days ago", "il y a 2 jours" };
@@ -78,6 +80,8 @@ public class RelativeDateTests
             yield return new object[] { "2018/01/01 00:00:25Z", "2018/01/01 00:00:00Z", "in 25 seconds", "dans 25 secondes" };
             yield return new object[] { "2018/01/01 00:10:00Z", "2018/01/01 00:00:00Z", "in 10 minutes", "dans 10 minutes" };
             yield return new object[] { "2018/01/01 01:00:00Z", "2018/01/01 00:00:00Z", "in an hour", "dans une heure" };
+            yield return new object[] { "2018/01/01 01:30:00Z", "2018/01/01 00:00:00Z", "in an hour", "dans une heure" };
+            yield return new object[] { "2018/01/01 01:59:00Z", "2018/01/01 00:00:00Z", "in an hour", "dans une heure" };
             yield return new object[] { "2018/01/01 00:01:00Z", "2018/01/01 00:00:00Z", "in a minute", "dans une minute" };
             yield return new object[] { "2018/01/01 02:00:00Z", "2018/01/01 00:00:00Z", "in 2 hours", "dans 2 heures" };
             yield return new object[] { "2018/01/02 00:00:00Z", "2018/01/01 00:00:00Z", "tomorrow", "demain" };

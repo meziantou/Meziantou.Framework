@@ -1490,6 +1490,112 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void HttpContent_DoesNotDeadlockUnderSingleThreadedSynchronizationContext()
+    {
+        using var completed = new ManualResetEventSlim();
+        string? result = null;
+
+        var thread = new Thread(() =>
+        {
+            var context = new SingleThreadedSynchronizationContext();
+            SynchronizationContext.SetSynchronizationContext(context);
+            context.Post(_ =>
+            {
+                try
+                {
+                    using var message = new StreamContent(new ContextCapturingStream());
+                    message.Headers.TryAddWithoutValidation("Content-Type", "text/plain");
+                    result = HumanReadableSerializer.Serialize(message);
+                }
+                finally
+                {
+                    completed.Set();
+                    context.Complete();
+                }
+            }, state: null);
+
+            context.RunLoop();
+        })
+        {
+            IsBackground = true,
+        };
+
+        thread.Start();
+
+        Assert.True(completed.Wait(TimeSpan.FromSeconds(30)), "Serializing the content deadlocked");
+        Assert.Equal("""
+            Headers:
+              Content-Type: text/plain
+            Value: xxx
+            """, result, ignoreLineEndingDifferences: true);
+    }
+
+    // Continuations are posted back to the captured context, which is what deadlocks a
+    // caller that blocks on the read. A hand-written stream in a test fixture behaves this way.
+    private sealed class ContextCapturingStream : Stream
+    {
+        private int _remaining = 3;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush() { }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            await Task.Yield();
+            if (_remaining-- <= 0)
+                return 0;
+
+            buffer.Span[0] = (byte)'x';
+            return 1;
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    private sealed class SingleThreadedSynchronizationContext : SynchronizationContext
+    {
+        private readonly BlockingCollection<(SendOrPostCallback Callback, object? State)> _queue = [];
+
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            try
+            {
+                _queue.Add((d, state));
+            }
+            catch (InvalidOperationException)
+            {
+                // The queue is completed, the loop has already stopped
+            }
+        }
+
+        public void Complete() => _queue.CompleteAdding();
+
+        public void RunLoop()
+        {
+            foreach (var (callback, state) in _queue.GetConsumingEnumerable())
+            {
+                callback(state);
+            }
+        }
+    }
+
+    [Fact]
     public void HttpContent_ByteArrayContent_WithHeaders()
     {
         using var message = new ByteArrayContent([1, 2, 3, 4, 5, 6, 7, 8, 9])

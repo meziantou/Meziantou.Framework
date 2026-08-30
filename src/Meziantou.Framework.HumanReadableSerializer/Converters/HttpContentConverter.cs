@@ -40,7 +40,7 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
         {
             if (CanReadAsString(value))
             {
-                var str = value.ReadAsStringAsync().Result;
+                var str = ReadSynchronously(value.ReadAsStringAsync);
 
                 var mediaType = value.Headers.ContentType?.MediaType;
                 if (mediaType is not null)
@@ -54,12 +54,25 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
             }
             else
             {
-                var bytes = value.ReadAsByteArrayAsync().Result;
+                var bytes = ReadSynchronously(value.ReadAsByteArrayAsync);
                 options.GetConverter(typeof(byte[])).WriteValue(writer, bytes, typeof(byte[]), options);
             }
         }
 
         writer.EndObject();
+    }
+
+    // The serializer is synchronous, so the content has to be drained on the calling thread.
+    // Task.Run detaches the read from the ambient SynchronizationContext: without it, content
+    // whose continuations post back to a single-threaded context (a UI thread, or a custom
+    // Stream in a test fixture) deadlocks against the thread blocked here.
+    // ConfigureAwait(false) is not enough, as it only applies to the awaits owned by this method.
+    private static T ReadSynchronously<T>(Func<Task<T>> read)
+    {
+        if (SynchronizationContext.Current is null)
+            return read().GetAwaiter().GetResult();
+
+        return Task.Run(read).GetAwaiter().GetResult();
     }
 
     private static bool CanReadAsString(HttpContent content)

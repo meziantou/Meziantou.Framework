@@ -154,6 +154,12 @@ public sealed class ByteSizeTests
     }
 
     [Fact]
+    public void Subtract_SubtractsTheValue()
+    {
+        Assert.Equal(1_000L, ByteSize.FromKiloBytes(3).Subtract(ByteSize.FromKiloBytes(2)).Value);
+    }
+
+    [Fact]
     public void From_Overflow_ThrowsOverflowException()
     {
         Assert.Throws<OverflowException>(() => ByteSize.From(long.MaxValue, ByteSizeUnit.KiloByte));

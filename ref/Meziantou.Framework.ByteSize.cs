@@ -41,6 +41,8 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.ByteSize operator /(Meziantou.Framework.ByteSize value1, Meziantou.Framework.ByteSize value2) => throw null;
         public static implicit operator Meziantou.Framework.ByteSize(long value) => throw null;
         public Meziantou.Framework.ByteSize Add(Meziantou.Framework.ByteSize other) => throw null;
+        public Meziantou.Framework.ByteSize Subtract(Meziantou.Framework.ByteSize other) => throw null;
+        [System.Obsolete("Misspelled. Use Subtract instead. This method will be removed in the next major version.")]
         public Meziantou.Framework.ByteSize Substract(Meziantou.Framework.ByteSize other) => throw null;
         public Meziantou.Framework.ByteSize Multiply(long multiplier) => throw null;
         public Meziantou.Framework.ByteSize Divide(long divisor) => throw null;

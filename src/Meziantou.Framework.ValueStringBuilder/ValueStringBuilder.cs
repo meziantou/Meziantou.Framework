@@ -50,8 +50,8 @@ ref partial struct ValueStringBuilder
         readonly get => _pos;
         set
         {
-            Debug.Assert(value >= 0);
-            Debug.Assert(value <= _chars.Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _chars.Length);
             _pos = value;
         }
     }
@@ -67,7 +67,7 @@ ref partial struct ValueStringBuilder
     /// <param name="capacity">The minimum capacity required.</param>
     public void EnsureCapacity(int capacity)
     {
-        Debug.Assert(capacity >= 0);
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         if ((uint)capacity > (uint)_chars.Length)
         {
@@ -113,7 +113,8 @@ ref partial struct ValueStringBuilder
     {
         get
         {
-            Debug.Assert(index < _pos);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _pos);
             return ref _chars[index];
         }
     }
@@ -168,6 +169,10 @@ ref partial struct ValueStringBuilder
     /// <param name="count">The number of times to insert it.</param>
     public void Insert(int index, char value, int count)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _pos);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+
         if (_pos > _chars.Length - count)
         {
             Grow(count);
@@ -190,6 +195,9 @@ ref partial struct ValueStringBuilder
         {
             return;
         }
+
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _pos);
 
         var count = s.Length;
         if (_pos > _chars.Length - count)
@@ -266,6 +274,8 @@ ref partial struct ValueStringBuilder
     /// <param name="count">The number of times to append it.</param>
     public void Append(char c, int count)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+
         if (_pos > _chars.Length - count)
         {
             Grow(count);
@@ -305,6 +315,8 @@ ref partial struct ValueStringBuilder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Span<char> AppendSpan(int length)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(length);
+
         var origPos = _pos;
         if (origPos > _chars.Length - length)
         {

@@ -200,6 +200,79 @@ public class ValueStringBuilderTests
     private static string ThrowingHole() => throw new InvalidOperationException("boom");
 
     [Fact]
+    public void AppendInterpolatedStringUsesTryFormatInsteadOfToString()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        var value = new TestSpanFormattable("abc", returnFromTryFormat: true);
+
+        sb.Append(CultureInfo.InvariantCulture, $"{value}");
+
+        Assert.Equal(1, value.TryFormatCount);
+        Assert.Equal(0, value.ToStringCount);
+        Assert.Equal("abc", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringGrowsAndRetriesWhenTryFormatDoesNotFit()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 1);
+        var value = new TestSpanFormattable(new string('a', 400), returnFromTryFormat: true);
+
+        sb.Append(CultureInfo.InvariantCulture, $"{value}");
+
+        Assert.True(value.TryFormatCount > 1);
+        Assert.Equal(0, value.ToStringCount);
+        Assert.Equal(new string('a', 400), sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringFallsBackToToStringForNonSpanFormattableValues()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        var value = new FormattableOnly("xyz");
+
+        sb.Append(CultureInfo.InvariantCulture, $"{value}");
+
+        Assert.Equal(1, value.ToStringCount);
+        Assert.Equal("xyz", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringFormatsSpanFormattableValuesInPlace()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 2);
+
+        sb.Append(CultureInfo.InvariantCulture, $"{42}|{2.5}|{DateTime.UnixEpoch:yyyy-MM-dd}|{Guid.Empty}");
+
+        Assert.Equal("42|2.5|1970-01-01|00000000-0000-0000-0000-000000000000", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringPadsSpanFormattableValuesWithoutAllocating()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+
+        sb.Append(CultureInfo.InvariantCulture, $"|{12,6}|{34,-6}|{5,2}|{123456,3}|");
+
+        Assert.Equal("|    12|34    | 5|123456|", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringSupportsNonSpanFormattableValues()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 8);
+
+        sb.Append(CultureInfo.InvariantCulture, $"{new NotSpanFormattable(),8}|{new NotSpanFormattable(),-8}|");
+
+        Assert.Equal("    text|text    |", sb.AsSpan().ToString());
+    }
+
+    private sealed class NotSpanFormattable
+    {
+        public override string ToString() => "text";
+    }
+
+    [Fact]
     public void AppendRuneSupportsSurrogatePairs()
     {
         using var sb = new ValueStringBuilder(initialCapacity: 4);
@@ -233,6 +306,21 @@ public class ValueStringBuilderTests
         Assert.Equal(1, value.TryFormatCount);
         Assert.Equal(1, value.ToStringCount);
         Assert.Equal("fallback", sb.ToString());
+    }
+
+    private sealed class FormattableOnly : IFormattable
+    {
+        private readonly string _value;
+
+        public FormattableOnly(string value) => _value = value;
+
+        public int ToStringCount { get; private set; }
+
+        public string ToString(string? format, IFormatProvider? formatProvider)
+        {
+            ToStringCount++;
+            return _value;
+        }
     }
 
     private sealed class TestSpanFormattable : ISpanFormattable

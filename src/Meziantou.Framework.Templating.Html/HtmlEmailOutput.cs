@@ -149,6 +149,22 @@ public class HtmlEmailOutput(Template template, TextWriter writer) : Output(temp
         }
     }
 
+    /// <summary>
+    /// Captures every section the template left open, so a missing <c>end_section</c> no longer
+    /// discards the metadata. Innermost first, so an outer section still wins when several share a
+    /// name, matching <see cref="EndSection"/>.
+    /// </summary>
+    internal void EndOpenSections()
+    {
+        for (var i = _currentSections.Count - 1; i >= 0; i--)
+        {
+            var section = _currentSections[i];
+            _sections[section.Name] = section.Writer.ToString();
+        }
+
+        _currentSections.Clear();
+    }
+
     /// <summary>Retrieves the content of a previously captured section.</summary>
     /// <param name="name">The name of the section to retrieve.</param>
     /// <returns>The decoded content of the section, or <see langword="null"/> if the section does not exist.</returns>

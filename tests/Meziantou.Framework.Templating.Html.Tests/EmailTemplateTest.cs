@@ -118,4 +118,29 @@ public class EmailTemplateTest
         Assert.Equal("42", metadata.Title);
     }
 
+    [Fact]
+    public void EmailTemplate_UnclosedSection_IsStillCapturedAsMetadata()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("Hello {{@begin_section title}}Subject");
+
+        var result = template.Run(out var metadata);
+
+        Assert.Equal("Hello Subject", result);
+        Assert.NotNull(metadata);
+        Assert.Equal("Subject", metadata.Title);
+    }
+
+    [Fact]
+    public void EmailTemplate_NestedSectionsWithTheSameName_KeepTheOutermostContent()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("{{@begin_section title}}A{{@begin_section title}}B{{@end_section}}C{{@end_section}}");
+
+        var result = template.Run(out var metadata);
+
+        Assert.Equal("ABC", result);
+        Assert.NotNull(metadata);
+        Assert.Equal("ABC", metadata.Title);
+    }
 }

@@ -119,6 +119,7 @@ public class HtmlEmailTemplate : Template
         var htmlEmailOutput = parameters.OfType<HtmlEmailOutput>().FirstOrDefault();
         if (htmlEmailOutput is not null)
         {
+            htmlEmailOutput.EndOpenSections();
             return new HtmlEmailMetadata
             {
                 Title = htmlEmailOutput.GetSection(HtmlEmailOutput.TitleSectionName),

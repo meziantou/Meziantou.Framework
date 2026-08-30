@@ -114,27 +114,99 @@ public sealed class RobotsFile
     /// Returns the <see cref="RobotsGroup"/> that best matches the given <paramref name="userAgent"/>.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// An exact (case-insensitive) match takes precedence over a catch-all (<c>*</c>) group.
     /// Returns <see langword="null"/> when no group matches.
+    /// </para>
+    /// <para>
+    /// When several groups declare the selected user-agent token, their rules are merged into a
+    /// single group, as required by RFC 9309 section 2.2.1. The merged group is not one of the
+    /// instances in <see cref="Groups"/>: it lists the union of the declared tokens, the rules of
+    /// every contributing group in file order, and the first <c>Crawl-delay</c> that was specified.
+    /// When exactly one group matches, that instance is returned as-is.
+    /// </para>
     /// </remarks>
     public RobotsGroup? GetGroup(string userAgent)
     {
         ArgumentNullException.ThrowIfNull(userAgent);
 
-        RobotsGroup? catchAll = null;
+        // An exact product token match wins over the catch-all, so look for one first and only
+        // fall back to '*' when no group names the agent.
+        return SelectGroup(userAgent, matchCatchAll: false) ?? SelectGroup(userAgent, matchCatchAll: true);
+    }
+
+    private RobotsGroup? SelectGroup(string userAgent, bool matchCatchAll)
+    {
+        RobotsGroup? first = null;
+        List<RobotsGroup>? matches = null;
+
         foreach (var group in Groups)
         {
-            foreach (var agent in group.UserAgents)
-            {
-                if (agent.Equals(userAgent, StringComparison.OrdinalIgnoreCase))
-                    return group;
+            if (!DeclaresToken(group, userAgent, matchCatchAll))
+                continue;
 
-                if (agent == "*")
-                    catchAll = group;
+            if (first is null)
+            {
+                first = group;
+            }
+            else
+            {
+                matches ??= [first];
+                matches.Add(group);
             }
         }
 
-        return catchAll;
+        // No duplicates: hand back the parsed instance without allocating anything.
+        if (matches is null)
+            return first;
+
+        var agents = new List<string>();
+        var rules = new List<RobotsRule>();
+        TimeSpan? crawlDelay = null;
+
+        foreach (var group in matches)
+        {
+            foreach (var agent in group.UserAgents)
+            {
+                if (!ContainsToken(agents, agent))
+                    agents.Add(agent);
+            }
+
+            foreach (var rule in group.Rules)
+            {
+                rules.Add(rule);
+            }
+
+            crawlDelay ??= group.CrawlDelay;
+        }
+
+        return new RobotsGroup(agents, rules, crawlDelay);
+    }
+
+    private static bool DeclaresToken(RobotsGroup group, string userAgent, bool matchCatchAll)
+    {
+        foreach (var agent in group.UserAgents)
+        {
+            var isMatch = matchCatchAll
+                ? agent == "*"
+                : agent.Equals(userAgent, StringComparison.OrdinalIgnoreCase);
+
+            if (isMatch)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool ContainsToken(List<string> agents, string agent)
+    {
+        foreach (var existing in agents)
+        {
+            if (existing.Equals(agent, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -190,6 +262,11 @@ public sealed class RobotsFile
         private List<string>? _currentAgents;
         private List<RobotsRule>? _currentRules;
         private TimeSpan? _currentCrawlDelay;
+
+        // Whether the current group has moved past its User-agent lines into its body. Crawl-delay
+        // is part of the body but is not stored in _currentRules, so the count of rules alone
+        // cannot tell a continued group from a new one.
+        private bool _currentGroupHasBody;
 
         // Completed data.
         private List<RobotsGroup>? _groups;
@@ -249,8 +326,9 @@ public sealed class RobotsFile
 
             if (directive.Equals("User-agent", StringComparison.OrdinalIgnoreCase))
             {
-                // A User-agent line after rules have started means a new group.
-                if (_currentRules is { Count: > 0 })
+                // Consecutive User-agent lines share one group; a User-agent line that follows the
+                // group's body starts a new one.
+                if (_currentGroupHasBody)
                     FlushGroup();
 
                 _currentAgents ??= [];
@@ -258,19 +336,25 @@ public sealed class RobotsFile
             }
             else if (directive.Equals("Allow", StringComparison.OrdinalIgnoreCase))
             {
+                _currentGroupHasBody = true;
                 _currentRules ??= [];
                 _currentRules.Add(new RobotsRule(RobotsRuleKind.Allow, value.ToString()));
             }
             else if (directive.Equals("Disallow", StringComparison.OrdinalIgnoreCase))
             {
+                _currentGroupHasBody = true;
                 _currentRules ??= [];
                 _currentRules.Add(new RobotsRule(RobotsRuleKind.Disallow, value.ToString()));
             }
             else if (directive.Equals("Crawl-delay", StringComparison.OrdinalIgnoreCase))
             {
-                if (double.TryParse(value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var seconds) && seconds >= 0)
+                // The line belongs to the group body whether or not its value parses, so grouping
+                // does not depend on the validity of the delay.
+                _currentGroupHasBody = true;
+
+                if (TryParseCrawlDelay(value, out var crawlDelay))
                 {
-                    _currentCrawlDelay = TimeSpan.FromSeconds(seconds);
+                    _currentCrawlDelay = crawlDelay;
                 }
                 else
                 {
@@ -316,9 +400,7 @@ public sealed class RobotsFile
         {
             if (_currentAgents is null or { Count: 0 })
             {
-                _currentAgents = null;
-                _currentRules = null;
-                _currentCrawlDelay = null;
+                ResetGroup();
                 return;
             }
 
@@ -328,15 +410,45 @@ public sealed class RobotsFile
                 (IReadOnlyList<RobotsRule>?)_currentRules ?? [],
                 _currentCrawlDelay));
 
+            ResetGroup();
+        }
+
+        private void ResetGroup()
+        {
             _currentAgents = null;
             _currentRules = null;
             _currentCrawlDelay = null;
+            _currentGroupHasBody = false;
         }
 
         private static ReadOnlySpan<char> StripComment(ReadOnlySpan<char> line)
         {
             var hash = line.IndexOf('#');
             return hash < 0 ? line : line[..hash];
+        }
+
+        // TimeSpan.MaxValue is a little over 922_337_203_685.47 seconds. Rounded down to a whole
+        // second it is still ~29_227 years, which is far beyond any meaningful crawl delay, and it
+        // keeps TimeSpan.FromSeconds safely inside Int64 ticks.
+        private const double MaxCrawlDelaySeconds = 922_337_203_685d;
+
+        private static bool TryParseCrawlDelay(ReadOnlySpan<char> value, out TimeSpan crawlDelay)
+        {
+            // NumberStyles.Float rather than NumberStyles.Any: a duration has no thousands
+            // separator, no currency symbol and no accounting parentheses, so "1,000" and "(5)"
+            // are malformed rather than 1000 seconds and -5 seconds.
+            // The upper bound also rejects NaN and infinity, which fail every comparison and would
+            // otherwise make TimeSpan.FromSeconds throw out of this deliberately lenient parser.
+            if (double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds)
+                && seconds >= 0
+                && seconds <= MaxCrawlDelaySeconds)
+            {
+                crawlDelay = TimeSpan.FromSeconds(seconds);
+                return true;
+            }
+
+            crawlDelay = default;
+            return false;
         }
     }
 }

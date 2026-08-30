@@ -34,24 +34,47 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
     private const byte MaxSubAuthorities = 15;
     private const int MaxBinaryLength = 1 + 1 + 6 + (MaxSubAuthorities * 4); // 4 bytes for each subauth
 
-    internal SecurityIdentifier(PSID sid)
+    private readonly byte[] _sid;
+    private (string? Domain, string? Name)? _account;
+
+    internal unsafe SecurityIdentifier(PSID sid)
     {
         if (sid == default)
             throw new ArgumentNullException(nameof(sid));
 
-        LookupName(sid, out var domain, out var name);
-        Domain = domain;
-        Name = name;
+        // The SID is only valid for the lifetime of the caller's buffer, so keep a copy for the deferred lookup
+        _sid = new Span<byte>(sid.Value, (int)PInvoke.GetLengthSid(sid)).ToArray();
         Sid = ConvertSidToStringSid(sid);
     }
 
     /// <summary>Gets the domain name associated with the SID.</summary>
     /// <value>The domain name, or <see langword="null"/> if the SID could not be resolved.</value>
-    public string? Domain { get; }
+    /// <remarks>Resolved on first access, which may query the local security authority or a domain controller.</remarks>
+    /// <exception cref="Win32Exception">The account lookup failed.</exception>
+    public string? Domain => Account.Domain;
 
     /// <summary>Gets the account name associated with the SID.</summary>
     /// <value>The account name, or <see langword="null"/> if the SID could not be resolved.</value>
-    public string? Name { get; }
+    /// <remarks>Resolved on first access, which may query the local security authority or a domain controller.</remarks>
+    /// <exception cref="Win32Exception">The account lookup failed.</exception>
+    public string? Name => Account.Name;
+
+    private unsafe (string? Domain, string? Name) Account
+    {
+        get
+        {
+            if (_account is null)
+            {
+                fixed (byte* pointer = _sid)
+                {
+                    LookupName(new PSID(pointer), out var domain, out var name);
+                    _account = (domain, name);
+                }
+            }
+
+            return _account.Value;
+        }
+    }
 
     /// <summary>Gets the string representation of the SID (e.g., "S-1-5-21-...").</summary>
     public string Sid { get; }

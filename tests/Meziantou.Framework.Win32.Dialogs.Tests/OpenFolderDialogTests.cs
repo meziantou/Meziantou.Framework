@@ -1,5 +1,5 @@
-using Meziantou.Framework.Win32.Natives;
 using Meziantou.Xunit;
+using Windows.Win32.UI.Shell;
 
 namespace Meziantou.Framework.Win32.Tests;
 
@@ -10,7 +10,7 @@ public class OpenFolderDialogTests
     {
         var options = OpenFolderDialog.CreateOptions(changeCurrentDirectory: false);
 
-        Assert.Equal(FOS.FOS_FORCEFILESYSTEM | FOS.FOS_PICKFOLDERS | FOS.FOS_NOCHANGEDIR, options);
+        Assert.Equal(FILEOPENDIALOGOPTIONS.FOS_FORCEFILESYSTEM | FILEOPENDIALOGOPTIONS.FOS_PICKFOLDERS | FILEOPENDIALOGOPTIONS.FOS_NOCHANGEDIR, options);
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
@@ -18,7 +18,7 @@ public class OpenFolderDialogTests
     {
         var options = OpenFolderDialog.CreateOptions(changeCurrentDirectory: true);
 
-        Assert.Equal(FOS.FOS_FORCEFILESYSTEM | FOS.FOS_PICKFOLDERS, options);
+        Assert.Equal(FILEOPENDIALOGOPTIONS.FOS_FORCEFILESYSTEM | FILEOPENDIALOGOPTIONS.FOS_PICKFOLDERS, options);
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
@@ -76,9 +76,5 @@ public class OpenFolderDialogTests
         Assert.NotNull(item);
     }
 
-    private static string GetFileSystemPath(IShellItem item)
-    {
-        item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out var path);
-        return path;
-    }
+    private static string GetFileSystemPath(IShellItem item) => OpenFolderDialog.GetFileSystemPath(item);
 }

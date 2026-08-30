@@ -126,6 +126,48 @@ public sealed partial class WriterTests
         Assert.Equal(0, document.RootElement.GetArrayLength());
     }
 
+    public static TheoryData<object> SupportedArgumentValues() => new()
+    {
+        "text",
+        (bool)true,
+        (byte)1,
+        (sbyte)1,
+        (char)'c',
+        (short)1,
+        (ushort)1,
+        (int)1,
+        (uint)1,
+        (long)1,
+        (ulong)1,
+        (float)1.5f,
+        (double)1.5,
+        (decimal)1.5m,
+        Guid.Empty,
+        new DateTime(2024, 5, 6, 7, 8, 9, DateTimeKind.Utc),
+        new DateTimeOffset(2024, 5, 6, 7, 8, 9, TimeSpan.Zero),
+        TimeSpan.FromSeconds(1),
+        new Uri("https://example.com"),
+    };
+
+    [Theory]
+    [MemberData(nameof(SupportedArgumentValues))]
+    public async Task ArgumentValuesOfCommonTypesCanBeSerialized(object value)
+    {
+        using var stream = new MemoryStream();
+        await using (var writer = ChromiumTracingWriter.Create(stream, streamOwned: false))
+        {
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent
+            {
+                Name = "Sample",
+                Arguments = new Dictionary<string, object?>(StringComparer.Ordinal) { ["value"] = value },
+            });
+        }
+
+        using var document = JsonDocument.Parse(stream.ToArray());
+        Assert.Equal(1, document.RootElement.GetArrayLength());
+        Assert.True(document.RootElement[0].GetProperty("args").TryGetProperty("value", out _));
+    }
+
     private sealed record CustomPayload(int Value);
 
     private sealed class UnserializableArgument;

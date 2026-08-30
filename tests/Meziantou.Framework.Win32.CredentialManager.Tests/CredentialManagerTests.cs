@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using Meziantou.Xunit;
 
@@ -198,6 +199,118 @@ public sealed partial class CredentialManagerTests
         Assert.Empty(credentials);
     }
 
+    // The credential prompts need a UI, so the dialogs themselves cannot be tested. The two buffer helpers behind
+    // them can: CredPackAuthenticationBuffer and CredUnPackAuthenticationBuffer are documented as a pair, so
+    // GetInputBuffer's output is exactly what GetCredentialsFromOutputBuffer expects.
+    [Theory, RunIf(TestOperatingSystems.Windows)]
+    [InlineData("john", "Pa$$w0rd")]
+    [InlineData("john", "")]
+    [InlineData("CONTOSO\\john", "Pa$$w0rd")]
+    [SupportedOSPlatform("windows6.0.6000")]
+    public unsafe void CredentialManager_AuthenticationBuffer_RoundTrips(string user, string password)
+    {
+        CredentialManager.GetInputBuffer(user, password, out var buffer, out var size);
+        Assert.NotEqual(IntPtr.Zero, (IntPtr)buffer);
+
+        // GetCredentialsFromOutputBuffer zeroes and frees the buffer it is given.
+        Assert.True(CredentialManager.GetCredentialsFromOutputBuffer(buffer, size, out var actualUser, out var actualPassword, out var actualDomain));
+
+        var (expectedDomain, expectedUser) = user.Split('\\') is [var d, var u] ? (d, u) : ("", user);
+        Assert.Equal(expectedUser, actualUser);
+        Assert.Equal(expectedDomain, actualDomain);
+        Assert.Equal(password, actualPassword);
+    }
+
+    // 1024 bytes, the size this used to hard-code, is not enough for a long user name plus a password.
+    [Theory, RunIf(TestOperatingSystems.Windows)]
+    [InlineData(400, 200)]
+    [InlineData(513, 256)]
+    [SupportedOSPlatform("windows6.0.6000")]
+    public unsafe void CredentialManager_AuthenticationBuffer_RoundTripsLongCredentials(int userLength, int passwordLength)
+    {
+        var user = new string('u', userLength);
+        var password = new string('p', passwordLength);
+
+        CredentialManager.GetInputBuffer(user, password, out var buffer, out var size);
+        Assert.NotEqual(IntPtr.Zero, (IntPtr)buffer);
+        Assert.True(size > 1024, $"expected the packed buffer to exceed 1024 bytes, was {size}");
+
+        Assert.True(CredentialManager.GetCredentialsFromOutputBuffer(buffer, size, out var actualUser, out var actualPassword, out _));
+        Assert.Equal(user, actualUser);
+        Assert.Equal(password, actualPassword);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    [SupportedOSPlatform("windows6.0.6000")]
+    public unsafe void CredentialManager_GetInputBuffer_NoUserName_PacksNothing()
+    {
+        CredentialManager.GetInputBuffer(user: null, password: "Pa$$w0rd", out var buffer, out var size);
+        Assert.Equal(IntPtr.Zero, (IntPtr)buffer);
+        Assert.Equal(0u, size);
+
+        CredentialManager.GetInputBuffer(user: "", password: "Pa$$w0rd", out buffer, out size);
+        Assert.Equal(IntPtr.Zero, (IntPtr)buffer);
+        Assert.Equal(0u, size);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_ToString_DoesNotExposeThePassword()
+    {
+        using var context = new IsolatedContext();
+        var credentialName = context.GetCredentialName();
+        CredentialManager.WriteCredential(credentialName, "John", "Pa$$w0rd", "Test", CredentialPersistence.Session);
+        try
+        {
+            var cred = CredentialManager.ReadCredential(credentialName);
+            Assert.NotNull(cred);
+            Assert.Equal("Pa$$w0rd", cred.Password);
+
+            var text = cred.ToString();
+            Assert.DoesNotContain("Pa$$w0rd", text);
+            Assert.Contains("Password: ******", text);
+            Assert.Contains("UserName: John", text);
+        }
+        finally
+        {
+            CredentialManager.DeleteCredential(credentialName);
+        }
+    }
+
+    [Fact]
+    public void Credential_ToString_WithoutPassword_DoesNotShowTheMask()
+    {
+        var cred = new Credential(CredentialType.Generic, "App", "John", password: null, "Test");
+        Assert.Equal("CredentialType: Generic, ApplicationName: App, UserName: John, Password: , Comment: Test", cred.ToString());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_ReadCredential_NullApplicationName_Throws()
+    {
+        var ex = Assert.Throws<ArgumentNullException>(() => CredentialManager.ReadCredential(null!));
+        Assert.Equal("applicationName", ex.ParamName);
+
+        ex = Assert.Throws<ArgumentNullException>(() => CredentialManager.ReadCredential(null!, CredentialType.DomainPassword));
+        Assert.Equal("applicationName", ex.ParamName);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_LimitComment_TooLong()
+    {
+        using var context = new IsolatedContext();
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => CredentialManager.WriteCredential(context.GetCredentialName(), "John", "Doe", new string('a', 256), CredentialPersistence.Session));
+        Assert.Equal("comment", ex.ParamName);
+        Assert.StartsWith("The comment message has exceeded 255 characters.", ex.Message);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_LimitSecret_TooLong()
+    {
+        using var context = new IsolatedContext();
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => CredentialManager.WriteCredential(context.GetCredentialName(), "John", new string('a', 1281), CredentialPersistence.Session));
+        Assert.Equal("secret", ex.ParamName);
+        Assert.StartsWith("The secret message has exceeded 2560 bytes.", ex.Message);
+    }
+
     [Theory, RunIf(TestOperatingSystems.Windows)]
     [InlineData(new byte[] { 0xDE, 0xAD, 0xBE, 0xEF, 0x01, 0x02, 0x03 })] // odd length
     [InlineData(new byte[] { 0x00, 0xD8, 0x41, 0x00 })] // unpaired high surrogate
@@ -302,24 +415,6 @@ public sealed partial class CredentialManagerTests
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CredWriteW(in CREDENTIALW credential, uint Flags);
-    }
-
-    [Fact, RunIf(TestOperatingSystems.Windows)]
-    public void CredentialManager_LimitComment_TooLong()
-    {
-        using var context = new IsolatedContext();
-        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => CredentialManager.WriteCredential(context.GetCredentialName(), "John", "Doe", new string('a', 256), CredentialPersistence.Session));
-        Assert.Equal("comment", ex.ParamName);
-        Assert.StartsWith("The comment message has exceeded 255 characters.", ex.Message);
-    }
-
-    [Fact, RunIf(TestOperatingSystems.Windows)]
-    public void CredentialManager_LimitSecret_TooLong()
-    {
-        using var context = new IsolatedContext();
-        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => CredentialManager.WriteCredential(context.GetCredentialName(), "John", new string('a', 1281), CredentialPersistence.Session));
-        Assert.Equal("secret", ex.ParamName);
-        Assert.StartsWith("The secret message has exceeded 2560 bytes.", ex.Message);
     }
 
     private sealed class IsolatedContext : IDisposable

@@ -180,6 +180,20 @@ public class RestartManagerTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void Operations_AfterDispose_ThrowObjectDisposedException()
+    {
+        var session = RestartManager.CreateSession();
+        session.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => session.RegisterFiles([@"C:\does-not-matter.txt"]));
+        Assert.Throws<ObjectDisposedException>(() => _ = session.GetProcessesLockingResources());
+        Assert.Throws<ObjectDisposedException>(() => _ = session.GetLockingProcesses());
+        Assert.Throws<ObjectDisposedException>(() => session.Shutdown(RestartManagerShutdownType.ForceShutdown));
+        Assert.Throws<ObjectDisposedException>(() => session.Restart());
+        Assert.Throws<ObjectDisposedException>(() => session.CancelCurrentTask());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void IsResourcesLocked_ReflectsTheCurrentStateOfRegisteredFiles()
     {
         var unlockedPath = Path.GetTempFileName();

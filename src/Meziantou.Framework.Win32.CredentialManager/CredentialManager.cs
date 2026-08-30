@@ -402,7 +402,7 @@ public static class CredentialManager
     }
 
     [SupportedOSPlatform("windows6.0.6000")]
-    private static unsafe void GetInputBuffer(string? user, string? password, out byte* inCredBuffer, out uint inCredSize)
+    internal static unsafe void GetInputBuffer(string? user, string? password, out byte* inCredBuffer, out uint inCredSize)
     {
         if (!string.IsNullOrEmpty(user))
         {
@@ -422,14 +422,16 @@ public static class CredentialManager
     }
 
     [SupportedOSPlatform("windows6.0.6000")]
-    private static unsafe bool GetCredentialsFromOutputBuffer(void* outCredBuffer, uint outCredSize, [NotNullWhen(returnValue: true)] out string? userName, [NotNullWhen(returnValue: true)] out string? password, [NotNullWhen(returnValue: true)] out string? domain)
+    internal static unsafe bool GetCredentialsFromOutputBuffer(void* outCredBuffer, uint outCredSize, [NotNullWhen(returnValue: true)] out string? userName, [NotNullWhen(returnValue: true)] out string? password, [NotNullWhen(returnValue: true)] out string? domain)
     {
-        var maxUserName = PInvoke.CREDUI_MAX_USERNAME_LENGTH;
-        var maxDomain = PInvoke.CREDUI_MAX_USERNAME_LENGTH;
-        var maxPassword = PInvoke.CREDUI_MAX_USERNAME_LENGTH;
+        // The lengths CredUnPackAuthenticationBuffer reports include the terminating null, so leave room for it.
+        const uint BufferLength = PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1;
+        var maxUserName = BufferLength;
+        var maxDomain = BufferLength;
+        var maxPassword = BufferLength;
         Span<char> usernameBuf = new char[maxUserName];
-        Span<char> passwordBuf = new char[maxDomain];
-        Span<char> domainBuf = new char[maxPassword];
+        Span<char> domainBuf = new char[maxDomain];
+        Span<char> passwordBuf = new char[maxPassword];
         try
         {
             fixed (char* usernamePtr = usernameBuf)
@@ -438,9 +440,13 @@ public static class CredentialManager
             {
                 if (PInvoke.CredUnPackAuthenticationBuffer(default, outCredBuffer, outCredSize, new PWSTR(usernamePtr), &maxUserName, new PWSTR(domainPtr), &maxDomain, new PWSTR(passwordPtr), &maxPassword))
                 {
-                    userName = ToString(usernameBuf, maxUserName);
-                    password = ToString(passwordBuf, maxPassword);
-                    domain = ToString(domainBuf, maxDomain);
+                    // Read up to the terminating null rather than trusting the reported lengths. On success they
+                    // are not a reliable string length: the user name is reported two characters longer than it
+                    // is, and when the credential carries no domain the domain length is left at the buffer size
+                    // and the domain buffer is never written to at all.
+                    userName = ToStringZero(usernameBuf);
+                    password = ToStringZero(passwordBuf);
+                    domain = ToStringZero(domainBuf);
 
                     if (string.IsNullOrWhiteSpace(domain))
                     {
@@ -483,16 +489,6 @@ public static class CredentialManager
             var zeroBytes = new byte[outCredSize];
             Marshal.Copy(zeroBytes, 0, (nint)outCredBuffer, (int)outCredSize);
             FreeCoTaskMem((nint)outCredBuffer);
-        }
-
-        static string ToString(ReadOnlySpan<char> buffer, uint length)
-        {
-            if (length == 0)
-                return "";
-
-            // Remove trailing \0
-            Debug.Assert(buffer[(int)length] == '\0');
-            return buffer.Slice(0, (int)length - 1).ToString();
         }
 
         static string ToStringZero(ReadOnlySpan<char> buffer)

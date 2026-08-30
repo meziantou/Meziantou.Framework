@@ -410,10 +410,20 @@ public static class CredentialManager
             fixed (char* passwordPtr = password ?? "")
             fixed (uint* inCredSizePtr = &inCredSize)
             {
-                inCredSize = 1024;
-                inCredBuffer = (byte*)Marshal.AllocCoTaskMem((int)inCredSize);
-                if (PInvoke.CredPackAuthenticationBuffer(default, userPtr, passwordPtr, inCredBuffer, inCredSizePtr))
-                    return;
+                // Ask for the required size first. A user name and password can need more than 1500 bytes, so a
+                // fixed buffer is not enough for every valid input.
+                inCredSize = 0;
+                PInvoke.CredPackAuthenticationBuffer(default, userPtr, passwordPtr, pPackedCredentials: null, inCredSizePtr);
+                if (inCredSize > 0)
+                {
+                    inCredBuffer = (byte*)Marshal.AllocCoTaskMem((int)inCredSize);
+                    if (PInvoke.CredPackAuthenticationBuffer(default, userPtr, passwordPtr, inCredBuffer, inCredSizePtr))
+                        return;
+
+                    // Do not leave the partially packed credential behind.
+                    NativeMemory.Clear(inCredBuffer, inCredSize);
+                    Marshal.FreeCoTaskMem((nint)inCredBuffer);
+                }
             }
         }
 

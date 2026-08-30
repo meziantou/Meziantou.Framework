@@ -218,6 +218,24 @@ public sealed class CredentialManagerTests
         Assert.Equal(password, actualPassword);
     }
 
+    // 1024 bytes, the size this used to hard-code, is not enough for a long user name plus a password.
+    [Theory, RunIf(TestOperatingSystems.Windows)]
+    [InlineData(400, 200)]
+    [SupportedOSPlatform("windows6.0.6000")]
+    public unsafe void CredentialManager_AuthenticationBuffer_RoundTripsLongCredentials(int userLength, int passwordLength)
+    {
+        var user = new string('u', userLength);
+        var password = new string('p', passwordLength);
+
+        CredentialManager.GetInputBuffer(user, password, out var buffer, out var size);
+        Assert.NotEqual(IntPtr.Zero, (IntPtr)buffer);
+        Assert.True(size > 1024, $"expected the packed buffer to exceed 1024 bytes, was {size}");
+
+        Assert.True(CredentialManager.GetCredentialsFromOutputBuffer(buffer, size, out var actualUser, out var actualPassword, out _));
+        Assert.Equal(user, actualUser);
+        Assert.Equal(password, actualPassword);
+    }
+
     [Fact, RunIf(TestOperatingSystems.Windows)]
     [SupportedOSPlatform("windows6.0.6000")]
     public unsafe void CredentialManager_GetInputBuffer_NoUserName_PacksNothing()

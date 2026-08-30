@@ -15,3 +15,5 @@ TOKEN_ELEVATION
 ConvertSidToStringSid
 CreateWellKnownSid
 LookupAccountSid
+LocalFree
+GetLengthSid

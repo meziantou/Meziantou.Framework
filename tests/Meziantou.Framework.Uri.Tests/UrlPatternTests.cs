@@ -1215,4 +1215,48 @@ public sealed class UrlPatternTests
         Assert.NotNull(result);
         Assert.Equal("css/styles/main.css", result.Pathname.Groups["path"]);
     }
+
+    // https://urlpattern.spec.whatwg.org/ - "https://example.com" matches any URL on that origin
+    [Fact]
+    public void Create_BareOrigin_MatchesAnyUrlOnThatOrigin()
+    {
+        var pattern = UrlPattern.Create("https://example.com");
+
+        Assert.Equal("*", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com/"));
+        Assert.True(pattern.IsMatch("https://example.com/anything"));
+        Assert.True(pattern.IsMatch("https://example.com/a/b/c?q=1#h"));
+        Assert.False(pattern.IsMatch("https://other.com/anything"));
+    }
+
+    [Fact]
+    public void Create_BareOriginWithPort_MatchesAnyUrlOnThatOrigin()
+    {
+        var pattern = UrlPattern.Create("https://example.com:8443");
+
+        Assert.Equal("*", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com:8443/anything"));
+        Assert.False(pattern.IsMatch("https://example.com/anything"));
+    }
+
+    [Fact]
+    public void Create_OriginWithTrailingSlash_MatchesOnlyTheRoot()
+    {
+        var pattern = UrlPattern.Create("https://example.com/");
+
+        Assert.Equal("/", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com/"));
+        Assert.False(pattern.IsMatch("https://example.com/anything"));
+    }
+
+    [Fact]
+    public void Create_OriginWithHash_StillDefaultsThePathnameToTheRoot()
+    {
+        var pattern = UrlPattern.Create("https://example.com#section");
+
+        Assert.Equal("/", pattern.Pathname);
+        Assert.Equal("section", pattern.Hash);
+        Assert.True(pattern.IsMatch("https://example.com/#section"));
+        Assert.False(pattern.IsMatch("https://example.com/anything#section"));
+    }
 }

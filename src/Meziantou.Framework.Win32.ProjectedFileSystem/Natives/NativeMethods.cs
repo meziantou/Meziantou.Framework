@@ -17,10 +17,13 @@ internal static class NativeMethods
         return ToHResult(PInvoke.PrjMarkDirectoryAsPlaceholder(rootPathName, targetPathName, versionInfo: null, in virtualizationInstanceID));
     }
 
-    internal static unsafe HResult PrjStartVirtualizing(string virtualizationRootPath, in ProjFs.PRJ_CALLBACKS callbacks, IntPtr instanceContext, in ProjFs.PRJ_STARTVIRTUALIZING_OPTIONS options, out ProjFSSafeHandle namespaceVirtualizationContext)
+    internal static unsafe HResult PrjStartVirtualizing(string virtualizationRootPath, in ProjFs.PRJ_CALLBACKS callbacks, IntPtr instanceContext, in ProjFs.PRJ_STARTVIRTUALIZING_OPTIONS options, out ProjFSSafeHandle? namespaceVirtualizationContext)
     {
         var hr = ToHResult(PInvoke.PrjStartVirtualizing(virtualizationRootPath, in callbacks, (void*)instanceContext, options, out var context));
-        namespaceVirtualizationContext = new ProjFSSafeHandle((IntPtr)context, ownHandle: true);
+
+        // Only take ownership when the call succeeded. On failure the out parameter is not a
+        // handle the driver ever gave out, and wrapping it leaves the instance looking started.
+        namespaceVirtualizationContext = hr.IsSuccess ? new ProjFSSafeHandle((IntPtr)context, ownHandle: true) : null;
         return hr;
     }
 

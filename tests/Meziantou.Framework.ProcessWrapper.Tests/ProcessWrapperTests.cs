@@ -152,6 +152,32 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_DoesNotChangeTheAmbientActivityOfTheCaller()
+    {
+        var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var listener = CreateProcessWrapperActivityListener(activity => activityTask.TrySetResult(activity));
+        ActivitySource.AddActivityListener(listener);
+
+        using var ambientSource = new ActivitySource("Meziantou.Framework.ProcessWrapper.Tests.Ambient");
+        using var ambientListener = new ActivityListener
+        {
+            ShouldListenTo = static source => source.Name == "Meziantou.Framework.ProcessWrapper.Tests.Ambient",
+            Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+        };
+        ActivitySource.AddActivityListener(ambientListener);
+
+        using var ambientActivity = ambientSource.StartActivity("ambient");
+        Assert.NotNull(ambientActivity);
+
+        await CreateEchoCommand("test").ExecuteAsync();
+
+        // The process activity is emitted, but it must not replace the caller's ambient activity.
+        var processActivity = await activityTask.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal("process.execute", processActivity.OperationName);
+        Assert.Same(ambientActivity, Activity.Current);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WithOutputStream_Action()
     {
         var lines = new List<string>();

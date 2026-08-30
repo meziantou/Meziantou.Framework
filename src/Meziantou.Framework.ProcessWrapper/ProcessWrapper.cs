@@ -627,8 +627,16 @@ public sealed class ProcessWrapper
             registration = cancellationToken.Register(static state => ProcessInstance.KillProcess((IProcessHandle)state!, entireProcessTree: true), processHandle);
         }
 
+        // StartActivity makes the new activity ambient on this thread, but it is stopped later from the
+        // completion task. Activity.Stop only restores Activity.Current where it runs, so the caller
+        // would keep a stopped activity as its ambient one and parent everything it does next to it.
+        var previousActivity = Activity.Current;
         var activity = ProcessWrapperTelemetry.ActivitySource.StartActivity("process.execute");
-        activity?.SetTag("process.executable.path", resolvedFileName);
+        if (activity is not null)
+        {
+            activity.SetTag("process.executable.path", resolvedFileName);
+            Activity.Current = previousActivity;
+        }
 
         return factory(processHandle, inputStreamTask, Task.WhenAll(outputStreamTask, errorStreamTask), registration, processLimiter, () => Volatile.Read(ref hasStandardErrorOutput) != 0, activity, processFileName, arguments, _logVerbosity, cancellationToken);
     }

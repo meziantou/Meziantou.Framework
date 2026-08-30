@@ -202,6 +202,24 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Theory]
+    [InlineData(1)]
+    [InlineData(100)]
+    [InlineData(4097)]
+    [InlineData(5000)]
+    [InlineData(70_000)]
+    [InlineData(1024 * 1024)]
+    public void Constructor_WithInitialCapacity_ComposesTiersInsteadOfRoundingUp(int initialCapacity)
+    {
+        using var stream = new PooledMemoryStream(initialCapacity);
+
+        // The reservation is built from configured tiers, so the excess stays below the smallest tier (4 KiB by
+        // default). It used to round the whole request up to the next tier: 70_000 reserved 1 MiB.
+        Assert.True(stream.Capacity >= initialCapacity);
+        Assert.True(stream.Capacity - initialCapacity < 4096);
+        Assert.Equal(0, stream.Length);
+    }
+
+    [Theory]
     [InlineData(10)]
     [InlineData(1000)]
     [InlineData(100_000)]

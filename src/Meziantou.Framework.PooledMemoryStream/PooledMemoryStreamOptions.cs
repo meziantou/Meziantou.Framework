@@ -102,6 +102,23 @@ public sealed class PooledMemoryStreamOptions
     }
 
     /// <summary>
+    /// Returns the block size to use when reserving <paramref name="remaining"/> more bytes of capacity: the largest
+    /// tier that fits, or the smallest tier when less than that is left. Reservations are composed of several blocks
+    /// rather than rounded up to a single larger tier, which keeps the over-allocation below the smallest tier.
+    /// </summary>
+    internal int GetReservationBlockSize(long remaining)
+    {
+        var sizes = _bufferSizes;
+        for (var i = sizes.Length - 1; i >= 0; i--)
+        {
+            if (remaining >= sizes[i])
+                return sizes[i];
+        }
+
+        return sizes[0];
+    }
+
+    /// <summary>
     /// Returns a discrete array size that is at least <paramref name="minimumSize"/> bytes. The result is one of the
     /// configured tiers, or a multiple of the largest tier when a single contiguous buffer larger than the largest
     /// tier is required (e.g. <c>GetSpan</c> with a big hint, or <c>GetBuffer</c> on a large stream).

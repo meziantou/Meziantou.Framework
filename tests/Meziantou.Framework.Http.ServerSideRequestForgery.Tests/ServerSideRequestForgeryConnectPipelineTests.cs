@@ -317,7 +317,25 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     [InlineData("2002:7f00:0001::")]
     [InlineData("2002:a9fe:a9fe::")]
     [InlineData("2001::1")]
+    [InlineData("64:ff9b:1::7f00:1")]
+    [InlineData("64:ff9b:1::a9fe:a9fe")]
+    [InlineData("::ffff:0:7f00:1")]
+    [InlineData("::ffff:0:a9fe:a9fe")]
     public async Task ResolveAndSelectIpAddressAsync_RejectsAddressEmbeddingUnsafeIpv4Target(string address)
+    {
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://example.com"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: new ServerSideRequestForgeryOptions(),
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse(address)]),
+            cancellationToken: CancellationToken.None).AsTask());
+    }
+
+    [Theory]
+    // Deprecated IPv6 site-local addresses (RFC3879) sit between fc00::/7 and fe80::/10 and are private scope.
+    [InlineData("fec0::1")]
+    [InlineData("feff::1")]
+    public async Task ResolveAndSelectIpAddressAsync_RejectsSiteLocalAddress(string address)
     {
         await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
             requestUri: new Uri("https://example.com"),
@@ -333,6 +351,8 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     [InlineData("2003::1")]
     [InlineData("192.1.0.1")]
     [InlineData("192.89.0.1")]
+    [InlineData("64:ff9b:2::1")]
+    [InlineData("2001:db8::1")]
     public async Task ResolveAndSelectIpAddressAsync_AllowsGlobalUnicastAddressNearBlockedRange(string address)
     {
         var options = new ServerSideRequestForgeryOptions

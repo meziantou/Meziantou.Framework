@@ -116,9 +116,18 @@ public sealed class PooledMemoryStreamOptions
         }
 
         // Larger than the largest tier: round up to a multiple of it so the size stays discrete and poolable.
+        // Computed in long: "minimumSize + largest - 1" overflows int once minimumSize approaches Array.MaxLength,
+        // which made 'multiples' negative or zero and handed a bogus length to Rent. The 'checked' on the multiply
+        // never caught it, because the addition had already wrapped.
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(minimumSize, Array.MaxLength);
+
         var largest = sizes[^1];
-        var multiples = (minimumSize + largest - 1) / largest;
-        return checked(multiples * largest);
+        var multiples = ((long)minimumSize + largest - 1) / largest;
+        var size = multiples * largest;
+
+        // A rounded-up size can pass Array.MaxLength even when minimumSize itself fits. Clamp instead of failing:
+        // an Array.MaxLength array still satisfies the request.
+        return size > Array.MaxLength ? Array.MaxLength : (int)size;
     }
 
     private void ThrowIfFrozen()

@@ -413,6 +413,44 @@ public sealed class PooledMemoryStreamTests
         Assert.Throws<ArgumentOutOfRangeException>(() => options.BufferSizes = [.. sizes]);
     }
 
+    [Theory]
+    // Just past the point where "minimumSize + largest - 1" wraps int: used to return int.MinValue.
+    [InlineData(2_146_435_073)]
+    // Array.MaxLength itself: used to return -2146435072.
+    [InlineData(2_147_483_591)]
+    public void GetContiguousBlockSize_NearArrayMaxLength_StaysPositiveAndAtLeastTheRequest(int minimumSize)
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4096, 65536, 1024 * 1024] };
+
+        var size = options.GetContiguousBlockSize(minimumSize);
+
+        Assert.True(size >= minimumSize);
+        Assert.True(size <= Array.MaxLength);
+    }
+
+    [Fact]
+    public void GetContiguousBlockSize_AboveArrayMaxLength_Throws()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4096, 65536, 1024 * 1024] };
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => options.GetContiguousBlockSize(int.MaxValue));
+    }
+
+    [Theory]
+    [InlineData(1_000_000_000)]
+    [InlineData(2_000_000_000)]
+    public void GetContiguousBlockSize_WithAHugeSingleTier_DoesNotReturnZero(int tier)
+    {
+        // The overflow path only runs when minimumSize exceeds the largest tier, so reaching it needs a tier above
+        // ~1 GiB. Exercised through the options object so the test costs no allocation.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [tier] };
+
+        var size = options.GetContiguousBlockSize(tier + 1);
+
+        Assert.True(size >= tier + 1);
+        Assert.True(size <= Array.MaxLength);
+    }
+
     [Fact]
     public void Options_Default_IsFrozen()
     {

@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework;
@@ -12,27 +13,49 @@ ref partial struct ValueStringBuilder
 {
     public void Append([InterpolatedStringHandlerArgument("")] ref AppendInterpolatedStringHandler handler)
     {
-        this = handler._valueStringBuilder;
+        AppendAndDispose(ref handler);
     }
 
     public void Append(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", nameof(provider))] ref AppendInterpolatedStringHandler handler)
     {
         _ = provider;
 
-        this = handler._valueStringBuilder;
+        AppendAndDispose(ref handler);
+    }
+
+    private void AppendAndDispose(ref AppendInterpolatedStringHandler handler)
+    {
+        try
+        {
+            Append(handler._valueStringBuilder.AsSpan());
+        }
+        finally
+        {
+            handler._valueStringBuilder.Dispose();
+        }
     }
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     [InterpolatedStringHandler]
+    [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "The handler is only created by the compiler for an interpolated string argument, and the Append overload it is passed to always disposes the buffer.")]
     public ref struct AppendInterpolatedStringHandler
     {
+        // Matches the heuristic used by DefaultInterpolatedStringHandler: assume ~11 characters per hole.
+        private const int GuessedLengthPerHole = 11;
+        private const int MinimumLength = 16;
+
         internal ValueStringBuilder _valueStringBuilder;
         private readonly IFormatProvider? _provider;
         private readonly bool _hasCustomFormatter;
 
         public AppendInterpolatedStringHandler(int literalLength, int formattedCount, ValueStringBuilder valueStringBuilder)
         {
-            _valueStringBuilder = valueStringBuilder;
+            // The handler must not share the buffer of the builder it appends to. It receives a copy of that
+            // builder, so growing it here would return the caller's pooled array while the caller still points
+            // at it, and an exception thrown between two holes would leave the copy - and the appended text -
+            // unreachable. Building into a private buffer keeps the caller's builder untouched until Append runs.
+            _ = valueStringBuilder;
+            _valueStringBuilder = new ValueStringBuilder(GetInitialCapacity(literalLength, formattedCount));
             _provider = null;
             _hasCustomFormatter = false;
         }
@@ -45,7 +68,8 @@ ref partial struct ValueStringBuilder
 
         public AppendInterpolatedStringHandler(int literalLength, int formattedCount, ValueStringBuilder valueStringBuilder, IFormatProvider? provider)
         {
-            _valueStringBuilder = valueStringBuilder;
+            _ = valueStringBuilder;
+            _valueStringBuilder = new ValueStringBuilder(GetInitialCapacity(literalLength, formattedCount));
             _provider = provider;
             _hasCustomFormatter = provider?.GetFormat(typeof(ICustomFormatter)) is ICustomFormatter;
         }
@@ -169,6 +193,11 @@ ref partial struct ValueStringBuilder
         public void AppendFormatted(string? value, int alignment = 0, string? format = null) => AppendFormatted<string?>(value, alignment, format);
 
         public void AppendFormatted(object? value, int alignment = 0, string? format = null) => AppendFormatted<object?>(value, alignment, format);
+
+        private static int GetInitialCapacity(int literalLength, int formattedCount)
+        {
+            return Math.Max(MinimumLength, literalLength + (formattedCount * GuessedLengthPerHole));
+        }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void AppendCustomFormatter<T>(T value, string? format)

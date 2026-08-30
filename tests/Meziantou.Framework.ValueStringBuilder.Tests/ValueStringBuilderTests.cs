@@ -1,3 +1,6 @@
+using System.Buffers;
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Tests;
 
 public class ValueStringBuilderTests
@@ -100,6 +103,101 @@ public class ValueStringBuilderTests
 
         Assert.Equal("A=<12>, B=<34>", sb.ToString());
     }
+
+    [Fact]
+    public void AppendInterpolatedStringDoesNotShareItsBufferWithTheBuilderWhenAHoleThrows()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 32);
+        try
+        {
+            // The literal forces the handler to grow before the throwing hole is evaluated.
+            sb.Append($"{new string('x', 200)}{ThrowingHole()}");
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        var rented = ArrayPool<char>.Shared.Rent(32);
+        try
+        {
+            Assert.False(Unsafe.AreSame(ref sb.GetPinnableReference(), ref rented[0]));
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(rented);
+        }
+
+        sb.Append("still usable");
+        Assert.Equal("still usable", sb.ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringReturnsTheBufferOnlyOnceWhenAHoleThrows()
+    {
+        var sb = new ValueStringBuilder(initialCapacity: 32);
+        try
+        {
+            sb.Append($"{new string('x', 200)}{ThrowingHole()}");
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        sb.Dispose();
+
+        var first = ArrayPool<char>.Shared.Rent(32);
+        var second = ArrayPool<char>.Shared.Rent(32);
+        try
+        {
+            Assert.NotSame(first, second);
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(first);
+            ArrayPool<char>.Shared.Return(second);
+        }
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringLeavesTheBuilderUntouchedWhenAHoleThrows()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 32);
+        sb.Append("before");
+
+        try
+        {
+            sb.Append($"{new string('x', 200)}{ThrowingHole()}");
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        Assert.Equal("before", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringGrowsTheBuilderWhenTheResultIsLarger()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 2);
+        var value = new string('a', 500);
+
+        sb.Append(CultureInfo.InvariantCulture, $"{value}|{value}");
+
+        Assert.Equal(value + "|" + value, sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringWorksWithAStackAllocatedBuffer()
+    {
+        Span<char> initialBuffer = stackalloc char[4];
+        using var sb = new ValueStringBuilder(initialBuffer);
+
+        sb.Append(CultureInfo.InvariantCulture, $"{new string('z', 50)}");
+
+        Assert.Equal(new string('z', 50), sb.AsSpan().ToString());
+    }
+
+    private static string ThrowingHole() => throw new InvalidOperationException("boom");
 
     [Fact]
     public void AppendRuneSupportsSurrogatePairs()

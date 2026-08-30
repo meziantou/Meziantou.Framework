@@ -176,6 +176,86 @@ public sealed class RobotsFileTests
         Assert.Single(robots.Groups);
     }
 
+    [Fact]
+    public void Parse_UserAgentAfterCrawlDelay_StartsANewGroup()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: A
+            Crawl-delay: 5
+            User-agent: B
+            Disallow: /
+            """);
+
+        Assert.Equal(2, robots.Groups.Count);
+        Assert.Equal(["A"], robots.Groups[0].UserAgents);
+        Assert.Equal(["B"], robots.Groups[1].UserAgents);
+        Assert.Equal(TimeSpan.FromSeconds(5), robots.GetCrawlDelay("A"));
+        Assert.Null(robots.GetCrawlDelay("B"));
+        Assert.True(robots.IsAllowed("A", "/anything"));
+        Assert.False(robots.IsAllowed("B", "/anything"));
+    }
+
+    [Fact]
+    public void Parse_UserAgentAfterInvalidCrawlDelay_StartsANewGroup()
+    {
+        // Grouping is structural: it must not depend on whether the delay value parses.
+        var robots = RobotsFile.Parse("""
+            User-agent: A
+            Crawl-delay: notanumber
+            User-agent: B
+            Disallow: /
+            """);
+
+        Assert.Equal(2, robots.Groups.Count);
+        Assert.True(robots.IsAllowed("A", "/anything"));
+        Assert.False(robots.IsAllowed("B", "/anything"));
+    }
+
+    [Fact]
+    public void Parse_ConsecutiveUserAgents_StillShareOneGroup()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: A
+            User-agent: B
+            Crawl-delay: 5
+            Disallow: /
+            """);
+
+        var group = Assert.Single(robots.Groups);
+        Assert.Equal(["A", "B"], group.UserAgents);
+        Assert.Equal(TimeSpan.FromSeconds(5), group.CrawlDelay);
+    }
+
+    [Fact]
+    public void Parse_SitemapInsideAGroup_DoesNotStartANewGroup()
+    {
+        // Sitemap is a file-level record, not part of a group body.
+        var robots = RobotsFile.Parse("""
+            User-agent: A
+            Sitemap: https://example.com/sitemap.xml
+            User-agent: B
+            Disallow: /
+            """);
+
+        var group = Assert.Single(robots.Groups);
+        Assert.Equal(["A", "B"], group.UserAgents);
+        Assert.Equal(["https://example.com/sitemap.xml"], robots.Sitemaps);
+    }
+
+    [Fact]
+    public void Parse_UnknownDirectiveBetweenUserAgents_DoesNotStartANewGroup()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: A
+            Host: example.com
+            User-agent: B
+            Disallow: /
+            """);
+
+        var group = Assert.Single(robots.Groups);
+        Assert.Equal(["A", "B"], group.UserAgents);
+    }
+
     // -------------------------------------------------------------------------
     // GetGroup
     // -------------------------------------------------------------------------

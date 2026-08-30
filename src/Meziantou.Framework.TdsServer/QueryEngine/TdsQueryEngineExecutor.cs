@@ -2328,7 +2328,7 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var navigator = CreateXmlContextNavigator(xmlValue.Value);
-        var evaluation = navigator.Evaluate(xquery);
+        var evaluation = EvaluateXPath(navigator, xquery);
         if (evaluation is XPathNodeIterator iterator)
         {
             var fragments = new List<string>();
@@ -2354,7 +2354,7 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var navigator = CreateXmlContextNavigator(xmlValue.Value);
-        var evaluation = navigator.Evaluate(xquery);
+        var evaluation = EvaluateXPath(navigator, xquery);
         if (evaluation is XPathNodeIterator iterator)
         {
             if (!iterator.MoveNext())
@@ -2392,7 +2392,7 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var navigator = CreateXmlContextNavigator(xmlValue.Value);
-        var evaluation = navigator.Evaluate(xquery);
+        var evaluation = EvaluateXPath(navigator, xquery);
         if (evaluation is XPathNodeIterator iterator)
         {
             return iterator.MoveNext() ? 1 : 0;
@@ -2414,7 +2414,7 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var navigator = CreateXmlContextNavigator(xmlValue.Value);
-        var evaluation = navigator.Evaluate(xquery);
+        var evaluation = EvaluateXPath(navigator, xquery);
         if (evaluation is not XPathNodeIterator iterator)
         {
             return [];
@@ -2474,6 +2474,25 @@ internal sealed class TdsQueryEngineExecutor
         if (validationError is not null)
         {
             throw new TdsQueryEngineException($"XML value is not valid for schema collection '{schemaCollectionName}': {validationError}");
+        }
+    }
+
+    /// <summary>Evaluates the argument of an XML method.</summary>
+    /// <remarks>
+    /// SQL Server's <c>.query()</c>, <c>.value()</c>, <c>.exist()</c> and <c>.nodes()</c> take XQuery; this
+    /// engine evaluates XPath 1.0, which covers the common path expressions but not FLWOR, <c>sql:variable()</c>
+    /// or the XQuery-only functions. Report what is unsupported rather than letting XPathException escape as a
+    /// generic handler failure.
+    /// </remarks>
+    private static object EvaluateXPath(XPathNavigator navigator, string xquery)
+    {
+        try
+        {
+            return navigator.Evaluate(xquery);
+        }
+        catch (XPathException ex)
+        {
+            throw new TdsQueryEngineException($"The XML method expression '{xquery}' is not a supported XPath 1.0 expression: {ex.Message}");
         }
     }
 

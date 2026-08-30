@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
 using Windows.Win32;
@@ -64,6 +63,13 @@ public sealed class OpenFolderDialog
     public string? OkButtonLabel { get; set; }
 
     /// <summary>Gets or sets the initial directory to display when the dialog opens.</summary>
+    /// <remarks>
+    /// The value is resolved by the Windows shell, so it accepts a file system path as well as a
+    /// shell location such as <c>shell:Downloads</c>. A path that uses <c>/</c> as a separator is
+    /// normalized before being resolved. When the value cannot be resolved — it does not exist, it
+    /// is malformed, or it names a drive that is not currently mounted — it is ignored and the
+    /// dialog opens on the folder the shell would have chosen by default.
+    /// </remarks>
     public string? InitialDirectory { get; set; }
 
     /// <summary>Gets the path of the folder selected by the user. This property is populated after <see cref="ShowDialog()"/> returns <see cref="DialogResult.OK"/>.</summary>
@@ -78,24 +84,14 @@ public sealed class OpenFolderDialog
 
     private void Configure(IFileOpenDialog dialog)
     {
-        dialog.SetOptions(CreateOptions());
+        dialog.SetOptions(CreateOptions(ChangeCurrentDirectory));
 
         if (!string.IsNullOrEmpty(InitialDirectory))
         {
-            var result = PInvoke.SHCreateItemFromParsingName(InitialDirectory, null, out IShellItem? shellItem);
-            switch ((int)result)
+            var shellItem = TryCreateShellItem(InitialDirectory);
+            if (shellItem is not null)
             {
-                case NativeMethods.S_OK:
-                    if (shellItem is not null)
-                    {
-                        dialog.SetFolder(shellItem);
-                    }
-
-                    break;
-                case NativeMethods.FILE_NOT_FOUND:
-                    break;
-                default:
-                    throw new Win32Exception((int)result);
+                dialog.SetFolder(shellItem);
             }
         }
 
@@ -110,10 +106,49 @@ public sealed class OpenFolderDialog
         }
     }
 
-    private FOS CreateOptions()
+    /// <summary>Resolves a path or shell location to a shell item, or <see langword="null"/> when the shell cannot parse it.</summary>
+    internal static IShellItem? TryCreateShellItem(string path)
+    {
+        if (TryParse(path, out var shellItem))
+        {
+            return shellItem;
+        }
+
+        // The shell parser only accepts the canonical Windows form. "C:/Users" names an existing
+        // directory as far as .NET is concerned but the shell rejects it, so retry once normalized.
+        if (TryGetFullPath(path, out var fullPath) && !string.Equals(fullPath, path, StringComparison.Ordinal) && TryParse(fullPath, out shellItem))
+        {
+            return shellItem;
+        }
+
+        return null;
+
+        static bool TryParse(string value, [NotNullWhen(true)] out IShellItem? item)
+        {
+            var hr = PInvoke.SHCreateItemFromParsingName(value, null, out IShellItem? result);
+            item = (int)hr == NativeMethods.S_OK ? result : null;
+            return item is not null;
+        }
+
+        static bool TryGetFullPath(string value, [NotNullWhen(true)] out string? fullPath)
+        {
+            try
+            {
+                fullPath = Path.GetFullPath(value);
+                return true;
+            }
+            catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                fullPath = null;
+                return false;
+            }
+        }
+    }
+
+    internal static FOS CreateOptions(bool changeCurrentDirectory)
     {
         var result = FOS.FOS_FORCEFILESYSTEM | FOS.FOS_PICKFOLDERS;
-        if (!ChangeCurrentDirectory)
+        if (!changeCurrentDirectory)
         {
             result |= FOS.FOS_NOCHANGEDIR;
         }

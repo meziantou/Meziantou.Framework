@@ -17,7 +17,10 @@ public static class Slug
     /// <summary>Creates a slug from the specified text using default options.</summary>
     /// <param name="text">The text to convert to a slug.</param>
     /// <returns>A slug generated from the input text, or <see langword="null"/> if <paramref name="text"/> is <see langword="null"/>.</returns>
-    /// <remarks>Text that is not well-formed Unicode is accepted: each ill-formed character is treated as <see cref="Rune.ReplacementChar"/>.</remarks>
+    /// <remarks>Text that is not well-formed Unicode is accepted: each ill-formed character is treated as <see cref="Rune.ReplacementChar"/>.
+    /// <para>The result is an empty string when no character of <paramref name="text"/> is allowed, which is the case for any text
+    /// written outside the default <see cref="SlugOptions.AllowedRanges"/> - every Cyrillic, Greek, Arabic or CJK title, for
+    /// instance. Callers that put the slug in a URL segment or a file path should handle that before using it.</para></remarks>
     [return: NotNullIfNotNull(parameterName: nameof(text))]
     public static string? Create(string? text)
     {
@@ -28,7 +31,10 @@ public static class Slug
     /// <param name="text">The text to convert to a slug.</param>
     /// <param name="options">The options to use for slug generation, or <see langword="null"/> to use default options.</param>
     /// <returns>A slug generated from the input text, or <see langword="null"/> if <paramref name="text"/> is <see langword="null"/>.</returns>
-    /// <remarks>Text that is not well-formed Unicode is accepted: each ill-formed character is treated as <see cref="Rune.ReplacementChar"/>.</remarks>
+    /// <remarks>Text that is not well-formed Unicode is accepted: each ill-formed character is treated as <see cref="Rune.ReplacementChar"/>.
+    /// <para>The result is an empty string when no character of <paramref name="text"/> is allowed, which is the case for any text
+    /// written outside the default <see cref="SlugOptions.AllowedRanges"/> - every Cyrillic, Greek, Arabic or CJK title, for
+    /// instance. Callers that put the slug in a URL segment or a file path should handle that before using it.</para></remarks>
     [return: NotNullIfNotNull(parameterName: nameof(text))]
     public static string? Create(string? text, SlugOptions? options)
     {

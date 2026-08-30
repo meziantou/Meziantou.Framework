@@ -36,15 +36,27 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
 
     /// <summary>Initializes a new instance of the <see cref="RelativeDate"/> struct with the specified date and time provider.</summary>
     /// <param name="dateTime">The date and time. Must have <see cref="DateTimeKind.Local"/> or <see cref="DateTimeKind.Utc"/>.</param>
-    /// <param name="timeProvider">The time provider to use for calculating the relative time. If <see langword="null"/>, <see cref="TimeProvider.System"/> is used.</param>
+    /// <param name="timeProvider">The time provider to use for calculating the relative time. If <see langword="null"/>, <see cref="TimeProvider.System"/> is used. A <see cref="DateTimeKind.Local"/> <paramref name="dateTime"/> is interpreted in this provider's <see cref="TimeProvider.LocalTimeZone"/>.</param>
     /// <exception cref="ArgumentException"><paramref name="dateTime"/> has <see cref="DateTimeKind.Unspecified"/>.</exception>
     public RelativeDate(DateTime dateTime, TimeProvider? timeProvider)
     {
         if (dateTime.Kind == DateTimeKind.Unspecified)
             throw new ArgumentException("Cannot determine if the argument is a local datetime or UTC datetime", nameof(dateTime));
 
-        DateTime = dateTime.ToUniversalTime();
         TimeProvider = timeProvider ?? TimeProvider.System;
+        DateTime = dateTime.Kind is DateTimeKind.Local ? ToUniversalTime(dateTime, TimeProvider.LocalTimeZone) : dateTime;
+
+        static DateTime ToUniversalTime(DateTime dateTime, TimeZoneInfo timeZone)
+        {
+            // ConvertTimeToUtc rejects a Local kind unless the zone is TimeZoneInfo.Local
+            var unspecified = DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified);
+
+            // ConvertTimeToUtc throws on a time skipped by a forward DST transition, where DateTime.ToUniversalTime returns the standard-time reading
+            if (timeZone.IsInvalidTime(unspecified))
+                return DateTime.SpecifyKind(unspecified - timeZone.BaseUtcOffset, DateTimeKind.Utc);
+
+            return TimeZoneInfo.ConvertTimeToUtc(unspecified, timeZone);
+        }
     }
 
     /// <summary>Initializes a new instance of the <see cref="RelativeDate"/> struct with the specified date and system time provider.</summary>

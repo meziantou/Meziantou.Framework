@@ -51,20 +51,18 @@ public static class ConvertUtilities
         var b = converter.TryChangeType(input, typeof(T), provider, out var v);
         if (!b)
         {
-            if (v is null)
+            // A custom IConverter may report a failure with a value that is not assignable to T
+            if (v is T failureValue)
             {
-                if (typeof(T).IsValueType)
-                {
-                    value = Activator.CreateInstance<T>()!;
-                }
-                else
-                {
-                    value = default!;
-                }
+                value = failureValue;
+            }
+            else if (typeof(T).IsValueType)
+            {
+                value = Activator.CreateInstance<T>()!;
             }
             else
             {
-                value = (T)v;
+                value = default!;
             }
 
             return false;

@@ -43,7 +43,8 @@ static partial class IOUtilities
 
         try
         {
-            if (fileSystemInfo is DirectoryInfo directoryInfo)
+            // A reparse point is deleted as a link. Enumerating it would delete the content of its target instead.
+            if (fileSystemInfo is DirectoryInfo directoryInfo && !fileSystemInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
             {
                 foreach (var childInfo in directoryInfo.GetFileSystemInfos())
                 {
@@ -142,7 +143,8 @@ static partial class IOUtilities
 
         try
         {
-            if (fileSystemInfo is DirectoryInfo directoryInfo)
+            // A reparse point is deleted as a link. Enumerating it would delete the content of its target instead.
+            if (fileSystemInfo is DirectoryInfo directoryInfo && !fileSystemInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
             {
                 foreach (var childInfo in directoryInfo.GetFileSystemInfos())
                 {

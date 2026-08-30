@@ -29,6 +29,47 @@ public class IOUtilitiesTests
         await IOUtilities.DeleteAsync(directoryInfo, XunitCancellationToken);
     }
 
+    [Fact]
+    public void DeleteDoesNotFollowADirectorySymbolicLink()
+    {
+        var (link, target, targetFile) = CreateDirectorySymbolicLink();
+
+        IOUtilities.Delete(new DirectoryInfo(link));
+
+        Assert.False(Directory.Exists(link));
+        Assert.True(Directory.Exists(target));
+        Assert.True(File.Exists(targetFile));
+        Directory.Delete(target, recursive: true);
+    }
+
+    [Fact]
+    public async Task DeleteAsyncDoesNotFollowADirectorySymbolicLink()
+    {
+        var (link, target, targetFile) = CreateDirectorySymbolicLink();
+
+        await IOUtilities.DeleteAsync(new DirectoryInfo(link), XunitCancellationToken);
+
+        Assert.False(Directory.Exists(link));
+        Assert.True(Directory.Exists(target));
+        Assert.True(File.Exists(targetFile));
+        Directory.Delete(target, recursive: true);
+    }
+
+    private static (string Link, string Target, string TargetFile) CreateDirectorySymbolicLink()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var target = Path.Combine(root, "target");
+        Directory.CreateDirectory(target);
+
+        var targetFile = Path.Combine(target, "content.txt");
+        File.WriteAllText(targetFile, "content");
+
+        var link = Path.Combine(root, "link");
+        Directory.CreateSymbolicLink(link, target);
+
+        return (link, target, targetFile);
+    }
+
     // FileSystemInfo.Exists is cached, so this reproduces the window between the Exists check
     // and the enumeration of the directory content, without depending on timing.
     private static DirectoryInfo CreateDirectoryRemovedAfterTheExistsCheck()

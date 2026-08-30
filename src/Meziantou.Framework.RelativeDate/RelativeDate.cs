@@ -31,7 +31,10 @@ namespace Meziantou.Framework;
 [StructLayout(LayoutKind.Auto)]
 public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IEquatable<RelativeDate>, IFormattable
 {
-    private TimeProvider TimeProvider { get; }
+    /// <remarks>
+    /// Null on a default instance. A struct cannot intercept its own zero-initialization, so every read must fall back to <see cref="System.TimeProvider.System"/>.
+    /// </remarks>
+    private TimeProvider? TimeProvider { get; }
     private DateTime DateTime { get; }
 
     /// <summary>Initializes a new instance of the <see cref="RelativeDate"/> struct with the specified date and time provider.</summary>
@@ -111,7 +114,8 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
         if (!string.IsNullOrEmpty(format) && !string.Equals(format, "G", StringComparison.Ordinal))
             throw new FormatException($"The '{format}' format string is not supported");
 
-        var now = TimeProvider.GetUtcNow().UtcDateTime;
+        // TimeProvider is null on a default instance: structs cannot intercept their own zero-initialization
+        var now = (TimeProvider ?? TimeProvider.System).GetUtcNow().UtcDateTime;
 
         var delta = now - DateTime;
         var culture = formatProvider as CultureInfo;

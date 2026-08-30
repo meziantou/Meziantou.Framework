@@ -125,6 +125,45 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public void Position_AboveArrayMaxLength_Throws()
+    {
+        using var stream = new PooledMemoryStream();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = (long)Array.MaxLength + 1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = long.MaxValue);
+        Assert.Equal(0, stream.Position);
+
+        stream.Position = Array.MaxLength;
+        Assert.Equal(Array.MaxLength, stream.Position);
+    }
+
+    [Fact]
+    public void Seek_AboveArrayMaxLength_Throws()
+    {
+        using var stream = new PooledMemoryStream();
+        stream.Write(CreateData(100));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(long.MaxValue, SeekOrigin.Begin));
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek((long)Array.MaxLength + 1, SeekOrigin.Begin));
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(Array.MaxLength, SeekOrigin.End));
+    }
+
+    [Fact]
+    public void WriteAtFarPosition_Throws_InsteadOfAllocatingForever()
+    {
+        // Regression: Position was unbounded and WriteCore guarded with "_position + count > Array.MaxLength",
+        // which overflows to a negative value near long.MaxValue. The guard passed and the write fell into an
+        // unbounded zero-fill loop that never returned.
+        using var stream = new PooledMemoryStream();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = long.MaxValue);
+
+        stream.Position = Array.MaxLength;
+        Assert.Throws<IOException>(() => stream.WriteByte(1));
+        Assert.Throws<IOException>(() => stream.Write(CreateData(10)));
+    }
+
+    [Fact]
     public void Overwrite_InTheMiddle()
     {
         using var stream = new PooledMemoryStream(SmallTiers());

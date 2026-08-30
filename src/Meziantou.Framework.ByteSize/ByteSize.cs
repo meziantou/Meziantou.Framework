@@ -64,7 +64,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
     public string ToString(ByteSizeUnit unit) => ToString(unit, formatProvider: null);
 
-    public string ToString(ByteSizeUnit unit, IFormatProvider? formatProvider) => GetValue(unit).ToString(formatProvider) + UnitToString(unit);
+    public string ToString(ByteSizeUnit unit, IFormatProvider? formatProvider) => FormatValue(unit, numberFormat: null, formatProvider) + UnitToString(unit);
 
     public string ToString(IFormatProvider? formatProvider)
     {
@@ -157,7 +157,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
             numberFormat = "F" + number.ToString(CultureInfo.InvariantCulture);
         }
 
-        return GetValue(unit).ToString(numberFormat, formatProvider) + UnitToString(unit);
+        return FormatValue(unit, numberFormat, formatProvider) + UnitToString(unit);
     }
 
     /// <summary>Tries to format the value into the provided span of characters.</summary>
@@ -218,11 +218,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         }
 
         // Format the value
-        var value = GetValue(unit);
         var unitStr = UnitToString(unit);
 
         // Try to format the number part
-        if (!value.TryFormat(destination, out var numberCharsWritten, numberFormat, provider))
+        if (!TryFormatValue(destination, out var numberCharsWritten, unit, numberFormat, provider))
         {
             charsWritten = 0;
             return false;
@@ -292,7 +291,41 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// <returns>The value in the specified unit.</returns>
     public double GetValue(ByteSizeUnit unit)
     {
-        return (double)Value / (long)unit;
+        var divisor = unit switch
+        {
+            ByteSizeUnit.Byte or ByteSizeUnit.KiloByte or ByteSizeUnit.MegaByte or ByteSizeUnit.GigaByte
+                or ByteSizeUnit.TeraByte or ByteSizeUnit.PetaByte or ByteSizeUnit.ExaByte
+                or ByteSizeUnit.KibiByte or ByteSizeUnit.MebiByte or ByteSizeUnit.GibiByte
+                or ByteSizeUnit.TebiByte or ByteSizeUnit.PebiByte or ByteSizeUnit.ExbiByte => (long)unit,
+            _ => throw new ArgumentOutOfRangeException(nameof(unit)),
+        };
+
+        return (double)Value / divisor;
+    }
+
+    // The Byte unit is formatted straight from the long so the value stays exact: going
+    // through double loses integer precision above 2^53 and lets the "G" specifier emit
+    // scientific notation, which none of this type's parsers accept. The scaled units are
+    // fractional by nature and keep using double.
+    private string FormatValue(ByteSizeUnit unit, string? numberFormat, IFormatProvider? formatProvider)
+    {
+        return unit is ByteSizeUnit.Byte
+            ? Value.ToString(numberFormat, formatProvider)
+            : GetValue(unit).ToString(numberFormat, formatProvider);
+    }
+
+    private bool TryFormatValue(Span<char> destination, out int charsWritten, ByteSizeUnit unit, ReadOnlySpan<char> numberFormat, IFormatProvider? provider)
+    {
+        return unit is ByteSizeUnit.Byte
+            ? Value.TryFormat(destination, out charsWritten, numberFormat, provider)
+            : GetValue(unit).TryFormat(destination, out charsWritten, numberFormat, provider);
+    }
+
+    private bool TryFormatValue(Span<byte> utf8Destination, out int bytesWritten, ByteSizeUnit unit, ReadOnlySpan<char> numberFormat, IFormatProvider? provider)
+    {
+        return unit is ByteSizeUnit.Byte
+            ? Value.TryFormat(utf8Destination, out bytesWritten, numberFormat, provider)
+            : GetValue(unit).TryFormat(utf8Destination, out bytesWritten, numberFormat, provider);
     }
 
     private static string UnitToString(ByteSizeUnit unit)
@@ -561,11 +594,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         }
 
         // Format the value
-        var value = GetValue(unit);
         var unitStr = UnitToString(unit);
 
         // Try to format the number part as UTF-8
-        if (!value.TryFormat(utf8Destination, out var numberBytesWritten, numberFormat, provider))
+        if (!TryFormatValue(utf8Destination, out var numberBytesWritten, unit, numberFormat, provider))
         {
             bytesWritten = 0;
             return false;

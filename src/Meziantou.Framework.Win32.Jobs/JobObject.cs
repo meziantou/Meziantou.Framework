@@ -17,7 +17,7 @@ namespace Meziantou.Framework.Win32;
 ///     Flags = JobObjectLimitFlags.KillOnJobClose
 /// });
 /// job.AssignProcess(Process.GetCurrentProcess());
-/// 
+///
 /// // Start a child process that will be terminated when the job is disposed
 /// var childProcess = Process.Start("child.exe");
 /// </code>
@@ -149,6 +149,7 @@ public sealed class JobObject : IDisposable
     public void Dispose() => _jobHandle.Dispose();
 
     /// <summary>Terminates all processes currently associated with the job. If the job is nested, this function terminates all processes currently associated with the job and all of its child jobs in the hierarchy.</summary>
+    /// <exception cref="Win32Exception">The processes could not be terminated.</exception>
     public void Terminate()
     {
         Terminate(1);
@@ -156,9 +157,14 @@ public sealed class JobObject : IDisposable
 
     /// <summary>Terminates all processes currently associated with the job. If the job is nested, this function terminates all processes currently associated with the job and all of its child jobs in the hierarchy.</summary>
     /// <param name="exitCode">The exit code to be used by all processes and threads in the job object.</param>
+    /// <exception cref="Win32Exception">The processes could not be terminated. This happens when the handle does not have the <see cref="JobObjectAccessRights.Terminate"/> access right.</exception>
     public void Terminate(int exitCode)
     {
-        Windows.Win32.PInvoke.TerminateJobObject(_jobHandle, unchecked((uint)exitCode));
+        if (!Windows.Win32.PInvoke.TerminateJobObject(_jobHandle, unchecked((uint)exitCode)))
+        {
+            var err = Marshal.GetLastWin32Error();
+            throw new Win32Exception(err);
+        }
     }
 
     /// <summary>Assigns a process to an existing job object.</summary>
@@ -445,6 +451,7 @@ public sealed class JobObject : IDisposable
             throw new Win32Exception(err);
         }
     }
+
     /// <summary>Sets I/O limits on a job object.</summary>
     [SupportedOSPlatform("windows10.0.10240")]
     public unsafe void SetIoLimits(JobIoRateLimits limits)

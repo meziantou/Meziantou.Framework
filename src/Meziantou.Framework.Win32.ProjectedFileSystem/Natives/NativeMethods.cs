@@ -17,17 +17,20 @@ internal static class NativeMethods
         return ToHResult(PInvoke.PrjMarkDirectoryAsPlaceholder(rootPathName, targetPathName, versionInfo: null, in virtualizationInstanceID));
     }
 
-    internal static unsafe HResult PrjStartVirtualizing(string virtualizationRootPath, in ProjFs.PRJ_CALLBACKS callbacks, IntPtr instanceContext, in ProjFs.PRJ_STARTVIRTUALIZING_OPTIONS options, out ProjFSSafeHandle namespaceVirtualizationContext)
+    internal static unsafe HResult PrjStartVirtualizing(string virtualizationRootPath, in ProjFs.PRJ_CALLBACKS callbacks, IntPtr instanceContext, in ProjFs.PRJ_STARTVIRTUALIZING_OPTIONS options, out ProjFSSafeHandle? namespaceVirtualizationContext)
     {
         var hr = ToHResult(PInvoke.PrjStartVirtualizing(virtualizationRootPath, in callbacks, (void*)instanceContext, options, out var context));
-        namespaceVirtualizationContext = new ProjFSSafeHandle((IntPtr)context, ownHandle: true);
+
+        // Only take ownership when the call succeeded. On failure the out parameter is not a
+        // handle the driver ever gave out, and wrapping it leaves the instance looking started.
+        namespaceVirtualizationContext = hr.IsSuccess ? new ProjFSSafeHandle((IntPtr)context, ownHandle: true) : null;
         return hr;
     }
 
-    internal static HResult PrjStopVirtualizing(IntPtr namespaceVirtualizationContext)
+    // PrjStopVirtualizing has no return value, so there is no status to surface here
+    internal static void PrjStopVirtualizing(IntPtr namespaceVirtualizationContext)
     {
         PInvoke.PrjStopVirtualizing((ProjFs.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT)namespaceVirtualizationContext);
-        return HResult.S_OK;
     }
 
     internal static HResult PrjFillDirEntryBuffer(string fileName, in ProjFs.PRJ_FILE_BASIC_INFO callbacks, IntPtr dirEntryBufferHandle)

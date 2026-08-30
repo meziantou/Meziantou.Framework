@@ -52,7 +52,7 @@ namespace Meziantou.Framework.Win32
         Critical = 1000
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
     public sealed class RestartManagerProcessInfo
     {
         public int ProcessId { get => throw null; }

@@ -151,6 +151,74 @@ public class RelativeDateTests
         }
     }
 
+    [Fact]
+    public void FormatProvider_ExposingACultureFromGetFormat_IsHonored()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var date = RelativeDate.Get(new DateTime(2018, 6, 14, 6, 0, 0, DateTimeKind.Utc), timeProvider);
+
+        Assert.Equal("hier", date.ToString(format: null, new CultureFormatProvider(CultureInfo.GetCultureInfo("fr"))));
+    }
+
+    // Ambient culture is restored in a finally block, but a leak would be observed by anything running beside this test
+    [Fact(DisableParallelization = true)]
+    public void NoFormatProvider_UsesTheCurrentUICulture()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var date = RelativeDate.Get(new DateTime(2018, 6, 14, 6, 0, 0, DateTimeKind.Utc), timeProvider);
+
+        var previousCulture = CultureInfo.CurrentCulture;
+        var previousUICulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
+            Assert.Equal("hier", date.ToString());
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+            CultureInfo.CurrentUICulture = previousUICulture;
+        }
+    }
+
+    // Swaps both LocalizationProvider.Current and the ambient culture, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public void NoFormatProvider_PassesTheResolvedCultureToTheProvider()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var date = RelativeDate.Get(new DateTime(2018, 6, 14, 6, 0, 0, DateTimeKind.Utc), timeProvider);
+
+        var previousProvider = LocalizationProvider.Current;
+        var previousUICulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            LocalizationProvider.Current = new CultureEchoLocalizationProvider();
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
+
+            // Without resolution the provider receives null and has to guess the culture itself
+            Assert.Equal("fr", date.ToString());
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousUICulture;
+            LocalizationProvider.Current = previousProvider;
+        }
+    }
+
+    private sealed class CultureFormatProvider(CultureInfo culture) : IFormatProvider
+    {
+        public object? GetFormat(Type? formatType) => formatType == typeof(CultureInfo) ? culture : null;
+    }
+
+    private sealed class CultureEchoLocalizationProvider : ILocalizationProvider
+    {
+        public string GetString(string name, CultureInfo? culture) => culture?.Name ?? "<null>";
+    }
+
     private static string GetDigits(string value) => string.Concat(value.Where(char.IsAsciiDigit));
 #endif
 }

@@ -560,12 +560,22 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         else if (right.Minor is { } rightMinor)
         {
             // Partial minor: <X.(Y+1).0
+            if (rightMinor is int.MaxValue)
+            {
+                return false;
+            }
+
             maxVersion = new SemanticVersion(right.Major.Value, rightMinor + 1, 0);
             isMaxInclusive = false;
         }
         else
         {
             // Only major: <(X+1).0.0
+            if (right.Major.Value is int.MaxValue)
+            {
+                return false;
+            }
+
             maxVersion = new SemanticVersion(right.Major.Value + 1, 0, 0);
             isMaxInclusive = false;
         }
@@ -740,6 +750,14 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
             return false;
         }
 
+        // Every upper bound below is a component plus one, so a component sitting at int.MaxValue
+        // would wrap into a negative version. Reject the range instead of building a nonsensical
+        // one; such versions are pathological and the alternative is a range matching nothing.
+        if (partial.Major is int.MaxValue || partial.Minor is int.MaxValue || partial.Patch is int.MaxValue)
+        {
+            return false;
+        }
+
         IntersectMin(ref minVersion, ref isMinInclusive, partial.LowerBound, inclusive: true);
 
         var upperBound = partial.Minor is { } minor
@@ -768,6 +786,14 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         // ^0.x := >=0.0.0 <1.0.0
 
         if (!TryParseNpmPartialVersion(versionPart, out var partial) || partial.Major is not { } major)
+        {
+            return false;
+        }
+
+        // Every upper bound below is a component plus one, so a component sitting at int.MaxValue
+        // would wrap into a negative version. Reject the range instead of building a nonsensical
+        // one; such versions are pathological and the alternative is a range matching nothing.
+        if (partial.Major is int.MaxValue || partial.Minor is int.MaxValue || partial.Patch is int.MaxValue)
         {
             return false;
         }
@@ -835,6 +861,14 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
             // Every version matches, so intersecting with it leaves the range untouched. Clearing
             // the bounds here would instead discard whatever the preceding constraints established.
             return true;
+        }
+
+        // Every upper bound below is a component plus one, so a component sitting at int.MaxValue
+        // would wrap into a negative version. Reject the range instead of building a nonsensical
+        // one; such versions are pathological and the alternative is a range matching nothing.
+        if (partial.Major is int.MaxValue || partial.Minor is int.MaxValue || partial.Patch is int.MaxValue)
+        {
+            return false;
         }
 
         IntersectMin(ref minVersion, ref isMinInclusive, partial.LowerBound, inclusive: true);

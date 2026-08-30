@@ -576,6 +576,12 @@ public class SemanticVersionRangeTests
     [InlineData("1.2-beta")] // A label needs a complete major.minor.patch
     [InlineData("^1.x-beta")]
     [InlineData(">=1.x")] // A wildcard carries no meaning next to a comparison operator
+    // An upper bound of "component + 1" would overflow into a negative version
+    [InlineData("^2147483647.0.0")]
+    [InlineData("~2147483647.0.0")]
+    [InlineData("2147483647.x")]
+    [InlineData("^0.0.2147483647")]
+    [InlineData("1.0.0 - 2147483647")]
     public void ParseNpm_InvalidFormats_ThrowsFormatException(string input)
     {
         Assert.Throws<FormatException>(() => SemanticVersionRange.ParseNpm(input));

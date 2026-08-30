@@ -51,13 +51,20 @@ internal static class Win32DeviceControl
     [SupportedOSPlatform("windows5.1.2600")]
     internal static unsafe void ControlWithOutput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure) where TStructure : unmanaged
     {
+        var structureLength = (uint)Marshal.SizeOf<TStructure>();
         fixed (void* pStructure = &structure)
         {
             uint returnedSize = 0;
             using var handleScope = new SafeHandleValue(handle);
-            var controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, lpInBuffer: null, 0u, pStructure, (uint)Marshal.SizeOf<TStructure>(), &returnedSize, lpOverlapped: null);
+            var controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, lpInBuffer: null, 0u, pStructure, structureLength, &returnedSize, lpOverlapped: null);
             if (!controlResult)
                 throw new Win32Exception(Marshal.GetLastWin32Error());
+
+            // A driver that does not know the whole structure fills in only the prefix it does know and reports how much it
+            // wrote. Ignoring that would hand back a structure whose newer fields are zero, which is indistinguishable from a
+            // driver that really did report zero for them.
+            if (returnedSize < structureLength)
+                throw new InvalidDataException($"The device returned {returnedSize.ToString(CultureInfo.InvariantCulture)} bytes for a {structureLength.ToString(CultureInfo.InvariantCulture)}-byte structure");
         }
     }
 }

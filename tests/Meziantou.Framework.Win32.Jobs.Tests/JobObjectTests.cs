@@ -73,6 +73,31 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CreatedNew_DistinguishesCreateFromAttach()
+    {
+        using (var unnamed = new JobObject())
+        {
+            Assert.True(unnamed.CreatedNew);
+        }
+
+        var objectName = Guid.NewGuid().ToString("N");
+        using var first = new JobObject(objectName);
+        Assert.True(first.CreatedNew);
+
+        using var second = new JobObject(objectName);
+        Assert.False(second.CreatedNew);
+
+        using var opened = JobObject.Open(JobObjectAccessRights.Query, inherited: false, objectName);
+        Assert.False(opened.CreatedNew);
+
+        Assert.True(JobObject.TryOpen(JobObjectAccessRights.Query, inherited: false, objectName, out var tryOpened));
+        using (tryOpened)
+        {
+            Assert.False(tryOpened.CreatedNew);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void InvalidName_TooLong()
     {
         var objectName = "Local\\" + new string('a', 40000);

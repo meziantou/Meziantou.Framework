@@ -89,6 +89,66 @@ public sealed class MarkOfTheWebTests
         }
     }
 
+    [Theory, RunIf(TestOperatingSystems.Windows)]
+    [InlineData(UrlZone.Invalid)]
+    [InlineData((UrlZone)(-2))]
+    [InlineData((UrlZone)5)]
+    [InlineData((UrlZone)999)]
+    public void SetFileZone_RejectsUndefinedZones(UrlZone zone)
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => MarkOfTheWeb.SetFileZone(path, zone));
+            Assert.Equal("zone", exception.ParamName);
+            Assert.Null(MarkOfTheWeb.GetFileZoneContent(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    // UrlZone.Trusted is deliberately absent: Windows resolves the Trusted Sites zone from site
+    // membership rather than from a saved-file mark, so a file marked ZoneId=2 reads back as
+    // UrlZone.LocalMachine. SetFileZone still accepts it, since the value it writes is well-formed.
+    [Theory, RunIf(TestOperatingSystems.Windows)]
+    [InlineData(UrlZone.LocalMachine)]
+    [InlineData(UrlZone.Intranet)]
+    [InlineData(UrlZone.Internet)]
+    [InlineData(UrlZone.Untrusted)]
+    public void SetFileZone_RoundTripsDefinedZones(UrlZone zone)
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            MarkOfTheWeb.SetFileZone(path, zone);
+
+            Assert.Equal(zone, MarkOfTheWeb.GetFileZone(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetFileZone_AcceptsTrusted_EvenThoughWindowsResolvesItToLocalMachine()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            MarkOfTheWeb.SetFileZone(path, UrlZone.Trusted);
+
+            Assert.Equal("[ZoneTransfer]\nZoneId=2\n", MarkOfTheWeb.GetFileZoneContent(path)!.ReplaceLineEndings("\n"));
+            Assert.Equal(UrlZone.LocalMachine, MarkOfTheWeb.GetFileZone(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact, RunIf(TestOperatingSystems.Windows)]
     public void SetFileZone_KeepsTheRequestedZone_WhenUrlsAreProvided()
     {

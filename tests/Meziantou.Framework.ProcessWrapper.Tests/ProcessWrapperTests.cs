@@ -1183,6 +1183,21 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_WhenDownstreamExitsWithoutReadingItsInput_DoesNotHang()
+    {
+        // The upstream command writes far more than the pipe's pause threshold while the downstream
+        // command exits without draining it, which used to deadlock the pipe's writer against DisposeReader.
+        var pipeline = CreateLargeOutputCommand(1024 * 1024)
+            | CreateExitImmediatelyCommand().WithValidation(ProcessValidationMode.None);
+
+        var execution = pipeline.ExecuteBufferedAsync();
+        var completed = await Task.WhenAny(execution, Task.Delay(TimeSpan.FromSeconds(30)));
+
+        Assert.Same(execution, completed);
+        await execution;
+    }
+
+    [Fact]
     public async Task ReusableConfiguration()
     {
         var baseCommand = CreateEchoBase();
@@ -1923,6 +1938,25 @@ public class ProcessWrapperTests
 
         return ProcessWrapper.Create("sh")
             .WithArguments("-c", $"echo ${variableName}");
+    }
+
+    private static ProcessWrapper CreateLargeOutputCommand(int byteCount)
+    {
+        var count = byteCount.ToString(CultureInfo.InvariantCulture);
+        if (OperatingSystem.IsWindows())
+        {
+            return ProcessWrapper.Create("powershell.exe")
+                .WithArguments(
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    $"[Console]::Out.Write('a' * {count})");
+        }
+
+        return ProcessWrapper.Create("sh")
+            .WithArguments("-c", $"yes aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | head -c {count}");
     }
 
     private static ProcessWrapper CreateExitImmediatelyCommand()

@@ -3,5 +3,8 @@
 Console.WriteLine("Clearing all recent documents");
 Meziantou.Framework.Win32.RecentDocuments.ClearRecentDocuments();
 
-Console.WriteLine("Add calc to recent document");
-Meziantou.Framework.Win32.RecentDocuments.AddToRecentDocuments("C:\\Users\\mezia\\source\\repos\\FileEtw\\FileEtw.sln");
+var path = Path.Combine(Path.GetTempPath(), "Meziantou.Framework.Win32.RecentDocuments.sample.txt");
+File.WriteAllText(path, "Sample document");
+
+Console.WriteLine($"Adding '{path}' to the recent documents");
+Meziantou.Framework.Win32.RecentDocuments.AddToRecentDocuments(path);

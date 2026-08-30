@@ -125,6 +125,45 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public void Position_AboveArrayMaxLength_Throws()
+    {
+        using var stream = new PooledMemoryStream();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = (long)Array.MaxLength + 1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = long.MaxValue);
+        Assert.Equal(0, stream.Position);
+
+        stream.Position = Array.MaxLength;
+        Assert.Equal(Array.MaxLength, stream.Position);
+    }
+
+    [Fact]
+    public void Seek_AboveArrayMaxLength_Throws()
+    {
+        using var stream = new PooledMemoryStream();
+        stream.Write(CreateData(100));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(long.MaxValue, SeekOrigin.Begin));
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek((long)Array.MaxLength + 1, SeekOrigin.Begin));
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(Array.MaxLength, SeekOrigin.End));
+    }
+
+    [Fact]
+    public void WriteAtFarPosition_Throws_InsteadOfAllocatingForever()
+    {
+        // Regression: Position was unbounded and WriteCore guarded with "_position + count > Array.MaxLength",
+        // which overflows to a negative value near long.MaxValue. The guard passed and the write fell into an
+        // unbounded zero-fill loop that never returned.
+        using var stream = new PooledMemoryStream();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = long.MaxValue);
+
+        stream.Position = Array.MaxLength;
+        Assert.Throws<IOException>(() => stream.WriteByte(1));
+        Assert.Throws<IOException>(() => stream.Write(CreateData(10)));
+    }
+
+    [Fact]
     public void Overwrite_InTheMiddle()
     {
         using var stream = new PooledMemoryStream(SmallTiers());
@@ -198,6 +237,24 @@ public sealed class PooledMemoryStreamTests
     {
         using var stream = new PooledMemoryStream(1234);
         Assert.True(stream.Capacity >= 1234);
+        Assert.Equal(0, stream.Length);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(100)]
+    [InlineData(4097)]
+    [InlineData(5000)]
+    [InlineData(70_000)]
+    [InlineData(1024 * 1024)]
+    public void Constructor_WithInitialCapacity_ComposesTiersInsteadOfRoundingUp(int initialCapacity)
+    {
+        using var stream = new PooledMemoryStream(initialCapacity);
+
+        // The reservation is built from configured tiers, so the excess stays below the smallest tier (4 KiB by
+        // default). It used to round the whole request up to the next tier: 70_000 reserved 1 MiB.
+        Assert.True(stream.Capacity >= initialCapacity);
+        Assert.True(stream.Capacity - initialCapacity < 4096);
         Assert.Equal(0, stream.Length);
     }
 

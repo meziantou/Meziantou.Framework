@@ -15,6 +15,22 @@ public class RelativeDateTests
         Assert.Throws<ArgumentException>(() => new RelativeDate(default, timeProvider).ToString());
     }
 
+    [Fact]
+    public void DefaultInstance_ToString_FallsBackToTheSystemTimeProvider()
+    {
+        // A default instance carries no TimeProvider and holds DateTime.MinValue, so it renders as a very distant past date
+        var result = default(RelativeDate).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.EndsWith(" years ago", result);
+    }
+
+    [Fact]
+    public void DefaultInstance_FromArray_ToString_FallsBackToTheSystemTimeProvider()
+    {
+        var dates = new RelativeDate[1];
+        var result = dates[0].ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.EndsWith(" years ago", result);
+    }
+
     [Theory]
     [MemberData(nameof(RelativeDate_ToString_Data))]
     public void RelativeDate_ToString(string dateTimeStr, string nowStr, string expectedValueEn, string expectedValueFr)
@@ -50,6 +66,8 @@ public class RelativeDateTests
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 00:01:00Z", "a minute ago", "il y a une minute" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 00:10:00Z", "10 minutes ago", "il y a 10 minutes" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 01:00:00Z", "an hour ago", "il y a une heure" };
+            yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 01:30:00Z", "an hour ago", "il y a une heure" };
+            yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 01:59:00Z", "an hour ago", "il y a une heure" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/01 02:00:00Z", "2 hours ago", "il y a 2 heures" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/02 00:00:00Z", "yesterday", "hier" };
             yield return new object[] { "2018/01/01 00:00:00Z", "2018/01/03 00:00:00Z", "2 days ago", "il y a 2 jours" };
@@ -62,6 +80,8 @@ public class RelativeDateTests
             yield return new object[] { "2018/01/01 00:00:25Z", "2018/01/01 00:00:00Z", "in 25 seconds", "dans 25 secondes" };
             yield return new object[] { "2018/01/01 00:10:00Z", "2018/01/01 00:00:00Z", "in 10 minutes", "dans 10 minutes" };
             yield return new object[] { "2018/01/01 01:00:00Z", "2018/01/01 00:00:00Z", "in an hour", "dans une heure" };
+            yield return new object[] { "2018/01/01 01:30:00Z", "2018/01/01 00:00:00Z", "in an hour", "dans une heure" };
+            yield return new object[] { "2018/01/01 01:59:00Z", "2018/01/01 00:00:00Z", "in an hour", "dans une heure" };
             yield return new object[] { "2018/01/01 00:01:00Z", "2018/01/01 00:00:00Z", "in a minute", "dans une minute" };
             yield return new object[] { "2018/01/01 02:00:00Z", "2018/01/01 00:00:00Z", "in 2 hours", "dans 2 heures" };
             yield return new object[] { "2018/01/02 00:00:00Z", "2018/01/01 00:00:00Z", "tomorrow", "demain" };

@@ -158,6 +158,56 @@ public class TemporaryDirectoryTests
     }
 
     [Fact]
+    public void TemporaryDirectoryIsOnlyAccessibleByTheCurrentUser()
+    {
+        if (OperatingSystem.IsWindows())
+            return; // Unix file modes only
+
+        using var dir = TemporaryDirectory.Create();
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(dir.FullPath.Value));
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(dir.FullPath.Parent.Value));
+    }
+
+    [Fact]
+    public void TemporaryFileIsOnlyAccessibleByTheCurrentUser()
+    {
+        if (OperatingSystem.IsWindows())
+            return; // Unix file modes only
+
+        using var file = TemporaryFile.Create();
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(file.FullPath.Value));
+    }
+
+    [Fact]
+    public void CreateTightensARootDirectoryAccessibleByOtherUsers()
+    {
+        if (OperatingSystem.IsWindows())
+            return; // Unix file modes only
+
+        using var parent = TemporaryDirectory.Create();
+        var sharedRoot = parent.GetFullPath("shared");
+        Directory.CreateDirectory(sharedRoot.Value, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+
+        using var dir = TemporaryDirectory.Create(sharedRoot);
+
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(sharedRoot.Value));
+    }
+
+    [Fact]
+    public void CreateReusesAnOwnerOnlyRootDirectory()
+    {
+        using var parent = TemporaryDirectory.Create();
+        var root = parent.GetFullPath("root");
+
+        using var first = TemporaryDirectory.Create(root);
+        using var second = TemporaryDirectory.Create(root);
+
+        Assert.NotEqual(first.FullPath, second.FullPath);
+        Assert.Equal(root, first.FullPath.Parent);
+        Assert.Equal(root, second.FullPath.Parent);
+    }
+
+    [Fact]
     public void TemporaryFileCreateWithFullPath()
     {
         var fullPath = FullPath.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".tmp");

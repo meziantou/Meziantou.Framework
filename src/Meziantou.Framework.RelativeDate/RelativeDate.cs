@@ -31,7 +31,10 @@ namespace Meziantou.Framework;
 [StructLayout(LayoutKind.Auto)]
 public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IEquatable<RelativeDate>, IFormattable
 {
-    private TimeProvider TimeProvider { get; }
+    /// <remarks>
+    /// Null on a default instance. A struct cannot intercept its own zero-initialization, so every read must fall back to <see cref="System.TimeProvider.System"/>.
+    /// </remarks>
+    private TimeProvider? TimeProvider { get; }
     private DateTime DateTime { get; }
 
     /// <summary>Initializes a new instance of the <see cref="RelativeDate"/> struct with the specified date and time provider.</summary>
@@ -95,8 +98,8 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     /// <item><description>"X seconds ago" / "in X seconds" - for &lt;1 minute</description></item>
     /// <item><description>"a minute ago" / "in a minute" - for 1-2 minutes</description></item>
     /// <item><description>"X minutes ago" / "in X minutes" - for &lt;45 minutes</description></item>
-    /// <item><description>"an hour ago" / "in an hour" - for 45-90 minutes</description></item>
-    /// <item><description>"X hours ago" / "in X hours" - for &lt;24 hours</description></item>
+    /// <item><description>"an hour ago" / "in an hour" - for 45-120 minutes</description></item>
+    /// <item><description>"X hours ago" / "in X hours" - for 2-24 hours</description></item>
     /// <item><description>"yesterday" / "tomorrow" - for 24-48 hours</description></item>
     /// <item><description>"X days ago" / "in X days" - for &lt;30 days</description></item>
     /// <item><description>"one month ago" / "in one month" - for 30-60 days</description></item>
@@ -107,7 +110,8 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     /// </remarks>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
-        var now = TimeProvider.GetUtcNow().UtcDateTime;
+        // TimeProvider is null on a default instance: structs cannot intercept their own zero-initialization
+        var now = (TimeProvider ?? TimeProvider.System).GetUtcNow().UtcDateTime;
 
         var delta = now - DateTime;
         var culture = formatProvider as CultureInfo;
@@ -128,7 +132,7 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
             if (delta < TimeSpan.FromMinutes(45))
                 return GetString("InManyMinutes", culture, delta.Minutes);
 
-            if (delta < TimeSpan.FromMinutes(90))
+            if (delta < TimeSpan.FromMinutes(120))
                 return GetString("InAnHour", culture);
 
             if (delta < TimeSpan.FromHours(24))
@@ -172,7 +176,7 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
         if (delta < TimeSpan.FromMinutes(45))
             return GetString("ManyMinutesAgo", culture, delta.Minutes);
 
-        if (delta < TimeSpan.FromMinutes(90))
+        if (delta < TimeSpan.FromMinutes(120))
             return GetString("AnHourAgo", culture);
 
         if (delta < TimeSpan.FromHours(24))

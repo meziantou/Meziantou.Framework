@@ -112,6 +112,16 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void Terminate_WithoutTerminateAccessRight()
+    {
+        var objectName = Guid.NewGuid().ToString("N");
+        using var job = new JobObject(objectName);
+        using var queryOnly = JobObject.Open(JobObjectAccessRights.Query, inherited: false, objectName);
+
+        Assert.Throws<Win32Exception>(queryOnly.Terminate);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CreateAndOpenJobObject()
     {
         var objectName = Guid.NewGuid().ToString("N");

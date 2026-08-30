@@ -693,6 +693,21 @@ public static class HtmlToMarkdown
                     sb.Append(c);
                     break;
 
+                // Escape & only when it could start an entity reference. Markdown has no
+                // backslash escape for &, so the entity form is the only way to keep a
+                // literal & from being decoded into a different character by the renderer.
+                case '&':
+                    if (i + 1 < text.Length && (char.IsAsciiLetter(text[i + 1]) || text[i + 1] is '#'))
+                    {
+                        sb.Append("&amp;");
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
+
+                    break;
+
                 // Escape ~ only in ~~ sequences (strikethrough)
                 case '~':
                     if ((i + 1 < text.Length && text[i + 1] == '~') || (i > 0 && text[i - 1] == '~'))

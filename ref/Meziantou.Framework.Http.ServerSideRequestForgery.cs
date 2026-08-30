@@ -14,6 +14,13 @@ namespace Meziantou.Framework.Http.ServerSideRequestForgery
         protected internal abstract System.Threading.Tasks.ValueTask<System.Net.IPAddress> ResolveAsync(System.Collections.Generic.IReadOnlyList<System.Net.IPAddress> addresses, Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions options, System.Threading.CancellationToken cancellationToken);
     }
 
+    public sealed class ServerSideRequestForgeryClientHandler : System.Net.Http.DelegatingHandler
+    {
+        public ServerSideRequestForgeryClientHandler(System.Net.Http.SocketsHttpHandler innerHandler, Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions options) { }
+        protected override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) => throw null;
+        protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) => throw null;
+    }
+
     public sealed class ServerSideRequestForgeryException : System.Exception
     {
         public ServerSideRequestForgeryException(string message) { }

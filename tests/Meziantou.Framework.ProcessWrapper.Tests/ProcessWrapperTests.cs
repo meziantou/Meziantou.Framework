@@ -513,11 +513,41 @@ public class ProcessWrapperTests
 
         var result = ProcessWrapper.Create(executableName)
             .WithWorkingDirectory(temporaryDirectoryPath)
+            .WithSearchWorkingDirectory()
             .ExecuteBufferedAsync();
 
         var processResult = await result;
 
         Assert.Equal("test-from-working-directory", processResult.Output.StandardOutput.First().Text.Trim());
+    }
+
+    [Fact]
+    public async Task WithWorkingDirectory_DoesNotFindExecutableInWorkingDirectoryByDefault()
+    {
+        // Without the opt-in, an executable sitting in the working directory must not be picked up: it would
+        // otherwise shadow the command that PATH resolves for the same bare name.
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        var temporaryDirectoryPath = temporaryDirectory.FullPath.Value;
+
+        string executableName;
+        if (OperatingSystem.IsWindows())
+        {
+            executableName = $"run{Guid.NewGuid():N}";
+            temporaryDirectory.CreateTextFile(executableName + ".bat", "@echo off\r\necho test-from-working-directory\r\n");
+        }
+        else
+        {
+            executableName = $"run{Guid.NewGuid():N}.sh";
+            var scriptPath = temporaryDirectory.CreateTextFile(executableName, "#!/bin/sh\necho test-from-working-directory\n");
+            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        await Assert.ThrowsAsync<System.ComponentModel.Win32Exception>(async () =>
+        {
+            _ = await ProcessWrapper.Create(executableName)
+                .WithWorkingDirectory(temporaryDirectoryPath)
+                .ExecuteBufferedAsync();
+        });
     }
 
     [Fact]
@@ -1348,6 +1378,7 @@ public class ProcessWrapperTests
 
         var processId = ProcessWrapper.Create(executableName)
             .WithWorkingDirectory(temporaryDirectoryPath)
+            .WithSearchWorkingDirectory()
             .WithArguments("argument")
             .WithEnvironmentVariables(env => env.Set("OUTPUT_FILE", outputPath))
             .StartAndForget();

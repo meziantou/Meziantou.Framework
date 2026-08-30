@@ -27,6 +27,29 @@ public sealed class DiffToolsTests
     }
 
     [Fact]
+    public void TryFindByName_ThrowsWhenEnvironmentVariableCannotBeResolved()
+    {
+        using var temp = TemporaryDirectory.Create();
+        using var scope = new EnvironmentVariableScope("DiffEngine_VisualStudioCode", Path.Combine(temp.FullPath, "missing"));
+
+        var exception = Assert.Throws<InvalidOperationException>(() => DiffTools.TryFindByName(DiffTool.VisualStudioCode, out _));
+        Assert.Contains("DiffEngine_VisualStudioCode", exception.Message);
+    }
+
+    [Fact]
+    public void TryFindByExtension_SkipsToolWhoseEnvironmentVariableCannotBeResolved()
+    {
+        using var temp = TemporaryDirectory.Create();
+        _ = temp.CreateTextFile(GetVisualStudioCodeExecutableName(), "");
+        using var vscodeScope = new EnvironmentVariableScope("DiffEngine_VisualStudioCode", temp.FullPath);
+        using var vimScope = new EnvironmentVariableScope("DiffEngine_Vim", Path.Combine(temp.FullPath, "missing"));
+
+        Assert.True(DiffTools.TryFindByExtension(".bin", out var tool));
+        Assert.NotNull(tool);
+        Assert.Equal(DiffTool.VisualStudioCode, tool.Tool);
+    }
+
+    [Fact]
     public void TryFindByExtension_ReturnsBinaryTool()
     {
         using var temp = TemporaryDirectory.Create();

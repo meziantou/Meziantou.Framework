@@ -23,6 +23,12 @@ namespace Meziantou.Framework;
 /// </summary>
 public static class ConvertUtilities
 {
+    /// <summary>Gets a value indicating whether an instance of the type can be created.</summary>
+    internal static bool IsInstantiable(Type type)
+    {
+        return type != typeof(void) && !type.ContainsGenericParameters && !type.IsByRef && !type.IsPointer;
+    }
+
     /// <summary>Gets the default converter instance used by the utility methods.</summary>
     public static IConverter DefaultConverter { get; } = new DefaultConverter();
 
@@ -217,7 +223,7 @@ public static class ConvertUtilities
 
         ArgumentNullException.ThrowIfNull(conversionType);
 
-        if (defaultValue is null && conversionType.IsValueType)
+        if (defaultValue is null && conversionType.IsValueType && IsInstantiable(conversionType))
         {
             defaultValue = Activator.CreateInstance(conversionType);
         }

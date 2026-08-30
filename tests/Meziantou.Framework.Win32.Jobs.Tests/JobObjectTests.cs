@@ -245,6 +245,41 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetCpuRate_OutOfRangeValues()
+    {
+        using var job = new JobObject();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateHardCap(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateHardCap(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateHardCap(10_001));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateWeight(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateWeight(10));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(-1, 3000));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(0, 3000));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(1000, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(70_000, 3000));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(1000, 10_001));
+
+        // Windows rejects an inverted range, so reject it before the P/Invoke
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(3000, 1000));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetCpuRate_BoundaryValuesAreAccepted()
+    {
+        using var job = new JobObject();
+
+        job.SetCpuRateHardCap(1);
+        job.SetCpuRateHardCap(10_000);
+        job.SetCpuRateWeight(1);
+        job.SetCpuRateWeight(9);
+        job.SetCpuRate(1, 10_000);
+        job.SetCpuRate(10_000, 10_000);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void SetUILimits()
     {
         using var job = new JobObject();

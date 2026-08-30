@@ -793,4 +793,54 @@ public class TemplateTest
         Assert.Equal(new object[] { 1, 2 }.ToString(), template.Run());
     }
 
+    [Fact]
+    public void Template_RunWithPositionalParameters_UsesCreateStringWriter()
+    {
+        var template = new TemplateWithCountingStringWriter();
+        template.Load("a");
+
+        Assert.Equal("a", template.Run());
+        Assert.Equal(1, template.CreateStringWriterCallCount);
+    }
+
+    [Fact]
+    public void Template_RunWithNamedParameters_UsesCreateStringWriter()
+    {
+        var template = new TemplateWithCountingStringWriter();
+        template.Load("a");
+
+        Assert.Equal("a", template.Run(new Dictionary<string, object?>()));
+        Assert.Equal(1, template.CreateStringWriterCallCount);
+    }
+
+    [Fact]
+    public void Template_RunWithPositionalParameters_ThrowsOnNullWriterWithoutBuilding()
+    {
+        var template = new Template();
+        template.Load("a");
+
+        Assert.Throws<ArgumentNullException>(() => template.Run(writer: null!));
+        Assert.False(template.IsBuilt);
+    }
+
+    [Fact]
+    public void Template_RunWithNamedParameters_ThrowsOnNullWriterWithoutBuilding()
+    {
+        var template = new Template();
+        template.Load("a");
+
+        Assert.Throws<ArgumentNullException>(() => template.Run(writer: null!, new Dictionary<string, object?>()));
+        Assert.False(template.IsBuilt);
+    }
+
+    private sealed class TemplateWithCountingStringWriter : Template
+    {
+        public int CreateStringWriterCallCount { get; private set; }
+
+        protected override StringWriter CreateStringWriter()
+        {
+            CreateStringWriterCallCount++;
+            return base.CreateStringWriter();
+        }
+    }
 }

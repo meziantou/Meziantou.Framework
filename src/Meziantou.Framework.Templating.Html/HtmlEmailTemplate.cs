@@ -49,7 +49,7 @@ public class HtmlEmailTemplate : Template
     {
         ArgumentNullException.ThrowIfNull(parameters);
 
-        using var writer = new StringWriter();
+        using var writer = CreateStringWriter();
         Run(writer, out metadata, parameters);
         return writer.ToString();
     }
@@ -60,7 +60,7 @@ public class HtmlEmailTemplate : Template
     /// <returns>The generated HTML content.</returns>
     public virtual string Run(out HtmlEmailMetadata? metadata, params object?[] parameters)
     {
-        using var writer = new StringWriter();
+        using var writer = CreateStringWriter();
         Run(writer, out metadata, parameters);
         return writer.ToString();
     }
@@ -70,7 +70,7 @@ public class HtmlEmailTemplate : Template
     /// <returns>The generated HTML content.</returns>
     public virtual string Run(out HtmlEmailMetadata? metadata)
     {
-        using var writer = new StringWriter();
+        using var writer = CreateStringWriter();
         Run(writer, out metadata);
         return writer.ToString();
     }

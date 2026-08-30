@@ -9,6 +9,13 @@ namespace Meziantou.AspNetCore.Authentication.HttpBasic;
 /// <summary>Extension methods to register HTTP Basic authentication with ASP.NET Core Identity.</summary>
 public static class HttpBasicAuthenticationIdentityExtensions
 {
+    // Verifying this hash when the user does not exist keeps the presence of an account from being
+    // observable through response time. It is produced once, with Identity's default options; if the
+    // application customises PasswordHasherOptions the two paths cost approximately, not exactly, the same.
+    private static readonly PasswordHasher<object> DummyPasswordHasher = new();
+    private static readonly object DummyPasswordHasherUser = new();
+    private static readonly string DummyPasswordHash = DummyPasswordHasher.HashPassword(DummyPasswordHasherUser, "8OqA2Zs4kkGm1sJv");
+
     /// <summary>Adds HTTP Basic authentication using ASP.NET Core Identity to validate credentials and build user principals.</summary>
     public static AuthenticationBuilder AddHttpBasicIdentity<TUser>(this AuthenticationBuilder builder)
         where TUser : class
@@ -76,7 +83,10 @@ public static class HttpBasicAuthenticationIdentityExtensions
         var signInManager = context.RequestServices.GetRequiredService<SignInManager<TUser>>();
         var user = await signInManager.UserManager.FindByNameAsync(username).ConfigureAwait(false);
         if (user is null)
+        {
+            DummyPasswordHasher.VerifyHashedPassword(DummyPasswordHasherUser, DummyPasswordHash, password);
             return null;
+        }
 
         var result = await signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure).ConfigureAwait(false);
         if (!result.Succeeded)

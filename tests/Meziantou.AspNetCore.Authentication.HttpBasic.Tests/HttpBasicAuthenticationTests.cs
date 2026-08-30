@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -125,6 +126,52 @@ public sealed class HttpBasicAuthenticationTests
         {
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         });
+    }
+
+    [Fact]
+    public async Task AspNetCoreIdentity_UnknownUser_IsRejected()
+    {
+        var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
+        await using var application = await TestApplication.CreateWithIdentityAsync([user], _ => { });
+
+        await application.SendAndAssert("/", "unknownUser", "myPassword", response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task AspNetCoreIdentity_UnknownUser_DoesNotShortCircuitPasswordVerification()
+    {
+        var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
+        await using var application = await TestApplication.CreateWithIdentityAsync([user], _ => { });
+
+        for (var i = 0; i < 3; i++)
+        {
+            await application.SendAndAssert("/", "myName", "wrong", _ => { });
+            await application.SendAndAssert("/", "unknownUser", "wrong", _ => { });
+        }
+
+        var knownUser = await MeasureAsync(application, "myName", "wrong");
+        var unknownUser = await MeasureAsync(application, "unknownUser", "wrong");
+
+        // Before the fix an unknown user skipped password verification entirely and was ~300x faster,
+        // which made valid usernames trivially enumerable. The bound is deliberately loose: this is a
+        // ratio between two paths doing the same work, so it is insensitive to how loaded the machine is.
+        Assert.InRange(knownUser.TotalMilliseconds / unknownUser.TotalMilliseconds, 0, 10);
+    }
+
+    private static async Task<TimeSpan> MeasureAsync(TestApplication application, string username, string password)
+    {
+        const int Iterations = 10;
+
+        var stopwatch = Stopwatch.StartNew();
+        for (var i = 0; i < Iterations; i++)
+        {
+            await application.SendAndAssert("/", username, password, _ => { });
+        }
+
+        return stopwatch.Elapsed;
     }
 
     private static IdentityUser CreateIdentityUser(string id, string username, string password)

@@ -510,7 +510,7 @@ public static class HtmlToMarkdown
         {
             if (cell.LocalName is "th" or "td")
             {
-                var content = ConvertInlineContent(cell, state).Trim();
+                var content = ConvertTableCellContent(cell, state);
                 var align = GetCellAlignment(cell);
                 cells.Add((content, align));
             }
@@ -518,6 +518,33 @@ public static class HtmlToMarkdown
 
         state.InTableCell = prevInTableCell;
         return cells;
+    }
+
+    /// <summary>
+    /// Converts the content of a table cell. Block children are converted as blocks rather
+    /// than concatenated, then the result is collapsed onto a single line: a row of a pipe
+    /// table cannot contain a line break.
+    /// </summary>
+    private static string ConvertTableCellContent(IElement cell, ConversionState state)
+    {
+        var content = ConvertChildNodes(cell, state).Trim();
+        if (!content.Contains('\n', StringComparison.Ordinal))
+            return content;
+
+        var sb = new StringBuilder();
+        foreach (var line in content.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.Length == 0)
+                continue;
+
+            if (sb.Length > 0)
+                sb.Append("<br>");
+
+            sb.Append(trimmed);
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>

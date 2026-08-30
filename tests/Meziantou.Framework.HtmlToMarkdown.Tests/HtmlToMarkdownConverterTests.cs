@@ -3619,4 +3619,50 @@ public sealed class HtmlToMarkdownConverterTests
             ```
             """);
     }
+
+    // --- Table cell content ---
+
+    [Fact]
+    public void Table_CellWithMultipleParagraphs()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><td><p>a</p><p>b</p></td><td>y</td></tr></table>",
+            """
+            | a<br>b | y |
+            | --- | --- |
+            """);
+    }
+
+    [Fact]
+    public void Table_CellWithRawHtmlContainingNewline()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><td><foo>a\nb</foo></td><td>y</td></tr></table>",
+            """
+            | <foo>a<br>b</foo> | y |
+            | --- | --- |
+            """);
+    }
+
+    [Fact]
+    public void Table_CellWithHeadingAndParagraph()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><td><h2>t</h2><p>b</p></td></tr></table>",
+            """
+            | ## t<br>b |
+            | --- |
+            """);
+    }
+
+    [Fact]
+    public void Table_CellWithBreakStaysOnOneLine()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><td>a<br>b</td></tr></table>",
+            """
+            | a<br>b |
+            | --- |
+            """);
+    }
 }

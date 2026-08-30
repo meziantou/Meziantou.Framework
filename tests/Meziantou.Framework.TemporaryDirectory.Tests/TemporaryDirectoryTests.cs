@@ -79,6 +79,41 @@ public class TemporaryDirectoryTests
         Assert.Equal(dir.GetFullPath("subdir/file.txt"), path);
     }
 
+    [Theory]
+    [InlineData("../escape.txt")]
+    [InlineData("sub/../../escape.txt")]
+    [InlineData("..")]
+    public void GetFullPathRejectsPathsOutsideTheDirectory(string relativePath)
+    {
+        using var dir = TemporaryDirectory.Create();
+
+        Assert.Throws<ArgumentException>(() => dir.GetFullPath(relativePath));
+        Assert.Throws<ArgumentException>(() => dir.CreateTextFile(relativePath, "content"));
+        Assert.Throws<ArgumentException>(() => dir.CreateEmptyFile(relativePath));
+        Assert.Throws<ArgumentException>(() => dir.CreateDirectory(relativePath));
+        Assert.Throws<ArgumentException>(() => dir / relativePath);
+    }
+
+    [Fact]
+    public void GetFullPathRejectsARootedPath()
+    {
+        using var dir = TemporaryDirectory.Create();
+        var rooted = FullPath.Combine(Path.GetTempPath(), "escape.txt");
+
+        Assert.Throws<ArgumentException>(() => dir.GetFullPath(rooted.Value));
+    }
+
+    [Fact]
+    public void GetFullPathAllowsPathsInsideTheDirectory()
+    {
+        using var dir = TemporaryDirectory.Create();
+
+        Assert.Equal(dir.FullPath / "a.txt", dir.GetFullPath("a.txt"));
+        Assert.Equal(dir.FullPath / "sub" / "a.txt", dir.GetFullPath("sub/a.txt"));
+        Assert.Equal(dir.FullPath / "a.txt", dir.GetFullPath("sub/../a.txt"));
+        Assert.Equal(dir.FullPath, dir.GetFullPath(""));
+    }
+
     [Fact]
     public void TemporaryFileDisposedDeletesFile()
     {

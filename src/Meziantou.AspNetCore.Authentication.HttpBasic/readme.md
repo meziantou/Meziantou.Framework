@@ -70,6 +70,15 @@ builder.Services
     });
 ```
 
+The principal is built by `SignInManager<TUser>.CreateUserPrincipalAsync`, so `User.Identity.AuthenticationType` is Identity's own `"Identity.Application"`, not the Basic scheme name:
+
+```csharp
+app.MapGet("/", (ClaimsPrincipal user) => user.Identity?.AuthenticationType);
+// => "Identity.Application"
+```
+
+Authorization policies are keyed on the authentication *scheme*, so `RequireAuthorization` and `AddAuthenticationSchemes(...)` behave as expected. Only code that branches on `AuthenticationType` is affected — audit logging, "how did this user sign in" checks, or an application that mixes cookie and Basic authentication would attribute these requests to the cookie scheme. Use the scheme name from the authentication ticket if you need to tell them apart.
+
 ## Security options
 
 - `MaxCredentialLength` limits the size (in characters) of the Base64 credential payload in the `Authorization` header.

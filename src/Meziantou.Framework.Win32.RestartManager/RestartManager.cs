@@ -17,11 +17,12 @@ namespace Meziantou.Framework.Win32;
 ///     Console.WriteLine("File is locked");
 /// }
 ///
-/// // Get processes locking a file
+/// // Get processes locking a file. The caller owns the returned Process instances.
 /// var processes = RestartManager.GetProcessesLockingFile(@"C:\path\to\file.txt");
 /// foreach (var process in processes)
 /// {
 ///     Console.WriteLine($"{process.ProcessName} (PID: {process.Id})");
+///     process.Dispose();
 /// }
 ///
 /// // Manual session management
@@ -106,6 +107,7 @@ public sealed class RestartManager : IDisposable
 
     /// <summary>Registers multiple files to be monitored by the Restart Manager session.</summary>
     /// <param name="paths">An array of full file paths to register.</param>
+    /// <remarks>The Restart Manager persists registrations to the registry, so a single session can only hold a bounded number of paths. Registering a very large set fails with a <see cref="Win32Exception"/> for ERROR_WRITE_FAULT (29) rather than a dedicated error; split such sets across several sessions.</remarks>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="paths"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="paths"/> contains a <see langword="null"/> element.</exception>
     /// <exception cref="Win32Exception">Thrown when the registration fails.</exception>
@@ -144,7 +146,7 @@ public sealed class RestartManager : IDisposable
     }
 
     /// <summary>Gets a list of processes that are currently locking the registered resources.</summary>
-    /// <returns>A read-only list of <see cref="Process"/> instances that are locking the registered resources.</returns>
+    /// <returns>A read-only list of <see cref="Process"/> instances that are locking the registered resources. The caller owns the returned instances and should dispose them.</returns>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public IReadOnlyList<Process> GetProcessesLockingResources()
     {
@@ -200,7 +202,7 @@ public sealed class RestartManager : IDisposable
     }
 
     /// <summary>Shuts down applications and services that are using the registered resources.</summary>
-    /// <param name="action">The shutdown options to use.</param>
+    /// <param name="action">The shutdown options to use. The Restart Manager documents this parameter as taking one or more of the defined options, so pass at least one flag.</param>
     /// <exception cref="Win32Exception">Thrown when the shutdown operation fails.</exception>
     public void Shutdown(RestartManagerShutdownType action)
     {
@@ -208,7 +210,7 @@ public sealed class RestartManager : IDisposable
     }
 
     /// <summary>Shuts down applications and services that are using the registered resources.</summary>
-    /// <param name="action">The shutdown options to use.</param>
+    /// <param name="action">The shutdown options to use. The Restart Manager documents this parameter as taking one or more of the defined options, so pass at least one flag.</param>
     /// <param name="statusCallback">An optional callback to receive progress updates during the shutdown operation. The callback is invoked by native code and must not throw; use <see cref="CancelCurrentTask"/> from another thread to stop the operation instead.</param>
     /// <exception cref="Win32Exception">Thrown when the shutdown operation fails.</exception>
     public void Shutdown(RestartManagerShutdownType action, RestartManagerWriteStatusCallback? statusCallback)
@@ -337,7 +339,7 @@ public sealed class RestartManager : IDisposable
 
     /// <summary>Gets a list of processes that are currently locking the specified file.</summary>
     /// <param name="path">The full path of the file to check.</param>
-    /// <returns>A read-only list of <see cref="Process"/> instances that are locking the file.</returns>
+    /// <returns>A read-only list of <see cref="Process"/> instances that are locking the file. The caller owns the returned instances and should dispose them.</returns>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public static IReadOnlyList<Process> GetProcessesLockingFile(string path)
     {
@@ -348,8 +350,8 @@ public sealed class RestartManager : IDisposable
 
     /// <summary>Gets a list of processes that are currently locking any of the specified files.</summary>
     /// <param name="paths">An array of full file paths to check.</param>
-    /// <returns>A read-only list of <see cref="Process"/> instances that are locking at least one of the files.</returns>
-    /// <remarks>Prefer this method over calling <see cref="GetProcessesLockingFile(string)"/> in a loop: registering resources performs relatively expensive write operations, so registering all the files in a single session is significantly cheaper.</remarks>
+    /// <returns>A read-only list of <see cref="Process"/> instances that are locking at least one of the files. The caller owns the returned instances and should dispose them.</returns>
+    /// <remarks>Prefer this method over calling <see cref="GetProcessesLockingFile(string)"/> in a loop: registering resources performs relatively expensive write operations, so registering all the files in a single session is significantly cheaper, though a session can only hold a bounded number of paths - see <see cref="RegisterFiles(string[])"/>.</remarks>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="paths"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="paths"/> contains a <see langword="null"/> element.</exception>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>

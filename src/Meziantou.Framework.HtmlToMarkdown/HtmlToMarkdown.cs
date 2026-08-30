@@ -180,7 +180,14 @@ public static class HtmlToMarkdown
     private static string ConvertPre(IElement element, ConversionState state)
     {
         var codeElement = element.QuerySelector("code");
-        var contentElement = codeElement ?? element;
+
+        // Only take the content from <code> when it is the sole significant child of the
+        // <pre>. QuerySelector matches any descendant, so using it unconditionally would
+        // silently drop everything around the match. The language may still come from a
+        // nested <code>, because a wrong language annotation costs less than lost content.
+        var contentElement = GetSingleSignificantChild(element) is IElement { LocalName: "code" } soleCodeChild
+            ? soleCodeChild
+            : element;
         var content = contentElement.TextContent;
         var language = ExtractLanguage(codeElement) ?? ExtractLanguage(element);
 

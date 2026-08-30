@@ -162,13 +162,16 @@ public static class MarkOfTheWeb
     /// </summary>
     /// <param name="filePath">The path to the file to check.</param>
     /// <returns><see langword="true"/> if the file is from an untrusted zone (Internet or Restricted); otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="FileNotFoundException"><paramref name="filePath"/> does not point to an existing file. A directory is not a file.</exception>
     [SupportedOSPlatform("windows")]
     public static bool IsUntrusted(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
 
+        // Answering "not untrusted" for a path that was never examined would let a typo pass a gate
+        // written as: if (MarkOfTheWeb.IsUntrusted(path)) return;
         if (!File.Exists(filePath))
-            return false;
+            throw new FileNotFoundException("File not found", filePath);
 
         filePath = Path.GetFullPath(filePath);
 

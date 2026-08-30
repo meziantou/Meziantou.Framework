@@ -168,6 +168,33 @@ public sealed partial class WriterTests
         Assert.True(document.RootElement[0].GetProperty("args").TryGetProperty("value", out _));
     }
 
+    [Fact]
+    public async Task ConcurrentWritesProduceAValidDocument()
+    {
+        const int EventCount = 500;
+
+        using var stream = new MemoryStream();
+        await using (var writer = ChromiumTracingWriter.Create(stream, streamOwned: false))
+        {
+            await Parallel.ForEachAsync(Enumerable.Range(0, EventCount), async (index, cancellationToken) =>
+            {
+                await writer.WriteEventAsync(new ChromiumTracingInstantEvent
+                {
+                    Name = "event",
+                    Category = "category",
+                    ProcessId = 1,
+                    ThreadId = index,
+                }, cancellationToken);
+            });
+        }
+
+        using var document = JsonDocument.Parse(stream.ToArray());
+        Assert.Equal(EventCount, document.RootElement.GetArrayLength());
+
+        var threadIds = document.RootElement.EnumerateArray().Select(element => element.GetProperty("tid").GetInt32()).ToList();
+        Assert.Equal(Enumerable.Range(0, EventCount), threadIds.Order());
+    }
+
     private sealed record CustomPayload(int Value);
 
     private sealed class UnserializableArgument;

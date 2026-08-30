@@ -33,6 +33,7 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     private readonly bool _streamOwned;
     private readonly Stream _stream;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
+    private readonly SemaphoreSlim _semaphore = new(initialCount: 1, maxCount: 1);
     private bool _hasItems;
 
     /// <summary>Initializes a new instance of the <see cref="ChromiumTracingWriter"/> class with the specified stream.</summary>
@@ -160,14 +161,17 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
     public async ValueTask DisposeAsync()
     {
-        if (_hasItems)
+        await _semaphore.WaitAsync().ConfigureAwait(false);
+        try
         {
-            await _stream.WriteAsync(ArrayEnd).ConfigureAwait(false);
+            await _stream.WriteAsync(_hasItems ? ArrayEnd : ArrayEmpty).ConfigureAwait(false);
         }
-        else
+        finally
         {
-            await _stream.WriteAsync(ArrayEmpty).ConfigureAwait(false);
+            _semaphore.Release();
         }
+
+        _semaphore.Dispose();
 
         if (_streamOwned)
         {
@@ -187,15 +191,24 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
 
         // Serialize the event before writing anything to the stream. Writing the item separator first would
         // leave it dangling when the serialization fails, which makes the whole document unparsable.
+        // Serializing outside the lock also keeps the critical section down to the stream writes.
         var buffer = new ArrayBufferWriter<byte>();
-        buffer.Write(_hasItems ? ArrayItemSeparator : ArrayStart);
         using (var jsonWriter = new Utf8JsonWriter(buffer))
         {
             JsonSerializer.Serialize(jsonWriter, tracingEvent, tracingEvent.GetType(), _jsonSerializerOptions);
         }
 
-        await _stream.WriteAsync(buffer.WrittenMemory, cancellationToken).ConfigureAwait(false);
-        _hasItems = true;
+        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _stream.WriteAsync(_hasItems ? ArrayItemSeparator : ArrayStart, cancellationToken).ConfigureAwait(false);
+            await _stream.WriteAsync(buffer.WrittenMemory, cancellationToken).ConfigureAwait(false);
+            _hasItems = true;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     private static JsonSerializerOptions CreateSerializerOptions(JsonSerializerContext serializerContext)

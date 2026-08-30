@@ -416,7 +416,14 @@ public static class HtmlToMarkdown
         if (string.IsNullOrEmpty(content))
             return "";
 
-        var needSpace = content.StartsWith('`', StringComparison.Ordinal) || content.EndsWith('`', StringComparison.Ordinal);
+        // A code span whose content both begins and ends with a space has one space removed
+        // from each end when it is parsed, so it has to be padded to survive the round trip.
+        // Content made entirely of spaces is left alone: that rule does not apply to it.
+        var needSpace = content.StartsWith('`', StringComparison.Ordinal)
+            || content.EndsWith('`', StringComparison.Ordinal)
+            || (content.StartsWith(' ', StringComparison.Ordinal)
+                && content.EndsWith(' ', StringComparison.Ordinal)
+                && content.AsSpan().Trim(' ').Length > 0);
         var openCount = CountMaxConsecutiveChars(content, '`') + 1;
 
         var sb = new StringBuilder();

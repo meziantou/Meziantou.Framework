@@ -35,9 +35,13 @@ foreach (var change in changeJournal.GetEntries(entry.UniqueSequenceNumber, Chan
 
 ## Monitor changes as they happen
 
-Pass a non-zero timeout to wait for new records instead of stopping at the end of the journal.
-`Timeout.InfiniteTimeSpan` waits indefinitely, so the loop below never completes on its own.
-The underlying control code counts in whole seconds, so a sub-second timeout is rounded up to one second.
+Pass a non-zero timeout to wait for new records instead of stopping at the end of the journal, so the loop below
+never completes on its own. The timeout is how long the driver waits before it looks for new records again, not a
+deadline: the read stays outstanding until a record matches the filter, whatever the timeout is. The underlying
+control code counts in whole seconds, so a sub-second timeout is rounded up to one second.
+
+The wait happens inside a synchronous call to the driver and cannot be cancelled, so only use a non-zero timeout on
+a thread that can afford to block until a change happens.
 
 ```c#
 foreach (var change in changeJournal.GetEntries(ChangeReason.All, returnOnlyOnClose: false, Timeout.InfiniteTimeSpan))

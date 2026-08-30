@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using Meziantou.Framework.Win32.Natives;
 using Microsoft.Win32.SafeHandles;
 using Windows.Win32.Foundation;
 using Windows.Win32.System.JobObjects;
@@ -18,7 +17,7 @@ namespace Meziantou.Framework.Win32;
 ///     Flags = JobObjectLimitFlags.KillOnJobClose
 /// });
 /// job.AssignProcess(Process.GetCurrentProcess());
-/// 
+///
 /// // Start a child process that will be terminated when the job is disposed
 /// var childProcess = Process.Start("child.exe");
 /// </code>
@@ -26,6 +25,11 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows5.1.2600")]
 public sealed class JobObject : IDisposable
 {
+    // CPU rates are expressed as a percentage times 100, so 10,000 is 100%.
+    private const int MaxCpuRate = 10_000;
+    private const int MinCpuWeight = 1;
+    private const int MaxCpuWeight = 9;
+
     private readonly SafeFileHandle _jobHandle;
 
     private JobObject(SafeFileHandle jobHandle)
@@ -248,8 +252,12 @@ public sealed class JobObject : IDisposable
     /// can use during each scheduling interval, as the number of cycles per 10,000 cycles.
     /// For example, to let the job use 20% of the CPU, set CpuRate to 20 times 100, or 2,000.
     /// </param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="cpuRate"/> is not between 1 and 10,000.</exception>
     public unsafe void SetCpuRateHardCap(int cpuRate)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(cpuRate, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(cpuRate, MaxCpuRate);
+
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
         {
             ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP,
@@ -340,8 +348,12 @@ public sealed class JobObject : IDisposable
     /// Specifies the scheduling weight of the job object, which determines the share of processor time given to the job relative to other workloads on the processor.
     /// This member can be a value from 1 through 9, where 1 is the smallest share and 9 is the largest share.The default is 5, which should be used for most workloads.
     /// </param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="weight"/> is not between 1 and 9.</exception>
     public unsafe void SetCpuRateWeight(int weight)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(weight, MinCpuWeight);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(weight, MaxCpuWeight);
+
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
         {
             ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_WEIGHT_BASED,
@@ -370,8 +382,15 @@ public sealed class JobObject : IDisposable
     ///
     /// After the job reaches this limit for a scheduling interval, no threads associated with the job can run until the next scheduling interval.
     /// </param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="minRate"/> or <paramref name="maxRate"/> is not between 1 and 10,000, or <paramref name="minRate"/> is greater than <paramref name="maxRate"/>.</exception>
     public unsafe void SetCpuRate(int minRate, int maxRate)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(minRate, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(minRate, MaxCpuRate);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxRate, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(maxRate, MaxCpuRate);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(minRate, maxRate);
+
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
         {
             ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE,
@@ -426,6 +445,7 @@ public sealed class JobObject : IDisposable
             throw new Win32Exception(err);
         }
     }
+
     /// <summary>Sets I/O limits on a job object.</summary>
     [SupportedOSPlatform("windows10.0.10240")]
     public unsafe void SetIoLimits(JobIoRateLimits limits)

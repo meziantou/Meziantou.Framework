@@ -245,10 +245,45 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetCpuRate_OutOfRangeValues()
+    {
+        using var job = new JobObject();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateHardCap(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateHardCap(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateHardCap(10_001));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateWeight(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRateWeight(10));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(-1, 3000));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(0, 3000));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(1000, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(70_000, 3000));
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(1000, 10_001));
+
+        // Windows rejects an inverted range, so reject it before the P/Invoke
+        Assert.Throws<ArgumentOutOfRangeException>(() => job.SetCpuRate(3000, 1000));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetCpuRate_BoundaryValuesAreAccepted()
+    {
+        using var job = new JobObject();
+
+        job.SetCpuRateHardCap(1);
+        job.SetCpuRateHardCap(10_000);
+        job.SetCpuRateWeight(1);
+        job.SetCpuRateWeight(9);
+        job.SetCpuRate(1, 10_000);
+        job.SetCpuRate(10_000, 10_000);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void SetUILimits()
     {
         using var job = new JobObject();
-        job.SetUIRestrictions(Natives.JobObjectUILimit.ReadClipboard);
+        job.SetUIRestrictions(JobObjectUILimit.ReadClipboard);
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
@@ -278,9 +313,30 @@ public class JobObjectTests
     {
         using var job = new JobObject();
         job.AssignProcess(Process.GetCurrentProcess());
-        var info = job.GetBasicAndIoAccountingInformation();
-        Assert.NotEqual(TimeSpan.Zero, info.BasicInfo.TotalUserTime);
-        Assert.NotEqual((ulong)0, info.IoInfo.ReadOperationCount);
+
+        // A job only accounts for I/O performed after a process joins it, so the counters are
+        // still zero right after AssignProcess. Perform I/O and assert the counters moved,
+        // instead of depending on whatever the runtime happens to do in the meantime.
+        var before = job.GetBasicAndIoAccountingInformation();
+
+        var path = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllBytes(path, new byte[64 * 1024]);
+            _ = File.ReadAllBytes(path);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+
+        var after = job.GetBasicAndIoAccountingInformation();
+
+        Assert.NotEqual(TimeSpan.Zero, after.BasicInfo.TotalUserTime);
+        Assert.True(after.IoInfo.ReadOperationCount > before.IoInfo.ReadOperationCount, "The job should have accounted for the read operations");
+        Assert.True(after.IoInfo.WriteOperationCount > before.IoInfo.WriteOperationCount, "The job should have accounted for the write operations");
+        Assert.True(after.IoInfo.ReadTransferCount >= before.IoInfo.ReadTransferCount + (64 * 1024), "The job should have accounted for the bytes read");
+        Assert.True(after.IoInfo.WriteTransferCount >= before.IoInfo.WriteTransferCount + (64 * 1024), "The job should have accounted for the bytes written");
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]

@@ -4,7 +4,7 @@ using Windows.Win32.System.RestartManager;
 namespace Meziantou.Framework.Win32;
 
 /// <summary>Describes an application or service that is using a resource registered with a Restart Manager session.</summary>
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows6.0.6000")]
 public sealed class RestartManagerProcessInfo
 {
     internal RestartManagerProcessInfo(RM_PROCESS_INFO processInfo)

@@ -117,6 +117,47 @@ public class TemporaryDirectoryTests
     }
 
     [Fact]
+    public void TemporaryFileCreateWithFileNameDeletesTheGeneratedDirectory()
+    {
+        FullPath path;
+        using (var file = TemporaryFile.Create("custom.txt"))
+        {
+            path = file.FullPath;
+            Assert.True(Directory.Exists(path.Parent));
+        }
+
+        Assert.False(File.Exists(path));
+        Assert.False(Directory.Exists(path.Parent));
+    }
+
+    [Fact]
+    public void TemporaryFileCreateWithRelativePathDeletesTheGeneratedDirectory()
+    {
+        FullPath path;
+        using (var file = TemporaryFile.Create(Path.Combine("sub", "custom.txt")))
+        {
+            path = file.FullPath;
+        }
+
+        Assert.False(File.Exists(path));
+        Assert.False(Directory.Exists(path.Parent));
+        Assert.False(Directory.Exists(path.Parent.Parent));
+    }
+
+    [Fact]
+    public void TemporaryFileCreateKeepsTheSharedRootDirectory()
+    {
+        FullPath path;
+        using (var file = TemporaryFile.Create())
+        {
+            path = file.FullPath;
+        }
+
+        Assert.False(File.Exists(path));
+        Assert.True(Directory.Exists(path.Parent));
+    }
+
+    [Fact]
     public void TemporaryFileCreateWithFullPath()
     {
         var fullPath = FullPath.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".tmp");

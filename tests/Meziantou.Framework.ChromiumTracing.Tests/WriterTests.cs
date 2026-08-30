@@ -77,6 +77,45 @@ public sealed partial class WriterTests
         });
     }
 
+    [Fact]
+    public async Task CreateFromAStreamTakesOwnershipOfIt()
+    {
+        var stream = new MemoryStream();
+
+        await using (var writer = ChromiumTracingWriter.Create(stream))
+        {
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent { Name = "sample" });
+        }
+
+        Assert.False(stream.CanWrite);
+    }
+
+    [Fact]
+    public async Task TheConstructorDoesNotTakeOwnershipOfTheStream()
+    {
+        using var stream = new MemoryStream();
+
+        await using (var writer = new ChromiumTracingWriter(stream))
+        {
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent { Name = "sample" });
+        }
+
+        Assert.True(stream.CanWrite);
+    }
+
+    [Fact]
+    public async Task CreateGzipFromAStreamDoesNotTakeOwnershipOfIt()
+    {
+        using var stream = new MemoryStream();
+
+        await using (var writer = ChromiumTracingWriter.CreateGzip(stream))
+        {
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent { Name = "sample" });
+        }
+
+        Assert.True(stream.CanWrite);
+    }
+
     private sealed record CustomPayload(int Value);
 
     [JsonSerializable(typeof(CustomPayload))]

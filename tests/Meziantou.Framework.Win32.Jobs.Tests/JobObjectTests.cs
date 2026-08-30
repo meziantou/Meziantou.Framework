@@ -278,9 +278,30 @@ public class JobObjectTests
     {
         using var job = new JobObject();
         job.AssignProcess(Process.GetCurrentProcess());
-        var info = job.GetBasicAndIoAccountingInformation();
-        Assert.NotEqual(TimeSpan.Zero, info.BasicInfo.TotalUserTime);
-        Assert.NotEqual((ulong)0, info.IoInfo.ReadOperationCount);
+
+        // A job only accounts for I/O performed after a process joins it, so the counters are
+        // still zero right after AssignProcess. Perform I/O and assert the counters moved,
+        // instead of depending on whatever the runtime happens to do in the meantime.
+        var before = job.GetBasicAndIoAccountingInformation();
+
+        var path = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllBytes(path, new byte[64 * 1024]);
+            _ = File.ReadAllBytes(path);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+
+        var after = job.GetBasicAndIoAccountingInformation();
+
+        Assert.NotEqual(TimeSpan.Zero, after.BasicInfo.TotalUserTime);
+        Assert.True(after.IoInfo.ReadOperationCount > before.IoInfo.ReadOperationCount, "The job should have accounted for the read operations");
+        Assert.True(after.IoInfo.WriteOperationCount > before.IoInfo.WriteOperationCount, "The job should have accounted for the write operations");
+        Assert.True(after.IoInfo.ReadTransferCount >= before.IoInfo.ReadTransferCount + (64 * 1024), "The job should have accounted for the bytes read");
+        Assert.True(after.IoInfo.WriteTransferCount >= before.IoInfo.WriteTransferCount + (64 * 1024), "The job should have accounted for the bytes written");
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]

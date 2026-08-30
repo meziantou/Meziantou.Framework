@@ -9,12 +9,17 @@ CredentialManager.WriteCredential(
     comment: "Test",
     persistence: CredentialPersistence.LocalMachine);
 
-// Get a credential from the credential manager
+// Get a credential from the credential manager.
+// ReadCredential returns null when no such credential exists.
 var cred = CredentialManager.ReadCredential(applicationName: "CredentialManagerTests");
-Console.WriteLine(cred.UserName);
-Console.WriteLine(cred.Password);
+if (cred is not null)
+{
+    Console.WriteLine(cred.UserName);
+    Console.WriteLine(cred.Password);
+}
 
-// Delete a credential from the credential manager
+// Delete a credential from the credential manager.
+// DeleteCredential throws Win32Exception when no such credential exists.
 CredentialManager.DeleteCredential(applicationName: "CredentialManagerTests");
 ````
 

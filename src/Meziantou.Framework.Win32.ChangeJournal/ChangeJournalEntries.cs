@@ -168,6 +168,7 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
                 ReasonMask = (uint)Options.ReasonFilter,
                 ReturnOnlyOnClose = Options.ReturnOnlyOnClose ? 1u : 0u,
                 Timeout = Options.TimeoutInSeconds,
+                BytesToWaitFor = Options.BytesToWaitFor,
                 UsnJournalID = ChangeJournal.Data.ID,
                 MinMajorVersion = Options.MinimumMajorVersion,
                 MaxMajorVersion = Options.MaximumMajorVersion,

@@ -17,7 +17,7 @@ namespace Meziantou.Framework.Win32;
 ///     Flags = JobObjectLimitFlags.KillOnJobClose
 /// });
 /// job.AssignProcess(Process.GetCurrentProcess());
-/// 
+///
 /// // Start a child process that will be terminated when the job is disposed
 /// var childProcess = Process.Start("child.exe");
 /// </code>
@@ -445,6 +445,7 @@ public sealed class JobObject : IDisposable
             throw new Win32Exception(err);
         }
     }
+
     /// <summary>Sets I/O limits on a job object.</summary>
     [SupportedOSPlatform("windows10.0.10240")]
     public unsafe void SetIoLimits(JobIoRateLimits limits)

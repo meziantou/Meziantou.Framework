@@ -75,7 +75,7 @@ public static class Privileges
     public const string SE_MACHINE_ACCOUNT_NAME = "SeMachineAccountPrivilege";
 
     /// <summary>Required to enable volume management privileges.</summary>
-  public const string SE_MANAGE_VOLUME_NAME = "SeManageVolumePrivilege";
+    public const string SE_MANAGE_VOLUME_NAME = "SeManageVolumePrivilege";
 
     /// <summary>Required to gather profiling information for a single process.</summary>
     public const string SE_PROF_SINGLE_PROCESS_NAME = "SeProfileSingleProcessPrivilege";
@@ -114,7 +114,7 @@ public static class Privileges
     public const string SE_TCB_NAME = "SeTcbPrivilege";
 
     /// <summary>Required to adjust the time zone associated with the computer's internal clock.</summary>
-  public const string SE_TIME_ZONE_NAME = "SeTimeZonePrivilege";
+    public const string SE_TIME_ZONE_NAME = "SeTimeZonePrivilege";
 
     /// <summary>Required to access Credential Manager as a trusted caller.</summary>
     public const string SE_TRUSTED_CREDMAN_ACCESS_NAME = "SeTrustedCredManAccessPrivilege";

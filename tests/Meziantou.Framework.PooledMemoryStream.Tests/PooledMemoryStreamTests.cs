@@ -284,6 +284,47 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public void GetBuffer_DoesNotExposeBytesLeftByAnotherStream()
+    {
+        // Unique tier size so this test owns its pool bucket and deterministically rents the same array back.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4111] };
+
+        using (var first = new PooledMemoryStream(options))
+        {
+            first.Write(CreateData(4111, seed: 77));
+        }
+
+        using var second = new PooledMemoryStream(options);
+        var data = CreateData(10, seed: 1);
+        second.Write(data);
+
+        var buffer = second.GetBuffer();
+        Assert.Equal(data, buffer.AsSpan(0, data.Length).ToArray());
+        Assert.Equal(new byte[buffer.Length - data.Length], buffer.AsSpan(data.Length).ToArray());
+    }
+
+    [Fact]
+    public void GetBuffer_AfterConsolidatingSegments_DoesNotExposeBytesLeftByAnotherStream()
+    {
+        // Both streams consolidate into the same 4139-byte bucket, so the second one rents the first one's array.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [16, 4139] };
+
+        using (var first = new PooledMemoryStream(options))
+        {
+            first.Write(CreateData(300, seed: 55));
+            first.GetBuffer();
+        }
+
+        using var second = new PooledMemoryStream(options);
+        var data = CreateData(20, seed: 2);
+        second.Write(data);
+
+        var buffer = second.GetBuffer();
+        Assert.Equal(data, buffer.AsSpan(0, data.Length).ToArray());
+        Assert.Equal(new byte[buffer.Length - data.Length], buffer.AsSpan(data.Length).ToArray());
+    }
+
+    [Fact]
     public void CopyTo_FromCurrentPosition()
     {
         var data = CreateData(1000, seed: 6);

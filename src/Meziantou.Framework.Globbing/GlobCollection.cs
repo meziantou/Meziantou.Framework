@@ -42,7 +42,9 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
     public static GlobCollection ParseGitIgnore(ReadOnlySpan<char> gitIgnoreContent)
     {
         var globs = new List<IGlobEvaluatable>();
-        foreach (var entry in new StringExtensions.LineSplitEnumerator(gitIgnoreContent))
+        // Split on CR/LF/CRLF only, like git and like TextReader.ReadLine in the LoadGitIgnoreAsync overloads. The
+        // default Unicode mode also breaks on U+0085, U+2028 and U+2029, which are legal characters in a file name.
+        foreach (var entry in new StringExtensions.LineSplitEnumerator(gitIgnoreContent, LineBreakMode.Standard))
         {
             AddGitIgnoreLine(entry.Line, globs);
         }

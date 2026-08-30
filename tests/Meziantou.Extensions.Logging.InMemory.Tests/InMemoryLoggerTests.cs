@@ -37,6 +37,52 @@ public sealed partial class InMemoryLoggerTests
     }
 
     [Fact]
+    public void ToString_DoesNotThrow_WhenAParameterValueIsNotJsonSerializable()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("handled by {Handler}", typeof(string));
+
+        var log = logger.Logs.Informations.Single();
+        var text = log.ToString();
+        Assert.Contains("handled by System.String", text);
+        Assert.Contains("handled by System.String", logger.Logs.ToString());
+    }
+
+    [Fact]
+    public void ToString_DoesNotThrow_WhenAScopeIsNotJsonSerializable()
+    {
+        using var provider = new InMemoryLoggerProvider(new LoggerExternalScopeProvider());
+        var logger = provider.CreateLogger("my_category");
+
+        using (logger.BeginScope(new { Callback = (Action)(() => { }) }))
+        {
+            logger.LogInformation("Test");
+        }
+
+        var log = provider.Logs.Informations.Single();
+        Assert.StartsWith("[my_category] Information: Test", log.ToString());
+    }
+
+    [Fact]
+    public void ToString_DoesNotThrow_WhenTheStateContainsAReferenceCycle()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        var node = new SelfReferencingNode();
+        node.Self = node;
+
+        logger.LogInformation("node {Node}", node);
+
+        var log = logger.Logs.Informations.Single();
+        Assert.StartsWith("[sample] Information: node ", log.ToString());
+    }
+
+    private sealed class SelfReferencingNode
+    {
+        public SelfReferencingNode? Self { get; set; }
+    }
+
+    [Fact]
     public void UsingDependencyInjection()
     {
         using var inMemoryLoggerProvider = new InMemoryLoggerProvider(NullExternalScopeProvider.Instance);

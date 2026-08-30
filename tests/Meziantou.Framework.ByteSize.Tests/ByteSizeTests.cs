@@ -17,6 +17,11 @@ public sealed class ByteSizeTests
     [InlineData(1_510_000L, "f1", "1.5MB")]
     [InlineData(1_510_000L, "", "1.51MB")]
     [InlineData(1_510_000L, "f2", "1.51MB")]
+    [InlineData(1_000_000_000_000_000L, "PB", "1PB")]
+    [InlineData(1_000_000_000_000_000_000L, "EB", "1EB")]
+    [InlineData(1_000_000_000_000_000_000L, "", "1EB")]
+    [InlineData(1_152_921_504_606_846_976L, "EiB", "1EiB")]
+    [InlineData(1_152_921_504_606_846_976L, "gi", "1EiB")]
     public void ToString_Test(long length, string? format, string expectedValue)
     {
         var byteSize = new ByteSize(length);
@@ -39,6 +44,28 @@ public sealed class ByteSizeTests
     }
 
     [Theory]
+    [InlineData(-10L, "", "-10B")]
+    [InlineData(-1_500L, "", "-1.5kB")]
+    [InlineData(-1_500_000_000L, "", "-1.5GB")]
+    [InlineData(-1_024L, "gi", "-1kiB")]
+    [InlineData(-1_073_741_824L, "gi", "-1GiB")]
+    [InlineData(long.MinValue, "gi", "-8EiB")]
+    public void ToString_NegativeValue_UsesScaledUnit(long length, string format, string expectedValue)
+    {
+        Assert.Equal(expectedValue, new ByteSize(length).ToString(format, CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData(1_500L, "", "1.5kB")]
+    [InlineData(1_500_000_000L, "", "1.5GB")]
+    [InlineData(1_073_741_824L, "gi", "1GiB")]
+    public void ToString_NegativeValue_MatchesPositiveApartFromTheSign(long length, string format, string expectedValue)
+    {
+        Assert.Equal(expectedValue, new ByteSize(length).ToString(format, CultureInfo.InvariantCulture));
+        Assert.Equal("-" + expectedValue, new ByteSize(-length).ToString(format, CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
     [InlineData("1", 1L)]
     [InlineData("1b", 1L)]
     [InlineData("1B", 1L)]
@@ -46,6 +73,11 @@ public sealed class ByteSizeTests
     [InlineData("1 KB", 1000L)]
     [InlineData("1 kiB", 1024L)]
     [InlineData("1.5 kB", 1500L)]
+    [InlineData("1PB", 1_000_000_000_000_000L)]
+    [InlineData("1EB", 1_000_000_000_000_000_000L)]
+    [InlineData("1eb", 1_000_000_000_000_000_000L)]
+    [InlineData("1 EiB", 1_152_921_504_606_846_976L)]
+    [InlineData("1PiB", 1_125_899_906_842_624L)]
     public void Parse(string str, long expectedValue)
     {
         var actual = ByteSize.Parse(str, CultureInfo.InvariantCulture);
@@ -89,6 +121,11 @@ public sealed class ByteSizeTests
     [InlineData(1_510_000L, "f1", "1.5MB")]
     [InlineData(1_510_000L, "", "1.51MB")]
     [InlineData(1_510_000L, "f2", "1.51MB")]
+    [InlineData(1_000_000_000_000_000L, "PB", "1PB")]
+    [InlineData(1_000_000_000_000_000_000L, "EB", "1EB")]
+    [InlineData(1_000_000_000_000_000_000L, "", "1EB")]
+    [InlineData(1_152_921_504_606_846_976L, "EiB", "1EiB")]
+    [InlineData(1_152_921_504_606_846_976L, "gi", "1EiB")]
     public void TryFormat_Test(long length, string? format, string expectedValue)
     {
         var byteSize = new ByteSize(length);
@@ -119,6 +156,11 @@ public sealed class ByteSizeTests
     [InlineData("1 KB", 1000L)]
     [InlineData("1 kiB", 1024L)]
     [InlineData("1.5 kB", 1500L)]
+    [InlineData("1PB", 1_000_000_000_000_000L)]
+    [InlineData("1EB", 1_000_000_000_000_000_000L)]
+    [InlineData("1eb", 1_000_000_000_000_000_000L)]
+    [InlineData("1 EiB", 1_152_921_504_606_846_976L)]
+    [InlineData("1PiB", 1_125_899_906_842_624L)]
     public void Parse_Span(string str, long expectedValue)
     {
         var actual = ByteSize.Parse(str.AsSpan(), CultureInfo.InvariantCulture);
@@ -155,6 +197,11 @@ public sealed class ByteSizeTests
     [InlineData(1_510_000L, "f1", "1.5MB")]
     [InlineData(1_510_000L, "", "1.51MB")]
     [InlineData(1_510_000L, "f2", "1.51MB")]
+    [InlineData(1_000_000_000_000_000L, "PB", "1PB")]
+    [InlineData(1_000_000_000_000_000_000L, "EB", "1EB")]
+    [InlineData(1_000_000_000_000_000_000L, "", "1EB")]
+    [InlineData(1_152_921_504_606_846_976L, "EiB", "1EiB")]
+    [InlineData(1_152_921_504_606_846_976L, "gi", "1EiB")]
     public void TryFormat_Utf8_Test(long length, string? format, string expectedValue)
     {
         var byteSize = new ByteSize(length);
@@ -185,6 +232,11 @@ public sealed class ByteSizeTests
     [InlineData("1 KB", 1000L)]
     [InlineData("1 kiB", 1024L)]
     [InlineData("1.5 kB", 1500L)]
+    [InlineData("1PB", 1_000_000_000_000_000L)]
+    [InlineData("1EB", 1_000_000_000_000_000_000L)]
+    [InlineData("1eb", 1_000_000_000_000_000_000L)]
+    [InlineData("1 EiB", 1_152_921_504_606_846_976L)]
+    [InlineData("1PiB", 1_125_899_906_842_624L)]
     public void Parse_Utf8(string str, long expectedValue)
     {
         var utf8Bytes = System.Text.Encoding.UTF8.GetBytes(str);
@@ -206,5 +258,19 @@ public sealed class ByteSizeTests
 
         var parsed = ByteSize.TryParse(utf8Bytes.AsSpan(), out var actualTry);
         Assert.False(parsed);
+    }
+
+    [Fact]
+    public void ToString_RoundTripsThroughParse_ForEveryUnit()
+    {
+        foreach (var unit in Enum.GetValues<ByteSizeUnit>())
+        {
+            var size = new ByteSize((long)unit);
+            var formatted = size.ToString(unit, CultureInfo.InvariantCulture);
+
+            Assert.Equal(size, ByteSize.Parse(formatted, CultureInfo.InvariantCulture));
+            Assert.Equal(size, ByteSize.Parse(formatted.AsSpan(), CultureInfo.InvariantCulture));
+            Assert.Equal(size, ByteSize.Parse(System.Text.Encoding.UTF8.GetBytes(formatted).AsSpan()));
+        }
     }
 }

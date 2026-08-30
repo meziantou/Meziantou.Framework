@@ -1150,6 +1150,26 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void DateTimeOffset_NegativeOffset() => AssertSerialization(new DateTimeOffset(2123, 4, 5, 6, 7, 8, TimeSpan.FromHours(-5)), "2123-04-05T06:07:08-05:00");
 
     [Fact]
+    public void DateTime_Milliseconds() => AssertSerialization(new DateTime(2123, 4, 5, 6, 7, 8, 9, DateTimeKind.Utc), "2123-04-05T06:07:08.0090000Z");
+
+    [Fact]
+    public void DateTime_SubMillisecondTicks() => AssertSerialization(new DateTime(2123, 4, 5, 6, 7, 8, DateTimeKind.Utc).AddTicks(5000), "2123-04-05T06:07:08.0005000Z");
+
+    [Fact]
+    public void DateTime_SingleTick() => AssertSerialization(new DateTime(2123, 4, 5, 6, 7, 8, DateTimeKind.Utc).AddTicks(1), "2123-04-05T06:07:08.0000001Z");
+
+    [Fact]
+    public void DateTimeOffset_SubMillisecondTicks() => AssertSerialization(new DateTimeOffset(2123, 4, 5, 6, 7, 8, TimeSpan.Zero).AddTicks(5000), "2123-04-05T06:07:08.0005000+00:00");
+
+    [Fact]
+    public void DateTime_ValuesDifferingBySubMillisecondTicksAreNotSerializedIdentically()
+    {
+        var value = new DateTime(2123, 4, 5, 6, 7, 8, DateTimeKind.Utc);
+
+        Assert.NotEqual(HumanReadableSerializer.Serialize(value), HumanReadableSerializer.Serialize(value.AddTicks(1)));
+    }
+
+    [Fact]
     public void Timespan_HoursMinutesSeconds() => AssertSerialization(new TimeSpan(1, 2, 3), "01:02:03");
 
     [Fact]

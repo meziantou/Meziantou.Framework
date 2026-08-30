@@ -88,7 +88,8 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
                 public static int Length => Generated.EmbeddedConstants.LogoBytes.Length;
             }
             """);
-        CreateBinaryFile(projectDirectory / "Assets" / "logo.bin", [0x89, 0x50, 0x4E, 0x47]);
+        // More than 16 bytes so the byte array spans several lines
+        CreateBinaryFile(projectDirectory / "Assets" / "logo.bin", [0x89, 0x50, 0x4E, 0x47, .. Enumerable.Range(0, 16).Select(i => (byte)i)]);
 
         await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
         await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
@@ -97,6 +98,7 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         Assert.DoesNotContain("LogoText", generatedSource);
         Assert.Contains("public static global::System.ReadOnlySpan<byte> LogoBytes => new byte[]", generatedSource);
         Assert.Contains("0x89, 0x50, 0x4E, 0x47", generatedSource);
+        AssertNoTrailingWhitespace(generatedSource);
     }
 
     [Fact]
@@ -138,6 +140,12 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         var generatedSource = await File.ReadAllTextAsync(GetGeneratedFilePath(projectDirectory), XunitCancellationToken);
         Assert.Contains("public const string ConfigJsonText = \"{}\";", generatedSource);
         Assert.Contains("public static global::System.ReadOnlySpan<byte> ConfigJsonBytes => new byte[]", generatedSource);
+
+        // The two members of the first entry are separated like every other pair of members
+        Assert.Contains(
+            "public const string ConfigJsonText = \"{}\";\n\n    public static global::System.ReadOnlySpan<byte> ConfigJsonBytes",
+            generatedSource.ReplaceLineEndings("\n"));
+        AssertNoTrailingWhitespace(generatedSource);
     }
 
     [Fact]
@@ -213,6 +221,12 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
               </ItemGroup>
             </Project>
             """;
+    }
+
+    private static void AssertNoTrailingWhitespace(string generatedSource)
+    {
+        var lines = generatedSource.ReplaceLineEndings("\n").Split('\n');
+        Assert.Empty(lines.Where(line => line != line.TrimEnd()));
     }
 
     private static FullPath GetGeneratedFilePath(FullPath projectDirectory)

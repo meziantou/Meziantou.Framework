@@ -43,6 +43,18 @@ public sealed class AccessTokenTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void EnablePrivilegeThrowsWhenTheTokenDoesNotHoldThePrivilege()
+    {
+        const int ErrorNotAllAssigned = 1300;
+
+        // SeTcbPrivilege is not granted to standard users nor to Administrators by default
+        using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query | TokenAccessLevels.AdjustPrivileges);
+        var exception = Assert.Throws<Win32Exception>(() => token.EnablePrivilege(Privileges.SE_TCB_NAME));
+
+        Assert.Equal(ErrorNotAllAssigned, exception.NativeErrorCode);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void EnumeratePrivilegesReturnsNamesWithoutTerminatingNullCharacter()
     {
         using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);

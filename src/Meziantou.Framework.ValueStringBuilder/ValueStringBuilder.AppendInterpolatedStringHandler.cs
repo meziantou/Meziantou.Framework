@@ -82,28 +82,7 @@ ref partial struct ValueStringBuilder
 
         public void AppendLiteral(string value) => _valueStringBuilder.Append(value);
 
-        public void AppendFormatted<T>(T value)
-        {
-            if (_hasCustomFormatter)
-            {
-                AppendCustomFormatter(value, format: null);
-                return;
-            }
-
-            if (value is null)
-            {
-                return;
-            }
-
-            if (value is IFormattable formattable)
-            {
-                _valueStringBuilder.Append(formattable.ToString(format: null, _provider));
-            }
-            else
-            {
-                _valueStringBuilder.Append(value.ToString());
-            }
-        }
+        public void AppendFormatted<T>(T value) => AppendFormatted(value, format: null);
 
         public void AppendFormatted<T>(T value, string? format)
         {
@@ -113,18 +92,27 @@ ref partial struct ValueStringBuilder
                 return;
             }
 
-            if (value is null)
+            if (value is IFormattable)
             {
-                return;
-            }
+                // ISpanFormattable formats straight into the buffer. IFormattable.ToString allocates a
+                // string for every hole, so it is only the fallback for types that cannot do better.
+                if (value is ISpanFormattable)
+                {
+                    int charsWritten;
+                    while (!((ISpanFormattable)value).TryFormat(_valueStringBuilder._chars[_valueStringBuilder._pos..], out charsWritten, format, _provider))
+                    {
+                        _valueStringBuilder.EnsureCapacity(_valueStringBuilder.Capacity + 1);
+                    }
 
-            if (value is IFormattable formattable)
-            {
-                _valueStringBuilder.Append(formattable.ToString(format, _provider));
+                    _valueStringBuilder._pos += charsWritten;
+                    return;
+                }
+
+                _valueStringBuilder.Append(((IFormattable)value).ToString(format, _provider));
             }
             else
             {
-                _valueStringBuilder.Append(value.ToString());
+                _valueStringBuilder.Append(value?.ToString());
             }
         }
 
@@ -132,14 +120,42 @@ ref partial struct ValueStringBuilder
 
         public void AppendFormatted<T>(T value, int alignment, string? format)
         {
-            if (alignment is 0)
+            var startingPos = _valueStringBuilder.Length;
+            AppendFormatted(value, format);
+
+            if (alignment is not 0)
             {
-                AppendFormatted(value, format);
+                // Formatting first and padding afterwards avoids materialising the value as a string
+                // just to measure it.
+                AppendOrInsertAlignmentIfNeeded(startingPos, alignment);
+            }
+        }
+
+        private void AppendOrInsertAlignmentIfNeeded(int startingPos, int alignment)
+        {
+            var charsWritten = _valueStringBuilder.Length - startingPos;
+
+            var leftAlign = false;
+            if (alignment < 0)
+            {
+                leftAlign = true;
+                alignment = -alignment;
+            }
+
+            var paddingRequired = alignment - charsWritten;
+            if (paddingRequired <= 0)
+            {
                 return;
             }
 
-            var formatted = FormatToString(value, format);
-            AppendFormatted(formatted.AsSpan(), alignment);
+            if (leftAlign)
+            {
+                _valueStringBuilder.Append(' ', paddingRequired);
+            }
+            else
+            {
+                _valueStringBuilder.Insert(startingPos, ' ', paddingRequired);
+            }
         }
 
         public void AppendFormatted(ReadOnlySpan<char> value) => _valueStringBuilder.Append(value);
@@ -206,26 +222,6 @@ ref partial struct ValueStringBuilder
             {
                 _valueStringBuilder.Append(formatter.Format(format, value, _provider));
             }
-        }
-
-        private string FormatToString<T>(T value, string? format)
-        {
-            if (_hasCustomFormatter && _provider?.GetFormat(typeof(ICustomFormatter)) is ICustomFormatter formatter)
-            {
-                return formatter.Format(format, value, _provider) ?? string.Empty;
-            }
-
-            if (value is null)
-            {
-                return string.Empty;
-            }
-
-            if (value is IFormattable formattable)
-            {
-                return formattable.ToString(format, _provider) ?? string.Empty;
-            }
-
-            return value.ToString() ?? string.Empty;
         }
     }
 }

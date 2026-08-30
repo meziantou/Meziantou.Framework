@@ -26,6 +26,12 @@
   <Target Name="GenerateEmbeddedConstants"
           BeforeTargets="CoreCompile;BeforeCompile"
           Condition="'@(EmbeddedConstant)' != '' and '$(IsCrossTargetingBuild)' != 'true'">
+    <!-- The inner builds of a multi-targeted project run in parallel. If they all resolve to the same
+         generated file they write to it concurrently, so the path must vary by target framework. -->
+    <Error Condition="'$(TargetFrameworks)' != '' and '$(TargetFramework)' != '' and !$(_EmbeddedConstantsGeneratedCodePath.Contains('$(TargetFramework)'))"
+           Code="MFECG0010"
+           Text="The embedded constants output path '$(_EmbeddedConstantsGeneratedCodePath)' is the same for every target framework of this project, and the parallel inner builds would write to it concurrently. Include $(TargetFramework) in 'EmbeddedConstantsOutputPath', or remove the property to use the default path under the intermediate output directory." />
+
     <MakeDir Directories="$(_EmbeddedConstantsGeneratedCodeDirectory)" />
 
     <GenerateEmbeddedConstantsTask EmbeddedConstants="@(EmbeddedConstant)"

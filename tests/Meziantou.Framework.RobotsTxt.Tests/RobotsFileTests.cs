@@ -247,6 +247,29 @@ public sealed class RobotsFileTests
     }
 
     [Fact]
+    public void Parse_LeadingByteOrderMark_IsIgnored()
+    {
+        var robots = RobotsFile.Parse("\uFEFFUser-agent: *\nDisallow: /\n");
+
+        var group = Assert.Single(robots.Groups);
+        Assert.Equal(["*"], group.UserAgents);
+        Assert.Empty(robots.ParseErrors);
+        Assert.False(robots.IsAllowed("Bot", "/anything"));
+    }
+
+    [Fact]
+    public void Parse_ByteOrderMarkOnALaterLine_IsNotStripped()
+    {
+        // Only the very first character of the file can be a BOM. Elsewhere U+FEFF is a
+        // zero-width no-break space and must not be silently removed from a directive.
+        var robots = RobotsFile.Parse("User-agent: *\n\uFEFFDisallow: /\n");
+
+        var error = Assert.Single(robots.ParseErrors);
+        Assert.Equal(RobotsParseErrorKind.UnknownDirective, error.Kind);
+        Assert.Equal(2, error.LineNumber);
+    }
+
+    [Fact]
     public void Parse_UserAgentAfterCrawlDelay_StartsANewGroup()
     {
         var robots = RobotsFile.Parse("""
@@ -797,6 +820,33 @@ public sealed class RobotsFileTests
         var robots = await RobotsFile.ParseAsync(stream, cancellationToken: XunitCancellationToken);
 
         Assert.Single(robots.Groups);
+        Assert.False(robots.IsAllowed("Bot", "/anything"));
+    }
+
+    [Fact]
+    public async Task ParseAsync_Utf8StreamWithByteOrderMark_IsIgnored()
+    {
+        using var stream = new MemoryStream();
+        stream.Write(Encoding.UTF8.GetPreamble());
+        stream.Write(Encoding.UTF8.GetBytes("User-agent: *\nDisallow: /\n"));
+        stream.Position = 0;
+
+        var robots = await RobotsFile.ParseAsync(stream, cancellationToken: XunitCancellationToken);
+
+        Assert.Single(robots.Groups);
+        Assert.Empty(robots.ParseErrors);
+        Assert.False(robots.IsAllowed("Bot", "/anything"));
+    }
+
+    [Fact]
+    public async Task ParseAsync_TextReaderWithByteOrderMark_IsIgnored()
+    {
+        using var reader = new StringReader("\uFEFFUser-agent: *\nDisallow: /\n");
+
+        var robots = await RobotsFile.ParseAsync(reader, XunitCancellationToken);
+
+        Assert.Single(robots.Groups);
+        Assert.Empty(robots.ParseErrors);
         Assert.False(robots.IsAllowed("Bot", "/anything"));
     }
 

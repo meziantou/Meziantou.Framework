@@ -1822,6 +1822,31 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void MaxDepthViolationDoesNotConsumeDepthBudget()
+    {
+        var options = new HumanReadableSerializerOptions { MaxDepth = 1 };
+        var writer = new HumanReadableTextWriter(options);
+
+        writer.StartObject();
+        writer.WritePropertyName("a");
+        Assert.Throws<HumanReadableSerializerException>(writer.StartObject);
+        writer.WriteValue("1");
+        writer.EndObject();
+
+        // The failed StartObject must not have left the depth inflated, so an unrelated
+        // object written afterwards is still within the budget.
+        writer.StartObject();
+        writer.WritePropertyName("b");
+        writer.WriteValue("2");
+        writer.EndObject();
+
+        Assert.Equal("""
+            a: 1
+              b: 2
+            """, writer.ToString(), ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
     public void IgnoreNullValues_Never()
     {
         AssertSerialization(new Validation

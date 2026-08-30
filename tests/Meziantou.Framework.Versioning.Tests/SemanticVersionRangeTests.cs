@@ -491,6 +491,49 @@ public class SemanticVersionRangeTests
     }
 
     [Theory]
+    // Space-separated constraints are ANDed, so the order they are written in cannot matter
+    [InlineData(">=1.0.0 >=1.5.0", ">=1.5.0 >=1.0.0")]
+    [InlineData("<1.5.0 <2.0.0", "<2.0.0 <1.5.0")]
+    [InlineData(">1.0.0 >=1.0.0", ">=1.0.0 >1.0.0")]
+    [InlineData("<2.0.0 <=2.0.0", "<=2.0.0 <2.0.0")]
+    [InlineData(">=1.5.0 ^1.0.0", "^1.0.0 >=1.5.0")]
+    [InlineData(">=1.2.0 1.x", "1.x >=1.2.0")]
+    [InlineData(">=2.0.0 x.x", "x.x >=2.0.0")]
+    public void ParseNpm_ConstraintOrder_DoesNotChangeTheRange(string one, string other)
+    {
+        Assert.Equal(SemanticVersionRange.ParseNpm(one), SemanticVersionRange.ParseNpm(other));
+    }
+
+    [Theory]
+    [InlineData(">=1.5.0 >=1.0.0", "[1.5.0, )")] // The tighter lower bound wins
+    [InlineData("<1.5.0 <2.0.0", "(, 1.5.0)")] // The tighter upper bound wins
+    [InlineData(">1.0.0 >=1.0.0", "(1.0.0, )")] // Equal bounds keep the exclusive one
+    [InlineData("<2.0.0 <=2.0.0", "(, 2.0.0)")]
+    [InlineData(">=2.0.0 x.x", "[2.0.0, )")] // A match-everything constraint narrows nothing
+    [InlineData(">=1.0.0 <2.0.0", "[1.0.0, 2.0.0)")]
+    public void ParseNpm_MultipleConstraints_AreIntersected(string input, string expected)
+    {
+        Assert.Equal(expected, SemanticVersionRange.ParseNpm(input).ToString());
+    }
+
+    [Fact]
+    public void ParseNpm_LooserConstraintLast_DoesNotWidenTheRange()
+    {
+        var range = SemanticVersionRange.ParseNpm(">=1.5.0 >=1.0.0");
+
+        Assert.False(range.Satisfies(SemanticVersion.Parse("1.2.0")));
+        Assert.True(range.Satisfies(SemanticVersion.Parse("1.5.0")));
+    }
+
+    [Fact]
+    public void ParseNpm_Union_ReportsThatUnionsAreUnsupported()
+    {
+        var exception = Assert.Throws<FormatException>(() => SemanticVersionRange.ParseNpm("^1.0.0 || ^2.0.0"));
+
+        Assert.Contains("||", exception.Message);
+    }
+
+    [Theory]
     [InlineData("x.x")]
     [InlineData("*.*")]
     [InlineData("x")]
@@ -533,6 +576,12 @@ public class SemanticVersionRangeTests
     [InlineData("1.2-beta")] // A label needs a complete major.minor.patch
     [InlineData("^1.x-beta")]
     [InlineData(">=1.x")] // A wildcard carries no meaning next to a comparison operator
+    // An upper bound of "component + 1" would overflow into a negative version
+    [InlineData("^2147483647.0.0")]
+    [InlineData("~2147483647.0.0")]
+    [InlineData("2147483647.x")]
+    [InlineData("^0.0.2147483647")]
+    [InlineData("1.0.0 - 2147483647")]
     public void ParseNpm_InvalidFormats_ThrowsFormatException(string input)
     {
         Assert.Throws<FormatException>(() => SemanticVersionRange.ParseNpm(input));

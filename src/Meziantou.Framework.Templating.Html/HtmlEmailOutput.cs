@@ -149,20 +149,15 @@ public class HtmlEmailOutput(Template template, TextWriter writer) : Output(temp
         }
     }
 
-    /// <summary>
-    /// Captures every section the template left open, so a missing <c>end_section</c> no longer
-    /// discards the metadata. Innermost first, so an outer section still wins when several share a
-    /// name, matching <see cref="EndSection"/>.
-    /// </summary>
-    internal void EndOpenSections()
+    /// <summary>Throws when the template left a section open, which means an <c>end_section</c> directive is missing.</summary>
+    /// <exception cref="TemplateException">A section was started but never ended.</exception>
+    internal void ThrowIfSectionsAreOpen()
     {
-        for (var i = _currentSections.Count - 1; i >= 0; i--)
-        {
-            var section = _currentSections[i];
-            _sections[section.Name] = section.Writer.ToString();
-        }
+        if (_currentSections.Count == 0)
+            return;
 
-        _currentSections.Clear();
+        var sectionNames = string.Join(", ", _currentSections.Select(section => "'" + section.Name + "'"));
+        throw new TemplateException($"The template is invalid: no end_section directive for {sectionNames}.");
     }
 
     /// <summary>Retrieves the content of a previously captured section.</summary>

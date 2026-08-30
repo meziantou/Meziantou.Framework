@@ -119,16 +119,36 @@ public class EmailTemplateTest
     }
 
     [Fact]
-    public void EmailTemplate_UnclosedSection_IsStillCapturedAsMetadata()
+    public void EmailTemplate_UnclosedSection_Throws()
     {
         var template = new HtmlEmailTemplate();
         template.Load("Hello {{@begin_section title}}Subject");
 
-        var result = template.Run(out var metadata);
+        var exception = Assert.Throws<TemplateException>(() => template.Run(out _));
 
-        Assert.Equal("Hello Subject", result);
-        Assert.NotNull(metadata);
-        Assert.Equal("Subject", metadata.Title);
+        Assert.Contains("end_section", exception.Message, ignoreCase: false);
+        Assert.Contains("'title'", exception.Message, ignoreCase: false);
+    }
+
+    [Fact]
+    public void EmailTemplate_SeveralUnclosedSections_AreAllReported()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("{{@begin_section title}}a{{@begin_section footer}}b");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Run(out _));
+
+        Assert.Contains("'title'", exception.Message, ignoreCase: false);
+        Assert.Contains("'footer'", exception.Message, ignoreCase: false);
+    }
+
+    [Fact]
+    public void EmailTemplate_UnclosedSection_ThrowsFromInheritedRunOverloadsToo()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("Hello {{@begin_section title}}Subject");
+
+        Assert.Throws<TemplateException>(() => ((Template)template).Run());
     }
 
     [Fact]

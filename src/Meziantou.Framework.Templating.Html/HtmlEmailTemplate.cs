@@ -114,12 +114,25 @@ public class HtmlEmailTemplate : Template
         metadata = GetMetadata(p);
     }
 
+    /// <summary>Runs the template, then rejects it if it left a section open.</summary>
+    /// <exception cref="TemplateException">The template started a section but never ended it.</exception>
+    protected override void InvokeRunMethod(object?[] p)
+    {
+        base.InvokeRunMethod(p);
+
+        // Checked here rather than while building the metadata so that every Run overload validates,
+        // including the inherited ones that never produce an HtmlEmailMetadata.
+        foreach (var htmlEmailOutput in p.OfType<HtmlEmailOutput>())
+        {
+            htmlEmailOutput.ThrowIfSectionsAreOpen();
+        }
+    }
+
     private static HtmlEmailMetadata? GetMetadata(object?[] parameters)
     {
         var htmlEmailOutput = parameters.OfType<HtmlEmailOutput>().FirstOrDefault();
         if (htmlEmailOutput is not null)
         {
-            htmlEmailOutput.EndOpenSections();
             return new HtmlEmailMetadata
             {
                 Title = htmlEmailOutput.GetSection(HtmlEmailOutput.TitleSectionName),

@@ -75,9 +75,12 @@ public sealed class RestartManager : IDisposable
     /// <summary>Joins an existing Restart Manager session using the specified session key.</summary>
     /// <param name="sessionKey">The session key of an existing Restart Manager session.</param>
     /// <returns>A <see cref="RestartManager"/> instance representing the joined session.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="sessionKey"/> is <see langword="null"/>.</exception>
     /// <exception cref="Win32Exception">Thrown when joining the session fails.</exception>
     public static RestartManager JoinSession(string sessionKey)
     {
+        ArgumentNullException.ThrowIfNull(sessionKey);
+
         var result = PInvoke.RmJoinSession(out var handle, sessionKey);
         if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmJoinSession failed ({result})");

@@ -73,6 +73,28 @@ public class RelativeDateTests
         }
     }
 
+    [Fact]
+    public void Equality_IsDefinedOverTheInstantOnly()
+    {
+        var dateTime = new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc);
+
+        var twoHoursLater = new FakeTimeProvider();
+        twoHoursLater.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var twoYearsLater = new FakeTimeProvider();
+        twoYearsLater.SetUtcNow(new DateTimeOffset(2020, 6, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var a = RelativeDate.Get(dateTime, twoHoursLater);
+        var b = RelativeDate.Get(dateTime, twoYearsLater);
+
+        Assert.Equal(a, b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        Assert.Equal(0, a.CompareTo(b));
+
+        // The time provider is display state: it decides what an instance renders as, but takes no part in equality
+        Assert.Equal("2 hours ago", a.ToString(format: null, CultureInfo.InvariantCulture));
+        Assert.Equal("2 years ago", b.ToString(format: null, CultureInfo.InvariantCulture));
+    }
+
 #if !INVARIANT_GLOBALIZATION_MODE_ENABLED
     private static readonly string[] LocalizedCultures = ["de", "es", "fr", "it", "ja", "ko", "nl", "pt", "tr", "zh-Hans"];
 

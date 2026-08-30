@@ -94,6 +94,49 @@ public class RelativeDateTests
     }
 
 #if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    [Fact]
+    public void LocalDateTime_IsInterpretedInTheTimeProviderTimeZone()
+    {
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        timeProvider.SetLocalTimeZone(timeZone);
+
+        // 10:00 UTC expressed as a wall clock reading in the provider's time zone
+        var local = DateTime.SpecifyKind(TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc), timeZone), DateTimeKind.Local);
+
+        var result = RelativeDate.Get(local, timeProvider).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.Equal("2 hours ago", result);
+    }
+
+    [Fact]
+    public void LocalDateTime_SkippedByAForwardDstTransition_DoesNotThrow()
+    {
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris");
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 3, 25, 12, 0, 0, TimeSpan.Zero));
+        timeProvider.SetLocalTimeZone(timeZone);
+
+        // 02:30 does not exist in Paris on 2018-03-25: the clock jumps from 02:00 to 03:00
+        var invalid = DateTime.SpecifyKind(new DateTime(2018, 3, 25, 2, 30, 0), DateTimeKind.Local);
+        Assert.True(timeZone.IsInvalidTime(DateTime.SpecifyKind(invalid, DateTimeKind.Unspecified)));
+
+        // Read against the standard-time offset (UTC+1), so 02:30 becomes 01:30 UTC
+        var result = RelativeDate.Get(invalid, timeProvider).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.Equal("10 hours ago", result);
+    }
+
+    [Fact]
+    public void UtcDateTime_IgnoresTheTimeProviderTimeZone()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        timeProvider.SetLocalTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo"));
+
+        var result = RelativeDate.Get(new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc), timeProvider).ToString(format: null, CultureInfo.InvariantCulture);
+        Assert.Equal("2 hours ago", result);
+    }
+
     private static readonly string[] LocalizedCultures = ["de", "es", "fr", "it", "ja", "ko", "nl", "pt", "tr", "zh-Hans"];
 
     /// <summary>Offsets from "now" reaching every branch of <see cref="RelativeDate.ToString(string, IFormatProvider)"/>, in both directions.</summary>

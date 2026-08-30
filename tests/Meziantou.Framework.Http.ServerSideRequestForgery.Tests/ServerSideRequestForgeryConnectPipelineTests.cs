@@ -18,6 +18,27 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         Assert.NotNull(handler.ConnectCallback);
     }
 
+    [Fact]
+    public void ConfigureSsrf_ThrowsWhenTheHandlerAlreadyHasAConnectCallback()
+    {
+        using var handler = new SocketsHttpHandler
+        {
+            ConnectCallback = (context, cancellationToken) => throw new InvalidOperationException("should never run"),
+        };
+
+        Assert.Throws<InvalidOperationException>(() => handler.ConfigureSsrf(new ServerSideRequestForgeryOptions(), new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")])));
+    }
+
+    [Fact]
+    public void ConfigureSsrf_ThrowsWhenCalledTwiceOnTheSameHandler()
+    {
+        using var handler = new SocketsHttpHandler();
+        var resolver = new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")]);
+        handler.ConfigureSsrf(new ServerSideRequestForgeryOptions(), resolver);
+
+        Assert.Throws<InvalidOperationException>(() => handler.ConfigureSsrf(new ServerSideRequestForgeryOptions(), resolver));
+    }
+
     [Theory]
     [InlineData(AddressFamily.InterNetwork)]
     [InlineData(AddressFamily.InterNetworkV6)]
@@ -248,6 +269,105 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             options);
     }
 
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_ProbesTheProxyOnceForABurstOfConnections()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        var proxy = new CountingWebProxy(new Uri("http://proxy.invalid:8080"));
+        using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = proxy };
+
+        for (var i = 0; i < 5; i++)
+        {
+            ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+                handler,
+                new Uri("https://example.com/"),
+                new DnsEndPoint("example.com", 443),
+                options);
+        }
+
+        // The two reserved probe destinations are resolved once and reused; only the real request URI is asked every time.
+        Assert.Equal(2, proxy.ProbeQueryCount);
+        Assert.Equal(5, proxy.RequestQueryCount);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_StillDetectsTheProxyOnACachedProbeResult()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        var proxy = new CountingWebProxy(new Uri("http://proxy.invalid:8080"));
+        using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = proxy };
+
+        // Populate the cache with a connection that is not to the proxy.
+        ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            new Uri("https://example.com/"),
+            new DnsEndPoint("example.com", 443),
+            options);
+
+        // A later connection that does target the proxy must still be rejected off the cached probe result.
+        var exception = Assert.Throws<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            new Uri("https://example.com/"),
+            new DnsEndPoint("proxy.invalid", 8080),
+            options));
+
+        Assert.Contains("targets a proxy", exception.Message);
+        Assert.Equal(2, proxy.ProbeQueryCount);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_DoesNotShareProbeResultsBetweenProxies()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        var first = new CountingWebProxy(new Uri("http://proxy-one.invalid:8080"));
+        var second = new CountingWebProxy(new Uri("http://proxy-two.invalid:9090"));
+
+        using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = first };
+        ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            new Uri("https://example.com/"),
+            new DnsEndPoint("example.com", 443),
+            options);
+
+        handler.Proxy = second;
+        Assert.Throws<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            new Uri("https://example.com/"),
+            new DnsEndPoint("proxy-two.invalid", 9090),
+            options));
+
+        Assert.Equal(2, first.ProbeQueryCount);
+        Assert.Equal(2, second.ProbeQueryCount);
+    }
+
+    private sealed class CountingWebProxy(Uri proxyUri) : IWebProxy
+    {
+        private int _probeQueryCount;
+        private int _requestQueryCount;
+
+        public ICredentials? Credentials { get; set; }
+
+        public int ProbeQueryCount => _probeQueryCount;
+
+        public int RequestQueryCount => _requestQueryCount;
+
+        public Uri? GetProxy(Uri destination)
+        {
+            if (destination.Host.EndsWith(".invalid", StringComparison.OrdinalIgnoreCase))
+            {
+                Interlocked.Increment(ref _probeQueryCount);
+                return proxyUri;
+            }
+
+            // Mirrors the case the probes exist for: the proxy reports nothing for the real destination, so its
+            // own address is only visible through a destination that is certainly not it.
+            Interlocked.Increment(ref _requestQueryCount);
+            return null;
+        }
+
+        public bool IsBypassed(Uri host) => false;
+    }
+
     private static ServerSideRequestForgeryOptions CreateProxyTestOptions()
     {
         var options = new ServerSideRequestForgeryOptions();
@@ -317,7 +437,25 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     [InlineData("2002:7f00:0001::")]
     [InlineData("2002:a9fe:a9fe::")]
     [InlineData("2001::1")]
+    [InlineData("64:ff9b:1::7f00:1")]
+    [InlineData("64:ff9b:1::a9fe:a9fe")]
+    [InlineData("::ffff:0:7f00:1")]
+    [InlineData("::ffff:0:a9fe:a9fe")]
     public async Task ResolveAndSelectIpAddressAsync_RejectsAddressEmbeddingUnsafeIpv4Target(string address)
+    {
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://example.com"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: new ServerSideRequestForgeryOptions(),
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse(address)]),
+            cancellationToken: CancellationToken.None).AsTask());
+    }
+
+    [Theory]
+    // Deprecated IPv6 site-local addresses (RFC3879) sit between fc00::/7 and fe80::/10 and are private scope.
+    [InlineData("fec0::1")]
+    [InlineData("feff::1")]
+    public async Task ResolveAndSelectIpAddressAsync_RejectsSiteLocalAddress(string address)
     {
         await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
             requestUri: new Uri("https://example.com"),
@@ -333,6 +471,8 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     [InlineData("2003::1")]
     [InlineData("192.1.0.1")]
     [InlineData("192.89.0.1")]
+    [InlineData("64:ff9b:2::1")]
+    [InlineData("2001:db8::1")]
     public async Task ResolveAndSelectIpAddressAsync_AllowsGlobalUnicastAddressNearBlockedRange(string address)
     {
         var options = new ServerSideRequestForgeryOptions

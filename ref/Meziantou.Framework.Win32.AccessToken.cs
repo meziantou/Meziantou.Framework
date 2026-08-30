@@ -12,11 +12,11 @@ namespace Meziantou.Framework.Win32
         public Meziantou.Framework.Win32.TokenElevationType GetElevationType() => throw null;
         public bool IsElevated() => throw null;
         public Meziantou.Framework.Win32.AccessToken? GetLinkedToken() => throw null;
-        public Meziantou.Framework.Win32.TokenEntry? GetMandatoryIntegrityLevel() => throw null;
-        public Meziantou.Framework.Win32.SecurityIdentifier? GetOwner() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.TokenGroupEntry>? EnumerateGroups() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.TokenGroupEntry>? EnumerateRestrictedSid() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.TokenPrivilegeEntry>? EnumeratePrivileges() => throw null;
+        public Meziantou.Framework.Win32.TokenEntry GetMandatoryIntegrityLevel() => throw null;
+        public Meziantou.Framework.Win32.SecurityIdentifier GetOwner() => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.TokenGroupEntry> EnumerateGroups() => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.TokenGroupEntry> EnumerateRestrictedSid() => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.TokenPrivilegeEntry> EnumeratePrivileges() => throw null;
         public void EnablePrivilege(string privilegeName) { }
         public void DisablePrivilege(string privilegeName) { }
         public void DisableAllPrivileges() { }

@@ -420,7 +420,7 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
             return result;
         }
 
-        throw new FormatException($"The value '{value}' is not a valid npm version range.");
+        throw new FormatException(GetNpmFormatErrorMessage(value));
     }
 
     /// <summary>Parses a version range in npm format.</summary>
@@ -435,7 +435,17 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
             return result;
         }
 
-        throw new FormatException($"The value '{value}' is not a valid npm version range.");
+        throw new FormatException(GetNpmFormatErrorMessage(value));
+    }
+
+    private static string GetNpmFormatErrorMessage(ReadOnlySpan<char> value)
+    {
+        // A union is valid npm syntax that this type cannot represent, since it models a single
+        // interval. Saying so beats letting the caller hunt for a syntax error that is not there.
+        if (value.Contains("||".AsSpan(), StringComparison.Ordinal))
+            return $"The value '{value}' is not a valid npm version range: a union of ranges ('||') cannot be represented by a single {nameof(SemanticVersionRange)}.";
+
+        return $"The value '{value}' is not a valid npm version range.";
     }
 
     /// <summary>Attempts to parse a version range in npm format.</summary>
@@ -550,12 +560,22 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         else if (right.Minor is { } rightMinor)
         {
             // Partial minor: <X.(Y+1).0
+            if (rightMinor is int.MaxValue)
+            {
+                return false;
+            }
+
             maxVersion = new SemanticVersion(right.Major.Value, rightMinor + 1, 0);
             isMaxInclusive = false;
         }
         else
         {
             // Only major: <(X+1).0.0
+            if (right.Major.Value is int.MaxValue)
+            {
+                return false;
+            }
+
             maxVersion = new SemanticVersion(right.Major.Value + 1, 0, 0);
             isMaxInclusive = false;
         }
@@ -638,30 +658,70 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         switch (op)
         {
             case NpmOperator.Exact:
-                minVersion = version;
-                maxVersion = version;
-                isMinInclusive = true;
-                isMaxInclusive = true;
+                IntersectMin(ref minVersion, ref isMinInclusive, version, inclusive: true);
+                IntersectMax(ref maxVersion, ref isMaxInclusive, version, inclusive: true);
                 break;
             case NpmOperator.GreaterThan:
-                minVersion = version;
-                isMinInclusive = false;
+                IntersectMin(ref minVersion, ref isMinInclusive, version, inclusive: false);
                 break;
             case NpmOperator.GreaterThanOrEqual:
-                minVersion = version;
-                isMinInclusive = true;
+                IntersectMin(ref minVersion, ref isMinInclusive, version, inclusive: true);
                 break;
             case NpmOperator.LessThan:
-                maxVersion = version;
-                isMaxInclusive = false;
+                IntersectMax(ref maxVersion, ref isMaxInclusive, version, inclusive: false);
                 break;
             case NpmOperator.LessThanOrEqual:
-                maxVersion = version;
-                isMaxInclusive = true;
+                IntersectMax(ref maxVersion, ref isMaxInclusive, version, inclusive: true);
                 break;
         }
 
         return true;
+    }
+
+    // Space-separated npm constraints are ANDed together, so each one narrows the range rather
+    // than replacing it. Assigning instead would make the result depend on the order the
+    // constraints happen to be written in, and ">=1.5.0 >=1.0.0" would widen back out to >=1.0.0.
+    private static void IntersectMin(ref SemanticVersion? minVersion, ref bool isMinInclusive, SemanticVersion version, bool inclusive)
+    {
+        if (minVersion is null)
+        {
+            minVersion = version;
+            isMinInclusive = inclusive;
+            return;
+        }
+
+        var comparison = version.CompareTo(minVersion);
+        if (comparison > 0)
+        {
+            minVersion = version;
+            isMinInclusive = inclusive;
+        }
+        else if (comparison is 0)
+        {
+            // Of two equal lower bounds the exclusive one is tighter: ">1.0.0 >=1.0.0" is >1.0.0.
+            isMinInclusive &= inclusive;
+        }
+    }
+
+    private static void IntersectMax(ref SemanticVersion? maxVersion, ref bool isMaxInclusive, SemanticVersion version, bool inclusive)
+    {
+        if (maxVersion is null)
+        {
+            maxVersion = version;
+            isMaxInclusive = inclusive;
+            return;
+        }
+
+        var comparison = version.CompareTo(maxVersion);
+        if (comparison < 0)
+        {
+            maxVersion = version;
+            isMaxInclusive = inclusive;
+        }
+        else if (comparison is 0)
+        {
+            isMaxInclusive &= inclusive;
+        }
     }
 
     private enum NpmOperator
@@ -690,21 +750,21 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
             return false;
         }
 
-        minVersion = partial.LowerBound;
-        isMinInclusive = true;
-
-        if (partial.Minor is { } minor)
+        // Every upper bound below is a component plus one, so a component sitting at int.MaxValue
+        // would wrap into a negative version. Reject the range instead of building a nonsensical
+        // one; such versions are pathological and the alternative is a range matching nothing.
+        if (partial.Major is int.MaxValue || partial.Minor is int.MaxValue || partial.Patch is int.MaxValue)
         {
-            // ~1.2.3 or ~1.2 -> <1.3.0
-            maxVersion = new SemanticVersion(partial.Major.Value, minor + 1, 0);
-        }
-        else
-        {
-            // ~1 or ~1.x -> <2.0.0
-            maxVersion = new SemanticVersion(partial.Major.Value + 1, 0, 0);
+            return false;
         }
 
-        isMaxInclusive = false;
+        IntersectMin(ref minVersion, ref isMinInclusive, partial.LowerBound, inclusive: true);
+
+        var upperBound = partial.Minor is { } minor
+            ? new SemanticVersion(partial.Major.Value, minor + 1, 0) // ~1.2.3 or ~1.2 -> <1.3.0
+            : new SemanticVersion(partial.Major.Value + 1, 0, 0);    // ~1 or ~1.x -> <2.0.0
+
+        IntersectMax(ref maxVersion, ref isMaxInclusive, upperBound, inclusive: false);
 
         return true;
     }
@@ -730,10 +790,17 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
             return false;
         }
 
-        minVersion = partial.LowerBound;
-        isMinInclusive = true;
+        // Every upper bound below is a component plus one, so a component sitting at int.MaxValue
+        // would wrap into a negative version. Reject the range instead of building a nonsensical
+        // one; such versions are pathological and the alternative is a range matching nothing.
+        if (partial.Major is int.MaxValue || partial.Minor is int.MaxValue || partial.Patch is int.MaxValue)
+        {
+            return false;
+        }
 
-        maxVersion = (major, partial.Minor, partial.Patch) switch
+        IntersectMin(ref minVersion, ref isMinInclusive, partial.LowerBound, inclusive: true);
+
+        var upperBound = (major, partial.Minor, partial.Patch) switch
         {
             ( > 0, _, _) => new SemanticVersion(major + 1, 0, 0),            // ^1.2.3 -> <2.0.0
             (0, > 0 and { } minor, _) => new SemanticVersion(0, minor + 1, 0), // ^0.2.3 -> <0.3.0
@@ -742,7 +809,7 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
             _ => new SemanticVersion(1, 0, 0),                               // ^0 or ^0.x -> <1.0.0
         };
 
-        isMaxInclusive = false;
+        IntersectMax(ref maxVersion, ref isMaxInclusive, upperBound, inclusive: false);
 
         return true;
     }
@@ -791,28 +858,26 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         // with it.
         if (partial.Major is not { } major)
         {
-            minVersion = null;
-            maxVersion = null;
-            isMinInclusive = false;
-            isMaxInclusive = false;
+            // Every version matches, so intersecting with it leaves the range untouched. Clearing
+            // the bounds here would instead discard whatever the preceding constraints established.
             return true;
         }
 
-        minVersion = partial.LowerBound;
-        isMinInclusive = true;
-
-        if (partial.Minor is { } minor)
+        // Every upper bound below is a component plus one, so a component sitting at int.MaxValue
+        // would wrap into a negative version. Reject the range instead of building a nonsensical
+        // one; such versions are pathological and the alternative is a range matching nothing.
+        if (partial.Major is int.MaxValue || partial.Minor is int.MaxValue || partial.Patch is int.MaxValue)
         {
-            // 1.2.x -> <1.3.0
-            maxVersion = new SemanticVersion(major, minor + 1, 0);
-        }
-        else
-        {
-            // 1.x -> <2.0.0
-            maxVersion = new SemanticVersion(major + 1, 0, 0);
+            return false;
         }
 
-        isMaxInclusive = false;
+        IntersectMin(ref minVersion, ref isMinInclusive, partial.LowerBound, inclusive: true);
+
+        var upperBound = partial.Minor is { } minor
+            ? new SemanticVersion(major, minor + 1, 0) // 1.2.x -> <1.3.0
+            : new SemanticVersion(major + 1, 0, 0);    // 1.x -> <2.0.0
+
+        IntersectMax(ref maxVersion, ref isMaxInclusive, upperBound, inclusive: false);
 
         return true;
     }

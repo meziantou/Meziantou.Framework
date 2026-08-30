@@ -36,8 +36,12 @@ public sealed class ServerSideRequestForgeryOptions
         IPNetwork.Parse("::/96"),
         // IPv6 loopback address. Already covered by ::/96 above, but listed explicitly because it is the range most often looked for.
         IPNetwork.Parse("::1/128"),
+        // IPv4-translated range (RFC2765). Embeds an IPv4 address, and is not normalized by IPAddress.IsIPv4MappedToIPv6.
+        IPNetwork.Parse("::ffff:0:0:0/96"),
         // NAT64 well-known prefix (RFC6052). Embeds an IPv4 address, so it reaches IPv4 targets from an IPv6-only network.
         IPNetwork.Parse("64:ff9b::/96"),
+        // NAT64 local-use prefix (RFC8215), the standard choice when the well-known prefix is unsuitable. Also embeds an IPv4 address.
+        IPNetwork.Parse("64:ff9b:1::/48"),
         // Teredo tunneling range (RFC4380). Embeds an IPv4 address.
         IPNetwork.Parse("2001::/32"),
         // 6to4 range (RFC3056). Embeds an IPv4 address in the second and third groups.
@@ -46,6 +50,8 @@ public sealed class ServerSideRequestForgeryOptions
         IPNetwork.Parse("fc00::/7"),
         // IPv6 link-local addresses.
         IPNetwork.Parse("fe80::/10"),
+        // Deprecated IPv6 site-local addresses (RFC3879), private scope. Falls in the gap between fc00::/7 and fe80::/10.
+        IPNetwork.Parse("fec0::/10"),
         // IPv6 multicast range.
         IPNetwork.Parse("ff00::/8"),
     ];

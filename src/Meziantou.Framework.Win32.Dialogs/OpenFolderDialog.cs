@@ -52,19 +52,34 @@ public sealed class OpenFolderDialog
 
         var hwndOwner = owner != IntPtr.Zero ? new HWND(owner) : PInvoke.GetActiveWindow();
         var dialog = (IFileOpenDialog)new FileOpenDialog();
-        Configure(dialog);
+        try
+        {
+            Configure(dialog);
 
-        var hr = dialog.Show(hwndOwner);
-        LastHResult = hr;
-        if (hr == ErrorCancelled)
-            return DialogResult.Cancel;
+            var hr = dialog.Show(hwndOwner);
+            LastHResult = hr;
+            if (hr == ErrorCancelled)
+                return DialogResult.Cancel;
 
-        if (hr != Ok)
-            return DialogResult.Abort;
+            if (hr != Ok)
+                return DialogResult.Abort;
 
-        dialog.GetResult(out var item);
-        SelectedPath = GetFileSystemPath(item);
-        return DialogResult.OK;
+            dialog.GetResult(out var item);
+            try
+            {
+                SelectedPath = GetFileSystemPath(item);
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(item);
+            }
+
+            return DialogResult.OK;
+        }
+        finally
+        {
+            Marshal.ReleaseComObject(dialog);
+        }
     }
 
     /// <summary>Gets or sets the title text displayed in the dialog's title bar.</summary>

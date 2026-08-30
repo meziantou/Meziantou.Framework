@@ -401,6 +401,9 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// <summary>Subtracts a byte size value from this instance.</summary>
     /// <param name="other">The value to subtract.</param>
     /// <returns>The result of the subtraction.</returns>
+    public ByteSize Subtract(ByteSize other) => this - other;
+
+    [Obsolete("Misspelled. Use " + nameof(Subtract) + " instead. This method will be removed in the next major version.")]
     public ByteSize Substract(ByteSize other) => this - other;
 
     /// <summary>Scales this byte size by a factor.</summary>

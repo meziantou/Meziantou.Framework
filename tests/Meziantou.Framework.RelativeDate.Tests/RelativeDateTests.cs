@@ -73,6 +73,69 @@ public class RelativeDateTests
         }
     }
 
+    private static RelativeDate CreateDate(DateTime dateTime)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 0, 0, 0, TimeSpan.Zero));
+        return RelativeDate.Get(dateTime, timeProvider);
+    }
+
+    [Fact]
+    public void IComparable_CompareTo_ReturnsPositive_ForNull()
+    {
+        // null sorts first, even against the smallest representable date
+        var date = (IComparable)CreateDate(new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        Assert.Equal(1, date.CompareTo(obj: null));
+    }
+
+    [Theory]
+    [InlineData(42)]
+    [InlineData("string")]
+    public void IComparable_CompareTo_Throws_ForAnotherType(object value)
+    {
+        var date = (IComparable)CreateDate(new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        Assert.Throws<ArgumentException>(() => date.CompareTo(value));
+    }
+
+    [Fact]
+    public void NonGenericSort_OrdersByDate()
+    {
+        var min = CreateDate(new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        var middle = CreateDate(new DateTime(2018, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+        var max = CreateDate(new DateTime(2018, 1, 3, 0, 0, 0, DateTimeKind.Utc));
+
+        var items = new object[] { max, min, middle };
+        Array.Sort(items);
+
+        Assert.Equal(new object[] { min, middle, max }, items);
+    }
+
+    [Fact]
+    public void ComparisonOperators_AreConsistent()
+    {
+        var earlier = CreateDate(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        var later = CreateDate(new DateTime(2018, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+        var sameAsEarlier = CreateDate(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
+        Assert.True(earlier < later);
+        Assert.True(earlier <= later);
+        Assert.False(earlier > later);
+        Assert.False(earlier >= later);
+        Assert.True(later > earlier);
+        Assert.True(later >= earlier);
+
+        Assert.True(earlier == sameAsEarlier);
+        Assert.False(earlier != sameAsEarlier);
+        Assert.True(earlier <= sameAsEarlier);
+        Assert.True(earlier >= sameAsEarlier);
+        Assert.Equal(0, earlier.CompareTo(sameAsEarlier));
+        Assert.Equal(earlier.GetHashCode(), sameAsEarlier.GetHashCode());
+        Assert.True(earlier.Equals((object)sameAsEarlier));
+        // Assigned first so the analyzer does not rewrite this into Assert.NotEqual, which would not exercise Equals(object)
+        var equalsAnotherType = earlier.Equals("not a relative date");
+        Assert.False(equalsAnotherType);
+    }
+
 #if !INVARIANT_GLOBALIZATION_MODE_ENABLED
     private static readonly string[] LocalizedCultures = ["de", "es", "fr", "it", "ja", "ko", "nl", "pt", "tr", "zh-Hans"];
 

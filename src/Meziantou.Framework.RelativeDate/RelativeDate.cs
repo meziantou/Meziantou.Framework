@@ -204,13 +204,12 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
 
     private static string GetString(string name, CultureInfo? culture, int value) => string.Format(culture, LocalizationProvider.Current.GetString(name, culture), value);
 
-    int IComparable.CompareTo(object? obj)
+    int IComparable.CompareTo(object? obj) => obj switch
     {
-        if (obj is RelativeDate rd)
-            return CompareTo(rd);
-
-        return CompareTo(default);
-    }
+        null => 1,
+        RelativeDate rd => CompareTo(rd),
+        _ => throw new ArgumentException($"Object must be of type {nameof(RelativeDate)}", nameof(obj)),
+    };
 
     /// <summary>Compares this instance to another <see cref="RelativeDate"/> and returns an integer that indicates their relative order.</summary>
     /// <param name="other">The <see cref="RelativeDate"/> to compare with this instance.</param>

@@ -192,12 +192,14 @@ public sealed class LinkHeaderValue
                         index = value.IndexOfAny(';', ',');
                         if (index == -1)
                         {
-                            parameterValue = value.ToString();
+                            // Trim the trailing whitespace: an unquoted value is terminated by the next
+                            // ';' or ',', and RFC 7230 allows optional whitespace before that separator.
+                            parameterValue = value.Trim().ToString();
                             value = [];
                         }
                         else
                         {
-                            parameterValue = value[0..index].ToString();
+                            parameterValue = value[0..index].Trim().ToString();
                             value = value[index..];
                         }
                     }

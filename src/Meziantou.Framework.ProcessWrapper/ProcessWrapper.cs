@@ -228,9 +228,16 @@ public sealed class ProcessWrapper
 
     /// <summary>Also looks for the executable in the working directory, before the directories listed in <c>PATH</c>.</summary>
     /// <remarks>
-    /// Disabled by default. When the executable is a bare file name, enabling this lets a file in the working
-    /// directory take precedence over the command found in <c>PATH</c>, so only enable it when the working
-    /// directory is trusted.
+    /// <para>
+    /// Windows resolves a bare executable name against the current directory before <c>PATH</c>, so this is the
+    /// native behavior there. POSIX shells deliberately do not.
+    /// </para>
+    /// <para>
+    /// It is nevertheless disabled by default on every platform, Windows included, for security reasons: a file
+    /// sitting in the working directory would otherwise take precedence over the command <c>PATH</c> resolves for
+    /// the same name, letting an untrusted working directory substitute its own executable for the intended one.
+    /// Only enable it when the working directory is trusted.
+    /// </para>
     /// </remarks>
     public ProcessWrapper WithSearchWorkingDirectory(bool searchWorkingDirectory = true)
     {

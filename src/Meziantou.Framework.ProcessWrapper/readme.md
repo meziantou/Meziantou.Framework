@@ -110,7 +110,8 @@ await ProcessWrapper.Create("git")
 ````
 
 The executable is resolved from `PATH`. The working directory is not searched, so a file sitting in it cannot
-shadow the command `PATH` resolves for the same name. Opt in with `WithSearchWorkingDirectory()` when the
+shadow the command `PATH` resolves for the same name. Windows searches the current directory before `PATH` by
+default, but that is disabled here too, for the same reason. Opt in with `WithSearchWorkingDirectory()` when the
 working directory is trusted and you want the executable looked up there first:
 
 ````c#

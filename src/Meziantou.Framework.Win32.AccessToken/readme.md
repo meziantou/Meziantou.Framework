@@ -99,7 +99,10 @@ bool IsAdministrator()
     using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
 
     // Check if current token has admin rights
-    if (!IsAdministrator(token) && token.GetElevationType() == TokenElevationType.Limited)
+    if (IsAdministrator(token))
+        return true;
+
+    if (token.GetElevationType() == TokenElevationType.Limited)
     {
         // If limited, check the linked token (elevated token)
         using var linkedToken = token.GetLinkedToken();

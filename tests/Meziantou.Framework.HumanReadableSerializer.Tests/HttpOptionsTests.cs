@@ -154,4 +154,52 @@ public sealed class HttpOptionsTests : SerializerTestsBase
               Value: test
             """);
     }
+
+    [Fact]
+    public void Redact_CSP_Nonce_ReportOnly()
+    {
+        using var httpContent = new HttpResponseMessage()
+        {
+            Headers =
+            {
+                Date = DateTimeOffset.UtcNow,
+            },
+            Content = new StringContent("test"),
+        };
+        httpContent.Headers.Add("Content-Security-Policy-Report-Only", "script-src 'nonce-QOlYr5k1Ls3VoNjVQLK5DWFc';");
+
+        AssertSerialization(httpContent, new HumanReadableHttpResponseMessageOptions { RedactContentSecurityPolicyNonce = true }, """
+            StatusCode: 200 (OK)
+            Headers:
+              Content-Security-Policy-Report-Only: script-src 'nonce-[redacted]';
+            Content:
+              Headers:
+                Content-Type: text/plain; charset=utf-8
+              Value: test
+            """);
+    }
+
+    [Fact]
+    public void Redact_CSP_Nonce_LeavesOtherHeadersAlone()
+    {
+        using var httpContent = new HttpResponseMessage()
+        {
+            Headers =
+            {
+                Date = DateTimeOffset.UtcNow,
+            },
+            Content = new StringContent("test"),
+        };
+        httpContent.Headers.Add("X-Custom", "script-src 'nonce-QOlYr5k1Ls3VoNjVQLK5DWFc';");
+
+        AssertSerialization(httpContent, new HumanReadableHttpResponseMessageOptions { RedactContentSecurityPolicyNonce = true }, """
+            StatusCode: 200 (OK)
+            Headers:
+              X-Custom: script-src 'nonce-QOlYr5k1Ls3VoNjVQLK5DWFc';
+            Content:
+              Headers:
+                Content-Type: text/plain; charset=utf-8
+              Value: test
+            """);
+    }
 }

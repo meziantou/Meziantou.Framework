@@ -5,7 +5,7 @@
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>3.0.3</Version>
     <IsTrimmable>true</IsTrimmable>
-    <Description>TemporaryDirectory allows to create a disposable directory to store temporary files</Description>
+    <Description>TemporaryDirectory and TemporaryFile allow to create a disposable directory or file to store temporary data</Description>
   </PropertyGroup>
 
   <ItemGroup>

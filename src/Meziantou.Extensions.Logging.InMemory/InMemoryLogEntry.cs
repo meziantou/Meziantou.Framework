@@ -80,15 +80,41 @@ public sealed class InMemoryLogEntry
 
         if (State is not null)
         {
-            sb.Append("\n  => ").Append(JsonSerializer.Serialize(State));
+            sb.Append("\n  => ").Append(Serialize(State));
         }
 
         foreach (var scope in Scopes)
         {
-            sb.Append("\n  => ").Append(JsonSerializer.Serialize(scope));
+            sb.Append("\n  => ").Append(Serialize(scope));
         }
 
         return sb.ToString();
+    }
+
+    // ToString is the diagnostic surface of this type: it ends up in assertion messages and in the
+    // debugger, so it must never throw. JsonSerializer rejects plenty of values that are perfectly
+    // ordinary to log (Type, delegates, reference cycles), hence the fallback to the value's own
+    // representation instead of letting the exception escape.
+    private static string Serialize(object? value)
+    {
+        if (value is null)
+            return "null";
+
+        try
+        {
+            return JsonSerializer.Serialize(value);
+        }
+        catch (Exception)
+        {
+            try
+            {
+                return value.ToString() ?? value.GetType().ToString();
+            }
+            catch (Exception)
+            {
+                return value.GetType().ToString();
+            }
+        }
     }
 
     /// <summary>Tries to retrieve the first parameter value with the specified name from the state or scopes.</summary>

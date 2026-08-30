@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Net;
@@ -666,6 +667,95 @@ public sealed class TdsServerProtocolTests
 
         Assert.False(capturedContext.HasCompleteParameters);
         Assert.DoesNotContain(capturedContext.Parameters, parameter => parameter.Name == "@int");
+    }
+
+    [Fact]
+    public async Task RawClient_RpcRequest_ThatCannotBeParsed_ReportsIncompleteParameters()
+    {
+        // The whole RPC payload is undecodable, so there is no parameter list at all. Reporting it as complete
+        // would tell a handler the client sent no parameters, which is exactly the case the flag exists to warn
+        // about.
+        var context = await SendRawRpcRequestAsync([0xAA, 0xBB, 0xCC, 0xDD]);
+
+        Assert.False(context.HasCompleteParameters);
+        Assert.Empty(context.Parameters);
+    }
+
+    [Fact]
+    public async Task RawClient_RpcRequest_WithAnOutOfRangeDate_ReportsIncompleteParameters()
+    {
+        // A DATE value carries a 24-bit day count, which reaches far past year 9999. Out-of-range values have to
+        // take the same "cannot decode" path as any other bad parameter instead of throwing out of the parser.
+        var payload = new List<byte> { 0x01, 0x00 };
+        payload.AddRange(Encoding.Unicode.GetBytes("p"));
+        payload.AddRange([0x00, 0x00]); // option flags
+        payload.Add(0x02); // parameter name length, in characters
+        payload.AddRange(Encoding.Unicode.GetBytes("@d"));
+        payload.Add(0x00); // status
+        payload.Add(0x28); // DATEN
+        payload.Add(0x03); // value length
+        payload.AddRange([0xFF, 0xFF, 0xFF]); // day count far beyond DateOnly.MaxValue
+
+        var context = await SendRawRpcRequestAsync([.. payload]);
+
+        Assert.False(context.HasCompleteParameters);
+        Assert.Empty(context.Parameters);
+    }
+
+    private static async Task<TdsQueryContext> SendRawRpcRequestAsync(byte[] rpcPayload)
+    {
+        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                queryContextTask.TrySetResult(context);
+                return ValueTask.FromResult(new TdsQueryResult());
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var client = new TcpClient();
+        await client.ConnectAsync(IPAddress.Loopback, port, cancellationTokenSource.Token);
+        using var stream = client.GetStream();
+
+        // PRELOGIN advertising NOT_SUPPORTED so the session stays in clear text.
+        await stream.WriteAsync(CreateTdsMessage(0x12, [0x01, 0x00, 0x06, 0x00, 0x01, 0xFF, 0x02]), cancellationTokenSource.Token);
+        await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
+
+        // LOGIN7 with every variable-length field empty: the authentication callback above accepts anything.
+        await stream.WriteAsync(CreateTdsMessage(0x10, new byte[94]), cancellationTokenSource.Token);
+        await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
+
+        await stream.WriteAsync(CreateTdsMessage(0x03, rpcPayload), cancellationTokenSource.Token);
+
+        return await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationTokenSource.Token);
+    }
+
+    private static byte[] CreateTdsMessage(byte packetType, ReadOnlySpan<byte> payload)
+    {
+        var message = new byte[8 + payload.Length];
+        message[0] = packetType;
+        message[1] = 0x01; // end of message
+        BinaryPrimitives.WriteUInt16BigEndian(message.AsSpan(2, 2), (ushort)message.Length);
+        message[6] = 1; // packet id
+        payload.CopyTo(message.AsSpan(8));
+        return message;
+    }
+
+    private static async Task ReadTdsMessageAsync(NetworkStream stream, CancellationToken cancellationToken)
+    {
+        var header = new byte[8];
+        await stream.ReadExactlyAsync(header, cancellationToken);
+        var length = BinaryPrimitives.ReadUInt16BigEndian(header.AsSpan(2, 2));
+        await stream.ReadExactlyAsync(new byte[length - 8], cancellationToken);
     }
 
     private static object? GetParameterValue(TdsQueryContext context, string name, TdsColumnType expectedType)

@@ -25,6 +25,220 @@ public class ValueStringBuilderTests
     }
 
     [Fact]
+    public void InsertGrowsTheBufferAndKeepsTheExistingContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 4);
+        sb.Append("end");
+
+        sb.Insert(0, new string('a', 100));
+        sb.Insert(50, '-', 10);
+
+        var expected = new string('a', 50) + new string('-', 10) + new string('a', 50) + "end";
+        Assert.Equal(expected, sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void InsertAtTheEndAppends()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 8);
+        sb.Append("ab");
+
+        sb.Insert(2, "cd");
+        sb.Insert(4, '!', 2);
+
+        Assert.Equal("abcd!!", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void InsertNullStringIsANoOp()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 8);
+        sb.Append("ab");
+
+        sb.Insert(1, null);
+
+        Assert.Equal("ab", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendRepeatedCharGrowsTheBuffer()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 2);
+        sb.Append('a', 0);
+        sb.Append('b', 100);
+
+        Assert.Equal(new string('b', 100), sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendNullStringIsANoOp()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 8);
+        sb.Append("ab");
+        sb.Append((string?)null);
+
+        Assert.Equal("ab", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void EnsureCapacityGrowsWithoutLosingContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 4);
+        sb.Append("abc");
+
+        sb.EnsureCapacity(500);
+
+        Assert.True(sb.Capacity >= 500);
+        Assert.Equal(3, sb.Length);
+        Assert.Equal("abc", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void EnsureCapacityBelowTheCurrentCapacityIsANoOp()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        sb.Append("abc");
+        var capacity = sb.Capacity;
+
+        sb.EnsureCapacity(1);
+
+        Assert.Equal(capacity, sb.Capacity);
+        Assert.Equal("abc", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendSpanGrowsTheBufferAndKeepsTheExistingContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 4);
+        sb.Append("ab");
+
+        var span = sb.AppendSpan(100);
+        span.Fill('c');
+
+        Assert.Equal("ab" + new string('c', 100), sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void ClearResetsTheLengthButKeepsTheBuffer()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        sb.Append("hello");
+        var capacity = sb.Capacity;
+
+        sb.Clear();
+
+        Assert.Equal(0, sb.Length);
+        Assert.Equal(capacity, sb.Capacity);
+
+        sb.Append("world");
+        Assert.Equal("world", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void DisposeIsIdempotent()
+    {
+        var sb = new ValueStringBuilder(initialCapacity: 64);
+        sb.Append("hello");
+
+        sb.Dispose();
+        sb.Dispose();
+
+        Assert.Equal(0, sb.Length);
+        Assert.Equal(0, sb.Capacity);
+    }
+
+    [Fact]
+    public void NullTerminateGrowsWhenTheBufferIsFull()
+    {
+        Span<char> initialBuffer = stackalloc char[2];
+        using var sb = new ValueStringBuilder(initialBuffer);
+        sb.Append("ab");
+
+        sb.NullTerminate();
+
+        Assert.Equal(2, sb.Length);
+        Assert.Equal('\0', sb.RawChars[sb.Length]);
+        Assert.Equal("ab", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void BuilderMatchesStringBuilderForRandomOperationSequences()
+    {
+        var random = new Random(20260829);
+        Span<char> runeChars = stackalloc char[2];
+
+        for (var iteration = 0; iteration < 2000; iteration++)
+        {
+            var expected = new StringBuilder();
+            var sb = iteration % 2 == 0
+                ? new ValueStringBuilder(initialCapacity: random.Next(0, 8))
+                : new ValueStringBuilder(new char[random.Next(0, 8)]);
+
+            try
+            {
+                var operations = random.Next(1, 12);
+                for (var i = 0; i < operations; i++)
+                {
+                    switch (random.Next(8))
+                    {
+                        case 0:
+                            var c = (char)('a' + random.Next(26));
+                            sb.Append(c);
+                            expected.Append(c);
+                            break;
+                        case 1:
+                            var s = new string((char)('a' + random.Next(26)), random.Next(0, 30));
+                            sb.Append(s);
+                            expected.Append(s);
+                            break;
+                        case 2:
+                            var repeated = (char)('a' + random.Next(26));
+                            var count = random.Next(0, 30);
+                            sb.Append(repeated, count);
+                            expected.Append(repeated, count);
+                            break;
+                        case 3:
+                            var span = new string((char)('a' + random.Next(26)), random.Next(0, 30));
+                            sb.Append(span.AsSpan());
+                            expected.Append(span);
+                            break;
+                        case 4:
+                            var charIndex = random.Next(0, expected.Length + 1);
+                            var inserted = (char)('a' + random.Next(26));
+                            var insertedCount = random.Next(0, 10);
+                            sb.Insert(charIndex, inserted, insertedCount);
+                            expected.Insert(charIndex, new string(inserted, insertedCount));
+                            break;
+                        case 5:
+                            var stringIndex = random.Next(0, expected.Length + 1);
+                            var insertedString = new string((char)('a' + random.Next(26)), random.Next(0, 20));
+                            sb.Insert(stringIndex, insertedString);
+                            expected.Insert(stringIndex, insertedString);
+                            break;
+                        case 6:
+                            var length = random.Next(0, 20);
+                            sb.AppendSpan(length).Fill('#');
+                            expected.Append('#', length);
+                            break;
+                        default:
+                            var rune = new Rune(random.Next(2) == 0 ? random.Next(0x20, 0xD7FF) : random.Next(0x10000, 0x10FFFF));
+                            sb.Append(rune);
+                            expected.Append(runeChars[..rune.EncodeToUtf16(runeChars)]);
+                            break;
+                    }
+                }
+
+                Assert.Equal(expected.ToString(), sb.AsSpan().ToString());
+            }
+            finally
+            {
+                sb.Dispose();
+            }
+        }
+    }
+
+    [Fact]
     public void InsertSupportsCharAndString()
     {
         using var sb = new ValueStringBuilder(initialCapacity: 8);

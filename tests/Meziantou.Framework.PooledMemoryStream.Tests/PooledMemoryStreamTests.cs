@@ -371,6 +371,36 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public async Task ReadAsync_ReusesTheTaskWhenTheCountRepeats()
+    {
+        using var stream = new PooledMemoryStream(SmallTiers());
+        stream.Write(CreateData(200, seed: 6));
+        stream.Position = 0;
+
+        var buffer = new byte[10];
+        var first = stream.ReadAsync(buffer, 0, buffer.Length);
+        var second = stream.ReadAsync(buffer, 0, buffer.Length);
+
+        Assert.Equal(10, await first);
+        Assert.Equal(10, await second);
+        Assert.Same(first, second);
+    }
+
+    [Fact]
+    public void CopyToAsync_ValidatesArgumentsSynchronously()
+    {
+        using var stream = new PooledMemoryStream(SmallTiers());
+        stream.Write(CreateData(50, seed: 7));
+
+        // Block-bodied lambdas so these bind to Assert.Throws(Action): the point is that the exception is raised
+        // before any task exists, which a faulted-task assertion could not tell apart.
+        Task? task = null;
+        Assert.Throws<ArgumentNullException>(() => { task = stream.CopyToAsync(destination: null!); });
+        Assert.Throws<ArgumentOutOfRangeException>(() => { task = stream.CopyToAsync(new MemoryStream(), bufferSize: 0); });
+        Assert.Null(task);
+    }
+
+    [Fact]
     public void IBufferWriter_GetSpan_ReturnsAtLeastSizeHint_AndWritesAcrossBoundary()
     {
         using var stream = new PooledMemoryStream(SmallTiers());
@@ -509,6 +539,44 @@ public sealed class PooledMemoryStreamTests
     {
         var options = new PooledMemoryStreamOptions();
         Assert.Throws<ArgumentOutOfRangeException>(() => options.BufferSizes = [.. sizes]);
+    }
+
+    [Theory]
+    // Just past the point where "minimumSize + largest - 1" wraps int: used to return int.MinValue.
+    [InlineData(2_146_435_073)]
+    // Array.MaxLength itself: used to return -2146435072.
+    [InlineData(2_147_483_591)]
+    public void GetContiguousBlockSize_NearArrayMaxLength_StaysPositiveAndAtLeastTheRequest(int minimumSize)
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4096, 65536, 1024 * 1024] };
+
+        var size = options.GetContiguousBlockSize(minimumSize);
+
+        Assert.True(size >= minimumSize);
+        Assert.True(size <= Array.MaxLength);
+    }
+
+    [Fact]
+    public void GetContiguousBlockSize_AboveArrayMaxLength_Throws()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4096, 65536, 1024 * 1024] };
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => options.GetContiguousBlockSize(int.MaxValue));
+    }
+
+    [Theory]
+    [InlineData(1_000_000_000)]
+    [InlineData(2_000_000_000)]
+    public void GetContiguousBlockSize_WithAHugeSingleTier_DoesNotReturnZero(int tier)
+    {
+        // The overflow path only runs when minimumSize exceeds the largest tier, so reaching it needs a tier above
+        // ~1 GiB. Exercised through the options object so the test costs no allocation.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [tier] };
+
+        var size = options.GetContiguousBlockSize(tier + 1);
+
+        Assert.True(size >= tier + 1);
+        Assert.True(size <= Array.MaxLength);
     }
 
     [Fact]

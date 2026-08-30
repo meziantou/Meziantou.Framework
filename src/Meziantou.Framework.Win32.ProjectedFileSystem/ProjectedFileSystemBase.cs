@@ -58,6 +58,11 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     private readonly ConcurrentDictionary<Guid, DirectoryEnumerationSession> _activeEnumerations = new();
 
+    // Counts commands that returned ERROR_IO_PENDING and have not called PrjCompleteCommand yet.
+    // The initial count is the instance itself; Stop signals it and then drains the rest.
+    private readonly CountdownEvent _pendingCommands = new(initialCount: 1);
+    private int _drainStarted;
+
     /// <summary>Gets the root folder path where the virtual file system is mounted.</summary>
     public string RootFolder { get; }
 
@@ -227,6 +232,17 @@ public abstract class ProjectedFileSystemBase : IDisposable
         if (_instanceHandle is null)
             return;
 
+        // Drain the commands that returned ERROR_IO_PENDING before tearing the context down.
+        // PrjCompleteCommand against an instance that has already been stopped is undefined
+        // behaviour in the driver, and PrjStopVirtualizing only waits for callbacks that
+        // returned synchronously.
+        if (Interlocked.Exchange(ref _drainStarted, 1) is 0)
+        {
+            _pendingCommands.Signal();
+        }
+
+        _pendingCommands.Wait();
+
         // Stop virtualizing before dropping the callback table: the driver can still be
         // invoking those delegates until PrjStopVirtualizing returns.
         _instanceHandle.Dispose();
@@ -304,6 +320,11 @@ public abstract class ProjectedFileSystemBase : IDisposable
     protected virtual void Dispose(bool disposing)
     {
         Stop();
+
+        if (disposing)
+        {
+            _pendingCommands.Dispose();
+        }
     }
 
     private static unsafe HRESULT QueryFileNameCallbackNative(ProjFs.PRJ_CALLBACK_DATA* callbackData)
@@ -701,16 +722,34 @@ public abstract class ProjectedFileSystemBase : IDisposable
         }
     }
 
-    private static HResult ExecuteCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, ValueTask<HResult> callbackResult, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
+    private HResult ExecuteCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, ValueTask<HResult> callbackResult, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
     {
         if (callbackResult.IsCompletedSuccessfully)
             return callbackResult.Result;
+
+        // Register before handing back ERROR_IO_PENDING so Stop cannot tear the context down
+        // underneath the PrjCompleteCommand this is about to schedule. TryAddCount fails once
+        // the drain has finished, which means the instance is going away.
+        if (!_pendingCommands.TryAddCount())
+            return HResult.ERROR_FILE_SYSTEM_VIRTUALIZATION_INVALID_OPERATION;
 
         _ = CompleteCommandAsync(callbackData.NamespaceVirtualizationContext, callbackData.CommandId, callbackResult.AsTask(), extendedParameters);
         return HResult.ERROR_IO_PENDING;
     }
 
-    private static async Task CompleteCommandAsync(IntPtr namespaceVirtualizationContext, int commandId, Task<HResult> callbackTask, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
+    private async Task CompleteCommandAsync(IntPtr namespaceVirtualizationContext, int commandId, Task<HResult> callbackTask, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
+    {
+        try
+        {
+            await CompleteCommandCoreAsync(namespaceVirtualizationContext, commandId, callbackTask, extendedParameters).ConfigureAwait(false);
+        }
+        finally
+        {
+            _pendingCommands.Signal();
+        }
+    }
+
+    private static async Task CompleteCommandCoreAsync(IntPtr namespaceVirtualizationContext, int commandId, Task<HResult> callbackTask, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
     {
         HResult completionResult;
         try

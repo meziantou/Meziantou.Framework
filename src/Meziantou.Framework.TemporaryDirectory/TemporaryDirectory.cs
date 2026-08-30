@@ -78,7 +78,9 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <summary>Gets the full path for a relative path within the temporary directory.</summary>
     /// <param name="relativePath">The relative path (can include subdirectories).</param>
     /// <returns>The absolute <see cref="FullPath"/> combining the temporary directory and the relative path.</returns>
+    /// <remarks>The resulting path must stay inside the temporary directory, so it cannot be escaped using "..".</remarks>
     /// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
+    /// <exception cref="ArgumentException"><paramref name="relativePath"/> is rooted, or resolves to a path outside the temporary directory.</exception>
     /// <example>
     /// <code>
     /// using var tempDir = TemporaryDirectory.Create();
@@ -88,13 +90,22 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     public FullPath GetFullPath(string relativePath)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        return FullPath.Combine(FullPath, relativePath);
+
+        var path = FullPath.Combine(FullPath, relativePath);
+
+        // Path.Combine returns relativePath as-is when it is rooted, and GetFullPath resolves any "..",
+        // so both ways out of the directory are caught here.
+        if (path != FullPath && !path.IsChildOf(FullPath))
+            throw new ArgumentException($"The path '{relativePath}' resolves to '{path}', which is outside the temporary directory '{FullPath}'.", nameof(relativePath));
+
+        return path;
     }
 
     /// <summary>Creates an empty file at the specified relative path.</summary>
     /// <param name="relativePath">The relative path for the file (can include subdirectories).</param>
     /// <returns>The absolute <see cref="FullPath"/> of the created file.</returns>
     /// <remarks>If the parent directories don't exist, they will be created automatically.</remarks>
+    /// <exception cref="ArgumentException"><paramref name="relativePath"/> resolves to a path outside the temporary directory.</exception>
     /// <example>
     /// <code>
     /// using var tempDir = TemporaryDirectory.Create();
@@ -114,6 +125,7 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <param name="content">The text content to write to the file.</param>
     /// <returns>The absolute <see cref="FullPath"/> of the created file.</returns>
     /// <remarks>If the parent directories don't exist, they will be created automatically.</remarks>
+    /// <exception cref="ArgumentException"><paramref name="relativePath"/> resolves to a path outside the temporary directory.</exception>
     /// <example>
     /// <code>
     /// using var tempDir = TemporaryDirectory.Create();
@@ -134,6 +146,7 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation, containing the absolute <see cref="FullPath"/> of the created file.</returns>
     /// <remarks>If the parent directories don't exist, they will be created automatically.</remarks>
+    /// <exception cref="ArgumentException"><paramref name="relativePath"/> resolves to a path outside the temporary directory.</exception>
     /// <example>
     /// <code>
     /// await using var tempDir = TemporaryDirectory.Create();
@@ -152,6 +165,7 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <param name="relativePath">The relative path for the directory (can include subdirectories).</param>
     /// <returns>The absolute <see cref="FullPath"/> of the created directory.</returns>
     /// <remarks>If parent directories don't exist, they will be created automatically.</remarks>
+    /// <exception cref="ArgumentException"><paramref name="relativePath"/> resolves to a path outside the temporary directory.</exception>
     /// <example>
     /// <code>
     /// using var tempDir = TemporaryDirectory.Create();

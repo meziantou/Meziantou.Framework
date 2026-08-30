@@ -79,13 +79,14 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     ///     <item><c>G2</c>: Find the best unit (B, kB, MB, GB, etc.), and use F2 format for the value</item>
     ///     <item><c>Gi</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use G format for the value</item>
     ///     <item><c>Gi2</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use F2 format for the value</item>
+    ///     <item><c>F</c>, <c>F2</c>, <c>Fi</c>, <c>Fi2</c>: Synonyms of <c>G</c>, <c>G2</c>, <c>Gi</c>, <c>Gi2</c></item>
     ///     <item>
     ///         <c>B</c>, <c>kB</c>, <c>kiB</c>, <c>MB</c>, <c>MiB</c>, <c>GB</c>, <c>GiB</c>, <c>TB</c>, <c>TiB</c>, <c>PB</c>, <c>PiB</c>, <c>EB</c>, <c>EiB</c>:
     ///         Use the provided unit, and use G format for the value. If a number is provided (e.g. <c>kB3</c>), it use Fn (e.g. F3) format to convert the value to string.
     ///     </item>
     /// </list>
     /// </param>
-    /// <exception cref="ArgumentException">The provided format is not valid</exception>
+    /// <exception cref="FormatException">The provided format is not valid</exception>
     public string ToString(string? format)
     {
         return ToString(format, formatProvider: null);
@@ -99,6 +100,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     ///     <item><c>G2</c>: Find the best unit (B, kB, MB, GB, etc.), and use F2 format for the value</item>
     ///     <item><c>Gi</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use G format for the value</item>
     ///     <item><c>Gi2</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use F2 format for the value</item>
+    ///     <item><c>F</c>, <c>F2</c>, <c>Fi</c>, <c>Fi2</c>: Synonyms of <c>G</c>, <c>G2</c>, <c>Gi</c>, <c>Gi2</c></item>
     ///     <item>
     ///         <c>B</c>, <c>kB</c>, <c>kiB</c>, <c>MB</c>, <c>MiB</c>, <c>GB</c>, <c>GiB</c>, <c>TB</c>, <c>TiB</c>, <c>PB</c>, <c>PiB</c>, <c>EB</c>, <c>EiB</c>:
     ///         Use the provided unit, and use G format for the value. If a number is provided (e.g. <c>kB3</c>), it use Fn (e.g. F3) format to convert the value to string.
@@ -107,7 +109,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// </param>
     /// <param name="formatProvider"></param>
     /// <returns></returns>
-    /// <exception cref="ArgumentException">The provided format is not valid</exception>
+    /// <exception cref="FormatException">The provided format is not valid</exception>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
         if (string.IsNullOrEmpty(format))
@@ -144,7 +146,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
             }
             else
             {
-                throw new ArgumentException($"format '{format}' is invalid", nameof(format));
+                throw new FormatException($"format '{format}' is invalid");
             }
         }
 
@@ -152,7 +154,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         if (index > 0)
         {
             if (!int.TryParse(format[index..], NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
-                throw new ArgumentException($"format '{format}' is invalid", nameof(format));
+                throw new FormatException($"format '{format}' is invalid");
 
             numberFormat = "F" + number.ToString(CultureInfo.InvariantCulture);
         }

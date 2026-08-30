@@ -99,6 +99,32 @@ public sealed class ByteSizeTests
         Assert.False(parsed);
     }
 
+    [Theory]
+    [InlineData("ZZZ")]
+    [InlineData("Q")]
+    [InlineData("2")]
+    public void ToString_InvalidFormat_ThrowsFormatException(string format)
+    {
+        Assert.Throws<FormatException>(() => new ByteSize(10).ToString(format, CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void StringFormat_InvalidFormat_ThrowsFormatException()
+    {
+        Assert.Throws<FormatException>(() => string.Format(CultureInfo.InvariantCulture, "{0:ZZZ}", new ByteSize(10)));
+    }
+
+    [Theory]
+    [InlineData(1_500L, "G", "F")]
+    [InlineData(1_500L, "G2", "F2")]
+    [InlineData(1_024L, "Gi", "Fi")]
+    [InlineData(1_024L, "Gi2", "Fi2")]
+    public void ToString_FSpecifier_IsASynonymOfG(long value, string gFormat, string fFormat)
+    {
+        var size = new ByteSize(value);
+        Assert.Equal(size.ToString(gFormat, CultureInfo.InvariantCulture), size.ToString(fFormat, CultureInfo.InvariantCulture));
+    }
+
     [Fact]
     public void Operator_Add()
     {

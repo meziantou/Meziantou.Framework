@@ -220,10 +220,15 @@ public static class DiffTools
 
     public static bool TryFindByExtension(string extension, [NotNullWhen(true)] out ResolvedTool? resolvedTool)
     {
+        ArgumentNullException.ThrowIfNull(extension);
+
         var tools = ResolveAvailableTools();
-        var normalizedExtension = NormalizeExtension(extension);
-        if (normalizedExtension.Length > 0)
+
+        // An empty extension is a legitimate input: Path.GetExtension returns it for a file that has none.
+        // There is nothing to match against BinaryExtensions, so go straight to the text tool.
+        if (!string.IsNullOrWhiteSpace(extension))
         {
+            var normalizedExtension = FileExtension.Normalize(extension);
             foreach (var tool in tools)
             {
                 if (tool.BinaryExtensions.Contains(normalizedExtension, StringComparer.OrdinalIgnoreCase))
@@ -482,15 +487,6 @@ public static class DiffTools
         }
 
         return pathExtensions.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-    }
-
-    private static string NormalizeExtension(string extension)
-    {
-        if (string.IsNullOrWhiteSpace(extension))
-            return "";
-
-        var trimmed = extension.Trim();
-        return trimmed[0] == '.' ? trimmed : "." + trimmed;
     }
 
     private static string StandardLeftArguments(string temp, string target) => $"\"{target}\" \"{temp}\"";

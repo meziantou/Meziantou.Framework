@@ -53,6 +53,38 @@ public sealed class DiffToolsTests
     }
 
     [Fact]
+    public void TryFindByExtension_ThrowsWhenExtensionIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => DiffTools.TryFindByExtension(null!, out _));
+    }
+
+    [Fact]
+    public void TryFindByExtension_AcceptsAnExtensionWithoutALeadingDot()
+    {
+        using var temp = TemporaryDirectory.Create();
+        _ = temp.CreateTextFile(GetVisualStudioCodeExecutableName(), "");
+        using var scope = new EnvironmentVariableScope("DiffEngine_VisualStudioCode", temp.FullPath);
+        using var pathScope = new EnvironmentVariableScope("PATH", temp.FullPath);
+
+        Assert.True(DiffTools.TryFindByExtension("bin", out var tool));
+        Assert.NotNull(tool);
+        Assert.Contains(".bin", tool.BinaryExtensions, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void TryFindByExtension_AcceptsAnEmptyExtension()
+    {
+        using var temp = TemporaryDirectory.Create();
+        _ = temp.CreateTextFile(GetVisualStudioCodeExecutableName(), "");
+        using var scope = new EnvironmentVariableScope("DiffEngine_VisualStudioCode", temp.FullPath);
+        using var pathScope = new EnvironmentVariableScope("PATH", temp.FullPath);
+
+        Assert.True(DiffTools.TryFindByExtension(Path.GetExtension("Makefile"), out var tool));
+        Assert.NotNull(tool);
+        Assert.True(tool.SupportsText);
+    }
+
+    [Fact]
     public void GetArguments_HonorsTargetPosition()
     {
         using var temp = TemporaryDirectory.Create();

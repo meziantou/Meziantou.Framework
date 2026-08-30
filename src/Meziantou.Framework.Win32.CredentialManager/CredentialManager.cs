@@ -117,7 +117,7 @@ public static class CredentialManager
     /// <param name="persistence">The persistence option for the credential.</param>
     /// <param name="type">The type of the credential.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="applicationName"/>, <paramref name="userName"/>, or <paramref name="secret"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="secret"/> exceeds 512 bytes (on Windows XP/Vista) or 2560 bytes (on Windows 7 and later), or <paramref name="comment"/> exceeds 255 characters.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="secret"/> exceeds 2560 bytes, when <paramref name="comment"/> exceeds 255 characters, or when <paramref name="type"/> is not <see cref="CredentialType.Generic"/> or <see cref="CredentialType.DomainPassword"/>.</exception>
     public static unsafe void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence, CredentialType type)
     {
         ArgumentNullException.ThrowIfNull(applicationName);
@@ -126,31 +126,22 @@ public static class CredentialManager
 
         ArgumentNullException.ThrowIfNull(secret);
 
-        // CRED_MAX_CREDENTIAL_BLOB_SIZE
-        // XP and Vista: 512;
-        // 7 and above: 5*512
+        // CRED_MAX_CREDENTIAL_BLOB_SIZE is 5*512 since Windows 7. The 512-byte limit only applied to XP and Vista,
+        // which no supported target framework can run on.
         var secretLength = secret.Length * UnicodeEncoding.CharSize;
-        if (Environment.OSVersion.Version < new Version(6, 1) /* Windows 7 */)
-        {
-            if (secretLength > 512)
-                throw new ArgumentOutOfRangeException(nameof(secret), "The secret message has exceeded 512 bytes.");
-        }
-        else
-        {
-            if (secretLength > 2560)
-                throw new ArgumentOutOfRangeException(nameof(secret), "The secret message has exceeded 2560 bytes.");
-        }
+        if (secretLength > 2560)
+            throw new ArgumentOutOfRangeException(nameof(secret), "The secret message has exceeded 2560 bytes.");
 
         if (comment is not null)
         {
-            // CRED_MAX_STRING_LENGTH 256
+            // CRED_MAX_STRING_LENGTH is 256, including the terminating null character
             if (comment.Length > 255)
-                throw new ArgumentOutOfRangeException(nameof(comment), "The comment message has exceeded 256 characters.");
+                throw new ArgumentOutOfRangeException(nameof(comment), "The comment message has exceeded 255 characters.");
         }
 
         if (type is not (CredentialType.Generic or CredentialType.DomainPassword))
         {
-            throw new ArgumentOutOfRangeException(nameof(type), "Only CredentialType.Generic and CredentialType.DomainPassword is supported");
+            throw new ArgumentOutOfRangeException(nameof(type), $"Only {nameof(CredentialType)}.{nameof(CredentialType.Generic)} and {nameof(CredentialType)}.{nameof(CredentialType.DomainPassword)} is supported");
         }
 
         fixed (char* applicationNamePtr = applicationName)

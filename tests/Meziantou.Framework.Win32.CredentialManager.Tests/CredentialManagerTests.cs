@@ -304,6 +304,24 @@ public sealed partial class CredentialManagerTests
         public static partial bool CredWriteW(in CREDENTIALW credential, uint Flags);
     }
 
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_LimitComment_TooLong()
+    {
+        using var context = new IsolatedContext();
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => CredentialManager.WriteCredential(context.GetCredentialName(), "John", "Doe", new string('a', 256), CredentialPersistence.Session));
+        Assert.Equal("comment", ex.ParamName);
+        Assert.StartsWith("The comment message has exceeded 255 characters.", ex.Message);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_LimitSecret_TooLong()
+    {
+        using var context = new IsolatedContext();
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => CredentialManager.WriteCredential(context.GetCredentialName(), "John", new string('a', 1281), CredentialPersistence.Session));
+        Assert.Equal("secret", ex.ParamName);
+        Assert.StartsWith("The secret message has exceeded 2560 bytes.", ex.Message);
+    }
+
     private sealed class IsolatedContext : IDisposable
     {
         private readonly Mutex? _mutex;

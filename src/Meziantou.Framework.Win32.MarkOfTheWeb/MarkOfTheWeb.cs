@@ -25,8 +25,11 @@ namespace Meziantou.Framework.Win32;
 /// </example>
 public static class MarkOfTheWeb
 {
+    private static readonly UTF8Encoding ZoneIdentifierEncoding = new(encoderShouldEmitUTF8Identifier: false);
+
     /// <summary>Removes the Mark of the Web zone information from a file by deleting the Zone.Identifier alternate data stream.</summary>
     /// <param name="filePath">The path to the file from which to remove the zone information.</param>
+    /// <remarks>Does nothing when the file carries no zone information, or when the file or its directory does not exist.</remarks>
     public static void RemoveFileZone(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
@@ -36,7 +39,7 @@ public static class MarkOfTheWeb
         {
             File.Delete(adsPath);
         }
-        catch (FileNotFoundException)
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
         {
         }
     }
@@ -80,7 +83,11 @@ public static class MarkOfTheWeb
 
     /// <summary>Gets the raw content of the Zone.Identifier alternate data stream from a file.</summary>
     /// <param name="filePath">The path to the file to read.</param>
-    /// <returns>The content of the Zone.Identifier stream, or <see langword="null"/> if the file does not have zone information.</returns>
+    /// <returns>The content of the Zone.Identifier stream, or <see langword="null"/> if the file does not have zone information, or if the file or its directory does not exist.</returns>
+    /// <remarks>
+    /// Windows and web browsers write the stream as ASCII. A byte order mark, if present, takes precedence,
+    /// so streams written as UTF-16 by earlier versions of this library are still decoded correctly.
+    /// </remarks>
     public static string? GetFileZoneContent(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
@@ -90,9 +97,11 @@ public static class MarkOfTheWeb
 
         try
         {
-            return File.ReadAllText(adsPath, Encoding.Unicode);
+            // File.ReadAllText honors a byte order mark when there is one and falls back to the
+            // requested encoding otherwise. UTF-8 is a superset of the ASCII that Windows writes.
+            return File.ReadAllText(adsPath, Encoding.UTF8);
         }
-        catch (FileNotFoundException)
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
         {
         }
 
@@ -104,14 +113,27 @@ public static class MarkOfTheWeb
     /// <param name="zone">The security zone to assign to the file.</param>
     /// <param name="referrerUrl">Optional URL of the page that linked to the file.</param>
     /// <param name="hostUrl">Optional URL of the host from which the file was downloaded.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="zone"/> is not one of <see cref="UrlZone.LocalMachine"/>, <see cref="UrlZone.Intranet"/>, <see cref="UrlZone.Trusted"/>, <see cref="UrlZone.Internet"/>, or <see cref="UrlZone.Untrusted"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="referrerUrl"/> or <paramref name="hostUrl"/> contains a carriage return, a line feed, or a null character.</exception>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public static void SetFileZone(string filePath, UrlZone zone, string? referrerUrl = null, string? hostUrl = null)
     {
         ArgumentNullException.ThrowIfNull(filePath);
 
+        // Windows ignores a ZoneId it cannot interpret, so writing one would report success while leaving
+        // the file effectively unmarked. UrlZone.Invalid is a "could not determine" result, not a zone.
+        if (zone is < UrlZone.LocalMachine or > UrlZone.Untrusted)
+            throw new ArgumentOutOfRangeException(nameof(zone), zone, "The zone must be a defined URL zone other than UrlZone.Invalid.");
+
+        EnsureSingleLine(referrerUrl, nameof(referrerUrl));
+        EnsureSingleLine(hostUrl, nameof(hostUrl));
+
         filePath = Path.GetFullPath(filePath);
         var adsPath = filePath + ":Zone.Identifier";
-        using var writer = new StreamWriter(adsPath, append: false, Encoding.Unicode);
+
+        // Windows and web browsers write the stream as ASCII. UTF-8 without a byte order mark produces
+        // the same bytes for the ASCII that URLs are normally made of, while still preserving the rest.
+        using var writer = new StreamWriter(adsPath, append: false, ZoneIdentifierEncoding);
         writer.WriteLine("[ZoneTransfer]");
         writer.WriteLine("ZoneId=" + ((int)zone).ToString(CultureInfo.InvariantCulture));
         if (referrerUrl is not null)
@@ -123,6 +145,15 @@ public static class MarkOfTheWeb
         {
             writer.WriteLine("HostUrl=" + hostUrl);
         }
+    }
+
+    // Zone.Identifier is an INI-shaped stream and Windows resolves a repeated key to its last occurrence.
+    // A URL containing a line break would let the caller append arbitrary entries, including a second
+    // ZoneId that silently overrides the requested zone.
+    private static void EnsureSingleLine(string? url, string parameterName)
+    {
+        if (url is not null && url.AsSpan().ContainsAny('\r', '\n', '\0'))
+            throw new ArgumentException("The URL cannot contain a carriage return, a line feed, or a null character.", parameterName);
     }
 
     /// <summary>

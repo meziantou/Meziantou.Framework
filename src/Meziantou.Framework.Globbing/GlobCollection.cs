@@ -23,21 +23,33 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
 {
     private readonly IGlobEvaluatable[] _globs;
 
+    // gitignore resolves a path against the last pattern that matches it, whereas a hand-built collection uses
+    // the order-independent "any exclude wins" rule. Only the gitignore factories set this.
+    private readonly bool _lastMatchWins;
+
     /// <summary>Initializes a new instance of the <see cref="GlobCollection"/> class.</summary>
     /// <param name="globs">The glob patterns to include in the collection.</param>
     public GlobCollection(params IGlobEvaluatable[] globs) => _globs = globs;
+
+    private GlobCollection(IGlobEvaluatable[] globs, bool lastMatchWins)
+    {
+        _globs = globs;
+        _lastMatchWins = lastMatchWins;
+    }
 
     /// <summary>Loads gitignore content and creates a <see cref="GlobCollection"/> from it.</summary>
     /// <param name="gitIgnoreContent">The gitignore content.</param>
     public static GlobCollection ParseGitIgnore(ReadOnlySpan<char> gitIgnoreContent)
     {
         var globs = new List<IGlobEvaluatable>();
-        foreach (var entry in new StringExtensions.LineSplitEnumerator(gitIgnoreContent))
+        // Split on CR/LF/CRLF only, like git and like TextReader.ReadLine in the LoadGitIgnoreAsync overloads. The
+        // default Unicode mode also breaks on U+0085, U+2028 and U+2029, which are legal characters in a file name.
+        foreach (var entry in new StringExtensions.LineSplitEnumerator(gitIgnoreContent, LineBreakMode.Standard))
         {
             AddGitIgnoreLine(entry.Line, globs);
         }
 
-        return new GlobCollection([.. globs]);
+        return new GlobCollection([.. globs], lastMatchWins: true);
     }
 
     /// <summary>Loads a gitignore file asynchronously and creates a <see cref="GlobCollection"/> from it.</summary>
@@ -83,7 +95,7 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
             AddGitIgnoreLine(line.AsSpan(), globs);
         }
 
-        return new GlobCollection([.. globs]);
+        return new GlobCollection([.. globs], lastMatchWins: true);
     }
 
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -147,9 +159,16 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
     /// <param name="directory">The directory part of the path to match.</param>
     /// <param name="filename">The filename part of the path to match.</param>
     /// <param name="itemType">The type of the path item (file or directory), or <see langword="null"/> if unknown.</param>
-    /// <returns><see langword="true"/> if the path matches any include pattern and no exclude pattern; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///     <see langword="true"/> if the path matches any include pattern and no exclude pattern; otherwise,
+    ///     <see langword="false"/>. A collection created from gitignore content resolves the path against the last
+    ///     pattern that matches it instead, as git does.
+    /// </returns>
     public bool IsMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
     {
+        if (_lastMatchWins)
+            return IsLastMatch(directory, filename, itemType);
+
         var match = false;
         foreach (var glob in _globs)
         {
@@ -166,6 +185,19 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
         }
 
         return match;
+    }
+
+    private bool IsLastMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
+    {
+        // The last pattern that matches decides, so walk backwards and stop at the first hit.
+        for (var i = _globs.Length - 1; i >= 0; i--)
+        {
+            var glob = _globs[i];
+            if (glob.IsMatch(directory, filename, itemType))
+                return glob.Mode is GlobMode.Include;
+        }
+
+        return false;
     }
 
     /// <summary>Determines whether a directory should be recursed into when enumerating files.</summary>

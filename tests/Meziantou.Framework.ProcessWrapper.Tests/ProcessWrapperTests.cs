@@ -1105,6 +1105,18 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_WithInputStream_WhenProcessExitsWithoutReadingItsInput_ReturnsResult()
+    {
+        // The process closes its standard input immediately, so the remaining writes hit a broken pipe.
+        // That is expected for commands that stop reading early and must not fail the execution.
+        var result = await CreateExitImmediatelyCommand()
+            .WithInputStream(InputSource.FromText(new string('a', 10 * 1024 * 1024)))
+            .ExecuteAsync();
+
+        Assert.True(result.ExitCode.IsSuccess);
+    }
+
+    [Fact]
     public async Task ExecuteBufferedAsync_WithPipeOperator_PipesCommandOutput()
     {
         var processResult = await (CreateEchoCommand("hello from operator") | CreatePassthroughCommand())
@@ -1885,6 +1897,18 @@ public class ProcessWrapperTests
 
         return ProcessWrapper.Create("sh")
             .WithArguments("-c", $"echo ${variableName}");
+    }
+
+    private static ProcessWrapper CreateExitImmediatelyCommand()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return ProcessWrapper.Create("cmd.exe")
+                .WithArguments("/C", "exit /b 0");
+        }
+
+        return ProcessWrapper.Create("sh")
+            .WithArguments("-c", "exit 0");
     }
 
     private static ProcessWrapper CreateSingleByteOutputCommand(byte value, bool standardError = false)

@@ -608,15 +608,18 @@ public sealed class ProcessWrapper
                             break;
                         }
 
-                        inputStream.Write(buffer, 0, bytesRead);
+                        if (!TryWriteProcessInput(inputStream, buffer, bytesRead))
+                        {
+                            break;
+                        }
                     }
 
-                    inputStream.Flush();
+                    TryFlushProcessInput(inputStream);
                 }
                 finally
                 {
                     inputSource.NotifyProcessCompleted();
-                    inputStream.Close();
+                    TryCloseProcessInput(inputStream);
                 }
             }, cancellationToken);
         }
@@ -701,6 +704,54 @@ public sealed class ProcessWrapper
             {
                 target.NotifyProcessCompleted();
             }
+        }
+    }
+
+    // A process that stops reading its standard input closes the pipe, so the remaining writes fail.
+    // That is normal for commands such as head or grep -q, so treat it as the end of the input rather
+    // than an error, matching how ReadBufferAsync treats the same failure on the output side.
+    private static bool TryWriteProcessInput(Stream stream, byte[] buffer, int count)
+    {
+        try
+        {
+            stream.Write(buffer, 0, count);
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (ObjectDisposedException)
+        {
+            return false;
+        }
+    }
+
+    private static void TryFlushProcessInput(Stream stream)
+    {
+        try
+        {
+            stream.Flush();
+        }
+        catch (IOException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private static void TryCloseProcessInput(Stream stream)
+    {
+        try
+        {
+            stream.Close();
+        }
+        catch (IOException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
         }
     }
 

@@ -74,6 +74,27 @@ public sealed class ByteSizeTests
         Assert.Equal(3000L, result);
     }
 
+    [Fact]
+    public void CompareTo_Object_Null_ReturnsGreaterThan()
+    {
+        Assert.Equal(1, ((IComparable)new ByteSize(1)).CompareTo(obj: null));
+    }
+
+    [Fact]
+    public void CompareTo_Object_ByteSize_ComparesValues()
+    {
+        Assert.True(((IComparable)new ByteSize(1)).CompareTo(new ByteSize(2)) < 0);
+        Assert.True(((IComparable)new ByteSize(2)).CompareTo(new ByteSize(1)) > 0);
+        Assert.Equal(0, ((IComparable)new ByteSize(1)).CompareTo(new ByteSize(1)));
+    }
+
+    [Fact]
+    public void CompareTo_Object_OtherType_ThrowsArgumentException()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => ((IComparable)new ByteSize(1)).CompareTo("not a byte size"));
+        Assert.Equal("obj", exception.ParamName);
+    }
+
     [Theory]
     [InlineData(10L, null, "10B")]
     [InlineData(10L, "", "10B")]

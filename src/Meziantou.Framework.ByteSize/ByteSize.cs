@@ -56,8 +56,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         if (obj is null)
             return 1;
 
-        var fileLength = (ByteSize)obj;
-        return CompareTo(fileLength);
+        if (obj is not ByteSize byteSize)
+            throw new ArgumentException($"Object must be of type {nameof(ByteSize)}", nameof(obj));
+
+        return CompareTo(byteSize);
     }
 
     public override string ToString() => ToString(format: null, formatProvider: null);

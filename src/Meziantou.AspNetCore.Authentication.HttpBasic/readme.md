@@ -73,3 +73,4 @@ builder.Services
 ## Security options
 
 - `MaxCredentialLength` limits the size (in characters) of the Base64 credential payload in the `Authorization` header.
+- `Realm` accepts printable ASCII only (U+0020 to U+007E). Other characters cannot be written to a `WWW-Authenticate` header, so they are rejected when the option is set rather than failing later on every challenge.

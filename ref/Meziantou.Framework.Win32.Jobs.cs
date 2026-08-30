@@ -101,10 +101,32 @@ namespace Meziantou.Framework.Win32
         public bool Equals(Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation? other) => throw null;
     }
 
-    public struct JobObjectCpuHardCap
+    public readonly struct JobObjectCpuHardCap : System.IEquatable<Meziantou.Framework.Win32.JobObjectCpuHardCap>
     {
-        public bool Enabled { readonly get => throw null; set { } }
-        public int Rate { readonly get => throw null; set { } }
+        public bool Enabled { get => throw null; init { } }
+        public Meziantou.Framework.Win32.JobObjectCpuRateControlMode Mode { get => throw null; init { } }
+        public int Rate { get => throw null; init { } }
+        public int Weight { get => throw null; init { } }
+        public int MinRate { get => throw null; init { } }
+        public int MaxRate { get => throw null; init { } }
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator !=(Meziantou.Framework.Win32.JobObjectCpuHardCap left, Meziantou.Framework.Win32.JobObjectCpuHardCap right) => throw null;
+        public static bool operator ==(Meziantou.Framework.Win32.JobObjectCpuHardCap left, Meziantou.Framework.Win32.JobObjectCpuHardCap right) => throw null;
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public bool Equals(Meziantou.Framework.Win32.JobObjectCpuHardCap other) => throw null;
+    }
+
+    public enum JobObjectCpuRateControlMode
+    {
+        Disabled = 0,
+        HardCap = 1,
+        Weight = 2,
+        MinMaxRate = 3
     }
 
     public sealed class JobObjectIoCounters : System.IEquatable<Meziantou.Framework.Win32.JobObjectIoCounters>

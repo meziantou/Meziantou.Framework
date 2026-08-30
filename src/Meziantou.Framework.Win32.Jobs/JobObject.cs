@@ -267,8 +267,13 @@ public sealed class JobObject : IDisposable
         }
     }
 
-    /// <summary>Get the job's CPU rate limit enabled status and value.</summary>
-    /// <returns>Bool indicating if CPU rate control is enabled and the job's CPU rate limit.</returns>
+    /// <summary>Get the job's CPU rate control policy and the values that belong to it.</summary>
+    /// <returns>
+    /// A <see cref="JobObjectCpuHardCap"/> describing the active policy. Windows stores the rate, the
+    /// weight and the min/max pair in a union, so only the members matching
+    /// <see cref="JobObjectCpuHardCap.Mode"/> carry a meaningful value.
+    /// </returns>
+    /// <exception cref="Win32Exception">The operation failed.</exception>
     public unsafe JobObjectCpuHardCap GetCpuRateHardCap()
     {
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
@@ -280,12 +285,40 @@ public sealed class JobObject : IDisposable
             throw new Win32Exception(err);
         }
 
-        var cpuRateEnabled = restriction.ControlFlags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE);
-
-        return new JobObjectCpuHardCap
+        var mode = restriction.ControlFlags switch
         {
-            Enabled = cpuRateEnabled,
-            Rate = (int)restriction.Anonymous.CpuRate,
+            var flags when !flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE) => JobObjectCpuRateControlMode.Disabled,
+            var flags when flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_WEIGHT_BASED) => JobObjectCpuRateControlMode.Weight,
+            var flags when flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE) => JobObjectCpuRateControlMode.MinMaxRate,
+            _ => JobObjectCpuRateControlMode.HardCap,
+        };
+
+        return mode switch
+        {
+            JobObjectCpuRateControlMode.Weight => new JobObjectCpuHardCap
+            {
+                Enabled = true,
+                Mode = mode,
+                Weight = (int)restriction.Anonymous.Weight,
+            },
+            JobObjectCpuRateControlMode.MinMaxRate => new JobObjectCpuHardCap
+            {
+                Enabled = true,
+                Mode = mode,
+                MinRate = restriction.Anonymous.Anonymous.MinRate,
+                MaxRate = restriction.Anonymous.Anonymous.MaxRate,
+            },
+            JobObjectCpuRateControlMode.HardCap => new JobObjectCpuHardCap
+            {
+                Enabled = true,
+                Mode = mode,
+                Rate = (int)restriction.Anonymous.CpuRate,
+            },
+            _ => new JobObjectCpuHardCap
+            {
+                Enabled = false,
+                Mode = JobObjectCpuRateControlMode.Disabled,
+            },
         };
     }
 

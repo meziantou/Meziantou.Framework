@@ -149,15 +149,49 @@ public class JobObjectTests
 
         cap = job.GetCpuRateHardCap();
         Assert.False(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.Disabled, cap.Mode);
 
         job.SetCpuRateHardCap(7654);
         cap = job.GetCpuRateHardCap();
         Assert.True(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.HardCap, cap.Mode);
         Assert.Equal(7654, cap.Rate);
 
         job.DisableCpuRateHardCap();
         cap = job.GetCpuRateHardCap();
         Assert.False(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.Disabled, cap.Mode);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CpuRateWeight_IsReportedAsWeight()
+    {
+        using var job = new JobObject();
+        job.SetCpuRateWeight(5);
+
+        var cap = job.GetCpuRateHardCap();
+        Assert.True(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.Weight, cap.Mode);
+        Assert.Equal(5, cap.Weight);
+
+        // The weight lives in the same union as the hard cap rate, so Rate must not report it
+        Assert.Equal(0, cap.Rate);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CpuRateMinMax_IsReportedAsRange()
+    {
+        using var job = new JobObject();
+        job.SetCpuRate(minRate: 1000, maxRate: 3000);
+
+        var cap = job.GetCpuRateHardCap();
+        Assert.True(cap.Enabled);
+        Assert.Equal(JobObjectCpuRateControlMode.MinMaxRate, cap.Mode);
+        Assert.Equal(1000, cap.MinRate);
+        Assert.Equal(3000, cap.MaxRate);
+
+        // Reading CpuRate here used to yield 196609000: MaxRate and MinRate reinterpreted as one uint
+        Assert.Equal(0, cap.Rate);
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]

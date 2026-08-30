@@ -8,7 +8,8 @@ namespace Meziantou.Framework.Http;
 /// </summary>
 public sealed class LinkHeaderValue
 {
-    private static ReadOnlySpan<char> ParameterSeparators => [' ', '\t', '=', ';', ','];
+    private static ReadOnlySpan<char> WhiteSpaceCharacters => [' ', '\t', '\r', '\n'];
+    private static ReadOnlySpan<char> ParameterSeparators => [' ', '\t', '\r', '\n', '=', ';', ','];
 
     /// <summary>Gets the URL of the link.</summary>
     [SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "Breaking change")]
@@ -220,7 +221,7 @@ public sealed class LinkHeaderValue
 
         static ReadOnlySpan<char> ConsumeOptionalWhiteSpaces(ReadOnlySpan<char> value)
         {
-            var index = value.IndexOfAnyExcept(' ', '\t');
+            var index = value.IndexOfAnyExcept(WhiteSpaceCharacters);
             return index == -1 ? [] : value[index..];
         }
     }

@@ -31,6 +31,7 @@ namespace Meziantou.Framework
         public void Append(System.ReadOnlySpan<char> value) { }
         public System.Span<char> AppendSpan(int length) => throw null;
         public void Dispose() { }
+        public void Dispose(bool clearArray) { }
         public void Append(System.Text.Rune rune) { }
         [System.Runtime.CompilerServices.InterpolatedStringHandler]
         public ref struct AppendInterpolatedStringHandler

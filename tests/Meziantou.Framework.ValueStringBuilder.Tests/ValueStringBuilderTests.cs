@@ -46,6 +46,43 @@ public class ValueStringBuilderTests
     }
 
     [Fact]
+    public void DisposeWithClearArrayZeroesThePooledBuffer()
+    {
+        var sb = new ValueStringBuilder(initialCapacity: 64);
+        sb.Append("hunter2-super-secret");
+
+        // RawChars aliases the rented array; nothing else rents it before the assertion below.
+        var buffer = sb.RawChars;
+        sb.Dispose(clearArray: true);
+
+        Assert.Equal(new string('\0', 20), buffer.Slice(0, 20).ToString());
+    }
+
+    [Fact]
+    public void DisposeWithClearArrayZeroesAStackAllocatedBuffer()
+    {
+        Span<char> initialBuffer = stackalloc char[32];
+        var sb = new ValueStringBuilder(initialBuffer);
+        sb.Append("hunter2-super-secret");
+
+        sb.Dispose(clearArray: true);
+
+        Assert.Equal(new string('\0', 20), initialBuffer.Slice(0, 20).ToString());
+    }
+
+    [Fact]
+    public void DisposeWithoutClearArrayLeavesTheContent()
+    {
+        Span<char> initialBuffer = stackalloc char[32];
+        var sb = new ValueStringBuilder(initialBuffer);
+        sb.Append("hunter2-super-secret");
+
+        sb.Dispose(clearArray: false);
+
+        Assert.Equal("hunter2-super-secret", initialBuffer.Slice(0, 20).ToString());
+    }
+
+    [Fact]
     public void NullTerminateWritesTerminator()
     {
         using var sb = new ValueStringBuilder(initialCapacity: 2);

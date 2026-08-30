@@ -255,4 +255,28 @@ ref partial struct ValueStringBuilder
             ArrayPool<char>.Shared.Return(toReturn);
         }
     }
+
+    /// <summary>
+    /// Releases the buffer, optionally clearing the characters that were written to it first.
+    /// </summary>
+    /// <param name="clearArray">
+    /// <see langword="true" /> to zero the content before releasing the buffer, so that it is not left readable by
+    /// the next consumer to rent the array. Use it when the builder held sensitive data; it costs a clear of the
+    /// buffer, which is why <see cref="Dispose()" /> does not do it.
+    /// </param>
+    public void Dispose(bool clearArray)
+    {
+        if (clearArray)
+        {
+            // Clear through the span rather than the array so a stack-allocated initial buffer is covered too.
+            _chars.Slice(0, _pos).Clear();
+        }
+
+        var toReturn = _arrayToReturnToPool;
+        this = default;
+        if (toReturn is not null)
+        {
+            ArrayPool<char>.Shared.Return(toReturn, clearArray);
+        }
+    }
 }

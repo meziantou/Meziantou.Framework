@@ -28,6 +28,7 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
 
               <Target Name="CaptureEmbeddedConstantsBinlogItems" AfterTargets="GenerateEmbeddedConstants">
                 <WriteLinesToFile File="$(IntermediateOutputPath)embed-items.txt" Lines="@(EmbedInBinlog)" Overwrite="true" />
+                <WriteLinesToFile File="$(IntermediateOutputPath)uptodate-items.txt" Lines="@(UpToDateCheckInput)" Overwrite="true" />
               </Target>
             </Project>
             """);
@@ -53,6 +54,11 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         var embedItemsPath = Assert.Single(Directory.GetFiles(projectDirectory / "obj", "embed-items.txt", SearchOption.AllDirectories));
         var embedItems = await File.ReadAllTextAsync(embedItemsPath, XunitCancellationToken);
         Assert.Contains(generatedFilePath, embedItems, ignoreCase: true);
+
+        // The Visual Studio fast up-to-date check skips the build unless the embedded files are declared as inputs
+        var upToDateItemsPath = Assert.Single(Directory.GetFiles(projectDirectory / "obj", "uptodate-items.txt", SearchOption.AllDirectories));
+        var upToDateItems = await File.ReadAllTextAsync(upToDateItemsPath, XunitCancellationToken);
+        Assert.Contains("hello.txt", upToDateItems);
 
         await RunDotNetCommand(projectDirectory, ["clean", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
 

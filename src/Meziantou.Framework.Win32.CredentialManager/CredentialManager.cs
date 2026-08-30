@@ -34,6 +34,7 @@ public static class CredentialManager
     /// <summary>Reads a credential from the Windows Credential Manager.</summary>
     /// <param name="applicationName">The name that identifies the credential.</param>
     /// <returns>The credential if found; otherwise, <see langword="null"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="applicationName"/> is <see langword="null"/>.</exception>
     public static Credential? ReadCredential(string applicationName)
     {
         return ReadCredential(applicationName, CredentialType.Generic);
@@ -43,8 +44,11 @@ public static class CredentialManager
     /// <param name="applicationName">The name that identifies the credential.</param>
     /// <param name="type">The type of the credential.</param>
     /// <returns>The credential if found; otherwise, <see langword="null"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="applicationName"/> is <see langword="null"/>.</exception>
     public static unsafe Credential? ReadCredential(string applicationName, CredentialType type)
     {
+        ArgumentNullException.ThrowIfNull(applicationName);
+
         var read = PInvoke.CredRead(applicationName, (CRED_TYPE)type, out var handle);
         if (read)
         {

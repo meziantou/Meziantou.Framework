@@ -56,15 +56,17 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         if (obj is null)
             return 1;
 
-        var fileLength = (ByteSize)obj;
-        return CompareTo(fileLength);
+        if (obj is not ByteSize byteSize)
+            throw new ArgumentException($"Object must be of type {nameof(ByteSize)}", nameof(obj));
+
+        return CompareTo(byteSize);
     }
 
     public override string ToString() => ToString(format: null, formatProvider: null);
 
     public string ToString(ByteSizeUnit unit) => ToString(unit, formatProvider: null);
 
-    public string ToString(ByteSizeUnit unit, IFormatProvider? formatProvider) => GetValue(unit).ToString(formatProvider) + UnitToString(unit);
+    public string ToString(ByteSizeUnit unit, IFormatProvider? formatProvider) => FormatValue(unit, numberFormat: null, formatProvider) + UnitToString(unit);
 
     public string ToString(IFormatProvider? formatProvider)
     {
@@ -79,13 +81,14 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     ///     <item><c>G2</c>: Find the best unit (B, kB, MB, GB, etc.), and use F2 format for the value</item>
     ///     <item><c>Gi</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use G format for the value</item>
     ///     <item><c>Gi2</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use F2 format for the value</item>
+    ///     <item><c>F</c>, <c>F2</c>, <c>Fi</c>, <c>Fi2</c>: Synonyms of <c>G</c>, <c>G2</c>, <c>Gi</c>, <c>Gi2</c></item>
     ///     <item>
     ///         <c>B</c>, <c>kB</c>, <c>kiB</c>, <c>MB</c>, <c>MiB</c>, <c>GB</c>, <c>GiB</c>, <c>TB</c>, <c>TiB</c>, <c>PB</c>, <c>PiB</c>, <c>EB</c>, <c>EiB</c>:
     ///         Use the provided unit, and use G format for the value. If a number is provided (e.g. <c>kB3</c>), it use Fn (e.g. F3) format to convert the value to string.
     ///     </item>
     /// </list>
     /// </param>
-    /// <exception cref="ArgumentException">The provided format is not valid</exception>
+    /// <exception cref="FormatException">The provided format is not valid</exception>
     public string ToString(string? format)
     {
         return ToString(format, formatProvider: null);
@@ -99,6 +102,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     ///     <item><c>G2</c>: Find the best unit (B, kB, MB, GB, etc.), and use F2 format for the value</item>
     ///     <item><c>Gi</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use G format for the value</item>
     ///     <item><c>Gi2</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use F2 format for the value</item>
+    ///     <item><c>F</c>, <c>F2</c>, <c>Fi</c>, <c>Fi2</c>: Synonyms of <c>G</c>, <c>G2</c>, <c>Gi</c>, <c>Gi2</c></item>
     ///     <item>
     ///         <c>B</c>, <c>kB</c>, <c>kiB</c>, <c>MB</c>, <c>MiB</c>, <c>GB</c>, <c>GiB</c>, <c>TB</c>, <c>TiB</c>, <c>PB</c>, <c>PiB</c>, <c>EB</c>, <c>EiB</c>:
     ///         Use the provided unit, and use G format for the value. If a number is provided (e.g. <c>kB3</c>), it use Fn (e.g. F3) format to convert the value to string.
@@ -107,7 +111,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// </param>
     /// <param name="formatProvider"></param>
     /// <returns></returns>
-    /// <exception cref="ArgumentException">The provided format is not valid</exception>
+    /// <exception cref="FormatException">The provided format is not valid</exception>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
         if (string.IsNullOrEmpty(format))
@@ -144,7 +148,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
             }
             else
             {
-                throw new ArgumentException($"format '{format}' is invalid", nameof(format));
+                throw new FormatException($"format '{format}' is invalid");
             }
         }
 
@@ -152,12 +156,12 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         if (index > 0)
         {
             if (!int.TryParse(format[index..], NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
-                throw new ArgumentException($"format '{format}' is invalid", nameof(format));
+                throw new FormatException($"format '{format}' is invalid");
 
             numberFormat = "F" + number.ToString(CultureInfo.InvariantCulture);
         }
 
-        return GetValue(unit).ToString(numberFormat, formatProvider) + UnitToString(unit);
+        return FormatValue(unit, numberFormat, formatProvider) + UnitToString(unit);
     }
 
     /// <summary>Tries to format the value into the provided span of characters.</summary>
@@ -218,11 +222,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         }
 
         // Format the value
-        var value = GetValue(unit);
         var unitStr = UnitToString(unit);
 
         // Try to format the number part
-        if (!value.TryFormat(destination, out var numberCharsWritten, numberFormat, provider))
+        if (!TryFormatValue(destination, out var numberCharsWritten, unit, numberFormat, provider))
         {
             charsWritten = 0;
             return false;
@@ -299,7 +302,41 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// <returns>The value in the specified unit.</returns>
     public double GetValue(ByteSizeUnit unit)
     {
-        return (double)Value / (long)unit;
+        var divisor = unit switch
+        {
+            ByteSizeUnit.Byte or ByteSizeUnit.KiloByte or ByteSizeUnit.MegaByte or ByteSizeUnit.GigaByte
+                or ByteSizeUnit.TeraByte or ByteSizeUnit.PetaByte or ByteSizeUnit.ExaByte
+                or ByteSizeUnit.KibiByte or ByteSizeUnit.MebiByte or ByteSizeUnit.GibiByte
+                or ByteSizeUnit.TebiByte or ByteSizeUnit.PebiByte or ByteSizeUnit.ExbiByte => (long)unit,
+            _ => throw new ArgumentOutOfRangeException(nameof(unit)),
+        };
+
+        return (double)Value / divisor;
+    }
+
+    // The Byte unit is formatted straight from the long so the value stays exact: going
+    // through double loses integer precision above 2^53 and lets the "G" specifier emit
+    // scientific notation, which none of this type's parsers accept. The scaled units are
+    // fractional by nature and keep using double.
+    private string FormatValue(ByteSizeUnit unit, string? numberFormat, IFormatProvider? formatProvider)
+    {
+        return unit is ByteSizeUnit.Byte
+            ? Value.ToString(numberFormat, formatProvider)
+            : GetValue(unit).ToString(numberFormat, formatProvider);
+    }
+
+    private bool TryFormatValue(Span<char> destination, out int charsWritten, ByteSizeUnit unit, ReadOnlySpan<char> numberFormat, IFormatProvider? provider)
+    {
+        return unit is ByteSizeUnit.Byte
+            ? Value.TryFormat(destination, out charsWritten, numberFormat, provider)
+            : GetValue(unit).TryFormat(destination, out charsWritten, numberFormat, provider);
+    }
+
+    private bool TryFormatValue(Span<byte> utf8Destination, out int bytesWritten, ByteSizeUnit unit, ReadOnlySpan<char> numberFormat, IFormatProvider? provider)
+    {
+        return unit is ByteSizeUnit.Byte
+            ? Value.TryFormat(utf8Destination, out bytesWritten, numberFormat, provider)
+            : GetValue(unit).TryFormat(utf8Destination, out bytesWritten, numberFormat, provider);
     }
 
     private static string UnitToString(ByteSizeUnit unit)
@@ -573,11 +610,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         }
 
         // Format the value
-        var value = GetValue(unit);
         var unitStr = UnitToString(unit);
 
         // Try to format the number part as UTF-8
-        if (!value.TryFormat(utf8Destination, out var numberBytesWritten, numberFormat, provider))
+        if (!TryFormatValue(utf8Destination, out var numberBytesWritten, unit, numberFormat, provider))
         {
             bytesWritten = 0;
             return false;

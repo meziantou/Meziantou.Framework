@@ -314,6 +314,16 @@ public sealed class CredentialManagerTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CredentialManager_ReadCredential_NullApplicationName_Throws()
+    {
+        var ex = Assert.Throws<ArgumentNullException>(() => CredentialManager.ReadCredential(null!));
+        Assert.Equal("applicationName", ex.ParamName);
+
+        ex = Assert.Throws<ArgumentNullException>(() => CredentialManager.ReadCredential(null!, CredentialType.DomainPassword));
+        Assert.Equal("applicationName", ex.ParamName);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CredentialManager_LimitComment_TooLong()
     {
         using var context = new IsolatedContext();

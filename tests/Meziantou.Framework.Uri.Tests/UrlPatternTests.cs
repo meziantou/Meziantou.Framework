@@ -176,6 +176,34 @@ public sealed class UrlPatternTests
         Assert.True(pattern.IsMatch("https://example.com/Books/123"));
     }
 
+    [Fact]
+    public void IsMatch_IgnoreCase_AppliesToThePathnameSearchAndHash()
+    {
+        var options = new UrlPatternOptions { IgnoreCase = true };
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Pathname = "/Books" }, options)
+            .IsMatch("https://example.com/books"));
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Search = "Foo=Bar" }, options)
+            .IsMatch("https://example.com?foo=bar"));
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Hash = "Section" }, options)
+            .IsMatch("https://example.com#section"));
+    }
+
+    [Fact]
+    public void IsMatch_IgnoreCase_DoesNotApplyToTheUsernamePasswordOrPort()
+    {
+        // Per the spec, ignoreCase only reaches the pathname, search and hash components
+        var options = new UrlPatternOptions { IgnoreCase = true };
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Username = "Admin" }, options)
+            .IsMatch(new UrlPatternInit { Username = "admin" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Password = "Secret" }, options)
+            .IsMatch(new UrlPatternInit { Password = "secret" }));
+    }
+
     // Full URL pattern string
     [Fact]
     public void Create_WithFullUrlPatternString_ShouldParse()

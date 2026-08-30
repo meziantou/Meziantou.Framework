@@ -23,13 +23,18 @@ namespace Meziantou.Framework;
 [DebuggerDisplay("{FullPath}")]
 public sealed class TemporaryFile : IDisposable, IAsyncDisposable
 {
+    // Set when this instance created a directory for the sole purpose of holding the file.
+    // Disposing must then remove that directory, not just the file.
+    private readonly FullPath _ownedDirectory;
+
     /// <summary>Gets the full path to the temporary file.</summary>
     /// <value>The absolute path to the temporary file.</value>
     public FullPath FullPath { get; }
 
-    private TemporaryFile(FullPath fullPath)
+    private TemporaryFile(FullPath fullPath, FullPath ownedDirectory)
     {
         FullPath = fullPath;
+        _ownedDirectory = ownedDirectory;
     }
 
     /// <summary>Creates a new temporary file in the system's default temp location.</summary>
@@ -42,7 +47,7 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
     {
         var rootDirectory = FullPath.Combine(Path.GetTempPath(), "MezTF");
         var fileName = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture) + "_" + Guid.NewGuid().ToString("N") + ".tmp";
-        return CreateInRoot(rootDirectory, fileName);
+        return CreateInRoot(rootDirectory, fileName, ownedDirectory: default);
     }
 
     /// <summary>Creates a new temporary file using the specified file name or full path.</summary>
@@ -60,7 +65,7 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
             return Create(FullPath.FromPath(fileNameOrPath));
 
         var rootDirectory = FullPath.GetTempPath() / "MezTF" / CreateUniqueFolderName();
-        return CreateInRoot(rootDirectory, fileNameOrPath);
+        return CreateInRoot(rootDirectory, fileNameOrPath, ownedDirectory: rootDirectory);
     }
 
     /// <summary>Creates a new temporary file at the specified path.</summary>
@@ -72,14 +77,14 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
             throw new ArgumentException("The path is empty.", nameof(filePath));
 
         CreateFile(filePath);
-        return new TemporaryFile(filePath);
+        return new TemporaryFile(filePath, ownedDirectory: default);
     }
 
-    private static TemporaryFile CreateInRoot(FullPath rootDirectory, string relativePath)
+    private static TemporaryFile CreateInRoot(FullPath rootDirectory, string relativePath, FullPath ownedDirectory)
     {
         var fullPath = FullPath.Combine(rootDirectory, relativePath);
         CreateFile(fullPath);
-        return new TemporaryFile(fullPath);
+        return new TemporaryFile(fullPath, ownedDirectory);
     }
 
     private static string CreateUniqueFolderName()
@@ -94,16 +99,32 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
     }
 
     /// <summary>Deletes the temporary file.</summary>
+    /// <remarks>
+    /// When the instance was created from a file name, the unique directory created to hold that file is deleted as well.
+    /// </remarks>
     public void Dispose()
     {
-        IOUtilities.Delete(new FileInfo(FullPath));
+        if (_ownedDirectory.IsEmpty)
+        {
+            IOUtilities.Delete(new FileInfo(FullPath));
+        }
+        else
+        {
+            IOUtilities.Delete(new DirectoryInfo(_ownedDirectory));
+        }
     }
 
     /// <summary>Asynchronously deletes the temporary file.</summary>
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
+    /// <remarks>
+    /// When the instance was created from a file name, the unique directory created to hold that file is deleted as well.
+    /// </remarks>
     public ValueTask DisposeAsync()
     {
-        return IOUtilities.DeleteAsync(new FileInfo(FullPath), CancellationToken.None);
+        if (_ownedDirectory.IsEmpty)
+            return IOUtilities.DeleteAsync(new FileInfo(FullPath), CancellationToken.None);
+
+        return IOUtilities.DeleteAsync(new DirectoryInfo(_ownedDirectory), CancellationToken.None);
     }
 
     /// <summary>Implicitly converts a <see cref="TemporaryFile"/> to a <see cref="FullPath"/>.</summary>

@@ -7,4 +7,8 @@
     <Description>A pooled, recyclable MemoryStream backed by a shared pool of fixed-size byte arrays, implementing IBufferWriter&lt;byte&gt;.</Description>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.PooledMemoryStream.Tests" />
+  </ItemGroup>
+
 </Project>

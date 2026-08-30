@@ -384,6 +384,33 @@ public sealed class ProjectedFileSystemTests
         Assert.Equal(8192, vfs.GetBufferSize());
     }
 
+    /// <summary>
+    /// Verifies that a stream ending before the declared length fails the read instead of yielding filler.
+    ///
+    /// ProjFS zero-fills whatever range the provider does not write, so returning S_OK after a short read
+    /// hands the caller a file that is half real content and half zeros, with no error anywhere. For a
+    /// provider backed by a network or a pipe, a stream ending early is an ordinary transient failure,
+    /// so it has to surface as one.
+    /// </summary>
+    [ProjectedFileSystemFact]
+    public void TruncatedStreamFailsTheReadInsteadOfZeroFilling()
+    {
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            using var vfs = new TruncatedStreamVirtualFileSystem(fullPath);
+            vfs.Start(options: null);
+
+            // The provider declares 10000 bytes but only supplies 5000
+            Assert.ThrowsAny<IOException>(() => File.ReadAllBytes(Path.Combine(fullPath, "truncated.bin")));
+        }
+        finally
+        {
+            try { Directory.Delete(fullPath, recursive: true); } catch { }
+        }
+    }
+
     private sealed class BufferSizeVirtualFileSystem : ProjectedFileSystemBase
     {
         public BufferSizeVirtualFileSystem(string rootFolder) : base(rootFolder) { }

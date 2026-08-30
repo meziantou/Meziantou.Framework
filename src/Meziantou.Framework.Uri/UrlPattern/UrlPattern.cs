@@ -297,6 +297,7 @@ public sealed class UrlPattern
     /// <see href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-test">WHATWG URL Pattern Spec - test method</see>
     /// <see href="https://developer.mozilla.org/en-US/docs/Web/API/URLPattern/test">MDN - URLPattern.test()</see>
     /// </remarks>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public bool IsMatch(string url)
     {
@@ -307,28 +308,23 @@ public sealed class UrlPattern
     /// <param name="url">The URL string to test.</param>
     /// <param name="baseUrl">The base URL to use for resolving relative URLs.</param>
     /// <returns><see langword="true"/> if the pattern matches the URL; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public bool IsMatch(string url, string? baseUrl)
     {
         ArgumentNullException.ThrowIfNull(url);
 
-        try
-        {
-            var uri = ParseUrl(url, baseUrl);
-            if (uri is null)
-                return false;
-
-            return IsMatchUrl(uri);
-        }
-        catch (UriFormatException)
-        {
+        var uri = ParseUrl(url, baseUrl);
+        if (uri is null)
             return false;
-        }
+
+        return IsMatchUrl(uri);
     }
 
     /// <summary>Indicates whether the pattern finds a match in the specified URL.</summary>
     /// <param name="url">The URL to test.</param>
     /// <returns><see langword="true"/> if the pattern matches the URL; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     public bool IsMatch(Uri url)
     {
         ArgumentNullException.ThrowIfNull(url);
@@ -338,6 +334,7 @@ public sealed class UrlPattern
     /// <summary>Indicates whether the pattern finds a match in the specified URL input.</summary>
     /// <param name="input">The URL input dictionary to test.</param>
     /// <returns><see langword="true"/> if the pattern matches the input; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     public bool IsMatch(UrlPatternInit input)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -352,6 +349,7 @@ public sealed class UrlPattern
     /// <see href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-exec">WHATWG URL Pattern Spec - exec method</see>
     /// <see href="https://developer.mozilla.org/en-US/docs/Web/API/URLPattern/exec">MDN - URLPattern.exec()</see>
     /// </remarks>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public UrlPatternResult? Match(string url)
     {
@@ -362,28 +360,23 @@ public sealed class UrlPattern
     /// <param name="url">The URL string to match.</param>
     /// <param name="baseUrl">The base URL to use for resolving relative URLs.</param>
     /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no match.</returns>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public UrlPatternResult? Match(string url, string? baseUrl)
     {
         ArgumentNullException.ThrowIfNull(url);
 
-        try
-        {
-            var uri = ParseUrl(url, baseUrl);
-            if (uri is null)
-                return null;
-
-            return MatchUrl(uri, url);
-        }
-        catch (UriFormatException)
-        {
+        var uri = ParseUrl(url, baseUrl);
+        if (uri is null)
             return null;
-        }
+
+        return MatchUrl(uri, url);
     }
 
     /// <summary>Searches the specified URL for the first occurrence of the pattern and returns the match result with captured groups.</summary>
     /// <param name="url">The URL to match.</param>
     /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no match.</returns>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     public UrlPatternResult? Match(Uri url)
     {
         ArgumentNullException.ThrowIfNull(url);
@@ -393,6 +386,7 @@ public sealed class UrlPattern
     /// <summary>Searches the specified URL input for the first occurrence of the pattern and returns the match result with captured groups.</summary>
     /// <param name="input">The URL input dictionary to match.</param>
     /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no match.</returns>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     public UrlPatternResult? Match(UrlPatternInit input)
     {
         ArgumentNullException.ThrowIfNull(input);

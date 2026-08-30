@@ -810,6 +810,28 @@ public sealed class UrlPatternTests
         Assert.False(pattern.IsMatch("not-a-valid-url"));
     }
 
+    [Theory]
+    [InlineData("not-a-valid-url")]
+    [InlineData("::::")]
+    [InlineData("http://[/")]
+    [InlineData("")]
+    public void MatchAndIsMatch_WithUnparsableUrl_ReportNoMatch(string url)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/path" });
+
+        Assert.False(pattern.IsMatch(url));
+        Assert.Null(pattern.Match(url));
+    }
+
+    [Fact]
+    public void MatchAndIsMatch_WithUnparsableBaseUrl_ReportNoMatch()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/path" });
+
+        Assert.False(pattern.IsMatch("/path", "not-a-valid-base"));
+        Assert.Null(pattern.Match("/path", "not-a-valid-base"));
+    }
+
     // File URLs
     [Fact]
     public void IsMatch_FileProtocol()

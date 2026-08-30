@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.ComponentModel;
 using System.Reflection;
 
@@ -415,6 +416,18 @@ public class DefaultConverter : IConverter
 
     protected virtual bool TryConvert(object? input, IFormatProvider? provider, out TimeSpan value)
     {
+        if (input is byte[] inputBytes)
+        {
+            if (inputBytes.Length == 8)
+            {
+                value = new TimeSpan(BitConverter.ToInt64(inputBytes, 0));
+                return true;
+            }
+
+            value = TimeSpan.Zero;
+            return false;
+        }
+
         if (TimeSpan.TryParse(Convert.ToString(input, provider), provider, out value))
             return true;
 
@@ -517,6 +530,30 @@ public class DefaultConverter : IConverter
         {
             value = 0;
             return false;
+        }
+
+        if (input is byte[] inputBytes)
+        {
+            value = 0;
+            if (inputBytes.Length != 16)
+                return false;
+
+            var bits = new int[4];
+            for (var i = 0; i < bits.Length; i++)
+            {
+                bits[i] = BinaryPrimitives.ReadInt32LittleEndian(inputBytes.AsSpan(i * 4));
+            }
+
+            try
+            {
+                value = new decimal(bits);
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                // The scale or the reserved bits are invalid
+                return false;
+            }
         }
 
         if (input is not string)
@@ -643,6 +680,24 @@ public class DefaultConverter : IConverter
         {
             value = DateTime.MinValue;
             return false;
+        }
+
+        if (input is byte[] inputBytes)
+        {
+            value = DateTime.MinValue;
+            if (inputBytes.Length != 8)
+                return false;
+
+            try
+            {
+                value = DateTime.FromBinary(BitConverter.ToInt64(inputBytes, 0));
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                // The ticks are out of the range supported by DateTime
+                return false;
+            }
         }
 
         if (input is not string)

@@ -88,11 +88,6 @@ public static class AnsiTextProcessor
 
         AddRun(runs, currentStyle, currentRunStart, builder.Length);
 
-        if (runs.Count is 0 && builder.Length > 0)
-        {
-            runs.Add(new AnsiTextRun(0, builder.Length, AnsiStyle.None));
-        }
-
         return new AnsiText(builder.ToString(), runs);
     }
 

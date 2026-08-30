@@ -68,6 +68,33 @@ public class AnsiTextProcessorTests
         Assert.Equal(expected, actual);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("a")]
+    [InlineData("\u001b[1m")]
+    [InlineData("\u001b[1m\u001b[0m")]
+    [InlineData("\u001b[1ma")]
+    [InlineData("a\u001b[1m")]
+    [InlineData("\u001b[0ma")]
+    [InlineData("\u001b[1m\u001b[22ma")]
+    [InlineData("a\u001b[1mb\u001b[0mc")]
+    [InlineData("a\u001b[2Kb")]
+    [InlineData("\u001b[31m日本語\u001b[0m テキスト")]
+    public void ParseTextWithAnsiStyles_RunsCoverAllTextWithoutGaps(string input)
+    {
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles(input);
+
+        var position = 0;
+        foreach (var run in parsed.Runs)
+        {
+            Assert.Equal(position, run.Start);
+            Assert.True(run.End > run.Start, "Runs must not be empty");
+            position = run.End;
+        }
+
+        Assert.Equal(parsed.Text.Length, position);
+    }
+
     [Fact]
     public void RemoveAnsiSequences_PreservesUnicode()
     {

@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--
+      The attribute shipped by Meziantou.Analyzer.Annotations is [Conditional], so the compiler does not emit
+      its usages into the assembly and consumers of this package cannot see the annotation. Compile a local,
+      non-conditional copy instead, and drop the package's compile assets to avoid the type conflict (CS0436).
+    -->
+    <PackageReference Update="Meziantou.Analyzer.Annotations" ExcludeAssets="compile" />
     <Compile Include="../../common/CultureInsensitiveTypeAttribute.cs" />
   </ItemGroup>
 </Project>

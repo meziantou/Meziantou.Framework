@@ -100,22 +100,7 @@ public class DefaultConverter : IConverter
         if (bytes is null)
             return "";
 
-        return ToHexa(bytes, 0, bytes.Length);
-    }
-
-    private static string ToHexa(byte[]? bytes, int offset, int count)
-    {
-        if (bytes is null)
-            return "";
-
-        ArgumentOutOfRangeException.ThrowIfNegative(offset);
-        ArgumentOutOfRangeException.ThrowIfNegative(count);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, bytes.Length);
-
-        if (offset >= bytes.Length)
-            return "";
-
-        return Convert.ToHexString(bytes, offset, count);
+        return Convert.ToHexString(bytes);
     }
 
     private static byte[]? FromHexa(string hex)

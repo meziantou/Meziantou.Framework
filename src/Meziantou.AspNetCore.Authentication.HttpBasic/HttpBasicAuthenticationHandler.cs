@@ -69,15 +69,12 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
     protected override Task HandleChallengeAsync(AuthenticationProperties properties)
     {
         Response.StatusCode = StatusCodes.Status401Unauthorized;
-        if (Options.Realm is null)
-        {
-            Response.Headers.WWWAuthenticate = "Basic charset=\"UTF-8\"";
-        }
-        else
-        {
-            var escapedRealm = EscapeHeaderValue(Options.Realm);
-            Response.Headers.WWWAuthenticate = $"Basic realm=\"{escapedRealm}\", charset=\"UTF-8\"";
-        }
+        var challenge = Options.Realm is null
+            ? "Basic charset=\"UTF-8\""
+            : $"Basic realm=\"{EscapeHeaderValue(Options.Realm)}\", charset=\"UTF-8\"";
+
+        // Append instead of assigning so a challenge already written by another scheme is preserved.
+        Response.Headers.Append(HeaderNames.WWWAuthenticate, challenge);
 
         return Task.CompletedTask;
     }

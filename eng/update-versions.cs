@@ -56,15 +56,8 @@ var changesPerCsproj = new Dictionary<string, CsprojInfo>(StringComparer.Ordinal
 var allCsprojFiles = new List<string>();
 var packableProjects = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-// Every project under src, packable or not. Non-packable projects (analyzers, code fixes, source
-// generators) ship inside a packable package, so they must take part in the dependency graph even
-// though they never carry a version of their own.
-var allProjectFiles = new List<string>();
-
 foreach (var file in Directory.EnumerateFiles(srcPath, "*.csproj", SearchOption.AllDirectories))
 {
-    allProjectFiles.Add(file);
-
     var isPackable = IsPackableProject(file);
     if (isPackable)
     {
@@ -86,13 +79,13 @@ Console.WriteLine("Building dependency graph...");
 var dependencyGraph = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 var reverseDependencyGraph = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-foreach (var csproj in allProjectFiles)
+foreach (var csproj in allCsprojFiles)
 {
     dependencyGraph[csproj] = GetProjectReferences(csproj);
     reverseDependencyGraph[csproj] = [];
 }
 
-foreach (var csproj in allProjectFiles)
+foreach (var csproj in allCsprojFiles)
 {
     foreach (var dependency in dependencyGraph[csproj])
     {
@@ -100,6 +93,27 @@ foreach (var csproj in allProjectFiles)
         {
             list.Add(csproj);
         }
+    }
+}
+
+// A project that is not packable (an analyzer, a code fix, a source generator) carries no version of its own: it
+// ships inside the packable projects that reference it with ProjectReference/ReferenceOutputAssembly=false. Map it
+// to those packages so that a change confined to it still bumps the version of the package that ships it.
+var shippedByPackages = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+foreach (var csproj in allCsprojFiles)
+{
+    foreach (var dependency in GetProjectReferences(csproj))
+    {
+        if (packableProjects.Contains(dependency))
+            continue;
+
+        if (!shippedByPackages.TryGetValue(dependency, out var packages))
+        {
+            packages = [];
+            shippedByPackages[dependency] = packages;
+        }
+
+        packages.Add(csproj);
     }
 }
 
@@ -164,13 +178,16 @@ foreach (var commit in commits)
             if (csproj is null)
                 continue;
 
-            if (!changesPerCsproj.TryGetValue(csproj, out var info))
+            foreach (var versionedProject in GetVersionedProjects(csproj))
             {
-                info = new CsprojInfo();
-                changesPerCsproj[csproj] = info;
-            }
+                if (!changesPerCsproj.TryGetValue(versionedProject, out var info))
+                {
+                    info = new CsprojInfo();
+                    changesPerCsproj[versionedProject] = info;
+                }
 
-            info.StopProcessing = true;
+                info.StopProcessing = true;
+            }
         }
     }
 
@@ -180,16 +197,19 @@ foreach (var commit in commits)
         if (csproj is null)
             continue;
 
-        if (!changesPerCsproj.TryGetValue(csproj, out var info))
+        foreach (var versionedProject in GetVersionedProjects(csproj))
         {
-            info = new CsprojInfo();
-            changesPerCsproj[csproj] = info;
+            if (!changesPerCsproj.TryGetValue(versionedProject, out var info))
+            {
+                info = new CsprojInfo();
+                changesPerCsproj[versionedProject] = info;
+            }
+
+            if (info.StopProcessing)
+                continue;
+
+            info.Commits.Add(commit);
         }
-
-        if (info.StopProcessing)
-            continue;
-
-        info.Commits.Add(commit);
     }
 }
 
@@ -205,33 +225,21 @@ if (forceBumpAll)
     }
 }
 
-// First pass: identify projects with direct changes. A non-packable project carries no version of
-// its own, so it is never updated directly; the package shipping it is updated in the second pass.
+// First pass: identify projects with direct changes
 foreach (var (csproj, info) in changesPerCsproj.OrderBy(kv => kv.Key, StringComparer.Ordinal))
 {
-    if (info.Commits.Count > 0 && packableProjects.Contains(csproj))
+    if (info.Commits.Count > 0)
     {
         projectsToUpdate[csproj] = new ProjectUpdateInfo { Commits = info.Commits };
     }
 }
 
-// Second pass: identify transitive dependents. Seeded from every changed project, including the
-// non-packable ones, so that a change confined to an analyzer still bumps the package shipping it.
-var changedProjects = changesPerCsproj
-    .Where(kv => kv.Value.Commits.Count > 0)
-    .Select(kv => kv.Key)
-    .Union(projectsToUpdate.Keys, StringComparer.OrdinalIgnoreCase)
-    .OrderBy(csproj => csproj, StringComparer.Ordinal)
-    .ToList();
-
-foreach (var csproj in changedProjects)
+// Second pass: identify transitive dependents
+foreach (var csproj in projectsToUpdate.Keys.ToList())
 {
     var dependents = GetTransitiveDependents(csproj);
     foreach (var dependent in dependents)
     {
-        if (!packableProjects.Contains(dependent))
-            continue;
-
         if (!projectsToUpdate.TryGetValue(dependent, out var existingInfo) || existingInfo.ForceUpdated)
         {
             Console.WriteLine($"Project {dependent} will be updated due to dependency on {csproj}");
@@ -412,6 +420,29 @@ string? GetCsproj(string relativePath)
     }
 
     return null;
+}
+
+// Returns the projects whose version a change to csproj must bump: the project itself when it is packable,
+// otherwise the packable projects that ship it through an explicit ProjectReference.
+List<string> GetVersionedProjects(string csproj, HashSet<string>? visited = null)
+{
+    if (packableProjects.Contains(csproj))
+        return [csproj];
+
+    if (!shippedByPackages.TryGetValue(csproj, out var packages))
+        return [];
+
+    visited ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    if (!visited.Add(csproj))
+        return [];
+
+    var result = new List<string>();
+    foreach (var package in packages)
+    {
+        result.AddRange(GetVersionedProjects(package, visited));
+    }
+
+    return result.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 }
 
 List<string> GetProjectReferences(string csprojPath)

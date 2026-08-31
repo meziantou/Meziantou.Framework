@@ -56,8 +56,15 @@ var changesPerCsproj = new Dictionary<string, CsprojInfo>(StringComparer.Ordinal
 var allCsprojFiles = new List<string>();
 var packableProjects = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+// Every project under src, packable or not. Non-packable projects (analyzers, code fixes, source
+// generators) ship inside a packable package, so they must take part in the dependency graph even
+// though they never carry a version of their own.
+var allProjectFiles = new List<string>();
+
 foreach (var file in Directory.EnumerateFiles(srcPath, "*.csproj", SearchOption.AllDirectories))
 {
+    allProjectFiles.Add(file);
+
     var isPackable = IsPackableProject(file);
     if (isPackable)
     {
@@ -79,13 +86,13 @@ Console.WriteLine("Building dependency graph...");
 var dependencyGraph = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 var reverseDependencyGraph = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-foreach (var csproj in allCsprojFiles)
+foreach (var csproj in allProjectFiles)
 {
     dependencyGraph[csproj] = GetProjectReferences(csproj);
     reverseDependencyGraph[csproj] = [];
 }
 
-foreach (var csproj in allCsprojFiles)
+foreach (var csproj in allProjectFiles)
 {
     foreach (var dependency in dependencyGraph[csproj])
     {
@@ -159,9 +166,6 @@ foreach (var commit in commits)
 
             if (!changesPerCsproj.TryGetValue(csproj, out var info))
             {
-                if (!packableProjects.Contains(csproj))
-                    continue;
-
                 info = new CsprojInfo();
                 changesPerCsproj[csproj] = info;
             }
@@ -178,9 +182,6 @@ foreach (var commit in commits)
 
         if (!changesPerCsproj.TryGetValue(csproj, out var info))
         {
-            if (!packableProjects.Contains(csproj))
-                continue;
-
             info = new CsprojInfo();
             changesPerCsproj[csproj] = info;
         }
@@ -204,21 +205,33 @@ if (forceBumpAll)
     }
 }
 
-// First pass: identify projects with direct changes
+// First pass: identify projects with direct changes. A non-packable project carries no version of
+// its own, so it is never updated directly; the package shipping it is updated in the second pass.
 foreach (var (csproj, info) in changesPerCsproj.OrderBy(kv => kv.Key, StringComparer.Ordinal))
 {
-    if (info.Commits.Count > 0)
+    if (info.Commits.Count > 0 && packableProjects.Contains(csproj))
     {
         projectsToUpdate[csproj] = new ProjectUpdateInfo { Commits = info.Commits };
     }
 }
 
-// Second pass: identify transitive dependents
-foreach (var csproj in projectsToUpdate.Keys.ToList())
+// Second pass: identify transitive dependents. Seeded from every changed project, including the
+// non-packable ones, so that a change confined to an analyzer still bumps the package shipping it.
+var changedProjects = changesPerCsproj
+    .Where(kv => kv.Value.Commits.Count > 0)
+    .Select(kv => kv.Key)
+    .Union(projectsToUpdate.Keys, StringComparer.OrdinalIgnoreCase)
+    .OrderBy(csproj => csproj, StringComparer.Ordinal)
+    .ToList();
+
+foreach (var csproj in changedProjects)
 {
     var dependents = GetTransitiveDependents(csproj);
     foreach (var dependent in dependents)
     {
+        if (!packableProjects.Contains(dependent))
+            continue;
+
         if (!projectsToUpdate.TryGetValue(dependent, out var existingInfo) || existingInfo.ForceUpdated)
         {
             Console.WriteLine($"Project {dependent} will be updated due to dependency on {csproj}");

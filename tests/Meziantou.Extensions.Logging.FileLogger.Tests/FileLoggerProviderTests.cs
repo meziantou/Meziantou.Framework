@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Text.Json;
@@ -796,6 +797,28 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    public async Task TheWriterDoesNotRunOnTheThreadPool()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new ThreadPoolTrackingTimeProvider();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions { Directory = tempDirectory.FullPath }, timeProvider);
+        var logger = provider.CreateLogger("Test");
+
+        // The first flush leaves the writer waiting on an empty queue, so the next message resumes it.
+        // That resumption is what used to move the loop onto the thread pool
+        logger.LogInformation("First");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        timeProvider.RanOnThreadPoolThread.Clear();
+
+        logger.LogInformation("Second");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotEmpty(timeProvider.RanOnThreadPoolThread);
+        Assert.DoesNotContain(true, timeProvider.RanOnThreadPoolThread);
+    }
+
+    [Fact]
     public void MissingDirectoryThrows()
     {
         Assert.Throws<InvalidOperationException>(() => new FileLoggerProvider(new FileLoggerOptions()));
@@ -976,6 +999,18 @@ public sealed class FileLoggerProviderTests
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         using var reader = new StreamReader(stream);
         return await reader.ReadToEndAsync(TestContext.Current.CancellationToken);
+    }
+
+    private sealed class ThreadPoolTrackingTimeProvider : TimeProvider
+    {
+        // Only the writer loop reads the timestamps, so this records the kind of thread it runs on
+        public ConcurrentQueue<bool> RanOnThreadPoolThread { get; } = new();
+
+        public override long GetTimestamp()
+        {
+            RanOnThreadPoolThread.Enqueue(Thread.CurrentThread.IsThreadPoolThread);
+            return base.GetTimestamp();
+        }
     }
 
     private sealed class UppercaseFileFormatter() : FileFormatter("uppercase")

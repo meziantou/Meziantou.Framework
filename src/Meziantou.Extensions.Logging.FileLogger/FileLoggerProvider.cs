@@ -30,7 +30,8 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
     // kept out of the channel, so they cannot be discarded by FileLoggerOptions.QueueFullMode
     private readonly Channel<LogMessage>? _channel;
     private readonly ConcurrentQueue<TaskCompletionSource> _pendingFlushes = new();
-    private readonly Task? _writerTask;
+    private readonly Thread? _writerThread;
+    private readonly TaskCompletionSource? _writerCompletion;
 
     private FileLoggerOptions _options;
     private IExternalScopeProvider _scopeProvider = new LoggerExternalScopeProvider();
@@ -128,8 +129,17 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
                 SingleWriter = false,
             });
 
-        // The messages are written synchronously, so use a dedicated thread instead of a thread pool thread
-        _writerTask = Task.Factory.StartNew(ProcessLogQueueAsync, CancellationToken.None, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap();
+        // The messages are written synchronously and the loop blocks while the queue is empty, so it
+        // needs a thread of its own. TaskCreationOptions.LongRunning would not be enough: it only
+        // covers the synchronous prefix of an async method, and every continuation after the first
+        // await runs on the thread pool, where the loggers blocking in QueueFullMode.Wait can starve it
+        _writerCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _writerThread = new Thread(ProcessLogQueue)
+        {
+            IsBackground = true,
+            Name = "Meziantou.Extensions.Logging.FileLogger",
+        };
+        _writerThread.Start();
     }
 
     private static FileLoggerOptions GetCurrentValue(IOptionsMonitor<FileLoggerOptions> options)
@@ -190,7 +200,7 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "The application must keep running when the log file cannot be written")]
-    private async Task ProcessLogQueueAsync()
+    private void ProcessLogQueue()
     {
         var channel = _channel!;
         var fileWriter = _fileWriter!;
@@ -200,7 +210,8 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
 
         try
         {
-            while (await channel.Reader.WaitToReadAsync().ConfigureAwait(false))
+            // Blocking is the point: this is a dedicated thread, and it must not depend on the thread pool
+            while (channel.Reader.WaitToReadAsync().AsTask().GetAwaiter().GetResult())
             {
                 // Take the requests registered so far: every message logged before them is already in the
                 // queue drained below. A request registered while the queue is drained refers to a message
@@ -278,6 +289,7 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         {
             // Release the pending FlushAsync calls, the queue is not drained anymore
             CompletePendingFlushes();
+            _writerCompletion!.TrySetResult();
         }
 
         void Flush()
@@ -361,15 +373,8 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         // Any message already in the channel will be drained by the writer task
         _channel?.Writer.TryComplete();
 
-        try
-        {
-            // Wait for the writer task to finish processing ALL remaining messages
-            _writerTask?.GetAwaiter().GetResult();
-        }
-        catch (Exception)
-        {
-            // The error is already reported by the writer task
-        }
+        // Wait for the writer thread to finish processing ALL remaining messages
+        _writerThread?.Join();
 
         _fileWriter?.Dispose();
     }
@@ -384,16 +389,10 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         _optionsReloadToken?.Dispose();
         _channel?.Writer.TryComplete();
 
-        if (_writerTask is not null)
+        if (_writerCompletion is not null)
         {
-            try
-            {
-                await _writerTask.ConfigureAwait(false);
-            }
-            catch (Exception)
-            {
-                // The error is already reported by the writer task
-            }
+            // Wait for the writer thread to finish processing ALL remaining messages, without blocking
+            await _writerCompletion.Task.ConfigureAwait(false);
         }
 
         _fileWriter?.Dispose();

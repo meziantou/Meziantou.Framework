@@ -302,6 +302,58 @@ public class StaleResponseTests
         Assert.Equal("from-origin", await response.Content.ReadAsStringAsync(CancellationToken.None));
     }
 
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.BadGateway)]
+    [InlineData(HttpStatusCode.ServiceUnavailable)]
+    [InlineData(HttpStatusCode.GatewayTimeout)]
+    public async Task WhenRevalidationReturnsAServerErrorAndStaleIfErrorAllowsItThenStaleResponseServed(HttpStatusCode statusCode)
+    {
+        using var innerHandler = new StubHandler();
+        innerHandler.AddResponse(static () => CreateResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=2, stale-if-error=60"), ("ETag", "\"v1\"")));
+        innerHandler.AddResponse(() => CreateResponse(statusCode, "error"));
+
+        var timeProvider = new FakeTimeProvider();
+        using var handler = new HttpCachingDelegateHandler(innerHandler, new InMemoryHttpCacheStore(), new HttpCachingOptions { TimeProvider = timeProvider });
+        using var client = new HttpClient(handler);
+
+        using var firstResponse = await client.GetAsync("http://example.com/resource", CancellationToken.None);
+        timeProvider.Advance(TimeSpan.FromSeconds(3));
+
+        using var secondResponse = await client.GetAsync("http://example.com/resource", CancellationToken.None);
+        Assert.Equal(HttpStatusCode.OK, secondResponse.StatusCode);
+        Assert.Equal("cached", await secondResponse.Content.ReadAsStringAsync(CancellationToken.None));
+        Assert.Equal("110 - \"Response is Stale\", 111 - \"Revalidation Failed\"", string.Join(", ", secondResponse.Headers.GetValues("Warning")));
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.MovedPermanently)]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.Gone)]
+    [InlineData(HttpStatusCode.NotImplemented)]
+    public async Task WhenRevalidationReturnsANonErrorStatusThenStaleIfErrorDoesNotApply(HttpStatusCode statusCode)
+    {
+        using var innerHandler = new StubHandler();
+        innerHandler.AddResponse(static () => CreateResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=2, stale-if-error=60"), ("ETag", "\"v1\"")));
+        innerHandler.AddResponse(() => CreateResponse(statusCode, "from-origin"));
+
+        var timeProvider = new FakeTimeProvider();
+        using var handler = new HttpCachingDelegateHandler(innerHandler, new InMemoryHttpCacheStore(), new HttpCachingOptions { TimeProvider = timeProvider });
+        using var client = new HttpClient(handler);
+
+        using var firstResponse = await client.GetAsync("http://example.com/resource", CancellationToken.None);
+        timeProvider.Advance(TimeSpan.FromSeconds(3));
+
+        // RFC 5861 Section 4: only 500, 502, 503 and 504 are errors. The origin answered, so the caller
+        // must see that answer instead of the stored representation.
+        using var secondResponse = await client.GetAsync("http://example.com/resource", CancellationToken.None);
+        Assert.Equal(statusCode, secondResponse.StatusCode);
+        Assert.Equal("from-origin", await secondResponse.Content.ReadAsStringAsync(CancellationToken.None));
+    }
+
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership is transferred to the caller")]
     private static HttpResponseMessage CreateResponse(HttpStatusCode statusCode, string? content = null, params (string Name, string Value)[] headers)
     {

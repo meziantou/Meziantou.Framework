@@ -248,4 +248,39 @@ public sealed class AssertEqualUnorderedTests
             Actual:       [2, 1]
             """);
     }
+
+    [Fact]
+    public void EqualUnordered_ComparerWithInconsistentHashCode_Success()
+    {
+        double[] expected = [1.0, 2.0];
+        double[] actual = [1.1, 2.1];
+
+        AssertionsAssert.EqualUnordered(expected, actual, new ToleranceComparer());
+    }
+
+    [Fact]
+    public void NotEqualUnordered_ComparerWithInconsistentHashCode_Fails()
+    {
+        double[] expected = [1.0, 2.0];
+        double[] actual = [1.1, 2.1];
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqualUnordered(expected, actual, new ToleranceComparer()), """
+            Assert.NotEqualUnordered() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: [1, 2]
+            Actual:       [1.1, 2.1]
+            """);
+    }
+
+    /// <summary>
+    /// A comparer whose <see cref="GetHashCode(double)"/> disagrees with its <see cref="Equals(double, double)"/>,
+    /// so the hash-based multiset check cannot see the values as equal but the comparer itself does.
+    /// </summary>
+    private sealed class ToleranceComparer : IEqualityComparer<double>
+    {
+        public bool Equals(double x, double y) => Math.Abs(x - y) < 0.5;
+
+        public int GetHashCode(double obj) => obj.GetHashCode();
+    }
 }

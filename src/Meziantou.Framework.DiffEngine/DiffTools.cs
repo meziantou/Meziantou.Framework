@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.DiffEngine;
 
 public static class DiffTools
@@ -12,9 +10,9 @@ public static class DiffTools
     private static readonly LaunchArguments WinMergeArguments = new(WinMergeLeftArguments, WinMergeRightArguments);
 
     // Numeric ordering so "vim10" ranks above "vim9" and "Beyond Compare 10" above "Beyond Compare 5",
-    // which plain ordinal comparison gets backwards.
-    private static readonly StringComparer DirectoryNameComparer =
-        StringComparer.Create(CultureInfo.InvariantCulture, CompareOptions.NumericOrdering | CompareOptions.IgnoreCase);
+    // which plain ordinal comparison gets backwards. CompareOptions.NumericOrdering cannot be used here: it is
+    // silently ignored in invariant globalization mode, which would put the older version first.
+    private static readonly IComparer<string?> DirectoryNameComparer = new NumericNameComparer();
 
     private static readonly ToolDefinition[] Definitions =
     [
@@ -576,6 +574,73 @@ public static class DiffTools
         PlatformSettings? Windows = null,
         PlatformSettings? Linux = null,
         PlatformSettings? Osx = null);
+
+    /// <summary>Orders names so that an embedded number compares by value, independently of the globalization mode.</summary>
+    private sealed class NumericNameComparer : IComparer<string?>
+    {
+        public int Compare(string? x, string? y)
+        {
+            if (ReferenceEquals(x, y))
+                return 0;
+
+            if (x is null)
+                return -1;
+
+            if (y is null)
+                return 1;
+
+            var xIndex = 0;
+            var yIndex = 0;
+
+            while (xIndex < x.Length && yIndex < y.Length)
+            {
+                if (char.IsAsciiDigit(x[xIndex]) && char.IsAsciiDigit(y[yIndex]))
+                {
+                    var comparison = CompareNumbers(x, ref xIndex, y, ref yIndex);
+                    if (comparison != 0)
+                        return comparison;
+                }
+                else
+                {
+                    var comparison = char.ToUpperInvariant(x[xIndex]).CompareTo(char.ToUpperInvariant(y[yIndex]));
+                    if (comparison != 0)
+                        return comparison;
+
+                    xIndex++;
+                    yIndex++;
+                }
+            }
+
+            return (x.Length - xIndex).CompareTo(y.Length - yIndex);
+        }
+
+        private static int CompareNumbers(string x, ref int xIndex, string y, ref int yIndex)
+        {
+            // Leading zeros do not change the value, so they are skipped before the digits are counted.
+            while (xIndex < x.Length && x[xIndex] == '0')
+                xIndex++;
+
+            while (yIndex < y.Length && y[yIndex] == '0')
+                yIndex++;
+
+            var xStart = xIndex;
+            var yStart = yIndex;
+
+            while (xIndex < x.Length && char.IsAsciiDigit(x[xIndex]))
+                xIndex++;
+
+            while (yIndex < y.Length && char.IsAsciiDigit(y[yIndex]))
+                yIndex++;
+
+            var xDigits = x.AsSpan(xStart, xIndex - xStart);
+            var yDigits = y.AsSpan(yStart, yIndex - yStart);
+
+            // The longer run of digits is the larger number once leading zeros are gone.
+            return xDigits.Length != yDigits.Length
+                ? xDigits.Length.CompareTo(yDigits.Length)
+                : xDigits.SequenceCompareTo(yDigits);
+        }
+    }
 
     private sealed record PlatformSettings(string[] ExecutableNames, string[] SearchDirectories);
 }

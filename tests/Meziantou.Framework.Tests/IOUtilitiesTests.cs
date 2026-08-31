@@ -83,4 +83,41 @@ public class IOUtilitiesTests
 
         return directoryInfo;
     }
+
+    [Fact]
+    public void DeleteThrowsWhenTheFailureNeverClears()
+    {
+        // Producing this on Windows needs mandatory locking; on Unix an unwritable parent directory does it
+        if (OperatingSystem.IsWindows())
+            return;
+
+        var root = Directory.CreateTempSubdirectory();
+        var locked = root.CreateSubdirectory("locked");
+        var probe = Path.Combine(locked.FullName, "probe.txt");
+        var target = Path.Combine(locked.FullName, "target.txt");
+        File.WriteAllText(probe, "probe");
+        File.WriteAllText(target, "target");
+
+        try
+        {
+            File.SetUnixFileMode(locked.FullName, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+            // Skip when the permission is not enforced for the current user, e.g. root
+            try
+            {
+                File.Delete(probe);
+                return;
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+
+            Assert.Throws<UnauthorizedAccessException>(() => IOUtilities.Delete(target));
+        }
+        finally
+        {
+            File.SetUnixFileMode(locked.FullName, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            root.Delete(recursive: true);
+        }
+    }
 }

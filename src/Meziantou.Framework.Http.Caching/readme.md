@@ -275,6 +275,12 @@ This is particularly useful for versioned resources (e.g., `/assets/script.v123.
 | `No-Vary-Search` | `key-order`, `params`, `except` | Query parameters that do not affect the response |
 | `Age` | `<seconds>` | Age of cached response (added when serving from cache) |
 
+## Synchronous Requests
+
+`HttpClient.Send` is not supported: `IHttpCacheStore` is asynchronous, so there is no synchronous path through
+the cache, and `HttpCachingDelegateHandler` throws `NotSupportedException` rather than quietly forwarding the
+request to the origin without caching it. Use `SendAsync`, or one of the `GetAsync`/`PostAsync` overloads.
+
 ## Thread Safety
 
 The `HttpCachingDelegateHandler` is thread-safe and can be used concurrently across multiple threads.

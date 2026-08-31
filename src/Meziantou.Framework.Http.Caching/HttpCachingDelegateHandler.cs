@@ -40,6 +40,19 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
     }
 
     /// <inheritdoc />
+    /// <exception cref="NotSupportedException">Always. The cache is only available on the asynchronous path.</exception>
+    /// <remarks>
+    /// <see cref="IHttpCacheStore"/> is an asynchronous interface, so there is no synchronous path through
+    /// the cache. <see cref="DelegatingHandler"/> forwards this method to the inner handler by default,
+    /// which would send every synchronous request to the origin and store nothing, silently: the caller
+    /// would get no caching and no indication of it. Failing here surfaces that at the first call instead.
+    /// </remarks>
+    protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        throw new NotSupportedException($"{nameof(HttpCachingDelegateHandler)} does not support synchronous requests because the cache store is asynchronous. Use HttpClient.SendAsync or one of the GetAsync/PostAsync overloads.");
+    }
+
+    /// <inheritdoc />
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var requestTime = _timeProvider.GetUtcNow();

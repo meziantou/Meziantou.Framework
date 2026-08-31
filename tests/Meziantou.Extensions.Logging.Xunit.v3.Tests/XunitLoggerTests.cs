@@ -67,4 +67,42 @@ public sealed class XunitLoggerTests
 
         Assert.Equal(["kept" + Environment.NewLine], output.Logs, StringComparer.Ordinal);
     }
+
+    [Fact]
+    public void ActivityTrackingScopesAreWrittenToTheOutput()
+    {
+        var output = new InMemoryTestOutputHelper();
+        var services = new ServiceCollection();
+        services.AddLogging(builder =>
+        {
+            builder.Configure(options => options.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.SpanId);
+            builder.AddXunit(output, new XUnitLoggerOptions { IncludeScopes = true });
+        });
+
+        using var serviceProvider = services.BuildServiceProvider();
+        using var activity = new System.Diagnostics.Activity("test");
+        activity.Start();
+        serviceProvider.GetRequiredService<ILogger<XunitLoggerTests>>().LogInformation("message");
+
+        var log = Assert.Single(output.Logs);
+        Assert.Contains(activity.TraceId.ToString(), log, StringComparison.Ordinal);
+        Assert.Contains(activity.SpanId.ToString(), log, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ScopesStartedByTheCallerAreStillWrittenToTheOutput()
+    {
+        var output = new InMemoryTestOutputHelper();
+        var services = new ServiceCollection();
+        services.AddLogging(builder => builder.AddXunit(output, new XUnitLoggerOptions { IncludeScopes = true }));
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var logger = serviceProvider.GetRequiredService<ILogger<XunitLoggerTests>>();
+        using (logger.BeginScope("TheScope"))
+        {
+            logger.LogInformation("message");
+        }
+
+        Assert.Equal(["message\n => TheScope" + Environment.NewLine], output.Logs, StringComparer.Ordinal);
+    }
 }

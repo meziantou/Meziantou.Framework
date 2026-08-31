@@ -21,11 +21,11 @@ namespace Meziantou.Extensions.Logging.Xunit.v3;
 /// </code>
 /// </example>
 [ProviderAlias("XUnit")]
-public sealed class XUnitLoggerProvider : ILoggerProvider
+public sealed class XUnitLoggerProvider : ILoggerProvider, ISupportExternalScope
 {
     private readonly ITestOutputHelper? _testOutputHelper;
     private readonly XUnitLoggerOptions _options;
-    private readonly LoggerExternalScopeProvider _scopeProvider = new();
+    private readonly MutableExternalScopeProvider _scopeProvider = new(new LoggerExternalScopeProvider());
 
     /// <summary>Initializes a new instance of the <see cref="XUnitLoggerProvider"/> class.</summary>
     public XUnitLoggerProvider()
@@ -68,6 +68,18 @@ public sealed class XUnitLoggerProvider : ILoggerProvider
     public ILogger CreateLogger(string categoryName)
     {
         return new XUnitLogger(_testOutputHelper, _scopeProvider, categoryName, _options);
+    }
+
+    /// <summary>Sets the external scope provider supplied by the logger factory.</summary>
+    /// <param name="scopeProvider">The scope provider the factory uses to track scopes.</param>
+    /// <remarks>
+    /// Implementing <see cref="ISupportExternalScope"/> is what makes the factory route its scopes
+    /// through this provider, including the ones it synthesises from the current activity when
+    /// <c>LoggerFactoryOptions.ActivityTrackingOptions</c> is set.
+    /// </remarks>
+    public void SetScopeProvider(IExternalScopeProvider scopeProvider)
+    {
+        _scopeProvider.Current = scopeProvider;
     }
 
     /// <inheritdoc/>

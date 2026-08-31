@@ -38,13 +38,14 @@ namespace Meziantou.Extensions.Logging.Xunit.v3
         public bool UseUtcTimestamp { get => throw null; set { } }
     }
 
-    public sealed class XUnitLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, System.IDisposable
+    public sealed class XUnitLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ISupportExternalScope, System.IDisposable
     {
         public XUnitLoggerProvider(Xunit.ITestOutputHelper? testOutputHelper) { }
         public XUnitLoggerProvider(Xunit.ITestOutputHelper? testOutputHelper, bool appendScope) { }
         public XUnitLoggerProvider(Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) { }
         public XUnitLoggerProvider(Xunit.ITestOutputHelper? testOutputHelper, Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) { }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => throw null;
+        public void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider) { }
         public void Dispose() { }
     }
 }

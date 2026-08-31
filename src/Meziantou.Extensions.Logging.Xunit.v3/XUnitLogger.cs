@@ -24,7 +24,7 @@ public class XUnitLogger : ILogger
     private readonly ITestOutputHelper? _testOutputHelper;
     private readonly string? _categoryName;
     private readonly XUnitLoggerOptions _options;
-    private readonly LoggerExternalScopeProvider _scopeProvider;
+    private readonly IExternalScopeProvider _scopeProvider;
 
     /// <summary>Creates a new logger instance without a test output helper.</summary>
     /// <returns>A new <see cref="ILogger"/> instance.</returns>
@@ -84,6 +84,11 @@ public class XUnitLogger : ILogger
     /// <param name="categoryName">The category name for messages produced by the logger.</param>
     /// <param name="options">The logger options.</param>
     public XUnitLogger(ITestOutputHelper? testOutputHelper, LoggerExternalScopeProvider scopeProvider, string? categoryName, XUnitLoggerOptions? options)
+        : this(testOutputHelper, (IExternalScopeProvider)scopeProvider, categoryName, options)
+    {
+    }
+
+    internal XUnitLogger(ITestOutputHelper? testOutputHelper, IExternalScopeProvider scopeProvider, string? categoryName, XUnitLoggerOptions? options)
     {
         _testOutputHelper = testOutputHelper;
         _scopeProvider = scopeProvider;

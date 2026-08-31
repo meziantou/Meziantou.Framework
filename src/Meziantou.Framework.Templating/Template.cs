@@ -891,6 +891,8 @@ public class Template
     /// <param name="parameters">The parameter values to pass to the template.</param>
     public virtual void Run(TextWriter writer, params object?[] parameters)
     {
+        ArgumentNullException.ThrowIfNull(writer);
+
         if (!IsBuilt)
         {
             Build(CancellationToken.None);
@@ -919,7 +921,7 @@ public class Template
     {
         ArgumentNullException.ThrowIfNull(parameters);
 
-        using var writer = new StringWriter();
+        using var writer = CreateStringWriter();
         Run(writer, parameters);
         return writer.ToString();
     }

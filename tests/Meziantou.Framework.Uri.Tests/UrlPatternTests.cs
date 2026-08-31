@@ -176,6 +176,34 @@ public sealed class UrlPatternTests
         Assert.True(pattern.IsMatch("https://example.com/Books/123"));
     }
 
+    [Fact]
+    public void IsMatch_IgnoreCase_AppliesToThePathnameSearchAndHash()
+    {
+        var options = new UrlPatternOptions { IgnoreCase = true };
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Pathname = "/Books" }, options)
+            .IsMatch("https://example.com/books"));
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Search = "Foo=Bar" }, options)
+            .IsMatch("https://example.com?foo=bar"));
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Hash = "Section" }, options)
+            .IsMatch("https://example.com#section"));
+    }
+
+    [Fact]
+    public void IsMatch_IgnoreCase_DoesNotApplyToTheUsernamePasswordOrPort()
+    {
+        // Per the spec, ignoreCase only reaches the pathname, search and hash components
+        var options = new UrlPatternOptions { IgnoreCase = true };
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Username = "Admin" }, options)
+            .IsMatch(new UrlPatternInit { Username = "admin" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Password = "Secret" }, options)
+            .IsMatch(new UrlPatternInit { Password = "secret" }));
+    }
+
     // Full URL pattern string
     [Fact]
     public void Create_WithFullUrlPatternString_ShouldParse()
@@ -670,6 +698,22 @@ public sealed class UrlPatternTests
         Assert.True(pattern.IsMatch("https://user:secret@example.com/path"));
     }
 
+    [Theory]
+    // url, expected username, expected password
+    [InlineData("https://example.com/path", "", "")]
+    [InlineData("https://john@example.com/path", "john", "")]
+    [InlineData("https://john:secret@example.com/path", "john", "secret")]
+    [InlineData("https://:secret@example.com/path", "", "secret")]
+    [InlineData("https://john:pa:ss@example.com/path", "john", "pa:ss")]
+    public void Match_SplitsTheUserInfoIntoUsernameAndPassword(string url, string expectedUsername, string expectedPassword)
+    {
+        var result = UrlPattern.Create(new UrlPatternInit()).Match(url);
+
+        Assert.NotNull(result);
+        Assert.Equal(expectedUsername, result.Username.Input);
+        Assert.Equal(expectedPassword, result.Password.Input);
+    }
+
     // Trailing slash handling
     [Fact]
     public void IsMatch_TrailingSlash()
@@ -808,6 +852,28 @@ public sealed class UrlPatternTests
         });
 
         Assert.False(pattern.IsMatch("not-a-valid-url"));
+    }
+
+    [Theory]
+    [InlineData("not-a-valid-url")]
+    [InlineData("::::")]
+    [InlineData("http://[/")]
+    [InlineData("")]
+    public void MatchAndIsMatch_WithUnparsableUrl_ReportNoMatch(string url)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/path" });
+
+        Assert.False(pattern.IsMatch(url));
+        Assert.Null(pattern.Match(url));
+    }
+
+    [Fact]
+    public void MatchAndIsMatch_WithUnparsableBaseUrl_ReportNoMatch()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/path" });
+
+        Assert.False(pattern.IsMatch("/path", "not-a-valid-base"));
+        Assert.Null(pattern.Match("/path", "not-a-valid-base"));
     }
 
     // File URLs
@@ -1214,6 +1280,52 @@ public sealed class UrlPatternTests
 
         Assert.NotNull(result);
         Assert.Equal("css/styles/main.css", result.Pathname.Groups["path"]);
+    }
+
+    [Theory]
+    [InlineData("/books/:id.json", "/books/:id.json")]
+    [InlineData("/assets/*.png", "/assets/*.png")]
+    [InlineData("/:name-suffix", "/:name-suffix")]
+    [InlineData("/file-:name-v:version.txt", "/file-:name-v:version.txt")]
+    [InlineData("/{:name}text", "/{:name}text")]
+    public void Create_LiteralFollowingAGroup_KeepsThePathnameUnchanged(string pathname, string expected)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = pathname });
+
+        Assert.Equal(expected, pattern.Pathname);
+    }
+
+    [Theory]
+    [InlineData("/books/:id.json", "https://example.com/books/123.json")]
+    [InlineData("/assets/*.png", "https://example.com/assets/logo.png")]
+    [InlineData("/:name-suffix", "https://example.com/value-suffix")]
+    [InlineData("/file-:name-v:version.txt", "https://example.com/file-report-v2.txt")]
+    public void IsMatch_LiteralFollowingAGroup_ShouldMatch(string pathname, string url)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = pathname });
+
+        Assert.True(pattern.IsMatch(url));
+    }
+
+    [Fact]
+    public void Match_ExtensionAfterAGroup_ShouldCaptureWithoutTheExtension()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id.json" });
+
+        var result = pattern.Match("https://example.com/books/123.json");
+
+        Assert.NotNull(result);
+        Assert.Equal("123", result.Pathname.Groups["id"]);
+        Assert.False(pattern.IsMatch("https://example.com/books/123/.json"));
+    }
+
+    [Fact]
+    public void Create_FromPatternString_LiteralFollowingAGroupIsPreserved()
+    {
+        var pattern = UrlPattern.Create("https://example.com/books/:id.json");
+
+        Assert.Equal("/books/:id.json", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com/books/123.json"));
     }
 
     [Fact]

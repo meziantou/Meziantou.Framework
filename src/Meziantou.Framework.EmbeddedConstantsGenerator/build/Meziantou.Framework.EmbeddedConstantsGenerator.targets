@@ -19,6 +19,12 @@
     <_EmbeddedConstantsGeneratedCodeDirectory>$([System.IO.Path]::GetDirectoryName('$(_EmbeddedConstantsGeneratedCodePath)'))</_EmbeddedConstantsGeneratedCodeDirectory>
   </PropertyGroup>
 
+  <!-- The Visual Studio fast up-to-date check only knows about well-known item types. Without this,
+       editing an embedded file does not invalidate the project and the build is skipped entirely. -->
+  <ItemGroup>
+    <UpToDateCheckInput Include="@(EmbeddedConstant)" />
+  </ItemGroup>
+
   <UsingTask TaskName="Meziantou.Framework.EmbeddedConstantsGenerator.GenerateEmbeddedConstantsTask"
              AssemblyFile="$(_EmbeddedConstantsTaskAssemblyPath)"
              Condition="Exists('$(_EmbeddedConstantsTaskAssemblyPath)')" />

@@ -25,7 +25,8 @@ public partial class Assert
             return;
         }
 
-        throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<T, IEnumerable<T>>("Not expected prefix", expected, actual, actualExpression, expectedExpression, message)));
+        actualSnapshot.EnsureComplete();
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<T, IReadOnlyList<T>>("Not expected prefix", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
     public static void DoesNotStartWith(object? expected, System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -39,7 +40,8 @@ public partial class Assert
             return;
         }
 
-        throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<object?, System.Collections.IEnumerable>("Not expected prefix", expected, actual, actualExpression, expectedExpression, message)));
+        actualSnapshot.EnsureComplete();
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<object?, IReadOnlyList<object?>>("Not expected prefix", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
     public static void DoesNotStartWith<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -107,6 +109,8 @@ public partial class Assert
                 return;
         }
 
-        throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable>("Not expected prefix", expected, actual, actualExpression, expectedExpression, message)));
+        expectedSnapshot.EnsureComplete();
+        actualSnapshot.EnsureComplete();
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<IReadOnlyList<object?>, IReadOnlyList<object?>>("Not expected prefix", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 }

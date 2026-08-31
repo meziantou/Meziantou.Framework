@@ -534,4 +534,13 @@ public sealed class AssertContainsTests
             Actual:           [[a, 1]]
             """);
     }
+
+    [Fact]
+    public void DoesNotContain_EnumeratesASingleUseSequenceOnlyOnce()
+    {
+        var actual = AssertionTestHelpers.SingleUse(1, 2, 3);
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotContain(2, actual));
+    }
+
 }

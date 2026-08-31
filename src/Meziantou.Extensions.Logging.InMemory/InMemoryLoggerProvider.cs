@@ -18,9 +18,9 @@ namespace Meziantou.Extensions.Logging.InMemory;
 /// var logs = provider.Logs.Informations;
 /// </code>
 /// </example>
-public sealed class InMemoryLoggerProvider : ILoggerProvider
+public sealed class InMemoryLoggerProvider : ILoggerProvider, ISupportExternalScope
 {
-    private readonly IExternalScopeProvider _scopeProvider;
+    private readonly MutableExternalScopeProvider _scopeProvider;
     private readonly TimeProvider _timeProvider;
 
     /// <summary>Gets the collection of log entries captured by all loggers created by this provider.</summary>
@@ -52,7 +52,7 @@ public sealed class InMemoryLoggerProvider : ILoggerProvider
     public InMemoryLoggerProvider(InMemoryLogCollection? logs, IExternalScopeProvider? scopeProvider)
     {
         Logs = logs ?? [];
-        _scopeProvider = scopeProvider ?? new LoggerExternalScopeProvider();
+        _scopeProvider = new MutableExternalScopeProvider(scopeProvider ?? new LoggerExternalScopeProvider());
         _timeProvider = TimeProvider.System;
     }
 
@@ -87,7 +87,7 @@ public sealed class InMemoryLoggerProvider : ILoggerProvider
     {
         _timeProvider = timeProvider ?? TimeProvider.System;
         Logs = logs ?? [];
-        _scopeProvider = scopeProvider ?? new LoggerExternalScopeProvider();
+        _scopeProvider = new MutableExternalScopeProvider(scopeProvider ?? new LoggerExternalScopeProvider());
     }
 
     /// <summary>Creates a new logger instance with the specified category name.</summary>
@@ -104,6 +104,18 @@ public sealed class InMemoryLoggerProvider : ILoggerProvider
     public ILogger<T> CreateLogger<T>()
     {
         return new InMemoryLogger<T>(Logs, _scopeProvider, _timeProvider);
+    }
+
+    /// <summary>Sets the external scope provider supplied by the logger factory.</summary>
+    /// <param name="scopeProvider">The scope provider the factory uses to track scopes.</param>
+    /// <remarks>
+    /// Implementing <see cref="ISupportExternalScope"/> is what makes the factory route its scopes
+    /// through this provider, including the ones it synthesises from the current activity when
+    /// <c>LoggerFactoryOptions.ActivityTrackingOptions</c> is set.
+    /// </remarks>
+    public void SetScopeProvider(IExternalScopeProvider scopeProvider)
+    {
+        _scopeProvider.Current = scopeProvider;
     }
 
     public void Dispose()

@@ -114,27 +114,99 @@ public sealed class RobotsFile
     /// Returns the <see cref="RobotsGroup"/> that best matches the given <paramref name="userAgent"/>.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// An exact (case-insensitive) match takes precedence over a catch-all (<c>*</c>) group.
     /// Returns <see langword="null"/> when no group matches.
+    /// </para>
+    /// <para>
+    /// When several groups declare the selected user-agent token, their rules are merged into a
+    /// single group, as required by RFC 9309 section 2.2.1. The merged group is not one of the
+    /// instances in <see cref="Groups"/>: it lists the union of the declared tokens, the rules of
+    /// every contributing group in file order, and the first <c>Crawl-delay</c> that was specified.
+    /// When exactly one group matches, that instance is returned as-is.
+    /// </para>
     /// </remarks>
     public RobotsGroup? GetGroup(string userAgent)
     {
         ArgumentNullException.ThrowIfNull(userAgent);
 
-        RobotsGroup? catchAll = null;
+        // An exact product token match wins over the catch-all, so look for one first and only
+        // fall back to '*' when no group names the agent.
+        return SelectGroup(userAgent, matchCatchAll: false) ?? SelectGroup(userAgent, matchCatchAll: true);
+    }
+
+    private RobotsGroup? SelectGroup(string userAgent, bool matchCatchAll)
+    {
+        RobotsGroup? first = null;
+        List<RobotsGroup>? matches = null;
+
         foreach (var group in Groups)
         {
-            foreach (var agent in group.UserAgents)
-            {
-                if (agent.Equals(userAgent, StringComparison.OrdinalIgnoreCase))
-                    return group;
+            if (!DeclaresToken(group, userAgent, matchCatchAll))
+                continue;
 
-                if (agent == "*")
-                    catchAll = group;
+            if (first is null)
+            {
+                first = group;
+            }
+            else
+            {
+                matches ??= [first];
+                matches.Add(group);
             }
         }
 
-        return catchAll;
+        // No duplicates: hand back the parsed instance without allocating anything.
+        if (matches is null)
+            return first;
+
+        var agents = new List<string>();
+        var rules = new List<RobotsRule>();
+        TimeSpan? crawlDelay = null;
+
+        foreach (var group in matches)
+        {
+            foreach (var agent in group.UserAgents)
+            {
+                if (!ContainsToken(agents, agent))
+                    agents.Add(agent);
+            }
+
+            foreach (var rule in group.Rules)
+            {
+                rules.Add(rule);
+            }
+
+            crawlDelay ??= group.CrawlDelay;
+        }
+
+        return new RobotsGroup(agents, rules, crawlDelay);
+    }
+
+    private static bool DeclaresToken(RobotsGroup group, string userAgent, bool matchCatchAll)
+    {
+        foreach (var agent in group.UserAgents)
+        {
+            var isMatch = matchCatchAll
+                ? agent == "*"
+                : agent.Equals(userAgent, StringComparison.OrdinalIgnoreCase);
+
+            if (isMatch)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool ContainsToken(List<string> agents, string agent)
+    {
+        foreach (var existing in agents)
+        {
+            if (existing.Equals(agent, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -218,9 +290,12 @@ public sealed class RobotsFile
                 else
                 {
                     line = content[..nl];
+                    var isCarriageReturn = content[nl] == '\r';
                     content = content[(nl + 1)..];
-                    // Skip the '\n' after '\r'.
-                    if (!content.IsEmpty && content[0] == '\n')
+                    // Skip the '\n' of a "\r\n" pair. Only a '\r' can be followed by a '\n'
+                    // belonging to the same line break; consuming it unconditionally would
+                    // swallow the empty line in "\n\n".
+                    if (isCarriageReturn && !content.IsEmpty && content[0] == '\n')
                         content = content[1..];
                 }
 
@@ -232,8 +307,18 @@ public sealed class RobotsFile
         {
             _lineNumber++;
 
+            var line = rawLine.AsSpan();
+
+            // A UTF-8 BOM that was decoded rather than consumed shows up as U+FEFF at the very
+            // start of the file. It is a format character, not whitespace, so Trim() leaves it
+            // glued to the first directive and the whole file parses as unknown directives.
+            // Only the first character of the first line can be a BOM; U+FEFF anywhere else is
+            // a zero-width no-break space and is left alone.
+            if (_lineNumber == 1 && !line.IsEmpty && line[0] == '\uFEFF')
+                line = line[1..];
+
             // Strip inline comments and trim whitespace.
-            var trimmed = StripComment(rawLine.AsSpan()).Trim();
+            var trimmed = StripComment(line).Trim();
 
             if (trimmed.IsEmpty)
             {

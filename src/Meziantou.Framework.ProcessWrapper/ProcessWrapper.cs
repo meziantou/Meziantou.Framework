@@ -31,6 +31,7 @@ public sealed class ProcessWrapper
     private ImmutableArray<OutputTarget> _errorTargets;
     private InputSource? _inputSource;
     private ProcessLimits? _limits;
+    private bool _searchExecutableInWorkingDirectory;
     private Action<JobObject>? _windowsJobObjectConfiguration;
     private Action<CGroup2>? _linuxControlGroupConfiguration;
     private bool _validationModeConfigured;
@@ -58,6 +59,7 @@ public sealed class ProcessWrapper
         _errorTargets = other._errorTargets;
         _inputSource = other._inputSource;
         _limits = other._limits;
+        _searchExecutableInWorkingDirectory = other._searchExecutableInWorkingDirectory;
         _windowsJobObjectConfiguration = other._windowsJobObjectConfiguration;
         _linuxControlGroupConfiguration = other._linuxControlGroupConfiguration;
         _validationModeConfigured = other._validationModeConfigured;
@@ -221,6 +223,25 @@ public sealed class ProcessWrapper
     public ProcessWrapper WithWorkingDirectory(string workingDirectory)
     {
         _startInfo.WorkingDirectory = workingDirectory;
+        return this;
+    }
+
+    /// <summary>Also looks for the executable in the working directory, before the directories listed in <c>PATH</c>.</summary>
+    /// <remarks>
+    /// <para>
+    /// Windows resolves a bare executable name against the current directory before <c>PATH</c>, so this is the
+    /// native behavior there. POSIX shells deliberately do not.
+    /// </para>
+    /// <para>
+    /// It is nevertheless disabled by default on every platform, Windows included, for security reasons: a file
+    /// sitting in the working directory would otherwise take precedence over the command <c>PATH</c> resolves for
+    /// the same name, letting an untrusted working directory substitute its own executable for the intended one.
+    /// Only enable it when the working directory is trusted.
+    /// </para>
+    /// </remarks>
+    public ProcessWrapper WithSearchWorkingDirectory(bool searchWorkingDirectory = true)
+    {
+        _searchExecutableInWorkingDirectory = searchWorkingDirectory;
         return this;
     }
 
@@ -507,7 +528,7 @@ public sealed class ProcessWrapper
             throw new InvalidOperationException("Process validation cannot be configured when starting a process without tracking it.");
 
         var startInfo = CloneStartInfo(_startInfo);
-        startInfo.FileName = ResolveFileName(startInfo.FileName, startInfo.WorkingDirectory);
+        startInfo.FileName = ResolveFileName(startInfo.FileName, GetExecutableSearchDirectory(startInfo));
         ApplyProcessStartInfoInterceptors(startInfo);
 
         return Process.StartAndForget(startInfo);
@@ -526,7 +547,7 @@ public sealed class ProcessWrapper
         var hasStandardErrorOutput = 0;
 
         var startInfo = CloneStartInfo(_startInfo);
-        var resolvedFileName = ResolveFileName(startInfo.FileName, startInfo.WorkingDirectory);
+        var resolvedFileName = ResolveFileName(startInfo.FileName, GetExecutableSearchDirectory(startInfo));
         startInfo.RedirectStandardOutput = hasOutputHandlers;
         startInfo.RedirectStandardError = hasErrorHandlers;
         startInfo.RedirectStandardInput = hasInputStream;
@@ -1089,6 +1110,11 @@ public sealed class ProcessWrapper
             }
         }
     }
+
+    // A file dropped in the working directory must not shadow a command resolved from PATH, so the working
+    // directory is searched only when the caller opts in with WithSearchWorkingDirectory.
+    private string? GetExecutableSearchDirectory(ProcessStartInfo startInfo)
+        => _searchExecutableInWorkingDirectory ? startInfo.WorkingDirectory : null;
 
     private static string ResolveFileName(string fileName, string? workingDirectory)
     {

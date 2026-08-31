@@ -928,8 +928,8 @@ public static class HtmlToMarkdown
                     sb.Append(c);
                     break;
 
-                // Escape # only at start of text (heading)
-                case '#':
+                // Escape # (heading) and + (bullet list) only at start of text
+                case '#' or '+':
                     if (i == 0)
                         sb.Append('\\');
                     sb.Append(c);
@@ -1073,19 +1073,54 @@ public static class HtmlToMarkdown
     }
 
     /// <summary>
-    /// Escapes ordered list markers (e.g., "1.") at the start of text.
+    /// Escapes constructs that would start a new block when they appear at the beginning of
+    /// a line: ordered list markers such as "1." and "4)", and setext heading underlines.
+    /// This runs per line because a line break inside a paragraph puts text at the start of
+    /// a line without it being the start of the block.
     /// </summary>
     private static string PostProcessLineStart(string text)
     {
-        if (text.Length > 1)
+        if (!text.Contains('\n', StringComparison.Ordinal))
+            return EscapeLineStart(text);
+
+        var lines = text.Split('\n');
+        for (var i = 0; i < lines.Length; i++)
         {
-            var i = 0;
-            while (i < text.Length && char.IsAsciiDigit(text[i]))
-                i++;
-            if (i > 0 && i < text.Length && text[i] is '.')
-                return string.Concat(text.AsSpan(0, i), "\\.", text.AsSpan(i + 1));
+            lines[i] = EscapeLineStart(lines[i]);
         }
-        return text;
+
+        return string.Join('\n', lines);
+    }
+
+    private static string EscapeLineStart(string line)
+    {
+        if (line.Length == 0)
+            return line;
+
+        // Ordered list marker: a run of digits followed by '.' or ')'
+        var i = 0;
+        while (i < line.Length && char.IsAsciiDigit(line[i]))
+            i++;
+
+        if (i > 0 && i < line.Length && line[i] is '.' or ')')
+            return string.Concat(line.AsSpan(0, i), "\\", line.AsSpan(i, 1), line.AsSpan(i + 1));
+
+        // Setext heading underline: a line containing nothing but '='
+        if (line[0] is '=' && IsSetextUnderline(line))
+            return "\\" + line;
+
+        return line;
+
+        static bool IsSetextUnderline(string line)
+        {
+            foreach (var c in line)
+            {
+                if (c is not ('=' or ' '))
+                    return false;
+            }
+
+            return true;
+        }
     }
 
     /// <summary>

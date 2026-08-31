@@ -3848,6 +3848,64 @@ public sealed class HtmlToMarkdownConverterTests
             "© 2026");
     }
 
+    // --- Line start escaping ---
+
+    [Fact]
+    public void Paragraph_StartingWithPlusIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>+ item</p>",
+            "\\+ item");
+    }
+
+    [Fact]
+    public void Paragraph_StartingWithParenthesizedNumberIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>4) item</p>",
+            "4\\) item");
+    }
+
+    [Fact]
+    public void Paragraph_LineAfterBreakStartingWithPlusIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>+ b</p>",
+            "a  \n\\+ b");
+    }
+
+    [Fact]
+    public void Paragraph_LineAfterBreakStartingWithOrderedMarkerIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>1. b</p>",
+            "a  \n1\\. b");
+    }
+
+    [Fact]
+    public void Paragraph_LineAfterBreakStartingWithParenthesizedNumberIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>4) b</p>",
+            "a  \n4\\) b");
+    }
+
+    [Fact]
+    public void Paragraph_LineOfEqualSignsIsNotASetextHeading()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>=</p>",
+            "a  \n\\=");
+    }
+
+    [Fact]
+    public void Paragraph_EqualSignFollowedByTextIsNotEscaped()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>= b</p>",
+            "a  \n= b");
+    }
+
     // --- Deeply nested documents (must not overflow the call stack) ---
 
     // The recursive traversal this replaced overflowed the stack at a nesting depth of

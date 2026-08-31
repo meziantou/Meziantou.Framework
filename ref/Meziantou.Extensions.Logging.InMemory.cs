@@ -16,12 +16,14 @@ namespace Meziantou.Extensions.Logging.InMemory
 
     public sealed class InMemoryLogCollection : System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry>, System.Collections.IEnumerable
     {
+        public int Count { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> Debugs { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> Traces { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> Informations { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> Warnings { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> Errors { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> Criticals { get => throw null; }
+        public void Clear() { }
         public override string ToString() => throw null;
         public Enumerator GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;

@@ -3620,6 +3620,116 @@ public sealed class HtmlToMarkdownConverterTests
             """);
     }
 
+    // --- Stripped elements inside passed-through unknown elements ---
+
+    [Fact]
+    public void UnknownElement_PassThrough_StripsNestedScript()
+    {
+        AssertHtmlToMarkdown(
+            "<foo><script>alert(1)</script></foo>",
+            "<foo></foo>");
+    }
+
+    [Fact]
+    public void UnknownElement_PassThrough_StripsDeeplyNestedScript()
+    {
+        AssertHtmlToMarkdown(
+            "<custom-el><div><script>alert(1)</script></div></custom-el>",
+            "<custom-el><div></div></custom-el>");
+    }
+
+    [Theory]
+    [InlineData("style", "body{color:red}")]
+    [InlineData("noscript", "<b>no js</b>")]
+    public void UnknownElement_PassThrough_StripsNestedStyleAndNoscript(string tagName, string content)
+    {
+        AssertHtmlToMarkdown(
+            $"<foo><{tagName}>{content}</{tagName}></foo>",
+            "<foo></foo>");
+    }
+
+    [Fact]
+    public void UnknownElement_PassThrough_KeepsSurroundingContent()
+    {
+        AssertHtmlToMarkdown(
+            "<foo>before<script>alert(1)</script>after</foo>",
+            "<foo>beforeafter</foo>");
+    }
+
+    [Fact]
+    public void UnknownElement_PassThrough_WithoutStrippedElementsIsUnchanged()
+    {
+        AssertHtmlToMarkdown(
+            """<foo bar="baz">content</foo>""",
+            """<foo bar="baz">content</foo>""");
+    }
+
+    // --- Link and image escaping ---
+
+    [Fact]
+    public void Link_UrlWithUnbalancedClosingParenthesis()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/a)b">text</a>""",
+            """[text](https://example.com/a\)b)""");
+    }
+
+    [Fact]
+    public void Link_UrlWithUnbalancedOpeningParenthesis()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/a(b">text</a>""",
+            """[text](https://example.com/a\(b)""");
+    }
+
+    [Fact]
+    public void Link_UrlWithSpaceUsesAngleBrackets()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/a b">text</a>""",
+            "[text](<https://example.com/a b>)");
+    }
+
+    [Fact]
+    public void Link_UrlWithNewlineIsPercentEncoded()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/&#10;evil">text</a>""",
+            "[text](https://example.com/%0Aevil)");
+    }
+
+    [Fact]
+    public void Link_UrlWithAngleBrackets()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/a<b>c">text</a>""",
+            """[text](https://example.com/a\<b\>c)""");
+    }
+
+    [Fact]
+    public void Image_AltTextWithBracketsCannotHijackTheSource()
+    {
+        AssertHtmlToMarkdown(
+            """<img src="safe.png" alt="a](https://attacker.example/evil.png)b">""",
+            """![a\](https://attacker.example/evil.png)b](safe.png)""");
+    }
+
+    [Fact]
+    public void Image_UrlWithUnbalancedParenthesis()
+    {
+        AssertHtmlToMarkdown(
+            """<img src="a)b.png" alt="x">""",
+            """![x](a\)b.png)""");
+    }
+
+    [Fact]
+    public void Link_BalancedParenthesesAreNotEscaped()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/path_(with_parens)">text</a>""",
+            "[text](https://example.com/path_(with_parens))");
+    }
+
     // --- Code block info string validation ---
 
     [Fact]

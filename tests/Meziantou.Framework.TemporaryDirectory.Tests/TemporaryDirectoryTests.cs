@@ -18,10 +18,7 @@ public class TemporaryDirectoryTests
 
             Assert.HasCount(Iterations, dirs.Select(dir => dir.FullPath).Distinct());
 
-            foreach (var dir in dirs)
-            {
-                Assert.All(dirs, dir => Assert.True(Directory.Exists(dir.FullPath)));
-            }
+            Assert.All(dirs, dir => Assert.True(Directory.Exists(dir.FullPath)));
         }
         finally
         {
@@ -79,6 +76,108 @@ public class TemporaryDirectoryTests
         Assert.Equal(dir.GetFullPath("subdir/file.txt"), path);
     }
 
+    [Theory]
+    [InlineData("../escape.txt")]
+    [InlineData("sub/../../escape.txt")]
+    [InlineData("..")]
+    public void GetFullPathRejectsPathsOutsideTheDirectory(string relativePath)
+    {
+        using var dir = TemporaryDirectory.Create();
+
+        Assert.Throws<ArgumentException>(() => dir.GetFullPath(relativePath));
+        Assert.Throws<ArgumentException>(() => dir.CreateTextFile(relativePath, "content"));
+        Assert.Throws<ArgumentException>(() => dir.CreateEmptyFile(relativePath));
+        Assert.Throws<ArgumentException>(() => dir.CreateDirectory(relativePath));
+        Assert.Throws<ArgumentException>(() => dir / relativePath);
+    }
+
+    [Fact]
+    public void GetFullPathRejectsARootedPath()
+    {
+        using var dir = TemporaryDirectory.Create();
+        var rooted = FullPath.Combine(Path.GetTempPath(), "escape.txt");
+
+        Assert.Throws<ArgumentException>(() => dir.GetFullPath(rooted.Value));
+    }
+
+    [Fact]
+    public void GetFullPathAllowsPathsInsideTheDirectory()
+    {
+        using var dir = TemporaryDirectory.Create();
+
+        Assert.Equal(dir.FullPath / "a.txt", dir.GetFullPath("a.txt"));
+        Assert.Equal(dir.FullPath / "sub" / "a.txt", dir.GetFullPath("sub/a.txt"));
+        Assert.Equal(dir.FullPath / "a.txt", dir.GetFullPath("sub/../a.txt"));
+        Assert.Equal(dir.FullPath, dir.GetFullPath(""));
+    }
+
+    [Fact]
+    public void CreateTextFileReturnsThePathAndWritesTheContent()
+    {
+        using var dir = TemporaryDirectory.Create();
+
+        var path = dir.CreateTextFile("a.txt", "content");
+
+        Assert.Equal(dir.GetFullPath("a.txt"), path);
+        Assert.Equal("content", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public async Task CreateTextFileAsyncReturnsThePathAndWritesTheContent()
+    {
+        await using var dir = TemporaryDirectory.Create();
+
+        var path = await dir.CreateTextFileAsync("a.txt", "content", XunitCancellationToken);
+
+        Assert.Equal(dir.GetFullPath("a.txt"), path);
+        Assert.Equal("content", await File.ReadAllTextAsync(path, XunitCancellationToken));
+    }
+
+    [Fact]
+    public void CreateEmptyFileReturnsThePathAndCreatesAnEmptyFile()
+    {
+        using var dir = TemporaryDirectory.Create();
+
+        var path = dir.CreateEmptyFile("a.txt");
+
+        Assert.Equal(dir.GetFullPath("a.txt"), path);
+        Assert.Empty(File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void CreateDirectoryReturnsThePathAndCreatesTheDirectory()
+    {
+        using var dir = TemporaryDirectory.Create();
+
+        var path = dir.CreateDirectory("sub/nested");
+
+        Assert.Equal(dir.GetFullPath("sub/nested"), path);
+        Assert.True(Directory.Exists(path));
+    }
+
+    [Fact]
+    public void CreateFileCreatesTheParentDirectories()
+    {
+        using var dir = TemporaryDirectory.Create();
+
+        var path = dir.CreateTextFile("sub/nested/a.txt", "content");
+
+        Assert.True(File.Exists(path));
+        Assert.True(Directory.Exists(dir.GetFullPath("sub/nested")));
+    }
+
+    [Fact]
+    public void CreateUnderAnExplicitRootDirectory()
+    {
+        using var parent = TemporaryDirectory.Create();
+        var root = parent.GetFullPath("root");
+
+        using var dir = TemporaryDirectory.Create(root);
+
+        Assert.Equal(root, dir.FullPath.Parent);
+        Assert.True(Directory.Exists(dir.FullPath));
+    }
+
     [Fact]
     public void TemporaryFileDisposedDeletesFile()
     {
@@ -114,6 +213,151 @@ public class TemporaryDirectoryTests
         var expectedRoot = FullPath.Combine(Path.GetTempPath(), "MezTF");
         Assert.Equal(expectedRoot, file.FullPath.Parent.Parent);
         Assert.True(File.Exists(file.FullPath));
+    }
+
+    [Fact]
+    public void TemporaryFileCreateWithFileNameDeletesTheGeneratedDirectory()
+    {
+        FullPath path;
+        using (var file = TemporaryFile.Create("custom.txt"))
+        {
+            path = file.FullPath;
+            Assert.True(Directory.Exists(path.Parent));
+        }
+
+        Assert.False(File.Exists(path));
+        Assert.False(Directory.Exists(path.Parent));
+    }
+
+    [Fact]
+    public void TemporaryFileCreateWithRelativePathDeletesTheGeneratedDirectory()
+    {
+        FullPath path;
+        using (var file = TemporaryFile.Create(Path.Combine("sub", "custom.txt")))
+        {
+            path = file.FullPath;
+        }
+
+        Assert.False(File.Exists(path));
+        Assert.False(Directory.Exists(path.Parent));
+        Assert.False(Directory.Exists(path.Parent.Parent));
+    }
+
+    [Fact]
+    public void TemporaryFileCreateKeepsTheSharedRootDirectory()
+    {
+        FullPath path;
+        using (var file = TemporaryFile.Create())
+        {
+            path = file.FullPath;
+        }
+
+        Assert.False(File.Exists(path));
+        Assert.True(Directory.Exists(path.Parent));
+    }
+
+    [Fact]
+    public void TemporaryDirectoryIsOnlyAccessibleByTheCurrentUser()
+    {
+        if (OperatingSystem.IsWindows())
+            return; // Unix file modes only
+
+        using var dir = TemporaryDirectory.Create();
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(dir.FullPath.Value));
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(dir.FullPath.Parent.Value));
+    }
+
+    [Fact]
+    public void TemporaryFileIsOnlyAccessibleByTheCurrentUser()
+    {
+        if (OperatingSystem.IsWindows())
+            return; // Unix file modes only
+
+        using var file = TemporaryFile.Create();
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(file.FullPath.Value));
+    }
+
+    [Fact]
+    public void CreateTightensARootDirectoryAccessibleByOtherUsers()
+    {
+        if (OperatingSystem.IsWindows())
+            return; // Unix file modes only
+
+        using var parent = TemporaryDirectory.Create();
+        var sharedRoot = parent.GetFullPath("shared");
+        Directory.CreateDirectory(sharedRoot.Value, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+
+        using var dir = TemporaryDirectory.Create(sharedRoot);
+
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(sharedRoot.Value));
+    }
+
+    [Fact]
+    public void CreateReusesAnOwnerOnlyRootDirectory()
+    {
+        using var parent = TemporaryDirectory.Create();
+        var root = parent.GetFullPath("root");
+
+        using var first = TemporaryDirectory.Create(root);
+        using var second = TemporaryDirectory.Create(root);
+
+        Assert.NotEqual(first.FullPath, second.FullPath);
+        Assert.Equal(root, first.FullPath.Parent);
+        Assert.Equal(root, second.FullPath.Parent);
+    }
+
+    [Fact]
+    public void UsingADisposedTemporaryDirectoryThrows()
+    {
+        var dir = TemporaryDirectory.Create();
+        dir.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => dir.GetFullPath("a.txt"));
+        Assert.Throws<ObjectDisposedException>(() => dir.CreateTextFile("a.txt", "content"));
+        Assert.Throws<ObjectDisposedException>(() => dir.CreateEmptyFile("a.txt"));
+        Assert.Throws<ObjectDisposedException>(() => dir.CreateDirectory("sub"));
+        Assert.Throws<ObjectDisposedException>(() => dir / "a.txt");
+        Assert.False(Directory.Exists(dir.FullPath));
+    }
+
+    [Fact]
+    public void DisposingATemporaryDirectoryTwiceKeepsARecreatedDirectory()
+    {
+        var dir = TemporaryDirectory.Create();
+        var path = dir.FullPath;
+        dir.Dispose();
+
+        Directory.CreateDirectory(path.Value);
+        try
+        {
+            File.WriteAllText(path / "unrelated.txt", "content");
+            dir.Dispose();
+
+            Assert.True(File.Exists(path / "unrelated.txt"));
+        }
+        finally
+        {
+            Directory.Delete(path.Value, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DisposingATemporaryFileTwiceKeepsARecreatedFile()
+    {
+        var file = TemporaryFile.Create();
+        var path = file.FullPath;
+        file.Dispose();
+
+        File.WriteAllText(path.Value, "content");
+        try
+        {
+            file.Dispose();
+            Assert.True(File.Exists(path));
+        }
+        finally
+        {
+            File.Delete(path.Value);
+        }
     }
 
     [Fact]

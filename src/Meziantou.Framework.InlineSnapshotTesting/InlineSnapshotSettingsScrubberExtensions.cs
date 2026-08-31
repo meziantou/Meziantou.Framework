@@ -41,8 +41,26 @@ public static class InlineSnapshotSettingsScrubberExtensions
     public static void ScrubLinesWithReplace(this InlineSnapshotSettings settings, Func<string, string?> replaceLine) => settings.Scrubbers.Add(new LineReplaceScrubber(replaceLine));
 
     /// <summary>Adds a scrubber that replaces the machine name with a consistent value.</summary>
-    public static void ScrubMachineName(this InlineSnapshotSettings settings) => settings.Scrubbers.Add(new LineReplaceScrubber(line => line.Replace(Environment.MachineName, "TheMachineName", StringComparison.OrdinalIgnoreCase)));
+    /// <remarks>Does nothing when <see cref="Environment.MachineName"/> is empty.</remarks>
+    public static void ScrubMachineName(this InlineSnapshotSettings settings)
+    {
+        // string.Replace throws on an empty search value, and the machine name can be empty in a container.
+        var machineName = Environment.MachineName;
+        if (string.IsNullOrEmpty(machineName))
+            return;
+
+        settings.Scrubbers.Add(new LineReplaceScrubber(line => line.Replace(machineName, "TheMachineName", StringComparison.OrdinalIgnoreCase)));
+    }
 
     /// <summary>Adds a scrubber that replaces the user name with a consistent value.</summary>
-    public static void ScrubUserName(this InlineSnapshotSettings settings) => settings.Scrubbers.Add(new LineReplaceScrubber(line => line.Replace(Environment.UserName, "TheUserName", StringComparison.OrdinalIgnoreCase)));
+    /// <remarks>Does nothing when <see cref="Environment.UserName"/> is empty.</remarks>
+    public static void ScrubUserName(this InlineSnapshotSettings settings)
+    {
+        // string.Replace throws on an empty search value, and the user name can be empty in a container.
+        var userName = Environment.UserName;
+        if (string.IsNullOrEmpty(userName))
+            return;
+
+        settings.Scrubbers.Add(new LineReplaceScrubber(line => line.Replace(userName, "TheUserName", StringComparison.OrdinalIgnoreCase)));
+    }
 }

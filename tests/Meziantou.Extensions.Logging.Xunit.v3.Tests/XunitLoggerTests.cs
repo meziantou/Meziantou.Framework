@@ -3,6 +3,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 
 namespace Meziantou.Extensions.Logging.Xunit.v3.Tests;
 
@@ -44,5 +45,26 @@ public sealed class XunitLoggerTests
         logger.LogInformation("Test {Sample}", "value");
 
         // Nothing to assert, it will throw an exception if something goes wrong
+    }
+
+    [Fact]
+    public void TheProviderAliasCanBeUsedToConfigureFilters()
+    {
+        var output = new InMemoryTestOutputHelper();
+        var host = new HostBuilder()
+            .ConfigureLogging(builder =>
+            {
+                builder.AddXunit(output);
+                builder.AddConfiguration(new ConfigurationBuilder()
+                    .AddInMemoryCollection(new Dictionary<string, string?> { ["XUnit:LogLevel:Default"] = "Error" })
+                    .Build());
+            })
+            .Build();
+
+        var logger = host.Services.GetRequiredService<ILogger<XunitLoggerTests>>();
+        logger.LogInformation("filtered out");
+        logger.LogError("kept");
+
+        Assert.Equal(["kept" + Environment.NewLine], output.Logs, StringComparer.Ordinal);
     }
 }

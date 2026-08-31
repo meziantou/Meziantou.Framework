@@ -20,6 +20,7 @@ namespace Meziantou.Extensions.Logging.Xunit.v3;
 ///     .Build();
 /// </code>
 /// </example>
+[ProviderAlias("XUnit")]
 public sealed class XUnitLoggerProvider : ILoggerProvider
 {
     private readonly ITestOutputHelper? _testOutputHelper;

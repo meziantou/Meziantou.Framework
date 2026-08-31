@@ -36,6 +36,32 @@ public sealed class HttpJsonSerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void MaxDepthViolationIsNotSwallowedAsAFormattingFailure()
+    {
+        var options = new HumanReadableSerializerOptions { MaxDepth = 4 }
+            .AddJsonFormatter(new JsonFormatterOptions { FormatAsStandardObject = true });
+
+        using var httpContent = new StringContent("""{"a":{"b":{"c":{"d":1}}}}""", encoding: null, "application/json");
+
+        Assert.Throws<HumanReadableSerializerException>(() => HumanReadableSerializer.Serialize(httpContent, options));
+    }
+
+    [Fact]
+    public void UnparsableJsonStillFallsBackToTheRawValue()
+    {
+        var options = new HumanReadableSerializerOptions()
+            .AddJsonFormatter(new JsonFormatterOptions { FormatAsStandardObject = true });
+
+        using var httpContent = new StringContent("{not json", encoding: null, "application/json");
+
+        AssertSerialization(httpContent, options, """
+            Headers:
+              Content-Type: application/json; charset=utf-8
+            Value: {not json
+            """);
+    }
+
+    [Fact]
     public void Indented_Ordered_NullValue()
     {
         using var httpContent = new StringContent("null", encoding: null, "application/json");

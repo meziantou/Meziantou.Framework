@@ -280,6 +280,68 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         Assert.DoesNotContain("MSB4018", output);
     }
 
+    [Fact]
+    public async Task GenerateOnBuild_MultiTargetingWithSharedOutputPath_InsertsTheTargetFrameworkIntoThePath()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("shared-output-path");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("shared-output-path/Sample.csproj", CreateMultiTargetingProjectFile(fixture, "Generated/EmbeddedConstants.g.cs"));
+        temporaryDirectory.CreateTextFile("shared-output-path/Assets/sample.txt", "Hello");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        // Building again matters: the generated files now exist, so the SDK default glob picks them all up
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        // The path was 'Generated/EmbeddedConstants.g.cs' for both frameworks, so each build gets its own subdirectory
+        Assert.True(File.Exists(projectDirectory / "Generated" / "net10.0" / "EmbeddedConstants.g.cs"));
+        Assert.True(File.Exists(projectDirectory / "Generated" / "net11.0" / "EmbeddedConstants.g.cs"));
+        Assert.False(File.Exists(projectDirectory / "Generated" / "EmbeddedConstants.g.cs"));
+    }
+
+    [Fact]
+    public async Task GenerateOnBuild_MultiTargetingWithPerTargetFrameworkOutputPath_GeneratesOneFilePerTargetFramework()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("per-tfm-output-path");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("per-tfm-output-path/Sample.csproj", CreateMultiTargetingProjectFile(fixture, "Generated/$(TargetFramework)/EmbeddedConstants.g.cs"));
+        temporaryDirectory.CreateTextFile("per-tfm-output-path/Assets/sample.txt", "Hello");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        // Building again matters: the generated files now exist, so the SDK default glob picks them all up
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        var generatedFiles = Directory.GetFiles(projectDirectory / "Generated", "EmbeddedConstants.g.cs", SearchOption.AllDirectories);
+        Assert.HasCount(2, generatedFiles);
+    }
+
+    private static string CreateMultiTargetingProjectFile(EmbeddedConstantsGeneratorPackageFixture fixture, string outputPath)
+    {
+        return $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
+                <EmbeddedConstantsNamespace>Generated</EmbeddedConstantsNamespace>
+                <EmbeddedConstantsOutputPath>{{outputPath}}</EmbeddedConstantsOutputPath>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="{{EmbeddedConstantsGeneratorPackageFixture.PackageName}}" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
+                <EmbeddedConstant Include="Assets/sample.txt" Kind="Text" />
+              </ItemGroup>
+            </Project>
+            """;
+    }
+
     private static string CreateProjectFile(EmbeddedConstantsGeneratorPackageFixture fixture, string embeddedConstants)
     {
         return $$"""

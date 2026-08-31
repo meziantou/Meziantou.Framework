@@ -54,4 +54,57 @@ public sealed class DictionaryExtensionsTests
         Assert.False(dict.TryGetValue("key2", out _));
         Assert.Equal(43, dict["key"]);
     }
+
+    [Fact]
+    public void GetOrAddFactory_ThrowingFactoryDoesNotAddTheKey()
+    {
+        var dict = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        Assert.Throws<InvalidOperationException>(() => dict.GetOrAdd("key", _ => throw new InvalidOperationException()));
+        Assert.False(dict.ContainsKey("key"));
+
+        Assert.Equal("recovered", dict.GetOrAdd("key", _ => "recovered"));
+        Assert.Equal("recovered", dict["key"]);
+    }
+
+    [Fact]
+    public void GetOrAddFactory_StoresTheValueWhenTheFactoryMutatesTheDictionary()
+    {
+        var dict = new Dictionary<int, string>();
+
+        var result = dict.GetOrAdd(0, _ =>
+        {
+            for (var i = 1; i <= 64; i++)
+            {
+                dict[i] = "filler";
+            }
+
+            return "computed";
+        });
+
+        Assert.Equal("computed", result);
+        Assert.Equal("computed", dict[0]);
+    }
+
+    [Fact]
+    public void TryUpdateFactory_StoresTheValueWhenTheFactoryMutatesTheDictionary()
+    {
+        var dict = new Dictionary<int, string>
+        {
+            [0] = "initial",
+        };
+
+        var result = dict.TryUpdate(0, (_, _) =>
+        {
+            for (var i = 1; i <= 64; i++)
+            {
+                dict[i] = "filler";
+            }
+
+            return "updated";
+        });
+
+        Assert.True(result);
+        Assert.Equal("updated", dict[0]);
+    }
 }

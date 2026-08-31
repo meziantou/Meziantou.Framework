@@ -17,7 +17,7 @@ public static class Slug
     /// <summary>Creates a slug from the specified text using default options.</summary>
     /// <param name="text">The text to convert to a slug.</param>
     /// <returns>A slug generated from the input text, or <see langword="null"/> if <paramref name="text"/> is <see langword="null"/>.</returns>
-    /// <remarks>Text that is not well-formed Unicode is accepted: each ill-formed character is treated as <see cref="Rune.ReplacementChar"/>.</remarks>
+    /// <remarks>Text that is not well-formed Unicode is accepted: each ill-formed character is treated as <see cref="Rune.ReplacementChar"/>. In invariant globalization mode, where the normalizer accepts ill-formed text, such characters are left as they are.</remarks>
     [return: NotNullIfNotNull(parameterName: nameof(text))]
     public static string? Create(string? text)
     {
@@ -28,7 +28,7 @@ public static class Slug
     /// <param name="text">The text to convert to a slug.</param>
     /// <param name="options">The options to use for slug generation, or <see langword="null"/> to use default options.</param>
     /// <returns>A slug generated from the input text, or <see langword="null"/> if <paramref name="text"/> is <see langword="null"/>.</returns>
-    /// <remarks>Text that is not well-formed Unicode is accepted: each ill-formed character is treated as <see cref="Rune.ReplacementChar"/>.</remarks>
+    /// <remarks>Text that is not well-formed Unicode is accepted: each ill-formed character is treated as <see cref="Rune.ReplacementChar"/>. In invariant globalization mode, where the normalizer accepts ill-formed text, such characters are left as they are.</remarks>
     [return: NotNullIfNotNull(parameterName: nameof(text))]
     public static string? Create(string? text, SlugOptions? options)
     {

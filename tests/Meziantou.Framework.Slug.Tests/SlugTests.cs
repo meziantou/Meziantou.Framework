@@ -149,7 +149,10 @@ public class SlugTests
         Assert.Equal(expected, slug);
     }
 
+    // string.Normalize only rejects ill-formed text when ICU is available, so the substitution the separator
+    // relies on does not happen in invariant globalization mode.
     [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void Slug_IllFormedSeparator_DoesNotThrow()
     {
         var options = new SlugOptions { Separator = "\uD800" };

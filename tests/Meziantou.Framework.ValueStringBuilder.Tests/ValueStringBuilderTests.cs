@@ -274,6 +274,187 @@ public class ValueStringBuilderTests
     }
 
     [Fact]
+    public void ToStringDisposesTheBuilder()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("hello");
+
+        Assert.Equal("hello", sb.ToString());
+        Assert.Equal("", sb.ToString());
+        Assert.Equal(0, sb.Length);
+        Assert.Equal(0, sb.Capacity);
+    }
+
+    [Fact]
+    public void AsSpanDoesNotDisposeTheBuilder()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("hello");
+
+        Assert.Equal("hello", sb.AsSpan().ToString());
+
+        sb.Append(" world");
+        Assert.Equal("hello world", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void DisposeIsIdempotentAfterToString()
+    {
+        var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("hello");
+
+        Assert.Equal("hello", sb.ToString());
+        sb.Dispose();
+        sb.Dispose();
+    }
+
+    [Fact]
+    public void AsSpanWithLengthReturnsASliceOfTheContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("hello");
+
+        Assert.Equal("ell", sb.AsSpan(1, 3).ToString());
+        Assert.Equal("hello", sb.AsSpan(0, 5).ToString());
+        Assert.Equal("", sb.AsSpan(5, 0).ToString());
+    }
+
+    [Fact]
+    public void AsSpanWithLengthCannotReadPastTheContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        sb.Append("hi");
+
+        // Reading 10 characters would reach into the rented buffer, past the two that were written.
+        Assert.True(sb.Capacity > 10);
+
+        var threw = false;
+        try
+        {
+            _ = sb.AsSpan(0, 10);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            threw = true;
+        }
+
+        Assert.True(threw);
+    }
+
+    [Fact]
+    public void AsSpanWithStartCannotReadPastTheContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        sb.Append("hi");
+
+        var threw = false;
+        try
+        {
+            _ = sb.AsSpan(10);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            threw = true;
+        }
+
+        Assert.True(threw);
+    }
+
+    [Fact]
+    public void LengthRejectsValuesOutsideTheBuffer()
+    {
+        Assert.True(ThrowsArgumentOutOfRange(() =>
+        {
+            var b = new ValueStringBuilder(initialCapacity: 16);
+            try
+            {
+                b.Length = -1;
+            }
+            finally
+            {
+                b.Dispose();
+            }
+        }));
+
+        Assert.True(ThrowsArgumentOutOfRange(() =>
+        {
+            var b = new ValueStringBuilder(initialCapacity: 16);
+            try
+            {
+                b.Length = b.Capacity + 1;
+            }
+            finally
+            {
+                b.Dispose();
+            }
+        }));
+
+        var sb = new ValueStringBuilder(initialCapacity: 16);
+        try
+        {
+            sb.Append("abc");
+            sb.Length = sb.Capacity;
+            sb.Length = 0;
+            Assert.Equal(0, sb.Length);
+        }
+        finally
+        {
+            sb.Dispose();
+        }
+    }
+
+    [Fact]
+    public void EnsureCapacityRejectsNegativeValues()
+    {
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.EnsureCapacity(-1); }));
+    }
+
+    [Fact]
+    public void IndexerRejectsPositionsOutsideTheContent()
+    {
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append("abc"); _ = b[-1]; }));
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append("abc"); _ = b[3]; }));
+
+        using var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("abc");
+        Assert.Equal('c', sb[2]);
+    }
+
+    [Fact]
+    public void InsertRejectsPositionsOutsideTheContent()
+    {
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append("ab"); b.Insert(3, "x"); }));
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append("ab"); b.Insert(-1, "x"); }));
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append("ab"); b.Insert(3, 'x', 1); }));
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append("ab"); b.Insert(0, 'x', -1); }));
+
+        using var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("ab");
+        sb.Insert(2, "c");
+        Assert.Equal("abc", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void AppendAndAppendSpanRejectNegativeCounts()
+    {
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.Append('x', -1); }));
+        Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); _ = b.AppendSpan(-1); }));
+    }
+
+    private static bool ThrowsArgumentOutOfRange(Action action)
+    {
+        try
+        {
+            action();
+            return false;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return true;
+        }
+    }
+
+    [Fact]
     public void AppendInterpolatedStringAppendsContent()
     {
         using var sb = new ValueStringBuilder(initialCapacity: 2);

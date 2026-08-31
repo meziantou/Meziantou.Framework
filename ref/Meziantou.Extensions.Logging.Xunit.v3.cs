@@ -15,6 +15,7 @@ namespace Meziantou.Extensions.Logging.Xunit.v3
         public XUnitLogger(Xunit.ITestOutputHelper? testOutputHelper, Microsoft.Extensions.Logging.LoggerExternalScopeProvider scopeProvider, string? categoryName) { }
         public XUnitLogger(Xunit.ITestOutputHelper? testOutputHelper, Microsoft.Extensions.Logging.LoggerExternalScopeProvider scopeProvider, string? categoryName, bool appendScope) { }
         public XUnitLogger(Xunit.ITestOutputHelper? testOutputHelper, Microsoft.Extensions.Logging.LoggerExternalScopeProvider scopeProvider, string? categoryName, Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) { }
+        public XUnitLogger(Xunit.ITestOutputHelper? testOutputHelper, Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider, string? categoryName, Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) { }
         public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => throw null;
         public System.IDisposable? BeginScope<TState>(TState state) => throw null;
         public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
@@ -38,13 +39,14 @@ namespace Meziantou.Extensions.Logging.Xunit.v3
         public bool UseUtcTimestamp { get => throw null; set { } }
     }
 
-    public sealed class XUnitLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, System.IDisposable
+    public sealed class XUnitLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ISupportExternalScope, System.IDisposable
     {
         public XUnitLoggerProvider(Xunit.ITestOutputHelper? testOutputHelper) { }
         public XUnitLoggerProvider(Xunit.ITestOutputHelper? testOutputHelper, bool appendScope) { }
         public XUnitLoggerProvider(Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) { }
         public XUnitLoggerProvider(Xunit.ITestOutputHelper? testOutputHelper, Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) { }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => throw null;
+        public void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider) { }
         public void Dispose() { }
     }
 }

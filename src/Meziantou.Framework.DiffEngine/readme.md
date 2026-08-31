@@ -26,5 +26,7 @@ if (DiffTools.TryFindByName(DiffTool.VisualStudioCode, out var tool))
 
 ## Environment variables
 
-- `DiffEngine_<ToolName>`: override executable detection for one tool (file path or directory)
+- `DiffEngine_<ToolName>`: override executable detection for one tool (file path or directory).
+  When the variable is set but the executable cannot be found, `TryFindByName` throws so the typo is not
+  silently ignored, while `TryFindByExtension` skips that tool and keeps looking at the others.
 - `DiffEngine_TargetOnLeft=true`: invert generated argument order

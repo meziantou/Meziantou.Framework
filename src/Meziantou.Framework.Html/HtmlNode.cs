@@ -1009,6 +1009,25 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         ArgumentNullException.ThrowIfNull(prefix);
 
+        // The ancestors are walked iteratively: a document can be nested thousands of levels deep and a
+        // recursive walk would overflow the stack, which cannot be caught and takes the whole process down.
+        for (var node = this; node is not null; node = node.ParentNode)
+        {
+            var namespaceURI = node.GetDeclaredNamespaceOfPrefix(prefix);
+            if (namespaceURI is not null)
+                return namespaceURI;
+        }
+
+        if (OwnerDocument is not null && OwnerDocument != this)
+            return OwnerDocument.GetNamespaceOfPrefix(prefix);
+
+        return "";
+    }
+
+    /// <summary>Resolves <paramref name="prefix"/> against the declarations carried by this node alone, without looking at its ancestors.</summary>
+    /// <returns>The namespace URI, or <see langword="null"/> when this node declares nothing for <paramref name="prefix"/>.</returns>
+    private protected virtual string? GetDeclaredNamespaceOfPrefix(string prefix)
+    {
         if (prefix.EqualsIgnoreCase(Prefix) && DeclaredNamespaceURI is not null)
             return DeclaredNamespaceURI;
 
@@ -1018,13 +1037,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 return att.Value ?? "";
         }
 
-        if (ParentNode is not null && ParentNode != this)
-            return ParentNode.GetNamespaceOfPrefix(prefix);
-
-        if (OwnerDocument is not null && OwnerDocument != this)
-            return OwnerDocument.GetNamespaceOfPrefix(prefix);
-
-        return "";
+        return null;
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
@@ -1032,6 +1045,25 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         ArgumentNullException.ThrowIfNull(namespaceURI);
 
+        // The ancestors are walked iteratively: a document can be nested thousands of levels deep and a
+        // recursive walk would overflow the stack, which cannot be caught and takes the whole process down.
+        for (var node = this; node is not null; node = node.ParentNode)
+        {
+            var prefix = node.GetDeclaredPrefixOfNamespace(namespaceURI);
+            if (prefix is not null)
+                return prefix;
+        }
+
+        if (OwnerDocument is not null && OwnerDocument != this)
+            return OwnerDocument.GetPrefixOfNamespace(namespaceURI);
+
+        return "";
+    }
+
+    /// <summary>Resolves <paramref name="namespaceURI"/> against the declarations carried by this node alone, without looking at its ancestors.</summary>
+    /// <returns>The prefix, or <see langword="null"/> when this node declares nothing for <paramref name="namespaceURI"/>.</returns>
+    private protected virtual string? GetDeclaredPrefixOfNamespace(string namespaceURI)
+    {
         if (namespaceURI.EqualsIgnoreCase(NamespaceURI))
             return Prefix;
 
@@ -1041,13 +1073,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 return att.LocalName;
         }
 
-        if (ParentNode is not null && ParentNode != this)
-            return ParentNode.GetPrefixOfNamespace(namespaceURI);
-
-        if (OwnerDocument is not null && OwnerDocument != this)
-            return OwnerDocument.GetPrefixOfNamespace(namespaceURI);
-
-        return "";
+        return null;
     }
 
     public virtual HtmlNode? GetParent(Func<HtmlNode, bool> func)
@@ -1074,6 +1100,17 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         ArgumentNullException.ThrowIfNull(namespaces);
 
+        // The ancestors are walked iteratively: a document can be nested thousands of levels deep and a
+        // recursive walk would overflow the stack, which cannot be caught and takes the whole process down.
+        for (var node = this; node is not null; node = node.ParentNode)
+        {
+            node.GetDeclaredNamespaceAttributes(namespaces);
+        }
+    }
+
+    /// <summary>Adds the namespaces declared by this node alone to <paramref name="namespaces"/>, without looking at its ancestors.</summary>
+    private protected virtual void GetDeclaredNamespaceAttributes(IDictionary<string, string> namespaces)
+    {
         foreach (var att in Attributes)
         {
             if (att.Prefix.EqualsIgnoreCase(XmlnsPrefix))
@@ -1084,8 +1121,6 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 }
             }
         }
-
-        ParentNode?.GetNamespaceAttributes(namespaces);
     }
 
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]

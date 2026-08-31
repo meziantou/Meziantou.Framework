@@ -469,9 +469,28 @@ sealed class HtmlDocument : HtmlNode
         return "";
     }
 
-    protected override void GetNamespaceAttributes(IDictionary<string, string> namespaces)
+    // A document resolves prefixes from its own declarations only, so the ancestor walk of a descendant node
+    // must reach these and not the attribute-based lookup of the base node.
+
+    private protected override string? GetDeclaredNamespaceOfPrefix(string prefix)
     {
-        base.GetNamespaceAttributes(namespaces);
+        if (_declaredPrefixes is not null && _declaredPrefixes.TryGetValue(prefix, out var namespaceURI))
+            return namespaceURI;
+
+        return null;
+    }
+
+    private protected override string? GetDeclaredPrefixOfNamespace(string namespaceURI)
+    {
+        if (_declaredNamespaces is not null && _declaredNamespaces.TryGetValue(namespaceURI, out var prefix))
+            return prefix;
+
+        return null;
+    }
+
+    private protected override void GetDeclaredNamespaceAttributes(IDictionary<string, string> namespaces)
+    {
+        base.GetDeclaredNamespaceAttributes(namespaces);
         if (_declaredPrefixes is not null)
         {
             foreach (var kv in _declaredPrefixes)

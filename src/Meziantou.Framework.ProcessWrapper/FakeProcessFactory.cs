@@ -27,7 +27,7 @@ public sealed class FakeProcessFactory : IProcessFactory
 
         foreach (var process in processes)
         {
-            if(process == null)
+            if (process is null)
                 throw new ArgumentException("Fake processes cannot contain null values.", nameof(processes));
         }
 
@@ -47,7 +47,7 @@ public sealed class FakeProcessFactory : IProcessFactory
 
     IProcessHandle IProcessFactory.Create(ProcessStartInfo processStartInfo)
     {
-            ArgumentNullException.ThrowIfNull(processStartInfo);
+        ArgumentNullException.ThrowIfNull(processStartInfo);
 
         var process = _factory(processStartInfo);
         return process ?? throw new InvalidOperationException("Fake process factory returned null.");

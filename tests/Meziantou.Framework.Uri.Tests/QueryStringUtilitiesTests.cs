@@ -45,6 +45,54 @@ public sealed class QueryStringUtilitiesTests
     }
 
     [Fact]
+    public void RemoveQueryString_QuestionMarkInFragment_DoesNotThrow()
+    {
+        var uri = "http://www.example.com/#/search?x=1";
+        var actual = QueryStringUtilities.RemoveQueryString(uri, "x");
+        Assert.Equal("http://www.example.com/#/search?x=1", actual);
+    }
+
+    [Fact]
+    public void AddOrReplaceQueryString_QuestionMarkInFragment_AddsARealQuery()
+    {
+        var uri = "http://www.example.com/#/search?x=1";
+        var actual = QueryStringUtilities.AddOrReplaceQueryString(uri, "a", "1");
+        Assert.Equal("http://www.example.com/?a=1#/search?x=1", actual);
+    }
+
+    [Fact]
+    public void SetQueryString_QuestionMarkInFragment_DoesNotDuplicateTheFragment()
+    {
+        var uri = "http://www.example.com/#/search?x=1";
+        var actual = QueryStringUtilities.SetQueryString(uri, [KeyValuePair.Create<string, string?>("a", "1")]);
+        Assert.Equal("http://www.example.com/?a=1#/search?x=1", actual);
+    }
+
+    [Fact]
+    public void SetQueryString_QueryAndFragmentContainingAQuestionMark()
+    {
+        var uri = "http://www.example.com/?old=1#/search?x=1";
+        var actual = QueryStringUtilities.SetQueryString(uri, [KeyValuePair.Create<string, string?>("a", "1")]);
+        Assert.Equal("http://www.example.com/?a=1#/search?x=1", actual);
+    }
+
+    [Fact]
+    public void AddQueryString_QuestionMarkInFragment_AddsARealQuery()
+    {
+        var uri = "http://www.example.com/#/search?x=1";
+        var actual = QueryStringUtilities.AddQueryString(uri, "a", "1");
+        Assert.Equal("http://www.example.com/?a=1#/search?x=1", actual);
+    }
+
+    [Fact]
+    public void AddQueryString_ExistingQueryAndFragmentContainingAQuestionMark()
+    {
+        var uri = "http://www.example.com/?old=1#/search?x=1";
+        var actual = QueryStringUtilities.AddQueryString(uri, "a", "1");
+        Assert.Equal("http://www.example.com/?old=1&a=1#/search?x=1", actual);
+    }
+
+    [Fact]
     public void ParameterCollection_AppendAccumulatesValuesInOrder()
     {
         var collection = new QueryStringParameterCollection();

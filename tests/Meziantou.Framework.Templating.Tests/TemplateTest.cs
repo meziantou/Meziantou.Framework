@@ -793,4 +793,60 @@ public class TemplateTest
         Assert.Equal(new object[] { 1, 2 }.ToString(), template.Run());
     }
 
+    [Fact]
+    public void Template_FailedBuild_ProducesTheSameDiagnosticsWhenRetried()
+    {
+        var template = new Template();
+        template.Load("<%@ implements System.IDisposable %><%= Missing %>");
+
+        var first = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        var second = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        Assert.Equal(first.Message, second.Message);
+        Assert.DoesNotContain("CS0528", second.Message, ignoreCase: false);
+    }
+
+    [Fact]
+    public void Template_FailedBuild_RollsBackTheDirectivesItApplied()
+    {
+        var template = new Template();
+        template.Load("<%@ using System.Globalization %><%@ implements System.IDisposable %><%= Missing %>");
+
+        Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        Assert.DoesNotContain("System.Globalization", template.Usings);
+        Assert.Empty(template.ImplementedInterfaces);
+    }
+
+    [Fact]
+    public void Template_LoadAfterFailedBuild_AppliesOnlyTheNewDirectives()
+    {
+        var template = new Template();
+        template.Load("<%@ implements System.IDisposable %><%= Missing %>");
+        Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        template.Load("<%= \"ok\" %>");
+
+        Assert.Equal("ok", template.Run());
+        Assert.Empty(template.ImplementedInterfaces);
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlockDeclaringARunOverload_DoesNotBreakTheMethodLookup()
+    {
+        var template = new Template();
+        template.Load("<%+ public static void Run(int value) { } %>hi");
+
+        Assert.Equal("hi", template.Run());
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlockDeclaringARunOverload_StillInvokesTheGeneratedMethod()
+    {
+        var template = new Template();
+        template.Arguments.Add(new TemplateArgument("value", typeof(int)));
+        template.Load("<%+ public static void Run(int value) { } %><%= value %>");
+
+        Assert.Equal("42", template.Run(42));
+    }
 }

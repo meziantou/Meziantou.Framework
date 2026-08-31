@@ -12,13 +12,24 @@ namespace Meziantou.Framework.HumanReadable;
 /// </example>
 public static class HumanReadableSerializer
 {
+    // Shared so that repeated calls without explicit options reuse the converter and member
+    // caches. The instance is read-only and its caches are concurrent, so it is safe to share.
+    private static readonly HumanReadableSerializerOptions DefaultOptions = CreateDefaultOptions();
+
+    private static HumanReadableSerializerOptions CreateDefaultOptions()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.MakeReadOnly();
+        return options;
+    }
+
     /// <summary>Serializes the specified value to a human-readable string.</summary>
     /// <param name="value">The value to serialize.</param>
     /// <param name="options">Options to control the serialization behavior.</param>
     /// <returns>A human-readable string representation of the value.</returns>
     public static string Serialize(object? value, HumanReadableSerializerOptions? options = null)
     {
-        options ??= new HumanReadableSerializerOptions();
+        options ??= DefaultOptions;
         var writer = new HumanReadableTextWriter(options);
         Serialize(writer, value, value?.GetType() ?? typeof(object), options);
         return writer.ToString();
@@ -34,7 +45,7 @@ public static class HumanReadableSerializer
         if (value is not null && !type.IsAssignableFrom(value.GetType()))
             throw new ArgumentException($"The provided value cannot be assigned to type '{type.AssemblyQualifiedName}'", nameof(value));
 
-        options ??= new HumanReadableSerializerOptions();
+        options ??= DefaultOptions;
         var writer = new HumanReadableTextWriter(options);
         Serialize(writer, value, type, options);
         return writer.ToString();

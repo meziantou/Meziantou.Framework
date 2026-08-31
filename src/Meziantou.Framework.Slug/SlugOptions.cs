@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Unicode;
 
 namespace Meziantou.Framework;
@@ -18,6 +19,9 @@ namespace Meziantou.Framework;
 public class SlugOptions
 {
     internal static SlugOptions Default { get; } = new SlugOptions();
+
+    /// <summary>Caches, per derived type, whether <see cref="Replace(Rune)"/> is still the one declared here.</summary>
+    private static readonly ConcurrentDictionary<Type, bool> UsesDefaultReplaceByType = new();
 
     /// <summary>The default maximum length for generated slugs (80 characters).</summary>
     public const int DefaultMaximumLength = 80;
@@ -136,5 +140,22 @@ public class SlugOptions
     /// Gets a value indicating whether <see cref="Replace(Rune)"/> still has its default implementation, in which case
     /// <see cref="Transform(Rune)"/> produces the same result without allocating a string for every rune.
     /// </summary>
-    internal bool UsesDefaultReplace => GetType() == typeof(SlugOptions);
+    internal bool UsesDefaultReplace
+    {
+        get
+        {
+            var type = GetType();
+            if (type == typeof(SlugOptions))
+                return true;
+
+            return UsesDefaultReplaceByType.GetOrAdd(type, _ =>
+            {
+                // Binding the delegate resolves the virtual call, so its target is the override that would run.
+                // Reading the method off a delegate keeps this trimmer-friendly, unlike looking the override up
+                // by name on a type that is only known at run time.
+                Func<Rune, string> replace = Replace;
+                return replace.Method.DeclaringType == typeof(SlugOptions);
+            });
+        }
+    }
 }

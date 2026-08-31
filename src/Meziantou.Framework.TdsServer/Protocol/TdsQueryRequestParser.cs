@@ -9,6 +9,16 @@ internal static class TdsQueryRequestParser
 {
     private static readonly DateTime SqlEpoch = new(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
 
+    /// <summary>The largest day count that <see cref="DateTime"/> and <see cref="DateOnly"/> can represent.</summary>
+    /// <remarks>
+    /// Temporal values carry a 24-bit day count, which reaches far beyond year 9999. A value out of range has to
+    /// take the same path as any other value the server cannot decode, rather than throwing out of the parser.
+    /// </remarks>
+    private const int MaxDayCount = 3652058;
+
+    /// <summary>The largest UTC offset, in minutes, that <see cref="DateTimeOffset"/> accepts.</summary>
+    private const int MaxOffsetMinutes = 14 * 60;
+
     public static TdsQueryContext Parse(TdsPacket packet, EndPoint remoteEndPoint, ClaimsPrincipal? userContext)
     {
         ArgumentNullException.ThrowIfNull(packet);
@@ -33,6 +43,7 @@ internal static class TdsQueryRequestParser
         var request = TryParseRpc(payload) ?? new TdsRpcRequest
         {
             Parameters = [],
+            HasCompleteParameters = false,
         };
 
         return new TdsQueryContext
@@ -552,7 +563,7 @@ internal static class TdsQueryRequestParser
         var value = valueLength switch
         {
             4 => SqlEpoch.AddDays(BinaryPrimitives.ReadUInt16LittleEndian(encoded[..2])).AddMinutes(BinaryPrimitives.ReadUInt16LittleEndian(encoded[2..4])),
-            8 => SqlEpoch.AddDays(BinaryPrimitives.ReadInt32LittleEndian(encoded[..4])).AddTicks(BinaryPrimitives.ReadUInt32LittleEndian(encoded[4..8]) * TimeSpan.TicksPerSecond / 300),
+            8 => TryReadSqlDateTime(encoded),
             _ => (DateTime?)null,
         };
 
@@ -580,7 +591,13 @@ internal static class TdsQueryRequestParser
             return null;
         }
 
-        var value = DateOnly.MinValue.AddDays(ReadUInt24LittleEndian(payload.Slice(position, 3)));
+        var days = ReadUInt24LittleEndian(payload.Slice(position, 3));
+        if (days > MaxDayCount)
+        {
+            return null;
+        }
+
+        var value = DateOnly.MinValue.AddDays(days);
         position += valueLength;
         return CreateParameter(name, value, TdsColumnType.Date);
     }
@@ -668,7 +685,19 @@ internal static class TdsQueryRequestParser
             return null;
         }
 
-        var offset = TimeSpan.FromMinutes(BinaryPrimitives.ReadInt16LittleEndian(encoded[^2..]));
+        var offsetMinutes = BinaryPrimitives.ReadInt16LittleEndian(encoded[^2..]);
+        if (offsetMinutes is < -MaxOffsetMinutes or > MaxOffsetMinutes)
+        {
+            return null;
+        }
+
+        var offset = TimeSpan.FromMinutes(offsetMinutes);
+        var localTicks = utcValue.Ticks + offset.Ticks;
+        if (localTicks < DateTime.MinValue.Ticks || localTicks > DateTime.MaxValue.Ticks)
+        {
+            return null;
+        }
+
         position += valueLength;
         return CreateParameter(name, new DateTimeOffset(utcValue, TimeSpan.Zero).ToOffset(offset), TdsColumnType.DateTimeOffset);
     }
@@ -686,7 +715,13 @@ internal static class TdsQueryRequestParser
             return false;
         }
 
-        value = DateTime.MinValue.AddDays(ReadUInt24LittleEndian(encoded[^3..])).Add(timeOfDay);
+        var days = ReadUInt24LittleEndian(encoded[^3..]);
+        if (days > MaxDayCount)
+        {
+            return false;
+        }
+
+        value = DateTime.MinValue.AddDays(days).Add(timeOfDay);
         return true;
     }
 
@@ -719,6 +754,24 @@ internal static class TdsQueryRequestParser
 
         value = TimeSpan.FromTicks(ticks);
         return true;
+    }
+
+    private static DateTime? TryReadSqlDateTime(ReadOnlySpan<byte> encoded)
+    {
+        var days = BinaryPrimitives.ReadInt32LittleEndian(encoded[..4]);
+        var timeOfDayTicks = BinaryPrimitives.ReadUInt32LittleEndian(encoded[4..8]) * TimeSpan.TicksPerSecond / 300;
+        if (timeOfDayTicks >= TimeSpan.TicksPerDay)
+        {
+            return null;
+        }
+
+        var daysFromMinValue = (SqlEpoch - DateTime.MinValue).Days + (long)days;
+        if (daysFromMinValue is < 0 or > MaxDayCount)
+        {
+            return null;
+        }
+
+        return SqlEpoch.AddDays(days).AddTicks(timeOfDayTicks);
     }
 
     private static int ReadUInt24LittleEndian(ReadOnlySpan<byte> value)

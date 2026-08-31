@@ -79,10 +79,18 @@ The converter supports common Markdown-related elements, including:
 - Tables (`table`, `thead`, `tbody`, `tfoot`, `tr`, `th`, `td`) with alignment support
 - Definition lists (`dl`, `dt`, `dd`)
 
-`script`, `style`, and `noscript` elements are stripped.
+`script`, `style`, and `noscript` elements are always stripped, including when they appear
+inside an element that is passed through as raw HTML.
 
 Unknown elements are handled using `UnknownElementHandling`:
 
 - `PassThrough` (default): keep raw HTML
 - `Strip`: remove the element and its content
 - `StripKeepContent`: remove the element but keep converted child content
+
+> [!WARNING]
+> This library is a converter, not an HTML sanitizer. With `PassThrough`, an unknown element
+> is emitted as raw HTML with its attributes intact, so event handlers such as `onclick` and
+> `onerror` and URLs such as `javascript:` survive the conversion. If you convert untrusted
+> HTML and render the resulting Markdown with a renderer that allows raw HTML, run a
+> sanitizer over the input or the output, or use `Strip` or `StripKeepContent`.

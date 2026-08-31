@@ -445,88 +445,105 @@ public class Template
             if (IsBuilt)
                 return;
 
-            ApplyDirectives();
-
-            using var sw = new StringWriter();
-            using (var tw = new IndentedTextWriter(sw))
+            // A failed build must not leave the directives applied. Build can be retried directly, or
+            // after loading corrected content, and applying them twice adds duplicate usings,
+            // interfaces and references, which reports errors that hide the real diagnostic.
+            var directiveState = CaptureDirectiveState();
+            try
             {
-                foreach (var @using in Usings)
-                {
-                    tw.WriteLine("using " + @using + ";");
-                }
+                BuildCore(cancellationToken);
+            }
+            catch
+            {
+                RestoreDirectiveState(directiveState);
+                throw;
+            }
+        }
+    }
 
-                var inheritanceTypes = new List<string>();
-                if (!string.IsNullOrEmpty(BaseClassFullTypeName))
-                {
-                    inheritanceTypes.Add(BaseClassFullTypeName);
-                }
+    private void BuildCore(CancellationToken cancellationToken)
+    {
+        ApplyDirectives();
 
-                foreach (var @interface in ImplementedInterfaces)
-                {
-                    inheritanceTypes.Add(@interface);
-                }
-
-                tw.Write("public class " + ClassName);
-                if (inheritanceTypes.Count > 0)
-                {
-                    tw.Write(" : " + string.Join(", ", inheritanceTypes));
-                }
-
-                tw.WriteLine();
-                tw.WriteLine("{");
-                tw.Indent++;
-
-                tw.Write("public static void " + RunMethodName);
-                tw.Write("(");
-                tw.Write(OutputType?.FullName ?? "dynamic");
-                tw.Write(" " + OutputParameterName);
-
-                foreach (var argument in Arguments)
-                {
-                    if (argument is null)
-                        continue;
-
-                    tw.Write(", ");
-                    tw.Write(argument.Type?.FullName ?? "dynamic");
-                    tw.Write(" ");
-                    tw.Write(argument.Name);
-                }
-
-                tw.Write(")");
-                tw.WriteLine();
-                tw.WriteLine("{");
-                tw.Indent++;
-
-                foreach (var block in Blocks)
-                {
-                    if (block is ClassMemberBlock)
-                        continue;
-
-                    WriteBlock(tw, block);
-                }
-
-                tw.Indent--;
-                tw.WriteLine("}");
-
-                foreach (var block in Blocks)
-                {
-                    if (block is not ClassMemberBlock)
-                        continue;
-
-                    WriteBlock(tw, block);
-                }
-
-                tw.Indent--;
-                tw.WriteLine("}");
+        using var sw = new StringWriter();
+        using (var tw = new IndentedTextWriter(sw))
+        {
+            foreach (var @using in Usings)
+            {
+                tw.WriteLine("using " + @using + ";");
             }
 
-            var source = sw.ToString();
-            SourceCode = source;
-            Compile(source, cancellationToken);
-            if (IsBuilt)
+            var inheritanceTypes = new List<string>();
+            if (!string.IsNullOrEmpty(BaseClassFullTypeName))
             {
-                FreezeCollections();
+                inheritanceTypes.Add(BaseClassFullTypeName);
             }
+
+            foreach (var @interface in ImplementedInterfaces)
+            {
+                inheritanceTypes.Add(@interface);
+            }
+
+            tw.Write("public class " + ClassName);
+            if (inheritanceTypes.Count > 0)
+            {
+                tw.Write(" : " + string.Join(", ", inheritanceTypes));
+            }
+
+            tw.WriteLine();
+            tw.WriteLine("{");
+            tw.Indent++;
+
+            tw.Write("public static void " + RunMethodName);
+            tw.Write("(");
+            tw.Write(OutputType?.FullName ?? "dynamic");
+            tw.Write(" " + OutputParameterName);
+
+            foreach (var argument in Arguments)
+            {
+                if (argument is null)
+                    continue;
+
+                tw.Write(", ");
+                tw.Write(argument.Type?.FullName ?? "dynamic");
+                tw.Write(" ");
+                tw.Write(argument.Name);
+            }
+
+            tw.Write(")");
+            tw.WriteLine();
+            tw.WriteLine("{");
+            tw.Indent++;
+
+            foreach (var block in Blocks)
+            {
+                if (block is ClassMemberBlock)
+                    continue;
+
+                WriteBlock(tw, block);
+            }
+
+            tw.Indent--;
+            tw.WriteLine("}");
+
+            foreach (var block in Blocks)
+            {
+                if (block is not ClassMemberBlock)
+                    continue;
+
+                WriteBlock(tw, block);
+            }
+
+            tw.Indent--;
+            tw.WriteLine("}");
+        }
+
+        var source = sw.ToString();
+        SourceCode = source;
+        Compile(source, cancellationToken);
+        if (IsBuilt)
+        {
+            FreezeCollections();
         }
     }
 
@@ -535,7 +552,10 @@ public class Template
         var code = block.BuildCode();
         if (block is CodeBlock or ClassMemberBlock && code.Length > 0 && block.Text.Length > 0)
         {
-            var textOffset = code.IndexOf(block.Text, StringComparison.Ordinal);
+            // The block text is emitted last, after whatever prefix BuildCode adds (for an expression
+            // block, "<output>.Write("). Search backwards so a prefix that happens to contain the
+            // block text — "<%=__output__%>", say — does not win over the real occurrence.
+            var textOffset = code.LastIndexOf(block.Text, StringComparison.Ordinal);
             if (textOffset >= 0)
             {
                 var generatedCodeColumnOffset = (writer.Indent * IndentedTextWriter.DefaultTabString.Length) + textOffset;
@@ -564,6 +584,45 @@ public class Template
                 directive.ApplyDirective();
             }
         }
+    }
+
+    private DirectiveState CaptureDirectiveState()
+    {
+        return new DirectiveState
+        {
+            Usings = [.. Usings],
+            ImplementedInterfaces = [.. ImplementedInterfaces],
+            AssemblyReferences = [.. AssemblyReferences],
+            IncludedSourceFiles = [.. IncludedSourceFiles],
+            BaseClassFullTypeName = BaseClassFullTypeName,
+        };
+    }
+
+    private void RestoreDirectiveState(DirectiveState state)
+    {
+        Usings.Clear();
+        Usings.AddRange(state.Usings);
+
+        ImplementedInterfaces.Clear();
+        ImplementedInterfaces.AddRange(state.ImplementedInterfaces);
+
+        AssemblyReferences.Clear();
+        AssemblyReferences.AddRange(state.AssemblyReferences);
+
+        IncludedSourceFiles.Clear();
+        IncludedSourceFiles.AddRange(state.IncludedSourceFiles);
+
+        BaseClassFullTypeName = state.BaseClassFullTypeName;
+    }
+
+    /// <summary>Snapshot of everything <see cref="ApplyDirectives"/> mutates, so a failed build can be rolled back.</summary>
+    private sealed class DirectiveState
+    {
+        public required string[] Usings { get; init; }
+        public required string[] ImplementedInterfaces { get; init; }
+        public required AssemblyReference[] AssemblyReferences { get; init; }
+        public required FileReference[] IncludedSourceFiles { get; init; }
+        public required string? BaseClassFullTypeName { get; init; }
     }
 
     /// <summary>Creates a text block for text content.</summary>
@@ -777,13 +836,29 @@ public class Template
     /// <returns>The Run method information.</returns>
     protected virtual MethodInfo FindMethod(Assembly assembly)
     {
-        var type = assembly.GetType(ClassName);
-        System.Diagnostics.Debug.Assert(type != null);
+        ArgumentNullException.ThrowIfNull(assembly);
 
-        var methodInfo = type.GetMethod(RunMethodName);
-        System.Diagnostics.Debug.Assert(methodInfo != null);
+        var type = assembly.GetType(ClassName)
+            ?? throw new TemplateException($"Type '{ClassName}' was not found in the generated assembly.");
+
+        // A class member block can declare its own overload of the run method, which makes
+        // Type.GetMethod(name) throw AmbiguousMatchException. Identify the generated one by its
+        // first parameter instead: it is always the output parameter.
+        var methodInfo = Array.Find(
+            type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly),
+            IsRunMethod)
+            ?? throw new TemplateException($"Method '{RunMethodName}' was not found in the generated assembly.");
 
         return methodInfo;
+
+        bool IsRunMethod(MethodInfo method)
+        {
+            if (!string.Equals(method.Name, RunMethodName, StringComparison.Ordinal))
+                return false;
+
+            var parameters = method.GetParameters();
+            return parameters.Length > 0 && string.Equals(parameters[0].Name, OutputParameterName, StringComparison.Ordinal);
+        }
     }
 
     /// <summary>Creates a string writer for capturing template output.</summary>

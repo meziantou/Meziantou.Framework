@@ -1095,10 +1095,23 @@ public static class HtmlToMarkdown
 
         var sb = new StringBuilder(text.Length);
         var changed = false;
-        var textElementEnumerator = StringInfo.GetTextElementEnumerator(text);
-        while (textElementEnumerator.MoveNext())
+        var index = 0;
+        while (index < text.Length)
         {
-            var textElement = (string)textElementEnumerator.Current;
+            var remaining = text.AsSpan(index);
+            var length = StringInfo.GetNextTextElementLength(remaining);
+            var element = remaining[..length];
+            index += length;
+
+            // No mapping key is a single ASCII character, so ordinary text can be copied
+            // without materializing a string for every grapheme cluster.
+            if (length == 1 && char.IsAscii(element[0]))
+            {
+                sb.Append(element[0]);
+                continue;
+            }
+
+            var textElement = element.ToString();
             if (mappings.TryGetValue(textElement, out var shortcode))
             {
                 sb.Append(shortcode);

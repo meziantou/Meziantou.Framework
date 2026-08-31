@@ -4184,6 +4184,53 @@ public sealed class HtmlToMarkdownConverterTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new HtmlToMarkdownOptions { UnorderedListMarker = value });
     }
 
+    // --- Emoji grapheme cluster handling ---
+
+    [Fact]
+    public void Emoji_KeycapWithVariationSelector()
+    {
+        AssertHtmlToMarkdown(
+            "<p>8\uFE0F\u20E3</p>",
+            ":eight:",
+            new HtmlToMarkdownOptions { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
+    }
+
+    [Fact]
+    public void Emoji_KeycapWithoutVariationSelector()
+    {
+        AssertHtmlToMarkdown(
+            "<p>8\u20E3</p>",
+            ":eight:",
+            new HtmlToMarkdownOptions { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
+    }
+
+    [Fact]
+    public void Emoji_SingleNonAsciiCharacter()
+    {
+        AssertHtmlToMarkdown(
+            "<p>\u00A9</p>",
+            ":copyright:",
+            new HtmlToMarkdownOptions { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
+    }
+
+    [Fact]
+    public void Emoji_AsciiTextIsUnchanged()
+    {
+        AssertHtmlToMarkdown(
+            "<p>hello 123 #8</p>",
+            "hello 123 #8",
+            new HtmlToMarkdownOptions { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
+    }
+
+    [Fact]
+    public void Emoji_ZeroWidthJoinerSequence()
+    {
+        AssertHtmlToMarkdown(
+            "<p>\U0001F468\u200D\U0001F469\u200D\U0001F466</p>",
+            ":family_man_woman_boy:",
+            new HtmlToMarkdownOptions { EmojiShortcodeMode = EmojiShortcodeMode.Unicode });
+    }
+
     // --- Deeply nested documents (must not overflow the call stack) ---
 
     // The recursive traversal this replaced overflowed the stack at a nesting depth of

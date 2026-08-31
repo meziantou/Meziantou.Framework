@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using Meziantou.Framework.NuGetPackageValidation.Rules;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Tests;
@@ -122,6 +123,78 @@ public sealed class NuGetPackageValidatorTests
     {
         var result = await ValidateAsync("Release_Icon_IconUrl.1.0.0.nupkg", NuGetPackageValidationRules.IconMustBeSet);
         AssertNoErrors(result);
+    }
+
+    /// <summary>Builds a package declaring <paramref name="iconPath"/> as its icon, with <paramref name="iconContent"/> as
+    /// the content of that file, and validates it with the icon rule.</summary>
+    private static async Task<NuGetPackageValidationResult> ValidateIconAsync(string iconPath, byte[] iconContent)
+    {
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        var packagePath = temporaryDirectory / "package.nupkg";
+
+        await using (var stream = File.Create(packagePath))
+        {
+            using var archive = new ZipArchive(stream, ZipArchiveMode.Create);
+            await using (var nuspec = archive.CreateEntry("Sample.nuspec").Open())
+            {
+                await using var writer = new StreamWriter(nuspec);
+                await writer.WriteAsync($"""
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+                      <metadata>
+                        <id>Sample</id>
+                        <version>1.0.0</version>
+                        <authors>Sample author</authors>
+                        <description>Sample description</description>
+                        <icon>{iconPath}</icon>
+                      </metadata>
+                    </package>
+                    """);
+            }
+
+            await using var iconEntry = archive.CreateEntry(iconPath).Open();
+            await iconEntry.WriteAsync(iconContent);
+        }
+
+        return await ValidateAsync(packagePath, excludedRuleIds: null, NuGetPackageValidationRules.IconMustBeSet);
+    }
+
+    [Theory]
+    // The extension is compared without case sensitivity
+    [InlineData("images/icon.png")]
+    [InlineData("images/icon.PNG")]
+    public async Task Validate_Icon_Png(string iconPath)
+    {
+        var result = await ValidateIconAsync(iconPath, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        AssertNoErrors(result);
+    }
+
+    [Theory]
+    // JFIF
+    [InlineData("images/icon.jpg", (byte)0xE0)]
+    // Exif
+    [InlineData("images/icon.jpg", (byte)0xE1)]
+    // Raw JPEG stream starting with a quantization table
+    [InlineData("images/icon.jpg", (byte)0xDB)]
+    [InlineData("images/icon.JPEG", (byte)0xE1)]
+    public async Task Validate_Icon_Jpeg(string iconPath, byte marker)
+    {
+        var result = await ValidateIconAsync(iconPath, [0xFF, 0xD8, 0xFF, marker, 0x00, 0x10]);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_Icon_ContentDoesNotMatchTheExtension()
+    {
+        var result = await ValidateIconAsync("images/icon.jpg", [0x89, 0x50, 0x4E, 0x47]);
+        AssertHasError(result, ErrorCodes.IconFileInvalidExtension);
+    }
+
+    [Fact]
+    public async Task Validate_Icon_UnsupportedFormat()
+    {
+        var result = await ValidateIconAsync("images/icon.gif", [0x47, 0x49, 0x46, 0x38]);
+        AssertHasError(result, ErrorCodes.IconFileFormatNotSupported);
     }
 
     [Fact]

@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Runtime.InteropServices;
 using Microsoft.Extensions.Primitives;
 
 namespace Meziantou.Framework;
@@ -9,7 +8,7 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
 {
     // The number of parameters is often small, so we use a List instead of a Dictionary.
     // Also, we want to preserve the order of the parameters.
-    private readonly List<KeyValuePair<string, StringValues>> _values = [];
+    private readonly List<Parameter> _values = [];
 
     /// <summary>Initializes a new instance of the <see cref="QueryStringParameterCollection"/> class.</summary>
     public QueryStringParameterCollection()
@@ -36,15 +35,11 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
     /// <returns>The value associated with the specified name, or <see cref="StringValues.Empty"/> if not found.</returns>
     public StringValues Get(string name)
     {
-        foreach (var parameter in _values)
-        {
-            if (parameter.Key == name)
-            {
-                return parameter.Value;
-            }
-        }
+        var parameter = Find(name);
+        if (parameter is null)
+            return StringValues.Empty;
 
-        return StringValues.Empty;
+        return parameter.GetValues();
     }
 
     /// <summary>Appends the specified values to an existing parameter or adds a new parameter if it doesn't exist.</summary>
@@ -52,21 +47,14 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
     /// <param name="values">The values to append.</param>
     public void Append(string name, StringValues values)
     {
-        var span = CollectionsMarshal.AsSpan(_values);
-        for (var i = 0; i < span.Length; i++)
+        var parameter = Find(name);
+        if (parameter is null)
         {
-            var value = span[i];
-            if (value.Key == name)
-            {
-                var newValue = new string?[value.Value.Count + values.Count];
-                value.Value.ToArray().AsSpan().CopyTo(newValue);
-                values.ToArray().AsSpan().CopyTo(newValue.AsSpan(value.Value.Count));
-                span[i] = KeyValuePair.Create(name, new StringValues(newValue));
-                return;
-            }
+            _values.Add(new Parameter(name, values));
+            return;
         }
 
-        _values.Add(KeyValuePair.Create(name, values));
+        parameter.Append(values);
     }
 
     /// <summary>Appends the specified value to an existing parameter or adds a new parameter if it doesn't exist.</summary>
@@ -82,10 +70,9 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
     /// <returns><see langword="true"/> if the parameter was found and removed; otherwise, <see langword="false"/>.</returns>
     public bool Remove(string name)
     {
-        var span = CollectionsMarshal.AsSpan(_values);
-        for (var i = 0; i < span.Length; i++)
+        for (var i = 0; i < _values.Count; i++)
         {
-            if (span[i].Key == name)
+            if (_values[i].Name == name)
             {
                 _values.RemoveAt(i);
                 return true;
@@ -100,18 +87,14 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
     /// <param name="values">The values to set.</param>
     public void Set(string name, StringValues values)
     {
-        var span = CollectionsMarshal.AsSpan(_values);
-        for (var i = 0; i < span.Length; i++)
+        var parameter = Find(name);
+        if (parameter is null)
         {
-            var value = span[i];
-            if (value.Key == name)
-            {
-                span[i] = KeyValuePair.Create(name, values);
-                return;
-            }
+            _values.Add(new Parameter(name, values));
+            return;
         }
 
-        _values.Add(KeyValuePair.Create(name, values));
+        parameter.SetValues(values);
     }
 
     /// <summary>Removes all parameters from the collection.</summary>
@@ -122,6 +105,76 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
 
     /// <summary>Returns an enumerator that iterates through the collection.</summary>
     /// <returns>An enumerator for the collection.</returns>
-    public IEnumerator<KeyValuePair<string, StringValues>> GetEnumerator() => _values.GetEnumerator();
+    public IEnumerator<KeyValuePair<string, StringValues>> GetEnumerator()
+    {
+        foreach (var parameter in _values)
+        {
+            yield return KeyValuePair.Create(parameter.Name, parameter.GetValues());
+        }
+    }
+
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    private Parameter? Find(string name)
+    {
+        foreach (var parameter in _values)
+        {
+            if (parameter.Name == name)
+                return parameter;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Holds the values of a single parameter. Appended values are buffered in a growable list and merged
+    /// into <see cref="StringValues"/> only when they are read, so appending n values to one name costs
+    /// O(n) instead of the O(n²) of copying the whole array on every append.
+    /// </summary>
+    private sealed class Parameter
+    {
+        private StringValues _values;
+        private List<string?>? _appended;
+
+        public Parameter(string name, StringValues values)
+        {
+            Name = name;
+            _values = values;
+        }
+
+        public string Name { get; }
+
+        public StringValues GetValues()
+        {
+            if (_appended is not null)
+            {
+                var merged = new string?[_values.Count + _appended.Count];
+                for (var i = 0; i < _values.Count; i++)
+                {
+                    merged[i] = _values[i];
+                }
+
+                _appended.CopyTo(merged, _values.Count);
+                _values = new StringValues(merged);
+                _appended = null;
+            }
+
+            return _values;
+        }
+
+        public void SetValues(StringValues values)
+        {
+            _values = values;
+            _appended = null;
+        }
+
+        public void Append(StringValues values)
+        {
+            _appended ??= [];
+            for (var i = 0; i < values.Count; i++)
+            {
+                _appended.Add(values[i]);
+            }
+        }
+    }
 }

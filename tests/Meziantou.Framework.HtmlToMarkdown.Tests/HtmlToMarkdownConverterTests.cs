@@ -3953,6 +3953,37 @@ public sealed class HtmlToMarkdownConverterTests
             """);
     }
 
+    // --- Headings stay on a single line ---
+
+    [Fact]
+    public void Heading_WithBreakStaysOnOneLine()
+    {
+        AssertHtmlToMarkdown(
+            "<h1>a<br>b</h1>",
+            "# a b");
+    }
+
+    [Fact]
+    public void Heading_WithBreakStaysOnOneLine_Setext()
+    {
+        AssertHtmlToMarkdown(
+            "<h1>a<br>b</h1>",
+            """
+            a b
+            ===
+            """,
+            new HtmlToMarkdownOptions { HeadingStyle = HeadingStyle.Setext });
+    }
+
+    [Fact]
+    public void Heading_WithBreakStaysOnOneLine_BackslashLineBreak()
+    {
+        AssertHtmlToMarkdown(
+            "<h2>a<br>b</h2>",
+            "## a b",
+            new HtmlToMarkdownOptions { LineBreakStyle = LineBreakStyle.Backslash });
+    }
+
     // --- Deeply nested documents (must not overflow the call stack) ---
 
     // The recursive traversal this replaced overflowed the stack at a nesting depth of

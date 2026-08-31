@@ -192,7 +192,9 @@ public static class HtmlToMarkdown
 
     private static string ConvertHeading(IElement element, ConversionState state)
     {
-        var content = ConvertInlineContent(element, state).Trim();
+        // A heading is a single line: a line break in its content would end the heading and
+        // turn the remainder into a separate paragraph.
+        var content = CollapseHardLineBreaks(ConvertInlineContent(element, state)).Trim();
         if (content.Length == 0)
             return "";
 
@@ -205,6 +207,16 @@ public static class HtmlToMarkdown
         }
 
         return new string('#', level) + " " + content;
+    }
+
+    /// <summary>
+    /// Replaces hard line breaks with a single space so inline content fits on one line.
+    /// A hard line break is a newline preceded either by trailing spaces or by a backslash,
+    /// depending on <see cref="LineBreakStyle"/>; the backslash has to go with it.
+    /// </summary>
+    private static string CollapseHardLineBreaks(string content)
+    {
+        return CollapseWhitespace(content.Replace("\\\n", "\n", StringComparison.Ordinal));
     }
 
     private static string ConvertParagraph(IElement element, ConversionState state)

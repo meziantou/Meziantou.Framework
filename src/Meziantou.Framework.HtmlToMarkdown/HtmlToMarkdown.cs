@@ -551,8 +551,27 @@ public static class HtmlToMarkdown
         {
             UnknownElementHandling.Strip => "",
             UnknownElementHandling.StripKeepContent => ConvertChildNodes(element, state),
-            _ => element.OuterHtml,
+            _ => GetOuterHtmlWithoutStrippedElements(element),
         };
+    }
+
+    /// <summary>
+    /// Gets the outer HTML of an element with its script, style and noscript descendants
+    /// removed. Those elements are stripped everywhere else, so passing an unknown element
+    /// through verbatim must not reintroduce them.
+    /// </summary>
+    private static string GetOuterHtmlWithoutStrippedElements(IElement element)
+    {
+        if (element.QuerySelector(StrippedElementsSelector) is null)
+            return element.OuterHtml;
+
+        var clone = (IElement)element.Clone(deep: true);
+        foreach (var stripped in clone.QuerySelectorAll(StrippedElementsSelector).ToArray())
+        {
+            stripped.Remove();
+        }
+
+        return clone.OuterHtml;
     }
 
     // =========================================================================
@@ -1104,6 +1123,8 @@ public static class HtmlToMarkdown
             or "dl" or "dt" or "dd" or "figure" or "figcaption"
             or "details" or "summary";
     }
+
+    private const string StrippedElementsSelector = "script, style, noscript";
 
     private static bool IsStrippedElement(INode node)
     {

@@ -3620,6 +3620,50 @@ public sealed class HtmlToMarkdownConverterTests
             """);
     }
 
+    // --- Stripped elements inside passed-through unknown elements ---
+
+    [Fact]
+    public void UnknownElement_PassThrough_StripsNestedScript()
+    {
+        AssertHtmlToMarkdown(
+            "<foo><script>alert(1)</script></foo>",
+            "<foo></foo>");
+    }
+
+    [Fact]
+    public void UnknownElement_PassThrough_StripsDeeplyNestedScript()
+    {
+        AssertHtmlToMarkdown(
+            "<custom-el><div><script>alert(1)</script></div></custom-el>",
+            "<custom-el><div></div></custom-el>");
+    }
+
+    [Theory]
+    [InlineData("style", "body{color:red}")]
+    [InlineData("noscript", "<b>no js</b>")]
+    public void UnknownElement_PassThrough_StripsNestedStyleAndNoscript(string tagName, string content)
+    {
+        AssertHtmlToMarkdown(
+            $"<foo><{tagName}>{content}</{tagName}></foo>",
+            "<foo></foo>");
+    }
+
+    [Fact]
+    public void UnknownElement_PassThrough_KeepsSurroundingContent()
+    {
+        AssertHtmlToMarkdown(
+            "<foo>before<script>alert(1)</script>after</foo>",
+            "<foo>beforeafter</foo>");
+    }
+
+    [Fact]
+    public void UnknownElement_PassThrough_WithoutStrippedElementsIsUnchanged()
+    {
+        AssertHtmlToMarkdown(
+            """<foo bar="baz">content</foo>""",
+            """<foo bar="baz">content</foo>""");
+    }
+
     // --- Link and image escaping ---
 
     [Fact]

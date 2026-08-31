@@ -46,6 +46,14 @@ public sealed class FileLoggerOptions
     /// Gets or sets a value indicating whether an existing log file is reused instead of creating a new one. Defaults to <see langword="false" />.
     /// When a matching file is already in use by another process, a new file is created.
     /// </summary>
+    /// <remarks>
+    /// A file is reused only when its name matches the name the provider computes when it starts, so this option has no effect unless the name is stable:
+    /// <list type="bullet">
+    /// <item><description><see cref="RollInterval" /> must be set. <see cref="RollInterval.None" /> includes the seconds in the name, so the name changes on every start.</description></item>
+    /// <item><description><see cref="IncludeProcessIdInFileName" /> must be <see langword="false" /> to reuse a file across restarts, as the identifier of the process changes.</description></item>
+    /// </list>
+    /// With the default values of these two options, a new file is created on every start even when this option is <see langword="true" />.
+    /// </remarks>
     public bool Append { get; set; }
 
     /// <summary>Gets or sets how often a new log file is created based on time. Defaults to <see cref="RollInterval.None" />.</summary>

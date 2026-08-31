@@ -452,6 +452,56 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    public async Task AppendReusesTheFileAcrossRestartsWhenTheNameIsStable()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+
+        // The process id is what changes between two runs, so the name is only stable without it
+        var options = new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            Append = true,
+            RollInterval = RollInterval.Daily,
+            IncludeProcessIdInFileName = false,
+        };
+
+        for (var i = 0; i < 3; i++)
+        {
+            await using var provider = new FileLoggerProvider(options, timeProvider);
+            provider.CreateLogger("Test").LogInformation("Run {Index}", i);
+        }
+
+        Assert.Equal(["2024-01-02.log"], GetFileNames(tempDirectory));
+        var content = await File.ReadAllTextAsync(Path.Combine(tempDirectory.FullPath, "2024-01-02.log"), TestContext.Current.CancellationToken);
+        Assert.Contains("Run 0", content);
+        Assert.Contains("Run 2", content);
+    }
+
+    [Fact]
+    public async Task AppendCreatesANewFileOnEveryStartWithTheDefaultFileName()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+
+        // RollInterval.None puts the seconds in the name and the process id is included by default,
+        // so Append cannot find a file to reuse. This pins the behavior documented on the option
+        var options = new FileLoggerOptions { Directory = tempDirectory.FullPath, Append = true };
+
+        for (var i = 0; i < 3; i++)
+        {
+            await using var provider = new FileLoggerProvider(options, timeProvider);
+            provider.CreateLogger("Test").LogInformation("Run {Index}", i);
+            timeProvider.Advance(TimeSpan.FromSeconds(1));
+        }
+
+        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
+        Assert.Equal(
+            [$"2024-01-02-03-04-05-{pid}.log", $"2024-01-02-03-04-06-{pid}.log", $"2024-01-02-03-04-07-{pid}.log"],
+            GetFileNames(tempDirectory));
+    }
+
+    [Fact]
     public async Task AppendDoesNotReuseAFullFile()
     {
         using var tempDirectory = TemporaryDirectory.Create();

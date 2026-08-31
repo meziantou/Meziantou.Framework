@@ -33,7 +33,7 @@ Console.WriteLine(result); // 0
 
 // Convert with culture-specific formatting
 var cultureInfo = CultureInfo.GetCultureInfo("fr-FR");
-var number = ConvertUtilities.ChangeType<decimal>("1234,56", provider: cultureInfo);
+var number = ConvertUtilities.ChangeType<decimal>("1234,56", defaultValue: 0m, provider: cultureInfo);
 Console.WriteLine(number); // 1234.56
 ```
 
@@ -44,7 +44,7 @@ var bytes = new byte[] { 1, 2, 3, 4 };
 
 // Default: Base64
 var converter1 = new DefaultConverter();
-converter1.TryChangeType(bytes, null, out string base64);
+converter1.TryChangeType(bytes, null, out string? base64);
 Console.WriteLine(base64); // "AQIDBA=="
 
 // Hexadecimal without prefix
@@ -52,7 +52,7 @@ var converter2 = new DefaultConverter
 {
     ByteArrayToStringFormat = ByteArrayToStringFormat.Base16
 };
-converter2.TryChangeType(bytes, null, out string hex);
+converter2.TryChangeType(bytes, null, out string? hex);
 Console.WriteLine(hex); // "01020304"
 
 // Hexadecimal with 0x prefix
@@ -60,15 +60,15 @@ var converter3 = new DefaultConverter
 {
     ByteArrayToStringFormat = ByteArrayToStringFormat.Base16Prefixed
 };
-converter3.TryChangeType(bytes, null, out string hexPrefixed);
+converter3.TryChangeType(bytes, null, out string? hexPrefixed);
 Console.WriteLine(hexPrefixed); // "0x01020304"
 
 // Convert from hexadecimal string to byte array
-ConvertUtilities.TryChangeType("0x01020304", out byte[] result);
+ConvertUtilities.TryChangeType("0x01020304", out byte[]? result);
 // result = [1, 2, 3, 4]
 
 // Convert from Base64 string to byte array
-ConvertUtilities.TryChangeType("AQIDBA==", out byte[] result2);
+ConvertUtilities.TryChangeType("AQIDBA==", out byte[]? result2);
 // result2 = [1, 2, 3, 4]
 ```
 

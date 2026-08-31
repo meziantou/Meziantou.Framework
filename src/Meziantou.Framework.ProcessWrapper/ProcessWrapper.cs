@@ -31,6 +31,7 @@ public sealed class ProcessWrapper
     private ImmutableArray<OutputTarget> _errorTargets;
     private InputSource? _inputSource;
     private ProcessLimits? _limits;
+    private bool _searchExecutableInWorkingDirectory;
     private Action<JobObject>? _windowsJobObjectConfiguration;
     private Action<CGroup2>? _linuxControlGroupConfiguration;
     private bool _validationModeConfigured;
@@ -58,6 +59,7 @@ public sealed class ProcessWrapper
         _errorTargets = other._errorTargets;
         _inputSource = other._inputSource;
         _limits = other._limits;
+        _searchExecutableInWorkingDirectory = other._searchExecutableInWorkingDirectory;
         _windowsJobObjectConfiguration = other._windowsJobObjectConfiguration;
         _linuxControlGroupConfiguration = other._linuxControlGroupConfiguration;
         _validationModeConfigured = other._validationModeConfigured;
@@ -175,6 +177,12 @@ public sealed class ProcessWrapper
     public static ProcessPipeline operator |(ProcessWrapper left, ProcessWrapper right) => ProcessPipeline.Create(left, right);
 
     /// <summary>Returns the command line representation of this process configuration.</summary>
+    /// <remarks>
+    /// The executable path and the arguments are always included, regardless of the verbosity set by
+    /// <see cref="WithLogVerbosity(ProcessLogVerbosity)"/>. Use <see cref="ProcessResult.ToString()"/> or the
+    /// message of <see cref="ProcessExecutionException"/> when the rendering has to honor that verbosity, for
+    /// example to keep a secret passed as an argument out of the logs.
+    /// </remarks>
     public override string ToString()
     {
         return ProcessCommandLineFormatter.Format(_startInfo.FileName, _startInfo.ArgumentList);
@@ -221,6 +229,25 @@ public sealed class ProcessWrapper
     public ProcessWrapper WithWorkingDirectory(string workingDirectory)
     {
         _startInfo.WorkingDirectory = workingDirectory;
+        return this;
+    }
+
+    /// <summary>Also looks for the executable in the working directory, before the directories listed in <c>PATH</c>.</summary>
+    /// <remarks>
+    /// <para>
+    /// Windows resolves a bare executable name against the current directory before <c>PATH</c>, so this is the
+    /// native behavior there. POSIX shells deliberately do not.
+    /// </para>
+    /// <para>
+    /// It is nevertheless disabled by default on every platform, Windows included, for security reasons: a file
+    /// sitting in the working directory would otherwise take precedence over the command <c>PATH</c> resolves for
+    /// the same name, letting an untrusted working directory substitute its own executable for the intended one.
+    /// Only enable it when the working directory is trusted.
+    /// </para>
+    /// </remarks>
+    public ProcessWrapper WithSearchWorkingDirectory(bool searchWorkingDirectory = true)
+    {
+        _searchExecutableInWorkingDirectory = searchWorkingDirectory;
         return this;
     }
 
@@ -507,7 +534,7 @@ public sealed class ProcessWrapper
             throw new InvalidOperationException("Process validation cannot be configured when starting a process without tracking it.");
 
         var startInfo = CloneStartInfo(_startInfo);
-        startInfo.FileName = ResolveFileName(startInfo.FileName, startInfo.WorkingDirectory);
+        startInfo.FileName = ResolveFileName(startInfo.FileName, GetExecutableSearchDirectory(startInfo));
         ApplyProcessStartInfoInterceptors(startInfo);
 
         return Process.StartAndForget(startInfo);
@@ -526,7 +553,7 @@ public sealed class ProcessWrapper
         var hasStandardErrorOutput = 0;
 
         var startInfo = CloneStartInfo(_startInfo);
-        var resolvedFileName = ResolveFileName(startInfo.FileName, startInfo.WorkingDirectory);
+        var resolvedFileName = ResolveFileName(startInfo.FileName, GetExecutableSearchDirectory(startInfo));
         startInfo.RedirectStandardOutput = hasOutputHandlers;
         startInfo.RedirectStandardError = hasErrorHandlers;
         startInfo.RedirectStandardInput = hasInputStream;
@@ -608,15 +635,18 @@ public sealed class ProcessWrapper
                             break;
                         }
 
-                        inputStream.Write(buffer, 0, bytesRead);
+                        if (!TryWriteProcessInput(inputStream, buffer, bytesRead))
+                        {
+                            break;
+                        }
                     }
 
-                    inputStream.Flush();
+                    TryFlushProcessInput(inputStream);
                 }
                 finally
                 {
                     inputSource.NotifyProcessCompleted();
-                    inputStream.Close();
+                    TryCloseProcessInput(inputStream);
                 }
             }, cancellationToken);
         }
@@ -627,8 +657,16 @@ public sealed class ProcessWrapper
             registration = cancellationToken.Register(static state => ProcessInstance.KillProcess((IProcessHandle)state!, entireProcessTree: true), processHandle);
         }
 
+        // StartActivity makes the new activity ambient on this thread, but it is stopped later from the
+        // completion task. Activity.Stop only restores Activity.Current where it runs, so the caller
+        // would keep a stopped activity as its ambient one and parent everything it does next to it.
+        var previousActivity = Activity.Current;
         var activity = ProcessWrapperTelemetry.ActivitySource.StartActivity("process.execute");
-        activity?.SetTag("process.executable.path", resolvedFileName);
+        if (activity is not null)
+        {
+            activity.SetTag("process.executable.path", resolvedFileName);
+            Activity.Current = previousActivity;
+        }
 
         return factory(processHandle, inputStreamTask, Task.WhenAll(outputStreamTask, errorStreamTask), registration, processLimiter, () => Volatile.Read(ref hasStandardErrorOutput) != 0, activity, processFileName, arguments, _logVerbosity, cancellationToken);
     }
@@ -701,6 +739,54 @@ public sealed class ProcessWrapper
             {
                 target.NotifyProcessCompleted();
             }
+        }
+    }
+
+    // A process that stops reading its standard input closes the pipe, so the remaining writes fail.
+    // That is normal for commands such as head or grep -q, so treat it as the end of the input rather
+    // than an error, matching how ReadBufferAsync treats the same failure on the output side.
+    private static bool TryWriteProcessInput(Stream stream, byte[] buffer, int count)
+    {
+        try
+        {
+            stream.Write(buffer, 0, count);
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (ObjectDisposedException)
+        {
+            return false;
+        }
+    }
+
+    private static void TryFlushProcessInput(Stream stream)
+    {
+        try
+        {
+            stream.Flush();
+        }
+        catch (IOException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private static void TryCloseProcessInput(Stream stream)
+    {
+        try
+        {
+            stream.Close();
+        }
+        catch (IOException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
         }
     }
 
@@ -1030,6 +1116,11 @@ public sealed class ProcessWrapper
             }
         }
     }
+
+    // A file dropped in the working directory must not shadow a command resolved from PATH, so the working
+    // directory is searched only when the caller opts in with WithSearchWorkingDirectory.
+    private string? GetExecutableSearchDirectory(ProcessStartInfo startInfo)
+        => _searchExecutableInWorkingDirectory ? startInfo.WorkingDirectory : null;
 
     private static string ResolveFileName(string fileName, string? workingDirectory)
     {

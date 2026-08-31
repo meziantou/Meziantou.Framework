@@ -41,6 +41,14 @@ sealed class HtmlDocument : HtmlNode
     private Dictionary<string, string>? _declaredNamespaces;
     private Dictionary<string, string>? _declaredPrefixes;
 
+    /// <summary>Gets or sets the number of times this document has changed since it was created.</summary>
+    /// <remarks>
+    /// Incremented by <see cref="HtmlNode.ClearCaches"/> for every mutation anywhere in the document. Nodes stamp
+    /// their cached serializations with the value they were computed for and recompute once it no longer matches,
+    /// which keeps invalidation O(1) instead of proportional to the depth of the mutated node.
+    /// </remarks>
+    internal int CacheVersion { get; set; }
+
     /// <summary>Occurs when the document is being parsed.</summary>
     /// <remarks>This event can be used to customize the parsing process or track progress.</remarks>
     public event EventHandler<HtmlDocumentParseEventArgs>? Parsing;

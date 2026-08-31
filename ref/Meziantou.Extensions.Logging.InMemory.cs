@@ -16,12 +16,14 @@ namespace Meziantou.Extensions.Logging.InMemory
 
     public sealed class InMemoryLogCollection : System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry>, System.Collections.IEnumerable
     {
+        public int Count { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> Debugs { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> Traces { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> Informations { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> Warnings { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> Errors { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry> Criticals { get => throw null; }
+        public void Clear() { }
         public override string ToString() => throw null;
         public Enumerator GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
@@ -62,7 +64,7 @@ namespace Meziantou.Extensions.Logging.InMemory
         public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
     }
 
-    public sealed class InMemoryLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, System.IDisposable
+    public sealed class InMemoryLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ISupportExternalScope, System.IDisposable
     {
         public Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection Logs { get => throw null; }
         public InMemoryLoggerProvider(Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection? logs) { }
@@ -74,6 +76,7 @@ namespace Meziantou.Extensions.Logging.InMemory
         public InMemoryLoggerProvider(System.TimeProvider? timeProvider, Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection? logs, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider) { }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => throw null;
         public Microsoft.Extensions.Logging.ILogger<T> CreateLogger<T>() => throw null;
+        public void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider) { }
         public void Dispose() { }
     }
 }

@@ -71,13 +71,13 @@ public static class CredentialManager
         Debug.Assert(applicationName is not null);
 
         var userName = credential->UserName.ToString();
-        string? secret = null;
-        if (credential->CredentialBlob is not null)
-        {
-            secret = Marshal.PtrToStringUni((nint)credential->CredentialBlob, (int)(credential->CredentialBlobSize / UnicodeEncoding.CharSize));
-        }
-
         var comment = credential->Comment.ToString();
+        if (credential->CredentialBlob is null)
+            return new Credential((CredentialType)credential->Type, applicationName, userName, password: null, comment);
+
+        // Keep the blob verbatim. It is only text by convention: for Generic credentials the writing application
+        // decides the layout, so decoding it as UTF-16 here would lose a trailing odd byte and mangle binary data.
+        var secret = new ReadOnlySpan<byte>(credential->CredentialBlob, (int)credential->CredentialBlobSize).ToArray();
         return new Credential((CredentialType)credential->Type, applicationName, userName, secret, comment);
     }
 
@@ -187,6 +187,7 @@ public static class CredentialManager
     /// <param name="applicationName">The name that identifies the credential.</param>
     /// <param name="type">The type of the credential.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="applicationName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="Win32Exception">Thrown when no such credential exists, or when the credential cannot be deleted. Use <see cref="TryDeleteCredential(string, CredentialType)"/> to ignore a missing credential.</exception>
     public static void DeleteCredential(string applicationName, CredentialType type)
     {
         ArgumentNullException.ThrowIfNull(applicationName);
@@ -197,6 +198,36 @@ public static class CredentialManager
             var lastError = Marshal.GetLastWin32Error();
             throw new Win32Exception(lastError);
         }
+    }
+
+    /// <summary>Deletes a credential from the Windows Credential Manager if it exists.</summary>
+    /// <param name="applicationName">The name that identifies the credential.</param>
+    /// <returns><see langword="true"/> if the credential was deleted; <see langword="false"/> if no such credential exists.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="applicationName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="Win32Exception">Thrown when the credential exists but cannot be deleted.</exception>
+    public static bool TryDeleteCredential(string applicationName)
+    {
+        return TryDeleteCredential(applicationName, CredentialType.Generic);
+    }
+
+    /// <summary>Deletes a credential from the Windows Credential Manager if it exists.</summary>
+    /// <param name="applicationName">The name that identifies the credential.</param>
+    /// <param name="type">The type of the credential.</param>
+    /// <returns><see langword="true"/> if the credential was deleted; <see langword="false"/> if no such credential exists.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="applicationName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="Win32Exception">Thrown when the credential exists but cannot be deleted.</exception>
+    public static bool TryDeleteCredential(string applicationName, CredentialType type)
+    {
+        ArgumentNullException.ThrowIfNull(applicationName);
+
+        if (PInvoke.CredDelete(applicationName, (CRED_TYPE)type))
+            return true;
+
+        var lastError = Marshal.GetLastWin32Error();
+        if (lastError == (int)WIN32_ERROR.ERROR_NOT_FOUND)
+            return false;
+
+        throw new Win32Exception(lastError);
     }
 
     /// <summary>Enumerates all credentials from the Windows Credential Manager.</summary>

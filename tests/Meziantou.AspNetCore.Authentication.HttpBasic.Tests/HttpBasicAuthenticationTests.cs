@@ -193,6 +193,49 @@ public sealed class HttpBasicAuthenticationTests
         });
     }
 
+    [Theory]
+    [InlineData("bad\r\nX-Injected: 1")]
+    [InlineData("bad\ttab")]
+    [InlineData("caf\u00E9")]
+    [InlineData("nul\0")]
+    public void Realm_RejectsCharactersThatCannotBeWrittenToAHeader(string realm)
+    {
+        var options = new HttpBasicAuthenticationOptions();
+        var exception = Assert.Throws<ArgumentException>(() => options.Realm = realm);
+        Assert.Equal("value", exception.ParamName);
+    }
+
+    [Fact]
+    public void Realm_AcceptsNullAndPrintableAscii()
+    {
+        var options = new HttpBasicAuthenticationOptions
+        {
+            Realm = null,
+        };
+        Assert.Null(options.Realm);
+
+        options.Realm = "we\"ird\\realm";
+        Assert.Equal("we\"ird\\realm", options.Realm);
+    }
+
+    [Fact]
+    public async Task Challenge_EscapesQuotesAndBackslashesInRealm()
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.Realm = "we\"ird\\realm";
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("myName", "myPassword", username, password);
+        });
+
+        await application.SendAndAssert("/", username: null, password: null, response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+            Assert.Contains(response.Headers.WwwAuthenticate, value =>
+                string.Equals(value.Scheme, HttpBasicAuthenticationDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(value.Parameter, "realm=\"we\\\"ird\\\\realm\", charset=\"UTF-8\"", StringComparison.Ordinal));
+        });
+    }
+
     private static IdentityUser CreateIdentityUser(string id, string username, string password)
     {
         var user = new IdentityUser

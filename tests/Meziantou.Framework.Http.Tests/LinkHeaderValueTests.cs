@@ -76,6 +76,38 @@ public sealed class LinkHeaderValueTests
     }
 
     [Theory]
+    [InlineData("<a>; rel=1, , <b>; rel=2")]
+    [InlineData("<a>; rel=1,,<b>; rel=2")]
+    [InlineData("<a>; rel=1, <b>; rel=2")]
+    public void Parse_IgnoresEmptyListElements(string header)
+    {
+        var links = LinkHeaderValue.Parse(header);
+        Assert.Collection(links,
+            item => Assert.Equal("a", item.Url),
+            item => Assert.Equal("b", item.Url));
+    }
+
+    [Theory]
+    [InlineData("garbage, <b>; rel=2")]
+    [InlineData(", <b>; rel=2")]
+    [InlineData("<a; rel=1, <b>; rel=2")]
+    [InlineData("garbage; title=\"a,b\", <b>; rel=2")]
+    public void Parse_MalformedElementDoesNotDiscardTheFollowingOnes(string header)
+    {
+        var link = Assert.Single(LinkHeaderValue.Parse(header));
+        Assert.Equal("b", link.Url);
+        Assert.Equal("2", link.Rel);
+    }
+
+    [Theory]
+    [InlineData("<https://example.com/a,b>; rel=next", "https://example.com/a,b")]
+    [InlineData("<https://example.com/a,b>; rel=next, <https://example.com/c>; rel=prev", "https://example.com/a,b")]
+    public void Parse_KeepsCommasInsideTheTargetUri(string header, string expectedUrl)
+    {
+        Assert.Equal(expectedUrl, LinkHeaderValue.Parse(header).GetLinkUrl("next"));
+    }
+
+    [Theory]
     [InlineData("start")]
     [InlineData("http://example.net/relation/other")]
     [InlineData("START")]

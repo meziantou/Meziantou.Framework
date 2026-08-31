@@ -109,6 +109,10 @@ public sealed class NuGetPackageValidationContext : IDisposable
             using var response = await SendHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
             return response.IsSuccessStatusCode;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch
         {
             return false;

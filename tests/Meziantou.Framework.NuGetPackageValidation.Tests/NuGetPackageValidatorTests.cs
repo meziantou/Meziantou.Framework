@@ -258,6 +258,20 @@ public sealed class NuGetPackageValidatorTests
     }
 
     [Fact]
+    public async Task Validate_CancellationIsNotReportedAsAValidationError()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        // The package has a project url, so the rule performs an HTTP request that observes the token
+        var path = FullPath.FromPath(typeof(NuGetPackageValidatorTests).Assembly.Location).Parent / "Packages" / "meziantou.framework.2.6.0.nupkg";
+        var options = new NuGetPackageValidationOptions();
+        options.Rules.Add(NuGetPackageValidationRules.ProjectUrlMustBeSet);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => NuGetPackageValidator.ValidateAsync(path, options, cts.Token));
+    }
+
+    [Fact]
     public async Task Validate_WithSymbolsServer()
     {
         // Downloading symbols can be flaky on CI

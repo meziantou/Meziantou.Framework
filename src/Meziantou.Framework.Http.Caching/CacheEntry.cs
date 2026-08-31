@@ -191,6 +191,11 @@ internal sealed class CacheEntry
                     secondaryKey.Add(headerName, value);
                 }
             }
+            else
+            {
+                // RFC 9111 Section 4.1: the field being absent is part of the key, not the absence of a key.
+                secondaryKey.AddAbsent(headerName);
+            }
         }
 
         return secondaryKey;

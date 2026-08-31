@@ -5,8 +5,9 @@ public static class Prompt
 {
     /// <summary>Prompts the user with a yes/no question using standard Y/N labels.</summary>
     /// <param name="question">The question to display to the user.</param>
-    /// <param name="defaultValue">The default value to use if the user presses Enter without typing a response. If <see langword="null"/>, the user must provide an explicit answer.</param>
+    /// <param name="defaultValue">The default value to use if the user presses Enter without typing a response, or if the standard input is closed. If <see langword="null"/>, the user must provide an explicit answer.</param>
     /// <returns><see langword="true"/> if the user answered yes; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="EndOfStreamException">The standard input is closed and <paramref name="defaultValue"/> is <see langword="null"/>.</exception>
     public static bool YesNo(string question, bool? defaultValue)
     {
         if (defaultValue.HasValue)
@@ -30,15 +31,25 @@ public static class Prompt
     /// <param name="question">The question to display to the user.</param>
     /// <param name="yesValue">The text representing a yes response (case-insensitive).</param>
     /// <param name="noValue">The text representing a no response (case-insensitive).</param>
-    /// <param name="defaultValue">The default value to use if the user presses Enter without typing a response. If <see langword="null"/>, the user must provide an explicit answer.</param>
+    /// <param name="defaultValue">The default value to use if the user presses Enter without typing a response, or if the standard input is closed. If <see langword="null"/>, the user must provide an explicit answer.</param>
     /// <returns><see langword="true"/> if the user answered yes; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="EndOfStreamException">The standard input is closed and <paramref name="defaultValue"/> is <see langword="null"/>.</exception>
     public static bool YesNo(string question, string yesValue, string noValue, bool? defaultValue)
     {
         while (true)
         {
             Console.Write($"{question} [{yesValue}/{noValue}] ");
             var result = Console.ReadLine();
-            if (string.IsNullOrEmpty(result))
+            if (result is null)
+            {
+                // The input is closed, so asking again would loop forever without ever reading a different answer.
+                if (defaultValue.HasValue)
+                    return defaultValue.Value;
+
+                throw new EndOfStreamException("Cannot read the answer because the standard input is closed and no default value is provided");
+            }
+
+            if (result.Length == 0)
             {
                 if (defaultValue.HasValue)
                     return defaultValue.Value;

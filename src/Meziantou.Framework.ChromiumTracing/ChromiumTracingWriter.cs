@@ -38,14 +38,14 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     private bool _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="ChromiumTracingWriter"/> class with the specified stream.</summary>
-    /// <param name="stream">The stream to write trace events to.</param>
+    /// <param name="stream">The stream to write trace events to. The stream is <b>not</b> disposed when the writer is disposed; the caller keeps ownership of it.</param>
     public ChromiumTracingWriter(Stream stream)
         : this(stream, streamOwned: false, serializerContext: null)
     {
     }
 
     /// <summary>Initializes a new instance of the <see cref="ChromiumTracingWriter"/> class with the specified stream and serializer context.</summary>
-    /// <param name="stream">The stream to write trace events to.</param>
+    /// <param name="stream">The stream to write trace events to. The stream is <b>not</b> disposed when the writer is disposed; the caller keeps ownership of it.</param>
     /// <param name="serializerContext">The serializer context to combine with the built-in one.</param>
     public ChromiumTracingWriter(Stream stream, JsonSerializerContext? serializerContext)
         : this(stream, streamOwned: false, serializerContext)
@@ -78,16 +78,16 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
         return new ChromiumTracingWriter(fs, streamOwned: true, serializerContext);
     }
 
-    /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to the specified stream.</summary>
-    /// <param name="stream">The stream to write trace events to.</param>
+    /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to the specified stream and takes ownership of it.</summary>
+    /// <param name="stream">The stream to write trace events to. It is disposed when the writer is disposed. Use <see cref="Create(Stream, bool)"/> or the constructor to keep ownership of the stream.</param>
     /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
     public static ChromiumTracingWriter Create(Stream stream)
     {
         return Create(stream, streamOwned: true, serializerContext: null);
     }
 
-    /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to the specified stream.</summary>
-    /// <param name="stream">The stream to write trace events to.</param>
+    /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to the specified stream and takes ownership of it.</summary>
+    /// <param name="stream">The stream to write trace events to. It is disposed when the writer is disposed. Use <see cref="Create(Stream, bool, JsonSerializerContext?)"/> or the constructor to keep ownership of the stream.</param>
     /// <param name="serializerContext">The serializer context to combine with the built-in one.</param>
     /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
     public static ChromiumTracingWriter Create(Stream stream, JsonSerializerContext? serializerContext)
@@ -138,7 +138,7 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     }
 
     /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes GZip-compressed trace events to the specified stream.</summary>
-    /// <param name="stream">The stream to write compressed trace events to.</param>
+    /// <param name="stream">The stream to write compressed trace events to. It is <b>not</b> disposed when the writer is disposed; only the compression stream wrapping it is.</param>
     /// <param name="compressionLevel">The compression level to use.</param>
     /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
     public static ChromiumTracingWriter CreateGzip(Stream stream, CompressionLevel compressionLevel = CompressionLevel.Fastest)
@@ -148,7 +148,7 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     }
 
     /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes GZip-compressed trace events to the specified stream.</summary>
-    /// <param name="stream">The stream to write compressed trace events to.</param>
+    /// <param name="stream">The stream to write compressed trace events to. It is <b>not</b> disposed when the writer is disposed; only the compression stream wrapping it is.</param>
     /// <param name="compressionLevel">The compression level to use.</param>
     /// <param name="serializerContext">The serializer context to combine with the built-in one.</param>
     /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>

@@ -1753,6 +1753,35 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void PropertyName_InvisibleChar()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new Dictionary<string, int> { ["a\nb"] = 1, ["z"] = 2 },
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = """
+            a␊
+            b: 1
+            z: 2
+            """,
+        });
+    }
+
+    [Fact]
+    public void PropertyName_InvisibleChar_Disabled()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new Dictionary<string, int> { ["a\nb"] = 1, ["z"] = 2 },
+            Expected = """
+            a
+            b: 1
+            z: 2
+            """,
+        });
+    }
+
+    [Fact]
     public void String_Multiline_InObject_NoStartingWhitespace()
     {
         AssertSerialization(new Validation

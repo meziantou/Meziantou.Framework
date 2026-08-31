@@ -4012,6 +4012,57 @@ public sealed class HtmlToMarkdownConverterTests
             """);
     }
 
+
+    // --- Pre content is not dropped ---
+
+    [Fact]
+    public void Pre_KeepsTextBeforeCode()
+    {
+        AssertHtmlToMarkdown(
+            "<pre>before<code>inside</code></pre>",
+            """
+            ```
+            beforeinside
+            ```
+            """);
+    }
+
+    [Fact]
+    public void Pre_KeepsTextAroundCode()
+    {
+        AssertHtmlToMarkdown(
+            "<pre>before<code>inside</code>after</pre>",
+            """
+            ```
+            beforeinsideafter
+            ```
+            """);
+    }
+
+    [Fact]
+    public void Pre_WithWrappedCodeKeepsSurroundingContent()
+    {
+        AssertHtmlToMarkdown(
+            """<pre><span class="gutter">1</span><code>x = 1;</code></pre>""",
+            """
+            ```
+            1x = 1;
+            ```
+            """);
+    }
+
+    [Fact]
+    public void Pre_LanguageStillFoundOnNestedCode()
+    {
+        AssertHtmlToMarkdown(
+            """<pre>before<code class="language-go">inside</code></pre>""",
+            """
+            ```go
+            beforeinside
+            ```
+            """);
+    }
+
     // --- Deeply nested documents (must not overflow the call stack) ---
 
     // The recursive traversal this replaced overflowed the stack at a nesting depth of

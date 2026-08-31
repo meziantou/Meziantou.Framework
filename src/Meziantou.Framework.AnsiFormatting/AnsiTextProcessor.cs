@@ -219,8 +219,12 @@ public static class AnsiTextProcessor
 
     private static AnsiStyle ApplySgr(AnsiStyle style, List<int> parameters)
     {
+        // An empty list means the sequence carried parameters but none of them could be parsed.
+        // Such a sequence is ignored: a reset would drop styling the caller never asked to clear.
+        // ESC[m, which carries no parameter at all, is reported as [0] by ParseSgrParameters and
+        // still resets the style through the switch below.
         if (parameters.Count is 0)
-            return AnsiStyle.None;
+            return style;
 
         var result = style;
 

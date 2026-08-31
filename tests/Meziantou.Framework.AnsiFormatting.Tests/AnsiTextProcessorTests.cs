@@ -123,6 +123,45 @@ public class AnsiTextProcessorTests
         Assert.Equal(expected, actual);
     }
 
+    [Theory]
+    [InlineData("\u001b[38:5:208m")]
+    [InlineData("\u001b[38:2:10:20:30m")]
+    [InlineData("\u001b[4:3m")]
+    [InlineData("\u001b[99999999999m")]
+    [InlineData("\u001b[<m")]
+    [InlineData("\u001b[?m")]
+    public void ParseTextWithAnsiStyles_UnparsableSgrParametersDoNotResetStyle(string sequence)
+    {
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles("\u001b[1;4m" + sequence + "A");
+
+        Assert.Equal("A", parsed.Text);
+        var run = Assert.Single(parsed.Runs);
+        Assert.True(run.Style.Bold);
+        Assert.True(run.Style.Underline);
+    }
+
+    [Theory]
+    [InlineData("\u001b[0m")]
+    [InlineData("\u001b[m")]
+    public void ParseTextWithAnsiStyles_ResetStillClearsStyle(string sequence)
+    {
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles("\u001b[1;4m" + sequence + "A");
+
+        var run = Assert.Single(parsed.Runs);
+        Assert.False(run.Style.Bold);
+        Assert.False(run.Style.Underline);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_PartlyParsableSgrParametersApplyTheKnownOnes()
+    {
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles("\u001b[1;?;4mA");
+
+        var run = Assert.Single(parsed.Runs);
+        Assert.True(run.Style.Bold);
+        Assert.True(run.Style.Underline);
+    }
+
     [Fact]
     public void RemoveAnsiSequences_MultipleSequencesInRow()
     {

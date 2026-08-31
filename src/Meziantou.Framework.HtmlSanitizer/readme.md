@@ -57,11 +57,30 @@ var sanitizer = new HtmlSanitizer();
 
 // Blocks srcset with dangerous URLs
 var result = sanitizer.SanitizeHtmlFragment("<img srcset='javascript:alert() 300w, https://example.com 600w'>");
-// Result: "<img srcset=''>"
+// Result: "<img srcset='' />"
 
 // Allows safe srcset
 var result = sanitizer.SanitizeHtmlFragment("<img srcset='https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w'>");
-// Result: "<img srcset='https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w'>"
+// Result: "<img srcset='https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w' />"
+```
+
+### Text
+
+Text keeps the entities it was written with, so already encoded markup stays encoded and is not encoded a
+second time. A literal `<` is re-encoded as `&lt;`, because a `<` the parser gave up on is still markup to a
+browser — an unterminated `<!--` would put the rest of the page in comment state.
+
+```csharp
+var sanitizer = new HtmlSanitizer();
+
+sanitizer.SanitizeHtmlFragment("<p>&lt;script&gt;</p>");
+// Result: "<p>&lt;script&gt;</p>"
+
+sanitizer.SanitizeHtmlFragment("<p>a < b</p>");
+// Result: "<p>a &lt; b</p>"
+
+sanitizer.SanitizeHtmlFragment("<b><!--");
+// Result: "<b>&lt;!--</b>"
 ```
 
 ### Keeping Comments
@@ -84,6 +103,10 @@ var sanitizer = new HtmlSanitizer();
 
 // Add custom elements
 sanitizer.ValidElements.Add("custom-element");
+
+// Has no effect: the content of a raw text element is never sanitized, so the element is
+// removed with its content whether or not it is in ValidElements
+sanitizer.ValidElements.Add("iframe");
 
 // Remove elements from allowed list
 sanitizer.ValidElements.Remove("img");
@@ -109,6 +132,26 @@ sanitizer.ValidAttributes.Remove("target");
 sanitizer.UriAttributes.Add("data-url");
 ```
 
+`ValidAttributes` and `UriAttributes` are separate sets, and only `UriAttributes` triggers URL validation.
+Adding an attribute to `ValidAttributes` alone lets any value through unchecked:
+
+```csharp
+var sanitizer = new HtmlSanitizer();
+sanitizer.ValidAttributes.Add("data-url");
+
+sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>");
+// Result: "<p data-url='javascript:alert(1)'>test</p>"   (the value is not validated)
+
+sanitizer.UriAttributes.Add("data-url");
+sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>");
+// Result: "<p data-url=''>test</p>"
+```
+
+Add any attribute that a browser resolves as a URL to both sets — `action`, `formaction`, `poster`, `data`,
+`srcdoc`, `dynsrc` and `lowsrc` among them. The same applies in reverse: removing an attribute from
+`UriAttributes` while leaving it in `ValidAttributes` stops its value from being checked. Removing it from
+`ValidAttributes` alone is safe, since the attribute is then dropped.
+
 ## Default Configuration
 
 ### Allowed Elements
@@ -122,8 +165,8 @@ By default, the sanitizer allows:
 
 An element is handled in one of three ways:
 
-- It is in `ValidElements` (and not in `BlockedElements`): the element and its content are kept, and its attributes are sanitized.
-- It is in `BlockedElements`, or its content is raw text rather than markup (`script`, `style`, `title`, `textarea`, `iframe`, `noscript`, `noembed`, `noframes`, `plaintext`, `xmp`): the element is removed **with its content**.
+- It is in `BlockedElements`, or its content is raw text rather than markup (`script`, `style`, `title`, `textarea`, `iframe`, `noscript`, `noembed`, `noframes`, `plaintext`, `xmp`): the element is removed **with its content**. This takes precedence over `ValidElements` — the content of a raw text element is written back exactly as it was read, so it can never be sanitized and adding such an element to `ValidElements` has no effect.
+- Otherwise, it is in `ValidElements`: the element and its content are kept, and its attributes are sanitized.
 - Otherwise the element is unwrapped: the tag is dropped but its content is kept and sanitized.
 
 ```csharp
@@ -176,6 +219,10 @@ The URL sanitizer allows:
 - `file:`
 - Relative URLs (no protocol)
 - Safe data URLs (base64-encoded images, videos, and audio)
+
+A URL is rejected when it contains a `&` before the first `/`, `?` or `#`. This is what stops an entity from
+masking the scheme, as in `java&#115;cript:alert(1)` or `javascript&#58;alert(1)`. It also rejects the rare
+relative URL whose first segment contains a literal `&`, such as `q&a.html` — encode it as `q%26a.html`.
 
 ## Implementation Details
 

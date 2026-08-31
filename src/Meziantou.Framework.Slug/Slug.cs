@@ -14,6 +14,18 @@ public static class Slug
     /// <summary>The number of UTF-16 characters needed to encode any single rune.</summary>
     private const int MaxUtf16CharsPerRune = 2;
 
+    /// <summary>Extra buffer room for the character that turns out not to fit and is removed again.</summary>
+    private const int TruncationHeadroom = 8;
+
+    // A Hangul syllable decomposes into a leading jamo, a vowel jamo and an optional trailing jamo. Those are
+    // letters rather than marks, so the mark test alone does not recognize them as part of the same character.
+    private const int HangulLeadingJamoFirst = 0x1100;
+    private const int HangulLeadingJamoLast = 0x1112;
+    private const int HangulVowelJamoFirst = 0x1161;
+    private const int HangulVowelJamoLast = 0x1175;
+    private const int HangulTrailingJamoFirst = 0x11A8;
+    private const int HangulTrailingJamoLast = 0x11C2;
+
     /// <summary>Creates a slug from the specified text using default options.</summary>
     /// <param name="text">The text to convert to a slug.</param>
     /// <returns>A slug generated from the input text, or <see langword="null"/> if <paramref name="text"/> is <see langword="null"/>.</returns>
@@ -41,53 +53,58 @@ public static class Slug
         var separator = options.Separator;
         var maximumLength = options.MaximumLength > 0 ? options.MaximumLength : int.MaxValue;
 
-        var sb = new StringBuilder(Math.Min(text.Length, maximumLength));
-        var budget = maximumLength;
-        string slug;
-        while (true)
-        {
-            var completed = AppendSlug(sb, text, options, separator, budget);
-            slug = Normalize(sb.ToString(), NormalizationForm.FormC);
-            if (completed)
-                break;
+        // AppendSlug writes a character before it can measure it, so the buffer briefly holds one character more
+        // than the limit allows. Sizing for that keeps the common case in a single StringBuilder chunk.
+        var capacity = text.Length <= maximumLength ? text.Length : Math.Min(text.Length, maximumLength + TruncationHeadroom);
+        var sb = new StringBuilder(capacity);
+        AppendSlug(sb, text, options, separator, maximumLength, out var trailingSeparatorStart);
 
-            // The slug is built decomposed but returned composed, and composing it merges each combining
-            // mark back into the character it follows. The buffer can therefore be full while the composed
-            // slug is still under the limit. Grant back exactly the characters composition recovered and
-            // rebuild: the limit stays an upper bound on the composed slug, but it is actually filled.
-            var recovered = sb.Length - slug.Length;
-            if (recovered == 0 || maximumLength > int.MaxValue - recovered)
-                break;
+        // Only a separator AppendSlug emitted is trimmed. A character that came from the input is content, even
+        // when it matches the separator, so CanEndWithSeparator never deletes something the caller typed.
+        if (!options.CanEndWithSeparator && separator.Length > 0 && trailingSeparatorStart >= 0)
+            sb.Length = trailingSeparatorStart;
 
-            var extendedBudget = maximumLength + recovered;
-            if (extendedBudget <= budget)
-                break;
-
-            budget = extendedBudget;
-        }
-
-        // Trimmed on the decomposed buffer, so a separator that is itself decomposed is still recognized.
-        if (!options.CanEndWithSeparator && separator.Length > 0 && EndsWith(sb, separator))
-        {
-            sb.Length -= separator.Length;
-            slug = Normalize(sb.ToString(), NormalizationForm.FormC);
-        }
-
-        return slug;
+        return Normalize(sb.ToString(), NormalizationForm.FormC);
     }
 
-    /// <summary>Rebuilds the slug into <paramref name="sb"/>, using at most <paramref name="budget"/> characters.</summary>
-    /// <returns><see langword="true"/> if the whole text was consumed; otherwise, <see langword="false"/>.</returns>
-    private static bool AppendSlug(StringBuilder sb, string text, SlugOptions options, string separator, int budget)
+    /// <summary>Builds the slug into <paramref name="sb"/>, keeping the composed result within <paramref name="maximumLength"/>.</summary>
+    /// <param name="trailingSeparatorStart">
+    /// The offset of the separator this method emitted at the end of <paramref name="sb"/>, or -1 when the buffer does
+    /// not end with one. A separator character that came from the input is content and never reported here.
+    /// </param>
+    /// <remarks>
+    /// The buffer is decomposed while the returned slug is composed, and composing merges each combining mark back into
+    /// the character it follows, so the two have different lengths. The limit applies to the composed slug, so the budget
+    /// is spent in composed characters: each character is measured once it is complete, and dropped whole when it does
+    /// not fit. That keeps the limit an upper bound on the result while still filling it, in a single pass over the text.
+    /// </remarks>
+    private static void AppendSlug(StringBuilder sb, string text, SlugOptions options, string separator, int maximumLength, out int trailingSeparatorStart)
     {
         sb.Clear();
+
+        // Offset of the most recent separator this method emitted. It is not cleared when more characters are
+        // appended, so that dropping a character below still leaves it describing the buffer correctly.
+        var lastSeparatorStart = -1;
         var usesDefaultReplace = options.UsesDefaultReplace;
         Span<char> transformed = stackalloc char[MaxUtf16CharsPerRune];
-        var characterStart = 0;
+
+        // Length of the composed slug built so far, and the character still being accumulated: it is only measured
+        // once the next character starts, because a combining mark can still shorten it.
+        var composedLength = 0;
+        var characterStart = -1;
+        var characterRuneCount = 0;
+        var separatorLength = separator.Length == 0 ? 0 : Normalize(separator, NormalizationForm.FormC).Length;
+        var previousRuneWasHangulJamo = false;
 
         foreach (var rune in text.EnumerateRunes())
         {
             var isCombiningMark = Rune.GetUnicodeCategory(rune) is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark;
+
+            // Everything that composes back into the character before it has to travel with it, so that the
+            // maximum length only ever cuts between characters.
+            var continuesCharacter = isCombiningMark || (previousRuneWasHangulJamo && IsHangulSyllableContinuation(rune));
+            var appended = false;
+
             if (options.IsAllowed(rune))
             {
                 // Append the replacement atomically, so the maximum length can never split a
@@ -104,39 +121,53 @@ public static class Slug
                     replacement = options.Replace(rune);
                 }
 
-                // A combining mark belongs to the character before it, so only a rune that is not one
-                // starts a new character.
-                if (!isCombiningMark)
-                    characterStart = sb.Length;
-
-                if (sb.Length + replacement.Length > budget)
+                if (!continuesCharacter)
                 {
-                    // Keeping a base character while dropping the mark that follows it would silently
-                    // strip the accent off the last character of the slug. Drop the character instead.
-                    if (isCombiningMark)
-                        sb.Length = characterStart;
+                    if (!TryEndCharacter(sb, characterStart, characterRuneCount, maximumLength, ref composedLength))
+                        break;
 
-                    return false;
+                    characterStart = sb.Length;
+                    characterRuneCount = 0;
+                }
+                else if (characterStart < 0 || characterStart == sb.Length)
+                {
+                    // Nothing was written for the current character, so this continuation has no base to attach to
+                    // and would leave a floating accent or a bare jamo at the start of the slug or right after a
+                    // separator. Drop it, the way a disallowed character's marks are dropped below.
+                    continue;
                 }
 
                 sb.Append(replacement);
+                characterRuneCount++;
+                appended = true;
             }
             else if (!isCombiningMark)
             {
-                // Combining marks attached to a disallowed character are dropped silently instead of
-                // producing a separator. A slug never starts with a separator, and separators are never repeated.
-                if (sb.Length == 0 || EndsWith(sb, separator))
+                // A disallowed combining mark is dropped rather than emitting a separator, because it is part of
+                // the character before it and not a word boundary.
+                if (!TryEndCharacter(sb, characterStart, characterRuneCount, maximumLength, ref composedLength))
+                    break;
+
+                characterStart = -1;
+                characterRuneCount = 0;
+
+                // A slug never starts with a separator, and separators are never repeated.
+                if (sb.Length == 0 || EndsWithEmittedSeparator(sb, lastSeparatorStart, separator))
                     continue;
 
-                if (sb.Length + separator.Length > budget)
-                    return false;
+                if (separatorLength > maximumLength - composedLength)
+                    break;
 
+                lastSeparatorStart = sb.Length;
                 sb.Append(separator);
-                characterStart = sb.Length;
+                composedLength += separatorLength;
             }
+
+            previousRuneWasHangulJamo = appended && IsHangulJamo(rune);
         }
 
-        return true;
+        TryEndCharacter(sb, characterStart, characterRuneCount, maximumLength, ref composedLength);
+        trailingSeparatorStart = TrailingSeparatorStart(sb, lastSeparatorStart, separator);
     }
 
     /// <summary>Normalizes <paramref name="text"/>, substituting anything the normalizer rejects.</summary>
@@ -179,17 +210,59 @@ public static class Slug
         return (rune.Value & 0xFFFE) == 0xFFFE || rune.Value is >= 0xFDD0 and <= 0xFDEF;
     }
 
-    private static bool EndsWith(StringBuilder stringBuilder, string suffix)
+    /// <summary>
+    /// Charges the character accumulated since <paramref name="characterStart"/> to <paramref name="composedLength"/>,
+    /// or removes it from <paramref name="sb"/> when it no longer fits.
+    /// </summary>
+    /// <returns><see langword="true"/> if the character fit; otherwise, <see langword="false"/>.</returns>
+    private static bool TryEndCharacter(StringBuilder sb, int characterStart, int characterRuneCount, int maximumLength, ref int composedLength)
     {
-        if (stringBuilder.Length < suffix.Length)
-            return false;
+        if (characterStart < 0 || characterStart == sb.Length)
+            return true;
 
-        for (var index = 0; index < suffix.Length; index++)
+        // A character made of a single rune has nothing to compose with, so its composed length is the length it
+        // already occupies. Only the ones carrying combining marks or jamo are worth normalizing to measure.
+        var length = sb.Length - characterStart;
+        if (characterRuneCount > 1)
         {
-            if (stringBuilder[stringBuilder.Length - 1 - index] != suffix[suffix.Length - 1 - index])
-                return false;
+            length = sb.ToString(characterStart, length).Normalize(NormalizationForm.FormC).Length;
         }
 
+        if (length > maximumLength - composedLength)
+        {
+            sb.Length = characterStart;
+            return false;
+        }
+
+        composedLength += length;
         return true;
     }
+
+    /// <summary>Determines whether the rune is one of the Hangul jamo a syllable decomposes into.</summary>
+    private static bool IsHangulJamo(Rune rune)
+    {
+        return rune.Value is (>= HangulLeadingJamoFirst and <= HangulLeadingJamoLast)
+            or (>= HangulVowelJamoFirst and <= HangulVowelJamoLast)
+            or (>= HangulTrailingJamoFirst and <= HangulTrailingJamoLast);
+    }
+
+    /// <summary>Determines whether the rune continues the Hangul syllable started by the jamo before it.</summary>
+    private static bool IsHangulSyllableContinuation(Rune rune)
+    {
+        return rune.Value is (>= HangulVowelJamoFirst and <= HangulVowelJamoLast)
+            or (>= HangulTrailingJamoFirst and <= HangulTrailingJamoLast);
+    }
+
+    /// <summary>Determines whether <paramref name="sb"/> ends with the separator emitted at <paramref name="lastSeparatorStart"/>.</summary>
+    private static bool EndsWithEmittedSeparator(StringBuilder sb, int lastSeparatorStart, string separator)
+    {
+        return lastSeparatorStart >= 0 && lastSeparatorStart + separator.Length == sb.Length;
+    }
+
+    /// <summary>Returns the offset of the emitted separator at the end of <paramref name="sb"/>, or -1 when there is none.</summary>
+    private static int TrailingSeparatorStart(StringBuilder sb, int lastSeparatorStart, string separator)
+    {
+        return EndsWithEmittedSeparator(sb, lastSeparatorStart, separator) ? lastSeparatorStart : -1;
+    }
+
 }

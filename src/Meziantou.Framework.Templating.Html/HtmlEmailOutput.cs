@@ -149,6 +149,17 @@ public class HtmlEmailOutput(Template template, TextWriter writer) : Output(temp
         }
     }
 
+    /// <summary>Throws when the template left a section open, which means an <c>end_section</c> directive is missing.</summary>
+    /// <exception cref="TemplateException">A section was started but never ended.</exception>
+    internal void ThrowIfSectionsAreOpen()
+    {
+        if (_currentSections.Count == 0)
+            return;
+
+        var sectionNames = string.Join(", ", _currentSections.Select(section => "'" + section.Name + "'"));
+        throw new TemplateException($"The template is invalid: no end_section directive for {sectionNames}.");
+    }
+
     /// <summary>Retrieves the content of a previously captured section.</summary>
     /// <param name="name">The name of the section to retrieve.</param>
     /// <returns>The decoded content of the section, or <see langword="null"/> if the section does not exist.</returns>

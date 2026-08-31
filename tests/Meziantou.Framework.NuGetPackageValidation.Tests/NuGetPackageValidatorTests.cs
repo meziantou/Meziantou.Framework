@@ -258,6 +258,14 @@ public sealed class NuGetPackageValidatorTests
     }
 
     [Fact]
+    public async Task Validate_ErrorsKeepTheOrderTheyAreReportedIn()
+    {
+        // The package sets the repository type but neither the url nor the commit
+        var result = await ValidateAsync("Release_RepositoryType.1.0.0.nupkg", NuGetPackageValidationRules.RepositoryMustBeSet);
+        Assert.Equal([ErrorCodes.RepositoryUrlNotSet, ErrorCodes.RepositoryCommitNotSet], result.Errors.Select(item => item.ErrorCode));
+    }
+
+    [Fact]
     public async Task Validate_WithSymbolsServer()
     {
         // Downloading symbols can be flaky on CI

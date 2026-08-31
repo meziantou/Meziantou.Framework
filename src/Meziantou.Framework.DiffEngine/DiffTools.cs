@@ -243,6 +243,17 @@ public static class DiffTools
         return resolvedTool is not null;
     }
 
+    internal static LaunchArguments GetLaunchArguments(DiffTool tool)
+    {
+        foreach (var definition in Definitions)
+        {
+            if (definition.Tool == tool)
+                return definition.LaunchArguments;
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(tool), tool, message: null);
+    }
+
     private static List<ResolvedTool> ResolveAvailableTools()
     {
         var result = new List<ResolvedTool>();
@@ -492,45 +503,56 @@ public static class DiffTools
         return pathExtensions.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
-    private static string StandardLeftArguments(string temp, string target) => $"\"{target}\" \"{temp}\"";
-    private static string StandardRightArguments(string temp, string target) => $"\"{temp}\" \"{target}\"";
+    private static string StandardLeftArguments(string temp, string target) => $"{Quote(target)} {Quote(temp)}";
+    private static string StandardRightArguments(string temp, string target) => $"{Quote(temp)} {Quote(target)}";
 
-    private static string RiderLeftArguments(string temp, string target) => $"diff \"{target}\" \"{temp}\"";
-    private static string RiderRightArguments(string temp, string target) => $"diff \"{temp}\" \"{target}\"";
+    private static string RiderLeftArguments(string temp, string target) => $"diff {Quote(target)} {Quote(temp)}";
+    private static string RiderRightArguments(string temp, string target) => $"diff {Quote(temp)} {Quote(target)}";
 
-    private static string VimLeftArguments(string temp, string target) => $"-d \"{target}\" \"{temp}\"";
-    private static string VimRightArguments(string temp, string target) => $"-d \"{temp}\" \"{target}\"";
+    private static string VimLeftArguments(string temp, string target) => $"-d {Quote(target)} {Quote(temp)}";
+    private static string VimRightArguments(string temp, string target) => $"-d {Quote(temp)} {Quote(target)}";
 
-    private static string VisualStudioCodeLeftArguments(string temp, string target) => $"--diff \"{target}\" \"{temp}\"";
-    private static string VisualStudioCodeRightArguments(string temp, string target) => $"--diff \"{temp}\" \"{target}\"";
+    private static string VisualStudioCodeLeftArguments(string temp, string target) => $"--diff {Quote(target)} {Quote(temp)}";
+    private static string VisualStudioCodeRightArguments(string temp, string target) => $"--diff {Quote(temp)} {Quote(target)}";
 
     private static string VisualStudioLeftArguments(string temp, string target)
     {
         var tempTitle = Path.GetFileName(temp);
         var targetTitle = Path.GetFileName(target);
-        return $"/diff \"{target}\" \"{temp}\" \"{targetTitle}\" \"{tempTitle}\"";
+        return $"/diff {Quote(target)} {Quote(temp)} {Quote(targetTitle)} {Quote(tempTitle)}";
     }
 
     private static string VisualStudioRightArguments(string temp, string target)
     {
         var tempTitle = Path.GetFileName(temp);
         var targetTitle = Path.GetFileName(target);
-        return $"/diff \"{temp}\" \"{target}\" \"{tempTitle}\" \"{targetTitle}\"";
+        return $"/diff {Quote(temp)} {Quote(target)} {Quote(tempTitle)} {Quote(targetTitle)}";
     }
 
     private static string WinMergeLeftArguments(string temp, string target)
     {
         var tempTitle = Path.GetFileName(temp);
         var targetTitle = Path.GetFileName(target);
-        return $"/u /wr /e \"{target}\" \"{temp}\" /dl \"{targetTitle}\" /dr \"{tempTitle}\" /cfg Backup/EnableFile=0";
+        return $"/u /wr /e {Quote(target)} {Quote(temp)} /dl {Quote(targetTitle)} /dr {Quote(tempTitle)} /cfg Backup/EnableFile=0";
     }
 
     private static string WinMergeRightArguments(string temp, string target)
     {
         var tempTitle = Path.GetFileName(temp);
         var targetTitle = Path.GetFileName(target);
-        return $"/u /wl /e \"{temp}\" \"{target}\" /dl \"{tempTitle}\" /dr \"{targetTitle}\" /cfg Backup/EnableFile=0";
+        return $"/u /wl /e {Quote(temp)} {Quote(target)} /dl {Quote(tempTitle)} /dr {Quote(targetTitle)} /cfg Backup/EnableFile=0";
     }
+
+    /// <summary>
+    /// Quotes a path for <see cref="System.Diagnostics.ProcessStartInfo.Arguments"/>. A quote is legal in a file
+    /// name on Linux and macOS, and an unescaped one would end the argument early and turn the rest of the path
+    /// into extra arguments for the diff tool.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="CommandLineBuilder"/> implements the rules <see cref="System.Diagnostics.ProcessStartInfo.Arguments"/>
+    /// is parsed with on every platform, and only adds quotes when the value actually needs them.
+    /// </remarks>
+    private static string Quote(string path) => CommandLineBuilder.WindowsQuotedArgument(path);
 
     private static PlatformSettings Windows(string[] executableNames, params string[] searchDirectories) => new(executableNames, searchDirectories);
     private static PlatformSettings Linux(string[] executableNames, params string[] searchDirectories) => new(executableNames, searchDirectories);

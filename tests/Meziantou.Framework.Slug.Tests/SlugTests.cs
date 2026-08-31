@@ -1,3 +1,4 @@
+using System.Text.Unicode;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -104,6 +105,48 @@ public class SlugTests
         var options = new SlugOptions { Separator = "" };
         var slug = Slug.Create("a b", options);
         Assert.Equal("ab", slug);
+    }
+
+    [Theory]
+    [InlineData("Ajax", "x", "Ajax")]
+    [InlineData("version 10", "0", "version010")]
+    [InlineData("ax b", "x", "axxb")]
+    public void Slug_SeparatorCharacterFromTheInput_IsContentAndIsNotTrimmed(string text, string separator, string expected)
+    {
+        var options = new SlugOptions { Separator = separator };
+        var slug = Slug.Create(text, options);
+        Assert.Equal(expected, slug);
+    }
+
+    [Theory]
+    [InlineData("hello-world-", "hello-world-")]
+    [InlineData("end-", "end-")]
+    [InlineData("a-", "a-")]
+    [InlineData("wrap-up -", "wrap-up--")]
+    public void Slug_AllowedSeparatorCharacter_IsKeptEvenWhenItEndsTheSlug(string text, string expected)
+    {
+        var options = new SlugOptions();
+        options.AllowedRanges.Add(UnicodeRange.Create('-', '-'));
+        var slug = Slug.Create(text, options);
+        Assert.Equal(expected, slug);
+    }
+
+    [Theory]
+    [InlineData("\u1100__")]
+    [InlineData("_b\u00C1\u11A8--__a!")]
+    public void Slug_MaximumLength_RaisingTheLimitNeverShortensTheSlug_WhenTheInputContainsTheSeparator(string text)
+    {
+        var previousLength = 0;
+        for (var maximumLength = 1; maximumLength <= 16; maximumLength++)
+        {
+            var options = new SlugOptions { Separator = "__", MaximumLength = maximumLength };
+            options.AllowedRanges.Clear();
+
+            var slug = Slug.Create(text, options);
+
+            Assert.HasCountGreaterThanOrEqual(previousLength, slug, $"limit {maximumLength} produced fewer characters than limit {maximumLength - 1}");
+            previousLength = slug.Length;
+        }
     }
 
     [Fact]

@@ -35,19 +35,6 @@ internal sealed class ConstructorStringParser
         Done,
     }
 
-    /// <summary>
-    /// Special schemes per URL Standard.
-    /// </summary>
-    private static readonly HashSet<string> SpecialSchemes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "ftp",
-        "file",
-        "http",
-        "https",
-        "ws",
-        "wss",
-    };
-
     public ConstructorStringParser(string input)
     {
         _input = input;
@@ -441,7 +428,7 @@ internal sealed class ConstructorStringParser
         try
         {
             var component = UrlPatternComponent.Compile(protocolString, CanonicalizeProtocol, PatternOptions.Default);
-            foreach (var scheme in SpecialSchemes)
+            foreach (var scheme in SpecialSchemes.All)
             {
                 if (component.RegularExpression.IsMatch(scheme))
                 {

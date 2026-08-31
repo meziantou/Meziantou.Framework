@@ -550,47 +550,10 @@ public static class DiffTools
     /// into extra arguments for the diff tool.
     /// </summary>
     /// <remarks>
-    /// Escaping follows the rules <see cref="System.Diagnostics.ProcessStartInfo.Arguments"/> is parsed with on
-    /// every platform, described in
-    /// <see href="https://learn.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way">Everyone quotes command line arguments the wrong way</see>.
-    /// The value is always quoted, so paths without special characters keep the command line they had before.
+    /// <see cref="CommandLineBuilder"/> implements the rules <see cref="System.Diagnostics.ProcessStartInfo.Arguments"/>
+    /// is parsed with on every platform, and only adds quotes when the value actually needs them.
     /// </remarks>
-    private static string Quote(string path)
-    {
-        var sb = new StringBuilder(path.Length + 2);
-        sb.Append('"');
-
-        for (var i = 0; i < path.Length; i++)
-        {
-            var backslashes = 0;
-            while (i < path.Length && path[i] == '\\')
-            {
-                i++;
-                backslashes++;
-            }
-
-            if (i == path.Length)
-            {
-                // Backslashes that would otherwise escape the closing quote.
-                sb.Append('\\', backslashes * 2);
-                break;
-            }
-
-            if (path[i] == '"')
-            {
-                sb.Append('\\', (backslashes * 2) + 1);
-            }
-            else
-            {
-                sb.Append('\\', backslashes);
-            }
-
-            sb.Append(path[i]);
-        }
-
-        sb.Append('"');
-        return sb.ToString();
-    }
+    private static string Quote(string path) => CommandLineBuilder.WindowsQuotedArgument(path);
 
     private static PlatformSettings Windows(string[] executableNames, params string[] searchDirectories) => new(executableNames, searchDirectories);
     private static PlatformSettings Linux(string[] executableNames, params string[] searchDirectories) => new(executableNames, searchDirectories);

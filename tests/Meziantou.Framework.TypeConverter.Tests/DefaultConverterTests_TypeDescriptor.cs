@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Tests;
 
@@ -93,10 +94,31 @@ public sealed class DefaultConverterTests_TypeDescriptor
     }
 
     // The two-argument TypeConverter.ConvertTo overload is hardcoded to CultureInfo.CurrentCulture,
-    // so the provider passed by the caller used to be ignored
+    // so the provider passed by the caller used to be ignored.
+    // A custom separator keeps this independent of the available ICU data, so it also runs
+    // under InvariantGlobalization, and it cannot pass by accidentally matching the ambient culture.
+    [Fact]
+    public void TryConvert_NumberToString_UsesTheProviderNumberFormat()
+    {
+        var converter = new DefaultConverter();
+        var provider = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+        provider.NumberFormat.NumberDecimalSeparator = "#";
+
+        Assert.True(converter.TryChangeType(1234.56m, provider, out string? decimalValue));
+        Assert.Equal("1234#56", decimalValue);
+
+        Assert.True(converter.TryChangeType(1234.5d, provider, out string? doubleValue));
+        Assert.Equal("1234#5", doubleValue);
+
+        Assert.True(converter.TryChangeType(1234.5f, provider, out string? floatValue));
+        Assert.Equal("1234#5", floatValue);
+    }
+
+    // The same behaviour against real culture data, which needs ICU
     [Theory]
     [InlineData("fr-FR", "1234,56")]
     [InlineData("en-US", "1234.56")]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void TryConvert_DecimalToString_UsesTheProvider(string cultureName, string expected)
     {
         var converter = new DefaultConverter();
@@ -109,6 +131,7 @@ public sealed class DefaultConverterTests_TypeDescriptor
     [Theory]
     [InlineData("fr-FR", "02/01/2020")]
     [InlineData("en-US", "1/2/2020")]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void TryConvert_DateTimeToString_UsesTheProvider(string cultureName, string expected)
     {
         var converter = new DefaultConverter();

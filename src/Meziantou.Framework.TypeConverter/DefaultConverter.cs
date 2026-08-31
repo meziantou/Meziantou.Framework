@@ -41,20 +41,6 @@ public class DefaultConverter : IConverter
         return TryConvert(input, conversionType, provider, out value);
     }
 
-    private static byte GetHexaByte(char c)
-    {
-        if (c is >= '0' and <= '9')
-            return (byte)(c - '0');
-
-        if (c is >= 'A' and <= 'F')
-            return (byte)(c - 'A' + 10);
-
-        if (c is >= 'a' and <= 'f')
-            return (byte)(c - 'a' + 10);
-
-        return 0xFF;
-    }
-
     private static bool NormalizeHexString(ref string? s)
     {
         if (s is null)

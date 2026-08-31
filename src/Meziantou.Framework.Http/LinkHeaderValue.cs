@@ -17,7 +17,7 @@ public sealed class LinkHeaderValue
     /// <summary>Gets the relation type (rel parameter) of the link.</summary>
     public string Rel => GetParameterValue("rel") ?? "";
 
-    /// <summary>Gets the value of a parameter by name.</summary>
+    /// <summary>Gets the value of a parameter by name. The comparison is case-insensitive.</summary>
     /// <param name="parameterName">The name of the parameter.</param>
     /// <returns>The parameter value, or <see langword="null"/> if the parameter is not found.</returns>
     public string? GetParameterValue(string parameterName)
@@ -25,7 +25,7 @@ public sealed class LinkHeaderValue
         var parameters = Parameters;
         for (var i = 0; i < parameters.Count; i++)
         {
-            if (parameters[i].Key == parameterName)
+            if (string.Equals(parameters[i].Key, parameterName, StringComparison.OrdinalIgnoreCase))
                 return parameters[i].Value;
         }
 
@@ -204,12 +204,14 @@ public sealed class LinkHeaderValue
                         index = value.IndexOfAny(';', ',');
                         if (index == -1)
                         {
-                            parameterValue = value.ToString();
+                            // Trim the trailing whitespace: an unquoted value is terminated by the next
+                            // ';' or ',', and RFC 7230 allows optional whitespace before that separator.
+                            parameterValue = value.Trim().ToString();
                             value = [];
                         }
                         else
                         {
-                            parameterValue = value[0..index].ToString();
+                            parameterValue = value[0..index].Trim().ToString();
                             value = value[index..];
                         }
                     }

@@ -55,6 +55,28 @@ public class PromptTests
         Assert.True(output.LastIndexOf("test?", StringComparison.Ordinal) >= 0);
     }
 
+    [Fact]
+    public void YesNo_ShouldThrowWhenInputIsClosedAndNoDefaultValue()
+    {
+        Assert.Throws<EndOfStreamException>(() => UsingConsole("", () => Prompt.YesNo("test?", defaultValue: null)));
+    }
+
+    [Fact]
+    public void YesNo_ShouldThrowWhenInputIsClosedAfterAnInvalidValue()
+    {
+        Assert.Throws<EndOfStreamException>(() => UsingConsole("maybe\r\n", () => Prompt.YesNo("test?", "Yes", "No", defaultValue: null)));
+    }
+
+    [Fact]
+    public void YesNo_ShouldUseDefaultValueWhenInputIsClosed()
+    {
+        UsingConsole("", () =>
+        {
+            var result = Prompt.YesNo("test?", defaultValue: true);
+            Assert.True(result);
+        });
+    }
+
     private static string UsingConsole(string input, Action action)
     {
         var initialInStream = Console.In;

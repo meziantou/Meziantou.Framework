@@ -36,6 +36,11 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     private string? _outerXml;
     private string? _innerXml;
 
+    // The document and version the cached values above were computed for. A cached value is only used while
+    // it still matches the document's current version.
+    private HtmlDocument? _cacheDocument;
+    private int _cacheVersion;
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     static HtmlNode()
@@ -125,15 +130,48 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
 
     protected internal virtual void ClearCaches()
     {
-        // Walking the ancestors iteratively instead of recursively: a document can legitimately be nested
-        // thousands of levels deep and a recursive walk would overflow the stack.
-        for (var node = this; node is not null; node = node._parentNode)
+        // A single counter on the document is moved instead of clearing every ancestor of the changed node:
+        // parsing adds one node per level of nesting, so an O(depth) walk per addition made loading a deeply
+        // nested document quadratic in its depth. Every node compares its stamp against this counter before
+        // using a cached value, so one increment invalidates the whole document.
+        //
+        // A node that is not owned by a document keeps no cached value at all (see SyncCaches), and such a node
+        // is always the root of its tree - OwnerDocument only becomes null when ParentNode is set to null - so
+        // there is never an ancestor left to invalidate here.
+        var document = OwnerDocument;
+        if (document is not null)
         {
-            node._innerHtml = null;
-            node._innerText = null;
-            node._innerXml = null;
-            node._outerHtml = null;
-            node._outerXml = null;
+            document.CacheVersion++;
+        }
+    }
+
+    private void ClearOwnCaches()
+    {
+        _innerHtml = null;
+        _innerText = null;
+        _innerXml = null;
+        _outerHtml = null;
+        _outerXml = null;
+    }
+
+    /// <summary>Drops this node's cached values when the document has changed since they were computed.</summary>
+    /// <remarks>Called by every cached property before it looks at its backing field.</remarks>
+    private void SyncCaches()
+    {
+        var document = OwnerDocument;
+        if (document is null)
+        {
+            // Nothing carries a version for a detached node, and its descendants may still be reporting their
+            // changes to the document it was removed from, so it cannot trust anything it computed earlier.
+            ClearOwnCaches();
+            return;
+        }
+
+        if (!ReferenceEquals(document, _cacheDocument) || document.CacheVersion != _cacheVersion)
+        {
+            _cacheDocument = document;
+            _cacheVersion = document.CacheVersion;
+            ClearOwnCaches();
         }
     }
 
@@ -471,6 +509,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
+            SyncCaches();
             if (_outerHtml is null)
             {
                 using var w = new StringWriter(CultureInfo.InvariantCulture);
@@ -486,6 +525,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
+            SyncCaches();
             if (_innerText is null)
             {
                 var sb = new StringBuilder();
@@ -543,6 +583,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
+            SyncCaches();
             if (_innerHtml is null)
             {
                 using var w = new StringWriter(CultureInfo.InvariantCulture);
@@ -559,6 +600,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
+            SyncCaches();
             if (_outerXml is null)
             {
                 using var w = new StringWriter(CultureInfo.InvariantCulture);
@@ -578,6 +620,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
+            SyncCaches();
             if (_innerXml is null)
             {
                 using var w = new StringWriter(CultureInfo.InvariantCulture);
@@ -1009,6 +1052,25 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         ArgumentNullException.ThrowIfNull(prefix);
 
+        // The ancestors are walked iteratively: a document can be nested thousands of levels deep and a
+        // recursive walk would overflow the stack, which cannot be caught and takes the whole process down.
+        for (var node = this; node is not null; node = node.ParentNode)
+        {
+            var namespaceURI = node.GetDeclaredNamespaceOfPrefix(prefix);
+            if (namespaceURI is not null)
+                return namespaceURI;
+        }
+
+        if (OwnerDocument is not null && OwnerDocument != this)
+            return OwnerDocument.GetNamespaceOfPrefix(prefix);
+
+        return "";
+    }
+
+    /// <summary>Resolves <paramref name="prefix"/> against the declarations carried by this node alone, without looking at its ancestors.</summary>
+    /// <returns>The namespace URI, or <see langword="null"/> when this node declares nothing for <paramref name="prefix"/>.</returns>
+    private protected virtual string? GetDeclaredNamespaceOfPrefix(string prefix)
+    {
         if (prefix.EqualsIgnoreCase(Prefix) && DeclaredNamespaceURI is not null)
             return DeclaredNamespaceURI;
 
@@ -1018,13 +1080,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 return att.Value ?? "";
         }
 
-        if (ParentNode is not null && ParentNode != this)
-            return ParentNode.GetNamespaceOfPrefix(prefix);
-
-        if (OwnerDocument is not null && OwnerDocument != this)
-            return OwnerDocument.GetNamespaceOfPrefix(prefix);
-
-        return "";
+        return null;
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
@@ -1032,6 +1088,25 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         ArgumentNullException.ThrowIfNull(namespaceURI);
 
+        // The ancestors are walked iteratively: a document can be nested thousands of levels deep and a
+        // recursive walk would overflow the stack, which cannot be caught and takes the whole process down.
+        for (var node = this; node is not null; node = node.ParentNode)
+        {
+            var prefix = node.GetDeclaredPrefixOfNamespace(namespaceURI);
+            if (prefix is not null)
+                return prefix;
+        }
+
+        if (OwnerDocument is not null && OwnerDocument != this)
+            return OwnerDocument.GetPrefixOfNamespace(namespaceURI);
+
+        return "";
+    }
+
+    /// <summary>Resolves <paramref name="namespaceURI"/> against the declarations carried by this node alone, without looking at its ancestors.</summary>
+    /// <returns>The prefix, or <see langword="null"/> when this node declares nothing for <paramref name="namespaceURI"/>.</returns>
+    private protected virtual string? GetDeclaredPrefixOfNamespace(string namespaceURI)
+    {
         if (namespaceURI.EqualsIgnoreCase(NamespaceURI))
             return Prefix;
 
@@ -1041,13 +1116,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 return att.LocalName;
         }
 
-        if (ParentNode is not null && ParentNode != this)
-            return ParentNode.GetPrefixOfNamespace(namespaceURI);
-
-        if (OwnerDocument is not null && OwnerDocument != this)
-            return OwnerDocument.GetPrefixOfNamespace(namespaceURI);
-
-        return "";
+        return null;
     }
 
     public virtual HtmlNode? GetParent(Func<HtmlNode, bool> func)
@@ -1074,6 +1143,17 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         ArgumentNullException.ThrowIfNull(namespaces);
 
+        // The ancestors are walked iteratively: a document can be nested thousands of levels deep and a
+        // recursive walk would overflow the stack, which cannot be caught and takes the whole process down.
+        for (var node = this; node is not null; node = node.ParentNode)
+        {
+            node.GetDeclaredNamespaceAttributes(namespaces);
+        }
+    }
+
+    /// <summary>Adds the namespaces declared by this node alone to <paramref name="namespaces"/>, without looking at its ancestors.</summary>
+    private protected virtual void GetDeclaredNamespaceAttributes(IDictionary<string, string> namespaces)
+    {
         foreach (var att in Attributes)
         {
             if (att.Prefix.EqualsIgnoreCase(XmlnsPrefix))
@@ -1084,8 +1164,6 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 }
             }
         }
-
-        ParentNode?.GetNamespaceAttributes(namespaces);
     }
 
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]

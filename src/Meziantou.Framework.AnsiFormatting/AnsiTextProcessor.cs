@@ -367,7 +367,7 @@ public static class AnsiTextProcessor
 
     public sealed record AnsiStyle(AnsiColor? Foreground, AnsiColor? Background, bool Bold, bool Italic, bool Underline, bool Inverse)
     {
-        public static AnsiStyle None => new(Foreground: null, Background: null, Bold: false, Italic: false, Underline: false, Inverse: false);
+        public static AnsiStyle None { get; } = new(Foreground: null, Background: null, Bold: false, Italic: false, Underline: false, Inverse: false);
     }
 
     public sealed record AnsiColor(AnsiColorKind Kind, byte Red, byte Green, byte Blue, byte IndexedValue)

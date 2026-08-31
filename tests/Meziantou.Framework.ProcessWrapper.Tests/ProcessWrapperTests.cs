@@ -955,6 +955,24 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_WithSharedStringBuilderOutputTarget_DoesNotLoseOutput()
+    {
+        // Both pumps append to the same StringBuilder concurrently. StringBuilder is not thread-safe,
+        // so without a shared lock this silently loses output or throws from inside Append.
+        const int Iterations = 2000;
+        const int ChunkLength = 10;
+
+        var stringBuilder = new StringBuilder();
+        await CreateInterleavedChunkCommand(Iterations, new string('o', ChunkLength), new string('e', ChunkLength))
+            .WithValidation(ProcessValidationMode.None)
+            .WithOutputStream(stringBuilder)
+            .WithErrorStream(stringBuilder)
+            .ExecuteAsync();
+
+        Assert.Equal(Iterations * ChunkLength * 2, stringBuilder.Length);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WithErrorEncoding_UsesConfiguredEncoding()
     {
         var sb = new StringBuilder();
@@ -2034,6 +2052,25 @@ public class ProcessWrapperTests
         var redirection = standardError ? " >&2" : "";
         return ProcessWrapper.Create("sh")
             .WithArguments("-c", $"printf '\\{octalValue}'{redirection}");
+    }
+
+    private static ProcessWrapper CreateInterleavedChunkCommand(int iterations, string outputChunk, string errorChunk)
+    {
+        var count = iterations.ToString(CultureInfo.InvariantCulture);
+        if (OperatingSystem.IsWindows())
+        {
+            return ProcessWrapper.Create("powershell.exe")
+                .WithArguments(
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    $"for ($i = 0; $i -lt {count}; $i++) {{ [Console]::Out.Write('{outputChunk}'); [Console]::Error.Write('{errorChunk}') }}");
+        }
+
+        return ProcessWrapper.Create("sh")
+            .WithArguments("-c", $"i=0; while [ $i -lt {count} ]; do printf '{outputChunk}'; printf '{errorChunk}' >&2; i=$((i+1)); done");
     }
 
     private static string[] GetEchoArguments(string text)

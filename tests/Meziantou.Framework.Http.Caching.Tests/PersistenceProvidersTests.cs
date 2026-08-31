@@ -523,6 +523,31 @@ public class PersistenceProvidersTests
         }
     }
 
+    [Fact]
+    public async Task InMemoryProviderConcurrentWritesToTheSameKeyKeepOneEntryPerSecondaryKey()
+    {
+        var provider = new InMemoryHttpCacheStore();
+        var primaryKey = "http://example.com/concurrent";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        // Every write replaces the stored array, so the read-modify-write has to survive contention.
+        var writes = Enumerable.Range(0, 64).Select(i => Task.Run(async () =>
+        {
+            var entry = CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false);
+            entry.SecondaryKeyHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Accept-Language"] = "lang-" + (i % 4).ToString(CultureInfo.InvariantCulture),
+            };
+
+            await provider.SetEntryAsync(primaryKey, entry, CancellationToken.None);
+        }));
+
+        await Task.WhenAll(writes);
+
+        var entries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
+        Assert.HasCount(4, entries);
+    }
+
     private static HttpCachePersistenceEntry CreatePersistenceEntry(
         DateTimeOffset now,
         TimeSpan maxAge,

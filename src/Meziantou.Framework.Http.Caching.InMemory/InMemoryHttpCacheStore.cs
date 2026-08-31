@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.Text.Json;
 
 namespace Meziantou.Framework.Http.Caching.InMemory;
@@ -8,7 +9,10 @@ namespace Meziantou.Framework.Http.Caching.InMemory;
 /// </summary>
 public sealed class InMemoryHttpCacheStore : IHttpCacheStore
 {
-    private readonly ConcurrentDictionary<string, ConcurrentBag<HttpCachePersistenceEntry>> _entries = new(StringComparer.Ordinal);
+    // The value is replaced wholesale on every write, never mutated in place, so an immutable array says
+    // what the code actually does. A ConcurrentBag here paid for thread-local storage and work stealing that
+    // nothing used, since no two threads ever added to the same instance.
+    private readonly ConcurrentDictionary<string, ImmutableArray<HttpCachePersistenceEntry>> _entries = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Saves all in-memory cache entries to a JSON file.
@@ -90,7 +94,7 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            _entries[primaryKey] = new ConcurrentBag<HttpCachePersistenceEntry>(entries.Select(static entry => entry.Clone()));
+            _entries[primaryKey] = [.. entries.Select(static entry => entry.Clone())];
         }
     }
 
@@ -104,7 +108,14 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
         if (!_entries.TryGetValue(primaryKey, out var entries))
             return ValueTask.FromResult<IReadOnlyCollection<HttpCachePersistenceEntry>>(Array.Empty<HttpCachePersistenceEntry>());
 
-        var clonedEntries = entries.Select(static entry => entry.Clone()).ToArray();
+        // The entries are handed out as clones: HttpCachePersistenceEntry is public and mutable, so a
+        // caller must not be able to reach into what the store holds.
+        var clonedEntries = new HttpCachePersistenceEntry[entries.Length];
+        for (var i = 0; i < entries.Length; i++)
+        {
+            clonedEntries[i] = entries[i].Clone();
+        }
+
         return ValueTask.FromResult<IReadOnlyCollection<HttpCachePersistenceEntry>>(clonedEntries);
     }
 
@@ -116,23 +127,12 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
 
         cancellationToken.ThrowIfCancellationRequested();
 
+        var storedEntry = entry.Clone();
         _entries.AddOrUpdate(
             primaryKey,
-            _ => new ConcurrentBag<HttpCachePersistenceEntry> { entry.Clone() },
-            (_, bag) =>
-            {
-                var newBag = new ConcurrentBag<HttpCachePersistenceEntry>();
-                foreach (var existing in bag)
-                {
-                    if (!HttpCachePersistenceEntry.HasSameSecondaryKey(existing, entry))
-                    {
-                        newBag.Add(existing);
-                    }
-                }
-
-                newBag.Add(entry.Clone());
-                return newBag;
-            });
+            static (_, added) => [added],
+            static (_, existing, added) => existing.RemoveAll(candidate => HttpCachePersistenceEntry.HasSameSecondaryKey(candidate, added)).Add(added),
+            storedEntry);
 
         return ValueTask.CompletedTask;
     }
@@ -170,29 +170,15 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            while (_entries.TryGetValue(primaryKey, out var bag))
+            while (_entries.TryGetValue(primaryKey, out var entries))
             {
-                var keptEntries = new List<HttpCachePersistenceEntry>();
-                var deletedEntriesForKey = 0;
-
-                foreach (var entry in bag)
-                {
-                    if (entry.IsObsolete(now))
-                    {
-                        deletedEntriesForKey++;
-                    }
-                    else
-                    {
-                        keptEntries.Add(entry);
-                    }
-                }
-
-                if (deletedEntriesForKey is 0)
+                var keptEntries = entries.RemoveAll(entry => entry.IsObsolete(now));
+                if (keptEntries.Length == entries.Length)
                     break;
 
-                if (keptEntries.Count is 0)
+                if (keptEntries.IsEmpty)
                 {
-                    if (_entries.TryRemove(new KeyValuePair<string, ConcurrentBag<HttpCachePersistenceEntry>>(primaryKey, bag)))
+                    if (_entries.TryRemove(new KeyValuePair<string, ImmutableArray<HttpCachePersistenceEntry>>(primaryKey, entries)))
                     {
                         break;
                     }
@@ -200,8 +186,7 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
                     continue;
                 }
 
-                var replacementBag = new ConcurrentBag<HttpCachePersistenceEntry>(keptEntries);
-                if (_entries.TryUpdate(primaryKey, replacementBag, bag))
+                if (_entries.TryUpdate(primaryKey, keptEntries, entries))
                 {
                     break;
                 }

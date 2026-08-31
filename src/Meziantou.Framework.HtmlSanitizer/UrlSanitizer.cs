@@ -39,11 +39,11 @@ public static partial class UrlSanitizer
      *
      * This regular expression was taken from the Closure sanitization library.
      */
-    [GeneratedRegex("^(?:(?:https?|mailto|ftp|tel|file):|[^&:/?#]*(?:[/?#]|$))", RegexOptions.IgnoreCase | RegexOptions.Compiled, matchTimeoutMilliseconds: 10000)]
+    [GeneratedRegex("^(?:(?:https?|mailto|ftp|tel|file):|[^&:/?#]*(?:[/?#]|$))", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 10000)]
     private static partial Regex SafeUrlRegex();
 
     /** A pattern that matches safe data URLs. Only matches image, video and audio types. */
-    [GeneratedRegex("^data:(?:image/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|video/(?:mpeg|mp4|ogg|webm)|audio/(?:mp3|oga|ogg|opus));base64,[a-z0-9+/]+=*$", RegexOptions.IgnoreCase | RegexOptions.Compiled, matchTimeoutMilliseconds: 10000)]
+    [GeneratedRegex("^data:(?:image/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|video/(?:mpeg|mp4|ogg|webm)|audio/(?:mp3|oga|ogg|opus));base64,[a-z0-9+/]+=*$", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 10000)]
     private static partial Regex DataUrlPattern();
 
     private static readonly char[] Whitespaces = ['\t', '\r', '\n', ' ', '\f'];

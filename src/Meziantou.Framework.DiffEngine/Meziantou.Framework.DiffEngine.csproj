@@ -10,6 +10,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Meziantou.Framework.CommandLine/CommandLineBuilder.cs" Link="Utils/CommandLineBuilder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
   </ItemGroup>
 </Project>

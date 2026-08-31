@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Net.Http.Headers;
 using System.Text.Encodings.Web;
+using System.Text.Unicode;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,7 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
     private static readonly AuthenticateResult MissingCredentialsResult = AuthenticateResult.Fail("Missing credentials");
     private static readonly AuthenticateResult CredentialsTooLongResult = AuthenticateResult.Fail("Credentials are too long");
     private static readonly AuthenticateResult InvalidBase64CredentialsResult = AuthenticateResult.Fail("Invalid Base64 credentials");
+    private static readonly AuthenticateResult InvalidCredentialsEncodingResult = AuthenticateResult.Fail("Credentials are not valid UTF-8");
     private static readonly AuthenticateResult InvalidCredentialsFormatResult = AuthenticateResult.Fail("Invalid credentials format");
     private static readonly AuthenticateResult InvalidUsernameOrPasswordResult = AuthenticateResult.Fail("Invalid username or password");
 
@@ -44,9 +46,10 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
         if (headerValue.Parameter.Length > Options.MaxCredentialLength)
             return CredentialsTooLongResult;
 
-        if (!TryDecodeCredentials(headerValue.Parameter, out var credentials))
+        var decodeResult = DecodeCredentials(headerValue.Parameter, out var credentials);
+        if (decodeResult is not CredentialsDecodeResult.Success)
         {
-            return InvalidBase64CredentialsResult;
+            return decodeResult is CredentialsDecodeResult.InvalidBase64 ? InvalidBase64CredentialsResult : InvalidCredentialsEncodingResult;
         }
 
         // RFC 7617 defines userid as *<TEXT excluding ":">, so an empty user-id is well-formed.
@@ -68,15 +71,12 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
     protected override Task HandleChallengeAsync(AuthenticationProperties properties)
     {
         Response.StatusCode = StatusCodes.Status401Unauthorized;
-        if (Options.Realm is null)
-        {
-            Response.Headers.WWWAuthenticate = "Basic charset=\"UTF-8\"";
-        }
-        else
-        {
-            var escapedRealm = EscapeHeaderValue(Options.Realm);
-            Response.Headers.WWWAuthenticate = $"Basic realm=\"{escapedRealm}\", charset=\"UTF-8\"";
-        }
+        var challenge = Options.Realm is null
+            ? "Basic charset=\"UTF-8\""
+            : $"Basic realm=\"{EscapeHeaderValue(Options.Realm)}\", charset=\"UTF-8\"";
+
+        // Append instead of assigning so a challenge already written by another scheme is preserved.
+        Response.Headers.Append(HeaderNames.WWWAuthenticate, challenge);
 
         return Task.CompletedTask;
     }
@@ -86,7 +86,7 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
         return value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal);
     }
 
-    private static bool TryDecodeCredentials(string encodedCredentials, out string credentials)
+    private static CredentialsDecodeResult DecodeCredentials(string encodedCredentials, out string credentials)
     {
         byte[]? rentedBuffer = null;
 
@@ -98,11 +98,10 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
             if (!Convert.TryFromBase64String(encodedCredentials, credentialBytes, out var bytesWritten))
             {
                 credentials = "";
-                return false;
+                return CredentialsDecodeResult.InvalidBase64;
             }
 
-            credentials = Encoding.UTF8.GetString(credentialBytes[..bytesWritten]);
-            return true;
+            return TranscodeUtf8(credentialBytes[..bytesWritten], out credentials);
         }
         finally
         {
@@ -113,8 +112,44 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
         }
     }
 
+    private static CredentialsDecodeResult TranscodeUtf8(ReadOnlySpan<byte> credentialBytes, out string credentials)
+    {
+        char[]? rentedBuffer = null;
+
+        try
+        {
+            // A UTF-8 sequence never produces more UTF-16 code units than it has bytes.
+            var credentialChars = credentialBytes.Length <= StackallocThreshold ? stackalloc char[credentialBytes.Length] : (rentedBuffer = ArrayPool<char>.Shared.Rent(credentialBytes.Length));
+
+            // replaceInvalidSequences: false keeps malformed input from silently collapsing onto U+FFFD,
+            // which would make unrelated byte sequences decode to the same credentials.
+            if (Utf8.ToUtf16(credentialBytes, credentialChars, out _, out var charsWritten, replaceInvalidSequences: false) is not OperationStatus.Done)
+            {
+                credentials = "";
+                return CredentialsDecodeResult.InvalidEncoding;
+            }
+
+            credentials = new string(credentialChars[..charsWritten]);
+            return CredentialsDecodeResult.Success;
+        }
+        finally
+        {
+            if (rentedBuffer is not null)
+            {
+                ArrayPool<char>.Shared.Return(rentedBuffer);
+            }
+        }
+    }
+
     private static int GetMaximumDecodedLength(int encodedLength)
     {
         return (int)((encodedLength + 3L) / 4L * 3L);
+    }
+
+    private enum CredentialsDecodeResult
+    {
+        Success,
+        InvalidBase64,
+        InvalidEncoding,
     }
 }

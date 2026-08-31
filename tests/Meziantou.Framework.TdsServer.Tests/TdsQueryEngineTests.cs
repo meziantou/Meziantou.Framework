@@ -3406,6 +3406,42 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_Iif_WithAnExistsCondition_ReturnsAQueryEngineError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT IIF(EXISTS(SELECT 1 FROM customers), 1, 0) AS Value
+                    FROM customers
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "IIF does not support a subquery");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Iif_WithAnInSubqueryCondition_ReturnsAQueryEngineError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT IIF(Id IN (SELECT Id FROM customers), 1, 0) AS Value
+                    FROM customers
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "IIF does not support a subquery");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_InvalidQuery_ReturnsServerError()
     {
         var invalidQueryTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);

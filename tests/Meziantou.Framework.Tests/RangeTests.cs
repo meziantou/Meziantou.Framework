@@ -113,4 +113,56 @@ public class RangeTests
         var result = range1.IsInRangeUpperInclusive(range2);
         Assert.Equal(expectedValue, result);
     }
+
+    [Fact]
+    public void Equals_IsSymmetricWhenABoundIsNull()
+    {
+        var withNullFrom = new Range<string>(from: null!, to: "b");
+        var withFrom = new Range<string>("a", "b");
+
+        Assert.Equal(withNullFrom.Equals(withFrom), withFrom.Equals(withNullFrom));
+        Assert.False(withNullFrom.Equals(withFrom));
+        Assert.False(withFrom.Equals(withNullFrom));
+    }
+
+    [Fact]
+    public void Equals_TwoRangesWithTheSameNullBoundAreEqual()
+    {
+        var first = new Range<string>(from: null!, to: "b");
+        var second = new Range<string>(from: null!, to: "b");
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+    }
+
+    [Fact]
+    public void Equals_EqualRangesShareAHashCode()
+    {
+        var first = new Range<int>(1, 10);
+        var second = new Range<int>(1, 10);
+
+        Assert.Equal(first, second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+    }
+
+    [Fact]
+    public void Equals_DifferentRangesAreNotEqual()
+    {
+        Assert.NotEqual(new Range<int>(1, 10), new Range<int>(1, 11));
+        Assert.NotEqual(new Range<int>(1, 10), new Range<int>(2, 10));
+    }
+
+    [Fact]
+    public void CanBeUsedAsADictionaryKey()
+    {
+        var dictionary = new Dictionary<Range<string>, int>
+        {
+            [new Range<string>(from: null!, to: "b")] = 1,
+            [new Range<string>("a", "b")] = 2,
+        };
+
+        Assert.Equal(2, dictionary.Count);
+        Assert.Equal(1, dictionary[new Range<string>(from: null!, to: "b")]);
+        Assert.Equal(2, dictionary[new Range<string>("a", "b")]);
+    }
 }

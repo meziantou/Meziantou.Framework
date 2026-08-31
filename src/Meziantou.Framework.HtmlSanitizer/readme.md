@@ -57,11 +57,11 @@ var sanitizer = new HtmlSanitizer();
 
 // Blocks srcset with dangerous URLs
 var result = sanitizer.SanitizeHtmlFragment("<img srcset='javascript:alert() 300w, https://example.com 600w'>");
-// Result: "<img srcset=''>"
+// Result: "<img srcset='' />"
 
 // Allows safe srcset
 var result = sanitizer.SanitizeHtmlFragment("<img srcset='https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w'>");
-// Result: "<img srcset='https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w'>"
+// Result: "<img srcset='https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w' />"
 ```
 
 ### Text
@@ -132,6 +132,26 @@ sanitizer.ValidAttributes.Remove("target");
 sanitizer.UriAttributes.Add("data-url");
 ```
 
+`ValidAttributes` and `UriAttributes` are separate sets, and only `UriAttributes` triggers URL validation.
+Adding an attribute to `ValidAttributes` alone lets any value through unchecked:
+
+```csharp
+var sanitizer = new HtmlSanitizer();
+sanitizer.ValidAttributes.Add("data-url");
+
+sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>");
+// Result: "<p data-url='javascript:alert(1)'>test</p>"   (the value is not validated)
+
+sanitizer.UriAttributes.Add("data-url");
+sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>");
+// Result: "<p data-url=''>test</p>"
+```
+
+Add any attribute that a browser resolves as a URL to both sets — `action`, `formaction`, `poster`, `data`,
+`srcdoc`, `dynsrc` and `lowsrc` among them. The same applies in reverse: removing an attribute from
+`UriAttributes` while leaving it in `ValidAttributes` stops its value from being checked. Removing it from
+`ValidAttributes` alone is safe, since the attribute is then dropped.
+
 ## Default Configuration
 
 ### Allowed Elements
@@ -199,6 +219,10 @@ The URL sanitizer allows:
 - `file:`
 - Relative URLs (no protocol)
 - Safe data URLs (base64-encoded images, videos, and audio)
+
+A URL is rejected when it contains a `&` before the first `/`, `?` or `#`. This is what stops an entity from
+masking the scheme, as in `java&#115;cript:alert(1)` or `javascript&#58;alert(1)`. It also rejects the rare
+relative URL whose first segment contains a literal `&`, such as `q&a.html` — encode it as `q%26a.html`.
 
 ## Implementation Details
 

@@ -152,6 +152,32 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_DoesNotChangeTheAmbientActivityOfTheCaller()
+    {
+        var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var listener = CreateProcessWrapperActivityListener(activity => activityTask.TrySetResult(activity));
+        ActivitySource.AddActivityListener(listener);
+
+        using var ambientSource = new ActivitySource("Meziantou.Framework.ProcessWrapper.Tests.Ambient");
+        using var ambientListener = new ActivityListener
+        {
+            ShouldListenTo = static source => source.Name == "Meziantou.Framework.ProcessWrapper.Tests.Ambient",
+            Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+        };
+        ActivitySource.AddActivityListener(ambientListener);
+
+        using var ambientActivity = ambientSource.StartActivity("ambient");
+        Assert.NotNull(ambientActivity);
+
+        await CreateEchoCommand("test").ExecuteAsync();
+
+        // The process activity is emitted, but it must not replace the caller's ambient activity.
+        var processActivity = await activityTask.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal("process.execute", processActivity.OperationName);
+        Assert.Same(ambientActivity, Activity.Current);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WithOutputStream_Action()
     {
         var lines = new List<string>();
@@ -1137,6 +1163,18 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_WithInputStream_WhenProcessExitsWithoutReadingItsInput_ReturnsResult()
+    {
+        // The process closes its standard input immediately, so the remaining writes hit a broken pipe.
+        // That is expected for commands that stop reading early and must not fail the execution.
+        var result = await CreateExitImmediatelyCommand()
+            .WithInputStream(InputSource.FromText(new string('a', 10 * 1024 * 1024)))
+            .ExecuteAsync();
+
+        Assert.True(result.ExitCode.IsSuccess);
+    }
+
+    [Fact]
     public async Task ExecuteBufferedAsync_WithPipeOperator_PipesCommandOutput()
     {
         var processResult = await (CreateEchoCommand("hello from operator") | CreatePassthroughCommand())
@@ -1174,6 +1212,21 @@ public class ProcessWrapperTests
             _ = await (CreateEchoCommand("hello from operator") | CreatePassthroughCommand().WithInputStream("overridden"))
                 .ExecuteBufferedAsync();
         });
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_WhenDownstreamExitsWithoutReadingItsInput_DoesNotHang()
+    {
+        // The upstream command writes far more than the pipe's pause threshold while the downstream
+        // command exits without draining it, which used to deadlock the pipe's writer against DisposeReader.
+        var pipeline = CreateLargeOutputCommand(1024 * 1024)
+            | CreateExitImmediatelyCommand().WithValidation(ProcessValidationMode.None);
+
+        var execution = pipeline.ExecuteBufferedAsync();
+        var completed = await Task.WhenAny(execution, Task.Delay(TimeSpan.FromSeconds(30)));
+
+        Assert.Same(execution, completed);
+        await execution;
     }
 
     [Fact]
@@ -1917,6 +1970,37 @@ public class ProcessWrapperTests
 
         return ProcessWrapper.Create("sh")
             .WithArguments("-c", $"echo ${variableName}");
+    }
+
+    private static ProcessWrapper CreateLargeOutputCommand(int byteCount)
+    {
+        var count = byteCount.ToString(CultureInfo.InvariantCulture);
+        if (OperatingSystem.IsWindows())
+        {
+            return ProcessWrapper.Create("powershell.exe")
+                .WithArguments(
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    $"[Console]::Out.Write('a' * {count})");
+        }
+
+        return ProcessWrapper.Create("sh")
+            .WithArguments("-c", $"yes aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | head -c {count}");
+    }
+
+    private static ProcessWrapper CreateExitImmediatelyCommand()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return ProcessWrapper.Create("cmd.exe")
+                .WithArguments("/C", "exit /b 0");
+        }
+
+        return ProcessWrapper.Create("sh")
+            .WithArguments("-c", "exit 0");
     }
 
     /// <summary>Returns a stream that yields a single byte per read, so multi-byte characters are split across reads.</summary>

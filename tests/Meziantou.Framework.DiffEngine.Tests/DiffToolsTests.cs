@@ -26,6 +26,10 @@ public sealed class DiffToolsTests
         AssertPathEqual(Path.GetFullPath(executable), tool.ExePath);
     }
 
+    // These two tests can override PATH and DiffEngine_VisualStudioCode, but not the hard-coded search
+    // directories of the tools that precede VisualStudioCode in DiffTools.Definitions. So they assert the
+    // property the API actually promises for the extension, not one specific tool: any real installation on
+    // the developer's machine is a legitimate answer.
     [Fact]
     public void TryFindByName_ThrowsWhenEnvironmentVariableCannotBeResolved()
     {
@@ -59,7 +63,7 @@ public sealed class DiffToolsTests
 
         Assert.True(DiffTools.TryFindByExtension(".bin", out var tool));
         Assert.NotNull(tool);
-        Assert.Equal(DiffTool.VisualStudioCode, tool.Tool);
+        Assert.Contains(".bin", tool.BinaryExtensions, StringComparer.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -72,7 +76,7 @@ public sealed class DiffToolsTests
 
         Assert.True(DiffTools.TryFindByExtension(".txt", out var tool));
         Assert.NotNull(tool);
-        Assert.Equal(DiffTool.VisualStudioCode, tool.Tool);
+        Assert.True(tool.SupportsText);
     }
 
     [Fact]

@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 namespace Meziantou.Framework.HtmlToMarkdownTests;
 
 public sealed class HtmlToMarkdownConverterTests
@@ -4229,6 +4231,31 @@ public sealed class HtmlToMarkdownConverterTests
             "<p>\U0001F468\u200D\U0001F469\u200D\U0001F466</p>",
             ":family_man_woman_boy:",
             new HtmlToMarkdownOptions { EmojiShortcodeMode = EmojiShortcodeMode.Unicode });
+    }
+
+    // --- Concurrency ---
+
+    [Fact]
+    public void Convert_IsSafeToCallConcurrently()
+    {
+        var inputs = Enumerable.Range(0, 32)
+            .Select(i => $"<div><p>item {i}</p><ul><li>a{i}</li></ul><table><tr><td>c{i}</td></tr></table></div>")
+            .ToArray();
+        var expected = inputs.Select(HtmlToMarkdown.Convert).ToArray();
+
+        var failures = new ConcurrentBag<string>();
+        Parallel.For(0, Environment.ProcessorCount * 2, worker =>
+        {
+            for (var i = 0; i < 200; i++)
+            {
+                var index = ((worker * 7) + i) % inputs.Length;
+                var actual = HtmlToMarkdown.Convert(inputs[index]);
+                if (!string.Equals(actual, expected[index], StringComparison.Ordinal))
+                    failures.Add(actual);
+            }
+        });
+
+        Assert.Empty(failures);
     }
 
     // --- Deeply nested documents (must not overflow the call stack) ---

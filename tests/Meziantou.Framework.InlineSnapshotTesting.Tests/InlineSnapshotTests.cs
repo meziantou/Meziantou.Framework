@@ -290,6 +290,46 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
     }
 
     [Fact]
+    public async Task SupportHelperMethods_SnapshotParameterIsNotTheFirstParameter()
+    {
+        // The parameter lookup used to bound its loop by the length of the parameter *name*, so a short name on a
+        // later parameter was never found and the value-matching fallback rewrote the first matching argument
+        // instead: "Helper(null, null)" became "Helper(\"<null>\", null)".
+        await AssertSnapshot(
+            """"
+            Helper(null, null);
+
+            [InlineSnapshotAssertion(nameof(v))]
+            static void Helper(object data, string v, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                InlineSnapshot.Validate(data, v, filePath, lineNumber);
+            }
+            """",
+            """"
+            Helper(null, "<null>");
+
+            [InlineSnapshotAssertion(nameof(v))]
+            static void Helper(object data, string v, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                InlineSnapshot.Validate(data, v, filePath, lineNumber);
+            }
+            """");
+    }
+
+    [Fact]
+    public void HelperMethod_WithUnknownParameterName_ReportsTheAttribute()
+    {
+        var exception = Assert.Throws<InlineSnapshotException>(() => HelperWithUnknownParameterName(new object(), "not the actual snapshot"));
+
+        Assert.Contains(nameof(InlineSnapshotAssertionAttribute), exception.Message);
+        Assert.Contains("thisParameterDoesNotExist", exception.Message);
+    }
+
+    [InlineSnapshotAssertion("thisParameterDoesNotExist")]
+    private static void HelperWithUnknownParameterName(object data, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
+        => InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+
+    [Fact]
     public async Task SupportAsyncHelperMethods()
     {
         await AssertSnapshot(

@@ -162,4 +162,25 @@ public sealed class QueryStringUtilitiesTests
         Assert.Equal("0", result["a"][0]);
         Assert.Equal((Count - 1).ToString(CultureInfo.InvariantCulture), result["a"][Count - 1]);
     }
+
+    [Fact]
+    public void AddQueryString_NullValue_AppendsNothing()
+    {
+        Assert.Equal("http://www.example.com/", QueryStringUtilities.AddQueryString("http://www.example.com/", "a", value: null));
+    }
+
+    [Fact]
+    public void AddQueryString_NullTupleCollection_ReturnsTheUriUnchanged()
+    {
+        Assert.Equal("http://www.example.com/", QueryStringUtilities.AddQueryString("http://www.example.com/", (IEnumerable<(string Name, string? Value)>?)null));
+    }
+
+    [Fact]
+    public void AddQueryString_NullCollection_ThrowsForTheDocumentedParameter()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(
+            () => QueryStringUtilities.AddQueryString("http://www.example.com/", (IEnumerable<(string Name, StringValues Value)>)null!));
+
+        Assert.Equal("queryString", exception.ParamName);
+    }
 }

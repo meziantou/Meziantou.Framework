@@ -266,15 +266,14 @@ public sealed class UrlPattern
         var compileOptions = PatternOptions.Default.WithIgnoreCase(ignoreCase);
         var pathCompileOptions = PatternOptions.Pathname.WithIgnoreCase(ignoreCase);
 
-        UrlPatternComponent pathnameComponent;
-        if (ProtocolMatchesSpecialScheme(protocolComponent))
-        {
-            pathnameComponent = UrlPatternComponent.Compile(processedInit.Pathname, CanonicalizePathname, pathCompileOptions);
-        }
-        else
-        {
-            pathnameComponent = UrlPatternComponent.Compile(processedInit.Pathname, CanonicalizeOpaquePathname, compileOptions);
-        }
+        // The spec canonicalizes a pathname by percent-encoding it, which this implementation does not do,
+        // so the pathname is matched as written and needs no encoding callback. It must not gain a leading
+        // "/" here: the callback runs on every fixed-text part, so that would insert a separator in front of
+        // any literal following a group, turning "/books/:id.json" into "/books/:id/.json". The spec avoids
+        // the same trap by prefixing "/-" before parsing and stripping it afterwards. Only the compile
+        // options differ between an opaque path and a special-scheme path.
+        var pathnameOptions = ProtocolMatchesSpecialScheme(protocolComponent) ? pathCompileOptions : compileOptions;
+        var pathnameComponent = UrlPatternComponent.Compile(processedInit.Pathname, encodingCallback: null, pathnameOptions);
 
         var searchComponent = UrlPatternComponent.Compile(processedInit.Search, CanonicalizeSearch, compileOptions);
         var hashComponent = UrlPatternComponent.Compile(processedInit.Hash, CanonicalizeHash, compileOptions);
@@ -764,25 +763,6 @@ public sealed class UrlPattern
             }
         }
 
-        return value;
-    }
-
-    private static string CanonicalizePathname(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-            return value;
-
-        // Ensure starts with /
-        if (!value.StartsWith('/', StringComparison.Ordinal))
-        {
-            value = "/" + value;
-        }
-
-        return value;
-    }
-
-    private static string CanonicalizeOpaquePathname(string value)
-    {
         return value;
     }
 

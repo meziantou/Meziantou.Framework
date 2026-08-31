@@ -1215,4 +1215,50 @@ public sealed class UrlPatternTests
         Assert.NotNull(result);
         Assert.Equal("css/styles/main.css", result.Pathname.Groups["path"]);
     }
+
+    [Theory]
+    [InlineData("/books/:id.json", "/books/:id.json")]
+    [InlineData("/assets/*.png", "/assets/*.png")]
+    [InlineData("/:name-suffix", "/:name-suffix")]
+    [InlineData("/file-:name-v:version.txt", "/file-:name-v:version.txt")]
+    [InlineData("/{:name}text", "/{:name}text")]
+    public void Create_LiteralFollowingAGroup_KeepsThePathnameUnchanged(string pathname, string expected)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = pathname });
+
+        Assert.Equal(expected, pattern.Pathname);
+    }
+
+    [Theory]
+    [InlineData("/books/:id.json", "https://example.com/books/123.json")]
+    [InlineData("/assets/*.png", "https://example.com/assets/logo.png")]
+    [InlineData("/:name-suffix", "https://example.com/value-suffix")]
+    [InlineData("/file-:name-v:version.txt", "https://example.com/file-report-v2.txt")]
+    public void IsMatch_LiteralFollowingAGroup_ShouldMatch(string pathname, string url)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = pathname });
+
+        Assert.True(pattern.IsMatch(url));
+    }
+
+    [Fact]
+    public void Match_ExtensionAfterAGroup_ShouldCaptureWithoutTheExtension()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id.json" });
+
+        var result = pattern.Match("https://example.com/books/123.json");
+
+        Assert.NotNull(result);
+        Assert.Equal("123", result.Pathname.Groups["id"]);
+        Assert.False(pattern.IsMatch("https://example.com/books/123/.json"));
+    }
+
+    [Fact]
+    public void Create_FromPatternString_LiteralFollowingAGroupIsPreserved()
+    {
+        var pattern = UrlPattern.Create("https://example.com/books/:id.json");
+
+        Assert.Equal("/books/:id.json", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com/books/123.json"));
+    }
 }

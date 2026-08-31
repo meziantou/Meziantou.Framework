@@ -131,11 +131,9 @@ internal sealed class ConstructorStringParser
                         var nextState = ConstructorStringState.Pathname;
                         var skip = 1;
 
-                        if (_protocolMatchesSpecialScheme)
-                        {
-                            _result.Pathname = "/";
-                        }
-
+                        // The pathname is not defaulted here: the spec leaves it absent so that a pattern
+                        // which stops at the origin wildcards it. ChangeState applies the "/" default on
+                        // the transitions where the spec asks for it.
                         if (NextIsAuthoritySlashes())
                         {
                             nextState = ConstructorStringState.Authority;

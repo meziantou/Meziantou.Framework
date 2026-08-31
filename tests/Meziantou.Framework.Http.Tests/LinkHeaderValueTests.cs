@@ -107,6 +107,16 @@ public sealed class LinkHeaderValueTests
         Assert.Equal(expectedUrl, LinkHeaderValue.Parse(header).GetLinkUrl("next"));
     }
 
+    [Theory]
+    [InlineData("<  https://example.com/a  >; rel=next")]
+    [InlineData("<\thttps://example.com/a\t>; rel=next")]
+    [InlineData("<https://example.com/a>; rel=next")]
+    public void Parse_TrimsWhitespaceAroundTheTargetUri(string header)
+    {
+        var link = Assert.Single(LinkHeaderValue.Parse(header));
+        Assert.Equal("https://example.com/a", link.Url);
+    }
+
     private sealed class CustomHttpHeaders : HttpHeaders
     {
     }

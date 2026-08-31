@@ -211,6 +211,21 @@ internal sealed class LogFileWriter : IDisposable
         }
     }
 
+    private string[] GetRetentionPatterns()
+    {
+        // A log file is named {prefix}{timestamp}[-{processId}][_{index}]{extension}[{compressionExtension}].
+        // Matching the process id keeps the retention policy from deleting the files that another
+        // process is currently writing in the same directory
+        var prefix = _options.FileNamePrefix + "*";
+        if (_options.IncludeProcessIdInFileName)
+        {
+            prefix += "-" + Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
+        }
+
+        // The index is added after the process id, so it needs its own pattern
+        return [prefix + _options.FileNameExtension, prefix + "_*" + _options.FileNameExtension];
+    }
+
     private void ApplyRetentionPolicy()
     {
         if (_options.MaxRetainedFiles is not { } maxRetainedFiles)
@@ -219,12 +234,11 @@ internal sealed class LogFileWriter : IDisposable
         try
         {
             var directory = new DirectoryInfo(_directory);
-            var pattern = _options.FileNamePrefix + "*" + _options.FileNameExtension;
 
             // The file names start with the timestamp, so ordering them by name orders them chronologically.
-            // The second pattern matches the compressed files, whatever the algorithm they were compressed with
-            var files = directory.GetFiles(pattern)
-                .Concat(directory.GetFiles(pattern + ".*"))
+            // The '.*' patterns match the compressed files, whatever the algorithm they were compressed with
+            var files = GetRetentionPatterns()
+                .SelectMany(pattern => directory.GetFiles(pattern).Concat(directory.GetFiles(pattern + ".*")))
                 .DistinctBy(file => file.FullName, StringComparer.Ordinal)
                 .OrderByDescending(file => file.Name, StringComparer.Ordinal)
                 .Skip(maxRetainedFiles);

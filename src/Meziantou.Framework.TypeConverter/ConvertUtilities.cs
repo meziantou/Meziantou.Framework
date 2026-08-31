@@ -17,12 +17,18 @@ namespace Meziantou.Framework;
 ///
 /// // Convert with culture-specific formatting
 /// var cultureInfo = CultureInfo.GetCultureInfo("fr-FR");
-/// var number = ConvertUtilities.ChangeType<decimal>("1234,56", provider: cultureInfo);
+/// var number = ConvertUtilities.ChangeType<decimal>("1234,56", defaultValue: 0m, provider: cultureInfo);
 /// ]]></code>
 /// </example>
 /// </summary>
 public static class ConvertUtilities
 {
+    /// <summary>Gets a value indicating whether an instance of the type can be created.</summary>
+    internal static bool IsInstantiable(Type type)
+    {
+        return type != typeof(void) && !type.ContainsGenericParameters && !type.IsByRef && !type.IsPointer;
+    }
+
     /// <summary>Gets the default converter instance used by the utility methods.</summary>
     public static IConverter DefaultConverter { get; } = new DefaultConverter();
 
@@ -51,20 +57,18 @@ public static class ConvertUtilities
         var b = converter.TryChangeType(input, typeof(T), provider, out var v);
         if (!b)
         {
-            if (v is null)
+            // A custom IConverter may report a failure with a value that is not assignable to T
+            if (v is T failureValue)
             {
-                if (typeof(T).IsValueType)
-                {
-                    value = Activator.CreateInstance<T>()!;
-                }
-                else
-                {
-                    value = default!;
-                }
+                value = failureValue;
+            }
+            else if (typeof(T).IsValueType)
+            {
+                value = Activator.CreateInstance<T>()!;
             }
             else
             {
-                value = (T)v;
+                value = default!;
             }
 
             return false;
@@ -217,7 +221,7 @@ public static class ConvertUtilities
 
         ArgumentNullException.ThrowIfNull(conversionType);
 
-        if (defaultValue is null && conversionType.IsValueType)
+        if (defaultValue is null && conversionType.IsValueType && IsInstantiable(conversionType))
         {
             defaultValue = Activator.CreateInstance(conversionType);
         }

@@ -589,6 +589,38 @@ public class HtmlParserTests
         Assert.Equal(expectedLine, states[^1].Line);
     }
 
+    [Theory]
+    // An attribute name that starts with a quote used to end at the closing quote, which dropped the value that
+    // followed it. When that value contained a quote of the other kind, the rest of the tag went with it and the
+    // content of the element was lost. A browser treats the quote as an ordinary attribute name character.
+    [InlineData("<p 'class'='a'>x</p>", "<p class='a'>x</p>")]
+    [InlineData("<p \"class\"=\"a\">x</p>", "<p class=\"a\">x</p>")]
+    [InlineData("<p 'title'='a\" onmouseover=\"alert(1)'>x</p>", "<p title='a\" onmouseover=\"alert(1)'>x</p>")]
+    [InlineData("<p 'class'='a'>x<b>y</b></p>", "<p class='a'>x<b>y</b></p>")]
+    // A doctype and a processing instruction carry quoted text rather than attributes, so they keep it
+    [InlineData("<!DOCTYPE html><p>a</p>", "<!DOCTYPE html><p>a</p>")]
+    // The space before "?>" is how a processing instruction has always been written back
+    [InlineData("<?xml version='1.0'?><p>a</p>", "<?xml version='1.0' ?><p>a</p>")]
+    public void HtmlParser_QuotedAttributeNames(string html, string expected)
+    {
+        var document = new HtmlDocument();
+        document.LoadHtml(html);
+
+        Assert.Equal(expected, document.OuterHtml);
+    }
+
+    [Fact]
+    public void HtmlParser_DoctypeKeepsItsPublicAndSystemIdentifiers()
+    {
+        const string Html = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\"><p>a</p>";
+        var document = new HtmlDocument();
+        document.LoadHtml(Html);
+
+        Assert.Equal(Html, document.OuterHtml);
+        Assert.NotNull(document.DocumentType);
+        Assert.Equal(["html", "PUBLIC", "-//W3C//DTD XHTML 1.0 Strict//EN", "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"], document.DocumentType!.Attributes.Select(a => a.Name));
+    }
+
     private static List<HtmlReaderState> ReadAll(string html)
     {
         var reader = new HtmlReader(new StringReader(html));

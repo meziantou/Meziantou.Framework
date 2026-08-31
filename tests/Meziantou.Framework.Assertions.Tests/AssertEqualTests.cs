@@ -1003,4 +1003,40 @@ public sealed class AssertEqualTests
         AssertionsAssert.NotEqual(expected, actual);
     }
 
+
+    [Fact]
+    public void StringComparer_EqualUsesTheComparer()
+    {
+        AssertionsAssert.Equal("a", "A", StringComparer.OrdinalIgnoreCase);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal("a", "b", StringComparer.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void StringComparer_NotEqualUsesTheComparer()
+    {
+        AssertionsAssert.NotEqual("a", "b", StringComparer.OrdinalIgnoreCase);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual("a", "A", StringComparer.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ScalarComparer_IsUsedForNonStringValues()
+    {
+        AssertionsAssert.Equal(1, 2, new AlwaysEqualComparer());
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(1, 2, new AlwaysEqualComparer()));
+    }
+
+    [Fact]
+    public void SequenceComparerOverloadStillComparesElementWise()
+    {
+        AssertionsAssert.Equal([1, 2], (int[])[3, 4], new AlwaysEqualComparer());
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal([1, 2], (int[])[1, 2, 3], new AlwaysEqualComparer()));
+    }
+
+    private sealed class AlwaysEqualComparer : IEqualityComparer<int>
+    {
+        public bool Equals(int x, int y) => true;
+
+        public int GetHashCode(int obj) => 0;
+    }
+
 }

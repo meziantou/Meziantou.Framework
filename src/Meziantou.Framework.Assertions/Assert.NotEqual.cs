@@ -71,6 +71,20 @@ public partial class Assert
         }
     }
 
+    /// <summary>Asserts that two values are not equal using the specified comparer.</summary>
+    /// <param name="expected">The value that is not expected.</param>
+    /// <param name="actual">The actual value.</param>
+    /// <param name="comparer">The comparer used to compare the values.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    public static void NotEqual<T>(T expected, T actual, IEqualityComparer<T> comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (comparer.Equals(expected, actual))
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<T, T>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+        }
+    }
+
     public static void NotEqual<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (expected.SequenceEqual(actual))

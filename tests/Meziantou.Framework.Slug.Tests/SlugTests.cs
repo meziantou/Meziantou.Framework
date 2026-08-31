@@ -194,6 +194,32 @@ public class SlugTests
         }
     }
 
+    [Theory]
+    [InlineData(CasingTransformation.PreserveCase)]
+    [InlineData(CasingTransformation.ToLowerCase)]
+    [InlineData(CasingTransformation.ToUpperCase)]
+    public void Slug_SubclassNotOverridingReplace_MatchesTheBaseClass(CasingTransformation casingTransformation)
+    {
+        string[] texts = ["Hello World", "Caf\u00E9 cr\u00E8me br\u00FBl\u00E9e", "a\U0001F600b", "TeSt:test ", "!!!"];
+        foreach (var text in texts)
+        {
+            foreach (var maximumLength in new[] { 0, 1, 3, 8, 80 })
+            {
+                var expected = Slug.Create(text, new SlugOptions { CasingTransformation = casingTransformation, MaximumLength = maximumLength });
+                var actual = Slug.Create(text, new PassThroughSlugOptions { CasingTransformation = casingTransformation, MaximumLength = maximumLength });
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    private sealed class PassThroughSlugOptions : SlugOptions
+    {
+        public override bool IsAllowed(Rune character)
+        {
+            return base.IsAllowed(character);
+        }
+    }
+
     private sealed class NoVowelSlugOptions : SlugOptions
     {
         public override bool IsAllowed(Rune character)

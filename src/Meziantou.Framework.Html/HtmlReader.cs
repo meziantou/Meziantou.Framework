@@ -172,6 +172,13 @@ sealed class HtmlReader
         return character is '"' or '\'';
     }
 
+    // "<!DOCTYPE …>" and "<?php … ?>" are not elements: they carry quoted text rather than attributes, and the
+    // public and system identifiers of a doctype are read back from the names of its attributes.
+    private static bool CanHaveQuotedAttributeNames(string? elementName)
+    {
+        return elementName is ['!' or '?', ..];
+    }
+
     public static bool IsWhiteSpace(int character)
     {
         return character is 10 or 13 or 32 or 9;
@@ -553,19 +560,13 @@ sealed class HtmlReader
                     break;
 
                 case HtmlParserState.AttName:
-                    // quoted named are essentially useful for !DOCTYPE tags
                     if (Value.Length == 1) // first char?
                     {
-                        if (IsAnyQuote(Value[0]))
-                        {
-                            // quoted
-                            QuoteChar = Value[0];
-                        }
-                        else
-                        {
-                            // not quoted
-                            QuoteChar = '\0';
-                        }
+                        // A quoted name only means something in a !DOCTYPE or a processing instruction. Everywhere
+                        // else the HTML tokenizer treats a quote as an ordinary attribute name character, and
+                        // ending the name at the closing quote dropped the value that followed it - and, when
+                        // that value contained a quote of the other kind, the content of the element as well.
+                        QuoteChar = IsAnyQuote(Value[0]) && CanHaveQuotedAttributeNames(_currentElement) ? Value[0] : '\0';
                     }
 
                     // quoted name?

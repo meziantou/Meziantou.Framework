@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -20,11 +21,15 @@ namespace Meziantou.Extensions.Logging.Xunit.v3;
 ///     .Build();
 /// </code>
 /// </example>
-public sealed class XUnitLoggerProvider : ILoggerProvider
+public sealed class XUnitLoggerProvider : ILoggerProvider, ISupportExternalScope
 {
     private readonly ITestOutputHelper? _testOutputHelper;
     private readonly XUnitLoggerOptions _options;
-    private readonly LoggerExternalScopeProvider _scopeProvider = new();
+    private readonly ConcurrentDictionary<string, XUnitLogger> _loggers = new(StringComparer.Ordinal);
+
+    private IExternalScopeProvider _scopeProvider = new LoggerExternalScopeProvider();
+
+    private IExternalScopeProvider ScopeProvider => Volatile.Read(ref _scopeProvider);
 
     /// <summary>Initializes a new instance of the <see cref="XUnitLoggerProvider"/> class.</summary>
     public XUnitLoggerProvider()
@@ -66,7 +71,18 @@ public sealed class XUnitLoggerProvider : ILoggerProvider
     /// <inheritdoc/>
     public ILogger CreateLogger(string categoryName)
     {
-        return new XUnitLogger(_testOutputHelper, _scopeProvider, categoryName, _options);
+        return _loggers.GetOrAdd(categoryName, static (name, state) => new XUnitLogger(state._testOutputHelper, state.ScopeProvider, name, state._options), this);
+    }
+
+    /// <inheritdoc/>
+    public void SetScopeProvider(IExternalScopeProvider scopeProvider)
+    {
+        Volatile.Write(ref _scopeProvider, scopeProvider);
+
+        foreach (var logger in _loggers)
+        {
+            logger.Value.ScopeProvider = scopeProvider;
+        }
     }
 
     /// <inheritdoc/>

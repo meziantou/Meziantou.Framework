@@ -7,6 +7,15 @@ public class IOUtilitiesTests
     [InlineData("sample.txt", "sample.txt")]
     [InlineData("sample/.txt", "sample_x47_.txt")]
     [InlineData("COM1", "_COM1_")]
+    // A device name is reserved with any extension
+    [InlineData("con.txt", "_con.txt_")]
+    [InlineData("NUL.log.bak", "_NUL.log.bak_")]
+    [InlineData("console.txt", "console.txt")]
+    // Windows strips trailing periods and spaces
+    [InlineData("report.", "report_x46_")]
+    [InlineData("report ", "report_x32_")]
+    [InlineData("report.. ", "report_x46__x46__x32_")]
+    [InlineData("...", "_..._")]
     public void ToValidFileName(string fileName, string expectedResult)
     {
         var result = IOUtilities.ToValidFileName(fileName);

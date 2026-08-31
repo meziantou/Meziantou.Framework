@@ -30,6 +30,10 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     private long _capacity;
     private bool _isOpen;
 
+    // Mirrors MemoryStream: the byte[] ReadAsync overload hands back the previous task when the count matches, so a
+    // sequence of same-sized reads doesn't allocate a Task each time.
+    private Task<int>? _lastReadTask;
+
     // Cursor caching the last located segment so sequential access doesn't re-walk from segment 0 every call.
     // _cursorStart is the logical offset at which segment _cursorIndex begins (sum of Used of earlier segments).
     private int _cursorIndex;
@@ -221,7 +225,9 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
         try
         {
-            return Task.FromResult(Read(buffer, offset, count));
+            var read = Read(buffer, offset, count);
+            var lastTask = _lastReadTask;
+            return lastTask is not null && lastTask.Result == read ? lastTask : (_lastReadTask = Task.FromResult(read));
         }
         catch (Exception ex)
         {
@@ -341,14 +347,23 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     }
 
     /// <inheritdoc />
-    public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+    public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
     {
+        // Validate before entering the state machine so bad arguments throw synchronously, as MemoryStream does.
         ValidateCopyToArguments(destination, bufferSize);
         EnsureOpen();
-        cancellationToken.ThrowIfCancellationRequested();
-        if (_position >= _length)
-            return;
 
+        if (cancellationToken.IsCancellationRequested)
+            return Task.FromCanceled(cancellationToken);
+
+        if (_position >= _length)
+            return Task.CompletedTask;
+
+        return CopyToAsyncCore(destination, cancellationToken);
+    }
+
+    private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
+    {
         Locate(_position, out var segmentIndex, out var offset);
         var remaining = _length - _position;
         while (remaining > 0)

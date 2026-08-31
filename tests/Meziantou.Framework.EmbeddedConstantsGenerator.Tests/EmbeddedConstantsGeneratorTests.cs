@@ -199,6 +199,89 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         Assert.Contains("MFECG0005", string.Join('\n', result.Output));
     }
 
+    [Fact]
+    public async Task GenerateOnBuild_MemberNameMatchesClassName_FailsBuild()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("member-matches-class");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        // Foo.txt generates 'FooText', which is also the class name, and C# does not allow that
+        temporaryDirectory.CreateTextFile("member-matches-class/Sample.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net10.0</TargetFramework>
+                <EmbeddedConstantsNamespace>Generated</EmbeddedConstantsNamespace>
+                <EmbeddedConstantsClassName>FooText</EmbeddedConstantsClassName>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="{{EmbeddedConstantsGeneratorPackageFixture.PackageName}}" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
+                <EmbeddedConstant Include="Assets/Foo.txt" Kind="Text" />
+              </ItemGroup>
+            </Project>
+            """);
+        temporaryDirectory.CreateTextFile("member-matches-class/Assets/Foo.txt", "x");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 1);
+
+        var output = string.Join('\n', result.Output);
+        Assert.Contains("MFECG0010", output);
+
+        // The generator reports it instead of letting the compiler produce CS0542 on generated code
+        Assert.DoesNotContain("CS0542", output);
+    }
+
+    [Fact]
+    public async Task GenerateOnBuild_DuplicateMemberName_NamesTheFilesInvolved()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("duplicate-names-files");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("duplicate-names-files/Sample.csproj", CreateProjectFile(fixture, """
+                <EmbeddedConstant Include="Assets/first.txt" Kind="Text" Name="Same" />
+                <EmbeddedConstant Include="Assets/second.txt" Kind="Text" Name="Same" />
+            """));
+        temporaryDirectory.CreateTextFile("duplicate-names-files/Assets/first.txt", "First");
+        temporaryDirectory.CreateTextFile("duplicate-names-files/Assets/second.txt", "Second");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 1);
+
+        var output = string.Join('\n', result.Output);
+        Assert.Contains("MFECG0005", output);
+        Assert.Contains("first.txt", output);
+        Assert.Contains("second.txt", output);
+    }
+
+    [Fact]
+    public async Task GenerateOnBuild_ImplicitNamesCollideOutsideTheProjectDirectory_FailsInsteadOfUsingTheAbsolutePath()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("outside-collision");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        // One shared.txt inside the project, one in a sibling directory outside it
+        temporaryDirectory.CreateTextFile("outside-collision/Sample.csproj", CreateProjectFile(fixture, """
+                <EmbeddedConstant Include="shared.txt" Kind="Text" />
+                <EmbeddedConstant Include="../outside/shared.txt" Kind="Text" />
+            """));
+        temporaryDirectory.CreateTextFile("outside-collision/shared.txt", "inside");
+        temporaryDirectory.CreateTextFile("outside/shared.txt", "outside");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 1);
+
+        var output = string.Join('\n', result.Output);
+        Assert.Contains("MFECG0005", output);
+        Assert.Contains("'SharedText'", output);
+    }
+
     private static string CreateProjectFile(EmbeddedConstantsGeneratorPackageFixture fixture, string embeddedConstants)
     {
         return $$"""

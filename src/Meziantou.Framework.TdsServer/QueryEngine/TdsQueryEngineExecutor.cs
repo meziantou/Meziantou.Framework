@@ -2298,15 +2298,17 @@ internal sealed class TdsQueryEngineExecutor
 
     private static SqlXmlValue ConvertToXmlCore(object? value, string? schemaCollectionName, XmlSchemaSet? schemaSet, SqlXmlDocumentConstraint documentConstraint)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             throw new TdsQueryEngineException("Cannot convert NULL to 'XML'.");
         }
 
-        EnsureXmlConstraint(xmlValue.Value, documentConstraint);
+        // DOCUMENT/CONTENT need no separate check: parsing the value already rejected anything without a
+        // single root element, which is what this engine enforces.
+        _ = documentConstraint;
         if (schemaSet is not null)
         {
-            ValidateXmlAgainstSchema(xmlValue.Value, schemaSet, schemaCollectionName);
+            ValidateXmlAgainstSchema(document, schemaSet, schemaCollectionName);
         }
 
         return schemaCollectionName is null ? xmlValue : xmlValue with { SchemaCollection = schemaCollectionName };
@@ -2328,12 +2330,12 @@ internal sealed class TdsQueryEngineExecutor
 
     private static SqlXmlValue? XmlQueryCore(object? value, string xquery)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             return null;
         }
 
-        var navigator = CreateXmlContextNavigator(xmlValue.Value);
+        var navigator = CreateXmlContextNavigator(document);
         var evaluation = navigator.Evaluate(xquery);
         if (evaluation is XPathNodeIterator iterator)
         {
@@ -2354,12 +2356,12 @@ internal sealed class TdsQueryEngineExecutor
 
     private static object XmlValueCore(object? value, string xquery, Type targetType)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             throw new TdsQueryEngineException("xml.value cannot be evaluated on NULL.");
         }
 
-        var navigator = CreateXmlContextNavigator(xmlValue.Value);
+        var navigator = CreateXmlContextNavigator(document);
         var evaluation = navigator.Evaluate(xquery);
         if (evaluation is XPathNodeIterator iterator)
         {
@@ -2392,12 +2394,12 @@ internal sealed class TdsQueryEngineExecutor
 
     private static int? XmlExistCore(object? value, string xquery)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             return null;
         }
 
-        var navigator = CreateXmlContextNavigator(xmlValue.Value);
+        var navigator = CreateXmlContextNavigator(document);
         var evaluation = navigator.Evaluate(xquery);
         if (evaluation is XPathNodeIterator iterator)
         {
@@ -2414,12 +2416,12 @@ internal sealed class TdsQueryEngineExecutor
 
     private static IEnumerable<SqlXmlValue> XmlNodesCore(object? value, string xquery)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             return [];
         }
 
-        var navigator = CreateXmlContextNavigator(xmlValue.Value);
+        var navigator = CreateXmlContextNavigator(document);
         var evaluation = navigator.Evaluate(xquery);
         if (evaluation is not XPathNodeIterator iterator)
         {
@@ -2441,8 +2443,9 @@ internal sealed class TdsQueryEngineExecutor
         return result;
     }
 
-    private static bool TryConvertToSqlXmlValue(object? value, string? schemaCollectionName, out SqlXmlValue? xmlValue)
+    private static bool TryConvertToSqlXmlValue(object? value, string? schemaCollectionName, out SqlXmlValue? xmlValue, out XDocument? document)
     {
+        document = null;
         if (value is null or DBNull)
         {
             xmlValue = null;
@@ -2453,9 +2456,9 @@ internal sealed class TdsQueryEngineExecutor
         {
             SqlXmlValue typedXml => schemaCollectionName is null ? typedXml : typedXml with { SchemaCollection = schemaCollectionName },
             string text => new SqlXmlValue(text, schemaCollectionName),
-            XDocument document => new SqlXmlValue(document.ToString(SaveOptions.DisableFormatting), schemaCollectionName),
+            XDocument xmlDocument => new SqlXmlValue(xmlDocument.ToString(SaveOptions.DisableFormatting), schemaCollectionName),
             XElement element => new SqlXmlValue(element.ToString(SaveOptions.DisableFormatting), schemaCollectionName),
-            XmlDocument document => new SqlXmlValue(document.OuterXml, schemaCollectionName),
+            XmlDocument xmlDocument => new SqlXmlValue(xmlDocument.OuterXml, schemaCollectionName),
             _ => null,
         };
 
@@ -2464,13 +2467,12 @@ internal sealed class TdsQueryEngineExecutor
             return false;
         }
 
-        _ = ParseXml(xmlValue.Value);
+        document = ParseXml(xmlValue.Value);
         return true;
     }
 
-    private static void ValidateXmlAgainstSchema(string xml, XmlSchemaSet schemaSet, string? schemaCollectionName)
+    private static void ValidateXmlAgainstSchema(XDocument document, XmlSchemaSet schemaSet, string? schemaCollectionName)
     {
-        var document = ParseXml(xml);
         string? validationError = null;
         document.Validate(schemaSet, (_, args) =>
         {
@@ -2504,22 +2506,10 @@ internal sealed class TdsQueryEngineExecutor
         }
     }
 
-    private static XPathNavigator CreateXmlContextNavigator(string xml)
+    private static XPathNavigator CreateXmlContextNavigator(XDocument document)
     {
-        var document = ParseXml(xml);
         return document.Root?.CreateNavigator()
             ?? throw new TdsQueryEngineException("Cannot evaluate XML query on an empty document.");
-    }
-
-    private static void EnsureXmlConstraint(string xml, SqlXmlDocumentConstraint documentConstraint)
-    {
-        _ = ParseXml(xml);
-        if (documentConstraint == SqlXmlDocumentConstraint.None)
-        {
-            return;
-        }
-
-        // XDocument parsing already enforces a single root element, which matches DOCUMENT/CONTENT checks in this engine.
     }
 
     private static Type GetClrType(SqlDataTypeSpecification dataTypeSpec)
@@ -2853,7 +2843,7 @@ internal sealed class TdsQueryEngineExecutor
 
         if (targetType == typeof(SqlXmlValue))
         {
-            if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var sqlXmlValue) || sqlXmlValue is null)
+            if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var sqlXmlValue, out _) || sqlXmlValue is null)
             {
                 throw new TdsQueryEngineException($"Cannot convert value of type '{value.GetType().Name}' to 'XML'.");
             }

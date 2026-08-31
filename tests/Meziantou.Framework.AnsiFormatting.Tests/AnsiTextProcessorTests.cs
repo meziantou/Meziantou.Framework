@@ -76,4 +76,214 @@ public class AnsiTextProcessorTests
         var actual = AnsiTextProcessor.RemoveAnsiSequences(input);
         Assert.Equal(expected, actual);
     }
+
+    private static AnsiTextProcessor.AnsiText Parse(string input)
+    {
+        return AnsiTextProcessor.ParseTextWithAnsiStyles(input);
+    }
+
+    private static AnsiTextProcessor.AnsiStyle SingleRunStyle(string input, string expectedText)
+    {
+        var parsed = Parse(input);
+        Assert.Equal(expectedText, parsed.Text);
+        var run = Assert.Single(parsed.Runs);
+        Assert.Equal(0, run.Start);
+        Assert.Equal(expectedText.Length, run.End);
+        return run.Style;
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_Null()
+    {
+        Assert.Throws<ArgumentNullException>(() => AnsiTextProcessor.ParseTextWithAnsiStyles(null!));
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_PlainText()
+    {
+        Assert.Equal(AnsiTextProcessor.AnsiStyle.None, SingleRunStyle("Hello World", "Hello World"));
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_EmptyString()
+    {
+        var parsed = Parse("");
+        Assert.Equal("", parsed.Text);
+        Assert.Empty(parsed.Runs);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_SequencesOnly()
+    {
+        var parsed = Parse("\u001b[1m\u001b[0m");
+        Assert.Equal("", parsed.Text);
+        Assert.Empty(parsed.Runs);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_PreservesUnicode()
+    {
+        Assert.Equal("日本語 テキスト", Parse("\u001b[31m日本語\u001b[0m テキスト").Text);
+    }
+
+    [Theory]
+    [InlineData("\u001b[1mA", true, false, false, false)]
+    [InlineData("\u001b[3mA", false, true, false, false)]
+    [InlineData("\u001b[4mA", false, false, true, false)]
+    [InlineData("\u001b[7mA", false, false, false, true)]
+    [InlineData("\u001b[1;3;4;7mA", true, true, true, true)]
+    public void ParseTextWithAnsiStyles_Attributes(string input, bool bold, bool italic, bool underline, bool inverse)
+    {
+        var style = SingleRunStyle(input, "A");
+        Assert.Equal(bold, style.Bold);
+        Assert.Equal(italic, style.Italic);
+        Assert.Equal(underline, style.Underline);
+        Assert.Equal(inverse, style.Inverse);
+    }
+
+    [Theory]
+    [InlineData("\u001b[22mA", false, true, true, true)]
+    [InlineData("\u001b[23mA", true, false, true, true)]
+    [InlineData("\u001b[24mA", true, true, false, true)]
+    [InlineData("\u001b[27mA", true, true, true, false)]
+    public void ParseTextWithAnsiStyles_PartialResets(string reset, bool bold, bool italic, bool underline, bool inverse)
+    {
+        var style = SingleRunStyle("\u001b[1;3;4;7m" + reset, "A");
+        Assert.Equal(bold, style.Bold);
+        Assert.Equal(italic, style.Italic);
+        Assert.Equal(underline, style.Underline);
+        Assert.Equal(inverse, style.Inverse);
+    }
+
+    [Theory]
+    [InlineData("\u001b[1m\u001b[0mA")]
+    [InlineData("\u001b[1m\u001b[mA")]
+    public void ParseTextWithAnsiStyles_Reset(string input)
+    {
+        Assert.Equal(AnsiTextProcessor.AnsiStyle.None, SingleRunStyle(input, "A"));
+    }
+
+    [Theory]
+    [InlineData("\u001b[30mA", 0)]
+    [InlineData("\u001b[31mA", 1)]
+    [InlineData("\u001b[37mA", 7)]
+    [InlineData("\u001b[90mA", 8)]
+    [InlineData("\u001b[97mA", 15)]
+    [InlineData("\u001b[38;5;208mA", 208)]
+    public void ParseTextWithAnsiStyles_IndexedForeground(string input, int expectedIndex)
+    {
+        var style = SingleRunStyle(input, "A");
+        Assert.Null(style.Background);
+        Assert.NotNull(style.Foreground);
+        Assert.Equal(AnsiTextProcessor.AnsiColorKind.Indexed, style.Foreground.Kind);
+        Assert.Equal(expectedIndex, style.Foreground.IndexedValue);
+    }
+
+    [Theory]
+    [InlineData("\u001b[40mA", 0)]
+    [InlineData("\u001b[41mA", 1)]
+    [InlineData("\u001b[47mA", 7)]
+    [InlineData("\u001b[100mA", 8)]
+    [InlineData("\u001b[107mA", 15)]
+    [InlineData("\u001b[48;5;208mA", 208)]
+    public void ParseTextWithAnsiStyles_IndexedBackground(string input, int expectedIndex)
+    {
+        var style = SingleRunStyle(input, "A");
+        Assert.Null(style.Foreground);
+        Assert.NotNull(style.Background);
+        Assert.Equal(AnsiTextProcessor.AnsiColorKind.Indexed, style.Background.Kind);
+        Assert.Equal(expectedIndex, style.Background.IndexedValue);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_RgbForeground()
+    {
+        var style = SingleRunStyle("\u001b[38;2;10;20;30mA", "A");
+        Assert.NotNull(style.Foreground);
+        Assert.Equal(AnsiTextProcessor.AnsiColorKind.Rgb, style.Foreground.Kind);
+        Assert.Equal(10, style.Foreground.Red);
+        Assert.Equal(20, style.Foreground.Green);
+        Assert.Equal(30, style.Foreground.Blue);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_RgbBackground()
+    {
+        var style = SingleRunStyle("\u001b[48;2;10;20;30mA", "A");
+        Assert.NotNull(style.Background);
+        Assert.Equal(AnsiTextProcessor.AnsiColorKind.Rgb, style.Background.Kind);
+        Assert.Equal(10, style.Background.Red);
+        Assert.Equal(20, style.Background.Green);
+        Assert.Equal(30, style.Background.Blue);
+    }
+
+    [Theory]
+    [InlineData("\u001b[31;41m\u001b[39mA", true, false)]
+    [InlineData("\u001b[31;41m\u001b[49mA", false, true)]
+    public void ParseTextWithAnsiStyles_DefaultColors(string input, bool foregroundIsDefault, bool backgroundIsDefault)
+    {
+        var style = SingleRunStyle(input, "A");
+        Assert.Equal(foregroundIsDefault, style.Foreground is null);
+        Assert.Equal(backgroundIsDefault, style.Background is null);
+    }
+
+    [Theory]
+    [InlineData("\u001b[38mA")]
+    [InlineData("\u001b[38;5mA")]
+    [InlineData("\u001b[38;2;1;2mA")]
+    [InlineData("\u001b[38;5;300mA")]
+    [InlineData("\u001b[38;2;300;1;1mA")]
+    public void ParseTextWithAnsiStyles_InvalidExtendedColorIsIgnored(string input)
+    {
+        Assert.Null(SingleRunStyle(input, "A").Foreground);
+    }
+
+    [Theory]
+    [InlineData("a\u001b[2Kb", "ab")]
+    [InlineData("a\u001b[?25lb", "ab")]
+    [InlineData("a\u001b[Ab", "ab")]
+    [InlineData("a\u001b[1;2Hb", "ab")]
+    public void ParseTextWithAnsiStyles_NonSgrSequencesAreRemovedWithoutStyling(string input, string expected)
+    {
+        Assert.Equal(AnsiTextProcessor.AnsiStyle.None, SingleRunStyle(input, expected));
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_RunsSplitAtStyleBoundaries()
+    {
+        var parsed = Parse("a\u001b[1mb\u001b[0mc");
+        Assert.Equal("abc", parsed.Text);
+        Assert.Equal(3, parsed.Runs.Count);
+
+        Assert.Equal(0, parsed.Runs[0].Start);
+        Assert.Equal(1, parsed.Runs[0].End);
+        Assert.False(parsed.Runs[0].Style.Bold);
+
+        Assert.Equal(1, parsed.Runs[1].Start);
+        Assert.Equal(2, parsed.Runs[1].End);
+        Assert.True(parsed.Runs[1].Style.Bold);
+
+        Assert.Equal(2, parsed.Runs[2].Start);
+        Assert.Equal(3, parsed.Runs[2].End);
+        Assert.False(parsed.Runs[2].Style.Bold);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_AdjacentSequencesDoNotCreateEmptyRuns()
+    {
+        var style = SingleRunStyle("\u001b[1m\u001b[31m\u001b[4mX", "X");
+        Assert.True(style.Bold);
+        Assert.True(style.Underline);
+        Assert.NotNull(style.Foreground);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_RedundantSequenceDoesNotSplitRun()
+    {
+        var parsed = Parse("a\u001b[1mb\u001b[1mc");
+        Assert.Equal("abc", parsed.Text);
+        Assert.Equal(2, parsed.Runs.Count);
+        Assert.Equal(1, parsed.Runs[1].Start);
+        Assert.Equal(3, parsed.Runs[1].End);
+    }
 }

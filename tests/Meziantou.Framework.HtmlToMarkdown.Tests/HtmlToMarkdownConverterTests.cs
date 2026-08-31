@@ -3814,6 +3814,40 @@ public sealed class HtmlToMarkdownConverterTests
             """);
     }
 
+    // --- Ampersand escaping ---
+
+    [Fact]
+    public void Text_LiteralEntityIsEscaped()
+    {
+        AssertHtmlToMarkdown(
+            "<p>&amp;copy; and &amp;#65;</p>",
+            "&amp;copy; and &amp;#65;");
+    }
+
+    [Fact]
+    public void Text_LiteralEntityForTagIsEscaped()
+    {
+        AssertHtmlToMarkdown(
+            "<p>&amp;lt;b&amp;gt;</p>",
+            "&amp;lt;b&amp;gt;");
+    }
+
+    [Fact]
+    public void Text_StandaloneAmpersandIsNotEscaped()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a &amp; b</p>",
+            "a & b");
+    }
+
+    [Fact]
+    public void Text_DecodedEntityStaysDecoded()
+    {
+        AssertHtmlToMarkdown(
+            "<p>&copy; 2026</p>",
+            "© 2026");
+    }
+
     // --- Deeply nested documents (must not overflow the call stack) ---
 
     // The recursive traversal this replaced overflowed the stack at a nesting depth of

@@ -7,6 +7,9 @@ internal sealed class LogFileWriter : IDisposable
 {
     private const int MaxFileNameAttempts = 1000;
 
+    // Do not try to create a new file for every message when the directory stays unavailable
+    private static readonly TimeSpan ReopenInterval = TimeSpan.FromSeconds(5);
+
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
     private readonly FileLoggerOptions _options;
@@ -18,8 +21,11 @@ internal sealed class LogFileWriter : IDisposable
     private readonly bool _compressWhileWriting;
     private readonly string _fileNameSuffix;
 
-    private FileStream _fileStream;
-    private StreamWriter _writer;
+    // Null once a write or a roll failed. WriteLine then tries to create a new file, so a transient
+    // failure does not stop the logging for the lifetime of the process
+    private FileStream? _fileStream;
+    private StreamWriter? _writer;
+    private long? _lastOpenFailureTimestamp;
     private bool _canAppend;
     private string? _currentFilePath;
     private long _currentFileSize;
@@ -45,8 +51,27 @@ internal sealed class LogFileWriter : IDisposable
     public void WriteLine(string message)
     {
         var byteCount = Utf8NoBom.GetByteCount(message) + _newLineByteCount;
-        RollIfNeeded(_timeProvider.GetUtcNow(), byteCount);
-        _writer.WriteLine(message);
+        var now = _timeProvider.GetUtcNow();
+
+        if (_writer is { } currentWriter)
+        {
+            RollIfNeeded(currentWriter, now, byteCount);
+        }
+        else
+        {
+            // A previous write or roll failed. Wait before trying again, so an unavailable directory
+            // does not make every message pay for a failed file creation
+            if (_lastOpenFailureTimestamp is { } timestamp && _timeProvider.GetElapsedTime(timestamp) < ReopenInterval)
+                return;
+
+            OpenOrRecordFailure(now);
+        }
+
+        // Null when the roll could not create the next file
+        if (_writer is not { } writer)
+            return;
+
+        writer.WriteLine(message);
 
         // When the messages are compressed, this is an upper bound of the size of the file. The exact size is known when the data is flushed
         _currentFileSize += byteCount;
@@ -54,6 +79,9 @@ internal sealed class LogFileWriter : IDisposable
 
     public void Flush()
     {
+        if (_writer is null || _fileStream is null)
+            return;
+
         _writer.Flush();
         _currentFileSize = _fileStream.Position;
     }
@@ -62,11 +90,26 @@ internal sealed class LogFileWriter : IDisposable
     {
         // Keep CurrentFilePath, so the path of the last log file can be read after the provider is disposed.
         // Disposing the writer also finalizes the compressed stream and disposes the file stream
-        _writer.Dispose();
-        _fileStream.Dispose();
+        _writer?.Dispose();
+        _fileStream?.Dispose();
     }
 
-    private void RollIfNeeded(DateTimeOffset now, int byteCount)
+    private void OpenOrRecordFailure(DateTimeOffset now)
+    {
+        try
+        {
+            Open(now);
+            _lastOpenFailureTimestamp = null;
+        }
+        catch (Exception)
+        {
+            // The caller reports the error. Remember when it happened to space out the next attempts
+            _lastOpenFailureTimestamp = _timeProvider.GetTimestamp();
+            throw;
+        }
+    }
+
+    private void RollIfNeeded(StreamWriter writer, DateTimeOffset now, int byteCount)
     {
         var rollPeriod = _options.RollInterval is not RollInterval.None && Truncate(now) != _currentPeriod;
 
@@ -76,9 +119,14 @@ internal sealed class LogFileWriter : IDisposable
             return;
 
         var previousFilePath = _currentFilePath;
-        _writer.Flush();
-        _writer.Dispose();
-        Open(now);
+        writer.Flush();
+        writer.Dispose();
+
+        // The next file is not open yet. Leave the writer null so a failure to create it is recoverable
+        // instead of leaving a disposed writer behind
+        _writer = null;
+        _fileStream = null;
+        OpenOrRecordFailure(now);
 
         if (_options.Compression is not LogFileCompression.None && _options.CompressionMode is LogFileCompressionMode.OnRoll && previousFilePath is not null)
         {

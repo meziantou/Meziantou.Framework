@@ -59,6 +59,22 @@ public sealed class DiffToolsTests
     }
 
     [Fact]
+    public void TryFindByName_WildcardDirectoryOrdersVersionsNumerically()
+    {
+        using var temp = TemporaryDirectory.Create();
+        foreach (var version in new[] { "vim9", "vim10" })
+        {
+            _ = temp.CreateTextFile(Path.Combine(version, GetVisualStudioCodeExecutableName()), "");
+        }
+
+        using var scope = new EnvironmentVariableScope("DiffEngine_VisualStudioCode", Path.Combine(temp.FullPath, "*"));
+
+        Assert.True(DiffTools.TryFindByName(DiffTool.VisualStudioCode, out var tool));
+        Assert.NotNull(tool);
+        Assert.Equal("vim10", Path.GetFileName(Path.GetDirectoryName(tool.ExePath)));
+    }
+
+    [Fact]
     public void TryFindByExtension_ReturnsTextTool()
     {
         using var temp = TemporaryDirectory.Create();

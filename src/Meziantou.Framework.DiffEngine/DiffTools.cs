@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Meziantou.Framework.DiffEngine;
 
 public static class DiffTools
@@ -8,6 +10,11 @@ public static class DiffTools
     private static readonly LaunchArguments VisualStudioCodeArguments = new(VisualStudioCodeLeftArguments, VisualStudioCodeRightArguments);
     private static readonly LaunchArguments VisualStudioArguments = new(VisualStudioLeftArguments, VisualStudioRightArguments);
     private static readonly LaunchArguments WinMergeArguments = new(WinMergeLeftArguments, WinMergeRightArguments);
+
+    // Numeric ordering so "vim10" ranks above "vim9" and "Beyond Compare 10" above "Beyond Compare 5",
+    // which plain ordinal comparison gets backwards.
+    private static readonly StringComparer DirectoryNameComparer =
+        StringComparer.Create(CultureInfo.InvariantCulture, CompareOptions.NumericOrdering | CompareOptions.IgnoreCase);
 
     private static readonly ToolDefinition[] Definitions =
     [
@@ -424,7 +431,7 @@ public static class DiffTools
                         nextRoots.AddRange(
                             Directory
                                 .EnumerateDirectories(root, segment)
-                                .OrderByDescending(Path.GetFileName, StringComparer.OrdinalIgnoreCase));
+                                .OrderByDescending(Path.GetFileName, DirectoryNameComparer));
                     }
                     catch (DirectoryNotFoundException)
                     {

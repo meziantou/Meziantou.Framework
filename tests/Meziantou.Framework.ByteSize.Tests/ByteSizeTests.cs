@@ -153,6 +153,48 @@ public sealed class ByteSizeTests
         Assert.Equal("obj", exception.ParamName);
     }
 
+    [Fact]
+    public void Subtract_SubtractsTheValue()
+    {
+        Assert.Equal(1_000L, ByteSize.FromKiloBytes(3).Subtract(ByteSize.FromKiloBytes(2)).Value);
+    }
+
+    [Fact]
+    public void From_Overflow_ThrowsOverflowException()
+    {
+        Assert.Throws<OverflowException>(() => ByteSize.From(long.MaxValue, ByteSizeUnit.KiloByte));
+        Assert.Throws<OverflowException>(() => ByteSize.FromGigaBytes(10_000_000_000L));
+        Assert.Throws<OverflowException>(() => ByteSize.FromExaBytes(10));
+        Assert.Throws<OverflowException>(() => ByteSize.From(1e30, ByteSizeUnit.MegaByte));
+        Assert.Throws<OverflowException>(() => ByteSize.FromKiloBytes(double.NaN));
+        Assert.Throws<OverflowException>(() => ByteSize.FromKiloBytes(double.PositiveInfinity));
+    }
+
+    [Fact]
+    public void From_AtTheEdgeOfLong_DoesNotThrow()
+    {
+        Assert.Equal(long.MaxValue, ByteSize.From(long.MaxValue, ByteSizeUnit.Byte).Value);
+        Assert.Equal(9_223_000_000_000_000_000L, ByteSize.FromPetaBytes(9_223L).Value);
+    }
+
+    [Fact]
+    public void Operator_Overflow_ThrowsOverflowException()
+    {
+        Assert.Throws<OverflowException>(() => ByteSize.MaxValue + new ByteSize(1));
+        Assert.Throws<OverflowException>(() => ByteSize.MinValue - new ByteSize(1));
+        Assert.Throws<OverflowException>(() => ByteSize.MaxValue * 2);
+    }
+
+    [Fact]
+    public void Operator_ScalesByAFactor()
+    {
+        Assert.Equal(3_000L, (ByteSize.FromKiloBytes(1) * 3).Value);
+        Assert.Equal(3_000L, (3 * ByteSize.FromKiloBytes(1)).Value);
+        Assert.Equal(500L, (ByteSize.FromKiloBytes(1) / 2).Value);
+        Assert.Equal(3_000L, ByteSize.FromKiloBytes(1).Multiply(3).Value);
+        Assert.Equal(500L, ByteSize.FromKiloBytes(1).Divide(2).Value);
+    }
+
     [Theory]
     [InlineData(10L, null, "10B")]
     [InlineData(10L, "", "10B")]
@@ -355,5 +397,33 @@ public sealed class ByteSizeTests
             Assert.Equal(size, ByteSize.Parse(formatted.AsSpan(), CultureInfo.InvariantCulture));
             Assert.Equal(size, ByteSize.Parse(System.Text.Encoding.UTF8.GetBytes(formatted).AsSpan()));
         }
+    }
+
+    [Theory]
+    [InlineData("99999999999PB")]
+    [InlineData("10000EB")]
+    [InlineData("9223372036854775808B")]
+    [InlineData("-99999999999999999999B")]
+    [InlineData("1e30MB")]
+    [InlineData("NaN")]
+    [InlineData("Infinity")]
+    [InlineData("-Infinity")]
+    public void TryParse_ValueDoesNotFitInLong_ReturnsFalse(string str)
+    {
+        Assert.False(ByteSize.TryParse(str, CultureInfo.InvariantCulture, out _));
+        Assert.False(ByteSize.TryParse(str.AsSpan(), CultureInfo.InvariantCulture, out _));
+        Assert.False(ByteSize.TryParse(System.Text.Encoding.UTF8.GetBytes(str).AsSpan(), out _));
+
+        Assert.Throws<FormatException>(() => ByteSize.Parse(str, CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData("9223372036854775807B", long.MaxValue)]
+    [InlineData("-9223372036854775808B", long.MinValue)]
+    [InlineData("9223PB", 9_223_000_000_000_000_000L)]
+    public void TryParse_ValueAtTheEdgeOfLong_StillSucceeds(string str, long expected)
+    {
+        Assert.True(ByteSize.TryParse(str, CultureInfo.InvariantCulture, out var result));
+        Assert.Equal(expected, result.Value);
     }
 }

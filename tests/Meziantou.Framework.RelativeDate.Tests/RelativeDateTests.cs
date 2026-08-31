@@ -156,6 +156,60 @@ public class RelativeDateTests
         Assert.False(equalsAnotherType);
     }
 
+    [Fact]
+    public void Equality_IsDefinedOverTheInstantOnly()
+    {
+        var dateTime = new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc);
+
+        var twoHoursLater = new FakeTimeProvider();
+        twoHoursLater.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var twoYearsLater = new FakeTimeProvider();
+        twoYearsLater.SetUtcNow(new DateTimeOffset(2020, 6, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var a = RelativeDate.Get(dateTime, twoHoursLater);
+        var b = RelativeDate.Get(dateTime, twoYearsLater);
+
+        Assert.Equal(a, b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        Assert.Equal(0, a.CompareTo(b));
+
+        // The time provider is display state: it decides what an instance renders as, but takes no part in equality
+        Assert.Equal("2 hours ago", a.ToString(format: null, CultureInfo.InvariantCulture));
+        Assert.Equal("2 years ago", b.ToString(format: null, CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("G")]
+    public void ToString_AcceptsTheSupportedFormats(string? format)
+    {
+        Assert.Equal("2 hours ago", CreateTwoHoursAgo().ToString(format, CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData("g")]
+    [InlineData("garbage")]
+    [InlineData("R")]
+    public void ToString_Throws_ForAnUnsupportedFormat(string format)
+    {
+        Assert.Throws<FormatException>(() => CreateTwoHoursAgo().ToString(format, CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void CompositeFormatting_Throws_ForAnUnsupportedFormat()
+    {
+        var date = CreateTwoHoursAgo();
+        Assert.Throws<FormatException>(() => string.Format(CultureInfo.InvariantCulture, "{0:garbage}", date));
+    }
+
+    private static RelativeDate CreateTwoHoursAgo()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2018, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        return RelativeDate.Get(new DateTime(2018, 6, 15, 10, 0, 0, DateTimeKind.Utc), timeProvider);
+    }
+
 #if !INVARIANT_GLOBALIZATION_MODE_ENABLED
     [Fact]
     public void LocalDateTime_IsInterpretedInTheTimeProviderTimeZone()

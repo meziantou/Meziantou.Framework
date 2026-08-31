@@ -266,11 +266,6 @@ public sealed class HttpBasicAuthenticationTests
             return new TestApplication(app, client);
         }
 
-        public Task SendAndAssert(string url, Func<HttpResponseMessage, Task> assert)
-        {
-            return SendAndAssert(url, null, null, assert);
-        }
-
         public async Task SendAndAssert(string url, string? username, string? password, Func<HttpResponseMessage, Task> assert)
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -317,7 +312,6 @@ public sealed class HttpBasicAuthenticationTests
         }
     }
 
-#nullable enable
     private sealed class InMemoryIdentityUserStore : IUserPasswordStore<IdentityUser>
     {
         private readonly List<IdentityUser> _users;
@@ -416,5 +410,4 @@ public sealed class HttpBasicAuthenticationTests
             return Task.FromResult(IdentityResult.Success);
         }
     }
-    #nullable restore
 }

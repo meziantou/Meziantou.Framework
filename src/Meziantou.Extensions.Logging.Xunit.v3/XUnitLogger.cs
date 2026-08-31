@@ -63,8 +63,9 @@ public class XUnitLogger : ILogger
     /// <param name="testOutputHelper">The xUnit.net test output helper.</param>
     /// <param name="scopeProvider">The scope provider.</param>
     /// <param name="categoryName">The category name for messages produced by the logger.</param>
+    /// <remarks>Scopes are not appended to the messages. Use the overload taking <see cref="XUnitLoggerOptions"/> to change it.</remarks>
     public XUnitLogger(ITestOutputHelper? testOutputHelper, LoggerExternalScopeProvider scopeProvider, string? categoryName)
-        : this(testOutputHelper, scopeProvider, categoryName, appendScope: true)
+        : this(testOutputHelper, scopeProvider, categoryName, appendScope: false)
     {
     }
 

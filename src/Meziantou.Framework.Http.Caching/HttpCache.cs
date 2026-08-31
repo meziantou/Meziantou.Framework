@@ -177,18 +177,10 @@ internal sealed class HttpCache
         if ((responseCacheControl?.NoStore) is true)
             return false;
 
-        // Authorization header without explicit cacheable directive
-        if (request.Headers.Authorization is not null)
-        {
-            // RFC 7234 Section 3.2: Must have must-revalidate, public, or s-maxage
-            if (responseCacheControl is null)
-                return false;
-
-            if (!responseCacheControl.MustRevalidate &&
-                !responseCacheControl.Public &&
-                responseCacheControl.SharedMaxAge is null)
-                return false;
-        }
+        // RFC 9111 Section 3.5: the restriction on responses to a request carrying an Authorization header
+        // applies to shared caches only. This is a private cache attached to a single HttpClient, so such a
+        // response is stored under the same rules as any other. It remains the caller's responsibility not
+        // to share one HttpClient, and therefore one cache, between users.
 
         // Check if response has explicit freshness information or is cacheable by default
         var hasExplicitFreshness = responseCacheControl?.MaxAge is not null ||

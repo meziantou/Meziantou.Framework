@@ -676,6 +676,114 @@ public sealed class ComprehensiveRFC7234Tests
     }
 
     [Fact]
+    public async Task WhenRequestHasAuthorizationThenResponseIsStoredInAPrivateCache()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "authorized-content", ("Cache-Control", "max-age=3600"));
+
+        using var request1 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request1.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "token");
+        await context.SnapshotResponse(request1, """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 18
+                Content-Type: text/plain; charset=utf-8
+              Value: authorized-content
+            """);
+
+        // RFC 9111 Section 3.5: the Authorization restriction applies to shared caches only.
+        using var request2 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request2.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "token");
+        await context.SnapshotResponse(request2, """
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 0
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 18
+                Content-Type: text/plain; charset=utf-8
+              Value: authorized-content
+            """);
+    }
+
+    [Fact]
+    public async Task WhenRequestHasAuthorizationAndResponseIsNoStoreThenNotCached()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "first", ("Cache-Control", "no-store"));
+        context.AddResponse(HttpStatusCode.OK, "second", ("Cache-Control", "no-store"));
+
+        using var request1 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request1.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "token");
+        await context.SnapshotResponse(request1, """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: no-store
+            Content:
+              Headers:
+                Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
+              Value: first
+            """);
+
+        // Dropping the shared-cache gate does not weaken the directives that actually forbid storage.
+        using var request2 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request2.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "token");
+        await context.SnapshotResponse(request2, """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: no-store
+            Content:
+              Headers:
+                Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
+              Value: second
+            """);
+    }
+
+    [Fact]
+    public async Task WhenRequestHasAuthorizationAndResponseVariesOnItThenVariantsAreSeparate()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "alice-content", ("Cache-Control", "max-age=3600"), ("Vary", "Authorization"));
+        context.AddResponse(HttpStatusCode.OK, "bob-content", ("Cache-Control", "max-age=3600"), ("Vary", "Authorization"));
+
+        using var request1 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request1.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "alice");
+        await context.SnapshotResponse(request1, """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+              Vary: Authorization
+            Content:
+              Headers:
+                Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
+              Value: alice-content
+            """);
+
+        // A server that returns per-principal content declares Vary: Authorization, which keeps the
+        // variants apart.
+        using var request2 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request2.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "bob");
+        await context.SnapshotResponse(request2, """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+              Vary: Authorization
+            Content:
+              Headers:
+                Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
+              Value: bob-content
+            """);
+    }
+
+    [Fact]
     public async Task WhenResponseHasNoStoreThenNotCached()
     {
         await using var context = new HttpTestContext();

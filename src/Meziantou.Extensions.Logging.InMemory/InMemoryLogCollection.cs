@@ -24,6 +24,14 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
     private readonly Lock _lock = new();
     private Chunk<InMemoryLogEntry>? _firstChunk;
     private Chunk<InMemoryLogEntry>? _lastChunk;
+    private int _count;
+
+    /// <summary>Gets the number of log entries in the collection.</summary>
+    /// <remarks>
+    /// The count is incremented only after the entry is reachable, so a concurrent reader never sees
+    /// a count that promises more entries than an enumeration would yield.
+    /// </remarks>
+    public int Count => Volatile.Read(ref _count);
 
     // Readers walk the chunks without taking the lock, so the head is published with a release
     // and read with an acquire, exactly like Chunk.Count and Chunk.Next.
@@ -41,6 +49,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
                 firstChunk.Count = 1;
                 _lastChunk = firstChunk;
                 Volatile.Write(ref _firstChunk, firstChunk);
+                Volatile.Write(ref _count, _count + 1);
                 return;
             }
 
@@ -55,11 +64,27 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
                 newChunk.Count = 1;
                 _lastChunk = newChunk;
                 lastChunk.Next = newChunk;
+                Volatile.Write(ref _count, _count + 1);
                 return;
             }
 
             lastChunk.Items[lastChunk.Count] = entry;
             lastChunk.Count++;
+            Volatile.Write(ref _count, _count + 1);
+        }
+    }
+
+    /// <summary>Removes all log entries from the collection.</summary>
+    /// <remarks>
+    /// An enumeration already in progress keeps walking the entries it started on; it is not invalidated.
+    /// </remarks>
+    public void Clear()
+    {
+        lock (_lock)
+        {
+            _lastChunk = null;
+            Volatile.Write(ref _count, 0);
+            Volatile.Write(ref _firstChunk, null);
         }
     }
 

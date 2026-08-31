@@ -163,20 +163,26 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         if (channel is null)
             return;
 
+        var logMessage = new LogMessage(message, flushCompletion: null);
+
         // Try to write to the channel - this will succeed as long as there's space
         // and the channel hasn't been completed yet
-        if (channel.Writer.TryWrite(new LogMessage(message, flushCompletion: null)))
+        if (channel.Writer.TryWrite(logMessage))
             return;
 
         // TryWrite failed - the channel is full (need backpressure) or completed (disposal)
         try
         {
+            // Another thread can take the room freed between WaitToWriteAsync and TryWrite, so keep
+            // trying until the message is queued. Otherwise the message would be dropped even though
+            // the caller asked to wait for room.
             // WaitToWriteAsync returns false if the channel is completed
             // This is cheaper than catching ChannelClosedException from WriteAsync
-            if (!channel.Writer.WaitToWriteAsync().AsTask().GetAwaiter().GetResult())
-                return;
-
-            channel.Writer.TryWrite(new LogMessage(message, flushCompletion: null));
+            while (channel.Writer.WaitToWriteAsync().AsTask().GetAwaiter().GetResult())
+            {
+                if (channel.Writer.TryWrite(logMessage))
+                    return;
+            }
         }
         catch (ChannelClosedException)
         {
@@ -256,20 +262,19 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
 
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var message = new LogMessage(message: null, completion);
-        if (!channel.Writer.TryWrite(message))
+        try
         {
-            try
+            // Another thread can take the room freed between WaitToWriteAsync and TryWrite, so keep
+            // trying until the flush request is queued
+            while (!channel.Writer.TryWrite(message))
             {
                 if (!await channel.Writer.WaitToWriteAsync(cancellationToken).ConfigureAwait(false))
                     return;
-
-                if (!channel.Writer.TryWrite(message))
-                    return;
             }
-            catch (ChannelClosedException)
-            {
-                return;
-            }
+        }
+        catch (ChannelClosedException)
+        {
+            return;
         }
 
         await completion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);

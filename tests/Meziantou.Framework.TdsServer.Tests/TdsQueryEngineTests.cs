@@ -3314,6 +3314,61 @@ public sealed class TdsQueryEngineTests
             expectedMessageContains: "SELECT permission was denied");
     }
 
+    [Theory]
+    // A denied query root has to stay denied however the SQL reaches it, not just as the top-level FROM. Every
+    // one of these funnels through BuildTableSource -> ResolveConfiguredQueryRoot today; these cases pin that
+    // down so a future translation feature cannot resolve a root some other way and skip the check.
+    [InlineData("SELECT Id FROM orders")]
+    [InlineData("SELECT Id FROM dbo.orders")]
+    [InlineData("SELECT o.Id FROM customers c INNER JOIN orders o ON c.Id = o.Id")]
+    [InlineData("SELECT o.Id FROM customers c LEFT JOIN orders o ON c.Id = o.Id")]
+    [InlineData("WITH o AS (SELECT Id FROM orders) SELECT Id FROM o")]
+    [InlineData("SELECT d.Id FROM (SELECT Id FROM orders) d")]
+    [InlineData("SELECT Id FROM customers WHERE Id IN (SELECT Id FROM orders)")]
+    [InlineData("SELECT Id FROM customers WHERE EXISTS (SELECT 1 FROM orders)")]
+    [InlineData("SELECT Id FROM customers UNION ALL SELECT Id FROM orders")]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The query text comes from the test's own inline data.")]
+    public async Task SqlClient_QueryEngine_QueryRoot_Unauthorized_IsDeniedThroughEveryReference(string commandText)
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
+            resourceKind != TdsQueryEngineResourceKind.QueryRoot ||
+            !string.Equals(resourceName, "orders", StringComparison.OrdinalIgnoreCase);
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command => command.CommandText = commandText,
+            expectedErrorNumber: 229,
+            expectedMessageContains: "SELECT permission was denied on the object 'orders'");
+    }
+
+    [Theory]
+    // The mirror of the theory above: with the same handler, a root that is allowed still resolves through each
+    // of those shapes, so the check is not simply denying everything.
+    [InlineData("SELECT Id FROM customers")]
+    [InlineData("SELECT c2.Id FROM customers c1 INNER JOIN customers c2 ON c1.Id = c2.Id")]
+    [InlineData("WITH c AS (SELECT Id FROM customers) SELECT Id FROM c")]
+    [InlineData("SELECT Id FROM customers WHERE EXISTS (SELECT 1 FROM customers)")]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The query text comes from the test's own inline data.")]
+    public async Task SqlClient_QueryEngine_QueryRoot_Authorized_StillResolvesThroughEveryReference(string commandText)
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
+            resourceKind != TdsQueryEngineResourceKind.QueryRoot ||
+            !string.Equals(resourceName, "orders", StringComparison.OrdinalIgnoreCase);
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command => command.CommandText = commandText,
+            """
+            Id
+            1
+            2
+            4
+            """,
+            expectedMaterializedQueries: null);
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The stored procedure name is generated within the test and not user-controlled.")]
     public async Task SqlClient_QueryEngine_UnknownStoredProcedure_RemainsNotFoundError()

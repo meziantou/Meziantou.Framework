@@ -102,6 +102,9 @@ public class XUnitLogger : ILogger
     [SuppressMessage("Usage", "MA0011:IFormatProvider is missing")]
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
+        if (!IsEnabled(logLevel))
+            return;
+
         var testOutputHelper = _testOutputHelper ?? TestContext.Current.TestOutputHelper;
         if (testOutputHelper is null)
             return;

@@ -45,4 +45,24 @@ public sealed class XunitLoggerTests
 
         // Nothing to assert, it will throw an exception if something goes wrong
     }
+
+    [Fact]
+    public void LogLevelNoneIsIgnoredInsteadOfThrowing()
+    {
+        var output = new InMemoryTestOutputHelper();
+        var logger = XUnitLogger.CreateLogger(output, new XUnitLoggerOptions { IncludeLogLevel = true });
+        logger.Log(LogLevel.None, "message");
+
+        Assert.Empty(output.Logs);
+    }
+
+    [Fact]
+    public void LogLevelNoneIsIgnoredWhenTheLevelIsNotWritten()
+    {
+        var output = new InMemoryTestOutputHelper();
+        var logger = XUnitLogger.CreateLogger(output);
+        logger.Log(LogLevel.None, "message");
+
+        Assert.Empty(output.Logs);
+    }
 }

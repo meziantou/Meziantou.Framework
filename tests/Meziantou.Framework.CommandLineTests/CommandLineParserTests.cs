@@ -86,6 +86,20 @@ public class CommandLineParserTests
     }
 
     [Fact]
+    public void Current_ShouldNotIncludeTheExecutablePath()
+    {
+        var commandLineArgs = Environment.GetCommandLineArgs();
+        var expected = new CommandLineParser();
+        expected.Parse(commandLineArgs[1..]);
+
+        // Position 0 must be the first argument of the process, not the path of the executable.
+        for (var i = 0; i < commandLineArgs.Length; i++)
+        {
+            Assert.Equal(expected.GetArgument(i), CommandLineParser.Current.GetArgument(i));
+        }
+    }
+
+    [Fact]
     public void HelpRequested_01()
     {
         // Arrange

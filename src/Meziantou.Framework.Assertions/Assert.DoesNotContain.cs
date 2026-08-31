@@ -36,12 +36,14 @@ public partial class Assert
             return;
 
         comparer ??= EqualityComparer<T>.Default;
-        foreach (var item in actual)
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        for (var index = 0; actualSnapshot.TryGetItem(index, out var item); index++)
         {
             if (!comparer.Equals(expected, item))
                 continue;
 
-            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<T, IEnumerable<T>>("Not expected item", expected, actual, actualExpression, expectedExpression, message)));
+            actualSnapshot.EnsureComplete();
+            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<T, IReadOnlyList<T>>("Not expected item", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
         }
     }
 
@@ -65,12 +67,14 @@ public partial class Assert
             return;
 
         comparer ??= EqualityComparer<TKey>.Default;
-        foreach (var item in actual)
+        using var actualSnapshot = CollectionSnapshot.Create<KeyValuePair<TKey, TValue>>(actual);
+        for (var index = 0; actualSnapshot.TryGetItem(index, out var item); index++)
         {
             if (!comparer.Equals(expected, item.Key))
                 continue;
 
-            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<TKey, IEnumerable<KeyValuePair<TKey, TValue>>>("Not expected key", expected, actual, actualExpression, expectedExpression, message)));
+            actualSnapshot.EnsureComplete();
+            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<TKey, IReadOnlyList<KeyValuePair<TKey, TValue>>>("Not expected key", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
         }
     }
 
@@ -93,12 +97,14 @@ public partial class Assert
         if (actual is null)
             return;
 
-        foreach (var item in actual)
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
+        for (var index = 0; actualSnapshot.TryGetItem(index, out var item); index++)
         {
             if (!object.Equals(expected, item))
                 continue;
 
-            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<object?, System.Collections.IEnumerable>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+            actualSnapshot.EnsureComplete();
+            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<object?, IReadOnlyList<object?>>("Not expected", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
         }
     }
 
@@ -177,6 +183,6 @@ public partial class Assert
         if (!ContainsSubsequence(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<IReadOnlyList<object?>, IReadOnlyList<object?>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 }

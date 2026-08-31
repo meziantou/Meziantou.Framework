@@ -89,7 +89,7 @@ public abstract class OutputTarget
 
     private sealed class StringBuilderOutputTarget(StringBuilder stringBuilder) : OutputTarget
     {
-        private readonly Lock _syncObject = new();
+        private readonly Lock _syncObject = SharedSinkLock.For(stringBuilder);
         private Decoder _decoder = Encoding.UTF8.GetDecoder();
 
         public override void Write(ReadOnlySpan<byte> write)
@@ -99,13 +99,16 @@ public abstract class OutputTarget
 
             lock (_syncObject)
             {
+                // GetCharCount does not consume the bytes, only GetChars does. Returning early when the
+                // buffer holds nothing but the start of a multi-byte character would drop those bytes
+                // instead of leaving them buffered in the decoder for the next call.
                 var charCount = _decoder.GetCharCount(write, flush: false);
-                if (charCount == 0)
-                    return;
-
-                var chars = new char[charCount];
+                var chars = charCount == 0 ? [] : new char[charCount];
                 var charsRead = _decoder.GetChars(write, chars, flush: false);
-                stringBuilder.Append(chars, 0, charsRead);
+                if (charsRead > 0)
+                {
+                    stringBuilder.Append(chars, 0, charsRead);
+                }
             }
         }
 
@@ -132,7 +135,7 @@ public abstract class OutputTarget
         }
     }
 
-    private sealed class TextDelegateOutputTarget(Action<string> handler) : LineBasedTextOutputTarget
+    private sealed class TextDelegateOutputTarget(Action<string> handler) : LineBasedTextOutputTarget(handler)
     {
         protected override void HandleLine(string line)
         {
@@ -140,7 +143,7 @@ public abstract class OutputTarget
         }
     }
 
-    private sealed class TextWriterOutputTarget(TextWriter writer) : LineBasedTextOutputTarget
+    private sealed class TextWriterOutputTarget(TextWriter writer) : LineBasedTextOutputTarget(writer)
     {
         protected override void HandleLine(string line)
         {
@@ -150,7 +153,7 @@ public abstract class OutputTarget
 
     private sealed class BytesDelegateOutputTarget(Action<byte[]> handler) : OutputTarget
     {
-        private readonly Lock _syncObject = new();
+        private readonly Lock _syncObject = SharedSinkLock.For(handler);
 
         public override void Write(ReadOnlySpan<byte> write)
         {
@@ -162,7 +165,7 @@ public abstract class OutputTarget
         }
     }
 
-    private sealed class ProcessOutputCollectionOutputTarget(ProcessOutputCollection collection, ProcessOutputType outputType) : LineBasedTextOutputTarget
+    private sealed class ProcessOutputCollectionOutputTarget(ProcessOutputCollection collection, ProcessOutputType outputType) : LineBasedTextOutputTarget(collection)
     {
         protected override void HandleLine(string line)
         {
@@ -188,9 +191,9 @@ public abstract class OutputTarget
         }
     }
 
-    private abstract class LineBasedTextOutputTarget : OutputTarget
+    private abstract class LineBasedTextOutputTarget(object sink) : OutputTarget
     {
-        private readonly Lock _syncObject = new();
+        private readonly Lock _syncObject = SharedSinkLock.For(sink);
         private Decoder _decoder = Encoding.UTF8.GetDecoder();
         private readonly StringBuilder _lineBuilder = new();
         private bool _lastCharacterWasCarriageReturn;
@@ -202,13 +205,16 @@ public abstract class OutputTarget
 
             lock (_syncObject)
             {
+                // GetCharCount does not consume the bytes, only GetChars does. Returning early when the
+                // buffer holds nothing but the start of a multi-byte character would drop those bytes
+                // instead of leaving them buffered in the decoder for the next call.
                 var charCount = _decoder.GetCharCount(write, flush: false);
-                if (charCount == 0)
-                    return;
-
-                var chars = new char[charCount];
+                var chars = charCount == 0 ? [] : new char[charCount];
                 var charsRead = _decoder.GetChars(write, chars, flush: false);
-                DispatchLines(chars.AsSpan(0, charsRead));
+                if (charsRead > 0)
+                {
+                    DispatchLines(chars.AsSpan(0, charsRead));
+                }
             }
         }
 
@@ -279,6 +285,17 @@ public abstract class OutputTarget
             _lineBuilder.Clear();
             HandleLine(line);
         }
+    }
+
+    // The same sink can be attached to both standard output and standard error, and the two stream
+    // pumps run concurrently. Targets built from one sink therefore share a single lock so the sink is
+    // never mutated from two threads at once, matching what SynchronizedWriteStream and
+    // SynchronizedTextWriter already do for streams and text writers.
+    private static class SharedSinkLock
+    {
+        private static readonly ConditionalWeakTable<object, Lock> LockBySink = new();
+
+        public static Lock For(object sink) => LockBySink.GetValue(sink, static _ => new Lock());
     }
 
     [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The wrapped stream and semaphore are shared and owned by the caller/ConditionalWeakTable.")]

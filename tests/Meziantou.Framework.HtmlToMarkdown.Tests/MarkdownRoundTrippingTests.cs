@@ -38,7 +38,7 @@ public sealed class MarkdownRoundTrippingTests
         foreach (var testCase in AllCases.Value)
         {
             // Some tests may not round-trip due to extension-specific parsing behaviors
-            if (!ShouldSkip(testCase, out _))
+            if (!ShouldSkip(testCase))
             {
                 data.Add(testCase);
             }
@@ -67,24 +67,14 @@ public sealed class MarkdownRoundTrippingTests
         HtmlNormalizer.AssertEquivalent(testCase.Html, roundTrippedHtml);
     }
 
-    private static bool ShouldSkip(MarkdigTestCase testCase, out string reason)
+    private static bool ShouldSkip(MarkdigTestCase testCase)
     {
         // CommonMark.md contains the full CommonMark spec. We test those separately
         // in CommonMarkSpecTests. Skip the duplicate here to avoid 600+ duplicate tests.
         if (testCase.FileName == "CommonMark.md")
-        {
-            reason = "CommonMark spec is tested separately in CommonMarkSpecTests";
             return true;
-        }
 
-        if (SkippedExamples.TryGetValue((testCase.FileName, testCase.Example), out var skippedReason))
-        {
-            reason = skippedReason;
-            return true;
-        }
-
-        reason = "";
-        return false;
+        return SkippedExamples.ContainsKey((testCase.FileName, testCase.Example));
     }
 
     private static readonly Dictionary<(string FileName, int Example), string> SkippedExamples = new()

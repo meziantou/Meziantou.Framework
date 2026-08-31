@@ -118,4 +118,76 @@ public class EmailTemplateTest
         Assert.Equal("42", metadata.Title);
     }
 
+    [Fact]
+    public void EmailTemplate_ExpressionBlock_WritesArrayValueWithoutTreatingItAsFormatArguments()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("{{# new object[] { 1, 2 } }}");
+
+        Assert.Equal(new object[] { 1, 2 }.ToString(), template.Run(out _));
+    }
+
+    [Fact]
+    public void EmailTemplate_ExpressionBlock_WritesEmptyArrayValueWithoutThrowing()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("{{# System.Array.Empty<object>() }}");
+
+        Assert.Equal(System.Array.Empty<object>().ToString(), template.Run(out _));
+    }
+
+    [Fact]
+    public void EmailTemplate_HtmlEncode_EncodesArrayValueWithoutTreatingItAsFormatArguments()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("{{#html new object[] { 1, 2 } }}");
+
+        Assert.Equal(new object[] { 1, 2 }.ToString(), template.Run(out _));
+    }
+
+    [Fact]
+    public void EmailTemplate_UnclosedSection_Throws()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("Hello {{@begin_section title}}Subject");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Run(out _));
+
+        Assert.Contains("end_section", exception.Message, ignoreCase: false);
+        Assert.Contains("'title'", exception.Message, ignoreCase: false);
+    }
+
+    [Fact]
+    public void EmailTemplate_SeveralUnclosedSections_AreAllReported()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("{{@begin_section title}}a{{@begin_section footer}}b");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Run(out _));
+
+        Assert.Contains("'title'", exception.Message, ignoreCase: false);
+        Assert.Contains("'footer'", exception.Message, ignoreCase: false);
+    }
+
+    [Fact]
+    public void EmailTemplate_UnclosedSection_ThrowsFromInheritedRunOverloadsToo()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("Hello {{@begin_section title}}Subject");
+
+        Assert.Throws<TemplateException>(() => ((Template)template).Run());
+    }
+
+    [Fact]
+    public void EmailTemplate_NestedSectionsWithTheSameName_KeepTheOutermostContent()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("{{@begin_section title}}A{{@begin_section title}}B{{@end_section}}C{{@end_section}}");
+
+        var result = template.Run(out var metadata);
+
+        Assert.Equal("ABC", result);
+        Assert.NotNull(metadata);
+        Assert.Equal("ABC", metadata.Title);
+    }
 }

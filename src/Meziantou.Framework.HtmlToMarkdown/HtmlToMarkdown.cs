@@ -474,8 +474,9 @@ public static class HtmlToMarkdown
 
     private static string ConvertLink(IElement element, ConversionState state)
     {
+        // GetAttribute returns null only when the attribute is absent: <a href> yields "".
         var href = element.GetAttribute("href");
-        if (href is null && !element.HasAttribute("href"))
+        if (href is null)
             return ConvertInlineContent(element, state);
 
         var title = element.GetAttribute("title");
@@ -485,7 +486,7 @@ public static class HtmlToMarkdown
         sb.Append('[');
         sb.Append(content);
         sb.Append("](");
-        sb.Append(href ?? "");
+        AppendLinkDestination(sb, href);
         if (!string.IsNullOrEmpty(title))
         {
             AppendLinkTitle(sb, title);
@@ -505,9 +506,9 @@ public static class HtmlToMarkdown
 
         var sb = new StringBuilder();
         sb.Append("![");
-        sb.Append(alt);
+        AppendLinkText(sb, alt);
         sb.Append("](");
-        sb.Append(src);
+        AppendLinkDestination(sb, src);
         if (!string.IsNullOrEmpty(title))
         {
             AppendLinkTitle(sb, title);
@@ -550,8 +551,27 @@ public static class HtmlToMarkdown
         {
             UnknownElementHandling.Strip => "",
             UnknownElementHandling.StripKeepContent => ConvertChildNodes(element, state),
-            _ => element.OuterHtml,
+            _ => GetOuterHtmlWithoutStrippedElements(element),
         };
+    }
+
+    /// <summary>
+    /// Gets the outer HTML of an element with its script, style and noscript descendants
+    /// removed. Those elements are stripped everywhere else, so passing an unknown element
+    /// through verbatim must not reintroduce them.
+    /// </summary>
+    private static string GetOuterHtmlWithoutStrippedElements(IElement element)
+    {
+        if (element.QuerySelector(StrippedElementsSelector) is null)
+            return element.OuterHtml;
+
+        var clone = (IElement)element.Clone(deep: true);
+        foreach (var stripped in clone.QuerySelectorAll(StrippedElementsSelector).ToArray())
+        {
+            stripped.Remove();
+        }
+
+        return clone.OuterHtml;
     }
 
     // =========================================================================
@@ -693,18 +713,40 @@ public static class HtmlToMarkdown
         var classes = element.GetAttribute("class");
         if (classes is not null)
         {
-            foreach (var cls in classes.Split(' '))
+            // The class attribute is separated by any whitespace, not only spaces.
+            foreach (var cls in classes.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
             {
                 if (cls.StartsWith("language-", StringComparison.Ordinal))
-                    return cls["language-".Length..];
+                    return SanitizeLanguage(cls["language-".Length..]);
             }
         }
 
         var dataLang = element.GetAttribute("data-language");
         if (!string.IsNullOrEmpty(dataLang))
-            return dataLang;
+            return SanitizeLanguage(dataLang);
 
         return null;
+    }
+
+    /// <summary>
+    /// Validates the info string of a fenced code block. The value comes from the document
+    /// and is copied onto the opening fence, so one containing a line break or a fence
+    /// character would end the code block early and let the rest of the attribute be
+    /// interpreted as Markdown. Letters and digits are accepted, including non-ASCII ones,
+    /// and anything outside the accepted set drops the info string.
+    /// </summary>
+    private static string? SanitizeLanguage(string language)
+    {
+        if (language.Length == 0)
+            return null;
+
+        foreach (var c in language)
+        {
+            if (!char.IsLetterOrDigit(c) && c is not ('-' or '+' or '_' or '.' or '#'))
+                return null;
+        }
+
+        return language;
     }
 
     // =========================================================================
@@ -726,12 +768,121 @@ public static class HtmlToMarkdown
                     sb.Append('\\');
                     sb.Append(c);
                     break;
+
                 default:
                     sb.Append(c);
                     break;
             }
         }
         sb.Append('"');
+    }
+
+    /// <summary>
+    /// Appends a link or image destination, escaping the characters that would otherwise
+    /// end it. A destination containing a space must use the angle bracket form, because
+    /// a space cannot be backslash-escaped there.
+    /// </summary>
+    private static void AppendLinkDestination(StringBuilder sb, string url)
+    {
+        if (url.Contains(' ', StringComparison.Ordinal))
+        {
+            sb.Append('<');
+            foreach (var c in url)
+            {
+                switch (c)
+                {
+                    case '<' or '>' or '\\':
+                        sb.Append('\\');
+                        sb.Append(c);
+                        break;
+
+                    default:
+                        AppendUrlCharacter(sb, c);
+                        break;
+                }
+            }
+            sb.Append('>');
+            return;
+        }
+
+        var escapeParentheses = !HasBalancedParentheses(url);
+        foreach (var c in url)
+        {
+            switch (c)
+            {
+                case '(' or ')' when escapeParentheses:
+                case '<' or '>' or '\\':
+                    sb.Append('\\');
+                    sb.Append(c);
+                    break;
+
+                default:
+                    AppendUrlCharacter(sb, c);
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Determines whether the parentheses in a link destination are balanced. A bare
+    /// destination may contain balanced parentheses, so only unbalanced ones need escaping.
+    /// </summary>
+    private static bool HasBalancedParentheses(string url)
+    {
+        var depth = 0;
+        foreach (var c in url)
+        {
+            if (c is '(')
+            {
+                depth++;
+            }
+            else if (c is ')')
+            {
+                depth--;
+                if (depth < 0)
+                    return false;
+            }
+        }
+
+        return depth == 0;
+    }
+
+    /// <summary>
+    /// Appends a character of a URL, percent-encoding the control characters that cannot
+    /// appear in a link destination in any form.
+    /// </summary>
+    private static void AppendUrlCharacter(StringBuilder sb, char c)
+    {
+        if (char.IsControl(c))
+        {
+            sb.Append(System.Globalization.CultureInfo.InvariantCulture, $"%{(int)c:X2}");
+        }
+        else
+        {
+            sb.Append(c);
+        }
+    }
+
+    /// <summary>
+    /// Appends literal text used as a link label or image description, escaping the
+    /// brackets that would otherwise end it.
+    /// </summary>
+    private static void AppendLinkText(StringBuilder sb, string text)
+    {
+        foreach (var c in text)
+        {
+            switch (c)
+            {
+                case '[' or ']' or '\\':
+                    sb.Append('\\');
+                    sb.Append(c);
+                    break;
+
+                default:
+                    sb.Append(c);
+                    break;
+            }
+        }
     }
 
     private static string EscapeMarkdown(string text)
@@ -1009,6 +1160,8 @@ public static class HtmlToMarkdown
             or "dl" or "dt" or "dd" or "figure" or "figcaption"
             or "details" or "summary";
     }
+
+    private const string StrippedElementsSelector = "script, style, noscript";
 
     private static bool IsStrippedElement(INode node)
     {

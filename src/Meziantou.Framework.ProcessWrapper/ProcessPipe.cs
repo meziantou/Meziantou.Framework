@@ -8,7 +8,8 @@ public sealed class ProcessPipe
 
     private readonly Stream _inputStream;
     private readonly Stream _outputStream;
-    private readonly Lock _syncObject = new();
+    private readonly Lock _stateLock = new();
+    private readonly Lock _writerLock = new();
     private bool _isWriterDisposed;
     private bool _isReaderDisposed;
 
@@ -54,11 +55,11 @@ public sealed class ProcessPipe
     internal void DisposeReader()
     {
         var shouldDispose = false;
-        lock (_syncObject)
+        lock (_stateLock)
         {
             if (!_isReaderDisposed)
             {
-                _isReaderDisposed = true;
+                Volatile.Write(ref _isReaderDisposed, value: true);
                 shouldDispose = true;
             }
         }
@@ -71,7 +72,10 @@ public sealed class ProcessPipe
 
     internal void Write(ReadOnlySpan<byte> buffer)
     {
-        lock (_syncObject)
+        // Only serialize concurrent writers. This write blocks until the buffered data drops below
+        // the pause threshold, so it must not hold the lock guarding the disposed flags: completing
+        // the reader is what releases a paused writer, and DisposeReader needs that lock to run.
+        lock (_writerLock)
         {
             ThrowIfWriterDisposed();
             _outputStream.Write(buffer);
@@ -96,11 +100,11 @@ public sealed class ProcessPipe
     private void DisposeWriterCore()
     {
         var shouldDispose = false;
-        lock (_syncObject)
+        lock (_stateLock)
         {
             if (!_isWriterDisposed)
             {
-                _isWriterDisposed = true;
+                Volatile.Write(ref _isWriterDisposed, value: true);
                 shouldDispose = true;
             }
         }

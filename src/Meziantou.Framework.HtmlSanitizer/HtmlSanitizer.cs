@@ -24,40 +24,41 @@ public sealed class HtmlSanitizer
     // http://dev.w3.org/html5/spec/Overview.html#optional-tags
     private static readonly string[] OptionalEndTagBlockElements = ["colgroup", "dd", "dt", "li", "p", "tbody", "td", "tfoot", "th", "thead", "tr"];
     private static readonly string[] OptionalEndTagInlineElements = ["rp", "rt"];
-    private static readonly string[] OptionalEndTagElements = [.. OptionalEndTagInlineElements, .. OptionalEndTagBlockElements];
 
     // Safe Block Elements - HTML5
     private static readonly string[] BlockElements = [.. OptionalEndTagBlockElements, "address", "article", "aside", "blockquote", "caption", "center", "del", "dir", "div", "dl", "figure", "figcaption", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "ins", "map", "menu", "nav", "ol", "pre", "section", "table", "ul"];
 
     // Inline Elements - HTML5
+    // del, ins and map are in BlockElements as well: their content model is transparent, so they are either
+    // depending on what they wrap. The lists are merged into a set, so the overlap costs nothing.
     private static readonly string[] InlineElements = [.. OptionalEndTagInlineElements, "a", "abbr", "acronym", "b", "bdi", "bdo", "big", "br", "cite", "code", "del", "dfn", "em", "font", "i", "img", "ins", "kbd", "label", "map", "mark", "q", "ruby", "rp", "rt", "s", "samp", "small", "span", "strike", "strong", "sub", "sup", "time", "tt", "u", "var"];
 
     // Blocked Elements (will be stripped)
-    private static readonly string[] DefaulBlockedElements = ["script", "style"];
+    private static readonly string[] DefaultBlockedElements = ["script", "style"];
 
-    private static readonly string[] DefaulValidElements = [.. VoidElements, .. BlockElements, .. InlineElements, .. OptionalEndTagElements];
+    private static readonly string[] DefaultValidElements = [.. VoidElements, .. BlockElements, .. InlineElements];
 
     //Attributes that have href and hence need to be sanitized
-    private static readonly string[] DefaulUriAttrs = ["background", "cite", "href", "longdesc", "src", "xlink:href"];
-    private static readonly string[] DefaulSrcsetAttrs = ["srcset"];
+    private static readonly string[] DefaultUriAttrs = ["background", "cite", "href", "longdesc", "src", "xlink:href"];
+    private static readonly string[] DefaultSrcsetAttrs = ["srcset"];
     private static readonly string[] DefaultHtmlAttrs = ["abbr", "align", "alt", "axis", "bgcolor", "border", "cellpadding", "cellspacing", "class", "clear", "color", "cols", "colspan", "compact", "coords", "dir", "face", "headers", "height", "hreflang", "hspace", "ismap", "lang", "language", "nohref", "nowrap", "rel", "rev", "rows", "rowspan", "rules", "scope", "scrolling", "shape", "size", "span", "start", "summary", "tabindex", "target", "title", "type", "valign", "value", "vspace", "width"];
 
-    private static readonly string[] DefaulValidAttrs = [.. DefaulUriAttrs, .. DefaulSrcsetAttrs, .. DefaultHtmlAttrs];
+    private static readonly string[] DefaultValidAttrs = [.. DefaultUriAttrs, .. DefaultSrcsetAttrs, .. DefaultHtmlAttrs];
 
     /// <summary>Gets the set of HTML elements that are allowed in sanitized output. Elements not in this set are unwrapped: the tag is dropped but its content is kept, unless the element is in the BlockedElements set.</summary>
-    public ISet<string> ValidElements { get; } = ToHashSet(DefaulValidElements);
+    public ISet<string> ValidElements { get; } = ToHashSet(DefaultValidElements);
 
     /// <summary>Gets the set of HTML attributes that are allowed in sanitized output. Attributes not in this set will be removed from elements.</summary>
-    public ISet<string> ValidAttributes { get; } = ToHashSet(DefaulValidAttrs);
+    public ISet<string> ValidAttributes { get; } = ToHashSet(DefaultValidAttrs);
 
     /// <summary>Gets the set of HTML elements that will be completely removed from the output, including their content. By default includes script and style elements.</summary>
-    public ISet<string> BlockedElements { get; } = ToHashSet(DefaulBlockedElements);
+    public ISet<string> BlockedElements { get; } = ToHashSet(DefaultBlockedElements);
 
     /// <summary>Gets the set of attribute names that contain URLs and should be validated for safety. Unsafe URLs will be replaced with empty strings.</summary>
-    public ISet<string> UriAttributes { get; } = ToHashSet(DefaulUriAttrs);
+    public ISet<string> UriAttributes { get; } = ToHashSet(DefaultUriAttrs);
 
     /// <summary>Gets the set of attribute names that contain srcset values (responsive image sources) and should be validated for safety.</summary>
-    public ISet<string> SrcsetAttributes { get; } = ToHashSet(DefaulSrcsetAttrs);
+    public ISet<string> SrcsetAttributes { get; } = ToHashSet(DefaultSrcsetAttrs);
 
     /// <summary>Gets or sets a value indicating whether HTML comments are kept in the sanitized output. Comments are removed by default because downlevel-hidden conditional comments (<c>&lt;!--[if IE]&gt;&lt;script&gt;…&lt;/script&gt;&lt;![endif]--&gt;</c>) are executed by legacy browsers.</summary>
     public bool AllowComments { get; set; }

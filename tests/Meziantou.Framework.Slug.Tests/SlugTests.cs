@@ -389,31 +389,125 @@ public class SlugTests
         Assert.Equal("\u00E9\u00E9\u00E9\u00E9", slug);
     }
 
-    [Fact]
-    public void Slug_MaximumLength_IsNeverExceededOnComposingInput()
+    [Theory]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    [InlineData("\u00E9\u00E9\u00E9\u00E9", "\u00E9\u00E9\u00E9\u00E9")]
+    [InlineData("caf\u00E9 cr\u00E8me br\u00FBl\u00E9e", "caf\u00E9 cr\u00E8me br\u00FBl\u00E9e")]
+    [InlineData("\uAC00\uAC01\uAC02", "\uAC00\uAC01\uAC02")]
+    [InlineData("a\u0301\u0302\u0303\u0304b", "\u00E1\u0302\u0303\u0304b")]
+    [InlineData("  \u00E9 \u00E9  ", "  \u00E9 \u00E9  ")]
+    [InlineData("\U0001F600\u00E9\U0001F600", "\U0001F600\u00E9\U0001F600")]
+    [InlineData("Ti\u1EBFng Vi\u1EC7t", "Ti\u1EBFng Vi\u1EC7t")]
+    [InlineData("a-b--c", "a-b--c")]
+    public void Slug_MaximumLength_Unlimited_KeepsEveryAllowedCharacter(string text, string expected)
     {
-        string[] inputs =
+        var options = new SlugOptions { MaximumLength = 0 };
+        options.AllowedRanges.Clear();
+
+        var slug = Slug.Create(text, options);
+
+        Assert.Equal(expected, slug);
+    }
+
+    [Fact]
+    public void Slug_MaximumLength_Properties_WithoutNormalization()
+    {
+        // Normalization is a no-op under InvariantGlobalization, so these inputs keep the limit logic covered in
+        // both modes. The cases that depend on composing are in Slug_MaximumLength_Properties.
+        string[] texts = ["hello world this is long", "a-b--c", "a  b", "!!!", "A", "ab cdef"];
+
+        foreach (var text in texts)
+        {
+            foreach (var separator in new[] { "-", "__", "" })
+            {
+                foreach (var canEndWithSeparator in new[] { true, false })
+                {
+                    SlugOptions CreateOptions(int maximumLength)
+                        => new() { MaximumLength = maximumLength, Separator = separator, CanEndWithSeparator = canEndWithSeparator };
+
+                    var context = $"[{text}] separator '{separator}' canEndWithSeparator={canEndWithSeparator}";
+                    var unlimited = Slug.Create(text, CreateOptions(0));
+                    var previous = "";
+
+                    for (var maximumLength = 1; maximumLength <= 24; maximumLength++)
+                    {
+                        var slug = Slug.Create(text, CreateOptions(maximumLength));
+
+                        Assert.HasCountLessThanOrEqual(maximumLength, slug, $"{context} with limit {maximumLength} exceeded the limit");
+                        Assert.StartsWith(previous, slug, message: $"{context}: limit {maximumLength} does not extend the slug from limit {maximumLength - 1}");
+
+                        if (maximumLength >= unlimited.Length)
+                        {
+                            Assert.Equal(unlimited, slug);
+                        }
+
+                        previous = slug;
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Slug_MaximumLength_Properties()
+    {
+        string[] texts =
         [
             "\u00E9\u00E9\u00E9\u00E9",
             "caf\u00E9 cr\u00E8me br\u00FBl\u00E9e",
             "\uAC00\uAC01\uAC02",
+            "a\u0301\u0302\u0303\u0304b",
             "  \u00E9 \u00E9  ",
             "\U0001F600\u00E9\U0001F600",
+            "Ti\u1EBFng Vi\u1EC7t",
+            "a-b--c",
+            "_b\u00C1\u11A8--__a!",
         ];
 
-        foreach (var input in inputs)
+        foreach (var text in texts)
         {
-            for (var maximumLength = 1; maximumLength <= 24; maximumLength++)
+            foreach (var separator in new[] { "-", "__", "" })
             {
-                foreach (var separator in new[] { "-", "__", "" })
+                foreach (var clearAllowedRanges in new[] { true, false })
                 {
-                    var options = new SlugOptions { MaximumLength = maximumLength, Separator = separator };
-                    options.AllowedRanges.Clear();
+                    foreach (var canEndWithSeparator in new[] { true, false })
+                    {
+                        SlugOptions CreateOptions(int maximumLength)
+                        {
+                            var options = new SlugOptions { MaximumLength = maximumLength, Separator = separator, CanEndWithSeparator = canEndWithSeparator };
+                            if (clearAllowedRanges)
+                            {
+                                options.AllowedRanges.Clear();
+                            }
 
-                    var slug = Slug.Create(input, options);
+                            return options;
+                        }
 
-                    Assert.HasCountLessThanOrEqual(maximumLength, slug, $"[{input}] with limit {maximumLength} and separator '{separator}'");
-                    Assert.Equal(slug, slug.Normalize(NormalizationForm.FormC));
+                        var context = $"[{text}] separator '{separator}' cleared={clearAllowedRanges} canEndWithSeparator={canEndWithSeparator}";
+                        var unlimited = Slug.Create(text, CreateOptions(0));
+                        var previous = "";
+
+                        for (var maximumLength = 1; maximumLength <= 24; maximumLength++)
+                        {
+                            var slug = Slug.Create(text, CreateOptions(maximumLength));
+
+                            Assert.HasCountLessThanOrEqual(maximumLength, slug, $"{context} with limit {maximumLength} exceeded the limit");
+                            Assert.Equal(slug, slug.Normalize(NormalizationForm.FormC));
+
+                            // Raising the limit only ever appends, so the shorter slug is a prefix of the longer one.
+                            Assert.StartsWith(previous, slug, message: $"{context}: limit {maximumLength} does not extend the slug from limit {maximumLength - 1}");
+
+                            // A limit that can hold the whole slug produces exactly it, so truncation is the only
+                            // thing the limit ever does.
+                            if (maximumLength >= unlimited.Length)
+                            {
+                                Assert.Equal(unlimited, slug);
+                            }
+
+                            previous = slug;
+                        }
+                    }
                 }
             }
         }
@@ -458,19 +552,4 @@ public class SlugTests
         }
     }
 
-    [Fact]
-    public void Slug_MaximumLength_RaisingTheLimitNeverShortensTheSlug()
-    {
-        var previousLength = 0;
-        for (var maximumLength = 1; maximumLength <= 24; maximumLength++)
-        {
-            var options = new SlugOptions { MaximumLength = maximumLength };
-            options.AllowedRanges.Clear();
-
-            var slug = Slug.Create("caf\u00E9 cr\u00E8me br\u00FBl\u00E9e", options);
-
-            Assert.HasCountGreaterThanOrEqual(previousLength, slug, $"limit {maximumLength} produced fewer characters than limit {maximumLength - 1}");
-            previousLength = slug.Length;
-        }
-    }
 }

@@ -552,7 +552,10 @@ public class Template
         var code = block.BuildCode();
         if (block is CodeBlock or ClassMemberBlock && code.Length > 0 && block.Text.Length > 0)
         {
-            var textOffset = code.IndexOf(block.Text, StringComparison.Ordinal);
+            // The block text is emitted last, after whatever prefix BuildCode adds (for an expression
+            // block, "<output>.Write("). Search backwards so a prefix that happens to contain the
+            // block text — "<%=__output__%>", say — does not win over the real occurrence.
+            var textOffset = code.LastIndexOf(block.Text, StringComparison.Ordinal);
             if (textOffset >= 0)
             {
                 var generatedCodeColumnOffset = (writer.Indent * IndentedTextWriter.DefaultTabString.Length) + textOffset;

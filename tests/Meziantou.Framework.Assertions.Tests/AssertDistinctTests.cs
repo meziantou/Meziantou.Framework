@@ -233,4 +233,13 @@ public sealed class AssertDistinctTests
             Actual:       [1, 2, 3]
             """);
     }
+
+    [Fact]
+    public void NotDistinct_EnumeratesASingleUseSequenceOnlyOnce()
+    {
+        var actual = AssertionTestHelpers.SingleUse(1, 2, 3);
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotDistinct(actual));
+    }
+
 }

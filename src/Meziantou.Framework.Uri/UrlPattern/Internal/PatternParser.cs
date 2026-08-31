@@ -9,7 +9,7 @@ namespace Meziantou.Framework.UrlPatternInternal;
 internal sealed class PatternParser
 {
     private readonly List<Token> _tokenList;
-    private readonly Func<string, string> _encodingCallback;
+    private readonly Func<string, string>? _encodingCallback;
     private readonly string _segmentWildcardRegexp;
     private readonly PatternOptions _options;
     private readonly List<Part> _partList;
@@ -25,7 +25,7 @@ internal sealed class PatternParser
     /// </remarks>
     private const string FullWildcardRegexpValue = ".*";
 
-    public PatternParser(List<Token> tokenList, Func<string, string> encodingCallback, PatternOptions options)
+    public PatternParser(List<Token> tokenList, Func<string, string>? encodingCallback, PatternOptions options)
     {
         _tokenList = tokenList;
         _encodingCallback = encodingCallback;
@@ -36,6 +36,9 @@ internal sealed class PatternParser
         _index = 0;
         _nextNumericName = 0;
     }
+
+    /// <summary>Runs the encoding callback, or returns the value unchanged when the component needs no encoding.</summary>
+    private string Encode(string value) => _encodingCallback is null ? value : _encodingCallback(value);
 
     /// <summary>Parses the token list into a part list.</summary>
     /// <remarks>
@@ -217,7 +220,7 @@ internal sealed class PatternParser
         if (_pendingFixedValue.Length == 0)
             return;
 
-        var encodedValue = _encodingCallback(_pendingFixedValue.ToString());
+        var encodedValue = Encode(_pendingFixedValue.ToString());
         _pendingFixedValue.Clear();
         var part = new Part(PartType.FixedText, encodedValue, PartModifier.None);
         _partList.Add(part);
@@ -240,7 +243,7 @@ internal sealed class PatternParser
 
             if (!string.IsNullOrEmpty(prefix))
             {
-                var encodedValue = _encodingCallback(prefix);
+                var encodedValue = Encode(prefix);
                 var part = new Part(PartType.FixedText, encodedValue, modifier);
                 _partList.Add(part);
             }
@@ -291,8 +294,8 @@ internal sealed class PatternParser
             throw new UrlPatternException($"Duplicate name '{name}'");
         }
 
-        var encodedPrefix = _encodingCallback(prefix);
-        var encodedSuffix = _encodingCallback(suffix);
+        var encodedPrefix = Encode(prefix);
+        var encodedSuffix = Encode(suffix);
         var newPart = new Part(type, regexpValue, modifier, name, encodedPrefix, encodedSuffix);
         _partList.Add(newPart);
     }

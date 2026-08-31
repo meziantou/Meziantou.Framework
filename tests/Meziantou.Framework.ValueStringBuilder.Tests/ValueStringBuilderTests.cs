@@ -274,6 +274,41 @@ public class ValueStringBuilderTests
     }
 
     [Fact]
+    public void ToStringDisposesTheBuilder()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("hello");
+
+        Assert.Equal("hello", sb.ToString());
+        Assert.Equal("", sb.ToString());
+        Assert.Equal(0, sb.Length);
+        Assert.Equal(0, sb.Capacity);
+    }
+
+    [Fact]
+    public void AsSpanDoesNotDisposeTheBuilder()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("hello");
+
+        Assert.Equal("hello", sb.AsSpan().ToString());
+
+        sb.Append(" world");
+        Assert.Equal("hello world", sb.AsSpan().ToString());
+    }
+
+    [Fact]
+    public void DisposeIsIdempotentAfterToString()
+    {
+        var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("hello");
+
+        Assert.Equal("hello", sb.ToString());
+        sb.Dispose();
+        sb.Dispose();
+    }
+
+    [Fact]
     public void AppendInterpolatedStringAppendsContent()
     {
         using var sb = new ValueStringBuilder(initialCapacity: 2);

@@ -76,7 +76,9 @@ Examples:
 | `appsettings.Development.json` | `Both` | `AppsettingsDevelopmentText`, `AppsettingsDevelopmentBytes` |
 | `logo.bin` | `Binary` | `LogoBytes` |
 
-If two implicit names collide, the generator tries a path-based name. Remaining collisions are reported as MSBuild errors.
+If two implicit names collide, the generator tries a name based on the file path relative to the project directory. Files outside the project directory keep their original name, because a name derived from an absolute path would change with the location of the checkout. Remaining collisions are reported as MSBuild errors, and the files involved need explicit `Name` metadata.
+
+A generated member may not have the same name as the generated class, since C# does not allow it. That is reported too.
 
 ## Text Encoding
 
@@ -99,4 +101,5 @@ Text files larger than 1 MiB are rejected to avoid producing impractically large
 | `MFECG0007` | Embedded constant text file is not valid UTF-8 |
 | `MFECG0008` | Embedded constant text file is too large |
 | `MFECG0009` | Embedded constants visibility is invalid |
+| `MFECG0010` | Embedded constant member name is the same as the generated class name |
 | `MFECG0011` | The embedded constants could not be computed or written |

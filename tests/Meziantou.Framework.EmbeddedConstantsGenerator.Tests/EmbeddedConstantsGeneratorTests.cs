@@ -226,7 +226,7 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
     private static void AssertNoTrailingWhitespace(string generatedSource)
     {
         var lines = generatedSource.ReplaceLineEndings("\n").Split('\n');
-        Assert.Empty(lines.Where(line => line != line.TrimEnd()));
+        Assert.DoesNotContain(lines, line => line != line.TrimEnd());
     }
 
     private static FullPath GetGeneratedFilePath(FullPath projectDirectory)

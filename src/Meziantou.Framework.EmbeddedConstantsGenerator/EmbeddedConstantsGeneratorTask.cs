@@ -134,6 +134,7 @@ internal static class EmbeddedConstantsGeneratorTask
                 sb.Append("    ").Append(options.MemberVisibility).Append(" const string ").Append(entry.BaseName).Append("Text = ");
                 AppendStringLiteral(sb, entry.File.Text!);
                 sb.AppendLine(";");
+                first = false;
             }
 
             if (entry.File.Kind.HasFlag(EmbeddedConstantKind.Binary))
@@ -146,9 +147,8 @@ internal static class EmbeddedConstantsGeneratorTask
                 sb.Append("    ").Append(options.MemberVisibility).Append(" static global::System.ReadOnlySpan<byte> ").Append(entry.BaseName).Append("Bytes => ");
                 AppendByteArray(sb, entry.File.Bytes);
                 sb.AppendLine(";");
+                first = false;
             }
-
-            first = false;
         }
 
         sb.AppendLine("}");
@@ -464,12 +464,17 @@ internal static class EmbeddedConstantsGeneratorTask
             sb.Append(bytes[i].ToString("X2", CultureInfo.InvariantCulture));
             if (i != bytes.Length - 1)
             {
-                sb.Append(", ");
+                sb.Append(',');
             }
 
+            // The separating space goes before the next byte so the line does not end with trailing whitespace
             if (i % 16 == 15 || i == bytes.Length - 1)
             {
                 sb.AppendLine();
+            }
+            else
+            {
+                sb.Append(' ');
             }
         }
 
@@ -616,7 +621,9 @@ internal static class EmbeddedConstantsGeneratorTask
             try
             {
                 var content = Utf8NoBomThrowOnInvalidBytes.GetString(textBytes, 0, textBytes.Length);
-                return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, content, textBytes, errors);
+
+                // The byte member mirrors the file exactly. Only the text member drops the byte order mark.
+                return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, content, bytes, errors);
             }
             catch (DecoderFallbackException)
             {

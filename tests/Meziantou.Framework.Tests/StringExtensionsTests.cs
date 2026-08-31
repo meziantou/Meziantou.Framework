@@ -163,4 +163,41 @@ public class StringExtensionsTests
     {
         Assert.Equal(expected, str.RemovePrefix(suffx, comparison));
     }
+
+    [Theory]
+    // A wholly ignorable affix stands for nothing, so it removes nothing
+    [InlineData("abc", "\u200D", "abc")]
+    [InlineData("abc", "", "abc")]
+    // "e" followed by a combining acute accent is the decomposed form of "\u00E9": the match is 2 chars long
+    [InlineData("cafe\u0301", "\u00E9", "caf")]
+    [InlineData("cafe\u0301", "e\u0301", "caf")]
+    [InlineData("abc", "c", "ab")]
+    [InlineData("abc", "d", "abc")]
+    public void RemoveSuffix_CultureSensitive(string str, string suffix, string expected)
+    {
+        Assert.Equal(expected, CultureInfoUtilities.UseCulture(CultureInfo.InvariantCulture, () => str.RemoveSuffix(suffix, StringComparison.CurrentCulture)));
+    }
+
+    [Theory]
+    [InlineData("abc", "\u200D", "abc")]
+    [InlineData("abc", "", "abc")]
+    [InlineData("e\u0301cole", "\u00E9", "cole")]
+    [InlineData("abc", "a", "bc")]
+    [InlineData("abc", "d", "abc")]
+    public void RemovePrefix_CultureSensitive(string str, string prefix, string expected)
+    {
+        Assert.Equal(expected, CultureInfoUtilities.UseCulture(CultureInfo.InvariantCulture, () => str.RemovePrefix(prefix, StringComparison.CurrentCulture)));
+    }
+
+    [Fact]
+    public void RemoveSuffix_UnsupportedComparisonThrows()
+    {
+        Assert.Throws<ArgumentException>(() => "abc".RemoveSuffix("c", (StringComparison)42));
+    }
+
+    [Fact]
+    public void RemovePrefix_UnsupportedComparisonThrows()
+    {
+        Assert.Throws<ArgumentException>(() => "abc".RemovePrefix("a", (StringComparison)42));
+    }
 }

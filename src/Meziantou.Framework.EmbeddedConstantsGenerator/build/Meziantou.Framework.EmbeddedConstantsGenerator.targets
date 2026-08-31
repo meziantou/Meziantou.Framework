@@ -15,9 +15,31 @@
     <Meziantou_EmbeddedConstantsMemberVisibility Condition="'$(Meziantou_EmbeddedConstantsMemberVisibility)' == ''">public</Meziantou_EmbeddedConstantsMemberVisibility>
     <Meziantou_EmbeddedConstantsOutputPath Condition="'$(Meziantou_EmbeddedConstantsOutputPath)' == ''">$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'Meziantou.Framework.EmbeddedConstantsGenerator', 'EmbeddedConstants.g.cs'))</Meziantou_EmbeddedConstantsOutputPath>
 
+    <!-- The inner builds of a multi-targeted project run in parallel, so they must not share one generated
+         file. The default path already varies by target framework through IntermediateOutputPath, but a
+         path set by the user might not, so the target framework is inserted into it. -->
+    <Meziantou_EmbeddedConstantsOutputPath Condition="'$(TargetFrameworks)' != '' and '$(TargetFramework)' != '' and !$(Meziantou_EmbeddedConstantsOutputPath.Contains('$(TargetFramework)'))">$([System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName('$(Meziantou_EmbeddedConstantsOutputPath)')), '$(TargetFramework)', $([System.IO.Path]::GetFileName('$(Meziantou_EmbeddedConstantsOutputPath)'))))</Meziantou_EmbeddedConstantsOutputPath>
+
     <_EmbeddedConstantsGeneratedCodePath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(Meziantou_EmbeddedConstantsOutputPath)'))</_EmbeddedConstantsGeneratedCodePath>
     <_EmbeddedConstantsGeneratedCodeDirectory>$([System.IO.Path]::GetDirectoryName('$(_EmbeddedConstantsGeneratedCodePath)'))</_EmbeddedConstantsGeneratedCodeDirectory>
+
+    <!-- When the generated files live inside the project directory, the SDK's default glob picks up every
+         framework's copy once they exist, which breaks the second build. The target drops them and adds
+         back only this framework's file. The pattern is kept relative to match how the default glob
+         specifies its items. -->
+    <_EmbeddedConstantsGeneratedCodeRelativePath>$([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '$(_EmbeddedConstantsGeneratedCodePath)'))</_EmbeddedConstantsGeneratedCodeRelativePath>
+    <_EmbeddedConstantsGeneratedCodeGlob Condition="'$(TargetFrameworks)' != '' and '$(TargetFramework)' != ''">$(_EmbeddedConstantsGeneratedCodeRelativePath.Replace('$(TargetFramework)', '*'))</_EmbeddedConstantsGeneratedCodeGlob>
+    <_EmbeddedConstantsGeneratedCodeGlob Condition="'$(_EmbeddedConstantsGeneratedCodeGlob)' == ''">$(_EmbeddedConstantsGeneratedCodeRelativePath)</_EmbeddedConstantsGeneratedCodeGlob>
   </PropertyGroup>
+
+  <!-- This file is imported after the SDK's default globs, so removing here drops the generated files they
+       picked up; the target below adds this framework's file back. Unescape is required because MSBuild
+       escapes wildcards that come from a property, which would make this match nothing. The removal is
+       unconditional because an item reference is not allowed in an evaluation-time condition, and the
+       pattern only ever matches files this package generates. -->
+  <ItemGroup>
+    <Compile Remove="$([MSBuild]::Unescape('$(_EmbeddedConstantsGeneratedCodeGlob)'))" />
+  </ItemGroup>
 
   <UsingTask TaskName="Meziantou.Framework.EmbeddedConstantsGenerator.GenerateEmbeddedConstantsTask"
              AssemblyFile="$(_EmbeddedConstantsTaskAssemblyPath)"
@@ -26,12 +48,6 @@
   <Target Name="GenerateEmbeddedConstants"
           BeforeTargets="CoreCompile;BeforeCompile"
           Condition="'@(EmbeddedConstant)' != '' and '$(IsCrossTargetingBuild)' != 'true'">
-    <!-- The inner builds of a multi-targeted project run in parallel. If they all resolve to the same
-         generated file they write to it concurrently, so the path must vary by target framework. -->
-    <Error Condition="'$(TargetFrameworks)' != '' and '$(TargetFramework)' != '' and !$(_EmbeddedConstantsGeneratedCodePath.Contains('$(TargetFramework)'))"
-           Code="MFECG0010"
-           Text="The embedded constants output path '$(_EmbeddedConstantsGeneratedCodePath)' is the same for every target framework of this project, and the parallel inner builds would write to it concurrently. Include $(TargetFramework) in 'EmbeddedConstantsOutputPath', or remove the property to use the default path under the intermediate output directory." />
-
     <MakeDir Directories="$(_EmbeddedConstantsGeneratedCodeDirectory)" />
 
     <GenerateEmbeddedConstantsTask EmbeddedConstants="@(EmbeddedConstant)"

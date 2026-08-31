@@ -200,7 +200,7 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
     }
 
     [Fact]
-    public async Task GenerateOnBuild_MultiTargetingWithSharedOutputPath_FailsBuild()
+    public async Task GenerateOnBuild_MultiTargetingWithSharedOutputPath_InsertsTheTargetFrameworkIntoThePath()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
         var projectDirectory = temporaryDirectory.CreateDirectory("shared-output-path");
@@ -211,9 +211,15 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         temporaryDirectory.CreateTextFile("shared-output-path/Assets/sample.txt", "Hello");
 
         await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
-        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 1);
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
 
-        Assert.Contains("MFECG0010", string.Join('\n', result.Output));
+        // Building again matters: the generated files now exist, so the SDK default glob picks them all up
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        // The path was 'Generated/EmbeddedConstants.g.cs' for both frameworks, so each build gets its own subdirectory
+        Assert.True(File.Exists(projectDirectory / "Generated" / "net10.0" / "EmbeddedConstants.g.cs"));
+        Assert.True(File.Exists(projectDirectory / "Generated" / "net11.0" / "EmbeddedConstants.g.cs"));
+        Assert.False(File.Exists(projectDirectory / "Generated" / "EmbeddedConstants.g.cs"));
     }
 
     [Fact]
@@ -228,6 +234,9 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         temporaryDirectory.CreateTextFile("per-tfm-output-path/Assets/sample.txt", "Hello");
 
         await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        // Building again matters: the generated files now exist, so the SDK default glob picks them all up
         await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
 
         var generatedFiles = Directory.GetFiles(projectDirectory / "Generated", "EmbeddedConstants.g.cs", SearchOption.AllDirectories);

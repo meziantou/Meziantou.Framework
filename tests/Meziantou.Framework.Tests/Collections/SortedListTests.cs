@@ -366,4 +366,54 @@ public sealed class SortedListTests
 
         Assert.Equal([42], result);
     }
+
+    [Fact]
+    public void Indexer_ThrowsBeyondCountEvenWhenTheBackingArrayIsLarger()
+    {
+        var list = new SortedList<int> { 1, 2 };
+
+        Assert.True(list.Capacity > list.Count, "This test needs spare capacity to be meaningful");
+        Assert.Throws<ArgumentOutOfRangeException>(() => list[list.Count]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => list[-1]);
+    }
+
+    [Fact]
+    public void CopyToSpan_CopiesOnlyTheItems()
+    {
+        var list = new SortedList<int> { 1, 2 };
+
+        var destination = new int[list.Count];
+        list.CopyTo(destination.AsSpan());
+
+        Assert.Equal([1, 2], destination);
+    }
+
+    [Fact]
+    public void CopyToMemory_CopiesOnlyTheItems()
+    {
+        var list = new SortedList<int> { 1, 2 };
+
+        var destination = new int[list.Count];
+        list.CopyTo(destination.AsMemory());
+
+        Assert.Equal([1, 2], destination);
+    }
+
+    [Fact]
+    public void CopyToSpanRange_ValidatesAgainstCount()
+    {
+        var list = new SortedList<int> { 1, 2 };
+
+        var destination = new int[4];
+        Assert.Throws<ArgumentOutOfRangeException>(() => list.CopyTo(0, destination.AsSpan(), list.Count + 1));
+    }
+
+    [Fact]
+    public void CopyToMemoryRange_ValidatesAgainstCount()
+    {
+        var list = new SortedList<int> { 1, 2 };
+
+        var destination = new int[4];
+        Assert.Throws<ArgumentOutOfRangeException>(() => list.CopyTo(0, destination.AsMemory(), list.Count + 1));
+    }
 }

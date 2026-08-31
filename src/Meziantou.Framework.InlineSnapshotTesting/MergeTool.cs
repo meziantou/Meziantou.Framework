@@ -49,7 +49,7 @@ public abstract class MergeTool
     /// <returns>A <see cref="MergeToolResult"/> that represents the merge tool process, or null if the tool cannot be started.</returns>
     public abstract MergeToolResult? Start(string currentFilePath, string newFilePath);
 
-    private static bool IsDisable()
+    internal static bool IsDisabled()
     {
         var variable = Environment.GetEnvironmentVariable("DiffEngine_Disabled");
         return string.Equals(variable, "true", StringComparison.OrdinalIgnoreCase) ||
@@ -60,7 +60,7 @@ public abstract class MergeTool
 
     internal static MergeToolResult? Launch(IEnumerable<MergeTool?>? mergeTools, string currentFilePath, string newFilePath)
     {
-        if (IsDisable())
+        if (IsDisabled())
             return null;
 
         if (mergeTools is not null)

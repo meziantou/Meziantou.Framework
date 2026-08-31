@@ -62,6 +62,25 @@ public sealed class InlineSnapshotSettingsTests
         Assert.Contains("- Re-run the test.", exception.Message);
     }
 
+    [Fact]
+    public void MergeToolStrategy_WhenDiffToolsAreDisabled_ReportsTheSnapshotDifference()
+    {
+        // Diff tools switched off used to surface as InlineSnapshotException("Cannot start the merge tool"),
+        // which replaced the diff and the resolution guidance with a message about the tool.
+        using var _ = new EnvironmentVariableScope("DiffEngine_Disabled", "true");
+
+        var settings = InlineSnapshotSettings.Default with
+        {
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.MergeTool,
+            AutoDetectContinuousEnvironment = false,
+        };
+
+        var exception = Assert.ThrowsAny<Exception>(() => InlineSnapshot.Validate(new object(), settings, "not the snapshot"));
+
+        Assert.StartsWith("Snapshots do not match:\n", exception.Message);
+        Assert.Contains("Resolution guidance:", exception.Message);
+    }
+
     [Theory]
     [InlineData("DISALLOW", nameof(SnapshotUpdateStrategy.Disallow))]
     [InlineData("overwrite", nameof(SnapshotUpdateStrategy.Overwrite))]

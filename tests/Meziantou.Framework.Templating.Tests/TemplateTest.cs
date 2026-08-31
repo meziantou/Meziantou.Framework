@@ -793,4 +793,128 @@ public class TemplateTest
         Assert.Equal(new object[] { 1, 2 }.ToString(), template.Run());
     }
 
+    [Fact]
+    public void Template_FailedBuild_ProducesTheSameDiagnosticsWhenRetried()
+    {
+        var template = new Template();
+        template.Load("<%@ implements System.IDisposable %><%= Missing %>");
+
+        var first = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        var second = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        Assert.Equal(first.Message, second.Message);
+        Assert.DoesNotContain("CS0528", second.Message, ignoreCase: false);
+    }
+
+    [Fact]
+    public void Template_FailedBuild_RollsBackTheDirectivesItApplied()
+    {
+        var template = new Template();
+        template.Load("<%@ using System.Globalization %><%@ implements System.IDisposable %><%= Missing %>");
+
+        Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        Assert.DoesNotContain("System.Globalization", template.Usings);
+        Assert.Empty(template.ImplementedInterfaces);
+    }
+
+    [Fact]
+    public void Template_LoadAfterFailedBuild_AppliesOnlyTheNewDirectives()
+    {
+        var template = new Template();
+        template.Load("<%@ implements System.IDisposable %><%= Missing %>");
+        Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        template.Load("<%= \"ok\" %>");
+
+        Assert.Equal("ok", template.Run());
+        Assert.Empty(template.ImplementedInterfaces);
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlockDeclaringARunOverload_DoesNotBreakTheMethodLookup()
+    {
+        var template = new Template();
+        template.Load("<%+ public static void Run(int value) { } %>hi");
+
+        Assert.Equal("hi", template.Run());
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlockDeclaringARunOverload_StillInvokesTheGeneratedMethod()
+    {
+        var template = new Template();
+        template.Arguments.Add(new TemplateArgument("value", typeof(int)));
+        template.Load("<%+ public static void Run(int value) { } %><%= value %>");
+
+        Assert.Equal("42", template.Run(42));
+    }
+
+    // "__output__" also occurs in the generated "__output__.Write(" prefix, so searching forwards
+    // pointed the #line directive at the prefix instead of at the expression.
+    [Fact]
+    public void Template_ExpressionBlockMatchingTheGeneratedPrefix_EmitsTheColumnOfTheExpression()
+    {
+        var template = new Template();
+        template.Load("<%=__output__%>");
+        template.Build(CancellationToken.None);
+
+        var lines = template.SourceCode!.ReplaceLineEndings("\n").Split('\n');
+        var directiveIndex = Array.FindIndex(lines, line => line.StartsWith("#line (", StringComparison.Ordinal));
+        Assert.True(directiveIndex >= 0, "No #line directive was emitted");
+
+        var columnOffset = int.Parse(lines[directiveIndex].Split(' ')[^2], CultureInfo.InvariantCulture);
+        Assert.Equal("__output__);", lines[directiveIndex + 1][columnOffset..]);
+    }
+
+    [Fact]
+    public void Template_RunWithPositionalParameters_UsesCreateStringWriter()
+    {
+        var template = new TemplateWithCountingStringWriter();
+        template.Load("a");
+
+        Assert.Equal("a", template.Run());
+        Assert.Equal(1, template.CreateStringWriterCallCount);
+    }
+
+    [Fact]
+    public void Template_RunWithNamedParameters_UsesCreateStringWriter()
+    {
+        var template = new TemplateWithCountingStringWriter();
+        template.Load("a");
+
+        Assert.Equal("a", template.Run(new Dictionary<string, object?>()));
+        Assert.Equal(1, template.CreateStringWriterCallCount);
+    }
+
+    [Fact]
+    public void Template_RunWithPositionalParameters_ThrowsOnNullWriterWithoutBuilding()
+    {
+        var template = new Template();
+        template.Load("a");
+
+        Assert.Throws<ArgumentNullException>(() => template.Run(writer: null!));
+        Assert.False(template.IsBuilt);
+    }
+
+    [Fact]
+    public void Template_RunWithNamedParameters_ThrowsOnNullWriterWithoutBuilding()
+    {
+        var template = new Template();
+        template.Load("a");
+
+        Assert.Throws<ArgumentNullException>(() => template.Run(writer: null!, new Dictionary<string, object?>()));
+        Assert.False(template.IsBuilt);
+    }
+
+    private sealed class TemplateWithCountingStringWriter : Template
+    {
+        public int CreateStringWriterCallCount { get; private set; }
+
+        protected override StringWriter CreateStringWriter()
+        {
+            CreateStringWriterCallCount++;
+            return base.CreateStringWriter();
+        }
+    }
 }

@@ -62,6 +62,21 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
     }
 
     [Fact]
+    public void ForceUpdateSnapshots_WithDisallowStrategy_DoesNotThrow()
+    {
+        // The force-update path used to call FileEditor.UpdateFile without asking the strategy first, so
+        // Disallow reported a bare InvalidOperationException for a snapshot that actually matched.
+        var settings = InlineSnapshotSettings.Default with
+        {
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            AutoDetectContinuousEnvironment = false,
+            ForceUpdateSnapshots = true,
+        };
+
+        InlineSnapshot.Validate(new object(), settings, "{}");
+    }
+
+    [Fact]
     public void Validate_DoesNotComputeCallerContextWhenSnapshotMatches()
     {
         var exception = Record.Exception(() => InlineSnapshot.Validate(new object(), InlineSnapshotSettings.Default, "{}", "invalid\0path", 1));
@@ -617,6 +632,21 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
             expected: """
             InlineSnapshot.Validate(new object(), "{}");
             """);
+    }
+
+    [Fact]
+    public async Task DoNotForceUpdateSnapshotOnCI()
+    {
+        // Reformatting a matching snapshot is still a write to the source file, so continuous integration
+        // detection must stop it just like it stops updating a failing one.
+        await AssertSnapshot(forceUpdateSnapshots: true,
+            autoDetectCI: true,
+            environmentVariables: new[] { new KeyValuePair<string, string>("CI", "true") },
+            source: """"
+            InlineSnapshot.Validate(new object(), """
+                {}
+                """);
+            """");
     }
 
     [Fact]

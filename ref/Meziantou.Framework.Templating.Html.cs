@@ -58,5 +58,6 @@ namespace Meziantou.Framework.Templating
         public virtual void Run(System.IO.TextWriter writer, out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, System.Collections.Generic.IReadOnlyDictionary<string, object?> parameters) => throw null;
         public virtual void Run(System.IO.TextWriter writer, out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, params object?[] parameters) => throw null;
         public virtual void Run(System.IO.TextWriter writer, out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata) => throw null;
+        protected override void InvokeRunMethod(object?[] p) { }
     }
 }

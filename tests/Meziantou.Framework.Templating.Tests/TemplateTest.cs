@@ -831,6 +831,25 @@ public class TemplateTest
         Assert.Empty(template.ImplementedInterfaces);
     }
 
+    [Fact]
+    public void Template_ClassMemberBlockDeclaringARunOverload_DoesNotBreakTheMethodLookup()
+    {
+        var template = new Template();
+        template.Load("<%+ public static void Run(int value) { } %>hi");
+
+        Assert.Equal("hi", template.Run());
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlockDeclaringARunOverload_StillInvokesTheGeneratedMethod()
+    {
+        var template = new Template();
+        template.Arguments.Add(new TemplateArgument("value", typeof(int)));
+        template.Load("<%+ public static void Run(int value) { } %><%= value %>");
+
+        Assert.Equal("42", template.Run(42));
+    }
+
     // "__output__" also occurs in the generated "__output__.Write(" prefix, so searching forwards
     // pointed the #line directive at the prefix instead of at the expression.
     [Fact]

@@ -11,6 +11,7 @@ public sealed class FakeProcess : IProcessHandle
     private readonly Stream _inputStream;
     private readonly Stream _outputStream;
     private readonly Stream _errorStream;
+    private readonly Lock _syncObject = new();
     private readonly int _initialExitCode;
     private bool _completeOnStart = true;
     private bool _isDisposed;
@@ -90,11 +91,15 @@ public sealed class FakeProcess : IProcessHandle
     /// <param name="exitCode">Optional exit code override. If <see langword="null" />, keeps the configured code.</param>
     public void Complete(int? exitCode = null)
     {
-        if (_hasExited)
-            return;
+        lock (_syncObject)
+        {
+            if (_hasExited)
+                return;
 
-        _exitCode = exitCode ?? _initialExitCode;
-        _hasExited = true;
+            Volatile.Write(ref _exitCode, exitCode ?? _initialExitCode);
+            Volatile.Write(ref _hasExited, value: true);
+        }
+
         _waitForExitTaskSource.TrySetResult();
     }
 
@@ -117,7 +122,7 @@ public sealed class FakeProcess : IProcessHandle
 
     private bool StartCore()
     {
-        ObjectDisposedException.ThrowIf(_isDisposed, this);
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _isDisposed), this);
 
         if (_completeOnStart)
         {
@@ -129,26 +134,27 @@ public sealed class FakeProcess : IProcessHandle
 
     private Task WaitForExitCoreAsync(CancellationToken cancellationToken)
     {
-        ObjectDisposedException.ThrowIf(_isDisposed, this);
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _isDisposed), this);
         return _waitForExitTaskSource.Task.WaitAsync(cancellationToken);
     }
 
     private void KillCore()
     {
-        ObjectDisposedException.ThrowIf(_isDisposed, this);
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _isDisposed), this);
 
-        if (!_hasExited)
-        {
-            Complete(_initialExitCode == 0 ? -1 : _initialExitCode);
-        }
+        Complete(_initialExitCode == 0 ? -1 : _initialExitCode);
     }
 
     private void DisposeCore()
     {
-        if (_isDisposed)
-            return;
+        lock (_syncObject)
+        {
+            if (_isDisposed)
+                return;
 
-        _isDisposed = true;
+            Volatile.Write(ref _isDisposed, value: true);
+        }
+
         _inputStream.Dispose();
         _outputStream.Dispose();
         _errorStream.Dispose();
@@ -156,8 +162,8 @@ public sealed class FakeProcess : IProcessHandle
 
     bool IProcessHandle.Start() => StartCore();
     int IProcessHandle.Id => _id;
-    bool IProcessHandle.HasExited => _hasExited;
-    int IProcessHandle.ExitCode => _exitCode;
+    bool IProcessHandle.HasExited => Volatile.Read(ref _hasExited);
+    int IProcessHandle.ExitCode => Volatile.Read(ref _exitCode);
     Stream IProcessHandle.InputStream => _inputStream;
     Stream IProcessHandle.OutputStream => _outputStream;
     Stream IProcessHandle.ErrorStream => _errorStream;

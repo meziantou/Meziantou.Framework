@@ -136,6 +136,47 @@ public sealed class HttpBasicAuthenticationTests
     }
 
     [Fact]
+    public async Task MalformedUtf8Credentials_AreRejected()
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("victim", "\uFFFD\uFFFD\uFFFD", username, password);
+        });
+
+        byte[] credentials = [.. "victim:"u8, 0xFF, 0xFE, 0xC0];
+        await application.SendRawAndAssert("/", credentials, response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task MalformedUtf8Credentials_DoNotCollideOnReplacementCharacter()
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("victim", "\uFFFD\uFFFD\uFFFD", username, password);
+        });
+
+        byte[] credentials = [.. "victim:"u8, 0x80, 0x81, 0x82];
+        await application.SendRawAndAssert("/", credentials, response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task NonAsciiUtf8Credentials_AreAccepted()
+    {
+        await using var application = await TestApplication.CreateAsync("\u00DCn\u00EFc\u00F8de", "p\u00E4ssw\u00F6rd");
+        await application.SendAndAssert("/", "\u00DCn\u00EFc\u00F8de", "p\u00E4ssw\u00F6rd", async response =>
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("\u00DCn\u00EFc\u00F8de", await response.Content.ReadAsStringAsync(XunitCancellationToken));
+        });
+    }
+
+    [Fact]
     public async Task Challenge_PreservesChallengeWrittenByAnotherScheme()
     {
         await using var application = await TestApplication.CreateWithSecondSchemeAsync(options =>
@@ -326,6 +367,15 @@ public sealed class HttpBasicAuthenticationTests
             assert(response);
         }
 
+        public async Task SendRawAndAssert(string url, byte[] credentials, Action<HttpResponseMessage> assert)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.TryAddWithoutValidation("Authorization", HttpBasicAuthenticationDefaults.AuthenticationScheme + " " + Convert.ToBase64String(credentials));
+
+            using var response = await Client.SendAsync(request);
+            assert(response);
+        }
+
         public async ValueTask DisposeAsync()
         {
             Client.Dispose();
@@ -339,7 +389,6 @@ public sealed class HttpBasicAuthenticationTests
         }
     }
 
-#nullable enable
     private sealed class InMemoryIdentityUserStore : IUserPasswordStore<IdentityUser>
     {
         private readonly List<IdentityUser> _users;
@@ -438,5 +487,4 @@ public sealed class HttpBasicAuthenticationTests
             return Task.FromResult(IdentityResult.Success);
         }
     }
-    #nullable restore
 }

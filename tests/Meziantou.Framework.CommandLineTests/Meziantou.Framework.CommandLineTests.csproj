@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- PromptTests redirects the process-wide Console, so its tests must not run in parallel with each other. -->
+    <XunitParallelizationMode>Collections</XunitParallelizationMode>
   </PropertyGroup>
 
   <ItemGroup>

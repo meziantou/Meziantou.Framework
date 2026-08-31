@@ -373,9 +373,22 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
     public static bool operator >(ByteSize value1, ByteSize value2) => value1.CompareTo(value2) > 0;
 
-    public static ByteSize operator +(ByteSize value1, ByteSize value2) => new(value1.Value + value2.Value);
-    public static ByteSize operator -(ByteSize value1, ByteSize value2) => new(value1.Value - value2.Value);
-    public static ByteSize operator *(ByteSize value1, ByteSize value2) => new(value1.Value * value2.Value);
+    public static ByteSize operator +(ByteSize value1, ByteSize value2) => new(checked(value1.Value + value2.Value));
+    public static ByteSize operator -(ByteSize value1, ByteSize value2) => new(checked(value1.Value - value2.Value));
+
+    /// <summary>Scales a byte size by a factor.</summary>
+    public static ByteSize operator *(ByteSize value, long multiplier) => new(checked(value.Value * multiplier));
+
+    /// <summary>Scales a byte size by a factor.</summary>
+    public static ByteSize operator *(long multiplier, ByteSize value) => new(checked(multiplier * value.Value));
+
+    /// <summary>Divides a byte size by a factor.</summary>
+    public static ByteSize operator /(ByteSize value, long divisor) => new(value.Value / divisor);
+
+    [Obsolete("Multiplying two sizes yields bytes squared, which is not a size. Use the ByteSize * long overload to scale a size. This overload will be removed in the next major version.")]
+    public static ByteSize operator *(ByteSize value1, ByteSize value2) => new(checked(value1.Value * value2.Value));
+
+    [Obsolete("Dividing two sizes yields a dimensionless ratio, not a size. Use the ByteSize / long overload to scale a size, or divide the Value properties to get a ratio. This overload will be removed in the next major version.")]
     public static ByteSize operator /(ByteSize value1, ByteSize value2) => new(value1.Value / value2.Value);
 
     public static implicit operator ByteSize(long value) => new(value);
@@ -388,17 +401,29 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// <summary>Subtracts a byte size value from this instance.</summary>
     /// <param name="other">The value to subtract.</param>
     /// <returns>The result of the subtraction.</returns>
+    public ByteSize Subtract(ByteSize other) => this - other;
+
+    [Obsolete("Misspelled. Use " + nameof(Subtract) + " instead. This method will be removed in the next major version.")]
     public ByteSize Substract(ByteSize other) => this - other;
 
-    /// <summary>Multiplies two byte size values.</summary>
-    /// <param name="other">The value to multiply by.</param>
-    /// <returns>The product of the two byte sizes.</returns>
-    public ByteSize Multiply(ByteSize other) => this * other;
+    /// <summary>Scales this byte size by a factor.</summary>
+    /// <param name="multiplier">The factor to scale by.</param>
+    /// <returns>The scaled byte size.</returns>
+    public ByteSize Multiply(long multiplier) => this * multiplier;
 
-    /// <summary>Divides this byte size by another.</summary>
-    /// <param name="other">The value to divide by.</param>
-    /// <returns>The result of the division.</returns>
-    public ByteSize Divide(ByteSize other) => this / other;
+    /// <summary>Divides this byte size by a factor.</summary>
+    /// <param name="divisor">The factor to divide by.</param>
+    /// <returns>The divided byte size.</returns>
+    public ByteSize Divide(long divisor) => this / divisor;
+
+    // Computed inline rather than delegating to the obsolete operators, so this file does not
+    // need to suppress its own obsoletion warnings.
+
+    [Obsolete("Multiplying two sizes yields bytes squared, which is not a size. Use the Multiply(long) overload to scale a size. This overload will be removed in the next major version.")]
+    public ByteSize Multiply(ByteSize other) => new(checked(Value * other.Value));
+
+    [Obsolete("Dividing two sizes yields a dimensionless ratio, not a size. Use the Divide(long) overload to scale a size, or divide the Value properties to get a ratio. This overload will be removed in the next major version.")]
+    public ByteSize Divide(ByteSize other) => new(Value / other.Value);
 
     private static bool TryParseUnit(ReadOnlySpan<char> unit, out ByteSizeUnit result, out int parsedLength)
     {
@@ -538,19 +563,48 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
         // Convert number
         if (long.TryParse(s, NumberStyles.Integer, provider, out var resultLong))
-        {
-            result = From(resultLong, unit);
-            return true;
-        }
+            return TryFrom(resultLong, unit, out result);
 
         if (double.TryParse(s, NumberStyles.Float, provider, out var resultDouble))
-        {
-            result = From(resultDouble, unit);
-            return true;
-        }
+            return TryFrom(resultDouble, unit, out result);
 
         result = default;
         return false;
+    }
+
+    // Text is untrusted input, so a size that does not fit in a long must be reported as a
+    // parse failure. Multiplying it out and letting it wrap would make TryParse return true
+    // with a negative value, which silently defeats any "size <= limit" check on the result.
+    private static bool TryFrom(long value, ByteSizeUnit unit, out ByteSize result)
+    {
+        var scaled = (Int128)value * (long)unit;
+        if (scaled < long.MinValue || scaled > long.MaxValue)
+        {
+            result = default;
+            return false;
+        }
+
+        result = new ByteSize((long)scaled);
+        return true;
+    }
+
+    private static bool TryFrom(double value, ByteSizeUnit unit, out ByteSize result)
+    {
+        // long.MinValue and long.MaxValue + 1 are both exactly representable as double, so
+        // this is the exact representable range of a long. Written as a negated condition so
+        // NaN - which compares false against everything - is rejected too.
+        const double MinInclusive = -9223372036854775808d;
+        const double MaxExclusive = 9223372036854775808d;
+
+        var scaled = value * (long)unit;
+        if (!(scaled >= MinInclusive && scaled < MaxExclusive))
+        {
+            result = default;
+            return false;
+        }
+
+        result = new ByteSize((long)scaled);
+        return true;
     }
 
     /// <summary>Tries to format the value as UTF-8 into the provided span of bytes.</summary>
@@ -686,16 +740,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
         // Convert number from UTF-8
         if (System.Buffers.Text.Utf8Parser.TryParse(utf8Text, out long resultLong, out var bytesConsumed) && bytesConsumed == utf8Text.Length)
-        {
-            result = From(resultLong, unit);
-            return true;
-        }
+            return TryFrom(resultLong, unit, out result);
 
         if (System.Buffers.Text.Utf8Parser.TryParse(utf8Text, out double resultDouble, out bytesConsumed) && bytesConsumed == utf8Text.Length)
-        {
-            result = From(resultDouble, unit);
-            return true;
-        }
+            return TryFrom(resultDouble, unit, out result);
 
         result = default;
         return false;
@@ -775,37 +823,37 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// <param name="value">The numeric value.</param>
     /// <param name="unit">The unit of the value.</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
-    public static ByteSize From(byte value, ByteSizeUnit unit) => new(value * (long)unit);
+    public static ByteSize From(byte value, ByteSizeUnit unit) => new(checked(value * (long)unit));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
     /// <param name="value">The numeric value.</param>
     /// <param name="unit">The unit of the value.</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
-    public static ByteSize From(short value, ByteSizeUnit unit) => new(value * (long)unit);
+    public static ByteSize From(short value, ByteSizeUnit unit) => new(checked(value * (long)unit));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
     /// <param name="value">The numeric value.</param>
     /// <param name="unit">The unit of the value.</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
-    public static ByteSize From(int value, ByteSizeUnit unit) => new(value * (long)unit);
+    public static ByteSize From(int value, ByteSizeUnit unit) => new(checked(value * (long)unit));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
     /// <param name="value">The numeric value.</param>
     /// <param name="unit">The unit of the value.</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
-    public static ByteSize From(long value, ByteSizeUnit unit) => new(value * (long)unit);
+    public static ByteSize From(long value, ByteSizeUnit unit) => new(checked(value * (long)unit));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
     /// <param name="value">The numeric value.</param>
     /// <param name="unit">The unit of the value.</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
-    public static ByteSize From(float value, ByteSizeUnit unit) => new((long)(value * (long)unit));
+    public static ByteSize From(float value, ByteSizeUnit unit) => new(checked((long)(value * (long)unit)));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
     /// <param name="value">The numeric value.</param>
     /// <param name="unit">The unit of the value.</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
-    public static ByteSize From(double value, ByteSizeUnit unit) => new((long)(value * (long)unit));
+    public static ByteSize From(double value, ByteSizeUnit unit) => new(checked((long)(value * (long)unit)));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a file's length.</summary>
     /// <param name="fileInfo">The file information.</param>

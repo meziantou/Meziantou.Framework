@@ -240,7 +240,7 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
 
         var generatedFiles = Directory.GetFiles(projectDirectory / "Generated", "EmbeddedConstants.g.cs", SearchOption.AllDirectories);
-        Assert.Equal(2, generatedFiles.Length);
+        Assert.HasCount(2, generatedFiles);
     }
 
     private static string CreateMultiTargetingProjectFile(EmbeddedConstantsGeneratorPackageFixture fixture, string outputPath)

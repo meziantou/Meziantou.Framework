@@ -36,31 +36,6 @@ public sealed class UrlPattern
     private readonly UrlPatternComponent _searchComponent;
     private readonly UrlPatternComponent _hashComponent;
 
-    /// <summary>
-    /// Special schemes per URL Standard.
-    /// </summary>
-    private static readonly HashSet<string> SpecialSchemes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "ftp",
-        "file",
-        "http",
-        "https",
-        "ws",
-        "wss",
-    };
-
-    /// <summary>
-    /// Default ports for special schemes.
-    /// </summary>
-    private static readonly Dictionary<string, string> DefaultPorts = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["ftp"] = "21",
-        ["http"] = "80",
-        ["https"] = "443",
-        ["ws"] = "80",
-        ["wss"] = "443",
-    };
-
     private UrlPattern(
         UrlPatternComponent protocolComponent,
         UrlPatternComponent usernameComponent,
@@ -238,7 +213,7 @@ public sealed class UrlPattern
 
         // If protocol is a special scheme and port matches its default port, set port to empty string
         if (SpecialSchemes.Contains(processedInit.Protocol) &&
-            DefaultPorts.TryGetValue(processedInit.Protocol, out var defaultPort) &&
+            SpecialSchemes.TryGetDefaultPort(processedInit.Protocol, out var defaultPort) &&
             processedInit.Port == defaultPort)
         {
             processedInit.Port = "";
@@ -692,7 +667,7 @@ public sealed class UrlPattern
 
     private static bool ProtocolMatchesSpecialScheme(UrlPatternComponent protocolComponent)
     {
-        foreach (var scheme in SpecialSchemes)
+        foreach (var scheme in SpecialSchemes.All)
         {
             if (protocolComponent.RegularExpression.IsMatch(scheme))
             {

@@ -557,6 +557,49 @@ public sealed class FileLoggerProviderTests
         Assert.HasCount(ThreadCount * MessagesPerThread, lines);
     }
 
+    [Theory]
+    [InlineData(FileLoggerQueueFullMode.Wait)]
+    [InlineData(FileLoggerQueueFullMode.DropWrite)]
+    [InlineData(FileLoggerQueueFullMode.DropOldest)]
+    public async Task FlushAsyncCompletesWhenTheQueueIsSaturated(FileLoggerQueueFullMode queueFullMode)
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            MaxQueueLength = 1,
+            QueueFullMode = queueFullMode,
+            FlushInterval = TimeSpan.FromHours(1),
+            TimestampFormat = null,
+            IncludeLogLevel = false,
+            IncludeCategory = false,
+        });
+
+        var logger = provider.CreateLogger("Test");
+        using var stop = new CancellationTokenSource();
+        var producers = Enumerable.Range(0, 4).Select(_ => Task.Factory.StartNew(
+            () =>
+            {
+                while (!stop.IsCancellationRequested)
+                {
+                    logger.LogInformation("Message");
+                }
+            }, TestContext.Current.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray();
+
+        // The queue is full most of the time, so a flush request that the queue-full policy can
+        // discard would leave this loop waiting forever
+        for (var i = 0; i < 50; i++)
+        {
+            await provider.FlushAsync(TestContext.Current.CancellationToken);
+        }
+
+        await stop.CancelAsync();
+        await Task.WhenAll(producers);
+
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+        Assert.NotEqual(0, new FileInfo(provider.LogFilePath!).Length);
+    }
+
     [Fact]
     public async Task DropWriteDoesNotBlock()
     {

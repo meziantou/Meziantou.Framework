@@ -4063,6 +4063,52 @@ public sealed class HtmlToMarkdownConverterTests
             """);
     }
 
+    // --- Ordered list start attribute ---
+
+    [Fact]
+    public void OrderedList_StartAtIntMaxValueDoesNotOverflow()
+    {
+        AssertHtmlToMarkdown(
+            """<ol start="2147483647"><li>a</li><li>b</li></ol>""",
+            """
+            1. a
+            2. b
+            """);
+    }
+
+    [Fact]
+    public void OrderedList_NegativeStartFallsBackToOne()
+    {
+        AssertHtmlToMarkdown(
+            """<ol start="-3"><li>a</li><li>b</li></ol>""",
+            """
+            1. a
+            2. b
+            """);
+    }
+
+    [Fact]
+    public void OrderedList_StartAtMaximumMarkerSaturates()
+    {
+        AssertHtmlToMarkdown(
+            """<ol start="999999999"><li>a</li><li>b</li></ol>""",
+            """
+            999999999. a
+            999999999. b
+            """);
+    }
+
+    [Fact]
+    public void OrderedList_ValidStartIsPreserved()
+    {
+        AssertHtmlToMarkdown(
+            """<ol start="5"><li>a</li><li>b</li></ol>""",
+            """
+            5. a
+            6. b
+            """);
+    }
+
     // --- Deeply nested documents (must not overflow the call stack) ---
 
     // The recursive traversal this replaced overflowed the stack at a nesting depth of

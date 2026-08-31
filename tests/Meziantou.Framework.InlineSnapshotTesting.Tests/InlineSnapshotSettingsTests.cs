@@ -99,6 +99,15 @@ public sealed class InlineSnapshotSettingsTests
         Assert.Same(SnapshotUpdateStrategy.Disallow, settings.SnapshotUpdateStrategy);
     }
 
+    [Fact]
+    public void DiffToolFromEnvironmentVariable_NamingItself_DoesNotRecurse()
+    {
+        // The reflection lookup used to resolve this very instance and call Start on it again.
+        using var _ = new EnvironmentVariableScope("DiffEngine_Tool", nameof(MergeTool.DiffToolFromEnvironmentVariable));
+
+        Assert.Null(MergeTool.DiffToolFromEnvironmentVariable.Start("current.cs", "new.cs"));
+    }
+
     private static SnapshotUpdateStrategy GetSnapshotUpdateStrategy(string name)
     {
         return name switch

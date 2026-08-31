@@ -32,12 +32,23 @@ namespace Meziantou.Framework
         public static bool operator >(Meziantou.Framework.ByteSize value1, Meziantou.Framework.ByteSize value2) => throw null;
         public static Meziantou.Framework.ByteSize operator +(Meziantou.Framework.ByteSize value1, Meziantou.Framework.ByteSize value2) => throw null;
         public static Meziantou.Framework.ByteSize operator -(Meziantou.Framework.ByteSize value1, Meziantou.Framework.ByteSize value2) => throw null;
+        public static Meziantou.Framework.ByteSize operator *(Meziantou.Framework.ByteSize value, long multiplier) => throw null;
+        public static Meziantou.Framework.ByteSize operator *(long multiplier, Meziantou.Framework.ByteSize value) => throw null;
+        public static Meziantou.Framework.ByteSize operator /(Meziantou.Framework.ByteSize value, long divisor) => throw null;
+        [System.Obsolete("Multiplying two sizes yields bytes squared, which is not a size. Use the ByteSize * long overload to scale a size. This overload will be removed in the next major version.")]
         public static Meziantou.Framework.ByteSize operator *(Meziantou.Framework.ByteSize value1, Meziantou.Framework.ByteSize value2) => throw null;
+        [System.Obsolete("Dividing two sizes yields a dimensionless ratio, not a size. Use the ByteSize / long overload to scale a size, or divide the Value properties to get a ratio. This overload will be removed in the next major version.")]
         public static Meziantou.Framework.ByteSize operator /(Meziantou.Framework.ByteSize value1, Meziantou.Framework.ByteSize value2) => throw null;
         public static implicit operator Meziantou.Framework.ByteSize(long value) => throw null;
         public Meziantou.Framework.ByteSize Add(Meziantou.Framework.ByteSize other) => throw null;
+        public Meziantou.Framework.ByteSize Subtract(Meziantou.Framework.ByteSize other) => throw null;
+        [System.Obsolete("Misspelled. Use Subtract instead. This method will be removed in the next major version.")]
         public Meziantou.Framework.ByteSize Substract(Meziantou.Framework.ByteSize other) => throw null;
+        public Meziantou.Framework.ByteSize Multiply(long multiplier) => throw null;
+        public Meziantou.Framework.ByteSize Divide(long divisor) => throw null;
+        [System.Obsolete("Multiplying two sizes yields bytes squared, which is not a size. Use the Multiply(long) overload to scale a size. This overload will be removed in the next major version.")]
         public Meziantou.Framework.ByteSize Multiply(Meziantou.Framework.ByteSize other) => throw null;
+        [System.Obsolete("Dividing two sizes yields a dimensionless ratio, not a size. Use the Divide(long) overload to scale a size, or divide the Value properties to get a ratio. This overload will be removed in the next major version.")]
         public Meziantou.Framework.ByteSize Divide(Meziantou.Framework.ByteSize other) => throw null;
         public static Meziantou.Framework.ByteSize Parse(string text, System.IFormatProvider? formatProvider) => throw null;
         public static bool TryParse(string text, out Meziantou.Framework.ByteSize result) => throw null;

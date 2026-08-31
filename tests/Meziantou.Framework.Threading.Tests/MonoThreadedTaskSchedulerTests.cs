@@ -18,6 +18,14 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
     }
 
     [Fact]
+    public void MaximumConcurrencyLevel_IsOne()
+    {
+        // The TPL reads this to size partitions; the base TaskScheduler value is int.MaxValue, which is the
+        // wrong answer for a scheduler that runs everything on a single thread.
+        Assert.Equal(1, _taskScheduler.MaximumConcurrencyLevel);
+    }
+
+    [Fact]
     public async Task SequentialEnqueue()
     {
         const int Count = 1000;

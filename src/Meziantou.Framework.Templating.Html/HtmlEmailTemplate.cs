@@ -49,7 +49,7 @@ public class HtmlEmailTemplate : Template
     {
         ArgumentNullException.ThrowIfNull(parameters);
 
-        using var writer = new StringWriter();
+        using var writer = CreateStringWriter();
         Run(writer, out metadata, parameters);
         return writer.ToString();
     }
@@ -60,7 +60,7 @@ public class HtmlEmailTemplate : Template
     /// <returns>The generated HTML content.</returns>
     public virtual string Run(out HtmlEmailMetadata? metadata, params object?[] parameters)
     {
-        using var writer = new StringWriter();
+        using var writer = CreateStringWriter();
         Run(writer, out metadata, parameters);
         return writer.ToString();
     }
@@ -70,7 +70,7 @@ public class HtmlEmailTemplate : Template
     /// <returns>The generated HTML content.</returns>
     public virtual string Run(out HtmlEmailMetadata? metadata)
     {
-        using var writer = new StringWriter();
+        using var writer = CreateStringWriter();
         Run(writer, out metadata);
         return writer.ToString();
     }
@@ -112,6 +112,20 @@ public class HtmlEmailTemplate : Template
         var p = CreateMethodParameters(writer, (object[]?)null);
         InvokeRunMethod(p);
         metadata = GetMetadata(p);
+    }
+
+    /// <summary>Runs the template, then rejects it if it left a section open.</summary>
+    /// <exception cref="TemplateException">The template started a section but never ended it.</exception>
+    protected override void InvokeRunMethod(object?[] p)
+    {
+        base.InvokeRunMethod(p);
+
+        // Checked here rather than while building the metadata so that every Run overload validates,
+        // including the inherited ones that never produce an HtmlEmailMetadata.
+        foreach (var htmlEmailOutput in p.OfType<HtmlEmailOutput>())
+        {
+            htmlEmailOutput.ThrowIfSectionsAreOpen();
+        }
     }
 
     private static HtmlEmailMetadata? GetMetadata(object?[] parameters)

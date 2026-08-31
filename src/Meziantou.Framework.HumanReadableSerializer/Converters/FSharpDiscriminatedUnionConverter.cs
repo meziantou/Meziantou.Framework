@@ -16,8 +16,14 @@ internal sealed class FSharpDiscriminatedUnionConverter : HumanReadableConverter
         Debug.Assert(value is not null);
 
         var type = value.GetType();
-        var info = FSharpUtils.Get(type)!;
-        var unionCase = info.GetUnionCase(type, value)!;
+
+        // Both probes swallow reflection failures and return null, so they cannot be trusted
+        // to succeed here just because CanConvert did.
+        var info = FSharpUtils.Get(type)
+            ?? throw new HumanReadableSerializerException($"Cannot serialize the F# union type '{type}' as the F# reflection API is not available");
+
+        var unionCase = info.GetUnionCase(type, value)
+            ?? throw new HumanReadableSerializerException($"Cannot serialize the F# union type '{type}' as its union case cannot be determined");
 
         writer.StartObject();
         writer.WritePropertyName("Tag");

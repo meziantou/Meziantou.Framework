@@ -1,10 +1,18 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
+using Microsoft.Net.Http.Headers;
 
 namespace Meziantou.AspNetCore.Authentication.HttpBasic.Tests;
 
@@ -127,6 +135,107 @@ public sealed class HttpBasicAuthenticationTests
         });
     }
 
+    [Fact]
+    public async Task MalformedUtf8Credentials_AreRejected()
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("victim", "\uFFFD\uFFFD\uFFFD", username, password);
+        });
+
+        byte[] credentials = [.. "victim:"u8, 0xFF, 0xFE, 0xC0];
+        await application.SendRawAndAssert("/", credentials, response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task MalformedUtf8Credentials_DoNotCollideOnReplacementCharacter()
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("victim", "\uFFFD\uFFFD\uFFFD", username, password);
+        });
+
+        byte[] credentials = [.. "victim:"u8, 0x80, 0x81, 0x82];
+        await application.SendRawAndAssert("/", credentials, response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task NonAsciiUtf8Credentials_AreAccepted()
+    {
+        await using var application = await TestApplication.CreateAsync("\u00DCn\u00EFc\u00F8de", "p\u00E4ssw\u00F6rd");
+        await application.SendAndAssert("/", "\u00DCn\u00EFc\u00F8de", "p\u00E4ssw\u00F6rd", async response =>
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("\u00DCn\u00EFc\u00F8de", await response.Content.ReadAsStringAsync(XunitCancellationToken));
+        });
+    }
+
+    [Fact]
+    public async Task Challenge_PreservesChallengeWrittenByAnotherScheme()
+    {
+        await using var application = await TestApplication.CreateWithSecondSchemeAsync(options =>
+        {
+            options.Realm = "My API";
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("myName", "myPassword", username, password);
+        });
+
+        await application.SendAndAssert("/", username: null, password: null, response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+            var challenges = response.Headers.WwwAuthenticate.Select(value => $"{value.Scheme} {value.Parameter}").ToArray();
+            Assert.Equal(["Bearer realm=\"api\"", "Basic realm=\"My API\", charset=\"UTF-8\""], challenges);
+        });
+    }
+
+    [Theory]
+    [InlineData("bad\r\nX-Injected: 1")]
+    [InlineData("bad\ttab")]
+    [InlineData("caf\u00E9")]
+    [InlineData("nul\0")]
+    public void Realm_RejectsCharactersThatCannotBeWrittenToAHeader(string realm)
+    {
+        var options = new HttpBasicAuthenticationOptions();
+        var exception = Assert.Throws<ArgumentException>(() => options.Realm = realm);
+        Assert.Equal("value", exception.ParamName);
+    }
+
+    [Fact]
+    public void Realm_AcceptsNullAndPrintableAscii()
+    {
+        var options = new HttpBasicAuthenticationOptions
+        {
+            Realm = null,
+        };
+        Assert.Null(options.Realm);
+
+        options.Realm = "we\"ird\\realm";
+        Assert.Equal("we\"ird\\realm", options.Realm);
+    }
+
+    [Fact]
+    public async Task Challenge_EscapesQuotesAndBackslashesInRealm()
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.Realm = "we\"ird\\realm";
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("myName", "myPassword", username, password);
+        });
+
+        await application.SendAndAssert("/", username: null, password: null, response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+            Assert.Contains(response.Headers.WwwAuthenticate, value =>
+                string.Equals(value.Scheme, HttpBasicAuthenticationDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(value.Parameter, "realm=\"we\\\"ird\\\\realm\", charset=\"UTF-8\"", StringComparison.Ordinal));
+        });
+    }
+
     private static IdentityUser CreateIdentityUser(string id, string username, string password)
     {
         var user = new IdentityUser
@@ -159,6 +268,26 @@ public sealed class HttpBasicAuthenticationTests
 
         var identity = new ClaimsIdentity(claims, authenticationType: HttpBasicAuthenticationDefaults.AuthenticationScheme);
         return new ClaimsPrincipal(identity);
+    }
+
+    private sealed class FakeBearerAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+    {
+        public FakeBearerAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
+            : base(options, logger, encoder)
+        {
+        }
+
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        {
+            return Task.FromResult(AuthenticateResult.NoResult());
+        }
+
+        protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+        {
+            Response.StatusCode = StatusCodes.Status401Unauthorized;
+            Response.Headers[HeaderNames.WWWAuthenticate] = StringValues.Concat(Response.Headers[HeaderNames.WWWAuthenticate], "Bearer realm=\"api\"");
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class TestApplication : IAsyncDisposable
@@ -225,6 +354,33 @@ public sealed class HttpBasicAuthenticationTests
             return new TestApplication(app, client);
         }
 
+        public static async Task<TestApplication> CreateWithSecondSchemeAsync(Action<HttpBasicAuthenticationOptions> configureOptions)
+        {
+            ArgumentNullException.ThrowIfNull(configureOptions);
+
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseTestServer();
+            builder.Services.AddAuthentication("Bearer")
+                            .AddScheme<AuthenticationSchemeOptions, FakeBearerAuthenticationHandler>("Bearer", displayName: null, _ => { })
+                            .AddHttpBasic(HttpBasicAuthenticationDefaults.AuthenticationScheme, configureOptions);
+            builder.Services.AddAuthorization(options =>
+            {
+                options.DefaultPolicy = new AuthorizationPolicyBuilder("Bearer", HttpBasicAuthenticationDefaults.AuthenticationScheme)
+                    .RequireAuthenticatedUser()
+                    .Build();
+            });
+
+            var app = builder.Build();
+            app.UseAuthentication();
+            app.UseAuthorization();
+            app.MapGet("/", (ClaimsPrincipal user) => user.Identity?.Name ?? "anonymous")
+                .RequireAuthorization();
+            await app.StartAsync(XunitCancellationToken);
+
+            var client = app.GetTestClient();
+            return new TestApplication(app, client);
+        }
+
         public Task SendAndAssert(string url, Func<HttpResponseMessage, Task> assert)
         {
             return SendAndAssert(url, null, null, assert);
@@ -254,6 +410,15 @@ public sealed class HttpBasicAuthenticationTests
             assert(response);
         }
 
+        public async Task SendRawAndAssert(string url, byte[] credentials, Action<HttpResponseMessage> assert)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.TryAddWithoutValidation("Authorization", HttpBasicAuthenticationDefaults.AuthenticationScheme + " " + Convert.ToBase64String(credentials));
+
+            using var response = await Client.SendAsync(request);
+            assert(response);
+        }
+
         public async ValueTask DisposeAsync()
         {
             Client.Dispose();
@@ -267,7 +432,6 @@ public sealed class HttpBasicAuthenticationTests
         }
     }
 
-#nullable enable
     private sealed class InMemoryIdentityUserStore : IUserPasswordStore<IdentityUser>
     {
         private readonly List<IdentityUser> _users;
@@ -366,5 +530,4 @@ public sealed class HttpBasicAuthenticationTests
             return Task.FromResult(IdentityResult.Success);
         }
     }
-    #nullable restore
 }

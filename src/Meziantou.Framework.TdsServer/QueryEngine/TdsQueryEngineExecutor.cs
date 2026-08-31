@@ -35,6 +35,12 @@ internal sealed class TdsQueryEngineExecutor
         public IDictionary<string, IQueryable> ResolvedQueryRoots { get; }
     }
 
+    private static readonly XmlReaderSettings XmlReaderSettings = new()
+    {
+        DtdProcessing = DtdProcessing.Prohibit,
+        XmlResolver = null,
+    };
+
     private readonly TdsQueryEngineOptions _options;
     private readonly FrozenDictionary<string, TdsQueryRoot> _queryRoots;
     private readonly FrozenDictionary<string, Delegate> _storedProcedures;
@@ -277,7 +283,13 @@ internal sealed class TdsQueryEngineExecutor
                 query = ApplyColumnList(query, cte.ColumnList, scopeName: "CTE");
             }
 
-            result.Add(cteName, new TdsQueryRoot(cteName, query));
+            // The SQL parser only reports syntax errors, and a repeated CTE name is a semantic one, so the
+            // statement parses and lands here. Dictionary.Add would throw ArgumentException straight out of the
+            // engine, past the catch in ExecuteAsync.
+            if (!result.TryAdd(cteName, new TdsQueryRoot(cteName, query)))
+            {
+                throw new TdsQueryEngineException($"Duplicate common table expression name '{cteName}'.");
+            }
         }
 
         return result;
@@ -1907,6 +1919,15 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var conditionExpression = ParseBooleanExpression(argumentTexts[0]);
+        if (ContainsSubquery(conditionExpression))
+        {
+            // The condition is re-parsed here, detached from the statement being translated, so there is no
+            // query execution context to resolve a query root against and no CTE scope to look one up in.
+            // Reject it with an error that names the limitation instead of throwing out of the engine.
+            throw new TdsQueryEngineException("IIF does not support a subquery in its condition.");
+        }
+
+        // Safe now that subqueries are rejected: the context and the CTE scope are only reached from a subquery.
         var condition = BuildBoolean(
             conditionExpression,
             aliases,
@@ -2292,15 +2313,17 @@ internal sealed class TdsQueryEngineExecutor
 
     private static SqlXmlValue ConvertToXmlCore(object? value, string? schemaCollectionName, XmlSchemaSet? schemaSet, SqlXmlDocumentConstraint documentConstraint)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             throw new TdsQueryEngineException("Cannot convert NULL to 'XML'.");
         }
 
-        EnsureXmlConstraint(xmlValue.Value, documentConstraint);
+        // DOCUMENT/CONTENT need no separate check: parsing the value already rejected anything without a
+        // single root element, which is what this engine enforces.
+        _ = documentConstraint;
         if (schemaSet is not null)
         {
-            ValidateXmlAgainstSchema(xmlValue.Value, schemaSet, schemaCollectionName);
+            ValidateXmlAgainstSchema(document, schemaSet, schemaCollectionName);
         }
 
         return schemaCollectionName is null ? xmlValue : xmlValue with { SchemaCollection = schemaCollectionName };
@@ -2322,12 +2345,12 @@ internal sealed class TdsQueryEngineExecutor
 
     private static SqlXmlValue? XmlQueryCore(object? value, string xquery)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             return null;
         }
 
-        var navigator = CreateXmlContextNavigator(xmlValue.Value);
+        var navigator = CreateXmlContextNavigator(document);
         var evaluation = EvaluateXPath(navigator, xquery);
         if (evaluation is XPathNodeIterator iterator)
         {
@@ -2348,12 +2371,12 @@ internal sealed class TdsQueryEngineExecutor
 
     private static object XmlValueCore(object? value, string xquery, Type targetType)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             throw new TdsQueryEngineException("xml.value cannot be evaluated on NULL.");
         }
 
-        var navigator = CreateXmlContextNavigator(xmlValue.Value);
+        var navigator = CreateXmlContextNavigator(document);
         var evaluation = EvaluateXPath(navigator, xquery);
         if (evaluation is XPathNodeIterator iterator)
         {
@@ -2386,12 +2409,12 @@ internal sealed class TdsQueryEngineExecutor
 
     private static int? XmlExistCore(object? value, string xquery)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             return null;
         }
 
-        var navigator = CreateXmlContextNavigator(xmlValue.Value);
+        var navigator = CreateXmlContextNavigator(document);
         var evaluation = EvaluateXPath(navigator, xquery);
         if (evaluation is XPathNodeIterator iterator)
         {
@@ -2408,12 +2431,12 @@ internal sealed class TdsQueryEngineExecutor
 
     private static IEnumerable<SqlXmlValue> XmlNodesCore(object? value, string xquery)
     {
-        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue, out var document) || xmlValue is null || document is null)
         {
             return [];
         }
 
-        var navigator = CreateXmlContextNavigator(xmlValue.Value);
+        var navigator = CreateXmlContextNavigator(document);
         var evaluation = EvaluateXPath(navigator, xquery);
         if (evaluation is not XPathNodeIterator iterator)
         {
@@ -2435,8 +2458,9 @@ internal sealed class TdsQueryEngineExecutor
         return result;
     }
 
-    private static bool TryConvertToSqlXmlValue(object? value, string? schemaCollectionName, out SqlXmlValue? xmlValue)
+    private static bool TryConvertToSqlXmlValue(object? value, string? schemaCollectionName, out SqlXmlValue? xmlValue, out XDocument? document)
     {
+        document = null;
         if (value is null or DBNull)
         {
             xmlValue = null;
@@ -2447,9 +2471,9 @@ internal sealed class TdsQueryEngineExecutor
         {
             SqlXmlValue typedXml => schemaCollectionName is null ? typedXml : typedXml with { SchemaCollection = schemaCollectionName },
             string text => new SqlXmlValue(text, schemaCollectionName),
-            XDocument document => new SqlXmlValue(document.ToString(SaveOptions.DisableFormatting), schemaCollectionName),
+            XDocument xmlDocument => new SqlXmlValue(xmlDocument.ToString(SaveOptions.DisableFormatting), schemaCollectionName),
             XElement element => new SqlXmlValue(element.ToString(SaveOptions.DisableFormatting), schemaCollectionName),
-            XmlDocument document => new SqlXmlValue(document.OuterXml, schemaCollectionName),
+            XmlDocument xmlDocument => new SqlXmlValue(xmlDocument.OuterXml, schemaCollectionName),
             _ => null,
         };
 
@@ -2458,13 +2482,12 @@ internal sealed class TdsQueryEngineExecutor
             return false;
         }
 
-        _ = XDocument.Parse(xmlValue.Value, LoadOptions.PreserveWhitespace);
+        document = ParseXml(xmlValue.Value);
         return true;
     }
 
-    private static void ValidateXmlAgainstSchema(string xml, XmlSchemaSet schemaSet, string? schemaCollectionName)
+    private static void ValidateXmlAgainstSchema(XDocument document, XmlSchemaSet schemaSet, string? schemaCollectionName)
     {
-        var document = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
         string? validationError = null;
         document.Validate(schemaSet, (_, args) =>
         {
@@ -2496,22 +2519,31 @@ internal sealed class TdsQueryEngineExecutor
         }
     }
 
-    private static XPathNavigator CreateXmlContextNavigator(string xml)
+    /// <summary>Parses an XML value with DTD processing disabled.</summary>
+    /// <remarks>
+    /// <see cref="XDocument.Parse(string, LoadOptions)"/> defaults to <see cref="DtdProcessing.Parse"/> with a
+    /// ten-million-character entity budget, so a few hundred bytes of nested internal entities expand into
+    /// megabytes. XML values reach this engine from client SQL and are parsed once per row, which turns that
+    /// budget into an arbitrary amount of server CPU. External entities were never resolved, so this only
+    /// removes the expansion.
+    /// </remarks>
+    private static XDocument ParseXml(string xml)
     {
-        var document = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
-        return document.Root?.CreateNavigator()
-            ?? throw new TdsQueryEngineException("Cannot evaluate XML query on an empty document.");
+        try
+        {
+            using var reader = XmlReader.Create(new StringReader(xml), XmlReaderSettings);
+            return XDocument.Load(reader, LoadOptions.PreserveWhitespace);
+        }
+        catch (XmlException ex)
+        {
+            throw new TdsQueryEngineException($"The XML value could not be parsed: {ex.Message}");
+        }
     }
 
-    private static void EnsureXmlConstraint(string xml, SqlXmlDocumentConstraint documentConstraint)
+    private static XPathNavigator CreateXmlContextNavigator(XDocument document)
     {
-        _ = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
-        if (documentConstraint == SqlXmlDocumentConstraint.None)
-        {
-            return;
-        }
-
-        // XDocument parsing already enforces a single root element, which matches DOCUMENT/CONTENT checks in this engine.
+        return document.Root?.CreateNavigator()
+            ?? throw new TdsQueryEngineException("Cannot evaluate XML query on an empty document.");
     }
 
     private static Type GetClrType(SqlDataTypeSpecification dataTypeSpec)
@@ -2646,6 +2678,24 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         return selectExpression.Expression;
+    }
+
+    private static bool ContainsSubquery(SqlCodeObject node)
+    {
+        if (node is SqlQueryExpression or SqlExistsBooleanExpression or SqlInBooleanExpressionQueryValue)
+        {
+            return true;
+        }
+
+        foreach (var child in node.Children)
+        {
+            if (ContainsSubquery(child))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static SqlBooleanExpression ParseBooleanExpression(string expressionText)
@@ -2845,7 +2895,7 @@ internal sealed class TdsQueryEngineExecutor
 
         if (targetType == typeof(SqlXmlValue))
         {
-            if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var sqlXmlValue) || sqlXmlValue is null)
+            if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var sqlXmlValue, out _) || sqlXmlValue is null)
             {
                 throw new TdsQueryEngineException($"Cannot convert value of type '{value.GetType().Name}' to 'XML'.");
             }

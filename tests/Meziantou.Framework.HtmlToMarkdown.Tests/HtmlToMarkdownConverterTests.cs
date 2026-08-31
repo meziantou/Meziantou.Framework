@@ -3984,6 +3984,34 @@ public sealed class HtmlToMarkdownConverterTests
             new HtmlToMarkdownOptions { LineBreakStyle = LineBreakStyle.Backslash });
     }
 
+
+    // --- Definition list blocks ---
+
+    [Fact]
+    public void DefinitionList_DefinitionWithMultipleParagraphs()
+    {
+        AssertHtmlToMarkdown(
+            "<dl><dt>t</dt><dd><p>a</p><p>b</p></dd></dl>",
+            """
+            t
+            :   a
+
+                b
+            """);
+    }
+
+    [Fact]
+    public void DefinitionList_DefinitionWithList()
+    {
+        AssertHtmlToMarkdown(
+            "<dl><dt>t</dt><dd><ul><li>a</li><li>b</li></ul></dd></dl>",
+            """
+            t
+            :   - a
+                - b
+            """);
+    }
+
     // --- Deeply nested documents (must not overflow the call stack) ---
 
     // The recursive traversal this replaced overflowed the stack at a nesting depth of

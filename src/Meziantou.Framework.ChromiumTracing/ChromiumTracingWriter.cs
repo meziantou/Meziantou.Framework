@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -32,17 +33,19 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     private readonly bool _streamOwned;
     private readonly Stream _stream;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
+    private readonly SemaphoreSlim _semaphore = new(initialCount: 1, maxCount: 1);
     private bool _hasItems;
+    private bool _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="ChromiumTracingWriter"/> class with the specified stream.</summary>
-    /// <param name="stream">The stream to write trace events to.</param>
+    /// <param name="stream">The stream to write trace events to. The stream is <b>not</b> disposed when the writer is disposed; the caller keeps ownership of it.</param>
     public ChromiumTracingWriter(Stream stream)
         : this(stream, streamOwned: false, serializerContext: null)
     {
     }
 
     /// <summary>Initializes a new instance of the <see cref="ChromiumTracingWriter"/> class with the specified stream and serializer context.</summary>
-    /// <param name="stream">The stream to write trace events to.</param>
+    /// <param name="stream">The stream to write trace events to. The stream is <b>not</b> disposed when the writer is disposed; the caller keeps ownership of it.</param>
     /// <param name="serializerContext">The serializer context to combine with the built-in one.</param>
     public ChromiumTracingWriter(Stream stream, JsonSerializerContext? serializerContext)
         : this(stream, streamOwned: false, serializerContext)
@@ -75,16 +78,16 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
         return new ChromiumTracingWriter(fs, streamOwned: true, serializerContext);
     }
 
-    /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to the specified stream.</summary>
-    /// <param name="stream">The stream to write trace events to.</param>
+    /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to the specified stream and takes ownership of it.</summary>
+    /// <param name="stream">The stream to write trace events to. It is disposed when the writer is disposed. Use <see cref="Create(Stream, bool)"/> or the constructor to keep ownership of the stream.</param>
     /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
     public static ChromiumTracingWriter Create(Stream stream)
     {
         return Create(stream, streamOwned: true, serializerContext: null);
     }
 
-    /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to the specified stream.</summary>
-    /// <param name="stream">The stream to write trace events to.</param>
+    /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to the specified stream and takes ownership of it.</summary>
+    /// <param name="stream">The stream to write trace events to. It is disposed when the writer is disposed. Use <see cref="Create(Stream, bool, JsonSerializerContext?)"/> or the constructor to keep ownership of the stream.</param>
     /// <param name="serializerContext">The serializer context to combine with the built-in one.</param>
     /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
     public static ChromiumTracingWriter Create(Stream stream, JsonSerializerContext? serializerContext)
@@ -135,7 +138,7 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     }
 
     /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes GZip-compressed trace events to the specified stream.</summary>
-    /// <param name="stream">The stream to write compressed trace events to.</param>
+    /// <param name="stream">The stream to write compressed trace events to. It is <b>not</b> disposed when the writer is disposed; only the compression stream wrapping it is.</param>
     /// <param name="compressionLevel">The compression level to use.</param>
     /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
     public static ChromiumTracingWriter CreateGzip(Stream stream, CompressionLevel compressionLevel = CompressionLevel.Fastest)
@@ -145,7 +148,7 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     }
 
     /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes GZip-compressed trace events to the specified stream.</summary>
-    /// <param name="stream">The stream to write compressed trace events to.</param>
+    /// <param name="stream">The stream to write compressed trace events to. It is <b>not</b> disposed when the writer is disposed; only the compression stream wrapping it is.</param>
     /// <param name="compressionLevel">The compression level to use.</param>
     /// <param name="serializerContext">The serializer context to combine with the built-in one.</param>
     /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
@@ -155,22 +158,37 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
         return new ChromiumTracingWriter(gzip, streamOwned: true, serializerContext);
     }
 
-    /// <summary>Finalizes the JSON array and disposes the underlying stream if owned.</summary>
+    /// <summary>Finalizes the JSON array and disposes the underlying stream if owned. Subsequent calls do nothing.</summary>
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
     public async ValueTask DisposeAsync()
     {
-        if (_hasItems)
-        {
-            await _stream.WriteAsync(ArrayEnd).ConfigureAwait(false);
-        }
-        else
-        {
-            await _stream.WriteAsync(ArrayEmpty).ConfigureAwait(false);
-        }
+        if (_disposed)
+            return;
 
-        if (_streamOwned)
+        _disposed = true;
+
+        try
         {
-            await _stream.DisposeAsync().ConfigureAwait(false);
+            await _semaphore.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                await _stream.WriteAsync(_hasItems ? ArrayEnd : ArrayEmpty).ConfigureAwait(false);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+        finally
+        {
+            // The stream must be released even when the closing bracket could not be written,
+            // otherwise a failure at the very end leaks the file handle and its buffered content.
+            _semaphore.Dispose();
+
+            if (_streamOwned)
+            {
+                await _stream.DisposeAsync().ConfigureAwait(false);
+            }
         }
     }
 
@@ -182,20 +200,29 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling", Justification = "The options only use source-generated resolvers, so a type that is not registered fails with NotSupportedException instead of falling back to reflection")]
     public async Task WriteEventAsync(ChromiumTracingEvent tracingEvent, CancellationToken cancellationToken = default)
     {
-        if (tracingEvent is null)
-            return;
+        ArgumentNullException.ThrowIfNull(tracingEvent);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (_hasItems)
+        // Serialize the event before writing anything to the stream. Writing the item separator first would
+        // leave it dangling when the serialization fails, which makes the whole document unparsable.
+        // Serializing outside the lock also keeps the critical section down to the stream writes.
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var jsonWriter = new Utf8JsonWriter(buffer))
         {
-            await _stream.WriteAsync(ArrayItemSeparator, cancellationToken).ConfigureAwait(false);
+            JsonSerializer.Serialize(jsonWriter, tracingEvent, tracingEvent.GetType(), _jsonSerializerOptions);
         }
-        else
+
+        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            await _stream.WriteAsync(ArrayStart, cancellationToken).ConfigureAwait(false);
+            await _stream.WriteAsync(_hasItems ? ArrayItemSeparator : ArrayStart, cancellationToken).ConfigureAwait(false);
+            await _stream.WriteAsync(buffer.WrittenMemory, cancellationToken).ConfigureAwait(false);
             _hasItems = true;
         }
-
-        await JsonSerializer.SerializeAsync(_stream, tracingEvent, tracingEvent.GetType(), _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     private static JsonSerializerOptions CreateSerializerOptions(JsonSerializerContext serializerContext)

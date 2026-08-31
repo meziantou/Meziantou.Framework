@@ -47,13 +47,16 @@ public sealed class CommandLineParser
     private readonly Dictionary<string, string> _namedArguments = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<int, string> _positionArguments = [];
 
-    /// <summary>Gets a parser for the current process's command-line arguments.</summary>
+    /// <summary>Gets a parser for the current process's command-line arguments, excluding the executable path.</summary>
+    /// <remarks>Positions match the array provided to the application entry point: position 0 is the first argument, not the path of the executable.</remarks>
     public static CommandLineParser Current { get; } = ParseCurrent();
 
     private static CommandLineParser ParseCurrent()
     {
+        // Environment.GetCommandLineArgs() starts with the executable path, unlike the array provided to the entry point.
+        var args = Environment.GetCommandLineArgs();
         var parser = new CommandLineParser();
-        parser.Parse(Environment.GetCommandLineArgs());
+        parser.Parse(args.Length > 1 ? args[1..] : []);
         return parser;
     }
 

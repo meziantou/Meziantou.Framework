@@ -3620,6 +3620,339 @@ public sealed class HtmlToMarkdownConverterTests
             """);
     }
 
+    // --- Stripped elements inside passed-through unknown elements ---
+
+    [Fact]
+    public void UnknownElement_PassThrough_StripsNestedScript()
+    {
+        AssertHtmlToMarkdown(
+            "<foo><script>alert(1)</script></foo>",
+            "<foo></foo>");
+    }
+
+    [Fact]
+    public void UnknownElement_PassThrough_StripsDeeplyNestedScript()
+    {
+        AssertHtmlToMarkdown(
+            "<custom-el><div><script>alert(1)</script></div></custom-el>",
+            "<custom-el><div></div></custom-el>");
+    }
+
+    [Theory]
+    [InlineData("style", "body{color:red}")]
+    [InlineData("noscript", "<b>no js</b>")]
+    public void UnknownElement_PassThrough_StripsNestedStyleAndNoscript(string tagName, string content)
+    {
+        AssertHtmlToMarkdown(
+            $"<foo><{tagName}>{content}</{tagName}></foo>",
+            "<foo></foo>");
+    }
+
+    [Fact]
+    public void UnknownElement_PassThrough_KeepsSurroundingContent()
+    {
+        AssertHtmlToMarkdown(
+            "<foo>before<script>alert(1)</script>after</foo>",
+            "<foo>beforeafter</foo>");
+    }
+
+    [Fact]
+    public void UnknownElement_PassThrough_WithoutStrippedElementsIsUnchanged()
+    {
+        AssertHtmlToMarkdown(
+            """<foo bar="baz">content</foo>""",
+            """<foo bar="baz">content</foo>""");
+    }
+
+    // --- Link and image escaping ---
+
+    [Fact]
+    public void Link_UrlWithUnbalancedClosingParenthesis()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/a)b">text</a>""",
+            """[text](https://example.com/a\)b)""");
+    }
+
+    [Fact]
+    public void Link_UrlWithUnbalancedOpeningParenthesis()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/a(b">text</a>""",
+            """[text](https://example.com/a\(b)""");
+    }
+
+    [Fact]
+    public void Link_UrlWithSpaceUsesAngleBrackets()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/a b">text</a>""",
+            "[text](<https://example.com/a b>)");
+    }
+
+    [Fact]
+    public void Link_UrlWithNewlineIsPercentEncoded()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/&#10;evil">text</a>""",
+            "[text](https://example.com/%0Aevil)");
+    }
+
+    [Fact]
+    public void Link_UrlWithAngleBrackets()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/a<b>c">text</a>""",
+            """[text](https://example.com/a\<b\>c)""");
+    }
+
+    [Fact]
+    public void Image_AltTextWithBracketsCannotHijackTheSource()
+    {
+        AssertHtmlToMarkdown(
+            """<img src="safe.png" alt="a](https://attacker.example/evil.png)b">""",
+            """![a\](https://attacker.example/evil.png)b](safe.png)""");
+    }
+
+    [Fact]
+    public void Image_UrlWithUnbalancedParenthesis()
+    {
+        AssertHtmlToMarkdown(
+            """<img src="a)b.png" alt="x">""",
+            """![x](a\)b.png)""");
+    }
+
+    [Fact]
+    public void Link_BalancedParenthesesAreNotEscaped()
+    {
+        AssertHtmlToMarkdown(
+            """<a href="https://example.com/path_(with_parens)">text</a>""",
+            "[text](https://example.com/path_(with_parens))");
+    }
+
+    // --- Code block info string validation ---
+
+    [Fact]
+    public void CodeBlock_DataLanguageWithNewlineCannotEscapeTheFence()
+    {
+        AssertHtmlToMarkdown(
+            "<pre><code data-language=\"x&#10;```&#10;# PWNED\">hi</code></pre>",
+            """
+            ```
+            hi
+            ```
+            """);
+    }
+
+    [Fact]
+    public void CodeBlock_ClassLanguageWithNewlineCannotEscapeTheFence()
+    {
+        // A newline separates class names, so the class list here is
+        // "language-c", "```" and "evil": the language is c and nothing escapes the fence.
+        AssertHtmlToMarkdown(
+            "<pre><code class=\"language-c&#10;```&#10;evil\">hi</code></pre>",
+            """
+            ```c
+            hi
+            ```
+            """);
+    }
+
+    [Fact]
+    public void CodeBlock_ClassLanguageWithBacktickIsDropped()
+    {
+        AssertHtmlToMarkdown(
+            """<pre><code class="language-a`b">hi</code></pre>""",
+            """
+            ```
+            hi
+            ```
+            """);
+    }
+
+    [Fact]
+    public void CodeBlock_NonAsciiLanguageIsPreserved()
+    {
+        AssertHtmlToMarkdown(
+            """<pre><code class="language-föö">hi</code></pre>""",
+            """
+            ```föö
+            hi
+            ```
+            """);
+    }
+
+    [Fact]
+    public void CodeBlock_LanguageWithBacktickIsDropped()
+    {
+        AssertHtmlToMarkdown(
+            """<pre><code data-language="a`b">hi</code></pre>""",
+            """
+            ```
+            hi
+            ```
+            """);
+    }
+
+    [Theory]
+    [InlineData("go")]
+    [InlineData("c#")]
+    [InlineData("f#")]
+    [InlineData("c++")]
+    [InlineData("objective-c")]
+    [InlineData("asp.net")]
+    [InlineData("shell_session")]
+    [InlineData("html5")]
+    public void CodeBlock_ValidLanguagesArePreserved(string language)
+    {
+        AssertHtmlToMarkdown(
+            $"""<pre><code data-language="{language}">hi</code></pre>""",
+            $"""
+            ```{language}
+            hi
+            ```
+            """);
+    }
+
+    // --- Ampersand escaping ---
+
+    [Fact]
+    public void Text_LiteralEntityIsEscaped()
+    {
+        AssertHtmlToMarkdown(
+            "<p>&amp;copy; and &amp;#65;</p>",
+            "&amp;copy; and &amp;#65;");
+    }
+
+    [Fact]
+    public void Text_LiteralEntityForTagIsEscaped()
+    {
+        AssertHtmlToMarkdown(
+            "<p>&amp;lt;b&amp;gt;</p>",
+            "&amp;lt;b&amp;gt;");
+    }
+
+    [Fact]
+    public void Text_StandaloneAmpersandIsNotEscaped()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a &amp; b</p>",
+            "a & b");
+    }
+
+    [Fact]
+    public void Text_DecodedEntityStaysDecoded()
+    {
+        AssertHtmlToMarkdown(
+            "<p>&copy; 2026</p>",
+            "© 2026");
+    }
+
+    // --- Line start escaping ---
+
+    [Fact]
+    public void Paragraph_StartingWithPlusIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>+ item</p>",
+            "\\+ item");
+    }
+
+    [Fact]
+    public void Paragraph_StartingWithParenthesizedNumberIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>4) item</p>",
+            "4\\) item");
+    }
+
+    [Fact]
+    public void Paragraph_LineAfterBreakStartingWithPlusIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>+ b</p>",
+            "a  \n\\+ b");
+    }
+
+    [Fact]
+    public void Paragraph_LineAfterBreakStartingWithOrderedMarkerIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>1. b</p>",
+            "a  \n1\\. b");
+    }
+
+    [Fact]
+    public void Paragraph_LineAfterBreakStartingWithParenthesizedNumberIsNotAList()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>4) b</p>",
+            "a  \n4\\) b");
+    }
+
+    [Fact]
+    public void Paragraph_LineOfEqualSignsIsNotASetextHeading()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>=</p>",
+            "a  \n\\=");
+    }
+
+    [Fact]
+    public void Paragraph_EqualSignFollowedByTextIsNotEscaped()
+    {
+        AssertHtmlToMarkdown(
+            "<p>a<br>= b</p>",
+            "a  \n= b");
+    }
+
+
+    // --- Table cell content ---
+
+    [Fact]
+    public void Table_CellWithMultipleParagraphs()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><td><p>a</p><p>b</p></td><td>y</td></tr></table>",
+            """
+            | a<br>b | y |
+            | --- | --- |
+            """);
+    }
+
+    [Fact]
+    public void Table_CellWithRawHtmlContainingNewline()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><td><foo>a\nb</foo></td><td>y</td></tr></table>",
+            """
+            | <foo>a<br>b</foo> | y |
+            | --- | --- |
+            """);
+    }
+
+    [Fact]
+    public void Table_CellWithHeadingAndParagraph()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><td><h2>t</h2><p>b</p></td></tr></table>",
+            """
+            | ## t<br>b |
+            | --- |
+            """);
+    }
+
+    [Fact]
+    public void Table_CellWithBreakStaysOnOneLine()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><td>a<br>b</td></tr></table>",
+            """
+            | a<br>b |
+            | --- |
+            """);
+    }
+
     // --- Headings stay on a single line ---
 
     [Fact]

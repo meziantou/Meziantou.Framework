@@ -23,13 +23,19 @@ namespace Meziantou.Framework;
 [DebuggerDisplay("{FullPath}")]
 public sealed class TemporaryFile : IDisposable, IAsyncDisposable
 {
+    // Set when this instance created a directory for the sole purpose of holding the file.
+    // Disposing must then remove that directory, not just the file.
+    private readonly FullPath _ownedDirectory;
+    private bool _disposed;
+
     /// <summary>Gets the full path to the temporary file.</summary>
     /// <value>The absolute path to the temporary file.</value>
     public FullPath FullPath { get; }
 
-    private TemporaryFile(FullPath fullPath)
+    private TemporaryFile(FullPath fullPath, FullPath ownedDirectory)
     {
         FullPath = fullPath;
+        _ownedDirectory = ownedDirectory;
     }
 
     /// <summary>Creates a new temporary file in the system's default temp location.</summary>
@@ -42,7 +48,8 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
     {
         var rootDirectory = FullPath.Combine(Path.GetTempPath(), "MezTF");
         var fileName = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture) + "_" + Guid.NewGuid().ToString("N") + ".tmp";
-        return CreateInRoot(rootDirectory, fileName);
+        TemporaryPaths.EnsureRootDirectory(rootDirectory);
+        return CreateInRoot(rootDirectory, fileName, ownedDirectory: default);
     }
 
     /// <summary>Creates a new temporary file using the specified file name or full path.</summary>
@@ -51,6 +58,8 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
     /// <remarks>
     /// If <paramref name="fileNameOrPath"/> is not rooted, it is created under the system temp path in a "MezTF" subdirectory.
     /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="fileNameOrPath"/> is <see langword="null"/>, empty, or contains only white-space characters.</exception>
+    /// <exception cref="IOException">The file already exists.</exception>
     public static TemporaryFile Create(string fileNameOrPath)
     {
         if (string.IsNullOrWhiteSpace(fileNameOrPath))
@@ -59,27 +68,34 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
         if (Path.IsPathRooted(fileNameOrPath))
             return Create(FullPath.FromPath(fileNameOrPath));
 
+        TemporaryPaths.EnsureRootDirectory(FullPath.GetTempPath() / "MezTF");
         var rootDirectory = FullPath.GetTempPath() / "MezTF" / CreateUniqueFolderName();
-        return CreateInRoot(rootDirectory, fileNameOrPath);
+        return CreateInRoot(rootDirectory, fileNameOrPath, ownedDirectory: rootDirectory);
     }
 
     /// <summary>Creates a new temporary file at the specified path.</summary>
     /// <param name="filePath">The full path where the temporary file will be created.</param>
     /// <returns>A new <see cref="TemporaryFile"/> instance.</returns>
+    /// <remarks>
+    /// The file must not already exist. An existing file is never adopted, so disposing the returned instance
+    /// cannot delete data that it did not create.
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="filePath"/> is empty.</exception>
+    /// <exception cref="IOException">The file already exists.</exception>
     public static TemporaryFile Create(FullPath filePath)
     {
         if (filePath.IsEmpty)
             throw new ArgumentException("The path is empty.", nameof(filePath));
 
         CreateFile(filePath);
-        return new TemporaryFile(filePath);
+        return new TemporaryFile(filePath, ownedDirectory: default);
     }
 
-    private static TemporaryFile CreateInRoot(FullPath rootDirectory, string relativePath)
+    private static TemporaryFile CreateInRoot(FullPath rootDirectory, string relativePath, FullPath ownedDirectory)
     {
         var fullPath = FullPath.Combine(rootDirectory, relativePath);
         CreateFile(fullPath);
-        return new TemporaryFile(fullPath);
+        return new TemporaryFile(fullPath, ownedDirectory);
     }
 
     private static string CreateUniqueFolderName()
@@ -89,21 +105,44 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
 
     private static void CreateFile(FullPath filePath)
     {
-        filePath.CreateParentDirectory();
-        using var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write);
+        TemporaryPaths.CreateFile(filePath);
     }
 
     /// <summary>Deletes the temporary file.</summary>
+    /// <remarks>
+    /// When the instance was created from a file name, the unique directory created to hold that file is deleted as well.
+    /// </remarks>
     public void Dispose()
     {
-        IOUtilities.Delete(new FileInfo(FullPath));
+        if (_disposed)
+            return;
+
+        _disposed = true;
+        if (_ownedDirectory.IsEmpty)
+        {
+            IOUtilities.Delete(new FileInfo(FullPath));
+        }
+        else
+        {
+            IOUtilities.Delete(new DirectoryInfo(_ownedDirectory));
+        }
     }
 
     /// <summary>Asynchronously deletes the temporary file.</summary>
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
+    /// <remarks>
+    /// When the instance was created from a file name, the unique directory created to hold that file is deleted as well.
+    /// </remarks>
     public ValueTask DisposeAsync()
     {
-        return IOUtilities.DeleteAsync(new FileInfo(FullPath), CancellationToken.None);
+        if (_disposed)
+            return ValueTask.CompletedTask;
+
+        _disposed = true;
+        if (_ownedDirectory.IsEmpty)
+            return IOUtilities.DeleteAsync(new FileInfo(FullPath), CancellationToken.None);
+
+        return IOUtilities.DeleteAsync(new DirectoryInfo(_ownedDirectory), CancellationToken.None);
     }
 
     /// <summary>Implicitly converts a <see cref="TemporaryFile"/> to a <see cref="FullPath"/>.</summary>

@@ -24,32 +24,74 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
     private readonly Lock _lock = new();
     private Chunk<InMemoryLogEntry>? _firstChunk;
     private Chunk<InMemoryLogEntry>? _lastChunk;
+    private int _count;
+
+    /// <summary>Gets the number of log entries in the collection.</summary>
+    /// <remarks>
+    /// The count is incremented only after the entry is reachable, so a concurrent reader never sees
+    /// a count that promises more entries than an enumeration would yield.
+    /// </remarks>
+    public int Count => Volatile.Read(ref _count);
+
+    // Readers walk the chunks without taking the lock, so the head is published with a release
+    // and read with an acquire, exactly like Chunk.Count and Chunk.Next.
+    private Chunk<InMemoryLogEntry>? FirstChunk => Volatile.Read(ref _firstChunk);
 
     internal void Add(InMemoryLogEntry entry)
     {
         lock (_lock)
         {
-            if (_lastChunk is null)
+            var lastChunk = _lastChunk;
+            if (lastChunk is null)
             {
-                _firstChunk = _lastChunk = new Chunk<InMemoryLogEntry>(16);
-            }
-            else if (_lastChunk.Count == _lastChunk.Items.Length)
-            {
-                var newCapacity = Math.Min(MaxChunkSize, _lastChunk.Count * 2);
-                var newChunk = new Chunk<InMemoryLogEntry>(newCapacity);
-                _lastChunk.Next = newChunk;
-                _lastChunk = newChunk;
+                var firstChunk = new Chunk<InMemoryLogEntry>(16);
+                firstChunk.Items[0] = entry;
+                firstChunk.Count = 1;
+                _lastChunk = firstChunk;
+                Volatile.Write(ref _firstChunk, firstChunk);
+                Volatile.Write(ref _count, _count + 1);
+                return;
             }
 
-            _lastChunk.Items[_lastChunk.Count] = entry;
-            _lastChunk.Count++;
+            if (lastChunk.Count == lastChunk.Items.Length)
+            {
+                var newCapacity = Math.Min(MaxChunkSize, lastChunk.Count * 2);
+                var newChunk = new Chunk<InMemoryLogEntry>(newCapacity);
+
+                // Populate the chunk before linking it, so a reader that observes the new Next
+                // never sees a chunk whose first entry has not been written yet.
+                newChunk.Items[0] = entry;
+                newChunk.Count = 1;
+                _lastChunk = newChunk;
+                lastChunk.Next = newChunk;
+                Volatile.Write(ref _count, _count + 1);
+                return;
+            }
+
+            lastChunk.Items[lastChunk.Count] = entry;
+            lastChunk.Count++;
+            Volatile.Write(ref _count, _count + 1);
+        }
+    }
+
+    /// <summary>Removes all log entries from the collection.</summary>
+    /// <remarks>
+    /// An enumeration already in progress keeps walking the entries it started on; it is not invalidated.
+    /// </remarks>
+    public void Clear()
+    {
+        lock (_lock)
+        {
+            _lastChunk = null;
+            Volatile.Write(ref _count, 0);
+            Volatile.Write(ref _firstChunk, null);
         }
     }
 
     public override string ToString()
     {
         var sb = new StringBuilder();
-        var chunk = _firstChunk;
+        var chunk = FirstChunk;
         while (chunk is not null)
         {
             for (var i = 0; i < chunk.Count; i++)
@@ -98,7 +140,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
     /// <returns>The first log entry that matches the predicate, or <see langword="null"/> if no match is found.</returns>
     public InMemoryLogEntry? Find(Func<InMemoryLogEntry, bool> predicate)
     {
-        var chunk = _firstChunk;
+        var chunk = FirstChunk;
         while (chunk is not null)
         {
             for (var i = 0; i < chunk.Count; i++)
@@ -116,7 +158,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
 
     private IEnumerable<InMemoryLogEntry> GetByLogLevel(LogLevel logLevel)
     {
-        var chunk = _firstChunk;
+        var chunk = FirstChunk;
         while (chunk is not null)
         {
             for (var i = 0; i < chunk.Count; i++)
@@ -138,7 +180,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
 
         public Enumerator(InMemoryLogCollection collection)
         {
-            _chunk = collection._firstChunk;
+            _chunk = collection.FirstChunk;
         }
 
         public readonly InMemoryLogEntry Current
@@ -154,18 +196,20 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
 
         public bool MoveNext()
         {
-            if (_chunk is null)
-                return false;
-
-            _index++;
-            if (_index >= _chunk.Count)
+            // A chunk is only ever linked once it holds an entry, but the loop tolerates an empty
+            // one anyway: returning true for a chunk whose Count is still 0 would hand out a
+            // default(InMemoryLogEntry) as if it were a real entry.
+            while (_chunk is not null)
             {
+                _index++;
+                if (_index < _chunk.Count)
+                    return true;
+
                 _chunk = _chunk.Next;
-                _index = 0;
-                return _chunk is not null;
+                _index = -1;
             }
 
-            return true;
+            return false;
         }
 
         public readonly void Dispose()

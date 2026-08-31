@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
 public sealed class ProjectedFileSystemTests
@@ -382,6 +384,85 @@ public sealed class ProjectedFileSystemTests
 
         vfs.SetBufferSize(8192);
         Assert.Equal(8192, vfs.GetBufferSize());
+    }
+
+    /// <summary>
+    /// Verifies that a stream ending before the declared length fails the read instead of yielding filler.
+    ///
+    /// ProjFS zero-fills whatever range the provider does not write, so returning S_OK after a short read
+    /// hands the caller a file that is half real content and half zeros, with no error anywhere. For a
+    /// provider backed by a network or a pipe, a stream ending early is an ordinary transient failure,
+    /// so it has to surface as one.
+    /// </summary>
+    [ProjectedFileSystemFact]
+    public void TruncatedStreamFailsTheReadInsteadOfZeroFilling()
+    {
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            using var vfs = new TruncatedStreamVirtualFileSystem(fullPath);
+            vfs.Start(options: null);
+
+            // The provider declares 10000 bytes but only supplies 5000
+            Assert.ThrowsAny<IOException>(() => File.ReadAllBytes(Path.Combine(fullPath, "truncated.bin")));
+        }
+        finally
+        {
+            try { Directory.Delete(fullPath, recursive: true); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// Verifies that Stop does not tear the instance down while a callback that returned
+    /// ERROR_IO_PENDING is still outstanding.
+    ///
+    /// PrjStopVirtualizing only waits for callbacks that returned synchronously. A callback that
+    /// handed back ERROR_IO_PENDING still has a PrjCompleteCommand to make, and making it against
+    /// a context the driver has already destroyed is undefined behaviour.
+    ///
+    /// The assertion is on how long Stop blocked rather than on it still running at some instant:
+    /// the provider is released on a timer, so a Stop that drains correctly cannot return before
+    /// that timer fires, while a Stop that ignores pending commands returns almost immediately.
+    /// </summary>
+    [ProjectedFileSystemFact]
+    public async Task StopWaitsForCommandsThatReturnedIoPending()
+    {
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            using var vfs = new GatedVirtualFileSystem(fullPath);
+            vfs.Start(options: null);
+
+            var read = Task.Run(() => File.ReadAllBytes(Path.Combine(fullPath, "gated.bin")));
+            await vfs.Entered.WaitAsync(TimeSpan.FromSeconds(30));
+
+            // Entering the provider happens just before ExecuteCallback registers the command, so
+            // let that settle: otherwise this races the registration instead of testing the drain.
+            await Task.Delay(TimeSpan.FromSeconds(1));
+
+            var holdFor = TimeSpan.FromSeconds(2);
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(holdFor);
+                vfs.Release();
+            });
+
+            var start = Stopwatch.GetTimestamp();
+            var stop = Task.Run(vfs.Stop);
+            await stop.WaitAsync(TimeSpan.FromSeconds(60));
+            var elapsed = Stopwatch.GetElapsedTime(start);
+
+            Assert.True(elapsed >= holdFor / 2, $"Stop returned after {elapsed} without waiting for the pending command");
+
+            // The read itself may fail once the instance is stopped; only Stop ordering matters here
+            try { await read.WaitAsync(TimeSpan.FromSeconds(30)); } catch (IOException) { }
+        }
+        finally
+        {
+            try { Directory.Delete(fullPath, recursive: true); } catch { }
+        }
     }
 
     private sealed class BufferSizeVirtualFileSystem : ProjectedFileSystemBase

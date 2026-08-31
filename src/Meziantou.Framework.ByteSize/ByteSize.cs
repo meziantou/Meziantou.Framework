@@ -8,10 +8,11 @@ namespace Meziantou.Framework;
 /// // Create an instance
 /// var size = new ByteSize(1024);
 /// var size2 = ByteSize.FromKiloBytes(10);
-/// var size3 = ByteSize.Parse("10MB");
+/// var size3 = ByteSize.Parse("10MB", CultureInfo.InvariantCulture);
 ///
 /// // Format with automatic unit selection
-/// Console.WriteLine(size.ToString()); // "1kiB"
+/// Console.WriteLine(size.ToString()); // "1.024kB" - decimal units
+/// Console.WriteLine(size.ToString("gi")); // "1kiB" - binary units
 ///
 /// // Format with specific unit
 /// Console.WriteLine(size.ToString("MB")); // "0.001024MB"
@@ -56,15 +57,17 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         if (obj is null)
             return 1;
 
-        var fileLength = (ByteSize)obj;
-        return CompareTo(fileLength);
+        if (obj is not ByteSize byteSize)
+            throw new ArgumentException($"Object must be of type {nameof(ByteSize)}", nameof(obj));
+
+        return CompareTo(byteSize);
     }
 
     public override string ToString() => ToString(format: null, formatProvider: null);
 
     public string ToString(ByteSizeUnit unit) => ToString(unit, formatProvider: null);
 
-    public string ToString(ByteSizeUnit unit, IFormatProvider? formatProvider) => GetValue(unit).ToString(formatProvider) + UnitToString(unit);
+    public string ToString(ByteSizeUnit unit, IFormatProvider? formatProvider) => FormatValue(unit, numberFormat: null, formatProvider) + UnitToString(unit);
 
     public string ToString(IFormatProvider? formatProvider)
     {
@@ -79,13 +82,14 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     ///     <item><c>G2</c>: Find the best unit (B, kB, MB, GB, etc.), and use F2 format for the value</item>
     ///     <item><c>Gi</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use G format for the value</item>
     ///     <item><c>Gi2</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use F2 format for the value</item>
+    ///     <item><c>F</c>, <c>F2</c>, <c>Fi</c>, <c>Fi2</c>: Synonyms of <c>G</c>, <c>G2</c>, <c>Gi</c>, <c>Gi2</c></item>
     ///     <item>
     ///         <c>B</c>, <c>kB</c>, <c>kiB</c>, <c>MB</c>, <c>MiB</c>, <c>GB</c>, <c>GiB</c>, <c>TB</c>, <c>TiB</c>, <c>PB</c>, <c>PiB</c>, <c>EB</c>, <c>EiB</c>:
     ///         Use the provided unit, and use G format for the value. If a number is provided (e.g. <c>kB3</c>), it use Fn (e.g. F3) format to convert the value to string.
     ///     </item>
     /// </list>
     /// </param>
-    /// <exception cref="ArgumentException">The provided format is not valid</exception>
+    /// <exception cref="FormatException">The provided format is not valid</exception>
     public string ToString(string? format)
     {
         return ToString(format, formatProvider: null);
@@ -99,6 +103,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     ///     <item><c>G2</c>: Find the best unit (B, kB, MB, GB, etc.), and use F2 format for the value</item>
     ///     <item><c>Gi</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use G format for the value</item>
     ///     <item><c>Gi2</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use F2 format for the value</item>
+    ///     <item><c>F</c>, <c>F2</c>, <c>Fi</c>, <c>Fi2</c>: Synonyms of <c>G</c>, <c>G2</c>, <c>Gi</c>, <c>Gi2</c></item>
     ///     <item>
     ///         <c>B</c>, <c>kB</c>, <c>kiB</c>, <c>MB</c>, <c>MiB</c>, <c>GB</c>, <c>GiB</c>, <c>TB</c>, <c>TiB</c>, <c>PB</c>, <c>PiB</c>, <c>EB</c>, <c>EiB</c>:
     ///         Use the provided unit, and use G format for the value. If a number is provided (e.g. <c>kB3</c>), it use Fn (e.g. F3) format to convert the value to string.
@@ -107,7 +112,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// </param>
     /// <param name="formatProvider"></param>
     /// <returns></returns>
-    /// <exception cref="ArgumentException">The provided format is not valid</exception>
+    /// <exception cref="FormatException">The provided format is not valid</exception>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
         if (string.IsNullOrEmpty(format))
@@ -144,7 +149,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
             }
             else
             {
-                throw new ArgumentException($"format '{format}' is invalid", nameof(format));
+                throw new FormatException($"format '{format}' is invalid");
             }
         }
 
@@ -152,12 +157,12 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         if (index > 0)
         {
             if (!int.TryParse(format[index..], NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
-                throw new ArgumentException($"format '{format}' is invalid", nameof(format));
+                throw new FormatException($"format '{format}' is invalid");
 
             numberFormat = "F" + number.ToString(CultureInfo.InvariantCulture);
         }
 
-        return GetValue(unit).ToString(numberFormat, formatProvider) + UnitToString(unit);
+        return FormatValue(unit, numberFormat, formatProvider) + UnitToString(unit);
     }
 
     /// <summary>Tries to format the value into the provided span of characters.</summary>
@@ -218,11 +223,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         }
 
         // Format the value
-        var value = GetValue(unit);
         var unitStr = UnitToString(unit);
 
         // Try to format the number part
-        if (!value.TryFormat(destination, out var numberCharsWritten, numberFormat, provider))
+        if (!TryFormatValue(destination, out var numberCharsWritten, unit, numberFormat, provider))
         {
             charsWritten = 0;
             return false;
@@ -241,24 +245,30 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return true;
     }
 
+    // The unit is chosen from the magnitude so negative sizes scale like positive ones.
+    // Negating long.MinValue overflows, but the unchecked wrap-around reinterpreted as
+    // ulong is exactly its magnitude (2^63), so no value needs a special case.
+    private ulong Magnitude => Value < 0 ? unchecked((ulong)(-Value)) : (ulong)Value;
+
     private ByteSizeUnit FindBestUnit()
     {
-        if (Value >= (long)ByteSizeUnit.ExaByte)
+        var magnitude = Magnitude;
+        if (magnitude >= (ulong)ByteSizeUnit.ExaByte)
             return ByteSizeUnit.ExaByte;
 
-        if (Value >= (long)ByteSizeUnit.PetaByte)
+        if (magnitude >= (ulong)ByteSizeUnit.PetaByte)
             return ByteSizeUnit.PetaByte;
 
-        else if (Value >= (long)ByteSizeUnit.TeraByte)
+        if (magnitude >= (ulong)ByteSizeUnit.TeraByte)
             return ByteSizeUnit.TeraByte;
 
-        else if (Value >= (long)ByteSizeUnit.GigaByte)
+        if (magnitude >= (ulong)ByteSizeUnit.GigaByte)
             return ByteSizeUnit.GigaByte;
 
-        else if (Value >= (long)ByteSizeUnit.MegaByte)
+        if (magnitude >= (ulong)ByteSizeUnit.MegaByte)
             return ByteSizeUnit.MegaByte;
 
-        else if (Value >= (long)ByteSizeUnit.KiloByte)
+        if (magnitude >= (ulong)ByteSizeUnit.KiloByte)
             return ByteSizeUnit.KiloByte;
 
         return ByteSizeUnit.Byte;
@@ -266,22 +276,23 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
     private ByteSizeUnit FindBestUnitI()
     {
-        if (Value >= (long)ByteSizeUnit.ExbiByte)
+        var magnitude = Magnitude;
+        if (magnitude >= (ulong)ByteSizeUnit.ExbiByte)
             return ByteSizeUnit.ExbiByte;
 
-        if (Value >= (long)ByteSizeUnit.PebiByte)
+        if (magnitude >= (ulong)ByteSizeUnit.PebiByte)
             return ByteSizeUnit.PebiByte;
 
-        if (Value >= (long)ByteSizeUnit.TebiByte)
+        if (magnitude >= (ulong)ByteSizeUnit.TebiByte)
             return ByteSizeUnit.TebiByte;
 
-        if (Value >= (long)ByteSizeUnit.GibiByte)
+        if (magnitude >= (ulong)ByteSizeUnit.GibiByte)
             return ByteSizeUnit.GibiByte;
 
-        if (Value >= (long)ByteSizeUnit.MebiByte)
+        if (magnitude >= (ulong)ByteSizeUnit.MebiByte)
             return ByteSizeUnit.MebiByte;
 
-        if (Value >= (long)ByteSizeUnit.KibiByte)
+        if (magnitude >= (ulong)ByteSizeUnit.KibiByte)
             return ByteSizeUnit.KibiByte;
 
         return ByteSizeUnit.Byte;
@@ -292,7 +303,41 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// <returns>The value in the specified unit.</returns>
     public double GetValue(ByteSizeUnit unit)
     {
-        return (double)Value / (long)unit;
+        var divisor = unit switch
+        {
+            ByteSizeUnit.Byte or ByteSizeUnit.KiloByte or ByteSizeUnit.MegaByte or ByteSizeUnit.GigaByte
+                or ByteSizeUnit.TeraByte or ByteSizeUnit.PetaByte or ByteSizeUnit.ExaByte
+                or ByteSizeUnit.KibiByte or ByteSizeUnit.MebiByte or ByteSizeUnit.GibiByte
+                or ByteSizeUnit.TebiByte or ByteSizeUnit.PebiByte or ByteSizeUnit.ExbiByte => (long)unit,
+            _ => throw new ArgumentOutOfRangeException(nameof(unit)),
+        };
+
+        return (double)Value / divisor;
+    }
+
+    // The Byte unit is formatted straight from the long so the value stays exact: going
+    // through double loses integer precision above 2^53 and lets the "G" specifier emit
+    // scientific notation, which none of this type's parsers accept. The scaled units are
+    // fractional by nature and keep using double.
+    private string FormatValue(ByteSizeUnit unit, string? numberFormat, IFormatProvider? formatProvider)
+    {
+        return unit is ByteSizeUnit.Byte
+            ? Value.ToString(numberFormat, formatProvider)
+            : GetValue(unit).ToString(numberFormat, formatProvider);
+    }
+
+    private bool TryFormatValue(Span<char> destination, out int charsWritten, ByteSizeUnit unit, ReadOnlySpan<char> numberFormat, IFormatProvider? provider)
+    {
+        return unit is ByteSizeUnit.Byte
+            ? Value.TryFormat(destination, out charsWritten, numberFormat, provider)
+            : GetValue(unit).TryFormat(destination, out charsWritten, numberFormat, provider);
+    }
+
+    private bool TryFormatValue(Span<byte> utf8Destination, out int bytesWritten, ByteSizeUnit unit, ReadOnlySpan<char> numberFormat, IFormatProvider? provider)
+    {
+        return unit is ByteSizeUnit.Byte
+            ? Value.TryFormat(utf8Destination, out bytesWritten, numberFormat, provider)
+            : GetValue(unit).TryFormat(utf8Destination, out bytesWritten, numberFormat, provider);
     }
 
     private static string UnitToString(ByteSizeUnit unit)
@@ -328,9 +373,22 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
     public static bool operator >(ByteSize value1, ByteSize value2) => value1.CompareTo(value2) > 0;
 
-    public static ByteSize operator +(ByteSize value1, ByteSize value2) => new(value1.Value + value2.Value);
-    public static ByteSize operator -(ByteSize value1, ByteSize value2) => new(value1.Value - value2.Value);
-    public static ByteSize operator *(ByteSize value1, ByteSize value2) => new(value1.Value * value2.Value);
+    public static ByteSize operator +(ByteSize value1, ByteSize value2) => new(checked(value1.Value + value2.Value));
+    public static ByteSize operator -(ByteSize value1, ByteSize value2) => new(checked(value1.Value - value2.Value));
+
+    /// <summary>Scales a byte size by a factor.</summary>
+    public static ByteSize operator *(ByteSize value, long multiplier) => new(checked(value.Value * multiplier));
+
+    /// <summary>Scales a byte size by a factor.</summary>
+    public static ByteSize operator *(long multiplier, ByteSize value) => new(checked(multiplier * value.Value));
+
+    /// <summary>Divides a byte size by a factor.</summary>
+    public static ByteSize operator /(ByteSize value, long divisor) => new(value.Value / divisor);
+
+    [Obsolete("Multiplying two sizes yields bytes squared, which is not a size. Use the ByteSize * long overload to scale a size. This overload will be removed in the next major version.")]
+    public static ByteSize operator *(ByteSize value1, ByteSize value2) => new(checked(value1.Value * value2.Value));
+
+    [Obsolete("Dividing two sizes yields a dimensionless ratio, not a size. Use the ByteSize / long overload to scale a size, or divide the Value properties to get a ratio. This overload will be removed in the next major version.")]
     public static ByteSize operator /(ByteSize value1, ByteSize value2) => new(value1.Value / value2.Value);
 
     public static implicit operator ByteSize(long value) => new(value);
@@ -343,17 +401,29 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// <summary>Subtracts a byte size value from this instance.</summary>
     /// <param name="other">The value to subtract.</param>
     /// <returns>The result of the subtraction.</returns>
+    public ByteSize Subtract(ByteSize other) => this - other;
+
+    [Obsolete("Misspelled. Use " + nameof(Subtract) + " instead. This method will be removed in the next major version.")]
     public ByteSize Substract(ByteSize other) => this - other;
 
-    /// <summary>Multiplies two byte size values.</summary>
-    /// <param name="other">The value to multiply by.</param>
-    /// <returns>The product of the two byte sizes.</returns>
-    public ByteSize Multiply(ByteSize other) => this * other;
+    /// <summary>Scales this byte size by a factor.</summary>
+    /// <param name="multiplier">The factor to scale by.</param>
+    /// <returns>The scaled byte size.</returns>
+    public ByteSize Multiply(long multiplier) => this * multiplier;
 
-    /// <summary>Divides this byte size by another.</summary>
-    /// <param name="other">The value to divide by.</param>
-    /// <returns>The result of the division.</returns>
-    public ByteSize Divide(ByteSize other) => this / other;
+    /// <summary>Divides this byte size by a factor.</summary>
+    /// <param name="divisor">The factor to divide by.</param>
+    /// <returns>The divided byte size.</returns>
+    public ByteSize Divide(long divisor) => this / divisor;
+
+    // Computed inline rather than delegating to the obsolete operators, so this file does not
+    // need to suppress its own obsoletion warnings.
+
+    [Obsolete("Multiplying two sizes yields bytes squared, which is not a size. Use the Multiply(long) overload to scale a size. This overload will be removed in the next major version.")]
+    public ByteSize Multiply(ByteSize other) => new(checked(Value * other.Value));
+
+    [Obsolete("Dividing two sizes yields a dimensionless ratio, not a size. Use the Divide(long) overload to scale a size, or divide the Value properties to get a ratio. This overload will be removed in the next major version.")]
+    public ByteSize Divide(ByteSize other) => new(Value / other.Value);
 
     private static bool TryParseUnit(ReadOnlySpan<char> unit, out ByteSizeUnit result, out int parsedLength)
     {
@@ -380,6 +450,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
                 else
                 {
                     result = default;
+                    parsedLength = 0;
                     return false;
                 }
             }
@@ -404,6 +475,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
                 case 'P':
                     result = isI ? ByteSizeUnit.PebiByte : ByteSizeUnit.PetaByte;
+                    return true;
+
+                case 'E':
+                    result = isI ? ByteSizeUnit.ExbiByte : ByteSizeUnit.ExaByte;
                     return true;
             }
         }
@@ -488,19 +563,48 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
         // Convert number
         if (long.TryParse(s, NumberStyles.Integer, provider, out var resultLong))
-        {
-            result = From(resultLong, unit);
-            return true;
-        }
+            return TryFrom(resultLong, unit, out result);
 
         if (double.TryParse(s, NumberStyles.Float, provider, out var resultDouble))
-        {
-            result = From(resultDouble, unit);
-            return true;
-        }
+            return TryFrom(resultDouble, unit, out result);
 
         result = default;
         return false;
+    }
+
+    // Text is untrusted input, so a size that does not fit in a long must be reported as a
+    // parse failure. Multiplying it out and letting it wrap would make TryParse return true
+    // with a negative value, which silently defeats any "size <= limit" check on the result.
+    private static bool TryFrom(long value, ByteSizeUnit unit, out ByteSize result)
+    {
+        var scaled = (Int128)value * (long)unit;
+        if (scaled < long.MinValue || scaled > long.MaxValue)
+        {
+            result = default;
+            return false;
+        }
+
+        result = new ByteSize((long)scaled);
+        return true;
+    }
+
+    private static bool TryFrom(double value, ByteSizeUnit unit, out ByteSize result)
+    {
+        // long.MinValue and long.MaxValue + 1 are both exactly representable as double, so
+        // this is the exact representable range of a long. Written as a negated condition so
+        // NaN - which compares false against everything - is rejected too.
+        const double MinInclusive = -9223372036854775808d;
+        const double MaxExclusive = 9223372036854775808d;
+
+        var scaled = value * (long)unit;
+        if (!(scaled >= MinInclusive && scaled < MaxExclusive))
+        {
+            result = default;
+            return false;
+        }
+
+        result = new ByteSize((long)scaled);
+        return true;
     }
 
     /// <summary>Tries to format the value as UTF-8 into the provided span of bytes.</summary>
@@ -561,11 +665,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         }
 
         // Format the value
-        var value = GetValue(unit);
         var unitStr = UnitToString(unit);
 
         // Try to format the number part as UTF-8
-        if (!value.TryFormat(utf8Destination, out var numberBytesWritten, numberFormat, provider))
+        if (!TryFormatValue(utf8Destination, out var numberBytesWritten, unit, numberFormat, provider))
         {
             bytesWritten = 0;
             return false;
@@ -637,16 +740,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
         // Convert number from UTF-8
         if (System.Buffers.Text.Utf8Parser.TryParse(utf8Text, out long resultLong, out var bytesConsumed) && bytesConsumed == utf8Text.Length)
-        {
-            result = From(resultLong, unit);
-            return true;
-        }
+            return TryFrom(resultLong, unit, out result);
 
         if (System.Buffers.Text.Utf8Parser.TryParse(utf8Text, out double resultDouble, out bytesConsumed) && bytesConsumed == utf8Text.Length)
-        {
-            result = From(resultDouble, unit);
-            return true;
-        }
+            return TryFrom(resultDouble, unit, out result);
 
         result = default;
         return false;
@@ -684,6 +781,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
                 else
                 {
                     result = default;
+                    parsedLength = 0;
                     return false;
                 }
             }
@@ -709,6 +807,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
                 case 'P':
                     result = isI ? ByteSizeUnit.PebiByte : ByteSizeUnit.PetaByte;
                     return true;
+
+                case 'E':
+                    result = isI ? ByteSizeUnit.ExbiByte : ByteSizeUnit.ExaByte;
+                    return true;
             }
         }
 
@@ -721,37 +823,37 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// <param name="value">The numeric value.</param>
     /// <param name="unit">The unit of the value.</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
-    public static ByteSize From(byte value, ByteSizeUnit unit) => new(value * (long)unit);
+    public static ByteSize From(byte value, ByteSizeUnit unit) => new(checked(value * (long)unit));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
     /// <param name="value">The numeric value.</param>
     /// <param name="unit">The unit of the value.</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
-    public static ByteSize From(short value, ByteSizeUnit unit) => new(value * (long)unit);
+    public static ByteSize From(short value, ByteSizeUnit unit) => new(checked(value * (long)unit));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
     /// <param name="value">The numeric value.</param>
     /// <param name="unit">The unit of the value.</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
-    public static ByteSize From(int value, ByteSizeUnit unit) => new(value * (long)unit);
+    public static ByteSize From(int value, ByteSizeUnit unit) => new(checked(value * (long)unit));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
     /// <param name="value">The numeric value.</param>
     /// <param name="unit">The unit of the value.</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
-    public static ByteSize From(long value, ByteSizeUnit unit) => new(value * (long)unit);
+    public static ByteSize From(long value, ByteSizeUnit unit) => new(checked(value * (long)unit));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
     /// <param name="value">The numeric value.</param>
     /// <param name="unit">The unit of the value.</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
-    public static ByteSize From(float value, ByteSizeUnit unit) => new((long)(value * (long)unit));
+    public static ByteSize From(float value, ByteSizeUnit unit) => new(checked((long)(value * (long)unit)));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
     /// <param name="value">The numeric value.</param>
     /// <param name="unit">The unit of the value.</param>
     /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
-    public static ByteSize From(double value, ByteSizeUnit unit) => new((long)(value * (long)unit));
+    public static ByteSize From(double value, ByteSizeUnit unit) => new(checked((long)(value * (long)unit)));
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a file's length.</summary>
     /// <param name="fileInfo">The file information.</param>

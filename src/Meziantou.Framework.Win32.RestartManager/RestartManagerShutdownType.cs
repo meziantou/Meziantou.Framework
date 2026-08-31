@@ -1,6 +1,7 @@
 namespace Meziantou.Framework.Win32;
 
 /// <summary>Configures the shut down of applications.</summary>
+/// <remarks>The Restart Manager documents its shutdown flags as taking one or more of these options, so pass at least one when calling <see cref="RestartManager.Shutdown(RestartManagerShutdownType)"/>.</remarks>
 [Flags]
 public enum RestartManagerShutdownType
 {

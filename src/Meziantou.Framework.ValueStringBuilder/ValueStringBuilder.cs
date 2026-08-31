@@ -158,7 +158,7 @@ ref partial struct ValueStringBuilder
     /// </summary>
     /// <param name="start">The position to start at.</param>
     /// <param name="length">The number of characters to return.</param>
-    public readonly ReadOnlySpan<char> AsSpan(int start, int length) => _chars.Slice(start, length);
+    public readonly ReadOnlySpan<char> AsSpan(int start, int length) => _chars.Slice(0, _pos).Slice(start, length);
 
     /// <summary>
     /// Inserts <paramref name="value" /> <paramref name="count" /> times at <paramref name="index" />.

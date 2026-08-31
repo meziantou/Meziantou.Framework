@@ -309,6 +309,58 @@ public class ValueStringBuilderTests
     }
 
     [Fact]
+    public void AsSpanWithLengthReturnsASliceOfTheContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 16);
+        sb.Append("hello");
+
+        Assert.Equal("ell", sb.AsSpan(1, 3).ToString());
+        Assert.Equal("hello", sb.AsSpan(0, 5).ToString());
+        Assert.Equal("", sb.AsSpan(5, 0).ToString());
+    }
+
+    [Fact]
+    public void AsSpanWithLengthCannotReadPastTheContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        sb.Append("hi");
+
+        // Reading 10 characters would reach into the rented buffer, past the two that were written.
+        Assert.True(sb.Capacity > 10);
+
+        var threw = false;
+        try
+        {
+            _ = sb.AsSpan(0, 10);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            threw = true;
+        }
+
+        Assert.True(threw);
+    }
+
+    [Fact]
+    public void AsSpanWithStartCannotReadPastTheContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 64);
+        sb.Append("hi");
+
+        var threw = false;
+        try
+        {
+            _ = sb.AsSpan(10);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            threw = true;
+        }
+
+        Assert.True(threw);
+    }
+
+    [Fact]
     public void AppendInterpolatedStringAppendsContent()
     {
         using var sb = new ValueStringBuilder(initialCapacity: 2);

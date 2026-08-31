@@ -307,6 +307,60 @@ public class TemporaryDirectoryTests
     }
 
     [Fact]
+    public void UsingADisposedTemporaryDirectoryThrows()
+    {
+        var dir = TemporaryDirectory.Create();
+        dir.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => dir.GetFullPath("a.txt"));
+        Assert.Throws<ObjectDisposedException>(() => dir.CreateTextFile("a.txt", "content"));
+        Assert.Throws<ObjectDisposedException>(() => dir.CreateEmptyFile("a.txt"));
+        Assert.Throws<ObjectDisposedException>(() => dir.CreateDirectory("sub"));
+        Assert.Throws<ObjectDisposedException>(() => dir / "a.txt");
+        Assert.False(Directory.Exists(dir.FullPath));
+    }
+
+    [Fact]
+    public void DisposingATemporaryDirectoryTwiceKeepsARecreatedDirectory()
+    {
+        var dir = TemporaryDirectory.Create();
+        var path = dir.FullPath;
+        dir.Dispose();
+
+        Directory.CreateDirectory(path.Value);
+        try
+        {
+            File.WriteAllText(path / "unrelated.txt", "content");
+            dir.Dispose();
+
+            Assert.True(File.Exists(path / "unrelated.txt"));
+        }
+        finally
+        {
+            Directory.Delete(path.Value, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DisposingATemporaryFileTwiceKeepsARecreatedFile()
+    {
+        var file = TemporaryFile.Create();
+        var path = file.FullPath;
+        file.Dispose();
+
+        File.WriteAllText(path.Value, "content");
+        try
+        {
+            file.Dispose();
+            Assert.True(File.Exists(path));
+        }
+        finally
+        {
+            File.Delete(path.Value);
+        }
+    }
+
+    [Fact]
     public void TemporaryFileCreateWithFullPath()
     {
         var fullPath = FullPath.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".tmp");

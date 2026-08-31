@@ -101,16 +101,21 @@ internal static partial class Program
         }
 
         var templateContent = await File.ReadAllTextAsync(inputPath, cancellationToken).ConfigureAwait(false);
-        var (resolvedStartCodeBlockDelimiter, resolvedEndCodeBlockDelimiter) = ResolveCodeBlockDelimiters(templateContent, startCodeBlockDelimiter, endCodeBlockDelimiter);
-        if (string.IsNullOrEmpty(resolvedStartCodeBlockDelimiter))
+        if (startCodeBlockDelimiter is { Length: 0 })
         {
             await error.WriteLineAsync("The start code block delimiter cannot be empty".AsMemory(), cancellationToken);
             return 1;
         }
 
-        if (string.IsNullOrEmpty(resolvedEndCodeBlockDelimiter))
+        if (endCodeBlockDelimiter is { Length: 0 })
         {
             await error.WriteLineAsync("The end code block delimiter cannot be empty".AsMemory(), cancellationToken);
+            return 1;
+        }
+
+        if (!TryResolveCodeBlockDelimiters(templateContent, startCodeBlockDelimiter, endCodeBlockDelimiter, out var resolvedStartCodeBlockDelimiter, out var resolvedEndCodeBlockDelimiter))
+        {
+            await error.WriteLineAsync("The start and end code block delimiters must be specified together, unless the one you specify belongs to a well-known pair (<% %> or <# #>)".AsMemory(), cancellationToken);
             return 1;
         }
 
@@ -263,40 +268,60 @@ internal static partial class Program
         return inputPath.WithExtension(directiveOutputExtension);
     }
 
-    private static (string StartCodeBlockDelimiter, string EndCodeBlockDelimiter) ResolveCodeBlockDelimiters(string templateContent, string? startCodeBlockDelimiter, string? endCodeBlockDelimiter)
+    private static bool TryResolveCodeBlockDelimiters(
+        string templateContent,
+        string? startCodeBlockDelimiter,
+        string? endCodeBlockDelimiter,
+        [NotNullWhen(true)] out string? resolvedStartCodeBlockDelimiter,
+        [NotNullWhen(true)] out string? resolvedEndCodeBlockDelimiter)
     {
         if (startCodeBlockDelimiter is null && endCodeBlockDelimiter is null)
         {
-            if (templateContent.Contains(T4StartCodeBlockDelimiter, StringComparison.Ordinal))
-            {
-                return (T4StartCodeBlockDelimiter, T4EndCodeBlockDelimiter);
-            }
-
-            return (DefaultStartCodeBlockDelimiter, DefaultEndCodeBlockDelimiter);
+            (resolvedStartCodeBlockDelimiter, resolvedEndCodeBlockDelimiter) = ContainsT4CodeBlock(templateContent)
+                ? (T4StartCodeBlockDelimiter, T4EndCodeBlockDelimiter)
+                : (DefaultStartCodeBlockDelimiter, DefaultEndCodeBlockDelimiter);
+            return true;
         }
 
-        return (
-            startCodeBlockDelimiter ?? GetDefaultStartCodeBlockDelimiter(endCodeBlockDelimiter),
-            endCodeBlockDelimiter ?? GetDefaultEndCodeBlockDelimiter(startCodeBlockDelimiter));
+        resolvedStartCodeBlockDelimiter = startCodeBlockDelimiter ?? GetPairedStartCodeBlockDelimiter(endCodeBlockDelimiter);
+        resolvedEndCodeBlockDelimiter = endCodeBlockDelimiter ?? GetPairedEndCodeBlockDelimiter(startCodeBlockDelimiter);
+        return resolvedStartCodeBlockDelimiter is not null && resolvedEndCodeBlockDelimiter is not null;
     }
 
-    private static string GetDefaultStartCodeBlockDelimiter(string? endCodeBlockDelimiter)
+    /// <summary>
+    /// Determines whether the template uses T4 delimiters: it must contain at least one complete
+    /// <c>&lt;# … #&gt;</c> block and no <c>&lt;%</c> at all, so that a stray <c>&lt;#</c> in the
+    /// template text cannot silently switch the delimiters.
+    /// </summary>
+    private static bool ContainsT4CodeBlock(string templateContent)
+    {
+        if (templateContent.Contains(DefaultStartCodeBlockDelimiter, StringComparison.Ordinal))
+            return false;
+
+        var startIndex = templateContent.IndexOf(T4StartCodeBlockDelimiter, StringComparison.Ordinal);
+        if (startIndex < 0)
+            return false;
+
+        return templateContent.IndexOf(T4EndCodeBlockDelimiter, startIndex + T4StartCodeBlockDelimiter.Length, StringComparison.Ordinal) >= 0;
+    }
+
+    private static string? GetPairedStartCodeBlockDelimiter(string? endCodeBlockDelimiter)
     {
         return endCodeBlockDelimiter switch
         {
             T4EndCodeBlockDelimiter => T4StartCodeBlockDelimiter,
             DefaultEndCodeBlockDelimiter => DefaultStartCodeBlockDelimiter,
-            _ => DefaultStartCodeBlockDelimiter,
+            _ => null,
         };
     }
 
-    private static string GetDefaultEndCodeBlockDelimiter(string? startCodeBlockDelimiter)
+    private static string? GetPairedEndCodeBlockDelimiter(string? startCodeBlockDelimiter)
     {
         return startCodeBlockDelimiter switch
         {
             T4StartCodeBlockDelimiter => T4EndCodeBlockDelimiter,
             DefaultStartCodeBlockDelimiter => DefaultEndCodeBlockDelimiter,
-            _ => DefaultEndCodeBlockDelimiter,
+            _ => null,
         };
     }
 

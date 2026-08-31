@@ -47,7 +47,7 @@ internal sealed class TdsConnectionProcessor
         TdsPreLoginNegotiationResult? negotiationResult = null;
         try
         {
-            var preLoginPacket = await TdsPacketReader.ReadAsync(input, cancellationToken).ConfigureAwait(false);
+            var preLoginPacket = await TdsPacketReader.ReadAsync(input, _options.MaxMessageSize, cancellationToken).ConfigureAwait(false);
             if (preLoginPacket is null)
             {
                 return;
@@ -87,14 +87,14 @@ internal sealed class TdsConnectionProcessor
 
             if (negotiationResult.Value.UpgradeToTls)
             {
-                sslStream = await UpgradeToTlsAsync(transportInput, transportOutput, serverCertificate!, _options.PacketSize, cancellationToken).ConfigureAwait(false);
+                sslStream = await UpgradeToTlsAsync(transportInput, transportOutput, serverCertificate!, _options.PacketSize, _options.MaxMessageSize, cancellationToken).ConfigureAwait(false);
                 usingTls = true;
                 input = sslStream;
                 output = sslStream;
                 writer = new TdsPacketWriter(output, _options.PacketSize);
             }
 
-            var loginPacket = await TdsPacketReader.ReadAsync(input, cancellationToken).ConfigureAwait(false);
+            var loginPacket = await TdsPacketReader.ReadAsync(input, _options.MaxMessageSize, cancellationToken).ConfigureAwait(false);
             if (loginPacket is null || loginPacket.Type != TdsPacketType.Login7)
             {
                 await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateProtocolError(18456, "Missing LOGIN7 packet"), cancellationToken).ConfigureAwait(false);
@@ -144,7 +144,7 @@ internal sealed class TdsConnectionProcessor
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                var packet = await TdsPacketReader.ReadAsync(input, cancellationToken).ConfigureAwait(false);
+                var packet = await TdsPacketReader.ReadAsync(input, _options.MaxMessageSize, cancellationToken).ConfigureAwait(false);
                 if (packet is null)
                 {
                     return;
@@ -218,13 +218,13 @@ internal sealed class TdsConnectionProcessor
     }
 
     [SuppressMessage("Security", "CA5398:Do not hardcode SslProtocols", Justification = "SqlClient interoperability with TDS-over-TLS requires TLS 1.2 during PRELOGIN encryption upgrade.")]
-    private static async Task<SslStream> UpgradeToTlsAsync(Stream input, Stream output, X509Certificate2 certificate, int packetSize, CancellationToken cancellationToken)
+    private static async Task<SslStream> UpgradeToTlsAsync(Stream input, Stream output, X509Certificate2 certificate, int packetSize, int maxMessageSize, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(input);
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(certificate);
 
-        var baseStream = new TdsTlsPacketStream(input, output, packetSize);
+        var baseStream = new TdsTlsPacketStream(input, output, packetSize, maxMessageSize);
         var sslStream = new SslStream(baseStream, leaveInnerStreamOpen: true);
 
         await sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
@@ -245,10 +245,11 @@ internal sealed class TdsConnectionProcessor
         private readonly Stream _readStream;
         private readonly Stream _writeStream;
         private readonly TdsPacketWriter _packetWriter;
+        private readonly int _maxMessageSize;
         private ReadOnlyMemory<byte> _pendingReadPayload;
         private bool _useTdsPacketMode = true;
 
-        public TdsTlsPacketStream(Stream readStream, Stream writeStream, int packetSize)
+        public TdsTlsPacketStream(Stream readStream, Stream writeStream, int packetSize, int maxMessageSize)
         {
             ArgumentNullException.ThrowIfNull(readStream);
             ArgumentNullException.ThrowIfNull(writeStream);
@@ -256,6 +257,7 @@ internal sealed class TdsConnectionProcessor
             _readStream = readStream;
             _writeStream = writeStream;
             _packetWriter = new TdsPacketWriter(writeStream, packetSize);
+            _maxMessageSize = maxMessageSize;
         }
 
         public override bool CanRead => _readStream.CanRead;
@@ -383,7 +385,7 @@ internal sealed class TdsConnectionProcessor
             {
                 while (true)
                 {
-                    var packet = await TdsPacketReader.ReadAsync(_readStream, cancellationToken).ConfigureAwait(false);
+                    var packet = await TdsPacketReader.ReadAsync(_readStream, _maxMessageSize, cancellationToken).ConfigureAwait(false);
                     if (packet is null)
                     {
                         return 0;

@@ -35,10 +35,11 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
             Directory.CreateDirectory(directoryPath);
         }
 
-        var tempFilePath = filePath + ".tmp";
+        // The temporary name is unique so that two concurrent saves to the same path do not collide on it.
+        var tempFilePath = filePath + "." + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture) + ".tmp";
         try
         {
-            await using (var stream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
+            await using (var stream = new FileStream(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
             {
                 await JsonSerializer.SerializeAsync(stream, snapshot, InMemorySerializationContext.Default.InMemoryHttpCachePersistenceData, cancellationToken).ConfigureAwait(false);
             }
@@ -47,9 +48,17 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
         }
         finally
         {
-            if (File.Exists(tempFilePath))
+            // Cleaning up must not replace the exception that is being propagated, and the file is already
+            // gone on the success path.
+            try
             {
                 File.Delete(tempFilePath);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
             }
         }
     }

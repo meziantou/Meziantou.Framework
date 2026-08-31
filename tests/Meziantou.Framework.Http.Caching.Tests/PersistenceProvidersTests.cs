@@ -523,6 +523,63 @@ public class PersistenceProvidersTests
         }
     }
 
+    [Fact]
+    public async Task InMemoryProviderConcurrentSavesToTheSamePathAllSucceed()
+    {
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        var filePath = Path.Combine(tempDirectory, "http-cache.json");
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        try
+        {
+            Directory.CreateDirectory(tempDirectory);
+
+            var provider = new InMemoryHttpCacheStore();
+            await provider.SetEntryAsync("http://example.com/a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+
+            // A fixed ".tmp" name made two concurrent saves collide on FileShare.None.
+            var saves = Enumerable.Range(0, 8).Select(_ => provider.SaveToFileAsync(filePath, CancellationToken.None).AsTask());
+            await Task.WhenAll(saves);
+
+            var reloaded = new InMemoryHttpCacheStore();
+            await reloaded.LoadFromFileAsync(filePath, CancellationToken.None);
+            Assert.Single(await reloaded.GetEntriesAsync("http://example.com/a", CancellationToken.None));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task InMemoryProviderSaveLeavesNoTemporaryFileBehind()
+    {
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        var filePath = Path.Combine(tempDirectory, "http-cache.json");
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        try
+        {
+            Directory.CreateDirectory(tempDirectory);
+
+            var provider = new InMemoryHttpCacheStore();
+            await provider.SetEntryAsync("http://example.com/a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+            await provider.SaveToFileAsync(filePath, CancellationToken.None);
+
+            Assert.Equal([filePath], Directory.GetFiles(tempDirectory));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
     private static HttpCachePersistenceEntry CreatePersistenceEntry(
         DateTimeOffset now,
         TimeSpan maxAge,

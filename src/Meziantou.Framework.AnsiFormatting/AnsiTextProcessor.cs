@@ -100,7 +100,7 @@ public static class AnsiTextProcessor
     {
         char[]? rented = null;
         var buffer = value.Length <= StackAllocThreshold
-            ? stackalloc char[value.Length]
+            ? stackalloc char[StackAllocThreshold]
             : (rented = ArrayPool<char>.Shared.Rent(value.Length));
 
         try

@@ -176,6 +176,99 @@ public sealed class RobotsFileTests
         Assert.Single(robots.Groups);
     }
 
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    [InlineData("\r")]
+    public void Parse_BlankLineSeparatesGroups_ForEveryLineEnding(string newLine)
+    {
+        // Group A has no body directive, so only the blank line can end it.
+        var content = string.Join(newLine, "User-agent: A", "", "User-agent: B", "Crawl-delay: 5", "Disallow: /");
+
+        var robots = RobotsFile.Parse(content);
+
+        Assert.Equal(2, robots.Groups.Count);
+        Assert.Equal(["A"], robots.Groups[0].UserAgents);
+        Assert.Equal(["B"], robots.Groups[1].UserAgents);
+        Assert.Null(robots.GetCrawlDelay("A"));
+        Assert.Equal(TimeSpan.FromSeconds(5), robots.GetCrawlDelay("B"));
+    }
+
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    [InlineData("\r")]
+    public void Parse_GroupWithoutRules_IsNotMergedIntoTheNextGroup(string newLine)
+    {
+        var content = string.Join(newLine, "User-agent: A", "", "User-agent: B", "Disallow: /");
+
+        var robots = RobotsFile.Parse(content);
+
+        Assert.Equal(2, robots.Groups.Count);
+        Assert.True(robots.IsAllowed("A", "/x"));
+        Assert.False(robots.IsAllowed("B", "/x"));
+    }
+
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    [InlineData("\r")]
+    public void Parse_ConsecutiveBlankLines_DoNotShiftLineNumbers(string newLine)
+    {
+        var content = string.Join(newLine, "User-agent: *", "", "", "", "Host: example.com");
+
+        var error = Assert.Single(RobotsFile.Parse(content).ParseErrors);
+
+        Assert.Equal(5, error.LineNumber);
+    }
+
+    [Fact]
+    public async Task Parse_AgreesWithParseAsync_OnIdenticalContent()
+    {
+        const string Content = "User-agent: A\n\nUser-agent: B\nDisallow: /\n";
+        using var reader = new StringReader(Content);
+
+        var synchronous = RobotsFile.Parse(Content);
+        var asynchronous = await RobotsFile.ParseAsync(reader, XunitCancellationToken);
+
+        Assert.Equal(synchronous.Groups.Count, asynchronous.Groups.Count);
+        Assert.Equal(synchronous.IsAllowed("A", "/x"), asynchronous.IsAllowed("A", "/x"));
+        Assert.Equal(synchronous.IsAllowed("B", "/x"), asynchronous.IsAllowed("B", "/x"));
+    }
+
+    [Fact]
+    public void Parse_MixedLineEndings_ProduceTheSameGroups()
+    {
+        var robots = RobotsFile.Parse("User-agent: A\r\nDisallow: /a\n\rUser-agent: B\rDisallow: /b\r\n");
+
+        Assert.Equal(2, robots.Groups.Count);
+        Assert.Equal(["A"], robots.Groups[0].UserAgents);
+        Assert.Equal(["B"], robots.Groups[1].UserAgents);
+    }
+
+    [Fact]
+    public void Parse_LeadingByteOrderMark_IsIgnored()
+    {
+        var robots = RobotsFile.Parse("\uFEFFUser-agent: *\nDisallow: /\n");
+
+        var group = Assert.Single(robots.Groups);
+        Assert.Equal(["*"], group.UserAgents);
+        Assert.Empty(robots.ParseErrors);
+        Assert.False(robots.IsAllowed("Bot", "/anything"));
+    }
+
+    [Fact]
+    public void Parse_ByteOrderMarkOnALaterLine_IsNotStripped()
+    {
+        // Only the very first character of the file can be a BOM. Elsewhere U+FEFF is a
+        // zero-width no-break space and must not be silently removed from a directive.
+        var robots = RobotsFile.Parse("User-agent: *\n\uFEFFDisallow: /\n");
+
+        var error = Assert.Single(robots.ParseErrors);
+        Assert.Equal(RobotsParseErrorKind.UnknownDirective, error.Kind);
+        Assert.Equal(2, error.LineNumber);
+    }
+
     [Fact]
     public void Parse_UserAgentAfterCrawlDelay_StartsANewGroup()
     {
@@ -310,6 +403,100 @@ public sealed class RobotsFileTests
 
         Assert.NotNull(robots.GetGroup("googlebot"));
         Assert.NotNull(robots.GetGroup("GOOGLEBOT"));
+    }
+
+    [Fact]
+    public void GetGroup_WithoutDuplicates_ReturnsTheParsedGroupInstance()
+    {
+        var robots = RobotsFile.Parse("User-agent: *\nDisallow: /\n");
+
+        Assert.Same(robots.Groups[0], robots.GetGroup("Bot"));
+    }
+
+    [Fact]
+    public void GetGroup_DuplicateNamedGroups_AreMerged()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: Googlebot
+            Disallow: /a
+
+            User-agent: Googlebot
+            Disallow: /b
+            """);
+
+        Assert.False(robots.IsAllowed("Googlebot", "/a"));
+        Assert.False(robots.IsAllowed("Googlebot", "/b"));
+    }
+
+    [Fact]
+    public void GetGroup_DuplicateCatchAllGroups_AreMerged()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow: /x
+
+            User-agent: *
+            Disallow: /y
+            """);
+
+        Assert.False(robots.IsAllowed("Bot", "/x"));
+        Assert.False(robots.IsAllowed("Bot", "/y"));
+    }
+
+    [Fact]
+    public void GetGroup_DuplicateGroups_KeepTheFirstCrawlDelay()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: Googlebot
+            Disallow: /a
+            Crawl-delay: 5
+
+            User-agent: Googlebot
+            Disallow: /b
+            Crawl-delay: 20
+            """);
+
+        Assert.Equal(TimeSpan.FromSeconds(5), robots.GetCrawlDelay("Googlebot"));
+    }
+
+    [Fact]
+    public void GetGroup_DuplicateGroups_UnionTheUserAgentTokens()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: Googlebot
+            User-agent: Bingbot
+            Disallow: /a
+
+            User-agent: googlebot
+            Disallow: /b
+            """);
+
+        var group = robots.GetGroup("Googlebot");
+
+        Assert.NotNull(group);
+        Assert.Equal(["Googlebot", "Bingbot"], group.UserAgents);
+        Assert.Equal(2, group.Rules.Count);
+    }
+
+    [Fact]
+    public void GetGroup_ExactMatchWinsOverADuplicatedCatchAll()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow: /all
+
+            User-agent: Googlebot
+            Disallow: /google
+
+            User-agent: *
+            Disallow: /everything
+            """);
+
+        Assert.True(robots.IsAllowed("Googlebot", "/all"));
+        Assert.True(robots.IsAllowed("Googlebot", "/everything"));
+        Assert.False(robots.IsAllowed("Googlebot", "/google"));
+        Assert.False(robots.IsAllowed("OtherBot", "/all"));
+        Assert.False(robots.IsAllowed("OtherBot", "/everything"));
     }
 
     // -------------------------------------------------------------------------
@@ -633,6 +820,33 @@ public sealed class RobotsFileTests
         var robots = await RobotsFile.ParseAsync(stream, cancellationToken: XunitCancellationToken);
 
         Assert.Single(robots.Groups);
+        Assert.False(robots.IsAllowed("Bot", "/anything"));
+    }
+
+    [Fact]
+    public async Task ParseAsync_Utf8StreamWithByteOrderMark_IsIgnored()
+    {
+        using var stream = new MemoryStream();
+        stream.Write(Encoding.UTF8.GetPreamble());
+        stream.Write(Encoding.UTF8.GetBytes("User-agent: *\nDisallow: /\n"));
+        stream.Position = 0;
+
+        var robots = await RobotsFile.ParseAsync(stream, cancellationToken: XunitCancellationToken);
+
+        Assert.Single(robots.Groups);
+        Assert.Empty(robots.ParseErrors);
+        Assert.False(robots.IsAllowed("Bot", "/anything"));
+    }
+
+    [Fact]
+    public async Task ParseAsync_TextReaderWithByteOrderMark_IsIgnored()
+    {
+        using var reader = new StringReader("\uFEFFUser-agent: *\nDisallow: /\n");
+
+        var robots = await RobotsFile.ParseAsync(reader, XunitCancellationToken);
+
+        Assert.Single(robots.Groups);
+        Assert.Empty(robots.ParseErrors);
         Assert.False(robots.IsAllowed("Bot", "/anything"));
     }
 

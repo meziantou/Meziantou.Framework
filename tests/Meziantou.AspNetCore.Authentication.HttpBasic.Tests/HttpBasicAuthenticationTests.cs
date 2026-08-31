@@ -127,6 +127,47 @@ public sealed class HttpBasicAuthenticationTests
         });
     }
 
+    [Fact]
+    public async Task MalformedUtf8Credentials_AreRejected()
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("victim", "\uFFFD\uFFFD\uFFFD", username, password);
+        });
+
+        byte[] credentials = [.. "victim:"u8, 0xFF, 0xFE, 0xC0];
+        await application.SendRawAndAssert("/", credentials, response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task MalformedUtf8Credentials_DoNotCollideOnReplacementCharacter()
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("victim", "\uFFFD\uFFFD\uFFFD", username, password);
+        });
+
+        byte[] credentials = [.. "victim:"u8, 0x80, 0x81, 0x82];
+        await application.SendRawAndAssert("/", credentials, response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task NonAsciiUtf8Credentials_AreAccepted()
+    {
+        await using var application = await TestApplication.CreateAsync("\u00DCn\u00EFc\u00F8de", "p\u00E4ssw\u00F6rd");
+        await application.SendAndAssert("/", "\u00DCn\u00EFc\u00F8de", "p\u00E4ssw\u00F6rd", async response =>
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("\u00DCn\u00EFc\u00F8de", await response.Content.ReadAsStringAsync(XunitCancellationToken));
+        });
+    }
+
     private static IdentityUser CreateIdentityUser(string id, string username, string password)
     {
         var user = new IdentityUser
@@ -249,6 +290,15 @@ public sealed class HttpBasicAuthenticationTests
             {
                 request.Headers.Authorization = CreateAuthorizationHeader(username, password);
             }
+
+            using var response = await Client.SendAsync(request);
+            assert(response);
+        }
+
+        public async Task SendRawAndAssert(string url, byte[] credentials, Action<HttpResponseMessage> assert)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.TryAddWithoutValidation("Authorization", HttpBasicAuthenticationDefaults.AuthenticationScheme + " " + Convert.ToBase64String(credentials));
 
             using var response = await Client.SendAsync(request);
             assert(response);

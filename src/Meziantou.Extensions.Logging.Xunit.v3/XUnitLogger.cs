@@ -26,6 +26,16 @@ public class XUnitLogger : ILogger
     private readonly XUnitLoggerOptions _options;
     private readonly LoggerExternalScopeProvider _scopeProvider;
 
+    /// <summary>Gets the options used to format the messages.</summary>
+    protected XUnitLoggerOptions Options => _options;
+
+    /// <summary>Gets the category name for the messages produced by this logger.</summary>
+    protected string? CategoryName => _categoryName;
+
+    /// <summary>Gets the test output helper the messages are written to, or <see langword="null"/> when no test is running.</summary>
+    /// <remarks>When no helper was supplied to the constructor, this resolves the one of the test that is currently running.</remarks>
+    protected ITestOutputHelper? TestOutputHelper => _testOutputHelper ?? TestContext.Current.TestOutputHelper;
+
     /// <summary>Creates a new logger instance without a test output helper.</summary>
     /// <returns>A new <see cref="ILogger"/> instance.</returns>
     public static ILogger CreateLogger() => CreateLogger(testOutputHelper: null);
@@ -100,12 +110,12 @@ public class XUnitLogger : ILogger
     /// <inheritdoc/>
     [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs")]
     [SuppressMessage("Usage", "MA0011:IFormatProvider is missing")]
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+    public virtual void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
         if (!IsEnabled(logLevel))
             return;
 
-        var testOutputHelper = _testOutputHelper ?? TestContext.Current.TestOutputHelper;
+        var testOutputHelper = TestOutputHelper;
         if (testOutputHelper is null)
             return;
 
@@ -155,7 +165,10 @@ public class XUnitLogger : ILogger
         }
     }
 
-    private static string GetLogLevelString(LogLevel logLevel)
+    /// <summary>Gets the four-character string written for a log level.</summary>
+    /// <param name="logLevel">The log level to format.</param>
+    /// <returns>The string written before the message when <see cref="XUnitLoggerOptions.IncludeLogLevel"/> is set.</returns>
+    protected static string GetLogLevelString(LogLevel logLevel)
     {
         return logLevel switch
         {

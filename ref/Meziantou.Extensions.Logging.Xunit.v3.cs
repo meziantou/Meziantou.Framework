@@ -6,6 +6,9 @@ namespace Meziantou.Extensions.Logging.Xunit.v3
 {
     public class XUnitLogger : Microsoft.Extensions.Logging.ILogger
     {
+        protected Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions Options { get => throw null; }
+        protected string? CategoryName { get => throw null; }
+        protected Xunit.ITestOutputHelper? TestOutputHelper { get => throw null; }
         public static Microsoft.Extensions.Logging.ILogger CreateLogger() => throw null;
         public static Microsoft.Extensions.Logging.ILogger CreateLogger(Xunit.ITestOutputHelper? testOutputHelper) => throw null;
         public static Microsoft.Extensions.Logging.ILogger CreateLogger(Xunit.ITestOutputHelper? testOutputHelper, Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) => throw null;
@@ -17,7 +20,8 @@ namespace Meziantou.Extensions.Logging.Xunit.v3
         public XUnitLogger(Xunit.ITestOutputHelper? testOutputHelper, Microsoft.Extensions.Logging.LoggerExternalScopeProvider scopeProvider, string? categoryName, Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) { }
         public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => throw null;
         public System.IDisposable? BeginScope<TState>(TState state) => throw null;
-        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
+        public virtual void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
+        protected static string GetLogLevelString(Microsoft.Extensions.Logging.LogLevel logLevel) => throw null;
     }
 
     public static class XUnitLoggerBuilderExtensions

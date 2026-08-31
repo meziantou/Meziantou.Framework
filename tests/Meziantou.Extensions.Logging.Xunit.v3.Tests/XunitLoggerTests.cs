@@ -65,4 +65,55 @@ public sealed class XunitLoggerTests
 
         Assert.Empty(output.Logs);
     }
+
+    [Fact]
+    public void ADerivedLoggerCanReplaceTheFormatting()
+    {
+        var output = new InMemoryTestOutputHelper();
+        var logger = new PrefixingLogger(output, new XUnitLoggerOptions { IncludeLogLevel = true });
+        logger.LogWarning("the message");
+
+        Assert.Equal(["warn [TheCategory] the message (IncludeLogLevel=True)" + Environment.NewLine], output.Logs, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void ADerivedLoggerCanDelegateToTheDefaultFormatting()
+    {
+        var output = new InMemoryTestOutputHelper();
+        var logger = new DelegatingLogger(output);
+        logger.LogInformation("kept");
+        logger.LogInformation("dropped");
+
+        Assert.Equal(["kept" + Environment.NewLine], output.Logs, StringComparer.Ordinal);
+    }
+
+    private sealed class PrefixingLogger : XUnitLogger
+    {
+        public PrefixingLogger(ITestOutputHelper testOutputHelper, XUnitLoggerOptions options)
+            : base(testOutputHelper, new LoggerExternalScopeProvider(), "TheCategory", options)
+        {
+        }
+
+        public override void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            var message = $"{GetLogLevelString(logLevel)} [{CategoryName}] {formatter(state, exception)} (IncludeLogLevel={Options.IncludeLogLevel})";
+            TestOutputHelper?.WriteLine(message);
+        }
+    }
+
+    private sealed class DelegatingLogger : XUnitLogger
+    {
+        public DelegatingLogger(ITestOutputHelper testOutputHelper)
+            : base(testOutputHelper, new LoggerExternalScopeProvider(), "TheCategory", options: null)
+        {
+        }
+
+        public override void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (formatter(state, exception) is "dropped")
+                return;
+
+            base.Log(logLevel, eventId, state, exception, formatter);
+        }
+    }
 }

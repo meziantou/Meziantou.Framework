@@ -371,6 +371,36 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public async Task ReadAsync_ReusesTheTaskWhenTheCountRepeats()
+    {
+        using var stream = new PooledMemoryStream(SmallTiers());
+        stream.Write(CreateData(200, seed: 6));
+        stream.Position = 0;
+
+        var buffer = new byte[10];
+        var first = stream.ReadAsync(buffer, 0, buffer.Length);
+        var second = stream.ReadAsync(buffer, 0, buffer.Length);
+
+        Assert.Equal(10, await first);
+        Assert.Equal(10, await second);
+        Assert.Same(first, second);
+    }
+
+    [Fact]
+    public void CopyToAsync_ValidatesArgumentsSynchronously()
+    {
+        using var stream = new PooledMemoryStream(SmallTiers());
+        stream.Write(CreateData(50, seed: 7));
+
+        // Block-bodied lambdas so these bind to Assert.Throws(Action): the point is that the exception is raised
+        // before any task exists, which a faulted-task assertion could not tell apart.
+        Task? task = null;
+        Assert.Throws<ArgumentNullException>(() => { task = stream.CopyToAsync(destination: null!); });
+        Assert.Throws<ArgumentOutOfRangeException>(() => { task = stream.CopyToAsync(new MemoryStream(), bufferSize: 0); });
+        Assert.Null(task);
+    }
+
+    [Fact]
     public void IBufferWriter_GetSpan_ReturnsAtLeastSizeHint_AndWritesAcrossBoundary()
     {
         using var stream = new PooledMemoryStream(SmallTiers());

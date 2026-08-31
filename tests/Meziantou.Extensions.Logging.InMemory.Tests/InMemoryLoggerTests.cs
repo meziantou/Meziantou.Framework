@@ -336,6 +336,56 @@ public sealed partial class InMemoryLoggerTests
     }
 
     [Fact]
+    public void Count_TracksTheNumberOfEntries()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        Assert.Equal(0, logger.Logs.Count);
+
+        logger.LogInformation("first");
+        Assert.Equal(1, logger.Logs.Count);
+
+        // Past the first chunk boundary
+        for (var i = 0; i < 50; i++)
+        {
+            logger.LogInformation("Entry {Index}", i);
+        }
+
+        Assert.Equal(51, logger.Logs.Count);
+        Assert.HasCount(51, logger.Logs);
+    }
+
+    [Fact]
+    public void Clear_RemovesEveryEntry()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        for (var i = 0; i < 50; i++)
+        {
+            logger.LogInformation("Entry {Index}", i);
+        }
+
+        logger.Logs.Clear();
+
+        Assert.Equal(0, logger.Logs.Count);
+        Assert.Empty(logger.Logs);
+        Assert.Empty(logger.Logs.Informations);
+        Assert.Null(logger.Logs.Find(_ => true));
+        Assert.Empty(logger.Logs.ToString());
+    }
+
+    [Fact]
+    public void Clear_LeavesTheCollectionUsable()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        logger.LogInformation("before");
+
+        logger.Logs.Clear();
+        logger.LogInformation("after");
+
+        Assert.Equal(1, logger.Logs.Count);
+        Assert.Equal("after", Assert.Single(logger.Logs).Message);
+    }
+
+    [Fact]
     public void WithTimeProvider()
     {
         using var provider = new InMemoryLoggerProvider(new CustomTimeProvider());
@@ -344,6 +394,104 @@ public sealed partial class InMemoryLoggerTests
 
         var log = provider.Logs.Informations.Single();
         Assert.Equal(new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero), log.CreatedAt);
+    }
+
+    [Fact]
+    public void LogLevelProperties_ReturnOnlyTheMatchingEntries()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogTrace("trace");
+        logger.LogDebug("debug");
+        logger.LogInformation("information");
+        logger.LogWarning("warning");
+        logger.LogError("error");
+        logger.LogCritical("critical");
+
+        Assert.Equal("trace", Assert.Single(logger.Logs.Traces).Message);
+        Assert.Equal("debug", Assert.Single(logger.Logs.Debugs).Message);
+        Assert.Equal("information", Assert.Single(logger.Logs.Informations).Message);
+        Assert.Equal("warning", Assert.Single(logger.Logs.Warnings).Message);
+        Assert.Equal("error", Assert.Single(logger.Logs.Errors).Message);
+        Assert.Equal("critical", Assert.Single(logger.Logs.Criticals).Message);
+    }
+
+    [Fact]
+    public void LogLevelProperties_AreEmptyWhenNothingMatches()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("information");
+
+        Assert.Empty(logger.Logs.Traces);
+        Assert.Empty(logger.Logs.Debugs);
+        Assert.Empty(logger.Logs.Warnings);
+        Assert.Empty(logger.Logs.Errors);
+        Assert.Empty(logger.Logs.Criticals);
+    }
+
+    [Fact]
+    public void Find_ReturnsTheFirstMatchingEntry()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("alpha");
+        logger.LogInformation("beta-match");
+        logger.LogInformation("gamma-match");
+
+        var found = logger.Logs.Find(log => log.Message.EndsWith("-match", StringComparison.Ordinal));
+        Assert.NotNull(found);
+        Assert.Equal("beta-match", found.Message);
+    }
+
+    [Fact]
+    public void Find_ReturnsNullWhenNothingMatches()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("first");
+
+        Assert.Null(logger.Logs.Find(log => log.Message is "missing"));
+    }
+
+    [Fact]
+    public void Contains_ReportsWhetherAnEntryMatches()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("first");
+
+        Assert.True(logger.Logs.Contains(log => log.Message is "first"));
+        Assert.False(logger.Logs.Contains(log => log.Message is "missing"));
+    }
+
+    [Fact]
+    public void Exception_IsCapturedAndRendered()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+        var exception = new InvalidOperationException("kaboom");
+
+        logger.LogError(exception, "boom");
+
+        var log = Assert.Single(logger.Logs.Errors);
+        Assert.Same(exception, log.Exception);
+        Assert.Equal("boom", log.Message);
+        Assert.Contains("kaboom", log.ToString());
+        Assert.Contains("kaboom", logger.Logs.ToString());
+    }
+
+    [Fact]
+    public void CollectionToString_RendersEveryEntryOnItsOwnLine()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("first");
+        logger.LogWarning("second");
+
+        var lines = logger.Logs.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.HasCount(4, lines);
+        Assert.StartsWith("[sample] Information: first", lines[0]);
+        Assert.StartsWith("[sample] Warning: second", lines[2]);
     }
 
     private sealed class CustomTimeProvider : TimeProvider

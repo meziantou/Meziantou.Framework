@@ -585,7 +585,9 @@ internal static class EmbeddedConstantsGeneratorTask
             try
             {
                 var content = Utf8NoBomThrowOnInvalidBytes.GetString(textBytes, 0, textBytes.Length);
-                return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, content, textBytes, errors);
+
+                // The byte member mirrors the file exactly. Only the text member drops the byte order mark.
+                return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, content, bytes, errors);
             }
             catch (DecoderFallbackException)
             {

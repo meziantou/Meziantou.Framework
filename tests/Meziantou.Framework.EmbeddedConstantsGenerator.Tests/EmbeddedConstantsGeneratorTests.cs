@@ -140,6 +140,38 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         Assert.Contains("public static global::System.ReadOnlySpan<byte> ConfigJsonBytes => new byte[]", generatedSource);
     }
 
+    [Theory]
+    [InlineData("Binary")]
+    [InlineData("Both")]
+    public async Task GenerateOnBuild_FileStartsWithByteOrderMark_ByteMemberKeepsIt(string kind)
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("bom-" + kind);
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile($"bom-{kind}/Sample.csproj", CreateProjectFile(fixture, $"""
+                <EmbeddedConstant Include="Assets/config.json" Kind="{kind}" />
+            """));
+
+        // A UTF-8 byte order mark followed by {}
+        CreateBinaryFile(projectDirectory / "Assets" / "config.json", [0xEF, 0xBB, 0xBF, (byte)'{', (byte)'}']);
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        var generatedSource = await File.ReadAllTextAsync(GetGeneratedFilePath(projectDirectory), XunitCancellationToken);
+
+        // The byte member is the file, byte for byte, whichever Kind asked for it
+        Assert.Contains("0xEF, 0xBB, 0xBF, 0x7B, 0x7D", generatedSource);
+
+        if (kind is "Both")
+        {
+            // Only the text member drops the byte order mark
+            Assert.Contains("public const string ConfigText = \"{}\";", generatedSource);
+        }
+    }
+
     [Fact]
     public async Task GenerateOnBuild_UnsupportedKind_FailsBuild()
     {

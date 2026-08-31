@@ -11,7 +11,9 @@ public abstract class ObjectGraphVisitor
         if (obj is null)
             return;
 
-        var hashSet = new HashSet<object>();
+        // Reference identity is what breaks cycles. The default comparer uses the objects' own
+        // Equals/GetHashCode, which makes distinct but equal instances look already visited.
+        var hashSet = new HashSet<object>(ReferenceEqualityComparer.Instance);
         Visit(hashSet, obj);
     }
 

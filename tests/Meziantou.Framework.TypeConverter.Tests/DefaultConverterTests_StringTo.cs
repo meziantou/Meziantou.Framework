@@ -82,6 +82,78 @@ public class DefaultConverterTests_StringTo
         Assert.Equal(SampleEnum.Option1 | SampleEnum.Option2, value);
     }
 
+    private enum ByteEnum : byte
+    {
+        None = 0,
+        First = 1,
+        Max = 255,
+    }
+
+    private enum LongEnum : long
+    {
+        None = 0,
+        Big = 4294967296L,
+    }
+
+    [Theory]
+    [InlineData("Option1")]
+    [InlineData("option1")]
+    [InlineData("OPTION1")]
+    public void TryConvert_StringToEnum_IsCaseInsensitive(string text)
+    {
+        var converter = new DefaultConverter();
+        var cultureInfo = CultureInfo.InvariantCulture;
+        var converted = converter.TryChangeType(text, cultureInfo, out SampleEnum value);
+        Assert.True(converted);
+        Assert.Equal(SampleEnum.Option1, value);
+    }
+
+    // Enums whose underlying type is not Int32 must round-trip through the same path
+    [Fact]
+    public void TryConvert_StringToEnum_NonInt32UnderlyingType()
+    {
+        var converter = new DefaultConverter();
+        var cultureInfo = CultureInfo.InvariantCulture;
+
+        Assert.True(converter.TryChangeType("Max", cultureInfo, out ByteEnum byteValue));
+        Assert.Equal(ByteEnum.Max, byteValue);
+
+        Assert.True(converter.TryChangeType("255", cultureInfo, out ByteEnum byteFromNumber));
+        Assert.Equal(ByteEnum.Max, byteFromNumber);
+
+        Assert.True(converter.TryChangeType("Big", cultureInfo, out LongEnum longValue));
+        Assert.Equal(LongEnum.Big, longValue);
+
+        Assert.True(converter.TryChangeType("4294967296", cultureInfo, out LongEnum longFromNumber));
+        Assert.Equal(LongEnum.Big, longFromNumber);
+    }
+
+    [Theory]
+    [InlineData("NotAnOption")]
+    [InlineData("")]
+    [InlineData("Option1, NotAnOption")]
+    public void TryConvert_StringToEnum_InvalidValue(string text)
+    {
+        var converter = new DefaultConverter();
+        var cultureInfo = CultureInfo.InvariantCulture;
+        var converted = converter.TryChangeType(text, cultureInfo, out SampleEnum value);
+        Assert.False(converted);
+        Assert.Equal(default, value);
+    }
+
+    [Fact]
+    public void TryConvert_StringToNullableEnum()
+    {
+        var converter = new DefaultConverter();
+        var cultureInfo = CultureInfo.InvariantCulture;
+
+        Assert.True(converter.TryChangeType("Option2", cultureInfo, out SampleEnum? value));
+        Assert.Equal(SampleEnum.Option2, value);
+
+        Assert.True(converter.TryChangeType("", cultureInfo, out SampleEnum? empty));
+        Assert.Null(empty);
+    }
+
     [Fact]
     public void TryConvert_StringToNullableLong()
     {

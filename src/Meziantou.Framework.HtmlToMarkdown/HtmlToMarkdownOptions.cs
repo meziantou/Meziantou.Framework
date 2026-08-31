@@ -12,11 +12,36 @@ public sealed class HtmlToMarkdownOptions
     /// <summary>Gets or sets the style used for code blocks.</summary>
     public CodeBlockStyle CodeBlockStyle { get; set; } = CodeBlockStyle.Fenced;
 
+    private char _codeBlockFenceCharacter = '`';
+    private char _unorderedListMarker = '-';
+
     /// <summary>Gets or sets the fence character used for fenced code blocks.</summary>
-    public char CodeBlockFenceCharacter { get; set; } = '`';
+    /// <exception cref="ArgumentOutOfRangeException">The value is neither a backtick nor a tilde.</exception>
+    public char CodeBlockFenceCharacter
+    {
+        get => _codeBlockFenceCharacter;
+        set
+        {
+            if (value is not ('`' or '~'))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The code block fence character must be '`' or '~'.");
+
+            _codeBlockFenceCharacter = value;
+        }
+    }
 
     /// <summary>Gets or sets the marker used for unordered lists.</summary>
-    public char UnorderedListMarker { get; set; } = '-';
+    /// <exception cref="ArgumentOutOfRangeException">The value is not '-', '*' or '+'.</exception>
+    public char UnorderedListMarker
+    {
+        get => _unorderedListMarker;
+        set
+        {
+            if (value is not ('-' or '*' or '+'))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The unordered list marker must be '-', '*' or '+'.");
+
+            _unorderedListMarker = value;
+        }
+    }
 
     /// <summary>Gets or sets the thematic break text to emit for horizontal rules.</summary>
     public string ThematicBreak { get; set; } = "---";

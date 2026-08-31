@@ -32,6 +32,12 @@
     <_EmbeddedConstantsGeneratedCodeGlob Condition="'$(_EmbeddedConstantsGeneratedCodeGlob)' == ''">$(_EmbeddedConstantsGeneratedCodeRelativePath)</_EmbeddedConstantsGeneratedCodeGlob>
   </PropertyGroup>
 
+  <!-- The Visual Studio fast up-to-date check only knows about well-known item types. Without this,
+       editing an embedded file does not invalidate the project and the build is skipped entirely. -->
+  <ItemGroup>
+    <UpToDateCheckInput Include="@(EmbeddedConstant)" />
+  </ItemGroup>
+
   <!-- This file is imported after the SDK's default globs, so removing here drops the generated files they
        picked up; the target below adds this framework's file back. Unescape is required because MSBuild
        escapes wildcards that come from a property, which would make this match nothing. The removal is

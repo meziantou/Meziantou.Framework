@@ -127,19 +127,19 @@ public class XUnitLogger : ILogger
 
         sb.Append(formatter(state, exception));
 
-        if (exception is not null)
-        {
-            sb.Append('\n').Append(exception);
-        }
-
-        // Append scopes
+        // Append scopes before the exception, so a long stack trace does not push them out of view
         if (_options.IncludeScopes)
         {
             _scopeProvider.ForEachScope((scope, state) =>
             {
-                state.Append("\n => ");
+                state.Append(Environment.NewLine).Append(" => ");
                 state.Append(scope);
             }, sb);
+        }
+
+        if (exception is not null)
+        {
+            sb.Append(Environment.NewLine).Append(exception);
         }
 
         try

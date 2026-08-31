@@ -45,4 +45,20 @@ public sealed class XunitLoggerTests
 
         // Nothing to assert, it will throw an exception if something goes wrong
     }
+
+    [Fact]
+    public void ScopesAreWrittenBetweenTheMessageAndTheException()
+    {
+        var output = new InMemoryTestOutputHelper();
+        var logger = XUnitLogger.CreateLogger(output, new XUnitLoggerOptions { IncludeScopes = true });
+        var exception = new InvalidOperationException("boom");
+        using (logger.BeginScope("TheScope"))
+        {
+            logger.LogError(exception, "the message");
+        }
+
+        var expected = "the message" + Environment.NewLine + " => TheScope" + Environment.NewLine + exception + Environment.NewLine;
+        Assert.Equal([expected], output.Logs, StringComparer.Ordinal);
+    }
+
 }

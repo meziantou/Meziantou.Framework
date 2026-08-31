@@ -236,6 +236,32 @@ public class SlugTests
         Assert.Null(Slug.Create(text: null));
     }
 
+    [Theory]
+    [InlineData("a\uD800b", "a-b")]
+    [InlineData("a\uDC00b", "a-b")]
+    [InlineData("\uD800", "")]
+    [InlineData("\uDFFF\uD800", "")]
+    [InlineData("My great post \uD83C", "My-great-post")]
+    [InlineData("a\uFFFEb", "a-b")]
+    [InlineData("a\uFFFFb", "a-b")]
+    [InlineData("a\uFDD0b", "a-b")]
+    public void Slug_IllFormedText_IsAcceptedAsReplacementCharacters(string text, string expected)
+    {
+        var slug = Slug.Create(text);
+        Assert.Equal(expected, slug);
+    }
+
+    // string.Normalize only rejects ill-formed text when ICU is available, so the substitution the separator
+    // relies on does not happen in invariant globalization mode.
+    [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Slug_IllFormedSeparator_DoesNotThrow()
+    {
+        var options = new SlugOptions { Separator = "\uD800" };
+        var slug = Slug.Create("a!b", options);
+        Assert.Equal("a\uFFFDb", slug);
+    }
+
     [Fact]
     public void Slug_OverriddenReplace_IsUsed()
     {

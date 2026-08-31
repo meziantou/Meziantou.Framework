@@ -832,6 +832,42 @@ public class TemplateTest
     }
 
     [Fact]
+    public void Template_ClassMemberBlockDeclaringARunOverload_DoesNotBreakTheMethodLookup()
+    {
+        var template = new Template();
+        template.Load("<%+ public static void Run(int value) { } %>hi");
+
+        Assert.Equal("hi", template.Run());
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlockDeclaringARunOverload_StillInvokesTheGeneratedMethod()
+    {
+        var template = new Template();
+        template.Arguments.Add(new TemplateArgument("value", typeof(int)));
+        template.Load("<%+ public static void Run(int value) { } %><%= value %>");
+
+        Assert.Equal("42", template.Run(42));
+    }
+
+    // "__output__" also occurs in the generated "__output__.Write(" prefix, so searching forwards
+    // pointed the #line directive at the prefix instead of at the expression.
+    [Fact]
+    public void Template_ExpressionBlockMatchingTheGeneratedPrefix_EmitsTheColumnOfTheExpression()
+    {
+        var template = new Template();
+        template.Load("<%=__output__%>");
+        template.Build(CancellationToken.None);
+
+        var lines = template.SourceCode!.ReplaceLineEndings("\n").Split('\n');
+        var directiveIndex = Array.FindIndex(lines, line => line.StartsWith("#line (", StringComparison.Ordinal));
+        Assert.True(directiveIndex >= 0, "No #line directive was emitted");
+
+        var columnOffset = int.Parse(lines[directiveIndex].Split(' ')[^2], CultureInfo.InvariantCulture);
+        Assert.Equal("__output__);", lines[directiveIndex + 1][columnOffset..]);
+    }
+
+    [Fact]
     public void Template_RunWithPositionalParameters_UsesCreateStringWriter()
     {
         var template = new TemplateWithCountingStringWriter();

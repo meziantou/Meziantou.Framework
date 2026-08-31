@@ -49,6 +49,8 @@ internal static partial class EmbeddedFiles
 | `EmbeddedConstantsMemberVisibility` | `public` | Generated member visibility: `internal` or `public` |
 | `EmbeddedConstantsOutputPath` | `$(IntermediateOutputPath)\Meziantou.Framework.EmbeddedConstantsGenerator\EmbeddedConstants.g.cs` | Generated C# file path |
 
+When the project is multi-targeted, the target framework is inserted into `EmbeddedConstantsOutputPath` unless the path already contains it, so each inner build writes to its own file. `Generated/EmbeddedConstants.g.cs` becomes `Generated/net10.0/EmbeddedConstants.g.cs`. The default path already varies by target framework and is left alone.
+
 The prefixed forms `Meziantou_EmbeddedConstantsNamespace`, `Meziantou_EmbeddedConstantsClassName`, `Meziantou_EmbeddedConstantsClassVisibility`, `Meziantou_EmbeddedConstantsMemberVisibility`, and `Meziantou_EmbeddedConstantsOutputPath` are also supported and take precedence over the shorter aliases.
 
 ## EmbeddedConstant Metadata

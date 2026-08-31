@@ -200,6 +200,37 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    public async Task JsonFormatterWritesIndependentEntries()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            FormatterName = FileFormatterNames.Json,
+        });
+
+        var logger = provider.CreateLogger("Test");
+
+        // The first entry is too big to be cached and the next ones are short, so a buffer that is
+        // not reset between the entries would leak the previous content
+        string[] messages = [new('a', 5000), "short", new('b', 100), "x"];
+        foreach (var message in messages)
+        {
+            logger.LogInformation("{Message}", message);
+        }
+
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        var lines = (await ReadLogFileAsync(provider.LogFilePath)).Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.HasCount(messages.Length, lines);
+        for (var i = 0; i < messages.Length; i++)
+        {
+            using var document = JsonDocument.Parse(lines[i]);
+            Assert.Equal(messages[i], document.RootElement.GetProperty("Message").GetString());
+        }
+    }
+
+    [Fact]
     public async Task CustomFormatter()
     {
         using var tempDirectory = TemporaryDirectory.Create();

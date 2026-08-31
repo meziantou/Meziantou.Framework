@@ -138,7 +138,7 @@ public sealed class HttpCachePersistenceEntry
     /// <summary>Computes the freshness lifetime of the entry, as defined by RFC 7234 Section 4.2.1.</summary>
     public TimeSpan GetFreshnessLifetime()
     {
-        return CacheFreshness.GetFreshnessLifetime(SharedMaxAge, MaxAge, Expires, ResponseDate, LastModified);
+        return CacheFreshness.GetFreshnessLifetime(MaxAge, Expires, ResponseDate, LastModified);
     }
 
     /// <summary>Computes the age of the entry at the specified time, as defined by RFC 7234 Section 4.2.3.</summary>

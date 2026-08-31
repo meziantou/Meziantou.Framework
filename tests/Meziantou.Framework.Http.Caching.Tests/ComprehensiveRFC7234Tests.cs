@@ -629,7 +629,7 @@ public sealed class ComprehensiveRFC7234Tests
     }
 
     [Fact]
-    public async Task WhenResponseHasSMaxAgeThenItTakesPrecedenceOverMaxAge()
+    public async Task WhenResponseHasSMaxAgeThenMaxAgeDecidesInAPrivateCache()
     {
         await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "content",
@@ -646,32 +646,19 @@ public sealed class ComprehensiveRFC7234Tests
               Value: content
             """);
 
-        // Within s-maxage
-        context.TimeProvider.Advance(TimeSpan.FromSeconds(1));
+        // RFC 9111 Section 5.2.2.10: s-maxage is only applicable to shared caches. This is a private cache,
+        // so the entry stays fresh for max-age even once s-maxage has elapsed.
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(30));
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Age: 1
+              Age: 30
               Cache-Control: max-age=3600, s-maxage=2
             Content:
               Headers:
                 Content-Length: 7
                 Content-Type: text/plain; charset=utf-8
               Value: content
-            """);
-
-        // After s-maxage but within max-age: still stale (s-maxage wins)
-        context.AddResponse(HttpStatusCode.OK, "new", ("Cache-Control", "max-age=3600, s-maxage=2"));
-        context.TimeProvider.Advance(TimeSpan.FromSeconds(2));
-        await context.SnapshotResponse("http://example.com/resource", """
-            StatusCode: 200 (OK)
-            Headers:
-              Cache-Control: max-age=3600, s-maxage=2
-            Content:
-              Headers:
-                Content-Length: 3
-                Content-Type: text/plain; charset=utf-8
-              Value: new
             """);
     }
 
@@ -868,6 +855,43 @@ public sealed class ComprehensiveRFC7234Tests
               Age: 3
               Cache-Control: proxy-revalidate, max-age=2
               ETag: "v1"
+            Content:
+              Headers:
+                Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
+              Value: proxy-reval
+            """);
+    }
+
+    [Fact]
+    public async Task WhenResponseHasProxyRevalidateThenMaxStaleIsHonoredInAPrivateCache()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "proxy-reval", ("Cache-Control", "max-age=2, proxy-revalidate"));
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: proxy-revalidate, max-age=2
+            Content:
+              Headers:
+                Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
+              Value: proxy-reval
+            """);
+
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(10));
+
+        // RFC 9111 Section 5.2.2.8: proxy-revalidate applies to shared caches only, so it does not stop a
+        // private cache from honoring max-stale the way must-revalidate does.
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { MaxStale = true };
+        await context.SnapshotResponse(request, """
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 10
+              Cache-Control: proxy-revalidate, max-age=2
+              Warning: 110 - "Response is Stale"
             Content:
               Headers:
                 Content-Length: 11

@@ -17,7 +17,7 @@ namespace Meziantou.Framework;
 ///
 /// // Convert with culture-specific formatting
 /// var cultureInfo = CultureInfo.GetCultureInfo("fr-FR");
-/// var number = ConvertUtilities.ChangeType<decimal>("1234,56", provider: cultureInfo);
+/// var number = ConvertUtilities.ChangeType<decimal>("1234,56", defaultValue: 0m, provider: cultureInfo);
 /// ]]></code>
 /// </example>
 /// </summary>

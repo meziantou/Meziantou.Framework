@@ -1,4 +1,6 @@
 using System.CommandLine;
+using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Meziantou.Framework.Templating.Tool.Tests")]
@@ -99,16 +101,21 @@ internal static partial class Program
         }
 
         var templateContent = await File.ReadAllTextAsync(inputPath, cancellationToken).ConfigureAwait(false);
-        var (resolvedStartCodeBlockDelimiter, resolvedEndCodeBlockDelimiter) = ResolveCodeBlockDelimiters(templateContent, startCodeBlockDelimiter, endCodeBlockDelimiter);
-        if (string.IsNullOrEmpty(resolvedStartCodeBlockDelimiter))
+        if (startCodeBlockDelimiter is { Length: 0 })
         {
             await error.WriteLineAsync("The start code block delimiter cannot be empty".AsMemory(), cancellationToken);
             return 1;
         }
 
-        if (string.IsNullOrEmpty(resolvedEndCodeBlockDelimiter))
+        if (endCodeBlockDelimiter is { Length: 0 })
         {
             await error.WriteLineAsync("The end code block delimiter cannot be empty".AsMemory(), cancellationToken);
+            return 1;
+        }
+
+        if (!TryResolveCodeBlockDelimiters(templateContent, startCodeBlockDelimiter, endCodeBlockDelimiter, out var resolvedStartCodeBlockDelimiter, out var resolvedEndCodeBlockDelimiter))
+        {
+            await error.WriteLineAsync("The start and end code block delimiters must be specified together, unless the one you specify belongs to a well-known pair (<% %> or <# #>)".AsMemory(), cancellationToken);
             return 1;
         }
 
@@ -143,6 +150,13 @@ internal static partial class Program
             await error.WriteLineAsync(ex.Message.AsMemory(), cancellationToken);
             return 1;
         }
+        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+        {
+            // The template threw while running. Report it against the template file instead of
+            // letting a reflection stack trace escape as if the tool itself had crashed.
+            await error.WriteLineAsync(FormatTemplateRuntimeError(ex.InnerException, inputPath).AsMemory(), cancellationToken);
+            return 1;
+        }
 
         if (resolvedLineEnding is not null)
         {
@@ -159,6 +173,31 @@ internal static partial class Program
         outputPath.CreateParentDirectory();
         await File.WriteAllTextAsync(outputPath, result, resolvedOutputEncoding, cancellationToken).ConfigureAwait(false);
         return 0;
+    }
+
+    /// <summary>
+    /// Formats an exception thrown by the template itself as a diagnostic pointing at the template
+    /// file, using the location the <c>#line</c> directives map the failing frame back to.
+    /// </summary>
+    private static string FormatTemplateRuntimeError(Exception exception, FullPath inputPath)
+    {
+        foreach (var frame in new StackTrace(exception, fNeedFileInfo: true).GetFrames())
+        {
+            var fileName = frame.GetFileName();
+            if (string.IsNullOrEmpty(fileName) || FullPath.FromPath(fileName) != inputPath)
+                continue;
+
+            var line = frame.GetFileLineNumber();
+            if (line <= 0)
+                break;
+
+            var column = frame.GetFileColumnNumber();
+            return column > 0
+                ? string.Create(CultureInfo.InvariantCulture, $"{inputPath}({line},{column}): error: {exception.Message}")
+                : string.Create(CultureInfo.InvariantCulture, $"{inputPath}({line}): error: {exception.Message}");
+        }
+
+        return string.Create(CultureInfo.InvariantCulture, $"{inputPath}: error: {exception.Message}");
     }
 
     private static bool TryResolveLineEnding(string? value, out string? lineEnding)
@@ -229,40 +268,60 @@ internal static partial class Program
         return inputPath.WithExtension(directiveOutputExtension);
     }
 
-    private static (string StartCodeBlockDelimiter, string EndCodeBlockDelimiter) ResolveCodeBlockDelimiters(string templateContent, string? startCodeBlockDelimiter, string? endCodeBlockDelimiter)
+    private static bool TryResolveCodeBlockDelimiters(
+        string templateContent,
+        string? startCodeBlockDelimiter,
+        string? endCodeBlockDelimiter,
+        [NotNullWhen(true)] out string? resolvedStartCodeBlockDelimiter,
+        [NotNullWhen(true)] out string? resolvedEndCodeBlockDelimiter)
     {
         if (startCodeBlockDelimiter is null && endCodeBlockDelimiter is null)
         {
-            if (templateContent.Contains(T4StartCodeBlockDelimiter, StringComparison.Ordinal))
-            {
-                return (T4StartCodeBlockDelimiter, T4EndCodeBlockDelimiter);
-            }
-
-            return (DefaultStartCodeBlockDelimiter, DefaultEndCodeBlockDelimiter);
+            (resolvedStartCodeBlockDelimiter, resolvedEndCodeBlockDelimiter) = ContainsT4CodeBlock(templateContent)
+                ? (T4StartCodeBlockDelimiter, T4EndCodeBlockDelimiter)
+                : (DefaultStartCodeBlockDelimiter, DefaultEndCodeBlockDelimiter);
+            return true;
         }
 
-        return (
-            startCodeBlockDelimiter ?? GetDefaultStartCodeBlockDelimiter(endCodeBlockDelimiter),
-            endCodeBlockDelimiter ?? GetDefaultEndCodeBlockDelimiter(startCodeBlockDelimiter));
+        resolvedStartCodeBlockDelimiter = startCodeBlockDelimiter ?? GetPairedStartCodeBlockDelimiter(endCodeBlockDelimiter);
+        resolvedEndCodeBlockDelimiter = endCodeBlockDelimiter ?? GetPairedEndCodeBlockDelimiter(startCodeBlockDelimiter);
+        return resolvedStartCodeBlockDelimiter is not null && resolvedEndCodeBlockDelimiter is not null;
     }
 
-    private static string GetDefaultStartCodeBlockDelimiter(string? endCodeBlockDelimiter)
+    /// <summary>
+    /// Determines whether the template uses T4 delimiters: it must contain at least one complete
+    /// <c>&lt;# … #&gt;</c> block and no <c>&lt;%</c> at all, so that a stray <c>&lt;#</c> in the
+    /// template text cannot silently switch the delimiters.
+    /// </summary>
+    private static bool ContainsT4CodeBlock(string templateContent)
+    {
+        if (templateContent.Contains(DefaultStartCodeBlockDelimiter, StringComparison.Ordinal))
+            return false;
+
+        var startIndex = templateContent.IndexOf(T4StartCodeBlockDelimiter, StringComparison.Ordinal);
+        if (startIndex < 0)
+            return false;
+
+        return templateContent.IndexOf(T4EndCodeBlockDelimiter, startIndex + T4StartCodeBlockDelimiter.Length, StringComparison.Ordinal) >= 0;
+    }
+
+    private static string? GetPairedStartCodeBlockDelimiter(string? endCodeBlockDelimiter)
     {
         return endCodeBlockDelimiter switch
         {
             T4EndCodeBlockDelimiter => T4StartCodeBlockDelimiter,
             DefaultEndCodeBlockDelimiter => DefaultStartCodeBlockDelimiter,
-            _ => DefaultStartCodeBlockDelimiter,
+            _ => null,
         };
     }
 
-    private static string GetDefaultEndCodeBlockDelimiter(string? startCodeBlockDelimiter)
+    private static string? GetPairedEndCodeBlockDelimiter(string? startCodeBlockDelimiter)
     {
         return startCodeBlockDelimiter switch
         {
             T4StartCodeBlockDelimiter => T4EndCodeBlockDelimiter,
             DefaultStartCodeBlockDelimiter => DefaultEndCodeBlockDelimiter,
-            _ => DefaultEndCodeBlockDelimiter,
+            _ => null,
         };
     }
 

@@ -31,7 +31,8 @@ public partial class Assert
                 return;
         }
 
-        throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<IEnumerable<T>>(nameof(NotDistinct), "all distinct items", actual, actualExpression, message)));
+        actualSnapshot.EnsureComplete();
+        throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<IReadOnlyList<T>>(nameof(NotDistinct), "all distinct items", actualSnapshot.Items, actualExpression, message)));
     }
 
     public static void NotDistinct(System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -43,7 +44,8 @@ public partial class Assert
                 return;
         }
 
-        throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<System.Collections.IEnumerable>(nameof(NotDistinct), "all distinct items", actual, actualExpression, message)));
+        actualSnapshot.EnsureComplete();
+        throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<IReadOnlyList<object?>>(nameof(NotDistinct), "all distinct items", actualSnapshot.Items, actualExpression, message)));
     }
 
     public static async Task NotDistinct<T>(IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)

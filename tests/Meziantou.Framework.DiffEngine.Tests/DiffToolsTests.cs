@@ -26,6 +26,33 @@ public sealed class DiffToolsTests
         AssertPathEqual(Path.GetFullPath(executable), tool.ExePath);
     }
 
+    // These two tests can override PATH and DiffEngine_VisualStudioCode, but not the hard-coded search
+    // directories of the tools that precede VisualStudioCode in DiffTools.Definitions. So they assert the
+    // property the API actually promises for the extension, not one specific tool: any real installation on
+    // the developer's machine is a legitimate answer.
+    [Fact]
+    public void TryFindByName_ThrowsWhenEnvironmentVariableCannotBeResolved()
+    {
+        using var temp = TemporaryDirectory.Create();
+        using var scope = new EnvironmentVariableScope("DiffEngine_VisualStudioCode", Path.Combine(temp.FullPath, "missing"));
+
+        var exception = Assert.Throws<InvalidOperationException>(() => DiffTools.TryFindByName(DiffTool.VisualStudioCode, out _));
+        Assert.Contains("DiffEngine_VisualStudioCode", exception.Message);
+    }
+
+    [Fact]
+    public void TryFindByExtension_SkipsToolWhoseEnvironmentVariableCannotBeResolved()
+    {
+        using var temp = TemporaryDirectory.Create();
+        _ = temp.CreateTextFile(GetVisualStudioCodeExecutableName(), "");
+        using var vscodeScope = new EnvironmentVariableScope("DiffEngine_VisualStudioCode", temp.FullPath);
+        using var vimScope = new EnvironmentVariableScope("DiffEngine_Vim", Path.Combine(temp.FullPath, "missing"));
+
+        Assert.True(DiffTools.TryFindByExtension(".bin", out var tool));
+        Assert.NotNull(tool);
+        Assert.Equal(DiffTool.VisualStudioCode, tool.Tool);
+    }
+
     [Fact]
     public void TryFindByExtension_ReturnsBinaryTool()
     {
@@ -36,7 +63,7 @@ public sealed class DiffToolsTests
 
         Assert.True(DiffTools.TryFindByExtension(".bin", out var tool));
         Assert.NotNull(tool);
-        Assert.Equal(DiffTool.VisualStudioCode, tool.Tool);
+        Assert.Contains(".bin", tool.BinaryExtensions, StringComparer.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -84,7 +111,39 @@ public sealed class DiffToolsTests
 
         Assert.True(DiffTools.TryFindByExtension(".txt", out var tool));
         Assert.NotNull(tool);
-        Assert.Equal(DiffTool.VisualStudioCode, tool.Tool);
+        Assert.True(tool.SupportsText);
+    }
+
+    [Fact]
+    public void TryFindByExtension_ThrowsWhenExtensionIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => DiffTools.TryFindByExtension(null!, out _));
+    }
+
+    [Fact]
+    public void TryFindByExtension_AcceptsAnExtensionWithoutALeadingDot()
+    {
+        using var temp = TemporaryDirectory.Create();
+        _ = temp.CreateTextFile(GetVisualStudioCodeExecutableName(), "");
+        using var scope = new EnvironmentVariableScope("DiffEngine_VisualStudioCode", temp.FullPath);
+        using var pathScope = new EnvironmentVariableScope("PATH", temp.FullPath);
+
+        Assert.True(DiffTools.TryFindByExtension("bin", out var tool));
+        Assert.NotNull(tool);
+        Assert.Contains(".bin", tool.BinaryExtensions, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void TryFindByExtension_AcceptsAnEmptyExtension()
+    {
+        using var temp = TemporaryDirectory.Create();
+        _ = temp.CreateTextFile(GetVisualStudioCodeExecutableName(), "");
+        using var scope = new EnvironmentVariableScope("DiffEngine_VisualStudioCode", temp.FullPath);
+        using var pathScope = new EnvironmentVariableScope("PATH", temp.FullPath);
+
+        Assert.True(DiffTools.TryFindByExtension(Path.GetExtension("Makefile"), out var tool));
+        Assert.NotNull(tool);
+        Assert.True(tool.SupportsText);
     }
 
     [Fact]
@@ -97,10 +156,102 @@ public sealed class DiffToolsTests
 
         Assert.True(DiffTools.TryFindByName(DiffTool.VisualStudioCode, out var tool));
         Assert.NotNull(tool);
-        Assert.Equal("--diff \"received.txt\" \"verified.txt\"", tool.GetArguments("received.txt", "verified.txt"));
+        Assert.Equal("--diff received.txt verified.txt", tool.GetArguments("received.txt", "verified.txt"));
 
         using var targetOnLeftScope = new EnvironmentVariableScope("DiffEngine_TargetOnLeft", "true");
-        Assert.Equal("--diff \"verified.txt\" \"received.txt\"", tool.GetArguments("received.txt", "verified.txt"));
+        Assert.Equal("--diff verified.txt received.txt", tool.GetArguments("received.txt", "verified.txt"));
+    }
+
+    // Paths with a space, so the quoting branch of CommandLineBuilder is what the table shows.
+    private const string TempFile = "/tmp/my snapshots/received.txt";
+    private const string TargetFile = "/tmp/my snapshots/verified.txt";
+
+    private const string StandardRight = "\"/tmp/my snapshots/received.txt\" \"/tmp/my snapshots/verified.txt\"";
+    private const string StandardLeft = "\"/tmp/my snapshots/verified.txt\" \"/tmp/my snapshots/received.txt\"";
+    private const string RiderRight = "diff \"/tmp/my snapshots/received.txt\" \"/tmp/my snapshots/verified.txt\"";
+    private const string RiderLeft = "diff \"/tmp/my snapshots/verified.txt\" \"/tmp/my snapshots/received.txt\"";
+    private const string VimRight = "-d \"/tmp/my snapshots/received.txt\" \"/tmp/my snapshots/verified.txt\"";
+    private const string VimLeft = "-d \"/tmp/my snapshots/verified.txt\" \"/tmp/my snapshots/received.txt\"";
+    private const string VisualStudioCodeRight = "--diff \"/tmp/my snapshots/received.txt\" \"/tmp/my snapshots/verified.txt\"";
+    private const string VisualStudioCodeLeft = "--diff \"/tmp/my snapshots/verified.txt\" \"/tmp/my snapshots/received.txt\"";
+    private const string VisualStudioRight = "/diff \"/tmp/my snapshots/received.txt\" \"/tmp/my snapshots/verified.txt\" received.txt verified.txt";
+    private const string VisualStudioLeft = "/diff \"/tmp/my snapshots/verified.txt\" \"/tmp/my snapshots/received.txt\" verified.txt received.txt";
+    private const string WinMergeRight = "/u /wl /e \"/tmp/my snapshots/received.txt\" \"/tmp/my snapshots/verified.txt\" /dl received.txt /dr verified.txt /cfg Backup/EnableFile=0";
+    private const string WinMergeLeft = "/u /wr /e \"/tmp/my snapshots/verified.txt\" \"/tmp/my snapshots/received.txt\" /dl verified.txt /dr received.txt /cfg Backup/EnableFile=0";
+
+    [Theory]
+    [InlineData(DiffTool.MsWordDiff, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.MsExcelDiff, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.BeyondCompare, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.P4Merge, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.Kaleidoscope, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.DeltaWalker, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.WinMerge, WinMergeRight, WinMergeLeft)]
+    [InlineData(DiffTool.TortoiseMerge, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.TortoiseGitMerge, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.TortoiseGitIDiff, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.TortoiseIDiff, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.KDiff3, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.TkDiff, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.Guiffy, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.ExamDiff, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.Diffinity, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.Rider, RiderRight, RiderLeft)]
+    [InlineData(DiffTool.Vim, VimRight, VimLeft)]
+    [InlineData(DiffTool.Neovim, VimRight, VimLeft)]
+    [InlineData(DiffTool.AraxisMerge, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.Meld, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.SublimeMerge, StandardRight, StandardLeft)]
+    [InlineData(DiffTool.VisualStudioCode, VisualStudioCodeRight, VisualStudioCodeLeft)]
+    [InlineData(DiffTool.VisualStudio, VisualStudioRight, VisualStudioLeft)]
+    [InlineData(DiffTool.Cursor, VisualStudioCodeRight, VisualStudioCodeLeft)]
+    public void GetArguments_ProducesTheExpectedCommandLine(DiffTool tool, string expectedRight, string expectedLeft)
+    {
+        var resolvedTool = new ResolvedTool(tool, "diff", DiffTools.GetLaunchArguments(tool), supportsText: true, []);
+
+        using (new EnvironmentVariableScope("DiffEngine_TargetOnLeft", null))
+        {
+            Assert.Equal(expectedRight, resolvedTool.GetArguments(TempFile, TargetFile));
+        }
+
+        using (new EnvironmentVariableScope("DiffEngine_TargetOnLeft", "true"))
+        {
+            Assert.Equal(expectedLeft, resolvedTool.GetArguments(TempFile, TargetFile));
+        }
+    }
+
+    [Fact]
+    public void GetArguments_EscapesAQuoteInThePath()
+    {
+        var resolvedTool = new ResolvedTool(DiffTool.VisualStudioCode, "diff", DiffTools.GetLaunchArguments(DiffTool.VisualStudioCode), supportsText: true, []);
+        using var scope = new EnvironmentVariableScope("DiffEngine_TargetOnLeft", null);
+
+        // A quote is a legal file name character on Linux and macOS. Unescaped, everything after it would
+        // reach the diff tool as extra arguments.
+        var arguments = resolvedTool.GetArguments("/tmp/a\" --wait --extensionDevelopmentPath=/evil \"x.txt", "/tmp/verified.txt");
+
+        Assert.Equal("--diff \"/tmp/a\\\" --wait --extensionDevelopmentPath=/evil \\\"x.txt\" /tmp/verified.txt", arguments);
+    }
+
+    [Fact]
+    public void GetArguments_EscapesBackslashesBeforeTheClosingQuote()
+    {
+        var resolvedTool = new ResolvedTool(DiffTool.Meld, "diff", DiffTools.GetLaunchArguments(DiffTool.Meld), supportsText: true, []);
+        using var scope = new EnvironmentVariableScope("DiffEngine_TargetOnLeft", null);
+
+        // A trailing backslash would otherwise escape the quote that closes the argument.
+        var arguments = resolvedTool.GetArguments("C:\\my dir\\", "C:\\other dir\\");
+
+        Assert.Equal("\"C:\\my dir\\\\\" \"C:\\other dir\\\\\"", arguments);
+    }
+
+    [Fact]
+    public void EveryDiffToolHasLaunchArguments()
+    {
+        foreach (var tool in Enum.GetValues<DiffTool>())
+        {
+            _ = DiffTools.GetLaunchArguments(tool);
+        }
     }
 
     private static string GetVisualStudioCodeExecutableName()

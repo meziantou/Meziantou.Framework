@@ -49,6 +49,8 @@ internal static partial class EmbeddedFiles
 | `EmbeddedConstantsMemberVisibility` | `public` | Generated member visibility: `internal` or `public` |
 | `EmbeddedConstantsOutputPath` | `$(IntermediateOutputPath)\Meziantou.Framework.EmbeddedConstantsGenerator\EmbeddedConstants.g.cs` | Generated C# file path |
 
+When the project is multi-targeted, the target framework is inserted into `EmbeddedConstantsOutputPath` unless the path already contains it, so each inner build writes to its own file. `Generated/EmbeddedConstants.g.cs` becomes `Generated/net10.0/EmbeddedConstants.g.cs`. The default path already varies by target framework and is left alone.
+
 The prefixed forms `Meziantou_EmbeddedConstantsNamespace`, `Meziantou_EmbeddedConstantsClassName`, `Meziantou_EmbeddedConstantsClassVisibility`, `Meziantou_EmbeddedConstantsMemberVisibility`, and `Meziantou_EmbeddedConstantsOutputPath` are also supported and take precedence over the shorter aliases.
 
 ## EmbeddedConstant Metadata
@@ -78,7 +80,9 @@ If two implicit names collide, the generator tries a path-based name. Remaining 
 
 ## Text Encoding
 
-Text files must be valid UTF-8. An optional UTF-8 BOM is ignored. Binary files are embedded as-is.
+Text files must be valid UTF-8. An optional UTF-8 BOM is stripped from the generated `const string`.
+
+Byte members always mirror the file exactly, for every `Kind`. A file marked as `Both` whose content starts with a BOM therefore produces a `Text` member without the BOM and a `Bytes` member with it.
 
 Text files larger than 1 MiB are rejected to avoid producing impractically large generated source. Binary files are emitted as byte arrays and should also be kept reasonably small.
 
@@ -95,3 +99,4 @@ Text files larger than 1 MiB are rejected to avoid producing impractically large
 | `MFECG0007` | Embedded constant text file is not valid UTF-8 |
 | `MFECG0008` | Embedded constant text file is too large |
 | `MFECG0009` | Embedded constants visibility is invalid |
+| `MFECG0011` | The embedded constants could not be computed or written |

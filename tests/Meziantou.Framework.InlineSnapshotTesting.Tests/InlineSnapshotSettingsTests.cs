@@ -87,6 +87,16 @@ public sealed class InlineSnapshotSettingsTests
     }
 
     [Fact]
+    public void SnapshotUpdateStrategy_Default_EnvironmentVariableNamingDefault_FallsBackToDisallow()
+    {
+        // "Default" is one of the static property names, so resolving it by reflection used to re-enter the
+        // Default getter and kill the process with a StackOverflowException instead of failing this assertion.
+        using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, nameof(SnapshotUpdateStrategy.Default));
+
+        Assert.Same(SnapshotUpdateStrategy.Disallow, SnapshotUpdateStrategy.Default);
+    }
+
+    [Fact]
     public void SnapshotUpdateStrategy_ExplicitSetting_HasPriorityOverEnvironmentVariable()
     {
         using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, nameof(SnapshotUpdateStrategy.Overwrite));

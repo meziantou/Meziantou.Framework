@@ -211,7 +211,7 @@ public static class DiffTools
             if (definition.Tool != tool)
                 continue;
 
-            return TryResolve(definition, out resolvedTool);
+            return TryResolve(definition, throwIfEnvironmentVariableIsInvalid: true, out resolvedTool);
         }
 
         resolvedTool = null;
@@ -243,7 +243,7 @@ public static class DiffTools
         var result = new List<ResolvedTool>();
         foreach (var definition in Definitions)
         {
-            if (TryResolve(definition, out var resolvedTool))
+            if (TryResolve(definition, throwIfEnvironmentVariableIsInvalid: false, out var resolvedTool))
             {
                 result.Add(resolvedTool);
             }
@@ -252,7 +252,7 @@ public static class DiffTools
         return result;
     }
 
-    private static bool TryResolve(ToolDefinition definition, [NotNullWhen(true)] out ResolvedTool? resolvedTool)
+    private static bool TryResolve(ToolDefinition definition, bool throwIfEnvironmentVariableIsInvalid, [NotNullWhen(true)] out ResolvedTool? resolvedTool)
     {
         var platformSettings = GetPlatformSettings(definition);
         if (platformSettings is null)
@@ -261,9 +261,7 @@ public static class DiffTools
             return false;
         }
 
-        if (!TryResolveFromEnvironmentVariable(definition.Tool, platformSettings.ExecutableNames, out var exePath) &&
-            !TryResolveFromDirectories(platformSettings.SearchDirectories, platformSettings.ExecutableNames, out exePath) &&
-            !TryResolveFromPath(platformSettings.ExecutableNames, out exePath))
+        if (!TryResolveExecutable(definition.Tool, platformSettings, throwIfEnvironmentVariableIsInvalid, out var exePath))
         {
             resolvedTool = null;
             return false;
@@ -285,24 +283,29 @@ public static class DiffTools
         return null;
     }
 
-    private static bool TryResolveFromEnvironmentVariable(DiffTool tool, IReadOnlyList<string> executableNames, [NotNullWhen(true)] out string? exePath)
+    private static bool TryResolveExecutable(DiffTool tool, PlatformSettings platformSettings, bool throwIfEnvironmentVariableIsInvalid, [NotNullWhen(true)] out string? exePath)
     {
         var environmentVariable = $"DiffEngine_{tool}";
         var basePath = Environment.GetEnvironmentVariable(environmentVariable);
-        if (string.IsNullOrWhiteSpace(basePath))
+        if (!string.IsNullOrWhiteSpace(basePath))
         {
-            exePath = null;
+            var trimmedPath = Environment.ExpandEnvironmentVariables(basePath.Trim().Trim('"'));
+            if (TryResolveFile(trimmedPath, out exePath))
+                return true;
+
+            if (TryResolveFromDirectories([trimmedPath], platformSettings.ExecutableNames, out exePath))
+                return true;
+
+            if (throwIfEnvironmentVariableIsInvalid)
+                throw new InvalidOperationException($"Could not find exe defined by {environmentVariable}. Path: {basePath}");
+
+            // The variable points at an executable that is no longer there. Skip the tool rather than silently
+            // falling back to another installation of it, and let the caller keep looking at the other tools.
             return false;
         }
 
-        var trimmedPath = Environment.ExpandEnvironmentVariables(basePath.Trim().Trim('"'));
-        if (TryResolveFile(trimmedPath, out exePath))
-            return true;
-
-        if (TryResolveFromDirectories([trimmedPath], executableNames, out exePath))
-            return true;
-
-        throw new InvalidOperationException($"Could not find exe defined by {environmentVariable}. Path: {basePath}");
+        return TryResolveFromDirectories(platformSettings.SearchDirectories, platformSettings.ExecutableNames, out exePath) ||
+               TryResolveFromPath(platformSettings.ExecutableNames, out exePath);
     }
 
     private static bool TryResolveFromPath(IReadOnlyList<string> executableNames, [NotNullWhen(true)] out string? exePath)

@@ -119,6 +119,33 @@ public class EmailTemplateTest
     }
 
     [Fact]
+    public void EmailTemplate_ExpressionBlock_WritesArrayValueWithoutTreatingItAsFormatArguments()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("{{# new object[] { 1, 2 } }}");
+
+        Assert.Equal(new object[] { 1, 2 }.ToString(), template.Run(out _));
+    }
+
+    [Fact]
+    public void EmailTemplate_ExpressionBlock_WritesEmptyArrayValueWithoutThrowing()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("{{# System.Array.Empty<object>() }}");
+
+        Assert.Equal(System.Array.Empty<object>().ToString(), template.Run(out _));
+    }
+
+    [Fact]
+    public void EmailTemplate_HtmlEncode_EncodesArrayValueWithoutTreatingItAsFormatArguments()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("{{#html new object[] { 1, 2 } }}");
+
+        Assert.Equal(new object[] { 1, 2 }.ToString(), template.Run(out _));
+    }
+
+    [Fact]
     public void EmailTemplate_UnclosedSection_Throws()
     {
         var template = new HtmlEmailTemplate();

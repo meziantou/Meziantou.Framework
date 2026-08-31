@@ -31,10 +31,13 @@ internal sealed class UrlPatternComponent
     public bool HasRegexpGroups { get; }
 
     /// <summary>Compiles a component from an input pattern string.</summary>
+    /// <param name="input">The pattern string of the component.</param>
+    /// <param name="encodingCallback">Canonicalizes each fixed-text part of the pattern, or <see langword="null"/> when the component needs no canonicalization.</param>
+    /// <param name="options">The options controlling the delimiter, the prefix and the case sensitivity.</param>
     /// <remarks>
     /// <see href="https://urlpattern.spec.whatwg.org/#compile-a-component">WHATWG URL Pattern Spec - Compile a component</see>
     /// </remarks>
-    public static UrlPatternComponent Compile(string input, Func<string, string> encodingCallback, PatternOptions options)
+    public static UrlPatternComponent Compile(string input, Func<string, string>? encodingCallback, PatternOptions options)
     {
         var tokenizer = new Tokenizer(input, TokenizePolicy.Strict);
         var tokenList = tokenizer.Tokenize();

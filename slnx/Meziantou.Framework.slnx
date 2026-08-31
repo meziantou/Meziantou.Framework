@@ -28,6 +28,7 @@
     <Project Path="../tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj" />
     <Project Path="../tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.NuGetPackageValidation.Tests/Meziantou.Framework.NuGetPackageValidation.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.ProcessWrapper.Tests/Meziantou.Framework.ProcessWrapper.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.StronglyTypedId.Tests/Meziantou.Framework.StronglyTypedId.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Tests/Meziantou.Framework.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj" />

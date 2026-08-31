@@ -12,8 +12,12 @@ public sealed class TdsServerOptions
     /// <summary>The largest packet size a TDS packet header can describe, since it stores the length in 16 bits.</summary>
     public const int MaximumPacketSize = ushort.MaxValue;
 
+    /// <summary>The default value of <see cref="MaxMessageSize"/>.</summary>
+    public const int DefaultMaxMessageSize = 16 * 1024 * 1024;
+
     private readonly Lock _tlsCertificateLock = new();
     private int _packetSize = 4096;
+    private int _maxMessageSize = DefaultMaxMessageSize;
     private X509Certificate2? _tlsCertificate;
     private bool _tlsCertificateLoaded;
 
@@ -34,6 +38,26 @@ public sealed class TdsServerOptions
             ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaximumPacketSize);
 
             _packetSize = value;
+        }
+    }
+
+    /// <summary>Gets or sets the maximum size, in bytes, of a single inbound TDS message.</summary>
+    /// <remarks>
+    /// A TDS message is made of as many packets as the client decides to send, and the server has to buffer the
+    /// whole message before it can be parsed. This limit bounds that buffer. It applies from the very first
+    /// packet of a connection, so it also bounds what an unauthenticated client can make the server allocate.
+    /// Raise it when clients legitimately send large parameters or SQL batches. Must be at least
+    /// <see cref="MaximumPacketSize"/> so that a single full packet always fits.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is smaller than <see cref="MaximumPacketSize"/>.</exception>
+    public int MaxMessageSize
+    {
+        get => _maxMessageSize;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, MaximumPacketSize);
+
+            _maxMessageSize = value;
         }
     }
 

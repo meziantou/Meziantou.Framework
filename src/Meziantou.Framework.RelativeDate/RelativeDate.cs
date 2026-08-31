@@ -27,6 +27,9 @@ namespace Meziantou.Framework;
 /// <remarks>
 /// This type provides localized relative date/time strings for multiple languages: Dutch, English, French, German, Italian, Japanese, Korean, Portuguese, Simplified Chinese, Spanish and Turkish.
 /// The default localization can be customized by setting <see cref="LocalizationProvider.Current"/>.
+/// <para>
+/// Equality and ordering are defined over the instant alone. The time provider is display state: two instances that compare equal, and hash the same, can still render differently.
+/// </para>
 /// </remarks>
 [StructLayout(LayoutKind.Auto)]
 public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IEquatable<RelativeDate>, IFormattable
@@ -99,9 +102,10 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     public override string ToString() => ToString(format: null, formatProvider: null);
 
     /// <summary>Formats the relative date using the specified format and culture.</summary>
-    /// <param name="format">The format string (currently not used).</param>
+    /// <param name="format">The format string. Only <see langword="null"/>, an empty string and <c>"G"</c> are supported; the output does not vary between them.</param>
     /// <param name="formatProvider">An <see cref="IFormatProvider"/> that supplies culture-specific formatting information, typically a <see cref="CultureInfo"/>. A provider that returns a <see cref="CultureInfo"/> from <see cref="IFormatProvider.GetFormat(Type)"/> is also honored. When <see langword="null"/>, <see cref="CultureInfo.CurrentUICulture"/> is used.</param>
     /// <returns>A localized relative date string.</returns>
+    /// <exception cref="FormatException"><paramref name="format"/> is not <see langword="null"/>, empty or <c>"G"</c>.</exception>
     /// <remarks>
     /// The method returns strings like:
     /// <list type="bullet">
@@ -122,6 +126,9 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     /// </remarks>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
+        if (!string.IsNullOrEmpty(format) && !string.Equals(format, "G", StringComparison.Ordinal))
+            throw new FormatException($"The '{format}' format string is not supported");
+
         // TimeProvider is null on a default instance: structs cannot intercept their own zero-initialization
         var now = (TimeProvider ?? TimeProvider.System).GetUtcNow().UtcDateTime;
 
@@ -247,13 +254,18 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     /// zero if they represent the same date and time;
     /// greater than zero if this instance is later than <paramref name="other"/>.
     /// </returns>
+    /// <remarks>Only the instant is compared. The time provider is display state and takes no part in the ordering.</remarks>
     public int CompareTo(RelativeDate other) => DateTime.CompareTo(other.DateTime);
 
+    /// <summary>Determines whether the specified object is a <see cref="RelativeDate"/> equal to the current instance.</summary>
+    /// <remarks>Only the instant is compared, so two equal instances built with different time providers can still produce different strings from <see cref="ToString()"/>.</remarks>
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is RelativeDate date && Equals(date);
 
     /// <summary>Determines whether the specified <see cref="RelativeDate"/> is equal to the current instance.</summary>
+    /// <remarks>Only the instant is compared, so two equal instances built with different time providers can still produce different strings from <see cref="ToString()"/>.</remarks>
     public bool Equals(RelativeDate other) => DateTime == other.DateTime;
 
+    /// <summary>Returns a hash code derived from the instant, consistent with <see cref="Equals(RelativeDate)"/>.</summary>
     public override int GetHashCode() => HashCode.Combine(DateTime);
 
     /// <summary>Determines whether two <see cref="RelativeDate"/> instances are equal.</summary>

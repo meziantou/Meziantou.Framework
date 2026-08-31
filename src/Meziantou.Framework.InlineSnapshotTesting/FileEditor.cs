@@ -359,6 +359,10 @@ internal static class FileEditor
     {
         foreach (var line in sourceText.Lines)
         {
+            // A text ending with a line break has a trailing empty line whose Start is past the last character.
+            if (line.Start == line.End)
+                continue;
+
             if (sourceText[line.Start] is (' ' or '\t') and var space)
             {
                 for (var i = line.Start + 1; i < line.End; i++)

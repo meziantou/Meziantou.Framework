@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Net;
@@ -5,6 +6,7 @@ using System.Net.Sockets;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Xml;
 using Meziantou.Framework.Tds.Handler;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -33,6 +35,36 @@ public sealed class TdsServerProtocolTests
 
         Assert.NotNull(json);
         Assert.Equal(42, json!["value"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public void TdsQueryParameter_AsXml_WithADtd_Throws()
+    {
+        // The value comes straight off the wire. XDocument.Parse would expand internal entities up to ten
+        // million characters, so a handler calling AsXml on a small parameter could allocate megabytes.
+        var parameter = new TdsQueryParameter
+        {
+            Name = "@xml",
+            Value = """<?xml version="1.0"?><!DOCTYPE root [<!ENTITY a "aaaaaaaaaa"><!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">]><root>&b;</root>""",
+            Type = TdsColumnType.NVarChar,
+        };
+
+        _ = Assert.Throws<XmlException>(parameter.AsXml);
+    }
+
+    [Fact]
+    public void TdsQueryParameter_AsXml_WithoutADtd_ReturnsTheDocument()
+    {
+        var parameter = new TdsQueryParameter
+        {
+            Name = "@xml",
+            Value = """<root><item id="1">Alpha</item></root>""",
+            Type = TdsColumnType.NVarChar,
+        };
+
+        var document = parameter.AsXml();
+
+        Assert.Equal("Alpha", document?.Root?.Element("item")?.Value);
     }
 
     [Fact]
@@ -666,6 +698,95 @@ public sealed class TdsServerProtocolTests
 
         Assert.False(capturedContext.HasCompleteParameters);
         Assert.DoesNotContain(capturedContext.Parameters, parameter => parameter.Name == "@int");
+    }
+
+    [Fact]
+    public async Task RawClient_RpcRequest_ThatCannotBeParsed_ReportsIncompleteParameters()
+    {
+        // The whole RPC payload is undecodable, so there is no parameter list at all. Reporting it as complete
+        // would tell a handler the client sent no parameters, which is exactly the case the flag exists to warn
+        // about.
+        var context = await SendRawRpcRequestAsync([0xAA, 0xBB, 0xCC, 0xDD]);
+
+        Assert.False(context.HasCompleteParameters);
+        Assert.Empty(context.Parameters);
+    }
+
+    [Fact]
+    public async Task RawClient_RpcRequest_WithAnOutOfRangeDate_ReportsIncompleteParameters()
+    {
+        // A DATE value carries a 24-bit day count, which reaches far past year 9999. Out-of-range values have to
+        // take the same "cannot decode" path as any other bad parameter instead of throwing out of the parser.
+        var payload = new List<byte> { 0x01, 0x00 };
+        payload.AddRange(Encoding.Unicode.GetBytes("p"));
+        payload.AddRange([0x00, 0x00]); // option flags
+        payload.Add(0x02); // parameter name length, in characters
+        payload.AddRange(Encoding.Unicode.GetBytes("@d"));
+        payload.Add(0x00); // status
+        payload.Add(0x28); // DATEN
+        payload.Add(0x03); // value length
+        payload.AddRange([0xFF, 0xFF, 0xFF]); // day count far beyond DateOnly.MaxValue
+
+        var context = await SendRawRpcRequestAsync([.. payload]);
+
+        Assert.False(context.HasCompleteParameters);
+        Assert.Empty(context.Parameters);
+    }
+
+    private static async Task<TdsQueryContext> SendRawRpcRequestAsync(byte[] rpcPayload)
+    {
+        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                queryContextTask.TrySetResult(context);
+                return ValueTask.FromResult(new TdsQueryResult());
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var client = new TcpClient();
+        await client.ConnectAsync(IPAddress.Loopback, port, cancellationTokenSource.Token);
+        using var stream = client.GetStream();
+
+        // PRELOGIN advertising NOT_SUPPORTED so the session stays in clear text.
+        await stream.WriteAsync(CreateTdsMessage(0x12, [0x01, 0x00, 0x06, 0x00, 0x01, 0xFF, 0x02]), cancellationTokenSource.Token);
+        await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
+
+        // LOGIN7 with every variable-length field empty: the authentication callback above accepts anything.
+        await stream.WriteAsync(CreateTdsMessage(0x10, new byte[94]), cancellationTokenSource.Token);
+        await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
+
+        await stream.WriteAsync(CreateTdsMessage(0x03, rpcPayload), cancellationTokenSource.Token);
+
+        return await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationTokenSource.Token);
+    }
+
+    private static byte[] CreateTdsMessage(byte packetType, ReadOnlySpan<byte> payload)
+    {
+        var message = new byte[8 + payload.Length];
+        message[0] = packetType;
+        message[1] = 0x01; // end of message
+        BinaryPrimitives.WriteUInt16BigEndian(message.AsSpan(2, 2), (ushort)message.Length);
+        message[6] = 1; // packet id
+        payload.CopyTo(message.AsSpan(8));
+        return message;
+    }
+
+    private static async Task ReadTdsMessageAsync(NetworkStream stream, CancellationToken cancellationToken)
+    {
+        var header = new byte[8];
+        await stream.ReadExactlyAsync(header, cancellationToken);
+        var length = BinaryPrimitives.ReadUInt16BigEndian(header.AsSpan(2, 2));
+        await stream.ReadExactlyAsync(new byte[length - 8], cancellationToken);
     }
 
     private static object? GetParameterValue(TdsQueryContext context, string name, TdsColumnType expectedType)
@@ -1592,6 +1713,91 @@ public sealed class TdsServerProtocolTests
         };
 
         Assert.Equal(packetSize, options.PacketSize);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(511)]
+    [InlineData(65534)]
+    public void TdsServerOptions_MaxMessageSize_SmallerThanAPacket_Throws(int maxMessageSize)
+    {
+        var options = new TdsServerOptions();
+
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() => options.MaxMessageSize = maxMessageSize);
+    }
+
+    [Theory]
+    [InlineData(65535)]
+    [InlineData(1024 * 1024)]
+    [InlineData(int.MaxValue)]
+    public void TdsServerOptions_MaxMessageSize_AtLeastAPacket_IsAccepted(int maxMessageSize)
+    {
+        var options = new TdsServerOptions
+        {
+            MaxMessageSize = maxMessageSize,
+        };
+
+        Assert.Equal(maxMessageSize, options.MaxMessageSize);
+    }
+
+    [Fact]
+    public void TdsServerOptions_MaxMessageSize_DefaultsToDefaultMaxMessageSize()
+    {
+        var options = new TdsServerOptions();
+
+        Assert.Equal(TdsServerOptions.DefaultMaxMessageSize, options.MaxMessageSize);
+    }
+
+    [Fact]
+    public async Task TdsServer_MessageLargerThanMaxMessageSize_IsRejectedBeforeAuthentication()
+    {
+        var options = new TdsServerOptions
+        {
+            MaxMessageSize = TdsServerOptions.MaximumPacketSize,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+        await server.StartAsync();
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var client = new TcpClient();
+        await client.ConnectAsync(IPAddress.Loopback, server.Ports[0], cancellationTokenSource.Token);
+        using var stream = client.GetStream();
+
+        // PRELOGIN packets that never set the end-of-message bit. The server has to buffer the whole message
+        // before it can parse anything, so without a limit this grows a single buffer without bound, and it
+        // does so on the first read of the connection: no credentials are involved.
+        var header = new byte[8];
+        header[0] = 0x12; // PRELOGIN
+        header[1] = 0x00; // not the end of the message
+        header[2] = 0xFF;
+        header[3] = 0xFF;
+        var body = new byte[TdsServerOptions.MaximumPacketSize - 8];
+
+        var connectionClosed = false;
+        try
+        {
+            for (var i = 0; i < 256 && !connectionClosed; i++)
+            {
+                await stream.WriteAsync(header, cancellationTokenSource.Token);
+                await stream.WriteAsync(body, cancellationTokenSource.Token);
+                await stream.FlushAsync(cancellationTokenSource.Token);
+            }
+
+            var buffer = new byte[1];
+            connectionClosed = await stream.ReadAsync(buffer, cancellationTokenSource.Token) == 0;
+        }
+        catch (IOException)
+        {
+            connectionClosed = true;
+        }
+
+        Assert.True(connectionClosed, "The server should close the connection instead of buffering a message larger than MaxMessageSize.");
     }
 
     [Fact]

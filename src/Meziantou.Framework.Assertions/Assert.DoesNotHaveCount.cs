@@ -27,7 +27,7 @@ public partial class Assert
         if (actualSnapshot.Items.Count != expectedCount)
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NegativeCountAssertionError<IEnumerable<T>>(nameof(DoesNotHaveCount), expectedCount, actualSnapshot.Items.Count, actual, actualExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NegativeCountAssertionError<IReadOnlyList<T>>(nameof(DoesNotHaveCount), expectedCount, actualSnapshot.Items.Count, actualSnapshot.Items, actualExpression, message)));
     }
 
     public static void DoesNotHaveCount(int expectedCount, System.Collections.IEnumerable actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -37,7 +37,7 @@ public partial class Assert
         if (actualSnapshot.Items.Count != expectedCount)
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NegativeCountAssertionError<System.Collections.IEnumerable>(nameof(DoesNotHaveCount), expectedCount, actualSnapshot.Items.Count, actual, actualExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NegativeCountAssertionError<IReadOnlyList<object?>>(nameof(DoesNotHaveCount), expectedCount, actualSnapshot.Items.Count, actualSnapshot.Items, actualExpression, message)));
     }
 
     public static async Task DoesNotHaveCount<T>(int expectedCount, IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)

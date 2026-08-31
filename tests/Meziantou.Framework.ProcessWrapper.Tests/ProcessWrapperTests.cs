@@ -255,6 +255,38 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteBufferedAsync_WhenMultiByteCharacterIsSplitAcrossReads_DecodesTheWholeCharacter()
+    {
+        // Each byte of "\u00e9" is delivered by a separate read, so the first read holds nothing but the
+        // start of the character. Those bytes must stay buffered in the decoder instead of being dropped.
+        var bytes = Encoding.UTF8.GetBytes("\u00e9\n");
+        using var outputStream = CreateSingleByteReadStream(bytes);
+        using var fakeProcess = FakeProcess.Create(0, outputStream, Stream.Null);
+
+        var processResult = await ProcessWrapper.Create("dummy")
+            .WithProcessFactory(new FakeProcessFactory(fakeProcess))
+            .ExecuteBufferedAsync();
+
+        Assert.Equal("\u00e9", processResult.Output.StandardOutput.Single().Text);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithOutputStream_StringBuilder_WhenMultiByteCharacterIsSplitAcrossReads_DecodesTheWholeCharacter()
+    {
+        var bytes = Encoding.UTF8.GetBytes("\u00e9");
+        using var outputStream = CreateSingleByteReadStream(bytes);
+        using var fakeProcess = FakeProcess.Create(0, outputStream, Stream.Null);
+        var stringBuilder = new StringBuilder();
+
+        await ProcessWrapper.Create("dummy")
+            .WithProcessFactory(new FakeProcessFactory(fakeProcess))
+            .WithOutputStream(stringBuilder)
+            .ExecuteAsync();
+
+        Assert.Equal("\u00e9", stringBuilder.ToString());
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WithOutputEncoding_UsesConfiguredEncoding()
     {
         var sb = new StringBuilder();
@@ -1969,6 +2001,18 @@ public class ProcessWrapperTests
 
         return ProcessWrapper.Create("sh")
             .WithArguments("-c", "exit 0");
+    }
+
+    /// <summary>Returns a stream that yields a single byte per read, so multi-byte characters are split across reads.</summary>
+    private static RestrictedStream CreateSingleByteReadStream(byte[] bytes)
+    {
+        return new RestrictedStream(new MemoryStream(bytes), new RestrictedStreamOptions
+        {
+            AllowReading = true,
+            AllowSynchronousCalls = true,
+            AllowAsynchronousCalls = true,
+            MaxReadLength = 1,
+        });
     }
 
     private static ProcessWrapper CreateSingleByteOutputCommand(byte value, bool standardError = false)

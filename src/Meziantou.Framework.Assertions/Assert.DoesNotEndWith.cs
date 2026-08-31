@@ -26,7 +26,7 @@ public partial class Assert
             return;
         }
 
-        throw new AssertionException(ErrorFormatter.Format(new DoesNotEndWithAssertionError<T, IEnumerable<T>>("Not expected suffix", expected, actual, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotEndWithAssertionError<T, IReadOnlyList<T>>("Not expected suffix", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
     public static void DoesNotEndWith(object? expected, System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -41,7 +41,7 @@ public partial class Assert
             return;
         }
 
-        throw new AssertionException(ErrorFormatter.Format(new DoesNotEndWithAssertionError<object?, System.Collections.IEnumerable>("Not expected suffix", expected, actual, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotEndWithAssertionError<object?, IReadOnlyList<object?>>("Not expected suffix", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
     public static void DoesNotEndWith<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -103,6 +103,6 @@ public partial class Assert
         if (GetFirstSuffixDifferenceIndex(expectedSnapshot.Items, actualSnapshot.Items, comparer) is not null)
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new DoesNotEndWithAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable>("Not expected suffix", expected, actual, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotEndWithAssertionError<IReadOnlyList<object?>, IReadOnlyList<object?>>("Not expected suffix", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 }

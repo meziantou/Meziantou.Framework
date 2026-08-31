@@ -36,31 +36,6 @@ public sealed class UrlPattern
     private readonly UrlPatternComponent _searchComponent;
     private readonly UrlPatternComponent _hashComponent;
 
-    /// <summary>
-    /// Special schemes per URL Standard.
-    /// </summary>
-    private static readonly HashSet<string> SpecialSchemes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "ftp",
-        "file",
-        "http",
-        "https",
-        "ws",
-        "wss",
-    };
-
-    /// <summary>
-    /// Default ports for special schemes.
-    /// </summary>
-    private static readonly Dictionary<string, string> DefaultPorts = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["ftp"] = "21",
-        ["http"] = "80",
-        ["https"] = "443",
-        ["ws"] = "80",
-        ["wss"] = "443",
-    };
-
     private UrlPattern(
         UrlPatternComponent protocolComponent,
         UrlPatternComponent usernameComponent,
@@ -238,7 +213,7 @@ public sealed class UrlPattern
 
         // If protocol is a special scheme and port matches its default port, set port to empty string
         if (SpecialSchemes.Contains(processedInit.Protocol) &&
-            DefaultPorts.TryGetValue(processedInit.Protocol, out var defaultPort) &&
+            SpecialSchemes.TryGetDefaultPort(processedInit.Protocol, out var defaultPort) &&
             processedInit.Port == defaultPort)
         {
             processedInit.Port = "";
@@ -266,15 +241,14 @@ public sealed class UrlPattern
         var compileOptions = PatternOptions.Default.WithIgnoreCase(ignoreCase);
         var pathCompileOptions = PatternOptions.Pathname.WithIgnoreCase(ignoreCase);
 
-        UrlPatternComponent pathnameComponent;
-        if (ProtocolMatchesSpecialScheme(protocolComponent))
-        {
-            pathnameComponent = UrlPatternComponent.Compile(processedInit.Pathname, CanonicalizePathname, pathCompileOptions);
-        }
-        else
-        {
-            pathnameComponent = UrlPatternComponent.Compile(processedInit.Pathname, CanonicalizeOpaquePathname, compileOptions);
-        }
+        // The spec canonicalizes a pathname by percent-encoding it, which this implementation does not do,
+        // so the pathname is matched as written and needs no encoding callback. It must not gain a leading
+        // "/" here: the callback runs on every fixed-text part, so that would insert a separator in front of
+        // any literal following a group, turning "/books/:id.json" into "/books/:id/.json". The spec avoids
+        // the same trap by prefixing "/-" before parsing and stripping it afterwards. Only the compile
+        // options differ between an opaque path and a special-scheme path.
+        var pathnameOptions = ProtocolMatchesSpecialScheme(protocolComponent) ? pathCompileOptions : compileOptions;
+        var pathnameComponent = UrlPatternComponent.Compile(processedInit.Pathname, encodingCallback: null, pathnameOptions);
 
         var searchComponent = UrlPatternComponent.Compile(processedInit.Search, CanonicalizeSearch, compileOptions);
         var hashComponent = UrlPatternComponent.Compile(processedInit.Hash, CanonicalizeHash, compileOptions);
@@ -297,6 +271,7 @@ public sealed class UrlPattern
     /// <see href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-test">WHATWG URL Pattern Spec - test method</see>
     /// <see href="https://developer.mozilla.org/en-US/docs/Web/API/URLPattern/test">MDN - URLPattern.test()</see>
     /// </remarks>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public bool IsMatch(string url)
     {
@@ -307,28 +282,23 @@ public sealed class UrlPattern
     /// <param name="url">The URL string to test.</param>
     /// <param name="baseUrl">The base URL to use for resolving relative URLs.</param>
     /// <returns><see langword="true"/> if the pattern matches the URL; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public bool IsMatch(string url, string? baseUrl)
     {
         ArgumentNullException.ThrowIfNull(url);
 
-        try
-        {
-            var uri = ParseUrl(url, baseUrl);
-            if (uri is null)
-                return false;
-
-            return IsMatchUrl(uri);
-        }
-        catch (UriFormatException)
-        {
+        var uri = ParseUrl(url, baseUrl);
+        if (uri is null)
             return false;
-        }
+
+        return IsMatchUrl(uri);
     }
 
     /// <summary>Indicates whether the pattern finds a match in the specified URL.</summary>
     /// <param name="url">The URL to test.</param>
     /// <returns><see langword="true"/> if the pattern matches the URL; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     public bool IsMatch(Uri url)
     {
         ArgumentNullException.ThrowIfNull(url);
@@ -338,6 +308,7 @@ public sealed class UrlPattern
     /// <summary>Indicates whether the pattern finds a match in the specified URL input.</summary>
     /// <param name="input">The URL input dictionary to test.</param>
     /// <returns><see langword="true"/> if the pattern matches the input; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     public bool IsMatch(UrlPatternInit input)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -352,6 +323,7 @@ public sealed class UrlPattern
     /// <see href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-exec">WHATWG URL Pattern Spec - exec method</see>
     /// <see href="https://developer.mozilla.org/en-US/docs/Web/API/URLPattern/exec">MDN - URLPattern.exec()</see>
     /// </remarks>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public UrlPatternResult? Match(string url)
     {
@@ -362,28 +334,23 @@ public sealed class UrlPattern
     /// <param name="url">The URL string to match.</param>
     /// <param name="baseUrl">The base URL to use for resolving relative URLs.</param>
     /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no match.</returns>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public UrlPatternResult? Match(string url, string? baseUrl)
     {
         ArgumentNullException.ThrowIfNull(url);
 
-        try
-        {
-            var uri = ParseUrl(url, baseUrl);
-            if (uri is null)
-                return null;
-
-            return MatchUrl(uri, url);
-        }
-        catch (UriFormatException)
-        {
+        var uri = ParseUrl(url, baseUrl);
+        if (uri is null)
             return null;
-        }
+
+        return MatchUrl(uri, url);
     }
 
     /// <summary>Searches the specified URL for the first occurrence of the pattern and returns the match result with captured groups.</summary>
     /// <param name="url">The URL to match.</param>
     /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no match.</returns>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     public UrlPatternResult? Match(Uri url)
     {
         ArgumentNullException.ThrowIfNull(url);
@@ -393,6 +360,7 @@ public sealed class UrlPattern
     /// <summary>Searches the specified URL input for the first occurrence of the pattern and returns the match result with captured groups.</summary>
     /// <param name="input">The URL input dictionary to match.</param>
     /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no match.</returns>
+    /// <exception cref="RegexMatchTimeoutException">A component pattern took more than one second to match.</exception>
     public UrlPatternResult? Match(UrlPatternInit input)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -402,16 +370,28 @@ public sealed class UrlPattern
 
     private UrlPatternResult? MatchUrl(Uri url, string originalInput)
     {
-        var protocol = url.Scheme;
-        var username = Uri.UnescapeDataString(url.UserInfo.Split(':').FirstOrDefault() ?? "");
-        var password = url.UserInfo.Contains(':', StringComparison.Ordinal) ? Uri.UnescapeDataString(url.UserInfo[(url.UserInfo.IndexOf(':', StringComparison.Ordinal) + 1)..]) : "";
-        var hostname = url.Host;
-        var port = url.IsDefaultPort ? "" : url.Port.ToString(CultureInfo.InvariantCulture);
-        var pathname = url.AbsolutePath;
-        var search = url.Query.TrimStart('?');
-        var hash = url.Fragment.TrimStart('#');
+        var (protocol, username, password, hostname, port, pathname, search, hash) = GetUrlComponents(url);
 
         return MatchComponents(protocol, username, password, hostname, port, pathname, search, hash, originalInput);
+    }
+
+    /// <summary>Splits the URL into the eight component values that are matched against the pattern.</summary>
+    private static (string Protocol, string Username, string Password, string Hostname, string Port, string Pathname, string Search, string Hash) GetUrlComponents(Uri url)
+    {
+        var userInfo = url.UserInfo;
+        var separatorIndex = userInfo.IndexOf(':', StringComparison.Ordinal);
+        var username = separatorIndex == -1 ? userInfo : userInfo[..separatorIndex];
+        var password = separatorIndex == -1 ? "" : userInfo[(separatorIndex + 1)..];
+
+        return (
+            url.Scheme,
+            Uri.UnescapeDataString(username),
+            Uri.UnescapeDataString(password),
+            url.Host,
+            url.IsDefaultPort ? "" : url.Port.ToString(CultureInfo.InvariantCulture),
+            url.AbsolutePath,
+            url.Query.TrimStart('?'),
+            url.Fragment.TrimStart('#'));
     }
 
     private UrlPatternResult? MatchInit(UrlPatternInit init)
@@ -515,14 +495,7 @@ public sealed class UrlPattern
 
     private bool IsMatchUrl(Uri url)
     {
-        var protocol = url.Scheme;
-        var username = Uri.UnescapeDataString(url.UserInfo.Split(':').FirstOrDefault() ?? "");
-        var password = url.UserInfo.Contains(':', StringComparison.Ordinal) ? Uri.UnescapeDataString(url.UserInfo[(url.UserInfo.IndexOf(':', StringComparison.Ordinal) + 1)..]) : "";
-        var hostname = url.Host;
-        var port = url.IsDefaultPort ? "" : url.Port.ToString(CultureInfo.InvariantCulture);
-        var pathname = url.AbsolutePath;
-        var search = url.Query.TrimStart('?');
-        var hash = url.Fragment.TrimStart('#');
+        var (protocol, username, password, hostname, port, pathname, search, hash) = GetUrlComponents(url);
 
         return IsMatchComponents(protocol, username, password, hostname, port, pathname, search, hash);
     }
@@ -699,7 +672,7 @@ public sealed class UrlPattern
 
     private static bool ProtocolMatchesSpecialScheme(UrlPatternComponent protocolComponent)
     {
-        foreach (var scheme in SpecialSchemes)
+        foreach (var scheme in SpecialSchemes.All)
         {
             if (protocolComponent.RegularExpression.IsMatch(scheme))
             {
@@ -764,25 +737,6 @@ public sealed class UrlPattern
             }
         }
 
-        return value;
-    }
-
-    private static string CanonicalizePathname(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-            return value;
-
-        // Ensure starts with /
-        if (!value.StartsWith('/', StringComparison.Ordinal))
-        {
-            value = "/" + value;
-        }
-
-        return value;
-    }
-
-    private static string CanonicalizeOpaquePathname(string value)
-    {
         return value;
     }
 

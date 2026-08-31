@@ -794,6 +794,44 @@ public class TemplateTest
     }
 
     [Fact]
+    public void Template_FailedBuild_ProducesTheSameDiagnosticsWhenRetried()
+    {
+        var template = new Template();
+        template.Load("<%@ implements System.IDisposable %><%= Missing %>");
+
+        var first = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        var second = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        Assert.Equal(first.Message, second.Message);
+        Assert.DoesNotContain("CS0528", second.Message, ignoreCase: false);
+    }
+
+    [Fact]
+    public void Template_FailedBuild_RollsBackTheDirectivesItApplied()
+    {
+        var template = new Template();
+        template.Load("<%@ using System.Globalization %><%@ implements System.IDisposable %><%= Missing %>");
+
+        Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        Assert.DoesNotContain("System.Globalization", template.Usings);
+        Assert.Empty(template.ImplementedInterfaces);
+    }
+
+    [Fact]
+    public void Template_LoadAfterFailedBuild_AppliesOnlyTheNewDirectives()
+    {
+        var template = new Template();
+        template.Load("<%@ implements System.IDisposable %><%= Missing %>");
+        Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        template.Load("<%= \"ok\" %>");
+
+        Assert.Equal("ok", template.Run());
+        Assert.Empty(template.ImplementedInterfaces);
+    }
+
+    [Fact]
     public void Template_ClassMemberBlockDeclaringARunOverload_DoesNotBreakTheMethodLookup()
     {
         var template = new Template();

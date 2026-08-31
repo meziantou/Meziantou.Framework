@@ -45,6 +45,25 @@ public sealed class LinkHeaderValueTests
         Assert.Equal("b", LinkHeaderValue.Parse("<a>; rel=prev, <b>;rel=next").GetLinkUrl("Next"));
     }
 
+    [Theory]
+    [InlineData("<https://example.com/2>; rel=next ; title=Page2")]
+    [InlineData("<https://example.com/2>; rel=next , <https://example.com/1>; rel=prev")]
+    [InlineData("<https://example.com/2>; rel=next\t")]
+    [InlineData("<https://example.com/2>; rel=next ")]
+    public void UnquotedParameterValue_TrailingWhitespaceIsTrimmed(string header)
+    {
+        var link = Assert.Single(LinkHeaderValue.Parse(header), l => l.Url is "https://example.com/2");
+        Assert.Equal("next", link.Rel);
+        Assert.Equal("https://example.com/2", LinkHeaderValue.Parse(header).GetLinkUrl("next"));
+    }
+
+    [Fact]
+    public void UnquotedParameterValue_InnerWhitespaceIsPreserved()
+    {
+        var link = Assert.Single(LinkHeaderValue.Parse("<a>; title = test title ; rel=next"));
+        Assert.Equal("test title", link.GetParameterValue("title"));
+    }
+
     private sealed class CustomHttpHeaders : HttpHeaders
     {
     }

@@ -872,6 +872,13 @@ public class DefaultConverter : IConverter
     {
         ArgumentNullException.ThrowIfNull(conversionType);
 
+        // No instance of these types can be created, so there is nothing to convert to
+        if (!ConvertUtilities.IsInstantiable(conversionType))
+        {
+            value = null;
+            return false;
+        }
+
         if (conversionType == typeof(object))
         {
             value = input;

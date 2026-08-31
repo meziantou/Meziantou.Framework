@@ -273,6 +273,31 @@ public sealed class AssertEqualUnorderedTests
             """);
     }
 
+    [Fact]
+    public void NotEqualUnordered_EnumeratesASingleUseSequenceOnlyOnce()
+    {
+        var expected = new SingleUseEnumerable<int>([1, 2]);
+        var actual = new SingleUseEnumerable<int>([2, 1]);
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqualUnordered(expected, actual));
+    }
+
+    private sealed class SingleUseEnumerable<T>(T[] items) : IEnumerable<T>
+    {
+        private int _enumerationCount;
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            _enumerationCount++;
+            if (_enumerationCount > 1)
+                throw new InvalidOperationException("The sequence was enumerated more than once.");
+
+            return ((IEnumerable<T>)items).GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
     /// <summary>
     /// A comparer whose <see cref="GetHashCode(double)"/> disagrees with its <see cref="Equals(double, double)"/>,
     /// so the hash-based multiset check cannot see the values as equal but the comparer itself does.

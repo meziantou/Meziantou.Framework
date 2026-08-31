@@ -15,11 +15,18 @@ public sealed class NuGetPackageValidationContext : IDisposable
         _options = options;
         CancellationToken = cancellationToken;
         Package = new PackageArchiveReader(file);
-
-        var symbolPackagePath = file.WithExtension(".snupkg");
-        if (File.Exists(symbolPackagePath))
+        try
         {
-            SymbolPackage = new PackageArchiveReader(symbolPackagePath);
+            var symbolPackagePath = file.WithExtension(".snupkg");
+            if (File.Exists(symbolPackagePath))
+            {
+                SymbolPackage = new PackageArchiveReader(symbolPackagePath);
+            }
+        }
+        catch
+        {
+            Package.Dispose();
+            throw;
         }
     }
 

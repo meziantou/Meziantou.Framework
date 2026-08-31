@@ -110,6 +110,7 @@ Each validation error has a specific error code for easy identification and filt
 
 ### General Errors (1-10)
 - `1` - FileNotFound: Package file not found
+- `2` - InvalidPackage: Package file cannot be read as a NuGet package
 
 ### Author Errors (11-20)
 - `11` - AuthorNotSet: Author metadata is missing

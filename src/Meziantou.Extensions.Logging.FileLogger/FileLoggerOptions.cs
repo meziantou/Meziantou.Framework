@@ -112,6 +112,14 @@ public sealed class FileLoggerOptions
     /// <summary>Gets or sets a value indicating whether the trace id and the span id of the current <see cref="System.Diagnostics.Activity" /> are included in the log messages. Defaults to <see langword="false" />.</summary>
     public bool IncludeActivityTracking { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the control characters of the messages, the exceptions and the scopes are escaped, so a log entry always spans a single line. Defaults to <see langword="false" />.</summary>
+    /// <remarks>
+    /// A message containing a line break is written as-is by default, so a value coming from an untrusted source can forge additional log entries.
+    /// Set this option to <see langword="true" /> when the messages can contain untrusted data. The stack traces are then written on a single line, which is harder to read.
+    /// This option is only used by <see cref="SimpleFileFormatter" />, as <see cref="JsonFileFormatter" /> already escapes the control characters.
+    /// </remarks>
+    public bool EscapeControlCharacters { get; set; }
+
     /// <summary>Gets or sets a value indicating whether only the last segment of the category is written, for instance <c>Program</c> instead of <c>Sample.Program</c>. Defaults to <see langword="false" />.</summary>
     public bool UseShortCategoryName { get; set; }
 

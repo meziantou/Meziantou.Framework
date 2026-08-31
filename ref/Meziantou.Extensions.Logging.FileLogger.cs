@@ -48,6 +48,7 @@ namespace Meziantou.Extensions.Logging
         public bool IncludeEventId { get => throw null; set { } }
         public bool IncludeThreadId { get => throw null; set { } }
         public bool IncludeActivityTracking { get => throw null; set { } }
+        public bool EscapeControlCharacters { get => throw null; set { } }
         public bool UseShortCategoryName { get => throw null; set { } }
         [System.Diagnostics.CodeAnalysis.StringSyntax("DateTimeFormat")]
         public string? TimestampFormat { get => throw null; set { } }

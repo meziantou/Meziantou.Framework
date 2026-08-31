@@ -121,6 +121,17 @@ You can also write a custom formatter by inheriting from `FileFormatter` and set
 | `IncludeEventId` | `false` | Write the event id |
 | `IncludeThreadId` | `false` | Write the id of the thread that logged the message |
 | `IncludeActivityTracking` | `false` | Write the trace id and the span id of `Activity.Current` |
+| `EscapeControlCharacters` | `false` | Escape the control characters, so an entry always spans a single line |
+
+### Untrusted data in the messages
+
+`SimpleFileFormatter` writes the messages as-is, so a value containing a line break produces several lines. When the value comes from an untrusted source, it can forge entries that look exactly like real ones:
+
+```c#
+logger.LogInformation("User said: {Text}", "hello\n[2020-01-01 00:00:00.000] [CRIT] [Security] admin login succeeded");
+```
+
+Set `EscapeControlCharacters` to `true` to write `\n`, `\r`, `\t` and the other control characters as escape sequences, so an entry always spans a single line. The stack traces are then written on a single line, which is harder to read. `JsonFileFormatter` is not affected, as the JSON writer already escapes the control characters.
 
 ## Reliability
 

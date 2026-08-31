@@ -4109,6 +4109,40 @@ public sealed class HtmlToMarkdownConverterTests
             """);
     }
 
+    // --- Code span spacing ---
+
+    [Fact]
+    public void InlineCode_SurroundingSpacesArePreserved()
+    {
+        AssertHtmlToMarkdown(
+            "<p>x<code> a </code>y</p>",
+            "x`  a  `y");
+    }
+
+    [Fact]
+    public void InlineCode_LeadingSpaceOnlyIsNotPadded()
+    {
+        AssertHtmlToMarkdown(
+            "<p><code> a</code></p>",
+            "` a`");
+    }
+
+    [Fact]
+    public void InlineCode_TrailingSpaceOnlyIsNotPadded()
+    {
+        AssertHtmlToMarkdown(
+            "<p><code>a </code></p>",
+            "`a `");
+    }
+
+    [Fact]
+    public void InlineCode_AllSpacesIsNotPadded()
+    {
+        AssertHtmlToMarkdown(
+            "<p><code>   </code></p>",
+            "`   `");
+    }
+
     // --- Deeply nested documents (must not overflow the call stack) ---
 
     // The recursive traversal this replaced overflowed the stack at a nesting depth of

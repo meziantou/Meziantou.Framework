@@ -159,7 +159,6 @@ public sealed class CommonMarkSpecTests
         [318] = "Lists: list start or tight/loose semantics differ after round-trip",
         [320] = "Lists: list start or tight/loose semantics differ after round-trip",
         [321] = "Lists: list start or tight/loose semantics differ after round-trip",
-        [331] = "Code spans: escaping semantics differ after round-trip",
         [344] = "Code spans: escaping semantics differ after round-trip",
         [353] = "Emphasis: non-breaking space handling differs after round-trip",
         [417] = "Emphasis: delimiter run parsing differs after round-trip",

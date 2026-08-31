@@ -80,10 +80,13 @@ public class SlugTests
         Assert.Equal("hello", slug);
     }
 
-    [Fact]
-    public void Slug_MaximumLength_ZeroMeansUnlimited()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(int.MinValue)]
+    public void Slug_MaximumLength_ZeroOrNegativeMeansUnlimited(int maximumLength)
     {
-        var options = new SlugOptions { MaximumLength = 0 };
+        var options = new SlugOptions { MaximumLength = maximumLength };
         var slug = Slug.Create("hello world this is long", options);
         Assert.Equal("hello-world-this-is-long", slug);
     }
@@ -148,6 +151,22 @@ public class SlugTests
         var options = new ExpandingSlugOptions();
         var slug = Slug.Create("ab c", options);
         Assert.Equal("aabb-cc", slug);
+    }
+
+    [Theory]
+    [InlineData(1, "")]
+    [InlineData(2, "aa")]
+    [InlineData(3, "aa")]
+    [InlineData(4, "aabb")]
+    [InlineData(5, "aabb")]
+    [InlineData(6, "aabb")]
+    [InlineData(7, "aabb-cc")]
+    [InlineData(8, "aabb-cc")]
+    public void Slug_OverriddenReplace_IsNeverSplitByMaximumLength(int maximumLength, string expected)
+    {
+        var options = new ExpandingSlugOptions { MaximumLength = maximumLength };
+        var slug = Slug.Create("ab c", options);
+        Assert.Equal(expected, slug);
     }
 
     [Fact]
@@ -246,6 +265,7 @@ public class SlugTests
     }
 
     [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void Slug_MaximumLength_FillsTheLimitWhenComposingFreesRoom()
     {
         var options = new SlugOptions { MaximumLength = 17 };

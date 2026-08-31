@@ -10,7 +10,7 @@ public static class HumanReadableHttpExtensions
     {
         if (httpOptions.RequestMessageOptions is { } requestOptions)
         {
-            if (requestOptions.ExcludedHeaderNames is not null || requestOptions.HeaderValueTransformer is not null)
+            if (requestOptions.ExcludedHeaderNames.Count > 0 || requestOptions.HeaderValueTransformer.Count > 0)
                 options.Converters.Add(new HttpHeadersConverter<HttpRequestHeaders>(requestOptions.ExcludedHeaderNames, requestOptions.HeaderValueTransformer));
         }
 
@@ -22,7 +22,7 @@ public static class HumanReadableHttpExtensions
                 headerFormatters = headerFormatters.Prepend(new ContentSecurityPolicyFormatter());
             }
 
-            if (responseOptions.ExcludedHeaderNames is not null || headerFormatters.Any())
+            if (responseOptions.ExcludedHeaderNames.Count > 0 || headerFormatters.Any())
             {
                 options.Converters.Add(new HttpHeadersConverter<HttpResponseHeaders>(responseOptions.ExcludedHeaderNames, headerFormatters));
             }
@@ -54,7 +54,8 @@ public static class HumanReadableHttpExtensions
 
         if (requestOptions is not null && requestOptions.OmitProtocolVersion)
         {
-            options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.Version), new HumanReadableIgnoreAttribute { Condition = HumanReadableIgnoreCondition.Always });
+            options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.Version), new HumanReadableIgnoreAttribute { Condition = HumanReadableIgnoreCondition.WhenWritingDefault });
+            options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.VersionPolicy), new HumanReadableIgnoreAttribute { Condition = HumanReadableIgnoreCondition.WhenWritingDefault });
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete

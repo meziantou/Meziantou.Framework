@@ -22,7 +22,7 @@ namespace Meziantou.Framework.ChromiumTracing
         public override string Type { get => throw null; }
     }
 
-    public abstract class ChromiumTracingAsyncEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
+    public closed class ChromiumTracingAsyncEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
         [System.Text.Json.Serialization.JsonPropertyName("id")]
         public int? Id { get => throw null; set { } }
@@ -68,7 +68,7 @@ namespace Meziantou.Framework.ChromiumTracing
         public override string Type { get => throw null; }
     }
 
-    public abstract class ChromiumTracingContextEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
+    public closed class ChromiumTracingContextEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
     }
 
@@ -92,11 +92,11 @@ namespace Meziantou.Framework.ChromiumTracing
         public override string Type { get => throw null; }
     }
 
-    public abstract class ChromiumTracingDurationEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
+    public closed class ChromiumTracingDurationEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
     }
 
-    public abstract class ChromiumTracingEvent
+    public closed class ChromiumTracingEvent
     {
         [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public abstract string Type { get; }
@@ -138,7 +138,7 @@ namespace Meziantou.Framework.ChromiumTracing
         public Meziantou.Framework.ChromiumTracing.BindingPoint BindingPoint { get => throw null; set { } }
     }
 
-    public abstract class ChromiumTracingFlowEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
+    public closed class ChromiumTracingFlowEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
     }
 
@@ -178,7 +178,7 @@ namespace Meziantou.Framework.ChromiumTracing
         public override string Type { get => throw null; }
     }
 
-    public abstract class ChromiumTracingMemoryDumpEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
+    public closed class ChromiumTracingMemoryDumpEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
     }
 
@@ -217,7 +217,7 @@ namespace Meziantou.Framework.ChromiumTracing
         public override string Type { get => throw null; }
     }
 
-    public abstract class ChromiumTracingObjectEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
+    public closed class ChromiumTracingObjectEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
         [System.Text.Json.Serialization.JsonPropertyName("id")]
         public string? Id { get => throw null; set { } }

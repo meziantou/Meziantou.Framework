@@ -46,15 +46,15 @@ public sealed class HumanReadableTextWriter
         _context = WriterContext.None;
     }
 
-    private void Write(string value, bool isValue = false)
+    private void Write(string value, bool showInvisibleCharacters = false)
     {
-        Write(value.AsSpan(), isValue);
+        Write(value.AsSpan(), showInvisibleCharacters);
     }
 
-    private void Write(ReadOnlySpan<char> value, bool isValue = false)
+    private void Write(ReadOnlySpan<char> value, bool showInvisibleCharacters = false)
     {
         var first = true;
-        if (isValue && _options.ShowInvisibleCharactersInValues)
+        if (showInvisibleCharacters && _options.ShowInvisibleCharactersInValues)
         {
             foreach (var (line, eol) in StringUtils.EnumerateLines(value))
             {
@@ -75,7 +75,7 @@ public sealed class HumanReadableTextWriter
                     }
 
                     WritePendingText(indent: !line.IsEmpty);
-                    if (isValue && _options.ShowInvisibleCharactersInValues)
+                    if (showInvisibleCharacters && _options.ShowInvisibleCharactersInValues)
                     {
                         ReplaceInvisibleCharacters(_text, line);
                         ReplaceInvisibleCharacters(_text, eol);
@@ -147,7 +147,7 @@ public sealed class HumanReadableTextWriter
                 WriteNewLine();
             }
 
-            Write(value, isValue: true);
+            Write(value, showInvisibleCharacters: true);
 
             if (indent)
             {
@@ -196,16 +196,21 @@ public sealed class HumanReadableTextWriter
     /// <param name="propertyName">The name of the property.</param>
     public void WritePropertyName(string propertyName)
     {
-        Write(propertyName);
+        // Property names go through the same replacement as values: a name containing a newline
+        // would otherwise be indistinguishable from several properties.
+        Write(propertyName, showInvisibleCharacters: true);
         Write(":");
         _context = WriterContext.PropertyName;
     }
 
     private void IncrementDepth()
     {
+        // Only increment once the limit is known to be respected. Incrementing first would leave
+        // the depth permanently inflated when a caller catches the exception and keeps writing.
+        if (_depth >= _options.MaxDepth)
+            throw new HumanReadableSerializerException($"Current depth ({_depth + 1}) is equal to or larger than the maximum allowed depth of {_options.MaxDepth}. Cannot write the next object or array");
+
         _depth++;
-        if (_depth > _options.MaxDepth)
-            throw new HumanReadableSerializerException($"Current depth ({_depth}) is equal to or larger than the maximum allowed depth of {_options.MaxDepth}. Cannot write the next object or array");
     }
 
     /// <summary>Starts writing an object.</summary>

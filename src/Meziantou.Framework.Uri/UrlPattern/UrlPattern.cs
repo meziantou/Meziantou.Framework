@@ -726,11 +726,6 @@ public sealed class UrlPattern
         return false;
     }
 
-    private static bool IsSpecialScheme(string protocol)
-    {
-        return SpecialSchemes.Contains(protocol);
-    }
-
     private static bool IsIPv6Hostname(string hostname)
     {
         if (hostname.Length < 2)

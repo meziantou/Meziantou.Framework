@@ -193,6 +193,37 @@ public sealed class CachedEnumerableTests
         }
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AsyncEnumerable_DoesNotYieldATrailingDefaultItem(bool threadSafe)
+    {
+        await using var cachedEnumerable = CachedEnumerable.Create(new SingleAsyncEnumerable<int>(RangeAsync(1, 2)), threadSafe);
+
+        await Assert.Equal([1, 2], cachedEnumerable);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AsyncEnumerable_EmptySourceYieldsNothing(bool threadSafe)
+    {
+        await using var cachedEnumerable = CachedEnumerable.Create(new SingleAsyncEnumerable<int>(RangeAsync(0, 0)), threadSafe);
+
+        await Assert.Equal([], cachedEnumerable);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Enumerable_MultipleEnumerations_ShouldEnumerateOnce(bool threadSafe)
+    {
+        using var cachedEnumerable = CachedEnumerable.Create(new SingleEnumerable<int>([1, 2, 3]), threadSafe);
+
+        Assert.Equal([1, 2, 3], cachedEnumerable);
+        Assert.Equal([1, 2, 3], cachedEnumerable);
+    }
+
     private static async IAsyncEnumerable<int> RangeAsync(int start, int count)
     {
         for (var i = 0; i < count; i++)

@@ -14,6 +14,15 @@ public static class Slug
     /// <summary>The number of UTF-16 characters needed to encode any single rune.</summary>
     private const int MaxUtf16CharsPerRune = 2;
 
+    // A Hangul syllable decomposes into a leading jamo, a vowel jamo and an optional trailing jamo. Those are
+    // letters rather than marks, so the mark test alone does not recognize them as part of the same character.
+    private const int HangulLeadingJamoFirst = 0x1100;
+    private const int HangulLeadingJamoLast = 0x1112;
+    private const int HangulVowelJamoFirst = 0x1161;
+    private const int HangulVowelJamoLast = 0x1175;
+    private const int HangulTrailingJamoFirst = 0x11A8;
+    private const int HangulTrailingJamoLast = 0x11C2;
+
     /// <summary>Creates a slug from the specified text using default options.</summary>
     /// <param name="text">The text to convert to a slug.</param>
     /// <returns>A slug generated from the input text, or <see langword="null"/> if <paramref name="text"/> is <see langword="null"/>.</returns>
@@ -92,10 +101,17 @@ public static class Slug
         var usesDefaultReplace = options.UsesDefaultReplace;
         Span<char> transformed = stackalloc char[MaxUtf16CharsPerRune];
         var characterStart = 0;
+        var previousRuneWasHangulJamo = false;
 
         foreach (var rune in text.EnumerateRunes())
         {
             var isCombiningMark = Rune.GetUnicodeCategory(rune) is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark;
+
+            // Everything that composes back into the character before it has to travel with it, so that the
+            // maximum length only ever cuts between characters.
+            var continuesCharacter = isCombiningMark || (previousRuneWasHangulJamo && IsHangulSyllableContinuation(rune));
+            var appended = false;
+
             if (options.IsAllowed(rune))
             {
                 // Append the replacement atomically, so the maximum length can never split a
@@ -112,16 +128,25 @@ public static class Slug
                     replacement = options.Replace(rune);
                 }
 
-                // A combining mark belongs to the character before it, so only a rune that is not one
-                // starts a new character.
-                if (!isCombiningMark)
+                // A continuation belongs to the character before it, so only a rune that is not one starts
+                // a new character.
+                if (!continuesCharacter)
+                {
                     characterStart = sb.Length;
+                }
+                else if (characterStart == sb.Length)
+                {
+                    // Nothing was written for the current character, so this continuation has no base to attach
+                    // to and would leave a floating accent or a bare jamo at the start of the slug or right
+                    // after a separator. Drop it, the way a disallowed character's marks are dropped below.
+                    continue;
+                }
 
                 if (sb.Length + replacement.Length > budget)
                 {
-                    // Keeping a base character while dropping the mark that follows it would silently
-                    // strip the accent off the last character of the slug. Drop the character instead.
-                    if (isCombiningMark)
+                    // Keeping a base character while dropping what follows it would silently strip the accent
+                    // off the last character of the slug, or cut a syllable in half. Drop the character instead.
+                    if (continuesCharacter)
                         sb.Length = characterStart;
 
                     trailingSeparatorStart = TrailingSeparatorStart(sb, lastSeparatorStart, separator);
@@ -129,11 +154,13 @@ public static class Slug
                 }
 
                 sb.Append(replacement);
+                appended = true;
             }
             else if (!isCombiningMark)
             {
-                // Combining marks attached to a disallowed character are dropped silently instead of
-                // producing a separator. A slug never starts with a separator, and separators are never repeated.
+                // A disallowed combining mark is dropped rather than emitting a separator, because it is part of
+                // the character before it and not a word boundary.
+                // A slug never starts with a separator, and separators are never repeated.
                 if (sb.Length == 0 || EndsWithEmittedSeparator(sb, lastSeparatorStart, separator))
                     continue;
 
@@ -147,10 +174,27 @@ public static class Slug
                 sb.Append(separator);
                 characterStart = sb.Length;
             }
+
+            previousRuneWasHangulJamo = appended && IsHangulJamo(rune);
         }
 
         trailingSeparatorStart = TrailingSeparatorStart(sb, lastSeparatorStart, separator);
         return true;
+    }
+
+    /// <summary>Determines whether the rune is one of the Hangul jamo a syllable decomposes into.</summary>
+    private static bool IsHangulJamo(Rune rune)
+    {
+        return rune.Value is (>= HangulLeadingJamoFirst and <= HangulLeadingJamoLast)
+            or (>= HangulVowelJamoFirst and <= HangulVowelJamoLast)
+            or (>= HangulTrailingJamoFirst and <= HangulTrailingJamoLast);
+    }
+
+    /// <summary>Determines whether the rune continues the Hangul syllable started by the jamo before it.</summary>
+    private static bool IsHangulSyllableContinuation(Rune rune)
+    {
+        return rune.Value is (>= HangulVowelJamoFirst and <= HangulVowelJamoLast)
+            or (>= HangulTrailingJamoFirst and <= HangulTrailingJamoLast);
     }
 
     /// <summary>Determines whether <paramref name="sb"/> ends with the separator emitted at <paramref name="lastSeparatorStart"/>.</summary>

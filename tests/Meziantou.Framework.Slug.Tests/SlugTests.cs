@@ -92,6 +92,62 @@ public class SlugTests
         Assert.Equal("hello-world-this-is-long", slug);
     }
 
+    [Theory]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    [InlineData(1, "")]
+    [InlineData(2, "\uAC00")]
+    [InlineData(3, "\uAC00")]
+    [InlineData(4, "\uAC00\uAC01")]
+    [InlineData(5, "\uAC00\uAC01\uAC02")]
+    public void Slug_MaximumLength_DoesNotSplitHangulSyllables(int maximumLength, string expected)
+    {
+        var options = new SlugOptions { MaximumLength = maximumLength };
+        options.AllowedRanges.Clear();
+
+        var slug = Slug.Create("\uAC00\uAC01\uAC02", options);
+
+        Assert.Equal(expected, slug);
+    }
+
+    [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Slug_MaximumLength_NeverLeavesALoneHangulJamo()
+    {
+        string[] texts = ["\uD55C\uAD6D\uC5B4 \uC81C\uBAA9", "\uAC00\uAC01\uAC02", "a\uAC00b\uAC01", "\uD55C a \uAD6D"];
+        foreach (var text in texts)
+        {
+            foreach (var separator in new[] { "-", "__", "" })
+            {
+                for (var maximumLength = 1; maximumLength <= 20; maximumLength++)
+                {
+                    var options = new SlugOptions { MaximumLength = maximumLength, Separator = separator };
+                    options.AllowedRanges.Clear();
+
+                    var slug = Slug.Create(text, options);
+
+                    Assert.DoesNotContain(slug, c => c is >= '\u1100' and <= '\u11FF');
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    [InlineData("!\u0301b", "b")]
+    [InlineData("\u0301abc", "abc")]
+    [InlineData("!\u0301", "")]
+    [InlineData("\u20AC\u0301x", "x")]
+    [InlineData("a\u0301b", "\u00E1b")]
+    public void Slug_AllowedCombiningMark_WithNoBaseCharacter_IsDropped(string text, string expected)
+    {
+        var options = new SlugOptions();
+        options.AllowedRanges.Add(UnicodeRange.Create('\u0300', '\u036F'));
+
+        var slug = Slug.Create(text, options);
+
+        Assert.Equal(expected, slug);
+    }
+
     [Fact]
     public void Slug_Separator_CannotBeSetToNull()
     {

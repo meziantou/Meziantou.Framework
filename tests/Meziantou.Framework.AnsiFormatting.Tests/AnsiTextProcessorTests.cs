@@ -114,6 +114,36 @@ public class AnsiTextProcessorTests
     }
 
     [Theory]
+    [InlineData("\u001b")]
+    [InlineData("\u001b[")]
+    [InlineData("Text\u001b")]
+    [InlineData("abc\u001b[31")]
+    [InlineData("\u001b[38;5")]
+    public void ContainsAnsiSequences_IncompleteSequences(string input)
+    {
+        Assert.False(AnsiTextProcessor.ContainsAnsiSequences(input));
+        Assert.False(AnsiTextProcessor.ContainsAnsiSequences(input.AsSpan()));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Hello World")]
+    [InlineData("\u001b")]
+    [InlineData("\u001b[")]
+    [InlineData("Text\u001b")]
+    [InlineData("abc\u001b[31")]
+    [InlineData("\u001b[31mRed\u001b[0m")]
+    [InlineData("Start\u001b[2KMiddle\u001b[0mEnd")]
+    [InlineData("\u001b[?25lHidden cursor\u001b[?25h")]
+    [InlineData("Text with\u001b[A cursor up")]
+    [InlineData("\u001b[1m\u001b[31m\u001b[4mBold\u001b[0m")]
+    public void ContainsAnsiSequences_AgreesWithRemoveAnsiSequences(string input)
+    {
+        var removeChangedTheText = !string.Equals(AnsiTextProcessor.RemoveAnsiSequences(input), input, StringComparison.Ordinal);
+        Assert.Equal(removeChangedTheText, AnsiTextProcessor.ContainsAnsiSequences(input));
+    }
+
+    [Theory]
     [InlineData("\x1b", "\x1b")]
     [InlineData("\x1b[", "\x1b[")]
     [InlineData("Text\x1b", "Text\x1b")]

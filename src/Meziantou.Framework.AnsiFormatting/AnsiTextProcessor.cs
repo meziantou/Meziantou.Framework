@@ -47,7 +47,9 @@ public static class AnsiTextProcessor
                 return false;
 
             escapeIndex += i;
-            if (escapeIndex + 1 < value.Length && value[escapeIndex + 1] == '[')
+
+            // Only a sequence that reaches its terminator is one RemoveAnsiSequences would strip.
+            if (escapeIndex + 1 < value.Length && value[escapeIndex + 1] == '[' && FindCsiTerminator(value, escapeIndex + 2) >= 0)
                 return true;
 
             i = escapeIndex + 1;

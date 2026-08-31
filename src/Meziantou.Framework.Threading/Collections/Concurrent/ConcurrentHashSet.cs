@@ -260,15 +260,29 @@ public sealed class ConcurrentHashSet<T> : ISet<T>, IReadOnlySet<T>
     /// <summary>Copies the elements of the <see cref="ConcurrentHashSet{T}"/> to an array, starting at the specified array index.</summary>
     /// <param name="array">The destination array.</param>
     /// <param name="arrayIndex">The zero-based index in the array at which copying begins.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="array"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="arrayIndex"/> is negative.</exception>
+    /// <exception cref="ArgumentException">The number of elements in the set is greater than the available space from <paramref name="arrayIndex"/> to the end of <paramref name="array"/>.</exception>
     public void CopyTo(T[] array, int arrayIndex)
     {
-        // PERF: Do not use dictionary.Keys here because that creates a snapshot
-        // of the collection resulting in a List<T> allocation.
-        // Instead, enumerate the set and copy over the elements.
-        foreach (var element in this)
+        ArgumentNullException.ThrowIfNull(array);
+        ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+
+        // The set can grow while it is being copied, so the size cannot be validated against a live Count and
+        // then trusted. Snapshotting first is also what keeps the destination untouched when it turns out to be
+        // too small, instead of leaving it partially written.
+        // Enumerate the dictionary directly: new List<T>(this) would detect ICollection<T> and call back into
+        // this method, recursing until the stack overflows.
+        var items = new List<T>(_dictionary.Count);
+        foreach (var kvp in _dictionary)
         {
-            array[arrayIndex++] = element;
+            items.Add(kvp.Key);
         }
+
+        if (items.Count > array.Length - arrayIndex)
+            throw new ArgumentException("The destination array is too small to contain all the elements of the collection.", nameof(array));
+
+        items.CopyTo(array, arrayIndex);
     }
 
     private HashSet<T> CreateSet(IEnumerable<T> values) => new(values, _dictionary.Comparer);

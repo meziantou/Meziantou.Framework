@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.NuGetPackageValidation.Rules;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Tests;
@@ -255,6 +256,33 @@ public sealed class NuGetPackageValidatorTests
     {
         var result = await ValidateAsync("Release_XmlDocumentation.1.0.0.nupkg", NuGetPackageValidationRules.XmlDocumentationMustBePresent);
         AssertNoErrors(result);
+    }
+
+    [Fact]
+    public void SymbolChecksumHeaders_NoChecksum()
+    {
+        // The symbol server must still be queried, the URL does not depend on the checksum
+        var headers = SymbolsValidationRule.GetSymbolChecksumHeaders([]);
+        Assert.Equal([null], headers);
+    }
+
+    [Fact]
+    public void SymbolChecksumHeaders_SingleChecksum()
+    {
+        var headers = SymbolsValidationRule.GetSymbolChecksumHeaders([("SHA256", ImmutableArray.Create<byte>(0x01, 0xAB))]);
+        Assert.Equal(["SHA256:01AB"], headers);
+    }
+
+    [Fact]
+    public void SymbolChecksumHeaders_SeveralChecksums()
+    {
+        var headers = SymbolsValidationRule.GetSymbolChecksumHeaders(
+        [
+            ("SHA256", ImmutableArray.Create<byte>(0x01, 0xAB)),
+            ("SHA1", ImmutableArray.Create<byte>(0xFF)),
+        ]);
+
+        Assert.Equal(["SHA256:01AB", "SHA1:FF"], headers);
     }
 
     [Fact]

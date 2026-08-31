@@ -81,6 +81,13 @@ public sealed class FileLoggerOptions
         }
     }
 
+    /// <summary>Gets or sets the Unix file mode applied to the log files when they are created. Defaults to <see langword="null" />, which uses the default mode of the platform.</summary>
+    /// <remarks>
+    /// The default mode of most Unix systems makes the log files readable by every local user. Set this option to <see cref="System.IO.UnixFileMode.UserRead" /> | <see cref="System.IO.UnixFileMode.UserWrite" /> when the messages can contain sensitive data.
+    /// The value is ignored on Windows, and the mode is still filtered by the umask of the process. The mode of the directory is not changed.
+    /// </remarks>
+    public UnixFileMode? UnixCreateMode { get; set; }
+
     /// <summary>Gets or sets the algorithm used to compress the log files. Defaults to <see cref="LogFileCompression.None" />.</summary>
     public LogFileCompression Compression { get; set; }
 

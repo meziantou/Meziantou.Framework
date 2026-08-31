@@ -108,7 +108,7 @@ internal sealed class LogFileWriter : IDisposable
             {
                 // Opening the file with FileShare.Read allows other processes to read the log file while it is being written,
                 // and prevents 2 providers from writing to the same file
-                stream = new FileStream(path, append ? FileMode.Append : FileMode.CreateNew, FileAccess.Write, FileShare.Read | FileShare.Delete);
+                stream = new FileStream(path, CreateStreamOptions(append ? FileMode.Append : FileMode.CreateNew, FileShare.Read | FileShare.Delete));
                 _writer = new StreamWriter(_compressWhileWriting ? CreateCompressionStream(stream) : stream, Utf8NoBom) { AutoFlush = false };
                 _fileStream = stream;
                 _currentFileSize = stream.Length;
@@ -126,6 +126,24 @@ internal sealed class LogFileWriter : IDisposable
         }
 
         throw lastException ?? new IOException("Cannot create a log file in " + _directory);
+    }
+
+    private FileStreamOptions CreateStreamOptions(FileMode mode, FileShare share)
+    {
+        var streamOptions = new FileStreamOptions
+        {
+            Mode = mode,
+            Access = FileAccess.Write,
+            Share = share,
+        };
+
+        // Setting UnixCreateMode throws on Windows, where the value has no meaning
+        if (!OperatingSystem.IsWindows() && _options.UnixCreateMode is { } unixCreateMode)
+        {
+            streamOptions.UnixCreateMode = unixCreateMode;
+        }
+
+        return streamOptions;
     }
 
     private Stream CreateCompressionStream(Stream stream) => _options.Compression switch
@@ -197,7 +215,7 @@ internal sealed class LogFileWriter : IDisposable
         try
         {
             using (var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
-            using (var destination = new FileStream(path + GetCompressionExtension(_options.Compression), FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var destination = new FileStream(path + GetCompressionExtension(_options.Compression), CreateStreamOptions(FileMode.Create, FileShare.None)))
             using (var compressedStream = CreateCompressionStream(destination))
             {
                 source.CopyTo(compressedStream);

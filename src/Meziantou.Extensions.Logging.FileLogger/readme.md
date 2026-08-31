@@ -87,6 +87,16 @@ options.CompressionMode = LogFileCompressionMode.Continuous;
 
 `MaxFileSizeInBytes` is compared to the size of the file on disk, so it accounts for the compression. As the compressed size is only known once the data is flushed, the file may be rolled slightly before the limit.
 
+## Permissions
+
+On Unix, the log files are created with the default mode of the platform, which usually makes them readable by every local user. Set `UnixCreateMode` when the messages can contain sensitive data:
+
+```c#
+options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+```
+
+The value is ignored on Windows, and it is still filtered by the umask of the process. The mode of the directory is not changed, so create the directory yourself when it must be private too.
+
 ## Formatters
 
 `SimpleFileFormatter` (default) writes one human-readable line per entry:

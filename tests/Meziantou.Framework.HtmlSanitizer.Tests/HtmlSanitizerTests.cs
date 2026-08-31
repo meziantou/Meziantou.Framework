@@ -355,6 +355,44 @@ public class HtmlSanitizerTests
         Assert.Equal("", sanitizer.SanitizeHtmlFragment("<script>alert(1)</script>"));
     }
 
+    [Theory]
+    // The content of these elements is raw text: the parser never reads it as markup and the writer puts it back
+    // exactly as it was, so allowing the element would write unsanitized markup straight through.
+    [InlineData("iframe")]
+    [InlineData("title")]
+    [InlineData("textarea")]
+    [InlineData("noscript")]
+    [InlineData("noembed")]
+    [InlineData("noframes")]
+    [InlineData("xmp")]
+    [InlineData("plaintext")]
+    public void Sanitize_AllowedRawTextElementIsStillRemoved(string name)
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidElements.Add(name);
+
+        Assert.Equal("", sanitizer.SanitizeHtmlFragment($"<{name}><img src=x onerror=alert(1)></{name}>"));
+    }
+
+    [Fact]
+    public void Sanitize_AllowedAndUnblockedRawTextElementIsStillRemoved()
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.BlockedElements.Remove("script");
+        sanitizer.ValidElements.Add("script");
+
+        Assert.Equal("<p>ab</p>", sanitizer.SanitizeHtmlFragment("<p>a<script>alert(1)</script>b</p>"));
+    }
+
+    [Fact]
+    public void Sanitize_AllowedRawTextElementIsRemovedWithItsContent()
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidElements.Add("title");
+
+        Assert.Equal("<p>ab</p>", sanitizer.SanitizeHtmlFragment("<p>a<title><img src=x onerror=alert(1)></title>b</p>"));
+    }
+
     [Fact]
     public void Sanitize_CanAllowAdditionalAttributes()
     {

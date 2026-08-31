@@ -104,6 +104,10 @@ var sanitizer = new HtmlSanitizer();
 // Add custom elements
 sanitizer.ValidElements.Add("custom-element");
 
+// Has no effect: the content of a raw text element is never sanitized, so the element is
+// removed with its content whether or not it is in ValidElements
+sanitizer.ValidElements.Add("iframe");
+
 // Remove elements from allowed list
 sanitizer.ValidElements.Remove("img");
 
@@ -141,8 +145,8 @@ By default, the sanitizer allows:
 
 An element is handled in one of three ways:
 
-- It is in `ValidElements` (and not in `BlockedElements`): the element and its content are kept, and its attributes are sanitized.
-- It is in `BlockedElements`, or its content is raw text rather than markup (`script`, `style`, `title`, `textarea`, `iframe`, `noscript`, `noembed`, `noframes`, `plaintext`, `xmp`): the element is removed **with its content**.
+- It is in `BlockedElements`, or its content is raw text rather than markup (`script`, `style`, `title`, `textarea`, `iframe`, `noscript`, `noembed`, `noframes`, `plaintext`, `xmp`): the element is removed **with its content**. This takes precedence over `ValidElements` — the content of a raw text element is written back exactly as it was read, so it can never be sanitized and adding such an element to `ValidElements` has no effect.
+- Otherwise, it is in `ValidElements`: the element and its content are kept, and its attributes are sanitized.
 - Otherwise the element is unwrapped: the tag is dropped but its content is kept and sanitized.
 
 ```csharp

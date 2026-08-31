@@ -523,6 +523,40 @@ public class PersistenceProvidersTests
         }
     }
 
+    [Fact]
+    public async Task SqliteProviderKeepsAnInMemoryDatabaseAliveWithoutAnExternalConnection()
+    {
+        var connectionString = CreateInMemorySqliteConnectionString();
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        // No anchor connection held by the caller: the store keeps the in-memory database alive itself.
+        using var provider = new SqliteHttpCacheStore(connectionString);
+        await provider.SetEntryAsync("http://example.com/a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+
+        Assert.Single(await provider.GetEntriesAsync("http://example.com/a", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task SqliteProviderThrowsAfterDispose()
+    {
+        var connectionString = CreateInMemorySqliteConnectionString();
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        var provider = new SqliteHttpCacheStore(connectionString);
+        await provider.SetEntryAsync("http://example.com/a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+        provider.Dispose();
+
+        await Assert.ThrowsAsync<ObjectDisposedException>(async () => await provider.GetEntriesAsync("http://example.com/a", CancellationToken.None));
+    }
+
+    [Fact]
+    public void SqliteProviderDisposeIsIdempotent()
+    {
+        var provider = new SqliteHttpCacheStore(CreateInMemorySqliteConnectionString());
+        provider.Dispose();
+        provider.Dispose();
+    }
+
     private static HttpCachePersistenceEntry CreatePersistenceEntry(
         DateTimeOffset now,
         TimeSpan maxAge,

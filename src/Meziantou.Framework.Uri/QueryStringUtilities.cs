@@ -91,20 +91,18 @@ public static class QueryStringUtilities
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);
 
-        var anchorIndex = uri.IndexOf('#', StringComparison.Ordinal);
-        var uriToBeAppended = uri;
-        var anchorText = "";
-        // If there is an anchor, then the query string must be inserted before its first occurrence.
-        if (anchorIndex != -1)
-        {
-            anchorText = uri[anchorIndex..];
-            uriToBeAppended = uri[..anchorIndex];
-        }
+        // The query string must be inserted before the first occurrence of the anchor.
+        var (beforeQuery, query, anchorText) = SplitUri(uri);
 
-        var hasQuery = uriToBeAppended.Contains('?', StringComparison.Ordinal);
+        var hasQuery = query is not null;
 
         var sb = new StringBuilder();
-        sb.Append(uriToBeAppended);
+        sb.Append(beforeQuery);
+        if (query is not null)
+        {
+            sb.Append('?').Append(query);
+        }
+
         foreach (var parameter in queryString)
         {
             if (parameter.Value is null)
@@ -148,25 +146,10 @@ public static class QueryStringUtilities
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);
 
-        var anchorIndex = uri.IndexOf('#', StringComparison.Ordinal);
-        var queryIndex = uri.IndexOf('?', StringComparison.Ordinal);
+        var (beforeQuery, _, anchorText) = SplitUri(uri);
 
         var sb = new StringBuilder();
-        if (queryIndex != -1)
-        {
-            sb.Append(uri[..queryIndex]);
-        }
-        else
-        {
-            if (anchorIndex != -1)
-            {
-                sb.Append(uri[..anchorIndex]);
-            }
-            else
-            {
-                sb.Append(uri);
-            }
-        }
+        sb.Append(beforeQuery);
 
         var hasQuery = false;
         foreach (var parameter in queryString)
@@ -183,11 +166,7 @@ public static class QueryStringUtilities
             hasQuery = true;
         }
 
-        if (anchorIndex != -1)
-        {
-            sb.Append(uri[anchorIndex..]);
-        }
-
+        sb.Append(anchorText);
         return sb.ToString();
     }
 
@@ -399,19 +378,29 @@ public static class QueryStringUtilities
 
     private static string? GetQueryString(string uri)
     {
-        var queryIndex = uri.IndexOf('?', StringComparison.Ordinal);
+        return SplitUri(uri).Query;
+    }
+
+    /// <summary>Splits the URI around its query string.</summary>
+    /// <param name="uri">The URI to split.</param>
+    /// <returns>
+    /// The part before the query, the query without its leading '?' (<see langword="null"/> when the URI has no query),
+    /// and the fragment including its leading '#' (empty when the URI has no fragment).
+    /// </returns>
+    /// <remarks>
+    /// The fragment starts at the first '#', so a '?' after that point is fragment content rather than
+    /// the query delimiter. "http://example.com/#a?b" has a fragment of "#a?b" and no query.
+    /// </remarks>
+    private static (string BeforeQuery, string? Query, string Anchor) SplitUri(string uri)
+    {
         var anchorIndex = uri.IndexOf('#', StringComparison.Ordinal);
+        var anchor = anchorIndex == -1 ? "" : uri[anchorIndex..];
+        var beforeAnchor = anchorIndex == -1 ? uri : uri[..anchorIndex];
 
+        var queryIndex = beforeAnchor.IndexOf('?', StringComparison.Ordinal);
         if (queryIndex == -1)
-        {
-            return null;
-        }
+            return (beforeAnchor, null, anchor);
 
-        if (anchorIndex == -1)
-        {
-            return uri[(queryIndex + 1)..];
-        }
-
-        return uri[(queryIndex + 1)..anchorIndex];
+        return (beforeAnchor[..queryIndex], beforeAnchor[(queryIndex + 1)..], anchor);
     }
 }

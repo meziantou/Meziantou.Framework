@@ -199,7 +199,9 @@ internal static class AssertionMethodSelectionAnalyzerCommon
 
     private static bool TryGetNullCheckMatchFromBinaryOperation(IOperation conditionOperation, out NullCheckMatch match)
     {
-        if (conditionOperation is not IBinaryOperation binaryOperation ||
+        // A user-defined operator== is not necessarily a null check, so rewriting it to Assert.Null
+        // would change which code runs. OperatorMethod is null for built-in operators only.
+        if (conditionOperation is not IBinaryOperation { OperatorMethod: null } binaryOperation ||
             binaryOperation.OperatorKind is not (BinaryOperatorKind.Equals or BinaryOperatorKind.NotEquals))
         {
             match = default;

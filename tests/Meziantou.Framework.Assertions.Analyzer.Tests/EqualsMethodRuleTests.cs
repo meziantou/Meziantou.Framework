@@ -175,4 +175,55 @@ public sealed class EqualsMethodRuleTests : AssertionsAnalyzerTestBase
 
         await CreateCodeFixTest<EqualsMethodAnalyzerType, EqualsMethodCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_ForUnrelatedEqualsOverload()
+    {
+        var source = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public sealed class Money
+            {
+                public bool Equals(int cents) => true;
+            }
+
+            public static class TestClass
+            {
+                public static void M(Money money)
+                {
+                    Assert.True(money.Equals(5));
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<EqualsMethodAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_ForExplicitEquatableImplementation()
+    {
+        var source = """
+            using System;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public sealed class Box : IEquatable<Box>
+            {
+                bool IEquatable<Box>.Equals(Box? other) => true;
+            }
+
+            public static class TestClass
+            {
+                public static void M(Box a, Box b)
+                {
+                    Assert.True(a.Equals(b));
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<EqualsMethodAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
 }

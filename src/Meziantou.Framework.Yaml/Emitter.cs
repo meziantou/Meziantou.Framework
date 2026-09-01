@@ -1199,7 +1199,7 @@ public partial class Emitter : IEmitter
                         break;
 
                     default:
-                        short code = (short)character;
+                        int code = character;
                         if (code <= 0xFF)
                         {
                             Write('x');

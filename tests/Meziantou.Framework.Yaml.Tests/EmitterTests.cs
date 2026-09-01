@@ -127,7 +127,58 @@ public class EmitterTests : YamlTest
             emitter.Emit(new DocumentEnd(true));
         }
         var result = encoding.GetString(stream.ToArray()).Trim();
-        Assert.Equal("\"Test\\xD802\\xDD05Yo♥\"", result);
+        Assert.Equal("\"Test\\U00010905Yo♥\"", result);
+    }
+
+    [Theory]
+    [InlineData("\U0001F600")]
+    [InlineData("\U00020000")]
+    [InlineData("\U00010905")]
+    [InlineData("a\U0001F600b")]
+    [InlineData("\U0001F600\U0001F601")]
+    [InlineData("♥\U00010905中")]
+    public void EmitNonBmpCharacters_RoundTrips(string input)
+    {
+        var yaml = EmitDoubleQuotedScalar(input);
+
+        Assert.Equal(input, ParseSingleScalarValue(yaml));
+    }
+
+    [Fact]
+    public void EmitNonBmpCharacter_UsesEightDigitEscape()
+    {
+        Assert.Equal("\"\\U0001F600\"", EmitDoubleQuotedScalar("\U0001F600").Trim());
+    }
+
+    [Fact]
+    public void EmitBmpCharacterAboveShortMaxValue_UsesFourDigitEscape()
+    {
+        // U+FFFE is above short.MaxValue and is not printable, so it must use the 4-digit escape.
+        Assert.Equal("\"\\uFFFE\"", EmitDoubleQuotedScalar("\uFFFE").Trim());
+    }
+
+    private static string EmitDoubleQuotedScalar(string value)
+    {
+        using var output = new StringWriter();
+        var emitter = new Emitter(output);
+        emitter.Emit(new StreamStart());
+        emitter.Emit(new DocumentStart(null, null, true));
+        emitter.Emit(new Scalar(value, ScalarStyle.DoubleQuoted));
+        emitter.Emit(new DocumentEnd(true));
+        emitter.Emit(new StreamEnd());
+        return output.ToString();
+    }
+
+    private static string? ParseSingleScalarValue(string yaml)
+    {
+        var parser = Parser.CreateParser(new StringReader(yaml));
+        while (parser.MoveNext())
+        {
+            if (parser.Current is Scalar scalar)
+                return scalar.Value;
+        }
+
+        return null;
     }
 
     private static void ParseAndEmit(string name)

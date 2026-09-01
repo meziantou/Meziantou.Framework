@@ -178,7 +178,7 @@ sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         // Clear the elements so that the gc can reclaim the references.
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>() && Count > 0)
         {
-            Array.Clear(_items, _startIndex, Math.Min(Count - _startIndex, Capacity - _startIndex));
+            Array.Clear(_items, _startIndex, Math.Min(Count, Capacity - _startIndex));
             if (_startIndex + Count > Capacity)
             {
                 Array.Clear(_items, 0, (_startIndex + Count) % Capacity);

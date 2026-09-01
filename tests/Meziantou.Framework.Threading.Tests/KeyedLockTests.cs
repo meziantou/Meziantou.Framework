@@ -106,6 +106,41 @@ public sealed class KeyedLockTests
     }
 
     [Fact]
+    public void Lock_DisposedOnAnotherThread_ThrowsButStillEvictsTheEntry()
+    {
+        // System.Threading.Lock is thread-affine, so Exit throws here. The reference count must still be
+        // released, otherwise the entry stays in the dictionary and every later Lock(1) deadlocks.
+        var locks = new KeyedLock<int>();
+        var lease = locks.Lock(1);
+
+        // A dedicated thread, not the thread pool: xunit runs the test body on a pool thread, so Task.Run can
+        // schedule the disposal back onto that same thread and Exit would then legitimately succeed.
+        Exception? captured = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                lease.Dispose();
+            }
+            catch (Exception ex)
+            {
+                captured = ex;
+            }
+        });
+
+        thread.Start();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(30)));
+
+        Assert.IsType<SynchronizationLockException>(captured);
+        Assert.Empty(GetEntries(locks));
+
+        // A fresh entry is created, so the key is usable again rather than permanently wedged.
+        using (locks.Lock(1))
+        {
+        }
+    }
+
+    [Fact]
     public void Dispose_IsIdempotent()
     {
         var locks = new KeyedLock<int>();

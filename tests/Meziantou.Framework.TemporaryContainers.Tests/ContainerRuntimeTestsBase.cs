@@ -513,6 +513,41 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         Assert.Contains(exception.Command, exception.Message);
     }
 
+    /// <summary>Shared assertion that a container dying before its ready message fails with what it printed (called
+    /// from the relevant subclasses). It is not run for every runtime: apple/container keeps the log stream open after
+    /// the container exits, so the wait times out instead of ending.</summary>
+    protected async Task AssertStartFailureReportsContainerOutputAsync()
+    {
+        var definition = new ContainerDefinition(new RegistryImage(ContainerImage))
+        {
+            Runtime = Runtime,
+        };
+        if (UseWindowsContainerImages)
+        {
+            definition.Command.Add("powershell");
+            definition.Command.Add("-NoProfile");
+            definition.Command.Add("-Command");
+            definition.Command.Add("Write-Output 'the entrypoint gave up'; exit 3");
+        }
+        else
+        {
+            definition.Command.Add("sh");
+            definition.Command.Add("-c");
+            definition.Command.Add("echo 'the entrypoint gave up'; exit 3");
+        }
+
+        definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
+
+        await using var container = definition.CreateContainer();
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await container.StartAsync(XunitCancellationToken));
+
+        // A container that dies during startup is the common case, and what it printed on the way out is the only
+        // thing that explains why. Reporting nothing but the missing pattern leaves a CI failure undiagnosable.
+        Assert.Contains("the entrypoint gave up", exception.Message);
+        Assert.Contains(ContainerState.Exited.ToString(), exception.Message);
+        Assert.Contains("exit code 3", exception.Message);
+    }
+
     /// <summary>Shared pause/unpause assertion for runtimes that support it (called from the relevant subclasses).</summary>
     protected async Task AssertPauseUnpauseAsync()
     {

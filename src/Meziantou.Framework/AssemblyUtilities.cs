@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 
 namespace Meziantou.Framework;
 
@@ -35,8 +36,9 @@ public static class AssemblyUtilities
                 return GetLinkerTimestampUtc(location);
             }
         }
-        catch
+        catch (NotSupportedException)
         {
+            // Dynamic assemblies have no location
         }
 
         return null;
@@ -44,7 +46,12 @@ public static class AssemblyUtilities
 
     /// <summary>Gets the linker timestamp of a specified assembly.</summary>
     /// <param name="filePath">The assembly file path.</param>
-    /// <returns>A valid date time or null if an error occurred.</returns>
+    /// <returns>A valid date time, or <see langword="null"/> if the file has no meaningful timestamp or could not be read.</returns>
+    /// <remarks>
+    /// Deterministic builds, which the .NET SDK produces by default, store a hash of the content in the
+    /// COFF <c>TimeDateStamp</c> field instead of a date. Those are reported as <see langword="null"/>
+    /// rather than as the arbitrary date the hash decodes to.
+    /// </remarks>
     public static DateTime? GetLinkerTimestampUtc(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
@@ -54,20 +61,28 @@ public static class AssemblyUtilities
             if (!File.Exists(filePath))
                 return null;
 
-            const int PeHeaderOffset = 60;
-            const int LinkerTimestampOffset = 8;
-            var bytes = new byte[2048];
+            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var peReader = new PEReader(stream);
 
-            using (var file = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            // A deterministic build advertises itself with a Reproducible debug directory entry
+            foreach (var entry in peReader.ReadDebugDirectory())
             {
-                file.TryReadAll(bytes, 0, bytes.Length);
+                if (entry.Type == DebugDirectoryEntryType.Reproducible)
+                    return null;
             }
 
-            var headerPos = BitConverter.ToInt32(bytes, PeHeaderOffset);
-            var secondsSince1970 = BitConverter.ToInt32(bytes, headerPos + LinkerTimestampOffset);
-            return DateTime.UnixEpoch.AddSeconds(secondsSince1970);
+            var timestamp = unchecked((uint)peReader.PEHeaders.CoffHeader.TimeDateStamp);
+            return DateTime.UnixEpoch.AddSeconds(timestamp);
         }
-        catch
+        catch (BadImageFormatException)
+        {
+            return null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
         {
             return null;
         }

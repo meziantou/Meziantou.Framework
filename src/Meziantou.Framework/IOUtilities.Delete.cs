@@ -7,6 +7,8 @@ internal
 #endif
 static partial class IOUtilities
 {
+    private const int MaxDeleteAttempts = 10;
+
     /// <summary>Determines whether the specified exception is a sharing violation exception.</summary>
     /// <param name="exception">The exception. May not be null.</param>
     /// <returns>
@@ -82,22 +84,22 @@ static partial class IOUtilities
 
     private static void Retry(Action action)
     {
-        var attempt = 0;
-        while (attempt < 10)
+        // The exception filters stop matching on the last attempt, so a failure that never clears is
+        // reported to the caller instead of being swallowed by the loop.
+        for (var attempt = 1; ; attempt++)
         {
             try
             {
                 action();
                 return;
             }
-            catch (IOException ex) when (IsSharingViolation(ex))
+            catch (IOException ex) when (attempt < MaxDeleteAttempts && IsSharingViolation(ex))
             {
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException) when (attempt < MaxDeleteAttempts)
             {
             }
 
-            attempt++;
             Thread.Sleep(50);
         }
     }
@@ -182,22 +184,22 @@ static partial class IOUtilities
 
     private static async ValueTask RetryOnSharingViolationAsync(Action action, CancellationToken cancellationToken)
     {
-        var attempt = 0;
-        while (attempt < 10)
+        // The exception filters stop matching on the last attempt, so a failure that never clears is
+        // reported to the caller instead of being swallowed by the loop.
+        for (var attempt = 1; ; attempt++)
         {
             try
             {
                 action();
                 return;
             }
-            catch (IOException ex) when (IsSharingViolation(ex))
+            catch (IOException ex) when (attempt < MaxDeleteAttempts && IsSharingViolation(ex))
             {
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException) when (attempt < MaxDeleteAttempts)
             {
             }
 
-            attempt++;
             await Task.Delay(50, cancellationToken).ConfigureAwait(false);
         }
     }

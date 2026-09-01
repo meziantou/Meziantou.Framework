@@ -57,19 +57,38 @@ public static class NuGetPackageValidator
     public static async Task<NuGetPackageValidationResult> ValidateAsync(FullPath packagePath, NuGetPackageValidationOptions options, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(packagePath))
-        {
-            return new NuGetPackageValidationResult(
-            [
-                new (ErrorCodes.FileNotFound, $"NuGet package '{packagePath}' not found", helpText: null),
-            ]);
-        }
+            return CreateResult(options, ErrorCodes.FileNotFound, $"NuGet package '{packagePath}' not found");
 
-        using var context = new NuGetPackageValidationContext(packagePath, options, cancellationToken);
-        foreach (var rule in options.Rules)
+        NuGetPackageValidationContext? context = null;
+        try
         {
-            await rule.ExecuteAsync(context).ConfigureAwait(false);
-        }
+            try
+            {
+                context = new NuGetPackageValidationContext(packagePath, options, cancellationToken);
+            }
+            catch (InvalidDataException ex)
+            {
+                return CreateResult(options, ErrorCodes.InvalidPackage, $"NuGet package '{packagePath}' cannot be read: {ex.Message}");
+            }
 
-        return new NuGetPackageValidationResult(context.Errors);
+            foreach (var rule in options.Rules)
+            {
+                await rule.ExecuteAsync(context).ConfigureAwait(false);
+            }
+
+            return new NuGetPackageValidationResult(context.Errors);
+        }
+        finally
+        {
+            context?.Dispose();
+        }
+    }
+
+    private static NuGetPackageValidationResult CreateResult(NuGetPackageValidationOptions options, int errorCode, string message)
+    {
+        if (options.ExcludedRuleIds.Contains(errorCode))
+            return new NuGetPackageValidationResult([]);
+
+        return new NuGetPackageValidationResult([new NuGetPackageValidationError(errorCode, message, helpText: null)]);
     }
 }

@@ -242,7 +242,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
                     }
 
                     // RFC 5861: Handle error responses with stale-if-error
-                    if (!conditionalResponse.IsSuccessStatusCode && CanServeStaleOnError(cacheResult, currentAge, freshnessLifetime))
+                    if (IsStaleIfErrorStatus(conditionalResponse.StatusCode) && CanServeStaleOnError(cacheResult, currentAge, freshnessLifetime))
                     {
                         conditionalResponse.Dispose();
 
@@ -495,6 +495,15 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
         var staleness = currentAge - freshnessLifetime;
         return staleness <= entry.StaleIfError.Value;
+    }
+
+    private static bool IsStaleIfErrorStatus(HttpStatusCode statusCode)
+    {
+        // RFC 5861 Section 4: an error is a situation that would result in a 500, 502, 503 or 504 response.
+        // Any other status is the origin answering the request, and must reach the caller: a 404 or a 410
+        // means the representation is gone, a 401 or a 403 means it is no longer accessible, and a 3xx is a
+        // redirection. Serving the stored body for those would hide the answer the origin just gave.
+        return (int)statusCode is 500 or 502 or 503 or 504;
     }
 
     private static bool IsOriginUnreachable(Exception exception, CancellationToken cancellationToken)

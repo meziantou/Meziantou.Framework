@@ -121,8 +121,8 @@ public class RangeTests
         var withFrom = new Range<string>("a", "b");
 
         Assert.Equal(withNullFrom.Equals(withFrom), withFrom.Equals(withNullFrom));
-        Assert.False(withNullFrom.Equals(withFrom));
-        Assert.False(withFrom.Equals(withNullFrom));
+        Assert.NotEqual(withFrom, withNullFrom);
+        Assert.NotEqual(withNullFrom, withFrom);
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public class RangeTests
             [new Range<string>("a", "b")] = 2,
         };
 
-        Assert.Equal(2, dictionary.Count);
+        Assert.HasCount(2, dictionary);
         Assert.Equal(1, dictionary[new Range<string>(from: null!, to: "b")]);
         Assert.Equal(2, dictionary[new Range<string>("a", "b")]);
     }

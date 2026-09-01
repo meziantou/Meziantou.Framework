@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using Meziantou.Framework.NuGetPackageValidation.Rules;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Tests;
@@ -42,6 +43,35 @@ public sealed class NuGetPackageValidatorTests
     private static Task<NuGetPackageValidationResult> ValidateAsync(string packageName, params NuGetPackageValidationRule[] rules)
     {
         return ValidateAsync(packageName, excludedRuleIds: null, rules);
+    }
+
+    /// <summary>Validates a package built on the fly from the provided nuspec metadata. Rules that only read the
+    /// nuspec can be exercised this way without adding a binary fixture to the Packages folder.</summary>
+    private static async Task<NuGetPackageValidationResult> ValidateMetadataAsync(string metadata, params NuGetPackageValidationRule[] rules)
+    {
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        var packagePath = temporaryDirectory / "package.nupkg";
+
+        await using (var stream = File.Create(packagePath))
+        {
+            using var archive = new ZipArchive(stream, ZipArchiveMode.Create);
+            await using var entry = archive.CreateEntry("Sample.nuspec").Open();
+            await using var writer = new StreamWriter(entry);
+            await writer.WriteAsync($"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+                  <metadata>
+                    <id>Sample</id>
+                    <version>1.0.0</version>
+                    <authors>Sample author</authors>
+                    <description>Sample description</description>
+                {metadata}
+                  </metadata>
+                </package>
+                """);
+        }
+
+        return await ValidateAsync(packagePath, excludedRuleIds: null, rules);
     }
 
     private static void AssertNoErrors(NuGetPackageValidationResult result)
@@ -131,6 +161,35 @@ public sealed class NuGetPackageValidatorTests
     {
         var result = await ValidateAsync("Release_Icon_IconUrl.1.0.0.nupkg", NuGetPackageValidationRules.IconMustBeSet);
         AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_ProjectUrl_ProjectUrlSetWithoutRepository()
+    {
+        var result = await ValidateMetadataAsync("""    <projectUrl>https://www.example.com/</projectUrl>""", NuGetPackageValidationRules.ProjectUrlMustBeSet);
+        Assert.DoesNotContain(result.Errors, item => item.ErrorCode == ErrorCodes.ProjectUrlNotSet);
+    }
+
+    [Fact]
+    public async Task Validate_ProjectUrl_RepositorySetWithoutProjectUrl()
+    {
+        var result = await ValidateMetadataAsync("""    <repository type="git" url="https://www.example.com/" />""", NuGetPackageValidationRules.ProjectUrlMustBeSet);
+        AssertHasError(result, ErrorCodes.ProjectUrlNotSet);
+    }
+
+    [Fact]
+    public async Task Validate_ProjectUrl_NotSet()
+    {
+        var result = await ValidateMetadataAsync("", NuGetPackageValidationRules.ProjectUrlMustBeSet);
+        AssertHasError(result, ErrorCodes.ProjectUrlNotSet);
+    }
+
+    [Fact]
+    public async Task Validate_ProjectUrl_NotAnHttpUrl()
+    {
+        var result = await ValidateMetadataAsync("""    <projectUrl>ftp://www.example.com/</projectUrl>""", NuGetPackageValidationRules.ProjectUrlMustBeSet);
+        AssertHasError(result, ErrorCodes.ProjectUrlNotAccessible);
+        Assert.DoesNotContain(result.Errors, item => item.ErrorCode == ErrorCodes.ProjectUrlNotSet);
     }
 
     [Fact]

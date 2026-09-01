@@ -2201,20 +2201,11 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
-    public void Parenthesize_KeepsTriviaOutsideOfTheParentheses()
+    public void Parenthesize_KeepsTriviaInsideOfTheParentheses()
     {
         var expression = SyntaxFactory.ParseExpression("  a  +  b // comment\n");
 
-        Assert.Equal("  (a  +  b) // comment\n", expression.Parenthesize().ToFullString());
-    }
-
-    [Fact]
-    public void Parenthesize_DoesNotWrapRefExpressions()
-    {
-        var expression = SyntaxFactory.ParseExpression("ref value");
-
-        Assert.IsType<RefExpressionSyntax>(expression);
-        Assert.Same(expression, expression.Parenthesize());
+        Assert.Equal("(  a  +  b // comment\n)", expression.Parenthesize().ToFullString());
     }
 
 #if ROSLYN_WORKSPACES

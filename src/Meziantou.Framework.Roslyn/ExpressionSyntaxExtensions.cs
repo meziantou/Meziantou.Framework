@@ -24,8 +24,8 @@ internal static partial class ExpressionSyntaxExtensions
     /// binary operator. Both bind tighter than most expressions, so an operand such as <c>a ? b : c</c> has to be
     /// parenthesized to preserve the meaning of the original code.
     /// <para>
-    /// The trivia of the expression stays outside of the parentheses, so <c>a + b // comment</c> becomes
-    /// <c>(a + b) // comment</c> instead of moving the comment inside the parentheses.
+    /// The trivia of the expression stays inside of the parentheses, so the trailing comment of
+    /// <c>a + b // comment</c> ends up before the closing parenthesis.
     /// </para>
     /// <para>
     /// When the project references a Roslyn workspaces package, the parentheses are annotated with
@@ -35,7 +35,7 @@ internal static partial class ExpressionSyntaxExtensions
     /// </remarks>
     public static ExpressionSyntax Parenthesize(this ExpressionSyntax expression)
     {
-        var parenthesized = SyntaxFactory.ParenthesizedExpression(expression.WithLeadingTrivia().WithTrailingTrivia()).WithTriviaFrom(expression);
+        var parenthesized = SyntaxFactory.ParenthesizedExpression(expression);
 #if ROSLYN_WORKSPACES
         parenthesized = parenthesized.WithAdditionalAnnotations(Simplifier.Annotation);
 #endif

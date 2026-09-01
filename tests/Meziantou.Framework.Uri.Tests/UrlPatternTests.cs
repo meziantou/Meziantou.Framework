@@ -1546,4 +1546,44 @@ public sealed class UrlPatternTests
 
         Assert.False(pattern.IsMatch(new UrlPatternInit { Protocol = "http" }));
     }
+
+    [Fact]
+    public void Create_PortWithLeadingZeros_CollapsesLikeTheDefaultPort()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https", Port = "0443" });
+
+        Assert.Equal("", pattern.Port);
+        Assert.True(pattern.IsMatch("https://example.com/"));
+    }
+
+    [Theory]
+    [InlineData("08080", "8080")]
+    [InlineData("8080", "8080")]
+    [InlineData("0", "0")]
+    public void Create_NumericPort_IsNormalized(string port, string expected)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Port = port });
+
+        Assert.Equal(expected, pattern.Port);
+    }
+
+    [Fact]
+    public void Create_PortWithLeadingZeros_MatchesTheSamePort()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Port = "08080" });
+
+        Assert.True(pattern.IsMatch("https://example.com:8080/path"));
+        Assert.False(pattern.IsMatch("https://example.com:9090/path"));
+    }
+
+    [Theory]
+    [InlineData("*")]
+    [InlineData("99999")]
+    [InlineData(":p")]
+    public void Create_PortThatIsNotAPlainNumber_IsMatchedAsWritten(string port)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Port = port });
+
+        Assert.Equal(port, pattern.Port);
+    }
 }

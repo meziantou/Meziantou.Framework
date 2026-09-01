@@ -372,7 +372,8 @@ public sealed class SortedListTests
     {
         var list = new SortedList<int> { 1, 2 };
 
-        Assert.True(list.Capacity > list.Count, "This test needs spare capacity to be meaningful");
+        // The test only means something while the backing array is larger than the item count
+        Assert.HasCountLessThan(list.Capacity, list);
         Assert.Throws<ArgumentOutOfRangeException>(() => list[list.Count]);
         Assert.Throws<ArgumentOutOfRangeException>(() => list[-1]);
     }

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Meziantou.Xunit;
 using Microsoft.Extensions.Time.Testing;
 
 #pragma warning disable CA1848 // Use the LoggerMessage delegates
@@ -492,6 +493,38 @@ public sealed class FileLoggerProviderTests
 
         var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
         Assert.Equal([$"2024-01-05-{pid}.log.gz", $"2024-01-06-{pid}.log.gz"], GetFileNames(tempDirectory));
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public async Task UnixCreateModeIsAppliedToTheLogFiles()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite,
+            RollInterval = RollInterval.Daily,
+            Compression = LogFileCompression.GZip,
+            CompressionMode = LogFileCompressionMode.OnRoll,
+        }, timeProvider);
+
+        var logger = provider.CreateLogger("Test");
+        logger.LogInformation("First day");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        // Roll, so the file created by the compression is checked too
+        timeProvider.Advance(TimeSpan.FromDays(1));
+        logger.LogInformation("Second day");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        var files = new DirectoryInfo(tempDirectory.FullPath).GetFiles();
+        Assert.NotEmpty(files);
+        foreach (var file in files)
+        {
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(file.FullName));
+        }
     }
 
     [Fact]

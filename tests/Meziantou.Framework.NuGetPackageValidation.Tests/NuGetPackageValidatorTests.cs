@@ -266,6 +266,64 @@ public sealed class NuGetPackageValidatorTests
         AssertNoErrors(result);
     }
 
+    [Theory]
+    // Exact match
+    [InlineData("/_/src/Foo.cs", "https://example.com/raw/src/Foo.cs")]
+    // No match
+    [InlineData("/_/src/Bar.cs", null)]
+    public void SourceLink_ExactMatch(string file, string? expected)
+    {
+        var json = new SymbolsValidationRule.SourceLinkJson
+        {
+            Documents = new(StringComparer.Ordinal) { ["/_/src/Foo.cs"] = "https://example.com/raw/src/Foo.cs" },
+        };
+
+        Assert.Equal(expected, json.GetUrl(file));
+    }
+
+    [Theory]
+    [InlineData("/_/src/Foo.cs", "https://example.com/raw/src/Foo.cs")]
+    [InlineData("/_/src/sub/Foo.cs", "https://example.com/raw/src/sub/Foo.cs")]
+    // Backslashes of the matched value are normalized
+    [InlineData("/_/src/sub\\Foo.cs", "https://example.com/raw/src/sub/Foo.cs")]
+    // The key is anchored: it must match the whole path, not a suffix of it
+    [InlineData("/other/_/src/Foo.cs", null)]
+    // The matched value cannot be empty of the prefix
+    [InlineData("/_/", null)]
+    public void SourceLink_Wildcard(string file, string? expected)
+    {
+        var json = new SymbolsValidationRule.SourceLinkJson
+        {
+            Documents = new(StringComparer.Ordinal) { ["/_/src/*"] = "https://example.com/raw/src/*" },
+        };
+
+        Assert.Equal(expected, json.GetUrl(file));
+    }
+
+    [Fact]
+    public void SourceLink_OnlyTheFirstWildcardOfTheUrlIsReplaced()
+    {
+        var json = new SymbolsValidationRule.SourceLinkJson
+        {
+            Documents = new(StringComparer.Ordinal) { ["/_/*"] = "https://example.com/*?ref=*" },
+        };
+
+        Assert.Equal("https://example.com/Foo.cs?ref=*", json.GetUrl("/_/Foo.cs"));
+    }
+
+    [Fact]
+    public void SourceLink_KeyWithSeveralWildcardsIsIgnored()
+    {
+        // The Source Link specification allows a single wildcard. Matching such a key with a regex built from
+        // the key made the lookup vulnerable to catastrophic backtracking, and it ran without a timeout.
+        var json = new SymbolsValidationRule.SourceLinkJson
+        {
+            Documents = new(StringComparer.Ordinal) { [new string('*', 8) + "Z"] = "https://example.com/*" },
+        };
+
+        Assert.Null(json.GetUrl(new string('a', 40)));
+    }
+
     [Fact]
     public async Task Validate_PackageIdAvailableOnNuGetOrg_PackageExists()
     {

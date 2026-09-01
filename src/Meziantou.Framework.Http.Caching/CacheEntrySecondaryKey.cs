@@ -10,6 +10,10 @@ internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondary
     public static CacheEntrySecondaryKey MatchAll => new();
     public static CacheEntrySecondaryKey MatchNone { get; }
 
+    // RFC 9110 Section 5.5: a field value is made of visible ASCII characters, spaces and horizontal tabs,
+    // so NUL can never appear in one and is safe as a marker.
+    private const string AbsentValue = "\u0000";
+
     private readonly Dictionary<string, string>? _headers;
 
     private CacheEntrySecondaryKey(Dictionary<string, string> headers)
@@ -35,6 +39,21 @@ internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondary
             return MatchAll;
 
         return new CacheEntrySecondaryKey(new Dictionary<string, string>(headers, StringComparer.OrdinalIgnoreCase));
+    }
+
+    /// <summary>Records that a header nominated by <c>Vary</c> was absent from the request.</summary>
+    /// <remarks>
+    /// RFC 9111 Section 4.1: a nominated field matches when it is absent from both the stored request and
+    /// the presented one, or present in both with the same value. Absence therefore has to be recorded.
+    /// Leaving it out made the key of a request that carried none of the nominated headers indistinguishable
+    /// from the key of a response with no <c>Vary</c> at all, which matches every request.
+    /// </remarks>
+    public void AddAbsent(string name)
+    {
+        if (_headers is null)
+            return;
+
+        _headers.TryAdd(name, AbsentValue);
     }
 
     public void Add(string name, string value)
@@ -84,6 +103,10 @@ internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondary
                 {
                     requestKey.Add(headerName, value);
                 }
+            }
+            else
+            {
+                requestKey.AddAbsent(headerName);
             }
         }
 

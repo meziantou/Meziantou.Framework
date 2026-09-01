@@ -167,6 +167,12 @@ internal sealed class HttpCache
         if (!IsCacheableStatusCode(response.StatusCode))
             return false;
 
+        // RFC 9111 Section 4.1: a stored response with "Vary: *" can never be selected for any request, so
+        // storing it is pure waste. This is checked before the body is read rather than after.
+        var vary = response.Headers.Vary;
+        if (vary.Count > 0 && vary.Contains("*"))
+            return false;
+
         var requestCacheControl = request.Headers.CacheControl;
         var responseCacheControl = response.Headers.CacheControl;
 

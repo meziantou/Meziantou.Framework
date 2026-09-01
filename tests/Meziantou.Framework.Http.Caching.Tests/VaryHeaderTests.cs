@@ -1,4 +1,5 @@
 using System.Net;
+using Meziantou.Framework.Http.Caching.InMemory;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
 
@@ -371,6 +372,34 @@ public sealed class VaryHeaderTests
                 Content-Type: text/plain; charset=utf-8
               Value: second
             """);
+    }
+
+    [Fact]
+    public async Task WhenVaryStarThenTheResponseIsNotStored()
+    {
+        var store = new InMemoryHttpCacheStore();
+        using var innerHandler = new StubHandler();
+        using var handler = new HttpCachingDelegateHandler(innerHandler, store);
+        using var client = new HttpClient(handler);
+
+        using var response = await client.GetAsync("http://example.com/resource", CancellationToken.None);
+        _ = await response.Content.ReadAsStringAsync(CancellationToken.None);
+
+        // RFC 9111 Section 4.1: an entry stored under "Vary: *" can never be selected for any request, so
+        // storing it only takes up room that nothing will ever reclaim.
+        Assert.Empty(await store.GetEntriesAsync("GET http://example.com/resource", CancellationToken.None));
+    }
+
+    private sealed class StubHandler : HttpMessageHandler
+    {
+        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership is transferred to the caller")]
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("content") };
+            response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=3600");
+            response.Headers.TryAddWithoutValidation("Vary", "*");
+            return Task.FromResult(response);
+        }
     }
 
     [Fact]

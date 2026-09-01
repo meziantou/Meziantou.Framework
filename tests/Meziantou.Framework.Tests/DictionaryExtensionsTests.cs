@@ -61,7 +61,7 @@ public sealed class DictionaryExtensionsTests
         var dict = new Dictionary<string, string>(StringComparer.Ordinal);
 
         Assert.Throws<InvalidOperationException>(() => dict.GetOrAdd("key", _ => throw new InvalidOperationException()));
-        Assert.False(dict.ContainsKey("key"));
+        Assert.DoesNotContain("key", dict);
 
         Assert.Equal("recovered", dict.GetOrAdd("key", _ => "recovered"));
         Assert.Equal("recovered", dict["key"]);

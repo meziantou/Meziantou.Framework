@@ -15,6 +15,15 @@ public sealed class HttpCachingOptions
     public long? MaximumResponseSize { get; set; } = 5 * 1024 * 1024; // 5 MB default
 
     /// <summary>
+    /// Gets or sets a callback invoked when the cache store fails.
+    /// A store failure never fails the request: the lookup is treated as a miss and the write is skipped, so
+    /// a degraded store degrades to no caching rather than to a broken <see cref="HttpClient"/>. This
+    /// callback is the only way to observe that, so set it if you need the failures to be visible.
+    /// Default is null (store failures are silently ignored).
+    /// </summary>
+    public Action<Exception>? OnStoreError { get; set; }
+
+    /// <summary>
     /// Gets or sets a predicate that determines whether a response should be cached.
     /// When the predicate returns true, normal caching logic applies.
     /// When the predicate returns false, the response is not cached.

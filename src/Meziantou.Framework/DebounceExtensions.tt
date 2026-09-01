@@ -11,7 +11,6 @@
 #nullable enable
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Meziantou.Framework;
 
@@ -51,19 +50,37 @@ public static class DebounceExtensions
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        var last = 0;
+        var l = new object();
+        ITimer? timer = null;
+<# if (i > 0) { #>
+        <#= GetTupleTypeString(i) #> args = <#= GetTupleDefaultValue(i) #>;
+<# } #>
         return (<#= GetArgsString(i) #>) =>
         {
-            var current = Interlocked.Increment(ref last);
-            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            lock (l)
             {
-                if (current == last)
+<# if (i > 0) { #>
+                args = <#= GetTupleCreationExpression(i) #>;
+<# } #>
+                // A single timer is reused and restarted on every call. Scheduling one Task.Delay per
+                // call kept every pending delay alive for the whole interval, which is the opposite of
+                // what a debounce is reached for on a high-frequency event.
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
-                    action(<#= GetArgsString(i) #>);
-                }
+<# if (i > 0) { #>
+                    <#= GetTupleTypeString(i) #> pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
 
-                task.Dispose();
-            }, TaskScheduler.Default);
+<# } #>
+                    action(<#= GetTupleItemsString(i, "pendingArgs") #>);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                // Restart the countdown so only the last call of a burst fires
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
         };
     }
 
@@ -95,6 +112,54 @@ public static class DebounceExtensions
         {
             str += "    /// <typeparam name=\"T" + i + "\">The type of the parameter " + i + " of the action.</typeparam>\r\n";
         }
+        return str;
+    }
+
+    static string GetTupleTypeString(int count)
+    {
+        return count switch
+        {
+            1 => "T0",
+            _ => "(" + GetTemplateString(count).Substring(1, GetTemplateString(count).Length - 2) + ")",
+        };
+    }
+
+    static string GetTupleCreationExpression(int count)
+    {
+        if (count == 1)
+            return "arg0";
+
+        return "(" + GetArgsString(count) + ")";
+    }
+
+    static string GetTupleDefaultValue(int count)
+    {
+        return count switch
+        {
+            1 => "default!",
+            _ => "default",
+        };
+    }
+
+    static string GetTupleItemsString(int count, string tupleName)
+    {
+        if (count == 0)
+            return "";
+
+        if (count == 1)
+            return tupleName;
+
+        var str = "";
+        for (var i = 1; i <= count; i++)
+        {
+            if (i > 1)
+            {
+                str += ", ";
+            }
+
+            str += tupleName + ".Item" + i;
+        }
+
         return str;
     }
 

@@ -232,6 +232,7 @@ namespace Meziantou.Framework
         public Meziantou.Framework.ProcessWrapper WithArguments(params System.ReadOnlySpan<string> arguments) => throw null;
         public Meziantou.Framework.ProcessWrapper WithArguments(System.Collections.Generic.IEnumerable<string> arguments) => throw null;
         public Meziantou.Framework.ProcessWrapper WithWorkingDirectory(string workingDirectory) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithSearchWorkingDirectory(bool searchWorkingDirectory = true) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public Meziantou.Framework.ProcessWrapper WithCredentials(string userName, string passwordInClearText, string? domain = null) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]

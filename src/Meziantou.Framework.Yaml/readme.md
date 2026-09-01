@@ -891,6 +891,7 @@ Use `TryDeserialize` when a failure is expected and an exception is not wanted.
 | `MaxDepth` | `64` | Caps the nesting depth of mappings and sequences while reading and writing. `0` means the default. |
 | `AllowAnchors` | `true` | Rejects documents declaring anchors. |
 | `AllowAliases` | `true` | Rejects documents using aliases, which prevents alias-expansion amplification. |
+| `MaxAliasExpansionNodeCount` | `100000` | Caps how many nodes aliases may materialize when building a `YamlNode` model. `0` means the default. |
 | `DuplicateKeyHandling` | `Error` | Rejects mappings with duplicate keys. |
 | `UnsafeAllowDeserializeFromTagTypeName` | `false` | Allows a YAML tag to name a CLR type to instantiate. Enable it only for trusted input. |
 
@@ -902,4 +903,16 @@ var options = new YamlSerializerOptions
     AllowAliases = false,
     UnmappedMemberHandling = YamlUnmappedMemberHandling.Disallow,
 };
+```
+
+The document object model expands each alias into a copy of the anchored subtree, so nesting anchors makes the node
+count grow exponentially while the document grows linearly. `MaxDepth` does not bound this, because the growth is in
+breadth rather than depth. `MaxAliasExpansionNodeCount` bounds it directly, and only counts nodes produced by alias
+expansion, so documents that do not use aliases are never affected.
+
+Pass the options to `YamlStream.Load` when reading untrusted input into the model; the parameterless overload uses
+`YamlSerializerOptions.Default`:
+
+```csharp
+var stream = YamlStream.Load(reader, options);
 ```

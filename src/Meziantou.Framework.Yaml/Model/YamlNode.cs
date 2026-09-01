@@ -11,29 +11,29 @@ public abstract class YamlNode
     /// <summary>Reads the next YAML element from the event stream.</summary>
     protected static YamlElement? ReadElement(EventReader eventReader)
     {
-        return ReadElement(eventReader, anchors: null);
+        return ReadElement(eventReader, context: null);
     }
 
-    internal static YamlElement? ReadElement(EventReader eventReader, Dictionary<string, YamlElement>? anchors)
+    internal static YamlElement? ReadElement(EventReader eventReader, YamlModelLoadContext? context)
     {
-        if (eventReader.Accept<MappingStart>())
+        if (eventReader.Peek<MappingStart>() is { } mappingStart)
         {
-            var mapping = YamlMapping.Load(eventReader, anchors);
-            RegisterAnchor(mapping, anchors);
+            var mapping = YamlMapping.Load(eventReader, context);
+            RegisterAnchor(mapping, context, mappingStart.Start, mappingStart.End);
             return mapping;
         }
 
-        if (eventReader.Accept<SequenceStart>())
+        if (eventReader.Peek<SequenceStart>() is { } sequenceStart)
         {
-            var sequence = YamlSequence.Load(eventReader, anchors);
-            RegisterAnchor(sequence, anchors);
+            var sequence = YamlSequence.Load(eventReader, context);
+            RegisterAnchor(sequence, context, sequenceStart.Start, sequenceStart.End);
             return sequence;
         }
 
-        if (eventReader.Accept<Scalar>())
+        if (eventReader.Peek<Scalar>() is { } scalarStart)
         {
             var value = YamlValue.Load(eventReader);
-            RegisterAnchor(value, anchors);
+            RegisterAnchor(value, context, scalarStart.Start, scalarStart.End);
             return value;
         }
 
@@ -41,13 +41,20 @@ public abstract class YamlNode
         {
             var alias = eventReader.Expect<AnchorAlias>();
 
-            if (anchors == null || !anchors.TryGetValue(alias.Value, out var anchored))
+            if (context is not null && !context.AllowAliases)
+            {
+                throw new YamlException(alias.Start, alias.End, "YAML aliases are not allowed.");
+            }
+
+            if (context is null || !context.Anchors.TryGetValue(alias.Value, out var anchored))
             {
                 throw new YamlException(alias.Start, alias.End, FormattableString.Invariant($"Found an alias '*{alias.Value}' referencing an unknown anchor."));
             }
 
-            // The model API does not currently preserve aliases as a distinct node type.
-            // We materialize a copy so that writing the model back out does not emit duplicate anchors.
+            // The model API does not currently preserve aliases as a distinct node type, so the anchored subtree is
+            // copied. That copy is what makes alias amplification possible, so it is charged against a budget first.
+            context.ChargeAliasExpansion(anchored, alias.Value, alias.Start, alias.End);
+
             var clone = (YamlElement)anchored.DeepClone();
             clone.Anchor = null;
             return clone;
@@ -56,9 +63,9 @@ public abstract class YamlNode
         return null;
     }
 
-    private static void RegisterAnchor(YamlElement element, Dictionary<string, YamlElement>? anchors)
+    private static void RegisterAnchor(YamlElement element, YamlModelLoadContext? context, Mark start, Mark end)
     {
-        if (anchors == null)
+        if (context is null)
         {
             return;
         }
@@ -66,7 +73,13 @@ public abstract class YamlNode
         var anchor = element.Anchor;
         if (!string.IsNullOrEmpty(anchor))
         {
-            anchors[anchor] = element;
+            if (!context.AllowAnchors)
+            {
+                throw new YamlException(start, end, "YAML anchors are not allowed.");
+            }
+
+            context.Anchors[anchor] = element;
+            context.RegisterNodeCount(element);
         }
     }
 

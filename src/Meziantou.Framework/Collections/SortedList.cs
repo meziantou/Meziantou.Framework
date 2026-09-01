@@ -48,7 +48,19 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
 
     public int Count { get; private set; }
 
-    public T this[int index] => _items[index];
+    public T this[int index]
+    {
+        get
+        {
+            // Bounds are checked against Count: _items is the backing array and its tail is uninitialized
+            if ((uint)index >= (uint)Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+            }
+
+            return _items[index];
+        }
+    }
 
     public int Capacity
     {
@@ -152,8 +164,8 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
     }
 
     public void CopyTo(T[] array) => CopyTo(array, 0);
-    public void CopyTo(Span<T> array) => _items.CopyTo(array);
-    public void CopyTo(Memory<T> array) => _items.CopyTo(array);
+    public void CopyTo(Span<T> array) => _items.AsSpan(0, Count).CopyTo(array);
+    public void CopyTo(Memory<T> array) => _items.AsMemory(0, Count).CopyTo(array);
 
     void ICollection.CopyTo(Array array, int arrayIndex)
     {
@@ -183,12 +195,21 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
 
     public void CopyTo(int index, Span<T> array, int count)
     {
+        ValidateRange(index, count);
         _items.AsSpan(index, count).CopyTo(array);
     }
 
     public void CopyTo(int index, Memory<T> array, int count)
     {
+        ValidateRange(index, count);
         _items.AsMemory(index, count).CopyTo(array);
+    }
+
+    private void ValidateRange(int index, int count)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(count, Count - index);
     }
 
     public void CopyTo(T[] array, int arrayIndex)

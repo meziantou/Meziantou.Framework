@@ -11,6 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Sources of a package generator, they are compiled by their own project -->
+    <Compile Remove="Packages/PackageGenerator/ModuleAttribute/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="Packages/*.nupkg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

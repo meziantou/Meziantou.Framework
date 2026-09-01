@@ -523,6 +523,41 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    public async Task WaitQueueFullModeDoesNotDropMessages()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            MaxQueueLength = 1,
+            QueueFullMode = FileLoggerQueueFullMode.Wait,
+            TimestampFormat = null,
+            IncludeLogLevel = false,
+            IncludeCategory = false,
+        });
+
+        const int ThreadCount = 8;
+        const int MessagesPerThread = 500;
+
+        var logger = provider.CreateLogger("Test");
+
+        // Dedicated threads, so the producers cannot starve the thread pool the writer runs on
+        await Task.WhenAll(Enumerable.Range(0, ThreadCount).Select(_ => Task.Factory.StartNew(
+            () =>
+            {
+                for (var i = 0; i < MessagesPerThread; i++)
+                {
+                    logger.LogInformation("Message");
+                }
+            }, TestContext.Current.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default)));
+
+        await provider.DisposeAsync();
+
+        var lines = await File.ReadAllLinesAsync(provider.LogFilePath!, TestContext.Current.CancellationToken);
+        Assert.HasCount(ThreadCount * MessagesPerThread, lines);
+    }
+
+    [Fact]
     public async Task DropWriteDoesNotBlock()
     {
         using var tempDirectory = TemporaryDirectory.Create();

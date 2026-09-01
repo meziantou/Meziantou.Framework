@@ -56,6 +56,15 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
     }
 
     [Fact]
+    public void DefaultBuilder_UsesTheDefaultSettings()
+    {
+        // default(InlineSnapshotBuilder) does not run the constructor, so the settings field is null.
+        InlineSnapshotBuilder builder = default;
+
+        builder.Validate(new object(), "{}");
+    }
+
+    [Fact]
     public void Validate_WithSettings()
     {
         InlineSnapshot.Validate(new object(), InlineSnapshotSettings.Default, "{}");

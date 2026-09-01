@@ -13,7 +13,7 @@ public sealed class RandomExtensionsTests
         }
 
         // The previous implementation overflowed and returned 0 for every draw
-        Assert.True(values.Count > 900, $"Expected a spread over [0, 1000), got {values.Count} distinct values");
+        Assert.HasCountGreaterThan(900, values);
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public sealed class RandomExtensionsTests
             values.Add(random.NextUInt64());
         }
 
-        Assert.True(values.Count > 90, $"Expected distinct values over the full range, got {values.Count}");
+        Assert.HasCountGreaterThan(90, values);
     }
 
     [Fact]

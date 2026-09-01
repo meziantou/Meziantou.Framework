@@ -121,6 +121,70 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
         Assert.Equal(5, executed);
     }
 
+    [Fact]
+    public async Task Dispose_DoesNotRunTasksOnTheDisposingThread()
+    {
+        // The join below times out while the first task is still running. Draining on the disposing thread
+        // would then execute the queued tasks concurrently with the still-live worker.
+        using var started = new ManualResetEventSlim(initialState: false);
+        var threadIds = new System.Collections.Concurrent.ConcurrentBag<int>();
+
+        var scheduler = new MonoThreadedTaskScheduler("shutdown")
+        {
+            DequeueOnDispose = true,
+            DisposeThreadJoinTimeout = TimeSpan.FromMilliseconds(50),
+        };
+
+        _ = Task.Factory.StartNew(
+            () =>
+            {
+                started.Set();
+                Thread.Sleep(500);
+                threadIds.Add(Environment.CurrentManagedThreadId);
+            },
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        started.Wait();
+
+        var queued = new Task[5];
+        for (var i = 0; i < queued.Length; i++)
+        {
+            queued[i] = Task.Factory.StartNew(
+                () => threadIds.Add(Environment.CurrentManagedThreadId),
+                CancellationToken.None,
+                TaskCreationOptions.None,
+                scheduler);
+        }
+
+        scheduler.Dispose();
+
+        await Task.WhenAll(queued).WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.HasCount(6, threadIds);
+        Assert.Single(threadIds.Distinct());
+        Assert.DoesNotContain(Environment.CurrentManagedThreadId, threadIds);
+    }
+
+    [Fact]
+    public void QueueTask_AfterDispose_Throws()
+    {
+        var scheduler = new MonoThreadedTaskScheduler("disposed");
+        scheduler.Dispose();
+
+        var exception = Assert.Throws<TaskSchedulerException>(() =>
+        {
+            _ = Task.Factory.StartNew(
+                () => { },
+                CancellationToken.None,
+                TaskCreationOptions.None,
+                scheduler);
+        });
+
+        Assert.IsType<ObjectDisposedException>(exception.InnerException);
+    }
+
     private Task EnqueueTask()
     {
         return Task.Factory.StartNew(() =>

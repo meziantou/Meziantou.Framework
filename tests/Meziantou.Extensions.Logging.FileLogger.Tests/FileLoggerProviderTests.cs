@@ -180,6 +180,26 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    public async Task JsonFormatterOmitsTheTimestampWhenTheFormatIsNull()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            FormatterName = FileFormatterNames.Json,
+            TimestampFormat = null,
+        });
+
+        provider.CreateLogger("Test").LogInformation("Hello");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        var content = await ReadLogFileAsync(provider.LogFilePath);
+        using var document = JsonDocument.Parse(content);
+        Assert.False(document.RootElement.TryGetProperty("Timestamp", out _));
+        Assert.Equal("Hello", document.RootElement.GetProperty("Message").GetString());
+    }
+
+    [Fact]
     public async Task CustomFormatter()
     {
         using var tempDirectory = TemporaryDirectory.Create();

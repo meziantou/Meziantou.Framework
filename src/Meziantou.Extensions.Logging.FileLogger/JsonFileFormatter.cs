@@ -32,7 +32,12 @@ public sealed class JsonFileFormatter : FileFormatter
         using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
-            writer.WriteString("Timestamp", timestamp.ToString(options.TimestampFormat ?? "o", CultureInfo.InvariantCulture));
+
+            // A null format means the timestamp must be omitted, like in SimpleFileFormatter
+            if (options.TimestampFormat is not null)
+            {
+                writer.WriteString("Timestamp", timestamp.ToString(options.TimestampFormat, CultureInfo.InvariantCulture));
+            }
 
             if (options.IncludeLogLevel)
             {

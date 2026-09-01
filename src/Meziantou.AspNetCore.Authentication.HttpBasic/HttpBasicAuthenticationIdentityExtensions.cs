@@ -39,6 +39,17 @@ public static class HttpBasicAuthenticationIdentityExtensions
     }
 
     /// <summary>Adds HTTP Basic authentication using ASP.NET Core Identity to validate credentials and build user principals.</summary>
+    public static AuthenticationBuilder AddHttpBasicIdentity<TUser>(this AuthenticationBuilder builder, string authenticationScheme, Action<HttpBasicAuthenticationOptions> configureOptions)
+        where TUser : class
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentException.ThrowIfNullOrEmpty(authenticationScheme);
+        ArgumentNullException.ThrowIfNull(configureOptions);
+
+        return builder.AddHttpBasicIdentity<TUser>(authenticationScheme, displayName: null, configureOptions, lockoutOnFailure: false);
+    }
+
+    /// <summary>Adds HTTP Basic authentication using ASP.NET Core Identity to validate credentials and build user principals.</summary>
     public static AuthenticationBuilder AddHttpBasicIdentity<TUser>(this AuthenticationBuilder builder, string authenticationScheme, Action<HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure)
         where TUser : class
     {

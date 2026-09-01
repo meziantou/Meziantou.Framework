@@ -983,4 +983,24 @@ public sealed class AssertEqualTests
 
         public override int GetHashCode() => _value;
     }
+
+    [Fact]
+    public void BoxedReadOnlyMemory_EqualAndNotEqualDisagree()
+    {
+        object expected = new ReadOnlyMemory<int>([1, 2, 3]);
+        object actual = new ReadOnlyMemory<int>([1, 2, 3]);
+
+        AssertionsAssert.Equal(expected, actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(expected, actual));
+    }
+
+    [Fact]
+    public void BoxedReadOnlyMemory_NotEqualSucceedsForDifferentContent()
+    {
+        object expected = new ReadOnlyMemory<int>([1, 2, 3]);
+        object actual = new ReadOnlyMemory<int>([1, 2, 4]);
+
+        AssertionsAssert.NotEqual(expected, actual);
+    }
+
 }

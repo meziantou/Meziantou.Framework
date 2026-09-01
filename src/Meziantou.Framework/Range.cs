@@ -110,25 +110,10 @@ public readonly struct Range<T> : IEquatable<Range<T>>
 
     public bool Equals(Range<T> other)
     {
-        if (From is not null)
-        {
-            if (From.CompareTo(other.From) != 0)
-                return false;
-
-            if (other.From is not null && other.From.CompareTo(From) != 0)
-                return false;
-        }
-
-        if (To is not null)
-        {
-            if (To.CompareTo(other.To) != 0)
-                return false;
-
-            if (other.To is not null && other.To.CompareTo(To) != 0)
-                return false;
-        }
-
-        return true;
+        // Both bounds are always compared: skipping the comparison when a bound is null made a null
+        // bound match anything, which is neither symmetric nor consistent with GetHashCode.
+        var comparer = EqualityComparer<T>.Default;
+        return comparer.Equals(From, other.From) && comparer.Equals(To, other.To);
     }
 
     public override int GetHashCode() => HashCode.Combine(From, To);

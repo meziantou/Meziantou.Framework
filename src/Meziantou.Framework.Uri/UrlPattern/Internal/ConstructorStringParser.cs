@@ -35,19 +35,6 @@ internal sealed class ConstructorStringParser
         Done,
     }
 
-    /// <summary>
-    /// Special schemes per URL Standard.
-    /// </summary>
-    private static readonly HashSet<string> SpecialSchemes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "ftp",
-        "file",
-        "http",
-        "https",
-        "ws",
-        "wss",
-    };
-
     public ConstructorStringParser(string input)
     {
         _input = input;
@@ -144,11 +131,9 @@ internal sealed class ConstructorStringParser
                         var nextState = ConstructorStringState.Pathname;
                         var skip = 1;
 
-                        if (_protocolMatchesSpecialScheme)
-                        {
-                            _result.Pathname = "/";
-                        }
-
+                        // The pathname is not defaulted here: the spec leaves it absent so that a pattern
+                        // which stops at the origin wildcards it. ChangeState applies the "/" default on
+                        // the transitions where the spec asks for it.
                         if (NextIsAuthoritySlashes())
                         {
                             nextState = ConstructorStringState.Authority;
@@ -443,7 +428,7 @@ internal sealed class ConstructorStringParser
         try
         {
             var component = UrlPatternComponent.Compile(protocolString, CanonicalizeProtocol, PatternOptions.Default);
-            foreach (var scheme in SpecialSchemes)
+            foreach (var scheme in SpecialSchemes.All)
             {
                 if (component.RegularExpression.IsMatch(scheme))
                 {

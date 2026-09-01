@@ -17,6 +17,7 @@ public sealed class DelayedCancellationTokenSource : IDisposable, IAsyncDisposab
     private readonly CancellationTokenSource _cts;
     private readonly CancellationTokenSource _disposeCts = new();
     private readonly CancellationTokenRegistration _cancelRegistration;
+    private int _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="DelayedCancellationTokenSource"/> class that will be cancelled after the specified delay when the source token is cancelled.</summary>
     /// <param name="cancellationToken">The source cancellation token to monitor.</param>
@@ -53,6 +54,9 @@ public sealed class DelayedCancellationTokenSource : IDisposable, IAsyncDisposab
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
+
         _cancelRegistration.Dispose();
         _disposeCts.Cancel();
         _disposeCts.Dispose();
@@ -61,6 +65,9 @@ public sealed class DelayedCancellationTokenSource : IDisposable, IAsyncDisposab
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
+
         await _cancelRegistration.DisposeAsync().ConfigureAwait(false);
         await _disposeCts.CancelAsync().ConfigureAwait(false);
         _disposeCts.Dispose();

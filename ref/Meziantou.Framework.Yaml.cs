@@ -363,6 +363,7 @@ namespace Meziantou.Framework.Yaml
         public int MaxDepth { get => throw null; init { } }
         public bool AllowAnchors { get => throw null; init { } }
         public bool AllowAliases { get => throw null; init { } }
+        public int MaxAliasExpansionNodeCount { get => throw null; init { } }
         public Meziantou.Framework.Yaml.IYamlTypeInfoResolver? TypeInfoResolver { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlTypeInfo<T> GetTypeInfo<T>() => throw null;
         public bool TryGetTypeInfo<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Yaml.YamlTypeInfo<T>? typeInfo) => throw null;
@@ -557,6 +558,7 @@ namespace Meziantou.Framework.Yaml.Model
         public Meziantou.Framework.Yaml.Events.DocumentEnd DocumentEnd { get => throw null; set { } }
         public Meziantou.Framework.Yaml.Model.YamlElement? Contents { get => throw null; set { } }
         public static Meziantou.Framework.Yaml.Model.YamlDocument Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
+        public static Meziantou.Framework.Yaml.Model.YamlDocument Load(Meziantou.Framework.Yaml.EventReader eventReader, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
         public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
     }
 
@@ -654,7 +656,9 @@ namespace Meziantou.Framework.Yaml.Model
         public bool IsReadOnly { get => throw null; }
         public Meziantou.Framework.Yaml.Model.YamlDocument this[int index] { get => throw null; set { } }
         public static Meziantou.Framework.Yaml.Model.YamlStream Load(System.IO.TextReader stream) => throw null;
+        public static Meziantou.Framework.Yaml.Model.YamlStream Load(System.IO.TextReader stream, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
         public static Meziantou.Framework.Yaml.Model.YamlStream Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
+        public static Meziantou.Framework.Yaml.Model.YamlStream Load(Meziantou.Framework.Yaml.EventReader eventReader, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Model.YamlDocument> GetEnumerator() => throw null;
         public void Add(Meziantou.Framework.Yaml.Model.YamlDocument item) { }

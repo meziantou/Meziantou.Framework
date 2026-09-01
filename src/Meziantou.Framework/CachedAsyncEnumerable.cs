@@ -64,7 +64,7 @@ internal sealed class CachedAsyncEnumerable<T> : ICachedAsyncEnumerable<T>
             await _enumerator.DisposeAsync().ConfigureAwait(false);
             _enumerator = null;
             _enumerated = true;
-            return new(default!);
+            return new();
         }
     }
 

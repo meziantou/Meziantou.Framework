@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.Yaml.Tokens;
 using AnchorAlias = Meziantou.Framework.Yaml.Tokens.AnchorAlias;
 using DocumentEnd = Meziantou.Framework.Yaml.Tokens.DocumentEnd;
@@ -130,6 +131,19 @@ public class Parser<TBuffer> : IParser where TBuffer : ILookAheadBuffer
             if (_currentDepth >= _maxDepth)
             {
                 throw YamlDepthHelper.CreateMaxDepthExceededException(_maxDepth, current.Start, current.End, _sourceName);
+            }
+
+            // Consumers such as converters and the document object model recurse once per nesting level, so a
+            // large MaxDepth can exhaust the stack before the depth limit is reached. Every nested read passes
+            // through here at its deepest point, so probing the stack now turns an uncatchable process crash
+            // into a regular YamlException.
+            try
+            {
+                RuntimeHelpers.EnsureSufficientExecutionStack();
+            }
+            catch (InsufficientExecutionStackException exception)
+            {
+                throw YamlDepthHelper.CreateInsufficientStackException(_currentDepth, current.Start, current.End, _sourceName, exception);
             }
 
             _currentDepth++;

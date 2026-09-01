@@ -9,6 +9,11 @@ public static class DiffTools
     private static readonly LaunchArguments VisualStudioArguments = new(VisualStudioLeftArguments, VisualStudioRightArguments);
     private static readonly LaunchArguments WinMergeArguments = new(WinMergeLeftArguments, WinMergeRightArguments);
 
+    // Numeric ordering so "vim10" ranks above "vim9" and "Beyond Compare 10" above "Beyond Compare 5",
+    // which plain ordinal comparison gets backwards. CompareOptions.NumericOrdering cannot be used here: it is
+    // silently ignored in invariant globalization mode, which would put the older version first.
+    private static readonly IComparer<string?> DirectoryNameComparer = new NumericNameComparer();
+
     private static readonly ToolDefinition[] Definitions =
     [
         new(
@@ -243,6 +248,17 @@ public static class DiffTools
         return resolvedTool is not null;
     }
 
+    internal static LaunchArguments GetLaunchArguments(DiffTool tool)
+    {
+        foreach (var definition in Definitions)
+        {
+            if (definition.Tool == tool)
+                return definition.LaunchArguments;
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(tool), tool, message: null);
+    }
+
     private static List<ResolvedTool> ResolveAvailableTools()
     {
         var result = new List<ResolvedTool>();
@@ -426,10 +442,13 @@ public static class DiffTools
                 {
                     try
                     {
+                        // Order by name so the newest version wins deterministically. Last-write time looks like a
+                        // proxy for "newest" but a directory's timestamp changes whenever its direct children do,
+                        // so an update to an older version would promote it above a newer one.
                         nextRoots.AddRange(
                             Directory
                                 .EnumerateDirectories(root, segment)
-                                .OrderByDescending(Directory.GetLastWriteTimeUtc));
+                                .OrderByDescending(Path.GetFileName, DirectoryNameComparer));
                     }
                     catch (DirectoryNotFoundException)
                     {
@@ -492,45 +511,56 @@ public static class DiffTools
         return pathExtensions.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
-    private static string StandardLeftArguments(string temp, string target) => $"\"{target}\" \"{temp}\"";
-    private static string StandardRightArguments(string temp, string target) => $"\"{temp}\" \"{target}\"";
+    private static string StandardLeftArguments(string temp, string target) => $"{Quote(target)} {Quote(temp)}";
+    private static string StandardRightArguments(string temp, string target) => $"{Quote(temp)} {Quote(target)}";
 
-    private static string RiderLeftArguments(string temp, string target) => $"diff \"{target}\" \"{temp}\"";
-    private static string RiderRightArguments(string temp, string target) => $"diff \"{temp}\" \"{target}\"";
+    private static string RiderLeftArguments(string temp, string target) => $"diff {Quote(target)} {Quote(temp)}";
+    private static string RiderRightArguments(string temp, string target) => $"diff {Quote(temp)} {Quote(target)}";
 
-    private static string VimLeftArguments(string temp, string target) => $"-d \"{target}\" \"{temp}\"";
-    private static string VimRightArguments(string temp, string target) => $"-d \"{temp}\" \"{target}\"";
+    private static string VimLeftArguments(string temp, string target) => $"-d {Quote(target)} {Quote(temp)}";
+    private static string VimRightArguments(string temp, string target) => $"-d {Quote(temp)} {Quote(target)}";
 
-    private static string VisualStudioCodeLeftArguments(string temp, string target) => $"--diff \"{target}\" \"{temp}\"";
-    private static string VisualStudioCodeRightArguments(string temp, string target) => $"--diff \"{temp}\" \"{target}\"";
+    private static string VisualStudioCodeLeftArguments(string temp, string target) => $"--diff {Quote(target)} {Quote(temp)}";
+    private static string VisualStudioCodeRightArguments(string temp, string target) => $"--diff {Quote(temp)} {Quote(target)}";
 
     private static string VisualStudioLeftArguments(string temp, string target)
     {
         var tempTitle = Path.GetFileName(temp);
         var targetTitle = Path.GetFileName(target);
-        return $"/diff \"{target}\" \"{temp}\" \"{targetTitle}\" \"{tempTitle}\"";
+        return $"/diff {Quote(target)} {Quote(temp)} {Quote(targetTitle)} {Quote(tempTitle)}";
     }
 
     private static string VisualStudioRightArguments(string temp, string target)
     {
         var tempTitle = Path.GetFileName(temp);
         var targetTitle = Path.GetFileName(target);
-        return $"/diff \"{temp}\" \"{target}\" \"{tempTitle}\" \"{targetTitle}\"";
+        return $"/diff {Quote(temp)} {Quote(target)} {Quote(tempTitle)} {Quote(targetTitle)}";
     }
 
     private static string WinMergeLeftArguments(string temp, string target)
     {
         var tempTitle = Path.GetFileName(temp);
         var targetTitle = Path.GetFileName(target);
-        return $"/u /wr /e \"{target}\" \"{temp}\" /dl \"{targetTitle}\" /dr \"{tempTitle}\" /cfg Backup/EnableFile=0";
+        return $"/u /wr /e {Quote(target)} {Quote(temp)} /dl {Quote(targetTitle)} /dr {Quote(tempTitle)} /cfg Backup/EnableFile=0";
     }
 
     private static string WinMergeRightArguments(string temp, string target)
     {
         var tempTitle = Path.GetFileName(temp);
         var targetTitle = Path.GetFileName(target);
-        return $"/u /wl /e \"{temp}\" \"{target}\" /dl \"{tempTitle}\" /dr \"{targetTitle}\" /cfg Backup/EnableFile=0";
+        return $"/u /wl /e {Quote(temp)} {Quote(target)} /dl {Quote(tempTitle)} /dr {Quote(targetTitle)} /cfg Backup/EnableFile=0";
     }
+
+    /// <summary>
+    /// Quotes a path for <see cref="System.Diagnostics.ProcessStartInfo.Arguments"/>. A quote is legal in a file
+    /// name on Linux and macOS, and an unescaped one would end the argument early and turn the rest of the path
+    /// into extra arguments for the diff tool.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="CommandLineBuilder"/> implements the rules <see cref="System.Diagnostics.ProcessStartInfo.Arguments"/>
+    /// is parsed with on every platform, and only adds quotes when the value actually needs them.
+    /// </remarks>
+    private static string Quote(string path) => CommandLineBuilder.WindowsQuotedArgument(path);
 
     private static PlatformSettings Windows(string[] executableNames, params string[] searchDirectories) => new(executableNames, searchDirectories);
     private static PlatformSettings Linux(string[] executableNames, params string[] searchDirectories) => new(executableNames, searchDirectories);
@@ -544,6 +574,73 @@ public static class DiffTools
         PlatformSettings? Windows = null,
         PlatformSettings? Linux = null,
         PlatformSettings? Osx = null);
+
+    /// <summary>Orders names so that an embedded number compares by value, independently of the globalization mode.</summary>
+    private sealed class NumericNameComparer : IComparer<string?>
+    {
+        public int Compare(string? x, string? y)
+        {
+            if (ReferenceEquals(x, y))
+                return 0;
+
+            if (x is null)
+                return -1;
+
+            if (y is null)
+                return 1;
+
+            var xIndex = 0;
+            var yIndex = 0;
+
+            while (xIndex < x.Length && yIndex < y.Length)
+            {
+                if (char.IsAsciiDigit(x[xIndex]) && char.IsAsciiDigit(y[yIndex]))
+                {
+                    var comparison = CompareNumbers(x, ref xIndex, y, ref yIndex);
+                    if (comparison != 0)
+                        return comparison;
+                }
+                else
+                {
+                    var comparison = char.ToUpperInvariant(x[xIndex]).CompareTo(char.ToUpperInvariant(y[yIndex]));
+                    if (comparison != 0)
+                        return comparison;
+
+                    xIndex++;
+                    yIndex++;
+                }
+            }
+
+            return (x.Length - xIndex).CompareTo(y.Length - yIndex);
+        }
+
+        private static int CompareNumbers(string x, ref int xIndex, string y, ref int yIndex)
+        {
+            // Leading zeros do not change the value, so they are skipped before the digits are counted.
+            while (xIndex < x.Length && x[xIndex] == '0')
+                xIndex++;
+
+            while (yIndex < y.Length && y[yIndex] == '0')
+                yIndex++;
+
+            var xStart = xIndex;
+            var yStart = yIndex;
+
+            while (xIndex < x.Length && char.IsAsciiDigit(x[xIndex]))
+                xIndex++;
+
+            while (yIndex < y.Length && char.IsAsciiDigit(y[yIndex]))
+                yIndex++;
+
+            var xDigits = x.AsSpan(xStart, xIndex - xStart);
+            var yDigits = y.AsSpan(yStart, yIndex - yStart);
+
+            // The longer run of digits is the larger number once leading zeros are gone.
+            return xDigits.Length != yDigits.Length
+                ? xDigits.Length.CompareTo(yDigits.Length)
+                : xDigits.SequenceCompareTo(yDigits);
+        }
+    }
 
     private sealed record PlatformSettings(string[] ExecutableNames, string[] SearchDirectories);
 }

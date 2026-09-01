@@ -29,6 +29,10 @@ public static class Slug
     /// <summary>Creates a slug from the specified text using default options.</summary>
     /// <param name="text">The text to convert to a slug.</param>
     /// <returns>A slug generated from the input text, or <see langword="null"/> if <paramref name="text"/> is <see langword="null"/>.</returns>
+    /// <remarks>Text that is not well-formed Unicode is accepted: each ill-formed character is treated as <see cref="Rune.ReplacementChar"/>. In invariant globalization mode, where the normalizer accepts ill-formed text, such characters are left as they are.
+    /// <para>The result is an empty string when no character of <paramref name="text"/> is allowed, which is the case for any text
+    /// written outside the default <see cref="SlugOptions.AllowedRanges"/> - every Cyrillic, Greek, Arabic or CJK title, for
+    /// instance. Callers that put the slug in a URL segment or a file path should handle that before using it.</para></remarks>
     [return: NotNullIfNotNull(parameterName: nameof(text))]
     public static string? Create(string? text)
     {
@@ -39,6 +43,10 @@ public static class Slug
     /// <param name="text">The text to convert to a slug.</param>
     /// <param name="options">The options to use for slug generation, or <see langword="null"/> to use default options.</param>
     /// <returns>A slug generated from the input text, or <see langword="null"/> if <paramref name="text"/> is <see langword="null"/>.</returns>
+    /// <remarks>Text that is not well-formed Unicode is accepted: each ill-formed character is treated as <see cref="Rune.ReplacementChar"/>. In invariant globalization mode, where the normalizer accepts ill-formed text, such characters are left as they are.
+    /// <para>The result is an empty string when no character of <paramref name="text"/> is allowed, which is the case for any text
+    /// written outside the default <see cref="SlugOptions.AllowedRanges"/> - every Cyrillic, Greek, Arabic or CJK title, for
+    /// instance. Callers that put the slug in a URL segment or a file path should handle that before using it.</para></remarks>
     [return: NotNullIfNotNull(parameterName: nameof(text))]
     public static string? Create(string? text, SlugOptions? options)
     {
@@ -46,7 +54,7 @@ public static class Slug
             return null;
 
         options ??= SlugOptions.Default;
-        text = text.Normalize(NormalizationForm.FormD);
+        text = Normalize(text, NormalizationForm.FormD);
 
         var separator = options.Separator;
         var maximumLength = options.MaximumLength > 0 ? options.MaximumLength : int.MaxValue;
@@ -62,7 +70,7 @@ public static class Slug
         if (!options.CanEndWithSeparator && separator.Length > 0 && trailingSeparatorStart >= 0)
             sb.Length = trailingSeparatorStart;
 
-        return sb.ToString().Normalize(NormalizationForm.FormC);
+        return Normalize(sb.ToString(), NormalizationForm.FormC);
     }
 
     /// <summary>Builds the slug into <paramref name="sb"/>, keeping the composed result within <paramref name="maximumLength"/>.</summary>
@@ -91,7 +99,7 @@ public static class Slug
         var composedLength = 0;
         var characterStart = -1;
         var characterRuneCount = 0;
-        var separatorLength = separator.Length == 0 ? 0 : separator.Normalize(NormalizationForm.FormC).Length;
+        var separatorLength = separator.Length == 0 ? 0 : Normalize(separator, NormalizationForm.FormC).Length;
         var previousRuneWasHangulJamo = false;
 
         foreach (var rune in text.EnumerateRunes())
@@ -166,6 +174,46 @@ public static class Slug
 
         TryEndCharacter(sb, characterStart, characterRuneCount, maximumLength, ref composedLength);
         trailingSeparatorStart = TrailingSeparatorStart(sb, lastSeparatorStart, separator);
+    }
+
+    /// <summary>Normalizes <paramref name="text"/>, substituting anything the normalizer rejects.</summary>
+    private static string Normalize(string text, NormalizationForm normalizationForm)
+    {
+        try
+        {
+            return text.Normalize(normalizationForm);
+        }
+        catch (ArgumentException)
+        {
+            // string.Normalize rejects text that is not well-formed UTF-16 - an unpaired surrogate, which a
+            // caller produces by cutting a string in the middle of a surrogate pair - and the code points the
+            // normalizer treats as ill-formed. Substituting them costs nothing on the well-formed path, which
+            // never reaches this handler, and lets arbitrary user text through instead of throwing.
+            return ReplaceIllFormedCharacters(text).Normalize(normalizationForm);
+        }
+    }
+
+    /// <summary>Replaces every character the normalizer rejects with <see cref="Rune.ReplacementChar"/>.</summary>
+    private static string ReplaceIllFormedCharacters(string text)
+    {
+        var sb = new StringBuilder(text.Length);
+        Span<char> encoded = stackalloc char[MaxUtf16CharsPerRune];
+
+        // EnumerateRunes already yields the replacement character for an unpaired surrogate, so only the
+        // noncharacters have to be substituted here.
+        foreach (var rune in text.EnumerateRunes())
+        {
+            var replacement = IsNoncharacter(rune) ? Rune.ReplacementChar : rune;
+            sb.Append(encoded[..replacement.EncodeToUtf16(encoded)]);
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>Determines whether the rune is one of the Unicode noncharacters, which never appear in well-formed text.</summary>
+    private static bool IsNoncharacter(Rune rune)
+    {
+        return (rune.Value & 0xFFFE) == 0xFFFE || rune.Value is >= 0xFDD0 and <= 0xFDEF;
     }
 
     /// <summary>

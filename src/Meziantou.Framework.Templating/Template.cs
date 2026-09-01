@@ -552,7 +552,10 @@ public class Template
         var code = block.BuildCode();
         if (block is CodeBlock or ClassMemberBlock && code.Length > 0 && block.Text.Length > 0)
         {
-            var textOffset = code.IndexOf(block.Text, StringComparison.Ordinal);
+            // The block text is emitted last, after whatever prefix BuildCode adds (for an expression
+            // block, "<output>.Write("). Search backwards so a prefix that happens to contain the
+            // block text — "<%=__output__%>", say — does not win over the real occurrence.
+            var textOffset = code.LastIndexOf(block.Text, StringComparison.Ordinal);
             if (textOffset >= 0)
             {
                 var generatedCodeColumnOffset = (writer.Indent * IndentedTextWriter.DefaultTabString.Length) + textOffset;
@@ -833,13 +836,29 @@ public class Template
     /// <returns>The Run method information.</returns>
     protected virtual MethodInfo FindMethod(Assembly assembly)
     {
-        var type = assembly.GetType(ClassName);
-        System.Diagnostics.Debug.Assert(type != null);
+        ArgumentNullException.ThrowIfNull(assembly);
 
-        var methodInfo = type.GetMethod(RunMethodName);
-        System.Diagnostics.Debug.Assert(methodInfo != null);
+        var type = assembly.GetType(ClassName)
+            ?? throw new TemplateException($"Type '{ClassName}' was not found in the generated assembly.");
+
+        // A class member block can declare its own overload of the run method, which makes
+        // Type.GetMethod(name) throw AmbiguousMatchException. Identify the generated one by its
+        // first parameter instead: it is always the output parameter.
+        var methodInfo = Array.Find(
+            type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly),
+            IsRunMethod)
+            ?? throw new TemplateException($"Method '{RunMethodName}' was not found in the generated assembly.");
 
         return methodInfo;
+
+        bool IsRunMethod(MethodInfo method)
+        {
+            if (!string.Equals(method.Name, RunMethodName, StringComparison.Ordinal))
+                return false;
+
+            var parameters = method.GetParameters();
+            return parameters.Length > 0 && string.Equals(parameters[0].Name, OutputParameterName, StringComparison.Ordinal);
+        }
     }
 
     /// <summary>Creates a string writer for capturing template output.</summary>
@@ -872,6 +891,8 @@ public class Template
     /// <param name="parameters">The parameter values to pass to the template.</param>
     public virtual void Run(TextWriter writer, params object?[] parameters)
     {
+        ArgumentNullException.ThrowIfNull(writer);
+
         if (!IsBuilt)
         {
             Build(CancellationToken.None);
@@ -900,7 +921,7 @@ public class Template
     {
         ArgumentNullException.ThrowIfNull(parameters);
 
-        using var writer = new StringWriter();
+        using var writer = CreateStringWriter();
         Run(writer, parameters);
         return writer.ToString();
     }

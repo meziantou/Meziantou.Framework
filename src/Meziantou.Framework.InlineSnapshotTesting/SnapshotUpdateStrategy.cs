@@ -7,7 +7,11 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 public abstract class SnapshotUpdateStrategy
 {
     private const string SnapshotUpdateStrategyEnvironmentVariableName = "INLINESNAPSHOTTESTING_STRATEGY";
-    private static readonly IReadOnlyList<PropertyInfo> SnapshotUpdateStrategyProperties = typeof(SnapshotUpdateStrategy).GetProperties(BindingFlags.Public | BindingFlags.Static);
+
+    // Default is excluded on purpose: its getter calls GetStrategyFromEnvironmentVariable, so resolving it from
+    // here would re-enter the getter and recurse until the process died with an uncatchable StackOverflowException.
+    private static readonly IReadOnlyList<PropertyInfo> SnapshotUpdateStrategyProperties =
+        [.. typeof(SnapshotUpdateStrategy).GetProperties(BindingFlags.Public | BindingFlags.Static).Where(property => property.Name is not nameof(Default))];
 
     /// <summary>Do not update the snapshots and fail the tests if the snapshots are different.</summary>
     public static SnapshotUpdateStrategy Disallow { get; } = new DisallowStrategy();

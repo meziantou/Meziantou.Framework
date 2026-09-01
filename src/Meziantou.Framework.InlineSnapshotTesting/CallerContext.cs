@@ -47,13 +47,20 @@ internal record struct CallerContext(FullPath FilePath, int LineNumber, int Colu
             if (parameterName is not null)
             {
                 var parameters = method.GetParameters();
-                for (var j = 0; j < parameterName.Length; j++)
+                for (var j = 0; j < parameters.Length; j++)
                 {
                     if (parameters[j].Name == parameterName)
                     {
                         parameterIndex = j;
                         break;
                     }
+                }
+
+                // Falling through with an unknown index would let FindArgumentExpression pick the first argument
+                // whose literal happens to equal the expected value, which can be an unrelated argument.
+                if (parameterIndex < 0)
+                {
+                    throw new InlineSnapshotException($"'{method.DeclaringType?.FullName}.{method.Name}' is decorated with '{nameof(InlineSnapshotAssertionAttribute)}' referencing the parameter '{parameterName}', but the method has no such parameter.");
                 }
             }
 

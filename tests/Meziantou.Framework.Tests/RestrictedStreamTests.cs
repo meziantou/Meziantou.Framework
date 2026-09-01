@@ -833,4 +833,130 @@ public sealed class RestrictedStreamTests
         Assert.Equal(3, bytesRead3);
         Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9], buffer.AsSpan(0, 9));
     }
+
+    [Fact]
+    public void CopyTo_HonorsMaxReadLength()
+    {
+        var inner = new CountingStream(new MemoryStream(new byte[1000]));
+        using var stream = new RestrictedStream(inner, new RestrictedStreamOptions
+        {
+            AllowSynchronousCalls = true,
+            AllowReading = true,
+            MaxReadLength = 10,
+        });
+
+        using var destination = new MemoryStream();
+        stream.CopyTo(destination, bufferSize: 256);
+
+        Assert.Equal(1000, destination.Length);
+        Assert.True(inner.MaxReadRequested <= 10, $"A single read asked for {inner.MaxReadRequested} bytes, above the 10-byte cap");
+    }
+
+    [Fact]
+    public async Task CopyToAsync_HonorsMaxReadLength()
+    {
+        var inner = new CountingStream(new MemoryStream(new byte[1000]));
+        await using var stream = new RestrictedStream(inner, new RestrictedStreamOptions
+        {
+            AllowAsynchronousCalls = true,
+            AllowReading = true,
+            MaxReadLength = 10,
+        });
+
+        using var destination = new MemoryStream();
+        await stream.CopyToAsync(destination, bufferSize: 256);
+
+        Assert.Equal(1000, destination.Length);
+        Assert.True(inner.MaxReadRequested <= 10, $"A single read asked for {inner.MaxReadRequested} bytes, above the 10-byte cap");
+    }
+
+    [Fact]
+    public async Task DisposeAsync_DisposesTheWrappedStreamOnce()
+    {
+        var inner = new CountingStream(new MemoryStream());
+        var stream = new RestrictedStream(inner, new RestrictedStreamOptions { AllowReading = true });
+
+        await stream.DisposeAsync();
+
+        Assert.Equal(1, inner.DisposeCount);
+    }
+
+    [Fact]
+    public void Dispose_DisposesTheWrappedStreamOnce()
+    {
+        var inner = new CountingStream(new MemoryStream());
+        var stream = new RestrictedStream(inner, new RestrictedStreamOptions { AllowReading = true });
+
+        stream.Dispose();
+        stream.Dispose();
+
+        Assert.Equal(1, inner.DisposeCount);
+    }
+
+    private sealed class CountingStream(Stream inner) : Stream
+    {
+        private bool _insideDisposeAsync;
+
+        public int MaxReadRequested { get; private set; }
+        public int DisposeCount { get; private set; }
+
+        public override bool CanRead => inner.CanRead;
+        public override bool CanSeek => inner.CanSeek;
+        public override bool CanWrite => inner.CanWrite;
+        public override long Length => inner.Length;
+        public override long Position { get => inner.Position; set => inner.Position = value; }
+        public override void Flush() => inner.Flush();
+        public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
+        public override void SetLength(long value) => inner.SetLength(value);
+        public override void Write(byte[] buffer, int offset, int count) => inner.Write(buffer, offset, count);
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            MaxReadRequested = Math.Max(MaxReadRequested, count);
+            return inner.Read(buffer, offset, count);
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            MaxReadRequested = Math.Max(MaxReadRequested, buffer.Length);
+            return inner.Read(buffer);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            MaxReadRequested = Math.Max(MaxReadRequested, buffer.Length);
+            return inner.ReadAsync(buffer, cancellationToken);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            MaxReadRequested = Math.Max(MaxReadRequested, count);
+            return inner.ReadAsync(buffer, offset, count, cancellationToken);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            // Stream.DisposeAsync routes through Dispose, so that inner call is not counted twice
+            if (!_insideDisposeAsync)
+            {
+                DisposeCount++;
+            }
+
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            DisposeCount++;
+            _insideDisposeAsync = true;
+            try
+            {
+                await base.DisposeAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _insideDisposeAsync = false;
+            }
+        }
+    }
 }

@@ -3406,6 +3406,80 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_Iif_WithAnExistsCondition_ReturnsAQueryEngineError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT IIF(EXISTS(SELECT 1 FROM customers), 1, 0) AS Value
+                    FROM customers
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "IIF does not support a subquery");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Iif_WithAnInSubqueryCondition_ReturnsAQueryEngineError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT IIF(Id IN (SELECT Id FROM customers), 1, 0) AS Value
+                    FROM customers
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "IIF does not support a subquery");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_XmlMethod_WithAnXQueryOnlyExpression_ReturnsAQueryEngineError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        // The XML methods evaluate XPath 1.0, so a FLWOR expression is not supported. It has to say so rather
+        // than letting XPathException escape as a generic handler failure.
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Payload.value('for $i in /root/item return string($i)', 'nvarchar(max)') AS Value
+                    FROM xml_docs
+                    WHERE Id = 1
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "is not a supported XPath 1.0 expression");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_SchemaQualifiedTableName_ResolvesTheQueryRoot()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command => command.CommandText = "SELECT Id FROM dbo.customers",
+            """
+            Id
+            1
+            2
+            4
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_InvalidQuery_ReturnsServerError()
     {
         var invalidQueryTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);

@@ -1045,11 +1045,18 @@ public class DefaultConverter : IConverter
                     return true;
                 }
 
-                var tc = TypeDescriptor.GetConverter(inputType);
-                if (tc is not null && tc.CanConvertTo(typeof(string)))
+                try
                 {
-                    value = (string?)tc.ConvertTo(input, typeof(string));
-                    return true;
+                    var tc = TypeDescriptor.GetConverter(inputType);
+                    if (tc is not null && tc.CanConvertTo(typeof(string)))
+                    {
+                        value = (string?)tc.ConvertTo(context: null, provider as CultureInfo, input, typeof(string));
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // The TypeConverter cannot handle the value, fall back to Convert.ToString
                 }
 
                 value = Convert.ToString(input, provider);

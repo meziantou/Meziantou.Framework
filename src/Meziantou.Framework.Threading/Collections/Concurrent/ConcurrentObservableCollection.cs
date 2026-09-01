@@ -28,6 +28,15 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     private ImmutableList<T> _items = ImmutableList<T>.Empty;
     private DispatchedObservableCollection<T>? _observableCollection;
 
+    // _items is written under _lock but read without it by Count, the indexer, IndexOf, Contains, CopyTo and
+    // GetEnumerator. A plain read is not guaranteed to ever observe the latest write on a weak memory model
+    // (arm64), and the JIT may hoist it out of a loop, so publication goes through an explicit fence.
+    private ImmutableList<T> Items
+    {
+        get => Volatile.Read(ref _items);
+        set => Volatile.Write(ref _items, value);
+    }
+
     /// <summary>Initializes a new instance of the <see cref="ConcurrentObservableCollection{T}"/> class using the synchronization context of the current thread.</summary>
     /// <remarks>
     /// When the current thread has no synchronization context, a default <see cref="SynchronizationContext"/> is used and the collection
@@ -72,22 +81,31 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     {
         get
         {
-            if (_observableCollection is null)
+            // Double-checked locking: the fast path reads the field without the lock, so it needs an acquire
+            // fence. Without it a caller can observe the reference before the constructor's writes are visible
+            // and get a DispatchedObservableCollection whose fields still read as null.
+            var observableCollection = Volatile.Read(ref _observableCollection);
+            if (observableCollection is null)
             {
                 lock (_lock)
                 {
-                    _observableCollection ??= new DispatchedObservableCollection<T>(this, _synchronizationContext);
+                    observableCollection = _observableCollection;
+                    if (observableCollection is null)
+                    {
+                        observableCollection = new DispatchedObservableCollection<T>(this, _synchronizationContext);
+                        Volatile.Write(ref _observableCollection, observableCollection);
+                    }
                 }
             }
 
-            return _observableCollection;
+            return observableCollection;
         }
     }
 
     bool ICollection<T>.IsReadOnly => false;
 
     /// <summary>Gets the number of elements in the collection.</summary>
-    public int Count => _items.Count;
+    public int Count => Items.Count;
 
     bool IList.IsReadOnly => false;
 
@@ -95,9 +113,9 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
 
     int ICollection.Count => Count;
 
-    object ICollection.SyncRoot => ((ICollection)_items).SyncRoot;
+    object ICollection.SyncRoot => ((ICollection)Items).SyncRoot;
 
-    bool ICollection.IsSynchronized => ((ICollection)_items).IsSynchronized;
+    bool ICollection.IsSynchronized => ((ICollection)Items).IsSynchronized;
 
     object? IList.this[int index]
     {
@@ -120,12 +138,12 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     /// <summary>Gets or sets the element at the specified index.</summary>
     public T this[int index]
     {
-        get => _items[index];
+        get => Items[index];
         set
         {
             lock (_lock)
             {
-                _items = _items.SetItem(index, value);
+                Items = Items.SetItem(index, value);
                 _observableCollection?.EnqueueReplace(index, value);
             }
         }
@@ -137,7 +155,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     {
         lock (_lock)
         {
-            _items = _items.Add(item);
+            Items = Items.Add(item);
             _observableCollection?.EnqueueAdd(item);
         }
     }
@@ -155,17 +173,17 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     {
         lock (_lock)
         {
-            var count = _items.Count;
-            _items = _items.AddRange(items);
+            var count = Items.Count;
+            Items = Items.AddRange(items);
             if (SupportRangeNotifications)
             {
-                _observableCollection?.EnqueueAddRange(_items.GetRange(count, _items.Count - count));
+                _observableCollection?.EnqueueAddRange(Items.GetRange(count, Items.Count - count));
             }
             else
             {
                 if (_observableCollection is not null)
                 {
-                    foreach (var item in _items.GetRange(count, _items.Count - count))
+                    foreach (var item in Items.GetRange(count, Items.Count - count))
                     {
                         _observableCollection.EnqueueAdd(item);
                     }
@@ -181,19 +199,19 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     {
         lock (_lock)
         {
-            var count = _items.Count;
-            _items = _items.InsertRange(index, items);
-            var addedItemsCount = _items.Count - count;
+            var count = Items.Count;
+            Items = Items.InsertRange(index, items);
+            var addedItemsCount = Items.Count - count;
             if (SupportRangeNotifications)
             {
-                _observableCollection?.EnqueueInsertRange(index, _items.GetRange(index, addedItemsCount));
+                _observableCollection?.EnqueueInsertRange(index, Items.GetRange(index, addedItemsCount));
             }
             else
             {
                 if (_observableCollection is not null)
                 {
                     var i = index;
-                    foreach (var item in _items.GetRange(index, addedItemsCount))
+                    foreach (var item in Items.GetRange(index, addedItemsCount))
                     {
                         _observableCollection.EnqueueInsert(i, item);
                         i++;
@@ -208,7 +226,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     {
         lock (_lock)
         {
-            _items = _items.Clear();
+            Items = Items.Clear();
             _observableCollection?.EnqueueClear();
         }
     }
@@ -220,7 +238,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     {
         lock (_lock)
         {
-            _items = _items.Insert(index, item);
+            Items = Items.Insert(index, item);
             _observableCollection?.EnqueueInsert(index, item);
         }
     }
@@ -232,10 +250,10 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     {
         lock (_lock)
         {
-            var newList = _items.Remove(item);
-            if (_items != newList)
+            var newList = Items.Remove(item);
+            if (Items != newList)
             {
-                _items = newList;
+                Items = newList;
                 _observableCollection?.EnqueueRemove(item);
                 return true;
             }
@@ -250,7 +268,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     {
         lock (_lock)
         {
-            _items = _items.RemoveAt(index);
+            Items = Items.RemoveAt(index);
             _observableCollection?.EnqueueRemoveAt(index);
         }
     }
@@ -258,7 +276,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     /// <summary>Returns an enumerator that iterates through the collection.</summary>
     public IEnumerator<T> GetEnumerator()
     {
-        return _items.GetEnumerator();
+        return Items.GetEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -271,7 +289,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     /// <returns>The index of the item if found; otherwise, -1.</returns>
     public int IndexOf(T item)
     {
-        return _items.IndexOf(item);
+        return Items.IndexOf(item);
     }
 
     /// <summary>Determines whether the collection contains a specific item.</summary>
@@ -279,7 +297,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     /// <returns><see langword="true"/> if the item is found; otherwise, <see langword="false"/>.</returns>
     public bool Contains(T item)
     {
-        return _items.Contains(item);
+        return Items.Contains(item);
     }
 
     /// <summary>Copies the elements of the collection to an array, starting at a particular array index.</summary>
@@ -287,7 +305,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     /// <param name="arrayIndex">The zero-based index in the array at which copying begins.</param>
     public void CopyTo(T[] array, int arrayIndex)
     {
-        _items.CopyTo(array, arrayIndex);
+        Items.CopyTo(array, arrayIndex);
     }
 
     /// <summary>Sorts the elements in the collection using the default comparer.</summary>
@@ -302,8 +320,8 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     {
         lock (_lock)
         {
-            _items = _items.Sort(comparer);
-            _observableCollection?.EnqueueReset(_items);
+            Items = Items.Sort(comparer);
+            _observableCollection?.EnqueueReset(Items);
         }
     }
 
@@ -319,8 +337,8 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     {
         lock (_lock)
         {
-            _items = ImmutableList.CreateRange(_items.Order(comparer));
-            _observableCollection?.EnqueueReset(_items);
+            Items = ImmutableList.CreateRange(Items.Order(comparer));
+            _observableCollection?.EnqueueReset(Items);
         }
     }
 
@@ -333,8 +351,8 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
             var item = (T)value!;
             lock (_lock)
             {
-                var index = _items.Count;
-                _items = _items.Add(item);
+                var index = Items.Count;
+                Items = Items.Add(item);
                 _observableCollection?.EnqueueAdd(item);
                 return index;
             }
@@ -400,7 +418,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
 
     void ICollection.CopyTo(Array array, int index)
     {
-        ((ICollection)_items).CopyTo(array, index);
+        ((ICollection)Items).CopyTo(array, index);
     }
 
     private static bool IsCompatibleObject(object? value)

@@ -32,4 +32,9 @@ internal static class YamlDepthHelper
     {
         return new YamlException(sourceName, start, end, $"The maximum nesting depth of {maxDepth} has been exceeded.");
     }
+
+    public static YamlException CreateInsufficientStackException(int depth, Mark start, Mark end, string? sourceName, Exception innerException)
+    {
+        return new YamlException(sourceName, start, end, $"The document is nested too deeply to be processed on the current thread. Nesting depth {depth} exhausted the available stack space. Reduce MaxDepth, or process the document on a thread with a larger stack.", innerException);
+    }
 }

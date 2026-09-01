@@ -12,9 +12,9 @@ public static class QueryStringUtilities
     /// <param name="name">The name of the query key.</param>
     /// <param name="value">The query value.</param>
     /// <returns>The combined result.</returns>
+    /// <remarks>A <see langword="null"/> <paramref name="value"/> appends nothing, which is how <see cref="RemoveQueryString"/> drops a parameter.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public static string AddQueryString(string uri, string name, string? value)
     {
         ArgumentNullException.ThrowIfNull(uri);
@@ -39,10 +39,10 @@ public static class QueryStringUtilities
 
     /// <summary>Append the given query keys and values to the URI.</summary>
     /// <param name="uri">The base URI.</param>
-    /// <param name="queryString">A dictionary of query keys and values to append.</param>
+    /// <param name="queryString">A collection of query names and values to append, or <see langword="null"/>.</param>
     /// <returns>The combined result.</returns>
+    /// <remarks>Unlike the other overloads, a <see langword="null"/> <paramref name="queryString"/> returns <paramref name="uri"/> unchanged.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
     public static string AddQueryString(string uri, IEnumerable<(string Name, string? Value)>? queryString)
     {
         ArgumentNullException.ThrowIfNull(uri);
@@ -54,13 +54,14 @@ public static class QueryStringUtilities
 
     /// <summary>Append the given query keys and values to the URI.</summary>
     /// <param name="uri">The base URI.</param>
-    /// <param name="queryString">A dictionary of query keys and values to append.</param>
+    /// <param name="queryString">A collection of query names and values to append.</param>
     /// <returns>The combined result.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
     public static string AddQueryString(string uri, IEnumerable<(string Name, StringValues Value)> queryString)
     {
         ArgumentNullException.ThrowIfNull(uri);
+        ArgumentNullException.ThrowIfNull(queryString);
 
         return AddQueryString(uri, queryString.Select(tuple => KeyValuePair.Create(tuple.Name, tuple.Value)));
     }
@@ -169,7 +170,7 @@ public static class QueryStringUtilities
         return sb.ToString();
     }
 
-    /// <summary>Append the given query key and value to the URI.</summary>
+    /// <summary>Adds or replaces the given query keys and values in the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of name value query pairs to set.</param>
     /// <returns>The combined result.</returns>
@@ -192,7 +193,7 @@ public static class QueryStringUtilities
         return SetQueryString(uri, parsed);
     }
 
-    /// <summary>Append the given query key and value to the URI.</summary>
+    /// <summary>Adds or replaces the given query keys and values in the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of name value query pairs to set.</param>
     /// <returns>The combined result.</returns>
@@ -215,7 +216,7 @@ public static class QueryStringUtilities
         return SetQueryString(uri, parsed);
     }
 
-    /// <summary>Append the given query key and value to the URI.</summary>
+    /// <summary>Adds or replaces the given query keys and values in the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of name value query pairs to set.</param>
     /// <returns>The combined result.</returns>
@@ -258,7 +259,7 @@ public static class QueryStringUtilities
         return SetQueryString(uri, parsed);
     }
 
-    /// <summary>Append the given query key and value to the URI.</summary>
+    /// <summary>Adds or replaces the given query keys and values in the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of name value query pairs to set.</param>
     /// <returns>The combined result.</returns>

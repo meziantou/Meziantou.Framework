@@ -137,6 +137,9 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
         }
     }
 
+    /// <summary>Gets the maximum concurrency level supported by this scheduler, which is always 1.</summary>
+    public override int MaximumConcurrencyLevel => 1;
+
     protected override IEnumerable<Task> GetScheduledTasks() => _tasks;
 
     protected override void QueueTask(Task task)

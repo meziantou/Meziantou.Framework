@@ -8,7 +8,8 @@ namespace Meziantou.Framework.Http;
 /// </summary>
 public sealed class LinkHeaderValue
 {
-    private static ReadOnlySpan<char> ParameterSeparators => [' ', '\t', '=', ';', ','];
+    private static ReadOnlySpan<char> WhiteSpaceCharacters => [' ', '\t', '\r', '\n'];
+    private static ReadOnlySpan<char> ParameterSeparators => [' ', '\t', '\r', '\n', '=', ';', ','];
 
     /// <summary>Gets the URL of the link.</summary>
     [SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "Breaking change")]
@@ -49,13 +50,20 @@ public sealed class LinkHeaderValue
     /// <returns>A collection of <see cref="LinkHeaderValue"/> instances.</returns>
     // https://httpwg.org/specs/rfc8288.html
     // https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.3
-    public static IEnumerable<LinkHeaderValue> Parse(HttpResponseMessage httpResponse) => Parse(httpResponse.Headers);
+    public static IEnumerable<LinkHeaderValue> Parse(HttpResponseMessage httpResponse)
+    {
+        ArgumentNullException.ThrowIfNull(httpResponse);
+
+        return Parse(httpResponse.Headers);
+    }
 
     /// <summary>Parses Link header values from HTTP headers.</summary>
     /// <param name="headers">The HTTP headers containing Link header values.</param>
     /// <returns>A collection of <see cref="LinkHeaderValue"/> instances.</returns>
     public static IEnumerable<LinkHeaderValue> Parse(HttpHeaders headers)
     {
+        ArgumentNullException.ThrowIfNull(headers);
+
         if (!headers.TryGetValues("Link", out var values))
             return [];
 
@@ -65,7 +73,12 @@ public sealed class LinkHeaderValue
     /// <summary>Parses a Link header value from a string.</summary>
     /// <param name="value">The Link header value to parse.</param>
     /// <returns>A collection of <see cref="LinkHeaderValue"/> instances.</returns>
-    public static IEnumerable<LinkHeaderValue> Parse(string value) => Parse(value.AsSpan());
+    public static IEnumerable<LinkHeaderValue> Parse(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        return Parse(value.AsSpan());
+    }
 
     /// <summary>Parses a Link header value from a character span.</summary>
     /// <param name="value">The Link header value to parse.</param>
@@ -100,7 +113,7 @@ public sealed class LinkHeaderValue
                 continue;
             }
 
-            var targetLink = value[..index].ToString();
+            var targetLink = value[..index].Trim().ToString();
             value = value[(index + 1)..];
 
             // Parse parameters
@@ -239,7 +252,7 @@ public sealed class LinkHeaderValue
 
         static ReadOnlySpan<char> ConsumeOptionalWhiteSpaces(ReadOnlySpan<char> value)
         {
-            var index = value.IndexOfAnyExcept(' ', '\t');
+            var index = value.IndexOfAnyExcept(WhiteSpaceCharacters);
             return index == -1 ? [] : value[index..];
         }
 

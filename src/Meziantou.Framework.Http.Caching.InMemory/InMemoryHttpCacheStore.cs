@@ -44,7 +44,7 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
                 await JsonSerializer.SerializeAsync(stream, snapshot, InMemorySerializationContext.Default.InMemoryHttpCachePersistenceData, cancellationToken).ConfigureAwait(false);
             }
 
-            File.Move(tempFilePath, filePath, overwrite: true);
+            await MoveOverwritingWithRetryAsync(tempFilePath, filePath, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -59,6 +59,27 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
             }
             catch (UnauthorizedAccessException)
             {
+            }
+        }
+    }
+
+    /// <summary>Replaces the destination, waiting out the concurrent saves that are replacing it at the same time.</summary>
+    private static async Task MoveOverwritingWithRetryAsync(string sourceFilePath, string destinationFilePath, CancellationToken cancellationToken)
+    {
+        // Replacing a file is atomic on Unix, but Windows denies access to the destination while another move is
+        // replacing it, so concurrent saves to the same path have to wait for each other instead of failing.
+        const int MaxAttempts = 50;
+
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Move(sourceFilePath, destinationFilePath, overwrite: true);
+                return;
+            }
+            catch (Exception ex) when (attempt < MaxAttempts && ex is UnauthorizedAccessException or (IOException and not (FileNotFoundException or DirectoryNotFoundException)))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(20), cancellationToken).ConfigureAwait(false);
             }
         }
     }

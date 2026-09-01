@@ -64,6 +64,18 @@ public sealed class SynchronizationContextExtensionsTests
         Assert.Equal(0, result.PostCount);
     }
 
+    [Fact]
+    public async Task GetAwaiter_PassesTheContinuationAsTheCallbackState()
+    {
+        // The continuation is passed as state rather than captured, so the posted callback allocates no closure.
+        using var synchronizationContext = new DedicatedThreadSynchronizationContext();
+
+        await Task.Run(async () => await synchronizationContext).WaitAsync(Timeout);
+
+        Assert.Equal(1, synchronizationContext.PostCount);
+        Assert.IsType<Action>(synchronizationContext.LastPostedState);
+    }
+
     private readonly record struct AwaitResult(int BeforeAwaitThreadId, int AfterAwaitThreadId, SynchronizationContext? CurrentSynchronizationContext, int PostCount);
 
     private sealed class DedicatedThreadSynchronizationContext : SynchronizationContext, IDisposable
@@ -72,6 +84,7 @@ public sealed class SynchronizationContextExtensionsTests
         private readonly Thread _thread;
         private readonly TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _postCount;
+        private object? _lastPostedState;
 
         public DedicatedThreadSynchronizationContext()
         {
@@ -89,11 +102,14 @@ public sealed class SynchronizationContextExtensionsTests
 
         public int PostCount => Volatile.Read(ref _postCount);
 
+        public object? LastPostedState => Volatile.Read(ref _lastPostedState);
+
         public override void Post(SendOrPostCallback d, object? state)
         {
             ArgumentNullException.ThrowIfNull(d);
 
             Interlocked.Increment(ref _postCount);
+            Volatile.Write(ref _lastPostedState, state);
             _workItems.Add(new WorkItem(d, state));
         }
 

@@ -69,29 +69,23 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
             return;
 
-        // Signal the worker thread to stop, then wait for it to exit before disposing the wait
-        // handles it relies on. Disposing a wait handle while another thread is blocked on it (in
-        // ThreadExecute's WaitAny) is a race condition that can throw or corrupt the wait, so the
-        // join must happen first.
+        // Signal the worker thread to stop. It drains the remaining tasks itself (see ThreadExecute), so
+        // the single-threaded execution guarantee holds even when the join below times out.
         _stop.Set();
 
         var thread = Thread;
-        if (thread is not null && thread.IsAlive)
-        {
-            thread.Join(DisposeThreadJoinTimeout);
-        }
+        var exited = thread is null || !thread.IsAlive || thread.Join(DisposeThreadJoinTimeout);
 
         Thread = null;
 
-        // The worker thread has stopped, so draining the remaining tasks on the current thread no
-        // longer races with the worker and preserves the single-threaded execution guarantee.
-        if (DequeueOnDispose)
+        // Disposing a wait handle while the worker is still blocked on it (in ThreadExecute's WaitAny) is a
+        // race condition that can throw or corrupt the wait. When the join times out the worker is still
+        // running, so the handles are left to be reclaimed by the GC instead of being pulled out from under it.
+        if (exited)
         {
-            Dequeue();
+            _stop.Dispose();
+            _dequeue.Dispose();
         }
-
-        _stop.Dispose();
-        _dequeue.Dispose();
     }
 
     private bool ExecuteTask(Task task)
@@ -134,13 +128,24 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
             Dequeue();
         }
         while (true);
+
+        // The final drain runs on the worker thread rather than on the thread calling Dispose, so queued
+        // tasks never execute on two threads at once.
+        if (DequeueOnDispose)
+        {
+            Dequeue();
+        }
     }
+
+    /// <summary>Gets the maximum concurrency level supported by this scheduler, which is always 1.</summary>
+    public override int MaximumConcurrencyLevel => 1;
 
     protected override IEnumerable<Task> GetScheduledTasks() => _tasks;
 
     protected override void QueueTask(Task task)
     {
         ArgumentNullException.ThrowIfNull(task);
+        ObjectDisposedException.ThrowIf(_disposed != 0, this);
 
         _tasks.Enqueue(task);
         _dequeue.Set();

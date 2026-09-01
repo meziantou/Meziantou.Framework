@@ -151,6 +151,16 @@ Built-in scalar function mappings can be customized through `TdsQueryEngineOptio
 
 Comparisons follow SQL's three-valued logic: a comparison with `NULL` is never true, `<>` and `NOT` do not match `NULL` rows, and `NOT IN` over a list containing `NULL` matches nothing. `NOT` is pushed down into the predicate instead of negating an already-evaluated result, so `WHERE NOT (Name = 'a')` excludes rows where `Name` is `NULL`, as SQL Server does. `JOIN ... ON` is an exception: it currently matches `NULL` keys to each other.
 
+The XML methods (`.query()`, `.value()`, `.exist()`, `.nodes()`) take **XPath 1.0**, not XQuery. Common path
+expressions such as `/root/item[@id="2"]/text()` behave the same in both, but XQuery-only constructs - FLWOR
+(`for $x in ... return`), `sql:variable()`, `sql:column()`, and the XQuery function library - are not supported
+and produce a query engine error.
+
+Table names are matched on the object name alone, so any schema or database qualifier is ignored:
+`customers`, `dbo.customers` and `otherdb.dbo.customers` all resolve to the query root named `customers`.
+Authorization uses that same unqualified name, so a qualifier cannot be used to reach a root that
+`IsAuthorized` denies.
+
 Main unsupported SQL features include `LIKE`, recursive CTEs, many advanced subquery forms (for example scalar subqueries in projections), DML (`INSERT`/`UPDATE`/`DELETE`), and multiple statements/result sets.
 
 ## Access command text, stored procedure name, and parameters

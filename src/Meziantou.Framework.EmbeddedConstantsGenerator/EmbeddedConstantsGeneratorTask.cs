@@ -134,6 +134,7 @@ internal static class EmbeddedConstantsGeneratorTask
                 sb.Append("    ").Append(options.MemberVisibility).Append(" const string ").Append(entry.BaseName).Append("Text = ");
                 AppendStringLiteral(sb, entry.File.Text!);
                 sb.AppendLine(";");
+                first = false;
             }
 
             if (entry.File.Kind.HasFlag(EmbeddedConstantKind.Binary))
@@ -146,9 +147,8 @@ internal static class EmbeddedConstantsGeneratorTask
                 sb.Append("    ").Append(options.MemberVisibility).Append(" static global::System.ReadOnlySpan<byte> ").Append(entry.BaseName).Append("Bytes => ");
                 AppendByteArray(sb, entry.File.Bytes);
                 sb.AppendLine(";");
+                first = false;
             }
-
-            first = false;
         }
 
         sb.AppendLine("}");
@@ -167,7 +167,7 @@ internal static class EmbeddedConstantsGeneratorTask
         }
 
         UsePathBasedNamesForImplicitDuplicates(options, entries);
-        ReportDuplicateMembers(entries, errors);
+        ReportInvalidMemberNames(options, entries, errors);
 
         return entries;
     }
@@ -182,17 +182,39 @@ internal static class EmbeddedConstantsGeneratorTask
 
         foreach (var entry in duplicatedImplicitEntries)
         {
+            // A file outside the project directory has no stable relative path. Naming the member after its
+            // absolute path would make the generated API depend on where the repository is checked out, so
+            // the collision is reported instead and the file needs explicit Name metadata.
             var relativePath = MakeRelativePath(entry.File.FullPath, options.ProjectDirectory);
+            if (relativePath is null)
+                continue;
+
             var pathWithoutExtension = Path.ChangeExtension(relativePath, extension: null);
             entry.BaseName = ToPascalCaseIdentifier(pathWithoutExtension);
         }
     }
 
-    private static void ReportDuplicateMembers(List<EmbeddedConstantEntry> entries, List<ValidationError> errors)
+    private static void ReportInvalidMemberNames(GeneratorOptions options, List<EmbeddedConstantEntry> entries, List<ValidationError> errors)
     {
         foreach (var group in GetDuplicateMemberNames(entries))
         {
-            errors.Add(ValidationError.DuplicateMemberName(group.MemberName));
+            var paths = group.Entries
+                .Select(entry => entry.File.FullPath)
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(path => path, StringComparer.Ordinal)
+                .ToArray();
+            errors.Add(ValidationError.DuplicateMemberName(group.MemberName, paths));
+        }
+
+        foreach (var entry in entries)
+        {
+            foreach (var memberName in entry.GetMemberNames())
+            {
+                if (string.Equals(memberName, options.ClassName, StringComparison.Ordinal))
+                {
+                    errors.Add(ValidationError.MemberNameMatchesClassName(memberName, entry.File.FullPath));
+                }
+            }
         }
     }
 
@@ -335,26 +357,35 @@ internal static class EmbeddedConstantsGeneratorTask
         return bytes;
     }
 
-    private static string MakeRelativePath(string path, string? basePath)
+    /// <summary>
+    /// Returns <paramref name="path"/> relative to <paramref name="basePath"/>, or <see langword="null"/>
+    /// when it is not under it. Path.GetRelativePath applies the comparison rules of the current platform.
+    /// </summary>
+    private static string? MakeRelativePath(string path, string? basePath)
     {
         if (string.IsNullOrWhiteSpace(basePath))
-            return path;
+            return null;
 
         try
         {
-            var fullBasePath = Path.GetFullPath(basePath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
-            var fullPath = Path.GetFullPath(path);
-            if (fullPath.StartsWith(fullBasePath, StringComparison.OrdinalIgnoreCase))
-            {
-                return fullPath.Substring(fullBasePath.Length);
-            }
+            var relativePath = Path.GetRelativePath(Path.GetFullPath(basePath), Path.GetFullPath(path));
+            if (Path.IsPathRooted(relativePath) || IsParentDirectorySegment(relativePath))
+                return null;
+
+            return relativePath;
         }
         catch (Exception)
         {
-            return path;
+            return null;
         }
+    }
 
-        return path;
+    private static bool IsParentDirectorySegment(string relativePath)
+    {
+        if (!relativePath.StartsWith("..", StringComparison.Ordinal))
+            return false;
+
+        return relativePath.Length is 2 || relativePath[2] == Path.DirectorySeparatorChar || relativePath[2] == Path.AltDirectorySeparatorChar;
     }
 
     private static void AppendStringLiteral(StringBuilder sb, string value)
@@ -433,12 +464,17 @@ internal static class EmbeddedConstantsGeneratorTask
             sb.Append(bytes[i].ToString("X2", CultureInfo.InvariantCulture));
             if (i != bytes.Length - 1)
             {
-                sb.Append(", ");
+                sb.Append(',');
             }
 
+            // The separating space goes before the next byte so the line does not end with trailing whitespace
             if (i % 16 == 15 || i == bytes.Length - 1)
             {
                 sb.AppendLine();
+            }
+            else
+            {
+                sb.Append(' ');
             }
         }
 
@@ -585,7 +621,9 @@ internal static class EmbeddedConstantsGeneratorTask
             try
             {
                 var content = Utf8NoBomThrowOnInvalidBytes.GetString(textBytes, 0, textBytes.Length);
-                return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, content, textBytes, errors);
+
+                // The byte member mirrors the file exactly. Only the text member drops the byte order mark.
+                return new EmbeddedFile(file.FullPath, kind, file.ExplicitName, content, bytes, errors);
             }
             catch (DecoderFallbackException)
             {
@@ -655,9 +693,15 @@ internal static class EmbeddedConstantsGeneratorTask
             return new ValidationError("MFECG0004", string.Create(CultureInfo.InvariantCulture, $"Embedded constant file has unsupported Kind value '{kind}'"), filePath);
         }
 
-        public static ValidationError DuplicateMemberName(string memberName)
+        public static ValidationError DuplicateMemberName(string memberName, IReadOnlyList<string> filePaths)
         {
-            return new ValidationError("MFECG0005", string.Create(CultureInfo.InvariantCulture, $"Generated member name '{memberName}' is used by multiple embedded constant files"), filePath: null);
+            var paths = string.Join(", ", filePaths);
+            return new ValidationError("MFECG0005", string.Create(CultureInfo.InvariantCulture, $"Generated member name '{memberName}' is used by multiple embedded constant files ({paths}). Set the Name metadata on all but one of them."), filePaths.Count > 0 ? filePaths[0] : null);
+        }
+
+        public static ValidationError MemberNameMatchesClassName(string memberName, string filePath)
+        {
+            return new ValidationError("MFECG0010", string.Create(CultureInfo.InvariantCulture, $"Generated member name '{memberName}' is the same as the generated class name, which does not compile. Set the Name metadata on this file, or change the 'EmbeddedConstantsClassName' property."), filePath);
         }
 
         public static ValidationError CannotReadFile(string filePath, string message)

@@ -105,10 +105,10 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     /// <summary>Loads data.</summary>
     public static YamlMapping Load(EventReader eventReader)
     {
-        return Load(eventReader, anchors: null);
+        return Load(eventReader, context: null);
     }
 
-    internal static YamlMapping Load(EventReader eventReader, Dictionary<string, YamlElement>? anchors)
+    internal static YamlMapping Load(EventReader eventReader, YamlModelLoadContext? context)
     {
         var mappingStart = eventReader.Expect<MappingStart>();
 
@@ -116,8 +116,8 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
         var contents = new Dictionary<YamlElement, YamlElement?>();
         while (!eventReader.Accept<MappingEnd>())
         {
-            var key = ReadElement(eventReader, anchors);
-            var value = ReadElement(eventReader, anchors);
+            var key = ReadElement(eventReader, context);
+            var value = ReadElement(eventReader, context);
 
             if (key is null || value is null)
             {

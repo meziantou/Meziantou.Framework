@@ -176,6 +176,7 @@ namespace Meziantou.Framework.Threading
         public System.TimeSpan WaitTimeout { get => throw null; set { } }
         public System.TimeSpan DequeueTimeout { get => throw null; set { } }
         public int QueueCount { get => throw null; }
+        public override int MaximumConcurrencyLevel { get => throw null; }
         public MonoThreadedTaskScheduler(string? threadName) { }
         public void Dispose() { }
         protected override System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> GetScheduledTasks() => throw null;

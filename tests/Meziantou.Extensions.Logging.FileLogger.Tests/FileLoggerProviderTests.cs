@@ -271,6 +271,40 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    public async Task RetentionPolicyKeepsTheFilesOfTheOtherProcesses()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+
+        // Log files that another process is writing in the same directory. They are older than the
+        // files of this process, so the retention policy would delete them first if it considered them
+        var otherProcessId = (Environment.ProcessId + 1).ToString(CultureInfo.InvariantCulture);
+        string[] otherProcessFiles = [$"2024-01-01-{otherProcessId}.log", $"2024-01-01-{otherProcessId}_001.log"];
+        foreach (var fileName in otherProcessFiles)
+        {
+            await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullPath, fileName), "other process", TestContext.Current.CancellationToken);
+        }
+
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            RollInterval = RollInterval.Daily,
+            MaxRetainedFiles = 2,
+        }, timeProvider);
+
+        var logger = provider.CreateLogger("Test");
+        for (var i = 0; i < 5; i++)
+        {
+            logger.LogInformation("Day {Index}", i);
+            await provider.FlushAsync(TestContext.Current.CancellationToken);
+            timeProvider.Advance(TimeSpan.FromDays(1));
+        }
+
+        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
+        Assert.Equal([.. otherProcessFiles, $"2024-01-05-{pid}.log", $"2024-01-06-{pid}.log"], GetFileNames(tempDirectory));
+    }
+
+    [Fact]
     public async Task CompressOnRoll()
     {
         using var tempDirectory = TemporaryDirectory.Create();
@@ -486,6 +520,41 @@ public sealed class FileLoggerProviderTests
 
         await provider.FlushAsync(TestContext.Current.CancellationToken);
         Assert.Contains("Hello", await ReadLogFileAsync(provider.LogFilePath));
+    }
+
+    [Fact]
+    public async Task WaitQueueFullModeDoesNotDropMessages()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            MaxQueueLength = 1,
+            QueueFullMode = FileLoggerQueueFullMode.Wait,
+            TimestampFormat = null,
+            IncludeLogLevel = false,
+            IncludeCategory = false,
+        });
+
+        const int ThreadCount = 8;
+        const int MessagesPerThread = 500;
+
+        var logger = provider.CreateLogger("Test");
+
+        // Dedicated threads, so the producers cannot starve the thread pool the writer runs on
+        await Task.WhenAll(Enumerable.Range(0, ThreadCount).Select(_ => Task.Factory.StartNew(
+            () =>
+            {
+                for (var i = 0; i < MessagesPerThread; i++)
+                {
+                    logger.LogInformation("Message");
+                }
+            }, TestContext.Current.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default)));
+
+        await provider.DisposeAsync();
+
+        var lines = await File.ReadAllLinesAsync(provider.LogFilePath!, TestContext.Current.CancellationToken);
+        Assert.HasCount(ThreadCount * MessagesPerThread, lines);
     }
 
     [Fact]

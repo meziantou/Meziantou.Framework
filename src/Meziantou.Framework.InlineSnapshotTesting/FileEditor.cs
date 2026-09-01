@@ -13,8 +13,11 @@ internal static class FileEditor
     private static readonly ConcurrentDictionary<FullPath, Lock> FileLocks = new();
     private static readonly ConcurrentDictionary<FullPath, FullPath> TempFiles = new();
 
-    private static readonly Dictionary<FullPath, List<FileEdit>> Changes = [];
-    private static readonly HashSet<FullPath> Errors = [];
+    // Concurrent because the lock above is per file: two threads updating snapshots in two different files
+    // hold two different locks and would otherwise mutate these two collections at the same time.
+    // The List<FileEdit> of a given file is only ever touched under that file's lock, so it stays a plain list.
+    private static readonly ConcurrentDictionary<FullPath, List<FileEdit>> Changes = new();
+    private static readonly ConcurrentDictionary<FullPath, byte> Errors = new();
 
     private static int GetActualLine(FullPath fullPath, int startLine)
     {
@@ -64,7 +67,7 @@ internal static class FileEditor
         var lockObject = FileLocks.GetOrAdd(context.FilePath, _ => new());
         lock (lockObject)
         {
-            if (Errors.Contains(context.FilePath))
+            if (Errors.ContainsKey(context.FilePath))
                 throw new InlineSnapshotException("The previous merged cannot be resolved. Restart the tests to update this snapshot.");
 
             var tempPath = TempFiles.GetOrAdd(context.FilePath, _ => FullPath.GetTempPath() / (Guid.NewGuid().ToString("N") + ".cs"));
@@ -185,7 +188,7 @@ internal static class FileEditor
                 var potentialMergedExpressions = mergedRoot.DescendantNodesAndSelf(textSpan).OfType<InvocationExpressionSyntax>().ToArray();
                 if (potentialMergedExpressions.Length == 0)
                 {
-                    Errors.Add(context.FilePath);
+                    Errors.TryAdd(context.FilePath, value: default);
                     return;
                 }
 
@@ -205,11 +208,7 @@ internal static class FileEditor
             context.LineNumber,
             invocationSpan.EndLinePosition.Line - invocationSpan.StartLinePosition.Line,
             newInvocationSpan.EndLinePosition.Line - newInvocationSpan.StartLinePosition.Line);
-        if (!Changes.TryGetValue(context.FilePath, out var fileEdits))
-        {
-            fileEdits = [];
-            Changes.Add(context.FilePath, fileEdits);
-        }
+        var fileEdits = Changes.GetOrAdd(context.FilePath, _ => []);
 
         fileEdits.Add(fileEdit);
         fileEdits.Sort((a, b) => a.StartLine - b.StartLine);
@@ -359,6 +358,10 @@ internal static class FileEditor
     {
         foreach (var line in sourceText.Lines)
         {
+            // A text ending with a line break has a trailing empty line whose Start is past the last character.
+            if (line.Start == line.End)
+                continue;
+
             if (sourceText[line.Start] is (' ' or '\t') and var space)
             {
                 for (var i = line.Start + 1; i < line.End; i++)

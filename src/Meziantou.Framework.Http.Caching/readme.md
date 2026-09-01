@@ -3,6 +3,8 @@
 An HTTP caching implementation for `HttpClient` that follows [RFC 7234 (HTTP Caching)](https://www.rfc-editor.org/rfc/rfc7234.html), since obsoleted by [RFC 9111](https://www.rfc-editor.org/rfc/rfc9111.html), together with [RFC 8246 (Immutable directive)](https://www.rfc-editor.org/rfc/rfc8246.html), [RFC 5861 (stale-if-error)](https://www.rfc-editor.org/rfc/rfc5861.html), and [No-Vary-Search](https://httpwg.org/http-extensions/draft-ietf-httpbis-no-vary-search.html).
 
 This is a **private** cache: it is attached to a single `HttpClient` and its entries are not shared between users.
+Responses to requests carrying an `Authorization` header are stored like any other, which is what RFC 9111 Section 3.5
+allows for a private cache. Do not share one `HttpClient`, and therefore one cache, between users.
 
 ## What is it?
 

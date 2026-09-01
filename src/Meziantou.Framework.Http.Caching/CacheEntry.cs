@@ -311,7 +311,7 @@ internal sealed class CacheEntry
     }
 
     /// <summary>Calculates the freshness lifetime per RFC 7234 Section 4.2.1.</summary>
-    public TimeSpan FreshnessLifetime => CacheFreshness.GetFreshnessLifetime(SharedMaxAge, MaxAge, Expires, ResponseDate, LastModified);
+    public TimeSpan FreshnessLifetime => CacheFreshness.GetFreshnessLifetime(MaxAge, Expires, ResponseDate, LastModified);
 
     /// <summary>Gets whether heuristic expiration was used to calculate the freshness lifetime.</summary>
     public bool UsesHeuristicExpiration

@@ -17,4 +17,12 @@ public sealed class FileEditorTests
 
     [Fact]
     public void DetectIndentation_SecondLineIndented() => Assert.Equal("  ", FileEditor.DetectIndentation(SourceText.From("dummy\n  dummy")));
+
+    // A text ending with a line break has a trailing empty line. Indexing it used to throw IndexOutOfRangeException
+    // whenever no earlier line was indented, which is the shape of a top-level-statements file.
+    [Fact]
+    public void DetectIndentation_NoLineIndented_TrailingLineBreak() => Assert.Equal("    ", FileEditor.DetectIndentation(SourceText.From("dummy\ndummy\n")));
+
+    [Fact]
+    public void DetectIndentation_Empty() => Assert.Equal("    ", FileEditor.DetectIndentation(SourceText.From("")));
 }

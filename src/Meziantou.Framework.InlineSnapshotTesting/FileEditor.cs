@@ -51,7 +51,10 @@ internal static class FileEditor
             try
             {
                 stream.CopyTo(ms);
-                stream.Seek(0, SeekOrigin.Begin);
+
+                // The copy, not the source: this branch only runs for a source that cannot seek, and SourceText.From
+                // reads the returned stream from its current position, which CopyTo leaves at the end.
+                ms.Seek(0, SeekOrigin.Begin);
                 return ms;
             }
             catch

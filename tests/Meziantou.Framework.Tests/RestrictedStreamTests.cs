@@ -895,6 +895,8 @@ public sealed class RestrictedStreamTests
 
     private sealed class CountingStream(Stream inner) : Stream
     {
+        private bool _insideDisposeAsync;
+
         public int MaxReadRequested { get; private set; }
         public int DisposeCount { get; private set; }
 
@@ -934,15 +936,27 @@ public sealed class RestrictedStreamTests
 
         protected override void Dispose(bool disposing)
         {
-            DisposeCount++;
+            // Stream.DisposeAsync routes through Dispose, so that inner call is not counted twice
+            if (!_insideDisposeAsync)
+            {
+                DisposeCount++;
+            }
+
             base.Dispose(disposing);
         }
 
-        public override ValueTask DisposeAsync()
+        public override async ValueTask DisposeAsync()
         {
             DisposeCount++;
-            GC.SuppressFinalize(this);
-            return default;
+            _insideDisposeAsync = true;
+            try
+            {
+                await base.DisposeAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _insideDisposeAsync = false;
+            }
         }
     }
 }

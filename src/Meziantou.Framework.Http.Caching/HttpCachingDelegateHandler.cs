@@ -136,7 +136,9 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
             // RFC 7234 Section 5.2.2.1: must-revalidate response directive
             // RFC 8246: must-revalidate takes precedence over immutable when stale
-            if ((cacheResult.MustRevalidate || cacheResult.ProxyRevalidate) && !isFresh)
+            // RFC 9111 Section 5.2.2.8: proxy-revalidate applies to shared caches only, so it is not
+            // considered here.
+            if (cacheResult.MustRevalidate && !isFresh)
             {
                 requiresValidation = true;
             }
@@ -150,7 +152,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
             // RFC 7234 Section 5.2.1.2: max-stale request directive allows stale responses
             var allowStale = false;
-            if ((requestCacheControl?.MaxStale) is true && !cacheResult.MustRevalidate && !cacheResult.ProxyRevalidate)
+            if ((requestCacheControl?.MaxStale) is true && !cacheResult.MustRevalidate)
             {
                 if (requestCacheControl.MaxStaleLimit is not null)
                 {

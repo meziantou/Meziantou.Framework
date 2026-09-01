@@ -48,6 +48,26 @@ public sealed class InlineSnapshotSettingsTests
     }
 
     [Fact]
+    public void ScrubMachineName_ReplacesTheMachineName()
+    {
+        var settings = new InlineSnapshotSettings();
+        settings.ScrubMachineName();
+
+        var scrubber = Assert.Single(settings.Scrubbers);
+        Assert.Equal("host TheMachineName end", scrubber.Scrub($"host {Environment.MachineName} end"));
+    }
+
+    [Fact]
+    public void ScrubUserName_ReplacesTheUserName()
+    {
+        var settings = new InlineSnapshotSettings();
+        settings.ScrubUserName();
+
+        var scrubber = Assert.Single(settings.Scrubbers);
+        Assert.Equal("user TheUserName end", scrubber.Scrub($"user {Environment.UserName} end"));
+    }
+
+    [Fact]
     public void AssertSnapshot_ShouldContainResolutionGuidance()
     {
         var settings = new InlineSnapshotSettings();

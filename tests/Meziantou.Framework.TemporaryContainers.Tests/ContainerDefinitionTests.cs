@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
-using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
@@ -179,9 +178,64 @@ public sealed class ContainerDefinitionTests
         Assert.DoesNotContain(logger.Messages, message => string.Equals(message, "after-stop", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public async Task StartAsync_ReattachesWhenTheLogStreamEndsWhileTheContainerIsRunning()
+    {
+        var runtime = new InMemoryRuntime();
+        var logger = new ListLogger();
+        var definition = new ContainerDefinition(ImageSource.FromExisting("sha256:test"))
+        {
+            Runtime = runtime,
+        };
+        definition.Logging.Logger = logger;
+
+        await using var container = definition.CreateContainer();
+        await container.StartAsync();
+
+        runtime.Emit(LogStream.Stdout, "before-the-stream-ended");
+        await logger.WaitForMessageAsync("before-the-stream-ended");
+
+        // The runtimes end the log stream on their own while the container is running. Stopping there leaves the
+        // container silent for the rest of its life.
+        runtime.EndLogStream();
+        runtime.Emit(LogStream.Stdout, "after-the-stream-ended");
+        await logger.WaitForMessageAsync("after-the-stream-ended");
+
+        // Attaching replays the log from the beginning, so what was already forwarded must not be logged twice.
+        Assert.Equal(1, logger.Messages.Count(message => string.Equals(message, "before-the-stream-ended", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task StartAsync_StopsForwardingWhenTheLogStreamEndsAndTheContainerIsNoLongerRunning()
+    {
+        var runtime = new InMemoryRuntime();
+        var logger = new ListLogger();
+        var definition = new ContainerDefinition(ImageSource.FromExisting("sha256:test"))
+        {
+            Runtime = runtime,
+        };
+        definition.Logging.Logger = logger;
+
+        await using var container = definition.CreateContainer();
+        await container.StartAsync();
+
+        runtime.Emit(LogStream.Stdout, "before-the-container-exited");
+        await logger.WaitForMessageAsync("before-the-container-exited");
+
+        runtime.State = ContainerState.Exited;
+        runtime.EndLogStream();
+        runtime.Emit(LogStream.Stdout, "after-the-container-exited");
+        await Task.Delay(500);
+
+        Assert.DoesNotContain(logger.Messages, message => string.Equals(message, "after-the-container-exited", StringComparison.Ordinal));
+        Assert.Equal(1, runtime.LogAttachCount);
+    }
+
     private sealed class InMemoryRuntime : ContainerRuntime
     {
-        private readonly Channel<LogEntry> _logs = Channel.CreateUnbounded<LogEntry>();
+        private readonly List<LogEntry> _logs = [];
+        private int _logStreamGeneration;
+        private int _logAttachCount;
 
         public InMemoryRuntime()
             : base("InMemory")
@@ -189,6 +243,9 @@ public sealed class ContainerDefinitionTests
         }
 
         public ContainerState State { get; set; } = ContainerState.Created;
+
+        /// <summary>Gets the number of times the log stream has been attached to.</summary>
+        public int LogAttachCount => Volatile.Read(ref _logAttachCount);
 
         public override Task<bool> IsSupportedAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
 
@@ -229,8 +286,31 @@ public sealed class ContainerDefinitionTests
 
         internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            await foreach (var item in _logs.Reader.ReadAllAsync(cancellationToken))
-                yield return item;
+            // Mimics the real runtimes: every attach replays the log from the beginning, and the stream can end on
+            // its own while the container is still running.
+            Interlocked.Increment(ref _logAttachCount);
+            var generation = Volatile.Read(ref _logStreamGeneration);
+            var index = 0;
+            while (Volatile.Read(ref _logStreamGeneration) == generation)
+            {
+                LogEntry? entry = null;
+                lock (_logs)
+                {
+                    if (index < _logs.Count)
+                    {
+                        entry = _logs[index];
+                        index++;
+                    }
+                }
+
+                if (entry is null)
+                {
+                    await Task.Delay(10, cancellationToken);
+                    continue;
+                }
+
+                yield return entry;
+            }
         }
 
         internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
@@ -240,7 +320,16 @@ public sealed class ContainerDefinitionTests
 
         public void Emit(LogStream stream, string message)
         {
-            _logs.Writer.TryWrite(new LogEntry(stream, message, Timestamp: null));
+            lock (_logs)
+            {
+                _logs.Add(new LogEntry(stream, message, Timestamp: null));
+            }
+        }
+
+        /// <summary>Ends the current log stream, as the runtimes do while the container is still running.</summary>
+        public void EndLogStream()
+        {
+            Interlocked.Increment(ref _logStreamGeneration);
         }
     }
 

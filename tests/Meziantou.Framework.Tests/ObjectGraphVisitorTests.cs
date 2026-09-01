@@ -67,13 +67,13 @@ public sealed class ObjectGraphVisitorTests
         var second = new EqualByName { Name = "same" };
         var third = new EqualByName { Name = "other" };
 
-        Assert.False(ReferenceEquals(first, second));
+        Assert.NotSame(first, second);
         Assert.Equal(first, second);
 
         var visitor = new InstanceCollector();
         visitor.Visit(new List<EqualByName> { first, second, third });
 
-        Assert.Equal(3, visitor.Instances.Count);
+        Assert.HasCount(3, visitor.Instances);
         Assert.Contains(first, visitor.Instances);
         Assert.Contains(second, visitor.Instances);
         Assert.Contains(third, visitor.Instances);
@@ -88,7 +88,7 @@ public sealed class ObjectGraphVisitorTests
         var visitor = new InstanceCollector();
         visitor.Visit(node);
 
-        Assert.Single(visitor.Instances.Where(i => ReferenceEquals(i, node)));
+        Assert.Single(visitor.Instances, i => ReferenceEquals(i, node));
     }
 
     private sealed class InstanceCollector : ObjectGraphVisitor
@@ -108,7 +108,7 @@ public sealed class ObjectGraphVisitorTests
     {
         public string? Name { get; set; }
 
-        public override bool Equals(object? obj) => obj is EqualByName other && other.Name == Name;
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is EqualByName other && string.Equals(other.Name, Name, StringComparison.Ordinal);
         public override int GetHashCode() => Name?.GetHashCode(StringComparison.Ordinal) ?? 0;
     }
 

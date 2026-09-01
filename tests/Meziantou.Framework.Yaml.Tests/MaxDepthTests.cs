@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using Meziantou.Framework.Yaml.Model;
 using Meziantou.Framework.Yaml.Serialization;
 
@@ -114,6 +115,69 @@ public sealed class MaxDepthTests
         var node = YamlNode.FromObject(value, options);
 
         Assert.IsType<YamlSequence>(node);
+    }
+
+    [Fact]
+    public void DeeplyNestedDocument_WithLargeMaxDepth_ThrowsInsteadOfOverflowingTheStack()
+    {
+        // A MaxDepth far above what the stack can support used to kill the process with an
+        // uncatchable StackOverflowException, because converters recurse once per nesting level.
+        var yaml = CreateDeepFlowSequenceYaml(100_000);
+        var options = new YamlSerializerOptions { MaxDepth = int.MaxValue };
+
+        var exception = RunOnSmallStack(() => Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<object>(yaml, options)));
+
+        Assert.Contains("nested too deeply", exception.Message);
+        Assert.IsType<InsufficientExecutionStackException>(exception.InnerException);
+    }
+
+    [Fact]
+    public void DeeplyNestedDocument_WithLargeMaxDepth_TryDeserializeReturnsFalse()
+    {
+        var yaml = CreateDeepFlowSequenceYaml(100_000);
+        var options = new YamlSerializerOptions { MaxDepth = int.MaxValue };
+
+        var result = RunOnSmallStack(() => YamlSerializer.TryDeserialize<object>(yaml, out _, options));
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void ModeratelyNestedDocument_StillSucceeds()
+    {
+        // The stack guard must not reject documents that comfortably fit, otherwise it would be
+        // a stricter limit than MaxDepth rather than a backstop for it.
+        var depth = 200;
+        var yaml = CreateDeepFlowSequenceYaml(depth);
+        var options = new YamlSerializerOptions { MaxDepth = depth };
+
+        var result = YamlSerializer.Deserialize<object>(yaml, options);
+
+        Assert.NotNull(result);
+    }
+
+    private static T RunOnSmallStack<T>(Func<T> func)
+    {
+        T result = default!;
+        ExceptionDispatchInfo? failure = null;
+
+        // 512 KB keeps the test fast and deterministic regardless of the runner's default stack size.
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                result = func();
+            }
+            catch (Exception exception)
+            {
+                failure = ExceptionDispatchInfo.Capture(exception);
+            }
+        }, 512 * 1024);
+
+        thread.Start();
+        thread.Join();
+        failure?.Throw();
+        return result;
     }
 
     private static List<Events.ParsingEvent> Drain(IParser parser)

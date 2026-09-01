@@ -1,4 +1,5 @@
 using System.Buffers;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Tests;
 
@@ -168,26 +169,48 @@ public class StringExtensionsTests
     // A wholly ignorable affix stands for nothing, so it removes nothing
     [InlineData("abc", "\u200D", "abc")]
     [InlineData("abc", "", "abc")]
-    // "e" followed by a combining acute accent is the decomposed form of "\u00E9": the match is 2 chars long
-    [InlineData("cafe\u0301", "\u00E9", "caf")]
+    // The suffix is ordinally identical to the end of the string, so the match is 2 chars long
     [InlineData("cafe\u0301", "e\u0301", "caf")]
     [InlineData("abc", "c", "ab")]
     [InlineData("abc", "d", "abc")]
     public void RemoveSuffix_CultureSensitive(string str, string suffix, string expected)
     {
-        Assert.Equal(expected, CultureInfoUtilities.UseCulture(CultureInfo.InvariantCulture, () => str.RemoveSuffix(suffix, StringComparison.CurrentCulture)));
+        Assert.Equal(expected, RemoveSuffixInInvariantCulture(str, suffix));
     }
 
     [Theory]
     [InlineData("abc", "\u200D", "abc")]
     [InlineData("abc", "", "abc")]
-    [InlineData("e\u0301cole", "\u00E9", "cole")]
     [InlineData("abc", "a", "bc")]
     [InlineData("abc", "d", "abc")]
     public void RemovePrefix_CultureSensitive(string str, string prefix, string expected)
     {
-        Assert.Equal(expected, CultureInfoUtilities.UseCulture(CultureInfo.InvariantCulture, () => str.RemovePrefix(prefix, StringComparison.CurrentCulture)));
+        Assert.Equal(expected, RemovePrefixInInvariantCulture(str, prefix));
     }
+
+    // "e" followed by a combining acute accent is canonically equivalent to the precomposed "\u00E9",
+    // but recognising that needs ICU. These two tests pin both supported configurations.
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void RemoveAffix_CanonicalEquivalence()
+    {
+        Assert.Equal("caf", RemoveSuffixInInvariantCulture("cafe\u0301", "\u00E9"));
+        Assert.Equal("cole", RemovePrefixInInvariantCulture("e\u0301cole", "\u00E9"));
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Invariant)]
+    public void RemoveAffix_CanonicalEquivalence_InvariantGlobalization()
+    {
+        // Without ICU a linguistic comparison degrades to ordinal, so the decomposed form does not
+        // match the precomposed one and nothing is removed
+        Assert.Equal("cafe\u0301", RemoveSuffixInInvariantCulture("cafe\u0301", "\u00E9"));
+        Assert.Equal("e\u0301cole", RemovePrefixInInvariantCulture("e\u0301cole", "\u00E9"));
+    }
+
+    private static string RemoveSuffixInInvariantCulture(string str, string suffix)
+        => CultureInfoUtilities.UseCulture(CultureInfo.InvariantCulture, () => str.RemoveSuffix(suffix, StringComparison.CurrentCulture));
+
+    private static string RemovePrefixInInvariantCulture(string str, string prefix)
+        => CultureInfoUtilities.UseCulture(CultureInfo.InvariantCulture, () => str.RemovePrefix(prefix, StringComparison.CurrentCulture));
 
     [Fact]
     public void RemoveSuffix_UnsupportedComparisonThrows()

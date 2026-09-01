@@ -355,6 +355,53 @@ public sealed class NuGetPackageValidatorTests
     }
 
     [Fact]
+    public async Task Validate_Repository_NotSet()
+    {
+        // NuspecReader.GetRepositoryMetadata returns an empty instance rather than null when the element is missing,
+        // so the individual fields are reported instead of ErrorCodes.RepositoryNotSet
+        var result = await ValidateAsync("Release.1.0.0.nupkg", NuGetPackageValidationRules.RepositoryMustBeSet);
+        AssertHasError(result, ErrorCodes.RepositoryTypeNotSet);
+        AssertHasError(result, ErrorCodes.RepositoryUrlNotSet);
+        AssertHasError(result, ErrorCodes.RepositoryCommitNotSet);
+    }
+
+    [Fact]
+    public async Task Validate_Repository_TypeOnly()
+    {
+        var result = await ValidateAsync("Release_RepositoryType.1.0.0.nupkg", NuGetPackageValidationRules.RepositoryMustBeSet);
+        AssertHasError(result, ErrorCodes.RepositoryUrlNotSet);
+        AssertHasError(result, ErrorCodes.RepositoryCommitNotSet);
+    }
+
+    [Fact]
+    public async Task Validate_Repository_TypeUrlAndCommit()
+    {
+        var result = await ValidateAsync("Release_RepositoryType_RepositoryUrl_RepositoryCommit.1.0.0.nupkg", NuGetPackageValidationRules.RepositoryMustBeSet);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_RepositoryBranch_NotSet()
+    {
+        var result = await ValidateAsync("Release_RepositoryType_RepositoryUrl_RepositoryCommit.1.0.0.nupkg", NuGetPackageValidationRules.RepositoryBranchMustBeSet);
+        AssertHasError(result, ErrorCodes.RepositoryBranchNotSet);
+    }
+
+    [Fact]
+    public async Task Validate_RepositoryBranch_Set()
+    {
+        var result = await ValidateAsync("Release_RepositoryType_RepositoryUrl_RepositoryCommit_RepositoryBranch.1.0.0.nupkg", NuGetPackageValidationRules.RepositoryBranchMustBeSet);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_Tags_NotSet()
+    {
+        var result = await ValidateAsync("Release.1.0.0.nupkg", NuGetPackageValidationRules.TagsMustBeSet);
+        AssertHasError(result, ErrorCodes.TagsNotSet);
+    }
+
+    [Fact]
     public async Task Validate_Deterministic_NonDeterministic()
     {
         var result = await ValidateAsync("Release_NonDeterministic_Pdb.1.0.0.nupkg", NuGetPackageValidationRules.Symbols);
@@ -528,8 +575,9 @@ public sealed class NuGetPackageValidatorTests
     [Fact]
     public async Task Validate_WithSymbolsServer()
     {
-        // Downloading symbols can be flaky on CI
-        for (var i = 0; i < 10; i++)
+        // Downloading symbols can be flaky on CI, but the last attempt must report its failure
+        const int MaxAttempts = 10;
+        for (var i = 1; ; i++)
         {
             try
             {
@@ -538,7 +586,7 @@ public sealed class NuGetPackageValidatorTests
                 AssertNoErrors(result);
                 return;
             }
-            catch
+            catch when (i < MaxAttempts)
             {
                 await Task.Delay(TimeSpan.FromSeconds(1), XunitCancellationToken);
             }

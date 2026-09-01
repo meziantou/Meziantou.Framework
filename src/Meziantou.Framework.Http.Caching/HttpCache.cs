@@ -111,7 +111,8 @@ internal sealed class HttpCache
             return;
 
         // Check the announced size before reading anything. Buffering a multi-gigabyte response only to
-        // discard it is a needless allocation, and serialization would grow it further.
+        // discard it is a needless allocation, and serialization would grow it further. A response that
+        // announces no Content-Length is bounded while it is read instead, by BoundedContentReader.
         var maximumResponseSize = _options.MaximumResponseSize;
         if (maximumResponseSize is not null && response.Content?.Headers.ContentLength > maximumResponseSize.GetValueOrDefault())
             return;

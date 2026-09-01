@@ -216,7 +216,7 @@ public sealed class CachedEnumerableTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Enumerable_MultipleEnumerations_ShouldEnumerateOnce(bool threadSafe)
+    public void Enumerable_MultipleEnumerations_ShouldEnumerateOnce_ExplicitThreadSafety(bool threadSafe)
     {
         using var cachedEnumerable = CachedEnumerable.Create(new SingleEnumerable<int>([1, 2, 3]), threadSafe);
 

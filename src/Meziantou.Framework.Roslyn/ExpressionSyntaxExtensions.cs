@@ -2,8 +2,12 @@
 #pragma warning disable
 #endif
 #nullable enable
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+#if ROSLYN_WORKSPACES
+using Microsoft.CodeAnalysis.Simplification;
+#endif
 
 namespace Meziantou.Framework.Roslyn;
 
@@ -13,21 +17,29 @@ namespace Meziantou.Framework.Roslyn;
 internal static partial class ExpressionSyntaxExtensions
 {
     /// <summary>
-    /// Wraps the expression in parentheses unless it is already a primary expression.
+    /// Wraps the expression in parentheses.
     /// </summary>
     /// <remarks>
     /// Generated code usually appends to an expression, either as the target of a member access or as an operand of a
     /// binary operator. Both bind tighter than most expressions, so an operand such as <c>a ? b : c</c> has to be
     /// parenthesized to preserve the meaning of the original code.
+    /// <para>
+    /// The trivia of the expression stays outside of the parentheses, so <c>a + b // comment</c> becomes
+    /// <c>(a + b) // comment</c> instead of moving the comment inside the parentheses.
+    /// </para>
+    /// <para>
+    /// When the project references a Roslyn workspaces package, the parentheses are annotated with
+    /// <c>Simplifier.Annotation</c>, so a code fix removes the ones the final document doesn't need while
+    /// post-processing it.
+    /// </para>
     /// </remarks>
     public static ExpressionSyntax Parenthesize(this ExpressionSyntax expression)
     {
-        return expression switch
-        {
-            IdentifierNameSyntax or MemberAccessExpressionSyntax or InvocationExpressionSyntax or ElementAccessExpressionSyntax
-                or ParenthesizedExpressionSyntax or ThisExpressionSyntax or BaseExpressionSyntax or LiteralExpressionSyntax
-                or PredefinedTypeSyntax or QualifiedNameSyntax => expression,
-            _ => SyntaxFactory.ParenthesizedExpression(expression),
-        };
+        var parenthesized = SyntaxFactory.ParenthesizedExpression(expression.WithLeadingTrivia().WithTrailingTrivia()).WithTriviaFrom(expression);
+#if ROSLYN_WORKSPACES
+        parenthesized = parenthesized.WithAdditionalAnnotations(Simplifier.Annotation);
+#endif
+
+        return parenthesized;
     }
 }

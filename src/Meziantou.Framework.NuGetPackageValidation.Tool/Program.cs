@@ -54,6 +54,13 @@ internal static partial class Program
                     options.Rules.Add(rule);
                 }
             }
+            else
+            {
+                foreach (var rule in includedRules)
+                {
+                    options.Rules.Add(rule);
+                }
+            }
 
             var excludedRules = parseResult.GetValue(excludedRulesOptions);
             if (excludedRules is not null && excludedRules.Length > 0)

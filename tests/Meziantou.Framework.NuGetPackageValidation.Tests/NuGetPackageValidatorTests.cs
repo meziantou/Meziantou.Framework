@@ -69,6 +69,15 @@ public sealed class NuGetPackageValidatorTests
     }
 
     [Fact]
+    public async Task Validate_AssembliesMustBeOptimizedMustBeSet_Debug_ModuleAttribute()
+    {
+        // The assembly applies an attribute it declares itself to its own module, so the CustomAttribute
+        // table holds a MethodDefinition constructor that sorts before the assembly-level DebuggableAttribute
+        var result = await ValidateAsync("Debug_ModuleAttribute.1.0.0.nupkg", NuGetPackageValidationRules.AssembliesMustBeOptimized);
+        AssertHasError(result, ErrorCodes.AssemblyIsNotOptimized);
+    }
+
+    [Fact]
     public async Task Validate_Description_DefaultDescription()
     {
         var result = await ValidateAsync("Release.1.0.0.nupkg", NuGetPackageValidationRules.DescriptionMustBeSet);

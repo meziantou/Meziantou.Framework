@@ -144,7 +144,13 @@ public static class InlineSnapshot
         else if (settings.ForceUpdateSnapshots)
         {
             var context = GetCallerContext();
-            FileEditor.UpdateFile(context, settings, expected, actual);
+
+            // Reformatting a matching snapshot writes to the source file just like updating a failing one, so it
+            // must go through the same gate: continuous integration and LLM detection, and the update strategy.
+            if (settings.SnapshotUpdateStrategy.CanUpdateSnapshotInternal(settings, context.FilePath, expected, actual))
+            {
+                FileEditor.UpdateFile(context, settings, expected, actual);
+            }
         }
     }
 }

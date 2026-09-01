@@ -56,9 +56,33 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
     }
 
     [Fact]
+    public void DefaultBuilder_UsesTheDefaultSettings()
+    {
+        // default(InlineSnapshotBuilder) does not run the constructor, so the settings field is null.
+        InlineSnapshotBuilder builder = default;
+
+        builder.Validate(new object(), "{}");
+    }
+
+    [Fact]
     public void Validate_WithSettings()
     {
         InlineSnapshot.Validate(new object(), InlineSnapshotSettings.Default, "{}");
+    }
+
+    [Fact]
+    public void ForceUpdateSnapshots_WithDisallowStrategy_DoesNotThrow()
+    {
+        // The force-update path used to call FileEditor.UpdateFile without asking the strategy first, so
+        // Disallow reported a bare InvalidOperationException for a snapshot that actually matched.
+        var settings = InlineSnapshotSettings.Default with
+        {
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            AutoDetectContinuousEnvironment = false,
+            ForceUpdateSnapshots = true,
+        };
+
+        InlineSnapshot.Validate(new object(), settings, "{}");
     }
 
     [Fact]
@@ -288,6 +312,46 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
             }
             """");
     }
+
+    [Fact]
+    public async Task SupportHelperMethods_SnapshotParameterIsNotTheFirstParameter()
+    {
+        // The parameter lookup used to bound its loop by the length of the parameter *name*, so a short name on a
+        // later parameter was never found and the value-matching fallback rewrote the first matching argument
+        // instead: "Helper(null, null)" became "Helper(\"<null>\", null)".
+        await AssertSnapshot(
+            """"
+            Helper(null, null);
+
+            [InlineSnapshotAssertion(nameof(v))]
+            static void Helper(object data, string v, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                InlineSnapshot.Validate(data, v, filePath, lineNumber);
+            }
+            """",
+            """"
+            Helper(null, "<null>");
+
+            [InlineSnapshotAssertion(nameof(v))]
+            static void Helper(object data, string v, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                InlineSnapshot.Validate(data, v, filePath, lineNumber);
+            }
+            """");
+    }
+
+    [Fact]
+    public void HelperMethod_WithUnknownParameterName_ReportsTheAttribute()
+    {
+        var exception = Assert.Throws<InlineSnapshotException>(() => HelperWithUnknownParameterName(new object(), "not the actual snapshot"));
+
+        Assert.Contains(nameof(InlineSnapshotAssertionAttribute), exception.Message);
+        Assert.Contains("thisParameterDoesNotExist", exception.Message);
+    }
+
+    [InlineSnapshotAssertion("thisParameterDoesNotExist")]
+    private static void HelperWithUnknownParameterName(object data, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
+        => InlineSnapshot.Validate(data, expected, filePath, lineNumber);
 
     [Fact]
     public async Task SupportAsyncHelperMethods()
@@ -617,6 +681,21 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
             expected: """
             InlineSnapshot.Validate(new object(), "{}");
             """);
+    }
+
+    [Fact]
+    public async Task DoNotForceUpdateSnapshotOnCI()
+    {
+        // Reformatting a matching snapshot is still a write to the source file, so continuous integration
+        // detection must stop it just like it stops updating a failing one.
+        await AssertSnapshot(forceUpdateSnapshots: true,
+            autoDetectCI: true,
+            environmentVariables: new[] { new KeyValuePair<string, string>("CI", "true") },
+            source: """"
+            InlineSnapshot.Validate(new object(), """
+                {}
+                """);
+            """");
     }
 
     [Fact]

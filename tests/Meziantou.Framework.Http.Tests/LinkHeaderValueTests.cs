@@ -108,6 +108,35 @@ public sealed class LinkHeaderValueTests
     }
 
     [Theory]
+    [InlineData("<  https://example.com/a  >; rel=next")]
+    [InlineData("<\thttps://example.com/a\t>; rel=next")]
+    [InlineData("<https://example.com/a>; rel=next")]
+    public void Parse_TrimsWhitespaceAroundTheTargetUri(string header)
+    {
+        var link = Assert.Single(LinkHeaderValue.Parse(header));
+        Assert.Equal("https://example.com/a", link.Url);
+    }
+
+    [Theory]
+    [InlineData("start")]
+    [InlineData("http://example.net/relation/other")]
+    [InlineData("START")]
+    public void GetLink_MatchesOneOfSeveralSpaceSeparatedRelations(string rel)
+    {
+        // Example from RFC 8288 section 3.5
+        var links = LinkHeaderValue.Parse("<http://example.org/>; rel=\"start http://example.net/relation/other\"");
+        Assert.Equal("http://example.org/", links.GetLinkUrl(rel));
+    }
+
+    [Fact]
+    public void GetLink_DoesNotMatchAPartialRelation()
+    {
+        var links = LinkHeaderValue.Parse("<http://example.org/>; rel=\"start next\"");
+        Assert.Null(links.GetLink("star"));
+        Assert.Null(links.GetLink("prev"));
+    }
+
+    [Theory]
     [InlineData("<a>;\r\n rel=next")]
     [InlineData("<a>;\r\nrel=next")]
     [InlineData("<a>;\n rel=next")]

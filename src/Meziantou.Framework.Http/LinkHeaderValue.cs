@@ -101,7 +101,7 @@ public sealed class LinkHeaderValue
                 continue;
             }
 
-            var targetLink = value[..index].ToString();
+            var targetLink = value[..index].Trim().ToString();
             value = value[(index + 1)..];
 
             // Parse parameters

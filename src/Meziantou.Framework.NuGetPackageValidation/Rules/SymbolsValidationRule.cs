@@ -286,9 +286,13 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                                         }
                                     }
                                 }
+                                catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+                                {
+                                    throw;
+                                }
                                 catch (Exception ex)
                                 {
-                                    context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible: {ex}", fileName: item);
+                                    context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible: {ex.Message}", fileName: item);
                                 }
                             }
                         }

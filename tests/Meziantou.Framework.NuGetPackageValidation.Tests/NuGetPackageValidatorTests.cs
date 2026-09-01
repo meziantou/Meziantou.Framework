@@ -85,6 +85,40 @@ public sealed class NuGetPackageValidatorTests
     }
 
     [Fact]
+    public async Task Validate_PackageFileNotFound()
+    {
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        var result = await ValidateAsync(temporaryDirectory / "missing.nupkg", excludedRuleIds: null, NuGetPackageValidationRules.Default.ToArray());
+        AssertHasError(result, ErrorCodes.FileNotFound);
+    }
+
+    [Fact]
+    public async Task Validate_PackageFileNotFound_ExcludedRuleId()
+    {
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        var result = await ValidateAsync(temporaryDirectory / "missing.nupkg", [ErrorCodes.FileNotFound], NuGetPackageValidationRules.Default.ToArray());
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_PackageIsNotAValidArchive()
+    {
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        var packagePath = await temporaryDirectory.CreateTextFileAsync("corrupted.nupkg", "This is not a zip archive");
+        var result = await ValidateAsync(packagePath, excludedRuleIds: null, NuGetPackageValidationRules.Default.ToArray());
+        AssertHasError(result, ErrorCodes.InvalidPackage);
+    }
+
+    [Fact]
+    public async Task Validate_PackageIsNotAValidArchive_ExcludedRuleId()
+    {
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        var packagePath = await temporaryDirectory.CreateTextFileAsync("corrupted.nupkg", "This is not a zip archive");
+        var result = await ValidateAsync(packagePath, [ErrorCodes.InvalidPackage], NuGetPackageValidationRules.Default.ToArray());
+        AssertNoErrors(result);
+    }
+
+    [Fact]
     public async Task Validate_AssembliesMustBeOptimizedMustBeSet_Debug()
     {
         var result = await ValidateAsync("Debug.1.0.0.nupkg", NuGetPackageValidationRules.AssembliesMustBeOptimized);

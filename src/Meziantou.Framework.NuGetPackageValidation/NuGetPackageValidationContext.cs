@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using NuGet.Packaging;
 
 namespace Meziantou.Framework.NuGetPackageValidation;
@@ -6,7 +5,8 @@ namespace Meziantou.Framework.NuGetPackageValidation;
 /// <summary>Provides context information and methods for validating a NuGet package.</summary>
 public sealed class NuGetPackageValidationContext : IDisposable
 {
-    private readonly ConcurrentBag<NuGetPackageValidationError> _errors = [];
+    private readonly List<NuGetPackageValidationError> _errors = [];
+    private readonly Lock _errorsLock = new();
     private readonly NuGetPackageValidationOptions _options;
 
     internal NuGetPackageValidationContext(FullPath file, NuGetPackageValidationOptions options, CancellationToken cancellationToken)
@@ -65,7 +65,16 @@ public sealed class NuGetPackageValidationContext : IDisposable
         }
     }
 
-    internal IReadOnlyCollection<NuGetPackageValidationError> Errors => _errors;
+    internal IReadOnlyCollection<NuGetPackageValidationError> Errors
+    {
+        get
+        {
+            lock (_errorsLock)
+            {
+                return _errors.ToArray();
+            }
+        }
+    }
 
     /// <summary>Determines whether a specific validation rule is excluded from validation.</summary>
     /// <param name="ruleId">The error code of the rule to check.</param>
@@ -91,7 +100,11 @@ public sealed class NuGetPackageValidationContext : IDisposable
         if (_options.ExcludedRuleIds.Contains(errorCode))
             return;
 
-        _errors.Add(new NuGetPackageValidationError(errorCode, message, helpText, fileName));
+        var error = new NuGetPackageValidationError(errorCode, message, helpText, fileName);
+        lock (_errorsLock)
+        {
+            _errors.Add(error);
+        }
     }
 
     /// <summary>Sends an HTTP request using the configured HTTP client and request configuration.</summary>

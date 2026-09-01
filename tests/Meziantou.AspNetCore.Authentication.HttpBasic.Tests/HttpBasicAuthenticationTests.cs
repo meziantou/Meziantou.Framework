@@ -261,6 +261,18 @@ public sealed class HttpBasicAuthenticationTests
         });
     }
 
+    [Theory]
+    [InlineData("bad\r\nX-Injected: 1")]
+    [InlineData("bad\ttab")]
+    [InlineData("caf\u00E9")]
+    [InlineData("nul\0")]
+    public void Realm_RejectsCharactersThatCannotBeWrittenToAHeader(string realm)
+    {
+        var options = new HttpBasicAuthenticationOptions();
+        var exception = Assert.Throws<ArgumentException>(() => options.Realm = realm);
+        Assert.Equal("value", exception.ParamName);
+    }
+
     [Fact]
     public async Task CustomAuthenticationSchemeName_StillReadsTheBasicHeader()
     {
@@ -284,6 +296,90 @@ public sealed class HttpBasicAuthenticationTests
         var options = new HttpBasicAuthenticationOptions();
         var exception = Assert.Throws<ArgumentOutOfRangeException>(() => options.MaxCredentialLength = value);
         Assert.Equal("value", exception.ParamName);
+    }
+
+    [Fact]
+    public void Realm_AcceptsNullAndPrintableAscii()
+    {
+        var options = new HttpBasicAuthenticationOptions
+        {
+            Realm = null,
+        };
+        Assert.Null(options.Realm);
+
+        options.Realm = "we\"ird\\realm";
+        Assert.Equal("we\"ird\\realm", options.Realm);
+    }
+
+    [Fact]
+    public async Task Challenge_EscapesQuotesAndBackslashesInRealm()
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.Realm = "we\"ird\\realm";
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("myName", "myPassword", username, password);
+        });
+
+        await application.SendAndAssert("/", username: null, password: null, response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+            Assert.Contains(response.Headers.WwwAuthenticate, value =>
+                string.Equals(value.Scheme, HttpBasicAuthenticationDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(value.Parameter, "realm=\"we\\\"ird\\\\realm\", charset=\"UTF-8\"", StringComparison.Ordinal));
+        });
+    }
+
+    [Fact]
+    public async Task EmptyUsername_IsPassedToTheCredentialValidator()
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("", "api-token", username, password);
+        });
+
+        await application.SendAndAssert("/", "", "api-token", response =>
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task EmptyUsernameAndPassword_IsPassedToTheCredentialValidator()
+    {
+        string? observedUsername = null;
+        string? observedPassword = null;
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, username, password) =>
+            {
+                observedUsername = username;
+                observedPassword = password;
+                return ValueTask.FromResult<ClaimsPrincipal?>(null);
+            };
+        });
+
+        await application.SendAndAssert("/", "", "", response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+
+        Assert.Equal("", observedUsername);
+        Assert.Equal("", observedPassword);
+    }
+
+    [Fact]
+    public async Task CredentialsWithoutSeparator_AreStillRejected()
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, _, _) => throw new InvalidOperationException("The validator must not run for malformed credentials");
+        });
+
+        var payload = Convert.ToBase64String(Encoding.UTF8.GetBytes("no-separator-here"));
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/");
+        request.Headers.TryAddWithoutValidation("Authorization", "Basic " + payload);
+        using var response = await application.Client.SendAsync(request, XunitCancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]

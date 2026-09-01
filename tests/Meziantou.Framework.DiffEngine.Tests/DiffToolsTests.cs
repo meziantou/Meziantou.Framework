@@ -67,6 +67,41 @@ public sealed class DiffToolsTests
     }
 
     [Fact]
+    public void TryFindByName_WildcardDirectoryPrefersTheHighestVersion()
+    {
+        using var temp = TemporaryDirectory.Create();
+        foreach (var version in new[] { "2019", "2022", "2026" })
+        {
+            _ = temp.CreateTextFile(Path.Combine(version, GetVisualStudioCodeExecutableName()), "");
+        }
+
+        // Touch the oldest version last: ordering by last write time would pick it.
+        Directory.SetLastWriteTimeUtc(temp.GetFullPath("2019"), DateTime.UtcNow.AddMinutes(5));
+
+        using var scope = new EnvironmentVariableScope("DiffEngine_VisualStudioCode", Path.Combine(temp.FullPath, "*"));
+
+        Assert.True(DiffTools.TryFindByName(DiffTool.VisualStudioCode, out var tool));
+        Assert.NotNull(tool);
+        Assert.Equal("2026", Path.GetFileName(Path.GetDirectoryName(tool.ExePath)));
+    }
+
+    [Fact]
+    public void TryFindByName_WildcardDirectoryOrdersVersionsNumerically()
+    {
+        using var temp = TemporaryDirectory.Create();
+        foreach (var version in new[] { "vim9", "vim10" })
+        {
+            _ = temp.CreateTextFile(Path.Combine(version, GetVisualStudioCodeExecutableName()), "");
+        }
+
+        using var scope = new EnvironmentVariableScope("DiffEngine_VisualStudioCode", Path.Combine(temp.FullPath, "*"));
+
+        Assert.True(DiffTools.TryFindByName(DiffTool.VisualStudioCode, out var tool));
+        Assert.NotNull(tool);
+        Assert.Equal("vim10", Path.GetFileName(Path.GetDirectoryName(tool.ExePath)));
+    }
+
+    [Fact]
     public void TryFindByExtension_ReturnsTextTool()
     {
         using var temp = TemporaryDirectory.Create();

@@ -1547,6 +1547,7 @@ public sealed class UrlPatternTests
         Assert.False(pattern.IsMatch(new UrlPatternInit { Protocol = "http" }));
     }
 
+    [Fact]
     public void Create_PortWithLeadingZeros_CollapsesLikeTheDefaultPort()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https", Port = "0443" });

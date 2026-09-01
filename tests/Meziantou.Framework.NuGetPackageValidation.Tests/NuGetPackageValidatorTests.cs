@@ -267,6 +267,20 @@ public sealed class NuGetPackageValidatorTests
     }
 
     [Fact]
+    public async Task Validate_PackageIdAvailableOnNuGetOrg_PackageExists()
+    {
+        var result = await ValidateAsync("meziantou.framework.2.6.0.nupkg", NuGetPackageValidationRules.PackageIdAvailableOnNuGetOrg);
+        AssertHasError(result, ErrorCodes.PackageIdExistsOnNuGetOrg);
+    }
+
+    [Fact]
+    public async Task Validate_PackageIdAvailableOnNuGetOrg_PackageDoesNotExist()
+    {
+        var result = await ValidateAsync("Release_Author.1.0.0.nupkg", NuGetPackageValidationRules.PackageIdAvailableOnNuGetOrg);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
     public async Task Validate_WithSymbolsServer()
     {
         // Downloading symbols can be flaky on CI

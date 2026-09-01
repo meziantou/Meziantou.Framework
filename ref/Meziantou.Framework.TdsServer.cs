@@ -17,7 +17,9 @@ namespace Meziantou.Framework.Tds
     {
         public const int MinimumPacketSize = 512;
         public const int MaximumPacketSize = 65535;
+        public const int DefaultMaxMessageSize = 16777216;
         public int PacketSize { get => throw null; set { } }
+        public int MaxMessageSize { get => throw null; set { } }
         public bool RequireEncryption { get => throw null; set { } }
         public string? TlsPfxPath { get => throw null; set { } }
         public string? TlsPfxPassword { get => throw null; set { } }

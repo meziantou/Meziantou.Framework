@@ -24,7 +24,13 @@ public class XUnitLogger : ILogger
     private readonly ITestOutputHelper? _testOutputHelper;
     private readonly string? _categoryName;
     private readonly XUnitLoggerOptions _options;
-    private readonly LoggerExternalScopeProvider _scopeProvider;
+    private IExternalScopeProvider _scopeProvider;
+
+    internal IExternalScopeProvider ScopeProvider
+    {
+        get => Volatile.Read(ref _scopeProvider);
+        set => Volatile.Write(ref _scopeProvider, value);
+    }
 
     /// <summary>Creates a new logger instance without a test output helper.</summary>
     /// <returns>A new <see cref="ILogger"/> instance.</returns>
@@ -85,6 +91,16 @@ public class XUnitLogger : ILogger
     /// <param name="categoryName">The category name for messages produced by the logger.</param>
     /// <param name="options">The logger options.</param>
     public XUnitLogger(ITestOutputHelper? testOutputHelper, LoggerExternalScopeProvider scopeProvider, string? categoryName, XUnitLoggerOptions? options)
+        : this(testOutputHelper, (IExternalScopeProvider)scopeProvider, categoryName, options)
+    {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="XUnitLogger"/> class.</summary>
+    /// <param name="testOutputHelper">The xUnit.net test output helper.</param>
+    /// <param name="scopeProvider">The scope provider.</param>
+    /// <param name="categoryName">The category name for messages produced by the logger.</param>
+    /// <param name="options">The logger options.</param>
+    public XUnitLogger(ITestOutputHelper? testOutputHelper, IExternalScopeProvider scopeProvider, string? categoryName, XUnitLoggerOptions? options)
     {
         _testOutputHelper = testOutputHelper;
         _scopeProvider = scopeProvider;
@@ -96,7 +112,7 @@ public class XUnitLogger : ILogger
     public bool IsEnabled(LogLevel logLevel) => logLevel is not LogLevel.None;
 
     /// <inheritdoc/>
-    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => _scopeProvider.Push(state);
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => ScopeProvider.Push(state);
 
     /// <inheritdoc/>
     [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs")]
@@ -136,7 +152,7 @@ public class XUnitLogger : ILogger
         // Append scopes
         if (_options.IncludeScopes)
         {
-            _scopeProvider.ForEachScope((scope, state) =>
+            ScopeProvider.ForEachScope((scope, state) =>
             {
                 state.Append("\n => ");
                 state.Append(scope);

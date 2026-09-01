@@ -21,6 +21,17 @@ public partial class Assert
         return false;
     }
 
+    private static bool TryNotEqualMemory<TExpected, TActual>(TExpected expected, TActual actual, string? message, string? actualExpression, string? expectedExpression)
+    {
+        if (TryGetMemoryItems(expected, out var expectedItems) && TryGetMemoryItems(actual, out var actualItems))
+        {
+            NotEqual(expectedItems, actualItems, message, actualExpression, expectedExpression);
+            return true;
+        }
+
+        return false;
+    }
+
     private static bool TryGetMemoryItems<T>(T value, [NotNullWhen(true)] out System.Collections.IEnumerable? items)
     {
         items = null;

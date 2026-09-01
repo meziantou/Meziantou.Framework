@@ -31,10 +31,13 @@ internal sealed class UrlPatternComponent
     public bool HasRegexpGroups { get; }
 
     /// <summary>Compiles a component from an input pattern string.</summary>
+    /// <param name="input">The pattern string of the component.</param>
+    /// <param name="encodingCallback">Canonicalizes each fixed-text part of the pattern, or <see langword="null"/> when the component needs no canonicalization.</param>
+    /// <param name="options">The options controlling the delimiter, the prefix and the case sensitivity.</param>
     /// <remarks>
     /// <see href="https://urlpattern.spec.whatwg.org/#compile-a-component">WHATWG URL Pattern Spec - Compile a component</see>
     /// </remarks>
-    public static UrlPatternComponent Compile(string input, Func<string, string> encodingCallback, PatternOptions options)
+    public static UrlPatternComponent Compile(string input, Func<string, string>? encodingCallback, PatternOptions options)
     {
         var tokenizer = new Tokenizer(input, TokenizePolicy.Strict);
         var tokenList = tokenizer.Tokenize();
@@ -81,7 +84,10 @@ internal sealed class UrlPatternComponent
     /// </remarks>
     private static (string RegexpString, List<string> NameList) GenerateRegularExpressionAndNameList(List<Part> partList, PatternOptions options)
     {
-        var result = new StringBuilder("^");
+        // \A and \z rather than ^ and $: in .NET, $ also matches immediately before a trailing "\n",
+        // so "/admin\n" would match a pattern of "/admin". The spec's regexes are evaluated in
+        // JavaScript, where $ without the m flag anchors to the very end of the input.
+        var result = new StringBuilder("\\A");
         var nameList = new List<string>();
 
         foreach (var part in partList)
@@ -171,7 +177,7 @@ internal sealed class UrlPatternComponent
             }
         }
 
-        result.Append('$');
+        result.Append("\\z");
         return (result.ToString(), nameList);
     }
 

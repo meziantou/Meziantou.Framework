@@ -253,9 +253,9 @@ namespace Meziantou.Framework
 
     public static class HashCodeExtensions
     {
-        public static void AddValues<T>(this System.HashCode hashCode, T[] values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
-        public static void AddValues<T>(this System.HashCode hashCode, System.ReadOnlySpan<T> values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
-        public static void AddValues<T>(this System.HashCode hashCode, System.Collections.Generic.IEnumerable<T> values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
+        public static void AddValues<T>(this ref System.HashCode hashCode, T[] values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
+        public static void AddValues<T>(this ref System.HashCode hashCode, System.ReadOnlySpan<T> values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
+        public static void AddValues<T>(this ref System.HashCode hashCode, System.Collections.Generic.IEnumerable<T> values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
     }
 
     public interface ICachedAsyncEnumerable<T> : System.Collections.Generic.IAsyncEnumerable<T>, System.IAsyncDisposable

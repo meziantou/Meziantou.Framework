@@ -84,7 +84,10 @@ internal sealed class UrlPatternComponent
     /// </remarks>
     private static (string RegexpString, List<string> NameList) GenerateRegularExpressionAndNameList(List<Part> partList, PatternOptions options)
     {
-        var result = new StringBuilder("^");
+        // \A and \z rather than ^ and $: in .NET, $ also matches immediately before a trailing "\n",
+        // so "/admin\n" would match a pattern of "/admin". The spec's regexes are evaluated in
+        // JavaScript, where $ without the m flag anchors to the very end of the input.
+        var result = new StringBuilder("\\A");
         var nameList = new List<string>();
 
         foreach (var part in partList)
@@ -174,7 +177,7 @@ internal sealed class UrlPatternComponent
             }
         }
 
-        result.Append('$');
+        result.Append("\\z");
         return (result.ToString(), nameList);
     }
 

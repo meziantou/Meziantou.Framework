@@ -1455,6 +1455,98 @@ public sealed class UrlPatternTests
     }
 
     [Fact]
+    public void IsMatch_ComponentWithATrailingNewLine_ShouldNotMatch()
+    {
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Pathname = "/admin" })
+            .IsMatch(new UrlPatternInit { Pathname = "/admin\n" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Hostname = "example.com" })
+            .IsMatch(new UrlPatternInit { Hostname = "example.com\n" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Protocol = "https" })
+            .IsMatch(new UrlPatternInit { Protocol = "https\n" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Search = "a=1" })
+            .IsMatch(new UrlPatternInit { Search = "a=1\n" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Hash = "top" })
+            .IsMatch(new UrlPatternInit { Hash = "top\n" }));
+    }
+
+    [Fact]
+    public void IsMatch_TrailingNewLineAfterAGroupsFixedSuffix_ShouldNotMatch()
+    {
+        // The group itself is "[^/]+?", which matches "123\n" in JavaScript too, so the
+        // newline has to be rejected by the trailing literal rather than by the group.
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id/edit" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Pathname = "/books/123/edit" }));
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Pathname = "/books/123/edit\n" }));
+    }
+
+    [Fact]
+    public void IsMatch_ComponentWithALeadingNewLine_ShouldNotMatch()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/admin" });
+
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Pathname = "\n/admin" }));
+    }
+
+    [Theory]
+    [InlineData("HTTPS")]
+    [InlineData("https:")]
+    [InlineData("HTTPS:")]
+    public void IsMatch_InitInput_CanonicalizesTheProtocol(string protocol)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Protocol = protocol }));
+    }
+
+    [Fact]
+    public void IsMatch_InitInput_CanonicalizesTheHostname()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = "example.com" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Hostname = "EXAMPLE.com" }));
+    }
+
+    [Fact]
+    public void IsMatch_InitInput_StripsTheSearchAndHashPrefixes()
+    {
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Search = "a=1" })
+            .IsMatch(new UrlPatternInit { Search = "?a=1" }));
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Hash = "top" })
+            .IsMatch(new UrlPatternInit { Hash = "#top" }));
+    }
+
+    [Fact]
+    public void Match_InitInput_CanonicalizesTheInputAndReportsItUnchanged()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https", Hostname = "example.com" });
+
+        var result = pattern.Match(new UrlPatternInit { Protocol = "HTTPS:", Hostname = "EXAMPLE.com" });
+
+        Assert.NotNull(result);
+        Assert.Equal("https", result.Protocol.Input);
+        Assert.Equal("example.com", result.Hostname.Input);
+
+        // Inputs reports what the caller supplied, not the canonicalized form
+        var suppliedInit = Assert.Single(result.Inputs).Init;
+        Assert.NotNull(suppliedInit);
+        Assert.Equal("HTTPS:", suppliedInit.Protocol);
+        Assert.Equal("EXAMPLE.com", suppliedInit.Hostname);
+    }
+
+    [Fact]
+    public void IsMatch_InitInput_StillRejectsAValueThatDoesNotMatch()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https" });
+
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Protocol = "http" }));
+    }
+
     public void Create_PortWithLeadingZeros_CollapsesLikeTheDefaultPort()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https", Port = "0443" });

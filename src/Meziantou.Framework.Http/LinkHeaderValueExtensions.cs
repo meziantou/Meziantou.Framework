@@ -10,11 +10,27 @@ public static class LinkHeaderValueExtensions
     /// <returns>A collection of <see cref="LinkHeaderValue"/> instances.</returns>
     public static IEnumerable<LinkHeaderValue> EnumerateLinkHeaders(this HttpHeaders headers) => LinkHeaderValue.Parse(headers);
 
-    /// <summary>Gets the first link with the specified relation type.</summary>
+    /// <summary>Gets the first link declaring the specified relation type.</summary>
     /// <param name="links">The collection of links to search.</param>
-    /// <param name="rel">The relation type to find.</param>
+    /// <param name="rel">The relation type to find. A link matches when <see cref="LinkHeaderValue.Rel"/> contains this relation type, which may be one of several space-separated values.</param>
     /// <returns>The first <see cref="LinkHeaderValue"/> with the specified relation type, or <see langword="null"/> if not found.</returns>
-    public static LinkHeaderValue? GetLink(this IEnumerable<LinkHeaderValue> links, string rel) => links.FirstOrDefault(l => string.Equals(l.Rel, rel, StringComparison.OrdinalIgnoreCase));
+    public static LinkHeaderValue? GetLink(this IEnumerable<LinkHeaderValue> links, string rel) => links.FirstOrDefault(l => HasRelation(l.Rel, rel));
+
+    // RFC 8288 3.3: the rel parameter carries a space-separated list of relation types.
+    private static bool HasRelation(string relations, string rel)
+    {
+        if (string.Equals(relations, rel, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var span = relations.AsSpan();
+        foreach (var range in span.SplitAny(" \t"))
+        {
+            if (span[range].Equals(rel, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
 
     /// <summary>Gets the URL of the first link with the specified relation type.</summary>
     /// <param name="links">The collection of links to search.</param>

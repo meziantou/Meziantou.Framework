@@ -26,9 +26,9 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
     private readonly IDisposable? _optionsReloadToken;
     private readonly LogFileWriter? _fileWriter;
 
-    // A null message is a wake-up marker for a FlushAsync call. The requests themselves are kept out
-    // of the channel, so they cannot be discarded by FileLoggerOptions.QueueFullMode
-    private readonly Channel<string?>? _channel;
+    // A message with a null text is a wake-up marker for a FlushAsync call. The requests themselves are
+    // kept out of the channel, so they cannot be discarded by FileLoggerOptions.QueueFullMode
+    private readonly Channel<LogMessage>? _channel;
     private readonly ConcurrentQueue<TaskCompletionSource> _pendingFlushes = new();
     private readonly Task? _writerTask;
 
@@ -115,7 +115,7 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         }
 
         // Bounded channel, the behavior when it is full is defined by FileLoggerOptions.QueueFullMode
-        _channel = Channel.CreateBounded<string?>(
+        _channel = Channel.CreateBounded<LogMessage>(
             new BoundedChannelOptions(options.MaxQueueLength)
             {
                 FullMode = options.QueueFullMode switch
@@ -156,15 +156,17 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         Volatile.Write(ref _scopeProvider, scopeProvider ?? new LoggerExternalScopeProvider());
     }
 
-    internal void WriteLog(string message)
+    internal void WriteLog(string message, DateTimeOffset timestamp)
     {
         var channel = _channel;
         if (channel is null)
             return;
 
+        var logMessage = new LogMessage(message, timestamp);
+
         // Try to write to the channel - this will succeed as long as there's space
         // and the channel hasn't been completed yet
-        if (channel.Writer.TryWrite(message))
+        if (channel.Writer.TryWrite(logMessage))
             return;
 
         // TryWrite failed - the channel is full (need backpressure) or completed (disposal)
@@ -177,7 +179,7 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
             // This is cheaper than catching ChannelClosedException from WriteAsync
             while (channel.Writer.WaitToWriteAsync().AsTask().GetAwaiter().GetResult())
             {
-                if (channel.Writer.TryWrite(message))
+                if (channel.Writer.TryWrite(logMessage))
                     return;
             }
         }
@@ -201,14 +203,14 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
             {
                 while (channel.Reader.TryRead(out var message))
                 {
-                    if (message is null)
+                    if (message.Message is null)
                     {
                         // Wake-up marker written by FlushAsync
                         Flush();
                     }
                     else
                     {
-                        fileWriter.WriteLine(message);
+                        fileWriter.WriteLine(message.Message, message.Timestamp);
                         pendingFlush = true;
 
                         // Ensure the messages reach the disk even when the queue is never empty
@@ -264,7 +266,7 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         // Wake the writer up. The marker itself carries nothing, so it does not matter if
         // QueueFullMode discards it: a full queue means the writer is already busy and it completes
         // the pending requests as soon as it drains the queue
-        if (!channel.Writer.TryWrite(null))
+        if (!channel.Writer.TryWrite(default))
         {
             try
             {
@@ -276,7 +278,7 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
                     return;
                 }
 
-                channel.Writer.TryWrite(null);
+                channel.Writer.TryWrite(default);
             }
             catch (ChannelClosedException)
             {
@@ -345,5 +347,14 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         }
 
         _fileWriter?.Dispose();
+    }
+
+    /// <summary>A message to write to the log file, or a wake-up marker for a FlushAsync call when <see cref="Message"/> is null.</summary>
+    private readonly struct LogMessage(string? message, DateTimeOffset timestamp)
+    {
+        public string? Message { get; } = message;
+
+        /// <summary>Gets the UTC time at which the message was logged, used to roll the log file.</summary>
+        public DateTimeOffset Timestamp { get; } = timestamp;
     }
 }

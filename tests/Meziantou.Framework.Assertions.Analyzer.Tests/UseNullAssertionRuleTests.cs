@@ -240,4 +240,35 @@ public sealed class UseNullAssertionRuleTests : AssertionsAnalyzerTestBase
 
         await CreateAnalyzerTest<UseNullAssertionAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_ForUserDefinedEqualityOperator()
+    {
+        var source = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public sealed class Fake
+            {
+                public static bool operator ==(Fake? left, Fake? right) => true;
+                public static bool operator !=(Fake? left, Fake? right) => false;
+                public override bool Equals(object? obj) => true;
+                public override int GetHashCode() => 0;
+            }
+
+            public static class TestClass
+            {
+                public static void M(Fake? value)
+                {
+                    Assert.True(value == null);
+                    Assert.True(value != null);
+                    Assert.False(value == null);
+                    Assert.False(value != null);
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<UseNullAssertionAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
 }

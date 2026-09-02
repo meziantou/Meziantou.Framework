@@ -96,6 +96,19 @@ public partial class Assert
         if (actual is null)
             return;
 
+        // A string is itself an IEnumerable, so without this guard it binds here rather than to the object overload
+        // and is searched as a char subsequence of a collection whose elements are not chars. That comparison can
+        // never match, which makes the assertion impossible to fail.
+        if (expected is string)
+        {
+            using var stringActualSnapshot = CollectionSnapshot.Create(actual);
+            stringActualSnapshot.EnsureComplete();
+            if (stringActualSnapshot.Items.Count is 0 || !Equals(expected, stringActualSnapshot.Items[^1], comparer))
+                return;
+
+            throw new AssertionException(ErrorFormatter.Format(new DoesNotEndWithAssertionError<object?, IReadOnlyList<object?>>("Not expected suffix", expected, stringActualSnapshot.Items, actualExpression, expectedExpression, message)));
+        }
+
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         using var expectedSnapshot = CollectionSnapshot.Create(expected);
         expectedSnapshot.EnsureComplete();

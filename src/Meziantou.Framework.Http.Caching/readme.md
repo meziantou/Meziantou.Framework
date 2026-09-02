@@ -277,6 +277,21 @@ This is particularly useful for versioned resources (e.g., `/assets/script.v123.
 | `No-Vary-Search` | `key-order`, `params`, `except` | Query parameters that do not affect the response |
 | `Age` | `<seconds>` | Age of cached response (added when serving from cache) |
 
+## Cache Store Failures
+
+A failing `IHttpCacheStore` never fails the request. A lookup that throws is treated as a cache miss, and a write
+that throws is skipped, so a Redis outage or a locked SQLite file degrades to *no caching* rather than to a broken
+`HttpClient`. Set `OnStoreError` to observe those failures:
+
+```csharp
+var options = new HttpCachingOptions
+{
+    OnStoreError = ex => logger.LogWarning(ex, "HTTP cache store failure"),
+};
+```
+
+A cancellation requested by the caller is not a store failure and still propagates.
+
 ## Thread Safety
 
 The `HttpCachingDelegateHandler` is thread-safe and can be used concurrently across multiple threads.

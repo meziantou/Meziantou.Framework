@@ -8,6 +8,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 {
     private readonly HttpCache _cache;
     private readonly TimeProvider _timeProvider;
+    private readonly Action<Exception>? _onStoreError;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HttpCachingDelegateHandler"/> class.
@@ -20,6 +21,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         var resolvedOptions = options ?? new();
 
         _timeProvider = resolvedOptions.TimeProvider;
+        _onStoreError = resolvedOptions.OnStoreError;
         _cache = new HttpCache(store, resolvedOptions);
     }
 
@@ -36,6 +38,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         var resolvedOptions = options ?? new();
 
         _timeProvider = resolvedOptions.TimeProvider;
+        _onStoreError = resolvedOptions.OnStoreError;
         _cache = new HttpCache(store, resolvedOptions);
     }
 
@@ -52,8 +55,15 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             // RFC 7234 Section 4.4: Invalidation on unsafe methods
             if (!IsMethodSafe(request.Method) && IsNonErrorStatusCode(response.StatusCode))
             {
-                await _cache.InvalidateAsync(request.RequestUri, cancellationToken).ConfigureAwait(false);
-                await InvalidateLocationHeadersAsync(response, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await _cache.InvalidateAsync(request.RequestUri, cancellationToken).ConfigureAwait(false);
+                    await InvalidateLocationHeadersAsync(response, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (IsStoreFailure(ex, cancellationToken))
+                {
+                    ReportStoreError(ex);
+                }
             }
 
             // Set RequestMessage if it's not already set by the base handler
@@ -95,7 +105,17 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         }
 
         // Try to get a cached response
-        var cacheResult = await _cache.TryGetAsync(request, cancellationToken).ConfigureAwait(false);
+        CacheEntry? cacheResult;
+        try
+        {
+            cacheResult = await _cache.TryGetAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (IsStoreFailure(ex, cancellationToken))
+        {
+            // A store that cannot be read is a cache miss, not a failed request.
+            ReportStoreError(ex);
+            cacheResult = null;
+        }
 
         if (cacheResult is not null)
         {
@@ -235,7 +255,16 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
                     {
                         // Update cached entry with new headers from 304 response
                         await cacheResult.UpdateFromValidationResponse(conditionalResponse, validationRequestTime, responseTime, cancellationToken).ConfigureAwait(false);
-                        await _cache.PersistEntryAsync(request.Method, request.RequestUri, cacheResult, cancellationToken).ConfigureAwait(false);
+                        try
+                        {
+                            await _cache.PersistEntryAsync(request.Method, request.RequestUri, cacheResult, cancellationToken).ConfigureAwait(false);
+                        }
+                        catch (Exception ex) when (IsStoreFailure(ex, cancellationToken))
+                        {
+                            // The refreshed entry could not be written back. The response it validated is
+                            // still correct, so it is served anyway.
+                            ReportStoreError(ex);
+                        }
 
                         conditionalResponse.Dispose();
 
@@ -255,7 +284,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
                     // Use fresh response and cache it. The timing of the validation request is used so the
                     // stored entry is not aged by the time the previous entry spent in the cache.
-                    await _cache.StoreAsync(request, conditionalResponse, validationRequestTime, responseTime, cancellationToken).ConfigureAwait(false);
+                    await StoreAsync(request, conditionalResponse, validationRequestTime, responseTime, cancellationToken).ConfigureAwait(false);
                     conditionalResponse.RequestMessage ??= request;
                     return conditionalResponse;
                 }
@@ -295,11 +324,43 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
         var freshResponseTime = _timeProvider.GetUtcNow();
 
-        await _cache.StoreAsync(request, freshResponse, requestTime, freshResponseTime, cancellationToken).ConfigureAwait(false);
+        await StoreAsync(request, freshResponse, requestTime, freshResponseTime, cancellationToken).ConfigureAwait(false);
 
         // Set RequestMessage if it's not already set by the base handler
         freshResponse.RequestMessage ??= request;
         return freshResponse;
+    }
+
+    /// <summary>Stores the response, reporting rather than propagating a store failure.</summary>
+    private async ValueTask StoreAsync(HttpRequestMessage request, HttpResponseMessage response, DateTimeOffset requestTime, DateTimeOffset responseTime, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _cache.StoreAsync(request, response, requestTime, responseTime, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (IsStoreFailure(ex, cancellationToken))
+        {
+            // The origin answered. Failing to remember the answer must not turn that into a failed request.
+            ReportStoreError(ex);
+        }
+        catch
+        {
+            // The caller cancelled while the body was being read for storage, so the response is no longer
+            // usable and nothing else will dispose it.
+            response.Dispose();
+            throw;
+        }
+    }
+
+    private static bool IsStoreFailure(Exception exception, CancellationToken cancellationToken)
+    {
+        // A cancellation requested by the caller is not a store failure and must propagate.
+        return exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested;
+    }
+
+    private void ReportStoreError(Exception exception)
+    {
+        _onStoreError?.Invoke(exception);
     }
 
     private static bool IsMethodSafe(HttpMethod method)

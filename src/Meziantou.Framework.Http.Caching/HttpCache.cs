@@ -56,45 +56,69 @@ internal sealed class HttpCache
         if (persistedEntries.Count is 0)
             return null;
 
-        // Find the best matching entry considering Vary headers
-        CacheEntry? bestMatch = null;
-        DateTimeOffset latestDate = DateTimeOffset.MinValue;
+        // Find the matching entries considering Vary headers.
+        // The match is decided on the persisted entry: building a CacheEntry copies the whole serialized
+        // response and scans it to check that it is well-formed, and most candidates are about to be
+        // rejected. Only the selected one is materialized, below.
+        List<HttpCachePersistenceEntry>? candidates = null;
 
         foreach (var persistedEntry in persistedEntries)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            CacheEntry entry;
-            try
-            {
-                entry = CacheEntry.FromPersistenceEntry(persistedEntry);
-            }
-            catch (JsonException)
-            {
-                // The stored payload is corrupted: ignore the entry and treat it as a miss.
-                continue;
-            }
-
             // Check secondary key (Vary headers) match
-            if (!entry.SecondaryKey.MatchRequest(request))
+            if (!MatchesSecondaryKey(persistedEntry, request))
                 continue;
 
             // draft-ietf-httpbis-no-vary-search Section 6: the entries stored under this key were kept for
             // other queries of the same path, and only answer requests for an equivalent URL.
-            if (matchQuery && !entry.MatchesQuery(uri))
+            if (matchQuery && !MatchesQuery(persistedEntry, uri))
                 continue;
 
-            // RFC 7234 Section 4: Use most recent response by Date header
-            // draft-ietf-httpbis-no-vary-search Section 7: preferring the most recent Date also makes caches
-            // converge on the latest config when several of them are stored.
-            if (entry.ResponseDate > latestDate)
+            candidates ??= [];
+            candidates.Add(persistedEntry);
+        }
+
+        if (candidates is null)
+            return null;
+
+        // RFC 7234 Section 4: Use most recent response by Date header
+        // draft-ietf-httpbis-no-vary-search Section 7: preferring the most recent Date also makes caches
+        // converge on the latest config when several of them are stored.
+        if (candidates.Count > 1)
+        {
+            candidates.Sort(static (left, right) => right.ResponseDate.CompareTo(left.ResponseDate));
+        }
+
+        foreach (var candidate in candidates)
+        {
+            try
             {
-                latestDate = entry.ResponseDate;
-                bestMatch = entry;
+                return CacheEntry.FromPersistenceEntry(candidate);
+            }
+            catch (JsonException)
+            {
+                // The stored payload is corrupted: ignore the entry and fall back to the next best match.
             }
         }
 
-        return bestMatch;
+        return null;
+    }
+
+    private static bool MatchesSecondaryKey(HttpCachePersistenceEntry entry, HttpRequestMessage request)
+    {
+        return CacheEntrySecondaryKey.Create(entry.SecondaryKeyMatchNone, entry.SecondaryKeyHeaders).MatchRequest(request);
+    }
+
+    private static bool MatchesQuery(HttpCachePersistenceEntry entry, Uri uri)
+    {
+        // An entry whose config is the default one does not belong to the query-independent key, and never
+        // matches. Only the queries remain to be compared: the rest of the URL is part of the storage key.
+        if (entry.NoVarySearch is null)
+            return false;
+
+        var query = UrlVariationConfig.Parse(entry.NoVarySearch).NormalizeQuery(uri.Query);
+        return string.Equals(query, entry.NormalizedQuery, StringComparison.Ordinal);
     }
 
     public async ValueTask StoreAsync(HttpRequestMessage request, HttpResponseMessage response, DateTimeOffset requestTime, DateTimeOffset responseTime, CancellationToken cancellationToken)
@@ -111,7 +135,8 @@ internal sealed class HttpCache
             return;
 
         // Check the announced size before reading anything. Buffering a multi-gigabyte response only to
-        // discard it is a needless allocation, and serialization would grow it further.
+        // discard it is a needless allocation, and serialization would grow it further. A response that
+        // announces no Content-Length is bounded while it is read instead, by BoundedContentReader.
         var maximumResponseSize = _options.MaximumResponseSize;
         if (maximumResponseSize is not null && response.Content?.Headers.ContentLength > maximumResponseSize.GetValueOrDefault())
             return;
@@ -164,6 +189,12 @@ internal sealed class HttpCache
 
         // The response status code is cacheable
         if (!IsCacheableStatusCode(response.StatusCode))
+            return false;
+
+        // RFC 9111 Section 4.1: a stored response with "Vary: *" can never be selected for any request, so
+        // storing it is pure waste. This is checked before the body is read rather than after.
+        var vary = response.Headers.Vary;
+        if (vary.Count > 0 && vary.Contains("*"))
             return false;
 
         var requestCacheControl = request.Headers.CacheControl;

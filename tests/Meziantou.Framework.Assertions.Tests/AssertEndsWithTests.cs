@@ -300,4 +300,23 @@ public sealed class AssertEndsWithTests
             Actual:              [1, 2, 3]
             """);
     }
+
+    [Fact]
+    public void DoesNotEndWith_EnumeratesASingleUseSequenceOnlyOnce()
+    {
+        var actual = AssertionTestHelpers.SingleUse(1, 2, 3);
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotEndWith(3, actual));
+    }
+
+
+    [Fact]
+    public void DoesNotEndWith_StringExpectedAgainstNonGenericCollection_Fails()
+    {
+        System.Collections.IEnumerable actual = new[] { "a", "b" };
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotEndWith("b", actual));
+        AssertionsAssert.DoesNotEndWith("a", actual);
+    }
+
 }

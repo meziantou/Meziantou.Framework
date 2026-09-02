@@ -48,6 +48,11 @@ public partial class Assert
 
     public static void NotEqual<T>(T expected, T? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        // Memory<T> and ReadOnlyMemory<T> compare by backing object, index and length, so a boxed pair holding equal
+        // content has to be unwrapped and compared element by element, exactly as Assert.Equal does.
+        if (TryNotEqualMemory(expected, actual, message, actualExpression, expectedExpression))
+            return;
+
         if (ValuesEqual(expected, actual))
         {
             throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<T, T?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
@@ -57,6 +62,9 @@ public partial class Assert
     [OverloadResolutionPriority(-1)]
     public static void NotEqual<TExpected, TActual>(TExpected expected, TActual? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (TryNotEqualMemory(expected, actual, message, actualExpression, expectedExpression))
+            return;
+
         if (ValuesEqual(expected, actual))
         {
             throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<TExpected, TActual?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));

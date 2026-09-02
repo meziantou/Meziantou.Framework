@@ -129,7 +129,6 @@ namespace Meziantou.Framework.Html
         public void AddNamespace(string? prefix, string? uri) { }
         public override string GetNamespaceOfPrefix(string prefix) => throw null;
         public override string GetPrefixOfNamespace(string namespaceURI) => throw null;
-        protected override void GetNamespaceAttributes(System.Collections.Generic.IDictionary<string, string> namespaces) { }
         public Meziantou.Framework.Html.HtmlAttribute CreateAttribute(string prefix, string localName, string? namespaceURI) => throw null;
         public Meziantou.Framework.Html.HtmlText CreateText() => throw null;
         public Meziantou.Framework.Html.HtmlText CreateText(string value) => throw null;

@@ -1,6 +1,15 @@
 namespace Meziantou.Framework.Threading;
 
 /// <summary>Represents a cancellation token source that can be reset to its initial state.</summary>
+/// <remarks>
+/// All members are safe to call concurrently. Note that the callbacks registered on <see cref="Token"/> run while the
+/// internal lock is held, so a callback must not block waiting on another thread that uses the same instance.
+/// <para>
+/// <see cref="Reset"/> replaces the underlying <see cref="CancellationTokenSource"/>, so a <see cref="CancellationToken"/>
+/// obtained before the reset belongs to the previous generation: it never reacts to a later <see cref="Cancel"/>. Read
+/// <see cref="Token"/> again after resetting.
+/// </para>
+/// </remarks>
 /// <example>
 /// <code><![CDATA[
 /// var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
@@ -16,7 +25,9 @@ namespace Meziantou.Framework.Threading;
 public sealed class ResettableCancellationTokenSource : IDisposable
 {
     private readonly ResettableCancellationTokenSourceOptions _options;
+    private readonly Lock _lock = new();
     private CancellationTokenSource _cts = new();
+    private bool _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="ResettableCancellationTokenSource"/> class with the specified options.</summary>
     /// <param name="options">Options that control the behavior when resetting or disposing.</param>
@@ -36,40 +47,85 @@ public sealed class ResettableCancellationTokenSource : IDisposable
     }
 
     /// <summary>Gets the cancellation token associated with this <see cref="ResettableCancellationTokenSource"/>.</summary>
-    public CancellationToken Token => _cts.Token;
+    public CancellationToken Token
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _cts.Token;
+            }
+        }
+    }
 
     /// <summary>Gets whether cancellation has been requested for this token source.</summary>
-    public bool IsCancellationRequested => _cts.IsCancellationRequested;
+    public bool IsCancellationRequested
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _cts.IsCancellationRequested;
+            }
+        }
+    }
 
     /// <summary>Communicates a request for cancellation.</summary>
-    public void Cancel() => _cts.Cancel();
+    public void Cancel()
+    {
+        lock (_lock)
+        {
+            _cts.Cancel();
+        }
+    }
 
     /// <summary>Schedules a cancel operation on this <see cref="ResettableCancellationTokenSource"/> after the specified time span.</summary>
     /// <param name="delay">The time span to wait before canceling this <see cref="ResettableCancellationTokenSource"/>.</param>
-    public void CancelAfter(TimeSpan delay) => _cts.CancelAfter(delay);
+    public void CancelAfter(TimeSpan delay)
+    {
+        lock (_lock)
+        {
+            _cts.CancelAfter(delay);
+        }
+    }
 
     /// <summary>Resets the cancellation token source to its initial state.</summary>
     public void Reset()
     {
-        if (_options.HasFlag(ResettableCancellationTokenSourceOptions.CancelOnReset))
+        lock (_lock)
         {
-            _cts.Cancel();
-        }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_cts.TryReset())
-        {
-            _cts.Dispose();
-            _cts = new CancellationTokenSource();
+            if (_options.HasFlag(ResettableCancellationTokenSourceOptions.CancelOnReset))
+            {
+                _cts.Cancel();
+            }
+
+            // Replacing the source is only safe while the lock is held: every other member reads _cts under the same
+            // lock, so no caller can be using the instance that is about to be disposed.
+            if (!_cts.TryReset())
+            {
+                _cts.Dispose();
+                _cts = new CancellationTokenSource();
+            }
         }
     }
 
     public void Dispose()
     {
-        if (_options.HasFlag(ResettableCancellationTokenSourceOptions.CancelOnDispose))
+        lock (_lock)
         {
-            _cts.Cancel();
-        }
+            if (_disposed)
+                return;
 
-        _cts.Dispose();
+            _disposed = true;
+
+            if (_options.HasFlag(ResettableCancellationTokenSourceOptions.CancelOnDispose))
+            {
+                _cts.Cancel();
+            }
+
+            _cts.Dispose();
+        }
     }
 }

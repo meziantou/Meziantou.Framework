@@ -88,6 +88,7 @@ public sealed class XunitLoggerTests
 
         Assert.Contains(activity.TraceId.ToHexString(), output.Output, StringComparison.Ordinal);
     }
+
     [Fact]
     public void IncludeLogLevelPrefixesTheLevel()
     {
@@ -187,5 +188,31 @@ public sealed class XunitLoggerTests
 
         var expected = DateTimeOffset.UtcNow.ToLocalTime().ToString("yyyy", CultureInfo.CurrentCulture) + " warn [TheCategory] message\n => TheScope" + Environment.NewLine;
         Assert.Equal([expected], output.Logs, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void AddXunit_RegistersASingleProviderWhenCalledTwice()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging(builder =>
+        {
+            builder.AddXunit();
+            builder.AddXunit();
+        });
+
+        Assert.Single(services, service => service.ServiceType == typeof(ILoggerProvider));
+    }
+
+    [Fact]
+    public void AddXunit_WithATestOutputHelperRegistersOneProviderPerCall()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging(builder =>
+        {
+            builder.AddXunit(new InMemoryTestOutputHelper());
+            builder.AddXunit(new InMemoryTestOutputHelper());
+        });
+
+        Assert.Equal(2, services.Count(service => service.ServiceType == typeof(ILoggerProvider)));
     }
 }

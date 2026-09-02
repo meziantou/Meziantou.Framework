@@ -284,9 +284,13 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                                         }
                                     }
                                 }
+                                catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+                                {
+                                    throw;
+                                }
                                 catch (Exception ex)
                                 {
-                                    context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible: {ex}", fileName: item);
+                                    context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible: {ex.Message}", fileName: item);
                                 }
                             }
                         }
@@ -483,36 +487,48 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
     {
     }
 
-    private sealed class SourceLinkJson
+    internal sealed class SourceLinkJson
     {
         [JsonPropertyName("documents")]
         public Dictionary<string, string>? Documents { get; set; }
 
+        /// <summary>Maps a document path to its URL. A key may contain a single '*' standing for any sequence of characters,
+        /// and the matched text replaces the first '*' of the URL.</summary>
         public string? GetUrl(string file)
         {
             if (Documents is null)
                 return null;
 
-            foreach (var key in Documents.Keys)
+            foreach (var (key, url) in Documents)
             {
-                if (key.Contains('*', StringComparison.Ordinal))
+                var wildcardIndex = key.IndexOf('*', StringComparison.Ordinal);
+                if (wildcardIndex < 0)
                 {
-                    var pattern = Regex.Escape(key).Replace(@"\*", "(.+)", StringComparison.Ordinal);
-                    var m = Regex.Match(file, pattern, RegexOptions.None, Timeout.InfiniteTimeSpan);
-                    if (!m.Success)
-                        continue;
+                    if (string.Equals(key, file, StringComparison.Ordinal))
+                        return url;
 
-                    var url = Documents[key];
-                    var path = m.Groups[1].Value.Replace('\\', '/');
-                    return url.Replace("*", path, StringComparison.Ordinal);
+                    continue;
                 }
-                else
-                {
-                    if (!key.Equals(file, StringComparison.Ordinal))
-                        continue;
 
-                    return Documents[key];
-                }
+                // The Source Link specification allows a single wildcard per key
+                if (key.AsSpan(wildcardIndex + 1).Contains('*'))
+                    continue;
+
+                var prefix = key.AsSpan(0, wildcardIndex);
+                var suffix = key.AsSpan(wildcardIndex + 1);
+                if (file.Length < prefix.Length + suffix.Length)
+                    continue;
+
+                var fileSpan = file.AsSpan();
+                if (!fileSpan.StartsWith(prefix, StringComparison.Ordinal) || !fileSpan.EndsWith(suffix, StringComparison.Ordinal))
+                    continue;
+
+                var matchedValue = file[prefix.Length..(file.Length - suffix.Length)].Replace('\\', '/');
+                var urlWildcardIndex = url.IndexOf('*', StringComparison.Ordinal);
+                if (urlWildcardIndex < 0)
+                    return url;
+
+                return string.Concat(url.AsSpan(0, urlWildcardIndex), matchedValue, url.AsSpan(urlWildcardIndex + 1));
             }
 
             return null;

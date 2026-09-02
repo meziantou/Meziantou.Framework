@@ -25,13 +25,15 @@ internal sealed class IconMustBeSetValidationRule : NuGetPackageValidationRule
         else
         {
             var extension = Path.GetExtension(icon);
-            if (extension is ".png")
+            if (string.Equals(extension, ".png", StringComparison.OrdinalIgnoreCase))
             {
                 await ValidateMagicNumber(context, realPath, [0x89, 0x50, 0x4E, 0x47], extension, "PNG").ConfigureAwait(false);
             }
-            else if (extension is ".jpg" or ".jpeg")
+            else if (string.Equals(extension, ".jpg", StringComparison.OrdinalIgnoreCase) || string.Equals(extension, ".jpeg", StringComparison.OrdinalIgnoreCase))
             {
-                await ValidateMagicNumber(context, realPath, [0xFF, 0xD8, 0xFF, 0xE0], extension, "JPEG").ConfigureAwait(false);
+                // Start of Image marker followed by any marker. JFIF (FF E0) and Exif (FF E1) are both valid,
+                // and other application markers are in use, so only the first 3 bytes are common to every JPEG file.
+                await ValidateMagicNumber(context, realPath, [0xFF, 0xD8, 0xFF], extension, "JPEG").ConfigureAwait(false);
             }
             else
             {

@@ -92,7 +92,10 @@ public static partial class ProcessExtensions
                 {
                     p = entry.ToProcess();
                     if (p is null || p.StartTime > process.StartTime)
+                    {
+                        p?.Dispose();
                         continue;
+                    }
                 }
                 catch (ArgumentException)
                 {
@@ -245,10 +248,16 @@ public static partial class ProcessExtensions
                 {
                     var child = entry.ToProcess();
                     if (child is null || child.StartTime < process.StartTime)
+                    {
+                        child?.Dispose();
                         continue;
+                    }
 
                     children.Add(child);
-                    if (currentDepth < maxDepth)
+
+                    // currentDepth is the depth of the children being collected, so descending is only
+                    // allowed while the next level still fits within maxDepth
+                    if (currentDepth + 1 < maxDepth)
                     {
                         GetChildProcesses(entries, child, children, maxDepth, currentDepth + 1);
                     }

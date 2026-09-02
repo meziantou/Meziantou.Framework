@@ -966,6 +966,56 @@ public sealed class AssertEqualTests
             """);
     }
 
+    [Fact]
+    public void Enums_SameEnumType_Success()
+    {
+        AssertionsAssert.Equal(Status.Active, Status.Active);
+        AssertionsAssert.Equal<object>(Status.Closed, Status.Closed);
+    }
+
+    [Fact]
+    public void Enums_DifferentEnumTypesWithSameNumericValue_Fails()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(Status.Active, Kind.First), """
+            Assert.Equal() assertion failed.
+            Expected expression: Status.Active
+            Actual expression:   Kind.First
+            Expected: Active
+            Actual:   First
+            """);
+    }
+
+    [Fact]
+    public void Enums_EnumAndIntegerWithSameNumericValue_Fails()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(1, Status.Active), """
+            Assert.Equal() assertion failed.
+            Expected expression: 1
+            Actual expression:   Status.Active
+            Expected: 1
+            Actual:   Active
+            """);
+    }
+
+    [Fact]
+    public void Enums_NotEqualAcceptsDifferentEnumTypesWithSameNumericValue()
+    {
+        AssertionsAssert.NotEqual(Status.Active, Kind.First);
+        AssertionsAssert.NotEqual(1, Status.Active);
+    }
+
+    private enum Status
+    {
+        Active = 1,
+        Closed = 2,
+    }
+
+    private enum Kind
+    {
+        First = 1,
+        Second = 2,
+    }
+
     private readonly struct ImplicitlyConvertibleValue : IEquatable<ImplicitlyConvertibleValue>
     {
         private readonly int _value;
@@ -983,4 +1033,24 @@ public sealed class AssertEqualTests
 
         public override int GetHashCode() => _value;
     }
+
+    [Fact]
+    public void BoxedReadOnlyMemory_EqualAndNotEqualDisagree()
+    {
+        object expected = new ReadOnlyMemory<int>([1, 2, 3]);
+        object actual = new ReadOnlyMemory<int>([1, 2, 3]);
+
+        AssertionsAssert.Equal(expected, actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(expected, actual));
+    }
+
+    [Fact]
+    public void BoxedReadOnlyMemory_NotEqualSucceedsForDifferentContent()
+    {
+        object expected = new ReadOnlyMemory<int>([1, 2, 3]);
+        object actual = new ReadOnlyMemory<int>([1, 2, 4]);
+
+        AssertionsAssert.NotEqual(expected, actual);
+    }
+
 }

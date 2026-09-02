@@ -2,6 +2,11 @@ namespace Meziantou.Framework.Threading;
 
 /// <summary>Provides a synchronous lock mechanism that locks based on a key, allowing concurrent operations on different keys.</summary>
 /// <typeparam name="TKey">The type of the key.</typeparam>
+/// <remarks>
+/// The lock is thread-affine: it is built on <see cref="System.Threading.Lock"/>, which requires the lease to be
+/// released on the thread that acquired it. The critical section must therefore stay on one thread and must not
+/// <see langword="await"/>. Use <see cref="KeyedAsyncLock{TKey}"/> for asynchronous code.
+/// </remarks>
 /// <example>
 /// <code><![CDATA[
 /// var keyedLock = new KeyedLock<string>();
@@ -41,6 +46,10 @@ public sealed class KeyedLock<TKey> where TKey : notnull
     /// <summary>Acquires the lock for the specified key.</summary>
     /// <param name="key">The key to lock on.</param>
     /// <returns>A disposable object. Disposing the object releases the lock.</returns>
+    /// <remarks>
+    /// The returned object must be disposed on the thread that called this method. Disposing it on another thread
+    /// throws <see cref="SynchronizationLockException"/> and leaves the underlying lock held.
+    /// </remarks>
     public IDisposable Lock(TKey key)
     {
         Entry entry;
@@ -63,12 +72,21 @@ public sealed class KeyedLock<TKey> where TKey : notnull
 
     private void Release(TKey key, Entry entry)
     {
-        entry.Lock.Exit();
-        lock (_locks)
+        try
         {
-            if (--entry.ReferenceCount == 0)
+            entry.Lock.Exit();
+        }
+        finally
+        {
+            // The reference count must be released even when Exit throws, which happens when the lease is
+            // disposed on a thread that does not own the lock. Skipping it would leave the entry in the
+            // dictionary forever and permanently deadlock every later acquisition of the same key.
+            lock (_locks)
             {
-                _locks.Remove(key);
+                if (--entry.ReferenceCount == 0)
+                {
+                    _locks.Remove(key);
+                }
             }
         }
     }

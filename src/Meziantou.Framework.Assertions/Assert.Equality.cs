@@ -169,8 +169,16 @@ public partial class Assert
         if (expected is null || actual is null)
             return false;
 
-        var expectedTypeCode = Type.GetTypeCode(expected.GetType());
-        var actualTypeCode = Type.GetTypeCode(actual.GetType());
+        var expectedType = expected.GetType();
+        var actualType = actual.GetType();
+
+        // Type.GetTypeCode reports an enum as its underlying type, so without this guard two unrelated enums, or an
+        // enum and a raw integer, would compare equal whenever their numeric values happen to coincide.
+        if (expectedType.IsEnum || actualType.IsEnum)
+            return false;
+
+        var expectedTypeCode = Type.GetTypeCode(expectedType);
+        var actualTypeCode = Type.GetTypeCode(actualType);
         if (!IsNumericTypeCode(expectedTypeCode) || !IsNumericTypeCode(actualTypeCode))
             return false;
 

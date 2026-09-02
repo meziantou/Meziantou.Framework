@@ -332,4 +332,14 @@ public sealed class AssertStartsWithTests
         AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotStartWith(1, actual));
     }
 
+
+    [Fact]
+    public void DoesNotStartWith_StringExpectedAgainstNonGenericCollection_Fails()
+    {
+        System.Collections.IEnumerable actual = new[] { "a", "b" };
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotStartWith("a", actual));
+        AssertionsAssert.DoesNotStartWith("b", actual);
+    }
+
 }

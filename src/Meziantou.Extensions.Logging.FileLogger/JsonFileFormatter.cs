@@ -9,6 +9,15 @@ namespace Meziantou.Extensions.Logging;
 /// <summary>A <see cref="FileFormatter"/> that writes one JSON object per log entry.</summary>
 public sealed class JsonFileFormatter : FileFormatter
 {
+    // Keep the cached buffer small, so a single big entry doesn't retain a big buffer for the lifetime of the thread
+    private const int MaxCachedCapacity = 4 * 1024;
+
+    [ThreadStatic]
+    private static ArrayBufferWriter<byte>? s_buffer;
+
+    [ThreadStatic]
+    private static Utf8JsonWriter? s_jsonWriter;
+
     /// <summary>Gets a shared instance of the <see cref="JsonFileFormatter"/> class.</summary>
     public static JsonFileFormatter Instance { get; } = new();
 
@@ -28,11 +37,31 @@ public sealed class JsonFileFormatter : FileFormatter
         if (string.IsNullOrEmpty(message) && logEntry.Exception is null)
             return;
 
-        var buffer = new ArrayBufferWriter<byte>(256);
-        using (var writer = new Utf8JsonWriter(buffer))
+        // The buffers are cached per thread. Detach them in case a formatter callback logs a message
+        var buffer = s_buffer;
+        var writer = s_jsonWriter;
+        if (buffer is null || writer is null)
+        {
+            buffer = new ArrayBufferWriter<byte>(256);
+            writer = new Utf8JsonWriter(buffer);
+        }
+        else
+        {
+            s_buffer = null;
+            s_jsonWriter = null;
+            buffer.ResetWrittenCount();
+            writer.Reset(buffer);
+        }
+
+        try
         {
             writer.WriteStartObject();
-            writer.WriteString("Timestamp", timestamp.ToString(options.TimestampFormat ?? "o", CultureInfo.InvariantCulture));
+
+            // A null format means the timestamp must be omitted, like in SimpleFileFormatter
+            if (options.TimestampFormat is not null)
+            {
+                writer.WriteString("Timestamp", timestamp.ToString(options.TimestampFormat, CultureInfo.InvariantCulture));
+            }
 
             if (options.IncludeLogLevel)
             {
@@ -108,9 +137,37 @@ public sealed class JsonFileFormatter : FileFormatter
             }
 
             writer.WriteEndObject();
-        }
+            writer.Flush();
 
-        textWriter.Write(Encoding.UTF8.GetString(buffer.WrittenSpan));
+            WriteUtf8(textWriter, buffer.WrittenSpan);
+        }
+        finally
+        {
+            if (buffer.Capacity <= MaxCachedCapacity)
+            {
+                s_buffer = buffer;
+                s_jsonWriter = writer;
+            }
+            else
+            {
+                writer.Dispose();
+            }
+        }
+    }
+
+    private static void WriteUtf8(TextWriter textWriter, ReadOnlySpan<byte> utf8)
+    {
+        // Transcode into a pooled buffer instead of allocating a string for every entry
+        var chars = ArrayPool<char>.Shared.Rent(Encoding.UTF8.GetMaxCharCount(utf8.Length));
+        try
+        {
+            var charCount = Encoding.UTF8.GetChars(utf8, chars);
+            textWriter.Write(chars.AsSpan(0, charCount));
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(chars);
+        }
     }
 
     private static void WriteProperty(Utf8JsonWriter writer, string name, object? value)

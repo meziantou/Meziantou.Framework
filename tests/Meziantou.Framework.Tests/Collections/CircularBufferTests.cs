@@ -1,3 +1,4 @@
+using System.Reflection;
 using Meziantou.Framework.Collections;
 
 namespace Meziantou.Framework.Tests.Collections;
@@ -497,5 +498,53 @@ public class CircularBufferTests
 
         Assert.Equal([1, 2, 3], firstPass);
         Assert.Equal(firstPass, secondPass);
+    }
+
+    [Fact]
+    public void Clear_WrappedBufferOfReferenceType()
+    {
+        var list = new CircularBuffer<string>(3) { AllowOverwrite = true };
+        list.AddLast("a");
+        list.AddLast("b");
+        list.AddLast("c");
+        list.RemoveFirst();
+        list.RemoveFirst();
+
+        list.Clear();
+
+        Assert.Empty(list);
+    }
+
+    [Fact]
+    public void Clear_ReleasesTheReferencesOfAWrappedBuffer()
+    {
+        var list = new CircularBuffer<string>(2) { AllowOverwrite = true };
+        list.AddLast("a");
+        list.AddLast("b");
+        list.RemoveFirst();
+
+        list.Clear();
+
+        // Clear exists to let the GC reclaim the items, so no slot may still reference one
+        var items = (string?[])typeof(CircularBuffer<string>)
+            .GetField("_items", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(list)!;
+        Assert.All(items, item => Assert.Null(item));
+    }
+
+    [Fact]
+    public void Clear_BufferThatWrapsAroundTheEndOfTheArray()
+    {
+        var list = new CircularBuffer<string>(3) { AllowOverwrite = true };
+        list.AddLast("a");
+        list.AddLast("b");
+        list.AddLast("c");
+        list.AddLast("d");
+
+        list.Clear();
+
+        Assert.Empty(list);
+        list.AddLast("e");
+        Assert.Equal(["e"], list);
     }
 }

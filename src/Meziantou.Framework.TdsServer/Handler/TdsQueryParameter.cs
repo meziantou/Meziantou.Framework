@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace Meziantou.Framework.Tds.Handler;
@@ -156,11 +157,30 @@ public sealed class TdsQueryParameter
         };
     }
 
+    private static readonly XmlReaderSettings XmlReaderSettings = new()
+    {
+        DtdProcessing = DtdProcessing.Prohibit,
+        IgnoreWhitespace = true,
+        XmlResolver = null,
+    };
+
     /// <summary>Parses the value as XML when possible.</summary>
+    /// <remarks>
+    /// DTD processing is disabled. The value comes straight off the wire, and
+    /// <see cref="XDocument.Parse(string, LoadOptions)"/> would expand internal entities up to ten million
+    /// characters, so a few hundred bytes of parameter could cost megabytes of allocation.
+    /// </remarks>
+    /// <exception cref="XmlException">The value is not well-formed XML, or it declares a DTD.</exception>
     public XDocument? AsXml()
     {
         var text = AsString();
-        return text is null ? null : XDocument.Parse(text, LoadOptions.None);
+        if (text is null)
+        {
+            return null;
+        }
+
+        using var reader = XmlReader.Create(new StringReader(text), XmlReaderSettings);
+        return XDocument.Load(reader, LoadOptions.None);
     }
 
     private static JsonObject ParseJsonObject(string value)

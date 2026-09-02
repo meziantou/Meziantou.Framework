@@ -26,7 +26,7 @@ internal sealed class YamlModelNodeConverter : YamlConverter
         var start = reader.Start;
         var end = reader.End;
 
-        var node = ReadNode(reader, new Dictionary<string, YamlElement>(StringComparer.Ordinal));
+        var node = ReadNode(reader, YamlDocument.CreateContext(reader.Options));
         if (node is null)
         {
             return null;
@@ -58,25 +58,25 @@ internal sealed class YamlModelNodeConverter : YamlConverter
         WriteNode(writer, node);
     }
 
-    private static YamlElement? ReadNode(YamlReader reader, Dictionary<string, YamlElement> anchors)
+    private static YamlElement? ReadNode(YamlReader reader, YamlModelLoadContext context)
     {
         switch (reader.CurrentEvent)
         {
             case MappingStart mappingStart:
-                return ReadMapping(reader, mappingStart, anchors);
+                return ReadMapping(reader, mappingStart, context);
 
             case SequenceStart sequenceStart:
-                return ReadSequence(reader, sequenceStart, anchors);
+                return ReadSequence(reader, sequenceStart, context);
 
             case Scalar scalar:
                 reader.Read();
                 var value = new YamlValue(scalar);
-                RegisterAnchor(value, anchors);
+                RegisterAnchor(value, context);
                 return value;
 
             case AnchorAlias alias:
                 reader.Read();
-                if (!anchors.TryGetValue(alias.Value, out var anchored))
+                if (!context.Anchors.TryGetValue(alias.Value, out var anchored))
                 {
                     throw new YamlException(
                         alias.Start,
@@ -84,8 +84,10 @@ internal sealed class YamlModelNodeConverter : YamlConverter
                         FormattableString.Invariant($"Found an alias '*{alias.Value}' referencing an unknown anchor."));
                 }
 
-                // The model API does not currently preserve aliases as a distinct node type.
-                // Materialize a copy so that writing the model back out does not emit duplicate anchors.
+                // The model API does not currently preserve aliases as a distinct node type, so the anchored subtree
+                // is copied. That copy is what makes alias amplification possible, so charge it against a budget first.
+                context.ChargeAliasExpansion(anchored, alias.Value, alias.Start, alias.End);
+
                 var clone = (YamlElement)anchored.DeepClone();
                 clone.Anchor = null;
                 return clone;
@@ -95,7 +97,7 @@ internal sealed class YamlModelNodeConverter : YamlConverter
         }
     }
 
-    private static YamlMapping ReadMapping(YamlReader reader, MappingStart mappingStart, Dictionary<string, YamlElement> anchors)
+    private static YamlMapping ReadMapping(YamlReader reader, MappingStart mappingStart, YamlModelLoadContext context)
     {
         reader.Read();
 
@@ -108,8 +110,8 @@ internal sealed class YamlModelNodeConverter : YamlConverter
                 throw new YamlException("Unexpected end of mapping while loading YAML model.");
             }
 
-            var key = ReadNode(reader, anchors);
-            var value = ReadNode(reader, anchors);
+            var key = ReadNode(reader, context);
+            var value = ReadNode(reader, context);
 
             if (key is null || value is null)
             {
@@ -125,11 +127,11 @@ internal sealed class YamlModelNodeConverter : YamlConverter
         reader.Read();
 
         var mapping = new YamlMapping(mappingStart, mappingEnd, keys, contents);
-        RegisterAnchor(mapping, anchors);
+        RegisterAnchor(mapping, context);
         return mapping;
     }
 
-    private static YamlSequence ReadSequence(YamlReader reader, SequenceStart sequenceStart, Dictionary<string, YamlElement> anchors)
+    private static YamlSequence ReadSequence(YamlReader reader, SequenceStart sequenceStart, YamlModelLoadContext context)
     {
         reader.Read();
 
@@ -141,7 +143,7 @@ internal sealed class YamlModelNodeConverter : YamlConverter
                 throw new YamlException("Unexpected end of sequence while loading YAML model.");
             }
 
-            var item = ReadNode(reader, anchors);
+            var item = ReadNode(reader, context);
             if (item is not null)
             {
                 contents.Add(item);
@@ -153,16 +155,17 @@ internal sealed class YamlModelNodeConverter : YamlConverter
         reader.Read();
 
         var sequence = new YamlSequence(sequenceStart, sequenceEnd, contents);
-        RegisterAnchor(sequence, anchors);
+        RegisterAnchor(sequence, context);
         return sequence;
     }
 
-    private static void RegisterAnchor(YamlElement element, Dictionary<string, YamlElement> anchors)
+    private static void RegisterAnchor(YamlElement element, YamlModelLoadContext context)
     {
         var anchor = element.Anchor;
         if (!string.IsNullOrEmpty(anchor))
         {
-            anchors[anchor] = element;
+            context.Anchors[anchor] = element;
+            context.RegisterNodeCount(element);
         }
     }
 

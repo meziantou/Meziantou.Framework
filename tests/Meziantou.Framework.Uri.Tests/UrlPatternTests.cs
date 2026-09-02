@@ -176,6 +176,34 @@ public sealed class UrlPatternTests
         Assert.True(pattern.IsMatch("https://example.com/Books/123"));
     }
 
+    [Fact]
+    public void IsMatch_IgnoreCase_AppliesToThePathnameSearchAndHash()
+    {
+        var options = new UrlPatternOptions { IgnoreCase = true };
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Pathname = "/Books" }, options)
+            .IsMatch("https://example.com/books"));
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Search = "Foo=Bar" }, options)
+            .IsMatch("https://example.com?foo=bar"));
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Hash = "Section" }, options)
+            .IsMatch("https://example.com#section"));
+    }
+
+    [Fact]
+    public void IsMatch_IgnoreCase_DoesNotApplyToTheUsernamePasswordOrPort()
+    {
+        // Per the spec, ignoreCase only reaches the pathname, search and hash components
+        var options = new UrlPatternOptions { IgnoreCase = true };
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Username = "Admin" }, options)
+            .IsMatch(new UrlPatternInit { Username = "admin" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Password = "Secret" }, options)
+            .IsMatch(new UrlPatternInit { Password = "secret" }));
+    }
+
     // Full URL pattern string
     [Fact]
     public void Create_WithFullUrlPatternString_ShouldParse()
@@ -670,6 +698,22 @@ public sealed class UrlPatternTests
         Assert.True(pattern.IsMatch("https://user:secret@example.com/path"));
     }
 
+    [Theory]
+    // url, expected username, expected password
+    [InlineData("https://example.com/path", "", "")]
+    [InlineData("https://john@example.com/path", "john", "")]
+    [InlineData("https://john:secret@example.com/path", "john", "secret")]
+    [InlineData("https://:secret@example.com/path", "", "secret")]
+    [InlineData("https://john:pa:ss@example.com/path", "john", "pa:ss")]
+    public void Match_SplitsTheUserInfoIntoUsernameAndPassword(string url, string expectedUsername, string expectedPassword)
+    {
+        var result = UrlPattern.Create(new UrlPatternInit()).Match(url);
+
+        Assert.NotNull(result);
+        Assert.Equal(expectedUsername, result.Username.Input);
+        Assert.Equal(expectedPassword, result.Password.Input);
+    }
+
     // Trailing slash handling
     [Fact]
     public void IsMatch_TrailingSlash()
@@ -808,6 +852,28 @@ public sealed class UrlPatternTests
         });
 
         Assert.False(pattern.IsMatch("not-a-valid-url"));
+    }
+
+    [Theory]
+    [InlineData("not-a-valid-url")]
+    [InlineData("::::")]
+    [InlineData("http://[/")]
+    [InlineData("")]
+    public void MatchAndIsMatch_WithUnparsableUrl_ReportNoMatch(string url)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/path" });
+
+        Assert.False(pattern.IsMatch(url));
+        Assert.Null(pattern.Match(url));
+    }
+
+    [Fact]
+    public void MatchAndIsMatch_WithUnparsableBaseUrl_ReportNoMatch()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/path" });
+
+        Assert.False(pattern.IsMatch("/path", "not-a-valid-base"));
+        Assert.Null(pattern.Match("/path", "not-a-valid-base"));
     }
 
     // File URLs
@@ -1214,5 +1280,310 @@ public sealed class UrlPatternTests
 
         Assert.NotNull(result);
         Assert.Equal("css/styles/main.css", result.Pathname.Groups["path"]);
+    }
+
+    [Theory]
+    [InlineData("/books/:id.json", "/books/:id.json")]
+    [InlineData("/assets/*.png", "/assets/*.png")]
+    [InlineData("/:name-suffix", "/:name-suffix")]
+    [InlineData("/file-:name-v:version.txt", "/file-:name-v:version.txt")]
+    [InlineData("/{:name}text", "/{:name}text")]
+    public void Create_LiteralFollowingAGroup_KeepsThePathnameUnchanged(string pathname, string expected)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = pathname });
+
+        Assert.Equal(expected, pattern.Pathname);
+    }
+
+    [Theory]
+    [InlineData("/books/:id.json", "https://example.com/books/123.json")]
+    [InlineData("/assets/*.png", "https://example.com/assets/logo.png")]
+    [InlineData("/:name-suffix", "https://example.com/value-suffix")]
+    [InlineData("/file-:name-v:version.txt", "https://example.com/file-report-v2.txt")]
+    public void IsMatch_LiteralFollowingAGroup_ShouldMatch(string pathname, string url)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = pathname });
+
+        Assert.True(pattern.IsMatch(url));
+    }
+
+    [Fact]
+    public void Match_ExtensionAfterAGroup_ShouldCaptureWithoutTheExtension()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id.json" });
+
+        var result = pattern.Match("https://example.com/books/123.json");
+
+        Assert.NotNull(result);
+        Assert.Equal("123", result.Pathname.Groups["id"]);
+        Assert.False(pattern.IsMatch("https://example.com/books/123/.json"));
+    }
+
+    [Fact]
+    public void Create_FromPatternString_LiteralFollowingAGroupIsPreserved()
+    {
+        var pattern = UrlPattern.Create("https://example.com/books/:id.json");
+
+        Assert.Equal("/books/:id.json", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com/books/123.json"));
+    }
+
+    // https://urlpattern.spec.whatwg.org/ - "https://example.com" matches any URL on that origin
+    [Fact]
+    public void Create_BareOrigin_MatchesAnyUrlOnThatOrigin()
+    {
+        var pattern = UrlPattern.Create("https://example.com");
+
+        Assert.Equal("*", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com/"));
+        Assert.True(pattern.IsMatch("https://example.com/anything"));
+        Assert.True(pattern.IsMatch("https://example.com/a/b/c?q=1#h"));
+        Assert.False(pattern.IsMatch("https://other.com/anything"));
+    }
+
+    [Fact]
+    public void Create_BareOriginWithPort_MatchesAnyUrlOnThatOrigin()
+    {
+        var pattern = UrlPattern.Create("https://example.com:8443");
+
+        Assert.Equal("*", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com:8443/anything"));
+        Assert.False(pattern.IsMatch("https://example.com/anything"));
+    }
+
+    [Fact]
+    public void Create_OriginWithTrailingSlash_MatchesOnlyTheRoot()
+    {
+        var pattern = UrlPattern.Create("https://example.com/");
+
+        Assert.Equal("/", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com/"));
+        Assert.False(pattern.IsMatch("https://example.com/anything"));
+    }
+
+    [Fact]
+    public void Create_OriginWithHash_StillDefaultsThePathnameToTheRoot()
+    {
+        var pattern = UrlPattern.Create("https://example.com#section");
+
+        Assert.Equal("/", pattern.Pathname);
+        Assert.Equal("section", pattern.Hash);
+        Assert.True(pattern.IsMatch("https://example.com/#section"));
+        Assert.False(pattern.IsMatch("https://example.com/anything#section"));
+    }
+
+    [Fact]
+    public void Create_WithBaseUrl_InheritsTheSearchAndTheHash()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { BaseUrl = "https://example.com/foo?a=1#h" });
+
+        Assert.Equal("/foo", pattern.Pathname);
+        Assert.Equal("a=1", pattern.Search);
+        Assert.Equal("h", pattern.Hash);
+        Assert.True(pattern.IsMatch("https://example.com/foo?a=1#h"));
+        Assert.False(pattern.IsMatch("https://example.com/foo?other=1#h"));
+        Assert.False(pattern.IsMatch("https://example.com/foo?a=1#other"));
+    }
+
+    [Fact]
+    public void Create_WithBaseUrl_DoesNotInheritAComponentLessSpecificThanTheInit()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Protocol = "https",
+            BaseUrl = "https://example.com:8443/base",
+        });
+
+        Assert.Equal("*", pattern.Hostname);
+        Assert.Equal("*", pattern.Port);
+        Assert.Equal("*", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://other.example/anything"));
+    }
+
+    [Fact]
+    public void Create_WithBaseUrl_DoesNotInheritThePathnameWhenThePortIsSpecified()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Port = "8443",
+            BaseUrl = "https://example.com:8443/base",
+        });
+
+        Assert.Equal("*", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com:8443/anything"));
+    }
+
+    [Theory]
+    [InlineData("https://example.com/x/:id", "https://example.com/x/:id", "https://example.com/x/anything")]
+    [InlineData("https://example.com/a(b)", "https://example.com/a(b)", "https://example.com/aXb")]
+    public void Create_WithBaseUrl_TreatsThePathAsLiteralText(string baseUrl, string literalUrl, string patternishUrl)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { BaseUrl = baseUrl });
+
+        Assert.True(pattern.IsMatch(literalUrl));
+        Assert.False(pattern.IsMatch(patternishUrl));
+    }
+
+    [Fact]
+    public void Create_WithBaseUrl_TreatsTheHostAsLiteralText()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { BaseUrl = "https://a.example.com/" });
+
+        Assert.True(pattern.IsMatch("https://a.example.com/"));
+        Assert.False(pattern.IsMatch("https://axexample.com/"));
+    }
+
+    [Fact]
+    public void Create_WithBaseUrl_StillResolvesARelativePathname()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "books/:id",
+            BaseUrl = "https://example.com/base/index.html",
+        });
+
+        Assert.Equal("/base/books/:id", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com/base/books/42"));
+    }
+
+    [Fact]
+    public void IsMatch_WithBaseUrlOnTheInput_InheritsWithoutEscaping()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/x/*" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { BaseUrl = "https://example.com/x/a(b)" }));
+    }
+
+    [Fact]
+    public void IsMatch_ComponentWithATrailingNewLine_ShouldNotMatch()
+    {
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Pathname = "/admin" })
+            .IsMatch(new UrlPatternInit { Pathname = "/admin\n" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Hostname = "example.com" })
+            .IsMatch(new UrlPatternInit { Hostname = "example.com\n" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Protocol = "https" })
+            .IsMatch(new UrlPatternInit { Protocol = "https\n" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Search = "a=1" })
+            .IsMatch(new UrlPatternInit { Search = "a=1\n" }));
+
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Hash = "top" })
+            .IsMatch(new UrlPatternInit { Hash = "top\n" }));
+    }
+
+    [Fact]
+    public void IsMatch_TrailingNewLineAfterAGroupsFixedSuffix_ShouldNotMatch()
+    {
+        // The group itself is "[^/]+?", which matches "123\n" in JavaScript too, so the
+        // newline has to be rejected by the trailing literal rather than by the group.
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id/edit" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Pathname = "/books/123/edit" }));
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Pathname = "/books/123/edit\n" }));
+    }
+
+    [Fact]
+    public void IsMatch_ComponentWithALeadingNewLine_ShouldNotMatch()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/admin" });
+
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Pathname = "\n/admin" }));
+    }
+
+    [Theory]
+    [InlineData("HTTPS")]
+    [InlineData("https:")]
+    [InlineData("HTTPS:")]
+    public void IsMatch_InitInput_CanonicalizesTheProtocol(string protocol)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Protocol = protocol }));
+    }
+
+    [Fact]
+    public void IsMatch_InitInput_CanonicalizesTheHostname()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = "example.com" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Hostname = "EXAMPLE.com" }));
+    }
+
+    [Fact]
+    public void IsMatch_InitInput_StripsTheSearchAndHashPrefixes()
+    {
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Search = "a=1" })
+            .IsMatch(new UrlPatternInit { Search = "?a=1" }));
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Hash = "top" })
+            .IsMatch(new UrlPatternInit { Hash = "#top" }));
+    }
+
+    [Fact]
+    public void Match_InitInput_CanonicalizesTheInputAndReportsItUnchanged()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https", Hostname = "example.com" });
+
+        var result = pattern.Match(new UrlPatternInit { Protocol = "HTTPS:", Hostname = "EXAMPLE.com" });
+
+        Assert.NotNull(result);
+        Assert.Equal("https", result.Protocol.Input);
+        Assert.Equal("example.com", result.Hostname.Input);
+
+        // Inputs reports what the caller supplied, not the canonicalized form
+        var suppliedInit = Assert.Single(result.Inputs).Init;
+        Assert.NotNull(suppliedInit);
+        Assert.Equal("HTTPS:", suppliedInit.Protocol);
+        Assert.Equal("EXAMPLE.com", suppliedInit.Hostname);
+    }
+
+    [Fact]
+    public void IsMatch_InitInput_StillRejectsAValueThatDoesNotMatch()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https" });
+
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Protocol = "http" }));
+    }
+
+    [Fact]
+    public void Create_PortWithLeadingZeros_CollapsesLikeTheDefaultPort()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https", Port = "0443" });
+
+        Assert.Equal("", pattern.Port);
+        Assert.True(pattern.IsMatch("https://example.com/"));
+    }
+
+    [Theory]
+    [InlineData("08080", "8080")]
+    [InlineData("8080", "8080")]
+    [InlineData("0", "0")]
+    public void Create_NumericPort_IsNormalized(string port, string expected)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Port = port });
+
+        Assert.Equal(expected, pattern.Port);
+    }
+
+    [Fact]
+    public void Create_PortWithLeadingZeros_MatchesTheSamePort()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Port = "08080" });
+
+        Assert.True(pattern.IsMatch("https://example.com:8080/path"));
+        Assert.False(pattern.IsMatch("https://example.com:9090/path"));
+    }
+
+    [Theory]
+    [InlineData("*")]
+    [InlineData("99999")]
+    [InlineData(":p")]
+    public void Create_PortThatIsNotAPlainNumber_IsMatchedAsWritten(string port)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Port = port });
+
+        Assert.Equal(port, pattern.Port);
     }
 }

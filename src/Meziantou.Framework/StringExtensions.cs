@@ -917,12 +917,20 @@ static partial class StringExtensions
     /// <summary>Removes the trailing occurrence of a specified string from the current string.</summary>
     public static string RemoveSuffix(this string str, string suffix, StringComparison stringComparison)
     {
-        if (str.EndsWith(suffix, stringComparison))
-        {
-            return str[..^suffix.Length];
-        }
+        // Ordinal comparisons always match exactly suffix.Length characters
+        if (stringComparison is StringComparison.Ordinal or StringComparison.OrdinalIgnoreCase)
+            return str.EndsWith(suffix, stringComparison) ? str[..^suffix.Length] : str;
 
-        return str;
+        // A linguistic comparison can match a number of characters that differs from suffix.Length,
+        // so the length of the match is what must be removed.
+        var (compareInfo, options) = GetCompareInfo(stringComparison);
+
+        // A suffix made only of ignorable characters matches everywhere and stands for nothing,
+        // so there is nothing to remove. IsSuffix would report the whole string as the match.
+        if (compareInfo.Compare(suffix, "", options) is 0)
+            return str;
+
+        return compareInfo.IsSuffix(str, suffix, options, out var matchLength) ? str[..^matchLength] : str;
     }
 
     /// <summary>Removes the leading occurrence of a specified string from the current string.</summary>
@@ -934,11 +942,33 @@ static partial class StringExtensions
     /// <summary>Removes the leading occurrence of a specified string from the current string.</summary>
     public static string RemovePrefix(this string str, string prefix, StringComparison stringComparison)
     {
-        if (str.StartsWith(prefix, stringComparison))
-        {
-            return str[prefix.Length..];
-        }
+        // Ordinal comparisons always match exactly prefix.Length characters
+        if (stringComparison is StringComparison.Ordinal or StringComparison.OrdinalIgnoreCase)
+            return str.StartsWith(prefix, stringComparison) ? str[prefix.Length..] : str;
 
-        return str;
+        // A linguistic comparison can match a number of characters that differs from prefix.Length,
+        // so the length of the match is what must be removed.
+        var (compareInfo, options) = GetCompareInfo(stringComparison);
+
+        // A prefix made only of ignorable characters matches everywhere and stands for nothing,
+        // so there is nothing to remove. IsPrefix would report the whole string as the match.
+        if (compareInfo.Compare(prefix, "", options) is 0)
+            return str;
+
+        return compareInfo.IsPrefix(str, prefix, options, out var matchLength) ? str[matchLength..] : str;
+    }
+
+    private static (CompareInfo CompareInfo, CompareOptions Options) GetCompareInfo(StringComparison stringComparison)
+    {
+        return stringComparison switch
+        {
+            StringComparison.CurrentCulture => (CultureInfo.CurrentCulture.CompareInfo, CompareOptions.None),
+            StringComparison.CurrentCultureIgnoreCase => (CultureInfo.CurrentCulture.CompareInfo, CompareOptions.IgnoreCase),
+#pragma warning disable RS0030 // The banned invariant comparisons are mapped here, not chosen: the caller decides which comparison to use
+            StringComparison.InvariantCulture => (CultureInfo.InvariantCulture.CompareInfo, CompareOptions.None),
+            StringComparison.InvariantCultureIgnoreCase => (CultureInfo.InvariantCulture.CompareInfo, CompareOptions.IgnoreCase),
+#pragma warning restore RS0030
+            _ => throw new ArgumentException($"The string comparison type '{stringComparison}' is not supported.", nameof(stringComparison)),
+        };
     }
 }

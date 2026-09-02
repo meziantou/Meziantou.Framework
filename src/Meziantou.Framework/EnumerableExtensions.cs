@@ -277,13 +277,16 @@ public static partial class EnumerableExtensions
         var count = 0;
         foreach (var item in enumerable)
         {
-            result += item.Ticks;
-
             checked
             {
+                // The sum is what can realistically overflow, so it is the part that must be checked
+                result += item.Ticks;
                 count++;
             }
         }
+
+        if (count is 0)
+            throw new InvalidOperationException("Sequence contains no elements");
 
         return TimeSpan.FromTicks(result / count);
     }

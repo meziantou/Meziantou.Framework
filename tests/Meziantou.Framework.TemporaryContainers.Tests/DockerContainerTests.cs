@@ -7,4 +7,7 @@ public sealed class DockerContainerTests() : ContainerRuntimeTestsBase(Container
 {
     [Fact]
     public Task PauseAndUnpause() => AssertPauseUnpauseAsync();
+
+    [Fact]
+    public Task StartAsync_ContainerExitsBeforeTheReadyMessage_ReportsWhatTheContainerPrinted() => AssertStartFailureReportsContainerOutputAsync();
 }

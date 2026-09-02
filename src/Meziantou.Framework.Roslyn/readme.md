@@ -25,6 +25,7 @@ using Meziantou.Framework.Roslyn;
 - `Compilation.IsNet9OrGreater`
 - `ContextExtensions.ReportDiagnostic`
 - `DiagnosticReporter`
+- `ExpressionSyntax.Parenthesize`
 - `GeneratedCodeExtensions.IsGeneratedCodeFile`
 - `IOperation.UnwrapImplicitConversions`
 - `LanguageVersionExtensions`
@@ -42,6 +43,8 @@ using Meziantou.Framework.Roslyn;
 - `TypeSymbolExtensions`
 
 The package also defines Roslyn and C# feature constants before compilation based on the referenced `Microsoft.CodeAnalysis.*` package version, such as `ROSLYN_4_8_OR_GREATER` and `CSHARP12_OR_GREATER`.
+
+`ROSLYN_WORKSPACES` is defined when the project references a Roslyn workspaces package (`Microsoft.CodeAnalysis.Workspaces.Common`, `Microsoft.CodeAnalysis.CSharp.Workspaces`, `Microsoft.CodeAnalysis.VisualBasic.Workspaces` or `Microsoft.CodeAnalysis.Workspaces.MSBuild`). The helpers use it to light up the features that need a workspace, such as annotating the nodes they create with `Simplifier.Annotation`.
 
 ### Type relationships
 

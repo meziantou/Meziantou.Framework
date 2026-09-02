@@ -2115,8 +2115,9 @@ public sealed class RoslynHelperTests
         return new DiagnosticDescriptor("MFTEST001", "Title", "Message", "Category", DiagnosticSeverity.Warning, isEnabledByDefault: true);
     }
 
-    // RS1036/RS1041 only apply to analyzers shipped in an analyzer package. This one only exists to exercise the extension methods.
+    // RS1036/RS1038/RS1041 only apply to analyzers shipped in an analyzer package. This one only exists to exercise the extension methods.
 #pragma warning disable RS1036 // A project containing analyzers or source generators should specify the property '<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>'
+#pragma warning disable RS1038 // This compiler extension should not be implemented in an assembly containing a reference to Microsoft.CodeAnalysis.Workspaces
 #pragma warning disable RS1041 // This compiler extension should not be implemented in an assembly with target framework
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     private sealed class MessageArgsAnalyzer : DiagnosticAnalyzer
@@ -2149,6 +2150,7 @@ public sealed class RoslynHelperTests
         }
     }
 #pragma warning restore RS1041
+#pragma warning restore RS1038
 #pragma warning restore RS1036
 
     private sealed class GeneratedCodeOptionProvider(string? generatedCode) : AnalyzerConfigOptionsProvider
@@ -2176,16 +2178,14 @@ public sealed class RoslynHelperTests
     }
 
     [Theory]
-    // Primary expressions are already valid as a member-access target or a binary operand
-    [InlineData("value", "value")]
-    [InlineData("a.b", "a.b")]
-    [InlineData("M()", "M()")]
-    [InlineData("a[0]", "a[0]")]
-    [InlineData("(a)", "(a)")]
-    [InlineData("this", "this")]
-    [InlineData("\"literal\"", "\"literal\"")]
-    [InlineData("int", "int")]
-    // Everything else binds looser and has to be wrapped
+    [InlineData("value", "(value)")]
+    [InlineData("a.b", "(a.b)")]
+    [InlineData("M()", "(M())")]
+    [InlineData("a[0]", "(a[0])")]
+    [InlineData("(a)", "((a))")]
+    [InlineData("this", "(this)")]
+    [InlineData("\"literal\"", "(\"literal\")")]
+    [InlineData("int", "(int)")]
     [InlineData("a ? b : c", "(a ? b : c)")]
     [InlineData("a ?? b", "(a ?? b)")]
     [InlineData("(string)a", "((string)a)")]
@@ -2193,7 +2193,7 @@ public sealed class RoslynHelperTests
     [InlineData("a as string", "(a as string)")]
     [InlineData("await a", "(await a)")]
     [InlineData("-a", "(-a)")]
-    public void Parenthesize_WrapsOnlyNonPrimaryExpressions(string expression, string expected)
+    public void Parenthesize_WrapsTheExpression(string expression, string expected)
     {
         var actual = SyntaxFactory.ParseExpression(expression).Parenthesize();
 
@@ -2201,10 +2201,20 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
-    public void Parenthesize_IsIdempotent()
+    public void Parenthesize_KeepsTriviaInsideOfTheParentheses()
     {
-        var once = SyntaxFactory.ParseExpression("a ? b : c").Parenthesize();
+        var expression = SyntaxFactory.ParseExpression("  a  +  b // comment\n");
 
-        Assert.Equal("(a ? b : c)", once.Parenthesize().ToFullString());
+        Assert.Equal("(  a  +  b // comment\n)", expression.Parenthesize().ToFullString());
     }
+
+#if ROSLYN_WORKSPACES
+    [Fact]
+    public void Parenthesize_AnnotatesTheParenthesesForTheSimplifier()
+    {
+        var parenthesized = SyntaxFactory.ParseExpression("a + b").Parenthesize();
+
+        Assert.True(parenthesized.HasAnnotation(Microsoft.CodeAnalysis.Simplification.Simplifier.Annotation));
+    }
+#endif
 }

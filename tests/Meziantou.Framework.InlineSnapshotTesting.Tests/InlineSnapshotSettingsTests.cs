@@ -82,6 +82,42 @@ public sealed class InlineSnapshotSettingsTests
         Assert.Contains("- Re-run the test.", exception.Message);
     }
 
+    [Fact]
+    public void MergeToolStrategy_WhenDiffToolsAreDisabled_ReportsTheSnapshotDifference()
+    {
+        // Diff tools switched off used to surface as InlineSnapshotException("Cannot start the merge tool"),
+        // which replaced the diff and the resolution guidance with a message about the tool.
+        using var _ = new EnvironmentVariableScope("DiffEngine_Disabled", "true");
+
+        // The file the snapshot lives in is written for this test instead of using this very file through
+        // CallerFilePath: a deterministic build reports the compile-time path ("/_/tests/..."), which does not exist
+        // on the machine running the tests, and the strategy would fail reading it before it could report anything.
+        var directory = Path.Combine(Path.GetTempPath(), "meziantou-inline-snapshot", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var filePath = Path.Combine(directory, "Snapshot.cs");
+            File.WriteAllText(filePath, "InlineSnapshot.Validate(new object(), settings, \"not the snapshot\");" + Environment.NewLine);
+
+            var settings = InlineSnapshotSettings.Default with
+            {
+                SnapshotUpdateStrategy = SnapshotUpdateStrategy.MergeTool,
+                AutoDetectContinuousEnvironment = false,
+                ValidateSourceFilePathUsingPdbInfoWhenAvailable = false,
+                ValidateLineNumberUsingPdbInfoWhenAvailable = false,
+            };
+
+            var exception = Assert.ThrowsAny<Exception>(() => InlineSnapshot.Validate(new object(), settings, "not the snapshot", filePath, lineNumber: 1));
+
+            Assert.StartsWith("Snapshots do not match:\n", exception.Message);
+            Assert.Contains("Resolution guidance:", exception.Message);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData("DISALLOW", nameof(SnapshotUpdateStrategy.Disallow))]
     [InlineData("overwrite", nameof(SnapshotUpdateStrategy.Overwrite))]

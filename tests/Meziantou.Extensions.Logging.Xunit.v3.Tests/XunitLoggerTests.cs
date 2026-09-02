@@ -191,6 +191,49 @@ public sealed class XunitLoggerTests
     }
 
     [Fact]
+    public void EveryConstructionPathDefaultsToNotAppendingScopes()
+    {
+        var constructor = new InMemoryTestOutputHelper();
+        var constructorLogger = new XUnitLogger(constructor, new LoggerExternalScopeProvider(), "Category");
+        using (constructorLogger.BeginScope("TheScope"))
+        {
+            constructorLogger.LogInformation("message");
+        }
+
+        var factory = new InMemoryTestOutputHelper();
+        var factoryLogger = XUnitLogger.CreateLogger(factory);
+        using (factoryLogger.BeginScope("TheScope"))
+        {
+            factoryLogger.LogInformation("message");
+        }
+
+        var provider = new InMemoryTestOutputHelper();
+        using var loggerProvider = new XUnitLoggerProvider(provider);
+        var providerLogger = loggerProvider.CreateLogger("Category");
+        using (providerLogger.BeginScope("TheScope"))
+        {
+            providerLogger.LogInformation("message");
+        }
+
+        Assert.Equal(["message" + Environment.NewLine], constructor.Logs, StringComparer.Ordinal);
+        Assert.Equal(["message" + Environment.NewLine], factory.Logs, StringComparer.Ordinal);
+        Assert.Equal(["message" + Environment.NewLine], provider.Logs, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void ScopesAreAppendedWhenIncludeScopesIsSet()
+    {
+        var output = new InMemoryTestOutputHelper();
+        var logger = XUnitLogger.CreateLogger(output, new XUnitLoggerOptions { IncludeScopes = true });
+        using (logger.BeginScope("TheScope"))
+        {
+            logger.LogInformation("message");
+        }
+
+        Assert.Equal(["message\n => TheScope" + Environment.NewLine], output.Logs, StringComparer.Ordinal);
+    }
+
+    [Fact]
     public void AddXunit_RegistersASingleProviderWhenCalledTwice()
     {
         var services = new ServiceCollection();

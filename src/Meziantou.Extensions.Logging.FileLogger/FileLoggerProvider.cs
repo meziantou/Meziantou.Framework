@@ -196,6 +196,7 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         var fileWriter = _fileWriter!;
         var lastFlush = TimeProvider.GetTimestamp();
         var pendingFlush = false;
+        var writeFailed = false;
 
         try
         {
@@ -208,28 +209,46 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
 
                 while (channel.Reader.TryRead(out var message))
                 {
-                    if (message.Message is null)
+                    // A failure on a single message must not stop the writer. The log file can become
+                    // writable again, and the loop still has to drain the queue and release FlushAsync
+                    try
                     {
-                        // Wake-up marker written by FlushAsync
-                        Flush();
-                    }
-                    else
-                    {
-                        fileWriter.WriteLine(message.Message, message.Timestamp);
-                        pendingFlush = true;
-
-                        // Ensure the messages reach the disk even when the queue is never empty
-                        if (TimeProvider.GetElapsedTime(lastFlush) >= CurrentOptions.FlushInterval)
+                        if (message.Message is null)
                         {
+                            // Wake-up marker written by FlushAsync
                             Flush();
                         }
+                        else
+                        {
+                            fileWriter.WriteLine(message.Message, message.Timestamp);
+                            pendingFlush = true;
+
+                            // Ensure the messages reach the disk even when the queue is never empty
+                            if (TimeProvider.GetElapsedTime(lastFlush) >= CurrentOptions.FlushInterval)
+                            {
+                                Flush();
+                            }
+                        }
+
+                        writeFailed = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        ReportWriteFailure(ex);
                     }
                 }
 
                 // The queue is empty, make the messages visible to the other processes
-                if (pendingFlush)
+                try
                 {
-                    Flush();
+                    if (pendingFlush)
+                    {
+                        Flush();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ReportWriteFailure(ex);
                 }
 
                 // The queue is drained and flushed, so every message queued before these requests is on the disk
@@ -266,6 +285,20 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
             fileWriter.Flush();
             pendingFlush = false;
             lastFlush = TimeProvider.GetTimestamp();
+        }
+
+        void ReportWriteFailure(Exception exception)
+        {
+            // The data of the failed write is lost, do not try to flush it again
+            pendingFlush = false;
+
+            // Report the first failure and the failures that follow a successful write, so a log file
+            // that stays unavailable does not flood the standard error stream
+            if (!writeFailed)
+            {
+                writeFailed = true;
+                Console.Error.WriteLine($"Warning: Could not write to the log file '{fileWriter.CurrentFilePath}': {exception.Message}");
+            }
         }
     }
 

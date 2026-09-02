@@ -856,6 +856,62 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    [RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public async Task WritingResumesAfterTheLogFileCannotBeCreated()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            RollInterval = RollInterval.Daily,
+            TimestampFormat = null,
+            IncludeLogLevel = false,
+            IncludeCategory = false,
+        }, timeProvider);
+
+        var logger = provider.CreateLogger("Test");
+        logger.LogInformation("Before the failure");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+        var firstFilePath = provider.LogFilePath;
+
+        // A read-only directory makes the roll to the next day fail
+        SetDirectoryWritable(tempDirectory.FullPath, writable: false);
+        try
+        {
+            timeProvider.Advance(TimeSpan.FromDays(1));
+            logger.LogInformation("Lost while the directory is read-only");
+            await provider.FlushAsync(TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            SetDirectoryWritable(tempDirectory.FullPath, writable: true);
+        }
+
+        // The writer waits before creating a new file again
+        timeProvider.Advance(TimeSpan.FromMinutes(1));
+        logger.LogInformation("After the failure");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotEqual(firstFilePath, provider.LogFilePath);
+        Assert.Contains("After the failure", await ReadLogFileAsync(provider.LogFilePath));
+    }
+
+    private static void SetDirectoryWritable(string path, bool writable)
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        var mode = UnixFileMode.UserRead | UnixFileMode.UserExecute;
+        if (writable)
+        {
+            mode |= UnixFileMode.UserWrite;
+        }
+
+        File.SetUnixFileMode(path, mode);
+    }
+
+    [Fact]
     public async Task InvalidDirectoryDoesNotThrow()
     {
         using var tempDirectory = TemporaryDirectory.Create();

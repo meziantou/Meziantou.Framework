@@ -61,17 +61,31 @@ static partial class IOUtilities
 
         ArgumentNullException.ThrowIfNull(reservedCharFormat);
 
-        if (ReservedFileNames.ContainsIgnoreCase(fileName) || IsAllDots(fileName))
+        // Windows reserves a device name with any extension, so "con.txt" is as reserved as "con".
+        // The device name is the part before the first period.
+        var dotIndex = fileName.IndexOf('.', StringComparison.Ordinal);
+        var deviceName = dotIndex < 0 ? fileName : fileName[..dotIndex];
+        if (ReservedFileNames.ContainsIgnoreCase(deviceName) || IsAllDots(fileName))
         {
             return string.Format(CultureInfo.InvariantCulture, reservedNameFormat, fileName);
         }
 
         var invalid = Path.GetInvalidFileNameChars();
 
-        var sb = new StringBuilder(fileName.Length);
-        foreach (var c in fileName)
+        // Windows silently strips trailing periods and spaces, so a name keeping them would be
+        // created under a different name than the caller was given. They are escaped like any other
+        // character that cannot be used as-is.
+        var trailingStart = fileName.Length;
+        while (trailingStart > 0 && fileName[trailingStart - 1] is '.' or ' ')
         {
-            if (Array.IndexOf(invalid, c) >= 0)
+            trailingStart--;
+        }
+
+        var sb = new StringBuilder(fileName.Length);
+        for (var i = 0; i < fileName.Length; i++)
+        {
+            var c = fileName[i];
+            if (Array.IndexOf(invalid, c) >= 0 || i >= trailingStart)
             {
                 sb.AppendFormat(CultureInfo.InvariantCulture, reservedCharFormat, (short)c);
             }

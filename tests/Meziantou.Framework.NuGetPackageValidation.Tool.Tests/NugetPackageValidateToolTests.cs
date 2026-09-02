@@ -58,6 +58,36 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
         Assert.Contains(result.ValidationResults.Packages[path2].Errors, item => item.ErrorCode == 101);
     }
 
+    [Theory]
+    [InlineData("raw.githubusercontent.com", true)]
+    [InlineData("RAW.GITHUBUSERCONTENT.COM", true)]
+    [InlineData("cdn.raw.githubusercontent.com", true)]
+    [InlineData("notraw.githubusercontent.com", false)]
+    [InlineData("raw.githubusercontent.com.example.com", false)]
+    [InlineData("github.com", false)]
+    public void IsGitHubRawHost(string host, bool expected)
+    {
+        Assert.Equal(expected, Program.IsGitHubRawHost(host));
+    }
+
+    [Fact]
+    public async Task TestPackage_DuplicatePathsAreValidatedOnce()
+    {
+        var path = FullPath.FromPath("Packages/Debug.1.0.0.nupkg");
+        var result = await RunValidation(path, path);
+        Assert.HasCount(1, result.ValidationResults!.Packages);
+    }
+
+    [Fact]
+    public async Task TestPackage_DuplicatePathsDifferingByCaseAreValidatedOnce()
+    {
+        var result = await RunValidation("Packages/Debug.1.0.0.nupkg", "Packages/debug.1.0.0.NUPKG");
+
+        // On a case-sensitive file system the two paths are different files, so both are validated
+        var expectedCount = FullPathComparer.Default.IsCaseSensitive ? 2 : 1;
+        Assert.HasCount(expectedCount, result.ValidationResults!.Packages);
+    }
+
     [Fact]
     public async Task ExcludedRuleIds()
     {

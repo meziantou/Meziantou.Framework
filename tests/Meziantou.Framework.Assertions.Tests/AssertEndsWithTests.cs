@@ -309,4 +309,14 @@ public sealed class AssertEndsWithTests
         AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotEndWith(3, actual));
     }
 
+
+    [Fact]
+    public void DoesNotEndWith_StringExpectedAgainstNonGenericCollection_Fails()
+    {
+        System.Collections.IEnumerable actual = new[] { "a", "b" };
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotEndWith("b", actual));
+        AssertionsAssert.DoesNotEndWith("a", actual);
+    }
+
 }

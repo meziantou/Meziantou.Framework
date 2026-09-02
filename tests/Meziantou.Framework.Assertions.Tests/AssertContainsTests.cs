@@ -543,4 +543,22 @@ public sealed class AssertContainsTests
         AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotContain(2, actual));
     }
 
+
+    [Fact]
+    public void DoesNotContain_StringExpectedAgainstNonGenericCollection_Fails()
+    {
+        System.Collections.IEnumerable actual = new[] { "a", "b" };
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotContain("b", actual));
+        AssertionsAssert.DoesNotContain("c", actual);
+    }
+
+    [Fact]
+    public void DoesNotContain_StringExpectedAgainstHashtableKeys_Fails()
+    {
+        var table = new System.Collections.Hashtable { { "a", 1 }, { "b", 2 } };
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotContain("b", table.Keys));
+    }
+
 }

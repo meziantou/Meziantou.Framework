@@ -89,27 +89,26 @@ internal static partial class Program
                     if (host is null)
                         return;
 
-                    if (host.EndsWith("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase))
+                    if (IsGitHubRawHost(host))
                     {
                         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", githubToken);
                     }
                 };
             }
 
-            var packageResults = new Dictionary<string, NuGetPackageValidationResult>(capacity: paths is null ? 0 : paths.Length, StringComparer.Ordinal);
-            if (paths is not null)
+            var packageResults = new Dictionary<string, NuGetPackageValidationResult>(capacity: paths.Length, StringComparer.Ordinal);
+            var validatedPaths = new HashSet<FullPath>(capacity: paths.Length);
+            foreach (var path in paths)
             {
-                foreach (var path in paths)
-                {
-                    var packagePath = FullPath.FromPath(path);
-                    if (packageResults.ContainsKey(packagePath))
-                        continue;
+                // FullPath knows whether the file system is case-sensitive, a plain string comparison does not
+                var packagePath = FullPath.FromPath(path);
+                if (!validatedPaths.Add(packagePath))
+                    continue;
 
-                    var packageResult = await NuGetPackageValidator.ValidateAsync(packagePath, options, cancellationToken).ConfigureAwait(false);
+                var packageResult = await NuGetPackageValidator.ValidateAsync(packagePath, options, cancellationToken).ConfigureAwait(false);
 
-                    if (!packageResult.IsValid || !onlyReportErrors)
-                        packageResults.Add(packagePath, packageResult);
-                }
+                if (!packageResult.IsValid || !onlyReportErrors)
+                    packageResults.Add(packagePath, packageResult);
             }
 
             var result = new Result(packageResults);
@@ -133,6 +132,16 @@ internal static partial class Program
         var invocationConfiguration = new InvocationConfiguration();
         configure?.Invoke(invocationConfiguration);
         return rootCommand.Parse(args).InvokeAsync(invocationConfiguration);
+    }
+
+    /// <summary>Checks the host is raw.githubusercontent.com or one of its subdomains. A plain EndsWith would also
+    /// match a host such as "notraw.githubusercontent.com".</summary>
+    internal static bool IsGitHubRawHost(string host)
+    {
+        const string GitHubRawHost = "raw.githubusercontent.com";
+
+        return string.Equals(host, GitHubRawHost, StringComparison.OrdinalIgnoreCase)
+            || host.EndsWith("." + GitHubRawHost, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string GetRulesDescription()

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Text.Json;
@@ -849,6 +850,28 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    public async Task TheWriterDoesNotRunOnTheThreadPool()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new ThreadPoolTrackingTimeProvider();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions { Directory = tempDirectory.FullPath }, timeProvider);
+        var logger = provider.CreateLogger("Test");
+
+        // The first flush leaves the writer waiting on an empty queue, so the next message resumes it.
+        // That resumption is what used to move the loop onto the thread pool
+        logger.LogInformation("First");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        timeProvider.RanOnThreadPoolThread.Clear();
+
+        logger.LogInformation("Second");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotEmpty(timeProvider.RanOnThreadPoolThread);
+        Assert.DoesNotContain(true, timeProvider.RanOnThreadPoolThread);
+    }
+
+    [Fact]
     public void MissingDirectoryThrows()
     {
         Assert.Throws<InvalidOperationException>(() => new FileLoggerProvider(new FileLoggerOptions()));
@@ -906,6 +929,62 @@ public sealed class FileLoggerProviderTests
         var content = await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken);
         Assert.DoesNotContain("Filtered out", content);
         Assert.Contains("[EventId:42] Kept by the configuration", content);
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public async Task WritingResumesAfterTheLogFileCannotBeCreated()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            RollInterval = RollInterval.Daily,
+            TimestampFormat = null,
+            IncludeLogLevel = false,
+            IncludeCategory = false,
+        }, timeProvider);
+
+        var logger = provider.CreateLogger("Test");
+        logger.LogInformation("Before the failure");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+        var firstFilePath = provider.LogFilePath;
+
+        // A read-only directory makes the roll to the next day fail
+        SetDirectoryWritable(tempDirectory.FullPath, writable: false);
+        try
+        {
+            timeProvider.Advance(TimeSpan.FromDays(1));
+            logger.LogInformation("Lost while the directory is read-only");
+            await provider.FlushAsync(TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            SetDirectoryWritable(tempDirectory.FullPath, writable: true);
+        }
+
+        // The writer waits before creating a new file again
+        timeProvider.Advance(TimeSpan.FromMinutes(1));
+        logger.LogInformation("After the failure");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotEqual(firstFilePath, provider.LogFilePath);
+        Assert.Contains("After the failure", await ReadLogFileAsync(provider.LogFilePath));
+    }
+
+    private static void SetDirectoryWritable(string path, bool writable)
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        var mode = UnixFileMode.UserRead | UnixFileMode.UserExecute;
+        if (writable)
+        {
+            mode |= UnixFileMode.UserWrite;
+        }
+
+        File.SetUnixFileMode(path, mode);
     }
 
     [Fact]
@@ -973,6 +1052,18 @@ public sealed class FileLoggerProviderTests
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         using var reader = new StreamReader(stream);
         return await reader.ReadToEndAsync(TestContext.Current.CancellationToken);
+    }
+
+    private sealed class ThreadPoolTrackingTimeProvider : TimeProvider
+    {
+        // Only the writer loop reads the timestamps, so this records the kind of thread it runs on
+        public ConcurrentQueue<bool> RanOnThreadPoolThread { get; } = new();
+
+        public override long GetTimestamp()
+        {
+            RanOnThreadPoolThread.Enqueue(Thread.CurrentThread.IsThreadPoolThread);
+            return base.GetTimestamp();
+        }
     }
 
     private sealed class UppercaseFileFormatter() : FileFormatter("uppercase")

@@ -30,7 +30,8 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
     // kept out of the channel, so they cannot be discarded by FileLoggerOptions.QueueFullMode
     private readonly Channel<LogMessage>? _channel;
     private readonly ConcurrentQueue<TaskCompletionSource> _pendingFlushes = new();
-    private readonly Task? _writerTask;
+    private readonly Thread? _writerThread;
+    private readonly TaskCompletionSource? _writerCompletion;
 
     private FileLoggerOptions _options;
     private IExternalScopeProvider _scopeProvider = new LoggerExternalScopeProvider();
@@ -128,8 +129,17 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
                 SingleWriter = false,
             });
 
-        // The messages are written synchronously, so use a dedicated thread instead of a thread pool thread
-        _writerTask = Task.Factory.StartNew(ProcessLogQueueAsync, CancellationToken.None, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap();
+        // The messages are written synchronously and the loop blocks while the queue is empty, so it
+        // needs a thread of its own. TaskCreationOptions.LongRunning would not be enough: it only
+        // covers the synchronous prefix of an async method, and every continuation after the first
+        // await runs on the thread pool, where the loggers blocking in QueueFullMode.Wait can starve it
+        _writerCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _writerThread = new Thread(ProcessLogQueue)
+        {
+            IsBackground = true,
+            Name = "Meziantou.Extensions.Logging.FileLogger",
+        };
+        _writerThread.Start();
     }
 
     private static FileLoggerOptions GetCurrentValue(IOptionsMonitor<FileLoggerOptions> options)
@@ -190,16 +200,18 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "The application must keep running when the log file cannot be written")]
-    private async Task ProcessLogQueueAsync()
+    private void ProcessLogQueue()
     {
         var channel = _channel!;
         var fileWriter = _fileWriter!;
         var lastFlush = TimeProvider.GetTimestamp();
         var pendingFlush = false;
+        var writeFailed = false;
 
         try
         {
-            while (await channel.Reader.WaitToReadAsync().ConfigureAwait(false))
+            // Blocking is the point: this is a dedicated thread, and it must not depend on the thread pool
+            while (channel.Reader.WaitToReadAsync().AsTask().GetAwaiter().GetResult())
             {
                 // Take the requests registered so far: every message logged before them is already in the
                 // queue drained below. A request registered while the queue is drained refers to a message
@@ -208,28 +220,46 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
 
                 while (channel.Reader.TryRead(out var message))
                 {
-                    if (message.Message is null)
+                    // A failure on a single message must not stop the writer. The log file can become
+                    // writable again, and the loop still has to drain the queue and release FlushAsync
+                    try
                     {
-                        // Wake-up marker written by FlushAsync
-                        Flush();
-                    }
-                    else
-                    {
-                        fileWriter.WriteLine(message.Message, message.Timestamp);
-                        pendingFlush = true;
-
-                        // Ensure the messages reach the disk even when the queue is never empty
-                        if (TimeProvider.GetElapsedTime(lastFlush) >= CurrentOptions.FlushInterval)
+                        if (message.Message is null)
                         {
+                            // Wake-up marker written by FlushAsync
                             Flush();
                         }
+                        else
+                        {
+                            fileWriter.WriteLine(message.Message, message.Timestamp);
+                            pendingFlush = true;
+
+                            // Ensure the messages reach the disk even when the queue is never empty
+                            if (TimeProvider.GetElapsedTime(lastFlush) >= CurrentOptions.FlushInterval)
+                            {
+                                Flush();
+                            }
+                        }
+
+                        writeFailed = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        ReportWriteFailure(ex);
                     }
                 }
 
                 // The queue is empty, make the messages visible to the other processes
-                if (pendingFlush)
+                try
                 {
-                    Flush();
+                    if (pendingFlush)
+                    {
+                        Flush();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ReportWriteFailure(ex);
                 }
 
                 // The queue is drained and flushed, so every message queued before these requests is on the disk
@@ -259,6 +289,7 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         {
             // Release the pending FlushAsync calls, the queue is not drained anymore
             CompletePendingFlushes();
+            _writerCompletion!.TrySetResult();
         }
 
         void Flush()
@@ -266,6 +297,20 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
             fileWriter.Flush();
             pendingFlush = false;
             lastFlush = TimeProvider.GetTimestamp();
+        }
+
+        void ReportWriteFailure(Exception exception)
+        {
+            // The data of the failed write is lost, do not try to flush it again
+            pendingFlush = false;
+
+            // Report the first failure and the failures that follow a successful write, so a log file
+            // that stays unavailable does not flood the standard error stream
+            if (!writeFailed)
+            {
+                writeFailed = true;
+                Console.Error.WriteLine($"Warning: Could not write to the log file '{fileWriter.CurrentFilePath}': {exception.Message}");
+            }
         }
     }
 
@@ -328,15 +373,8 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         // Any message already in the channel will be drained by the writer task
         _channel?.Writer.TryComplete();
 
-        try
-        {
-            // Wait for the writer task to finish processing ALL remaining messages
-            _writerTask?.GetAwaiter().GetResult();
-        }
-        catch (Exception)
-        {
-            // The error is already reported by the writer task
-        }
+        // Wait for the writer thread to finish processing ALL remaining messages
+        _writerThread?.Join();
 
         _fileWriter?.Dispose();
     }
@@ -351,16 +389,10 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         _optionsReloadToken?.Dispose();
         _channel?.Writer.TryComplete();
 
-        if (_writerTask is not null)
+        if (_writerCompletion is not null)
         {
-            try
-            {
-                await _writerTask.ConfigureAwait(false);
-            }
-            catch (Exception)
-            {
-                // The error is already reported by the writer task
-            }
+            // Wait for the writer thread to finish processing ALL remaining messages, without blocking
+            await _writerCompletion.Task.ConfigureAwait(false);
         }
 
         _fileWriter?.Dispose();

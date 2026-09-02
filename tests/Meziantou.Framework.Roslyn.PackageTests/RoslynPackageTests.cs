@@ -83,10 +83,11 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
               <ItemGroup>
                 <PackageReference Include="{{RoslynPackageFixture.PackageName}}" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
                 <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" PrivateAssets="all" />
+                <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.6.0" PrivateAssets="all" />
               </ItemGroup>
             </Project>
             """);
-        temporaryDirectory.CreateTextFile("consumer/Consumer.cs", CreateConsumerSourceWithConstantChecks(GetRoslyn56Constants()));
+        temporaryDirectory.CreateTextFile("consumer/Consumer.cs", CreateConsumerSourceWithConstantChecks([.. GetRoslyn56Constants(), "ROSLYN_WORKSPACES"]));
 
         await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
         await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
@@ -130,7 +131,7 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
               </ItemGroup>
             </Project>
             """);
-        temporaryDirectory.CreateTextFile("consumer-cpm/Consumer.cs", CreateConstantChecksSource(GetRoslyn56Constants()));
+        temporaryDirectory.CreateTextFile("consumer-cpm/Consumer.cs", CreateConstantChecksSource(GetRoslyn56Constants(), unexpectedConstants: ["ROSLYN_WORKSPACES"]));
 
         await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
         await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
@@ -257,10 +258,10 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
             """;
     }
 
-    private static string CreateConstantChecksSource(string[] expectedConstants)
+    private static string CreateConstantChecksSource(string[] expectedConstants, string[]? unexpectedConstants = null)
     {
         return $$"""
-            {{CreateConstantChecks(expectedConstants)}}
+            {{CreateConstantChecks(expectedConstants, unexpectedConstants)}}
 
             namespace Demo;
 
@@ -268,9 +269,13 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
             """;
     }
 
-    private static string CreateConstantChecks(string[] expectedConstants)
+    private static string CreateConstantChecks(string[] expectedConstants, string[]? unexpectedConstants = null)
     {
-        return string.Join('\n', expectedConstants.Select(constant => $"#if !{constant}\n#error Expected {constant}.\n#endif"));
+        var checks = expectedConstants
+            .Select(constant => $"#if !{constant}\n#error Expected {constant}.\n#endif")
+            .Concat((unexpectedConstants ?? []).Select(constant => $"#if {constant}\n#error Unexpected {constant}.\n#endif"));
+
+        return string.Join('\n', checks);
     }
 
     private static string[] GetRoslyn56Constants()

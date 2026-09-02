@@ -163,9 +163,10 @@ public class XUnitLogger : ILogger
         {
             testOutputHelper.WriteLine(sb.ToString());
         }
-        catch
+        catch (InvalidOperationException)
         {
-            // This can happen when the test is not active
+            // Xunit.v3.TestOutputHelper throws when the test it belongs to is no longer active.
+            // Any other failure belongs to the ITestOutputHelper implementation and is left to surface.
         }
     }
 

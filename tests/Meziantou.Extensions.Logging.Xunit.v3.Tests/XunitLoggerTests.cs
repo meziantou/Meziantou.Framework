@@ -295,4 +295,38 @@ public sealed class XunitLoggerTests
 
         Assert.Equal(2, services.Count(service => service.ServiceType == typeof(ILoggerProvider)));
     }
+
+    [Fact]
+    public void AnOutputHelperWhoseTestEndedDoesNotFailTheLogCall()
+    {
+        var logger = XUnitLogger.CreateLogger(new ThrowingTestOutputHelper(new InvalidOperationException("There is no currently active test.")));
+
+        logger.LogInformation("message");
+    }
+
+    [Fact]
+    public void AFailingOutputHelperSurfacesItsError()
+    {
+        var logger = XUnitLogger.CreateLogger(new ThrowingTestOutputHelper(new NotSupportedException("broken helper")));
+
+        var exception = Assert.Throws<NotSupportedException>(() => logger.LogInformation("message"));
+        Assert.Equal("broken helper", exception.Message, StringComparer.Ordinal);
+    }
+
+    private sealed class ThrowingTestOutputHelper : ITestOutputHelper
+    {
+        private readonly Exception _exception;
+
+        public ThrowingTestOutputHelper(Exception exception) => _exception = exception;
+
+        public string Output => throw _exception;
+
+        public void Write(string message) => throw _exception;
+
+        public void Write(string format, params object[] args) => throw _exception;
+
+        public void WriteLine(string message) => throw _exception;
+
+        public void WriteLine(string format, params object[] args) => throw _exception;
+    }
 }

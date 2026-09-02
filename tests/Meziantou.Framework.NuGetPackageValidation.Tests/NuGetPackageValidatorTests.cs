@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.IO.Compression;
 using Meziantou.Framework.NuGetPackageValidation.Rules;
 
@@ -570,6 +571,33 @@ public sealed class NuGetPackageValidatorTests
         // The package sets the repository type but neither the url nor the commit
         var result = await ValidateAsync("Release_RepositoryType.1.0.0.nupkg", NuGetPackageValidationRules.RepositoryMustBeSet);
         Assert.Equal([ErrorCodes.RepositoryUrlNotSet, ErrorCodes.RepositoryCommitNotSet], result.Errors.Select(item => item.ErrorCode));
+    }
+
+    [Fact]
+    public void SymbolChecksumHeaders_NoChecksum()
+    {
+        // The symbol server must still be queried, the URL does not depend on the checksum
+        var headers = SymbolsValidationRule.GetSymbolChecksumHeaders([]);
+        Assert.Equal([null], headers);
+    }
+
+    [Fact]
+    public void SymbolChecksumHeaders_SingleChecksum()
+    {
+        var headers = SymbolsValidationRule.GetSymbolChecksumHeaders([("SHA256", ImmutableArray.Create<byte>(0x01, 0xAB))]);
+        Assert.Equal(["SHA256:01AB"], headers);
+    }
+
+    [Fact]
+    public void SymbolChecksumHeaders_SeveralChecksums()
+    {
+        var headers = SymbolsValidationRule.GetSymbolChecksumHeaders(
+        [
+            ("SHA256", ImmutableArray.Create<byte>(0x01, 0xAB)),
+            ("SHA1", ImmutableArray.Create<byte>(0xFF)),
+        ]);
+
+        Assert.Equal(["SHA256:01AB", "SHA1:FF"], headers);
     }
 
     [Fact]

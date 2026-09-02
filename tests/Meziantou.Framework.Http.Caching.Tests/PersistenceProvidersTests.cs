@@ -603,6 +603,65 @@ public class PersistenceProvidersTests
     }
 
     [Fact]
+    public async Task InMemoryProviderConcurrentWritesToTheSameKeyKeepOneEntryPerSecondaryKey()
+    {
+        var provider = new InMemoryHttpCacheStore();
+        var primaryKey = "http://example.com/concurrent";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        // Every write replaces the stored array, so the read-modify-write has to survive contention.
+        var writes = Enumerable.Range(0, 64).Select(i => Task.Run(async () =>
+        {
+            var entry = CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false);
+            entry.SecondaryKeyHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Accept-Language"] = "lang-" + (i % 4).ToString(CultureInfo.InvariantCulture),
+            };
+
+            await provider.SetEntryAsync(primaryKey, entry, CancellationToken.None);
+        }));
+
+        await Task.WhenAll(writes);
+
+        var entries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
+        Assert.HasCount(4, entries);
+    }
+
+    [Fact]
+    public async Task SqliteProviderKeepsAnInMemoryDatabaseAliveWithoutAnExternalConnection()
+    {
+        var connectionString = CreateInMemorySqliteConnectionString();
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        // No anchor connection held by the caller: the store keeps the in-memory database alive itself.
+        using var provider = new SqliteHttpCacheStore(connectionString);
+        await provider.SetEntryAsync("http://example.com/a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+
+        Assert.Single(await provider.GetEntriesAsync("http://example.com/a", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task SqliteProviderThrowsAfterDispose()
+    {
+        var connectionString = CreateInMemorySqliteConnectionString();
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        var provider = new SqliteHttpCacheStore(connectionString);
+        await provider.SetEntryAsync("http://example.com/a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+        provider.Dispose();
+
+        await Assert.ThrowsAsync<ObjectDisposedException>(async () => await provider.GetEntriesAsync("http://example.com/a", CancellationToken.None));
+    }
+
+    [Fact]
+    public void SqliteProviderDisposeIsIdempotent()
+    {
+        var provider = new SqliteHttpCacheStore(CreateInMemorySqliteConnectionString());
+        provider.Dispose();
+        provider.Dispose();
+    }
+
+    [Fact]
     public async Task InMemoryProviderConcurrentSavesToTheSamePathAllSucceed()
     {
         var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));

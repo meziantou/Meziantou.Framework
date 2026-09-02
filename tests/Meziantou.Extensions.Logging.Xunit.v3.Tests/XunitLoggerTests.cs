@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 
 namespace Meziantou.Extensions.Logging.Xunit.v3.Tests;
 
@@ -48,6 +49,21 @@ public sealed class XunitLoggerTests
     }
 
     [Fact]
+    public void ScopesAreWrittenBetweenTheMessageAndTheException()
+    {
+        var output = new InMemoryTestOutputHelper();
+        var logger = XUnitLogger.CreateLogger(output, new XUnitLoggerOptions { IncludeScopes = true });
+        var exception = new InvalidOperationException("boom");
+        using (logger.BeginScope("TheScope"))
+        {
+            logger.LogError(exception, "the message");
+        }
+
+        var expected = "the message" + Environment.NewLine + " => TheScope" + Environment.NewLine + exception + Environment.NewLine;
+        Assert.Equal([expected], output.Logs, StringComparer.Ordinal);
+    }
+
+    [Fact]
     public void SetScopeProviderUpdatesExistingAndNewLoggers()
     {
         var output = new InMemoryTestOutputHelper();
@@ -87,6 +103,27 @@ public sealed class XunitLoggerTests
         logger.LogInformation("Test");
 
         Assert.Contains(activity.TraceId.ToHexString(), output.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheProviderAliasCanBeUsedToConfigureFilters()
+    {
+        var output = new InMemoryTestOutputHelper();
+        var host = new HostBuilder()
+            .ConfigureLogging(builder =>
+            {
+                builder.AddXunit(output);
+                builder.AddConfiguration(new ConfigurationBuilder()
+                    .AddInMemoryCollection(new Dictionary<string, string?> { ["XUnit:LogLevel:Default"] = "Error" })
+                    .Build());
+            })
+            .Build();
+
+        var logger = host.Services.GetRequiredService<ILogger<XunitLoggerTests>>();
+        logger.LogInformation("filtered out");
+        logger.LogError("kept");
+
+        Assert.Equal(["kept" + Environment.NewLine], output.Logs, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -143,7 +180,7 @@ public sealed class XunitLoggerTests
         var exception = new InvalidOperationException("boom");
         logger.LogError(exception, "message");
 
-        Assert.Equal(["message\n" + exception + Environment.NewLine], output.Logs, StringComparer.Ordinal);
+        Assert.Equal(["message" + Environment.NewLine + exception + Environment.NewLine], output.Logs, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -186,7 +223,7 @@ public sealed class XunitLoggerTests
             logger.LogWarning("message");
         }
 
-        var expected = DateTimeOffset.UtcNow.ToLocalTime().ToString("yyyy", CultureInfo.CurrentCulture) + " warn [TheCategory] message\n => TheScope" + Environment.NewLine;
+        var expected = DateTimeOffset.UtcNow.ToLocalTime().ToString("yyyy", CultureInfo.CurrentCulture) + " warn [TheCategory] message" + Environment.NewLine + " => TheScope" + Environment.NewLine;
         Assert.Equal([expected], output.Logs, StringComparer.Ordinal);
     }
 
@@ -230,7 +267,7 @@ public sealed class XunitLoggerTests
             logger.LogInformation("message");
         }
 
-        Assert.Equal(["message\n => TheScope" + Environment.NewLine], output.Logs, StringComparer.Ordinal);
+        Assert.Equal(["message" + Environment.NewLine + " => TheScope" + Environment.NewLine], output.Logs, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -257,5 +294,39 @@ public sealed class XunitLoggerTests
         });
 
         Assert.Equal(2, services.Count(service => service.ServiceType == typeof(ILoggerProvider)));
+    }
+
+    [Fact]
+    public void AnOutputHelperWhoseTestEndedDoesNotFailTheLogCall()
+    {
+        var logger = XUnitLogger.CreateLogger(new ThrowingTestOutputHelper(new InvalidOperationException("There is no currently active test.")));
+
+        logger.LogInformation("message");
+    }
+
+    [Fact]
+    public void AFailingOutputHelperSurfacesItsError()
+    {
+        var logger = XUnitLogger.CreateLogger(new ThrowingTestOutputHelper(new NotSupportedException("broken helper")));
+
+        var exception = Assert.Throws<NotSupportedException>(() => logger.LogInformation("message"));
+        Assert.Equal("broken helper", exception.Message, StringComparer.Ordinal);
+    }
+
+    private sealed class ThrowingTestOutputHelper : ITestOutputHelper
+    {
+        private readonly Exception _exception;
+
+        public ThrowingTestOutputHelper(Exception exception) => _exception = exception;
+
+        public string Output => throw _exception;
+
+        public void Write(string message) => throw _exception;
+
+        public void Write(string format, params object[] args) => throw _exception;
+
+        public void WriteLine(string message) => throw _exception;
+
+        public void WriteLine(string format, params object[] args) => throw _exception;
     }
 }

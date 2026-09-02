@@ -144,28 +144,29 @@ public class XUnitLogger : ILogger
 
         sb.Append(formatter(state, exception));
 
-        if (exception is not null)
-        {
-            sb.Append('\n').Append(exception);
-        }
-
-        // Append scopes
+        // Append scopes before the exception, so a long stack trace does not push them out of view
         if (_options.IncludeScopes)
         {
             ScopeProvider.ForEachScope((scope, state) =>
             {
-                state.Append("\n => ");
+                state.Append(Environment.NewLine).Append(" => ");
                 state.Append(scope);
             }, sb);
+        }
+
+        if (exception is not null)
+        {
+            sb.Append(Environment.NewLine).Append(exception);
         }
 
         try
         {
             testOutputHelper.WriteLine(sb.ToString());
         }
-        catch
+        catch (InvalidOperationException)
         {
-            // This can happen when the test is not active
+            // Xunit.v3.TestOutputHelper throws when the test it belongs to is no longer active.
+            // Any other failure belongs to the ITestOutputHelper implementation and is left to surface.
         }
     }
 

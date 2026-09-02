@@ -292,6 +292,12 @@ var options = new HttpCachingOptions
 
 A cancellation requested by the caller is not a store failure and still propagates.
 
+## Synchronous Requests
+
+`HttpClient.Send` is not supported: `IHttpCacheStore` is asynchronous, so there is no synchronous path through
+the cache, and `HttpCachingDelegateHandler` throws `NotSupportedException` rather than quietly forwarding the
+request to the origin without caching it. Use `SendAsync`, or one of the `GetAsync`/`PostAsync` overloads.
+
 ## Thread Safety
 
 The `HttpCachingDelegateHandler` is thread-safe and can be used concurrently across multiple threads.

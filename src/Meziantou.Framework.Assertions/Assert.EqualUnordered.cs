@@ -49,15 +49,10 @@ public partial class Assert
         expectedSnapshot.EnsureComplete();
         comparer ??= EqualityComparer<T>.Default;
 
-        if (EqualUnorderedUsingComparer(expectedSnapshot.Items, actualSnapshot.Items, comparer))
+        if (GetEqualUnorderedDifference(expectedSnapshot.Items, actualSnapshot.Items, comparer) is not { } difference)
             return;
 
-        // Only the failure path pays for the quadratic scan, which locates the indexes shown in the message.
-        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer);
-        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
-        {
-            throw new AssertionException(ErrorFormatter.Format(new CollectionEqualUnorderedAssertionError<T, T>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)));
-        }
+        throw new AssertionException(ErrorFormatter.Format(new CollectionEqualUnorderedAssertionError<T, T>(expectedSnapshot, actualSnapshot, difference.MissingExpectedIndex, difference.UnexpectedActualIndex, message, actualExpression, expectedExpression)));
     }
 
     private static void EqualUnorderedCollections<TExpected, TActual>(IEnumerable<TExpected> expected, IEnumerable<TActual> actual, System.Collections.IEqualityComparer? comparer, string? message, string? actualExpression, string? expectedExpression)
@@ -125,15 +120,10 @@ public partial class Assert
         await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         comparer ??= EqualityComparer<T>.Default;
 
-        if (EqualUnorderedUsingComparer(expectedSnapshot.Items, actualSnapshot.Items, comparer))
+        if (GetEqualUnorderedDifference(expectedSnapshot.Items, actualSnapshot.Items, comparer) is not { } difference)
             return;
 
-        // Only the failure path pays for the quadratic scan, which locates the indexes shown in the message.
-        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer);
-        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
-        {
-            throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionEqualUnorderedAssertionError<T, T>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)).ConfigureAwait(false));
-        }
+        throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionEqualUnorderedAssertionError<T, T>(expectedSnapshot, actualSnapshot, difference.MissingExpectedIndex, difference.UnexpectedActualIndex, message, actualExpression, expectedExpression)).ConfigureAwait(false));
     }
 
     private static async Task EqualUnorderedAsyncCollections<TExpected, TActual>(IAsyncEnumerable<TExpected> expected, IAsyncEnumerable<TActual> actual, System.Collections.IEqualityComparer? comparer, string? message, string? actualExpression, string? expectedExpression)
@@ -168,6 +158,35 @@ public partial class Assert
         }
 
         EqualUnorderedCollections(EnumerateObjects(expected), EnumerateObjects(actual), comparer, message, actualExpression, expectedExpression);
+    }
+
+    /// <summary>
+    /// Locates a difference between two collections compared as multisets, or <see langword="null"/> when they hold
+    /// the same items regardless of order.
+    /// </summary>
+    /// <remarks>
+    /// The O(n) hash-based check is authoritative only when it succeeds. A comparer whose <c>GetHashCode</c> disagrees
+    /// with its <c>Equals</c> — a tolerance comparer, for instance — can make it report a difference that the
+    /// comparer's own <c>Equals</c> does not see, so a negative result is confirmed with the Equals-only scan before
+    /// it is trusted. <c>EqualUnordered</c> and <c>NotEqualUnordered</c> both decide through this method so they stay
+    /// exact complements.
+    /// </remarks>
+    private static (int? MissingExpectedIndex, int? UnexpectedActualIndex)? GetEqualUnorderedDifference<T>(IReadOnlyList<T> expected, IReadOnlyList<T> actual, IEqualityComparer<T> comparer)
+    {
+        if (EqualUnorderedUsingComparer(expected, actual, comparer))
+            return null;
+
+        // Only the failure path pays for the quadratic scan, which locates the indexes shown in the message.
+        var mismatch = GetEqualUnorderedMismatch(expected, actual, comparer);
+        if (mismatch.MissingExpectedIndex is null && mismatch.UnexpectedActualIndex is null)
+            return null;
+
+        return mismatch;
+    }
+
+    private static bool AreEqualUnordered<T>(IReadOnlyList<T> expected, IReadOnlyList<T> actual, IEqualityComparer<T> comparer)
+    {
+        return GetEqualUnorderedDifference(expected, actual, comparer) is null;
     }
 
     /// <summary>

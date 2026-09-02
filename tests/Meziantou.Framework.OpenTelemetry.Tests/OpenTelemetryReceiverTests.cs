@@ -491,10 +491,17 @@ public sealed class OpenTelemetryReceiverTests
         await SendTracesAsync(app.HttpClient, CreateTraceRequest("00000000000000000000000000000061", ("0000000000000062", "0000000000000061", "orphan-child")));
         Assert.Empty(GetTraceSpans(app.Receiver));
 
-        timeProvider.Advance(TimeSpan.FromMinutes(2));
+        // No other trace is received: only the background sweep can release the buffered trace. The
+        // sweep waits on a PeriodicTimer, and a clock advance that happens before the timer is
+        // created schedules no tick, so keep advancing until the sweep runs.
+        await WaitForAsync(() =>
+        {
+            if (GetTraceSpans(app.Receiver).Count > 0)
+                return true;
 
-        // No other trace is received: only the background sweep can release the buffered trace.
-        await WaitForAsync(() => GetTraceSpans(app.Receiver).Count > 0);
+            timeProvider.Advance(TimeSpan.FromMinutes(2));
+            return false;
+        });
 
         var span = Assert.Single(GetTraceSpans(app.Receiver));
         Assert.Equal("orphan-child", span.Name);

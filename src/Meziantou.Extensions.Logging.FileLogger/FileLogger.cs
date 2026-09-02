@@ -25,7 +25,9 @@ internal sealed class FileLogger(FileLoggerProvider provider, string categoryNam
         if (logLevel is LogLevel.None || logLevel < options.MinLevel)
             return;
 
-        var timestamp = options.UseUtcTimestamp ? provider.TimeProvider.GetUtcNow() : provider.TimeProvider.GetLocalNow();
+        // The log file is rolled using the time at which the message is logged, so read the clock once here
+        var utcNow = provider.TimeProvider.GetUtcNow();
+        var timestamp = options.UseUtcTimestamp ? utcNow : TimeZoneInfo.ConvertTime(utcNow, provider.TimeProvider.LocalTimeZone);
         var category = options.UseShortCategoryName ? _shortCategoryName : categoryName;
         var logEntry = new LogEntry<TState>(logLevel, category, eventId, state, exception, formatter);
 
@@ -48,7 +50,7 @@ internal sealed class FileLogger(FileLoggerProvider provider, string categoryNam
             if (builder.Length is 0)
                 return;
 
-            provider.WriteLog(builder.ToString());
+            provider.WriteLog(builder.ToString(), utcNow);
         }
         finally
         {

@@ -10,7 +10,6 @@ internal sealed class LogFileWriter : IDisposable
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
     private readonly FileLoggerOptions _options;
-    private readonly TimeProvider _timeProvider;
     private readonly string _directory;
     private readonly int _newLineByteCount;
 
@@ -32,7 +31,6 @@ internal sealed class LogFileWriter : IDisposable
     {
         _directory = directory;
         _options = options;
-        _timeProvider = timeProvider;
         _newLineByteCount = Environment.NewLine.Length;
         _compressWhileWriting = options.Compression is not LogFileCompression.None && options.CompressionMode is LogFileCompressionMode.Continuous;
         _fileNameSuffix = _compressWhileWriting ? GetCompressionExtension(options.Compression) : "";
@@ -42,10 +40,15 @@ internal sealed class LogFileWriter : IDisposable
         Open(timeProvider.GetUtcNow());
     }
 
-    public void WriteLine(string message)
+    /// <summary>Writes a message to the log file.</summary>
+    /// <param name="message">The message to write.</param>
+    /// <param name="timestamp">The UTC time at which the message was logged. The file is rolled using this time, and not
+    /// the current time, so a message is always written to the file of the period it was logged in, whatever the delay
+    /// between the moment it is logged and the moment it is written.</param>
+    public void WriteLine(string message, DateTimeOffset timestamp)
     {
         var byteCount = Utf8NoBom.GetByteCount(message) + _newLineByteCount;
-        RollIfNeeded(_timeProvider.GetUtcNow(), byteCount);
+        RollIfNeeded(timestamp, byteCount);
         _writer.WriteLine(message);
 
         // When the messages are compressed, this is an upper bound of the size of the file. The exact size is known when the data is flushed

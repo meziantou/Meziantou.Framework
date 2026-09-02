@@ -25,7 +25,7 @@ public sealed class ValidateCollectionItemsAttribute : ValidationAttribute
             {
                 var results = new List<ValidationResult>();
                 var itemValidationContext = new ValidationContext(item);
-                Validator.TryValidateObject(item, itemValidationContext, results);
+                Validator.TryValidateObject(item, itemValidationContext, results, validateAllProperties: true);
                 if (results.Count > 0)
                     return results[0];
             }

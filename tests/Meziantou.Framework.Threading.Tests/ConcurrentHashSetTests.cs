@@ -108,4 +108,51 @@ public class ConcurrentHashSetTests
         set.ExceptWith(["C"]);
         Assert.Equal(["d"], set);
     }
+
+    [Fact]
+    public void CopyTo_NullArray_Throws()
+    {
+        var set = new ConcurrentHashSet<int> { 1 };
+
+        Assert.Throws<ArgumentNullException>(() => set.CopyTo(array: null!, 0));
+    }
+
+    [Fact]
+    public void CopyTo_NegativeIndex_Throws()
+    {
+        var set = new ConcurrentHashSet<int> { 1 };
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => set.CopyTo(new int[4], -1));
+    }
+
+    [Fact]
+    public void CopyTo_DestinationTooSmall_ThrowsArgumentExceptionAndLeavesTheArrayUntouched()
+    {
+        var set = new ConcurrentHashSet<int> { 1, 2, 3 };
+        var destination = new int[2];
+
+        Assert.Throws<ArgumentException>(() => set.CopyTo(destination, 0));
+        Assert.Equal([0, 0], destination);
+    }
+
+    [Fact]
+    public void CopyTo_IndexPastTheEnd_ThrowsArgumentException()
+    {
+        var set = new ConcurrentHashSet<int> { 1 };
+
+        Assert.Throws<ArgumentException>(() => set.CopyTo(new int[2], 4));
+    }
+
+    [Fact]
+    public void CopyTo_CopiesTheElementsAtTheGivenOffset()
+    {
+        var set = new ConcurrentHashSet<int> { 1, 2, 3 };
+        var destination = new int[5];
+
+        set.CopyTo(destination, 1);
+
+        Assert.Equal(0, destination[0]);
+        Assert.Equal(0, destination[4]);
+        Assert.Equal([1, 2, 3], destination[1..4].Order());
+    }
 }

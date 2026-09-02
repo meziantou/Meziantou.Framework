@@ -176,6 +176,15 @@ public partial class Assert
         if (actual is null)
             return;
 
+        // A string is itself an IEnumerable, so without this guard it binds here rather than to the object overload
+        // and is searched as a char subsequence of a collection whose elements are not chars. That comparison can
+        // never match, which makes the assertion impossible to fail.
+        if (expected is string)
+        {
+            DoesNotContainValue(expected, actual, comparer, message, actualExpression, expectedExpression);
+            return;
+        }
+
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         using var expectedSnapshot = CollectionSnapshot.Create(expected);
         expectedSnapshot.EnsureComplete();
@@ -184,5 +193,18 @@ public partial class Assert
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<IReadOnlyList<object?>, IReadOnlyList<object?>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
+    }
+
+    private static void DoesNotContainValue(object? expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer, string? message, string? actualExpression, string? expectedExpression)
+    {
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
+        for (var index = 0; actualSnapshot.TryGetItem(index, out var item); index++)
+        {
+            if (!Equals(expected, item, comparer))
+                continue;
+
+            actualSnapshot.EnsureComplete();
+            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<object?, IReadOnlyList<object?>>("Not expected", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
+        }
     }
 }

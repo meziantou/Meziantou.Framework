@@ -232,4 +232,30 @@ public sealed class XunitLoggerTests
 
         Assert.Equal(["message\n => TheScope" + Environment.NewLine], output.Logs, StringComparer.Ordinal);
     }
+
+    [Fact]
+    public void AddXunit_RegistersASingleProviderWhenCalledTwice()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging(builder =>
+        {
+            builder.AddXunit();
+            builder.AddXunit();
+        });
+
+        Assert.Single(services, service => service.ServiceType == typeof(ILoggerProvider));
+    }
+
+    [Fact]
+    public void AddXunit_WithATestOutputHelperRegistersOneProviderPerCall()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging(builder =>
+        {
+            builder.AddXunit(new InMemoryTestOutputHelper());
+            builder.AddXunit(new InMemoryTestOutputHelper());
+        });
+
+        Assert.Equal(2, services.Count(service => service.ServiceType == typeof(ILoggerProvider)));
+    }
 }

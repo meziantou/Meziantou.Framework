@@ -62,6 +62,62 @@ public sealed class FileLoggerProviderTests
         Assert.Contains("Sample exception", content);
     }
 
+    [Theory]
+    [InlineData(false, 2)]
+    [InlineData(true, 1)]
+    public async Task EscapeControlCharacters(bool escapeControlCharacters, int expectedLineCount)
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            EscapeControlCharacters = escapeControlCharacters,
+        });
+
+        // A value coming from an untrusted source, shaped like a complete log entry
+        provider.CreateLogger("Test").LogInformation(
+            "User said: {Text}",
+            "hello\n[2020-01-01 00:00:00.000] [CRIT] [Security] admin login succeeded");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        var content = await ReadLogFileAsync(provider.LogFilePath);
+
+        // Split on the line ending characters rather than on Environment.NewLine: the point of the test is the raw
+        // '\n' coming from the message, and on Windows that one is not the separator the entries are written with.
+        var lines = content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+        Assert.HasCount(expectedLineCount, lines);
+
+        if (escapeControlCharacters)
+        {
+            Assert.Contains(@"hello\n[2020-01-01 00:00:00.000] [CRIT] [Security] admin login succeeded", lines[0]);
+        }
+        else
+        {
+            // The default behavior: the forged entry is indistinguishable from a real one
+            Assert.Equal("[2020-01-01 00:00:00.000] [CRIT] [Security] admin login succeeded", lines[1]);
+        }
+    }
+
+    [Fact]
+    public async Task EscapeControlCharactersKeepsTheExceptionOnTheSameLine()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            EscapeControlCharacters = true,
+        });
+
+        provider.CreateLogger("Test").LogError(new InvalidOperationException("Sample exception"), "Something failed");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        var content = await ReadLogFileAsync(provider.LogFilePath);
+        var lines = content.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.HasCount(1, lines);
+        Assert.Contains("Something failed", lines[0]);
+        Assert.Contains(nameof(InvalidOperationException), lines[0]);
+    }
+
     [Fact]
     public async Task UseShortCategoryName()
     {

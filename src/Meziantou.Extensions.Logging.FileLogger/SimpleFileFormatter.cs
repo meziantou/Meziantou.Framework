@@ -70,20 +70,77 @@ public sealed class SimpleFileFormatter : FileFormatter
             textWriter.Write("] ");
         }
 
+        var escape = options.EscapeControlCharacters;
         scopeProvider?.ForEachScope(
-            (scope, writer) =>
+            (scope, state) =>
             {
-                writer.Write("=> ");
-                writer.Write(Convert.ToString(scope, CultureInfo.InvariantCulture));
-                writer.Write(' ');
-            }, textWriter);
+                state.TextWriter.Write("=> ");
+                WriteValue(state.TextWriter, Convert.ToString(scope, CultureInfo.InvariantCulture), state.Escape);
+                state.TextWriter.Write(' ');
+            }, (TextWriter: textWriter, Escape: escape));
 
-        textWriter.Write(message);
+        WriteValue(textWriter, message, escape);
 
         if (logEntry.Exception is not null)
         {
-            textWriter.WriteLine();
-            textWriter.Write(logEntry.Exception.ToString());
+            // Escaping the exception would be pointless if it could start a new line by itself
+            if (escape)
+            {
+                textWriter.Write(' ');
+            }
+            else
+            {
+                textWriter.WriteLine();
+            }
+
+            WriteValue(textWriter, logEntry.Exception.ToString(), escape);
+        }
+    }
+
+    private static void WriteValue(TextWriter textWriter, string? value, bool escape)
+    {
+        if (value is null)
+            return;
+
+        if (!escape)
+        {
+            textWriter.Write(value);
+            return;
+        }
+
+        foreach (var c in value)
+        {
+            switch (c)
+            {
+                case '\\':
+                    textWriter.Write("\\\\");
+                    break;
+
+                case '\r':
+                    textWriter.Write("\\r");
+                    break;
+
+                case '\n':
+                    textWriter.Write("\\n");
+                    break;
+
+                case '\t':
+                    textWriter.Write("\\t");
+                    break;
+
+                default:
+                    if (char.IsControl(c))
+                    {
+                        textWriter.Write("\\u");
+                        textWriter.Write(((int)c).ToString("x4", CultureInfo.InvariantCulture));
+                    }
+                    else
+                    {
+                        textWriter.Write(c);
+                    }
+
+                    break;
+            }
         }
     }
 

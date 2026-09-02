@@ -51,19 +51,27 @@ public static class ThrottleExtensions
         var l = new object();
         return () =>
         {
-            if (task is not null)
-                return;
-
             lock (l)
             {
+                // task is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
                 if (task is not null)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(t =>
+                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
                 {
-                    action();
-                    t.Dispose();
-                    task = null;
+                    try
+                    {
+                        action();
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            task = null;
+                        }
+                    }
                 }, TaskScheduler.Default);
             }
         };
@@ -105,20 +113,38 @@ public static class ThrottleExtensions
         T0 args = default!;
         return (T0 arg0) =>
         {
-            args = arg0;
-            if (task is not null)
-                return;
-
             lock (l)
             {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = arg0;
+
+                // task is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
                 if (task is not null)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(t =>
+                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
                 {
-                    action(args);
-                    t.Dispose();
-                    task = null;
+                    T0 pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            task = null;
+                        }
+                    }
                 }, TaskScheduler.Default);
             }
         };
@@ -162,20 +188,38 @@ public static class ThrottleExtensions
         (T0, T1) args = default;
         return (T0 arg0, T1 arg1) =>
         {
-            args = (arg0, arg1);
-            if (task is not null)
-                return;
-
             lock (l)
             {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1);
+
+                // task is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
                 if (task is not null)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(t =>
+                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
                 {
-                    action(args.Item1, args.Item2);
-                    t.Dispose();
-                    task = null;
+                    (T0, T1) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            task = null;
+                        }
+                    }
                 }, TaskScheduler.Default);
             }
         };
@@ -221,20 +265,38 @@ public static class ThrottleExtensions
         (T0, T1, T2) args = default;
         return (T0 arg0, T1 arg1, T2 arg2) =>
         {
-            args = (arg0, arg1, arg2);
-            if (task is not null)
-                return;
-
             lock (l)
             {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1, arg2);
+
+                // task is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
                 if (task is not null)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(t =>
+                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
                 {
-                    action(args.Item1, args.Item2, args.Item3);
-                    t.Dispose();
-                    task = null;
+                    (T0, T1, T2) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            task = null;
+                        }
+                    }
                 }, TaskScheduler.Default);
             }
         };
@@ -282,20 +344,38 @@ public static class ThrottleExtensions
         (T0, T1, T2, T3) args = default;
         return (T0 arg0, T1 arg1, T2 arg2, T3 arg3) =>
         {
-            args = (arg0, arg1, arg2, arg3);
-            if (task is not null)
-                return;
-
             lock (l)
             {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1, arg2, arg3);
+
+                // task is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
                 if (task is not null)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(t =>
+                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
                 {
-                    action(args.Item1, args.Item2, args.Item3, args.Item4);
-                    t.Dispose();
-                    task = null;
+                    (T0, T1, T2, T3) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            task = null;
+                        }
+                    }
                 }, TaskScheduler.Default);
             }
         };
@@ -345,20 +425,38 @@ public static class ThrottleExtensions
         (T0, T1, T2, T3, T4) args = default;
         return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) =>
         {
-            args = (arg0, arg1, arg2, arg3, arg4);
-            if (task is not null)
-                return;
-
             lock (l)
             {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1, arg2, arg3, arg4);
+
+                // task is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
                 if (task is not null)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(t =>
+                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
                 {
-                    action(args.Item1, args.Item2, args.Item3, args.Item4, args.Item5);
-                    t.Dispose();
-                    task = null;
+                    (T0, T1, T2, T3, T4) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            task = null;
+                        }
+                    }
                 }, TaskScheduler.Default);
             }
         };
@@ -410,20 +508,38 @@ public static class ThrottleExtensions
         (T0, T1, T2, T3, T4, T5) args = default;
         return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) =>
         {
-            args = (arg0, arg1, arg2, arg3, arg4, arg5);
-            if (task is not null)
-                return;
-
             lock (l)
             {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1, arg2, arg3, arg4, arg5);
+
+                // task is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
                 if (task is not null)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(t =>
+                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
                 {
-                    action(args.Item1, args.Item2, args.Item3, args.Item4, args.Item5, args.Item6);
-                    t.Dispose();
-                    task = null;
+                    (T0, T1, T2, T3, T4, T5) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            task = null;
+                        }
+                    }
                 }, TaskScheduler.Default);
             }
         };
@@ -477,20 +593,38 @@ public static class ThrottleExtensions
         (T0, T1, T2, T3, T4, T5, T6) args = default;
         return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) =>
         {
-            args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-            if (task is not null)
-                return;
-
             lock (l)
             {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+
+                // task is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
                 if (task is not null)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(t =>
+                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
                 {
-                    action(args.Item1, args.Item2, args.Item3, args.Item4, args.Item5, args.Item6, args.Item7);
-                    t.Dispose();
-                    task = null;
+                    (T0, T1, T2, T3, T4, T5, T6) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            task = null;
+                        }
+                    }
                 }, TaskScheduler.Default);
             }
         };
@@ -546,20 +680,38 @@ public static class ThrottleExtensions
         (T0, T1, T2, T3, T4, T5, T6, T7) args = default;
         return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) =>
         {
-            args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-            if (task is not null)
-                return;
-
             lock (l)
             {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+
+                // task is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
                 if (task is not null)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(t =>
+                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
                 {
-                    action(args.Item1, args.Item2, args.Item3, args.Item4, args.Item5, args.Item6, args.Item7, args.Item8);
-                    t.Dispose();
-                    task = null;
+                    (T0, T1, T2, T3, T4, T5, T6, T7) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7, pendingArgs.Item8);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            task = null;
+                        }
+                    }
                 }, TaskScheduler.Default);
             }
         };
@@ -617,20 +769,38 @@ public static class ThrottleExtensions
         (T0, T1, T2, T3, T4, T5, T6, T7, T8) args = default;
         return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) =>
         {
-            args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-            if (task is not null)
-                return;
-
             lock (l)
             {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+
+                // task is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
                 if (task is not null)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(t =>
+                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
                 {
-                    action(args.Item1, args.Item2, args.Item3, args.Item4, args.Item5, args.Item6, args.Item7, args.Item8, args.Item9);
-                    t.Dispose();
-                    task = null;
+                    (T0, T1, T2, T3, T4, T5, T6, T7, T8) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7, pendingArgs.Item8, pendingArgs.Item9);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            task = null;
+                        }
+                    }
                 }, TaskScheduler.Default);
             }
         };
@@ -690,20 +860,38 @@ public static class ThrottleExtensions
         (T0, T1, T2, T3, T4, T5, T6, T7, T8, T9) args = default;
         return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) =>
         {
-            args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-            if (task is not null)
-                return;
-
             lock (l)
             {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+
+                // task is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
                 if (task is not null)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(t =>
+                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
                 {
-                    action(args.Item1, args.Item2, args.Item3, args.Item4, args.Item5, args.Item6, args.Item7, args.Item8, args.Item9, args.Item10);
-                    t.Dispose();
-                    task = null;
+                    (T0, T1, T2, T3, T4, T5, T6, T7, T8, T9) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7, pendingArgs.Item8, pendingArgs.Item9, pendingArgs.Item10);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            task = null;
+                        }
+                    }
                 }, TaskScheduler.Default);
             }
         };

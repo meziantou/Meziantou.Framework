@@ -7,6 +7,15 @@ public class IOUtilitiesTests
     [InlineData("sample.txt", "sample.txt")]
     [InlineData("sample/.txt", "sample_x47_.txt")]
     [InlineData("COM1", "_COM1_")]
+    // A device name is reserved with any extension
+    [InlineData("con.txt", "_con.txt_")]
+    [InlineData("NUL.log.bak", "_NUL.log.bak_")]
+    [InlineData("console.txt", "console.txt")]
+    // Windows strips trailing periods and spaces
+    [InlineData("report.", "report_x46_")]
+    [InlineData("report ", "report_x32_")]
+    [InlineData("report.. ", "report_x46__x46__x32_")]
+    [InlineData("...", "_..._")]
     public void ToValidFileName(string fileName, string expectedResult)
     {
         var result = IOUtilities.ToValidFileName(fileName);
@@ -82,5 +91,42 @@ public class IOUtilitiesTests
         Directory.Delete(path);
 
         return directoryInfo;
+    }
+
+    [Fact]
+    public void DeleteThrowsWhenTheFailureNeverClears()
+    {
+        // Producing this on Windows needs mandatory locking; on Unix an unwritable parent directory does it
+        if (OperatingSystem.IsWindows())
+            return;
+
+        var root = Directory.CreateTempSubdirectory();
+        var locked = root.CreateSubdirectory("locked");
+        var probe = Path.Combine(locked.FullName, "probe.txt");
+        var target = Path.Combine(locked.FullName, "target.txt");
+        File.WriteAllText(probe, "probe");
+        File.WriteAllText(target, "target");
+
+        try
+        {
+            File.SetUnixFileMode(locked.FullName, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+            // Skip when the permission is not enforced for the current user, e.g. root
+            try
+            {
+                File.Delete(probe);
+                return;
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+
+            Assert.Throws<UnauthorizedAccessException>(() => IOUtilities.Delete(target));
+        }
+        finally
+        {
+            File.SetUnixFileMode(locked.FullName, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            root.Delete(recursive: true);
+        }
     }
 }

@@ -80,7 +80,10 @@ public sealed class FileLoggerProviderTests
         await provider.FlushAsync(TestContext.Current.CancellationToken);
 
         var content = await ReadLogFileAsync(provider.LogFilePath);
-        var lines = content.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+
+        // Split on the line ending characters rather than on Environment.NewLine: the point of the test is the raw
+        // '\n' coming from the message, and on Windows that one is not the separator the entries are written with.
+        var lines = content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
         Assert.HasCount(expectedLineCount, lines);
 
         if (escapeControlCharacters)

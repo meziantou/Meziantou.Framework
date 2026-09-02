@@ -315,11 +315,11 @@ public sealed class FileLoggerProviderTests
         {
             logger.LogInformation("Day {Index}", i);
             await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+            // Assert on every day, so a failure tells which write did not reach the file
+            Assert.Equal(GetExpectedRetainedFileNames(i, maxRetainedFiles: 2, extension: ".log"), GetFileNames(tempDirectory), $"Day {i}, current file: {Path.GetFileName(provider.LogFilePath)}");
             timeProvider.Advance(TimeSpan.FromDays(1));
         }
-
-        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
-        Assert.Equal([$"2024-01-05-{pid}.log", $"2024-01-06-{pid}.log"], GetFileNames(tempDirectory));
     }
 
     [Fact]
@@ -471,6 +471,28 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    public async Task MessagesAreWrittenToTheFileOfTheTimeTheyWereLogged()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+
+        // The provider is created and the message is logged on the current thread, so the time provider
+        // reports a later time to the background thread that writes the messages to the file
+        var timeProvider = new ThreadDependentTimeProvider(StartDate, TimeSpan.FromDays(1));
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            RollInterval = RollInterval.Daily,
+        }, timeProvider);
+
+        provider.CreateLogger("Test").LogInformation("First day");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
+        Assert.Equal([$"2024-01-02-{pid}.log"], GetFileNames(tempDirectory));
+        Assert.Contains("First day", await ReadLogFileAsync(Path.Combine(tempDirectory.FullPath, $"2024-01-02-{pid}.log")));
+    }
+
+    [Fact]
     public async Task CompressedFilesAreDeletedByTheRetentionPolicy()
     {
         using var tempDirectory = TemporaryDirectory.Create();
@@ -488,11 +510,11 @@ public sealed class FileLoggerProviderTests
         {
             logger.LogInformation("Day {Index}", i);
             await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+            // Assert on every day, so a failure tells which write did not reach the file
+            Assert.Equal(GetExpectedRetainedFileNames(i, maxRetainedFiles: 2, extension: ".log.gz"), GetFileNames(tempDirectory), $"Day {i}, current file: {Path.GetFileName(provider.LogFilePath)}");
             timeProvider.Advance(TimeSpan.FromDays(1));
         }
-
-        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
-        Assert.Equal([$"2024-01-05-{pid}.log.gz", $"2024-01-06-{pid}.log.gz"], GetFileNames(tempDirectory));
     }
 
     [Fact]
@@ -845,6 +867,27 @@ public sealed class FileLoggerProviderTests
         await provider.FlushAsync(TestContext.Current.CancellationToken);
 
         Assert.Null(provider.LogFilePath);
+    }
+
+    /// <summary>A time provider that reports a later time to every thread but the one that created it.</summary>
+    private sealed class ThreadDependentTimeProvider(DateTimeOffset now, TimeSpan otherThreadsOffset) : TimeProvider
+    {
+        private readonly int _threadId = Environment.CurrentManagedThreadId;
+
+        public override DateTimeOffset GetUtcNow()
+        {
+            return Environment.CurrentManagedThreadId == _threadId ? now : now + otherThreadsOffset;
+        }
+    }
+
+    /// <summary>Gets the files a daily log started on <see cref="StartDate"/> must contain after the given number of days.</summary>
+    private static string[] GetExpectedRetainedFileNames(int dayIndex, int maxRetainedFiles, string extension)
+    {
+        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
+        var firstDay = Math.Max(0, dayIndex - maxRetainedFiles + 1);
+        return [.. Enumerable
+            .Range(firstDay, dayIndex - firstDay + 1)
+            .Select(day => $"{StartDate.AddDays(day):yyyy-MM-dd}-{pid}{extension}")];
     }
 
     private static string[] GetFileNames(TemporaryDirectory directory)

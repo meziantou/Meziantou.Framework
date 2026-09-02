@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Unicode;
 
 namespace Meziantou.Framework;
@@ -19,6 +20,9 @@ public class SlugOptions
 {
     internal static SlugOptions Default { get; } = new SlugOptions();
 
+    /// <summary>Caches, per derived type, whether <see cref="Replace(Rune)"/> is still the one declared here.</summary>
+    private static readonly ConcurrentDictionary<Type, bool> UsesDefaultReplaceByType = new();
+
     /// <summary>The default maximum length for generated slugs (80 characters).</summary>
     public const int DefaultMaximumLength = 80;
 
@@ -26,6 +30,11 @@ public class SlugOptions
     public const string DefaultSeparator = "-";
 
     /// <summary>Gets the list of allowed Unicode character ranges in the generated slug.</summary>
+    /// <remarks>
+    /// An <b>empty</b> list allows every character instead of none, so the slug is returned unfiltered. The list has no
+    /// setter: add to it, or call <see cref="ICollection{T}.Clear"/> and then add, to change which characters are kept.
+    /// Clearing it and adding nothing is what makes the generation permissive.
+    /// </remarks>
     public IList<UnicodeRange> AllowedRanges { get; }
 
     /// <summary>
@@ -35,10 +44,17 @@ public class SlugOptions
     /// The limit applies to the returned slug and is never exceeded. A slug is only cut between characters, so it never
     /// ends with an incomplete surrogate pair, a partial <see cref="Separator"/>, or a character stripped of the combining
     /// marks that follow it. Because those units are kept whole, a slug can end up slightly shorter than the limit.
+    /// <para>
+    /// Truncation makes slugs lossy: two different inputs that agree up to the limit produce the same slug, as do inputs
+    /// that differ only by characters this class removes. A slug is therefore never unique. Callers that key on one must
+    /// enforce uniqueness themselves, and must not use it as a security boundary.
+    /// </para>
     /// </remarks>
     public int MaximumLength { get; set; }
 
     /// <summary>Gets or sets the separator string used between words. Default is "-".</summary>
+    /// <remarks>The separator should be made of characters that <see cref="IsAllowed(Rune)"/> rejects. When a separator character
+    /// can also come from the input, a trailing occurrence of it is indistinguishable from a separator this class emitted.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public string Separator
     {
@@ -75,6 +91,8 @@ public class SlugOptions
     /// <summary>Determines whether the specified character is allowed in the slug.</summary>
     /// <param name="character">The character to check.</param>
     /// <returns><see langword="true"/> if the character is allowed; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>Every character is allowed when <see cref="AllowedRanges"/> is empty. The check runs on the character read from
+    /// the input, before <see cref="Replace(Rune)"/> and <see cref="CasingTransformation"/> are applied to it.</remarks>
     public virtual bool IsAllowed(Rune character)
     {
         var ranges = AllowedRanges;
@@ -122,5 +140,22 @@ public class SlugOptions
     /// Gets a value indicating whether <see cref="Replace(Rune)"/> still has its default implementation, in which case
     /// <see cref="Transform(Rune)"/> produces the same result without allocating a string for every rune.
     /// </summary>
-    internal bool UsesDefaultReplace => GetType() == typeof(SlugOptions);
+    internal bool UsesDefaultReplace
+    {
+        get
+        {
+            var type = GetType();
+            if (type == typeof(SlugOptions))
+                return true;
+
+            return UsesDefaultReplaceByType.GetOrAdd(type, _ =>
+            {
+                // Binding the delegate resolves the virtual call, so its target is the override that would run.
+                // Reading the method off a delegate keeps this trimmer-friendly, unlike looking the override up
+                // by name on a type that is only known at run time.
+                Func<Rune, string> replace = Replace;
+                return replace.Method.DeclaringType == typeof(SlugOptions);
+            });
+        }
+    }
 }

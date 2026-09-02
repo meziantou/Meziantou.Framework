@@ -191,22 +191,38 @@ public static class RandomExtensions
         return (uint)random.NextInt64(min, max);
     }
 
-    /// <summary>Returns a random 64-bit unsigned integer within the specified range.</summary>
+    /// <summary>Returns a random 64-bit unsigned integer greater than or equal to <paramref name="min"/> and less than <paramref name="max"/>.</summary>
     public static ulong NextUInt64(this Random random, ulong min = 0ul, ulong max = ulong.MaxValue)
     {
         ArgumentNullException.ThrowIfNull(random);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(min, max);
 
-        var buffer = new byte[sizeof(long)];
+        if (min == max)
+            return min;
+
+        Span<byte> buffer = stackalloc byte[sizeof(ulong)];
         random.NextBytes(buffer);
-        return (BitConverter.ToUInt64(buffer, 0) * (max - min) / ulong.MaxValue) + min;
+        var value = BitConverter.ToUInt64(buffer);
+
+        // Scale with a 128-bit intermediate. Multiplying in 64 bits overflows for any non-tiny
+        // range, and the wrapped product divided by ulong.MaxValue collapses to min.
+        return min + (ulong)(((UInt128)value * (max - min)) >> 64);
     }
 
-    /// <summary>Returns a random decimal value within the specified range.</summary>
+    /// <summary>Returns a random decimal value greater than or equal to <paramref name="min"/> and less than <paramref name="max"/>.</summary>
+    /// <remarks>The value is derived from <see cref="Random.NextDouble"/>, so it carries the granularity of a double rather than that of a decimal.</remarks>
     public static decimal NextDecimal(this Random random, decimal min = decimal.MinValue, decimal max = decimal.MaxValue)
     {
         ArgumentNullException.ThrowIfNull(random);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(min, max);
 
-        return (((decimal)random.NextDouble()) * (max - min)) + min;
+        if (min == max)
+            return min;
+
+        // Interpolate instead of scaling (max - min): the default range is twice decimal.MaxValue,
+        // so computing the difference overflows. Both terms below stay within the decimal range.
+        var ratio = (decimal)random.NextDouble();
+        return (min * (1m - ratio)) + (max * ratio);
     }
 
     /// <summary>Returns a random string of the specified length using characters from the provided character set.</summary>

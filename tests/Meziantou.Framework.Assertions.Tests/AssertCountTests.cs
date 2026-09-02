@@ -259,4 +259,13 @@ public sealed class AssertCountTests
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
+
+    [Fact]
+    public void DoesNotHaveCount_EnumeratesASingleUseSequenceOnlyOnce()
+    {
+        var actual = AssertionTestHelpers.SingleUse(1, 2, 3);
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotHaveCount(3, actual));
+    }
+
 }

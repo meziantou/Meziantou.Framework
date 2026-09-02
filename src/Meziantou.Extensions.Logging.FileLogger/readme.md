@@ -64,9 +64,22 @@ Note that the options related to the log file itself (`Directory`, file name, `A
 | `MaxFileSizeInBytes` | Creates a new file when the current one reaches the size limit |
 | `MaxRetainedFiles` | Deletes the oldest files when a new file is created |
 | `Compression` | Compresses the log files using gzip, Brotli, or Zstandard (.NET 11+) |
-| `Append` | Reuses an existing file instead of creating a new one at startup |
+| `Append` | Reuses an existing file instead of creating a new one at startup. See the note below |
 
 The log files are named `{FileNamePrefix}{timestamp}-{processId}{FileNameExtension}`, so they are ordered chronologically by name. When the name is already used, a suffix is added (`_001`, `_002`, …).
+
+`Append` reuses a file only when its name matches the name computed at startup, so it needs a stable file name:
+
+- `RollInterval` must be set. `RollInterval.None` includes the seconds in the name, so the name changes on every start.
+- `IncludeProcessIdInFileName` must be `false` to reuse a file across restarts, as the identifier of the process changes.
+
+With the default values of these two options, a new file is created on every start even when `Append` is `true`.
+
+```c#
+options.Append = true;
+options.RollInterval = RollInterval.Daily;
+options.IncludeProcessIdInFileName = false; // Required to reuse the file after a restart
+```
 
 ## Compression
 
@@ -86,6 +99,16 @@ options.CompressionMode = LogFileCompressionMode.Continuous;
 `Append` is ignored when the messages are compressed continuously, as appending to a compressed file would produce a file that most tools cannot read entirely.
 
 `MaxFileSizeInBytes` is compared to the size of the file on disk, so it accounts for the compression. As the compressed size is only known once the data is flushed, the file may be rolled slightly before the limit.
+
+## Permissions
+
+On Unix, the log files are created with the default mode of the platform, which usually makes them readable by every local user. Set `UnixCreateMode` when the messages can contain sensitive data:
+
+```c#
+options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+```
+
+The value is ignored on Windows, and it is still filtered by the umask of the process. The mode of the directory is not changed, so create the directory yourself when it must be private too.
 
 ## Formatters
 

@@ -25,7 +25,8 @@ public partial class Assert
             return;
         }
 
-        throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<T, IEnumerable<T>>("Not expected prefix", expected, actual, actualExpression, expectedExpression, message)));
+        actualSnapshot.EnsureComplete();
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<T, IReadOnlyList<T>>("Not expected prefix", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
     public static void DoesNotStartWith(object? expected, System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -39,7 +40,8 @@ public partial class Assert
             return;
         }
 
-        throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<object?, System.Collections.IEnumerable>("Not expected prefix", expected, actual, actualExpression, expectedExpression, message)));
+        actualSnapshot.EnsureComplete();
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<object?, IReadOnlyList<object?>>("Not expected prefix", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
     public static void DoesNotStartWith<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -97,6 +99,19 @@ public partial class Assert
         if (actual is null)
             return;
 
+        // A string is itself an IEnumerable, so without this guard it binds here rather than to the object overload
+        // and is searched as a char subsequence of a collection whose elements are not chars. That comparison can
+        // never match, which makes the assertion impossible to fail.
+        if (expected is string)
+        {
+            using var stringActualSnapshot = CollectionSnapshot.Create(actual);
+            if (!stringActualSnapshot.TryGetItem(0, out var firstItem) || !Equals(expected, firstItem, comparer))
+                return;
+
+            stringActualSnapshot.EnsureComplete();
+            throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<object?, IReadOnlyList<object?>>("Not expected prefix", expected, stringActualSnapshot.Items, actualExpression, expectedExpression, message)));
+        }
+
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         using var expectedSnapshot = CollectionSnapshot.Create(expected);
 
@@ -107,6 +122,8 @@ public partial class Assert
                 return;
         }
 
-        throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable>("Not expected prefix", expected, actual, actualExpression, expectedExpression, message)));
+        expectedSnapshot.EnsureComplete();
+        actualSnapshot.EnsureComplete();
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<IReadOnlyList<object?>, IReadOnlyList<object?>>("Not expected prefix", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 }

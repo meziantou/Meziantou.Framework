@@ -199,4 +199,30 @@ public class ProcessExtensionsTests
         Assert.Contains(descendants, p => p.Id == current.Id);
         Assert.Contains(descendants, p => p.Id == parent.Id);
     }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetChildProcessesDoesNotReturnGrandChildren()
+    {
+        using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
+        try
+        {
+            // We need to wait for the process to be started by cmd
+            IReadOnlyCollection<Process> grandChildren;
+            while ((grandChildren = process.GetDescendantProcesses()).Count is 0)
+            {
+                Thread.Sleep(100);
+            }
+
+            using var current = Process.GetCurrentProcess();
+            var children = current.GetChildProcesses();
+
+            Assert.Contains(children, p => p.Id == process.Id);
+            Assert.DoesNotContain(children, p => grandChildren.Any(grandChild => grandChild.Id == p.Id));
+        }
+        finally
+        {
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit();
+        }
+    }
 }

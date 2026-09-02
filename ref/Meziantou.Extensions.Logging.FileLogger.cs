@@ -38,6 +38,7 @@ namespace Meziantou.Extensions.Logging
         public Meziantou.Extensions.Logging.RollInterval RollInterval { get => throw null; set { } }
         public long? MaxFileSizeInBytes { get => throw null; set { } }
         public int? MaxRetainedFiles { get => throw null; set { } }
+        public System.IO.UnixFileMode? UnixCreateMode { get => throw null; set { } }
         public Meziantou.Extensions.Logging.LogFileCompression Compression { get => throw null; set { } }
         public Meziantou.Extensions.Logging.LogFileCompressionMode CompressionMode { get => throw null; set { } }
         public System.IO.Compression.CompressionLevel CompressionLevel { get => throw null; set { } }

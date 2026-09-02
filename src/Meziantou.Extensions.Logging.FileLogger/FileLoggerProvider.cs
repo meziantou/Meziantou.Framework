@@ -201,6 +201,11 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         {
             while (await channel.Reader.WaitToReadAsync().ConfigureAwait(false))
             {
+                // Take the requests registered so far: every message logged before them is already in the
+                // queue drained below. A request registered while the queue is drained refers to a message
+                // that may not be read yet, so it is left to the next iteration
+                var flushCount = _pendingFlushes.Count;
+
                 while (channel.Reader.TryRead(out var message))
                 {
                     if (message.Message is null)
@@ -227,9 +232,21 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
                     Flush();
                 }
 
-                // The queue is drained and flushed, so every message queued before these requests is
-                // on the disk. Requests registered from now on are handled by the next iteration
-                CompletePendingFlushes();
+                // The queue is drained and flushed, so every message queued before these requests is on the disk
+                for (var i = 0; i < flushCount; i++)
+                {
+                    if (!_pendingFlushes.TryDequeue(out var completion))
+                        break;
+
+                    completion.TrySetResult();
+                }
+
+                // The marker of a request registered while the queue was drained may have been discarded
+                // by FileLoggerOptions.QueueFullMode, so make sure the writer wakes up again for it
+                if (!_pendingFlushes.IsEmpty)
+                {
+                    channel.Writer.TryWrite(default);
+                }
             }
         }
         catch (Exception ex)

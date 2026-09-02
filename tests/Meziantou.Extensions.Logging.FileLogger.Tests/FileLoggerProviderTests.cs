@@ -315,11 +315,11 @@ public sealed class FileLoggerProviderTests
         {
             logger.LogInformation("Day {Index}", i);
             await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+            // Assert on every day, so a failure tells which write did not reach the file
+            Assert.Equal(GetExpectedRetainedFileNames(i, maxRetainedFiles: 2, extension: ".log"), GetFileNames(tempDirectory), $"Day {i}, current file: {Path.GetFileName(provider.LogFilePath)}");
             timeProvider.Advance(TimeSpan.FromDays(1));
         }
-
-        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
-        Assert.Equal([$"2024-01-05-{pid}.log", $"2024-01-06-{pid}.log"], GetFileNames(tempDirectory));
     }
 
     [Fact]
@@ -510,11 +510,11 @@ public sealed class FileLoggerProviderTests
         {
             logger.LogInformation("Day {Index}", i);
             await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+            // Assert on every day, so a failure tells which write did not reach the file
+            Assert.Equal(GetExpectedRetainedFileNames(i, maxRetainedFiles: 2, extension: ".log.gz"), GetFileNames(tempDirectory), $"Day {i}, current file: {Path.GetFileName(provider.LogFilePath)}");
             timeProvider.Advance(TimeSpan.FromDays(1));
         }
-
-        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
-        Assert.Equal([$"2024-01-05-{pid}.log.gz", $"2024-01-06-{pid}.log.gz"], GetFileNames(tempDirectory));
     }
 
     [Fact]
@@ -878,6 +878,16 @@ public sealed class FileLoggerProviderTests
         {
             return Environment.CurrentManagedThreadId == _threadId ? now : now + otherThreadsOffset;
         }
+    }
+
+    /// <summary>Gets the files a daily log started on <see cref="StartDate"/> must contain after the given number of days.</summary>
+    private static string[] GetExpectedRetainedFileNames(int dayIndex, int maxRetainedFiles, string extension)
+    {
+        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
+        var firstDay = Math.Max(0, dayIndex - maxRetainedFiles + 1);
+        return [.. Enumerable
+            .Range(firstDay, dayIndex - firstDay + 1)
+            .Select(day => $"{StartDate.AddDays(day):yyyy-MM-dd}-{pid}{extension}")];
     }
 
     private static string[] GetFileNames(TemporaryDirectory directory)

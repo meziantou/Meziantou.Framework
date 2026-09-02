@@ -1244,6 +1244,7 @@ internal sealed partial class TestYamlSerializerContext : YamlSerializerContext
 
 [YamlSourceGenerationOptions(
     WriteIndented = false,
+    IndentBlockSequences = false,
     PropertyNameCaseInsensitive = true,
     DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingNull,
     BlockSequenceMappingStyle = YamlSequenceItemStyle.Expanded,
@@ -1915,6 +1916,7 @@ public class YamlSerializerSourceGenerationTests
         var options = context.GeneratedWithDefaultOptions.Options;
 
         Assert.False(options.WriteIndented);
+        Assert.False(options.IndentBlockSequences);
         Assert.True(options.PropertyNameCaseInsensitive);
         Assert.Equal(YamlIgnoreCondition.WhenWritingNull, options.DefaultIgnoreCondition);
         Assert.Equal(YamlSequenceItemStyle.Expanded, options.BlockSequenceMappingStyle);

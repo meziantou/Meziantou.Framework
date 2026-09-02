@@ -350,6 +350,7 @@ namespace Meziantou.Framework.Yaml
         public Meziantou.Framework.Yaml.YamlIgnoreCondition DefaultIgnoreCondition { get => throw null; init { } }
         public bool WriteIndented { get => throw null; init { } }
         public int IndentSize { get => throw null; init { } }
+        public bool IndentBlockSequences { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlMappingOrderPolicy MappingOrder { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlSequenceItemStyle BlockSequenceMappingStyle { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlSequenceItemStyle BlockSequenceSequenceStyle { get => throw null; init { } }
@@ -1013,6 +1014,7 @@ namespace Meziantou.Framework.Yaml.Serialization
     {
         public bool WriteIndented { get => throw null; set { } }
         public int IndentSize { get => throw null; set { } }
+        public bool IndentBlockSequences { get => throw null; set { } }
         public Meziantou.Framework.Yaml.YamlKnownNamingPolicy PropertyNamingPolicy { get => throw null; set { } }
         public Meziantou.Framework.Yaml.YamlKnownNamingPolicy DictionaryKeyPolicy { get => throw null; set { } }
         public bool PropertyNameCaseInsensitive { get => throw null; set { } }

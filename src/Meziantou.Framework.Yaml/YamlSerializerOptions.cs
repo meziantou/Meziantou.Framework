@@ -162,6 +162,24 @@ public sealed record YamlSerializerOptions
         }
     } = 2;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether a block sequence that is the value of a mapping key is indented
+    /// relative to that mapping.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A block sequence used as a mapping value does not need its own indentation level: YAML allows the sequence
+    /// dashes to sit at the indentation of the parent mapping. When <see langword="false"/>, the dashes are written
+    /// at the indentation of the parent mapping instead of being indented by <see cref="IndentSize"/> columns.
+    /// </para>
+    /// <para>
+    /// This option only affects sequences written as a mapping value. A sequence nested inside another sequence is
+    /// always indented past its parent dash, because YAML has no unindented form for it. This option is ignored when
+    /// <see cref="WriteIndented"/> is disabled, because the flow style has no sequence dash.
+    /// </para>
+    /// </remarks>
+    public bool IndentBlockSequences { get; init; } = true;
+
     /// <summary>Gets or sets member ordering behavior for emitted mappings.</summary>
     public YamlMappingOrderPolicy MappingOrder { get; init; } = YamlMappingOrderPolicy.Declaration;
 

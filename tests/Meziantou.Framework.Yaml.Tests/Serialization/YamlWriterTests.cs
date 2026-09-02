@@ -318,6 +318,94 @@ public sealed class YamlWriterTests
         Assert.Equal((1, 2), (roundTrip.Items[0].A, roundTrip.Items[0].B));
     }
 
+    [Fact]
+    public void IndentBlockSequences_IsEnabledByDefault()
+    {
+        Assert.True(new YamlSerializerOptions().IndentBlockSequences);
+    }
+
+    [Fact]
+    public void MappingValueSequence_WithIndentBlockSequencesDisabled_WritesDashesAtParentIndentation()
+    {
+        var options = new YamlSerializerOptions { IndentBlockSequences = false };
+        var writer = CreateWriter(options, out var buffer);
+
+        writer.WriteStartMapping();
+        writer.WritePropertyName("tags");
+        writer.WriteStartSequence();
+        writer.WriteScalar("a");
+        writer.WriteScalar("b");
+        writer.WriteEndSequence();
+        writer.WriteEndMapping();
+
+        Assert.Equal("tags:\n- a\n- b", buffer.ToString());
+    }
+
+    [Fact]
+    public void MappingValueSequence_WithIndentBlockSequencesDisabled_KeepsMappingsIndentedAndRoundTrips()
+    {
+        var options = new YamlSerializerOptions { IndentBlockSequences = false };
+        var yaml = YamlSerializer.Serialize(new ItemsContainer { Items = [new Item { A = 1, B = 2 }] }, options);
+
+        Assert.Equal("Items:\n- A: 1\n  B: 2\n", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize<ItemsContainer>(yaml, options);
+        Assert.NotNull(roundTrip?.Items);
+        var item = Assert.Single(roundTrip.Items);
+        Assert.Equal((1, 2), (item.A, item.B));
+    }
+
+    [Fact]
+    public void MappingValueSequence_WithIndentBlockSequencesDisabledAndLargeIndentSize_IgnoresIndentSizeForSequences()
+    {
+        var options = new YamlSerializerOptions { IndentBlockSequences = false, IndentSize = 4 };
+        var yaml = YamlSerializer.Serialize(new Outer { Child = new Inner { Value = 1 }, Count = 2 }, options);
+
+        Assert.Equal("Child:\n    Value: 1\nCount: 2\n", yaml);
+
+        var listYaml = YamlSerializer.Serialize(new MapsContainer { List = [1, 2] }, options);
+        Assert.Equal("Map: null\nList:\n- 1\n- 2\n", listYaml);
+    }
+
+    [Fact]
+    public void NestedSequence_WithIndentBlockSequencesDisabled_IsStillIndentedAndRoundTrips()
+    {
+        var options = new YamlSerializerOptions { IndentBlockSequences = false };
+        var yaml = YamlSerializer.Serialize(new RowsContainer { Rows = [[1, 2], [3]] }, options);
+
+        Assert.Equal("Rows:\n-\n  - 1\n  - 2\n-\n  - 3\n", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize<RowsContainer>(yaml, options);
+        Assert.NotNull(roundTrip?.Rows);
+        Assert.HasCount(2, roundTrip.Rows);
+        Assert.Equal([1, 2], roundTrip.Rows[0]);
+        Assert.Equal([3], roundTrip.Rows[1]);
+    }
+
+    [Fact]
+    public void SequenceInsideCompactSequenceItem_WithIndentBlockSequencesDisabled_AlignsWithItsMappingAndRoundTrips()
+    {
+        var options = new YamlSerializerOptions { IndentBlockSequences = false };
+        var yaml = YamlSerializer.Serialize(new TagsContainer { Items = [new TaggedItem { Name = "a", Tags = ["x", "y"] }] }, options);
+
+        Assert.Equal("Items:\n- Name: a\n  Tags:\n  - x\n  - y\n", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize<TagsContainer>(yaml, options);
+        Assert.NotNull(roundTrip?.Items);
+        var item = Assert.Single(roundTrip.Items);
+        Assert.Equal("a", item.Name);
+        Assert.Equal(["x", "y"], item.Tags);
+    }
+
+    [Fact]
+    public void IndentBlockSequences_WithoutIndentation_IsIgnored()
+    {
+        var options = new YamlSerializerOptions { WriteIndented = false, IndentBlockSequences = false };
+        var yaml = YamlSerializer.Serialize(new ItemsContainer { Items = [new Item { A = 1, B = 2 }] }, options);
+
+        Assert.Equal("{Items: [{A: 1, B: 2}]}\n", yaml);
+    }
+
     private static YamlWriter CreateWriter(YamlSerializerOptions options, out StringWriter buffer)
     {
         buffer = new StringWriter();
@@ -375,5 +463,17 @@ public sealed class YamlWriterTests
         public string? Text { get; set; }
 
         public string? Other { get; set; }
+    }
+
+    private sealed class TagsContainer
+    {
+        public List<TaggedItem>? Items { get; set; }
+    }
+
+    private sealed class TaggedItem
+    {
+        public string? Name { get; set; }
+
+        public List<string>? Tags { get; set; }
     }
 }

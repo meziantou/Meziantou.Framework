@@ -29,6 +29,15 @@ public sealed class YamlSourceGenerationOptionsAttribute : YamlAttribute
     /// </summary>
     public int IndentSize { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether a block sequence that is the value of a mapping key is indented
+    /// relative to that mapping.
+    /// </summary>
+    /// <remarks>
+    /// See <see cref="YamlSerializerOptions.IndentBlockSequences"/>.
+    /// </remarks>
+    public bool IndentBlockSequences { get; set; }
+
     /// <summary>Gets or sets the policy used to convert CLR property names.</summary>
     public YamlKnownNamingPolicy PropertyNamingPolicy { get; set; }
 

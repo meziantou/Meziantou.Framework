@@ -825,7 +825,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
                 }
 
                 pendingStart = PendingStartKind.MappingValue;
-                indent = parent.Indent + GetIndentStep(kind);
+                indent = parent.Indent + GetMappingValueIndentStep(kind);
                 if (_pendingAnchor is not null || _pendingTag is not null)
                 {
                     WriteNodeProperties(writeLeadingSpace: true, writeTrailingSpace: false);
@@ -957,6 +957,24 @@ public sealed class YamlWriter : YamlReaderWriterBase
         }
 
         return kind == ContainerKind.Sequence ? 0 : 1;
+    }
+
+    /// <summary>
+    /// Gets the number of columns a block collection written as a mapping value is indented by, relative to the mapping
+    /// that contains it.
+    /// </summary>
+    /// <remarks>
+    /// A block sequence that is the value of a mapping key does not need its own indentation level, so
+    /// <see cref="YamlSerializerOptions.IndentBlockSequences"/> can keep its dashes aligned with the parent mapping.
+    /// </remarks>
+    private int GetMappingValueIndentStep(ContainerKind kind)
+    {
+        if (kind == ContainerKind.Sequence && !Options.IndentBlockSequences)
+        {
+            return 0;
+        }
+
+        return GetIndentStep(kind);
     }
 
     private void WriteNewLine()

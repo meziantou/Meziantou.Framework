@@ -6327,6 +6327,13 @@ public sealed partial class YamlSerializerContextGenerator
                 .AppendLine(",");
         }
 
+        if (options.IndentBlockSequences.HasValue)
+        {
+            builder.Append("            IndentBlockSequences = ")
+                .Append(options.IndentBlockSequences.Value ? "true" : "false")
+                .AppendLine(",");
+        }
+
         if (options.PropertyNameCaseInsensitive.HasValue)
         {
             builder.Append("            PropertyNameCaseInsensitive = ")

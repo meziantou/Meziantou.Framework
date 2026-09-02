@@ -154,6 +154,7 @@ exposes the default instance.
 | --- | --- | --- |
 | `WriteIndented` | `true` | Writes block collections indented by `IndentSize`. When disabled, collections use the flow style and the document stays on a single line. |
 | `IndentSize` | `2` | Number of spaces per indentation level. Ignored when `WriteIndented` is disabled. |
+| `IndentBlockSequences` | `true` | Indents a block sequence that is the value of a mapping key. When disabled, the sequence dashes stay at the indentation of the parent mapping. |
 | `MappingOrder` | `Declaration` | `Declaration` or `Sorted`. |
 | `BlockSequenceMappingStyle` | `Compact` | How a mapping inside a block sequence is emitted. |
 | `BlockSequenceSequenceStyle` | `Expanded` | How a nested sequence inside a block sequence is emitted. |
@@ -173,6 +174,24 @@ items:
     id: 1
     name: first
 ```
+
+`IndentBlockSequences` controls whether a sequence used as a mapping value gets its own indentation level:
+
+```yaml
+# IndentBlockSequences = true
+product:
+  tags:
+    - new
+    - sale
+
+# IndentBlockSequences = false
+product:
+  tags:
+  - new
+  - sale
+```
+
+A sequence nested inside another sequence is always indented past its parent dash, because YAML has no unindented form for it.
 
 Block YAML expresses nesting through indentation, so `WriteIndented = false` switches collections to the flow style instead of writing block collections without indentation. The whole document stays on a single line, and `IndentSize`, `BlockSequenceMappingStyle`, and `BlockSequenceSequenceStyle` no longer apply:
 

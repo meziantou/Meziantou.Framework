@@ -3487,6 +3487,9 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 case "IndentSize":
                     model.IndentSize = argument.Value.Value as int?;
                     break;
+                case "IndentBlockSequences":
+                    model.IndentBlockSequences = argument.Value.Value as bool?;
+                    break;
                 case "PropertyNameCaseInsensitive":
                     model.PropertyNameCaseInsensitive = argument.Value.Value as bool?;
                     break;

@@ -191,6 +191,11 @@ internal sealed class CacheEntry
                     secondaryKey.Add(headerName, value);
                 }
             }
+            else
+            {
+                // RFC 9111 Section 4.1: the field being absent is part of the key, not the absence of a key.
+                secondaryKey.AddAbsent(headerName);
+            }
         }
 
         return secondaryKey;
@@ -311,7 +316,7 @@ internal sealed class CacheEntry
     }
 
     /// <summary>Calculates the freshness lifetime per RFC 7234 Section 4.2.1.</summary>
-    public TimeSpan FreshnessLifetime => CacheFreshness.GetFreshnessLifetime(SharedMaxAge, MaxAge, Expires, ResponseDate, LastModified);
+    public TimeSpan FreshnessLifetime => CacheFreshness.GetFreshnessLifetime(MaxAge, Expires, ResponseDate, LastModified);
 
     /// <summary>Gets whether heuristic expiration was used to calculate the freshness lifetime.</summary>
     public bool UsesHeuristicExpiration
@@ -335,29 +340,27 @@ internal sealed class CacheEntry
     {
         // RFC 7234 Section 4.3.4: Update metadata from 304 response
 
-        // Update cache control if provided
+        // Update cache control if provided.
+        // RFC 7234 Section 4.3.4: the 304 replaces the stored Cache-Control header, so every directive
+        // derived from it is re-read from the new value. A directive missing from it is gone, not retained:
+        // a server that stops sending `immutable` or `stale-if-error` has to be able to take that back.
+        // A 304 that carries no Cache-Control at all leaves the stored directives untouched.
         var cacheControl = validationResponse.Headers.CacheControl;
         var updatedMaxAge = false;
         if (cacheControl is not null)
         {
-            if (cacheControl.MaxAge is not null && cacheControl.MaxAge != MaxAge)
-            {
-                MaxAge = cacheControl.MaxAge;
-                updatedMaxAge = true;
-            }
+            updatedMaxAge = cacheControl.MaxAge != MaxAge || cacheControl.SharedMaxAge != SharedMaxAge;
 
-            if (cacheControl.SharedMaxAge is not null && cacheControl.SharedMaxAge != SharedMaxAge)
-            {
-                SharedMaxAge = cacheControl.SharedMaxAge;
-                updatedMaxAge = true;
-            }
-
+            MaxAge = cacheControl.MaxAge;
+            SharedMaxAge = cacheControl.SharedMaxAge;
             MustRevalidate = cacheControl.MustRevalidate;
             ProxyRevalidate = cacheControl.ProxyRevalidate;
             ResponseNoCache = cacheControl.NoCache;
             Public = cacheControl.Public;
             Private = cacheControl.Private;
             NoTransform = cacheControl.NoTransform;
+            Immutable = HasImmutableDirective(cacheControl);
+            StaleIfError = ParseStaleIfErrorDirective(cacheControl);
         }
 
         // If the 304 response provides a new max-age, treat it as a fresh revalidation

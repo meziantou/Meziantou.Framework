@@ -529,4 +529,26 @@ public class EnumerableTests
         A = 2,
         C = 3,
     }
+
+    [Fact]
+    public void TimeSpanAverage_EmptySequenceThrowsInvalidOperationException()
+    {
+        Assert.Throws<InvalidOperationException>(() => Array.Empty<TimeSpan>().Average());
+    }
+
+    [Fact]
+    public void TimeSpanAverage_OverflowingSumThrows()
+    {
+        var values = new[] { TimeSpan.MaxValue, TimeSpan.MaxValue };
+
+        Assert.Throws<OverflowException>(() => values.Average());
+    }
+
+    [Fact]
+    public void TimeSpanAverage_ComputesTheAverage()
+    {
+        var values = new[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(3) };
+
+        Assert.Equal(TimeSpan.FromSeconds(2), values.Average());
+    }
 }

@@ -138,7 +138,7 @@ public sealed class HttpCachePersistenceEntry
     /// <summary>Computes the freshness lifetime of the entry, as defined by RFC 7234 Section 4.2.1.</summary>
     public TimeSpan GetFreshnessLifetime()
     {
-        return CacheFreshness.GetFreshnessLifetime(SharedMaxAge, MaxAge, Expires, ResponseDate, LastModified);
+        return CacheFreshness.GetFreshnessLifetime(MaxAge, Expires, ResponseDate, LastModified);
     }
 
     /// <summary>Computes the age of the entry at the specified time, as defined by RFC 7234 Section 4.2.3.</summary>
@@ -179,17 +179,26 @@ public sealed class HttpCachePersistenceEntry
 
     /// <summary>Gets a value indicating whether the entry becomes unusable as soon as it is stale.</summary>
     /// <remarks>
-    /// An entry that may be served stale, or that carries a validator allowing it to be revalidated, remains
-    /// usable after it expires and must be kept.
+    /// <para>
+    /// Two things keep an entry useful past its freshness lifetime: a validator, which lets it be
+    /// revalidated with a conditional request, and <c>stale-if-error</c> (RFC 5861), which lets it be served
+    /// as-is while the origin is failing. An entry with neither can only ever be discarded once it is stale,
+    /// so a store is free to reclaim it.
+    /// </para>
+    /// <para>
+    /// <c>must-revalidate</c>, <c>proxy-revalidate</c> and <c>no-cache</c> are deliberately not consulted.
+    /// They say when a stored response must be revalidated before reuse, not whether it can be reused at
+    /// all, so requiring one of them here left an ordinary <c>max-age</c> entry unreclaimable forever.
+    /// </para>
     /// </remarks>
     public bool IsUnusableWhenStale
     {
         get
         {
-            if (!MustRevalidate && !ProxyRevalidate && !ResponseNoCache)
+            if (!string.IsNullOrEmpty(ETag) || LastModified is not null)
                 return false;
 
-            return string.IsNullOrEmpty(ETag) && LastModified is null;
+            return StaleIfError is null;
         }
     }
 

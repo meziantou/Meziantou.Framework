@@ -49,6 +49,7 @@ namespace Meziantou.Framework.Http.Caching
     {
         public System.TimeProvider TimeProvider { get => throw null; set { } }
         public long? MaximumResponseSize { get => throw null; set { } }
+        public System.Action<System.Exception>? OnStoreError { get => throw null; set { } }
         public System.Func<System.Net.Http.HttpResponseMessage, bool>? ShouldCacheResponse { get => throw null; set { } }
     }
 

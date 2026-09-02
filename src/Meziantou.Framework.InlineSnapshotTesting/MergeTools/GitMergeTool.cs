@@ -22,8 +22,28 @@ internal sealed class GitMergeTool : GitTool
                          .Replace("$MERGED", currentFilePath, StringComparison.Ordinal));
 
                 var process = Process.Start(filename, args);
-                process.Exited += (sender, args) =>
+
+                // Exited is only raised when EnableRaisingEvents is set. Without it the handler below never ran,
+                // so every merge left a full copy of the source file behind under the temp directory.
+                process.EnableRaisingEvents = true;
+
+                var cleanedUp = 0;
+                process.Exited += (sender, args) => DeleteOriginalCopy();
+
+                // The tool may already have exited before the handler was attached.
+                if (process.HasExited)
                 {
+                    DeleteOriginalCopy();
+                }
+
+                return new ProcessMergeToolResult(process);
+
+                void DeleteOriginalCopy()
+                {
+                    // Exited and the HasExited check above can both reach this.
+                    if (Interlocked.Exchange(ref cleanedUp, 1) is not 0)
+                        return;
+
                     try
                     {
                         var fi = new FileInfo(originalCopy);
@@ -33,10 +53,7 @@ internal sealed class GitMergeTool : GitTool
                     catch
                     {
                     }
-
-                    process.Dispose();
-                };
-                return new ProcessMergeToolResult(process);
+                }
             }
         }
 

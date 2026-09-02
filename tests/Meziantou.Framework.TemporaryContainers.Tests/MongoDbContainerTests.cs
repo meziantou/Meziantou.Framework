@@ -13,6 +13,12 @@ public sealed class MongoDbContainerTests
     {
         if (!OperatingSystem.IsLinux() && TestEnvironment.IsOnGitHubActions())
             global::Xunit.Assert.Skip("Only runs on Linux.");
+
+        // mongod refuses to start on Linux 6.19 and newer (https://jira.mongodb.org/browse/SERVER-121912), and 8.3.8,
+        // the newest image there is, still carries the guard. A Linux container shares the host kernel, so the host
+        // version is the one that decides; elsewhere the container runs in a VM whose kernel is its own.
+        if (OperatingSystem.IsLinux() && Environment.OSVersion.Version >= new Version(6, 19))
+            global::Xunit.Assert.Skip("The MongoDB image cannot start on Linux kernel 6.19 or newer (SERVER-121912).");
     }
 
     [Fact]

@@ -269,6 +269,31 @@ public sealed record YamlSerializerOptions
     public bool AllowAliases { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets the maximum number of nodes that aliases are allowed to materialize while building a
+    /// <see cref="Meziantou.Framework.Yaml.Model.YamlNode"/> document object model.
+    /// </summary>
+    /// <remarks>
+    /// <para>A value of <c>0</c> uses the default limit of 100000.</para>
+    /// <para>
+    /// The document object model does not preserve aliases as a distinct node type, so each alias is expanded into a
+    /// copy of the anchored subtree. Nesting anchors so that each level references the previous one several times makes
+    /// the node count grow exponentially while the document grows linearly, which lets a very small payload exhaust
+    /// memory. Only nodes produced by alias expansion count towards this limit; documents without aliases are never
+    /// affected, and <see cref="MaxDepth"/> does not help because the growth is in breadth rather than depth.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">Value is less than 0.</exception>
+    public int MaxAliasExpansionNodeCount
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            field = value;
+        }
+    }
+
+    /// <summary>
     /// Gets or sets a metadata resolver used to retrieve <see cref="YamlTypeInfo"/> instances.
     /// </summary>
     /// <remarks>
@@ -312,6 +337,10 @@ public sealed record YamlSerializerOptions
     }
 
     internal int EffectiveMaxDepth => YamlDepthHelper.GetEffectiveMaxDepth(MaxDepth);
+
+    internal const int DefaultMaxAliasExpansionNodeCount = 100_000;
+
+    internal int EffectiveMaxAliasExpansionNodeCount => MaxAliasExpansionNodeCount == 0 ? DefaultMaxAliasExpansionNodeCount : MaxAliasExpansionNodeCount;
 
     internal static void ValidateSequenceItemStyle(YamlSequenceItemStyle value, string paramName)
     {

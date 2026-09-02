@@ -571,11 +571,41 @@ public class ProcessWrapperTests
 
         var result = ProcessWrapper.Create(executableName)
             .WithWorkingDirectory(temporaryDirectoryPath)
+            .WithSearchWorkingDirectory()
             .ExecuteBufferedAsync();
 
         var processResult = await result;
 
         Assert.Equal("test-from-working-directory", processResult.Output.StandardOutput.First().Text.Trim());
+    }
+
+    [Fact]
+    public async Task WithWorkingDirectory_DoesNotFindExecutableInWorkingDirectoryByDefault()
+    {
+        // Without the opt-in, an executable sitting in the working directory must not be picked up: it would
+        // otherwise shadow the command that PATH resolves for the same bare name.
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        var temporaryDirectoryPath = temporaryDirectory.FullPath.Value;
+
+        string executableName;
+        if (OperatingSystem.IsWindows())
+        {
+            executableName = $"run{Guid.NewGuid():N}";
+            temporaryDirectory.CreateTextFile(executableName + ".bat", "@echo off\r\necho test-from-working-directory\r\n");
+        }
+        else
+        {
+            executableName = $"run{Guid.NewGuid():N}.sh";
+            var scriptPath = temporaryDirectory.CreateTextFile(executableName, "#!/bin/sh\necho test-from-working-directory\n");
+            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        await Assert.ThrowsAsync<System.ComponentModel.Win32Exception>(async () =>
+        {
+            _ = await ProcessWrapper.Create(executableName)
+                .WithWorkingDirectory(temporaryDirectoryPath)
+                .ExecuteBufferedAsync();
+        });
     }
 
     [Fact]
@@ -952,6 +982,24 @@ public class ProcessWrapperTests
         var capturedText = Encoding.UTF8.GetString(stream.ToArray());
         Assert.Contains("out1", capturedText);
         Assert.Contains("err1", capturedText);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithSharedStringBuilderOutputTarget_DoesNotLoseOutput()
+    {
+        // Both pumps append to the same StringBuilder concurrently. StringBuilder is not thread-safe,
+        // so without a shared lock this silently loses output or throws from inside Append.
+        const int Iterations = 2000;
+        const int ChunkLength = 10;
+
+        var stringBuilder = new StringBuilder();
+        await CreateInterleavedChunkCommand(Iterations, new string('o', ChunkLength), new string('e', ChunkLength))
+            .WithValidation(ProcessValidationMode.None)
+            .WithOutputStream(stringBuilder)
+            .WithErrorStream(stringBuilder)
+            .ExecuteAsync();
+
+        Assert.Equal(Iterations * ChunkLength * 2, stringBuilder.Length);
     }
 
     [Fact]
@@ -1433,6 +1481,7 @@ public class ProcessWrapperTests
 
         var processId = ProcessWrapper.Create(executableName)
             .WithWorkingDirectory(temporaryDirectoryPath)
+            .WithSearchWorkingDirectory()
             .WithArguments("argument")
             .WithEnvironmentVariables(env => env.Set("OUTPUT_FILE", outputPath))
             .StartAndForget();
@@ -2034,6 +2083,25 @@ public class ProcessWrapperTests
         var redirection = standardError ? " >&2" : "";
         return ProcessWrapper.Create("sh")
             .WithArguments("-c", $"printf '\\{octalValue}'{redirection}");
+    }
+
+    private static ProcessWrapper CreateInterleavedChunkCommand(int iterations, string outputChunk, string errorChunk)
+    {
+        var count = iterations.ToString(CultureInfo.InvariantCulture);
+        if (OperatingSystem.IsWindows())
+        {
+            return ProcessWrapper.Create("powershell.exe")
+                .WithArguments(
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    $"for ($i = 0; $i -lt {count}; $i++) {{ [Console]::Out.Write('{outputChunk}'); [Console]::Error.Write('{errorChunk}') }}");
+        }
+
+        return ProcessWrapper.Create("sh")
+            .WithArguments("-c", $"i=0; while [ $i -lt {count} ]; do printf '{outputChunk}'; printf '{errorChunk}' >&2; i=$((i+1)); done");
     }
 
     private static string[] GetEchoArguments(string text)

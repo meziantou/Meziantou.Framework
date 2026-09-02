@@ -36,6 +36,11 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     // Upper bound on the number of arguments accepted from the pipe. The message is
     // sender-controlled, so the count is validated before allocating from it.
     private const int MaxArgumentCount = 64 * 1024;
+    // Arming the next listener can lose a race against the teardown of the previous one, so it is retried rather
+    // than abandoned. The bound keeps a genuinely unusable pipe from spinning a thread pool thread.
+    private const int MaxListenerArmAttempts = 5;
+    private static readonly TimeSpan ListenerArmRetryDelay = TimeSpan.FromMilliseconds(20);
+
     private readonly Lock _lock = new();
     private NamedPipeServerStream? _server;
     private Mutex? _mutex;
@@ -132,32 +137,61 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         }
     }
 
+    /// <summary>Arms the listener that replaces the one that has just been consumed, and keeps trying for as long as it is worth it.</summary>
+    private void ReplaceListener()
+    {
+        // Another instance of the pipe can be refused while the previous one is still being torn down. Losing that
+        // race used to end the server for good, which is all a client needs to silence an application for the rest
+        // of its life: connect, disconnect, and never be heard from again.
+        for (var attempt = 1; attempt <= MaxListenerArmAttempts; attempt++)
+        {
+            lock (_lock)
+            {
+                if (_disposed)
+                    return;
+            }
+
+            try
+            {
+                StartNamedPipeServer();
+                return;
+            }
+            catch (Exception)
+            {
+                // Runs on a thread pool thread, so the exception must not escape. The wait is short and bounded:
+                // the process is deaf until a listener is armed again.
+                Thread.Sleep(ListenerArmRetryDelay);
+            }
+        }
+    }
+
     private void Listen(IAsyncResult ar)
     {
         var server = (NamedPipeServerStream)ar.AsyncState!;
 
+        var connected = false;
         try
         {
             server.EndWaitForConnection(ar);
+            connected = true;
         }
         catch (Exception)
         {
-            // The server was disposed while waiting, or the connection failed. Do not re-arm:
-            // the application is either shutting down or the pipe is unusable.
+            // Either Dispose ran while this listener was waiting, or the client gave up before the connection was
+            // established. Only the first means the application is going away, so this listener is replaced like any
+            // other; ReplaceListener is what tells the two apart.
+        }
+
+        if (!connected)
+        {
             server.Dispose();
+            ReplaceListener();
             return;
         }
 
         // Re-arm before reading, so a malformed or truncated message cannot stop the
         // application from accepting notifications from later instances.
-        try
-        {
-            StartNamedPipeServer();
-        }
-        catch (Exception)
-        {
-            // Keep handling the current connection even if the next listener could not start.
-        }
+        ReplaceListener();
 
         SingleInstanceEventArgs? eventArgs;
         try

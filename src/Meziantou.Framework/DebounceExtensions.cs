@@ -9,7 +9,6 @@
 #nullable enable
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Meziantou.Framework;
 
@@ -48,19 +47,23 @@ public static class DebounceExtensions
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        var last = 0;
+        var l = new object();
+        ITimer? timer = null;
         return () =>
         {
-            var current = Interlocked.Increment(ref last);
-            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            lock (l)
             {
-                if (current == last)
+                // A single timer is reused and restarted on every call. Scheduling one Task.Delay per
+                // call kept every pending delay alive for the whole interval, which is the opposite of
+                // what a debounce is reached for on a high-frequency event.
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
                     action();
-                }
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
 
-                task.Dispose();
-            }, TaskScheduler.Default);
+                // Restart the countdown so only the last call of a burst fires
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
         };
     }
 
@@ -95,19 +98,31 @@ public static class DebounceExtensions
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        var last = 0;
+        var l = new object();
+        ITimer? timer = null;
+        T0 args = default!;
         return (arg0) =>
         {
-            var current = Interlocked.Increment(ref last);
-            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            lock (l)
             {
-                if (current == last)
+                args = arg0;
+                // A single timer is reused and restarted on every call. Scheduling one Task.Delay per
+                // call kept every pending delay alive for the whole interval, which is the opposite of
+                // what a debounce is reached for on a high-frequency event.
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
-                    action(arg0);
-                }
+                    T0 pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
 
-                task.Dispose();
-            }, TaskScheduler.Default);
+                    action(pendingArgs);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                // Restart the countdown so only the last call of a burst fires
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
         };
     }
 
@@ -144,19 +159,31 @@ public static class DebounceExtensions
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        var last = 0;
+        var l = new object();
+        ITimer? timer = null;
+        (T0, T1) args = default;
         return (arg0, arg1) =>
         {
-            var current = Interlocked.Increment(ref last);
-            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            lock (l)
             {
-                if (current == last)
+                args = (arg0, arg1);
+                // A single timer is reused and restarted on every call. Scheduling one Task.Delay per
+                // call kept every pending delay alive for the whole interval, which is the opposite of
+                // what a debounce is reached for on a high-frequency event.
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
-                    action(arg0, arg1);
-                }
+                    (T0, T1) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
 
-                task.Dispose();
-            }, TaskScheduler.Default);
+                    action(pendingArgs.Item1, pendingArgs.Item2);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                // Restart the countdown so only the last call of a burst fires
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
         };
     }
 
@@ -195,19 +222,31 @@ public static class DebounceExtensions
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        var last = 0;
+        var l = new object();
+        ITimer? timer = null;
+        (T0, T1, T2) args = default;
         return (arg0, arg1, arg2) =>
         {
-            var current = Interlocked.Increment(ref last);
-            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            lock (l)
             {
-                if (current == last)
+                args = (arg0, arg1, arg2);
+                // A single timer is reused and restarted on every call. Scheduling one Task.Delay per
+                // call kept every pending delay alive for the whole interval, which is the opposite of
+                // what a debounce is reached for on a high-frequency event.
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
-                    action(arg0, arg1, arg2);
-                }
+                    (T0, T1, T2) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
 
-                task.Dispose();
-            }, TaskScheduler.Default);
+                    action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                // Restart the countdown so only the last call of a burst fires
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
         };
     }
 
@@ -248,19 +287,31 @@ public static class DebounceExtensions
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        var last = 0;
+        var l = new object();
+        ITimer? timer = null;
+        (T0, T1, T2, T3) args = default;
         return (arg0, arg1, arg2, arg3) =>
         {
-            var current = Interlocked.Increment(ref last);
-            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            lock (l)
             {
-                if (current == last)
+                args = (arg0, arg1, arg2, arg3);
+                // A single timer is reused and restarted on every call. Scheduling one Task.Delay per
+                // call kept every pending delay alive for the whole interval, which is the opposite of
+                // what a debounce is reached for on a high-frequency event.
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
-                    action(arg0, arg1, arg2, arg3);
-                }
+                    (T0, T1, T2, T3) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
 
-                task.Dispose();
-            }, TaskScheduler.Default);
+                    action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                // Restart the countdown so only the last call of a burst fires
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
         };
     }
 
@@ -303,19 +354,31 @@ public static class DebounceExtensions
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        var last = 0;
+        var l = new object();
+        ITimer? timer = null;
+        (T0, T1, T2, T3, T4) args = default;
         return (arg0, arg1, arg2, arg3, arg4) =>
         {
-            var current = Interlocked.Increment(ref last);
-            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            lock (l)
             {
-                if (current == last)
+                args = (arg0, arg1, arg2, arg3, arg4);
+                // A single timer is reused and restarted on every call. Scheduling one Task.Delay per
+                // call kept every pending delay alive for the whole interval, which is the opposite of
+                // what a debounce is reached for on a high-frequency event.
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
-                    action(arg0, arg1, arg2, arg3, arg4);
-                }
+                    (T0, T1, T2, T3, T4) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
 
-                task.Dispose();
-            }, TaskScheduler.Default);
+                    action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                // Restart the countdown so only the last call of a burst fires
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
         };
     }
 
@@ -360,19 +423,31 @@ public static class DebounceExtensions
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        var last = 0;
+        var l = new object();
+        ITimer? timer = null;
+        (T0, T1, T2, T3, T4, T5) args = default;
         return (arg0, arg1, arg2, arg3, arg4, arg5) =>
         {
-            var current = Interlocked.Increment(ref last);
-            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            lock (l)
             {
-                if (current == last)
+                args = (arg0, arg1, arg2, arg3, arg4, arg5);
+                // A single timer is reused and restarted on every call. Scheduling one Task.Delay per
+                // call kept every pending delay alive for the whole interval, which is the opposite of
+                // what a debounce is reached for on a high-frequency event.
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
-                    action(arg0, arg1, arg2, arg3, arg4, arg5);
-                }
+                    (T0, T1, T2, T3, T4, T5) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
 
-                task.Dispose();
-            }, TaskScheduler.Default);
+                    action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                // Restart the countdown so only the last call of a burst fires
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
         };
     }
 
@@ -419,19 +494,31 @@ public static class DebounceExtensions
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        var last = 0;
+        var l = new object();
+        ITimer? timer = null;
+        (T0, T1, T2, T3, T4, T5, T6) args = default;
         return (arg0, arg1, arg2, arg3, arg4, arg5, arg6) =>
         {
-            var current = Interlocked.Increment(ref last);
-            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            lock (l)
             {
-                if (current == last)
+                args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                // A single timer is reused and restarted on every call. Scheduling one Task.Delay per
+                // call kept every pending delay alive for the whole interval, which is the opposite of
+                // what a debounce is reached for on a high-frequency event.
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
-                    action(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-                }
+                    (T0, T1, T2, T3, T4, T5, T6) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
 
-                task.Dispose();
-            }, TaskScheduler.Default);
+                    action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                // Restart the countdown so only the last call of a burst fires
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
         };
     }
 
@@ -480,19 +567,31 @@ public static class DebounceExtensions
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        var last = 0;
+        var l = new object();
+        ITimer? timer = null;
+        (T0, T1, T2, T3, T4, T5, T6, T7) args = default;
         return (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) =>
         {
-            var current = Interlocked.Increment(ref last);
-            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            lock (l)
             {
-                if (current == last)
+                args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                // A single timer is reused and restarted on every call. Scheduling one Task.Delay per
+                // call kept every pending delay alive for the whole interval, which is the opposite of
+                // what a debounce is reached for on a high-frequency event.
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
-                    action(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-                }
+                    (T0, T1, T2, T3, T4, T5, T6, T7) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
 
-                task.Dispose();
-            }, TaskScheduler.Default);
+                    action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7, pendingArgs.Item8);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                // Restart the countdown so only the last call of a burst fires
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
         };
     }
 
@@ -543,19 +642,31 @@ public static class DebounceExtensions
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        var last = 0;
+        var l = new object();
+        ITimer? timer = null;
+        (T0, T1, T2, T3, T4, T5, T6, T7, T8) args = default;
         return (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) =>
         {
-            var current = Interlocked.Increment(ref last);
-            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            lock (l)
             {
-                if (current == last)
+                args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                // A single timer is reused and restarted on every call. Scheduling one Task.Delay per
+                // call kept every pending delay alive for the whole interval, which is the opposite of
+                // what a debounce is reached for on a high-frequency event.
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
-                    action(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-                }
+                    (T0, T1, T2, T3, T4, T5, T6, T7, T8) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
 
-                task.Dispose();
-            }, TaskScheduler.Default);
+                    action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7, pendingArgs.Item8, pendingArgs.Item9);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                // Restart the countdown so only the last call of a burst fires
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
         };
     }
 

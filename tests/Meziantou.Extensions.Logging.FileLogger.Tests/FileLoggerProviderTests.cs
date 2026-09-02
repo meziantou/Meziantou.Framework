@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Meziantou.Xunit;
 using Microsoft.Extensions.Time.Testing;
 
 #pragma warning disable CA1848 // Use the LoggerMessage delegates
@@ -180,6 +181,57 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    public async Task JsonFormatterOmitsTheTimestampWhenTheFormatIsNull()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            FormatterName = FileFormatterNames.Json,
+            TimestampFormat = null,
+        });
+
+        provider.CreateLogger("Test").LogInformation("Hello");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        var content = await ReadLogFileAsync(provider.LogFilePath);
+        using var document = JsonDocument.Parse(content);
+        Assert.False(document.RootElement.TryGetProperty("Timestamp", out _));
+        Assert.Equal("Hello", document.RootElement.GetProperty("Message").GetString());
+    }
+
+    [Fact]
+    public async Task JsonFormatterWritesIndependentEntries()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            FormatterName = FileFormatterNames.Json,
+        });
+
+        var logger = provider.CreateLogger("Test");
+
+        // The first entry is too big to be cached and the next ones are short, so a buffer that is
+        // not reset between the entries would leak the previous content
+        string[] messages = [new('a', 5000), "short", new('b', 100), "x"];
+        foreach (var message in messages)
+        {
+            logger.LogInformation("{Message}", message);
+        }
+
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        var lines = (await ReadLogFileAsync(provider.LogFilePath)).Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.HasCount(messages.Length, lines);
+        for (var i = 0; i < messages.Length; i++)
+        {
+            using var document = JsonDocument.Parse(lines[i]);
+            Assert.Equal(messages[i], document.RootElement.GetProperty("Message").GetString());
+        }
+    }
+
+    [Fact]
     public async Task CustomFormatter()
     {
         using var tempDirectory = TemporaryDirectory.Create();
@@ -268,6 +320,40 @@ public sealed class FileLoggerProviderTests
 
         var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
         Assert.Equal([$"2024-01-05-{pid}.log", $"2024-01-06-{pid}.log"], GetFileNames(tempDirectory));
+    }
+
+    [Fact]
+    public async Task RetentionPolicyKeepsTheFilesOfTheOtherProcesses()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+
+        // Log files that another process is writing in the same directory. They are older than the
+        // files of this process, so the retention policy would delete them first if it considered them
+        var otherProcessId = (Environment.ProcessId + 1).ToString(CultureInfo.InvariantCulture);
+        string[] otherProcessFiles = [$"2024-01-01-{otherProcessId}.log", $"2024-01-01-{otherProcessId}_001.log"];
+        foreach (var fileName in otherProcessFiles)
+        {
+            await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullPath, fileName), "other process", TestContext.Current.CancellationToken);
+        }
+
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            RollInterval = RollInterval.Daily,
+            MaxRetainedFiles = 2,
+        }, timeProvider);
+
+        var logger = provider.CreateLogger("Test");
+        for (var i = 0; i < 5; i++)
+        {
+            logger.LogInformation("Day {Index}", i);
+            await provider.FlushAsync(TestContext.Current.CancellationToken);
+            timeProvider.Advance(TimeSpan.FromDays(1));
+        }
+
+        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
+        Assert.Equal([.. otherProcessFiles, $"2024-01-05-{pid}.log", $"2024-01-06-{pid}.log"], GetFileNames(tempDirectory));
     }
 
     [Fact]
@@ -410,6 +496,38 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    [RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public async Task UnixCreateModeIsAppliedToTheLogFiles()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite,
+            RollInterval = RollInterval.Daily,
+            Compression = LogFileCompression.GZip,
+            CompressionMode = LogFileCompressionMode.OnRoll,
+        }, timeProvider);
+
+        var logger = provider.CreateLogger("Test");
+        logger.LogInformation("First day");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        // Roll, so the file created by the compression is checked too
+        timeProvider.Advance(TimeSpan.FromDays(1));
+        logger.LogInformation("Second day");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        var files = new DirectoryInfo(tempDirectory.FullPath).GetFiles();
+        Assert.NotEmpty(files);
+        foreach (var file in files)
+        {
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(file.FullName));
+        }
+    }
+
+    [Fact]
     public async Task TwoProvidersUseDifferentFiles()
     {
         using var tempDirectory = TemporaryDirectory.Create();
@@ -452,6 +570,56 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    public async Task AppendReusesTheFileAcrossRestartsWhenTheNameIsStable()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+
+        // The process id is what changes between two runs, so the name is only stable without it
+        var options = new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            Append = true,
+            RollInterval = RollInterval.Daily,
+            IncludeProcessIdInFileName = false,
+        };
+
+        for (var i = 0; i < 3; i++)
+        {
+            await using var provider = new FileLoggerProvider(options, timeProvider);
+            provider.CreateLogger("Test").LogInformation("Run {Index}", i);
+        }
+
+        Assert.Equal(["2024-01-02.log"], GetFileNames(tempDirectory));
+        var content = await File.ReadAllTextAsync(Path.Combine(tempDirectory.FullPath, "2024-01-02.log"), TestContext.Current.CancellationToken);
+        Assert.Contains("Run 0", content);
+        Assert.Contains("Run 2", content);
+    }
+
+    [Fact]
+    public async Task AppendCreatesANewFileOnEveryStartWithTheDefaultFileName()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+
+        // RollInterval.None puts the seconds in the name and the process id is included by default,
+        // so Append cannot find a file to reuse. This pins the behavior documented on the option
+        var options = new FileLoggerOptions { Directory = tempDirectory.FullPath, Append = true };
+
+        for (var i = 0; i < 3; i++)
+        {
+            await using var provider = new FileLoggerProvider(options, timeProvider);
+            provider.CreateLogger("Test").LogInformation("Run {Index}", i);
+            timeProvider.Advance(TimeSpan.FromSeconds(1));
+        }
+
+        var pid = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
+        Assert.Equal(
+            [$"2024-01-02-03-04-05-{pid}.log", $"2024-01-02-03-04-06-{pid}.log", $"2024-01-02-03-04-07-{pid}.log"],
+            GetFileNames(tempDirectory));
+    }
+
+    [Fact]
     public async Task AppendDoesNotReuseAFullFile()
     {
         using var tempDirectory = TemporaryDirectory.Create();
@@ -486,6 +654,41 @@ public sealed class FileLoggerProviderTests
 
         await provider.FlushAsync(TestContext.Current.CancellationToken);
         Assert.Contains("Hello", await ReadLogFileAsync(provider.LogFilePath));
+    }
+
+    [Fact]
+    public async Task WaitQueueFullModeDoesNotDropMessages()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            MaxQueueLength = 1,
+            QueueFullMode = FileLoggerQueueFullMode.Wait,
+            TimestampFormat = null,
+            IncludeLogLevel = false,
+            IncludeCategory = false,
+        });
+
+        const int ThreadCount = 8;
+        const int MessagesPerThread = 500;
+
+        var logger = provider.CreateLogger("Test");
+
+        // Dedicated threads, so the producers cannot starve the thread pool the writer runs on
+        await Task.WhenAll(Enumerable.Range(0, ThreadCount).Select(_ => Task.Factory.StartNew(
+            () =>
+            {
+                for (var i = 0; i < MessagesPerThread; i++)
+                {
+                    logger.LogInformation("Message");
+                }
+            }, TestContext.Current.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default)));
+
+        await provider.DisposeAsync();
+
+        var lines = await File.ReadAllLinesAsync(provider.LogFilePath!, TestContext.Current.CancellationToken);
+        Assert.HasCount(ThreadCount * MessagesPerThread, lines);
     }
 
     [Fact]

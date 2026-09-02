@@ -89,7 +89,7 @@ InlineSnapshot.Validate(data, settings, "");
 If you prefer, you can use the builder syntax:
 
 ````c#
-InlineSnapshot.CreateBuilder()
+InlineSnapshot
     .WithSettings(settings)
     .Validate(data, "");
 ````
@@ -97,7 +97,7 @@ InlineSnapshot.CreateBuilder()
 Or configure settings inline:
 
 ````c#
-InlineSnapshot.CreateBuilder()
+InlineSnapshot
     .WithSettings(settings => settings.SnapshotUpdateStrategy = SnapshotUpdateStrategy.Overwrite)
     .Validate(data, "");
 ````
@@ -115,14 +115,14 @@ By default, `InlineSnapshot` uses the [`HumanReadableSerializer`](https://www.nu
 
 ````c#
 // Configure the HumanReadableSerializer
-InlineSnapshot.CreateBuilder()
+InlineSnapshot
     .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
     .Validate(data);
 ````
 
 ````c#
 // Use System.Text.Json
-InlineSnapshot.CreateBuilder()
+InlineSnapshot
     .WithSerializer(new JsonSnapshotSerializer())
     .Validate(data);
 ````
@@ -142,7 +142,7 @@ public sealed class MySnapshotSerializer : SnapshotSerializer
     }
 }
 
-InlineSnapshot.CreateBuilder()
+InlineSnapshot
     .WithSerializer(new MySnapshotSerializer())
     .Validate(data);
 ````
@@ -233,7 +233,7 @@ When a snapshot is updated, a diff tool is used to compare the expected value an
 - The diff tool configured by the `DiffEngine_Tool` environment variable
 - The merge tool from the local git configuration
 - The diff tool from the local git configuration
-- The diff tool from the current IDE (support VS Code, VS, Rider)
+- The diff tool from the current IDE (support VS Code, VS, Rider). This relies on inspecting the ancestor processes, which is only supported on Windows.
 - The first available diff tool (rely on [Meziantou.Framework.DiffEngine](../Meziantou.Framework.DiffEngine/readme.md))
 
 You can disable the diff tool by setting the `DiffEngine_Disabled` environment variable.
@@ -376,11 +376,11 @@ InlineSnapshot
 
 ## String formats
 
-By default, the snapshot can use string, verbatim string, or raw string. It uses the information from the PDB file to determine which C# features are available. You can override the default behavior by setting the `CSharpStringFormat` property.
+By default, the snapshot can use string, verbatim string, or raw string. It uses the information from the PDB file to determine which C# features are available. You can override the default behavior by setting the `AllowedStringFormats` property.
 
 ````c#
 InlineSnapshot
-    .WithSerializer(options => options.AllowedStringFormats = CSharpStringFormats.Quoted | CSharpStringFormats.Verbatim | CSharpStringFormats.Raw)
+    .WithSettings(settings => settings.AllowedStringFormats = CSharpStringFormats.Quoted | CSharpStringFormats.Verbatim | CSharpStringFormats.Raw)
     .Validate(...);
 ````
 
@@ -390,7 +390,7 @@ You can also change the indentation of raw strings:
 
 ````c#
 InlineSnapshot
-    .WithSerializer(options => options.AllowedStringFormats = CSharpStringFormats.Raw)
+    .WithSettings(settings => settings.AllowedStringFormats = CSharpStringFormats.Raw)
     .Validate(new object(), """
         {}
         """);
@@ -398,7 +398,7 @@ InlineSnapshot
 
 ````c#
 InlineSnapshot
-    .WithSerializer(options => options.AllowedStringFormats = CSharpStringFormats.LeftAlignedRaw)
+    .WithSettings(settings => settings.AllowedStringFormats = CSharpStringFormats.LeftAlignedRaw)
     .Validate(new object(), """
 {}
 """);
@@ -408,11 +408,11 @@ You can also change the indentation, end of line, and the encoding of the file i
 
 ````c#
 InlineSnapshot
-    .WithSerializer(options => options.CSharpStringFormat = new CSharpStringFormat
+    .WithSettings(settings =>
     {
-        Indentation = "    ",
-        EndOfLine = "\r\n",
-        FileEncoding = Encoding.UTF8,
+        settings.Indentation = "    ";
+        settings.EndOfLine = "\r\n";
+        settings.FileEncoding = Encoding.UTF8;
     })
     .Validate(...);
 ````

@@ -13,15 +13,29 @@ internal static class ResponseSerializer
 
     /// <summary>Serializes the response, or returns <see langword="null"/> when it exceeds <paramref name="maximumSize"/>.</summary>
     /// <remarks>
-    /// The body is checked before it is serialized. JSON encoding only grows the payload, since the body is
+    /// The body is read through <see cref="BoundedContentReader"/> so that a response which announces no
+    /// <c>Content-Length</c> cannot push an unbounded number of bytes into memory before being rejected. It
+    /// is checked before it is serialized: JSON encoding only grows the payload, since the body is
     /// Base64-encoded and the headers are added, so a body already over the limit can never fit and the
     /// serialization is skipped entirely.
     /// </remarks>
     public static async Task<byte[]?> SerializeAsync(HttpResponseMessage response, long? maximumSize, CancellationToken cancellationToken)
     {
-        var content = response.Content is null ? null : await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
-        if (maximumSize is not null && content is not null && content.Length > maximumSize.GetValueOrDefault())
-            return null;
+        byte[]? content;
+        if (response.Content is null)
+        {
+            content = null;
+        }
+        else if (maximumSize is null)
+        {
+            content = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            content = await BoundedContentReader.ReadAsync(response, maximumSize.GetValueOrDefault(), cancellationToken).ConfigureAwait(false);
+            if (content is null)
+                return null;
+        }
 
         var serialized = new SerializedResponseMessage
         {

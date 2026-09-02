@@ -168,9 +168,10 @@ public sealed class AiffTests
         // Read once so the measured read is not paying for JIT and first-use initialization
         MediaFile.ReadTags(stream, MediaFormat.Aiff);
 
-        var before = GC.GetTotalAllocatedBytes(precise: true);
+        // Thread-scoped, because GC.GetTotalAllocatedBytes also counts what the other threads of the process allocate
+        var before = GC.GetAllocatedBytesForCurrentThread();
         var result = MediaFile.ReadTags(stream, MediaFormat.Aiff);
-        var allocated = GC.GetTotalAllocatedBytes(precise: true) - before;
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
         Assert.True(result.IsSuccess);
         Assert.Null(result.Value.Title);

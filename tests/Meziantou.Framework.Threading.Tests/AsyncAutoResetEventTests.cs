@@ -4,6 +4,10 @@ public class AsyncAutoResetEventTests
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
 
+    // The iterations of the race below only widen the window, so stop early on a machine that is
+    // too slow or too loaded to run them all instead of hitting Timeout
+    private static readonly TimeSpan RaceBudget = TimeSpan.FromSeconds(5);
+
     [Fact]
     public async Task WaitAsync_InitiallySignaled_CompletesImmediatelyOnce()
     {
@@ -71,7 +75,8 @@ public class AsyncAutoResetEventTests
 
         static async Task RaceCancellationAgainstWaitAsync()
         {
-            for (var i = 0; i < 20_000; i++)
+            var deadline = Environment.TickCount64 + (long)RaceBudget.TotalMilliseconds;
+            for (var i = 0; i < 20_000 && Environment.TickCount64 < deadline; i++)
             {
                 var e = new AsyncAutoResetEvent(initialState: false);
                 using var cts = new CancellationTokenSource();

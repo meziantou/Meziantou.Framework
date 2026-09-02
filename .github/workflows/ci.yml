@@ -59,6 +59,9 @@ jobs:
     timeout-minutes: 20
     outputs:
       has-project: ${{ steps.package-project.outputs.has-project }}
+    env:
+      # Analyzers run in the run_analyzers job
+      RunAnalyzers: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -131,7 +134,215 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NUGET_VALIDATION_IS_DELTA: ${{ case((github.event_name == 'pull_request' || github.event_name == 'push') && needs.create_nuget.outputs.has-project == 'true', 'true', 'false') }}
 
+  run_analyzers:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - run: git config --global protocol.file.allow always
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+
+      - name: Generate delta build file
+        id: build-project
+        uses: ./.github/actions/deltabuild
+        with:
+          input-project: eng/build.proj
+          output-project: eng/delta.proj
+          base-commit: ${{ case(github.event_name == 'push', github.event.before, '') }}
+          run-generate: ${{ case(github.event_name == 'pull_request' || github.event_name == 'push', 'true', 'false') }}
+          full-rebuild-triggers: |
+            .github/workflows/ci.yml
+            eng/**/*.proj
+
+      # Generating the public API of a project runs this tool, and a delta build does not
+      # necessarily contain it
+      - run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj --configuration Release /p:IsOfficialBuild=true /bl:build.publicapi.binlog
+        if: steps.build-project.outputs.has-project == 'true'
+
+      # Analyzers are disabled when building the tests (RunAnalyzers=false) and the IDExxxx
+      # diagnostics are only reported in Release with IsOfficialBuild
+      - name: Build all projects
+        if: steps.build-project.outputs.has-project == 'true'
+        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration Release /p:IsOfficialBuild=true /bl:build.binlog
+
+      - name: Skip build
+        if: steps.build-project.outputs.has-project != 'true'
+        run: Write-Host "No project was impacted. Skipping build."
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: binlog-analyzers
+          if-no-files-found: ${{ case(steps.build-project.outputs.has-project == 'true', 'error', 'warn') }}
+          retention-days: 3
+          path: '**/*.binlog'
+
+  compute_test_matrix:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    outputs:
+      matrix: ${{ steps.compute-matrix.outputs.matrix }}
+      has-tests: ${{ steps.compute-matrix.outputs.has-tests }}
+      base-commit: ${{ steps.base-commit.outputs.base-commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - run: git config --global protocol.file.allow always
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+
+      - name: Compute base commit
+        id: base-commit
+        env:
+          BEFORE_COMMIT: ${{ github.event.before }}
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq "pull_request") {
+            # Let DeltaBuild compute the merge-base with the pull request base branch
+            $baseCommit = ""
+          }
+          elseif ($env:GITHUB_EVENT_NAME -eq "push") {
+            $baseCommit = $env:BEFORE_COMMIT
+          }
+          else {
+            # There is no base to compare with (workflow_dispatch), so use the empty tree:
+            # every tracked file is reported as changed and DeltaBuild lists all test projects.
+            $baseCommit = (git hash-object -t tree /dev/null).Trim()
+          }
+
+          Write-Host "Base commit: $baseCommit"
+          "base-commit=$baseCommit" >> $env:GITHUB_OUTPUT
+
+      - name: List affected test projects
+        id: affected-tests
+        uses: ./.github/actions/deltabuild
+        with:
+          input-project: eng/build.proj
+          # A .json output makes DeltaBuild write the affected project paths, relative to the
+          # folder containing the output file, instead of a traversal project.
+          output-project: affected-test-projects.json
+          base-commit: ${{ steps.base-commit.outputs.base-commit }}
+          run-generate: "true"
+          test-projects-only: "true"
+          full-rebuild-triggers: |
+            .github/workflows/ci.yml
+            eng/**/*.proj
+
+      - name: Compute test matrix
+        id: compute-matrix
+        run: |
+          # The slowest suites are also the flakiest, so they get a job of their own
+          $IsolatedProjects = @(
+            "tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj"
+            "tests/Meziantou.Framework.TemporaryContainers.Tests/Meziantou.Framework.TemporaryContainers.Tests.csproj"
+            "tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj"
+            "tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests.csproj"
+          )
+
+          # The DNS suites bind sockets, so they run in their own job instead of competing with the
+          # other tests of a shard
+          $DnsProjects = @(
+            "tests/Meziantou.Framework.DnsClient.Tests/Meziantou.Framework.DnsClient.Tests.csproj"
+            "tests/Meziantou.Framework.DnsFilter.Tests/Meziantou.Framework.DnsFilter.Tests.csproj"
+            "tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj"
+            "tests/Meziantou.Framework.DnsServer.Tests/Meziantou.Framework.DnsServer.Tests.csproj"
+          )
+
+          # Remaining expensive suites. They are assigned round-robin in declaration order
+          # (1st -> shard 1, 2nd -> shard 2, ...), so the list is ordered from slowest to fastest
+          # to spread them across shards.
+          $HeavyProjects = @(
+            "tests/Meziantou.Framework.StronglyTypedId.Tests/Meziantou.Framework.StronglyTypedId.Tests.csproj"
+            "tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests.csproj"
+            "tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj"
+            "tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj"
+            "tests/Meziantou.Framework.ResxSourceGenerator.Tests/Meziantou.Framework.ResxSourceGenerator.Tests.csproj"
+            "tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj"
+          )
+
+          $MaxShards = 3
+          $ProjectsPerShard = 15
+
+          # Fail explicitly when a configured project is renamed or removed instead of silently
+          # ignoring it and unbalancing the shards.
+          foreach ($project in @($IsolatedProjects) + @($DnsProjects) + @($HeavyProjects)) {
+            if (-not (Test-Path -LiteralPath $project)) {
+              throw "Configured project does not exist: $project"
+            }
+          }
+
+          $affected = @()
+          if (Test-Path -LiteralPath "affected-test-projects.json") {
+            $affected = @(
+              Get-Content -Raw -LiteralPath "affected-test-projects.json"
+              | ConvertFrom-Json
+              | ForEach-Object { $_.Replace('\', '/') }
+            )
+          }
+
+          Write-Host "Affected test projects: $($affected.Count)"
+
+          $groups = @()
+          $isolated = @($IsolatedProjects | Where-Object { $affected -contains $_ })
+          foreach ($project in $isolated) {
+            # tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj -> SnapshotTesting
+            $id = [System.IO.Path]::GetFileNameWithoutExtension($project) -replace '^Meziantou\.Framework\.', '' -replace '\.Tests$', ''
+            $groups += [pscustomobject]@{ id = $id; projects = $project }
+          }
+
+          $dns = @($DnsProjects | Where-Object { $affected -contains $_ })
+          if ($dns.Count -gt 0) {
+            $groups += [pscustomobject]@{ id = "Dns"; projects = ($dns -join "`n") }
+          }
+
+          $rest = @($affected | Where-Object { $isolated -notcontains $_ -and $dns -notcontains $_ } | Sort-Object)
+          if ($rest.Count -gt 0) {
+            $shardCount = [int][Math]::Min($MaxShards, [Math]::Max(1, [Math]::Ceiling($rest.Count / $ProjectsPerShard)))
+            $shards = @(1..$shardCount | ForEach-Object { ,[System.Collections.Generic.List[string]]::new() })
+
+            $heavy = @($HeavyProjects | Where-Object { $rest -contains $_ })
+            for ($i = 0; $i -lt $heavy.Count; $i++) {
+              $shards[$i % $shardCount].Add($heavy[$i])
+            }
+
+            # Split the remaining projects into contiguous blocks of equal size
+            $remaining = @($rest | Where-Object { $heavy -notcontains $_ })
+            $minimumShardSize = [int][Math]::Floor($remaining.Count / $shardCount)
+            $shardCountWithExtraProject = $remaining.Count % $shardCount
+            $currentIndex = 0
+            for ($i = 0; $i -lt $shardCount; $i++) {
+              $shardSize = $minimumShardSize + $(if ($i -lt $shardCountWithExtraProject) { 1 } else { 0 })
+              for ($j = 0; $j -lt $shardSize; $j++) {
+                $shards[$i].Add($remaining[$currentIndex])
+                $currentIndex++
+              }
+            }
+
+            for ($i = 0; $i -lt $shardCount; $i++) {
+              if ($shards[$i].Count -gt 0) {
+                $groups += [pscustomobject]@{ id = "shard-$($i + 1)"; projects = ($shards[$i] -join "`n") }
+              }
+            }
+          }
+
+          foreach ($group in $groups) {
+            Write-Host "Group '$($group.id)':"
+            $group.projects -split "`n" | ForEach-Object { Write-Host "  $_" }
+          }
+
+          # -InputObject does not unroll the array, so the result is a JSON array for 0, 1 or more groups
+          $matrix = ConvertTo-Json -InputObject @($groups) -Compress
+          Write-Host "Matrix: $matrix"
+          "matrix=$matrix" >> $env:GITHUB_OUTPUT
+          "has-tests=$(($groups.Count -gt 0).ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
   build_and_test:
+    needs: [ compute_test_matrix ]
+    if: needs.compute_test_matrix.outputs.has-tests == 'true'
+    name: build_and_test (${{ matrix.runs-on }}, ${{ matrix.configuration }}${{ case(matrix.additionalArguments == '', '', ', invariant') }}, ${{ matrix.test-group.id }})
     runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 120
     strategy:
@@ -140,7 +351,7 @@ jobs:
         runs-on: [ windows-2025-vs2026, ubuntu-26.04, ubuntu-26.04-arm, macos-26 ]
         configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
-        shard: [1, 2, 3]
+        test-group: ${{ fromJson(needs.compute_test_matrix.outputs.matrix) }}
         exclude:
           # Debug already covers the invariant globalization mode
           - configuration: Release
@@ -157,7 +368,7 @@ jobs:
         name: Compute artifact name
         run: |
           $SanitizedName = "${{ matrix.runs-on }}-${{ matrix.configuration }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
-          "artifact-name=test-results-$SanitizedName-shard-${{ matrix.shard }}" >> $env:GITHUB_OUTPUT
+          "artifact-name=test-results-$SanitizedName-${{ matrix.test-group.id }}" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
@@ -172,39 +383,12 @@ jobs:
         with:
           input-project: eng/build.proj
           output-project: eng/delta.proj
-          base-commit: ${{ case(github.event_name == 'push', github.event.before, '') }}
-          run-generate: ${{ case(github.event_name == 'pull_request' || github.event_name == 'push', 'true', 'false') }}
+          base-commit: ${{ needs.compute_test_matrix.outputs.base-commit }}
+          run-generate: "true"
           test-projects-only: "true"
-          shard: ${{ matrix.shard }}
-          total-shards: 3
-          # DeltaBuild balances shards by project count, which is a poor proxy for duration:
-          # a handful of suites account for most of the test time. The projects below are
-          # assigned round-robin in declaration order (1st -> shard 1, 2nd -> shard 2,
-          # 3rd -> shard 3, 4th -> shard 1, ...), so the list is ordered to spread the
-          # expensive suites across shards.
-          # Approximate test duration per project, summed over TFMs (win/linux-x64/linux-arm64/macOS, in seconds):
-          #   SnapshotTesting           2769 / 3237 / 1869 / 2446
-          #   TemporaryContainers       1247 /  609 /  545 /    7
-          #   InlineSnapshotTesting     1060 /  921 /  843 /  790
-          #   PublicApiGenerator.MSBuild 801 /  951 /  557 /  632
-          #   StronglyTypedId            652 /  284 /  188 /  375
-          #   EmbeddedConstantsGenerator 297 /  200 /  170 /  141
-          #   CommandLine                285 /  132 /   98 /   99
-          #   Yaml                       255 /  284 /  164 /  174
-          #   ResxSourceGenerator         88 /   47 /   34 /   53
-          #   DependencyScanning          82 /   12 /    9 /   19
-          # Paths must point to the project file: directory paths are silently ignored.
-          shard-separate: |
-            tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj
-            tests/Meziantou.Framework.TemporaryContainers.Tests/Meziantou.Framework.TemporaryContainers.Tests.csproj
-            tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj
-            tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj
-            tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests.csproj
-            tests/Meziantou.Framework.StronglyTypedId.Tests/Meziantou.Framework.StronglyTypedId.Tests.csproj
-            tests/Meziantou.Framework.ResxSourceGenerator.Tests/Meziantou.Framework.ResxSourceGenerator.Tests.csproj
-            tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj
-            tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests.csproj
-            tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj
+          # The projects of the group are the only candidates, so the generated project contains
+          # exactly the projects computed by the compute_test_matrix job.
+          include: ${{ matrix.test-group.projects }}
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj
@@ -252,7 +436,9 @@ jobs:
             if: always() && steps.build-project.outputs.has-project == 'true'
             with:
               name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
-              if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
+              # A group can legitimately produce no test result when all its projects are
+              # excluded on the current platform (eng/build.platform-exclusions.proj)
+              if-no-files-found: warn
               retention-days: 3
               path: |
                 !**/*.coverage
@@ -263,7 +449,7 @@ jobs:
             if: always() && steps.build-project.outputs.has-project == 'true' && env.EnableCodeCoverage == 'true'
             with:
               name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
-              if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
+              if-no-files-found: warn
               retention-days: 3
               path: |
                 **/*.coverage
@@ -334,9 +520,10 @@ jobs:
             test-result.cobertura.xml
 
   deploy:
-    if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
+    # build_and_test is skipped when no test project is affected, which must not prevent the deployment
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) }}
     runs-on: ubuntu-26.04
-    needs: [ build_eng_scripts, validate_generated_files, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
+    needs: [ build_eng_scripts, validate_generated_files, validate_nuget, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf ]
     permissions:
       contents: read
       id-token: write
@@ -438,7 +625,7 @@ jobs:
   final_status_check:
     runs-on: ubuntu-slim
     if: always()
-    needs: [ build_eng_scripts, validate_generated_files, create_nuget, validate_nuget, build_and_test, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
+    needs: [ build_eng_scripts, validate_generated_files, create_nuget, validate_nuget, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
     steps:
       - name: Check previous jobs status
         env:

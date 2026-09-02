@@ -44,6 +44,12 @@ inputs:
       Each entry is passed as --shard-separate.
     required: false
     default: ""
+  include:
+    description: |
+      Newline-separated list of project paths or globs.
+      Each entry is passed as --include.
+    required: false
+    default: ""
 
 outputs:
   project:
@@ -75,6 +81,7 @@ runs:
         SHARD: ${{ inputs.shard }}
         TOTAL_SHARDS: ${{ inputs.total-shards }}
         SHARD_SEPARATE: ${{ inputs.shard-separate }}
+        INCLUDE_PROJECTS: ${{ inputs.include }}
       run: |
         $arguments = @(
           "generate"
@@ -106,6 +113,13 @@ runs:
           $project = $_.Trim()
           if ($project) {
             $arguments += @("--shard-separate", $project)
+          }
+        }
+
+        $env:INCLUDE_PROJECTS -split "`n" | ForEach-Object {
+          $project = $_.Trim()
+          if ($project) {
+            $arguments += @("--include", $project)
           }
         }
 

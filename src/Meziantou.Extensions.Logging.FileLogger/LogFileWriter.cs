@@ -48,23 +48,27 @@ internal sealed class LogFileWriter : IDisposable
         Open(timeProvider.GetUtcNow());
     }
 
-    public void WriteLine(string message)
+    /// <summary>Writes a message to the log file.</summary>
+    /// <param name="message">The message to write.</param>
+    /// <param name="timestamp">The UTC time at which the message was logged. The file is rolled using this time, and not
+    /// the current time, so a message is always written to the file of the period it was logged in, whatever the delay
+    /// between the moment it is logged and the moment it is written.</param>
+    public void WriteLine(string message, DateTimeOffset timestamp)
     {
         var byteCount = Utf8NoBom.GetByteCount(message) + _newLineByteCount;
-        var now = _timeProvider.GetUtcNow();
 
         if (_writer is { } currentWriter)
         {
-            RollIfNeeded(currentWriter, now, byteCount);
+            RollIfNeeded(currentWriter, timestamp, byteCount);
         }
         else
         {
             // A previous write or roll failed. Wait before trying again, so an unavailable directory
             // does not make every message pay for a failed file creation
-            if (_lastOpenFailureTimestamp is { } timestamp && _timeProvider.GetElapsedTime(timestamp) < ReopenInterval)
+            if (_lastOpenFailureTimestamp is { } lastFailure && _timeProvider.GetElapsedTime(lastFailure) < ReopenInterval)
                 return;
 
-            OpenOrRecordFailure(now);
+            OpenOrRecordFailure(timestamp);
         }
 
         // Null when the roll could not create the next file

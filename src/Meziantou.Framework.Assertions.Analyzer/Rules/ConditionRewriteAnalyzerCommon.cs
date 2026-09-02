@@ -34,7 +34,8 @@ internal static class ConditionRewriteAnalyzerCommon
         var setType = compilation.GetTypeByMetadataName("System.Collections.Generic.ISet`1");
         var nonGenericEnumerableType = compilation.GetTypeByMetadataName("System.Collections.IEnumerable");
         var comparableType = compilation.GetTypeByMetadataName("System.IComparable`1");
-        if (enumerableType is null || setType is null || nonGenericEnumerableType is null || comparableType is null)
+        var equatableType = compilation.GetTypeByMetadataName("System.IEquatable`1");
+        if (enumerableType is null || setType is null || nonGenericEnumerableType is null || comparableType is null || equatableType is null)
         {
             symbols = null;
             return false;
@@ -63,6 +64,10 @@ internal static class ConditionRewriteAnalyzerCommon
             .OfType<IMethodSymbol>()
             .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 2 });
 
+        var objectInstanceEqualsMethod = objectType.GetMembers("Equals")
+            .OfType<IMethodSymbol>()
+            .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 1 });
+
         var objectGetTypeMethod = objectType.GetMembers("GetType")
             .OfType<IMethodSymbol>()
             .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 0 });
@@ -76,7 +81,7 @@ internal static class ConditionRewriteAnalyzerCommon
         var setProperSupersetMethod = setType.GetMembers("IsProperSupersetOf").OfType<IMethodSymbol>().FirstOrDefault();
 
         if (objectReferenceEqualsMethod is null || objectStaticEqualsMethod is null || objectGetTypeMethod is null ||
-            setProperSubsetMethod is null || setProperSupersetMethod is null)
+            objectInstanceEqualsMethod is null || setProperSubsetMethod is null || setProperSupersetMethod is null)
         {
             symbols = null;
             return false;
@@ -87,12 +92,14 @@ internal static class ConditionRewriteAnalyzerCommon
             sequenceEqualMethods,
             objectReferenceEqualsMethod,
             objectStaticEqualsMethod,
+            objectInstanceEqualsMethod,
             objectGetTypeMethod,
             stringStaticEqualsMethods,
             setProperSubsetMethod,
             setProperSupersetMethod,
             nonGenericEnumerableType,
-            comparableType);
+            comparableType,
+            equatableType);
         return true;
     }
 
@@ -214,6 +221,12 @@ internal static class ConditionRewriteAnalyzerCommon
 
             // Assert.Equal compares sequences element by element, which Equals does not
             if (MayBeComparedAsSequence(actualOperand.Type, symbols) || MayBeComparedAsSequence(expectedOperand.Type, symbols))
+            {
+                match = default;
+                return false;
+            }
+
+            if (!EqualsMatchesDefaultComparer(invocation.TargetMethod, actualOperand.Type, symbols))
             {
                 match = default;
                 return false;
@@ -612,6 +625,44 @@ internal static class ConditionRewriteAnalyzerCommon
     }
 
     /// <summary>
+    /// <c>Assert.Equal</c> compares through <see cref="EqualityComparer{T}.Default"/>, which calls
+    /// <c>IEquatable&lt;T&gt;.Equals</c> when the type implements it and <c>object.Equals</c> otherwise. Rewriting
+    /// <c>a.Equals(b)</c> is only safe when it binds to that very member. An unrelated <c>Equals</c> overload
+    /// compares something else entirely, and a type whose <c>IEquatable&lt;T&gt;</c> implementation is explicit binds
+    /// to <c>object.Equals</c> here while <c>Assert.Equal</c> would use the interface, which can flip the result.
+    /// </summary>
+    private static bool EqualsMatchesDefaultComparer(IMethodSymbol method, ITypeSymbol? receiverType, Symbols symbols)
+    {
+        if (receiverType is null)
+            return false;
+
+        foreach (var interfaceType in receiverType.AllInterfaces)
+        {
+            if (!SymbolEqualityComparer.Default.Equals(interfaceType.OriginalDefinition, symbols.EquatableType))
+                continue;
+
+            if (interfaceType.TypeArguments.Length != 1 || !SymbolEqualityComparer.Default.Equals(interfaceType.TypeArguments[0], receiverType))
+                continue;
+
+            var equatableEquals = interfaceType.GetMembers("Equals").OfType<IMethodSymbol>().FirstOrDefault();
+            if (equatableEquals is null)
+                return false;
+
+            var implementation = receiverType.FindImplementationForInterfaceMember(equatableEquals);
+            return implementation is not null && SymbolEqualityComparer.Default.Equals(method, implementation);
+        }
+
+        // Without IEquatable<T>, EqualityComparer<T>.Default falls back to object.Equals
+        for (var current = method; current is not null; current = current.OverriddenMethod)
+        {
+            if (SymbolEqualityComparer.Default.Equals(current.OriginalDefinition, symbols.ObjectInstanceEqualsMethod))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// <c>Assert.Equal</c> inspects its arguments at run time and compares sequences element by element, which
     /// <c>Equals</c> never does. The rewrite is therefore only safe when the value provably cannot be a sequence:
     /// a value type or a sealed type that does not implement <see cref="System.Collections.IEnumerable"/>. An
@@ -676,12 +727,14 @@ internal static class ConditionRewriteAnalyzerCommon
         ImmutableArray<IMethodSymbol> SequenceEqualMethods,
         IMethodSymbol ObjectReferenceEqualsMethod,
         IMethodSymbol ObjectStaticEqualsMethod,
+        IMethodSymbol ObjectInstanceEqualsMethod,
         IMethodSymbol ObjectGetTypeMethod,
         ImmutableArray<IMethodSymbol> StringStaticEqualsMethods,
         IMethodSymbol SetProperSubsetMethod,
         IMethodSymbol SetProperSupersetMethod,
         INamedTypeSymbol NonGenericEnumerableType,
-        INamedTypeSymbol ComparableType);
+        INamedTypeSymbol ComparableType,
+        INamedTypeSymbol EquatableType);
 
     internal readonly record struct ConditionRewriteMatch(
         IOperation ReportOperation,

@@ -37,7 +37,9 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
     private readonly Lock _initializationLock = new();
     private readonly string _connectionString;
     private Task? _initializationTask;
+    private SqliteConnection? _anchorConnection;
     private volatile bool _initialized;
+    private volatile bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SqliteHttpCacheStore"/> class.
@@ -300,6 +302,8 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
 
     private async ValueTask EnsureInitializedAsync(CancellationToken cancellationToken)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         if (_initialized)
             return;
 
@@ -339,6 +343,21 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
     {
         if (_initialized)
             return;
+
+        // One connection is kept open for the lifetime of the store. A SQLite in-memory database exists only
+        // while a connection to it is open, so without this the caller has to hold one itself just to keep
+        // the cache from vanishing between operations. It also gives Dispose something to release: the
+        // per-operation connections below are returned to the pool as soon as they are used.
+        var anchorConnection = await OpenConnectionAsync(CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            _anchorConnection = anchorConnection;
+        }
+        catch
+        {
+            await anchorConnection.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
 
         await using var connection = await OpenConnectionAsync(CancellationToken.None).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
@@ -649,5 +668,18 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+
+        SqliteConnection? anchorConnection;
+        lock (_initializationLock)
+        {
+            anchorConnection = _anchorConnection;
+            _anchorConnection = null;
+        }
+
+        anchorConnection?.Dispose();
     }
 }

@@ -56,19 +56,28 @@ public class ThrottleExtensionsTests
         var callCount = 0;
         var throttled = ((Action)(() =>
         {
-            callCount++;
+            Interlocked.Increment(ref callCount);
             throw new InvalidOperationException("boom");
         })).Throttle(TimeSpan.FromSeconds(1), timeProvider);
 
         throttled();
         timeProvider.Advance(TimeSpan.FromSeconds(2));
-        SpinWait.SpinUntil(() => callCount >= 1, TimeSpan.FromSeconds(5));
-        Assert.Equal(1, callCount);
+        Assert.True(
+            SpinWait.SpinUntil(() => Volatile.Read(ref callCount) >= 1, TimeSpan.FromSeconds(30)),
+            "The action was not invoked");
 
-        // The first invocation threw; the throttle must not be stuck
-        throttled();
-        timeProvider.Advance(TimeSpan.FromSeconds(2));
-        SpinWait.SpinUntil(() => callCount >= 2, TimeSpan.FromSeconds(5));
-        Assert.Equal(2, callCount);
+        // The first invocation threw; the throttle must not be stuck. It is reset after the action
+        // returns, which is after the counter is incremented, so the call below can still be
+        // throttled by the invocation that just threw: keep calling until one gets through.
+        Assert.True(
+            SpinWait.SpinUntil(
+                () =>
+                {
+                    throttled();
+                    timeProvider.Advance(TimeSpan.FromSeconds(2));
+                    return Volatile.Read(ref callCount) >= 2;
+                },
+                TimeSpan.FromSeconds(30)),
+            "The throttle is stuck after the action threw");
     }
 }

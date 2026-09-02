@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -24,7 +25,11 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
 {
     private readonly IDisposable? _optionsReloadToken;
     private readonly LogFileWriter? _fileWriter;
+
+    // A message with a null text is a wake-up marker for a FlushAsync call. The requests themselves are
+    // kept out of the channel, so they cannot be discarded by FileLoggerOptions.QueueFullMode
     private readonly Channel<LogMessage>? _channel;
+    private readonly ConcurrentQueue<TaskCompletionSource> _pendingFlushes = new();
     private readonly Task? _writerTask;
 
     private FileLoggerOptions _options;
@@ -121,7 +126,7 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
                 },
                 SingleReader = true,
                 SingleWriter = false,
-            }, OnMessageDropped);
+            });
 
         // The messages are written synchronously, so use a dedicated thread instead of a thread pool thread
         _writerTask = Task.Factory.StartNew(ProcessLogQueueAsync, CancellationToken.None, TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap();
@@ -139,12 +144,6 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         Volatile.Write(ref _options, options);
     }
 
-    private static void OnMessageDropped(LogMessage message)
-    {
-        // Do not let a FlushAsync call wait forever for a message that was dropped
-        message.FlushCompletion?.TrySetResult();
-    }
-
     /// <inheritdoc/>
     public ILogger CreateLogger(string categoryName)
     {
@@ -157,13 +156,13 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         Volatile.Write(ref _scopeProvider, scopeProvider ?? new LoggerExternalScopeProvider());
     }
 
-    internal void WriteLog(string message)
+    internal void WriteLog(string message, DateTimeOffset timestamp)
     {
         var channel = _channel;
         if (channel is null)
             return;
 
-        var logMessage = new LogMessage(message, flushCompletion: null);
+        var logMessage = new LogMessage(message, timestamp);
 
         // Try to write to the channel - this will succeed as long as there's space
         // and the channel hasn't been completed yet
@@ -202,16 +201,21 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         {
             while (await channel.Reader.WaitToReadAsync().ConfigureAwait(false))
             {
+                // Take the requests registered so far: every message logged before them is already in the
+                // queue drained below. A request registered while the queue is drained refers to a message
+                // that may not be read yet, so it is left to the next iteration
+                var flushCount = _pendingFlushes.Count;
+
                 while (channel.Reader.TryRead(out var message))
                 {
-                    if (message.FlushCompletion is not null)
+                    if (message.Message is null)
                     {
+                        // Wake-up marker written by FlushAsync
                         Flush();
-                        message.FlushCompletion.TrySetResult();
                     }
                     else
                     {
-                        fileWriter.WriteLine(message.Message!);
+                        fileWriter.WriteLine(message.Message, message.Timestamp);
                         pendingFlush = true;
 
                         // Ensure the messages reach the disk even when the queue is never empty
@@ -227,6 +231,22 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
                 {
                     Flush();
                 }
+
+                // The queue is drained and flushed, so every message queued before these requests is on the disk
+                for (var i = 0; i < flushCount; i++)
+                {
+                    if (!_pendingFlushes.TryDequeue(out var completion))
+                        break;
+
+                    completion.TrySetResult();
+                }
+
+                // The marker of a request registered while the queue was drained may have been discarded
+                // by FileLoggerOptions.QueueFullMode, so make sure the writer wakes up again for it
+                if (!_pendingFlushes.IsEmpty)
+                {
+                    channel.Writer.TryWrite(default);
+                }
             }
         }
         catch (Exception ex)
@@ -237,11 +257,8 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         }
         finally
         {
-            // Release the pending FlushAsync calls
-            while (channel.Reader.TryRead(out var message))
-            {
-                message.FlushCompletion?.TrySetResult();
-            }
+            // Release the pending FlushAsync calls, the queue is not drained anymore
+            CompletePendingFlushes();
         }
 
         void Flush()
@@ -261,23 +278,41 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
             return;
 
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var message = new LogMessage(message: null, completion);
-        try
+        _pendingFlushes.Enqueue(completion);
+
+        // Wake the writer up. The marker itself carries nothing, so it does not matter if
+        // QueueFullMode discards it: a full queue means the writer is already busy and it completes
+        // the pending requests as soon as it drains the queue
+        if (!channel.Writer.TryWrite(default))
         {
-            // Another thread can take the room freed between WaitToWriteAsync and TryWrite, so keep
-            // trying until the flush request is queued
-            while (!channel.Writer.TryWrite(message))
+            try
             {
+                // WaitToWriteAsync returns false once the channel is completed. The writer task is
+                // stopping, and it may already have released the pending requests, so do it here
                 if (!await channel.Writer.WaitToWriteAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    CompletePendingFlushes();
                     return;
+                }
+
+                channel.Writer.TryWrite(default);
             }
-        }
-        catch (ChannelClosedException)
-        {
-            return;
+            catch (ChannelClosedException)
+            {
+                CompletePendingFlushes();
+                return;
+            }
         }
 
         await completion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private void CompletePendingFlushes()
+    {
+        while (_pendingFlushes.TryDequeue(out var completion))
+        {
+            completion.TrySetResult();
+        }
     }
 
     /// <inheritdoc/>
@@ -331,10 +366,12 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         _fileWriter?.Dispose();
     }
 
-    private readonly struct LogMessage(string? message, TaskCompletionSource? flushCompletion)
+    /// <summary>A message to write to the log file, or a wake-up marker for a FlushAsync call when <see cref="Message"/> is null.</summary>
+    private readonly struct LogMessage(string? message, DateTimeOffset timestamp)
     {
         public string? Message { get; } = message;
 
-        public TaskCompletionSource? FlushCompletion { get; } = flushCompletion;
+        /// <summary>Gets the UTC time at which the message was logged, used to roll the log file.</summary>
+        public DateTimeOffset Timestamp { get; } = timestamp;
     }
 }

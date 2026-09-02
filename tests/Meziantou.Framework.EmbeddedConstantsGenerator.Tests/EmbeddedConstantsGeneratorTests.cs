@@ -28,6 +28,7 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
 
               <Target Name="CaptureEmbeddedConstantsBinlogItems" AfterTargets="GenerateEmbeddedConstants">
                 <WriteLinesToFile File="$(IntermediateOutputPath)embed-items.txt" Lines="@(EmbedInBinlog)" Overwrite="true" />
+                <WriteLinesToFile File="$(IntermediateOutputPath)uptodate-items.txt" Lines="@(UpToDateCheckInput)" Overwrite="true" />
               </Target>
             </Project>
             """);
@@ -53,6 +54,11 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         var embedItemsPath = Assert.Single(Directory.GetFiles(projectDirectory / "obj", "embed-items.txt", SearchOption.AllDirectories));
         var embedItems = await File.ReadAllTextAsync(embedItemsPath, XunitCancellationToken);
         Assert.Contains(generatedFilePath, embedItems, ignoreCase: true);
+
+        // The Visual Studio fast up-to-date check skips the build unless the embedded files are declared as inputs
+        var upToDateItemsPath = Assert.Single(Directory.GetFiles(projectDirectory / "obj", "uptodate-items.txt", SearchOption.AllDirectories));
+        var upToDateItems = await File.ReadAllTextAsync(upToDateItemsPath, XunitCancellationToken);
+        Assert.Contains("hello.txt", upToDateItems);
 
         await RunDotNetCommand(projectDirectory, ["clean", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
 
@@ -88,7 +94,8 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
                 public static int Length => Generated.EmbeddedConstants.LogoBytes.Length;
             }
             """);
-        CreateBinaryFile(projectDirectory / "Assets" / "logo.bin", [0x89, 0x50, 0x4E, 0x47]);
+        // More than 16 bytes so the byte array spans several lines
+        CreateBinaryFile(projectDirectory / "Assets" / "logo.bin", [0x89, 0x50, 0x4E, 0x47, .. Enumerable.Range(0, 16).Select(i => (byte)i)]);
 
         await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
         await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
@@ -97,6 +104,7 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         Assert.DoesNotContain("LogoText", generatedSource);
         Assert.Contains("public static global::System.ReadOnlySpan<byte> LogoBytes => new byte[]", generatedSource);
         Assert.Contains("0x89, 0x50, 0x4E, 0x47", generatedSource);
+        AssertNoTrailingWhitespace(generatedSource);
     }
 
     [Fact]
@@ -138,6 +146,44 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         var generatedSource = await File.ReadAllTextAsync(GetGeneratedFilePath(projectDirectory), XunitCancellationToken);
         Assert.Contains("public const string ConfigJsonText = \"{}\";", generatedSource);
         Assert.Contains("public static global::System.ReadOnlySpan<byte> ConfigJsonBytes => new byte[]", generatedSource);
+
+        // The two members of the first entry are separated like every other pair of members
+        Assert.Contains(
+            "public const string ConfigJsonText = \"{}\";\n\n    public static global::System.ReadOnlySpan<byte> ConfigJsonBytes",
+            generatedSource.ReplaceLineEndings("\n"));
+        AssertNoTrailingWhitespace(generatedSource);
+    }
+
+    [Theory]
+    [InlineData("Binary")]
+    [InlineData("Both")]
+    public async Task GenerateOnBuild_FileStartsWithByteOrderMark_ByteMemberKeepsIt(string kind)
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("bom-" + kind);
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile($"bom-{kind}/Sample.csproj", CreateProjectFile(fixture, $"""
+                <EmbeddedConstant Include="Assets/config.json" Kind="{kind}" />
+            """));
+
+        // A UTF-8 byte order mark followed by {}
+        CreateBinaryFile(projectDirectory / "Assets" / "config.json", [0xEF, 0xBB, 0xBF, (byte)'{', (byte)'}']);
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        var generatedSource = await File.ReadAllTextAsync(GetGeneratedFilePath(projectDirectory), XunitCancellationToken);
+
+        // The byte member is the file, byte for byte, whichever Kind asked for it
+        Assert.Contains("0xEF, 0xBB, 0xBF, 0x7B, 0x7D", generatedSource);
+
+        if (kind is "Both")
+        {
+            // Only the text member drops the byte order mark
+            Assert.Contains("public const string ConfigText = \"{}\";", generatedSource);
+        }
     }
 
     [Fact]
@@ -199,6 +245,186 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         Assert.Contains("MFECG0005", string.Join('\n', result.Output));
     }
 
+    [Fact]
+    public async Task GenerateOnBuild_OutputPathCannotBeWritten_ReportsDiagnosticInsteadOfUnhandledException()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("unwritable-output-path");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("unwritable-output-path/Sample.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net10.0</TargetFramework>
+                <EmbeddedConstantsNamespace>Generated</EmbeddedConstantsNamespace>
+                <EmbeddedConstantsOutputPath>Generated/EmbeddedConstants.g.cs</EmbeddedConstantsOutputPath>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="{{EmbeddedConstantsGeneratorPackageFixture.PackageName}}" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
+                <EmbeddedConstant Include="Assets/sample.txt" Kind="Text" />
+              </ItemGroup>
+            </Project>
+            """);
+        temporaryDirectory.CreateTextFile("unwritable-output-path/Assets/sample.txt", "Hello");
+
+        // The generated file path is an existing directory, so writing it throws inside the task
+        Directory.CreateDirectory(projectDirectory / "Generated" / "EmbeddedConstants.g.cs");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 1);
+
+        var output = string.Join('\n', result.Output);
+        Assert.Contains("MFECG0011", output);
+        Assert.DoesNotContain("MSB4018", output);
+    }
+
+    [Fact]
+    public async Task GenerateOnBuild_MultiTargetingWithSharedOutputPath_InsertsTheTargetFrameworkIntoThePath()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("shared-output-path");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("shared-output-path/Sample.csproj", CreateMultiTargetingProjectFile(fixture, "Generated/EmbeddedConstants.g.cs"));
+        temporaryDirectory.CreateTextFile("shared-output-path/Assets/sample.txt", "Hello");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        // Building again matters: the generated files now exist, so the SDK default glob picks them all up
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        // The path was 'Generated/EmbeddedConstants.g.cs' for both frameworks, so each build gets its own subdirectory
+        Assert.True(File.Exists(projectDirectory / "Generated" / "net10.0" / "EmbeddedConstants.g.cs"));
+        Assert.True(File.Exists(projectDirectory / "Generated" / "net11.0" / "EmbeddedConstants.g.cs"));
+        Assert.False(File.Exists(projectDirectory / "Generated" / "EmbeddedConstants.g.cs"));
+    }
+
+    [Fact]
+    public async Task GenerateOnBuild_MultiTargetingWithPerTargetFrameworkOutputPath_GeneratesOneFilePerTargetFramework()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("per-tfm-output-path");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("per-tfm-output-path/Sample.csproj", CreateMultiTargetingProjectFile(fixture, "Generated/$(TargetFramework)/EmbeddedConstants.g.cs"));
+        temporaryDirectory.CreateTextFile("per-tfm-output-path/Assets/sample.txt", "Hello");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        // Building again matters: the generated files now exist, so the SDK default glob picks them all up
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        var generatedFiles = Directory.GetFiles(projectDirectory / "Generated", "EmbeddedConstants.g.cs", SearchOption.AllDirectories);
+        Assert.HasCount(2, generatedFiles);
+    }
+
+    private static string CreateMultiTargetingProjectFile(EmbeddedConstantsGeneratorPackageFixture fixture, string outputPath)
+    {
+        return $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
+                <EmbeddedConstantsNamespace>Generated</EmbeddedConstantsNamespace>
+                <EmbeddedConstantsOutputPath>{{outputPath}}</EmbeddedConstantsOutputPath>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="{{EmbeddedConstantsGeneratorPackageFixture.PackageName}}" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
+                <EmbeddedConstant Include="Assets/sample.txt" Kind="Text" />
+              </ItemGroup>
+            </Project>
+            """;
+    }
+
+    [Fact]
+    public async Task GenerateOnBuild_MemberNameMatchesClassName_FailsBuild()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("member-matches-class");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        // Foo.txt generates 'FooText', which is also the class name, and C# does not allow that
+        temporaryDirectory.CreateTextFile("member-matches-class/Sample.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net10.0</TargetFramework>
+                <EmbeddedConstantsNamespace>Generated</EmbeddedConstantsNamespace>
+                <EmbeddedConstantsClassName>FooText</EmbeddedConstantsClassName>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="{{EmbeddedConstantsGeneratorPackageFixture.PackageName}}" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
+                <EmbeddedConstant Include="Assets/Foo.txt" Kind="Text" />
+              </ItemGroup>
+            </Project>
+            """);
+        temporaryDirectory.CreateTextFile("member-matches-class/Assets/Foo.txt", "x");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 1);
+
+        var output = string.Join('\n', result.Output);
+        Assert.Contains("MFECG0010", output);
+
+        // The generator reports it instead of letting the compiler produce CS0542 on generated code
+        Assert.DoesNotContain("CS0542", output);
+    }
+
+    [Fact]
+    public async Task GenerateOnBuild_DuplicateMemberName_NamesTheFilesInvolved()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("duplicate-names-files");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("duplicate-names-files/Sample.csproj", CreateProjectFile(fixture, """
+                <EmbeddedConstant Include="Assets/first.txt" Kind="Text" Name="Same" />
+                <EmbeddedConstant Include="Assets/second.txt" Kind="Text" Name="Same" />
+            """));
+        temporaryDirectory.CreateTextFile("duplicate-names-files/Assets/first.txt", "First");
+        temporaryDirectory.CreateTextFile("duplicate-names-files/Assets/second.txt", "Second");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 1);
+
+        var output = string.Join('\n', result.Output);
+        Assert.Contains("MFECG0005", output);
+        Assert.Contains("first.txt", output);
+        Assert.Contains("second.txt", output);
+    }
+
+    [Fact]
+    public async Task GenerateOnBuild_ImplicitNamesCollideOutsideTheProjectDirectory_FailsInsteadOfUsingTheAbsolutePath()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("outside-collision");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        // One shared.txt inside the project, one in a sibling directory outside it
+        temporaryDirectory.CreateTextFile("outside-collision/Sample.csproj", CreateProjectFile(fixture, """
+                <EmbeddedConstant Include="shared.txt" Kind="Text" />
+                <EmbeddedConstant Include="../outside/shared.txt" Kind="Text" />
+            """));
+        temporaryDirectory.CreateTextFile("outside-collision/shared.txt", "inside");
+        temporaryDirectory.CreateTextFile("outside/shared.txt", "outside");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 1);
+
+        var output = string.Join('\n', result.Output);
+        Assert.Contains("MFECG0005", output);
+        Assert.Contains("'SharedText'", output);
+    }
+
     private static string CreateProjectFile(EmbeddedConstantsGeneratorPackageFixture fixture, string embeddedConstants)
     {
         return $$"""
@@ -213,6 +439,12 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
               </ItemGroup>
             </Project>
             """;
+    }
+
+    private static void AssertNoTrailingWhitespace(string generatedSource)
+    {
+        var lines = generatedSource.ReplaceLineEndings("\n").Split('\n');
+        Assert.DoesNotContain(lines, line => line != line.TrimEnd());
     }
 
     private static FullPath GetGeneratedFilePath(FullPath projectDirectory)

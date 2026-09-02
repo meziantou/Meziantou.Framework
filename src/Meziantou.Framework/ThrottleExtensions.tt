@@ -58,22 +58,42 @@ public static class ThrottleExtensions
 <# } #>
         return (<#= GetTypedArgsString(i, "arg") #>) =>
         {
-<# if (i > 0) { #>
-            args = <#= GetTupleCreationExpression(i) #>;
-<# } #>
-            if (task is not null)
-                return;
-
             lock (l)
             {
+<# if (i > 0) { #>
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = <#= GetTupleCreationExpression(i) #>;
+
+<# } #>
+                // task is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
                 if (task is not null)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(t =>
+                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
                 {
-                    action(<#= GetTupleItemsString(i, "args") #>);
-                    t.Dispose();
-                    task = null;
+<# if (i > 0) { #>
+                    <#= GetTupleTypeString(i) #> pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+<# } #>
+                    try
+                    {
+                        action(<#= GetTupleItemsString(i, "pendingArgs") #>);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            task = null;
+                        }
+                    }
                 }, TaskScheduler.Default);
             }
         };

@@ -58,6 +58,36 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
         Assert.Contains(result.ValidationResults.Packages[path2].Errors, item => item.ErrorCode == 101);
     }
 
+    [Theory]
+    [InlineData("raw.githubusercontent.com", true)]
+    [InlineData("RAW.GITHUBUSERCONTENT.COM", true)]
+    [InlineData("cdn.raw.githubusercontent.com", true)]
+    [InlineData("notraw.githubusercontent.com", false)]
+    [InlineData("raw.githubusercontent.com.example.com", false)]
+    [InlineData("github.com", false)]
+    public void IsGitHubRawHost(string host, bool expected)
+    {
+        Assert.Equal(expected, Program.IsGitHubRawHost(host));
+    }
+
+    [Fact]
+    public async Task TestPackage_DuplicatePathsAreValidatedOnce()
+    {
+        var path = FullPath.FromPath("Packages/Debug.1.0.0.nupkg");
+        var result = await RunValidation(path, path);
+        Assert.HasCount(1, result.ValidationResults!.Packages);
+    }
+
+    [Fact]
+    public async Task TestPackage_DuplicatePathsDifferingByCaseAreValidatedOnce()
+    {
+        var result = await RunValidation("Packages/Debug.1.0.0.nupkg", "Packages/debug.1.0.0.NUPKG");
+
+        // On a case-sensitive file system the two paths are different files, so both are validated
+        var expectedCount = FullPathComparer.Default.IsCaseSensitive ? 2 : 1;
+        Assert.HasCount(expectedCount, result.ValidationResults!.Packages);
+    }
+
     [Fact]
     public async Task ExcludedRuleIds()
     {
@@ -73,7 +103,19 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
     [Fact]
     public async Task CustomRules()
     {
-        var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "AssembliesMustBeOptimized,AuthorMustBeSet");
+        var result = await RunValidation("Packages/Debug.1.0.0.nupkg", "--rules", "AssembliesMustBeOptimized");
+        Assert.Equal(1, result.ExitCode);
+        Assert.False(result.ValidationResult!.IsValid);
+        Assert.Contains(result.ValidationResult.Errors, item => item.ErrorCode == 81);
+
+        // Only the requested rule must run
+        Assert.DoesNotContain(result.ValidationResult.Errors, item => item.ErrorCode != 81);
+    }
+
+    [Fact]
+    public async Task CustomRules_PackageSatisfiesTheRequestedRule()
+    {
+        var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "AuthorMustBeSet");
         Assert.Equal(0, result.ExitCode);
         Assert.True(result.ValidationResult!.IsValid);
         Assert.Empty(result.ValidationResult.Errors);
@@ -91,9 +133,23 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
     [Fact]
     public async Task CustomRules_Multiple()
     {
-        var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "AssembliesMustBeOptimized", "--rules", "AuthorMustBeSet");
-        Assert.Equal(0, result.ExitCode);
-        Assert.True(result.ValidationResult!.IsValid);
-        Assert.Empty(result.ValidationResult.Errors);
+        var result = await RunValidation("Packages/Debug.1.0.0.nupkg", "--rules", "AssembliesMustBeOptimized", "--rules", "XmlDocumentationMustBePresent");
+        Assert.Equal(1, result.ExitCode);
+        Assert.False(result.ValidationResult!.IsValid);
+        Assert.Contains(result.ValidationResult.Errors, item => item.ErrorCode == 81);
+        Assert.Contains(result.ValidationResult.Errors, item => item.ErrorCode == 101);
+
+        // Only the requested rules must run
+        Assert.DoesNotContain(result.ValidationResult.Errors, item => item.ErrorCode is not (81 or 101));
+    }
+
+    [Fact]
+    public async Task CustomRules_Default()
+    {
+        var result = await RunValidation("Packages/Debug.1.0.0.nupkg", "--rules", "default");
+        Assert.Equal(1, result.ExitCode);
+        Assert.False(result.ValidationResult!.IsValid);
+        Assert.Contains(result.ValidationResult.Errors, item => item.ErrorCode == 81);
+        Assert.Contains(result.ValidationResult.Errors, item => item.ErrorCode == 131);
     }
 }

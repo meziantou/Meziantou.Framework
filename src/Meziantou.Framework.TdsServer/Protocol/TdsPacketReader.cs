@@ -5,9 +5,10 @@ namespace Meziantou.Framework.Tds.Protocol;
 
 internal static class TdsPacketReader
 {
-    public static async ValueTask<TdsPacket?> ReadAsync(Stream stream, CancellationToken cancellationToken)
+    public static async ValueTask<TdsPacket?> ReadAsync(Stream stream, int maxMessageSize, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(stream);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxMessageSize);
 
         TdsPacketType? messageType = null;
         byte[]? payload = null;
@@ -45,6 +46,14 @@ internal static class TdsPacketReader
                 var currentPayloadLength = packetLength - 8;
                 if (currentPayloadLength > 0)
                 {
+                    // A TDS message spans as many packets as the client wants, and the payloads accumulate into a
+                    // single buffer. Without a ceiling a client can grow that buffer until the process runs out of
+                    // memory, and it can do so before it has authenticated.
+                    if (payloadLength + currentPayloadLength > maxMessageSize)
+                    {
+                        throw new InvalidDataException($"The TDS message exceeds the maximum size of {maxMessageSize} bytes.");
+                    }
+
                     EnsurePayloadCapacity(ref payload, payloadLength + currentPayloadLength, payloadLength);
                     await stream.ReadExactlyAsync(payload.AsMemory(payloadLength, currentPayloadLength), cancellationToken).ConfigureAwait(false);
                     payloadLength += currentPayloadLength;

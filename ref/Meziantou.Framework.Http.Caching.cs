@@ -42,6 +42,7 @@ namespace Meziantou.Framework.Http.Caching
     {
         public HttpCachingDelegateHandler(Meziantou.Framework.Http.Caching.IHttpCacheStore store, Meziantou.Framework.Http.Caching.HttpCachingOptions? options = null) { }
         public HttpCachingDelegateHandler(System.Net.Http.HttpMessageHandler innerHandler, Meziantou.Framework.Http.Caching.IHttpCacheStore store, Meziantou.Framework.Http.Caching.HttpCachingOptions? options = null) { }
+        protected override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) => throw null;
         protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) => throw null;
     }
 
@@ -49,6 +50,7 @@ namespace Meziantou.Framework.Http.Caching
     {
         public System.TimeProvider TimeProvider { get => throw null; set { } }
         public long? MaximumResponseSize { get => throw null; set { } }
+        public System.Action<System.Exception>? OnStoreError { get => throw null; set { } }
         public System.Func<System.Net.Http.HttpResponseMessage, bool>? ShouldCacheResponse { get => throw null; set { } }
     }
 

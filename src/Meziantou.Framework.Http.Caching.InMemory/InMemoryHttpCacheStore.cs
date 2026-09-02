@@ -39,21 +39,51 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
             Directory.CreateDirectory(directoryPath);
         }
 
-        var tempFilePath = filePath + ".tmp";
+        // The temporary name is unique so that two concurrent saves to the same path do not collide on it.
+        var tempFilePath = filePath + "." + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture) + ".tmp";
         try
         {
-            await using (var stream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
+            await using (var stream = new FileStream(tempFilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
             {
                 await JsonSerializer.SerializeAsync(stream, snapshot, InMemorySerializationContext.Default.InMemoryHttpCachePersistenceData, cancellationToken).ConfigureAwait(false);
             }
 
-            File.Move(tempFilePath, filePath, overwrite: true);
+            await MoveOverwritingWithRetryAsync(tempFilePath, filePath, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            if (File.Exists(tempFilePath))
+            // Cleaning up must not replace the exception that is being propagated, and the file is already
+            // gone on the success path.
+            try
             {
                 File.Delete(tempFilePath);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>Replaces the destination, waiting out the concurrent saves that are replacing it at the same time.</summary>
+    private static async Task MoveOverwritingWithRetryAsync(string sourceFilePath, string destinationFilePath, CancellationToken cancellationToken)
+    {
+        // Replacing a file is atomic on Unix, but Windows denies access to the destination while another move is
+        // replacing it, so concurrent saves to the same path have to wait for each other instead of failing.
+        const int MaxAttempts = 50;
+
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Move(sourceFilePath, destinationFilePath, overwrite: true);
+                return;
+            }
+            catch (Exception ex) when (attempt < MaxAttempts && ex is UnauthorizedAccessException or (IOException and not (FileNotFoundException or DirectoryNotFoundException)))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(20), cancellationToken).ConfigureAwait(false);
             }
         }
     }

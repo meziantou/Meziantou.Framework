@@ -3022,6 +3022,27 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_XmlDataType_WithADtd_IsRejected()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        // A few hundred bytes of nested internal entities expand into megabytes, once per row, and the query
+        // cannot be cancelled. XDocument.Parse allows that by default, so the engine has to opt out.
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT CAST('<?xml version="1.0"?><!DOCTYPE root [<!ENTITY a "aaaaaaaaaa"><!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">]><root>&b;</root>' AS XML) AS Bomb
+                    FROM xml_docs
+                    WHERE Id = 1
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "could not be parsed");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_XmlMethod_Query_ReturnsXmlFragment()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -3293,6 +3314,61 @@ public sealed class TdsQueryEngineTests
             expectedMessageContains: "SELECT permission was denied");
     }
 
+    [Theory]
+    // A denied query root has to stay denied however the SQL reaches it, not just as the top-level FROM. Every
+    // one of these funnels through BuildTableSource -> ResolveConfiguredQueryRoot today; these cases pin that
+    // down so a future translation feature cannot resolve a root some other way and skip the check.
+    [InlineData("SELECT Id FROM orders")]
+    [InlineData("SELECT Id FROM dbo.orders")]
+    [InlineData("SELECT o.Id FROM customers c INNER JOIN orders o ON c.Id = o.Id")]
+    [InlineData("SELECT o.Id FROM customers c LEFT JOIN orders o ON c.Id = o.Id")]
+    [InlineData("WITH o AS (SELECT Id FROM orders) SELECT Id FROM o")]
+    [InlineData("SELECT d.Id FROM (SELECT Id FROM orders) d")]
+    [InlineData("SELECT Id FROM customers WHERE Id IN (SELECT Id FROM orders)")]
+    [InlineData("SELECT Id FROM customers WHERE EXISTS (SELECT 1 FROM orders)")]
+    [InlineData("SELECT Id FROM customers UNION ALL SELECT Id FROM orders")]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The query text comes from the test's own inline data.")]
+    public async Task SqlClient_QueryEngine_QueryRoot_Unauthorized_IsDeniedThroughEveryReference(string commandText)
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
+            resourceKind != TdsQueryEngineResourceKind.QueryRoot ||
+            !string.Equals(resourceName, "orders", StringComparison.OrdinalIgnoreCase);
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command => command.CommandText = commandText,
+            expectedErrorNumber: 229,
+            expectedMessageContains: "SELECT permission was denied on the object 'orders'");
+    }
+
+    [Theory]
+    // The mirror of the theory above: with the same handler, a root that is allowed still resolves through each
+    // of those shapes, so the check is not simply denying everything.
+    [InlineData("SELECT Id FROM customers")]
+    [InlineData("SELECT c2.Id FROM customers c1 INNER JOIN customers c2 ON c1.Id = c2.Id")]
+    [InlineData("WITH c AS (SELECT Id FROM customers) SELECT Id FROM c")]
+    [InlineData("SELECT Id FROM customers WHERE EXISTS (SELECT 1 FROM customers)")]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The query text comes from the test's own inline data.")]
+    public async Task SqlClient_QueryEngine_QueryRoot_Authorized_StillResolvesThroughEveryReference(string commandText)
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
+            resourceKind != TdsQueryEngineResourceKind.QueryRoot ||
+            !string.Equals(resourceName, "orders", StringComparison.OrdinalIgnoreCase);
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command => command.CommandText = commandText,
+            """
+            Id
+            1
+            2
+            4
+            """,
+            expectedMaterializedQueries: null);
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The stored procedure name is generated within the test and not user-controlled.")]
     public async Task SqlClient_QueryEngine_UnknownStoredProcedure_RemainsNotFoundError()
@@ -3309,6 +3385,98 @@ public sealed class TdsQueryEngineTests
             },
             expectedErrorNumber: 50004,
             expectedMessageContains: "Unknown stored procedure");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_DuplicateCteName_ReturnsAQueryEngineError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    WITH c AS (SELECT Id FROM customers), c AS (SELECT Id FROM customers)
+                    SELECT Id FROM c
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "Duplicate common table expression name 'c'");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Iif_WithAnExistsCondition_ReturnsAQueryEngineError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT IIF(EXISTS(SELECT 1 FROM customers), 1, 0) AS Value
+                    FROM customers
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "IIF does not support a subquery");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Iif_WithAnInSubqueryCondition_ReturnsAQueryEngineError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT IIF(Id IN (SELECT Id FROM customers), 1, 0) AS Value
+                    FROM customers
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "IIF does not support a subquery");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_XmlMethod_WithAnXQueryOnlyExpression_ReturnsAQueryEngineError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        // The XML methods evaluate XPath 1.0, so a FLWOR expression is not supported. It has to say so rather
+        // than letting XPathException escape as a generic handler failure.
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Payload.value('for $i in /root/item return string($i)', 'nvarchar(max)') AS Value
+                    FROM xml_docs
+                    WHERE Id = 1
+                    """;
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "is not a supported XPath 1.0 expression");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_SchemaQualifiedTableName_ResolvesTheQueryRoot()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command => command.CommandText = "SELECT Id FROM dbo.customers",
+            """
+            Id
+            1
+            2
+            4
+            """,
+            expectedMaterializedQueries: null);
     }
 
     [Fact]

@@ -416,30 +416,33 @@ internal static class SnapshotEngine
         ArgumentNullException.ThrowIfNull(filesToUpdate);
         ArgumentNullException.ThrowIfNull(filesToDelete);
 
+        // A strategy that needs the verified file to exist - a merge tool needs two sides to compare - creates
+        // it itself, so that it also owns removing it when the update does not happen. The engine only makes
+        // sure the directory is there, as MoveFile does not create it.
         foreach (var fileToUpdate in filesToUpdate)
         {
             fileToUpdate.VerifiedPath.CreateParentDirectory();
-            if (!File.Exists(fileToUpdate.VerifiedPath))
+        }
+
+        try
+        {
+            settings.SnapshotUpdateStrategy.UpdateFiles(
+                settings,
+                [.. filesToUpdate.Select(item => new SnapshotUpdateFile(item.VerifiedPath, item.ActualPath))],
+                [.. filesToDelete.Select(item => item.Value)]);
+        }
+        finally
+        {
+            // A strategy that fails part way through has still changed the set of verified files.
+            foreach (var fileToUpdate in filesToUpdate)
             {
-                using (File.Create(fileToUpdate.VerifiedPath))
-                {
-                }
+                InvalidateVerifiedSnapshotFiles(fileToUpdate.VerifiedPath.Parent);
             }
-        }
 
-        settings.SnapshotUpdateStrategy.UpdateFiles(
-            settings,
-            [.. filesToUpdate.Select(item => new SnapshotUpdateFile(item.VerifiedPath, item.ActualPath))],
-            [.. filesToDelete.Select(item => item.Value)]);
-
-        foreach (var fileToUpdate in filesToUpdate)
-        {
-            InvalidateVerifiedSnapshotFiles(fileToUpdate.VerifiedPath.Parent);
-        }
-
-        foreach (var fileToDelete in filesToDelete)
-        {
-            InvalidateVerifiedSnapshotFiles(fileToDelete.Parent);
+            foreach (var fileToDelete in filesToDelete)
+            {
+                InvalidateVerifiedSnapshotFiles(fileToDelete.Parent);
+            }
         }
     }
 

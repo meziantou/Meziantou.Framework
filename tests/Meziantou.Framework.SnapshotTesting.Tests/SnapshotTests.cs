@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
+using Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategies;
 using Xunit.Sdk;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
@@ -1512,6 +1513,105 @@ public sealed partial class SnapshotTests
 
     [GeneratedRegex("^[A-Za-z0-9._-]+_[0-9a-f]{8}_2\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex SnapshotNameWithHashAndIndexRegex();
+
+    [Theory]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeTool))]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeToolSync))]
+    public void Validate_MergeToolStrategy_DoesNotLeaveAnEmptyVerifiedFileWhenTheMergeToolCannotStart(string strategyName)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateDeterministicSnapshotSettings(directory, "sample") with
+        {
+            SnapshotUpdateStrategy = GetSnapshotUpdateStrategy(strategyName),
+            MergeTools = [],
+        };
+
+        Assert.Throws<SnapshotException>(() => Snapshot.Validate("value", settings));
+
+        // An empty verified file would become the expectation of the test on the next run.
+        Assert.False(File.Exists(directory / "snapshot.verified.txt"));
+        Assert.Equal("sample", File.ReadAllText(directory / "snapshot.actual.txt"));
+    }
+
+    [Theory]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeTool))]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeToolSync))]
+    public void Validate_MergeToolStrategy_KeepsTheVerifiedFileWhenTheMergeToolCannotStart(string strategyName)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var verifiedPath = directory / "snapshot.verified.txt";
+        File.WriteAllText(verifiedPath, "recorded");
+
+        var settings = CreateDeterministicSnapshotSettings(directory, "sample") with
+        {
+            SnapshotUpdateStrategy = GetSnapshotUpdateStrategy(strategyName),
+            MergeTools = [],
+        };
+
+        Assert.Throws<SnapshotException>(() => Snapshot.Validate("value", settings));
+
+        Assert.Equal("recorded", File.ReadAllText(verifiedPath));
+    }
+
+    [Fact]
+    public void VerifiedFilePlaceholder_DeletesTheFileWhenTheMergeToolDidNotWriteIt()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.txt";
+
+        var placeholder = VerifiedFilePlaceholder.TryCreate(path);
+
+        Assert.NotNull(placeholder);
+        Assert.Empty(File.ReadAllBytes(path));
+
+        placeholder.DeleteIfUnused();
+
+        Assert.False(File.Exists(path));
+    }
+
+    [Fact]
+    public void VerifiedFilePlaceholder_KeepsTheFileWhenTheMergeToolWroteIt()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.txt";
+
+        var placeholder = VerifiedFilePlaceholder.TryCreate(path);
+        Assert.NotNull(placeholder);
+        File.WriteAllText(path, "merged");
+
+        placeholder.DeleteIfUnused();
+
+        Assert.Equal("merged", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void VerifiedFilePlaceholder_KeepsTheFileWhenTheMergeToolSavedAnEmptySnapshot()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.txt";
+
+        var placeholder = VerifiedFilePlaceholder.TryCreate(path);
+        Assert.NotNull(placeholder);
+
+        // An empty snapshot is a meaningful expectation, so saving one must not be mistaken for an
+        // untouched placeholder.
+        File.WriteAllBytes(path, []);
+
+        placeholder.DeleteIfUnused();
+
+        Assert.True(File.Exists(path));
+    }
+
+    [Fact]
+    public void VerifiedFilePlaceholder_DoesNotTouchAnExistingVerifiedFile()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.txt";
+        File.WriteAllText(path, "recorded");
+
+        Assert.Null(VerifiedFilePlaceholder.TryCreate(path));
+        Assert.Equal("recorded", File.ReadAllText(path));
+    }
 
     [GeneratedRegex("Line[2]", RegexOptions.None, matchTimeoutMilliseconds: 10000)]
     private static partial Regex Line2Regex();

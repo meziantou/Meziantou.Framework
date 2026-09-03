@@ -2208,6 +2208,25 @@ public sealed class RoslynHelperTests
         Assert.Equal("(  a  +  b // comment\n)", expression.Parenthesize().ToFullString());
     }
 
+    [Fact]
+    public void Parenthesize_SyntaxNode_WrapsAnExpression()
+    {
+        SyntaxNode node = SyntaxFactory.ParseExpression("a + b");
+
+        var actual = node.Parenthesize();
+
+        Assert.IsType<ParenthesizedExpressionSyntax>(actual);
+        Assert.Equal("(a + b)", actual.ToFullString());
+    }
+
+    [Fact]
+    public void Parenthesize_SyntaxNode_ReturnsANonExpressionNodeAsIs()
+    {
+        SyntaxNode node = SyntaxFactory.ParseStatement("a + b;");
+
+        Assert.Same(node, node.Parenthesize());
+    }
+
 #if ROSLYN_WORKSPACES
     [Fact]
     public void Parenthesize_AnnotatesTheParenthesesForTheSimplifier()

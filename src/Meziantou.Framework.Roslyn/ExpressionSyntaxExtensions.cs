@@ -42,4 +42,17 @@ internal static partial class ExpressionSyntaxExtensions
 
         return parenthesized;
     }
+
+    /// <summary>
+    /// Wraps the node in parentheses when it is an expression.
+    /// </summary>
+    /// <remarks>
+    /// Nodes that are not an <see cref="ExpressionSyntax"/>, such as a statement or a type declaration, cannot be
+    /// parenthesized and are returned as-is. See <see cref="Parenthesize(ExpressionSyntax)"/> for the details of the
+    /// generated parentheses.
+    /// </remarks>
+    public static SyntaxNode Parenthesize(this SyntaxNode node)
+    {
+        return node is ExpressionSyntax expression ? expression.Parenthesize() : node;
+    }
 }

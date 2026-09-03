@@ -563,6 +563,41 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task ProjectAssetsDependencies()
+    {
+        AddFile("obj/project.assets.json", /*lang=json,strict*/ """
+            {
+              "libraries": {
+                "DirectDependency/1.0.0": {
+                  "type": "package"
+                },
+                "TransitiveDependency/2.0.0": {
+                  "type": "package"
+                },
+                "ProjectReference/1.0.0": {
+                  "type": "project"
+                },
+                "Invalid": {
+                  "type": "package"
+                }
+              }
+            }
+            """);
+
+        var result = await GetDependencies<ProjectAssetsDependencyScanner>([new ProjectAssetsDependencyScanner()]);
+
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "DirectDependency", "1.0.0", 0, 0),
+            (DependencyType.NuGet, "TransitiveDependency", "2.0.0", 0, 0));
+        Assert.HasCount(2, result);
+        Assert.All(result, dependency =>
+        {
+            Assert.False(dependency.NameLocation!.IsUpdatable);
+            Assert.False(dependency.VersionLocation!.IsUpdatable);
+        });
+    }
+
+    [Fact]
     public async Task PackagesConfigWithCsprojDependencies()
     {
         const string Original = """

@@ -52,15 +52,15 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
     internal static readonly DiagnosticDescriptor UseFastEnumGetName = new(
         id: "MFEG0006",
         title: "Use FastEnum GetName",
-        messageFormat: "Use '{0}.GetName()' instead of 'Enum.GetName(...)'",
+        messageFormat: "Use the generated 'GetName()' extension method on the '{0}' value instead of 'Enum.GetName(...)'",
         category: "FastEnumGenerator",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
     internal static readonly DiagnosticDescriptor UseFastEnumIsDefined = new(
         id: "MFEG0007",
-        title: "Use FastEnum IsDefined",
-        messageFormat: "Use '{0}.IsDefined(...)' instead of 'Enum.IsDefined(...)'",
+        title: "Use FastEnum IsDefinedFast",
+        messageFormat: "Use '{0}.IsDefinedFast(...)' instead of 'Enum.IsDefined(...)'",
         category: "FastEnumGenerator",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -73,66 +73,84 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [InvalidEnumType, UseFastEnumParse, UseFastEnumTryParse, UseFastEnumGetNames, UseFastEnumGetValues, UseFastEnumGetName, UseFastEnumIsDefined, UseFastEnumToStringFast];
+    internal static readonly DiagnosticDescriptor EmptyEnumType = new(
+        id: "MFEG0009",
+        title: "FastEnum target enum has no members",
+        messageFormat: "No code is generated for '{0}' because the enum has no members",
+        category: "FastEnumGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [InvalidEnumType, UseFastEnumParse, UseFastEnumTryParse, UseFastEnumGetNames, UseFastEnumGetValues, UseFastEnumGetName, UseFastEnumIsDefined, UseFastEnumToStringFast, EmptyEnumType];
 
     public override void Initialize(AnalysisContext context)
     {
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
+
+        // Validating the attribute arguments only needs the assembly's attribute list, so it does not
+        // require materializing an IOperation for every attribute application in the compilation.
+        context.RegisterCompilationAction(AnalyzeAssemblyAttributes);
+
         context.RegisterCompilationStartAction(context =>
         {
             var fastEnumAttribute = context.Compilation.GetTypeByMetadataName(FastEnumAnalyzerCommon.FastEnumAttributeMetadataName);
             if (fastEnumAttribute is null)
                 return;
 
-            context.RegisterOperationAction(context => AnalyzeAttributeOperation(context, fastEnumAttribute), OperationKind.Attribute);
-
-            var enumType = context.Compilation.GetSpecialType(SpecialType.System_Enum);
             var fastEnumTypes = FastEnumAnalyzerCommon.GetFastEnumTypes(context.Compilation, fastEnumAttribute);
             if (fastEnumTypes.Count == 0)
                 return;
 
-            context.RegisterOperationAction(context => AnalyzeInvocationOperation(context, enumType, fastEnumTypes), OperationKind.Invocation);
+            var enumType = context.Compilation.GetSpecialType(SpecialType.System_Enum);
+            var supportsExtensionMembers = FastEnumAnalyzerCommon.SupportsExtensionMembers(context.Compilation);
+            context.RegisterOperationAction(context => AnalyzeInvocationOperation(context, enumType, fastEnumTypes, supportsExtensionMembers), OperationKind.Invocation);
         });
     }
 
-    private static void AnalyzeAttributeOperation(OperationAnalysisContext context, INamedTypeSymbol fastEnumAttribute)
+    private static void AnalyzeAssemblyAttributes(CompilationAnalysisContext context)
     {
-        var attributeOperation = (IAttributeOperation)context.Operation;
-
-        if (attributeOperation.Operation is not IObjectCreationOperation attribute)
+        var fastEnumAttribute = context.Compilation.GetTypeByMetadataName(FastEnumAnalyzerCommon.FastEnumAttributeMetadataName);
+        if (fastEnumAttribute is null)
             return;
 
-        if (!SymbolEqualityComparer.Default.Equals(attribute.Constructor?.ContainingType, fastEnumAttribute))
-            return;
-
-        AnalyzeAttribute(context, attribute);
-    }
-
-    private static void AnalyzeAttribute(OperationAnalysisContext context, IObjectCreationOperation attribute)
-    {
-        if (attribute.Arguments.Length != 1)
-            return;
-
-        var location = attribute.Syntax.GetLocation();
-        var argument = attribute.Arguments[0].Value;
-
-        if (argument.ConstantValue is { HasValue: true, Value: null })
+        foreach (var attribute in context.Compilation.Assembly.GetAttributes())
         {
-            context.ReportDiagnostic(InvalidEnumType, location, "(null)");
-            return;
+            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, fastEnumAttribute))
+                continue;
+
+            if (attribute.ConstructorArguments.Length != 1)
+                continue;
+
+            var syntaxReference = attribute.ApplicationSyntaxReference;
+            if (syntaxReference is null)
+                continue;
+
+            var argument = attribute.ConstructorArguments[0];
+            switch (argument.Value)
+            {
+                case null:
+                    context.ReportDiagnostic(InvalidEnumType, syntaxReference, "(null)");
+                    break;
+
+                case INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType when !FastEnumAnalyzerCommon.HasEnumMembers(enumType):
+                    context.ReportDiagnostic(EmptyEnumType, syntaxReference, enumType.ToDisplayString());
+                    break;
+
+                case INamedTypeSymbol { TypeKind: TypeKind.Enum }:
+                    break;
+
+                case ITypeSymbol type:
+                    context.ReportDiagnostic(InvalidEnumType, syntaxReference, type.ToDisplayString());
+                    break;
+            }
         }
-
-        if (argument is not ITypeOfOperation { TypeOperand.TypeKind: not TypeKind.Enum } typeOfOperation)
-            return;
-
-        context.ReportDiagnostic(InvalidEnumType, location, typeOfOperation.TypeOperand.ToDisplayString());
     }
 
-    private static void AnalyzeInvocationOperation(OperationAnalysisContext context, INamedTypeSymbol enumType, ImmutableHashSet<INamedTypeSymbol> fastEnumTypes)
+    private static void AnalyzeInvocationOperation(OperationAnalysisContext context, INamedTypeSymbol enumType, ImmutableHashSet<INamedTypeSymbol> fastEnumTypes, bool supportsExtensionMembers)
     {
         var invocationOperation = (IInvocationOperation)context.Operation;
-        if (!FastEnumAnalyzerCommon.TryGetFastEnumInvocationMatch(invocationOperation, enumType, fastEnumTypes, out var match))
+        if (!FastEnumAnalyzerCommon.TryGetFastEnumInvocationMatch(invocationOperation, enumType, fastEnumTypes, supportsExtensionMembers, out var match))
             return;
 
         context.ReportDiagnostic(GetDiagnosticDescriptor(match.MethodKind), invocationOperation, match.EnumType.ToDisplayString());

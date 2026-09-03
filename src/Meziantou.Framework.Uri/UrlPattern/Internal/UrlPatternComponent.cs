@@ -56,7 +56,7 @@ internal sealed class UrlPatternComponent
         Regex regularExpression;
         try
         {
-            regularExpression = new Regex(regexpString, regexOptions, TimeSpan.FromSeconds(1));
+            regularExpression = new Regex(regexpString, regexOptions, Timeout.InfiniteTimeSpan);
         }
         catch (ArgumentException ex)
         {

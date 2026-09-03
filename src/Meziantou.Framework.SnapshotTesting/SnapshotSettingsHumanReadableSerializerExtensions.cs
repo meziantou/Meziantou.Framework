@@ -11,21 +11,13 @@ public static class SnapshotSettingsHumanReadableSerializerExtensions
             if (options is null)
                 return;
 
-            var serializers = settings.Serializers.ToList();
-            var index = serializers.FindIndex(serializer => serializer is HumanReadableSnapshotSerializer);
-            if (index < 0)
+            var serializer = settings.Serializers.OfType<HumanReadableSnapshotSerializer>().FirstOrDefault();
+            if (serializer is null)
                 return;
 
-            var serializer = (HumanReadableSnapshotSerializer)serializers[index];
             var clone = new HumanReadableSnapshotSerializer(serializer.Options with { });
             options(clone.Options);
-
-            serializers[index] = clone;
-            settings.Serializers.Clear();
-            foreach (var item in serializers)
-            {
-                settings.Serializers.Add(item);
-            }
+            settings.Serializers.Replace(serializer, clone);
         }
 
         public void AddConverter(HumanReadableConverter converter)

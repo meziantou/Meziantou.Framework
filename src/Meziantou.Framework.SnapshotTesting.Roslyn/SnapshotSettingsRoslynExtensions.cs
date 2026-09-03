@@ -27,11 +27,15 @@ public static class SnapshotSettingsRoslynExtensions
             snapshotSettings.Serializers.Add(DiagnosticSnapshotSerializer.Instance);
 
             // Roslyn values nested inside another snapshot are written by the human-readable serializer.
-            snapshotSettings.AddConverter(new DiagnosticHumanReadableConverter());
-            snapshotSettings.AddConverter(new LocationHumanReadableConverter());
-            snapshotSettings.AddConverter(new TextSpanHumanReadableConverter());
-            snapshotSettings.AddConverter(new LinePositionHumanReadableConverter());
-            snapshotSettings.AddConverter(new LinePositionSpanHumanReadableConverter());
+            // They are registered in a single call so the human-readable serializer is cloned only once.
+            snapshotSettings.ConfigureHumanReadableSerializer(options =>
+            {
+                options.Converters.Add(new DiagnosticHumanReadableConverter());
+                options.Converters.Add(new LocationHumanReadableConverter());
+                options.Converters.Add(new TextSpanHumanReadableConverter());
+                options.Converters.Add(new LinePositionHumanReadableConverter());
+                options.Converters.Add(new LinePositionSpanHumanReadableConverter());
+            });
         }
     }
 }

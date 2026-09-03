@@ -2,7 +2,7 @@
 
 Library to help implementing applications that must only have a single instance.
 
-Ensuring a single instance is supported on every operating system. Notifying the first instance uses a named pipe and is only supported on Windows: elsewhere `StartServer` defaults to `false` and `NotifyFirstInstance` returns `false`.
+Works on Windows, Linux, and macOS. The instance is scoped to the current user, so two users of the same machine can each run their own instance. Notifying the first instance uses a named pipe, which is backed by a Unix domain socket on Linux and macOS.
 
 ````c#
 // Generate a unique Guid for the application

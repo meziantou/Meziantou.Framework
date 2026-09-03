@@ -210,7 +210,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             // RFC 7234 Section 5.2.1.7: only-if-cached request directive
             if ((requestCacheControl?.OnlyIfCached) is true)
             {
-                if (isFresh || allowStale)
+                if (!requiresValidation && (isFresh || allowStale))
                 {
                     // RFC 7234 Section 5.5: Add Warning header for stale response
                     var warningHeader = !isFresh ? "110 - \"Response is Stale\"" : null;
@@ -266,6 +266,21 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
                     // RFC 7234 Section 4.3.3: Handle 304 Not Modified
                     if (conditionalResponse.StatusCode is HttpStatusCode.NotModified)
                     {
+                        // RFC 9111 Section 4.3.4 only allows a 304 to update a stored response when its
+                        // validators identify that response. A mismatched validator means this 304 cannot
+                        // validate the representation whose body we selected.
+                        if (HasMismatchedValidator(cacheResult, conditionalResponse))
+                        {
+                            conditionalResponse.Dispose();
+
+                            var replacementRequestTime = _timeProvider.GetUtcNow();
+                            var replacementResponse = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                            var replacementResponseTime = _timeProvider.GetUtcNow();
+                            await StoreAsync(request, replacementResponse, replacementRequestTime, replacementResponseTime, cancellationToken).ConfigureAwait(false);
+                            replacementResponse.RequestMessage ??= request;
+                            return replacementResponse;
+                        }
+
                         // Update cached entry with new headers from 304 response
                         await cacheResult.UpdateFromValidationResponse(conditionalResponse, validationRequestTime, responseTime, cancellationToken).ConfigureAwait(false);
                         try
@@ -470,66 +485,6 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         // RFC 7234 Section 5.1: Set Age header
         response.Headers.Age = currentAge;
 
-        // Rebuild Cache-Control header from CacheEntry properties
-        // This ensures that updates from 304 responses are reflected
-        if (entry.MaxAge is not null || entry.SharedMaxAge is not null || entry.MustRevalidate || entry.ProxyRevalidate || entry.ResponseNoCache || entry.Public || entry.Private || entry.NoTransform || entry.Immutable || entry.StaleIfError is not null)
-        {
-            response.Headers.Remove("Cache-Control");
-            var cacheControl = new CacheControlHeaderValue();
-
-            if (entry.MaxAge is not null)
-            {
-                cacheControl.MaxAge = entry.MaxAge;
-            }
-
-            if (entry.SharedMaxAge is not null)
-            {
-                cacheControl.SharedMaxAge = entry.SharedMaxAge;
-            }
-
-            if (entry.MustRevalidate)
-            {
-                cacheControl.MustRevalidate = true;
-            }
-
-            if (entry.ProxyRevalidate)
-            {
-                cacheControl.ProxyRevalidate = true;
-            }
-
-            if (entry.ResponseNoCache)
-            {
-                cacheControl.NoCache = true;
-            }
-
-            if (entry.Public)
-            {
-                cacheControl.Public = true;
-            }
-
-            if (entry.Private)
-            {
-                cacheControl.Private = true;
-            }
-
-            if (entry.NoTransform)
-            {
-                cacheControl.NoTransform = true;
-            }
-
-            if (entry.Immutable)
-            {
-                cacheControl.Extensions.Add(new NameValueHeaderValue("immutable"));
-            }
-
-            if (entry.StaleIfError is not null)
-            {
-                cacheControl.Extensions.Add(new NameValueHeaderValue("stale-if-error", ((int)entry.StaleIfError.Value.TotalSeconds).ToString(CultureInfo.InvariantCulture)));
-            }
-
-            response.Headers.CacheControl = cacheControl;
-        }
-
         // Set RequestMessage on the response
         response.RequestMessage = request;
         return response;
@@ -566,7 +521,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
     {
         // RFC 5861: stale-if-error allows a stale response to be served for the given amount of time past
         // the point at which it became stale.
-        if (entry.StaleIfError is null)
+        if (entry.StaleIfError is null || entry.MustRevalidate || entry.ResponseNoCache)
             return false;
 
         var staleness = currentAge - freshnessLifetime;
@@ -600,5 +555,24 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
                headers.IfModifiedSince is not null ||
                headers.IfUnmodifiedSince is not null ||
                headers.IfRange is not null;
+    }
+
+    private static bool HasMismatchedValidator(CacheEntry entry, HttpResponseMessage validationResponse)
+    {
+        var validator = validationResponse.Headers.ETag;
+        if (validator is not null)
+            return !string.Equals(entry.ETag, validator.ToString(), StringComparison.Ordinal);
+
+        var lastModified = validationResponse.Content.Headers.LastModified;
+        if (lastModified is null && validationResponse.Headers.TryGetValues("Last-Modified", out var values))
+        {
+            var value = values.FirstOrDefault();
+            if (value is not null && DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, out var parsedDate))
+            {
+                lastModified = parsedDate;
+            }
+        }
+
+        return lastModified is not null && entry.LastModified != lastModified;
     }
 }

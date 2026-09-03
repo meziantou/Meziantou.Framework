@@ -203,6 +203,35 @@ public class RequestValidationTests
     }
 
     [Fact]
+    public async Task WhenOnlyIfCachedResponseRequiresValidationThen504()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=600, no-cache"), ("ETag", "\"v1\""));
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: no-cache, max-age=600
+              ETag: "v1"
+            Content:
+              Headers:
+                Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
+              Value: cached
+            """);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { OnlyIfCached = true };
+        await context.SnapshotResponse(request, """
+            StatusCode: 504 (GatewayTimeout)
+            Content:
+              Headers:
+                Content-Length: 0
+              Value:
+            """);
+    }
+
+    [Fact]
     public async Task WhenOnlyIfCachedWithStaleAndMaxStaleThenServed()
     {
         await using var context = new HttpTestContext();

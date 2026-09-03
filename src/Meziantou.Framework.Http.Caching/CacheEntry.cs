@@ -184,9 +184,9 @@ internal sealed class CacheEntry
 
             if (request.Headers.TryGetValues(headerName, out var values))
             {
-                // Sort values to ensure consistent ordering for cache matching
-                // RFC 7234: Order of header values shouldn't affect cache matching
-                foreach (var value in values.Order(StringComparer.Ordinal))
+                // Values can only be reordered when their field specification says that ordering does not
+                // affect semantics. A generic Vary implementation must preserve the received order.
+                foreach (var value in values)
                 {
                     secondaryKey.Add(headerName, value);
                 }
@@ -400,8 +400,7 @@ internal sealed class CacheEntry
             Expires = newExpires;
         }
 
-        // RFC 7234 Section 4.3.4: Update stored response headers with headers from 304 response
-        // The cache MUST update the stored response with header fields provided in the 304 response
+        // RFC 9111 Section 4.3.4: Update stored response headers with headers from 304 response.
         await UpdateSerializedResponseHeaders(validationResponse, cancellationToken);
     }
 
@@ -410,17 +409,13 @@ internal sealed class CacheEntry
         // Deserialize the stored response
         var storedResponse = ResponseSerializer.Deserialize(SerializedResponse);
 
-        // Collect headers to update from the 304 response
-        // RFC 7234 Section 4.3.4: Update stored response headers, but exclude headers
-        // that are managed as metadata properties (Cache-Control, Date, ETag, Expires, Last-Modified)
+        // RFC 9111 Section 3.2: every response field supplied by the 304 replaces the stored value,
+        // except Content-Length. Age is regenerated when the cached response is returned.
         var headersToUpdate = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
         foreach (var header in validationResponse.Headers)
         {
-            // Skip headers managed separately via properties
-            if (string.Equals(header.Key, "Cache-Control", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(header.Key, "Date", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(header.Key, "ETag", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(header.Key, "Expires", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(header.Key, "Content-Length", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(header.Key, "Age", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
@@ -430,8 +425,8 @@ internal sealed class CacheEntry
 
         foreach (var header in validationResponse.Content.Headers)
         {
-            // Skip headers managed separately via properties
-            if (string.Equals(header.Key, "Last-Modified", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(header.Key, "Content-Length", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(header.Key, "Age", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
@@ -486,4 +481,3 @@ internal sealed class CacheEntry
         storedResponse.Dispose();
     }
 }
-

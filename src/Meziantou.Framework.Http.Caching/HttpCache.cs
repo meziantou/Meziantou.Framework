@@ -213,13 +213,14 @@ internal sealed class HttpCache
         // response is stored under the same rules as any other. It remains the caller's responsibility not
         // to share one HttpClient, and therefore one cache, between users.
 
-        // Check if response has explicit freshness information or is cacheable by default
-        var hasExplicitFreshness = responseCacheControl?.MaxAge is not null ||
-                                   responseCacheControl?.SharedMaxAge is not null ||
-                                   responseCacheControl?.Public is true;
+        // Check if the response is explicitly cacheable by this private cache or is cacheable by default.
+        // s-maxage only applies to shared caches, so it cannot make a response storable here.
+        var isExplicitlyCacheable = responseCacheControl?.MaxAge is not null ||
+                                    responseCacheControl?.Public is true ||
+                                    responseCacheControl?.Private is true;
 
         // Validate Expires header if present and no Cache-Control freshness
-        if (!hasExplicitFreshness && HasExpiresHeader(response))
+        if (!isExplicitlyCacheable && HasExpiresHeader(response))
         {
             var expires = CacheEntry.ParseExpiresHeader(response);
             var date = response.Headers.Date ?? DateTimeOffset.UtcNow;
@@ -227,12 +228,12 @@ internal sealed class HttpCache
             // If Expires is valid and in the future, it counts as explicit freshness
             if (expires.HasValue && expires.Value > date)
             {
-                hasExplicitFreshness = true;
+                isExplicitlyCacheable = true;
             }
             // If Expires is expired or invalid, don't cache unless status is cacheable by default
         }
 
-        if (!hasExplicitFreshness && !HasDefaultCacheableStatusCode(response.StatusCode))
+        if (!isExplicitlyCacheable && !HasDefaultCacheableStatusCode(response.StatusCode))
             return false;
 
         return true;

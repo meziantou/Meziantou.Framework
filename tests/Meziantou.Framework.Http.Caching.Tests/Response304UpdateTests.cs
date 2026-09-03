@@ -5,11 +5,12 @@ namespace Meziantou.Framework.Http.Caching.Tests;
 public class Response304UpdateTests
 {
     [Fact]
-    public async Task When304ResponseHasNewETagThenCachedETagUpdated()
+    public async Task When304ResponseHasMismatchedETagThenFetchesFullResponse()
     {
         await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "content", ("Cache-Control", "max-age=0"), ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified, ("Cache-Control", "max-age=600"), ("ETag", "\"v2\""));
+        context.AddResponse(HttpStatusCode.OK, "replacement", ("Cache-Control", "max-age=600"), ("ETag", "\"v2\""));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
@@ -26,19 +27,18 @@ public class Response304UpdateTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Age: 0
               Cache-Control: max-age=600
-              ETag: "v1"
+              ETag: "v2"
             Content:
               Headers:
-                Content-Length: 7
+                Content-Length: 11
                 Content-Type: text/plain; charset=utf-8
-              Value: content
+              Value: replacement
             """);
     }
 
     [Fact]
-    public async Task When304ResponseHasNewLastModifiedThenCachedLastModifiedUpdated()
+    public async Task When304ResponseHasMismatchedLastModifiedThenFetchesFullResponse()
     {
         await using var context = new HttpTestContext();
         var oldLastModified = context.TimeProvider.GetUtcNow().AddDays(-2);
@@ -46,6 +46,7 @@ public class Response304UpdateTests
 
         context.AddResponse(HttpStatusCode.OK, "content", ("Cache-Control", "max-age=0"), ("Last-Modified", oldLastModified.ToString("R")));
         context.AddResponse(HttpStatusCode.NotModified, ("Cache-Control", "max-age=600"), ("Last-Modified", newLastModified.ToString("R")));
+        context.AddResponse(HttpStatusCode.OK, "replacement", ("Cache-Control", "max-age=600"), ("Last-Modified", newLastModified.ToString("R")));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
@@ -62,14 +63,13 @@ public class Response304UpdateTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Age: 0
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Length: 7
+                Content-Length: 11
                 Content-Type: text/plain; charset=utf-8
-                Last-Modified: Thu, 30 Dec 1999 00:00:00 GMT
-              Value: content
+                Last-Modified: Fri, 31 Dec 1999 00:00:00 GMT
+              Value: replacement
             """);
     }
 
@@ -102,6 +102,41 @@ public class Response304UpdateTests
               Headers:
                 Expires: Sat, 01 Jan 2000 01:00:00 GMT
               Value:
+            """);
+    }
+
+    [Fact]
+    public async Task When304ResponseHasMatchingETagThenReplacesStoredHeaders()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "content", ("Cache-Control", "max-age=0"), ("ETag", "\"v1\""), ("X-Version", "old"));
+        context.AddResponse(HttpStatusCode.NotModified, ("Cache-Control", "max-age=600"), ("ETag", "\"v1\""), ("X-Version", "new"));
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=0
+              ETag: "v1"
+              X-Version: old
+            Content:
+              Headers:
+                Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
+              Value: content
+            """);
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 0
+              Cache-Control: max-age=600
+              ETag: "v1"
+              X-Version: new
+            Content:
+              Headers:
+                Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
+              Value: content
             """);
     }
 

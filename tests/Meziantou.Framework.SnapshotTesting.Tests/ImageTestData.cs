@@ -324,6 +324,132 @@ internal static class ImageTestData
         return result;
     }
 
+    public static byte[] CreateGif(int width, int height, IReadOnlyList<uint> colorTable, byte backgroundColorIndex, params GifFrameData[] frames)
+    {
+        ArgumentNullException.ThrowIfNull(colorTable);
+        ArgumentNullException.ThrowIfNull(frames);
+        if (colorTable.Count == 0)
+            throw new ArgumentException("At least one color is required.", nameof(colorTable));
+
+        if (frames.Length == 0)
+            throw new ArgumentException("At least one frame is required.", nameof(frames));
+
+        var colorBits = 1;
+        while ((1 << colorBits) < colorTable.Count)
+        {
+            colorBits++;
+        }
+
+        using var stream = new MemoryStream();
+        stream.Write("GIF89a"u8);
+        WriteGifUInt16(stream, width);
+        WriteGifUInt16(stream, height);
+        stream.WriteByte((byte)(0b1000_0000 | (colorBits - 1))); // Global color table of 2^colorBits entries
+        stream.WriteByte(backgroundColorIndex);
+        stream.WriteByte(0); // Pixel aspect ratio
+
+        var colorCount = 1 << colorBits;
+        for (var i = 0; i < colorCount; i++)
+        {
+            var color = i < colorTable.Count ? colorTable[i] : 0u;
+            stream.WriteByte((byte)((color >> 16) & 0xFF));
+            stream.WriteByte((byte)((color >> 8) & 0xFF));
+            stream.WriteByte((byte)(color & 0xFF));
+        }
+
+        var minimumCodeSize = Math.Max(2, colorBits);
+        foreach (var frame in frames)
+        {
+            if (frame.PixelIndexes.Count != checked(frame.Width * frame.Height))
+                throw new ArgumentException("The number of pixels does not match the frame size.", nameof(frames));
+
+            var hasTransparency = frame.TransparentColorIndex >= 0;
+            stream.WriteByte(0x21); // Extension introducer
+            stream.WriteByte(0xF9); // Graphic control extension
+            stream.WriteByte(4); // Block size
+            stream.WriteByte((byte)((frame.DisposalMethod << 2) | (hasTransparency ? 1 : 0)));
+            WriteGifUInt16(stream, 0); // Delay
+            stream.WriteByte(hasTransparency ? checked((byte)frame.TransparentColorIndex) : (byte)0);
+            stream.WriteByte(0); // Block terminator
+
+            stream.WriteByte(0x2C); // Image separator
+            WriteGifUInt16(stream, frame.Left);
+            WriteGifUInt16(stream, frame.Top);
+            WriteGifUInt16(stream, frame.Width);
+            WriteGifUInt16(stream, frame.Height);
+            stream.WriteByte(0); // No local color table, not interlaced
+
+            stream.WriteByte((byte)minimumCodeSize);
+            WriteGifSubBlocks(stream, EncodeGifPixels(frame.PixelIndexes, minimumCodeSize));
+        }
+
+        stream.WriteByte(0x3B); // Trailer
+        return stream.ToArray();
+    }
+
+    /// <summary>
+    /// Encodes the pixels without ever growing the LZW dictionary: every pixel is preceded by a clear code, so
+    /// all codes keep the same size. The output is larger than a real encoder would produce but is valid.
+    /// </summary>
+    private static byte[] EncodeGifPixels(IReadOnlyList<byte> pixelIndexes, int minimumCodeSize)
+    {
+        var clearCode = 1 << minimumCodeSize;
+        var endCode = clearCode + 1;
+        var codeSize = minimumCodeSize + 1;
+
+        using var stream = new MemoryStream();
+        var bitBuffer = 0u;
+        var bitCount = 0;
+
+        foreach (var pixelIndex in pixelIndexes)
+        {
+            WriteCode(clearCode);
+            WriteCode(pixelIndex);
+        }
+
+        WriteCode(endCode);
+        while (bitCount > 0)
+        {
+            stream.WriteByte((byte)(bitBuffer & 0xFF));
+            bitBuffer >>= 8;
+            bitCount -= Math.Min(bitCount, 8);
+        }
+
+        return stream.ToArray();
+
+        void WriteCode(int code)
+        {
+            bitBuffer |= (uint)code << bitCount;
+            bitCount += codeSize;
+            while (bitCount >= 8)
+            {
+                stream.WriteByte((byte)(bitBuffer & 0xFF));
+                bitBuffer >>= 8;
+                bitCount -= 8;
+            }
+        }
+    }
+
+    private static void WriteGifSubBlocks(Stream stream, ReadOnlySpan<byte> data)
+    {
+        while (!data.IsEmpty)
+        {
+            var blockSize = Math.Min(255, data.Length);
+            stream.WriteByte((byte)blockSize);
+            stream.Write(data[..blockSize]);
+            data = data[blockSize..];
+        }
+
+        stream.WriteByte(0); // Block terminator
+    }
+
+    private static void WriteGifUInt16(Stream stream, int value)
+    {
+        Span<byte> buffer = stackalloc byte[2];
+        BinaryPrimitives.WriteUInt16LittleEndian(buffer, checked((ushort)value));
+        stream.Write(buffer);
+    }
+
     private static void WritePngChunk(Stream stream, ReadOnlySpan<byte> type, ReadOnlySpan<byte> data)
     {
         Span<byte> uintBuffer = stackalloc byte[4];
@@ -372,5 +498,11 @@ internal static class ImageTestData
     private static void WriteUInt16LittleEndian(byte[] data, int offset, ushort value)
     {
         BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(offset, 2), value);
+    }
+
+    internal sealed record GifFrameData(int Left, int Top, int Width, int Height, IReadOnlyList<byte> PixelIndexes)
+    {
+        public int DisposalMethod { get; init; }
+        public int TransparentColorIndex { get; init; } = -1;
     }
 }

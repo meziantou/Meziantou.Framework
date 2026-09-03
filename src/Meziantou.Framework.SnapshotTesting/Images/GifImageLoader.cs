@@ -2,10 +2,15 @@ namespace Meziantou.Framework.SnapshotTesting;
 
 internal static class GifImageLoader
 {
-    internal static bool TryLoad(ReadOnlySpan<byte> data, [NotNullWhen(true)] out Image? image)
+    /// <summary>
+    /// Decodes every frame of a GIF. Frames after the first usually contain only the pixels that changed, so
+    /// each frame is composited over the canvas left by the previous one, honoring the disposal method of the
+    /// graphic control extension.
+    /// </summary>
+    internal static bool TryExtractFrames(ReadOnlySpan<byte> data, [NotNullWhen(true)] out List<Image>? frames)
     {
-        image = null;
-        if (!IsGifHeader(data) || data.Length < 13)
+        frames = null;
+        if (!IsGifHeader(data))
             return false;
 
         if (!TryReadUInt16(data, 6, out var logicalWidth) ||
@@ -27,7 +32,18 @@ internal static class GifImageLoader
                 return false;
         }
 
+        var backgroundColor = new Argb(0x00000000u);
+        if (globalColorTable is not null && backgroundColorIndex < globalColorTable.Length)
+        {
+            backgroundColor = globalColorTable[backgroundColorIndex];
+        }
+
+        var canvas = new Argb[checked(logicalWidth * logicalHeight)];
+        var canvasInitialized = false;
+        var extractedFrames = new List<Image>();
         var transparentColorIndex = -1;
+        var disposalMethod = DisposalMethod.None;
+
         while (offset < data.Length)
         {
             var blockType = data[offset];
@@ -36,27 +52,48 @@ internal static class GifImageLoader
             switch (blockType)
             {
                 case 0x3B: // Trailer
-                    return false;
+                    if (offset != data.Length || extractedFrames.Count == 0)
+                        return false;
+
+                    frames = extractedFrames;
+                    return true;
+
                 case 0x21: // Extension block
-                    if (!TryReadExtensionBlock(data, ref offset, ref transparentColorIndex))
+                    if (!TryReadExtensionBlock(data, ref offset, ref transparentColorIndex, ref disposalMethod))
                         return false;
 
                     break;
+
                 case 0x2C: // Image descriptor
+                    // A frame that declares a transparent color leaves the uncovered area transparent instead of
+                    // painting the background color of the logical screen.
+                    var frameBackground = transparentColorIndex >= 0 ? new Argb(0x00000000u) : backgroundColor;
+                    if (!canvasInitialized)
+                    {
+                        Array.Fill(canvas, frameBackground);
+                        canvasInitialized = true;
+                    }
+
                     if (!TryReadImage(
                         data,
                         ref offset,
                         logicalWidth,
                         logicalHeight,
                         globalColorTable,
-                        backgroundColorIndex,
                         transparentColorIndex,
-                        out image))
+                        disposalMethod,
+                        frameBackground,
+                        canvas,
+                        out var frame))
                     {
                         return false;
                     }
 
-                    return true;
+                    extractedFrames.Add(frame);
+                    transparentColorIndex = -1;
+                    disposalMethod = DisposalMethod.None;
+                    break;
+
                 default:
                     return false;
             }
@@ -71,8 +108,10 @@ internal static class GifImageLoader
         int logicalWidth,
         int logicalHeight,
         Argb[]? globalColorTable,
-        byte backgroundColorIndex,
         int transparentColorIndex,
+        DisposalMethod disposalMethod,
+        Argb frameBackground,
+        Argb[] canvas,
         [NotNullWhen(true)] out Image? image)
     {
         image = null;
@@ -116,16 +155,7 @@ internal static class GifImageLoader
         if (!TryDecodeLzw(compressedData, lzwMinimumCodeSize, expectedPixelCount, out var colorIndexes))
             return false;
 
-        var background = new Argb(0x00000000u);
-        if (transparentColorIndex < 0 &&
-            globalColorTable is not null &&
-            backgroundColorIndex < globalColorTable.Length)
-        {
-            background = globalColorTable[backgroundColorIndex];
-        }
-
-        var pixels = new Argb[checked(logicalWidth * logicalHeight)];
-        Array.Fill(pixels, background);
+        var previousCanvas = disposalMethod is DisposalMethod.RestoreToPrevious ? (Argb[])canvas.Clone() : null;
 
         var interlaced = (packedFields & 0b0100_0000) != 0;
         var rowOrder = interlaced ? BuildInterlaceRowOrder(imageHeight) : null;
@@ -151,12 +181,47 @@ internal static class GifImageLoader
                 if (paletteIndex == transparentColorIndex)
                     continue;
 
-                pixels[destinationRowOffset + targetX] = activeColorTable[paletteIndex];
+                canvas[destinationRowOffset + targetX] = activeColorTable[paletteIndex];
             }
         }
 
-        image = Image.Create(logicalWidth, logicalHeight, pixels);
+        image = Image.Create(logicalWidth, logicalHeight, (Argb[])canvas.Clone());
+
+        // The disposal method of a frame describes what the next frame is drawn over.
+        switch (disposalMethod)
+        {
+            case DisposalMethod.RestoreToBackgroundColor:
+                FillRectangle(canvas, logicalWidth, logicalHeight, imageLeft, imageTop, imageWidth, imageHeight, frameBackground);
+                break;
+
+            case DisposalMethod.RestoreToPrevious:
+                if (previousCanvas is not null)
+                {
+                    Array.Copy(previousCanvas, canvas, canvas.Length);
+                }
+
+                break;
+        }
+
         return true;
+    }
+
+    private static void FillRectangle(Argb[] canvas, int logicalWidth, int logicalHeight, int left, int top, int width, int height, Argb color)
+    {
+        for (var y = top; y < top + height; y++)
+        {
+            if (y < 0 || y >= logicalHeight)
+                continue;
+
+            var rowOffset = y * logicalWidth;
+            for (var x = left; x < left + width; x++)
+            {
+                if (x < 0 || x >= logicalWidth)
+                    continue;
+
+                canvas[rowOffset + x] = color;
+            }
+        }
     }
 
     private static int[] BuildInterlaceRowOrder(int height)
@@ -314,7 +379,7 @@ internal static class GifImageLoader
         return true;
     }
 
-    private static bool TryReadExtensionBlock(ReadOnlySpan<byte> data, ref int offset, ref int transparentColorIndex)
+    private static bool TryReadExtensionBlock(ReadOnlySpan<byte> data, ref int offset, ref int transparentColorIndex, ref DisposalMethod disposalMethod)
     {
         if (offset >= data.Length)
             return false;
@@ -335,6 +400,7 @@ internal static class GifImageLoader
         var packedFields = data[offset];
         var hasTransparency = (packedFields & 0b0000_0001) != 0;
         transparentColorIndex = hasTransparency ? data[offset + 3] : -1;
+        disposalMethod = (DisposalMethod)((packedFields & 0b0001_1100) >> 2);
         offset += 4;
 
         if (data[offset] != 0)
@@ -431,6 +497,14 @@ internal static class GifImageLoader
 
     private static bool HasGlobalColorTable(byte packedFields) => (packedFields & 0b1000_0000) != 0;
     private static bool HasLocalColorTable(byte packedFields) => (packedFields & 0b1000_0000) != 0;
+
+    private enum DisposalMethod
+    {
+        None = 0,
+        DoNotDispose = 1,
+        RestoreToBackgroundColor = 2,
+        RestoreToPrevious = 3,
+    }
 
     private ref struct GifBitReader(ReadOnlySpan<byte> data)
     {

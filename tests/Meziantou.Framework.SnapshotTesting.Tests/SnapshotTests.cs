@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 using Xunit.Sdk;
+using GifFrameData = Meziantou.Framework.SnapshotTesting.Tests.ImageTestData.GifFrameData;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
@@ -492,6 +493,93 @@ public sealed partial class SnapshotTests
         Assert.All(data.Data, snapshot => Assert.Equal(SnapshotType.Png.FileExtension, snapshot.Extension));
         Assert.Equal(CreateSingleFramePng(), data.Data[0].Data);
         Assert.Equal(CreateSingleFramePng(), data.Data[1].Data);
+    }
+
+    [Fact]
+    public void AddGifSerializer_CompositesDeltaEncodedFramesOverThePreviousFrame()
+    {
+        var gif = ImageTestData.CreateGif(
+            width: 2,
+            height: 2,
+            colorTable: [0xFFFFFFu, 0x000000u],
+            backgroundColorIndex: 1,
+            new GifFrameData(Left: 0, Top: 0, Width: 2, Height: 2, PixelIndexes: [0, 0, 0, 0]),
+            new GifFrameData(Left: 1, Top: 0, Width: 1, Height: 1, PixelIndexes: [1]));
+
+        var settings = new SnapshotSettings();
+        settings.Serializers.AddGifSerializer();
+        var data = settings.Serializers.Serialize(SnapshotType.Gif, gif);
+
+        Assert.Equal(2, data.Data.Count);
+        Assert.Equal(CreatePng2x2(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu), data.Data[0].Data);
+        Assert.Equal(CreatePng2x2(0xFFFFFFFFu, 0xFF000000u, 0xFFFFFFFFu, 0xFFFFFFFFu), data.Data[1].Data);
+    }
+
+    [Fact]
+    public void AddGifSerializer_RestoresTheBackgroundColorBetweenFramesWhenDisposalMethodIsRestoreToBackground()
+    {
+        var gif = ImageTestData.CreateGif(
+            width: 2,
+            height: 2,
+            colorTable: [0xFFFFFFu, 0x000000u, 0xFF0000u],
+            backgroundColorIndex: 2,
+            new GifFrameData(Left: 0, Top: 0, Width: 2, Height: 2, PixelIndexes: [0, 0, 0, 0]),
+            new GifFrameData(Left: 0, Top: 0, Width: 1, Height: 1, PixelIndexes: [1]) { DisposalMethod = 2 },
+            new GifFrameData(Left: 1, Top: 1, Width: 1, Height: 1, PixelIndexes: [1]));
+
+        var settings = new SnapshotSettings();
+        settings.Serializers.AddGifSerializer();
+        var data = settings.Serializers.Serialize(SnapshotType.Gif, gif);
+
+        Assert.Equal(3, data.Data.Count);
+        Assert.Equal(CreatePng2x2(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu), data.Data[0].Data);
+        Assert.Equal(CreatePng2x2(0xFF000000u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu), data.Data[1].Data);
+
+        // The rectangle covered by the second frame went back to the background color, the rest of the canvas
+        // still holds the pixels of the first frame.
+        Assert.Equal(CreatePng2x2(0xFFFF0000u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF000000u), data.Data[2].Data);
+    }
+
+    [Fact]
+    public void AddGifSerializer_RestoresThePreviousFrameWhenDisposalMethodIsRestoreToPrevious()
+    {
+        var gif = ImageTestData.CreateGif(
+            width: 2,
+            height: 2,
+            colorTable: [0xFFFFFFu, 0x000000u],
+            backgroundColorIndex: 1,
+            new GifFrameData(Left: 0, Top: 0, Width: 2, Height: 2, PixelIndexes: [0, 0, 0, 0]),
+            new GifFrameData(Left: 0, Top: 0, Width: 1, Height: 1, PixelIndexes: [1]) { DisposalMethod = 3 },
+            new GifFrameData(Left: 1, Top: 1, Width: 1, Height: 1, PixelIndexes: [1]));
+
+        var settings = new SnapshotSettings();
+        settings.Serializers.AddGifSerializer();
+        var data = settings.Serializers.Serialize(SnapshotType.Gif, gif);
+
+        Assert.Equal(3, data.Data.Count);
+        Assert.Equal(CreatePng2x2(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu), data.Data[0].Data);
+        Assert.Equal(CreatePng2x2(0xFF000000u, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu), data.Data[1].Data);
+        Assert.Equal(CreatePng2x2(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFF000000u), data.Data[2].Data);
+    }
+
+    [Fact]
+    public void AddGifSerializer_KeepsThePixelsOfThePreviousFrameWhereTheFrameIsTransparent()
+    {
+        var gif = ImageTestData.CreateGif(
+            width: 2,
+            height: 2,
+            colorTable: [0xFFFFFFu, 0x000000u],
+            backgroundColorIndex: 0,
+            new GifFrameData(Left: 0, Top: 0, Width: 2, Height: 2, PixelIndexes: [1, 1, 1, 1]),
+            new GifFrameData(Left: 0, Top: 0, Width: 2, Height: 2, PixelIndexes: [0, 1, 1, 1]) { TransparentColorIndex = 1 });
+
+        var settings = new SnapshotSettings();
+        settings.Serializers.AddGifSerializer();
+        var data = settings.Serializers.Serialize(SnapshotType.Gif, gif);
+
+        Assert.Equal(2, data.Data.Count);
+        Assert.Equal(CreatePng2x2(0xFF000000u, 0xFF000000u, 0xFF000000u, 0xFF000000u), data.Data[0].Data);
+        Assert.Equal(CreatePng2x2(0xFFFFFFFFu, 0xFF000000u, 0xFF000000u, 0xFF000000u), data.Data[1].Data);
     }
 
     [Fact]
@@ -1284,6 +1372,11 @@ public sealed partial class SnapshotTests
             0x00,
             0x3B,
         ];
+    }
+
+    private static byte[] CreatePng2x2(uint topLeft, uint topRight, uint bottomLeft, uint bottomRight)
+    {
+        return ImageTestData.CreatePngRgba32(width: 2, height: 2, pixels: [topLeft, topRight, bottomLeft, bottomRight]);
     }
 
     private static byte[] CreateSingleFramePng(uint color = 0xFFFFFFFFu)

@@ -246,6 +246,24 @@ public sealed class RobotsFileTests
         Assert.Equal(["B"], robots.Groups[1].UserAgents);
     }
 
+    [Theory]
+    [InlineData("\v")]
+    [InlineData("\f")]
+    [InlineData("\u0085")]
+    [InlineData("\u2028")]
+    [InlineData("\u2029")]
+    public void Parse_NonStandardLineSeparators_DoNotEndTheLine(string separator)
+    {
+        // RFC 9309 ends a line at CR, LF or CRLF only. Every other Unicode line break is an
+        // ordinary character that belongs to the value it appears in.
+        var robots = RobotsFile.Parse($"User-agent: *\nDisallow: /a{separator}b\n");
+
+        var group = Assert.Single(robots.Groups);
+        var rule = Assert.Single(group.Rules);
+        Assert.Equal($"/a{separator}b", rule.Value);
+        Assert.Empty(robots.ParseErrors);
+    }
+
     [Fact]
     public void Parse_LeadingByteOrderMark_IsIgnored()
     {

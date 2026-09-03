@@ -7,4 +7,8 @@
     <Description>robots.txt parser following RFC 9309 with Google path-wildcard extensions</Description>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="../Meziantou.Framework/StringExtensions.SplitLines.cs" Link="Internals/StringExtensions.SplitLines.cs" />
+  </ItemGroup>
+
 </Project>

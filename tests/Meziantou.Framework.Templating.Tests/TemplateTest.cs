@@ -928,6 +928,47 @@ public class TemplateTest
         Assert.False(template.IsBuilt);
     }
 
+    [Fact]
+    public void Template_RunWithNamedParameters_MissingArgumentUsesDefaultValue()
+    {
+        var template = new Template();
+        template.Arguments.Add(new TemplateArgument("n", typeof(int)));
+        template.Load("<%= n %>");
+
+        Assert.Equal("0", template.Run(new Dictionary<string, object?>(StringComparer.Ordinal)));
+    }
+
+    [Fact]
+    public void Template_RunWithNamedParameters_MissingArgumentThrowsWhenEnabled()
+    {
+        var template = new Template { ThrowOnMissingArgument = true };
+        template.Arguments.Add(new TemplateArgument("n", typeof(int)));
+        template.Load("<%= n %>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Run(new Dictionary<string, object?>(StringComparer.Ordinal)));
+        Assert.Contains("'n'", exception.Message);
+    }
+
+    [Fact]
+    public void Template_RunWithNamedParameters_ProvidedArgumentDoesNotThrowWhenEnabled()
+    {
+        var template = new Template { ThrowOnMissingArgument = true };
+        template.Arguments.Add(new TemplateArgument("n", typeof(int)));
+        template.Load("<%= n %>");
+
+        Assert.Equal("42", template.Run(new Dictionary<string, object?>(StringComparer.Ordinal) { { "n", 42 } }));
+    }
+
+    [Fact]
+    public void Template_RunWithNamedParameters_NullArgumentValueDoesNotThrowWhenEnabled()
+    {
+        var template = new Template { ThrowOnMissingArgument = true };
+        template.Arguments.Add(new TemplateArgument("name", typeof(string)));
+        template.Load("<%= name is null ? \"<null>\" : name %>");
+
+        Assert.Equal("<null>", template.Run(new Dictionary<string, object?>(StringComparer.Ordinal) { { "name", null } }));
+    }
+
     private sealed class TemplateWithCountingStringWriter : Template
     {
         public int CreateStringWriterCallCount { get; private set; }

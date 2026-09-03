@@ -177,6 +177,7 @@ namespace Meziantou.Framework.Templating
         public Meziantou.Framework.Templating.AssemblyReferenceCollection AssemblyReferences { get => throw null; }
         public Meziantou.Framework.Templating.FileReferenceCollection IncludedSourceFiles { get => throw null; }
         public bool Debug { get => throw null; set { } }
+        public bool ThrowOnMissingArgument { get => throw null; set { } }
         public void Load(string text) { }
         public void Load(System.IO.TextReader reader) { }
         public void Build(System.Threading.CancellationToken cancellationToken) { }

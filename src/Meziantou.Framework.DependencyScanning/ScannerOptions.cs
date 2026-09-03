@@ -33,6 +33,7 @@ public sealed class ScannerOptions
         new NpmPackageJsonDependencyScanner(),
         new NuSpecDependencyScanner(),
         new PackagesConfigDependencyScanner(),
+        new ProjectAssetsDependencyScanner(),
         new ProjectJsonDependencyScanner(),
         new PythonRequirementsDependencyScanner(),
         new RenovateExtendsDependencyScanner(),

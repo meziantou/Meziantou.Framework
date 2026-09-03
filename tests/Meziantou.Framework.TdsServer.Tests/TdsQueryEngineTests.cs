@@ -2198,6 +2198,104 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_IifFunction_WithAnExistsCondition_ReturnsProjectedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id, IIF(EXISTS(SELECT 1 FROM orders o WHERE o.Id = c.Id), 1, 0) AS HasOrder
+                    FROM customers c
+                    ORDER BY c.Id
+                    """;
+            },
+            """
+            Id HasOrder
+            1 1
+            2 1
+            4 0
+            """,
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id, HasOrder = IIF(Order[].Where(order => (order.Id == customer2.Id)).Any(), 1, 0)})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_IifFunction_WithAnInSubqueryCondition_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE IIF(Id IN (SELECT Id FROM orders), 'Y', 'N') = 'Y'
+                    ORDER BY Id
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => (IIF(Order[].Select(order => order.Id).Contains(customer.Id), \"Y\", \"N\") == \"Y\")).OrderBy(customer2 => customer2.Id).Select(customer3 => new TdsProjection() {Id = customer3.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_IifFunction_WithASubqueryOnACommonTableExpression_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    WITH large_orders AS (SELECT Id FROM orders WHERE Amount > 5)
+                    SELECT Id
+                    FROM customers
+                    WHERE IIF(Id IN (SELECT Id FROM large_orders), 'Y', 'N') = 'Y'
+                    ORDER BY Id
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => (IIF(Order[].Where(order => (order.Amount > 5)).Select(order2 => new TdsProjection() {Id = order2.Id}).Select(projection => projection.Id).Contains(customer.Id), \"Y\", \"N\") == \"Y\")).OrderBy(customer2 => customer2.Id).Select(customer3 => new TdsProjection() {Id = customer3.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_IifFunction_WithASubqueryUsingASqlParameter_ReturnsProjectedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id, IIF(EXISTS(SELECT 1 FROM orders o WHERE o.Id = @id), 1, 0) AS HasOrder
+                    FROM customers c
+                    ORDER BY c.Id
+                    """;
+                _ = command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = 3 });
+            },
+            """
+            Id HasOrder
+            1 1
+            2 1
+            4 1
+            """,
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id, HasOrder = IIF(Order[].Where(order => (order.Id == 3)).Any(), 1, 0)})");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_ChooseFunction_ReturnsFilteredRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -3214,6 +3312,56 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_Parameters_AreSupportedInTheSelectList()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, Id + @offset AS Shifted
+                    FROM customers
+                    ORDER BY Id
+                    """;
+                _ = command.Parameters.Add(new SqlParameter("@offset", SqlDbType.Int) { Value = 10 });
+            },
+            """
+            Id Shifted
+            1 11
+            2 12
+            4 14
+            """,
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id, Shifted = (customer2.Id + 10)})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Parameters_AreSupportedInAGroupedAggregate()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Region, SUM(Amount * @factor) AS Total
+                    FROM orders
+                    GROUP BY Region
+                    ORDER BY Region
+                    """;
+                _ = command.Parameters.Add(new SqlParameter("@factor", SqlDbType.Int) { Value = 2 });
+            },
+            """
+            Region Total
+            North 60
+            South 10
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Select(group => new TdsProjection() {Region = group.Key, Total = group.Sum(order2 => (order2.Amount * 2))}).OrderBy(projection => projection.Region)");
+    }
+
+    [Fact]
     [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The stored procedure name is generated within the test and not user-controlled.")]
     public async Task SqlClient_QueryEngine_StoredProcedure_MapsParametersToDelegate()
     {
@@ -3326,6 +3474,7 @@ public sealed class TdsQueryEngineTests
     [InlineData("SELECT d.Id FROM (SELECT Id FROM orders) d")]
     [InlineData("SELECT Id FROM customers WHERE Id IN (SELECT Id FROM orders)")]
     [InlineData("SELECT Id FROM customers WHERE EXISTS (SELECT 1 FROM orders)")]
+    [InlineData("SELECT Id FROM customers WHERE IIF(EXISTS (SELECT 1 FROM orders), 1, 0) = 1")]
     [InlineData("SELECT Id FROM customers UNION ALL SELECT Id FROM orders")]
     [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The query text comes from the test's own inline data.")]
     public async Task SqlClient_QueryEngine_QueryRoot_Unauthorized_IsDeniedThroughEveryReference(string commandText)
@@ -3349,6 +3498,7 @@ public sealed class TdsQueryEngineTests
     [InlineData("SELECT c2.Id FROM customers c1 INNER JOIN customers c2 ON c1.Id = c2.Id")]
     [InlineData("WITH c AS (SELECT Id FROM customers) SELECT Id FROM c")]
     [InlineData("SELECT Id FROM customers WHERE EXISTS (SELECT 1 FROM customers)")]
+    [InlineData("SELECT Id FROM customers WHERE IIF(EXISTS (SELECT 1 FROM customers), 1, 0) = 1")]
     [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The query text comes from the test's own inline data.")]
     public async Task SqlClient_QueryEngine_QueryRoot_Authorized_StillResolvesThroughEveryReference(string commandText)
     {
@@ -3403,42 +3553,6 @@ public sealed class TdsQueryEngineTests
             },
             expectedErrorNumber: 50004,
             expectedMessageContains: "Duplicate common table expression name 'c'");
-    }
-
-    [Fact]
-    public async Task SqlClient_QueryEngine_Iif_WithAnExistsCondition_ReturnsAQueryEngineError()
-    {
-        var queryEngineOptions = CreateQueryEngineOptions();
-
-        await ExecuteQueryExpectingServerError(
-            queryEngineOptions,
-            command =>
-            {
-                command.CommandText = """
-                    SELECT IIF(EXISTS(SELECT 1 FROM customers), 1, 0) AS Value
-                    FROM customers
-                    """;
-            },
-            expectedErrorNumber: 50004,
-            expectedMessageContains: "IIF does not support a subquery");
-    }
-
-    [Fact]
-    public async Task SqlClient_QueryEngine_Iif_WithAnInSubqueryCondition_ReturnsAQueryEngineError()
-    {
-        var queryEngineOptions = CreateQueryEngineOptions();
-
-        await ExecuteQueryExpectingServerError(
-            queryEngineOptions,
-            command =>
-            {
-                command.CommandText = """
-                    SELECT IIF(Id IN (SELECT Id FROM customers), 1, 0) AS Value
-                    FROM customers
-                    """;
-            },
-            expectedErrorNumber: 50004,
-            expectedMessageContains: "IIF does not support a subquery");
     }
 
     [Fact]

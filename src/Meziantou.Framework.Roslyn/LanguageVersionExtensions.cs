@@ -38,6 +38,14 @@ internal static partial class LanguageVersionExtensions
         return LanguageVersion.Default;
     }
 
+    public static LanguageVersion GetCSharpLanguageVersion(this ParseOptions parseOptions)
+    {
+        if (parseOptions is CSharpParseOptions options)
+            return options.LanguageVersion;
+
+        return LanguageVersion.Default;
+    }
+
     public static LanguageVersion GetCSharpLanguageVersion(this Compilation compilation)
     {
         var syntaxTree = compilation.SyntaxTrees.FirstOrDefault();

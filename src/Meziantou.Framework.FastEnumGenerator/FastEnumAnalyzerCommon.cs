@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Operations;
 
 namespace Meziantou.Framework.FastEnumGenerator;
@@ -8,12 +8,6 @@ namespace Meziantou.Framework.FastEnumGenerator;
 internal static class FastEnumAnalyzerCommon
 {
     internal const string FastEnumAttributeMetadataName = "Meziantou.Framework.Annotations.FastEnumAttribute";
-
-    /// <summary>
-    /// C# 14, the first version supporting extension members. Hardcoded because the referenced
-    /// Microsoft.CodeAnalysis version may not declare the enum member yet.
-    /// </summary>
-    internal const LanguageVersion CSharp14 = (LanguageVersion)1400;
 
     internal static ImmutableHashSet<INamedTypeSymbol> GetFastEnumTypes(Compilation compilation, INamedTypeSymbol fastEnumAttribute)
     {
@@ -83,7 +77,7 @@ internal static class FastEnumAnalyzerCommon
 
     internal static bool SupportsExtensionMembers(Compilation compilation)
     {
-        return compilation is CSharpCompilation { LanguageVersion: >= CSharp14 };
+        return compilation.GetCSharpLanguageVersion().IsCSharp14OrGreater();
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Reflection;
+using Meziantou.Framework.Collections;
 using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -69,7 +70,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         // Only the language version is needed, so depend on the parse options rather than the whole
         // compilation, which is invalidated on every edit.
         var supportsExtensionMembers = context.ParseOptionsProvider.Select(static (options, _) =>
-            options is CSharpParseOptions parseOptions && parseOptions.LanguageVersion >= FastEnumAnalyzerCommon.CSharp14);
+            options.GetCSharpLanguageVersion().IsCSharp14OrGreater());
 
         var generationInput = enums.Collect().Combine(supportsExtensionMembers);
         context.RegisterSourceOutput(generationInput, static (spc, source) => GenerateCode(spc, source.Left, source.Right));
@@ -89,7 +90,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         return assembly.GetName().Version?.ToString() ?? "0.0.0.0";
     }
 
-    private static EquatableArray<EnumToProcess> GetEnumsToProcess(GeneratorAttributeSyntaxContext ctx, CancellationToken cancellationToken)
+    private static ImmutableEquatableArray<EnumToProcess> GetEnumsToProcess(GeneratorAttributeSyntaxContext ctx, CancellationToken cancellationToken)
     {
         var flagsAttributeSymbol = ctx.SemanticModel.Compilation.GetTypeByMetadataName("System.FlagsAttribute");
         var builder = ImmutableArray.CreateBuilder<EnumToProcess>();
@@ -124,7 +125,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             builder.Add(new EnumToProcess(
                 fullCsharpName,
                 extensionNamespace ?? GetNamespace(enumType),
-                new EquatableArray<EnumMemberToProcess>(members),
+                ImmutableEquatableArray.Create(members),
                 isPublic,
                 isFlags,
                 isZeroBasedConsecutive,
@@ -133,7 +134,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
                 CreateNameToken(fullCsharpName)));
         }
 
-        return new EquatableArray<EnumToProcess>(builder.ToImmutable());
+        return ImmutableEquatableArray.Create(builder.ToImmutable());
     }
 
     /// <summary>
@@ -345,7 +346,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         var visibility = enumeration.IsPublic ? "public" : "internal";
         var enumTypeName = "global::" + enumeration.FullCsharpName;
         var token = enumeration.NameToken;
-        var members = enumeration.Members.AsImmutableArray();
+        var members = enumeration.Members;
 
         var uniqueMembers = GetUniqueMembers(members);
         var hasDistinctMetadata = members.Any(static item => item.MetadataName is not null && !string.Equals(item.MetadataName, item.Name, StringComparison.Ordinal));
@@ -582,7 +583,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine();
     }
 
-    private static void AppendMemberArrays(StringBuilder sb, string enumTypeName, string token, ImmutableArray<EnumMemberToProcess> members, bool needsNamesArray, bool needsMetadataNamesArray, bool supportsExtensionMembers)
+    private static void AppendMemberArrays(StringBuilder sb, string enumTypeName, string token, ImmutableEquatableArray<EnumMemberToProcess> members, bool needsNamesArray, bool needsMetadataNamesArray, bool supportsExtensionMembers)
     {
         var emitted = false;
         if (needsNamesArray)
@@ -730,7 +731,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine();
     }
 
-    private static void AppendTryParseHelpers(StringBuilder sb, string enumTypeName, EnumToProcess enumeration, string token, bool hasDistinctMetadata, ImmutableArray<EnumMemberToProcess> members, CancellationToken cancellationToken)
+    private static void AppendTryParseHelpers(StringBuilder sb, string enumTypeName, EnumToProcess enumeration, string token, bool hasDistinctMetadata, ImmutableEquatableArray<EnumMemberToProcess> members, CancellationToken cancellationToken)
     {
         AppendTryParseSingleHelperMethod(sb, enumTypeName, token, "TryParseSingle_" + token, GetParseTokens(members, useMetadata: false), cancellationToken);
         if (hasDistinctMetadata)
@@ -998,7 +999,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine();
     }
 
-    private static List<EnumMemberToProcess> GetUniqueMembers(ImmutableArray<EnumMemberToProcess> members)
+    private static List<EnumMemberToProcess> GetUniqueMembers(ImmutableEquatableArray<EnumMemberToProcess> members)
     {
         var result = new List<EnumMemberToProcess>(members.Length);
         var values = new HashSet<ulong>();
@@ -1013,7 +1014,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         return result;
     }
 
-    private static List<ParseTokenToProcess> GetParseTokens(ImmutableArray<EnumMemberToProcess> members, bool useMetadata)
+    private static List<ParseTokenToProcess> GetParseTokens(ImmutableEquatableArray<EnumMemberToProcess> members, bool useMetadata)
     {
         var tokens = new List<ParseTokenToProcess>(members.Length);
 
@@ -1035,7 +1036,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         return tokens;
     }
 
-    private static bool IsDenseMembersAligned(ImmutableArray<EnumMemberToProcess> members)
+    private static bool IsDenseMembersAligned(ImmutableEquatableArray<EnumMemberToProcess> members)
     {
         for (var i = 0; i < members.Length; i++)
         {
@@ -1074,7 +1075,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
     private sealed record EnumToProcess(
         string FullCsharpName,
         string? FullNamespace,
-        EquatableArray<EnumMemberToProcess> Members,
+        ImmutableEquatableArray<EnumMemberToProcess> Members,
         bool IsPublic,
         bool IsFlags,
         bool IsZeroBasedConsecutive,

@@ -10,10 +10,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../Meziantou.Framework.Roslyn/EmbeddedAttribute.cs" LinkBase="Roslyn" />
+    <Compile Include="../Meziantou.Framework.Roslyn/LanguageVersionExtensions.cs" LinkBase="Roslyn" />
     <Compile Include="../Meziantou.Framework.FastEnumGenerator/FastEnumAnalyzerCommon.cs" Link="FastEnumAnalyzerCommon.cs" />
     <Compile Include="../Meziantou.Framework.FastEnumGenerator/FastEnumInvocationMatch.cs" Link="FastEnumInvocationMatch.cs" />
     <Compile Include="../Meziantou.Framework.FastEnumGenerator/FastEnumMethodKind.cs" Link="FastEnumMethodKind.cs" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" PrivateAssets="all" />
   </ItemGroup>
+
+  <Import Project="../Meziantou.Framework.Roslyn/buildTransitive/Meziantou.Framework.Roslyn.targets" />
+
 </Project>

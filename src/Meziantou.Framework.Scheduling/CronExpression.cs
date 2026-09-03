@@ -2,7 +2,10 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Scheduling;
 
-public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>, ISpanParsable<CronExpression>
+public sealed class CronExpression : IRecurrenceRule
+#if NET7_0_OR_GREATER
+    , IParsable<CronExpression>, ISpanParsable<CronExpression>
+#endif
 {
     private readonly CronField _seconds;
     private readonly CronField _minutes;
@@ -670,10 +673,12 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
         return null;
     }
 
+#if NET7_0_OR_GREATER
     static CronExpression IParsable<CronExpression>.Parse(string s, IFormatProvider? provider) => Parse(s);
     static bool IParsable<CronExpression>.TryParse(string? s, IFormatProvider? provider, [NotNullWhen(true)] out CronExpression? result) => TryParse(s, out result);
     static CronExpression ISpanParsable<CronExpression>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
     static bool ISpanParsable<CronExpression>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [NotNullWhen(true)] out CronExpression? result) => TryParse(s, out result);
+#endif
 
     private enum CronFieldKind
     {

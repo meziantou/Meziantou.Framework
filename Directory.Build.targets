@@ -4,6 +4,11 @@
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
 
+  <!-- Trimming is not supported on the older targets, so a multi-targeting project can set IsTrimmable unconditionally -->
+  <PropertyGroup Condition="'$(TargetFramework)' != '' AND '$(IsTrimmable)' == 'true' AND !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <IsTrimmable>false</IsTrimmable>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
     <Compile Include="$(MSBuildThisFileDirectory)/common/AssemblyInfo.cs"
              Link="Properties/AssemblyInfo.common.cs"

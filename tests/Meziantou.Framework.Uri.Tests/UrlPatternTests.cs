@@ -1750,12 +1750,19 @@ public sealed class UrlPatternTests
         Assert.Equal(expected, pattern.Hostname);
     }
 
-    [Fact]
-    public void IsMatch_HostnameWrittenInUnicode_MatchesTheUnicodeUrl()
+    [Theory]
+    [InlineData("café.example.com")]
+    // ToASCII maps a label to lower case before it encodes it, which IdnMapping only does when ICU is
+    // available, so an upper-case label is what tells the two modes apart
+    [InlineData("CAFÉ.example.com")]
+    [InlineData("xn--caf-dma.example.com")]
+    public void IsMatch_HostnameWrittenInUnicode_MatchesTheUnicodeUrl(string hostname)
     {
-        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = "café.example.com" });
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = hostname });
 
+        Assert.Equal("xn--caf-dma.example.com", pattern.Hostname);
         Assert.True(pattern.IsMatch("https://café.example.com/"));
+        Assert.True(pattern.IsMatch("https://CAFÉ.example.com/"));
         Assert.True(pattern.IsMatch("https://xn--caf-dma.example.com/"));
     }
 

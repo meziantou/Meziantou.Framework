@@ -485,15 +485,19 @@ internal static class UrlCanonicalizer
         var labels = domain.Split('.');
         for (var i = 0; i < labels.Length; i++)
         {
-            if (Ascii.IsValid(labels[i]))
+            // ToASCII maps a label to lower case before it encodes it. IdnMapping only does so when ICU is
+            // available, so in globalization-invariant mode "CAFÉ" would encode as "xn--caf-pia" instead of
+            // "xn--caf-dma" and stop matching the host a Uri reports. Mapping it here covers both modes
+            var label = labels[i].ToLowerInvariant();
+            if (Ascii.IsValid(label))
             {
-                labels[i] = labels[i].ToLowerInvariant();
+                labels[i] = label;
                 continue;
             }
 
             try
             {
-                labels[i] = IdnMapping.GetAscii(labels[i]);
+                labels[i] = IdnMapping.GetAscii(label);
             }
             catch (ArgumentException ex)
             {

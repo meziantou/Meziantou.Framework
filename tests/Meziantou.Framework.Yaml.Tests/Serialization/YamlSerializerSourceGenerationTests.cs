@@ -2179,7 +2179,7 @@ public class YamlSerializerSourceGenerationTests
             },
             typeInfo);
 
-        Assert.Contains("url_value: \"https://example.com\"", yaml);
+        Assert.Contains("url_value: https://example.com", yaml);
         Assert.Contains("display_name: Ada", yaml);
 
         var roundtripped = YamlSerializer.Deserialize(yaml, typeInfo);
@@ -3779,8 +3779,8 @@ extra_list:
         Assert.NotNull(value);
         Assert.Equal(id, value.Id);
         Assert.Equal(optionalId, value.OptionalId);
-        Assert.Contains("Id: \"ref:id\"", yaml);
-        Assert.Contains("OptionalId: \"ref:optional-id\"", yaml);
+        Assert.Contains("Id: ref:id", yaml);
+        Assert.Contains("OptionalId: ref:optional-id", yaml);
     }
 
     [Fact]
@@ -3806,7 +3806,7 @@ extra_list:
         Assert.Equal(1, createConverterCount);
         Assert.Equal(canConvertCount, factory.CanConvertCount);
         Assert.Equal(createConverterCount, factory.CreateConverterCount);
-        Assert.Contains("Id: \"ref:id\"", yaml);
+        Assert.Contains("Id: ref:id", yaml);
         Assert.NotNull(value);
         Assert.Equal(id, value.Id);
     }

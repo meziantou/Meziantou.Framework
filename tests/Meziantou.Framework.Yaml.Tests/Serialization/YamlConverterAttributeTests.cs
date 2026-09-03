@@ -124,7 +124,7 @@ public sealed class YamlConverterAttributeTests
     public void RoundTrip_UsesOpenGenericPropertyConverterWithMultipleTypeParameters()
     {
         var yaml = YamlSerializer.Serialize(new PairModel { Pair = new Pair<int, string> { First = 1, Second = "two" } });
-        Assert.Contains("Pair: \"1|two\"", yaml);
+        Assert.Contains("Pair: 1|two", yaml);
 
         var value = YamlSerializer.Deserialize<PairModel>(yaml)!;
         Assert.Equal(1, value.Pair!.First);
@@ -135,7 +135,7 @@ public sealed class YamlConverterAttributeTests
     public void RoundTrip_UsesNestedOpenGenericPropertyConverter()
     {
         var yaml = YamlSerializer.Serialize(new NestedConverterPairModel { Pair = new Pair<int, string> { First = 3, Second = "four" } });
-        Assert.Contains("Pair: \"3|four\"", yaml);
+        Assert.Contains("Pair: 3|four", yaml);
 
         var value = YamlSerializer.Deserialize<NestedConverterPairModel>(yaml)!;
         Assert.Equal(3, value.Pair!.First);

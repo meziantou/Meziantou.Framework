@@ -652,6 +652,8 @@ namespace Meziantou.Framework
         public static string RemovePrefix(this string str, string prefix, System.StringComparison stringComparison) => throw null;
         public static LineSplitEnumerator SplitLines(this string str) => throw null;
         public static LineSplitEnumerator SplitLines(this string str, Meziantou.Framework.LineBreakMode lineBreakMode) => throw null;
+        public static LineSplitEnumerator SplitLines(this System.ReadOnlySpan<char> str) => throw null;
+        public static LineSplitEnumerator SplitLines(this System.ReadOnlySpan<char> str, Meziantou.Framework.LineBreakMode lineBreakMode) => throw null;
         public ref struct LineSplitEntry
         {
             public System.ReadOnlySpan<char> Line { get => throw null; }

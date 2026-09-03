@@ -95,6 +95,32 @@ public class StringExtensionsTests
     }
 
     [Theory]
+    [MemberData(nameof(SplitLineData))]
+    public void SplitLineSpan_FromReadOnlySpan(string str, (string Line, string Separator)[] expected)
+    {
+        var actual = new List<(string, string)>();
+        foreach (var (line, separator) in str.AsSpan().SplitLines())
+        {
+            actual.Add((line.ToString(), separator.ToString()));
+        }
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [MemberData(nameof(SplitLineWithLineBreakModeData))]
+    public void SplitLineSpan_FromReadOnlySpan_WithLineBreakMode(string str, LineBreakMode lineBreakMode, (string Line, string Separator)[] expected)
+    {
+        var actual = new List<(string, string)>();
+        foreach (var (line, separator) in str.AsSpan().SplitLines(lineBreakMode))
+        {
+            actual.Add((line.ToString(), separator.ToString()));
+        }
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
     [MemberData(nameof(SplitLineWithLineBreakModeData))]
     public void SplitLineSpan_WithLineBreakMode(string str, LineBreakMode lineBreakMode, (string Line, string Separator)[] expected)
     {

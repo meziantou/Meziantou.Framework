@@ -278,27 +278,10 @@ public sealed class RobotsFile
 
         public void Feed(ReadOnlySpan<char> content)
         {
-            while (!content.IsEmpty)
+            // RFC 9309 ends a line at CR, LF or CRLF only, so the other Unicode line breaks stay
+            // part of the value they appear in.
+            foreach (ReadOnlySpan<char> line in content.SplitLines(LineBreakMode.Standard))
             {
-                var nl = content.IndexOfAny('\n', '\r');
-                ReadOnlySpan<char> line;
-                if (nl < 0)
-                {
-                    line = content;
-                    content = [];
-                }
-                else
-                {
-                    line = content[..nl];
-                    var isCarriageReturn = content[nl] == '\r';
-                    content = content[(nl + 1)..];
-                    // Skip the '\n' of a "\r\n" pair. Only a '\r' can be followed by a '\n'
-                    // belonging to the same line break; consuming it unconditionally would
-                    // swallow the empty line in "\n\n".
-                    if (isCarriageReturn && !content.IsEmpty && content[0] == '\n')
-                        content = content[1..];
-                }
-
                 FeedLine(line.ToString());
             }
         }

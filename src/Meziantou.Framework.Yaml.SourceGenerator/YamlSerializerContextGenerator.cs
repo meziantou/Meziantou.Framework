@@ -1791,6 +1791,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         var converterTypeName = GetYamlConverterAttributeTypeName(member, type);
         var objectCreationHandling = GetObjectCreationHandling(member);
         var (blockSequenceMappingStyle, blockSequenceSequenceStyle) = GetBlockSequenceItemStyles(member);
+        var stringStyle = GetStringStyle(member);
         var isRequiredKeyword = member is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true };
         var isRequired = isRequiredKeyword || HasAttribute(member, "Meziantou.Framework.Yaml.Serialization.YamlRequiredAttribute");
         var isIgnoredOnRead = memberIgnoreCondition == IgnoreWhenReading;
@@ -1803,7 +1804,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         var numberHandling = converterTypeName is null ? GetNumberHandlingValue(member, type) : null;
         var enumCustomNames = converterTypeName is null ? GetEnumCustomNames(type) : null;
         var skipObjectInitializer = usesAccessorForWrite || RequiresConstructorAccessor(declaringType, accessors);
-        return new MemberModel(member, type, nameForRead, nameForWrite, accessExpression, assign, memberIgnoreCondition, converterTypeName, objectCreationHandling, blockSequenceMappingStyle, blockSequenceSequenceStyle, isRequired, isIgnoredOnRead, isInitOnly, isRequiredKeyword, requiresIncludeFields, disallowNull, disallowNull, isReadOnlyProperty, isReadOnlyField, skipObjectInitializer, numberHandling, enumCustomNames);
+        return new MemberModel(member, type, nameForRead, nameForWrite, accessExpression, assign, memberIgnoreCondition, converterTypeName, objectCreationHandling, blockSequenceMappingStyle, blockSequenceSequenceStyle, stringStyle, isRequired, isIgnoredOnRead, isInitOnly, isRequiredKeyword, requiresIncludeFields, disallowNull, disallowNull, isReadOnlyProperty, isReadOnlyField, skipObjectInitializer, numberHandling, enumCustomNames);
     }
 
     /// <summary>
@@ -3490,6 +3491,9 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 case "IndentBlockSequences":
                     model.IndentBlockSequences = argument.Value.Value as bool?;
                     break;
+                case "StringStyle":
+                    model.StringStyle = NormalizeEnumName(argument.Value.ToCSharpString());
+                    break;
                 case "PropertyNameCaseInsensitive":
                     model.PropertyNameCaseInsensitive = argument.Value.Value as bool?;
                     break;
@@ -3691,6 +3695,24 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         }
 
         return (null, null);
+    }
+
+    private static string? GetStringStyle(ISymbol member)
+    {
+        foreach (var attribute in member.GetAttributes())
+        {
+            if (!string.Equals(attribute.AttributeClass?.ToDisplayString(), "Meziantou.Framework.Yaml.Serialization.YamlStringStyleAttribute", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (attribute.ConstructorArguments.Length == 1)
+            {
+                return NormalizeEnumName(attribute.ConstructorArguments[0].ToCSharpString());
+            }
+        }
+
+        return null;
     }
 
     private static string? TryGetObjectCreationHandlingOverride(INamedTypeSymbol typeSymbol)

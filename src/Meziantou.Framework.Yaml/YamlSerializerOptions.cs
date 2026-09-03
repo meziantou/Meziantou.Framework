@@ -367,4 +367,12 @@ public sealed record YamlSerializerOptions
             throw new ArgumentOutOfRangeException(paramName, value, "The YAML sequence item style is not valid.");
         }
     }
+
+    internal static void ValidateScalarStyle(ScalarStyle value, string paramName)
+    {
+        if (value is not (ScalarStyle.Any or ScalarStyle.Plain or ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted or ScalarStyle.Literal or ScalarStyle.Folded))
+        {
+            throw new ArgumentOutOfRangeException(paramName, value, "The YAML scalar style is not valid.");
+        }
+    }
 }

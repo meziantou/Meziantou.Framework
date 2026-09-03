@@ -8,6 +8,7 @@ internal sealed class SourceGenerationOptionsModel
     public bool? WriteIndented { get; set; }
     public int? IndentSize { get; set; }
     public bool? IndentBlockSequences { get; set; }
+    public string? StringStyle { get; set; }
     public bool? PropertyNameCaseInsensitive { get; set; }
     public bool? IncludeFields { get; set; }
     public bool? IgnoreReadOnlyFields { get; set; }
@@ -42,6 +43,7 @@ internal sealed class SourceGenerationOptionsModel
         if (other.WriteIndented.HasValue) WriteIndented = other.WriteIndented;
         if (other.IndentSize.HasValue) IndentSize = other.IndentSize;
         if (other.IndentBlockSequences.HasValue) IndentBlockSequences = other.IndentBlockSequences;
+        if (!string.IsNullOrEmpty(other.StringStyle)) StringStyle = other.StringStyle;
         if (other.PropertyNameCaseInsensitive.HasValue) PropertyNameCaseInsensitive = other.PropertyNameCaseInsensitive;
         if (other.IncludeFields.HasValue) IncludeFields = other.IncludeFields;
         if (other.IgnoreReadOnlyFields.HasValue) IgnoreReadOnlyFields = other.IgnoreReadOnlyFields;

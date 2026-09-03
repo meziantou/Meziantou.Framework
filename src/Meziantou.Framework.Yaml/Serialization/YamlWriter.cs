@@ -19,6 +19,8 @@ public sealed class YamlWriter : YamlReaderWriterBase
     private char _lastWrittenChar;
     private YamlSequenceItemStyle _blockSequenceMappingStyle;
     private YamlSequenceItemStyle _blockSequenceSequenceStyle;
+    private ScalarStyle _stringStyle;
+    private bool _suppressNextNewLine;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="YamlWriter"/> class.
@@ -86,6 +88,27 @@ public sealed class YamlWriter : YamlReaderWriterBase
         if (sequenceStyle != YamlSequenceItemStyle.Default)
         {
             _blockSequenceSequenceStyle = sequenceStyle;
+        }
+
+        return scope;
+    }
+
+    /// <summary>Temporarily overrides the style used to write string values.</summary>
+    /// <param name="style">The style override, or <see cref="ScalarStyle.Any"/> to keep the current style.</param>
+    /// <returns>A scope that restores the previous style when disposed.</returns>
+    /// <remarks>
+    /// The style applies to string values only. It is ignored for a value that cannot be represented in it, and for
+    /// mapping keys.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="style"/> is not a defined <see cref="ScalarStyle"/>.</exception>
+    public StringStyleScope PushStringStyle(ScalarStyle style)
+    {
+        YamlSerializerOptions.ValidateScalarStyle(style, nameof(style));
+
+        var scope = new StringStyleScope(this, _stringStyle);
+        if (style != ScalarStyle.Any)
+        {
+            _stringStyle = style;
         }
 
         return scope;
@@ -979,6 +1002,13 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
     private void WriteNewLine()
     {
+        // A "keep" block scalar already wrote the line break that separates it from the next node.
+        if (_suppressNextNewLine)
+        {
+            _suppressNextNewLine = false;
+            return;
+        }
+
         Write('\n');
     }
 
@@ -986,6 +1016,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
     {
         _blockSequenceMappingStyle = ResolveOptionStyle(Options.BlockSequenceMappingStyle, YamlSequenceItemStyle.Compact);
         _blockSequenceSequenceStyle = ResolveOptionStyle(Options.BlockSequenceSequenceStyle, YamlSequenceItemStyle.Expanded);
+        _stringStyle = Options.ScalarStylePreferences.StringStyle;
     }
 
     private bool ShouldCompactSequenceItem(ContainerKind kind)
@@ -1002,6 +1033,11 @@ public sealed class YamlWriter : YamlReaderWriterBase
     {
         _blockSequenceMappingStyle = mappingStyle;
         _blockSequenceSequenceStyle = sequenceStyle;
+    }
+
+    private void RestoreStringStyle(ScalarStyle style)
+    {
+        _stringStyle = style;
     }
 
     private static YamlSequenceItemStyle ResolveOptionStyle(YamlSequenceItemStyle style, YamlSequenceItemStyle fallback)
@@ -1078,6 +1114,11 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return;
         }
 
+        if (!isKey && TryWriteStyledString(value))
+        {
+            return;
+        }
+
         if (ShouldQuoteAmbiguousScalar(value))
         {
             Write('"');
@@ -1087,6 +1128,228 @@ public sealed class YamlWriter : YamlReaderWriterBase
         }
 
         WriteScalarCore(value, isKey);
+    }
+
+    /// <summary>Writes <paramref name="value"/> using the requested string style.</summary>
+    /// <param name="value">The string value to write.</param>
+    /// <returns>
+    /// <see langword="true"/> when the value was written; <see langword="false"/> when the requested style cannot
+    /// represent it and the automatic style must be used instead.
+    /// </returns>
+    private bool TryWriteStyledString(ReadOnlySpan<char> value)
+    {
+        switch (_stringStyle)
+        {
+            case ScalarStyle.Literal or ScalarStyle.Folded:
+                return TryWriteBlockScalar(value, _stringStyle);
+
+            case ScalarStyle.SingleQuoted:
+                return TryWriteSingleQuotedScalar(value);
+
+            case ScalarStyle.DoubleQuoted:
+                Write('"');
+                WriteEscaped(value);
+                Write('"');
+                return true;
+
+            case ScalarStyle.Plain when IsPlainSafe(value, isKey: false):
+                Write(value);
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    private bool TryWriteSingleQuotedScalar(ReadOnlySpan<char> value)
+    {
+        foreach (var c in value)
+        {
+            // A line break inside a single-quoted scalar is folded when it is read back, and a control character
+            // can only be represented by a double-quoted escape.
+            if (IsLineBreak(c) || (c != '\t' && !Emitter.IsPrintable(c)))
+            {
+                return false;
+            }
+        }
+
+        Write('\'');
+        foreach (var c in value)
+        {
+            if (c == '\'')
+            {
+                Write("''");
+            }
+            else
+            {
+                Write(c);
+            }
+        }
+
+        Write('\'');
+        return true;
+    }
+
+    /// <summary>Writes <paramref name="value"/> using the literal (<c>|</c>) or folded (<c>&gt;</c>) block style.</summary>
+    /// <returns><see langword="true"/> when the value was written as a block scalar.</returns>
+    private bool TryWriteBlockScalar(ReadOnlySpan<char> value, ScalarStyle style)
+    {
+        // A block scalar spans several lines, so it has no meaning inside a flow collection.
+        if (IsFlow || !TryAnalyzeBlockScalar(value, style, out var body, out var trailingBreaks, out var needsIndentIndicator))
+        {
+            return false;
+        }
+
+        Write(style == ScalarStyle.Literal ? '|' : '>');
+
+        if (needsIndentIndicator)
+        {
+            Write((char)('0' + Options.IndentSize));
+        }
+
+        if (trailingBreaks == 0)
+        {
+            Write('-');
+        }
+        else if (trailingBreaks > 1)
+        {
+            Write('+');
+        }
+
+        var parentIndent = _depth == 0 ? 0 : _frames[_depth - 1].Indent;
+        WriteBlockScalarBody(body, style, parentIndent + Options.IndentSize);
+
+        if (trailingBreaks > 1)
+        {
+            // A "keep" block scalar owns every trailing line break, including the one that separates it from the
+            // node that follows, so that separator is written here instead.
+            for (var i = 0; i < trailingBreaks; i++)
+            {
+                Write('\n');
+            }
+
+            _suppressNextNewLine = true;
+        }
+
+        return true;
+    }
+
+    /// <summary>Determines whether <paramref name="value"/> round-trips through a block scalar.</summary>
+    /// <param name="value">The string value to write.</param>
+    /// <param name="style">The block style to use.</param>
+    /// <param name="body">The value without its trailing line breaks.</param>
+    /// <param name="trailingBreaks">The number of line breaks at the end of the value, which selects the chomping indicator.</param>
+    /// <param name="needsIndentIndicator">Whether the content indentation must be stated explicitly.</param>
+    private bool TryAnalyzeBlockScalar(ReadOnlySpan<char> value, ScalarStyle style, out ReadOnlySpan<char> body, out int trailingBreaks, out bool needsIndentIndicator)
+    {
+        needsIndentIndicator = false;
+        trailingBreaks = 0;
+        body = value;
+
+        while (body.Length > 0 && body[^1] == '\n')
+        {
+            body = body[..^1];
+            trailingBreaks++;
+        }
+
+        // A block scalar needs at least one content line, and a blank at the very end would be read back as
+        // trailing whitespace that a reader is free to drop.
+        if (body.Length == 0 || body[^1] is ' ' or '\t')
+        {
+            return false;
+        }
+
+        var isLineStart = true;
+        for (var i = 0; i < body.Length; i++)
+        {
+            var c = body[i];
+            if (c == '\n')
+            {
+                if (i > 0 && body[i - 1] is ' ' or '\t')
+                {
+                    return false;
+                }
+
+                isLineStart = true;
+                continue;
+            }
+
+            // Any other line break is normalized to a line feed when the block scalar is read back, and a
+            // control character can only be represented by a double-quoted escape.
+            if (IsLineBreak(c) || (c != '\t' && !Emitter.IsPrintable(c)))
+            {
+                return false;
+            }
+
+            if (isLineStart)
+            {
+                // Indentation is written with spaces, and a reader stops at a tab where it expects one.
+                if (c == '\t')
+                {
+                    return false;
+                }
+
+                // A folded scalar reads a more-indented line literally and stops folding around it, so a line
+                // that starts with a blank would not round-trip.
+                if (c == ' ' && style == ScalarStyle.Folded)
+                {
+                    return false;
+                }
+            }
+
+            isLineStart = false;
+        }
+
+        // The content indentation is detected from the first non-empty line, so a value that starts with a blank
+        // or with an empty line has to state it explicitly. YAML writes that indicator as a single digit.
+        if (body[0] is ' ' or '\n')
+        {
+            if (style == ScalarStyle.Folded || Options.IndentSize > 9)
+            {
+                return false;
+            }
+
+            needsIndentIndicator = true;
+        }
+
+        return true;
+    }
+
+    private void WriteBlockScalarBody(ReadOnlySpan<char> body, ScalarStyle style, int contentIndent)
+    {
+        var isFirstLine = true;
+        var previousLineWasEmpty = false;
+
+        for (var start = 0; ;)
+        {
+            var index = body[start..].IndexOf('\n');
+            var end = index < 0 ? body.Length : start + index;
+            var line = body[start..end];
+
+            // Folding turns a single line break into a space, so a line break in the value is written as a blank
+            // line unless the previous line was already blank.
+            var breaks = !isFirstLine && style == ScalarStyle.Folded && !previousLineWasEmpty ? 2 : 1;
+            for (var i = 0; i < breaks; i++)
+            {
+                Write('\n');
+            }
+
+            // An empty line is left empty so the document carries no trailing whitespace.
+            if (!line.IsEmpty)
+            {
+                WriteIndent(contentIndent);
+                Write(line);
+            }
+
+            if (index < 0)
+            {
+                return;
+            }
+
+            isFirstLine = false;
+            previousLineWasEmpty = line.IsEmpty;
+            start = end + 1;
+        }
     }
 
     private bool ShouldQuoteAmbiguousScalar(ReadOnlySpan<char> value)
@@ -1107,7 +1370,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
                YamlScalar.TryParseDouble(value, out _);
     }
 
-    private static bool IsPlainSafe(ReadOnlySpan<char> value, bool isKey)
+    private bool IsPlainSafe(ReadOnlySpan<char> value, bool isKey)
     {
         _ = isKey; // Currently unused, but may be used in future for stricter key rules.
 
@@ -1122,11 +1385,13 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return false;
         }
 
+        var isFlow = IsFlow;
+
         // Disallow YAML special characters and common ambiguities.
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
-            if (c is '\n' or '\r' or '\t')
+            if (c == '\t' || IsLineBreak(c))
             {
                 return false;
             }
@@ -1140,6 +1405,13 @@ public sealed class YamlWriter : YamlReaderWriterBase
             {
                 return false;
             }
+
+            // Inside a flow collection a '?' ends the plain scalar, wherever it appears: a leading one is the
+            // key indicator, and a later one is a scalar terminator.
+            if (isFlow && c == '?')
+            {
+                return false;
+            }
         }
 
         // A leading '-' or '?' followed by separation/end is a collection/key indicator, not a plain scalar.
@@ -1150,6 +1422,13 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
         return true;
     }
+
+    /// <summary>Gets a value indicating whether a YAML reader breaks a line on <paramref name="c"/>.</summary>
+    /// <remarks>
+    /// U+0085, U+2028, and U+2029 are line breaks to a YAML reader but are not control characters, and
+    /// <see cref="Emitter.IsPrintable"/> accepts them. A style that writes text verbatim has to reject them.
+    /// </remarks>
+    private static bool IsLineBreak(char c) => c is '\n' or '\r' or '\u0085' or '\u2028' or '\u2029';
 
     private void WriteEscaped(ReadOnlySpan<char> value)
     {
@@ -1174,7 +1453,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
                     Write("\\t");
                     break;
                 default:
-                    if (char.IsControl(c))
+                    if (char.IsControl(c) || IsLineBreak(c))
                     {
                         Write("\\u");
                         Write(((int)c).ToString("X4", CultureInfo.InvariantCulture));
@@ -1330,6 +1609,25 @@ public sealed class YamlWriter : YamlReaderWriterBase
         public void Dispose()
         {
             _writer?.RestoreBlockSequenceItemStyle(_mappingStyle, _sequenceStyle);
+        }
+    }
+
+    /// <summary>Restores the string style that was active before a <see cref="PushStringStyle"/> call.</summary>
+    public readonly struct StringStyleScope : IDisposable
+    {
+        private readonly YamlWriter? _writer;
+        private readonly ScalarStyle _style;
+
+        internal StringStyleScope(YamlWriter writer, ScalarStyle style)
+        {
+            _writer = writer;
+            _style = style;
+        }
+
+        /// <summary>Restores the previously active string style.</summary>
+        public void Dispose()
+        {
+            _writer?.RestoreStringStyle(_style);
         }
     }
 

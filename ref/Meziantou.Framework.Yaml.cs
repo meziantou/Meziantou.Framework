@@ -246,6 +246,7 @@ namespace Meziantou.Framework.Yaml
     {
         public bool PreferPlainStyle { get => throw null; init { } }
         public bool PreferQuotedForAmbiguousScalars { get => throw null; init { } }
+        public Meziantou.Framework.Yaml.ScalarStyle StringStyle { get => throw null; init { } }
     }
 
     public enum YamlSchemaKind
@@ -1038,11 +1039,19 @@ namespace Meziantou.Framework.Yaml.Serialization
         public string? SourceName { get => throw null; set { } }
         public bool PreferPlainStyle { get => throw null; set { } }
         public bool PreferQuotedForAmbiguousScalars { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.ScalarStyle StringStyle { get => throw null; set { } }
         public Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle DiscriminatorStyle { get => throw null; set { } }
         public string? TypeDiscriminatorPropertyName { get => throw null; set { } }
         public Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get => throw null; set { } }
         public bool InferClosedTypePolymorphism { get => throw null; set { } }
         public System.Type[]? Converters { get => throw null; set { } }
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class YamlStringStyleAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
+    {
+        public Meziantou.Framework.Yaml.ScalarStyle Style { get => throw null; }
+        public YamlStringStyleAttribute(Meziantou.Framework.Yaml.ScalarStyle style) { }
     }
 
     public enum YamlTokenType
@@ -1137,6 +1146,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public YamlWriter(System.IO.TextWriter writer, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) : base(default(Meziantou.Framework.Yaml.YamlSerializerOptions)) { }
         public YamlWriter(System.Text.StringBuilder stringBuilder, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) : base(default(Meziantou.Framework.Yaml.YamlSerializerOptions)) { }
         public BlockSequenceItemStyleScope PushBlockSequenceItemStyle(Meziantou.Framework.Yaml.YamlSequenceItemStyle mappingStyle, Meziantou.Framework.Yaml.YamlSequenceItemStyle sequenceStyle) => throw null;
+        public StringStyleScope PushStringStyle(Meziantou.Framework.Yaml.ScalarStyle style) => throw null;
         public bool TryWriteReference(object? value) => throw null;
         public void WriteTag(string tag) { }
         public void WriteAnchor(string anchor) { }
@@ -1182,6 +1192,10 @@ namespace Meziantou.Framework.Yaml.Serialization
         public void WriteScalar<T>(T value) where T : System.IFormattable { }
         public void WriteNullValue() { }
         public readonly struct BlockSequenceItemStyleScope : System.IDisposable
+        {
+            public void Dispose() { }
+        }
+        public readonly struct StringStyleScope : System.IDisposable
         {
             public void Dispose() { }
         }

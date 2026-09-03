@@ -219,7 +219,7 @@ public sealed class YamlWellKnownScalarConverterTests
     {
         var yaml = YamlSerializer.Serialize(new Uri("https://example.com/a%20b", UriKind.Absolute));
 
-        Assert.Equal("\"https://example.com/a%20b\"\n", yaml, ignoreLineEndingDifferences: true);
+        Assert.Equal("https://example.com/a%20b\n", yaml, ignoreLineEndingDifferences: true);
     }
 
     [Fact]

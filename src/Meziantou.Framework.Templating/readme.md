@@ -60,6 +60,19 @@ var result = template.Run(arguments);
 // result: "Hello Meziantou!"
 ```
 
+An argument that is missing from the dictionary gets the default value of its type (`null`, `0`,
+`false`, …). Set `ThrowOnMissingArgument` to get a `TemplateException` naming the argument instead,
+so a typo in a key does not silently produce a wrong document:
+
+```csharp
+var template = new Template { ThrowOnMissingArgument = true };
+template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+template.Load("Hello <%=Name%>!");
+
+// throws TemplateException: No value was provided for the argument 'Name'.
+template.Run(new Dictionary<string, object?>());
+```
+
 ### Code Blocks
 
 Templates support four types of code blocks:

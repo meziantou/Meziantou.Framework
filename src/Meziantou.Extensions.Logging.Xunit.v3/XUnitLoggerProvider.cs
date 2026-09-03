@@ -28,9 +28,7 @@ public sealed class XUnitLoggerProvider : ILoggerProvider, ISupportExternalScope
     private readonly XUnitLoggerOptions _options;
     private readonly ConcurrentDictionary<string, XUnitLogger> _loggers = new(StringComparer.Ordinal);
 
-    private IExternalScopeProvider _scopeProvider = new LoggerExternalScopeProvider();
-
-    private IExternalScopeProvider ScopeProvider => Volatile.Read(ref _scopeProvider);
+    private readonly MutableExternalScopeProvider _scopeProvider = new(new LoggerExternalScopeProvider());
 
     /// <summary>Initializes a new instance of the <see cref="XUnitLoggerProvider"/> class.</summary>
     public XUnitLoggerProvider()
@@ -72,18 +70,19 @@ public sealed class XUnitLoggerProvider : ILoggerProvider, ISupportExternalScope
     /// <inheritdoc/>
     public ILogger CreateLogger(string categoryName)
     {
-        return _loggers.GetOrAdd(categoryName, static (name, state) => new XUnitLogger(state._testOutputHelper, state.ScopeProvider, name, state._options), this);
+        return _loggers.GetOrAdd(categoryName, static (name, state) => new XUnitLogger(state._testOutputHelper, state._scopeProvider, name, state._options), this);
     }
 
-    /// <inheritdoc/>
+    /// <summary>Sets the external scope provider supplied by the logger factory.</summary>
+    /// <param name="scopeProvider">The scope provider the factory uses to track scopes.</param>
+    /// <remarks>
+    /// Implementing <see cref="ISupportExternalScope"/> is what makes the factory route its scopes
+    /// through this provider, including the ones it synthesises from the current activity when
+    /// <c>LoggerFactoryOptions.ActivityTrackingOptions</c> is set.
+    /// </remarks>
     public void SetScopeProvider(IExternalScopeProvider scopeProvider)
     {
-        Volatile.Write(ref _scopeProvider, scopeProvider);
-
-        foreach (var logger in _loggers)
-        {
-            logger.Value.ScopeProvider = scopeProvider;
-        }
+        _scopeProvider.Current = scopeProvider;
     }
 
     /// <inheritdoc/>

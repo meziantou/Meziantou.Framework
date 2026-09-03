@@ -24,13 +24,7 @@ public class XUnitLogger : ILogger
     private readonly ITestOutputHelper? _testOutputHelper;
     private readonly string? _categoryName;
     private readonly XUnitLoggerOptions _options;
-    private IExternalScopeProvider _scopeProvider;
-
-    internal IExternalScopeProvider ScopeProvider
-    {
-        get => Volatile.Read(ref _scopeProvider);
-        set => Volatile.Write(ref _scopeProvider, value);
-    }
+    private readonly IExternalScopeProvider _scopeProvider;
 
     /// <summary>Creates a new logger instance without a test output helper.</summary>
     /// <returns>A new <see cref="ILogger"/> instance.</returns>
@@ -112,7 +106,7 @@ public class XUnitLogger : ILogger
     public bool IsEnabled(LogLevel logLevel) => logLevel is not LogLevel.None;
 
     /// <inheritdoc/>
-    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => ScopeProvider.Push(state);
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => _scopeProvider.Push(state);
 
     /// <inheritdoc/>
     [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs")]
@@ -147,7 +141,7 @@ public class XUnitLogger : ILogger
         // Append scopes before the exception, so a long stack trace does not push them out of view
         if (_options.IncludeScopes)
         {
-            ScopeProvider.ForEachScope((scope, state) =>
+            _scopeProvider.ForEachScope((scope, state) =>
             {
                 state.Append(Environment.NewLine).Append(" => ");
                 state.Append(scope);

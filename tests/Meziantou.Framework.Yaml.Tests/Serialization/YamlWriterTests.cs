@@ -12,8 +12,13 @@ public sealed class YamlWriterTests
             ("", "''"),
             (" leading", "\" leading\""),
             ("trailing ", "\"trailing \""),
-            ("a:b", "\"a:b\""),
-            ("a#b", "\"a#b\""),
+            ("a:b", "a:b"),
+            ("a: b", "\"a: b\""),
+            ("a:", "\"a:\""),
+            ("a#b", "a#b"),
+            ("4 ways to enable the latest C# features", "4 ways to enable the latest C# features"),
+            ("a #b", "\"a #b\""),
+            ("#a", "\"#a\""),
             ("a\nb", "\"a\\nb\""),
             ("\u0001", "\"\\u0001\""),
         };
@@ -24,6 +29,51 @@ public sealed class YamlWriterTests
             writer.WriteScalar(@case.Value);
 
             Assert.Equal(@case.ExpectedYaml, buffer.ToString());
+        }
+    }
+
+    [Theory]
+    [InlineData(true, "4 ways to enable the latest C# features")]
+    [InlineData(true, "a#b")]
+    [InlineData(true, "12:30")]
+    [InlineData(true, "https://example.com/a%20b")]
+    [InlineData(true, "it's a plan")]
+    [InlineData(true, "1|two")]
+    [InlineData(true, "x@example.com")]
+    // A flow indicator ends a plain scalar inside a flow collection, but carries no meaning in a block context.
+    [InlineData(false, "a, b")]
+    [InlineData(false, "a[0]")]
+    public void Scalar_ThatNeedsNoQuotes_IsWrittenPlainAndRoundTrips(bool alsoInFlow, string value)
+    {
+        bool[] modes = alsoInFlow ? [true, false] : [true];
+        foreach (var writeIndented in modes)
+        {
+            var options = new YamlSerializerOptions { WriteIndented = writeIndented };
+            var yaml = YamlSerializer.Serialize(new TextContainer { Text = value }, options);
+
+            Assert.Contains(value, yaml);
+            Assert.DoesNotContain("\"", yaml);
+            Assert.Equal(value, YamlSerializer.Deserialize<TextContainer>(yaml, options)?.Text);
+        }
+    }
+
+    [Theory]
+    [InlineData("a #b")]
+    [InlineData("#a")]
+    [InlineData("a: b")]
+    [InlineData("a:")]
+    [InlineData("[a]")]
+    [InlineData("'a'")]
+    [InlineData("%a")]
+    public void Scalar_ThatNeedsQuotes_IsQuotedAndRoundTrips(string value)
+    {
+        foreach (var writeIndented in new[] { true, false })
+        {
+            var options = new YamlSerializerOptions { WriteIndented = writeIndented };
+            var yaml = YamlSerializer.Serialize(new TextContainer { Text = value }, options);
+
+            Assert.Contains("\"", yaml);
+            Assert.Equal(value, YamlSerializer.Deserialize<TextContainer>(yaml, options)?.Text);
         }
     }
 

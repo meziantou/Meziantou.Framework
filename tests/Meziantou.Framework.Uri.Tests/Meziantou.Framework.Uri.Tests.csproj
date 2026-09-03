@@ -13,6 +13,10 @@
     <EmbeddedResource Include="files/public_suffix_tests.txt">
       <LogicalName>%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
+    <None Remove="files/urlpatterntestdata.json" />
+    <EmbeddedResource Include="files/urlpatterntestdata.json">
+      <LogicalName>%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

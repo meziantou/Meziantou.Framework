@@ -99,6 +99,9 @@ public class Template : IDisposable
     /// <summary>Gets or sets a value indicating whether to compile the template in debug mode.</summary>
     public bool Debug { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether running the template with named parameters throws when an argument has no value. When <see langword="false" /> (the default), a missing argument gets the default value of its type.</summary>
+    public bool ThrowOnMissingArgument { get; set; }
+
     /// <summary>Loads the template from a string.</summary>
     /// <param name="text">The template text containing code blocks.</param>
     public void Load(string text)
@@ -978,6 +981,7 @@ public class Template : IDisposable
     /// <param name="writer">The text writer for output.</param>
     /// <param name="parameters">A dictionary of parameter names and values.</param>
     /// <returns>An array of method parameters.</returns>
+    /// <exception cref="TemplateException"><see cref="ThrowOnMissingArgument" /> is <see langword="true" /> and an argument has no value in <paramref name="parameters" />.</exception>
     protected virtual object?[] CreateMethodParameters(TextWriter writer, IReadOnlyDictionary<string, object?> parameters)
     {
         if (!IsBuilt)
@@ -993,12 +997,13 @@ public class Template : IDisposable
             {
                 p[pi.Position] = CreateOutput(writer);
             }
-            else
+            else if (parameters.TryGetValue(pi.Name!, out var value))
             {
-                if (parameters.TryGetValue(pi.Name!, out var value))
-                {
-                    p[pi.Position] = value;
-                }
+                p[pi.Position] = value;
+            }
+            else if (ThrowOnMissingArgument)
+            {
+                throw new TemplateException($"No value was provided for the argument '{pi.Name}'.");
             }
         }
 

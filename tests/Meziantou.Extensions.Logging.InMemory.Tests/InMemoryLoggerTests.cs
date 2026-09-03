@@ -142,6 +142,28 @@ public sealed partial class InMemoryLoggerTests
     }
 
     [Fact]
+    public void SetScopeProviderUpdatesExistingAndNewLoggers()
+    {
+        using var provider = new InMemoryLoggerProvider();
+        var loggerCreatedBeforeSet = provider.CreateLogger("before");
+
+        var scopeProvider = new LoggerExternalScopeProvider();
+        ((ISupportExternalScope)provider).SetScopeProvider(scopeProvider);
+
+        var loggerCreatedAfterSet = provider.CreateLogger("after");
+
+        using (scopeProvider.Push("external scope"))
+        {
+            loggerCreatedBeforeSet.LogInformation("Test");
+            loggerCreatedAfterSet.LogInformation("Test");
+        }
+
+        var logs = provider.Logs.Informations.ToArray();
+        Assert.HasCount(2, logs);
+        Assert.All(logs, log => Assert.Equivalent(new object[] { "external scope" }, log.Scopes));
+    }
+
+    [Fact]
     public void WithScope()
     {
         using var provider = new InMemoryLoggerProvider(new LoggerExternalScopeProvider());

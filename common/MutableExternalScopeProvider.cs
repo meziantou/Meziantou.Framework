@@ -1,6 +1,4 @@
-using Microsoft.Extensions.Logging;
-
-namespace Meziantou.Extensions.Logging.InMemory;
+namespace Microsoft.Extensions.Logging;
 
 // ILoggerFactory hands a provider its own scope provider through ISupportExternalScope, but only
 // once the provider is registered. Loggers therefore hold this indirection instead of a specific

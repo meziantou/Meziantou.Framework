@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../../common/MutableExternalScopeProvider.cs" Link="MutableExternalScopeProvider.cs" />
     <Compile Include="../../common/TypeNameHelper.cs" Link="TypeNameHelper.cs" />
   </ItemGroup>
 

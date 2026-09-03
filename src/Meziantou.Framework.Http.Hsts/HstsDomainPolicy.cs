@@ -15,13 +15,19 @@ public sealed class HstsDomainPolicy
     public string Host { get; }
 
     /// <summary>Gets the date and time when this HSTS policy expires.</summary>
+    /// <remarks><see cref="DateTimeOffset.MaxValue"/> when <see cref="IsPreloaded"/> is <see langword="true"/>: the built-in list is compiled into the assembly and stays valid until the package is updated.</remarks>
     public DateTimeOffset ExpiresAt { get; }
 
     /// <summary>Gets a value indicating whether the HSTS policy applies to subdomains of the host.</summary>
     public bool IncludeSubdomains { get; }
 
     /// <summary>Gets a value indicating whether the policy comes from the built-in HSTS preload list.</summary>
-    /// <remarks>A preloaded policy never expires and is not removed by a <c>max-age=0</c> response header.</remarks>
+    /// <remarks>
+    /// A preloaded policy never expires, and no <c>Strict-Transport-Security</c> response header can narrow it,
+    /// expire it or remove it: a policy learned from a header may only widen the coverage of a preloaded host.
+    /// Only <see cref="HstsDomainPolicyCollection.Remove"/> takes a host off the built-in list, and only for the
+    /// collection it is called on.
+    /// </remarks>
     public bool IsPreloaded { get; }
 
     public override string ToString()

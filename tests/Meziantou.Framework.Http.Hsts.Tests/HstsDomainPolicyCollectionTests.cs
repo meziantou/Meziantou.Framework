@@ -67,7 +67,8 @@ public sealed class HstsDomainPolicyCollectionTests
         hsts.Add("google.com", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
 
         Assert.True(hsts.MustUpgradeRequest("google.com"));
-        Assert.False(hsts.MustUpgradeRequest("dummy.google.com"));
+        // .invalid is reserved, so this cannot start matching when the preload list is regenerated
+        Assert.False(hsts.MustUpgradeRequest(Guid.NewGuid().ToString("N") + ".invalid"));
         Assert.False(hsts.MustUpgradeRequest("example.com"));
     }
 
@@ -371,14 +372,48 @@ public sealed class HstsDomainPolicyCollectionTests
     }
 
     [Fact]
-    public void HstsCollection_Add_KeepsThePreloadedFlag()
+    public void HstsCollection_Add_CannotNarrowAPreloadedPolicy()
     {
         var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);
+
+        // github.com is preloaded with includeSubdomains, and a narrower policy must not take that away
         hsts.Add("github.com", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
 
         var policy = hsts.Single(entry => entry.Host == "github.com");
         Assert.True(policy.IsPreloaded);
-        Assert.False(policy.IncludeSubdomains);
+        Assert.True(policy.IncludeSubdomains);
+        Assert.Equal(DateTimeOffset.MaxValue, policy.ExpiresAt);
+        Assert.True(hsts.MustUpgradeRequest("sub.github.com"));
+    }
+
+    [Fact]
+    public void HstsCollection_Add_WidensAPreloadedPolicy()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);
+
+        // Picked from the data rather than hardcoded, so regenerating the preload list cannot invalidate it
+        var host = hsts.First(policy => policy.IsPreloaded && !policy.IncludeSubdomains).Host;
+        Assert.False(hsts.MustUpgradeRequest("sub." + host));
+
+        hsts.Add(host, DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: true);
+
+        Assert.True(hsts.MustUpgradeRequest("sub." + host));
+        Assert.True(hsts.Single(entry => entry.Host == host).IncludeSubdomains);
+    }
+
+    [Fact]
+    public void HstsCollection_ExpiredPolicyOnAPreloadedHost_DoesNotRemoveThePreloadedEntry()
+    {
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.Parse("2024-01-01T00:00:00Z", CultureInfo.InvariantCulture));
+        var hsts = new HstsDomainPolicyCollection(timeProvider, includePreloadDomains: true);
+        hsts.Add("github.com", TimeSpan.FromSeconds(1), includeSubdomains: false);
+
+        timeProvider.Advance(TimeSpan.FromDays(1));
+
+        // The learned policy lapses; the preload entry underneath it is untouched
+        Assert.True(hsts.MustUpgradeRequest("github.com"));
+        Assert.True(hsts.MustUpgradeRequest("sub.github.com"));
+        Assert.Contains(hsts, policy => policy.Host == "github.com");
     }
 
     [Fact]
@@ -395,7 +430,8 @@ public sealed class HstsDomainPolicyCollectionTests
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness")]
     public void HstsCollection_Parallel()
     {
-        var hsts = new HstsDomainPolicyCollection();
+        // The cap is raised so this stays a concurrency test; HstsCollection_LearnedPolicies_AreCapped covers eviction
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true, maxLearnedPolicies: 1_000_000);
 
         var domains = Enumerable.Range(0, 500_000).Select(GenerateDomainName).ToArray();
 
@@ -409,7 +445,8 @@ public sealed class HstsDomainPolicyCollectionTests
             Assert.True(hsts.MustUpgradeRequest(domain));
         });
 
-        Assert.False(hsts.MustUpgradeRequest("dummy.google.com"));
+        // .invalid is reserved, so this cannot start matching when the preload list is regenerated
+        Assert.False(hsts.MustUpgradeRequest(Guid.NewGuid().ToString("N") + ".invalid"));
 
         static string GenerateDomainName(int i)
         {
@@ -444,6 +481,208 @@ public sealed class HstsDomainPolicyCollectionTests
         {
             CultureInfo.CurrentCulture = previousCulture;
         }
+    }
+
+    [Theory]
+    [InlineData(" ")]
+    [InlineData("example.com:443")]
+    [InlineData("https://example.com/")]
+    [InlineData("example.com/path")]
+    [InlineData("user@example.com")]
+    [InlineData("exam ple.com")]
+    [InlineData("-example.com")]
+    public void HstsCollection_Add_RejectsAHostARequestCanNeverProduce(string host)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+
+        // Uri.IdnHost never yields a scheme, a port, a path, userinfo or whitespace, so a policy stored under
+        // one of these would silently never match while every signal said it was added
+        Assert.Throws<ArgumentException>(() => hsts.Add(host, DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: true));
+        Assert.Empty(hsts);
+    }
+
+    [Theory]
+    [InlineData("a_b.com")]
+    [InlineData("192.168.0.1")]
+    [InlineData("a-.com")]
+    public void HstsCollection_Add_AcceptsAnUnusualButValidHost(string host)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add(host, DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+
+        Assert.True(hsts.MustUpgradeRequest(new Uri("http://" + host).IdnHost));
+    }
+
+    [Theory]
+    [InlineData("::1")]
+    [InlineData("[::1]")]
+    public void HstsCollection_Add_StoresAnIPv6LiteralInTheFormUriProduces(string host)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add(host, DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+
+        // Uri.IdnHost reports an IPv6 literal without brackets, so a bracketed key would never match
+        Assert.Equal("::1", Assert.Single(hsts).Host);
+        Assert.True(hsts.MustUpgradeRequest(new Uri("http://[::1]").IdnHost));
+    }
+
+    [Theory]
+    [InlineData("MyHost.Example.com", "myhost.example.com")]
+    [InlineData("myhost.example.com", "MYHOST.EXAMPLE.COM")]
+    public void HstsCollection_Match_IsCaseInsensitive(string addedHost, string lookedUpHost)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add(addedHost, DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: true);
+
+        // https://datatracker.ietf.org/doc/html/rfc6797#section-8.2
+        Assert.True(hsts.MustUpgradeRequest(lookedUpHost));
+        Assert.True(hsts.MustUpgradeRequest("sub." + lookedUpHost));
+        Assert.True(hsts.TryGetPolicy(lookedUpHost, out _));
+        Assert.True(hsts.Remove(lookedUpHost));
+    }
+
+    [Fact]
+    public void HstsCollection_Match_PreloadedHostIsCaseInsensitive()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);
+
+        Assert.True(hsts.MustUpgradeRequest("GitHub.COM"));
+        Assert.True(hsts.MustUpgradeRequest("SUB.GITHUB.COM"));
+    }
+
+    [Fact]
+    public void HstsCollection_Add_TrimsATrailingDotIntroducedByTheIdnaMapping()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+
+        // U+3002 IDEOGRAPHIC FULL STOP maps to '.', which would leave a trailing dot on the stored key
+        hsts.Add("example.com\u3002", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: true);
+
+        Assert.Equal("example.com", Assert.Single(hsts).Host);
+        Assert.True(hsts.MustUpgradeRequest("example.com"));
+        Assert.True(hsts.MustUpgradeRequest("sub.example.com"));
+    }
+
+    [Fact]
+    public void HstsCollection_TryGetPolicy()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("example.com", new DateTimeOffset(2030, 3, 4, 5, 6, 7, TimeSpan.Zero), includeSubdomains: true);
+
+        Assert.True(hsts.TryGetPolicy("example.com", out var policy));
+        Assert.Equal("example.com", policy.Host);
+        Assert.Equal(new DateTimeOffset(2030, 3, 4, 5, 6, 7, TimeSpan.Zero), policy.ExpiresAt);
+        Assert.True(policy.IncludeSubdomains);
+        Assert.False(policy.IsPreloaded);
+
+        Assert.False(hsts.TryGetPolicy("other.com", out _));
+
+        // A host covered only by its parent's includeSubdomains has no policy of its own
+        Assert.True(hsts.MustUpgradeRequest("sub.example.com"));
+        Assert.False(hsts.TryGetPolicy("sub.example.com", out _));
+    }
+
+    [Fact]
+    public void HstsCollection_TryGetPolicy_ReportsAPreloadedHost()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);
+
+        Assert.True(hsts.TryGetPolicy("github.com", out var policy));
+        Assert.True(policy.IsPreloaded);
+        Assert.True(policy.IncludeSubdomains);
+        Assert.Equal(DateTimeOffset.MaxValue, policy.ExpiresAt);
+    }
+
+    [Fact]
+    public void HstsCollection_ClearLearnedPolicies()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);
+        hsts.Add("example.com", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: true);
+        Assert.True(hsts.Remove("github.com"));
+
+        hsts.ClearLearnedPolicies();
+
+        // Learned policies are dropped and the preload entry Remove masked is back
+        Assert.False(hsts.MustUpgradeRequest("example.com"));
+        Assert.True(hsts.MustUpgradeRequest("github.com"));
+    }
+
+    [Fact]
+    public void HstsCollection_Remove_OfAPreloadedHostDoesNotAffectAnotherCollection()
+    {
+        var first = new HstsDomainPolicyCollection(includePreloadDomains: true);
+        var second = new HstsDomainPolicyCollection(includePreloadDomains: true);
+
+        Assert.True(first.Remove("github.com"));
+
+        // The preload data is shared and immutable, so removing masks it for one collection only
+        Assert.False(first.MustUpgradeRequest("github.com"));
+        Assert.True(second.MustUpgradeRequest("github.com"));
+    }
+
+    [Fact]
+    public void HstsCollection_LearnedPolicies_AreCapped()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false, maxLearnedPolicies: 16);
+
+        for (var i = 0; i < 500; i++)
+        {
+            hsts.Add($"host{i.ToString(CultureInfo.InvariantCulture)}.example", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+        }
+
+        // An application fed host names by a remote peer must not be able to grow the store without bound
+        Assert.InRange(hsts.Count(), 1, 17);
+    }
+
+    [Fact]
+    public void HstsCollection_ExpiredPolicy_IsSweptWithoutBeingLookedUp()
+    {
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.Parse("2024-01-01T00:00:00Z", CultureInfo.InvariantCulture));
+        var hsts = new HstsDomainPolicyCollection(timeProvider, includePreloadDomains: false, maxLearnedPolicies: 10_000);
+        hsts.Add("forgotten.example", TimeSpan.FromDays(1), includeSubdomains: false);
+
+        timeProvider.Advance(TimeSpan.FromDays(2));
+
+        // Nothing ever looks this host up again, so only the periodic sweep can drop it
+        for (var i = 0; i < 300; i++)
+        {
+            hsts.Add($"host{i.ToString(CultureInfo.InvariantCulture)}.example", TimeSpan.FromDays(365), includeSubdomains: false);
+        }
+
+        Assert.DoesNotContain(hsts, policy => policy.Host == "forgotten.example");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void HstsCollection_Constructor_RejectsANonPositiveLimit(int maxLearnedPolicies)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HstsDomainPolicyCollection(includePreloadDomains: false, maxLearnedPolicies: maxLearnedPolicies));
+    }
+
+    [Fact]
+    public void HstsCollection_EveryPreloadedHostIsFoundByLookup()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);
+
+        // The preload entries are binary-searched inside a sorted blob, so a sample spread across the whole
+        // data set is what proves the ordering and the case folding agree with the search
+        var sampled = 0;
+        var index = 0;
+        foreach (var policy in hsts)
+        {
+            if (index++ % 499 != 0)
+                continue;
+
+            sampled++;
+            Assert.True(hsts.MustUpgradeRequest(policy.Host), policy.Host);
+            Assert.True(hsts.MustUpgradeRequest(policy.Host.ToUpperInvariant()), policy.Host);
+            Assert.True(hsts.TryGetPolicy(policy.Host, out var found), policy.Host);
+            Assert.Equal(policy.IncludeSubdomains, found.IncludeSubdomains);
+        }
+
+        Assert.InRange(sampled, 100, int.MaxValue);
+        Assert.False(hsts.MustUpgradeRequest(Guid.NewGuid().ToString("N") + ".invalid"));
     }
 
     private static HstsDomainPolicy CreatePolicyExpiringOn2030()

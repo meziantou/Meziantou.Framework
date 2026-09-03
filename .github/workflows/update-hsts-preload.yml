@@ -27,7 +27,15 @@ jobs:
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
       - run: |
-          dotnet run --project tools/Meziantou.Framework.Http.Hsts.Generator
+          # Built first and run with --no-build: `dotnet run` exits 1 for a build or restore failure, which is
+          # also how the generator reports "files updated", so a broken build would otherwise be committed as
+          # an empty update.
+          dotnet build tools/Meziantou.Framework.Http.Hsts.Generator --configuration Release
+          if ($LASTEXITCODE -ne 0) {
+            throw "The HSTS preload generator failed to build (exit code $LASTEXITCODE)"
+          }
+
+          dotnet run --project tools/Meziantou.Framework.Http.Hsts.Generator --configuration Release --no-build
           # The generator reports its result through the exit code: 0 when the files were already up to
           # date, 1 when it updated them. Any other code is a failure and must not be committed.
           if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1) {
@@ -37,11 +45,23 @@ jobs:
             git config --global user.email "git@meziantou.net"
             git config --global user.name "meziantou"
             git checkout -b update-hsts-preload
-            git add .
+            # Staged explicitly: `git add .` would also pick up anything else the build left in the tree
+            git add `
+              src/Meziantou.Framework.Http.Hsts/preload_*.bin `
+              src/Meziantou.Framework.Http.Hsts/preload-hosts.txt `
+              src/Meziantou.Framework.Http.Hsts/HstsPreloadList.g.cs `
+              src/Meziantou.Framework.Http.Hsts/Meziantou.Framework.Http.Hsts.csproj
+            # An unchanged tree must never reach the force-push below: it would reset the shared branch and
+            # wipe the diff of a pull request that is already open, while the step still reported success.
+            git diff --cached --quiet
+            if ($LASTEXITCODE -eq 0) {
+              throw "The generator reported an update but nothing changed in the tracked files"
+            }
             git commit -m "Update HSTS preload list"
             git push origin update-hsts-preload --force
             $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            $body = "Update HSTS preload list`n`nCreated by: $runUrl"
+            # No backticks in the string: pwsh treats them as escape characters inside double quotes
+            $body = "Update HSTS preload list`n`nReview the host names added and removed in preload-hosts.txt; the preload_N.bin resources hold the same data in the form the library reads.`n`nCreated by: $runUrl"
             $openPr = gh pr list --head update-hsts-preload --state open --json number --jq '.[0].number // empty'
             if ($openPr) {
               gh pr edit $openPr --title "Update HSTS preload list" --body $body

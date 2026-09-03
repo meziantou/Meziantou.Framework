@@ -4,10 +4,24 @@ namespace Meziantou.Framework.Http;
 
 /// <summary>An HTTP message handler that automatically upgrades HTTP requests to HTTPS based on HSTS (HTTP Strict Transport Security) policies.</summary>
 /// <remarks>
-/// The handler follows redirects itself so that every hop is checked against the HSTS policies. When the inner
-/// handler is a <see cref="SocketsHttpHandler"/> or an <see cref="HttpClientHandler"/> configured to follow
-/// redirects, the constructor turns its <c>AllowAutoRedirect</c> off and takes the redirects over; an inner
-/// handler already configured not to follow them keeps returning the redirect responses as is.
+/// <para>
+/// The handler follows redirects itself so that every hop is checked against the HSTS policies. Redirects the
+/// inner handler follows never reach this handler, so a redirect to an HSTS host would be requested over HTTP.
+/// </para>
+/// <para>
+/// On the first request, when the inner handler is a <see cref="SocketsHttpHandler"/> or an
+/// <see cref="HttpClientHandler"/> configured to follow redirects, this handler turns its
+/// <c>AllowAutoRedirect</c> off and takes the redirects over, reusing its <c>MaxAutomaticRedirections</c>.
+/// <strong>That modifies the inner handler,</strong> so an instance shared with another
+/// <see cref="HttpClient"/> stops following redirects for that client too, and an instance that has already
+/// sent a request cannot be reconfigured at all and makes the first send throw. Pass
+/// <c>maxAutomaticRedirections</c> to the constructor to take the redirects over without touching the inner
+/// handler; that is also the only way to follow redirects when the inner handler is neither of those two types.
+/// </para>
+/// <para>
+/// An inner handler already configured not to follow redirects, or of a type this handler does not recognize,
+/// keeps returning the redirect responses as is unless <c>maxAutomaticRedirections</c> is given.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -21,67 +35,72 @@ namespace Meziantou.Framework.Http;
 public sealed class HstsClientHandler : DelegatingHandler
 {
     private const long MaxMaxAgeInSeconds = 100L * 365 * 24 * 60 * 60;
+    private const string HttpPrefix = "http://";
+
+    // The redirect budget is resolved on the first send, so a sentinel is needed for "not resolved yet".
+    // 0 means this handler does not follow redirects.
+    private const int UnresolvedRedirections = -1;
 
     private readonly HstsDomainPolicyCollection _configuration;
+    private readonly int? _explicitMaxAutomaticRedirections;
+    private readonly Lock _redirectionLock = new();
 
-    // 0 means this handler does not follow redirects, because the inner handler was already configured not to
-    // follow them or is not a type the redirects can be taken over from.
-    private readonly int _maxAutomaticRedirections;
+    private volatile int _maxAutomaticRedirections = UnresolvedRedirections;
+
+    /// <summary>Initializes a new instance of the <see cref="HstsClientHandler"/> class with the default HSTS policy collection and no inner handler.</summary>
+    /// <remarks>
+    /// The inner handler is left unset so the instance can be registered with
+    /// <c>IHttpClientFactory.AddHttpMessageHandler</c>, which supplies it.
+    /// </remarks>
+    public HstsClientHandler()
+        : this(innerHandler: null, HstsDomainPolicyCollection.Default)
+    {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="HstsClientHandler"/> class with a custom HSTS policy collection and no inner handler.</summary>
+    /// <param name="configuration">The HSTS policy collection to use for determining which requests to upgrade.</param>
+    /// <remarks>
+    /// The inner handler is left unset so the instance can be registered with
+    /// <c>IHttpClientFactory.AddHttpMessageHandler</c>, which supplies it.
+    /// </remarks>
+    public HstsClientHandler(HstsDomainPolicyCollection configuration)
+        : this(innerHandler: null, configuration)
+    {
+    }
 
     /// <summary>Initializes a new instance of the <see cref="HstsClientHandler"/> class with the default HSTS policy collection.</summary>
     /// <param name="innerHandler">The inner HTTP message handler to delegate requests to.</param>
     public HstsClientHandler(HttpMessageHandler innerHandler)
         : this(innerHandler, HstsDomainPolicyCollection.Default)
     {
+        ArgumentNullException.ThrowIfNull(innerHandler);
     }
 
     /// <summary>Initializes a new instance of the <see cref="HstsClientHandler"/> class with a custom HSTS policy collection.</summary>
-    /// <param name="innerHandler">The inner HTTP message handler to delegate requests to.</param>
+    /// <param name="innerHandler">The inner HTTP message handler to delegate requests to, or <see langword="null"/> to let a handler factory supply it.</param>
     /// <param name="configuration">The HSTS policy collection to use for determining which requests to upgrade.</param>
-    public HstsClientHandler(HttpMessageHandler innerHandler, HstsDomainPolicyCollection configuration)
-        : base(innerHandler)
+    public HstsClientHandler(HttpMessageHandler? innerHandler, HstsDomainPolicyCollection configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
         _configuration = configuration;
-        _maxAutomaticRedirections = TakeOverAutomaticRedirections(innerHandler);
-    }
-
-    // The inner handler follows redirects below this handler, so the requests it derives from a redirect
-    // response never go through the HSTS upgrade and reach an HSTS host in cleartext. Take the redirects over
-    // when the inner handler was going to follow them anyway, so that every hop is checked; a handler
-    // explicitly configured not to follow them keeps that behavior.
-    private static int TakeOverAutomaticRedirections(HttpMessageHandler? handler)
-    {
-        while (handler is DelegatingHandler delegatingHandler)
+        if (innerHandler is not null)
         {
-            handler = delegatingHandler.InnerHandler;
-        }
-
-        switch (handler)
-        {
-            case SocketsHttpHandler socketsHttpHandler when socketsHttpHandler.AllowAutoRedirect:
-                socketsHttpHandler.AllowAutoRedirect = false;
-                return socketsHttpHandler.MaxAutomaticRedirections;
-
-            case HttpClientHandler httpClientHandler when httpClientHandler.AllowAutoRedirect:
-                httpClientHandler.AllowAutoRedirect = false;
-                return httpClientHandler.MaxAutomaticRedirections;
-
-            default:
-                return 0;
+            InnerHandler = innerHandler;
         }
     }
 
-    // internal for tests: the redirect loop cannot be reached through a mock inner handler, as the public
-    // constructors only take the redirects over from the handler types that would have followed them
-    internal HstsClientHandler(HttpMessageHandler innerHandler, HstsDomainPolicyCollection configuration, int maxAutomaticRedirections)
-        : base(innerHandler)
+    /// <summary>Initializes a new instance of the <see cref="HstsClientHandler"/> class that follows redirects itself without reconfiguring the inner handler.</summary>
+    /// <param name="innerHandler">The inner HTTP message handler to delegate requests to, or <see langword="null"/> to let a handler factory supply it.</param>
+    /// <param name="configuration">The HSTS policy collection to use for determining which requests to upgrade.</param>
+    /// <param name="maxAutomaticRedirections">The number of redirects to follow, or <c>0</c> not to follow any. The inner handler must be configured not to follow redirects, or every hop it follows bypasses the HSTS upgrade.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxAutomaticRedirections"/> is negative.</exception>
+    public HstsClientHandler(HttpMessageHandler? innerHandler, HstsDomainPolicyCollection configuration, int maxAutomaticRedirections)
+        : this(innerHandler, configuration)
     {
-        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentOutOfRangeException.ThrowIfNegative(maxAutomaticRedirections);
 
-        _configuration = configuration;
-        _maxAutomaticRedirections = maxAutomaticRedirections;
+        _explicitMaxAutomaticRedirections = maxAutomaticRedirections;
     }
 
     /// <summary>Sends an HTTP request, upgrading to HTTPS if required by HSTS policy, and processes the Strict-Transport-Security response header.</summary>
@@ -90,7 +109,7 @@ public sealed class HstsClientHandler : DelegatingHandler
     /// <returns>The HTTP response message.</returns>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var remainingRedirections = _maxAutomaticRedirections;
+        var remainingRedirections = GetMaxAutomaticRedirections();
         while (true)
         {
             UpgradeRequest(request);
@@ -113,21 +132,93 @@ public sealed class HstsClientHandler : DelegatingHandler
         }
     }
 
+    // Resolved on the first send rather than in the constructor: a handler factory sets InnerHandler after
+    // construction, and a handler the caller owns must not be reconfigured before the caller has used it.
+    private int GetMaxAutomaticRedirections()
+    {
+        var value = _maxAutomaticRedirections;
+        if (value != UnresolvedRedirections)
+            return value;
+
+        lock (_redirectionLock)
+        {
+            value = _maxAutomaticRedirections;
+            if (value == UnresolvedRedirections)
+            {
+                value = _explicitMaxAutomaticRedirections ?? TakeOverAutomaticRedirections(InnerHandler);
+                _maxAutomaticRedirections = value;
+            }
+
+            return value;
+        }
+    }
+
+    // The inner handler follows redirects below this handler, so the requests it derives from a redirect
+    // response never go through the HSTS upgrade and reach an HSTS host in cleartext. Take the redirects over
+    // when the inner handler was going to follow them anyway, so that every hop is checked; a handler
+    // explicitly configured not to follow them keeps that behavior.
+    private static int TakeOverAutomaticRedirections(HttpMessageHandler? handler)
+    {
+        while (handler is DelegatingHandler delegatingHandler)
+        {
+            handler = delegatingHandler.InnerHandler;
+        }
+
+        switch (handler)
+        {
+            case SocketsHttpHandler socketsHttpHandler when socketsHttpHandler.AllowAutoRedirect:
+                try
+                {
+                    socketsHttpHandler.AllowAutoRedirect = false;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw CannotTakeOverRedirections(ex);
+                }
+
+                return socketsHttpHandler.MaxAutomaticRedirections;
+
+            case HttpClientHandler httpClientHandler when httpClientHandler.AllowAutoRedirect:
+                try
+                {
+                    httpClientHandler.AllowAutoRedirect = false;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw CannotTakeOverRedirections(ex);
+                }
+
+                return httpClientHandler.MaxAutomaticRedirections;
+
+            default:
+                return 0;
+        }
+    }
+
+    // Reconfiguring the inner handler is what the caller is told about, so the failure has to say so: the
+    // alternative is to carry on with redirects resolved below this handler, which is the cleartext hole the
+    // take-over exists to close.
+    private static InvalidOperationException CannotTakeOverRedirections(Exception innerException)
+        => new(
+            "The inner handler has already started sending requests, so HstsClientHandler cannot stop it from following redirects. " +
+            "A redirect the inner handler follows does not go through the HSTS upgrade, so a redirect to an HSTS host would be requested over HTTP. " +
+            "Set AllowAutoRedirect to false on the inner handler before it is used, and pass maxAutomaticRedirections to the HstsClientHandler constructor.",
+            innerException);
+
     private void UpgradeRequest(HttpRequestMessage request)
     {
         // Use IdnHost: the preload list stores internationalized domains in their Punycode form
-        if (request.RequestUri?.Scheme == Uri.UriSchemeHttp && _configuration.MustUpgradeRequest(request.RequestUri.IdnHost))
-        {
-            // https://datatracker.ietf.org/doc/html/rfc6797#section-8.3
-            // The default port becomes 443; an explicit port is kept as is.
-            var builder = new UriBuilder(request.RequestUri)
-            {
-                Scheme = Uri.UriSchemeHttps,
-                Port = request.RequestUri.IsDefaultPort ? 443 : request.RequestUri.Port,
-            };
+        var uri = request.RequestUri;
+        if (uri?.Scheme != Uri.UriSchemeHttp || !_configuration.MustUpgradeRequest(uri.IdnHost))
+            return;
 
-            request.RequestUri = builder.Uri;
-        }
+        // https://datatracker.ietf.org/doc/html/rfc6797#section-8.3
+        // The default port becomes 443; an explicit port is kept as is. AbsoluteUri leaves out the default
+        // HTTP port, so swapping the scheme covers both cases.
+        // A textual edit rather than UriBuilder, which cannot rebuild every URI System.Uri accepts: an empty
+        // user name in the userinfo component, as in http://:password@host/, makes it throw.
+        var absoluteUri = uri.AbsoluteUri;
+        request.RequestUri = new Uri(string.Concat("https://", absoluteUri.AsSpan(HttpPrefix.Length)), UriKind.Absolute);
     }
 
     private void ProcessStrictTransportSecurityHeader(HttpRequestMessage request, HttpResponseMessage response)
@@ -181,6 +272,13 @@ public sealed class HstsClientHandler : DelegatingHandler
         if (request.RequestUri.Scheme == Uri.UriSchemeHttps && location.Scheme != Uri.UriSchemeHttps)
             return null;
 
+        // The fragment of the original request carries over to a Location that has none, matching SocketsHttpHandler
+        var fragment = request.RequestUri.Fragment;
+        if (fragment.Length > 0 && location.Fragment.Length == 0)
+        {
+            location = new Uri(location.AbsoluteUri + fragment, UriKind.Absolute);
+        }
+
         return location;
     }
 
@@ -206,8 +304,15 @@ public sealed class HstsClientHandler : DelegatingHandler
         if (dropBody)
         {
             request.Method = HttpMethod.Get;
-            request.Content?.Dispose();
+
+            // The content belongs to the caller, so it is detached and not disposed
             request.Content = null;
+
+            // A request with no content must not keep advertising a chunked body, or sending it fails
+            if (request.Headers.TransferEncodingChunked == true)
+            {
+                request.Headers.TransferEncodingChunked = false;
+            }
         }
 
         // The credentials were granted to the origin that answered, not to the one it points at
@@ -228,9 +333,9 @@ public sealed class HstsClientHandler : DelegatingHandler
         includeSubdomains = false;
         var hasMaxAge = false;
 
-        foreach (var part in header.Split(';'))
+        while (!header.IsEmpty)
         {
-            var directive = header[part].Trim();
+            var directive = NextDirective(ref header).Trim();
             if (directive.IsEmpty)
                 continue;
 
@@ -269,5 +374,37 @@ public sealed class HstsClientHandler : DelegatingHandler
 
         // The max-age directive is required; without it the header is ignored
         return hasMaxAge;
+    }
+
+    // https://datatracker.ietf.org/doc/html/rfc6797#section-6.1
+    // A directive value may be a quoted-string, which can contain ';', so the separator only separates
+    // outside quotes. Splitting on every ';' would let a quoted extension directive either invalidate a
+    // valid header or smuggle an includeSubDomains the server never sent.
+    private static ReadOnlySpan<char> NextDirective(ref ReadOnlySpan<char> header)
+    {
+        var inQuotes = false;
+        for (var i = 0; i < header.Length; i++)
+        {
+            var c = header[i];
+            if (c == '"')
+            {
+                inQuotes = !inQuotes;
+            }
+            else if (c == '\\' && inQuotes && i + 1 < header.Length)
+            {
+                // quoted-pair
+                i++;
+            }
+            else if (c == ';' && !inQuotes)
+            {
+                var directive = header[..i];
+                header = header[(i + 1)..];
+                return directive;
+            }
+        }
+
+        var last = header;
+        header = default;
+        return last;
     }
 }

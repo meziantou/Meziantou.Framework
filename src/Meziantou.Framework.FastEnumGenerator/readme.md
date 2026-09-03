@@ -70,6 +70,48 @@ C# 13 or earlier, only the instance extension methods above are generated.
 `Enum.GetValues`, so they can be substituted for those methods. Unlike them, they return a
 `ReadOnlySpan<T>` rather than an array.
 
+## Interceptors (opt-in)
+
+Instead of rewriting your call sites, the generator can intercept the `System.Enum` calls in place, so
+existing code gets the generated implementation with no source change. This is off by default because it
+changes what a call does without changing what it looks like:
+
+````xml
+<PropertyGroup>
+  <MeziantouFastEnumInterceptors>true</MeziantouFastEnumInterceptors>
+</PropertyGroup>
+````
+
+It requires C# 12 or later (nothing is generated below that). The package's `.targets` adds the generated
+namespace to `InterceptorsNamespaces` for you.
+
+These calls are intercepted, for enums marked with `FastEnumAttribute`:
+
+| Call | Replaced by |
+| -- | -- |
+| `value.ToString()` | `ToStringFast(value)` |
+| `value.HasFlag(flag)` | `HasFlagFast(value, flag)` |
+| `Enum.IsDefined<TEnum>(value)` | the generated `IsDefinedFast` |
+| `Enum.GetName<TEnum>(value)` | the generated `GetName` |
+| `Enum.GetNames<TEnum>()` | the generated names table |
+| `Enum.GetValues<TEnum>()` | the generated values table |
+
+Behavior is unchanged: `GetNames`/`GetValues` still return a fresh array the caller owns and still order
+by the underlying value, `GetName` still returns `null` for an undefined value, and `HasFlag` still throws
+for a flag of a different enum type.
+
+Notes and limitations:
+
+- Only the generic `Enum.X<TEnum>(...)` overloads are intercepted. The `Type`-based overloads return
+  `object`/`Array`, which an interceptor cannot change.
+- `Parse` and `TryParse` are not intercepted; use the generated members directly.
+- `ToString()` and `HasFlag()` are declared on `System.Enum`, so their interceptors must take a
+  `System.Enum` receiver and the value is boxed at the call site, exactly as it is today when calling
+  `Enum.ToString()`. The win is skipping the reflection inside, not avoiding the box.
+- Enabling this makes the generator inspect every `ToString`/`HasFlag`/`IsDefined`/`GetName`/`GetNames`/
+  `GetValues` invocation in the project to find call sites, which costs more at design time than the
+  default mode.
+
 ## Analyzer rules
 
 The package also ships analyzers and code fixes for enums configured with `FastEnumAttribute`.

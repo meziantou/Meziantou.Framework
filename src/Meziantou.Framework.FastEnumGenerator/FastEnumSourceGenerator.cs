@@ -4,6 +4,7 @@ using Meziantou.Framework.Collections;
 using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.FastEnumGenerator;
@@ -69,11 +70,108 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
         // Only the language version is needed, so depend on the parse options rather than the whole
         // compilation, which is invalidated on every edit.
-        var supportsExtensionMembers = context.ParseOptionsProvider.Select(static (options, _) =>
-            options.GetCSharpLanguageVersion().IsCSharp14OrGreater());
+        var languageFeatures = context.ParseOptionsProvider.Select(static (options, _) =>
+        {
+            var languageVersion = options.GetCSharpLanguageVersion();
+            return new LanguageFeatures(languageVersion.IsCSharp12OrGreater(), languageVersion.IsCSharp14OrGreater());
+        });
 
-        var generationInput = enums.Collect().Combine(supportsExtensionMembers);
-        context.RegisterSourceOutput(generationInput, static (spc, source) => GenerateCode(spc, source.Left, source.Right));
+        // Interceptors rewrite call sites in place, so they only run when the project opts in.
+        var interceptorsEnabled = context.AnalyzerConfigOptionsProvider
+            .Select(static (provider, _) => provider.GlobalOptions.TryGetValue("build_property.MeziantouFastEnumInterceptors", out var value) && string.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
+            .Combine(languageFeatures)
+            .Select(static (item, _) => item.Left && item.Right.SupportsInterceptors);
+
+        var generationInput = enums.Collect().Combine(languageFeatures).Combine(interceptorsEnabled);
+        context.RegisterSourceOutput(generationInput, static (spc, source) => GenerateCode(spc, source.Left.Left, source.Left.Right.SupportsExtensionMembers, source.Right));
+
+        var interceptionCandidates = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                predicate: static (node, _) => IsInterceptionCandidateSyntax(node),
+                transform: static (ctx, cancellationToken) => GetInterceptionCandidate(ctx, cancellationToken))
+            .Where(static candidate => candidate is not null)
+            .Select(static (candidate, _) => candidate!);
+
+        var interceptionInput = enums.Collect().Combine(interceptionCandidates.Collect()).Combine(interceptorsEnabled);
+        context.RegisterSourceOutput(interceptionInput, static (spc, source) => GenerateInterceptors(spc, source.Left.Left, source.Left.Right, source.Right));
+    }
+
+    /// <summary>
+    /// Cheap syntactic filter so the semantic model is only asked about invocations that could possibly
+    /// be one of the intercepted <see cref="Enum"/> calls.
+    /// </summary>
+    private static bool IsInterceptionCandidateSyntax(SyntaxNode node)
+    {
+        if (node is not InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax memberAccess } invocation)
+            return false;
+
+        return memberAccess.Name.Identifier.ValueText switch
+        {
+            nameof(object.ToString) => invocation.ArgumentList.Arguments.Count == 0,
+            nameof(Enum.HasFlag) => invocation.ArgumentList.Arguments.Count == 1,
+            nameof(Enum.IsDefined) or nameof(Enum.GetName) => invocation.ArgumentList.Arguments.Count == 1,
+            nameof(Enum.GetNames) or nameof(Enum.GetValues) => invocation.ArgumentList.Arguments.Count == 0,
+            _ => false,
+        };
+    }
+
+    private static InterceptionCandidate? GetInterceptionCandidate(GeneratorSyntaxContext ctx, CancellationToken cancellationToken)
+    {
+        var invocation = (InvocationExpressionSyntax)ctx.Node;
+        var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
+
+        if (ctx.SemanticModel.GetSymbolInfo(invocation, cancellationToken).Symbol is not IMethodSymbol method)
+            return null;
+
+        INamedTypeSymbol enumType;
+        FastEnumInterceptKind kind;
+
+        if (method.IsStatic)
+        {
+            if (method.ContainingType?.SpecialType is not SpecialType.System_Enum)
+                return null;
+
+            // Only the generic overloads are intercepted: the Type-based ones return object/Array and
+            // would need a different signature.
+            if (!method.IsGenericMethod || method.TypeArguments.Length != 1 || method.TypeArguments[0] is not INamedTypeSymbol { TypeKind: TypeKind.Enum } typeArgument)
+                return null;
+
+            enumType = typeArgument;
+            kind = method.Name switch
+            {
+                nameof(Enum.IsDefined) when method.Parameters.Length == 1 => FastEnumInterceptKind.IsDefined,
+                nameof(Enum.GetName) when method.Parameters.Length == 1 => FastEnumInterceptKind.GetName,
+                nameof(Enum.GetNames) when method.Parameters.Length == 0 => FastEnumInterceptKind.GetNames,
+                nameof(Enum.GetValues) when method.Parameters.Length == 0 => FastEnumInterceptKind.GetValues,
+                _ => FastEnumInterceptKind.None,
+            };
+        }
+        else
+        {
+            // ToString resolves to System.Enum's override; HasFlag is declared on System.Enum.
+            if (method.ContainingType?.SpecialType is not (SpecialType.System_Enum or SpecialType.System_Object))
+                return null;
+
+            if (ctx.SemanticModel.GetTypeInfo(memberAccess.Expression, cancellationToken).Type is not INamedTypeSymbol { TypeKind: TypeKind.Enum } receiverType)
+                return null;
+
+            enumType = receiverType;
+            kind = method.Name switch
+            {
+                nameof(object.ToString) when method.Parameters.Length == 0 => FastEnumInterceptKind.ToString,
+                nameof(Enum.HasFlag) when method.Parameters.Length == 1 => FastEnumInterceptKind.HasFlag,
+                _ => FastEnumInterceptKind.None,
+            };
+        }
+
+        if (kind is FastEnumInterceptKind.None)
+            return null;
+
+        var location = ctx.SemanticModel.GetInterceptableLocation(invocation, cancellationToken);
+        if (location is null)
+            return null;
+
+        return new InterceptionCandidate(enumType.ToDisplayString(), kind, location.GetInterceptsLocationAttributeSyntax());
     }
 
     private static string GetGeneratorVersion()
@@ -309,7 +407,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         return true;
     }
 
-    private static void GenerateCode(SourceProductionContext context, ImmutableArray<EnumToProcess> enumToProcess, bool supportsExtensionMembers)
+    private static void GenerateCode(SourceProductionContext context, ImmutableArray<EnumToProcess> enumToProcess, bool supportsExtensionMembers, bool interceptorsEnabled)
     {
         if (enumToProcess.Length == 0)
             return;
@@ -334,14 +432,167 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             sb.AppendLine("// <auto-generated/>");
             sb.AppendLine("#pragma warning disable");
             sb.AppendLine("#nullable enable");
-            AppendEnumCode(sb, enumeration, supportsExtensionMembers, context.CancellationToken);
+            AppendEnumCode(sb, enumeration, supportsExtensionMembers, interceptorsEnabled, context.CancellationToken);
 
             // One file per enum keeps unchanged enums byte-identical when another enum is added or edited.
             context.AddSource("FastEnumExtensions." + enumeration.NameToken + ".g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
         }
     }
 
-    private static void AppendEnumCode(StringBuilder sb, EnumToProcess enumeration, bool supportsExtensionMembers, CancellationToken cancellationToken)
+    private static void GenerateInterceptors(SourceProductionContext context, ImmutableArray<EnumToProcess> enumToProcess, ImmutableArray<InterceptionCandidate> candidates, bool interceptorsEnabled)
+    {
+        if (!interceptorsEnabled || candidates.Length == 0 || enumToProcess.Length == 0)
+            return;
+
+        var enums = new Dictionary<string, EnumToProcess>(StringComparer.Ordinal);
+        foreach (var enumeration in enumToProcess)
+        {
+            if (!enums.ContainsKey(enumeration.FullCsharpName))
+            {
+                enums.Add(enumeration.FullCsharpName, enumeration);
+            }
+        }
+
+        // A call site can be reported once per compilation pass, and the same enum may be called from
+        // many places, so group by enum then by kind and drop duplicate locations.
+        var grouped = new SortedDictionary<string, SortedDictionary<FastEnumInterceptKind, SortedSet<string>>>(StringComparer.Ordinal);
+        foreach (var candidate in candidates)
+        {
+            context.CancellationToken.ThrowIfCancellationRequested();
+            if (!enums.ContainsKey(candidate.EnumFullName))
+                continue;
+
+            if (!grouped.TryGetValue(candidate.EnumFullName, out var byKind))
+            {
+                byKind = new SortedDictionary<FastEnumInterceptKind, SortedSet<string>>();
+                grouped.Add(candidate.EnumFullName, byKind);
+            }
+
+            if (!byKind.TryGetValue(candidate.Kind, out var locations))
+            {
+                locations = new SortedSet<string>(StringComparer.Ordinal);
+                byKind.Add(candidate.Kind, locations);
+            }
+
+            _ = locations.Add(candidate.InterceptsLocationAttribute);
+        }
+
+        if (grouped.Count == 0)
+            return;
+
+        var sb = new StringBuilder(4096);
+        sb.AppendLine("// <auto-generated/>");
+        sb.AppendLine("#pragma warning disable");
+        sb.AppendLine("#nullable enable");
+        sb.AppendLine();
+
+        // File-scoped so it cannot collide with another generator's or the consumer's declaration.
+        sb.AppendLine("namespace System.Runtime.CompilerServices");
+        sb.AppendLine("{");
+        sb.AppendLine("    [global::System.AttributeUsage(global::System.AttributeTargets.Method, AllowMultiple = true)]");
+        sb.AppendLine("    file sealed class InterceptsLocationAttribute : global::System.Attribute");
+        sb.AppendLine("    {");
+        sb.AppendLine("        public InterceptsLocationAttribute(int version, string data)");
+        sb.AppendLine("        {");
+        sb.AppendLine("        }");
+        sb.AppendLine("    }");
+        sb.AppendLine("}");
+        sb.AppendLine();
+
+        sb.AppendLine("namespace Meziantou.Framework.Annotations.FastEnumInterceptors");
+        sb.AppendLine("{");
+
+        foreach (var pair in grouped)
+        {
+            context.CancellationToken.ThrowIfCancellationRequested();
+            AppendInterceptorClass(sb, enums[pair.Key], pair.Value);
+        }
+
+        sb.AppendLine("}");
+        context.AddSource("FastEnumInterceptors.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
+    }
+
+    private static void AppendInterceptorClass(StringBuilder sb, EnumToProcess enumeration, SortedDictionary<FastEnumInterceptKind, SortedSet<string>> byKind)
+    {
+        var token = enumeration.NameToken;
+        var enumTypeName = "global::" + enumeration.FullCsharpName;
+        var extensions = string.IsNullOrEmpty(enumeration.FullNamespace)
+            ? "global::FastEnumExtensions_" + token
+            : "global::" + enumeration.FullNamespace + ".FastEnumExtensions_" + token;
+
+        sb.Append("    [global::System.CodeDom.Compiler.GeneratedCode(\"Meziantou.Framework.FastEnumGenerator\", ").Append(ToLiteral(GeneratorVersion)).AppendLine(")]");
+        sb.AppendLine("    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
+        sb.Append("    internal static class FastEnumInterceptors_").Append(token).AppendLine();
+        sb.AppendLine("    {");
+
+        foreach (var pair in byKind)
+        {
+            foreach (var location in pair.Value)
+            {
+                sb.Append("        ").AppendLine(location);
+            }
+
+            switch (pair.Key)
+            {
+                case FastEnumInterceptKind.ToString:
+                    // The intercepted method is declared on System.Enum, so the receiver must be typed as
+                    // System.Enum (CS9148). The call site already boxes for Enum.ToString today.
+                    sb.AppendLine("        public static string ToStringFast(this global::System.Enum value)");
+                    sb.AppendLine("        {");
+                    sb.Append("            return ").Append(extensions).Append(".ToStringFast((").Append(enumTypeName).AppendLine(")value);");
+                    sb.AppendLine("        }");
+                    break;
+
+                case FastEnumInterceptKind.HasFlag:
+                    sb.AppendLine("        public static bool HasFlagFast(this global::System.Enum value, global::System.Enum flag)");
+                    sb.AppendLine("        {");
+                    sb.AppendLine("            if (flag is null)");
+                    sb.AppendLine("                throw new global::System.ArgumentNullException(nameof(flag));");
+                    sb.AppendLine();
+                    // Enum.HasFlag rejects a flag of a different enum type; keep that behavior.
+                    sb.Append("            if (flag is not ").Append(enumTypeName).AppendLine(" typedFlag)");
+                    sb.Append("                throw new global::System.ArgumentException(\"The argument type must be ").Append(enumeration.FullCsharpName).AppendLine(".\", nameof(flag));");
+                    sb.AppendLine();
+                    sb.Append("            return ").Append(extensions).Append(".HasFlagFast((").Append(enumTypeName).AppendLine(")value, typedFlag);");
+                    sb.AppendLine("        }");
+                    break;
+
+                case FastEnumInterceptKind.IsDefined:
+                    sb.Append("        public static bool IsDefinedFast(").Append(enumTypeName).AppendLine(" value)");
+                    sb.AppendLine("        {");
+                    sb.Append("            return ").Append(extensions).Append(".IsDefinedCore_").Append(token).AppendLine("(value);");
+                    sb.AppendLine("        }");
+                    break;
+
+                case FastEnumInterceptKind.GetName:
+                    sb.Append("        public static string? GetNameFast(").Append(enumTypeName).AppendLine(" value)");
+                    sb.AppendLine("        {");
+                    sb.Append("            return ").Append(extensions).AppendLine(".GetName(value);");
+                    sb.AppendLine("        }");
+                    break;
+
+                case FastEnumInterceptKind.GetNames:
+                    sb.AppendLine("        public static string[] GetNamesFast()");
+                    sb.AppendLine("        {");
+                    sb.Append("            return ").Append(extensions).Append(".GetNamesArray_").Append(token).AppendLine("(useMetadata: false);");
+                    sb.AppendLine("        }");
+                    break;
+
+                case FastEnumInterceptKind.GetValues:
+                    sb.Append("        public static ").Append(enumTypeName).AppendLine("[] GetValuesFast()");
+                    sb.AppendLine("        {");
+                    sb.Append("            return ").Append(extensions).Append(".GetValuesArray_").Append(token).AppendLine("();");
+                    sb.AppendLine("        }");
+                    break;
+            }
+
+            sb.AppendLine();
+        }
+
+        sb.AppendLine("    }");
+    }
+
+    private static void AppendEnumCode(StringBuilder sb, EnumToProcess enumeration, bool supportsExtensionMembers, bool interceptorsEnabled, CancellationToken cancellationToken)
     {
         var visibility = enumeration.IsPublic ? "public" : "internal";
         var enumTypeName = "global::" + enumeration.FullCsharpName;
@@ -361,8 +612,9 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             : [];
         var emitFlagsFormatting = flagMembers.Count > 0;
 
-        var needsNamesArray = supportsExtensionMembers || (denseMembers.Count > 0 && canUseMainArraysForDenseLookup);
-        var needsMetadataNamesArray = supportsExtensionMembers;
+        var needsNamesArray = supportsExtensionMembers || interceptorsEnabled || (denseMembers.Count > 0 && canUseMainArraysForDenseLookup);
+        var needsMetadataNamesArray = supportsExtensionMembers || interceptorsEnabled;
+        var needsValuesArray = supportsExtensionMembers || interceptorsEnabled;
         var needsToUInt64Helper = emitFlagsFormatting || (enumeration.IsFlags && supportsExtensionMembers);
         var needsFromUInt64Helper = enumeration.IsFlags && supportsExtensionMembers;
 
@@ -377,7 +629,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.Append(visibility).Append(" static class FastEnumExtensions_").Append(token).AppendLine();
         sb.AppendLine("{");
 
-        AppendMemberArrays(sb, enumTypeName, token, members, needsNamesArray, needsMetadataNamesArray, supportsExtensionMembers);
+        AppendMemberArrays(sb, enumTypeName, token, members, needsNamesArray, needsMetadataNamesArray, needsValuesArray);
         if (denseMembers.Count > 0 && !canUseMainArraysForDenseLookup)
         {
             AppendDenseArrays(sb, denseMembers, token, hasDistinctMetadata);
@@ -456,9 +708,18 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             AppendFormatFlagsName(sb, enumTypeName, token, hasDistinctMetadata);
         }
 
-        if (supportsExtensionMembers)
+        if (supportsExtensionMembers || interceptorsEnabled)
         {
             AppendIsDefinedCore(sb, enumTypeName, token, uniqueMembers, denseMembers);
+        }
+
+        if (interceptorsEnabled)
+        {
+            AppendInterceptorAccessors(sb, enumTypeName, token, needsMetadataNamesArray);
+        }
+
+        if (supportsExtensionMembers)
+        {
             AppendEqualsTokenHelper(sb, token);
             AppendTryParseHelpers(sb, enumTypeName, enumeration, token, hasDistinctMetadata, members, cancellationToken);
             AppendExtensionMembers(sb, enumTypeName, visibility, token, hasDistinctMetadata, needsMetadataNamesArray);
@@ -560,7 +821,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
     private static void AppendIsDefinedCore(StringBuilder sb, string enumTypeName, string token, List<EnumMemberToProcess> uniqueMembers, List<EnumMemberToProcess> denseMembers)
     {
-        sb.Append("    private static bool IsDefinedCore_").Append(token).Append('(').Append(enumTypeName).AppendLine(" value)");
+        sb.Append("    internal static bool IsDefinedCore_").Append(token).Append('(').Append(enumTypeName).AppendLine(" value)");
         sb.AppendLine("    {");
         if (denseMembers.Count > 0)
         {
@@ -583,7 +844,35 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine();
     }
 
-    private static void AppendMemberArrays(StringBuilder sb, string enumTypeName, string token, ImmutableEquatableArray<EnumMemberToProcess> members, bool needsNamesArray, bool needsMetadataNamesArray, bool supportsExtensionMembers)
+    /// <summary>
+    /// Members the generated interceptors call. They are internal because the interceptors live in a
+    /// dedicated namespace, and they clone so <c>Enum.GetNames</c>/<c>Enum.GetValues</c> keep returning a
+    /// caller-owned array.
+    /// </summary>
+    private static void AppendInterceptorAccessors(StringBuilder sb, string enumTypeName, string token, bool hasMetadataNamesArray)
+    {
+        sb.Append("    internal static string[] GetNamesArray_").Append(token).AppendLine("(bool useMetadata)");
+        sb.AppendLine("    {");
+        if (hasMetadataNamesArray)
+        {
+            sb.Append("        return (string[])(useMetadata ? s_metadataNames_").Append(token).Append(" : s_names_").Append(token).AppendLine(").Clone();");
+        }
+        else
+        {
+            sb.Append("        return (string[])s_names_").Append(token).AppendLine(".Clone();");
+        }
+
+        sb.AppendLine("    }");
+        sb.AppendLine();
+
+        sb.Append("    internal static ").Append(enumTypeName).Append("[] GetValuesArray_").Append(token).AppendLine("()");
+        sb.AppendLine("    {");
+        sb.Append("        return (").Append(enumTypeName).Append("[])s_values_").Append(token).AppendLine(".Clone();");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+    }
+
+    private static void AppendMemberArrays(StringBuilder sb, string enumTypeName, string token, ImmutableEquatableArray<EnumMemberToProcess> members, bool needsNamesArray, bool needsMetadataNamesArray, bool needsValuesArray)
     {
         var emitted = false;
         if (needsNamesArray)
@@ -602,7 +891,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             emitted = true;
         }
 
-        if (supportsExtensionMembers)
+        if (needsValuesArray)
         {
             sb.Append("    private static readonly ").Append(enumTypeName).Append("[] s_values_").Append(token).Append(" = new ").Append(enumTypeName).Append("[] { ");
             AppendCommaSeparated(sb, members.Select(member => enumTypeName + "." + member.EscapedName));
@@ -1084,6 +1373,10 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         string NameToken);
 
     private sealed record EnumMemberToProcess(string Name, string EscapedName, ulong UInt64Value, string? MetadataName);
+
+    private readonly record struct LanguageFeatures(bool SupportsInterceptors, bool SupportsExtensionMembers);
+
+    private sealed record InterceptionCandidate(string EnumFullName, FastEnumInterceptKind Kind, string InterceptsLocationAttribute);
 
     private sealed record ParseTokenToProcess(string Token, string EscapedMemberName);
 }

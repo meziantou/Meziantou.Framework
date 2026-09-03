@@ -519,6 +519,107 @@ public sealed class FastEnumSourceGeneratorTests
         return (await generatedTree.GetRootAsync()).ToFullString();
     }
 
+    private const string InterceptorsNamespace = "Meziantou.Framework.Annotations.FastEnumInterceptors";
+
+    private const string InterceptorSource = """
+        using System;
+        [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Sample.Color))]
+        namespace Sample
+        {
+            [Flags]
+            public enum Color { None = 0, Blue = 1, Red = 2 }
+
+            public static class TestClass
+            {
+                public static void M()
+                {
+                    _ = Color.Blue.ToString();
+                    _ = Color.Blue.HasFlag(Color.Red);
+                    _ = Enum.IsDefined(Color.Blue);
+                    _ = Enum.GetName(Color.Blue);
+                    _ = Enum.GetNames<Color>();
+                    _ = Enum.GetValues<Color>();
+                }
+            }
+        }
+        """;
+
+    [Fact]
+    public async Task DoesNotGenerateInterceptorsByDefault()
+    {
+        // Interceptors rewrite call sites silently, so they must stay opt-in.
+        var (runResult, _) = await GenerateFiles(InterceptorSource);
+        Assert.DoesNotContain(runResult.GeneratedTrees, static tree => tree.FilePath.Contains("FastEnumInterceptors", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task GeneratesInterceptorsForEverySupportedCallWhenEnabled()
+    {
+        var (runResult, _) = await GenerateFiles(InterceptorSource, interceptorsEnabled: true);
+        var tree = Assert.Single(runResult.GeneratedTrees, static tree => tree.FilePath.Contains("FastEnumInterceptors", StringComparison.Ordinal));
+        var generatedCode = (await tree.GetRootAsync()).ToFullString();
+
+        Assert.Contains("namespace " + InterceptorsNamespace, generatedCode);
+        Assert.Contains("InterceptsLocationAttribute(1,", generatedCode);
+
+        // ToString and HasFlag are declared on System.Enum, so their interceptors must take that receiver.
+        Assert.Contains("public static string ToStringFast(this global::System.Enum value)", generatedCode);
+        Assert.Contains("public static bool HasFlagFast(this global::System.Enum value, global::System.Enum flag)", generatedCode);
+
+        // The static Enum members are intercepted by enum-specialized, non-generic methods.
+        Assert.Contains("public static bool IsDefinedFast(global::Sample.Color value)", generatedCode);
+        Assert.Contains("public static string? GetNameFast(global::Sample.Color value)", generatedCode);
+        Assert.Contains("public static string[] GetNamesFast()", generatedCode);
+        Assert.Contains("public static global::Sample.Color[] GetValuesFast()", generatedCode);
+
+        // Enum.GetNames/GetValues return a caller-owned array.
+        Assert.Contains(".Clone()", (await Assert.Single(runResult.GeneratedTrees, static tree => tree.FilePath.Contains("FastEnumExtensions.", StringComparison.Ordinal)).GetRootAsync()).ToFullString());
+    }
+
+    [Fact]
+    public async Task DoesNotGenerateInterceptorsBelowCSharp12()
+    {
+        // InterceptsLocationAttribute requires C# 12.
+        var (runResult, _) = await GenerateFiles(InterceptorSource, LanguageVersion.CSharp11, interceptorsEnabled: true);
+        Assert.DoesNotContain(runResult.GeneratedTrees, static tree => tree.FilePath.Contains("FastEnumInterceptors", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task DoesNotGenerateInterceptorsForEnumsWithoutTheAttribute()
+    {
+        var sourceCode = """
+            using System;
+            namespace Sample
+            {
+                public enum Color { Blue, Red }
+
+                public static class TestClass
+                {
+                    public static void M() => Console.WriteLine(Color.Blue.ToString());
+                }
+            }
+            """;
+
+        var (runResult, _) = await GenerateFiles(sourceCode, interceptorsEnabled: true);
+        Assert.DoesNotContain(runResult.GeneratedTrees, static tree => tree.FilePath.Contains("FastEnumInterceptors", StringComparison.Ordinal));
+    }
+
+    private sealed class TestAnalyzerConfigOptionsProvider(Dictionary<string, string> globalOptions) : AnalyzerConfigOptionsProvider
+    {
+        public override AnalyzerConfigOptions GlobalOptions { get; } = new TestAnalyzerConfigOptions(globalOptions);
+
+        public override AnalyzerConfigOptions GetOptions(SyntaxTree tree) => TestAnalyzerConfigOptions.Empty;
+
+        public override AnalyzerConfigOptions GetOptions(AdditionalText textFile) => TestAnalyzerConfigOptions.Empty;
+    }
+
+    private sealed class TestAnalyzerConfigOptions(Dictionary<string, string> values) : AnalyzerConfigOptions
+    {
+        public static readonly TestAnalyzerConfigOptions Empty = new(new Dictionary<string, string>(StringComparer.Ordinal));
+
+        public override bool TryGetValue(string key, [NotNullWhen(true)] out string? value) => values.TryGetValue(key, out value);
+    }
+
     private static async Task<string> GenerateCode(string sourceCode, LanguageVersion languageVersion = LanguageVersion.Preview)
     {
         var (runResult, _) = await GenerateFiles(sourceCode, languageVersion);
@@ -539,11 +640,16 @@ public sealed class FastEnumSourceGeneratorTests
             .OrderBy(static diagnostic => diagnostic.Id, StringComparer.Ordinal)];
     }
 
-    private static async Task<(GeneratorDriverRunResult RunResult, Compilation Compilation)> GenerateFiles(string sourceCode, LanguageVersion languageVersion = LanguageVersion.Preview)
+    private static async Task<(GeneratorDriverRunResult RunResult, Compilation Compilation)> GenerateFiles(string sourceCode, LanguageVersion languageVersion = LanguageVersion.Preview, bool interceptorsEnabled = false)
     {
         var netcoreReferences = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
         var references = netcoreReferences.Select(static location => MetadataReference.CreateFromFile(location)).ToArray();
         var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(languageVersion);
+        if (interceptorsEnabled)
+        {
+            // Mirrors what the package's .targets sets through InterceptorsNamespaces.
+            parseOptions = parseOptions.WithFeatures([new KeyValuePair<string, string>("InterceptorsNamespaces", InterceptorsNamespace)]);
+        }
         var compilation = CSharpCompilation.Create(
             "compilation",
             [CSharpSyntaxTree.ParseText(sourceCode, parseOptions)],
@@ -551,7 +657,10 @@ public sealed class FastEnumSourceGeneratorTests
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         var generator = new FastEnumSourceGenerator().AsSourceGenerator();
-        GeneratorDriver driver = CSharpGeneratorDriver.Create([generator], parseOptions: parseOptions);
+        var optionsProvider = new TestAnalyzerConfigOptionsProvider(interceptorsEnabled
+            ? new Dictionary<string, string>(StringComparer.Ordinal) { ["build_property.MeziantouFastEnumInterceptors"] = "true" }
+            : new Dictionary<string, string>(StringComparer.Ordinal));
+        GeneratorDriver driver = CSharpGeneratorDriver.Create([generator], parseOptions: parseOptions, optionsProvider: optionsProvider);
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
 
         Assert.Empty(diagnostics);

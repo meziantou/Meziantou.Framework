@@ -326,6 +326,31 @@ public static class YamlScalar
         return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
     }
 
+    /// <summary>
+    /// Parses a YAML scalar as a <see cref="CultureInfo"/> from its culture name (for example <c language="yaml">fr-FR</c>).
+    /// </summary>
+    /// <param name="value">The culture name to parse. An empty name resolves to <see cref="CultureInfo.InvariantCulture"/>.</param>
+    /// <param name="result">The parsed culture.</param>
+    public static bool TryParseCultureInfo(string? value, [NotNullWhen(true)] out CultureInfo? result)
+    {
+        if (value is null)
+        {
+            result = null;
+            return false;
+        }
+
+        try
+        {
+            result = CultureInfo.GetCultureInfo(value);
+            return true;
+        }
+        catch (CultureNotFoundException)
+        {
+            result = null;
+            return false;
+        }
+    }
+
 #if NET11_0_OR_GREATER
     /// <summary>
     /// Parses a YAML floating-point scalar into an IEEE 754 floating-point type, including <c>.inf</c> and <c>.nan</c>.

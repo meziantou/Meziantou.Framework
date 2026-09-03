@@ -1507,14 +1507,16 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     }
 
     private static bool IsCSharpUnionStringLikeSystemType(ITypeSymbol type)
-        => type is INamedTypeSymbol systemType &&
+        => IsUriType(type) ||
+           IsCultureInfoType(type) ||
+           (type is INamedTypeSymbol systemType &&
            string.Equals(systemType.ContainingNamespace?.ToDisplayString(), "System", StringComparison.Ordinal) &&
            (string.Equals(systemType.Name, "DateTime", StringComparison.Ordinal) ||
             string.Equals(systemType.Name, "DateTimeOffset", StringComparison.Ordinal) ||
             string.Equals(systemType.Name, "Guid", StringComparison.Ordinal) ||
             string.Equals(systemType.Name, "TimeSpan", StringComparison.Ordinal) ||
             string.Equals(systemType.Name, "DateOnly", StringComparison.Ordinal) ||
-            string.Equals(systemType.Name, "TimeOnly", StringComparison.Ordinal));
+            string.Equals(systemType.Name, "TimeOnly", StringComparison.Ordinal)));
 
     private static ImmutableArray<CSharpUnionCaseModel> CollapseCSharpUnionNullableOverloads(ImmutableArray<CSharpUnionCaseModel> cases)
     {
@@ -1621,6 +1623,16 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             _ => "untyped",
         };
 
+    private static bool IsUriType(ITypeSymbol type)
+        => type is INamedTypeSymbol named &&
+           string.Equals(named.Name, "Uri", StringComparison.Ordinal) &&
+           string.Equals(named.ContainingNamespace?.ToDisplayString(), "System", StringComparison.Ordinal);
+
+    private static bool IsCultureInfoType(ITypeSymbol type)
+        => type is INamedTypeSymbol named &&
+           string.Equals(named.Name, "CultureInfo", StringComparison.Ordinal) &&
+           string.Equals(named.ContainingNamespace?.ToDisplayString(), "System.Globalization", StringComparison.Ordinal);
+
     private static bool IsKnownScalar(ITypeSymbol type)
     {
         if (type is INamedTypeSymbol nullableType && nullableType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
@@ -1634,6 +1646,11 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         }
 
         if (GetIeee754TypeName(type) is not null)
+        {
+            return true;
+        }
+
+        if (IsUriType(type) || IsCultureInfoType(type))
         {
             return true;
         }

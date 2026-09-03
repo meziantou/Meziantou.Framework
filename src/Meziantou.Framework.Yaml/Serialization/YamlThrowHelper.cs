@@ -127,6 +127,14 @@ internal static class YamlThrowHelper
     public static YamlException ThrowInvalidGuidScalar(YamlReader reader)
         => ThrowInvalidScalar(reader, $"Invalid Guid scalar '{reader.ScalarValue}'.");
 
+    /// <summary>Throws an exception for invalid <see cref="Uri"/> Scalar.</summary>
+    public static YamlException ThrowInvalidUriScalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid Uri scalar '{reader.ScalarValue}'.");
+
+    /// <summary>Throws an exception for invalid <see cref="CultureInfo"/> Scalar.</summary>
+    public static YamlException ThrowInvalidCultureInfoScalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid CultureInfo scalar '{reader.ScalarValue}'.");
+
     /// <summary>Throws an exception for invalid <see cref="TimeSpan"/> Scalar.</summary>
     public static YamlException ThrowInvalidTimeSpanScalar(YamlReader reader)
         => ThrowInvalidScalar(reader, $"Invalid TimeSpan scalar '{reader.ScalarValue}'.");

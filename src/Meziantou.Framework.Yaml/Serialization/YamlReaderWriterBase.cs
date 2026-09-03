@@ -339,6 +339,16 @@ public abstract class YamlReaderWriterBase
                 return YamlTimeSpanConverter.Instance;
             }
 
+            if (typeToConvert == typeof(Uri))
+            {
+                return YamlUriConverter.Instance;
+            }
+
+            if (typeToConvert == typeof(CultureInfo))
+            {
+                return YamlCultureInfoConverter.Instance;
+            }
+
             if (typeToConvert == typeof(DateOnly))
             {
                 return YamlDateOnlyConverter.Instance;

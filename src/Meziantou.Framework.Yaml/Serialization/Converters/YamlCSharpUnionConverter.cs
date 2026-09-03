@@ -324,6 +324,8 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
             runtimeType == typeof(TimeSpan) ||
             runtimeType == typeof(DateOnly) ||
             runtimeType == typeof(TimeOnly) ||
+            runtimeType == typeof(Uri) ||
+            runtimeType == typeof(CultureInfo) ||
             runtimeType.IsEnum)
         {
             return UnionCaseKind.String;

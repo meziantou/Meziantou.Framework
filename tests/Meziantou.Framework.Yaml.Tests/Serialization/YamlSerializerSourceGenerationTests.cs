@@ -183,6 +183,14 @@ internal sealed class GeneratedWellKnownScalars
     public TimeSpan Duration { get; set; }
 }
 
+internal sealed class GeneratedUriAndCultureScalars
+{
+    public Uri? Absolute { get; set; }
+    public Uri? Relative { get; set; }
+    public CultureInfo? Culture { get; set; }
+    public Dictionary<Uri, string>? ByUri { get; set; }
+}
+
 internal sealed class GeneratedNullableScalars
 {
     public DateTimeOffset? PublishDate { get; set; }
@@ -1143,6 +1151,7 @@ internal sealed class GeneratedYamlIgnoreConditions
 [YamlSerializable(typeof(GeneratedContainer))]
 [YamlSerializable(typeof(GeneratedPrimitives))]
 [YamlSerializable(typeof(GeneratedWellKnownScalars))]
+[YamlSerializable(typeof(GeneratedUriAndCultureScalars))]
 [YamlSerializable(typeof(GeneratedNullableScalars))]
 [YamlSerializable(typeof(GeneratedModernScalars))]
 [YamlSerializable(typeof(GeneratedColor))]
@@ -1815,6 +1824,66 @@ public class YamlSerializerSourceGenerationTests
         Assert.Equal(payload.OptionalMedium, roundTrip.OptionalMedium);
     }
 #endif
+
+    [Fact]
+    public void GeneratedContext_UriAndCultureInfo_RoundTrip()
+    {
+        var payload = new GeneratedUriAndCultureScalars
+        {
+            Absolute = new Uri("https://example.com/path?query=1#fragment", UriKind.Absolute),
+            Relative = new Uri("path/to/resource", UriKind.Relative),
+            Culture = CultureInfo.InvariantCulture,
+            ByUri = new Dictionary<Uri, string> { [new Uri("https://example.com/", UriKind.Absolute)] = "root" },
+        };
+
+        var context = TestYamlSerializerContext.Default;
+        var typeInfo = context.GeneratedUriAndCultureScalars;
+
+        var yaml = YamlSerializer.Serialize(payload, typeInfo);
+        var roundTrip = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.NotNull(roundTrip);
+        Assert.Equal(payload.Absolute, roundTrip.Absolute);
+        Assert.Equal(payload.Relative, roundTrip.Relative);
+        Assert.Equal(CultureInfo.InvariantCulture, roundTrip.Culture);
+        Assert.Equal(payload.ByUri, roundTrip.ByUri);
+    }
+
+    [Fact]
+    public void GeneratedContext_NullUriAndCultureInfo_RoundTrip()
+    {
+        var context = TestYamlSerializerContext.Default;
+        var typeInfo = context.GeneratedUriAndCultureScalars;
+
+        var yaml = YamlSerializer.Serialize(new GeneratedUriAndCultureScalars(), typeInfo);
+        var roundTrip = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.NotNull(roundTrip);
+        Assert.Null(roundTrip.Absolute);
+        Assert.Null(roundTrip.Relative);
+        Assert.Null(roundTrip.Culture);
+        Assert.Null(roundTrip.ByUri);
+    }
+
+    [Fact]
+    public void GeneratedContext_InvalidUri_ShouldThrowYamlException()
+    {
+        var context = TestYamlSerializerContext.Default;
+        var typeInfo = context.GeneratedUriAndCultureScalars;
+
+        var ex = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize("Absolute: \"http://\"", typeInfo));
+        Assert.Contains("Uri", ex.Message);
+    }
+
+    [Fact]
+    public void GeneratedContext_InvalidCultureInfo_ShouldThrowYamlException()
+    {
+        var context = TestYamlSerializerContext.Default;
+        var typeInfo = context.GeneratedUriAndCultureScalars;
+
+        var ex = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize("Culture: not a culture!", typeInfo));
+        Assert.Contains("CultureInfo", ex.Message);
+    }
 
     [Fact]
     public void GeneratedContextExposesDefaultTypeInfoPropertyNames()

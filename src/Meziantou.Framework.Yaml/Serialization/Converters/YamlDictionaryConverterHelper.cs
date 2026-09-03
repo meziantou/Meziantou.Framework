@@ -154,6 +154,16 @@ internal static class YamlDictionaryConverterHelper
             return timeOnly.ToString("O", CultureInfo.InvariantCulture);
         }
 
+        if (key is Uri uri)
+        {
+            return uri.OriginalString;
+        }
+
+        if (key is CultureInfo culture)
+        {
+            return culture.Name;
+        }
+
         if (key is IFormattable formattable)
         {
             return formattable.ToString(format: null, CultureInfo.InvariantCulture) ?? string.Empty;

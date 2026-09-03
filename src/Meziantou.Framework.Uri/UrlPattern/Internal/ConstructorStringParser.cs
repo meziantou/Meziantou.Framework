@@ -427,7 +427,7 @@ internal sealed class ConstructorStringParser
         // Compile a component to test against special schemes
         try
         {
-            var component = UrlPatternComponent.Compile(protocolString, CanonicalizeProtocol, PatternOptions.Default);
+            var component = UrlPatternComponent.Compile(protocolString, UrlCanonicalizer.CanonicalizeProtocol, PatternOptions.Default);
             foreach (var scheme in SpecialSchemes.All)
             {
                 if (component.RegularExpression.IsMatch(scheme))
@@ -443,14 +443,5 @@ internal sealed class ConstructorStringParser
         }
 
         _protocolMatchesSpecialScheme = false;
-    }
-
-    private static string CanonicalizeProtocol(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-            return value;
-
-        // Protocol should be lowercased
-        return value.ToLowerInvariant();
     }
 }

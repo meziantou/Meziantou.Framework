@@ -233,20 +233,26 @@ internal sealed class PatternParser
     private void AddPart(string prefix, Token? nameToken, Token? regexpOrWildcardToken, string suffix, Token? modifierToken)
     {
         var modifier = GetModifier(modifierToken);
+
+        if (nameToken is null && regexpOrWildcardToken is null && modifier == PartModifier.None)
+        {
+            // This was a "{foo}" grouping. Buffering it unencoded is what lets it be combined with the text
+            // around it, so that the encoding callback sees "example.com/foo" rather than three fragments
+            _pendingFixedValue.Append(prefix);
+            return;
+        }
+
         MaybeAddPartFromPendingFixedValue();
 
         if (nameToken is null && regexpOrWildcardToken is null)
         {
-            // This was a "{foo}?" grouping
-            if (string.IsNullOrEmpty(suffix) && string.IsNullOrEmpty(prefix))
+            // This was a "{foo}?" grouping. The modifier means it cannot be combined with the text around it
+            if (string.IsNullOrEmpty(prefix))
                 return;
 
-            if (!string.IsNullOrEmpty(prefix))
-            {
-                var encodedValue = Encode(prefix);
-                var part = new Part(PartType.FixedText, encodedValue, modifier);
-                _partList.Add(part);
-            }
+            var encodedValue = Encode(prefix);
+            var part = new Part(PartType.FixedText, encodedValue, modifier);
+            _partList.Add(part);
 
             return;
         }

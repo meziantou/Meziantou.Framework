@@ -704,7 +704,8 @@ public sealed class UrlPatternTests
     [InlineData("https://john@example.com/path", "john", "")]
     [InlineData("https://john:secret@example.com/path", "john", "secret")]
     [InlineData("https://:secret@example.com/path", "", "secret")]
-    [InlineData("https://john:pa:ss@example.com/path", "john", "pa:ss")]
+    // Only the first ":" separates the two; the rest belongs to the password, where it is percent-encoded
+    [InlineData("https://john:pa:ss@example.com/path", "john", "pa%3Ass")]
     public void Match_SplitsTheUserInfoIntoUsernameAndPassword(string url, string expectedUsername, string expectedPassword)
     {
         var result = UrlPattern.Create(new UrlPatternInit()).Match(url);
@@ -1455,41 +1456,42 @@ public sealed class UrlPatternTests
     }
 
     [Fact]
-    public void IsMatch_ComponentWithATrailingNewLine_ShouldNotMatch()
+    public void IsMatch_ComponentWithANewLine_IgnoresIt()
     {
-        Assert.False(UrlPattern.Create(new UrlPatternInit { Pathname = "/admin" })
+        // The basic URL parser removes every tab and newline from its input before it does anything else,
+        // so canonicalizing a component drops them on both sides of a match
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Pathname = "/admin" })
             .IsMatch(new UrlPatternInit { Pathname = "/admin\n" }));
 
-        Assert.False(UrlPattern.Create(new UrlPatternInit { Hostname = "example.com" })
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Pathname = "/admin" })
+            .IsMatch(new UrlPatternInit { Pathname = "\n/admin" }));
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Hostname = "example.com" })
             .IsMatch(new UrlPatternInit { Hostname = "example.com\n" }));
 
-        Assert.False(UrlPattern.Create(new UrlPatternInit { Protocol = "https" })
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Protocol = "https" })
             .IsMatch(new UrlPatternInit { Protocol = "https\n" }));
 
-        Assert.False(UrlPattern.Create(new UrlPatternInit { Search = "a=1" })
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Search = "a=1" })
             .IsMatch(new UrlPatternInit { Search = "a=1\n" }));
 
-        Assert.False(UrlPattern.Create(new UrlPatternInit { Hash = "top" })
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Hash = "top" })
             .IsMatch(new UrlPatternInit { Hash = "top\n" }));
+
+        // A username is percent-encoded rather than parsed, so a newline survives as an escape
+        Assert.False(UrlPattern.Create(new UrlPatternInit { Username = "john" })
+            .IsMatch(new UrlPatternInit { Username = "john\n" }));
     }
 
     [Fact]
-    public void IsMatch_TrailingNewLineAfterAGroupsFixedSuffix_ShouldNotMatch()
+    public void IsMatch_TrailingContentAfterAGroupsFixedSuffix_ShouldNotMatch()
     {
-        // The group itself is "[^/]+?", which matches "123\n" in JavaScript too, so the
-        // newline has to be rejected by the trailing literal rather than by the group.
+        // The group itself is "[^/]+?", which matches "123x" in JavaScript too, so the trailing text
+        // has to be rejected by the literal that follows the group rather than by the group.
         var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id/edit" });
 
         Assert.True(pattern.IsMatch(new UrlPatternInit { Pathname = "/books/123/edit" }));
-        Assert.False(pattern.IsMatch(new UrlPatternInit { Pathname = "/books/123/edit\n" }));
-    }
-
-    [Fact]
-    public void IsMatch_ComponentWithALeadingNewLine_ShouldNotMatch()
-    {
-        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/admin" });
-
-        Assert.False(pattern.IsMatch(new UrlPatternInit { Pathname = "\n/admin" }));
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Pathname = "/books/123/edit/x" }));
     }
 
     [Theory]
@@ -1548,12 +1550,15 @@ public sealed class UrlPatternTests
     }
 
     [Fact]
-    public void Create_PortWithLeadingZeros_CollapsesLikeTheDefaultPort()
+    public void Create_PortWithLeadingZeros_DoesNotCollapseLikeTheDefaultPort()
     {
+        // A pattern is only stripped of a default port when it is written exactly as the default port is,
+        // because the comparison happens before the port component is compiled and canonicalized
         var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https", Port = "0443" });
 
-        Assert.Equal("", pattern.Port);
-        Assert.True(pattern.IsMatch("https://example.com/"));
+        Assert.Equal("443", pattern.Port);
+        Assert.False(pattern.IsMatch("https://example.com/"));
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Protocol = "https", Port = "443" }).IsMatch("https://example.com/"));
     }
 
     [Theory]
@@ -1578,12 +1583,316 @@ public sealed class UrlPatternTests
 
     [Theory]
     [InlineData("*")]
-    [InlineData("99999")]
     [InlineData(":p")]
     public void Create_PortThatIsNotAPlainNumber_IsMatchedAsWritten(string port)
     {
+        // These are pattern syntax rather than fixed text, so the encoding callback never sees them
         var pattern = UrlPattern.Create(new UrlPatternInit { Port = port });
 
         Assert.Equal(port, pattern.Port);
+    }
+
+    // Canonicalization
+    // https://urlpattern.spec.whatwg.org/#canon-encoding-callbacks
+
+    [Theory]
+    // The path percent-encode set: C0 controls, anything above "~", and " \" # < > ? ` { }
+    [InlineData("/foo bar", "/foo%20bar")]
+    [InlineData("/café", "/caf%C3%A9")]
+    [InlineData("/\U0001F600", "/%F0%9F%98%80")]
+    [InlineData("/a\"b", "/a%22b")]
+    [InlineData("/a<b>c", "/a%3Cb%3Ec")]
+    [InlineData("/a\\`b", "/a%60b")]
+    [InlineData("/a\\?b", "/a%3Fb")]
+    [InlineData("/a\\#b", "/a%23b")]
+    // "^" and "|" are not in the set, so they stay as written
+    [InlineData("/a^b|c", "/a^b|c")]
+    // An escape that is already present is not encoded a second time
+    [InlineData("/path%20with%20spaces", "/path%20with%20spaces")]
+    public void Create_Pathname_IsPercentEncoded(string pathname, string expected)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = pathname });
+
+        Assert.Equal(expected, pattern.Pathname);
+    }
+
+    [Theory]
+    [InlineData("https://example.com/foo bar")]
+    [InlineData("https://example.com/café")]
+    [InlineData("https://example.com/\U0001F600")]
+    [InlineData("https://example.com/a<b>c")]
+    public void IsMatch_PathnameWrittenAsLiteralText_MatchesTheEncodedUrl(string url)
+    {
+        // The pattern is written the way the URL is, and the two only line up because both are canonicalized
+        var pathname = new System.Uri(url).GetComponents(UriComponents.Path, UriFormat.SafeUnescaped);
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/" + pathname });
+
+        Assert.True(pattern.IsMatch(url));
+    }
+
+    [Theory]
+    // A path is parsed, so its dot segments are resolved and a backslash separates segments
+    [InlineData("/a/../b", "/b")]
+    [InlineData("/a/./b", "/a/b")]
+    [InlineData("/a/..", "/")]
+    [InlineData("/a\\\\b", "/a/b")]
+    public void Create_Pathname_ResolvesDotSegments(string pathname, string expected)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = pathname });
+
+        Assert.Equal(expected, pattern.Pathname);
+    }
+
+    [Fact]
+    public void Create_PathnameLiteralAfterAGroup_DoesNotGainASeparator()
+    {
+        // The callback runs on each fixed-text part, so ".json" is canonicalized on its own. The spec
+        // prefixes "/-" before parsing it and removes the two code points afterwards, which is what stops
+        // the URL parser from turning "/books/:id.json" into "/books/:id/.json"
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id.json" });
+
+        Assert.Equal("/books/:id.json", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com/books/42.json"));
+    }
+
+    [Fact]
+    public void Create_PathnameLiteralAfterAGroup_KeepsALeadingDot()
+    {
+        // The "-" of the "/-" prefix is what keeps ".." from being read as a dot segment of the fake path
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/{:id}..json" });
+
+        Assert.Equal("/books/{:id}..json", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com/books/42..json"));
+    }
+
+    [Fact]
+    public void Create_PathnameOfANonSpecialScheme_UsesTheC0ControlSetOnly()
+    {
+        // An opaque path encodes far less than a "/"-separated one: a space survives as written
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "data", Pathname = "text/plain;a b" });
+
+        Assert.Equal("text/plain;a b", pattern.Pathname);
+    }
+
+    [Theory]
+    // The special-query percent-encode set, because the URL record the spec canonicalizes against is https
+    [InlineData("a=b c", "a=b%20c")]
+    [InlineData("q='x'", "q=%27x%27")]
+    [InlineData("a=\\#b", "a=%23b")]
+    [InlineData("a=café", "a=caf%C3%A9")]
+    // "?" is not in the query set, so it survives (the pattern string escapes it again)
+    [InlineData("a=b\\?c", "a=b\\?c")]
+    public void Create_Search_IsPercentEncoded(string search, string expected)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Search = search });
+
+        Assert.Equal(expected, pattern.Search);
+    }
+
+    [Theory]
+    // The fragment percent-encode set, which covers "`" but not "#" or "?"
+    [InlineData("a b", "a%20b")]
+    [InlineData("a\\`b", "a%60b")]
+    [InlineData("a\"b", "a%22b")]
+    [InlineData("a\\?b", "a\\?b")]
+    [InlineData("café", "caf%C3%A9")]
+    public void Create_Hash_IsPercentEncoded(string hash, string expected)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hash = hash });
+
+        Assert.Equal(expected, pattern.Hash);
+    }
+
+    [Fact]
+    public void IsMatch_SearchAndHashWrittenAsLiteralText_MatchTheEncodedUrl()
+    {
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Search = "a=b c" }).IsMatch("https://example.com/?a=b c"));
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Hash = "a b" }).IsMatch("https://example.com/#a b"));
+    }
+
+    [Theory]
+    // The userinfo percent-encode set, which adds "/ : ; = @ [ \ ] ^ |" to the path set
+    [InlineData("jo hn", "jo%20hn")]
+    [InlineData("a\\:b", "a%3Ab")]
+    [InlineData("a@b", "a%40b")]
+    [InlineData("a|b", "a%7Cb")]
+    [InlineData("café", "caf%C3%A9")]
+    public void Create_Username_IsPercentEncoded(string username, string expected)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Username = username });
+
+        Assert.Equal(expected, pattern.Username);
+    }
+
+    [Fact]
+    public void IsMatch_UsernameAndPasswordWrittenAsLiteralText_MatchTheEncodedUrl()
+    {
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Username = "jo hn" })
+            .IsMatch("https://jo%20hn@example.com/"));
+
+        Assert.True(UrlPattern.Create(new UrlPatternInit { Password = @"pa\:ss" })
+            .IsMatch("https://user:pa:ss@example.com/"));
+    }
+
+    [Theory]
+    // A hostname goes through "domain to ASCII", which lowercases it and applies IDNA label by label
+    [InlineData("EXAMPLE.com", "example.com")]
+    [InlineData("CAFÉ.example.com", "xn--caf-dma.example.com")]
+    [InlineData("%C3%A9.com", "xn--9ca.com")]
+    // Hostname state stops at whatever would start the next component
+    [InlineData("example.com/ignored", "example.com")]
+    [InlineData("example.com\\?ignored", "example.com")]
+    [InlineData("example.com\\#ignored", "example.com")]
+    public void Create_Hostname_IsCanonicalized(string hostname, string expected)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = hostname });
+
+        Assert.Equal(expected, pattern.Hostname);
+    }
+
+    [Fact]
+    public void IsMatch_HostnameWrittenInUnicode_MatchesTheUnicodeUrl()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = "café.example.com" });
+
+        Assert.True(pattern.IsMatch("https://café.example.com/"));
+        Assert.True(pattern.IsMatch("https://xn--caf-dma.example.com/"));
+    }
+
+    [Fact]
+    public void Create_HostnameThatContainsAPort_Throws()
+    {
+        Assert.Throws<UrlPatternException>(() => UrlPattern.Create(new UrlPatternInit { Hostname = @"example.com\:80" }));
+    }
+
+    [Fact]
+    public void IsMatch_IPv6Hostname_IgnoresTheDottedFormOfUri()
+    {
+        // Uri writes the last two pieces of "[::ab:1]" as "[::0.171.0.1]", which the URL Standard never does
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = @"[\:\:ab\:1]" });
+
+        Assert.True(pattern.IsMatch("http://[::ab:1]/"));
+        Assert.False(pattern.IsMatch("http://[::ab:2]/"));
+    }
+
+    [Fact]
+    public void Create_IPv6HostnameWithAnInvalidCodePoint_Throws()
+    {
+        Assert.Throws<UrlPatternException>(() => UrlPattern.Create(new UrlPatternInit { Hostname = "[zz]" }));
+    }
+
+    [Theory]
+    [InlineData("HTTPS", "https")]
+    [InlineData("https:", "https")]
+    [InlineData("HTTPS:", "https")]
+    public void Create_Protocol_IsCanonicalized(string protocol, string expected)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = protocol });
+
+        Assert.Equal(expected, pattern.Protocol);
+    }
+
+    [Theory]
+    [InlineData("1http")]
+    [InlineData("ht tp")]
+    public void Create_ProtocolThatIsNotASchemeName_Throws(string protocol)
+    {
+        Assert.Throws<UrlPatternException>(() => UrlPattern.Create(new UrlPatternInit { Protocol = protocol }));
+    }
+
+    [Fact]
+    public void Create_PortThatIsOutOfRange_Throws()
+    {
+        Assert.Throws<UrlPatternException>(() => UrlPattern.Create(new UrlPatternInit { Port = "99999" }));
+    }
+
+    [Theory]
+    // Port state keeps the digits it read and stops at the first code point that is not one
+    [InlineData("80x", "80")]
+    [InlineData("08080", "8080")]
+    public void Create_Port_KeepsTheLeadingDigits(string port, string expected)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Port = port });
+
+        Assert.Equal(expected, pattern.Port);
+    }
+
+    [Fact]
+    public void Create_EmptyGroupBetweenTwoLiterals_IsCanonicalizedAsASingleValue()
+    {
+        // A "{foo}" grouping is buffered unencoded so that it joins the text around it, which is what lets
+        // the "/" of "{.com/}" end the hostname instead of surviving in the middle of it
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = "{sub.}?example{.com/}foo" });
+
+        Assert.Equal("{sub.}?example.com", pattern.Hostname);
+        Assert.True(pattern.IsMatch("https://example.com/foo"));
+        Assert.True(pattern.IsMatch("https://sub.example.com/foo"));
+    }
+
+    [Fact]
+    public void Create_LoneSurrogate_BecomesTheReplacementCharacter()
+    {
+        // A DOMString becomes a USVString before it is canonicalized
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/\ud83d" });
+
+        Assert.Equal("/%EF%BF%BD", pattern.Pathname);
+    }
+
+    [Theory]
+    // A name is an ECMAScript identifier, so it is not limited to ASCII: U+2118 is Other_ID_Start and
+    // U+10450 is a letter outside the basic multilingual plane
+    [InlineData("℘")]
+    [InlineData("\U00010450")]
+    public void Create_GroupNameOutsideAscii_IsAName(string name)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/:" + name });
+
+        var result = pattern.Match(new UrlPatternInit { Pathname = "/foo" });
+
+        Assert.NotNull(result);
+        Assert.Equal("foo", result.Pathname.Groups[name]);
+    }
+
+    [Theory]
+    [InlineData("8\t0", "80")]
+    [InlineData("80x", "80")]
+    public void IsMatch_InitInput_CanonicalizesThePort(string port, string patternPort)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Port = patternPort });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Port = port }));
+    }
+
+    [Fact]
+    public void IsMatch_InitInput_DropsAPortThatIsTheDefaultOfTheProtocol()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "https", Port = "" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Protocol = "https", Port = "443" }));
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Protocol = "https", Port = "8443" }));
+    }
+
+    [Fact]
+    public void IsMatch_InitInput_ThatCannotBeCanonicalized_DoesNotMatch()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Port = "*" });
+
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Port = "invalid80" }));
+    }
+
+    [Fact]
+    public void IsMatch_InitInput_CanonicalizesThePathname()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/foo bar" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Pathname = "/foo bar" }));
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Pathname = "/foo%20bar" }));
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Pathname = "/baz/../foo bar" }));
+    }
+
+    [Fact]
+    public void Create_WithAnEmptyBaseUrl_Throws()
+    {
+        Assert.Throws<UrlPatternException>(() => UrlPattern.Create(new UrlPatternInit { Pathname = "/foo", BaseUrl = "" }));
     }
 }

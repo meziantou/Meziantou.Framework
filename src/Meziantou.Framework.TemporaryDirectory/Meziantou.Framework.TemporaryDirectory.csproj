@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>3.0.3</Version>
+    <Version>3.0.4</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>TemporaryDirectory and TemporaryFile allow to create a disposable directory or file to store temporary data</Description>
   </PropertyGroup>

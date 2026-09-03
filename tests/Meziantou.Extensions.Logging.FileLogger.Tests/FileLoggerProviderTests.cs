@@ -173,6 +173,31 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    public async Task SetScopeProviderUpdatesExistingAndNewLoggers()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions { Directory = tempDirectory.FullPath, IncludeScopes = true });
+        var loggerCreatedBeforeSet = provider.CreateLogger("before");
+
+        var scopeProvider = new LoggerExternalScopeProvider();
+        ((ISupportExternalScope)provider).SetScopeProvider(scopeProvider);
+
+        var loggerCreatedAfterSet = provider.CreateLogger("after");
+
+        using (scopeProvider.Push("external scope"))
+        {
+            loggerCreatedBeforeSet.LogInformation("Test");
+            loggerCreatedAfterSet.LogInformation("Test");
+        }
+
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        var lines = (await ReadLogFileAsync(provider.LogFilePath)).Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.HasCount(2, lines);
+        Assert.All(lines, line => Assert.Contains("=> external scope", line));
+    }
+
+    [Fact]
     public async Task IncludeEventIdThreadIdAndActivity()
     {
         using var tempDirectory = TemporaryDirectory.Create();

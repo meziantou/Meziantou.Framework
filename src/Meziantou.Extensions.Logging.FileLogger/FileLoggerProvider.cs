@@ -33,8 +33,9 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
     private readonly Thread? _writerThread;
     private readonly TaskCompletionSource? _writerCompletion;
 
+    private readonly MutableExternalScopeProvider _scopeProvider = new(new LoggerExternalScopeProvider());
+
     private FileLoggerOptions _options;
-    private IExternalScopeProvider _scopeProvider = new LoggerExternalScopeProvider();
     private int _disposed;
 
     /// <summary>Gets the path of the file the messages are currently written to, or <see langword="null" /> when the log file could not be created.</summary>
@@ -45,7 +46,7 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
 
     internal FileLoggerOptions CurrentOptions => Volatile.Read(ref _options);
 
-    internal IExternalScopeProvider ScopeProvider => Volatile.Read(ref _scopeProvider);
+    internal IExternalScopeProvider ScopeProvider => _scopeProvider;
 
     /// <summary>Initializes a new instance of the <see cref="FileLoggerProvider"/> class that writes to the specified directory.</summary>
     /// <param name="logsDirectory">The directory where log files will be written.</param>
@@ -160,10 +161,16 @@ public sealed class FileLoggerProvider : ILoggerProvider, ISupportExternalScope,
         return new FileLogger(this, categoryName);
     }
 
-    /// <inheritdoc/>
+    /// <summary>Sets the external scope provider supplied by the logger factory.</summary>
+    /// <param name="scopeProvider">The scope provider the factory uses to track scopes.</param>
+    /// <remarks>
+    /// Implementing <see cref="ISupportExternalScope"/> is what makes the factory route its scopes
+    /// through this provider, including the ones it synthesises from the current activity when
+    /// <c>LoggerFactoryOptions.ActivityTrackingOptions</c> is set.
+    /// </remarks>
     public void SetScopeProvider(IExternalScopeProvider scopeProvider)
     {
-        Volatile.Write(ref _scopeProvider, scopeProvider ?? new LoggerExternalScopeProvider());
+        _scopeProvider.Current = scopeProvider;
     }
 
     internal void WriteLog(string message, DateTimeOffset timestamp)

@@ -11,6 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../../common/MutableExternalScopeProvider.cs" Link="MutableExternalScopeProvider.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="10.0.11" />
   </ItemGroup>

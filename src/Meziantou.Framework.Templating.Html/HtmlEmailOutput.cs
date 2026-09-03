@@ -8,6 +8,7 @@ namespace Meziantou.Framework.Templating;
 /// <code>
 /// var output = new HtmlEmailOutput(template, writer);
 /// output.WriteHtmlEncode("&lt;b&gt;text&lt;/b&gt;"); // Outputs: &amp;lt;b&amp;gt;text&amp;lt;/b&amp;gt;
+/// output.WriteHtmlAttributeEncode("a b"); // Outputs: a&amp;#x20;b
 /// output.WriteUrlEncode("value&amp;param"); // Outputs: value%26param
 /// output.WriteContentIdentifier("logo.png"); // Outputs: cid:logo.png
 /// </code>
@@ -16,6 +17,9 @@ public class HtmlEmailOutput(Template template, TextWriter writer) : Output(temp
 {
     /// <summary>The name of the section used for the email title.</summary>
     public const string TitleSectionName = "title";
+
+    private static readonly HtmlEncoder HtmlAttributeEncoder = CreateHtmlAttributeEncoder();
+
     private readonly HtmlEncoder _htmlEncoder = HtmlEncoder.Default;
     private readonly UrlEncoder _urlEncoder = UrlEncoder.Default;
 
@@ -88,7 +92,17 @@ public class HtmlEmailOutput(Template template, TextWriter writer) : Output(temp
     /// <summary>Writes a formatted HTML attribute-encoded string to the output.</summary>
     public virtual void WriteHtmlAttributeEncode(string format, params object?[] args)
     {
-        Write(_htmlEncoder.Encode(string.Format(provider: null, format, args)));
+        Write(HtmlAttributeEncoder.Encode(string.Format(provider: null, format, args)));
+    }
+
+    /// <summary>Creates an encoder that escapes every character outside <c>[0-9A-Za-z]</c>. Unlike <see cref="HtmlEncoder.Default"/>, it also escapes the characters that terminate an unquoted attribute value, such as the space, so the result is safe in quoted and unquoted HTML attributes alike.</summary>
+    private static HtmlEncoder CreateHtmlAttributeEncoder()
+    {
+        var settings = new TextEncoderSettings();
+        settings.AllowCodePoints(Enumerable.Range('0', count: 10));
+        settings.AllowCodePoints(Enumerable.Range('A', count: 26));
+        settings.AllowCodePoints(Enumerable.Range('a', count: 26));
+        return HtmlEncoder.Create(settings);
     }
 
     /// <summary>Writes a URL-encoded value to the output.</summary>

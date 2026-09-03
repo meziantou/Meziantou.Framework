@@ -67,6 +67,26 @@ public class EmailTemplateTest
     }
 
     [Fact]
+    public void EmailTemplate_HtmlAttributeEncode_EscapesCharactersThatEndAnUnquotedAttribute()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("<a href={{#attr \"x onmouseover=alert(1)\" }}>");
+
+        var result = template.Run(out _);
+        Assert.Equal("<a href=x&#x20;onmouseover&#x3D;alert&#x28;1&#x29;>", result);
+    }
+
+    [Fact]
+    public void EmailTemplate_HtmlAttributeEncode_EscapesEverythingOutsideAlphanumerics()
+    {
+        var template = new HtmlEmailTemplate();
+        template.Load("{{#attr \"a-z_0.9 \\t`'\\\"<>&\u00e9\" }}");
+
+        var result = template.Run(out _);
+        Assert.Equal("a&#x2D;z&#x5F;0&#x2E;9&#x20;&#x9;&#x60;&#x27;&quot;&lt;&gt;&amp;&#xE9;", result);
+    }
+
+    [Fact]
     public void EmailTemplate_HtmlCode_01()
     {
         // Arrange

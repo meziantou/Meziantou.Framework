@@ -85,6 +85,42 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
+    public void GetNextOccurrence_DateTimeOffset_ReturnsTheFirstOccurrenceWithTheSameOffset()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+        var startDate = new DateTimeOffset(2024, 01, 01, 09, 00, 00, TimeSpan.FromHours(2));
+
+        var occurrence = rrule.GetNextOccurrence(startDate);
+
+        Assert.NotNull(occurrence);
+        Assert.Equal(startDate, occurrence);
+        Assert.Equal(TimeSpan.FromHours(2), occurrence.Value.Offset);
+        Assert.Equal(new DateTime(2024, 01, 01, 09, 00, 00), occurrence.Value.DateTime);
+    }
+
+    [Fact]
+    public void GetNextOccurrence_DateTimeOffset_UsesTheLocalTimeOfTheStartDate()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=10");
+        var startDate = new DateTimeOffset(2024, 01, 01, 09, 00, 00, TimeSpan.FromHours(-5));
+
+        var occurrence = rrule.GetNextOccurrence(startDate);
+
+        Assert.NotNull(occurrence);
+        Assert.Equal(new DateTimeOffset(2024, 01, 01, 10, 00, 00, TimeSpan.FromHours(-5)), occurrence);
+        Assert.Equal(TimeSpan.FromHours(-5), occurrence.Value.Offset);
+    }
+
+    [Fact]
+    public void GetNextOccurrence_DateTimeOffset_ReturnsNullWhenTheRuleIsExhausted()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=0");
+        var startDate = new DateTimeOffset(2024, 01, 01, 09, 00, 00, TimeSpan.FromHours(2));
+
+        Assert.Null(rrule.GetNextOccurrence(startDate));
+    }
+
+    [Fact]
     public void Weekly_Text01()
     {
         var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;UNTIL=20000131T140000Z;BYMONTH=1;BYDAY=TU,WE");

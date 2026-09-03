@@ -101,6 +101,7 @@ namespace Meziantou.Framework.Scheduling
     public static class RecurrenceRuleExtensions
     {
         public static System.DateTime? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate) => throw null;
+        public static System.DateTimeOffset? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate) => throw null;
     }
 
     public static class RecurrenceRuleHumanizerExtensions

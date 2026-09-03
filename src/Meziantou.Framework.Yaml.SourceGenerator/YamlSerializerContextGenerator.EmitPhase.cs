@@ -2220,6 +2220,7 @@ public sealed partial class YamlSerializerContextGenerator
                 member.ObjectCreationHandling,
                 member.BlockSequenceMappingStyle,
                 member.BlockSequenceSequenceStyle,
+                member.StringStyle,
                 member.IsRequired,
                 member.IsIgnoredOnRead,
                 member.IsInitOnly,
@@ -2379,6 +2380,7 @@ public sealed partial class YamlSerializerContextGenerator
                 member.ObjectCreationHandling,
                 member.BlockSequenceMappingStyle,
                 member.BlockSequenceSequenceStyle,
+                member.StringStyle,
                 member.IsRequired,
                 member.IsIgnoredOnRead,
                 member.IsInitOnly,
@@ -3728,7 +3730,8 @@ public sealed partial class YamlSerializerContextGenerator
 
         if (member.Type.SpecialType == SpecialType.System_String)
         {
-            builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine(");");
+            // WriteString applies the scalar style preferences; WriteScalar would write the raw text.
+            builder.Append(indent).Append("writer.WriteString(").Append(valueExpression).AppendLine(");");
             return;
         }
 
@@ -3964,7 +3967,7 @@ public sealed partial class YamlSerializerContextGenerator
 
     private static void EmitWriteMemberValueWithCustomConverter(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string valueExpression, string indent, SourceGenerationOptionsModel sourceGenerationOptions)
     {
-        if (member.BlockSequenceMappingStyle is not null || member.BlockSequenceSequenceStyle is not null)
+        if (member.BlockSequenceMappingStyle is not null || member.BlockSequenceSequenceStyle is not null || member.StringStyle is not null)
         {
             var mappingStyle = member.BlockSequenceMappingStyle is null
                 ? "global::Meziantou.Framework.Yaml.YamlSequenceItemStyle.Default"
@@ -3979,6 +3982,13 @@ public sealed partial class YamlSerializerContextGenerator
                 .Append(", ")
                 .Append(sequenceStyle)
                 .AppendLine(");");
+            if (member.StringStyle is not null)
+            {
+                builder.Append(indent).Append("    using var stringStyleScope = writer.PushStringStyle(global::Meziantou.Framework.Yaml.ScalarStyle.")
+                    .Append(member.StringStyle)
+                    .AppendLine(");");
+            }
+
             EmitWriteMemberValueWithCustomConverterCore(builder, member, indexByType, valueExpression, indent + "    ", sourceGenerationOptions);
             builder.Append(indent).AppendLine("}");
             return;
@@ -6327,6 +6337,13 @@ public sealed partial class YamlSerializerContextGenerator
                 .AppendLine(",");
         }
 
+        if (options.IndentBlockSequences.HasValue)
+        {
+            builder.Append("            IndentBlockSequences = ")
+                .Append(options.IndentBlockSequences.Value ? "true" : "false")
+                .AppendLine(",");
+        }
+
         if (options.PropertyNameCaseInsensitive.HasValue)
         {
             builder.Append("            PropertyNameCaseInsensitive = ")
@@ -6474,7 +6491,7 @@ public sealed partial class YamlSerializerContextGenerator
                 .AppendLine(",");
         }
 
-        if (options.PreferPlainStyle.HasValue || options.PreferQuotedForAmbiguousScalars.HasValue)
+        if (options.PreferPlainStyle.HasValue || options.PreferQuotedForAmbiguousScalars.HasValue || !string.IsNullOrEmpty(options.StringStyle))
         {
             builder.AppendLine("            ScalarStylePreferences = new global::Meziantou.Framework.Yaml.YamlScalarStylePreferences");
             builder.AppendLine("            {");
@@ -6489,6 +6506,13 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.Append("                PreferQuotedForAmbiguousScalars = ")
                     .Append(options.PreferQuotedForAmbiguousScalars.Value ? "true" : "false")
+                    .AppendLine(",");
+            }
+
+            if (!string.IsNullOrEmpty(options.StringStyle))
+            {
+                builder.Append("                StringStyle = global::Meziantou.Framework.Yaml.ScalarStyle.")
+                    .Append(options.StringStyle)
                     .AppendLine(",");
             }
 

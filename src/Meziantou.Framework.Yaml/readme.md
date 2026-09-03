@@ -154,10 +154,11 @@ exposes the default instance.
 | --- | --- | --- |
 | `WriteIndented` | `true` | Writes block collections indented by `IndentSize`. When disabled, collections use the flow style and the document stays on a single line. |
 | `IndentSize` | `2` | Number of spaces per indentation level. Ignored when `WriteIndented` is disabled. |
+| `IndentBlockSequences` | `true` | Indents a block sequence that is the value of a mapping key. When disabled, the sequence dashes stay at the indentation of the parent mapping. |
 | `MappingOrder` | `Declaration` | `Declaration` or `Sorted`. |
 | `BlockSequenceMappingStyle` | `Compact` | How a mapping inside a block sequence is emitted. |
 | `BlockSequenceSequenceStyle` | `Expanded` | How a nested sequence inside a block sequence is emitted. |
-| `ScalarStylePreferences` | `PreferPlainStyle = true`, `PreferQuotedForAmbiguousScalars = true` | Quotes scalars that would otherwise resolve to a boolean, a number, or null. |
+| `ScalarStylePreferences` | `PreferPlainStyle = true`, `PreferQuotedForAmbiguousScalars = true`, `StringStyle = Any` | Quotes scalars that would otherwise resolve to a boolean, a number, or null, and selects the style used for string values. |
 
 `BlockSequenceMappingStyle` controls whether the first key of a mapping shares the line of its sequence dash:
 
@@ -173,6 +174,24 @@ items:
     id: 1
     name: first
 ```
+
+`IndentBlockSequences` controls whether a sequence used as a mapping value gets its own indentation level:
+
+```yaml
+# IndentBlockSequences = true
+product:
+  tags:
+    - new
+    - sale
+
+# IndentBlockSequences = false
+product:
+  tags:
+  - new
+  - sale
+```
+
+A sequence nested inside another sequence is always indented past its parent dash, because YAML has no unindented form for it.
 
 Block YAML expresses nesting through indentation, so `WriteIndented = false` switches collections to the flow style instead of writing block collections without indentation. The whole document stays on a single line, and `IndentSize`, `BlockSequenceMappingStyle`, and `BlockSequenceSequenceStyle` no longer apply:
 
@@ -190,6 +209,52 @@ product:
 ```
 
 Flow output is read back by the deserializer like any other YAML, and scalars containing a flow indicator such as `,`, `:`, `[`, or `{` are quoted so the round-trip stays faithful.
+
+`StringStyle` selects the style used for string values. The default, `Any`, lets the writer choose between the plain
+and the double-quoted style. `Literal` writes a block scalar instead:
+
+```csharp
+var options = new YamlSerializerOptions
+{
+    ScalarStylePreferences = new YamlScalarStylePreferences { StringStyle = ScalarStyle.Literal },
+};
+
+YamlSerializer.Serialize(new { Script = "echo one\necho two\n" }, options);
+```
+
+```yaml
+Script: |
+  echo one
+  echo two
+```
+
+The chomping indicator follows the value: `|-` when it has no trailing line break, `|` for one, and `|+` for more.
+`Folded` writes `>` instead, and `Plain`, `SingleQuoted`, and `DoubleQuoted` ask for those styles.
+
+The requested style is used only when the value round-trips through it. A block scalar cannot represent an empty
+value, a carriage return, a control character, a line that ends with a blank, or a line that starts with a tab, and
+none can be written inside a flow collection; a folded scalar additionally cannot hold a line that starts with a
+space. When the style does not fit, the value falls back to the automatic style. The style applies to string values
+only — mapping keys and non-string scalars such as numbers, booleans, and dates keep their own representation.
+
+`[YamlStringStyle]` overrides the style for one member and for the strings below it:
+
+```csharp
+internal sealed class Job
+{
+    [YamlStringStyle(ScalarStyle.Literal)]
+    public string? Script { get; set; }
+
+    public string? Name { get; set; }
+}
+```
+
+```yaml
+Script: |-
+  echo one
+  echo two
+Name: build
+```
 
 `PreferQuotedForAmbiguousScalars` keeps a round-trip faithful when a string looks like another type:
 

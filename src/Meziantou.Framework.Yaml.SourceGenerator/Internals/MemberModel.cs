@@ -16,6 +16,7 @@ internal sealed class MemberModel
         string? objectCreationHandling,
         string? blockSequenceMappingStyle,
         string? blockSequenceSequenceStyle,
+        string? stringStyle,
         bool isRequired,
         bool isIgnoredOnRead,
         bool isInitOnly,
@@ -40,6 +41,7 @@ internal sealed class MemberModel
         ObjectCreationHandling = objectCreationHandling;
         BlockSequenceMappingStyle = blockSequenceMappingStyle;
         BlockSequenceSequenceStyle = blockSequenceSequenceStyle;
+        StringStyle = stringStyle;
         IsRequired = isRequired;
         IsIgnoredOnRead = isIgnoredOnRead;
         IsInitOnly = isInitOnly;
@@ -69,6 +71,7 @@ internal sealed class MemberModel
     public string? ObjectCreationHandling { get; }
     public string? BlockSequenceMappingStyle { get; }
     public string? BlockSequenceSequenceStyle { get; }
+    public string? StringStyle { get; }
     public bool IsRequired { get; }
     public bool IsIgnoredOnRead { get; }
     public bool IsInitOnly { get; }

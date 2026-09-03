@@ -100,6 +100,19 @@ internal sealed class GeneratedNullableAnnotationsPayload
     public string? Optional { get; set; }
 }
 
+internal sealed class GeneratedLiteralStrings
+{
+    public string? Text { get; set; }
+}
+
+internal sealed class GeneratedScriptStrings
+{
+    [YamlStringStyle(ScalarStyle.Literal)]
+    public string? Script { get; set; }
+
+    public string? Description { get; set; }
+}
+
 internal sealed class GeneratedNamingPolicyPayload
 {
     public string URLValue { get; set; } = string.Empty;
@@ -1244,6 +1257,7 @@ internal sealed partial class TestYamlSerializerContext : YamlSerializerContext
 
 [YamlSourceGenerationOptions(
     WriteIndented = false,
+    IndentBlockSequences = false,
     PropertyNameCaseInsensitive = true,
     DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingNull,
     BlockSequenceMappingStyle = YamlSequenceItemStyle.Expanded,
@@ -1262,6 +1276,17 @@ internal sealed partial class TestYamlSerializerContextWithOptions : YamlSeriali
         : base(options)
     {
     }
+}
+
+[YamlSourceGenerationOptions(StringStyle = ScalarStyle.Literal)]
+[YamlSerializable(typeof(GeneratedLiteralStrings))]
+internal sealed partial class TestYamlSerializerContextWithLiteralStrings : YamlSerializerContext
+{
+}
+
+[YamlSerializable(typeof(GeneratedScriptStrings))]
+internal sealed partial class TestYamlSerializerContextWithStringStyleAttribute : YamlSerializerContext
+{
 }
 
 [YamlSourceGenerationOptions(PropertyNamingPolicy = YamlKnownNamingPolicy.SnakeCaseLower)]
@@ -1915,6 +1940,7 @@ public class YamlSerializerSourceGenerationTests
         var options = context.GeneratedWithDefaultOptions.Options;
 
         Assert.False(options.WriteIndented);
+        Assert.False(options.IndentBlockSequences);
         Assert.True(options.PropertyNameCaseInsensitive);
         Assert.Equal(YamlIgnoreCondition.WhenWritingNull, options.DefaultIgnoreCondition);
         Assert.Equal(YamlSequenceItemStyle.Expanded, options.BlockSequenceMappingStyle);
@@ -1941,6 +1967,40 @@ public class YamlSerializerSourceGenerationTests
 
         Assert.Contains("displayName: Ada", yaml);
         Assert.DoesNotContain("optional:", yaml);
+    }
+
+    [Fact]
+    public void GeneratedContextQuotesAStringThatWouldResolveToAnotherType()
+    {
+        var typeInfo = TestYamlSerializerContextWithStringStyleAttribute.Default.GeneratedScriptStrings;
+        var yaml = YamlSerializer.Serialize(new GeneratedScriptStrings { Description = "true" }, typeInfo);
+
+        Assert.Equal("Script: null\nDescription: \"true\"\n", yaml);
+        Assert.Equal("true", YamlSerializer.Deserialize(yaml, typeInfo)?.Description);
+    }
+
+    [Fact]
+    public void GeneratedContextAppliesTheStringStyleOption()
+    {
+        var typeInfo = TestYamlSerializerContextWithLiteralStrings.Default.GeneratedLiteralStrings;
+        Assert.Equal(ScalarStyle.Literal, typeInfo.Options.ScalarStylePreferences.StringStyle);
+
+        var yaml = YamlSerializer.Serialize(new GeneratedLiteralStrings { Text = "a\nb" }, typeInfo);
+        Assert.Equal("Text: |-\n  a\n  b\n", yaml);
+        Assert.Equal("a\nb", YamlSerializer.Deserialize(yaml, typeInfo)?.Text);
+    }
+
+    [Fact]
+    public void GeneratedContextAppliesTheStringStyleAttribute()
+    {
+        var typeInfo = TestYamlSerializerContextWithStringStyleAttribute.Default.GeneratedScriptStrings;
+        var yaml = YamlSerializer.Serialize(new GeneratedScriptStrings { Script = "a\nb", Description = "c\nd" }, typeInfo);
+
+        Assert.Equal("Script: |-\n  a\n  b\nDescription: \"c\\nd\"\n", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize(yaml, typeInfo);
+        Assert.Equal("a\nb", roundTrip?.Script);
+        Assert.Equal("c\nd", roundTrip?.Description);
     }
 
     [Fact]

@@ -1632,6 +1632,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             writer.WritePropertyName(member.Name);
             var converter = member.Converter ??= writer.GetConverter(member.MemberType);
             using var styleScope = writer.PushBlockSequenceItemStyle(member.BlockSequenceMappingStyle, member.BlockSequenceSequenceStyle);
+            using var stringStyleScope = writer.PushStringStyle(member.StringStyle);
             converter.Write(writer, memberValue);
         }
 
@@ -1783,6 +1784,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             writer.WritePropertyName(member.Name);
             var converter = member.Converter ??= writer.GetConverter(member.MemberType);
             using var styleScope = writer.PushBlockSequenceItemStyle(member.BlockSequenceMappingStyle, member.BlockSequenceSequenceStyle);
+            using var stringStyleScope = writer.PushStringStyle(member.StringStyle);
             converter.Write(writer, memberValue);
         }
 
@@ -1915,6 +1917,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 var token = property.MetadataToken;
 
                 var (mappingStyle, sequenceStyle) = GetBlockSequenceItemStyles(property);
+                var stringStyle = GetStringStyle(property);
                 var member = new Member(
                     name,
                     order,
@@ -1927,6 +1930,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     GetObjectCreationHandling(property),
                     mappingStyle,
                     sequenceStyle,
+                    stringStyle,
                     DisallowNullOnSerialize(nullabilityContext, property),
                     DisallowNullOnDeserialize(nullabilityContext, property),
                     isReadOnlyProperty: !canWrite);
@@ -1981,6 +1985,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 var token = field.MetadataToken;
 
                 var (mappingStyle, sequenceStyle) = GetBlockSequenceItemStyles(field);
+                var stringStyle = GetStringStyle(field);
                 var member = new Member(
                     name,
                     order,
@@ -1993,6 +1998,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     GetObjectCreationHandling(field),
                     mappingStyle,
                     sequenceStyle,
+                    stringStyle,
                     DisallowNullOnSerialize(nullabilityContext, field),
                     DisallowNullOnDeserialize(nullabilityContext, field),
                     isReadOnlyField: field.IsInitOnly);
@@ -2706,6 +2712,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             YamlObjectCreationHandling? objectCreationHandling,
             YamlSequenceItemStyle blockSequenceMappingStyle = YamlSequenceItemStyle.Default,
             YamlSequenceItemStyle blockSequenceSequenceStyle = YamlSequenceItemStyle.Default,
+            ScalarStyle stringStyle = ScalarStyle.Any,
             bool disallowNullOnSerialize = false,
             bool disallowNullOnDeserialize = false,
             bool isReadOnlyProperty = false)
@@ -2723,6 +2730,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             ObjectCreationHandling = objectCreationHandling;
             BlockSequenceMappingStyle = blockSequenceMappingStyle;
             BlockSequenceSequenceStyle = blockSequenceSequenceStyle;
+            StringStyle = stringStyle;
             DisallowNullOnSerialize = disallowNullOnSerialize;
             DisallowNullOnDeserialize = disallowNullOnDeserialize;
             IsReadOnlyProperty = isReadOnlyProperty;
@@ -2740,6 +2748,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             YamlObjectCreationHandling? objectCreationHandling,
             YamlSequenceItemStyle blockSequenceMappingStyle = YamlSequenceItemStyle.Default,
             YamlSequenceItemStyle blockSequenceSequenceStyle = YamlSequenceItemStyle.Default,
+            ScalarStyle stringStyle = ScalarStyle.Any,
             bool disallowNullOnSerialize = false,
             bool disallowNullOnDeserialize = false,
             bool isReadOnlyField = false)
@@ -2757,6 +2766,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             ObjectCreationHandling = objectCreationHandling;
             BlockSequenceMappingStyle = blockSequenceMappingStyle;
             BlockSequenceSequenceStyle = blockSequenceSequenceStyle;
+            StringStyle = stringStyle;
             DisallowNullOnSerialize = disallowNullOnSerialize;
             DisallowNullOnDeserialize = disallowNullOnDeserialize;
             IsReadOnlyField = isReadOnlyField;
@@ -2781,6 +2791,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         public YamlSequenceItemStyle BlockSequenceMappingStyle { get; }
 
         public YamlSequenceItemStyle BlockSequenceSequenceStyle { get; }
+
+        public ScalarStyle StringStyle { get; }
 
         public YamlIgnoreCondition? IgnoreCondition { get; }
 
@@ -3340,6 +3352,19 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         YamlSerializerOptions.ValidateSequenceItemStyle(attribute.MappingStyle, nameof(YamlBlockSequenceItemStyleAttribute.MappingStyle));
         YamlSerializerOptions.ValidateSequenceItemStyle(attribute.SequenceStyle, nameof(YamlBlockSequenceItemStyleAttribute.SequenceStyle));
         return (attribute.MappingStyle, attribute.SequenceStyle);
+    }
+
+    private static ScalarStyle GetStringStyle(MemberInfo member)
+    {
+        ArgumentNullException.ThrowIfNull(member);
+        var attribute = member.GetCustomAttribute<YamlStringStyleAttribute>(inherit: true);
+        if (attribute is null)
+        {
+            return ScalarStyle.Any;
+        }
+
+        YamlSerializerOptions.ValidateScalarStyle(attribute.Style, nameof(YamlStringStyleAttribute.Style));
+        return attribute.Style;
     }
 
     private static YamlConverter? CreateConverterFromAttribute(MemberInfo member, Type memberType, YamlSerializerOptions options)

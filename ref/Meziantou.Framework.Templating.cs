@@ -160,7 +160,7 @@ namespace Meziantou.Framework.Templating
         public virtual void Write(string format, params object?[] args) { }
     }
 
-    public class Template
+    public class Template : System.IDisposable
     {
         public string? OutputParameterName { get => throw null; set { } }
         public System.Type? OutputType { get => throw null; set { } }
@@ -193,6 +193,7 @@ namespace Meziantou.Framework.Templating
         protected virtual Microsoft.CodeAnalysis.CSharp.CSharpCompilation CreateCompilation(Microsoft.CodeAnalysis.SyntaxTree syntaxTree) => throw null;
         protected virtual Microsoft.CodeAnalysis.Emit.EmitOptions CreateEmitOptions() => throw null;
         protected virtual void Compile(string source, System.Threading.CancellationToken cancellationToken) { }
+        protected virtual System.Runtime.Loader.AssemblyLoadContext CreateAssemblyLoadContext() => throw null;
         protected virtual System.Reflection.Assembly LoadAssembly(System.IO.MemoryStream peStream, System.IO.MemoryStream pdbStream) => throw null;
         protected virtual System.Reflection.MethodInfo FindMethod(System.Reflection.Assembly assembly) => throw null;
         protected virtual System.IO.StringWriter CreateStringWriter() => throw null;
@@ -204,6 +205,8 @@ namespace Meziantou.Framework.Templating
         public virtual void Run(System.IO.TextWriter writer, System.Collections.Generic.IReadOnlyDictionary<string, object?> parameters) { }
         protected virtual object?[] CreateMethodParameters(System.IO.TextWriter writer, System.Collections.Generic.IReadOnlyDictionary<string, object?> parameters) => throw null;
         protected virtual void InvokeRunMethod(object?[] p) { }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
     }
 
     public class TemplateArgument

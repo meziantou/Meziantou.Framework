@@ -148,3 +148,14 @@ var result = template.Run(out var metadata, "John", 30);
 // No parameters
 var result = template.Run(out var metadata);
 ```
+
+### Memory Usage
+
+Building a template compiles it into an assembly, which is loaded in a collectible `AssemblyLoadContext` owned by the template. Dispose the template to unload that assembly; otherwise it is unloaded once the template becomes unreachable and the garbage collector runs.
+
+```csharp
+using var template = new HtmlEmailTemplate { OutputType = typeof(HtmlEmailOutput) };
+```
+
+> [!IMPORTANT]
+> `HtmlEmailTemplate` compiles to `dynamic` code unless `OutputType` is set, and a template that uses `dynamic` is **never** unloaded, even when disposed. See [Memory Usage](../Meziantou.Framework.Templating/readme.md#memory-usage) for the details. A server that keeps compiling templates — one per tenant, per file, or on every file change — should set `OutputType` to `typeof(HtmlEmailOutput)` and give every argument a type.

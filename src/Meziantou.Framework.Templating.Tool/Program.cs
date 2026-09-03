@@ -131,7 +131,7 @@ internal static partial class Program
             return 1;
         }
 
-        var template = new Template
+        using var template = new Template
         {
             StartCodeBlockDelimiter = resolvedStartCodeBlockDelimiter,
             EndCodeBlockDelimiter = resolvedEndCodeBlockDelimiter,

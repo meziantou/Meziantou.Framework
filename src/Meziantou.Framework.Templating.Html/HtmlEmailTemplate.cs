@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 namespace Meziantou.Framework.Templating;
 
 /// <summary>Provides a templating engine specialized for generating HTML email content with automatic encoding and metadata extraction.</summary>
@@ -50,7 +52,12 @@ public class HtmlEmailTemplate : Template
         ArgumentNullException.ThrowIfNull(parameters);
 
         using var writer = CreateStringWriter();
-        Run(writer, out metadata, parameters);
+
+        // Wrapped, not passed as-is: IDictionary<,> does not derive from IReadOnlyDictionary<,>, so
+        // the call would bind to the params overload and pass the whole dictionary as the first
+        // positional argument instead of matching the parameters by name. The wrapper keeps the
+        // comparer of the original dictionary, which a copy would not.
+        Run(writer, out metadata, new ReadOnlyDictionary<string, object?>(parameters));
         return writer.ToString();
     }
 

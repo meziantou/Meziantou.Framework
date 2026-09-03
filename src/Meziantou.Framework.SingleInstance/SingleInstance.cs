@@ -1,5 +1,8 @@
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.IO.Pipes;
+using System.Net.Sockets;
+using System.Security.Cryptography;
 
 namespace Meziantou.Framework;
 
@@ -42,6 +45,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     private static readonly TimeSpan ListenerArmRetryDelay = TimeSpan.FromMilliseconds(20);
 
     private readonly Lock _lock = new();
+    private readonly string _mutexName = GetMutexName(applicationId);
     private NamedPipeServerStream? _server;
     private Mutex? _mutex;
     private bool _disposed;
@@ -52,20 +56,55 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     /// </summary>
     public event EventHandler<SingleInstanceEventArgs>? NewInstance;
 
-    internal string PipeName { get; } = OperatingSystem.IsWindows() ? $"Local\\Pipe_{applicationId}_{GetSessionId().ToString(CultureInfo.InvariantCulture)}" : null!;
+    internal string PipeName { get; } = GetPipeName(applicationId);
 
     /// <summary>Gets or sets a value indicating whether to start a named pipe server to receive notifications from other instances.</summary>
     /// <value>
-    /// <see langword="true"/> to start the server; otherwise, <see langword="false"/>. The default is <see langword="true"/> on Windows, and <see langword="false"/> on every other operating system.
+    /// <see langword="true"/> to start the server; otherwise, <see langword="false"/>. The default is <see langword="true"/>.
     /// </value>
-    /// <remarks>
-    /// Communication between instances is only supported on Windows. Setting this property to <see langword="true"/> on another operating system makes <see cref="StartApplication"/> throw a <see cref="PlatformNotSupportedException"/>.
-    /// </remarks>
-    public bool StartServer { get; set; } = OperatingSystem.IsWindows();
+    public bool StartServer { get; set; } = true;
 
     /// <summary>Gets or sets the timeout for connecting to the first instance when notifying it.</summary>
     /// <value>The connection timeout. The default is 3 seconds.</value>
     public TimeSpan ClientConnectionTimeout { get; set; } = TimeSpan.FromSeconds(3);
+
+    /// <summary>Computes the name of the mutex that decides which process is the first instance.</summary>
+    private static string GetMutexName(Guid applicationId)
+    {
+        // On Windows the "Local\" prefix scopes the mutex to the logon session, which is exactly the wanted scope.
+        // On Unix it scopes it to the process session (getsid), which changes from one terminal or launcher to the
+        // next: every launch would then believe it is the first instance. "Global\" is the only prefix that spans
+        // sessions there, and its backing directory is shared by every user of the machine, so the scope that
+        // "Local\" gives for free on Windows has to be written into the name instead.
+        return OperatingSystem.IsWindows()
+            ? @"Local\Mutex" + applicationId.ToString()
+            : @"Global\" + GetUserScopedName(applicationId);
+    }
+
+    /// <summary>Computes the name of the pipe the first instance listens on.</summary>
+    private static string GetPipeName(Guid applicationId)
+    {
+        // On Unix the name becomes a file name under the temporary directory, and the resulting path has to fit in a
+        // sockaddr_un: 104 characters on macOS, where the per-user temporary directory already takes about half of
+        // them. Hence the compact name rather than the readable Windows one.
+        return OperatingSystem.IsWindows()
+            ? $@"Local\Pipe_{applicationId}_{GetSessionId().ToString(CultureInfo.InvariantCulture)}"
+            : GetUserScopedName(applicationId);
+    }
+
+    /// <summary>Builds a short, file-name-safe name that identifies the application for the current user only.</summary>
+    private static string GetUserScopedName(Guid applicationId)
+    {
+        Span<byte> applicationIdBytes = stackalloc byte[16];
+        _ = applicationId.TryWriteBytes(applicationIdBytes);
+
+        // The user name can be arbitrarily long and is not necessarily a valid file name, so only a prefix of its hash
+        // is used. It separates users, it is not a secret, so 48 bits is plenty.
+        Span<byte> userNameHash = stackalloc byte[32];
+        _ = SHA256.HashData(Encoding.UTF8.GetBytes(Environment.UserName), userNameHash);
+
+        return Base64Url.EncodeToString(applicationIdBytes) + "_" + Base64Url.EncodeToString(userNameHash[..6]);
+    }
 
     private static int GetSessionId()
     {
@@ -80,7 +119,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     /// <remarks>
     /// If this method returns <see langword="true"/>, the application should continue running and can receive notifications from other instances through the <see cref="NewInstance"/> event.
     /// If this method returns <see langword="false"/>, the application should call <see cref="NotifyFirstInstance"/> to notify the first instance and then exit.
-    /// Ensuring a single instance is supported on every operating system; only the communication between instances is Windows-only.
+    /// The instance is scoped to the current user: two users of the same machine can each run their own instance.
     /// </remarks>
     public bool StartApplication()
     {
@@ -104,14 +143,19 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         if (!StartServer)
             return;
 
-        if (!OperatingSystem.IsWindows())
-            throw new PlatformNotSupportedException("The communication with the first instance is only supported on Windows");
+        // Message mode is a Windows concept. Byte mode is enough on both: a client opens a connection, writes exactly
+        // one message, and closes it, so the end of the message is the end of the stream.
+        var transmissionMode = PipeTransmissionMode.Byte;
+        if (OperatingSystem.IsWindows())
+        {
+            transmissionMode = PipeTransmissionMode.Message;
+        }
 
         var server = new NamedPipeServerStream(
                 PipeName,
                 PipeDirection.In,
                 NamedPipeServerStream.MaxAllowedServerInstances,
-                PipeTransmissionMode.Message,
+                transmissionMode,
                 PipeOptions.CurrentUserOnly);
 
         lock (_lock)
@@ -239,11 +283,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
 
     private bool TryAcquireMutex()
     {
-        if (_mutex is null)
-        {
-            var mutexName = "Local\\Mutex" + applicationId.ToString();
-            _mutex = new Mutex(initiallyOwned: false, name: mutexName);
-        }
+        _mutex ??= new Mutex(initiallyOwned: false, name: _mutexName);
 
         try
         {
@@ -262,16 +302,13 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="args"/> is <see langword="null"/>.</exception>
     /// <remarks>
-    /// This method is only supported on Windows and returns <see langword="false"/> on every other operating system. The first instance must have <see cref="StartServer"/> set to <see langword="true"/> to receive notifications.
+    /// The first instance must have <see cref="StartServer"/> set to <see langword="true"/> to receive notifications.
     /// The method will timeout after <see cref="ClientConnectionTimeout"/> if the first instance is not responding.
     /// Failing to reach the first instance is reported by returning <see langword="false"/> instead of throwing.
     /// </remarks>
     public bool NotifyFirstInstance(string[] args)
     {
         ArgumentNullException.ThrowIfNull(args);
-
-        if (!OperatingSystem.IsWindows())
-            return false;
 
         try
         {
@@ -310,6 +347,12 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         catch (UnauthorizedAccessException)
         {
             // The pipe exists but is not accessible from this process
+            return false;
+        }
+        catch (SocketException)
+        {
+            // On Unix the pipe is a Unix domain socket. Anything left over at its path by a previous run, or a peer
+            // that goes away mid-write, surfaces as a socket error instead of an IOException.
             return false;
         }
     }

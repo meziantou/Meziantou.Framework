@@ -1,11 +1,10 @@
 using System.IO.Pipes;
-using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Tests;
 
 public sealed class SingleInstanceTests
 {
-    [Fact, RunIf(TestOperatingSystems.Windows)]
+    [Fact]
     public async Task TestSingleInstance_NotifyFirstInstance()
     {
         var applicationId = Guid.NewGuid();
@@ -48,7 +47,7 @@ public sealed class SingleInstanceTests
         }
     }
 
-    [Fact, RunIf(TestOperatingSystems.Windows)]
+    [Fact]
     public void TestSingleInstance_NotifyFirstInstanceReturnsFalseWhenNobodyIsListening()
     {
         using var singleInstance = new SingleInstance(Guid.NewGuid())
@@ -59,25 +58,13 @@ public sealed class SingleInstanceTests
         Assert.False(singleInstance.NotifyFirstInstance(["a", "b"]));
     }
 
-    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
-    public void TestSingleInstance_DefaultConfigurationDoesNotThrowOnNonWindows()
+    [Fact]
+    public void TestSingleInstance_ServerIsStartedByDefault()
     {
         using var singleInstance = new SingleInstance(Guid.NewGuid());
 
-        Assert.False(singleInstance.StartServer);
+        Assert.True(singleInstance.StartServer);
         Assert.True(singleInstance.StartApplication());
-        Assert.False(singleInstance.NotifyFirstInstance(["a", "b"]));
-    }
-
-    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
-    public void TestSingleInstance_StartServerExplicitlyEnabledThrowsOnNonWindows()
-    {
-        using var singleInstance = new SingleInstance(Guid.NewGuid())
-        {
-            StartServer = true,
-        };
-
-        Assert.Throws<PlatformNotSupportedException>(() => _ = singleInstance.StartApplication());
     }
 
     [Fact]
@@ -103,7 +90,7 @@ public sealed class SingleInstanceTests
         Assert.False(Volatile.Read(ref isStarted));
     }
 
-    [Fact, RunIf(TestOperatingSystems.Windows)]
+    [Fact]
     public async Task TestSingleInstance_MalformedMessagesDoNotStopTheServer()
     {
         var applicationId = Guid.NewGuid();

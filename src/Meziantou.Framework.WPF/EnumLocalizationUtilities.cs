@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Linq.Expressions;
@@ -7,8 +8,8 @@ namespace Meziantou.Framework.WPF;
 
 internal static class EnumLocalizationUtilities
 {
-    private static readonly Dictionary<Type, LocalizedEnumValueCollection> EnumsCache = [];
-    private static readonly Dictionary<Expression, string?> PropertiesCache = [];
+    private static readonly ConcurrentDictionary<Type, LocalizedEnumValueCollection> EnumsCache = new();
+    private static readonly ConcurrentDictionary<Expression, string?> PropertiesCache = new();
 
     public static LocalizedEnumValueCollection GetEnumLocalization<T>()
         where T : struct
@@ -18,9 +19,11 @@ internal static class EnumLocalizationUtilities
 
     public static LocalizedEnumValueCollection GetEnumLocalization(Type type)
     {
-        if (EnumsCache.TryGetValue(type, out var value))
-            return value;
+        return EnumsCache.GetOrAdd(type, CreateEnumLocalization);
+    }
 
+    private static LocalizedEnumValueCollection CreateEnumLocalization(Type type)
+    {
         var result = new List<LocalizedEnumValue>();
         var enumValues = type.GetEnumValues();
 
@@ -42,23 +45,19 @@ internal static class EnumLocalizationUtilities
             }
         }
 
-        var localizedValueCollection = new LocalizedEnumValueCollection(result);
-        EnumsCache.Add(type, localizedValueCollection);
-        return localizedValueCollection;
+        return new LocalizedEnumValueCollection(result);
     }
 
     public static string? GetPropertyLocalization<T>(Expression<Func<T>> exp)
     {
-        if (!PropertiesCache.TryGetValue(exp, out var value))
-        {
-            var memberExpression = (MemberExpression)exp.Body;
-            var displayAttribute = memberExpression.Member.GetCustomAttribute<DisplayAttribute>();
-            value = displayAttribute?.GetName() ?? memberExpression.Member.Name;
+        return PropertiesCache.GetOrAdd(exp, CreatePropertyLocalization);
+    }
 
-            PropertiesCache.Add(exp, value);
-        }
-
-        return value;
+    private static string? CreatePropertyLocalization(Expression expression)
+    {
+        var memberExpression = (MemberExpression)((LambdaExpression)expression).Body;
+        var displayAttribute = memberExpression.Member.GetCustomAttribute<DisplayAttribute>();
+        return displayAttribute?.GetName() ?? memberExpression.Member.Name;
     }
 
     public static string GetEnumMemberLocalization(Enum value)

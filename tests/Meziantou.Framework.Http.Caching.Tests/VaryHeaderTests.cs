@@ -441,10 +441,13 @@ public sealed class VaryHeaderTests
     }
 
     [Fact]
-    public async Task WhenVaryHeaderValueOrderDiffersThenStillMatches()
+    public async Task WhenVaryHeaderValueOrderDiffersThenFetchesNewResponse()
     {
         await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "content",
+            ("Cache-Control", "max-age=3600"),
+            ("Vary", "Accept-Language"));
+        context.AddResponse(HttpStatusCode.OK, "different-content",
             ("Cache-Control", "max-age=3600"),
             ("Vary", "Accept-Language"));
 
@@ -467,14 +470,13 @@ public sealed class VaryHeaderTests
         await context.SnapshotResponse(request2, """
             StatusCode: 200 (OK)
             Headers:
-              Age: 0
               Cache-Control: max-age=3600
               Vary: Accept-Language
             Content:
               Headers:
-                Content-Length: 7
+                Content-Length: 17
                 Content-Type: text/plain; charset=utf-8
-              Value: content
+              Value: different-content
             """);
     }
 }

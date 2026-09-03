@@ -222,6 +222,57 @@ public class StaleResponseTests
     }
 
     [Fact]
+    public async Task WhenMustRevalidateThenStaleIfErrorDoesNotServeStaleResponse()
+    {
+        using var innerHandler = new StubHandler();
+        innerHandler.AddResponse(static () => CreateResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=2, must-revalidate, stale-if-error=60"), ("ETag", "\"v1\"")));
+        innerHandler.AddThrow(static () => new HttpRequestException("origin unreachable"));
+
+        var timeProvider = new FakeTimeProvider();
+        using var handler = new HttpCachingDelegateHandler(innerHandler, new InMemoryHttpCacheStore(), new HttpCachingOptions { TimeProvider = timeProvider });
+        using var client = new HttpClient(handler);
+
+        using var firstResponse = await client.GetAsync("http://example.com/resource", CancellationToken.None);
+        timeProvider.Advance(TimeSpan.FromSeconds(3));
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync("http://example.com/resource", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task WhenResponseHasNoCacheThenStaleIfErrorDoesNotServeStaleResponse()
+    {
+        using var innerHandler = new StubHandler();
+        innerHandler.AddResponse(static () => CreateResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=2, no-cache, stale-if-error=60"), ("ETag", "\"v1\"")));
+        innerHandler.AddThrow(static () => new HttpRequestException("origin unreachable"));
+
+        var timeProvider = new FakeTimeProvider();
+        using var handler = new HttpCachingDelegateHandler(innerHandler, new InMemoryHttpCacheStore(), new HttpCachingOptions { TimeProvider = timeProvider });
+        using var client = new HttpClient(handler);
+
+        using var firstResponse = await client.GetAsync("http://example.com/resource", CancellationToken.None);
+        timeProvider.Advance(TimeSpan.FromSeconds(3));
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync("http://example.com/resource", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task WhenPrivateCacheReceivesSMaxAgeOnlyThenDoesNotStoreTheResponse()
+    {
+        using var innerHandler = new StubHandler();
+        innerHandler.AddResponse(static () => CreateResponse(HttpStatusCode.InternalServerError, "error", ("Cache-Control", "s-maxage=60, stale-if-error=60")));
+        innerHandler.AddThrow(static () => new HttpRequestException("origin unreachable"));
+
+        var timeProvider = new FakeTimeProvider();
+        using var handler = new HttpCachingDelegateHandler(innerHandler, new InMemoryHttpCacheStore(), new HttpCachingOptions { TimeProvider = timeProvider });
+        using var client = new HttpClient(handler);
+
+        using var firstResponse = await client.GetAsync("http://example.com/resource", CancellationToken.None);
+        Assert.Equal(HttpStatusCode.InternalServerError, firstResponse.StatusCode);
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync("http://example.com/resource", CancellationToken.None));
+    }
+
+    [Fact]
     public async Task WhenEntryHasNoValidatorAndRequestThrowsAndStaleIfErrorAllowsItThenStaleResponseServed()
     {
         using var innerHandler = new StubHandler();

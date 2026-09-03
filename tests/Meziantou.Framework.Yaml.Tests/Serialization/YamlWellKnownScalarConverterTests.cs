@@ -1,6 +1,7 @@
 #if NET11_0_OR_GREATER
 using System.Numerics;
 #endif
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlWellKnownScalarConverterTests
@@ -32,6 +33,13 @@ public sealed class YamlWellKnownScalarConverterTests
         public Decimal64? OptionalMedium { get; set; }
     }
 #endif
+
+    private sealed class UriAndCulturePayload
+    {
+        public Uri? Absolute { get; set; }
+        public Uri? Relative { get; set; }
+        public CultureInfo? Culture { get; set; }
+    }
 
     private sealed class NullablePayload
     {
@@ -186,6 +194,88 @@ public sealed class YamlWellKnownScalarConverterTests
         Assert.Contains("BFloat16", ex.Message);
     }
 #endif
+
+    [Fact]
+    public void RoundTrip_UriAndCultureInfo_ShouldSucceed()
+    {
+        var payload = new UriAndCulturePayload
+        {
+            Absolute = new Uri("https://example.com/path?query=1#fragment", UriKind.Absolute),
+            Relative = new Uri("path/to/resource", UriKind.Relative),
+            Culture = CultureInfo.InvariantCulture,
+        };
+
+        var yaml = YamlSerializer.Serialize(payload);
+        var roundTrip = YamlSerializer.Deserialize<UriAndCulturePayload>(yaml);
+
+        Assert.NotNull(roundTrip);
+        Assert.Equal(payload.Absolute, roundTrip.Absolute);
+        Assert.Equal(payload.Relative, roundTrip.Relative);
+        Assert.Equal(CultureInfo.InvariantCulture, roundTrip.Culture);
+    }
+
+    [Fact]
+    public void Serialize_Uri_ShouldUseOriginalString()
+    {
+        var yaml = YamlSerializer.Serialize(new Uri("https://example.com/a%20b", UriKind.Absolute));
+
+        Assert.Equal("\"https://example.com/a%20b\"\n", yaml, ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public void RoundTrip_NullUriAndCultureInfo_ShouldSucceed()
+    {
+        var yaml = YamlSerializer.Serialize(new UriAndCulturePayload());
+        var roundTrip = YamlSerializer.Deserialize<UriAndCulturePayload>(yaml);
+
+        Assert.NotNull(roundTrip);
+        Assert.Null(roundTrip.Absolute);
+        Assert.Null(roundTrip.Relative);
+        Assert.Null(roundTrip.Culture);
+    }
+
+    [Fact]
+    public void RoundTrip_UriDictionaryKey_ShouldSucceed()
+    {
+        var payload = new Dictionary<Uri, string>
+        {
+            [new Uri("https://example.com/", UriKind.Absolute)] = "root",
+            [new Uri("relative", UriKind.Relative)] = "other",
+        };
+
+        var yaml = YamlSerializer.Serialize(payload);
+        var roundTrip = YamlSerializer.Deserialize<Dictionary<Uri, string>>(yaml);
+
+        Assert.NotNull(roundTrip);
+        Assert.Equal(payload, roundTrip);
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void RoundTrip_SpecificCulture_ShouldSucceed()
+    {
+        var yaml = YamlSerializer.Serialize(CultureInfo.GetCultureInfo("fr-FR"));
+
+        Assert.Equal("fr-FR\n", yaml, ignoreLineEndingDifferences: true);
+        Assert.Equal(CultureInfo.GetCultureInfo("fr-FR"), YamlSerializer.Deserialize<CultureInfo>(yaml));
+    }
+
+    [Fact]
+    public void Deserialize_InvalidUri_ShouldThrowYamlExceptionWithContext()
+    {
+        var ex = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Uri>("\"http://\""));
+        Assert.Contains("Uri", ex.Message);
+        Assert.Contains("Lin:", ex.Message);
+        Assert.Contains("Col:", ex.Message);
+    }
+
+    [Fact]
+    public void Deserialize_InvalidCultureInfo_ShouldThrowYamlExceptionWithContext()
+    {
+        var ex = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<CultureInfo>("not a culture!"));
+        Assert.Contains("CultureInfo", ex.Message);
+        Assert.Contains("Lin:", ex.Message);
+        Assert.Contains("Col:", ex.Message);
+    }
 
     [Fact]
     public void Serialize_NullableDateTimeOffsetAndBoolean_ShouldRemainPlain()

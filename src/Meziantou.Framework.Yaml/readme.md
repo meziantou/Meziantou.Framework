@@ -107,7 +107,7 @@ When a stream contains several documents, `YamlSerializer.Deserialize` binds the
 | Integers | `byte`, `sbyte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `nint`, `nuint`, `Int128`, `UInt128` |
 | Floating point | `float`, `double`, `decimal`, `Half` |
 | Date and time | `DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`, `TimeSpan` |
-| Other scalars | `Guid`, enums |
+| Other scalars | `Guid`, `Uri`, `CultureInfo`, enums |
 | net11.0 only | `BFloat16`, `Decimal32`, `Decimal64`, `Decimal128` |
 | Collections | arrays, `List<>`, `HashSet<>`, `ImmutableArray<>`, `ImmutableList<>`, `ImmutableHashSet<>`, `IEnumerable<>`, `ICollection<>`, `IList<>`, `IReadOnlyCollection<>`, `IReadOnlyList<>`, `ISet<>`, `IReadOnlySet<>` |
 | Dictionaries | `Dictionary<,>`, `OrderedDictionary<,>`, `IDictionary<,>`, `IReadOnlyDictionary<,>`, with `string` or non-`string` keys |
@@ -121,6 +121,10 @@ mapping of its properties, using the object contract described below.
 
 Enums are written using their member name and read case-insensitively, with a numeric fallback. Use
 `YamlEnumMemberNameAttribute` to control the name of an individual member.
+
+`Uri` is written using its original string and read with `UriKind.RelativeOrAbsolute`, so both absolute and relative
+URIs round-trip. `CultureInfo` is written using its culture name (`CultureInfo.InvariantCulture` writes an empty
+name), and read back through `CultureInfo.GetCultureInfo`.
 
 Object contracts support parameterless constructors, parameterized constructors, records, `init` accessors, the
 `required` keyword, and non-public members annotated with `YamlIncludeAttribute`. When a type declares several public

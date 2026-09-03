@@ -116,6 +116,16 @@ internal static class YamlBuiltInTypeInfoResolver
             return YamlTimeSpanConverter.Instance;
         }
 
+        if (type == typeof(Uri))
+        {
+            return YamlUriConverter.Instance;
+        }
+
+        if (type == typeof(CultureInfo))
+        {
+            return YamlCultureInfoConverter.Instance;
+        }
+
         if (type == typeof(DateOnly))
         {
             return YamlDateOnlyConverter.Instance;

@@ -977,6 +977,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public static bool TryParseDecimal(System.ReadOnlySpan<char> value, out decimal result) => throw null;
         public static bool TryParseInt64(System.ReadOnlySpan<char> value, out long result) => throw null;
         public static bool TryParseDouble(System.ReadOnlySpan<char> value, out double result) => throw null;
+        public static bool TryParseCultureInfo(string? value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Globalization.CultureInfo? result) => throw null;
         #if NET11_0
         public static bool TryParseIeee754<T>(System.ReadOnlySpan<char> value, out T result) where T : struct, System.Numerics.IFloatingPointIeee754<T> => throw null;
         #endif

@@ -501,6 +501,14 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.AppendLine("            writer.WritePropertyName(pair.Key.ToString(\"c\", global::System.Globalization.CultureInfo.InvariantCulture));");
             }
+            else if (IsUriType(dictionaryKeyType))
+            {
+                builder.AppendLine("            writer.WritePropertyName(pair.Key.OriginalString);");
+            }
+            else if (IsCultureInfoType(dictionaryKeyType))
+            {
+                builder.AppendLine("            writer.WritePropertyName(pair.Key.Name);");
+            }
             else
             {
                 builder.AppendLine("            writer.WritePropertyName(((global::System.IFormattable)pair.Key).ToString(null, global::System.Globalization.CultureInfo.InvariantCulture));");
@@ -3943,6 +3951,14 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.Append(innerIndent + "        ").AppendLine("writer.WritePropertyName(pair.Key.ToString(\"c\", global::System.Globalization.CultureInfo.InvariantCulture));");
             }
+            else if (IsUriType(dictionaryKeyType))
+            {
+                builder.Append(innerIndent + "        ").AppendLine("writer.WritePropertyName(pair.Key.OriginalString);");
+            }
+            else if (IsCultureInfoType(dictionaryKeyType))
+            {
+                builder.Append(innerIndent + "        ").AppendLine("writer.WritePropertyName(pair.Key.Name);");
+            }
             else
             {
                 builder.Append(innerIndent + "        ").AppendLine("writer.WritePropertyName(((global::System.IFormattable)pair.Key).ToString(null, global::System.Globalization.CultureInfo.InvariantCulture));");
@@ -4090,6 +4106,27 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine("                else");
             builder.AppendLine("                {");
             builder.Append("                    ").Append(member.AssignExpression("reader.ScalarValue ?? string.Empty")).AppendLine(";");
+            builder.AppendLine("                    reader.Read();");
+            builder.AppendLine("                }");
+            return;
+        }
+
+        if (IsUriType(member.Type) || IsCultureInfoType(member.Type))
+        {
+            builder.AppendLine("                if (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.Scalar)");
+            builder.AppendLine("                {");
+            builder.AppendLine("                    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowExpectedScalar(reader);");
+            builder.AppendLine("                }");
+            builder.AppendLine("                if (global::Meziantou.Framework.Yaml.Serialization.YamlScalar.IsNull(reader))");
+            builder.AppendLine("                {");
+            EmitThrowIfNullForNonNullableMemberOnRead(builder, member, "null", "                    ");
+            builder.Append("                    ").Append(member.AssignExpression(GetDefaultMemberAssignmentExpression(member))).AppendLine(";");
+            builder.AppendLine("                    reader.Read();");
+            builder.AppendLine("                }");
+            builder.AppendLine("                else");
+            builder.AppendLine("                {");
+            EmitReadScalar(builder, member.Type, "value", indent: "                    ");
+            builder.Append("                    ").Append(member.AssignExpression("value")).AppendLine(";");
             builder.AppendLine("                    reader.Read();");
             builder.AppendLine("                }");
             return;
@@ -5179,6 +5216,22 @@ public sealed partial class YamlSerializerContextGenerator
         return true;
     }
 
+    private static void EmitParseUri(StringBuilder builder, string textExpression, string indent)
+    {
+        builder.Append(indent).Append("if (!global::System.Uri.TryCreate(").Append(textExpression).AppendLine(", global::System.UriKind.RelativeOrAbsolute, out var parsedUri))");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).AppendLine("    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowInvalidUriScalar(reader);");
+        builder.Append(indent).AppendLine("}");
+    }
+
+    private static void EmitParseCultureInfo(StringBuilder builder, string textExpression, string indent)
+    {
+        builder.Append(indent).Append("if (!global::Meziantou.Framework.Yaml.Serialization.YamlScalar.TryParseCultureInfo(").Append(textExpression).AppendLine(", out var parsedCultureInfo))");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).AppendLine("    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowInvalidCultureInfoScalar(reader);");
+        builder.Append(indent).AppendLine("}");
+    }
+
     private static bool TryEmitWriteScalar(StringBuilder builder, ITypeSymbol typeSymbol, string valueExpression, string indent)
     {
         if (typeSymbol.SpecialType == SpecialType.System_String)
@@ -5240,6 +5293,18 @@ public sealed partial class YamlSerializerContextGenerator
         if (GetIeee754TypeName(typeSymbol) is not null)
         {
             builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine(");");
+            return true;
+        }
+
+        if (IsUriType(typeSymbol))
+        {
+            builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine("?.OriginalString);");
+            return true;
+        }
+
+        if (IsCultureInfoType(typeSymbol))
+        {
+            builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine("?.Name);");
             return true;
         }
 
@@ -5456,6 +5521,20 @@ public sealed partial class YamlSerializerContextGenerator
             builder.Append(indent).Append("    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowInvalid").Append(ieee754Type).AppendLine("Scalar(reader);");
             builder.Append(indent).AppendLine("}");
             builder.Append(indent).Append("var ").Append(valueVarName).Append(" = parsed").Append(ieee754Type).AppendLine(";");
+            return;
+        }
+
+        if (IsUriType(typeSymbol))
+        {
+            EmitParseUri(builder, textExpression, indent);
+            builder.Append(indent).Append("var ").Append(valueVarName).AppendLine(" = parsedUri;");
+            return;
+        }
+
+        if (IsCultureInfoType(typeSymbol))
+        {
+            EmitParseCultureInfo(builder, textExpression, indent);
+            builder.Append(indent).Append("var ").Append(valueVarName).AppendLine(" = parsedCultureInfo;");
             return;
         }
 
@@ -5742,6 +5821,20 @@ public sealed partial class YamlSerializerContextGenerator
             builder.Append(indent).Append("    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowInvalid").Append(ieee754Type).AppendLine("Scalar(reader);");
             builder.Append(indent).AppendLine("}");
             builder.Append(indent).Append(targetExpression).Append(" = parsed").Append(ieee754Type).AppendLine(";");
+            return;
+        }
+
+        if (IsUriType(typeSymbol))
+        {
+            EmitParseUri(builder, textExpression, indent);
+            builder.Append(indent).Append(targetExpression).AppendLine(" = parsedUri;");
+            return;
+        }
+
+        if (IsCultureInfoType(typeSymbol))
+        {
+            EmitParseCultureInfo(builder, textExpression, indent);
+            builder.Append(indent).Append(targetExpression).AppendLine(" = parsedCultureInfo;");
             return;
         }
 

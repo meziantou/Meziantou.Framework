@@ -43,7 +43,8 @@ internal static class ContainerTestHelper
         return StartWithRetryAsync(definition.CreateContainer, cancellationToken);
     }
 
-    public static async Task<TContainer> StartWithRetryAsync<TContainer>(Func<TContainer> containerFactory, CancellationToken cancellationToken)
+    /// <param name="isPermanentFailure">Recognizes a failure that no retry can fix, so it is reported as-is instead of being attempted <see cref="MaxStartAttempts"/> times.</param>
+    public static async Task<TContainer> StartWithRetryAsync<TContainer>(Func<TContainer> containerFactory, CancellationToken cancellationToken, Func<Exception, bool>? isPermanentFailure = null)
         where TContainer : TemporaryContainer
     {
         var failures = new List<Exception>();
@@ -60,6 +61,10 @@ internal static class ContainerTestHelper
                 // The container may already exist when the failure happens (for instance when a wait strategy times out), so it must be removed before retrying.
                 await DisposeSafeAsync(container);
                 cancellationToken.ThrowIfCancellationRequested();
+
+                if (isPermanentFailure?.Invoke(ex) is true)
+                    throw;
+
                 failures.Add(ex);
 
                 if (attempt >= MaxStartAttempts)

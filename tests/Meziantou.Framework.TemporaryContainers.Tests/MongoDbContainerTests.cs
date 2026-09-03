@@ -13,12 +13,6 @@ public sealed class MongoDbContainerTests
     {
         if (!OperatingSystem.IsLinux() && TestEnvironment.IsOnGitHubActions())
             global::Xunit.Assert.Skip("Only runs on Linux.");
-
-        // mongod refuses to start on Linux 6.19 and newer (https://jira.mongodb.org/browse/SERVER-121912), and 8.3.8,
-        // the newest image there is, still carries the guard. A Linux container shares the host kernel, so the host
-        // version is the one that decides; elsewhere the container runs in a VM whose kernel is its own.
-        if (OperatingSystem.IsLinux() && Environment.OSVersion.Version >= new Version(6, 19))
-            global::Xunit.Assert.Skip("The MongoDB image cannot start on Linux kernel 6.19 or newer (SERVER-121912).");
     }
 
     [Fact]
@@ -101,8 +95,28 @@ public sealed class MongoDbContainerTests
         Assert.Equal(1, count);
     }
 
-    private static Task<MongoDbContainer> StartWithRetryAsync(MongoDbContainerDefinition definition)
+    private static async Task<MongoDbContainer> StartWithRetryAsync(MongoDbContainerDefinition definition)
     {
-        return ContainerTestHelper.StartWithRetryAsync(definition.CreateContainer, XunitCancellationToken);
+        try
+        {
+            return await ContainerTestHelper.StartWithRetryAsync(definition.CreateContainer, XunitCancellationToken, IsIncompatibleKernelFailure);
+        }
+        catch (Exception ex) when (IsIncompatibleKernelFailure(ex))
+        {
+            global::Xunit.Assert.Skip("The MongoDB image cannot start on this kernel (SERVER-121912): " + ex.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Recognizes the fatal log line <c>mongod</c> writes before exiting on Linux 6.19 and newer
+    /// (https://jira.mongodb.org/browse/SERVER-121912), which the readiness wait reports in its failure message.
+    /// Matching the ticket rather than comparing kernel versions keeps the skip tied to the image actually refusing
+    /// to run: the container's kernel is the one that decides (the host's on Linux, the runtime VM's elsewhere), and
+    /// the tests start running again on their own once an image without the guard ships.
+    /// </summary>
+    private static bool IsIncompatibleKernelFailure(Exception exception)
+    {
+        return exception.ToString().Contains("SERVER-121912", StringComparison.Ordinal);
     }
 }

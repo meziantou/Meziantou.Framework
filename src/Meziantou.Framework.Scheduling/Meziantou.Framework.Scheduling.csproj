@@ -1,10 +1,14 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <Description>RecurrenceRule (RFC 5545) and Cron expression parser and evaluator</Description>
     <Version>4.0.3</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+  </ItemGroup>
 
 </Project>

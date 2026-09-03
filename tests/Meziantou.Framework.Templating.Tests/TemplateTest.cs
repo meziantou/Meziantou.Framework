@@ -731,7 +731,7 @@ public class TemplateTest
     }
 
     [Fact]
-    public void Template_UnterminatedCodeBlock_IsParsedAsText()
+    public void Template_UnterminatedCodeBlock_IsParsedAsTextKeepingTheStartDelimiter()
     {
         var template = new Template();
         template.Load("a<% var x = 0;");
@@ -739,7 +739,28 @@ public class TemplateTest
         Assert.Collection(
             template.Blocks,
             block => Assert.Equal("a", Assert.IsType<TextBlock>(block).Text),
-            block => Assert.Equal(" var x = 0;", Assert.IsType<TextBlock>(block).Text));
+            block => Assert.Equal("<% var x = 0;", Assert.IsType<TextBlock>(block).Text));
+
+        Assert.Equal("a<% var x = 0;", template.Run());
+    }
+
+    [Fact]
+    public void Template_UnterminatedCodeBlockAfterATerminatedOne_KeepsTheStartDelimiter()
+    {
+        var template = new Template();
+        template.Load("a<%= 1 %>b<% var x = 0;");
+
+        Assert.Equal("a1b<% var x = 0;", template.Run());
+    }
+
+    [Fact]
+    public void Template_UnterminatedCodeBlock_ReportsThePositionOfTheStartDelimiter()
+    {
+        var template = new Template();
+        template.Load("a\n<% var x = 0;");
+
+        var block = Assert.IsType<TextBlock>(template.Blocks[^1]);
+        Assert.Equal(new TextPosition(line: 2, column: 1, index: 2), block.Start);
     }
 
     [Fact]

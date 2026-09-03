@@ -1401,7 +1401,29 @@ public sealed class YamlWriter : YamlReaderWriterBase
             {
                 return false;
             }
-            if (c is ':' or '#' or '{' or '}' or '[' or ']' or ',' or '&' or '*' or '!' or '|' or '>' or '\'' or '"' or '%' or '@' or '`')
+
+            // A flow indicator closes the enclosing collection, but it is an ordinary character in a block context.
+            if (isFlow && c is '{' or '}' or '[' or ']' or ',')
+            {
+                return false;
+            }
+
+            // '#' only starts a comment when a space comes before it, so "C# 14" needs no quotes.
+            if (c is '#' && (i == 0 || char.IsWhiteSpace(value[i - 1])))
+            {
+                return false;
+            }
+
+            // ':' only separates a key from its value when a space (or the end of the scalar) comes after it,
+            // so "12:30" needs no quotes. Inside a flow collection the character closing the collection also
+            // ends the scalar, which puts the ':' at its end again.
+            if (c is ':' && (i == value.Length - 1 || char.IsWhiteSpace(value[i + 1]) || (isFlow && value[i + 1] is '{' or '}' or '[' or ']' or ',')))
+            {
+                return false;
+            }
+
+            // The remaining indicators only carry a meaning as the first character of a scalar.
+            if (i == 0 && c is '{' or '}' or '[' or ']' or ',' or '&' or '*' or '!' or '|' or '>' or '\'' or '"' or '%' or '@' or '`')
             {
                 return false;
             }

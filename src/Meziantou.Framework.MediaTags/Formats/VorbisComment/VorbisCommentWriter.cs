@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.VorbisComment;
 
@@ -40,25 +41,16 @@ internal static class VorbisCommentWriter
         if (tags.IsCompilation is not null)
             AddField(comments, VorbisCommentFieldNames.Compilation, tags.IsCompilation.Value ? "1" : "0");
 
-        // ReplayGain
-        if (tags.ReplayGain is not null)
+        // ReplayGain and MusicBrainz use the names and formats shared with the other key/value formats.
+        foreach (var (key, value) in TagFieldMapping.EnumerateReplayGainFields(tags))
         {
-            var rg = tags.ReplayGain.Value;
-            if (rg.TrackGain is not null)
-                AddField(comments, VorbisCommentFieldNames.ReplayGainTrackGain, rg.TrackGain.Value.ToString("F2", CultureInfo.InvariantCulture) + " dB");
-            if (rg.TrackPeak is not null)
-                AddField(comments, VorbisCommentFieldNames.ReplayGainTrackPeak, rg.TrackPeak.Value.ToString("F6", CultureInfo.InvariantCulture));
-            if (rg.AlbumGain is not null)
-                AddField(comments, VorbisCommentFieldNames.ReplayGainAlbumGain, rg.AlbumGain.Value.ToString("F2", CultureInfo.InvariantCulture) + " dB");
-            if (rg.AlbumPeak is not null)
-                AddField(comments, VorbisCommentFieldNames.ReplayGainAlbumPeak, rg.AlbumPeak.Value.ToString("F6", CultureInfo.InvariantCulture));
+            AddField(comments, key, value);
         }
 
-        // MusicBrainz
-        AddField(comments, VorbisCommentFieldNames.MusicBrainzTrackId, tags.MusicBrainzTrackId);
-        AddField(comments, VorbisCommentFieldNames.MusicBrainzArtistId, tags.MusicBrainzArtistId);
-        AddField(comments, VorbisCommentFieldNames.MusicBrainzAlbumId, tags.MusicBrainzAlbumId);
-        AddField(comments, VorbisCommentFieldNames.MusicBrainzReleaseGroupId, tags.MusicBrainzReleaseGroupId);
+        foreach (var (key, value) in TagFieldMapping.EnumerateMusicBrainzFields(tags, useVorbisNames: true))
+        {
+            AddField(comments, key, value);
+        }
 
         // Custom fields
         foreach (var (key, value) in tags.CustomFields)

@@ -4,10 +4,21 @@ namespace Meziantou.Framework.MediaTags.Formats.Id3v2;
 
 internal static class Id3v2Writer
 {
-    private const int PaddingSize = 1024;
+    /// <summary>The largest value a synchsafe tag size can hold.</summary>
+    private const int MaxTagSize = 0x0FFFFFFF;
 
-    public static byte[] BuildTag(MediaTagInfo tags)
+    /// <summary>
+    /// Builds an ID3v2.4 tag.
+    /// </summary>
+    /// <returns>
+    /// <see langword="false"/> when the tags do not fit in an ID3v2 tag. Truncating the size field instead
+    /// would produce a file that reads back as corrupt.
+    /// </returns>
+    public static bool TryBuildTag(MediaTagInfo tags, int paddingSize, [NotNullWhen(true)] out byte[]? tag, out string? errorMessage)
     {
+        tag = null;
+        errorMessage = null;
+
         var frames = new List<byte[]>();
 
         AddTextFrame(frames, Id3v2FrameId.Title, tags.Title);
@@ -21,21 +32,10 @@ internal static class Id3v2Writer
         if (tags.Year is not null)
             AddTextFrame(frames, Id3v2FrameId.Year, tags.Year.Value.ToString("D4", CultureInfo.InvariantCulture));
 
-        if (tags.TrackNumber is not null)
-        {
-            var trackStr = tags.TrackTotal is not null
-                ? $"{tags.TrackNumber}/{tags.TrackTotal}"
-                : tags.TrackNumber.Value.ToString(CultureInfo.InvariantCulture);
-            AddTextFrame(frames, Id3v2FrameId.TrackNumber, trackStr);
-        }
-
-        if (tags.DiscNumber is not null)
-        {
-            var discStr = tags.DiscTotal is not null
-                ? $"{tags.DiscNumber}/{tags.DiscTotal}"
-                : tags.DiscNumber.Value.ToString(CultureInfo.InvariantCulture);
-            AddTextFrame(frames, Id3v2FrameId.DiscNumber, discStr);
-        }
+        // The number and the total share one frame, so writing the frame only when the number is set would
+        // discard a total that was supplied on its own.
+        AddTextFrame(frames, Id3v2FrameId.TrackNumber, FormatNumberPair(tags.TrackNumber, tags.TrackTotal));
+        AddTextFrame(frames, Id3v2FrameId.DiscNumber, FormatNumberPair(tags.DiscNumber, tags.DiscTotal));
 
         AddTextFrame(frames, Id3v2FrameId.Composer, tags.Composer);
         AddTextFrame(frames, Id3v2FrameId.Conductor, tags.Conductor);
@@ -43,6 +43,10 @@ internal static class Id3v2Writer
 
         if (tags.Bpm is not null)
             AddTextFrame(frames, Id3v2FrameId.Bpm, tags.Bpm.Value.ToString(CultureInfo.InvariantCulture));
+
+        // TLEN is parsed by Id3v2Reader, so not writing it would drop the value on a read-modify-write.
+        if (tags.Duration is { } duration && duration > TimeSpan.Zero)
+            AddTextFrame(frames, Id3v2FrameId.Duration, ((long)duration.TotalMilliseconds).ToString(CultureInfo.InvariantCulture));
 
         AddTextFrame(frames, Id3v2FrameId.Isrc, tags.Isrc);
 
@@ -57,32 +61,24 @@ internal static class Id3v2Writer
 
         foreach (var picture in tags.Pictures)
         {
+            if (picture.Data.Length > MaxTagSize)
+            {
+                errorMessage = $"A picture is too large for an ID3v2 frame ({picture.Data.Length} bytes, the maximum is {MaxTagSize}).";
+                return false;
+            }
+
             AddPictureFrame(frames, picture);
         }
 
-        // ReplayGain as TXXX
-        if (tags.ReplayGain is not null)
+        foreach (var (key, value) in TagFieldMapping.EnumerateReplayGainFields(tags))
         {
-            var rg = tags.ReplayGain.Value;
-            if (rg.TrackGain is not null)
-                AddUserDefinedTextFrame(frames, "REPLAYGAIN_TRACK_GAIN", rg.TrackGain.Value.ToString("F2", CultureInfo.InvariantCulture) + " dB");
-            if (rg.TrackPeak is not null)
-                AddUserDefinedTextFrame(frames, "REPLAYGAIN_TRACK_PEAK", rg.TrackPeak.Value.ToString("F6", CultureInfo.InvariantCulture));
-            if (rg.AlbumGain is not null)
-                AddUserDefinedTextFrame(frames, "REPLAYGAIN_ALBUM_GAIN", rg.AlbumGain.Value.ToString("F2", CultureInfo.InvariantCulture) + " dB");
-            if (rg.AlbumPeak is not null)
-                AddUserDefinedTextFrame(frames, "REPLAYGAIN_ALBUM_PEAK", rg.AlbumPeak.Value.ToString("F6", CultureInfo.InvariantCulture));
+            AddUserDefinedTextFrame(frames, key, value);
         }
 
-        // MusicBrainz as TXXX
-        if (tags.MusicBrainzTrackId is not null)
-            AddUserDefinedTextFrame(frames, "MusicBrainz Track Id", tags.MusicBrainzTrackId);
-        if (tags.MusicBrainzArtistId is not null)
-            AddUserDefinedTextFrame(frames, "MusicBrainz Artist Id", tags.MusicBrainzArtistId);
-        if (tags.MusicBrainzAlbumId is not null)
-            AddUserDefinedTextFrame(frames, "MusicBrainz Album Id", tags.MusicBrainzAlbumId);
-        if (tags.MusicBrainzReleaseGroupId is not null)
-            AddUserDefinedTextFrame(frames, "MusicBrainz Release Group Id", tags.MusicBrainzReleaseGroupId);
+        foreach (var (key, value) in TagFieldMapping.EnumerateMusicBrainzFields(tags, useVorbisNames: false))
+        {
+            AddUserDefinedTextFrame(frames, key, value);
+        }
 
         // Custom fields as TXXX
         foreach (var (key, value) in tags.CustomFields)
@@ -91,14 +87,28 @@ internal static class Id3v2Writer
         }
 
         // Calculate total frame size
-        var totalFrameSize = 0;
+        var totalFrameSize = 0L;
         foreach (var frame in frames)
         {
             totalFrameSize += frame.Length;
         }
 
+        // A caller removing tags asks for no frames and no padding: produce no tag at all rather than an
+        // empty one, so the file really does come back untagged.
+        if (totalFrameSize == 0 && paddingSize == 0)
+        {
+            tag = [];
+            return true;
+        }
+
+        var tagSize = totalFrameSize + paddingSize;
+        if (tagSize > MaxTagSize)
+        {
+            errorMessage = $"The tags are too large for an ID3v2 tag ({tagSize} bytes, the maximum is {MaxTagSize}).";
+            return false;
+        }
+
         // Build the complete tag
-        var tagSize = totalFrameSize + PaddingSize;
         var result = new byte[10 + tagSize];
 
         // Header
@@ -108,7 +118,7 @@ internal static class Id3v2Writer
         result[3] = 4; // Version 2.4
         result[4] = 0; // Revision
         result[5] = 0; // Flags
-        SynchsafeInteger.Encode(tagSize, result.AsSpan(6, 4));
+        SynchsafeInteger.Encode((int)tagSize, result.AsSpan(6, 4));
 
         // Write frames
         var offset = 10;
@@ -119,7 +129,24 @@ internal static class Id3v2Writer
         }
 
         // Remaining bytes are already 0 (padding)
-        return result;
+        tag = result;
+        return true;
+    }
+
+    /// <summary>
+    /// Formats an ID3v2 "number/total" value. Returns <see langword="null"/> when neither part is set.
+    /// </summary>
+    private static string? FormatNumberPair(int? number, int? total)
+    {
+        if (number is null && total is null)
+            return null;
+
+        if (total is null)
+            return number!.Value.ToString(CultureInfo.InvariantCulture);
+
+        // "0/total" is how the format expresses a known total with an unknown position.
+        var numberPart = (number ?? 0).ToString(CultureInfo.InvariantCulture);
+        return numberPart + "/" + total.Value.ToString(CultureInfo.InvariantCulture);
     }
 
     private static void AddTextFrame(List<byte[]> frames, string frameId, string? value)

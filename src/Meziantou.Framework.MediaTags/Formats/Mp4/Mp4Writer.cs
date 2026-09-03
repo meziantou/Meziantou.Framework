@@ -1,113 +1,256 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.Mp4;
 
 internal sealed class Mp4Writer : IMediaTagWriter
 {
-    public MediaTagResult WriteTags(Stream inputStream, Stream outputStream, MediaTagInfo tags)
+    private const string ItunesMean = "com.apple.iTunes";
+
+    /// <summary>The largest moov atom this writer reads into memory.</summary>
+    /// <remarks>Only moov is materialized; the audio is streamed, so a file of any size can be tagged.</remarks>
+    private const long MaxMoovSize = 64L * 1024 * 1024;
+
+    public MediaTagResult WriteTags(Stream inputStream, Stream outputStream, MediaTagInfo tags, MediaTagWriteOptions options)
     {
         try
         {
             inputStream.Position = 0;
 
-            // Read the entire file to get the atom structure
-            var fileData = new byte[inputStream.Length];
-            if (inputStream.ReadAtLeast(fileData, fileData.Length, throwOnEndOfStream: false) < fileData.Length)
-                return MediaTagResult.Failure(MediaTagError.CorruptFile, "File ended before all MP4 data could be read.");
+            var atoms = Mp4Atom.ReadAtoms(inputStream, inputStream.Length, out var complete);
 
-            // Parse atoms
-            inputStream.Position = 0;
-            var atoms = Mp4Atom.ReadAtoms(inputStream, inputStream.Length);
+            // Rebuilding the file from a partial parse silently drops every atom after the bad one, mdat
+            // included, and this output is about to replace the caller's file.
+            if (!complete)
+                return MediaTagResult.Failure(MediaTagError.CorruptFile, "The MP4 atoms do not cover the whole file.");
 
-            // Build new ilst data
-            var ilstData = BuildIlstData(tags);
-
-            // Find moov atom
-            var moovAtom = atoms.FirstOrDefault(a => a.Type == "moov");
+            var moovAtom = atoms.Find(a => a.Type == "moov");
             if (moovAtom is null)
                 return MediaTagResult.Failure(MediaTagError.CorruptFile, "No moov atom found.");
 
-            // Compute the new file by copying atoms and replacing moov.udta.meta.ilst
-            inputStream.Position = 0;
-            WriteAtomsWithNewIlst(outputStream, atoms, ilstData, fileData);
+            if (moovAtom.Size > MaxMoovSize)
+                return MediaTagResult.Failure(MediaTagError.CorruptFile, "The moov atom is too large to rewrite.");
+
+            inputStream.Position = moovAtom.Position;
+            var moovData = new byte[moovAtom.Size];
+            if (inputStream.ReadAtLeast(moovData, moovData.Length, throwOnEndOfStream: false) < moovData.Length)
+                return MediaTagResult.Failure(MediaTagError.UnexpectedEndOfStream, "The file ended inside the moov atom.");
+
+            if (!TryBuildIlstData(tags, moovAtom, moovData, out var ilstData, out var buildError))
+                return MediaTagResult.Failure(MediaTagError.InvalidTagData, buildError);
+
+            var newMoov = RebuildMoov(moovAtom, moovData, ilstData);
+
+            // Resizing moov moves every atom after it. Sample chunk offsets are absolute file offsets, so
+            // leaving them alone makes the audio of any file whose moov precedes its mdat — everything
+            // produced with faststart — decode from the wrong place.
+            var delta = newMoov.Length - moovAtom.Size;
+            if (delta != 0 && !TryAdjustChunkOffsets(newMoov, moovAtom.Position + moovAtom.Size, delta, out var offsetError))
+                return MediaTagResult.Failure(MediaTagError.CorruptFile, offsetError);
+
+            foreach (var atom in atoms)
+            {
+                if (ReferenceEquals(atom, moovAtom))
+                {
+                    outputStream.Write(newMoov);
+                }
+                else if (!StreamHelpers.CopyExactlyFrom(inputStream, outputStream, atom.Position, atom.Size))
+                {
+                    return MediaTagResult.Failure(MediaTagError.UnexpectedEndOfStream, "The file ended inside an MP4 atom.");
+                }
+            }
 
             return MediaTagResult.Success();
         }
-        catch (Exception ex)
+        catch (Exception ex) when (MediaTagErrors.TryMap(ex, out var error))
         {
-            return MediaTagResult.Failure(MediaTagError.IoError, ex.Message);
+            return MediaTagResult.Failure(error, ex.Message);
         }
     }
 
-    private static void WriteAtomsWithNewIlst(Stream output, List<Mp4Atom> atoms, byte[] ilstData, byte[] fileData)
+    /// <summary>
+    /// Shifts every chunk offset that points at data which moved when moov was resized.
+    /// </summary>
+    private static bool TryAdjustChunkOffsets(byte[] moovData, long movedFrom, long delta, out string? error)
     {
-        foreach (var atom in atoms)
+        error = null;
+
+        using var stream = new MemoryStream(moovData, writable: false);
+        var atoms = Mp4Atom.ReadAtoms(stream, moovData.Length, out var complete);
+        if (!complete)
         {
-            if (atom.Type == "moov")
+            error = "The rebuilt moov atom could not be parsed.";
+            return false;
+        }
+
+        foreach (var root in atoms)
+        {
+            foreach (var atom in root.DescendantsAndSelf())
             {
-                // Rebuild moov with new ilst
-                var newMoov = RebuildMoov(atom, ilstData, fileData);
-                output.Write(newMoov);
+                var entrySize = atom.Type switch
+                {
+                    Mp4Atom.ChunkOffsetTable => 4,
+                    Mp4Atom.ChunkOffsetTable64 => 8,
+                    _ => 0,
+                };
+
+                if (entrySize != 0 && !TryAdjustChunkOffsetTable(atom, moovData, movedFrom, delta, entrySize, out error))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TryAdjustChunkOffsetTable(Mp4Atom atom, byte[] moovData, long movedFrom, long delta, int entrySize, out string? error)
+    {
+        error = null;
+
+        var payloadStart = (int)(atom.Position + atom.HeaderSize);
+        var payloadLength = (int)(atom.Size - atom.HeaderSize);
+
+        // version/flags(4) + entry count(4)
+        if (payloadLength < 8)
+        {
+            error = "A chunk offset table is truncated.";
+            return false;
+        }
+
+        var payload = moovData.AsSpan(payloadStart, payloadLength);
+        var entryCount = BinaryPrimitives.ReadUInt32BigEndian(payload[4..]);
+        if ((long)entryCount * entrySize > payloadLength - 8)
+        {
+            error = "A chunk offset table declares more entries than it contains.";
+            return false;
+        }
+
+        var entries = payload[8..];
+        for (var i = 0; i < entryCount; i++)
+        {
+            var slot = entries.Slice(i * entrySize, entrySize);
+            var value = entrySize == 4
+                ? BinaryPrimitives.ReadUInt32BigEndian(slot)
+                : (long)BinaryPrimitives.ReadUInt64BigEndian(slot);
+
+            // Data before the old end of moov did not move.
+            if (value < movedFrom)
+                continue;
+
+            var adjusted = value + delta;
+            if (adjusted < 0)
+            {
+                error = "A chunk offset would become negative.";
+                return false;
+            }
+
+            if (entrySize == 4)
+            {
+                if (adjusted > uint.MaxValue)
+                {
+                    error = "A chunk offset no longer fits in a 32-bit chunk offset table.";
+                    return false;
+                }
+
+                BinaryPrimitives.WriteUInt32BigEndian(slot, (uint)adjusted);
             }
             else
             {
-                // Copy atom as-is from file data
-                output.Write(fileData, (int)atom.Position, (int)atom.Size);
+                BinaryPrimitives.WriteUInt64BigEndian(slot, (ulong)adjusted);
             }
         }
+
+        return true;
     }
 
-    private static byte[] RebuildMoov(Mp4Atom moovAtom, byte[] ilstData, byte[] fileData)
+    private static byte[] RebuildMoov(Mp4Atom moovAtom, byte[] moovData, byte[] ilstData)
     {
         using var ms = new MemoryStream();
+        var udtaWritten = false;
 
-        // We need to rebuild the moov atom with the updated ilst
-        // Strategy: copy all children except udta, then write new udta.meta.ilst
-        var children = moovAtom.Children;
-
-        foreach (var child in children)
+        foreach (var child in moovAtom.Children)
         {
-            if (child.Type == "udta")
+            if (child.Type == "udta" && !udtaWritten)
             {
-                // Build new udta.meta.ilst
-                var newIlstAtom = BuildAtom("ilst", ilstData);
-                var newMetaData = BuildMetaAtomData(newIlstAtom);
-                var newMetaAtom = BuildAtom("meta", newMetaData);
-                var newUdtaAtom = BuildAtom("udta", newMetaAtom);
-                ms.Write(newUdtaAtom);
+                ms.Write(BuildUdta(child, moovAtom, moovData, ilstData));
+                udtaWritten = true;
             }
             else
             {
-                // Copy child atom as-is
-                ms.Write(fileData, (int)child.Position, (int)child.Size);
+                ms.Write(GetAtomBytes(child, moovAtom, moovData));
             }
         }
 
-        // If no udta existed, add one
-        if (!children.Any(c => c.Type == "udta"))
-        {
-            var newIlstAtom = BuildAtom("ilst", ilstData);
-            var newMetaData = BuildMetaAtomData(newIlstAtom);
-            var newMetaAtom = BuildAtom("meta", newMetaData);
-            var newUdtaAtom = BuildAtom("udta", newMetaAtom);
-            ms.Write(newUdtaAtom);
-        }
+        if (!udtaWritten)
+            ms.Write(BuildUdta(existingUdta: null, moovAtom, moovData, ilstData));
 
-        // Wrap in moov atom
         return BuildAtom("moov", ms.ToArray());
     }
 
-    private static byte[] BuildMetaAtomData(byte[] content)
+    private static byte[] BuildUdta(Mp4Atom? existingUdta, Mp4Atom moovAtom, byte[] moovData, byte[] ilstData)
     {
+        using var ms = new MemoryStream();
+        var metaWritten = false;
+
+        if (existingUdta is not null)
+        {
+            foreach (var child in existingUdta.Children)
+            {
+                if (child.Type == "meta" && !metaWritten)
+                {
+                    ms.Write(BuildMeta(child, moovAtom, moovData, ilstData));
+                    metaWritten = true;
+                }
+                else
+                {
+                    // Anything else under udta — an m4b chapter list, Windows metadata — belongs to the user
+                    // and is copied through rather than dropped.
+                    ms.Write(GetAtomBytes(child, moovAtom, moovData));
+                }
+            }
+        }
+
+        if (!metaWritten)
+            ms.Write(BuildMeta(existingMeta: null, moovAtom, moovData, ilstData));
+
+        return BuildAtom("udta", ms.ToArray());
+    }
+
+    private static byte[] BuildMeta(Mp4Atom? existingMeta, Mp4Atom moovAtom, byte[] moovData, byte[] ilstData)
+    {
+        using var ms = new MemoryStream();
+
         // meta atom has 4 bytes version/flags, then a handler box, then the children. The handler box
         // declares the metadata as iTunes-style: readers such as iTunes and ffmpeg use it to recognise
         // the ilst box, and without it they report the file as having no tags at all.
-        var handlerAtom = BuildHandlerAtom();
-        var result = new byte[4 + handlerAtom.Length + content.Length];
-        handlerAtom.CopyTo(result, 4);
-        content.CopyTo(result, 4 + handlerAtom.Length);
-        return result;
+        Span<byte> versionAndFlags = stackalloc byte[4];
+        ms.Write(versionAndFlags);
+        ms.Write(BuildHandlerAtom());
+
+        var ilstWritten = false;
+        if (existingMeta is not null)
+        {
+            foreach (var child in existingMeta.Children)
+            {
+                if (child.Type == "ilst" && !ilstWritten)
+                {
+                    ms.Write(BuildAtom("ilst", ilstData));
+                    ilstWritten = true;
+                }
+                else if (child.Type != "hdlr")
+                {
+                    ms.Write(GetAtomBytes(child, moovAtom, moovData));
+                }
+            }
+        }
+
+        if (!ilstWritten)
+            ms.Write(BuildAtom("ilst", ilstData));
+
+        return BuildAtom("meta", ms.ToArray());
     }
+
+    private static ReadOnlySpan<byte> GetAtomBytes(Mp4Atom atom, Mp4Atom moovAtom, byte[] moovData)
+        => moovData.AsSpan((int)(atom.Position - moovAtom.Position), (int)atom.Size);
 
     private static byte[] BuildHandlerAtom()
     {
@@ -118,8 +261,13 @@ internal sealed class Mp4Writer : IMediaTagWriter
         return BuildAtom("hdlr", data);
     }
 
-    private static byte[] BuildIlstData(MediaTagInfo tags)
+    private static bool TryBuildIlstData(MediaTagInfo tags, Mp4Atom moovAtom, byte[] moovData, out byte[] ilstData, out string? error)
     {
+        ilstData = [];
+
+        if (!TryValidateRanges(tags, out error))
+            return false;
+
         using var ms = new MemoryStream();
 
         WriteTextAtom(ms, ItunesAtomNames.Title, tags.Title);
@@ -131,32 +279,36 @@ internal sealed class Mp4Writer : IMediaTagWriter
         if (tags.Year is not null)
             WriteTextAtom(ms, ItunesAtomNames.Year, tags.Year.Value.ToString("D4", CultureInfo.InvariantCulture));
 
-        if (tags.TrackNumber is not null)
-            WriteTrackDiskAtom(ms, ItunesAtomNames.TrackNumber, tags.TrackNumber.Value, tags.TrackTotal ?? 0);
+        // The number and the total share one atom, so writing it only when the number is set would discard a
+        // total that was supplied on its own.
+        if (tags.TrackNumber is not null || tags.TrackTotal is not null)
+            WriteTrackDiskAtom(ms, ItunesAtomNames.TrackNumber, tags.TrackNumber ?? 0, tags.TrackTotal ?? 0);
 
-        if (tags.DiscNumber is not null)
-            WriteTrackDiskAtom(ms, ItunesAtomNames.DiscNumber, tags.DiscNumber.Value, tags.DiscTotal ?? 0);
+        if (tags.DiscNumber is not null || tags.DiscTotal is not null)
+            WriteTrackDiskAtom(ms, ItunesAtomNames.DiscNumber, tags.DiscNumber ?? 0, tags.DiscTotal ?? 0);
 
         WriteTextAtom(ms, ItunesAtomNames.Composer, tags.Composer);
+        WriteTextAtom(ms, ItunesAtomNames.Conductor, tags.Conductor);
         WriteTextAtom(ms, ItunesAtomNames.Comment, tags.Comment);
         WriteTextAtom(ms, ItunesAtomNames.Lyrics, tags.Lyrics);
         WriteTextAtom(ms, ItunesAtomNames.Copyright, tags.Copyright);
-        WriteFreeformTextAtom(ms, "com.apple.iTunes", "ISRC", tags.Isrc);
+        WriteFreeformTextAtom(ms, ItunesMean, "ISRC", tags.Isrc);
 
-        if (tags.ReplayGain is not null)
+        foreach (var (key, value) in TagFieldMapping.EnumerateReplayGainFields(tags))
         {
-            var replayGain = tags.ReplayGain.Value;
-            if (replayGain.TrackGain is not null)
-                WriteFreeformTextAtom(ms, "com.apple.iTunes", "REPLAYGAIN_TRACK_GAIN", replayGain.TrackGain.Value.ToString("F2", CultureInfo.InvariantCulture) + " dB");
+            WriteFreeformTextAtom(ms, ItunesMean, key, value);
+        }
 
-            if (replayGain.TrackPeak is not null)
-                WriteFreeformTextAtom(ms, "com.apple.iTunes", "REPLAYGAIN_TRACK_PEAK", replayGain.TrackPeak.Value.ToString("F6", CultureInfo.InvariantCulture));
+        // Mp4Reader fills these from freeform atoms, so not writing them back drops them on a
+        // read-modify-write, which is the ordinary way this library is used.
+        foreach (var (key, value) in TagFieldMapping.EnumerateMusicBrainzFields(tags, useVorbisNames: false))
+        {
+            WriteFreeformTextAtom(ms, ItunesMean, key, value);
+        }
 
-            if (replayGain.AlbumGain is not null)
-                WriteFreeformTextAtom(ms, "com.apple.iTunes", "REPLAYGAIN_ALBUM_GAIN", replayGain.AlbumGain.Value.ToString("F2", CultureInfo.InvariantCulture) + " dB");
-
-            if (replayGain.AlbumPeak is not null)
-                WriteFreeformTextAtom(ms, "com.apple.iTunes", "REPLAYGAIN_ALBUM_PEAK", replayGain.AlbumPeak.Value.ToString("F6", CultureInfo.InvariantCulture));
+        foreach (var (key, value) in tags.CustomFields)
+        {
+            WriteFreeformTextAtom(ms, ItunesMean, key, value);
         }
 
         if (tags.Bpm is not null)
@@ -167,11 +319,59 @@ internal sealed class Mp4Writer : IMediaTagWriter
 
         foreach (var picture in tags.Pictures)
         {
-            var typeIndicator = picture.MimeType == "image/png" ? 14u : 13u;
+            var typeIndicator = string.Equals(picture.MimeType, "image/png", StringComparison.OrdinalIgnoreCase) ? 14u : 13u;
             WriteDataAtom(ms, ItunesAtomNames.CoverArt, typeIndicator, picture.Data);
         }
 
-        return ms.ToArray();
+        // Items this writer does not produce — sort names, the encoder tool, the gapless flag — are the
+        // user's data and are carried through instead of being dropped.
+        var existingIlst = moovAtom.FindChild("udta")?.FindChild("meta")?.FindChild("ilst");
+        if (existingIlst is not null)
+        {
+            foreach (var item in existingIlst.Children)
+            {
+                if (!IsRegeneratedItem(item.Type))
+                    ms.Write(GetAtomBytes(item, moovAtom, moovData));
+            }
+        }
+
+        ilstData = ms.ToArray();
+        return true;
+    }
+
+    /// <summary>
+    /// Checks the values that the MP4 atoms store in a narrower type than <see cref="MediaTagInfo"/> does.
+    /// </summary>
+    private static bool TryValidateRanges(MediaTagInfo tags, out string? error)
+    {
+        foreach (var (name, value) in new[]
+        {
+            (nameof(MediaTagInfo.TrackNumber), tags.TrackNumber),
+            (nameof(MediaTagInfo.TrackTotal), tags.TrackTotal),
+            (nameof(MediaTagInfo.DiscNumber), tags.DiscNumber),
+            (nameof(MediaTagInfo.DiscTotal), tags.DiscTotal),
+            (nameof(MediaTagInfo.Bpm), tags.Bpm),
+        })
+        {
+            if (value > ushort.MaxValue)
+            {
+                error = $"{name} is {value}, which does not fit in an MP4 tag (the maximum is {ushort.MaxValue}).";
+                return false;
+            }
+        }
+
+        error = null;
+        return true;
+    }
+
+    private static bool IsRegeneratedItem(string atomType)
+    {
+        return atomType is ItunesAtomNames.Title or ItunesAtomNames.Artist or ItunesAtomNames.Album
+            or ItunesAtomNames.AlbumArtist or ItunesAtomNames.Genre or ItunesAtomNames.Year
+            or ItunesAtomNames.TrackNumber or ItunesAtomNames.DiscNumber or ItunesAtomNames.Composer
+            or ItunesAtomNames.Conductor or ItunesAtomNames.Comment or ItunesAtomNames.Lyrics
+            or ItunesAtomNames.Copyright or ItunesAtomNames.Bpm or ItunesAtomNames.Compilation
+            or ItunesAtomNames.CoverArt or ItunesAtomNames.Freeform;
     }
 
     private static void WriteTextAtom(MemoryStream ms, string atomType, string? value)

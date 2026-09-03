@@ -81,6 +81,8 @@ public sealed class Mp4Tests
         Assert.Equal(12, tags.TrackTotal);
         Assert.Equal(2, tags.DiscNumber);
         Assert.Equal(3, tags.DiscTotal);
+        Assert.Equal("All Fields Album Artist", tags.AlbumArtist);
+        Assert.Equal("All Fields Composer", tags.Composer);
         Assert.Equal("All Fields Comment", tags.Comment);
     }
 
@@ -375,4 +377,214 @@ public sealed class Mp4Tests
 
         return -1;
     }
+
+    [Fact]
+    public void WriteTags_CustomFieldsAndMusicBrainzAndConductor_RoundTrip()
+    {
+        // Mp4Reader fills these from freeform atoms, so a writer that does not emit them silently strips them
+        // from every file that goes through the read-modify-write loop.
+        var tempFile = Path.GetTempFileName() + ".m4a";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.m4a"), tempFile, overwrite: true);
+
+            var tags = new MediaTagInfo
+            {
+                Title = "Title",
+                Conductor = "The Conductor",
+                MusicBrainzTrackId = "track-id",
+                MusicBrainzArtistId = "artist-id",
+                MusicBrainzAlbumId = "album-id",
+                MusicBrainzReleaseGroupId = "release-group-id",
+                ReplayGain = new ReplayGainInfo { TrackGain = -3.21, TrackPeak = 0.5 },
+            };
+            tags.CustomFields["MY FIELD"] = "my value";
+
+            Assert.True(MediaFile.WriteTags(tempFile, tags).IsSuccess);
+
+            var read = MediaFile.ReadTags(tempFile).Value;
+            Assert.Equal("The Conductor", read.Conductor);
+            Assert.Equal("track-id", read.MusicBrainzTrackId);
+            Assert.Equal("artist-id", read.MusicBrainzArtistId);
+            Assert.Equal("album-id", read.MusicBrainzAlbumId);
+            Assert.Equal("release-group-id", read.MusicBrainzReleaseGroupId);
+            Assert.Equal("my value", read.CustomFields["MY FIELD"]);
+            Assert.Equal(-3.21, read.ReplayGain?.TrackGain);
+            Assert.Equal(0.5, read.ReplayGain?.TrackPeak);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void WriteTags_TotalsWithoutNumbers_AreKept()
+    {
+        var tempFile = Path.GetTempFileName() + ".m4a";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.m4a"), tempFile, overwrite: true);
+
+            Assert.True(MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Title", TrackTotal = 12, DiscTotal = 3 }).IsSuccess);
+
+            var tags = MediaFile.ReadTags(tempFile).Value;
+            Assert.Equal(12, tags.TrackTotal);
+            Assert.Equal(3, tags.DiscTotal);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Theory]
+    [InlineData(70000, 0)]
+    [InlineData(0, 70000)]
+    public void WriteTags_ValueTooLargeForAnMp4Atom_IsRefused(int bpm, int trackNumber)
+    {
+        // The MP4 atoms store these in 16 bits. An unchecked cast silently wraps 70000 to 4464.
+        var tempFile = Path.GetTempFileName() + ".m4a";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.m4a"), tempFile, overwrite: true);
+            var original = File.ReadAllBytes(tempFile);
+
+            var tags = new MediaTagInfo { Title = "Title" };
+            if (bpm > 0)
+                tags.Bpm = bpm;
+            else
+                tags.TrackNumber = trackNumber;
+
+            var result = MediaFile.WriteTags(tempFile, tags);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(MediaTagError.InvalidTagData, result.Error);
+            Assert.Equal(original, File.ReadAllBytes(tempFile));
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void WriteTags_PreservesIlstItemsTheWriterDoesNotProduce()
+    {
+        // Sort names, the encoder tool and the gapless flag are the user's data and must survive a tag edit.
+        var tempFile = Path.GetTempFileName() + ".m4a";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.m4a"), tempFile, overwrite: true);
+            var encoderAtomBefore = Encoding.Latin1.GetString(File.ReadAllBytes(tempFile)).Contains("\u00A9too", StringComparison.Ordinal);
+            Assert.True(encoderAtomBefore, "The fixture no longer carries an encoder atom; the test cannot prove anything.");
+
+            Assert.True(MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Title" }).IsSuccess);
+
+            // The encoder atom must survive the tag edit
+            var after = Encoding.Latin1.GetString(File.ReadAllBytes(tempFile));
+            Assert.Contains("\u00A9too", after);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void ReadTags_WithArt_MatchesTheCoverFile()
+    {
+        var result = MediaFile.ReadTags(GetTestFilePath("with_art.m4a"));
+        Assert.True(result.IsSuccess);
+
+        var picture = Assert.Single(result.Value.Pictures);
+        Assert.Equal("image/png", picture.MimeType);
+        Assert.Equal(File.ReadAllBytes(GetTestFilePath("cover.png")), picture.Data);
+    }
+
+    [Fact]
+    public void WriteTags_MoovBeforeMdat_CorrectsTheChunkOffsets()
+    {
+        // Sample chunk offsets are absolute file offsets. Resizing moov moves mdat, so leaving stco alone
+        // makes the audio of every faststart file decode from the wrong place while the tags still read back.
+        var tempFile = Path.GetTempFileName() + ".m4a";
+        try
+        {
+            var faststart = BuildFaststartFile(File.ReadAllBytes(GetTestFilePath("basic.m4a")), out var originalMdatPayload);
+            File.WriteAllBytes(tempFile, faststart);
+
+            Assert.Equal(originalMdatPayload, ReadFirstChunkOffset(File.ReadAllBytes(tempFile)));
+
+            Assert.True(MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "A considerably longer title than the original" }).IsSuccess);
+
+            var written = File.ReadAllBytes(tempFile);
+            var newMdatPayload = FindTopLevelAtom(written, "mdat") + 8;
+            Assert.NotEqual(originalMdatPayload, newMdatPayload);
+            Assert.Equal(newMdatPayload, ReadFirstChunkOffset(written));
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    /// <summary>Rewrites a file so that moov precedes mdat, as a streaming-optimised encoder produces.</summary>
+    private static byte[] BuildFaststartFile(byte[] source, out long mdatPayloadPosition)
+    {
+        var moovPosition = FindTopLevelAtom(source, "moov");
+        var mdatPosition = FindTopLevelAtom(source, "mdat");
+        var moovSize = ReadAtomSize(source, moovPosition);
+        var mdatSize = ReadAtomSize(source, mdatPosition);
+
+        using var output = new MemoryStream();
+        var position = 0;
+        while (position + 8 <= source.Length)
+        {
+            var size = ReadAtomSize(source, position);
+            var type = Encoding.Latin1.GetString(source.AsSpan(position + 4, 4));
+            if (type is not ("moov" or "mdat"))
+                output.Write(source, position, (int)size);
+
+            position += (int)size;
+        }
+
+        output.Write(source, (int)moovPosition, (int)moovSize);
+        var mdatStart = (int)output.Length;
+        output.Write(source, (int)mdatPosition, (int)mdatSize);
+
+        var result = output.ToArray();
+        mdatPayloadPosition = mdatStart + 8;
+
+        // Point the chunk offset table at the audio in its new place
+        var stco = IndexOf(result, "stco"u8);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(result.AsSpan(stco + 12), (uint)mdatPayloadPosition);
+        return result;
+    }
+
+    private static long ReadFirstChunkOffset(byte[] file)
+    {
+        var stco = IndexOf(file, "stco"u8);
+        Assert.True(stco >= 0, "The file has no chunk offset table.");
+        return System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(file.AsSpan(stco + 12));
+    }
+
+    private static long FindTopLevelAtom(byte[] file, string type)
+    {
+        var position = 0;
+        while (position + 8 <= file.Length)
+        {
+            var size = ReadAtomSize(file, position);
+            if (Encoding.Latin1.GetString(file.AsSpan(position + 4, 4)) == type)
+                return position;
+
+            position += (int)size;
+        }
+
+        return -1;
+    }
+
+    private static long ReadAtomSize(byte[] file, long position)
+        => System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(file.AsSpan((int)position));
+
+    private static int IndexOf(byte[] haystack, ReadOnlySpan<byte> needle) => haystack.AsSpan().IndexOf(needle);
 }

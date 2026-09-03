@@ -1,4 +1,4 @@
-using System.Buffers.Binary;
+using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.Aiff;
 
@@ -23,75 +23,56 @@ internal sealed class AiffReader : IMediaTagReader
             if (formType is not ("AIFF" or "AIFC"))
                 return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.UnsupportedFormat, "Not an AIFF file.");
 
-            // Parse chunks
-            Span<byte> chunkHeader = stackalloc byte[8];
-            while (stream.Position + 8 <= stream.Length)
+            // Reading is best effort: whatever chunks were parsed before a malformed one still carry usable
+            // tags, and unlike the writer nothing is destroyed by using them.
+            var chunks = AiffChunk.ReadChunks(stream, stream.Length, out _);
+            foreach (var chunk in chunks)
             {
-                if (stream.ReadAtLeast(chunkHeader, 8, throwOnEndOfStream: false) < 8)
-                    break;
-
-                var chunkId = Encoding.ASCII.GetString(chunkHeader[..4]);
-                var chunkSize = BinaryPrimitives.ReadInt32BigEndian(chunkHeader[4..]);
-                var chunkDataStart = stream.Position;
-
-                // A chunk size is stored in a signed field, so a malformed file can declare a negative
-                // size (which would move the cursor backwards and loop forever) or a size far beyond the
-                // end of the file (which would allocate a buffer that can never be filled).
-                if (chunkSize < 0 || chunkSize > stream.Length - chunkDataStart)
-                    break;
-
-                if (chunkId is "ID3 " or "id3 ")
-                {
-                    var chunkData = new byte[chunkSize];
-                    if (stream.ReadAtLeast(chunkData, chunkSize, throwOnEndOfStream: false) >= chunkSize)
-                    {
-                        using var id3Stream = new MemoryStream(chunkData);
-                        Id3v2.Id3v2Reader.TryReadTag(id3Stream, tags);
-                    }
-                }
-                else if (chunkId == "NAME")
-                {
-                    var data = new byte[chunkSize];
-                    if (stream.ReadAtLeast(data, chunkSize, throwOnEndOfStream: false) >= chunkSize)
-                        tags.Title ??= ReadAiffString(data);
-                }
-                else if (chunkId == "AUTH")
-                {
-                    var data = new byte[chunkSize];
-                    if (stream.ReadAtLeast(data, chunkSize, throwOnEndOfStream: false) >= chunkSize)
-                        tags.Artist ??= ReadAiffString(data);
-                }
-                else if (chunkId == "ANNO")
-                {
-                    var data = new byte[chunkSize];
-                    if (stream.ReadAtLeast(data, chunkSize, throwOnEndOfStream: false) >= chunkSize)
-                        tags.Comment ??= ReadAiffString(data);
-                }
-                else if (chunkId == "(c) ")
-                {
-                    var data = new byte[chunkSize];
-                    if (stream.ReadAtLeast(data, chunkSize, throwOnEndOfStream: false) >= chunkSize)
-                        tags.Copyright ??= ReadAiffString(data);
-                }
-                else if (chunkId == "ISRC")
-                {
-                    var data = new byte[chunkSize];
-                    if (stream.ReadAtLeast(data, chunkSize, throwOnEndOfStream: false) >= chunkSize)
-                        tags.Isrc ??= ReadAiffString(data);
-                }
-
-                // Skip to next chunk (big-endian sizes, pad to even boundary)
-                var nextPos = chunkDataStart + chunkSize;
-                if (chunkSize % 2 != 0)
-                    nextPos++;
-                stream.Position = nextPos;
+                ProcessChunk(chunk, tags);
             }
 
             return MediaTagResult<MediaTagInfo>.Success(tags);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (MediaTagErrors.TryMap(ex, out var error))
         {
-            return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.CorruptFile, ex.Message);
+            return MediaTagResult<MediaTagInfo>.Failure(error, ex.Message);
+        }
+    }
+
+    private static void ProcessChunk(AiffChunk chunk, MediaTagInfo tags)
+    {
+        if (chunk.Data is not { } data)
+            return;
+
+        switch (chunk.Id)
+        {
+            case "ID3 " or "id3 ":
+                using (var id3Stream = new MemoryStream(data))
+                {
+                    Id3v2.Id3v2Reader.TryReadTag(id3Stream, tags);
+                }
+
+                break;
+
+            case "NAME":
+                tags.Title ??= ReadAiffString(data);
+                break;
+
+            case "AUTH":
+                tags.Artist ??= ReadAiffString(data);
+                break;
+
+            case "ANNO":
+                tags.Comment ??= ReadAiffString(data);
+                break;
+
+            case "(c) ":
+                tags.Copyright ??= ReadAiffString(data);
+                break;
+
+            case "ISRC":
+                tags.Isrc ??= ReadAiffString(data);
+                break;
         }
     }
 
@@ -100,6 +81,7 @@ internal sealed class AiffReader : IMediaTagReader
         var length = data.Length;
         while (length > 0 && data[length - 1] == 0)
             length--;
+
         return Encoding.Latin1.GetString(data, 0, length);
     }
 }

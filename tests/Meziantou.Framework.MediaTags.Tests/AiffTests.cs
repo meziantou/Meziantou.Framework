@@ -15,6 +15,10 @@ public sealed class AiffTests
 
         var tags = result.Value;
         Assert.Equal(MediaFormat.Aiff, tags.Format);
+
+        // basic.aiff carries a NAME chunk; without this assertion nothing proves the reader understands the
+        // chunks a third-party encoder writes.
+        Assert.Equal("Test Title", tags.Title);
     }
 
     [Fact]
@@ -22,6 +26,9 @@ public sealed class AiffTests
     {
         var result = MediaFile.ReadTags(GetTestFilePath("empty.aiff"));
         Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.Title);
+        Assert.Null(result.Value.Artist);
+        Assert.Null(result.Value.Album);
     }
 
     [Fact]
@@ -165,8 +172,10 @@ public sealed class AiffTests
         // A 1 GB NAME chunk declared by a file only a few bytes long
         using var stream = new MemoryStream(CreateAiff(("NAME", 0x4000_0000, [1, 2, 3, 4])));
 
-        // Read once so the measured read is not paying for JIT and first-use initialization
+        // Read once so the measured read is not paying for JIT and first-use initialization.
+        // ReadTags reads from the current position, so the stream is rewound before reading again.
         MediaFile.ReadTags(stream, MediaFormat.Aiff);
+        stream.Position = 0;
 
         // Thread-scoped, because GC.GetTotalAllocatedBytes also counts what the other threads of the process allocate
         var before = GC.GetAllocatedBytesForCurrentThread();
@@ -218,5 +227,17 @@ public sealed class AiffTests
         body.Position = 0;
         body.CopyTo(result);
         return result.ToArray();
+    }
+
+    [Fact]
+    public void WriteTags_NotAnIffFile_IsRefused()
+    {
+        using var input = new MemoryStream(Encoding.ASCII.GetBytes(new string('X', 4096)));
+        using var output = new MemoryStream();
+
+        var result = MediaFile.WriteTags(input, output, new MediaTagInfo { Title = "Title" }, MediaFormat.Aiff);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.UnsupportedFormat, result.Error);
     }
 }

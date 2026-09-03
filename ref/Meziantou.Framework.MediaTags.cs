@@ -9,7 +9,11 @@ namespace Meziantou.Framework.MediaTags
         public static Meziantou.Framework.MediaTags.MediaTagResult<Meziantou.Framework.MediaTags.MediaTagInfo> ReadTags(string filePath) => throw null;
         public static Meziantou.Framework.MediaTags.MediaTagResult<Meziantou.Framework.MediaTags.MediaTagInfo> ReadTags(System.IO.Stream stream, Meziantou.Framework.MediaTags.MediaFormat? format = null) => throw null;
         public static Meziantou.Framework.MediaTags.MediaTagResult WriteTags(string filePath, Meziantou.Framework.MediaTags.MediaTagInfo tags) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult WriteTags(string filePath, Meziantou.Framework.MediaTags.MediaTagInfo tags, Meziantou.Framework.MediaTags.MediaTagWriteOptions options) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult RemoveTags(string filePath) => throw null;
         public static Meziantou.Framework.MediaTags.MediaTagResult WriteTags(System.IO.Stream inputStream, System.IO.Stream outputStream, Meziantou.Framework.MediaTags.MediaTagInfo tags, Meziantou.Framework.MediaTags.MediaFormat format) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult WriteTags(System.IO.Stream inputStream, System.IO.Stream outputStream, Meziantou.Framework.MediaTags.MediaTagInfo tags, Meziantou.Framework.MediaTags.MediaFormat format, Meziantou.Framework.MediaTags.MediaTagWriteOptions options) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult RemoveTags(System.IO.Stream inputStream, System.IO.Stream outputStream, Meziantou.Framework.MediaTags.MediaFormat format) => throw null;
         public static Meziantou.Framework.MediaTags.MediaFormat? DetectFormat(string filePath) => throw null;
         public static Meziantou.Framework.MediaTags.MediaFormat? DetectFormat(System.IO.Stream stream) => throw null;
     }
@@ -119,6 +123,12 @@ namespace Meziantou.Framework.MediaTags
         public string? ErrorMessage { get => throw null; }
         public static Meziantou.Framework.MediaTags.MediaTagResult<T> Success(T value) => throw null;
         public static Meziantou.Framework.MediaTags.MediaTagResult<T> Failure(Meziantou.Framework.MediaTags.MediaTagError error, string? message = null) => throw null;
+    }
+
+    public sealed class MediaTagWriteOptions
+    {
+        public bool WriteId3v1Tag { get => throw null; set { } }
+        public int Id3v2PaddingSize { get => throw null; set { } }
     }
 
     public readonly struct ReplayGainInfo : System.IEquatable<Meziantou.Framework.MediaTags.ReplayGainInfo>

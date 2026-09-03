@@ -1,10 +1,11 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.Aiff;
 
 internal sealed class AiffWriter : IMediaTagWriter
 {
-    public MediaTagResult WriteTags(Stream inputStream, Stream outputStream, MediaTagInfo tags)
+    public MediaTagResult WriteTags(Stream inputStream, Stream outputStream, MediaTagInfo tags, MediaTagWriteOptions options)
     {
         try
         {
@@ -15,95 +16,97 @@ internal sealed class AiffWriter : IMediaTagWriter
             if (inputStream.ReadAtLeast(formHeader, 12, throwOnEndOfStream: false) < 12)
                 return MediaTagResult.Failure(MediaTagError.CorruptFile, "File too small for AIFF.");
 
+            // The container must be verified before anything is written: the output below synthesizes a fresh
+            // FORM header, so writing it over a file that is not an AIFF replaces all of its content.
+            if (formHeader[0] != 'F' || formHeader[1] != 'O' || formHeader[2] != 'R' || formHeader[3] != 'M')
+                return MediaTagResult.Failure(MediaTagError.UnsupportedFormat, "Not an IFF file.");
+
             var formType = Encoding.ASCII.GetString(formHeader[8..12]);
+            if (formType is not ("AIFF" or "AIFC"))
+                return MediaTagResult.Failure(MediaTagError.UnsupportedFormat, "Not an AIFF file.");
 
-            // Read all chunk positions
-            var existingChunks = new List<(string Id, int Size, long DataPos)>();
-            Span<byte> chunkHeader = stackalloc byte[8];
-            while (inputStream.Position + 8 <= inputStream.Length)
-            {
-                if (inputStream.ReadAtLeast(chunkHeader, 8, throwOnEndOfStream: false) < 8)
-                    break;
+            var chunks = AiffChunk.ReadChunks(inputStream, inputStream.Length, out var complete);
 
-                var chunkId = Encoding.ASCII.GetString(chunkHeader[..4]);
-                var chunkSize = BinaryPrimitives.ReadInt32BigEndian(chunkHeader[4..]);
-                var dataPos = inputStream.Position;
-
-                // See AiffReader: a negative size would move the cursor backwards and loop forever.
-                if (chunkSize < 0 || chunkSize > inputStream.Length - dataPos)
-                    break;
-
-                existingChunks.Add((chunkId, chunkSize, dataPos));
-
-                var nextPos = dataPos + chunkSize;
-                if (chunkSize % 2 != 0) nextPos++;
-                inputStream.Position = nextPos;
-            }
+            // Rebuilding the file from a partial parse silently drops every chunk after the bad one, the audio
+            // included, and this output is about to replace the caller's file.
+            if (!complete)
+                return MediaTagResult.Failure(MediaTagError.CorruptFile, "The AIFF chunks do not cover the whole file.");
 
             // Build new ID3v2 tag
-            var id3v2Tag = Id3v2.Id3v2Writer.BuildTag(tags);
+            if (!Id3v2.Id3v2Writer.TryBuildTag(tags, options.Id3v2PaddingSize, out var id3v2Tag, out var buildError))
+                return MediaTagResult.Failure(MediaTagError.InvalidTagData, buildError);
 
-            // Write FORM header (placeholder size, will update)
-            using var bodyStream = new MemoryStream();
-
-            // Copy existing chunks except ID3
-            foreach (var (id, size, dataPos) in existingChunks)
+            var preservedChunks = new List<AiffChunk>();
+            foreach (var chunk in chunks)
             {
                 // Drop every chunk AiffReader can source a tag from, otherwise the stale chunk is read
-                // back in preference to the ID3 tag written below. Keep in sync with AiffReader.ReadTags.
-                if (id is "ID3 " or "id3 " or "NAME" or "AUTH" or "ANNO" or "(c) " or "ISRC")
+                // back in preference to the ID3 tag written below. Keep in sync with AiffChunk.TagChunkIds.
+                if (AiffChunk.IsTagChunk(chunk.Id))
                     continue;
 
-                // Write chunk header
-                Encoding.ASCII.GetBytes(id, chunkHeader[..4]);
-                BinaryPrimitives.WriteInt32BigEndian(chunkHeader[4..], size);
-                bodyStream.Write(chunkHeader);
-
-                // Copy chunk data
-                inputStream.Position = dataPos;
-                var buffer = new byte[Math.Min(size, 8192)];
-                var remaining = size;
-                while (remaining > 0)
-                {
-                    var toRead = Math.Min(remaining, buffer.Length);
-                    var read = inputStream.Read(buffer, 0, toRead);
-                    if (read == 0) break;
-                    bodyStream.Write(buffer, 0, read);
-                    remaining -= read;
-                }
-
-                if (size % 2 != 0)
-                    bodyStream.WriteByte(0);
+                preservedChunks.Add(chunk);
             }
 
-            // Write ID3 chunk
-            Span<byte> id3Header = stackalloc byte[8];
-            Encoding.ASCII.GetBytes("ID3 ", id3Header[..4]);
-            BinaryPrimitives.WriteInt32BigEndian(id3Header[4..], id3v2Tag.Length);
-            bodyStream.Write(id3Header);
-            bodyStream.Write(id3v2Tag);
-            if (id3v2Tag.Length % 2 != 0)
-                bodyStream.WriteByte(0);
+            // The FORM size field precedes the body, so the total is computed rather than produced by staging
+            // the whole file in memory.
+            var bodySize = 4L; // formType
+            foreach (var chunk in preservedChunks)
+            {
+                bodySize += 8 + chunk.Size + (chunk.Size % 2);
+            }
 
-            // Write FORM header with correct size
-            var totalFormSize = 4 + (int)bodyStream.Length; // formType + chunks
+            if (id3v2Tag.Length > 0)
+                bodySize += 8 + id3v2Tag.Length + (id3v2Tag.Length % 2);
+
+            if (bodySize > int.MaxValue)
+                return MediaTagResult.Failure(MediaTagError.InvalidTagData, "The tagged file would be too large for the AIFF container.");
+
             Span<byte> outputHeader = stackalloc byte[12];
             outputHeader[0] = (byte)'F';
             outputHeader[1] = (byte)'O';
             outputHeader[2] = (byte)'R';
             outputHeader[3] = (byte)'M';
-            BinaryPrimitives.WriteInt32BigEndian(outputHeader[4..], totalFormSize);
+            BinaryPrimitives.WriteInt32BigEndian(outputHeader[4..], (int)bodySize);
             Encoding.ASCII.GetBytes(formType, outputHeader[8..12]);
-
             outputStream.Write(outputHeader);
-            bodyStream.Position = 0;
-            bodyStream.CopyTo(outputStream);
+
+            foreach (var chunk in preservedChunks)
+            {
+                WriteChunkHeader(outputStream, chunk.Id, chunk.Size);
+                if (!StreamHelpers.CopyExactlyFrom(inputStream, outputStream, chunk.DataPosition, chunk.Size))
+                    return MediaTagResult.Failure(MediaTagError.UnexpectedEndOfStream, "The file ended inside an AIFF chunk.");
+
+                WritePadding(outputStream, chunk.Size);
+            }
+
+            // Write ID3 chunk
+            if (id3v2Tag.Length > 0)
+            {
+                WriteChunkHeader(outputStream, "ID3 ", id3v2Tag.Length);
+                outputStream.Write(id3v2Tag);
+                WritePadding(outputStream, id3v2Tag.Length);
+            }
 
             return MediaTagResult.Success();
         }
-        catch (Exception ex)
+        catch (Exception ex) when (MediaTagErrors.TryMap(ex, out var error))
         {
-            return MediaTagResult.Failure(MediaTagError.IoError, ex.Message);
+            return MediaTagResult.Failure(error, ex.Message);
         }
+    }
+
+    private static void WriteChunkHeader(Stream output, string id, int size)
+    {
+        Span<byte> header = stackalloc byte[8];
+        Encoding.ASCII.GetBytes(id, header[..4]);
+        BinaryPrimitives.WriteInt32BigEndian(header[4..], size);
+        output.Write(header);
+    }
+
+    private static void WritePadding(Stream output, int size)
+    {
+        // Chunks are padded to even byte boundaries
+        if (size % 2 != 0)
+            output.WriteByte(0);
     }
 }

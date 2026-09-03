@@ -1,3 +1,5 @@
+using Meziantou.Framework.MediaTags.Internals;
+
 namespace Meziantou.Framework.MediaTags.Formats.Ogg;
 
 internal sealed class OggVorbisReader : IMediaTagReader
@@ -11,22 +13,17 @@ internal sealed class OggVorbisReader : IMediaTagReader
             stream.Position = 0;
             var tags = new MediaTagInfo();
 
-            var pages = OggPacketUtilities.ReadAllPages(stream);
-            var packets = OggPacketUtilities.ReadPackets(pages);
-            foreach (var packet in packets)
+            // The comment packet is one of the first packets of the stream, so only the leading pages are read.
+            if (OggPacketUtilities.TryFindHeaderPacket(stream, VorbisCommentPrefix, out var commentPacket))
             {
-                if (packet.Data.AsSpan().StartsWith(VorbisCommentPrefix))
-                {
-                    VorbisComment.VorbisCommentReader.TryParse(packet.Data.AsSpan(VorbisCommentPrefix.Length), tags);
-                    break;
-                }
+                VorbisComment.VorbisCommentReader.TryParse(commentPacket.AsSpan(VorbisCommentPrefix.Length), tags);
             }
 
             return MediaTagResult<MediaTagInfo>.Success(tags);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (MediaTagErrors.TryMap(ex, out var error))
         {
-            return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.CorruptFile, ex.Message);
+            return MediaTagResult<MediaTagInfo>.Failure(error, ex.Message);
         }
     }
 }

@@ -1,8 +1,14 @@
+using System.Buffers.Binary;
+using Meziantou.Framework.MediaTags.Internals;
+
 namespace Meziantou.Framework.MediaTags.Formats.Id3v2;
 
 internal sealed class Mp3TagReader : IMediaTagReader
 {
     private const int MaxResyncBytes = 64 * 1024;
+
+    /// <summary>The largest frame this reader inspects for a VBR header.</summary>
+    private const int MaxFirstFrameSize = 4096;
 
     private static readonly int[] Mpeg1Layer1BitRates =
     [
@@ -45,12 +51,20 @@ internal sealed class Mp3TagReader : IMediaTagReader
 
             return MediaTagResult<MediaTagInfo>.Success(tags);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (MediaTagErrors.TryMap(ex, out var error))
         {
-            return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.CorruptFile, ex.Message);
+            return MediaTagResult<MediaTagInfo>.Failure(error, ex.Message);
         }
     }
 
+    /// <summary>
+    /// Computes the duration from the first audio frame.
+    /// </summary>
+    /// <remarks>
+    /// The Xing/Info/VBRI header a VBR encoder writes into the first frame carries the exact frame count, and a
+    /// constant bit rate stream can be derived from the size of the audio. Walking every frame instead would
+    /// make reading the tags of a file cost time proportional to its length.
+    /// </remarks>
     private static TimeSpan? TryReadDuration(Stream stream)
     {
         if (!stream.CanSeek || !stream.CanRead)
@@ -64,40 +78,104 @@ internal sealed class Mp3TagReader : IMediaTagReader
             if (audioEnd - audioStart < 4)
                 return null;
 
-            var currentOffset = audioStart;
-            var totalSeconds = 0d;
-            var hasFrame = false;
-            var resyncBytes = 0;
+            if (!TryFindFirstFrame(stream, audioStart, audioEnd, out var frameOffset, out var frame))
+                return null;
 
-            Span<byte> headerBuffer = stackalloc byte[4];
-            while (currentOffset + 4 <= audioEnd)
-            {
-                stream.Position = currentOffset;
-                if (stream.ReadAtLeast(headerBuffer, 4, throwOnEndOfStream: false) < 4)
-                    break;
+            if (TryReadVbrFrameCount(stream, frameOffset, frame, audioEnd, out var frameCount))
+                return TimeSpan.FromSeconds((double)frameCount * frame.SamplesPerFrame / frame.SampleRate);
 
-                if (TryParseFrameHeader(headerBuffer, out var frameLength, out var samplesPerFrame, out var sampleRate) && currentOffset + frameLength <= audioEnd)
-                {
-                    totalSeconds += (double)samplesPerFrame / sampleRate;
-                    currentOffset += frameLength;
-                    hasFrame = true;
-                    resyncBytes = 0;
-                    continue;
-                }
+            var audioLength = audioEnd - frameOffset;
+            if (frame.BitRate > 0 && audioLength > 0)
+                return TimeSpan.FromSeconds(audioLength * 8d / frame.BitRate);
 
-                currentOffset++;
-                resyncBytes++;
-
-                if (hasFrame && resyncBytes >= MaxResyncBytes)
-                    break;
-            }
-
-            return hasFrame ? TimeSpan.FromSeconds(totalSeconds) : null;
+            return null;
         }
         finally
         {
             stream.Position = originalPosition;
         }
+    }
+
+    private static bool TryFindFirstFrame(Stream stream, long audioStart, long audioEnd, out long frameOffset, out Mp3FrameHeader frame)
+    {
+        frameOffset = 0;
+        frame = default;
+
+        var currentOffset = audioStart;
+        var resyncBytes = 0;
+        Span<byte> headerBuffer = stackalloc byte[4];
+
+        while (currentOffset + 4 <= audioEnd && resyncBytes < MaxResyncBytes)
+        {
+            stream.Position = currentOffset;
+            if (stream.ReadAtLeast(headerBuffer, 4, throwOnEndOfStream: false) < 4)
+                return false;
+
+            if (TryParseFrameHeader(headerBuffer, out var parsed) && currentOffset + parsed.FrameLength <= audioEnd)
+            {
+                frameOffset = currentOffset;
+                frame = parsed;
+                return true;
+            }
+
+            currentOffset++;
+            resyncBytes++;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Reads the frame count from the Xing, Info or VBRI header stored inside the first frame.
+    /// </summary>
+    private static bool TryReadVbrFrameCount(Stream stream, long frameOffset, in Mp3FrameHeader frame, long audioEnd, out uint frameCount)
+    {
+        frameCount = 0;
+
+        var frameLength = Math.Min(frame.FrameLength, MaxFirstFrameSize);
+        if (frameLength < 4 || frameOffset + frameLength > audioEnd)
+            return false;
+
+        Span<byte> frameData = stackalloc byte[MaxFirstFrameSize];
+        frameData = frameData[..frameLength];
+
+        stream.Position = frameOffset;
+        if (stream.ReadAtLeast(frameData, frameLength, throwOnEndOfStream: false) < frameLength)
+            return false;
+
+        // Xing (VBR) and Info (CBR) sit after the frame header and the side information.
+        var xingOffset = 4 + GetSideInfoSize(frame);
+        if (xingOffset + 12 <= frameData.Length)
+        {
+            var magic = frameData.Slice(xingOffset, 4);
+            if (magic.SequenceEqual("Xing"u8) || magic.SequenceEqual("Info"u8))
+            {
+                var flags = BinaryPrimitives.ReadUInt32BigEndian(frameData.Slice(xingOffset + 4, 4));
+                if ((flags & 0x0000_0001) != 0)
+                {
+                    frameCount = BinaryPrimitives.ReadUInt32BigEndian(frameData.Slice(xingOffset + 8, 4));
+                    return frameCount > 0;
+                }
+            }
+        }
+
+        // VBRI is written by the Fraunhofer encoder at a fixed offset instead.
+        const int VbriOffset = 4 + 32;
+        if (VbriOffset + 18 <= frameData.Length && frameData.Slice(VbriOffset, 4).SequenceEqual("VBRI"u8))
+        {
+            frameCount = BinaryPrimitives.ReadUInt32BigEndian(frameData.Slice(VbriOffset + 14, 4));
+            return frameCount > 0;
+        }
+
+        return false;
+    }
+
+    private static int GetSideInfoSize(in Mp3FrameHeader frame)
+    {
+        if (frame.IsMpeg1)
+            return frame.IsMono ? 17 : 32;
+
+        return frame.IsMono ? 9 : 17;
     }
 
     private static long GetAudioStartOffset(Stream stream)
@@ -120,11 +198,9 @@ internal sealed class Mp3TagReader : IMediaTagReader
         return id3v1Header is [(byte)'T', (byte)'A', (byte)'G'] ? audioEnd - 128 : audioEnd;
     }
 
-    private static bool TryParseFrameHeader(ReadOnlySpan<byte> header, out int frameLength, out int samplesPerFrame, out int sampleRate)
+    private static bool TryParseFrameHeader(ReadOnlySpan<byte> header, out Mp3FrameHeader frame)
     {
-        frameLength = 0;
-        samplesPerFrame = 0;
-        sampleRate = 0;
+        frame = default;
         if (header.Length < 4)
             return false;
 
@@ -139,11 +215,12 @@ internal sealed class Mp3TagReader : IMediaTagReader
         var bitrateIndex = (int)((headerValue >> 12) & 0b1111);
         var sampleRateIndex = (int)((headerValue >> 10) & 0b11);
         var padding = (int)((headerValue >> 9) & 0b1);
+        var channelMode = (int)((headerValue >> 6) & 0b11);
 
         if (versionBits is 0b01 || layerBits is 0b00 || bitrateIndex is 0b0000 or 0b1111 || sampleRateIndex is 0b11)
             return false;
 
-        sampleRate = GetSampleRate(versionBits, sampleRateIndex);
+        var sampleRate = GetSampleRate(versionBits, sampleRateIndex);
         if (sampleRate <= 0)
             return false;
 
@@ -153,6 +230,8 @@ internal sealed class Mp3TagReader : IMediaTagReader
         if (bitrate <= 0)
             return false;
 
+        int samplesPerFrame;
+        int frameLength;
         switch (layer)
         {
             case 1:
@@ -177,6 +256,15 @@ internal sealed class Mp3TagReader : IMediaTagReader
         if (frameLength <= 4)
             return false;
 
+        frame = new Mp3FrameHeader
+        {
+            FrameLength = frameLength,
+            SamplesPerFrame = samplesPerFrame,
+            SampleRate = sampleRate,
+            BitRate = bitrate,
+            IsMpeg1 = isMpeg1,
+            IsMono = channelMode == 0b11,
+        };
         return true;
     }
 
@@ -216,4 +304,13 @@ internal sealed class Mp3TagReader : IMediaTagReader
         };
     }
 
+    private readonly record struct Mp3FrameHeader
+    {
+        public int FrameLength { get; init; }
+        public int SamplesPerFrame { get; init; }
+        public int SampleRate { get; init; }
+        public int BitRate { get; init; }
+        public bool IsMpeg1 { get; init; }
+        public bool IsMono { get; init; }
+    }
 }

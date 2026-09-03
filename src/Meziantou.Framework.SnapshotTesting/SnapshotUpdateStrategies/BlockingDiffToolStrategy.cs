@@ -10,7 +10,17 @@ internal sealed class BlockingDiffToolStrategy : MergeToolStrategyBase
 
     public override void UpdateFile(SnapshotSettings settings, string currentFilePath, string newFilePath)
     {
-        using var process = LaunchMergeTool(settings, currentFilePath, newFilePath);
-        process.WaitForExit();
+        var placeholder = VerifiedFilePlaceholder.TryCreate(currentFilePath);
+        try
+        {
+            using var process = LaunchMergeTool(settings, currentFilePath, newFilePath);
+            process.WaitForExit();
+        }
+        finally
+        {
+            // The merge tool has exited, so a placeholder that is still untouched means the developer closed
+            // the tool without saving.
+            placeholder?.DeleteIfUnused();
+        }
     }
 }

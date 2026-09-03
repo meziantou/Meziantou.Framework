@@ -19,7 +19,7 @@ public sealed class BooleanToValueConverter : IValueConverter
     /// <summary>Gets or sets the value to return when the input is <see langword="false"/>.</summary>
     public object? FalseValue { get; set; }
 
-    /// <summary>Gets or sets the value to return when the input is <see langword="null"/>. If not set, <see cref="FalseValue"/> is used instead.</summary>
+    /// <summary>Gets or sets the value to return when the input is <see langword="null"/> or cannot be converted to a boolean. If not set, <see cref="FalseValue"/> is used instead.</summary>
     public object? NullValue { get; set; }
 
     private object? GetValue(bool value)
@@ -50,7 +50,7 @@ public sealed class BooleanToValueConverter : IValueConverter
             }
         }
 
-        return NullValue;
+        return NullValue ?? FalseValue;
     }
 
     /// <summary>This method is not supported and always throws <see cref="NotSupportedException"/>.</summary>

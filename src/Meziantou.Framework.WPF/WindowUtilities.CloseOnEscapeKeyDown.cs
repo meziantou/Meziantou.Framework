@@ -53,12 +53,12 @@ public static partial class WindowUtilities
 
     private static void CloseOnEscapeKeyDown_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (sender is Window target)
+        if (sender is Window target && e.Key is Key.Escape)
         {
-            if (e.Key == Key.Escape)
-            {
-                target.Close();
-            }
+            // Mark the event as handled before closing, so a Cancel button or a KeyDown handler on a child element
+            // does not also react to the key press on a window that is already closing.
+            e.Handled = true;
+            target.Close();
         }
     }
 }

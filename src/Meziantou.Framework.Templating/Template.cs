@@ -135,13 +135,15 @@ public class Template
                 break;
 
             AddBlock(blocks, codeBlock: false, span, ref position, delimiterOffset, ref blockIndex);
-            position.Advance(startCodeBlockDelimiter);
 
-            // Code up to the next end delimiter. An unterminated block falls back to a text block.
-            remaining = span[position.Index..];
+            // Code up to the next end delimiter. An unterminated block falls back to a text block. The end delimiter is
+            // searched for before consuming the start delimiter, so that fallback keeps the start delimiter in the text.
+            remaining = span[(position.Index + startCodeBlockDelimiter.Length)..];
             delimiterOffset = remaining.IndexOf(endCodeBlockDelimiter, StringComparison.Ordinal);
             if (delimiterOffset < 0)
                 break;
+
+            position.Advance(startCodeBlockDelimiter);
 
             var canTrimLeadingWhitespaceForLineOnlyBlock = TryGetTrailingLineWhitespaceLengthFromLastTextBlock(blocks, out var trailingWhitespaceLength);
             var block = AddBlock(blocks, codeBlock: true, span, ref position, delimiterOffset, ref blockIndex);

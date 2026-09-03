@@ -54,6 +54,26 @@ var files = PublicApi.Generate(
 
 If `TargetFrameworkMoniker` is omitted (or empty), the generator infers it from assembly metadata.
 
+Conditional blocks are kept as narrow as possible, so that adding a target framework produces a small diff. A type stays
+unconditional when the target frameworks only differ by their attributes, their members or their base type list; only
+the parts that are not shared by every target framework are wrapped in a conditional block:
+
+```csharp
+public sealed class CronExpression : IRecurrenceRule
+#if NET10_0
+    , System.IParsable<CronExpression>
+#endif
+{
+    public static CronExpression Parse(string expression) => throw null;
+#if NET10_0
+    public static CronExpression Parse(System.ReadOnlySpan<char> expression) => throw null;
+#endif
+}
+```
+
+The whole type is wrapped in a conditional block only when it cannot be merged, for instance when it does not exist in
+every target framework, or when its modifiers or generic constraints differ.
+
 ## Memory safety rules
 
 For assemblies compiled with the updated memory safety rules (`<Features>$(Features);updated-memory-safety-rules</Features>`), the `unsafe` modifier reflects the members the compiler marked as requiring an unsafe context, whatever their signature. Pointers in a signature no longer imply `unsafe`, and delegate declarations are never `unsafe`. Generated files may therefore need the same feature to be compiled.

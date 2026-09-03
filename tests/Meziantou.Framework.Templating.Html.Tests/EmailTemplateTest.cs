@@ -195,6 +195,43 @@ public class EmailTemplateTest
         Assert.Equal("ABC", metadata.Title);
     }
     [Fact]
+    public void EmailTemplate_RunWithNamedParameters_MatchesArgumentsByName()
+    {
+        using var template = new HtmlEmailTemplate();
+        template.Load("{{@begin_section title}}Welcome{{@end_section}}: {{#html FirstName}} {{#html LastName}}");
+        template.Arguments.Add(new TemplateArgument("FirstName", typeof(string)));
+        template.Arguments.Add(new TemplateArgument("LastName", typeof(string)));
+
+        // Declared in the opposite order of the arguments, so a positional binding would swap them
+        var result = template.Run(out var metadata, new Dictionary<string, object?>
+        {
+            ["LastName"] = "Barr<e>",
+            ["FirstName"] = "G&rald",
+        });
+
+        Assert.Equal("Welcome: G&amp;rald Barr&lt;e&gt;", result);
+        Assert.NotNull(metadata);
+        Assert.Equal("Welcome", metadata.Title);
+    }
+
+    [Fact]
+    public void EmailTemplate_RunWithNamedParameters_KeepsTheComparerOfTheDictionary()
+    {
+        using var template = new HtmlEmailTemplate();
+        template.Load("{{#html FirstName}} {{#html LastName}}");
+        template.Arguments.Add(new TemplateArgument("FirstName", typeof(string)));
+        template.Arguments.Add(new TemplateArgument("LastName", typeof(string)));
+
+        var parameters = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["firstname"] = "Gerald",
+            ["lastname"] = "Barre",
+        };
+
+        Assert.Equal("Gerald Barre", template.Run(out _, parameters));
+    }
+
+    [Fact]
     public void EmailTemplate_SettingTheOutputType_CompilesEveryBlockWithoutDynamic()
     {
         using var template = new HtmlEmailTemplate { OutputType = typeof(HtmlEmailOutput) };

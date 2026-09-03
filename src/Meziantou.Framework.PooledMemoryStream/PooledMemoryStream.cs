@@ -19,6 +19,12 @@ namespace Meziantou.Framework;
 /// returned by the <see cref="IBufferWriter{T}"/> members) are owned by the stream and are returned to the pool when
 /// the stream is disposed. Accessing them after the stream is disposed is undefined behavior.
 /// </para>
+/// <para>
+/// Because the storage is a chain of blocks rather than one array, the stream is not bounded by
+/// <see cref="Array.MaxLength"/>: it can hold as many bytes as memory allows. The members that have to materialize
+/// the contents as a single array (<see cref="ToArray"/>, <see cref="GetBuffer"/> and <see cref="TryGetBuffer"/>)
+/// are still bounded by it and throw an <see cref="InvalidOperationException"/> on a longer stream.
+/// </para>
 /// <para>This type is not thread-safe; the shared pool is.</para>
 /// </remarks>
 public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
@@ -104,7 +110,6 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         {
             EnsureOpen();
             ArgumentOutOfRangeException.ThrowIfNegative(value);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, Array.MaxLength);
 
             _position = value;
         }
@@ -117,8 +122,9 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         {
             EnsureOpen();
 
-            // _capacity is a long and can exceed int.MaxValue by up to one block on a stream near Array.MaxLength.
-            // Clamp rather than wrap to a negative value; a getter that throws would be worse.
+            // _capacity is a long and the stream is not bounded by Array.MaxLength, so the capacity can exceed the
+            // range of this int property. Clamp rather than wrap to a negative value; a getter that throws would be
+            // worse.
             return _capacity > int.MaxValue ? int.MaxValue : (int)_capacity;
         }
         set
@@ -152,20 +158,23 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     public override long Seek(long offset, SeekOrigin loc)
     {
         EnsureOpen();
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, Array.MaxLength);
 
-        var newPosition = loc switch
+        var origin = loc switch
         {
-            SeekOrigin.Begin => offset,
-            SeekOrigin.Current => _position + offset,
-            SeekOrigin.End => _length + offset,
+            SeekOrigin.Begin => 0L,
+            SeekOrigin.Current => _position,
+            SeekOrigin.End => _length,
             _ => throw new ArgumentException("Invalid seek origin.", nameof(loc)),
         };
 
+        // The position is not bounded by Array.MaxLength, so the only limit left is the range of Int64. The origin is
+        // never negative, so only a positive offset can overflow.
+        if (offset > 0 && origin > long.MaxValue - offset)
+            throw new ArgumentOutOfRangeException(nameof(offset), offset, "The resulting position would be greater than Int64.MaxValue.");
+
+        var newPosition = origin + offset;
         if (newPosition < 0)
             throw new IOException("An attempt was made to move the position before the beginning of the stream.");
-
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(newPosition, Array.MaxLength, nameof(offset));
 
         _position = newPosition;
         return newPosition;
@@ -176,7 +185,6 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     {
         EnsureOpen();
         ArgumentOutOfRangeException.ThrowIfNegative(value);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(value, Array.MaxLength);
 
         if (value > _length)
         {
@@ -257,7 +265,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         EnsureOpen();
         if (_position == _length)
         {
-            if (_length + 1 > Array.MaxLength)
+            if (_length == long.MaxValue)
                 throw new IOException("Stream was too long.");
 
             var index = EnsureAppendCapacity();
@@ -391,9 +399,11 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     }
 
     /// <summary>Returns a new array containing the contents of the stream.</summary>
+    /// <exception cref="InvalidOperationException">The stream is longer than <see cref="Array.MaxLength"/>.</exception>
     public override byte[] ToArray()
     {
         EnsureOpen();
+        ThrowIfLongerThanAnArray();
         var result = GC.AllocateUninitializedArray<byte>((int)_length);
         CopyAllTo(result);
         return result;
@@ -404,6 +414,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     /// larger than <see cref="Length"/>; only the first <see cref="Length"/> bytes are valid. The array is owned by
     /// the stream and is returned to the pool when the stream is disposed.
     /// </summary>
+    /// <exception cref="InvalidOperationException">The stream is longer than <see cref="Array.MaxLength"/>.</exception>
     public override byte[] GetBuffer()
     {
         EnsureOpen();
@@ -411,6 +422,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     }
 
     /// <inheritdoc />
+    /// <exception cref="InvalidOperationException">The stream is longer than <see cref="Array.MaxLength"/>.</exception>
     public override bool TryGetBuffer(out ArraySegment<byte> buffer)
     {
         EnsureOpen();
@@ -430,7 +442,8 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         if (_segments.Count == 0 || count > _segments[^1].Array.Length - _segments[^1].Used)
             throw new InvalidOperationException("Cannot advance past the end of the reserved buffer.");
 
-        if (_length + count > Array.MaxLength)
+        // Subtract rather than add: _length + count can overflow long on a stream near Int64.MaxValue.
+        if (_length > long.MaxValue - count)
             throw new IOException("Stream was too long.");
 
         CollectionsMarshal.AsSpan(_segments)[_segments.Count - 1].Used += count;
@@ -509,7 +522,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
             return;
 
         // Subtract rather than add: _position + source.Length can overflow long for a far-out position.
-        if (_position > Array.MaxLength - source.Length)
+        if (_position > long.MaxValue - source.Length)
             throw new IOException("Stream was too long.");
 
         if (_position > _length)
@@ -670,6 +683,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
     private byte[] Consolidate()
     {
+        ThrowIfLongerThanAnArray();
         if (_length == 0)
             return Array.Empty<byte>();
 
@@ -758,6 +772,13 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     {
         _cursorIndex = 0;
         _cursorStart = 0;
+    }
+
+    // The stream itself is not bounded by Array.MaxLength, but the members handing back a single byte[] are.
+    private void ThrowIfLongerThanAnArray()
+    {
+        if (_length > Array.MaxLength)
+            throw new InvalidOperationException("The stream is longer than Array.MaxLength and cannot be represented as a single array.");
     }
 
     private void EnsureOpen()

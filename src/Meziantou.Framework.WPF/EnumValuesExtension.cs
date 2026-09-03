@@ -30,8 +30,11 @@ public sealed class EnumValuesExtension : MarkupExtension
     /// <summary>Returns the enum values.</summary>
     public override object ProvideValue(IServiceProvider serviceProvider)
     {
-        if (EnumType == null)
+        if (EnumType is null)
             throw new InvalidOperationException("The enum type is not set");
+
+        if (!EnumType.IsEnum)
+            throw new InvalidOperationException($"'{EnumType}' is not an enum type");
 
         return Enum.GetValues(EnumType);
     }

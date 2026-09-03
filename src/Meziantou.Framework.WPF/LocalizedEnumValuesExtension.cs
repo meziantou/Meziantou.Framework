@@ -32,8 +32,11 @@ public sealed class LocalizedEnumValuesExtension : MarkupExtension
     /// <summary>Returns the localized enum values.</summary>
     public override object ProvideValue(IServiceProvider serviceProvider)
     {
-        if (EnumType == null)
+        if (EnumType is null)
             throw new InvalidOperationException("The enum type is not set");
+
+        if (!EnumType.IsEnum)
+            throw new InvalidOperationException($"'{EnumType}' is not an enum type");
 
         return EnumLocalizationUtilities.GetEnumLocalization(EnumType);
     }

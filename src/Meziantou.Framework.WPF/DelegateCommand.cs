@@ -63,6 +63,12 @@ public static class DelegateCommand
     /// <summary>Creates an asynchronous command that executes the specified task.</summary>
     /// <param name="execute">The task to execute when the command is invoked.</param>
     /// <returns>A new <see cref="IDelegateCommand"/> instance.</returns>
+    /// <remarks>
+    /// Execution is fire-and-forget: if the task faults, the exception is rethrown on the dispatcher and cannot be
+    /// caught by the caller. Handle it inside <paramref name="execute"/>, or subscribe to
+    /// <see cref="System.Windows.Application.DispatcherUnhandledException"/>. The command reports
+    /// <see cref="System.Windows.Input.ICommand.CanExecute(object)"/> as <see langword="false"/> while the task runs.
+    /// </remarks>
     public static IDelegateCommand Create(Func<Task>? execute)
     {
         return new AsyncDelegateCommand(WrapAction(execute), CanExecuteTrue);
@@ -71,6 +77,12 @@ public static class DelegateCommand
     /// <summary>Creates an asynchronous command that executes the specified task with a parameter.</summary>
     /// <param name="execute">The task to execute when the command is invoked.</param>
     /// <returns>A new <see cref="IDelegateCommand"/> instance.</returns>
+    /// <remarks>
+    /// Execution is fire-and-forget: if the task faults, the exception is rethrown on the dispatcher and cannot be
+    /// caught by the caller. Handle it inside <paramref name="execute"/>, or subscribe to
+    /// <see cref="System.Windows.Application.DispatcherUnhandledException"/>. The command reports
+    /// <see cref="System.Windows.Input.ICommand.CanExecute(object)"/> as <see langword="false"/> while the task runs.
+    /// </remarks>
     public static IDelegateCommand Create(Func<object?, Task>? execute)
     {
         return new AsyncDelegateCommand(execute ?? DefaultExecuteAsync, CanExecuteTrue);
@@ -80,6 +92,13 @@ public static class DelegateCommand
     /// <param name="execute">The task to execute when the command is invoked.</param>
     /// <param name="canExecute">The function that determines if the command can execute.</param>
     /// <returns>A new <see cref="IDelegateCommand"/> instance.</returns>
+    /// <remarks>
+    /// Execution is fire-and-forget: if the task faults, the exception is rethrown on the dispatcher and cannot be
+    /// caught by the caller. Handle it inside <paramref name="execute"/>, or subscribe to
+    /// <see cref="System.Windows.Application.DispatcherUnhandledException"/>. The command reports
+    /// <see cref="System.Windows.Input.ICommand.CanExecute(object)"/> as <see langword="false"/> while the task runs,
+    /// regardless of <paramref name="canExecute"/>.
+    /// </remarks>
     public static IDelegateCommand Create(Func<Task>? execute, Func<bool>? canExecute)
     {
         return new AsyncDelegateCommand(WrapAction(execute), WrapAction(canExecute));
@@ -89,6 +108,13 @@ public static class DelegateCommand
     /// <param name="execute">The task to execute when the command is invoked.</param>
     /// <param name="canExecute">The function that determines if the command can execute.</param>
     /// <returns>A new <see cref="IDelegateCommand"/> instance.</returns>
+    /// <remarks>
+    /// Execution is fire-and-forget: if the task faults, the exception is rethrown on the dispatcher and cannot be
+    /// caught by the caller. Handle it inside <paramref name="execute"/>, or subscribe to
+    /// <see cref="System.Windows.Application.DispatcherUnhandledException"/>. The command reports
+    /// <see cref="System.Windows.Input.ICommand.CanExecute(object)"/> as <see langword="false"/> while the task runs,
+    /// regardless of <paramref name="canExecute"/>.
+    /// </remarks>
     public static IDelegateCommand Create(Func<object?, Task>? execute, Func<object?, bool>? canExecute)
     {
         return new AsyncDelegateCommand(execute ?? DefaultExecuteAsync, canExecute ?? CanExecuteTrue);

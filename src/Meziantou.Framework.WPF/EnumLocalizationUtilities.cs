@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Meziantou.Framework.WPF;
@@ -9,13 +8,6 @@ namespace Meziantou.Framework.WPF;
 internal static class EnumLocalizationUtilities
 {
     private static readonly ConcurrentDictionary<Type, LocalizedEnumValueCollection> EnumsCache = new();
-    private static readonly ConcurrentDictionary<Expression, string?> PropertiesCache = new();
-
-    public static LocalizedEnumValueCollection GetEnumLocalization<T>()
-        where T : struct
-    {
-        return GetEnumLocalization(typeof(T));
-    }
 
     public static LocalizedEnumValueCollection GetEnumLocalization(Type type)
     {
@@ -46,23 +38,5 @@ internal static class EnumLocalizationUtilities
         }
 
         return new LocalizedEnumValueCollection(result);
-    }
-
-    public static string? GetPropertyLocalization<T>(Expression<Func<T>> exp)
-    {
-        return PropertiesCache.GetOrAdd(exp, CreatePropertyLocalization);
-    }
-
-    private static string? CreatePropertyLocalization(Expression expression)
-    {
-        var memberExpression = (MemberExpression)((LambdaExpression)expression).Body;
-        var displayAttribute = memberExpression.Member.GetCustomAttribute<DisplayAttribute>();
-        return displayAttribute?.GetName() ?? memberExpression.Member.Name;
-    }
-
-    public static string GetEnumMemberLocalization(Enum value)
-    {
-        var localizedValueCollection = GetEnumLocalization(value.GetType());
-        return localizedValueCollection[value].Name;
     }
 }

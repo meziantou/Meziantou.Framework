@@ -125,41 +125,65 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
-    public void Position_AboveArrayMaxLength_Throws()
+    public void Position_AboveArrayMaxLength_IsAllowed()
     {
+        // The storage is a chain of blocks, so the stream is not bounded by the length of a single array.
         using var stream = new PooledMemoryStream();
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = (long)Array.MaxLength + 1);
-        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = long.MaxValue);
-        Assert.Equal(0, stream.Position);
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = -1);
 
-        stream.Position = Array.MaxLength;
-        Assert.Equal(Array.MaxLength, stream.Position);
+        stream.Position = (long)Array.MaxLength + 1;
+        Assert.Equal((long)Array.MaxLength + 1, stream.Position);
+
+        stream.Position = long.MaxValue;
+        Assert.Equal(long.MaxValue, stream.Position);
     }
 
     [Fact]
-    public void Seek_AboveArrayMaxLength_Throws()
+    public void Seek_AboveArrayMaxLength_IsAllowed()
     {
         using var stream = new PooledMemoryStream();
         stream.Write(CreateData(100));
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(long.MaxValue, SeekOrigin.Begin));
-        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek((long)Array.MaxLength + 1, SeekOrigin.Begin));
-        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(Array.MaxLength, SeekOrigin.End));
+        Assert.Equal(long.MaxValue, stream.Seek(long.MaxValue, SeekOrigin.Begin));
+        Assert.Equal((long)Array.MaxLength + 1, stream.Seek((long)Array.MaxLength + 1, SeekOrigin.Begin));
+        Assert.Equal(Array.MaxLength + 100L, stream.Seek(Array.MaxLength, SeekOrigin.End));
+    }
+
+    [Fact]
+    public void Seek_PastInt64MaxValue_Throws()
+    {
+        using var stream = new PooledMemoryStream();
+        stream.Write(CreateData(100));
+
+        stream.Position = long.MaxValue - 10;
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(11, SeekOrigin.Current));
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(long.MaxValue, SeekOrigin.End));
+        Assert.Equal(long.MaxValue - 10, stream.Position);
+    }
+
+    [Fact]
+    public void SetLength_AboveArrayMaxLength_IsNotRejected()
+    {
+        // The length is only validated against the range of Int64; the actual allocation is what bounds the stream.
+        using var stream = new PooledMemoryStream();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => stream.SetLength(-1));
+        Assert.Equal(0, stream.Length);
     }
 
     [Fact]
     public void WriteAtFarPosition_Throws_InsteadOfAllocatingForever()
     {
-        // Regression: Position was unbounded and WriteCore guarded with "_position + count > Array.MaxLength",
-        // which overflows to a negative value near long.MaxValue. The guard passed and the write fell into an
-        // unbounded zero-fill loop that never returned.
+        // Regression: WriteCore guarded with "_position + count > limit", which overflows to a negative value near
+        // long.MaxValue. The guard passed and the write fell into an unbounded zero-fill loop that never returned.
         using var stream = new PooledMemoryStream();
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = long.MaxValue);
-
-        stream.Position = Array.MaxLength;
+        stream.Position = long.MaxValue;
         Assert.Throws<IOException>(() => stream.WriteByte(1));
+        Assert.Throws<IOException>(() => stream.Write(CreateData(10)));
+
+        stream.Position = long.MaxValue - 5;
         Assert.Throws<IOException>(() => stream.Write(CreateData(10)));
     }
 

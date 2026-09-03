@@ -103,7 +103,7 @@ public sealed record SnapshotSettings
         ];
         Comparers = new SnapshotComparerCollection();
         Comparers.Set(SnapshotType.None, ByteArraySnapshotComparer.Instance);
-        Scrubbers = [];
+        Scrubbers = new CopyOnWriteList<Scrubber>();
         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
         AssertionExceptionCreator = AssertionExceptionBuilder.Default;
         MaxSnapshotFileNameLength = 128;
@@ -117,11 +117,7 @@ public sealed record SnapshotSettings
         ArgumentNullException.ThrowIfNull(options);
         Serializers = new SnapshotSerializerCollection(options.Serializers);
         Comparers = new SnapshotComparerCollection(options.Comparers);
-        Scrubbers = [];
-        foreach (var scrubber in options.Scrubbers)
-        {
-            Scrubbers.Add(scrubber);
-        }
+        Scrubbers = new CopyOnWriteList<Scrubber>(options.Scrubbers);
 
         AutoDetectContinuousEnvironment = options.AutoDetectContinuousEnvironment;
         ForceUpdateSnapshots = options.ForceUpdateSnapshots;

@@ -1501,6 +1501,162 @@ public sealed partial class SnapshotTests
         }
     }
 
+    [Fact]
+    public void Serializers_TheLastRegisteredSerializerWins()
+    {
+        var settings = new SnapshotSettings();
+        settings.Serializers.Add(new FixedSnapshotSerializer("first"));
+        settings.Serializers.Add(new FixedSnapshotSerializer("second"));
+
+        var data = Assert.Single(settings.Serializers.Serialize(SnapshotType.None, new SerializerProbe()).Data);
+        Assert.Equal("second", Encoding.UTF8.GetString(data.Data));
+    }
+
+    [Fact]
+    public void ConfigureHumanReadableSerializer_ReplacesTheSerializerInPlace()
+    {
+        var settings = new SnapshotSettings();
+        var initialCount = settings.Serializers.Count;
+        var initialOrder = settings.Serializers.Select(serializer => serializer.GetType()).ToList();
+
+        settings.ConfigureHumanReadableSerializer(options => options.MaxDepth = 3);
+
+        Assert.Equal(initialCount, settings.Serializers.Count);
+        Assert.Equal(initialOrder, settings.Serializers.Select(serializer => serializer.GetType()).ToList());
+        Assert.Equal(3, settings.Serializers.OfType<HumanReadableSnapshotSerializer>().Single().Options.MaxDepth);
+    }
+
+    [Fact]
+    public void Serializers_SerializeIsNotBrokenByAConcurrentRegistration()
+    {
+        var settings = new SnapshotSettings();
+        RunConcurrently(
+            writer: () =>
+            {
+                var serializer = new NeverMatchingSnapshotSerializer();
+                settings.Serializers.Add(serializer);
+                settings.Serializers.Remove(serializer);
+                settings.ConfigureHumanReadableSerializer(options => options.MaxDepth = 32);
+            },
+            reader: () => settings.Serializers.Serialize(SnapshotType.None, new { A = 1 }));
+    }
+
+    [Fact]
+    public void Comparers_GetIsNotBrokenByAConcurrentRegistration()
+    {
+        var settings = new SnapshotSettings();
+        RunConcurrently(
+            writer: () =>
+            {
+                settings.Comparers.Set(SnapshotType.Png, ByteArraySnapshotComparer.Instance);
+                settings.Comparers.Remove(SnapshotType.Png);
+            },
+            reader: () =>
+            {
+                _ = settings.Comparers.Get(SnapshotType.Png);
+                _ = settings.Comparers.ToList();
+            });
+    }
+
+    [Fact]
+    public void Scrubbers_EnumerationIsNotBrokenByAConcurrentRegistration()
+    {
+        var settings = new SnapshotSettings();
+        var scrubber = new LineFilterScrubber(_ => false);
+        RunConcurrently(
+            writer: () =>
+            {
+                settings.Scrubbers.Add(scrubber);
+                settings.Scrubbers.Remove(scrubber);
+            },
+            reader: () =>
+            {
+                foreach (var item in settings.Scrubbers)
+                {
+                    _ = item;
+                }
+            });
+    }
+
+    [Fact]
+    public void Scrubbers_SupportTheFullListContract()
+    {
+        var settings = new SnapshotSettings();
+        var first = new LineFilterScrubber(_ => false);
+        var second = new LineFilterScrubber(_ => true);
+
+        settings.Scrubbers.Add(first);
+        settings.Scrubbers.Insert(0, second);
+        Assert.Equal([second, first], settings.Scrubbers);
+        Assert.Equal(0, settings.Scrubbers.IndexOf(second));
+        Assert.True(settings.Scrubbers.Contains(first));
+
+        settings.Scrubbers[0] = first;
+        Assert.Equal([first, first], settings.Scrubbers);
+
+        settings.Scrubbers.RemoveAt(0);
+        Assert.Equal([first], settings.Scrubbers);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => settings.Scrubbers.RemoveAt(1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => settings.Scrubbers.Insert(2, first));
+
+        settings.Scrubbers.Clear();
+        Assert.Empty(settings.Scrubbers);
+    }
+
+    /// <summary>Runs <paramref name="reader"/> on the current thread while <paramref name="writer"/> keeps mutating the same settings.</summary>
+    private static void RunConcurrently(Action writer, Action reader)
+    {
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var writerTask = Task.Run(() =>
+        {
+            while (!cancellationTokenSource.IsCancellationRequested)
+            {
+                writer();
+            }
+        });
+
+        try
+        {
+            for (var i = 0; i < 20_000; i++)
+            {
+                reader();
+            }
+        }
+        finally
+        {
+            cancellationTokenSource.Cancel();
+        }
+
+        writerTask.GetAwaiter().GetResult();
+    }
+
+    private sealed class SerializerProbe;
+
+    private sealed class NeverMatchingSnapshotSerializer : ISnapshotSerializer
+    {
+        public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
+        {
+            result = null;
+            return false;
+        }
+    }
+
+    private sealed class FixedSnapshotSerializer(string content) : ISnapshotSerializer
+    {
+        public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
+        {
+            if (value is not SerializerProbe)
+            {
+                result = null;
+                return false;
+            }
+
+            result = new SerializedSnapshot([new SnapshotData("txt", Encoding.UTF8.GetBytes(content))]);
+            return true;
+        }
+    }
+
     [GeneratedRegex("^[A-Za-z0-9._-]+_2\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex SnapshotNameWithIndexRegex();
 

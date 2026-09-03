@@ -12,6 +12,7 @@ A powerful and flexible .NET template engine that allows you to create text temp
 - **Using directives** - Import namespaces and types for use in templates
 - **Class member blocks** - Add methods, fields, and properties to the generated template class
 - **Debug support** - Generate debug symbols for template debugging
+- **Unloadable** - Dispose a template to unload the assembly it was compiled into
 
 ## Usage
 
@@ -203,7 +204,7 @@ var result = template.Run();
 
 ### Dynamic Parameters
 
-Use dynamic parameters when types are not known at compile time:
+Use dynamic parameters when types are not known at compile time. Note that a template using `dynamic` can never be unloaded, see [Memory Usage](#memory-usage):
 
 ```csharp
 var template = new Template();
@@ -268,6 +269,32 @@ The default template syntax uses `<%` and `%>` delimiters:
 | `<% statement %>` | Executes a C# statement | `<% var x = 10; %>` |
 | `<%+ member %>` | Declares a class member in the generated template class | `<%+private static int Get() => 42; %>` |
 | Text | Any text outside code blocks is written as-is | `Hello World` |
+
+## Memory Usage
+
+Building a template compiles it into an assembly, which is loaded in a collectible `AssemblyLoadContext` owned by the template. Dispose the template to unload that assembly; otherwise it is unloaded once the template becomes unreachable and the garbage collector runs. A disposed template cannot be built or run again.
+
+```csharp
+using var template = new Template { OutputType = typeof(Output) };
+template.Load("Hello <%=Name%>!");
+template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+var result = template.Run("Meziantou");
+```
+
+This matters for processes that compile many templates, such as a server that compiles one template per tenant, per file, or on every file change. A one-shot process does not need to dispose anything.
+
+> [!IMPORTANT]
+> A template that uses `dynamic` is **never** unloaded, even when disposed. Executing a dynamic call site registers the type that contains it in a process-wide cache held by the C# runtime binder, and that cache keeps the generated assembly alive for the lifetime of the process.
+>
+> A template uses `dynamic` when `OutputType` is `null` (the default), when a `TemplateArgument` is declared without a type, or when its code blocks use `dynamic` themselves. Set `OutputType` and give every argument a type to get an unloadable template:
+>
+> ```csharp
+> using var template = new Template { OutputType = typeof(Output) };
+> template.Load("Hello <%=Name%>!");
+> template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+> ```
+>
+> Declaring the types is worth it on its own: the template binds its calls at compile time, so it runs faster and reports errors when it is built instead of when it is run.
 
 ## Error Handling
 

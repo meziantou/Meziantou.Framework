@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.Loader;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -7,16 +8,22 @@ using Microsoft.CodeAnalysis.Text;
 namespace Meziantou.Framework.Templating;
 
 /// <summary>Represents a text template with embedded code blocks that can be dynamically compiled and executed.</summary>
+/// <remarks>
+/// Building a template compiles it into an assembly that is loaded in a dedicated collectible
+/// <see cref="AssemblyLoadContext"/>. Dispose the template to unload that assembly as soon as the
+/// template is no longer needed; otherwise it is unloaded once the template becomes unreachable and
+/// the garbage collector runs.
+/// </remarks>
 /// <example>
 /// <code><![CDATA[
-/// var template = new Template();
+/// using var template = new Template();
 /// template.Load("Hello <%=Name%>!");
 /// template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 /// var result = template.Run("Meziantou");
 /// // result: "Hello Meziantou!"
 /// ]]></code>
 /// </example>
-public class Template
+public class Template : IDisposable
 {
     private const string DefaultClassName = "Template";
     private const string DefaultRunMethodName = "Run";
@@ -25,6 +32,8 @@ public class Template
     private readonly Lock _buildLock = new();
 
     private MethodInfo? _runMethodInfo;
+    private AssemblyLoadContext? _assemblyLoadContext;
+    private bool _disposed;
 
     [NotNull]
     private string? ClassName
@@ -437,13 +446,18 @@ public class Template
 
     /// <summary>Compiles the template into executable code.</summary>
     /// <param name="cancellationToken">A cancellation token to observe.</param>
+    /// <exception cref="ObjectDisposedException">The template is disposed.</exception>
     public void Build(CancellationToken cancellationToken)
     {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed), this);
+
         if (IsBuilt)
             return;
 
         lock (_buildLock)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
             if (IsBuilt)
                 return;
 
@@ -824,13 +838,32 @@ public class Template
         Volatile.Write(ref _runMethodInfo, runMethodInfo);
     }
 
+    /// <summary>Creates the load context the compiled template is loaded into.</summary>
+    /// <returns>A new load context. It should be collectible, otherwise the compiled template can never be unloaded.</returns>
+    protected virtual AssemblyLoadContext CreateAssemblyLoadContext()
+    {
+        return new AssemblyLoadContext(GetAssemblyLoadContextName(), isCollectible: true);
+    }
+
+    private string GetAssemblyLoadContextName()
+    {
+        var name = "Meziantou.Framework.Templating." + ClassName;
+        return SourceFileName is null ? name : name + " (" + SourceFileName + ")";
+    }
+
     /// <summary>Loads an assembly from memory streams.</summary>
     /// <param name="peStream">The stream containing the assembly.</param>
     /// <param name="pdbStream">The stream containing debug symbols.</param>
     /// <returns>The loaded assembly.</returns>
+    /// <remarks>
+    /// The assembly is loaded in the load context created by <see cref="CreateAssemblyLoadContext"/>, so that
+    /// <see cref="Dispose()"/> can unload it. Loading it in the default context instead, for instance with
+    /// <see cref="Assembly.Load(byte[], byte[])"/>, keeps it in memory for the lifetime of the process.
+    /// </remarks>
     protected virtual Assembly LoadAssembly(MemoryStream peStream, MemoryStream pdbStream)
     {
-        return Assembly.Load(peStream.ToArray(), pdbStream.ToArray());
+        var loadContext = _assemblyLoadContext ??= CreateAssemblyLoadContext();
+        return loadContext.LoadFromStream(peStream, pdbStream);
     }
 
     /// <summary>Finds the Run method in the compiled assembly.</summary>
@@ -982,5 +1015,41 @@ public class Template
         }
 
         Volatile.Read(ref _runMethodInfo)!.Invoke(null, p);
+    }
+
+    /// <summary>Unloads the assembly the template was compiled into.</summary>
+    /// <remarks>
+    /// The assembly is unloaded once nothing references it anymore, which includes any object the
+    /// template created. A disposed template cannot be built or run again.
+    /// </remarks>
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Releases the resources used by the template.</summary>
+    /// <param name="disposing"><see langword="true"/> when called from <see cref="Dispose()"/>.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposing)
+            return;
+
+        // Take the build lock so the assembly is not unloaded while a concurrent build is loading it.
+        lock (_buildLock)
+        {
+            if (_disposed)
+                return;
+
+            Volatile.Write(ref _runMethodInfo, null);
+            Volatile.Write(ref _disposed, true);
+
+            var loadContext = _assemblyLoadContext;
+            _assemblyLoadContext = null;
+            if (loadContext?.IsCollectible is true)
+            {
+                loadContext.Unload();
+            }
+        }
     }
 }

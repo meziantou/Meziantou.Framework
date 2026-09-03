@@ -1,3 +1,5 @@
+using Meziantou.Framework.MediaTags.Internals;
+
 namespace Meziantou.Framework.MediaTags.Formats.Flac;
 
 internal sealed class FlacReader : IMediaTagReader
@@ -32,8 +34,7 @@ internal sealed class FlacReader : IMediaTagReader
                 if (blockType == FlacMetadataBlock.StreamInfo)
                 {
                     // STREAMINFO is always 34 bytes
-                    var blockData = new byte[blockSize];
-                    if (stream.ReadAtLeast(blockData, blockSize, throwOnEndOfStream: false) < blockSize)
+                    if (!StreamHelpers.TryReadExact(stream, blockSize, FlacMetadataBlock.MaxSize, out var blockData))
                         break;
 
                     if (blockSize >= 18)
@@ -55,16 +56,14 @@ internal sealed class FlacReader : IMediaTagReader
                 }
                 else if (blockType == FlacMetadataBlock.VorbisCommentType)
                 {
-                    var blockData = new byte[blockSize];
-                    if (stream.ReadAtLeast(blockData, blockSize, throwOnEndOfStream: false) < blockSize)
+                    if (!StreamHelpers.TryReadExact(stream, blockSize, FlacMetadataBlock.MaxSize, out var blockData))
                         break;
 
                     VorbisComment.VorbisCommentReader.TryParse(blockData, tags);
                 }
                 else if (blockType == FlacMetadataBlock.Picture)
                 {
-                    var blockData = new byte[blockSize];
-                    if (stream.ReadAtLeast(blockData, blockSize, throwOnEndOfStream: false) < blockSize)
+                    if (!StreamHelpers.TryReadExact(stream, blockSize, FlacMetadataBlock.MaxSize, out var blockData))
                         break;
 
                     FlacPictureBlock.TryParse(blockData, tags);
@@ -81,9 +80,9 @@ internal sealed class FlacReader : IMediaTagReader
 
             return MediaTagResult<MediaTagInfo>.Success(tags);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (MediaTagErrors.TryMap(ex, out var error))
         {
-            return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.CorruptFile, ex.Message);
+            return MediaTagResult<MediaTagInfo>.Failure(error, ex.Message);
         }
     }
 

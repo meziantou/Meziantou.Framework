@@ -99,4 +99,99 @@ public sealed class OggOpusTests
                 return true;
         }
     }
+
+    [Fact]
+    public void ReadTags_AllFieldsOpus()
+    {
+        var result = MediaFile.ReadTags(GetTestFilePath("all_fields.opus"));
+        Assert.True(result.IsSuccess);
+
+        var tags = result.Value;
+        Assert.Equal("All Fields Title", tags.Title);
+        Assert.Equal("All Fields Artist", tags.Artist);
+        Assert.Equal("All Fields Album", tags.Album);
+        Assert.Equal("All Fields Album Artist", tags.AlbumArtist);
+        Assert.Equal("Electronic", tags.Genre);
+        Assert.Equal(2023, tags.Year);
+        Assert.Equal(5, tags.TrackNumber);
+        Assert.Equal(12, tags.TrackTotal);
+        Assert.Equal(2, tags.DiscNumber);
+        Assert.Equal(3, tags.DiscTotal);
+        Assert.Equal("All Fields Composer", tags.Composer);
+        Assert.Equal("All Fields Comment", tags.Comment);
+    }
+
+    [Fact]
+    public void ReadTags_UnicodeOpus()
+    {
+        var result = MediaFile.ReadTags(GetTestFilePath("unicode.opus"));
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Ünïcödé Títlé", result.Value.Title);
+        Assert.Equal("Àrtïst 日本語", result.Value.Artist);
+    }
+
+    [Fact]
+    public void ReadTags_EmptyOpus()
+    {
+        var result = MediaFile.ReadTags(GetTestFilePath("empty.opus"));
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.Title);
+        Assert.Null(result.Value.Artist);
+    }
+
+    [Fact]
+    public void WriteTags_CommentPacketHasNoFramingBit()
+    {
+        // An OpusTags packet ends at its last comment; a Vorbis framing bit here would be read as tag data.
+        var tempFile = Path.GetTempFileName() + ".opus";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.opus"), tempFile, overwrite: true);
+
+            Assert.True(MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Opus Title" }).IsSuccess);
+
+            var packet = OggPageInspector.FindPacket(File.ReadAllBytes(tempFile), "OpusTags"u8);
+            Assert.NotNull(packet);
+            Assert.NotEqual(0x01, packet[^1]);
+            Assert.Equal("Opus Title", MediaFile.ReadTags(tempFile).Value.Title);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void WriteTags_EveryOutputPageHasTheChecksumItDeclares()
+    {
+        var tempFile = Path.GetTempFileName() + ".opus";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.opus"), tempFile, overwrite: true);
+
+            Assert.True(MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Checksummed" }).IsSuccess);
+
+            var pages = OggPageInspector.ReadPages(File.ReadAllBytes(tempFile));
+            Assert.NotEmpty(pages);
+            foreach (var page in pages)
+            {
+                Assert.Equal(page.StoredChecksum, Meziantou.Framework.MediaTags.Internals.OggCrc32.Compute(page.BytesWithZeroedChecksum));
+            }
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void ReadTags_NotAnOggFile_ReturnsSuccessWithNoTags()
+    {
+        using var stream = new MemoryStream([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]);
+
+        var result = MediaFile.ReadTags(stream, MediaFormat.OggOpus);
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.Title);
+    }
 }

@@ -111,14 +111,16 @@ public sealed class OggVorbisTests
             var tags = new MediaTagInfo { Title = "Idempotent" };
 
             // Write once
-            MediaFile.WriteTags(tempFile, tags);
+            Assert.True(MediaFile.WriteTags(tempFile, tags).IsSuccess);
             var firstRead = MediaFile.ReadTags(tempFile);
 
             // Write again
-            MediaFile.WriteTags(tempFile, tags);
+            Assert.True(MediaFile.WriteTags(tempFile, tags).IsSuccess);
             var secondRead = MediaFile.ReadTags(tempFile);
 
-            Assert.Equal(firstRead.Value.Title, secondRead.Value.Title);
+            // Comparing the two reads alone would pass if the writer dropped the title entirely
+            Assert.Equal("Idempotent", firstRead.Value.Title);
+            Assert.Equal("Idempotent", secondRead.Value.Title);
         }
         finally
         {
@@ -169,5 +171,132 @@ public sealed class OggVorbisTests
             if ((page.HeaderType & OggPage.HeaderTypeContinued) != 0)
                 return true;
         }
+    }
+
+    [Fact]
+    public void WriteTags_CommentPacketEndsWithTheFramingBit()
+    {
+        // libvorbis rejects the whole comment header when the framing bit is missing, so a file written
+        // without it is refused by every libvorbis-based player even though this library reads it back.
+        var tempFile = Path.GetTempFileName() + ".ogg";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.ogg"), tempFile, overwrite: true);
+
+            Assert.True(MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Framed" }).IsSuccess);
+
+            byte[] vorbisCommentPrefix = [0x03, (byte)'v', (byte)'o', (byte)'r', (byte)'b', (byte)'i', (byte)'s'];
+            var packet = OggPageInspector.FindPacket(File.ReadAllBytes(tempFile), vorbisCommentPrefix);
+            Assert.NotNull(packet);
+            Assert.Equal(0x01, packet[^1]);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void WriteTags_EveryOutputPageHasTheChecksumItDeclares()
+    {
+        var tempFile = Path.GetTempFileName() + ".ogg";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.ogg"), tempFile, overwrite: true);
+
+            Assert.True(MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Checksummed" }).IsSuccess);
+
+            var pages = OggPageInspector.ReadPages(File.ReadAllBytes(tempFile));
+            Assert.NotEmpty(pages);
+            foreach (var page in pages)
+            {
+                Assert.Equal(page.StoredChecksum, Meziantou.Framework.MediaTags.Internals.OggCrc32.Compute(page.BytesWithZeroedChecksum));
+            }
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void WriteTags_PageSequenceNumbersStayContiguous()
+    {
+        var tempFile = Path.GetTempFileName() + ".ogg";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.ogg"), tempFile, overwrite: true);
+
+            Assert.True(MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Sequenced" }).IsSuccess);
+
+            var pages = OggPageInspector.ReadPages(File.ReadAllBytes(tempFile));
+            for (var i = 0; i < pages.Count; i++)
+            {
+                Assert.Equal((uint)i, pages[i].SequenceNumber);
+            }
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void WriteTags_MultiplexedStream_IsRefused()
+    {
+        // Rewriting one stream of a multiplexed file would renumber the pages of the other one and leave a
+        // sequence hole in a stream this library was never asked to touch.
+        var tempFile = Path.GetTempFileName() + ".ogg";
+        try
+        {
+            var vorbis = File.ReadAllBytes(GetTestFilePath("basic.ogg"));
+            var opus = File.ReadAllBytes(GetTestFilePath("basic.opus"));
+            File.WriteAllBytes(tempFile, [.. vorbis, .. opus]);
+
+            var result = MediaFile.WriteTags(tempFile, new MediaTagInfo { Title = "Title" });
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(MediaTagError.UnsupportedFormat, result.Error);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void ReadTags_NotAnOggFile_ReturnsSuccessWithNoTags()
+    {
+        using var stream = new MemoryStream([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]);
+
+        var result = MediaFile.ReadTags(stream, MediaFormat.OggVorbis);
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.Title);
+    }
+
+    [Fact]
+    public void ReadTags_TruncatedPage_DoesNotAllocateTheDeclaredSize()
+    {
+        // A page whose segment table declares far more data than the file holds must not be believed.
+        var page = new byte[27 + 255];
+        "OggS"u8.CopyTo(page);
+        page[5] = 0x02; // begin of stream
+        page[26] = 255; // 255 segments...
+        for (var i = 0; i < 255; i++)
+        {
+            page[27 + i] = 255; // ...each declaring 255 bytes that are not there
+        }
+
+        using var stream = new MemoryStream(page);
+        MediaFile.ReadTags(stream, MediaFormat.OggVorbis);
+        stream.Position = 0;
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var result = MediaFile.ReadTags(stream, MediaFormat.OggVorbis);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.True(result.IsSuccess);
+        Assert.True(allocated < 1024 * 1024, $"Reading a {stream.Length} byte file allocated {allocated} bytes.");
     }
 }

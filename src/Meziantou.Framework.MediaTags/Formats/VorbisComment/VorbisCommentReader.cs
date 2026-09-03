@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.VorbisComment;
 
@@ -114,47 +115,10 @@ internal static class VorbisCommentReader
         }
         else if (string.Equals(fieldName, VorbisCommentFieldNames.Compilation, StringComparison.OrdinalIgnoreCase))
             tags.IsCompilation ??= value == "1";
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.ReplayGainTrackGain, StringComparison.OrdinalIgnoreCase))
-        {
-            if (TryParseReplayGainValue(value, out var gain))
-                tags.ReplayGain = (tags.ReplayGain ?? default) with { TrackGain = gain };
-        }
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.ReplayGainTrackPeak, StringComparison.OrdinalIgnoreCase))
-        {
-            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var peak))
-                tags.ReplayGain = (tags.ReplayGain ?? default) with { TrackPeak = peak };
-        }
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.ReplayGainAlbumGain, StringComparison.OrdinalIgnoreCase))
-        {
-            if (TryParseReplayGainValue(value, out var gain))
-                tags.ReplayGain = (tags.ReplayGain ?? default) with { AlbumGain = gain };
-        }
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.ReplayGainAlbumPeak, StringComparison.OrdinalIgnoreCase))
-        {
-            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var peak))
-                tags.ReplayGain = (tags.ReplayGain ?? default) with { AlbumPeak = peak };
-        }
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.MusicBrainzTrackId, StringComparison.OrdinalIgnoreCase))
-            tags.MusicBrainzTrackId ??= value;
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.MusicBrainzArtistId, StringComparison.OrdinalIgnoreCase))
-            tags.MusicBrainzArtistId ??= value;
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.MusicBrainzAlbumId, StringComparison.OrdinalIgnoreCase))
-            tags.MusicBrainzAlbumId ??= value;
-        else if (string.Equals(fieldName, VorbisCommentFieldNames.MusicBrainzReleaseGroupId, StringComparison.OrdinalIgnoreCase))
-            tags.MusicBrainzReleaseGroupId ??= value;
         else if (string.Equals(fieldName, VorbisCommentFieldNames.MetadataBlockPicture, StringComparison.OrdinalIgnoreCase))
             TryParseMetadataBlockPicture(value, tags);
-        else
+        else if (!TagFieldMapping.TryApplySharedField(fieldName, value, tags))
             tags.CustomFields.TryAdd(fieldName, value);
-    }
-
-    private static bool TryParseReplayGainValue(string value, out double result)
-    {
-        var trimmed = value.AsSpan().Trim();
-        if (trimmed.EndsWith(" dB", StringComparison.OrdinalIgnoreCase))
-            trimmed = trimmed[..^3].Trim();
-
-        return double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
     }
 
     private static void TryParseMetadataBlockPicture(string base64Value, MediaTagInfo tags)

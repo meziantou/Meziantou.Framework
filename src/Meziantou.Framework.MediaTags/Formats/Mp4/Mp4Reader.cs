@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.Mp4;
 
@@ -11,7 +12,9 @@ internal sealed class Mp4Reader : IMediaTagReader
             stream.Position = 0;
             var tags = new MediaTagInfo();
 
-            var atoms = Mp4Atom.ReadAtoms(stream, stream.Length);
+            // Reading is best effort: whatever atoms were parsed before a malformed one still carry usable
+            // tags, and unlike the writer nothing is destroyed by using them.
+            var atoms = Mp4Atom.ReadAtoms(stream, stream.Length, out _);
             tags.Duration = TryReadDuration(atoms);
 
             // Navigate to moov.udta.meta.ilst
@@ -26,9 +29,9 @@ internal sealed class Mp4Reader : IMediaTagReader
 
             return MediaTagResult<MediaTagInfo>.Success(tags);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (MediaTagErrors.TryMap(ex, out var error))
         {
-            return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.CorruptFile, ex.Message);
+            return MediaTagResult<MediaTagInfo>.Failure(error, ex.Message);
         }
     }
 
@@ -172,6 +175,9 @@ internal sealed class Mp4Reader : IMediaTagReader
             case ItunesAtomNames.Composer:
                 tags.Composer ??= ReadUtf8Value(valueData);
                 break;
+            case ItunesAtomNames.Conductor:
+                tags.Conductor ??= ReadUtf8Value(valueData);
+                break;
             case ItunesAtomNames.Comment:
                 tags.Comment ??= ReadUtf8Value(valueData);
                 break;
@@ -232,40 +238,10 @@ internal sealed class Mp4Reader : IMediaTagReader
 
         if (string.Equals(mean, "com.apple.iTunes", StringComparison.OrdinalIgnoreCase))
         {
-            if (string.Equals(name, "MusicBrainz Track Id", StringComparison.OrdinalIgnoreCase))
-                tags.MusicBrainzTrackId ??= value;
-            else if (string.Equals(name, "MusicBrainz Artist Id", StringComparison.OrdinalIgnoreCase))
-                tags.MusicBrainzArtistId ??= value;
-            else if (string.Equals(name, "MusicBrainz Album Id", StringComparison.OrdinalIgnoreCase))
-                tags.MusicBrainzAlbumId ??= value;
-            else if (string.Equals(name, "MusicBrainz Release Group Id", StringComparison.OrdinalIgnoreCase))
-                tags.MusicBrainzReleaseGroupId ??= value;
-            else if (string.Equals(name, "ISRC", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(name, "ISRC", StringComparison.OrdinalIgnoreCase))
                 tags.Isrc ??= value;
-            else if (string.Equals(name, "REPLAYGAIN_TRACK_GAIN", StringComparison.OrdinalIgnoreCase))
-            {
-                if (TryParseReplayGainValue(value, out var gain))
-                    tags.ReplayGain = (tags.ReplayGain ?? default) with { TrackGain = gain };
-            }
-            else if (string.Equals(name, "REPLAYGAIN_TRACK_PEAK", StringComparison.OrdinalIgnoreCase))
-            {
-                if (TryParseFloatingPointValue(value, out var peak))
-                    tags.ReplayGain = (tags.ReplayGain ?? default) with { TrackPeak = peak };
-            }
-            else if (string.Equals(name, "REPLAYGAIN_ALBUM_GAIN", StringComparison.OrdinalIgnoreCase))
-            {
-                if (TryParseReplayGainValue(value, out var gain))
-                    tags.ReplayGain = (tags.ReplayGain ?? default) with { AlbumGain = gain };
-            }
-            else if (string.Equals(name, "REPLAYGAIN_ALBUM_PEAK", StringComparison.OrdinalIgnoreCase))
-            {
-                if (TryParseFloatingPointValue(value, out var peak))
-                    tags.ReplayGain = (tags.ReplayGain ?? default) with { AlbumPeak = peak };
-            }
-            else
-            {
+            else if (!TagFieldMapping.TryApplySharedField(name, value, tags))
                 tags.CustomFields.TryAdd(name, value);
-            }
         }
         else
         {
@@ -297,24 +273,6 @@ internal sealed class Mp4Reader : IMediaTagReader
         };
 
         return TrimTrailingNullCharacters(text);
-    }
-
-    private static bool TryParseReplayGainValue(string value, out double result)
-    {
-        var trimmed = value.AsSpan().Trim();
-        if (trimmed.EndsWith(" dB", StringComparison.OrdinalIgnoreCase))
-            trimmed = trimmed[..^3].Trim();
-
-        return TryParseFloatingPointValue(trimmed, out result);
-    }
-
-    private static bool TryParseFloatingPointValue(ReadOnlySpan<char> value, out double result)
-    {
-        var trimmed = value.Trim();
-        if (double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out result))
-            return true;
-
-        return double.TryParse(trimmed.ToString().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out result);
     }
 
     private static string TrimTrailingNullCharacters(string value) => value.TrimEnd('\0');

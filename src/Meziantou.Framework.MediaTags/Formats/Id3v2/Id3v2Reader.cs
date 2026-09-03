@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Buffers.Binary;
 using Meziantou.Framework.MediaTags.Formats.Id3v1;
 using Meziantou.Framework.MediaTags.Internals;
@@ -32,25 +33,43 @@ internal static class Id3v2Reader
             return false;
         }
 
-        var tagData = new byte[header.TagSize];
-        if (stream.ReadAtLeast(tagData, header.TagSize, throwOnEndOfStream: false) < header.TagSize)
+        // An art-bearing tag is large enough to land on the large object heap, and it does not outlive this
+        // method, so the buffer is rented rather than allocated on every read.
+        var rented = ArrayPool<byte>.Shared.Rent(header.TagSize);
+        try
         {
-            stream.Position = originalPosition;
-            return false;
+            if (stream.ReadAtLeast(rented.AsSpan(0, header.TagSize), header.TagSize, throwOnEndOfStream: false) < header.TagSize)
+            {
+                stream.Position = originalPosition;
+                return false;
+            }
+
+            var tagData = rented.AsSpan(0, header.TagSize);
+
+            // Undo unsynchronisation if needed
+            ReadOnlySpan<byte> data = header.Unsynchronisation
+                ? tagData[..UndoUnsynchronisation(tagData)]
+                : tagData;
+
+            ReadFrames(data, header, tags);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(rented);
         }
 
-        // Undo unsynchronisation if needed
-        ReadOnlySpan<byte> data = header.Unsynchronisation
-            ? UndoUnsynchronisation(tagData)
-            : tagData;
+        return true;
+    }
 
+    private static void ReadFrames(ReadOnlySpan<byte> data, in Id3v2Header header, MediaTagInfo tags)
+    {
         var offset = 0;
 
         // Skip extended header if present
         if (header.ExtendedHeader)
         {
             if (data.Length < offset + 4)
-                return true;
+                return;
 
             int extHeaderSize;
             if (header.MajorVersion == 4)
@@ -78,29 +97,48 @@ internal static class Id3v2Reader
                     break;
             }
         }
-
-        return true;
     }
 
-    public static int GetTagSize(Stream stream)
+    /// <summary>
+    /// Gets the number of bytes the ID3v2 tag at the current position occupies, or 0 when there is none.
+    /// </summary>
+    /// <returns>
+    /// <see langword="false"/> when a tag header is present but its declared size runs past the end of the
+    /// stream. A writer must not treat those bytes as audio, and must not treat the tag as absent either: doing
+    /// the first drops the audio and doing the second embeds a stale tag in the audio stream.
+    /// </returns>
+    public static bool TryGetTagSize(Stream stream, out int tagSize)
     {
+        tagSize = 0;
+
         var originalPosition = stream.Position;
         Span<byte> headerBytes = stackalloc byte[10];
         if (stream.ReadAtLeast(headerBytes, 10, throwOnEndOfStream: false) < 10)
         {
             stream.Position = originalPosition;
-            return 0;
+            return true;
         }
 
         if (!Id3v2Header.TryParse(headerBytes, out var header))
         {
             stream.Position = originalPosition;
-            return 0;
+            return true;
         }
 
         stream.Position = originalPosition;
-        return 10 + header.TagSize + (header.FooterPresent ? 10 : 0);
+
+        var size = 10L + header.TagSize + (header.FooterPresent ? 10 : 0);
+        if (stream.CanSeek && size > stream.Length - originalPosition)
+            return false;
+
+        tagSize = (int)size;
+        return true;
     }
+
+    /// <summary>
+    /// Gets the size of the ID3v2 tag at the current position, treating an unusable declared size as no tag.
+    /// </summary>
+    public static int GetTagSize(Stream stream) => TryGetTagSize(stream, out var tagSize) ? tagSize : 0;
 
     private static bool TryReadFrameV22(ReadOnlySpan<byte> data, ref int offset, MediaTagInfo tags)
     {
@@ -120,6 +158,14 @@ internal static class Id3v2Reader
 
         var frameData = data.Slice(offset, frameSize);
         offset += frameSize;
+
+        // A v2.2 PIC frame carries a fixed 3-character image format where APIC carries a null-terminated MIME
+        // type, so it cannot be parsed with the APIC layout.
+        if (frameId == Id3v2FrameId.PictureV22)
+        {
+            ReadPictureFrameV22(frameData, tags);
+            return true;
+        }
 
         ProcessFrame(ConvertV22ToV24FrameId(frameId), frameData, tags);
         return true;
@@ -363,6 +409,50 @@ internal static class Id3v2Reader
         });
     }
 
+    private static void ReadPictureFrameV22(ReadOnlySpan<byte> data, MediaTagInfo tags)
+    {
+        // PIC frame: encoding(1) + image format(3 characters) + picture type(1) + description(null-terminated) + picture data
+        if (data.Length < 6)
+            return;
+
+        var encoding = data[0];
+        var imageFormat = System.Text.Encoding.ASCII.GetString(data.Slice(1, 3));
+        var pictureType = (MediaPictureType)data[4];
+        var pos = 5;
+
+        var descNullPos = Id3v2TextEncoding.FindNullTerminator(data, encoding, pos);
+        if (descNullPos < 0)
+            return;
+
+        var description = Id3v2TextEncoding.DecodeString(encoding, data[pos..descNullPos]);
+        pos = descNullPos + Id3v2TextEncoding.NullTerminatorSize(encoding);
+
+        if (pos >= data.Length)
+            return;
+
+        tags.Pictures.Add(new MediaPicture
+        {
+            PictureType = pictureType,
+            MimeType = GetMimeTypeFromV22ImageFormat(imageFormat),
+            Description = description,
+            Data = data[pos..].ToArray(),
+        });
+    }
+
+    private static string GetMimeTypeFromV22ImageFormat(string imageFormat)
+    {
+        if (string.Equals(imageFormat, "PNG", StringComparison.OrdinalIgnoreCase))
+            return "image/png";
+
+        if (string.Equals(imageFormat, "GIF", StringComparison.OrdinalIgnoreCase))
+            return "image/gif";
+
+        if (string.Equals(imageFormat, "BMP", StringComparison.OrdinalIgnoreCase))
+            return "image/bmp";
+
+        return "image/jpeg";
+    }
+
     private static void ReadUserDefinedTextFrame(ReadOnlySpan<byte> data, MediaTagInfo tags)
     {
         // TXXX frame: encoding(1) + description(null-terminated) + value
@@ -388,56 +478,10 @@ internal static class Id3v2Reader
         {
             tags.Comment ??= value;
         }
-        else if (string.Equals(description, "REPLAYGAIN_TRACK_GAIN", StringComparison.OrdinalIgnoreCase))
-        {
-            if (TryParseReplayGainValue(value, out var gain))
-                tags.ReplayGain = (tags.ReplayGain ?? default) with { TrackGain = gain };
-        }
-        else if (string.Equals(description, "REPLAYGAIN_TRACK_PEAK", StringComparison.OrdinalIgnoreCase))
-        {
-            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var peak))
-                tags.ReplayGain = (tags.ReplayGain ?? default) with { TrackPeak = peak };
-        }
-        else if (string.Equals(description, "REPLAYGAIN_ALBUM_GAIN", StringComparison.OrdinalIgnoreCase))
-        {
-            if (TryParseReplayGainValue(value, out var gain))
-                tags.ReplayGain = (tags.ReplayGain ?? default) with { AlbumGain = gain };
-        }
-        else if (string.Equals(description, "REPLAYGAIN_ALBUM_PEAK", StringComparison.OrdinalIgnoreCase))
-        {
-            if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var peak))
-                tags.ReplayGain = (tags.ReplayGain ?? default) with { AlbumPeak = peak };
-        }
-        else if (string.Equals(description, "MusicBrainz Track Id", StringComparison.OrdinalIgnoreCase))
-        {
-            tags.MusicBrainzTrackId ??= value;
-        }
-        else if (string.Equals(description, "MusicBrainz Artist Id", StringComparison.OrdinalIgnoreCase))
-        {
-            tags.MusicBrainzArtistId ??= value;
-        }
-        else if (string.Equals(description, "MusicBrainz Album Id", StringComparison.OrdinalIgnoreCase))
-        {
-            tags.MusicBrainzAlbumId ??= value;
-        }
-        else if (string.Equals(description, "MusicBrainz Release Group Id", StringComparison.OrdinalIgnoreCase))
-        {
-            tags.MusicBrainzReleaseGroupId ??= value;
-        }
-        else
+        else if (!TagFieldMapping.TryApplySharedField(description, value, tags))
         {
             tags.CustomFields.TryAdd(description, value);
         }
-    }
-
-    private static bool TryParseReplayGainValue(string value, out double result)
-    {
-        // ReplayGain values are like "+1.23 dB" or "-4.56 dB"
-        var trimmed = value.AsSpan().Trim();
-        if (trimmed.EndsWith(" dB", StringComparison.OrdinalIgnoreCase))
-            trimmed = trimmed[..^3].Trim();
-
-        return double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
     }
 
     private static void ParseDuration(string value, MediaTagInfo tags)
@@ -522,17 +566,23 @@ internal static class Id3v2Reader
         _ => v22Id,
     };
 
-    private static byte[] UndoUnsynchronisation(byte[] data)
+    /// <summary>
+    /// Removes the zero bytes inserted after every 0xFF, in place. The result is never longer than the input,
+    /// so it is compacted into the same buffer rather than copied into new ones.
+    /// </summary>
+    /// <returns>The length of the tag data after unsynchronisation.</returns>
+    private static int UndoUnsynchronisation(Span<byte> data)
     {
-        var result = new List<byte>(data.Length);
-        for (var i = 0; i < data.Length; i++)
+        var write = 0;
+        for (var read = 0; read < data.Length; read++)
         {
-            result.Add(data[i]);
-            if (data[i] == 0xFF && i + 1 < data.Length && data[i + 1] == 0x00)
+            data[write++] = data[read];
+            if (data[read] == 0xFF && read + 1 < data.Length && data[read + 1] == 0x00)
             {
-                i++; // Skip the inserted 0x00
+                read++; // Skip the inserted 0x00
             }
         }
-        return result.ToArray();
+
+        return write;
     }
 }

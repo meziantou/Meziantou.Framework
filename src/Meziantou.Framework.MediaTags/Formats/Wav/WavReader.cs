@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.Wav;
 
@@ -22,7 +23,9 @@ internal sealed class WavReader : IMediaTagReader
             if (riffHeader[8] != 'W' || riffHeader[9] != 'A' || riffHeader[10] != 'V' || riffHeader[11] != 'E')
                 return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.UnsupportedFormat, "Not a WAV file.");
 
-            var chunks = RiffChunk.ReadChunks(stream, stream.Length);
+            // Reading is best effort: whatever chunks were parsed before a malformed one still carry usable
+            // tags, and unlike the writer nothing is destroyed by using them.
+            var chunks = RiffChunk.ReadChunks(stream, stream.Length, out _);
 
             // Look for LIST-INFO chunk
             foreach (var chunk in chunks)
@@ -45,9 +48,9 @@ internal sealed class WavReader : IMediaTagReader
             tags.Duration ??= TryReadDuration(chunks);
             return MediaTagResult<MediaTagInfo>.Success(tags);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (MediaTagErrors.TryMap(ex, out var error))
         {
-            return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.CorruptFile, ex.Message);
+            return MediaTagResult<MediaTagInfo>.Failure(error, ex.Message);
         }
     }
 

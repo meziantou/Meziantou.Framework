@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.Ogg;
 
@@ -16,61 +17,51 @@ internal sealed class OggOpusReader : IMediaTagReader
             stream.Position = 0;
             var tags = new MediaTagInfo();
 
-            var pages = OggPacketUtilities.ReadAllPages(stream);
-            var packets = OggPacketUtilities.ReadPackets(pages);
-            foreach (var packet in packets)
+            // Both header packets are at the front of the stream, so only the leading pages are read.
+            stream.Position = 0;
+            OggPacketUtilities.TryFindHeaderPacket(stream, OpusHeadPrefix, out var opusHead);
+
+            stream.Position = 0;
+            if (OggPacketUtilities.TryFindHeaderPacket(stream, OpusTagsPrefix, out var opusTags))
             {
-                if (packet.Data.AsSpan().StartsWith(OpusTagsPrefix))
-                {
-                    VorbisComment.VorbisCommentReader.TryParse(packet.Data.AsSpan(OpusTagsPrefix.Length), tags);
-                    break;
-                }
+                VorbisComment.VorbisCommentReader.TryParse(opusTags.AsSpan(OpusTagsPrefix.Length), tags);
             }
 
-            tags.Duration ??= TryReadDuration(pages, packets);
+            if (opusHead is not null)
+            {
+                tags.Duration ??= TryReadDuration(stream, opusHead);
+            }
 
             return MediaTagResult<MediaTagInfo>.Success(tags);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (MediaTagErrors.TryMap(ex, out var error))
         {
-            return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.CorruptFile, ex.Message);
+            return MediaTagResult<MediaTagInfo>.Failure(error, ex.Message);
         }
     }
 
-    private static TimeSpan? TryReadDuration(List<OggPage> pages, List<OggPacketInfo> packets)
+    /// <summary>
+    /// Derives the duration from the granule position of the last page, which is found by searching backwards
+    /// from the end of the file rather than by reading every page.
+    /// </summary>
+    private static TimeSpan? TryReadDuration(Stream stream, byte[] opusHead)
     {
-        OggPacketInfo? opusHeadPacket = null;
-        foreach (var packet in packets)
-        {
-            if (packet.Data.AsSpan().StartsWith(OpusHeadPrefix))
-            {
-                opusHeadPacket = packet;
-                break;
-            }
-        }
-
-        if (opusHeadPacket is null || opusHeadPacket.Data.Length < OpusHeadPreSkipOffset + 2)
+        if (opusHead.Length < OpusHeadPreSkipOffset + 2)
             return null;
 
-        var preSkip = BinaryPrimitives.ReadUInt16LittleEndian(opusHeadPacket.Data.AsSpan(OpusHeadPreSkipOffset));
-        if (opusHeadPacket.StartPageIndex < 0 || opusHeadPacket.StartPageIndex >= pages.Count)
+        var preSkip = BinaryPrimitives.ReadUInt16LittleEndian(opusHead.AsSpan(OpusHeadPreSkipOffset));
+
+        stream.Position = 0;
+        var firstPage = OggPage.Read(stream);
+        if (firstPage is null)
             return null;
 
-        var streamSerialNumber = pages[opusHeadPacket.StartPageIndex].SerialNumber;
-        long? lastGranulePosition = null;
-        for (var i = pages.Count - 1; i >= 0; i--)
-        {
-            var page = pages[i];
-            if (page.SerialNumber != streamSerialNumber || page.GranulePosition < 0)
-                continue;
-
-            lastGranulePosition = page.GranulePosition;
-            break;
-        }
-
-        if (lastGranulePosition is null || lastGranulePosition <= preSkip)
+        if (!OggPacketUtilities.TryGetLastGranulePosition(stream, firstPage.SerialNumber, out var lastGranulePosition))
             return null;
 
-        return TimeSpan.FromSeconds((lastGranulePosition.Value - preSkip) / (double)OpusSampleRate);
+        if (lastGranulePosition <= preSkip)
+            return null;
+
+        return TimeSpan.FromSeconds((lastGranulePosition - preSkip) / (double)OpusSampleRate);
     }
 }

@@ -14,9 +14,11 @@ public sealed class WavTests
         Assert.Equal(MediaFormat.Wav, tags.Format);
         Assert.NotNull(tags.Duration);
         Assert.InRange(tags.Duration.Value.TotalSeconds, 0.95, 1.05);
-        // WAV metadata support varies by ffmpeg version; check at least title
-        if (tags.Title is not null)
-            Assert.Equal("Test Title", tags.Title);
+        // The fixture is committed, so these are not version dependent. Guarding the assertion would let a
+        // reader that no longer understands a third-party LIST/INFO chunk pass.
+        Assert.Equal("Test Title", tags.Title);
+        Assert.Equal("Test Artist", tags.Artist);
+        Assert.Equal("Test Album", tags.Album);
     }
 
     [Fact]
@@ -24,6 +26,9 @@ public sealed class WavTests
     {
         var result = MediaFile.ReadTags(GetTestFilePath("empty.wav"));
         Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.Title);
+        Assert.Null(result.Value.Artist);
+        Assert.Null(result.Value.Album);
     }
 
     [Fact]
@@ -132,5 +137,45 @@ public sealed class WavTests
 
         Assert.False(result.IsSuccess);
         Assert.Equal(MediaTagError.CorruptFile, result.Error);
+    }
+
+    [Fact]
+    public void WriteTags_NotARiffFile_IsRefused()
+    {
+        using var input = new MemoryStream(Encoding.ASCII.GetBytes(new string('X', 4096)));
+        using var output = new MemoryStream();
+
+        var result = MediaFile.WriteTags(input, output, new MediaTagInfo { Title = "Title" }, MediaFormat.Wav);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.UnsupportedFormat, result.Error);
+    }
+
+    [Fact]
+    public void WriteTags_ReplayGainAndCustomFields_RoundTrip()
+    {
+        var tempFile = Path.GetTempFileName() + ".wav";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.wav"), tempFile, overwrite: true);
+
+            var tags = new MediaTagInfo
+            {
+                Title = "Title",
+                ReplayGain = new ReplayGainInfo { TrackGain = -1.5, TrackPeak = 0.25 },
+            };
+            tags.CustomFields["MY FIELD"] = "my value";
+
+            Assert.True(MediaFile.WriteTags(tempFile, tags).IsSuccess);
+
+            var read = MediaFile.ReadTags(tempFile).Value;
+            Assert.Equal(-1.5, read.ReplayGain?.TrackGain);
+            Assert.Equal(0.25, read.ReplayGain?.TrackPeak);
+            Assert.Equal("my value", read.CustomFields["MY FIELD"]);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
     }
 }

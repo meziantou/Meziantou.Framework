@@ -6,8 +6,10 @@ namespace Meziantou.Framework.Http
 {
     public sealed class HstsClientHandler : System.Net.Http.DelegatingHandler
     {
+        public HstsClientHandler(Meziantou.Framework.Http.HstsDomainPolicyCollection configuration) { }
         public HstsClientHandler(System.Net.Http.HttpMessageHandler innerHandler) { }
-        public HstsClientHandler(System.Net.Http.HttpMessageHandler innerHandler, Meziantou.Framework.Http.HstsDomainPolicyCollection configuration) { }
+        public HstsClientHandler(System.Net.Http.HttpMessageHandler? innerHandler, Meziantou.Framework.Http.HstsDomainPolicyCollection configuration) { }
+        public HstsClientHandler(System.Net.Http.HttpMessageHandler? innerHandler, Meziantou.Framework.Http.HstsDomainPolicyCollection configuration, int maxAutomaticRedirections) { }
         protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) => throw null;
     }
 
@@ -22,12 +24,16 @@ namespace Meziantou.Framework.Http
 
     public sealed class HstsDomainPolicyCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.Http.HstsDomainPolicy>, System.Collections.IEnumerable
     {
+        public const int DefaultMaxLearnedPolicies = 10000;
         public static Meziantou.Framework.Http.HstsDomainPolicyCollection Default { get => throw null; }
-        public HstsDomainPolicyCollection(bool includePreloadDomains = true) { }
-        public HstsDomainPolicyCollection(System.TimeProvider? timeProvider, bool includePreloadDomains = true) { }
+        public int MaxLearnedPolicies { get => throw null; }
+        public HstsDomainPolicyCollection(bool includePreloadDomains = true, int maxLearnedPolicies = 10000) { }
+        public HstsDomainPolicyCollection(System.TimeProvider? timeProvider, bool includePreloadDomains = true, int maxLearnedPolicies = 10000) { }
         public void Add(string host, System.TimeSpan maxAge, bool includeSubdomains) { }
         public void Add(string host, System.DateTimeOffset expiresAt, bool includeSubdomains) { }
         public bool Remove(string host) => throw null;
+        public void ClearLearnedPolicies() { }
+        public bool TryGetPolicy(string host, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Http.HstsDomainPolicy? policy) => throw null;
         public bool MustUpgradeRequest(string host) => throw null;
         public bool MustUpgradeRequest(System.ReadOnlySpan<char> host) => throw null;
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Http.HstsDomainPolicy> GetEnumerator() => throw null;

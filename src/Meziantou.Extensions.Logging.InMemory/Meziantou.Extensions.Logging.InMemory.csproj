@@ -10,6 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../Meziantou.Framework/Collections/AppendOnlyCollection.cs" Link="Collections/AppendOnlyCollection.cs" />
+    <Compile Include="../Meziantou.Framework/Collections/AppendOnlyCollectionSegment.cs" Link="Collections/AppendOnlyCollectionSegment.cs" />
     <Compile Include="../../common/MutableExternalScopeProvider.cs" Link="MutableExternalScopeProvider.cs" />
     <Compile Include="../../common/TypeNameHelper.cs" Link="TypeNameHelper.cs" />
   </ItemGroup>

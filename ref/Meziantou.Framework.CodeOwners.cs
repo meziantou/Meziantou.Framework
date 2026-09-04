@@ -19,7 +19,8 @@ namespace Meziantou.Framework.CodeOwners
     public enum CodeOwnerType
     {
         Username = 0,
-        EmailAddress = 1
+        EmailAddress = 1,
+        Role = 2
     }
 
     public enum CodeOwnersDialect

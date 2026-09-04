@@ -50,6 +50,13 @@ else
 }
 ````
 
-A `CodeOwnersFile` only exists for a valid file: neither method hands back a partially parsed one.
+A `CodeOwnersFile` only exists for a valid file: neither method hands back a partially parsed one. `Entries`, `Owners` and `DefaultOwners` are read-only views that cannot be cast back to a mutable list.
+
+In the GitLab dialect an owner can also be a role, written `@@developer`, `@@maintainer` or `@@owner` (plural accepted). Anything else after `@@` is an error, as is a `@` inside a username.
+
+````c#
+CodeOwnersFile file = CodeOwnersFile.Parse("*.md @@maintainers", CodeOwnersDialect.GitLab);
+// file.Entries[0].Owners[0]: Type=Role, Name="maintainers"
+````
 
 The `CodeOwnersParser` type is obsolete: its `Parse` method forwards to `CodeOwnersFile` using the GitLab dialect, and will be removed in a future major version.

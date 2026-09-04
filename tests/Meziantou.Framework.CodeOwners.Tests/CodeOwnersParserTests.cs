@@ -6,6 +6,8 @@ public sealed class CodeOwnersParserTests
 
     private static CodeOwner Email(string address) => CodeOwner.EmailAddress(address);
 
+    private static CodeOwner Role(string name) => CodeOwner.Role(name);
+
     private static CodeOwnersEntry Entry(string pattern, params CodeOwner[] owners) => new(pattern, owners, section: null);
 
     private static CodeOwnersEntry Entry(string pattern, CodeOwnersSection section, params CodeOwner[] owners) => new(pattern, owners, section);
@@ -604,5 +606,79 @@ public sealed class CodeOwnersParserTests
         var gitlab = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
 
         Assert.Equal(github, gitlab);
+    }
+
+    [Theory]
+    [InlineData("developer")]
+    [InlineData("developers")]
+    [InlineData("maintainer")]
+    [InlineData("maintainers")]
+    [InlineData("owner")]
+    [InlineData("owners")]
+    [InlineData("Maintainer")]
+    public void GitLabDialectParsesRoles(string role)
+    {
+        var actual = CodeOwnersFile.Parse($"*.md @@{role}", CodeOwnersDialect.GitLab).Entries;
+
+        Assert.Equal([Entry("*.md", Role(role))], actual);
+        Assert.Equal(CodeOwnerType.Role, actual[0].Owners[0].Type);
+        Assert.Equal($"@@{role}", actual[0].Owners[0].ToString());
+    }
+
+    [Fact]
+    public void GitLabDialectParsesRolesAmongOtherOwners()
+    {
+        var actual = CodeOwnersFile.Parse("[Test] @@maintainer\n*.md @user1 @@developer docs@example.com", CodeOwnersDialect.GitLab).Entries;
+
+        var section = new CodeOwnersSection("Test", defaultOwners: [Role("maintainer")]);
+        Assert.Equal([Entry("*.md", section, User("user1"), Role("developer"), Email("docs@example.com"))], actual);
+    }
+
+    [Fact]
+    public void GitLabDialectUsesRolesAsSectionDefaultOwners()
+    {
+        var actual = CodeOwnersFile.Parse("[Test] @@owners\n*.md", CodeOwnersDialect.GitLab).Entries;
+
+        var section = new CodeOwnersSection("Test", defaultOwners: [Role("owners")]);
+        Assert.Equal([Entry("*.md", section, Role("owners"))], actual);
+        Assert.Equal("[Test] @@owners", section.ToString());
+    }
+
+    [Theory]
+    // Only Developer, Maintainer and Owner are roles: everything else after '@@' identifies nobody.
+    [InlineData("* @@user", CodeOwnersDialect.GitLab)]
+    [InlineData("* @@guest", CodeOwnersDialect.GitLab)]
+    [InlineData("* @@reporter", CodeOwnersDialect.GitLab)]
+    [InlineData("[Test] @@user\n*", CodeOwnersDialect.GitLab)]
+    // GitHub has no roles at all
+    [InlineData("* @@maintainer", CodeOwnersDialect.GitHub)]
+    [InlineData("* @@user", CodeOwnersDialect.GitHub)]
+    public void UnknownRolesAreInvalidOwners(string content, CodeOwnersDialect dialect)
+    {
+        Assert.False(CodeOwnersFile.TryParse(content, dialect, out _, out var error));
+        Assert.Equal(CodeOwnersParseErrorKind.InvalidOwner, error.Kind);
+    }
+
+    [Theory]
+    [InlineData("* @us@er")]
+    [InlineData("* @user@example.com")]
+    public void AUsernameCannotContainAnAtSign(string content)
+    {
+        Assert.False(CodeOwnersFile.TryParse(content, CodeOwnersDialect.GitLab, out _, out var error));
+        Assert.Equal(CodeOwnersParseErrorKind.InvalidOwner, error.Kind);
+    }
+
+    [Fact]
+    public void ParsedCollectionsCannotBeMutatedByCallers()
+    {
+        var file = CodeOwnersFile.Parse("[Test] @owner1\n* @user1\n*.js\n", CodeOwnersDialect.GitLab);
+
+        Assert.IsNotType<List<CodeOwnersEntry>>(file.Entries);
+        Assert.IsNotType<List<CodeOwner>>(file.Entries[0].Owners);
+        Assert.IsNotType<List<CodeOwner>>(file.Entries[0].Section!.DefaultOwners);
+
+        Assert.Throws<NotSupportedException>(() => ((IList<CodeOwnersEntry>)file.Entries).Clear());
+        Assert.Throws<NotSupportedException>(() => ((IList<CodeOwner>)file.Entries[0].Owners).Clear());
+        Assert.Throws<NotSupportedException>(() => ((IList<CodeOwner>)file.Entries[0].Section!.DefaultOwners).Clear());
     }
 }

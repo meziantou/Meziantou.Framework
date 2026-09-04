@@ -24,15 +24,23 @@ public readonly struct CodeOwner : IEquatable<CodeOwner>
     /// <summary>Gets how the owner is identified.</summary>
     public CodeOwnerType Type { get; }
 
-    /// <summary>Gets the owner identifier: a username without its leading <c>@</c>, or an email address.</summary>
+    /// <summary>Gets the owner identifier: a username without its leading <c>@</c>, an email address, or a role name without its leading <c>@@</c>.</summary>
+    /// <remarks>The value is the one written in the file, so a role keeps the singular or plural form it was written with.</remarks>
     public string Name { get; }
 
     internal static CodeOwner Username(string name) => new(CodeOwnerType.Username, name);
 
     internal static CodeOwner EmailAddress(string address) => new(CodeOwnerType.EmailAddress, address);
 
+    internal static CodeOwner Role(string name) => new(CodeOwnerType.Role, name);
+
     /// <summary>Returns the owner as written in a CODEOWNERS file.</summary>
-    public override string ToString() => Type is CodeOwnerType.Username ? "@" + Name : Name;
+    public override string ToString() => Type switch
+    {
+        CodeOwnerType.Username => "@" + Name,
+        CodeOwnerType.Role => "@@" + Name,
+        _ => Name,
+    };
 
     public override bool Equals([NotNullWhen(true)] object? obj)
     {

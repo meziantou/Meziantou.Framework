@@ -8,4 +8,7 @@ public enum CodeOwnerType
 
     /// <summary>The owner is an email address (e.g., <c>user@example.com</c>).</summary>
     EmailAddress,
+
+    /// <summary>The owner is a GitLab role (e.g., <c>@@maintainer</c>). Only <c>developer</c>, <c>maintainer</c> and <c>owner</c> are accepted, singular or plural.</summary>
+    Role,
 }

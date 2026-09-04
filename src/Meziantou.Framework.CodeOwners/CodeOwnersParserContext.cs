@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.CodeOwners;
@@ -23,14 +24,14 @@ internal struct CodeOwnersParserContext
         _dialect = dialect;
     }
 
-    public List<CodeOwnersEntry> Parse()
+    public IReadOnlyList<CodeOwnersEntry> Parse()
     {
         while (!EndOfFile && _error is null)
         {
             ParseLine();
         }
 
-        return _entries;
+        return AsReadOnly(_entries);
     }
 
     public readonly bool HasError => _error is not null;
@@ -113,7 +114,7 @@ internal struct CodeOwnersParserContext
         IReadOnlyList<CodeOwner> entryOwners;
         if (owners is not null)
         {
-            entryOwners = owners;
+            entryOwners = AsReadOnly(owners);
         }
         else if (_currentSection is { HasDefaultOwners: true })
         {
@@ -163,7 +164,7 @@ internal struct CodeOwnersParserContext
 
             // An optional section keeps the count written in the file: '^' says no approval is
             // required, not that the header declared no count.
-            section = new CodeOwnersSection(name, isOptional, requiredReviewerCount, defaultOwners);
+            section = new CodeOwnersSection(name, isOptional, requiredReviewerCount, AsReadOnly(defaultOwners));
             return true;
         }
 
@@ -252,7 +253,14 @@ internal struct CodeOwnersParserContext
             }
             else if (defaultOwner[0] is '@')
             {
-                defaultOwners.Add(CodeOwner.Username(defaultOwner[1..]));
+                if (ParseUsernameOrRole(defaultOwner[1..]) is { } parsedOwner)
+                {
+                    defaultOwners.Add(parsedOwner);
+                }
+                else
+                {
+                    SetError(CodeOwnersParseErrorKind.InvalidOwner, lineStartIndex + offset);
+                }
             }
             else if (IsEmailAddress(defaultOwner))
             {
@@ -377,8 +385,15 @@ internal struct CodeOwnersParserContext
             }
             else if (isUsername)
             {
-                owners ??= [];
-                owners.Add(CodeOwner.Username(owner));
+                if (ParseUsernameOrRole(owner) is { } parsedOwner)
+                {
+                    owners ??= [];
+                    owners.Add(parsedOwner);
+                }
+                else
+                {
+                    SetError(CodeOwnersParseErrorKind.InvalidOwner, tokenStartIndex);
+                }
             }
             else if (IsEmailAddress(owner))
             {
@@ -404,6 +419,41 @@ internal struct CodeOwnersParserContext
 
         return owners;
     }
+
+    /// <summary>Classifies the text following a leading '@', or returns null when it identifies nobody.</summary>
+    private readonly CodeOwner? ParseUsernameOrRole(string name)
+    {
+        if (name.Length is 0)
+            return null;
+
+        if (name[0] is '@')
+        {
+            // Roles are a GitLab extension, and only Developer, Maintainer and Owner exist
+            var role = name[1..];
+            if (_dialect is CodeOwnersDialect.GitLab && IsKnownRole(role))
+                return CodeOwner.Role(role);
+
+            return null;
+        }
+
+        // '@' is not valid inside a username on either host
+        if (name.AsSpan().Contains('@'))
+            return null;
+
+        return CodeOwner.Username(name);
+    }
+
+    private static bool IsKnownRole(string role)
+    {
+        var singular = role.Length > 0 && role[^1] is 's' or 'S' ? role[..^1] : role;
+        return singular.Equals("developer", StringComparison.OrdinalIgnoreCase)
+            || singular.Equals("maintainer", StringComparison.OrdinalIgnoreCase)
+            || singular.Equals("owner", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Returns a view that callers cannot cast back to a mutable list.</summary>
+    private static ReadOnlyCollection<T> AsReadOnly<T>(List<T>? list)
+        => list is null || list.Count is 0 ? ReadOnlyCollection<T>.Empty : new ReadOnlyCollection<T>(list);
 
     private static bool IsEmailAddress(ReadOnlySpan<char> value)
     {

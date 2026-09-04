@@ -52,7 +52,7 @@ public static class NavigationManagerExtensions
                 continue;
 
             var value = property.GetValue(component);
-            parameters[parameterName] = value;
+            parameters[parameterName] = NormalizeQueryValue(value);
         }
 
         // Compute the new URL
@@ -61,6 +61,28 @@ public static class NavigationManagerExtensions
         {
             navigationManager.NavigateTo(newUri, new NavigationOptions() { ReplaceHistoryEntry = replaceHistory });
         }
+    }
+
+    // GetUriWithQueryParameters only accepts a fixed set of types and throws for anything else. Values it cannot
+    // handle (enums, TimeSpan, custom types, ...) are converted to their string representation instead.
+    private static object? NormalizeQueryValue(object? value)
+    {
+        if (value is null)
+            return null;
+
+        var type = value.GetType();
+        if (type == typeof(string) || type == typeof(bool) || type == typeof(int) || type == typeof(long)
+            || type == typeof(float) || type == typeof(double) || type == typeof(decimal)
+            || type == typeof(Guid) || type == typeof(DateTime) || type == typeof(DateOnly) || type == typeof(TimeOnly))
+        {
+            return value;
+        }
+
+        // Collections of supported types are handled natively by GetUriWithQueryParameters
+        if (value is System.Collections.IEnumerable)
+            return value;
+
+        return ValueConverter.ConvertToString(value);
     }
 
     private static PropertyInfo[] GetProperties(Type type)

@@ -18,7 +18,13 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await ScrollToFragment();
+        // Only scroll on the first render. Doing it on every render re-runs scrollIntoView whenever anything on the
+        // page re-renders, which fights the user for control of the scroll position. Later navigations are handled
+        // by OnLocationChanged.
+        if (firstRender)
+        {
+            await ScrollToFragment();
+        }
     }
 
     public ValueTask DisposeAsync()
@@ -37,7 +43,16 @@
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        await ScrollToFragment();
+        // This is an event handler, so it must be async void and nothing observes the returned task. Any exception
+        // escaping here is unhandled and tears down the circuit, so the whole body has to be guarded. Importing the
+        // JS module is the realistic failure: navigating while the circuit is going away throws from that await.
+        try
+        {
+            await ScrollToFragment();
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or OperationCanceledException or ObjectDisposedException)
+        {
+        }
     }
 
     private async Task ScrollToFragment()

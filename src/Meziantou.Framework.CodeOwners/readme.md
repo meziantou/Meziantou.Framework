@@ -50,6 +50,13 @@ else
 }
 ````
 
+`Parse` and both `TryParse` overloads also accept a `ReadOnlySpan<char>`, so a file read into a buffer does not have to be turned into a `string` first. The parsed `CodeOwnersFile` never references the span: every value it exposes is copied out of it, and reported error positions are relative to the start of the span.
+
+````c#
+char[] buffer = ...;
+CodeOwnersFile file = CodeOwnersFile.Parse(buffer.AsSpan(0, length), CodeOwnersDialect.GitHub);
+````
+
 A `CodeOwnersFile` only exists for a valid file: neither method hands back a partially parsed one. `Entries`, `Owners` and `DefaultOwners` are read-only views that cannot be cast back to a mutable list.
 
 In the GitLab dialect an owner can also be a role, written `@@developer`, `@@maintainer` or `@@owner` (plural accepted). Anything else after `@@` is an error, as is a `@` inside a username.

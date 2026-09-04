@@ -534,16 +534,10 @@ public sealed class CodeOwnersParserTests
         const string Content = "* @user1 docs@example.com";
 #pragma warning disable CS0618 // Type or member is obsolete
         var parsed = CodeOwnersParser.Parse(Content);
-        Assert.True(CodeOwnersParser.TryParse(Content, out var tryParsed));
-        Assert.True(CodeOwnersParser.TryParse(Content, out var tryParsedWithError, out var error));
-        Assert.False(CodeOwnersParser.TryParse("[Test][0]", out var invalid, out var invalidError));
+        var invalid = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse("[Test][0]"));
 #pragma warning restore CS0618
 
         Assert.Equal(CodeOwnersFile.Parse(Content).Entries, parsed.Entries);
-        Assert.Equal(parsed.Entries, tryParsed.Entries);
-        Assert.Equal(parsed.Entries, tryParsedWithError.Entries);
-        Assert.Equal(default, error);
-        Assert.Null(invalid);
-        Assert.Equal(new CodeOwnersParseError(CodeOwnersParseErrorKind.InvalidRequiredReviewerCount, 1, 7), invalidError);
+        Assert.Equal(new CodeOwnersParseError(CodeOwnersParseErrorKind.InvalidRequiredReviewerCount, 1, 7), invalid.Error);
     }
 }

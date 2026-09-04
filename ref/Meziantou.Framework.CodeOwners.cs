@@ -78,10 +78,6 @@ namespace Meziantou.Framework.CodeOwners
     {
         [System.Obsolete("Use CodeOwnersFile.Parse instead.")]
         public static Meziantou.Framework.CodeOwners.CodeOwnersFile Parse(string content) => throw null;
-        [System.Obsolete("Use CodeOwnersFile.TryParse instead.")]
-        public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file) => throw null;
-        [System.Obsolete("Use CodeOwnersFile.TryParse instead.")]
-        public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file, out Meziantou.Framework.CodeOwners.CodeOwnersParseError error) => throw null;
     }
 
     public sealed class CodeOwnersSection : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersSection>

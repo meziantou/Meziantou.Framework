@@ -50,4 +50,4 @@ else
 
 A `CodeOwnersFile` only exists for a valid file: neither method hands back a partially parsed one.
 
-The `CodeOwnersParser` type is obsolete: its methods forward to `CodeOwnersFile` and will be removed in a future major version.
+The `CodeOwnersParser` type is obsolete: its `Parse` method forwards to `CodeOwnersFile` and will be removed in a future major version.

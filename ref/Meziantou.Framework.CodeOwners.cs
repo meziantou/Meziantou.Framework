@@ -36,6 +36,11 @@ namespace Meziantou.Framework.CodeOwners
         public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersEntry? left, Meziantou.Framework.CodeOwners.CodeOwnersEntry? right) => throw null;
     }
 
+    public sealed class CodeOwnersFile
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersEntry> Entries { get => throw null; }
+    }
+
     public readonly struct CodeOwnersParseError : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersParseError>
     {
         public Meziantou.Framework.CodeOwners.CodeOwnersParseErrorKind Kind { get => throw null; }
@@ -67,9 +72,9 @@ namespace Meziantou.Framework.CodeOwners
 
     public static class CodeOwnersParser
     {
-        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersEntry> Parse(string content) => throw null;
-        public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersEntry>? entries) => throw null;
-        public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersEntry>? entries, out Meziantou.Framework.CodeOwners.CodeOwnersParseError error) => throw null;
+        public static Meziantou.Framework.CodeOwners.CodeOwnersFile Parse(string content) => throw null;
+        public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file) => throw null;
+        public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file, out Meziantou.Framework.CodeOwners.CodeOwnersParseError error) => throw null;
     }
 
     public readonly struct CodeOwnersSection : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersSection>

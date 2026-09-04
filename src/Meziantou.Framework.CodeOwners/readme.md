@@ -5,16 +5,16 @@
 Each entry is one line of the file: a pattern and the owners it declares.
 
 ````c#
-IReadOnlyList<CodeOwnersEntry> entries = CodeOwnersParser.Parse("* @user1 docs@example.com");
-// entries[0].Pattern: "*"
-// entries[0].Owners[0]: Type=Username, Name="user1"
-// entries[0].Owners[1]: Type=EmailAddress, Name="docs@example.com"
+CodeOwnersFile file = CodeOwnersParser.Parse("* @user1 docs@example.com");
+// file.Entries[0].Pattern: "*"
+// file.Entries[0].Owners[0]: Type=Username, Name="user1"
+// file.Entries[0].Owners[1]: Type=EmailAddress, Name="docs@example.com"
 ````
 
 Entries are returned in file order, and CODEOWNERS resolution is last-match-wins, so the owners of a path are those of the last entry whose pattern matches it:
 
 ````c#
-CodeOwnersEntry? owningEntry = entries.LastOrDefault(entry => Matches(entry.Pattern, path));
+CodeOwnersEntry? owningEntry = file.Entries.LastOrDefault(entry => Matches(entry.Pattern, path));
 IReadOnlyList<CodeOwner> owners = owningEntry?.Owners ?? [];
 // An empty Owners list means the entry explicitly leaves the pattern unowned
 ````
@@ -28,9 +28,9 @@ try
 }
 catch (CodeOwnersParseException ex)
 {
-    // ex.Kind: CodeOwnersParseErrorKind.UnterminatedSectionHeader
-    // ex.LineNumber: 1
-    // ex.LinePosition: 1
+    // ex.Error.Kind: CodeOwnersParseErrorKind.UnterminatedSectionHeader
+    // ex.Error.LineNumber: 1
+    // ex.Error.LinePosition: 1
     Console.WriteLine(ex.Message);
 }
 ````
@@ -38,7 +38,7 @@ catch (CodeOwnersParseException ex)
 Use `TryParse` when an invalid file should not throw. An overload reports the same error without allocating an exception:
 
 ````c#
-if (CodeOwnersParser.TryParse(content, out IReadOnlyList<CodeOwnersEntry>? entries, out CodeOwnersParseError error))
+if (CodeOwnersParser.TryParse(content, out CodeOwnersFile? file, out CodeOwnersParseError error))
 {
     // ...
 }
@@ -47,3 +47,5 @@ else
     Console.WriteLine(error); // line 1, position 1: the section header is not terminated by ']'
 }
 ````
+
+A `CodeOwnersFile` only exists for a valid file: neither method hands back a partially parsed one.

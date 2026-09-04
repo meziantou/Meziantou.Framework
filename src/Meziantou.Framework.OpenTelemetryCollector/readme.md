@@ -32,6 +32,18 @@ app.MapOpenTelemetryReceiverEndpoints();
 app.Run();
 ```
 
+### Securing the endpoints
+
+`MapOpenTelemetryReceiverEndpoints` returns an `IEndpointConventionBuilder`, so the usual endpoint conventions apply to
+every mapped endpoint, HTTP and gRPC alike. An OTLP receiver is an unauthenticated write endpoint, so restrict it unless
+it is only reachable from a trusted network:
+
+```csharp
+app.MapOpenTelemetryReceiverEndpoints()
+   .RequireAuthorization()
+   .RequireRateLimiting("otlp");
+```
+
 ### Request sampling
 
 Use request samplers to drop logs, traces, or metrics before they are dispatched to handlers:
@@ -83,15 +95,27 @@ trace is received. The sweep runs every `SweepInterval`, which defaults to a qua
 Once spans left the buffer they are dispatched to the handlers without a cancellation token: the originating request has
 already been answered, so aborting the dispatch would silently discard buffered data belonging to other requests.
 
-Overflow behavior is configurable through `OpenTelemetryTailBufferOverflowPolicy`:
+`OpenTelemetryTailBufferOverflowPolicy` configures what happens to a trace that grows beyond `MaxBufferedSpansPerTrace`:
 
 - `DropWholeTrace`: drop the whole buffered trace
 - `DropOldestSpans`: keep newest spans
 - `DropNewestSpans`: keep oldest spans
 
-A trace that exceeds `MaxBufferedSpansPerTrace` while using `DropWholeTrace` is remembered, so the spans of the same
-trace received later are dropped too instead of being emitted as fragments. Exceeding the global `MaxBufferedSpans`
-limit is transient back pressure and does not mark the trace as dropped.
+`MaxBufferedSpans` is a separate limit, over all buffered traces. Reaching it evicts whole traces, largest first, so a
+trace that is within `MaxBufferedSpansPerTrace` is never truncated because of unrelated traffic, and new traces keep
+being accepted once the buffer is full.
+
+A trace dropped as a whole — because it exceeded `MaxBufferedSpansPerTrace` under `DropWholeTrace`, or because it was
+evicted to free global capacity — is remembered for `MaxTraceDuration`, so the spans of the same trace received later
+are dropped too instead of being emitted as a fragment of the original trace.
+
+Spans dropped because a trace exceeded its own limit are reported to the client that sent them (see below). Spans lost
+to a global eviction are only logged: they belong to traces buffered by earlier requests, so reporting them in the
+response of whichever request happened to trigger the eviction would describe records that request never sent.
+
+A handler that throws while a buffered trace is dispatched is logged and skipped. Buffered traces are dispatched outside
+of the request that produced them, so the failure never fails the request that happened to trigger the flush, and never
+stops the remaining traces from being dispatched.
 
 ### Reporting rejected records
 

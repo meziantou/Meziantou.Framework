@@ -23,7 +23,7 @@ namespace Meziantou.Framework.CodeOwners;
 [StructLayout(LayoutKind.Auto)]
 public readonly struct CodeOwnersSection : IEquatable<CodeOwnersSection>
 {
-    internal CodeOwnersSection(string name, int requiredReviewerCount = 1, IReadOnlyList<CodeOwnersOwner>? defaultOwners = null)
+    internal CodeOwnersSection(string name, int requiredReviewerCount = 1, IReadOnlyList<CodeOwner>? defaultOwners = null)
     {
         Name = name;
         RequiredReviewerCount = requiredReviewerCount;
@@ -43,7 +43,7 @@ public readonly struct CodeOwnersSection : IEquatable<CodeOwnersSection>
     public bool IsMandatory => !IsOptional;
 
     /// <summary>Gets the owners used by the patterns of this section that do not declare any owner.</summary>
-    public IReadOnlyList<CodeOwnersOwner> DefaultOwners { get; }
+    public IReadOnlyList<CodeOwner> DefaultOwners { get; }
 
     /// <summary>Gets a value indicating whether this section has default owners defined.</summary>
     public bool HasDefaultOwners => DefaultOwners.Count > 0;

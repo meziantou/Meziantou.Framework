@@ -157,7 +157,7 @@ public static class CodeOwnersParser
         private void ParseEntry(string pattern)
         {
             var owners = ParseOwners();
-            IReadOnlyList<CodeOwnersOwner> entryOwners;
+            IReadOnlyList<CodeOwner> entryOwners;
             if (owners is not null)
             {
                 entryOwners = owners;
@@ -198,7 +198,7 @@ public static class CodeOwnersParser
                     requiredReviewerCount = ParseSectionRequiredReviewerCount();
                 }
 
-                var defaultOwners = new List<CodeOwnersOwner>();
+                var defaultOwners = new List<CodeOwner>();
                 if (Peek() is ' ' or '\t')
                 {
                     defaultOwners = ParseSectionDefaultOwners();
@@ -267,12 +267,12 @@ public static class CodeOwnersParser
             return requiredReviewerCount;
         }
 
-        private List<CodeOwnersOwner> ParseSectionDefaultOwners()
+        private List<CodeOwner> ParseSectionDefaultOwners()
         {
             var lineStartIndex = _index;
             var line = ConsumeLine();
 
-            var defaultOwners = new List<CodeOwnersOwner>();
+            var defaultOwners = new List<CodeOwner>();
             var offset = 0;
             while (offset < line.Length)
             {
@@ -297,11 +297,11 @@ public static class CodeOwnersParser
                 }
                 else if (defaultOwner[0] is '@')
                 {
-                    defaultOwners.Add(CodeOwnersOwner.Username(defaultOwner[1..]));
+                    defaultOwners.Add(CodeOwner.Username(defaultOwner[1..]));
                 }
                 else if (IsEmailAddress(defaultOwner))
                 {
-                    defaultOwners.Add(CodeOwnersOwner.EmailAddress(defaultOwner));
+                    defaultOwners.Add(CodeOwner.EmailAddress(defaultOwner));
                 }
                 else
                 {
@@ -374,9 +374,9 @@ public static class CodeOwnersParser
         }
 
         /// <summary>Parses the owners declared on the current line, or returns <see langword="null"/> when the line declares none.</summary>
-        private List<CodeOwnersOwner>? ParseOwners()
+        private List<CodeOwner>? ParseOwners()
         {
-            List<CodeOwnersOwner>? owners = null;
+            List<CodeOwner>? owners = null;
 
             while (!EndOfFile)
             {
@@ -423,12 +423,12 @@ public static class CodeOwnersParser
                 else if (isUsername)
                 {
                     owners ??= [];
-                    owners.Add(CodeOwnersOwner.Username(owner));
+                    owners.Add(CodeOwner.Username(owner));
                 }
                 else if (IsEmailAddress(owner))
                 {
                     owners ??= [];
-                    owners.Add(CodeOwnersOwner.EmailAddress(owner));
+                    owners.Add(CodeOwner.EmailAddress(owner));
                 }
                 else
                 {

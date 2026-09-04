@@ -13,33 +13,33 @@ namespace Meziantou.Framework.CodeOwners;
 /// </example>
 /// </summary>
 [StructLayout(LayoutKind.Auto)]
-public readonly struct CodeOwnersOwner : IEquatable<CodeOwnersOwner>
+public readonly struct CodeOwner : IEquatable<CodeOwner>
 {
-    private CodeOwnersOwner(CodeOwnersOwnerType type, string name)
+    private CodeOwner(CodeOwnerType type, string name)
     {
         Type = type;
         Name = name;
     }
 
     /// <summary>Gets how the owner is identified.</summary>
-    public CodeOwnersOwnerType Type { get; }
+    public CodeOwnerType Type { get; }
 
     /// <summary>Gets the owner identifier: a username without its leading <c>@</c>, or an email address.</summary>
     public string Name { get; }
 
-    internal static CodeOwnersOwner Username(string name) => new(CodeOwnersOwnerType.Username, name);
+    internal static CodeOwner Username(string name) => new(CodeOwnerType.Username, name);
 
-    internal static CodeOwnersOwner EmailAddress(string address) => new(CodeOwnersOwnerType.EmailAddress, address);
+    internal static CodeOwner EmailAddress(string address) => new(CodeOwnerType.EmailAddress, address);
 
     /// <summary>Returns the owner as written in a CODEOWNERS file.</summary>
-    public override string ToString() => Type is CodeOwnersOwnerType.Username ? "@" + Name : Name;
+    public override string ToString() => Type is CodeOwnerType.Username ? "@" + Name : Name;
 
     public override bool Equals([NotNullWhen(true)] object? obj)
     {
-        return obj is CodeOwnersOwner owner && Equals(owner);
+        return obj is CodeOwner owner && Equals(owner);
     }
 
-    public bool Equals(CodeOwnersOwner other)
+    public bool Equals(CodeOwner other)
     {
         return Type == other.Type &&
                string.Equals(Name, other.Name, StringComparison.Ordinal);
@@ -47,6 +47,6 @@ public readonly struct CodeOwnersOwner : IEquatable<CodeOwnersOwner>
 
     public override int GetHashCode() => HashCode.Combine(Type, Name);
 
-    public static bool operator ==(CodeOwnersOwner left, CodeOwnersOwner right) => left.Equals(right);
-    public static bool operator !=(CodeOwnersOwner left, CodeOwnersOwner right) => !(left == right);
+    public static bool operator ==(CodeOwner left, CodeOwner right) => left.Equals(right);
+    public static bool operator !=(CodeOwner left, CodeOwner right) => !(left == right);
 }

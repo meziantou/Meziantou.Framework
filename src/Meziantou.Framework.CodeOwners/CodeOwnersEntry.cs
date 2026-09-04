@@ -15,7 +15,7 @@ namespace Meziantou.Framework.CodeOwners;
 /// <remarks>Entries are returned in the order they appear in the file. CODEOWNERS resolution is last-match-wins, so the last entry whose <see cref="Pattern"/> matches a path owns it.</remarks>
 public sealed class CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 {
-    internal CodeOwnersEntry(string pattern, IReadOnlyList<CodeOwnersOwner> owners, CodeOwnersSection? section)
+    internal CodeOwnersEntry(string pattern, IReadOnlyList<CodeOwner> owners, CodeOwnersSection? section)
     {
         Pattern = pattern;
         Owners = owners;
@@ -26,7 +26,7 @@ public sealed class CodeOwnersEntry : IEquatable<CodeOwnersEntry>
     public string Pattern { get; }
 
     /// <summary>Gets the owners of the pattern. Empty when the entry explicitly leaves the pattern unowned.</summary>
-    public IReadOnlyList<CodeOwnersOwner> Owners { get; }
+    public IReadOnlyList<CodeOwner> Owners { get; }
 
     /// <summary>Gets the section this entry belongs to, or null if not part of a section.</summary>
     public CodeOwnersSection? Section { get; }

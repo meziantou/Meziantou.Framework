@@ -2,13 +2,13 @@ namespace Meziantou.Framework.CodeOwners.Tests;
 
 public sealed class CodeOwnersParserTests
 {
-    private static CodeOwnersOwner User(string name) => CodeOwnersOwner.Username(name);
+    private static CodeOwner User(string name) => CodeOwner.Username(name);
 
-    private static CodeOwnersOwner Email(string address) => CodeOwnersOwner.EmailAddress(address);
+    private static CodeOwner Email(string address) => CodeOwner.EmailAddress(address);
 
-    private static CodeOwnersEntry Entry(string pattern, params CodeOwnersOwner[] owners) => new(pattern, owners, section: null);
+    private static CodeOwnersEntry Entry(string pattern, params CodeOwner[] owners) => new(pattern, owners, section: null);
 
-    private static CodeOwnersEntry Entry(string pattern, CodeOwnersSection section, params CodeOwnersOwner[] owners) => new(pattern, owners, section);
+    private static CodeOwnersEntry Entry(string pattern, CodeOwnersSection section, params CodeOwner[] owners) => new(pattern, owners, section);
 
     [Fact]
     public void ParseEmptyCodeOwners()

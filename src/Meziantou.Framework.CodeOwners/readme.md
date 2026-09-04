@@ -15,7 +15,7 @@ Entries are returned in file order, and CODEOWNERS resolution is last-match-wins
 
 ````c#
 CodeOwnersEntry? owningEntry = entries.LastOrDefault(entry => Matches(entry.Pattern, path));
-IReadOnlyList<CodeOwnersOwner> owners = owningEntry?.Owners ?? [];
+IReadOnlyList<CodeOwner> owners = owningEntry?.Owners ?? [];
 // An empty Owners list means the entry explicitly leaves the pattern unowned
 ````
 

@@ -4,10 +4,28 @@
 
 namespace Meziantou.Framework.CodeOwners
 {
+    public readonly struct CodeOwner : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwner>
+    {
+        public Meziantou.Framework.CodeOwners.CodeOwnerType Type { get => throw null; }
+        public string Name { get => throw null; }
+        public override string ToString() => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public bool Equals(Meziantou.Framework.CodeOwners.CodeOwner other) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwner left, Meziantou.Framework.CodeOwners.CodeOwner right) => throw null;
+        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwner left, Meziantou.Framework.CodeOwners.CodeOwner right) => throw null;
+    }
+
+    public enum CodeOwnerType
+    {
+        Username = 0,
+        EmailAddress = 1
+    }
+
     public sealed class CodeOwnersEntry : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersEntry>
     {
         public string Pattern { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersOwner> Owners { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwner> Owners { get => throw null; }
         public Meziantou.Framework.CodeOwners.CodeOwnersSection? Section { get => throw null; }
         public bool IsOptional { get => throw null; }
         public override string ToString() => throw null;
@@ -25,24 +43,6 @@ namespace Meziantou.Framework.CodeOwners
         InvalidRequiredReviewerCount = 2,
         EmptyOwner = 3,
         InvalidOwner = 4
-    }
-
-    public readonly struct CodeOwnersOwner : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersOwner>
-    {
-        public Meziantou.Framework.CodeOwners.CodeOwnersOwnerType Type { get => throw null; }
-        public string Name { get => throw null; }
-        public override string ToString() => throw null;
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.CodeOwners.CodeOwnersOwner other) => throw null;
-        public override int GetHashCode() => throw null;
-        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersOwner left, Meziantou.Framework.CodeOwners.CodeOwnersOwner right) => throw null;
-        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersOwner left, Meziantou.Framework.CodeOwners.CodeOwnersOwner right) => throw null;
-    }
-
-    public enum CodeOwnersOwnerType
-    {
-        Username = 0,
-        EmailAddress = 1
     }
 
     public sealed class CodeOwnersParseException : System.Exception
@@ -66,7 +66,7 @@ namespace Meziantou.Framework.CodeOwners
         public int RequiredReviewerCount { get => throw null; }
         public bool IsOptional { get => throw null; }
         public bool IsMandatory { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersOwner> DefaultOwners { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwner> DefaultOwners { get => throw null; }
         public bool HasDefaultOwners { get => throw null; }
         public override string ToString() => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;

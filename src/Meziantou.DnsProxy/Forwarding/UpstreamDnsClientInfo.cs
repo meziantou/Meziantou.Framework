@@ -1,8 +1,10 @@
 using Meziantou.Framework.DnsClient;
+using Meziantou.Framework.DnsClient.Query;
+using Meziantou.Framework.DnsClient.Response;
 
 namespace Meziantou.DnsProxy.Forwarding;
 
-internal sealed class UpstreamDnsClientInfo : IDisposable
+internal sealed class UpstreamDnsClientInfo : IUpstreamDnsClient, IDisposable
 {
     public UpstreamDnsClientInfo(string displayName, string endpoint, DnsClient client, SocketsHttpHandler? httpHandler)
     {
@@ -19,6 +21,11 @@ internal sealed class UpstreamDnsClientInfo : IDisposable
     public DnsClient Client { get; }
 
     private SocketsHttpHandler? HttpHandler { get; }
+
+    public Task<DnsResponseMessage> SendAsync(DnsQueryMessage query, CancellationToken cancellationToken)
+    {
+        return Client.SendAsync(query, cancellationToken);
+    }
 
     public void Dispose()
     {

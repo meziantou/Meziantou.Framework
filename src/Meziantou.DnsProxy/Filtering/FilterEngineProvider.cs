@@ -89,7 +89,7 @@ internal sealed class FilterEngineProvider
             activity?.SetTag("dns_proxy.filter.format", format.ToString());
 
             var ruleCount = ruleSet.Count;
-            var listText = await httpClient.GetStringAsync(filter.Url, cancellationToken).ConfigureAwait(false);
+            var listText = await DownloadFilterListAsync(httpClient, options, filter, cancellationToken).ConfigureAwait(false);
             var diagnostics = ruleSet.AddFromList(listText, format);
             await WriteFilterListToCacheAsync(options, filter, listText, cancellationToken).ConfigureAwait(false);
             activity?.SetTag("dns_proxy.filter.rule_count", ruleSet.Count - ruleCount);
@@ -111,6 +111,33 @@ internal sealed class FilterEngineProvider
 
             return false;
         }
+    }
+
+    /// <summary>
+    /// Downloads a filter list with an explicit size limit and timeout. The lists are third-party URLs, so an
+    /// oversized or slow response must not be buffered into memory unbounded.
+    /// </summary>
+    private static async Task<string> DownloadFilterListAsync(HttpClient httpClient, DnsProxyOptions options, FilterListOption filter, CancellationToken cancellationToken)
+    {
+        var maxSize = options.MaxFilterListSizeInBytes > 0 ? options.MaxFilterListSizeInBytes : long.MaxValue;
+
+        using var timeout = options.FilterDownloadTimeout > TimeSpan.Zero ? new CancellationTokenSource(options.FilterDownloadTimeout) : null;
+        using var linked = timeout is null
+            ? null
+            : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+        var downloadCancellationToken = linked?.Token ?? cancellationToken;
+
+        using var response = await httpClient.GetAsync(filter.Url, HttpCompletionOption.ResponseHeadersRead, downloadCancellationToken).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+
+        if (response.Content.Headers.ContentLength is { } contentLength && contentLength > maxSize)
+            throw new InvalidOperationException($"The filter list '{filter.Url}' is {contentLength} bytes, which exceeds the {maxSize} bytes limit.");
+
+        using var stream = await response.Content.ReadAsStreamAsync(downloadCancellationToken).ConfigureAwait(false);
+        using var limitedStream = new LimitedStream(stream, maxSize, filter.Url);
+        using var reader = new StreamReader(limitedStream);
+
+        return await reader.ReadToEndAsync(downloadCancellationToken).ConfigureAwait(false);
     }
 
     private void AddCachedFilterLists(DnsFilterRuleSet ruleSet, DnsProxyOptions options)
@@ -222,5 +249,59 @@ internal sealed class FilterEngineProvider
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(filter.Url))).ToLowerInvariant();
 
         return Path.Combine(cacheFolderPath, hash + ".txt");
+    }
+
+    /// <summary>Fails the read as soon as more than <paramref name="maxSize"/> bytes have been consumed.</summary>
+    private sealed class LimitedStream(Stream innerStream, long maxSize, string filterUrl) : Stream
+    {
+        private long _totalRead;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => _totalRead;
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            var read = innerStream.Read(buffer);
+            Account(read);
+            return read;
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            var read = await innerStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            Account(read);
+            return read;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override void Flush() => throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        private void Account(int read)
+        {
+            _totalRead += read;
+            if (_totalRead > maxSize)
+                throw new InvalidOperationException($"The filter list '{filterUrl}' exceeds the {maxSize} bytes limit.");
+        }
     }
 }

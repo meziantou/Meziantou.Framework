@@ -13,26 +13,35 @@ namespace Meziantou.DnsProxy.Proxy;
 
 internal sealed class DnsProxyHandler
 {
+    /// <summary>The payload size the proxy advertises in its own OPT record. 1232 bytes avoids IP fragmentation on most paths.</summary>
+    private const ushort ResponseUdpPayloadSize = 1232;
+
+    /// <summary>Upper 8 bits of BADVERS (16), reported through the OPT record per RFC 6891.</summary>
+    private const byte BadVersionExtendedRCode = 1;
+
+    /// <summary>TTL of a record synthesized from a <c>$dnsrewrite</c> directive.</summary>
     private const uint RewriteTimeToLive = 60;
 
     private readonly FilterEngineProvider _filterEngineProvider;
     private readonly FilteringPauseState _filteringPauseState;
     private readonly CustomDnsRecordProvider _customDnsRecordProvider;
-    private readonly UpstreamDnsClientFactory _upstreamDnsClientFactory;
+    private readonly IUpstreamDnsClientProvider _upstreamDnsClientProvider;
     private readonly DnsResponseCache _dnsResponseCache;
     private readonly ClientRateLimiter _clientRateLimiter;
+    private readonly ClientAccessPolicy _clientAccessPolicy;
     private readonly RequestHistoryStore _requestHistoryStore;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<DnsProxyHandler> _logger;
 
-    public DnsProxyHandler(FilterEngineProvider filterEngineProvider, FilteringPauseState filteringPauseState, CustomDnsRecordProvider customDnsRecordProvider, UpstreamDnsClientFactory upstreamDnsClientFactory, DnsResponseCache dnsResponseCache, ClientRateLimiter clientRateLimiter, RequestHistoryStore requestHistoryStore, TimeProvider timeProvider, ILogger<DnsProxyHandler> logger)
+    public DnsProxyHandler(FilterEngineProvider filterEngineProvider, FilteringPauseState filteringPauseState, CustomDnsRecordProvider customDnsRecordProvider, IUpstreamDnsClientProvider upstreamDnsClientProvider, DnsResponseCache dnsResponseCache, ClientRateLimiter clientRateLimiter, ClientAccessPolicy clientAccessPolicy, RequestHistoryStore requestHistoryStore, TimeProvider timeProvider, ILogger<DnsProxyHandler> logger)
     {
         _filterEngineProvider = filterEngineProvider;
         _filteringPauseState = filteringPauseState;
         _customDnsRecordProvider = customDnsRecordProvider;
-        _upstreamDnsClientFactory = upstreamDnsClientFactory;
+        _upstreamDnsClientProvider = upstreamDnsClientProvider;
         _dnsResponseCache = dnsResponseCache;
         _clientRateLimiter = clientRateLimiter;
+        _clientAccessPolicy = clientAccessPolicy;
         _requestHistoryStore = requestHistoryStore;
         _timeProvider = timeProvider;
         _logger = logger;
@@ -42,173 +51,166 @@ internal sealed class DnsProxyHandler
     {
         var response = context.CreateResponse();
         response.ResponseCode = DnsResponseCode.NoError;
+        response.RecursionAvailable = true;
 
-        foreach (var question in context.Query.Questions)
+        var queryEdnsOptions = context.Query.EdnsOptions;
+        ApplyResponseEdnsOptions(queryEdnsOptions, response);
+
+        if (context.Query.OpCode is not DnsOpCode.Query)
         {
-            var historyEntryBuilder = new RequestHistoryEntryBuilder
-            {
-                TimestampUtc = _timeProvider.GetUtcNow(),
-                Client = context.RemoteEndPoint is IPEndPoint ipEndPoint ? ipEndPoint.Address.ToString() : context.RemoteEndPoint.ToString() ?? "unknown",
-                Protocol = context.Protocol.ToString(),
-                QuestionName = question.Name,
-                QuestionType = question.Type.ToString(),
-                Result = "Forwarded",
-                Upstream = "-",
-            };
-            var clientAddress = context.RemoteEndPoint is IPEndPoint endpoint ? endpoint.Address : null;
-            if (!_clientRateLimiter.TryAcquire(clientAddress))
-            {
-                response.ResponseCode = DnsResponseCode.Refused;
-                historyEntryBuilder.Result = "RateLimited";
-                historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
-                _requestHistoryStore.Add(historyEntryBuilder.Build(response));
-                continue;
-            }
-
-            if (_customDnsRecordProvider.TryApply(question, response))
-            {
-                ApplyQueryEdnsOptions(context, response);
-                historyEntryBuilder.Result = "CustomRecord";
-                historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
-                _requestHistoryStore.Add(historyEntryBuilder.Build(response));
-                continue;
-            }
-
-            if (!_filteringPauseState.IsDisabled)
-            {
-                var filterResult = _filterEngineProvider.Engine.Evaluate(
-                    question.Name,
-                    ConvertToFilterQueryType(question.Type),
-                    new DnsClientInfo
-                    {
-                        Address = clientAddress,
-                    });
-
-                if (filterResult.Action is DnsFilterAction.Rewrite && TryApplyRewrite(filterResult.Rewrite!, question, response))
-                {
-                    ApplyQueryEdnsOptions(context, response);
-                    historyEntryBuilder.Result = "Rewritten";
-                    historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
-                    _requestHistoryStore.Add(historyEntryBuilder.Build(response));
-                    continue;
-                }
-
-                if (filterResult.Action is DnsFilterAction.Block or DnsFilterAction.Rewrite)
-                {
-                    response.ResponseCode = DnsResponseCode.NameError;
-                    historyEntryBuilder.Result = "Blocked";
-                    historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
-                    _requestHistoryStore.Add(historyEntryBuilder.Build(response));
-                    continue;
-                }
-            }
-
-            if (_dnsResponseCache.TryGet(question, context.Query.EdnsOptions, response))
-            {
-                ApplyQueryEdnsOptions(context, response);
-                historyEntryBuilder.Result = "CacheHit";
-                historyEntryBuilder.Upstream = "Cache";
-                historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
-                _requestHistoryStore.Add(historyEntryBuilder.Build(response));
-                continue;
-            }
-
-            var forwardResult = await ForwardToUpstreamAsync(question, cancellationToken).ConfigureAwait(false);
-            if (forwardResult.IsSuccess)
-            {
-                var upstreamResponse = forwardResult.Response!;
-                var forwardedResponse = context.CreateResponse();
-                ApplyUpstreamResponse(context, upstreamResponse, forwardedResponse);
-                _dnsResponseCache.Store(question, context.Query.EdnsOptions, forwardedResponse);
-                AppendResponse(forwardedResponse, response);
-
-                historyEntryBuilder.Upstream = forwardResult.UpstreamEndpoint;
-                historyEntryBuilder.LatencyMs = forwardResult.LatencyMs;
-                historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
-            }
-            else
-            {
-                response.ResponseCode = DnsResponseCode.ServerFailure;
-                historyEntryBuilder.Result = "UpstreamFailure";
-                historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
-            }
-
-            _requestHistoryStore.Add(historyEntryBuilder.Build(response));
+            response.ResponseCode = DnsResponseCode.NotImplemented;
+            return response;
         }
+
+        // An unsupported EDNS version must be answered with BADVERS and the highest version supported (RFC 6891, 6.1.3).
+        if (queryEdnsOptions is { Version: > 0 } && response.EdnsOptions is { } responseEdns)
+        {
+            responseEdns.ExtendedRCode = BadVersionExtendedRCode;
+            return response;
+        }
+
+        // A query carrying anything other than a single question has no defined merge semantics for the response code,
+        // so it is rejected rather than answered ambiguously.
+        if (context.Query.Questions.Count is not 1)
+        {
+            response.ResponseCode = DnsResponseCode.FormError;
+            return response;
+        }
+
+        var question = context.Query.Questions[0];
+        var clientAddress = context.RemoteEndPoint is IPEndPoint ipEndPoint ? ipEndPoint.Address : null;
+        var historyEntryBuilder = new RequestHistoryEntryBuilder
+        {
+            TimestampUtc = _timeProvider.GetUtcNow(),
+            Client = clientAddress?.ToString() ?? context.RemoteEndPoint.ToString() ?? "unknown",
+            Protocol = context.Protocol.ToString(),
+            QuestionName = question.Name,
+            QuestionType = question.Type.ToString(),
+            Result = "Forwarded",
+            Upstream = "-",
+        };
+
+        if (!_clientAccessPolicy.IsAllowed(clientAddress))
+        {
+            return Complete(response, historyEntryBuilder, DnsResponseCode.Refused, "NotAllowed");
+        }
+
+        if (!_clientRateLimiter.TryAcquire(clientAddress))
+        {
+            return Complete(response, historyEntryBuilder, DnsResponseCode.Refused, "RateLimited");
+        }
+
+        if (_customDnsRecordProvider.TryApply(question, response))
+        {
+            return Complete(response, historyEntryBuilder, response.ResponseCode, "CustomRecord");
+        }
+
+        if (!_filteringPauseState.IsDisabled)
+        {
+            var filterResult = _filterEngineProvider.Engine.Evaluate(
+                question.Name,
+                ConvertToFilterQueryType(question.Type),
+                new DnsClientInfo
+                {
+                    Address = clientAddress,
+                });
+
+            if (filterResult.Action is DnsFilterAction.Rewrite && TryApplyRewrite(filterResult.Rewrite!, question, response))
+            {
+                return Complete(response, historyEntryBuilder, response.ResponseCode, "Rewritten");
+            }
+
+            if (filterResult.Action is DnsFilterAction.Block or DnsFilterAction.Rewrite)
+            {
+                return Complete(response, historyEntryBuilder, DnsResponseCode.NameError, "Blocked");
+            }
+        }
+
+        if (_dnsResponseCache.TryGet(question, queryEdnsOptions, response))
+        {
+            historyEntryBuilder.Upstream = "Cache";
+            return Complete(response, historyEntryBuilder, response.ResponseCode, "CacheHit");
+        }
+
+        var forwardResult = await ForwardToUpstreamAsync(question, queryEdnsOptions, cancellationToken).ConfigureAwait(false);
+        if (!forwardResult.IsSuccess)
+        {
+            return Complete(response, historyEntryBuilder, DnsResponseCode.ServerFailure, "UpstreamFailure");
+        }
+
+        ApplyUpstreamResponse(forwardResult.Response!, response);
+        _dnsResponseCache.Store(question, queryEdnsOptions, response);
+
+        historyEntryBuilder.Upstream = forwardResult.UpstreamEndpoint;
+        historyEntryBuilder.LatencyMs = forwardResult.LatencyMs;
+        var result = response.ResponseCode is DnsResponseCode.ServerFailure or DnsResponseCode.Refused ? "UpstreamFailure" : "Forwarded";
+        return Complete(response, historyEntryBuilder, response.ResponseCode, result);
+    }
+
+    private DnsMessage Complete(DnsMessage response, RequestHistoryEntryBuilder historyEntryBuilder, DnsResponseCode responseCode, string result)
+    {
+        response.ResponseCode = responseCode;
+        historyEntryBuilder.Result = result;
+        historyEntryBuilder.ResponseCode = responseCode.ToString();
+        _requestHistoryStore.Add(historyEntryBuilder.Build(response));
 
         return response;
     }
 
-    private static void ApplyUpstreamResponse(DnsRequestContext context, Meziantou.Framework.DnsClient.Response.DnsResponseMessage upstreamResponse, DnsMessage response)
+    private static void ApplyUpstreamResponse(Meziantou.Framework.DnsClient.Response.DnsResponseMessage upstreamResponse, DnsMessage response)
     {
         response.ResponseCode = (DnsResponseCode)upstreamResponse.Header.ResponseCode;
         response.RecursionAvailable = upstreamResponse.Header.RecursionAvailable;
 
-        foreach (var answer in upstreamResponse.Answers)
-        {
-            response.Answers.Add(DnsRecordConverter.ConvertToServerRecord(answer));
-        }
+        // The AD bit is deliberately not forwarded: the proxy does not validate signatures itself, so it must not
+        // claim the answer is authenticated. DNSSEC records are forwarded, so a client can validate for itself.
 
-        foreach (var authority in upstreamResponse.Authorities)
-        {
-            response.Authorities.Add(DnsRecordConverter.ConvertToServerRecord(authority));
-        }
-
-        foreach (var additionalRecord in upstreamResponse.AdditionalRecords)
-        {
-            response.AdditionalRecords.Add(DnsRecordConverter.ConvertToServerRecord(additionalRecord));
-        }
-
-        ApplyQueryEdnsOptions(context, response);
+        AppendRecords(response.Answers, upstreamResponse.Answers);
+        AppendRecords(response.Authorities, upstreamResponse.Authorities);
+        AppendRecords(response.AdditionalRecords, upstreamResponse.AdditionalRecords);
     }
 
-    private static void ApplyQueryEdnsOptions(DnsRequestContext context, DnsMessage response)
+    private static void AppendRecords(ICollection<DnsResourceRecord> target, IEnumerable<Meziantou.Framework.DnsClient.Response.DnsRecord> records)
     {
-        if (context.Query.EdnsOptions is not { } queryEdns)
+        foreach (var record in records)
         {
+            // The proxy emits its own OPT record from DnsMessage.EdnsOptions; copying the upstream's would
+            // produce a second OPT record, which RFC 6891 forbids.
+            if (record.RecordType is Meziantou.Framework.DnsClient.Query.DnsQueryType.OPT)
+            {
+                continue;
+            }
+
+            target.Add(DnsRecordConverter.ConvertToServerRecord(record));
+        }
+    }
+
+    /// <summary>
+    /// Builds the OPT record the proxy sends back. The payload size and version describe the proxy, not the client,
+    /// so they are not echoed from the query.
+    /// </summary>
+    private static void ApplyResponseEdnsOptions(DnsEdnsOptions? queryEdnsOptions, DnsMessage response)
+    {
+        if (queryEdnsOptions is null)
+        {
+            response.EdnsOptions = null;
             return;
         }
 
         response.EdnsOptions = new DnsEdnsOptions
         {
-            UdpPayloadSize = queryEdns.UdpPayloadSize,
-            Version = queryEdns.Version,
-            DnssecOk = queryEdns.DnssecOk,
-            ExtendedRCode = queryEdns.ExtendedRCode,
+            UdpPayloadSize = ResponseUdpPayloadSize,
+            Version = 0,
+            DnssecOk = queryEdnsOptions.DnssecOk,
+            ExtendedRCode = 0,
         };
-    }
-
-    private static void AppendResponse(DnsMessage source, DnsMessage target)
-    {
-        target.IsAuthoritative = source.IsAuthoritative;
-        target.IsTruncated = source.IsTruncated;
-        target.RecursionAvailable = source.RecursionAvailable;
-        target.AuthenticatedData = source.AuthenticatedData;
-        target.CheckingDisabled = source.CheckingDisabled;
-        target.ResponseCode = source.ResponseCode;
-        target.EdnsOptions = source.EdnsOptions;
-
-        foreach (var answer in source.Answers)
-        {
-            target.Answers.Add(answer);
-        }
-
-        foreach (var authority in source.Authorities)
-        {
-            target.Authorities.Add(authority);
-        }
-
-        foreach (var additionalRecord in source.AdditionalRecords)
-        {
-            target.AdditionalRecords.Add(additionalRecord);
-        }
     }
 
     private static DnsFilterQueryType ConvertToFilterQueryType(DnsQueryType queryType)
     {
-        // DnsFilterQueryType is an open set of QTYPE codes. Substituting ANY for an unnamed type
-        // would make $dnstype=ANY rules fire on it and $dnstype=~ANY rules spare it.
-        return (DnsFilterQueryType)queryType;
+        return Enum.IsDefined((DnsFilterQueryType)queryType)
+            ? (DnsFilterQueryType)queryType
+            : DnsFilterQueryType.ANY;
     }
 
     /// <summary>
@@ -252,23 +254,34 @@ internal sealed class DnsProxyHandler
         return true;
     }
 
-    private async Task<ForwardResult> ForwardToUpstreamAsync(Meziantou.Framework.DnsServer.Protocol.DnsQuestion question, CancellationToken cancellationToken)
+    private async Task<ForwardResult> ForwardToUpstreamAsync(DnsQuestion question, DnsEdnsOptions? queryEdnsOptions, CancellationToken cancellationToken)
     {
-        var upstreams = _upstreamDnsClientFactory.GetUpstreams();
+        var upstreams = _upstreamDnsClientProvider.GetUpstreams();
         if (upstreams.Count == 0)
         {
             return ForwardResult.Failure();
         }
 
+        // A SERVFAIL or REFUSED is an upstream problem rather than an answer, so the next upstream is tried. The last
+        // such response is kept so the client sees the real response code when every upstream is unhealthy.
+        var lastUnhealthyResult = ForwardResult.Failure();
         foreach (var upstream in upstreams)
         {
             try
             {
-                var result = await QueryUpstreamAsync(upstream, question, cancellationToken).ConfigureAwait(false);
-                if (result.IsSuccess)
+                var result = await QueryUpstreamAsync(upstream, question, queryEdnsOptions, cancellationToken).ConfigureAwait(false);
+                if (!result.IsSuccess)
                 {
-                    return result;
+                    continue;
                 }
+
+                if (IsUpstreamFailure(result.Response!))
+                {
+                    lastUnhealthyResult = result;
+                    continue;
+                }
+
+                return result;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -281,10 +294,17 @@ internal sealed class DnsProxyHandler
             }
         }
 
-        return ForwardResult.Failure();
+        return lastUnhealthyResult;
     }
 
-    private static async Task<ForwardResult> QueryUpstreamAsync(UpstreamDnsClientInfo upstream, Meziantou.Framework.DnsServer.Protocol.DnsQuestion question, CancellationToken cancellationToken)
+    private static bool IsUpstreamFailure(Meziantou.Framework.DnsClient.Response.DnsResponseMessage response)
+    {
+        // NXDOMAIN and an empty NOERROR are real answers and must not trigger failover.
+        return response.Header.ResponseCode is Meziantou.Framework.DnsClient.Response.DnsResponseCode.ServerFailure
+            or Meziantou.Framework.DnsClient.Response.DnsResponseCode.Refused;
+    }
+
+    private static async Task<ForwardResult> QueryUpstreamAsync(IUpstreamDnsClient upstream, DnsQuestion question, DnsEdnsOptions? queryEdnsOptions, CancellationToken cancellationToken)
     {
         var startTimestamp = Stopwatch.GetTimestamp();
         try
@@ -298,7 +318,19 @@ internal sealed class DnsProxyHandler
                 (Meziantou.Framework.DnsClient.Query.DnsQueryType)question.Type,
                 (Meziantou.Framework.DnsClient.Query.DnsQueryClass)question.QueryClass));
 
-            var response = await upstream.Client.SendAsync(query, cancellationToken).ConfigureAwait(false);
+            // The client's DNSSEC-OK bit must reach the upstream, otherwise the proxy would answer a DNSSEC-aware
+            // client with unsigned data while still reporting DO in its own OPT record.
+            if (queryEdnsOptions is not null)
+            {
+                query.EdnsOptions = new Meziantou.Framework.DnsClient.Query.DnsEdnsOptions
+                {
+                    UdpPayloadSize = ResponseUdpPayloadSize,
+                    Version = 0,
+                    DnssecOk = queryEdnsOptions.DnssecOk,
+                };
+            }
+
+            var response = await upstream.SendAsync(query, cancellationToken).ConfigureAwait(false);
             return ForwardResult.Success(upstream.DisplayName, response, (long)Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)

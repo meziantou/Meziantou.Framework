@@ -17,6 +17,7 @@ public sealed class DnsProxyOptionsTests
     public void DnsProxyOptions_Defaults_AreExpected()
     {
         var options = new DnsProxyOptions();
+        options.ApplyDefaults();
 
         Assert.Equal(5053, options.DnsPort);
         Assert.Equal(5080, options.HttpPort);
@@ -273,6 +274,98 @@ public sealed class DnsProxyOptionsTests
         Assert.True(limiter.TryAcquire(clientAddress));
         Assert.True(limiter.TryAcquire(clientAddress));
         Assert.True(limiter.TryAcquire(clientAddress));
+    }
+
+    [Fact]
+    public void CustomDnsRecordProvider_DoesNotAnswerQueriesFromAnotherClass()
+    {
+        var provider = CreateCustomDnsRecordProvider(new CustomDnsRecordOption { Domain = "sample.local", Type = "A", Value = "192.168.1.11" });
+        var response = new DnsMessage();
+
+        Assert.False(provider.TryApply(new DnsServerQuestion("sample.local", DnsQueryType.A, DnsQueryClass.CH), response));
+        Assert.Empty(response.Answers);
+    }
+
+    [Fact]
+    public void ClientAccessPolicy_WithoutConfiguredNetworks_AllowsEveryClient()
+    {
+        var policy = CreateAccessPolicy();
+
+        Assert.False(policy.HasRestrictions);
+        Assert.True(policy.IsAllowed(IPAddress.Parse("203.0.113.7")));
+    }
+
+    [Fact]
+    public void ClientAccessPolicy_AllowsClientsInsideTheConfiguredNetworks()
+    {
+        var policy = CreateAccessPolicy("192.168.1.0/24", "203.0.113.7");
+
+        Assert.True(policy.HasRestrictions);
+        Assert.True(policy.IsAllowed(IPAddress.Parse("192.168.1.42")));
+        Assert.True(policy.IsAllowed(IPAddress.Parse("203.0.113.7")));
+    }
+
+    [Fact]
+    public void ClientAccessPolicy_RejectsClientsOutsideTheConfiguredNetworks()
+    {
+        var policy = CreateAccessPolicy("192.168.1.0/24");
+
+        Assert.False(policy.IsAllowed(IPAddress.Parse("192.168.2.42")));
+        Assert.False(policy.IsAllowed(IPAddress.Parse("203.0.113.8")));
+    }
+
+    [Fact]
+    public void ClientAccessPolicy_AlwaysAllowsLoopbackSoTheLocalEndpointsKeepWorking()
+    {
+        var policy = CreateAccessPolicy("192.168.1.0/24");
+
+        Assert.True(policy.IsAllowed(IPAddress.Loopback));
+        Assert.True(policy.IsAllowed(IPAddress.IPv6Loopback));
+        Assert.True(policy.IsAllowed(clientAddress: null));
+    }
+
+    [Fact]
+    public void ClientAccessPolicy_MatchesIPv4MappedAddresses()
+    {
+        var policy = CreateAccessPolicy("192.168.1.0/24");
+
+        Assert.True(policy.IsAllowed(IPAddress.Parse("192.168.1.42").MapToIPv6()));
+    }
+
+    [Fact]
+    public void ClientAccessPolicy_IgnoresInvalidNetworks()
+    {
+        var policy = CreateAccessPolicy("not-an-address", "192.168.1.0/24");
+
+        Assert.True(policy.IsAllowed(IPAddress.Parse("192.168.1.42")));
+        Assert.False(policy.IsAllowed(IPAddress.Parse("192.168.2.42")));
+    }
+
+    [Fact]
+    public void ApplyDefaults_DoesNotAddToCollectionsThatConfigurationAlreadyProvided()
+    {
+        // Configuration binding appends to a pre-populated collection, so the defaults must only fill empty ones.
+        var options = new DnsProxyOptions
+        {
+            Upstreams = [new UpstreamServerOption { Name = "Only", Url = new("https://example.com/dns-query") }],
+            Filters = [new FilterListOption { Url = "https://example.com/list.txt" }],
+            BootstrapDnsServers = ["203.0.113.53"],
+            BindAddresses = ["0.0.0.0"],
+        };
+
+        options.ApplyDefaults();
+
+        Assert.Equal("Only", Assert.Single(options.Upstreams).Name);
+        Assert.Equal("https://example.com/list.txt", Assert.Single(options.Filters).Url);
+        Assert.Equal("203.0.113.53", Assert.Single(options.BootstrapDnsServers));
+        Assert.Equal("0.0.0.0", Assert.Single(options.BindAddresses));
+    }
+
+    private static ClientAccessPolicy CreateAccessPolicy(params string[] allowedClientNetworks)
+    {
+        return new ClientAccessPolicy(
+            Options.Create(new DnsProxyOptions { AllowedClientNetworks = [.. allowedClientNetworks] }),
+            NullLogger<ClientAccessPolicy>.Instance);
     }
 
     private static CustomDnsRecordProvider CreateCustomDnsRecordProvider(params CustomDnsRecordOption[] customRecords)

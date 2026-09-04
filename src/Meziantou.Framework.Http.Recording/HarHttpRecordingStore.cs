@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Text.Json;
 using Meziantou.Framework.HttpArchive;
 
 namespace Meziantou.Framework.Http.Recording;
@@ -5,7 +7,13 @@ namespace Meziantou.Framework.Http.Recording;
 /// <summary>Stores recorded HTTP entries in HAR (HTTP Archive) 1.2 format.</summary>
 public sealed class HarHttpRecordingStore : IHttpRecordingStore
 {
-    private static readonly System.Text.UTF8Encoding Utf8EncodingThrowOnInvalid = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    /// <summary>HAR 1.2 uses -1 for "information not available". 0 is a factual claim that tooling will plot.</summary>
+    private const long UnknownSize = -1;
+
+    private static readonly UTF8Encoding Utf8EncodingThrowOnInvalid = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    private static readonly JsonElement Base64EncodingValue = CreateBase64EncodingValue();
+    private static readonly string CreatorVersion = GetCreatorVersion();
+
     private readonly string _filePath;
 
     public HarHttpRecordingStore(string filePath)
@@ -22,11 +30,22 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
             return [];
         }
 
-        await using var stream = File.OpenRead(_filePath);
-        var doc = await HarDocument.ParseAsync(stream, cancellationToken).ConfigureAwait(false);
+        HarDocument doc;
+        await using (var stream = File.OpenRead(_filePath))
+        {
+            try
+            {
+                doc = await HarDocument.ParseAsync(stream, cancellationToken).ConfigureAwait(false);
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidDataException($"The recording file '{_filePath}' is not a valid HAR document. It may have been truncated by an interrupted save.", ex);
+            }
+        }
+
         if (doc.Log?.Entries is not { } harEntries)
         {
-            return [];
+            throw new InvalidDataException($"The recording file '{_filePath}' has no 'log.entries' array. Delete it to start a new recording.");
         }
 
         var entries = new List<HttpRecordingEntry>(harEntries.Count);
@@ -35,17 +54,14 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
             entries.Add(ConvertFromHarEntry(harEntry));
         }
 
+        HttpRecordingStoreHelpers.ValidateEntries(entries, _filePath);
         return entries;
     }
 
     /// <inheritdoc />
-    public async ValueTask SaveAsync(IReadOnlyList<HttpRecordingEntry> entries, CancellationToken cancellationToken)
+    public ValueTask SaveAsync(IReadOnlyList<HttpRecordingEntry> entries, CancellationToken cancellationToken)
     {
-        var directory = Path.GetDirectoryName(_filePath);
-        if (!string.IsNullOrEmpty(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
+        ArgumentNullException.ThrowIfNull(entries);
 
         var harEntries = new List<HarEntry>(entries.Count);
         foreach (var entry in entries)
@@ -58,13 +74,15 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
             Log = new HarLog
             {
                 Version = "1.2",
-                Creator = new HarCreator { Name = "Meziantou.Framework.Http.Recording", Version = "1.0.0" },
+                Creator = new HarCreator { Name = "Meziantou.Framework.Http.Recording", Version = CreatorVersion },
                 Entries = harEntries,
             },
         };
 
-        await using var stream = File.Create(_filePath);
-        await doc.WriteToAsync(stream, indented: true, cancellationToken).ConfigureAwait(false);
+        return HttpRecordingStoreHelpers.WriteAtomicallyAsync(
+            _filePath,
+            async (stream, token) => await doc.WriteToAsync(stream, indented: true, token).ConfigureAwait(false),
+            cancellationToken);
     }
 
     private static HttpRecordingEntry ConvertFromHarEntry(HarEntry harEntry)
@@ -77,6 +95,8 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
             Method = request?.Method ?? "",
             RequestUri = request?.Url ?? "",
             StatusCode = response?.Status ?? 0,
+            ReasonPhrase = string.IsNullOrEmpty(response?.StatusText) ? null : response.StatusText,
+            HttpVersion = ParseHttpVersion(response?.HttpVersion),
             RecordedAt = harEntry.StartedDateTime,
             RequestHeaders = ConvertFromHarHeaders(request?.Headers),
             ResponseHeaders = ConvertFromHarHeaders(response?.Headers),
@@ -88,12 +108,11 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
             entry.RequestBody = requestBody;
         }
 
-        // Response body
-        if (response?.Content?.Text is { } responseText)
+        // Response body. Uses the same helper as the request side: it reports an unrecognized encoding or malformed
+        // base64 as "no body" instead of throwing or silently returning the undecoded text as bytes.
+        if (response?.Content.TryGetRawData(out var responseBody) is true)
         {
-            entry.ResponseBody = string.Equals(response.Content.Encoding, "base64", StringComparison.OrdinalIgnoreCase)
-                ? Convert.FromBase64String(responseText)
-                : System.Text.Encoding.UTF8.GetBytes(responseText);
+            entry.ResponseBody = responseBody;
         }
 
         return entry;
@@ -125,13 +144,18 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
             Method = entry.Method,
             Url = entry.RequestUri,
             Headers = ConvertToHarHeaders(entry.RequestHeaders),
+            HeadersSize = UnknownSize,
+            BodySize = entry.RequestBody?.Length ?? UnknownSize,
         };
 
         var response = new HarResponse
         {
             Status = entry.StatusCode,
-            StatusText = "",
+            StatusText = entry.ReasonPhrase ?? "",
+            HttpVersion = entry.HttpVersion is { } version ? "HTTP/" + version : "",
             Headers = ConvertToHarHeaders(entry.ResponseHeaders),
+            HeadersSize = UnknownSize,
+            BodySize = entry.ResponseBody?.Length ?? UnknownSize,
         };
 
         // Request body
@@ -151,9 +175,9 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
             else
             {
                 postData.Text = Convert.ToBase64String(entry.RequestBody);
-                postData.ExtensionData = new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal)
+                postData.ExtensionData = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
                 {
-                    [HarPostDataExtensions.DefaultEncodingExtensionName] = System.Text.Json.JsonDocument.Parse("\"base64\"").RootElement.Clone(),
+                    [HarPostDataExtensions.DefaultEncodingExtensionName] = Base64EncodingValue,
                 };
             }
 
@@ -187,6 +211,7 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
         return new HarEntry
         {
             StartedDateTime = entry.RecordedAt,
+            Time = UnknownSize,
             Request = request,
             Response = response,
         };
@@ -244,11 +269,40 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
             text = Utf8EncodingThrowOnInvalid.GetString(bytes);
             return true;
         }
-        catch (System.Text.DecoderFallbackException)
+        catch (DecoderFallbackException)
         {
             text = null;
             return false;
         }
     }
 
+    /// <summary>Converts the HAR <c>httpVersion</c> field (e.g. <c>HTTP/1.1</c>) to the version string used by <see cref="HttpRecordingEntry.HttpVersion"/>.</summary>
+    private static string? ParseHttpVersion(string? httpVersion)
+    {
+        if (string.IsNullOrEmpty(httpVersion))
+            return null;
+
+        const string Prefix = "HTTP/";
+        var value = httpVersion.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase) ? httpVersion[Prefix.Length..] : httpVersion;
+        return Version.TryParse(value, out _) ? value : null;
+    }
+
+    private static JsonElement CreateBase64EncodingValue()
+    {
+        using var document = JsonDocument.Parse("\"base64\"");
+        return document.RootElement.Clone();
+    }
+
+    private static string GetCreatorVersion()
+    {
+        var informationalVersion = typeof(HarHttpRecordingStore).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        if (!string.IsNullOrEmpty(informationalVersion))
+        {
+            // Strip the source-revision suffix that the SDK appends (1.2.3+abcdef).
+            var separatorIndex = informationalVersion.IndexOf('+', StringComparison.Ordinal);
+            return separatorIndex >= 0 ? informationalVersion[..separatorIndex] : informationalVersion;
+        }
+
+        return typeof(HarHttpRecordingStore).Assembly.GetName().Version?.ToString() ?? "";
+    }
 }

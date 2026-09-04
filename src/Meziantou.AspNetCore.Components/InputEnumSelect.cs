@@ -17,6 +17,13 @@ namespace Meziantou.AspNetCore.Components;
 // Note that adding a constraint on TEnum (where T : Enum) doesn't work when used in the view, Razor raises an error at build time. Also, this would prevent using nullable types...
 public sealed class InputEnumSelect<TEnum> : InputBase<TEnum>
 {
+    private static readonly bool IsNullable = Nullable.GetUnderlyingType(typeof(TEnum)) is not null;
+    private static readonly (string Value, string? DisplayName)[] Options = GetOptions();
+
+    /// <summary>Gets or sets the text of the empty option rendered for nullable enum types. Defaults to an empty string.</summary>
+    [Parameter]
+    public string EmptyOptionText { get; set; } = "";
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "select");
@@ -25,13 +32,22 @@ public sealed class InputEnumSelect<TEnum> : InputBase<TEnum>
         builder.AddAttribute(3, "value", BindConverter.FormatValue(CurrentValueAsString));
         builder.AddAttribute(4, "onchange", EventCallback.Factory.CreateBinder<string?>(this, value => CurrentValueAsString = value, CurrentValueAsString, culture: null));
 
-        // Add an option element per enum value
-        var enumType = InputEnumSelect<TEnum>.GetEnumType();
-        foreach (var value in Enum.GetValues(enumType))
+        // A nullable enum needs an empty option, otherwise null is not selectable and a null value silently displays
+        // as the first member of the enum
+        if (IsNullable)
         {
             builder.OpenElement(5, "option");
-            builder.AddAttribute(6, "value", value.ToString());
-            builder.AddContent(7, GetDisplayName(value));
+            builder.AddAttribute(6, "value", "");
+            builder.AddContent(7, EmptyOptionText);
+            builder.CloseElement();
+        }
+
+        // Add an option element per enum value
+        foreach (var option in Options)
+        {
+            builder.OpenElement(8, "option");
+            builder.AddAttribute(9, "value", option.Value);
+            builder.AddContent(10, option.DisplayName);
             builder.CloseElement();
         }
 
@@ -64,6 +80,20 @@ public sealed class InputEnumSelect<TEnum> : InputBase<TEnum>
         result = default;
         validationErrorMessage = $"The {FieldIdentifier.FieldName} field is not valid.";
         return false;
+    }
+
+    // Reflecting over the enum members on every render is wasteful: the set of options cannot change at runtime
+    private static (string Value, string? DisplayName)[] GetOptions()
+    {
+        var values = Enum.GetValues(GetEnumType());
+        var result = new (string, string?)[values.Length];
+        for (var i = 0; i < values.Length; i++)
+        {
+            var value = values.GetValue(i);
+            result[i] = (value?.ToString() ?? "", GetDisplayName(value));
+        }
+
+        return result;
     }
 
     // Get the display text for an enum value:

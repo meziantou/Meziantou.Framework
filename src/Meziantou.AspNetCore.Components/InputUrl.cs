@@ -10,7 +10,7 @@ namespace Meziantou.AspNetCore.Components;
 public class InputUrl<TValue> : InputBase<TValue>
 {
     /// <summary>Gets or sets the error message to display when the input value cannot be parsed.</summary>
-    [Parameter] public string ParsingErrorMessage { get; set; } = "";
+    [Parameter] public string ParsingErrorMessage { get; set; } = "The {0} field must be a valid URL.";
 
     /// <summary>Gets a reference to the rendered input element.</summary>
     [DisallowNull] public ElementReference? Element { get; protected set; }
@@ -56,7 +56,7 @@ public class InputUrl<TValue> : InputBase<TValue>
         }
         else
         {
-            throw new InvalidOperationException($"The type '{targetType}' is not a supported date type.");
+            throw new InvalidOperationException($"The type '{targetType}' is not supported. Use string or Uri.");
         }
 
         if (success)
@@ -72,9 +72,27 @@ public class InputUrl<TValue> : InputBase<TValue>
         }
     }
 
+    // The component renders <input type="url">, but the parser also runs for programmatic binding and for forms that
+    // never submit natively, so schemes that execute script are rejected here. Consumers commonly render the result
+    // into an anchor href, and this is the only place that can prevent that becoming a script injection.
+    private static bool HasDangerousScheme(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return false;
+
+        var separatorIndex = value.IndexOf(':', StringComparison.Ordinal);
+        if (separatorIndex < 0)
+            return false;
+
+        var scheme = value.AsSpan(0, separatorIndex).Trim();
+        return scheme.Equals("javascript", StringComparison.OrdinalIgnoreCase)
+            || scheme.Equals("vbscript", StringComparison.OrdinalIgnoreCase)
+            || scheme.Equals("data", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static bool TryParseString(string? value, out TValue? result)
     {
-        if (value is not null)
+        if (value is not null && !HasDangerousScheme(value))
         {
             result = (TValue)(object)value;
             return true;
@@ -88,7 +106,7 @@ public class InputUrl<TValue> : InputBase<TValue>
 
     private static bool TryParseUri(string? value, out TValue? result)
     {
-        if (Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out var uri))
+        if (!HasDangerousScheme(value) && Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out var uri))
         {
             result = (TValue)(object)uri;
             return true;

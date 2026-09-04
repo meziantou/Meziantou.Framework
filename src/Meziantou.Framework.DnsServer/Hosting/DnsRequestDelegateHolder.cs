@@ -8,10 +8,13 @@ internal sealed class DnsRequestDelegateHolder
 {
     private DnsRequestDelegate? _handler;
 
-    public DnsRequestDelegate Handler
+    public DnsRequestDelegate Handler => _handler ?? DefaultHandler;
+
+    /// <summary>Registers the handler. Only the first call succeeds, so a late or duplicate registration fails loudly instead of racing.</summary>
+    public void SetHandler(DnsRequestDelegate handler)
     {
-        get => _handler ?? DefaultHandler;
-        set => _handler = value;
+        if (Interlocked.CompareExchange(ref _handler, handler, comparand: null) is not null)
+            throw new InvalidOperationException("A DNS request handler is already registered. MapDnsHandler must be called exactly once, before the application starts.");
     }
 
     private static ValueTask<DnsMessage> DefaultHandler(DnsRequestContext context, CancellationToken cancellationToken)

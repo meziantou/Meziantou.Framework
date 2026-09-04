@@ -9,7 +9,7 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 /// &lt;render-on-page-load&gt;
 ///     &lt;link rel="stylesheet" href="/css/non-critical.css" /&gt;
 /// &lt;/render-on-page-load&gt;
-/// 
+///
 /// &lt;!-- Defer loading with custom ID --&gt;
 /// &lt;render-on-page-load id="analytics-scripts"&gt;
 ///     &lt;script src="/js/analytics.js"&gt;&lt;/script&gt;
@@ -25,7 +25,13 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 [HtmlTargetElement("render-on-page-load")]
 public sealed class RenderOnPageLoadTagHelper : TagHelper
 {
-    /// <summary>Gets or sets the unique identifier for the noscript element. Defaults to "render-onload" if not specified.</summary>
+    // The script locates its own element through document.currentScript instead of an id, so no value is
+    // ever interpolated into it. Interpolating the id allowed script injection when it came from user data.
+    // The work is scheduled on the load event rather than requestAnimationFrame: rAF callbacks do not run
+    // while the document is hidden, so a page opened in a background tab never rendered its deferred content.
+    private const string Script = "<script>(function(){var e=document.currentScript.previousElementSibling;function r(){var n=document.createElement('div');n.innerHTML=e.textContent;document.body.appendChild(n);e.parentElement.removeChild(e);}if(document.readyState==='complete'){r();}else{window.addEventListener('load',r);}})();</script>";
+
+    /// <summary>Gets or sets an optional identifier for the noscript element. No identifier is emitted when not specified.</summary>
     [HtmlAttributeName("id")]
     public string? Id { get; set; }
 
@@ -36,8 +42,11 @@ public sealed class RenderOnPageLoadTagHelper : TagHelper
     {
         output.TagName = "noscript";
 
-        var id = string.IsNullOrEmpty(Id) ? "render-onload" : Id;
-        output.Attributes.Add("id", id);
-        output.PostElement.AppendHtml("<script>var renderOnLoad=function(){var e=document.getElementById('" + id + "'),n=document.createElement('div');n.innerHTML=e.textContent,document.body.appendChild(n),e.parentElement.removeChild(e)},r=window.requestAnimationFrame;r?r(function(){window.setTimeout(renderOnLoad,0)}):window.addEventListener('load',renderOnLoad);</script>");
+        if (!string.IsNullOrEmpty(Id))
+        {
+            output.Attributes.SetAttribute("id", Id);
+        }
+
+        output.PostElement.AppendHtml(Script);
     }
 }

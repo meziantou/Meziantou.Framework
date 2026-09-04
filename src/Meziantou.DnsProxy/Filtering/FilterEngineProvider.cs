@@ -23,7 +23,7 @@ internal sealed class FilterEngineProvider
         var initialRuleSet = new DnsFilterRuleSet();
         AddCachedFilterLists(initialRuleSet, options.Value);
         _engine = new DnsFilterEngine(initialRuleSet);
-        _ruleCount = initialRuleSet.Rules.Count;
+        _ruleCount = initialRuleSet.Count;
     }
 
     public DnsFilterEngine Engine => Volatile.Read(ref _engine);
@@ -61,7 +61,7 @@ internal sealed class FilterEngineProvider
         activity?.SetTag("dns_proxy.filter.count", filterCount);
         activity?.SetTag("dns_proxy.filter.loaded_count", loadedFilterCount);
         activity?.SetTag("dns_proxy.filter.failed_count", failedFilterCount);
-        activity?.SetTag("dns_proxy.rule.count", ruleSet.Rules.Count);
+        activity?.SetTag("dns_proxy.rule.count", ruleSet.Count);
 
         if (failedFilterCount == 0)
         {
@@ -72,7 +72,7 @@ internal sealed class FilterEngineProvider
             activity?.SetStatus(ActivityStatusCode.Error, $"{failedFilterCount} filter lists failed to load");
         }
 
-        Volatile.Write(ref _ruleCount, ruleSet.Rules.Count);
+        Volatile.Write(ref _ruleCount, ruleSet.Count);
         Volatile.Write(ref _engine, new DnsFilterEngine(ruleSet));
     }
 
@@ -88,11 +88,13 @@ internal sealed class FilterEngineProvider
                 : DnsFilterListFormat.AutoDetect;
             activity?.SetTag("dns_proxy.filter.format", format.ToString());
 
-            var ruleCount = ruleSet.Rules.Count;
+            var ruleCount = ruleSet.Count;
             var listText = await DownloadFilterListAsync(httpClient, options, filter, cancellationToken).ConfigureAwait(false);
-            ruleSet.AddFromList(listText, format);
+            var diagnostics = ruleSet.AddFromList(listText, format);
             await WriteFilterListToCacheAsync(options, filter, listText, cancellationToken).ConfigureAwait(false);
-            activity?.SetTag("dns_proxy.filter.rule_count", ruleSet.Rules.Count - ruleCount);
+            activity?.SetTag("dns_proxy.filter.rule_count", ruleSet.Count - ruleCount);
+            activity?.SetTag("dns_proxy.filter.skipped_line_count", diagnostics.Count);
+            LogSkippedLines(filter, diagnostics);
             activity?.SetStatus(ActivityStatusCode.Ok);
 
             return true;
@@ -162,7 +164,7 @@ internal sealed class FilterEngineProvider
             }
 
             var listText = File.ReadAllText(cacheFilePath);
-            AddFilterList(ruleSet, filter, listText);
+            LogSkippedLines(filter, AddFilterList(ruleSet, filter, listText));
         }
         catch (Exception ex)
         {
@@ -213,12 +215,30 @@ internal sealed class FilterEngineProvider
         }
     }
 
-    private static void AddFilterList(DnsFilterRuleSet ruleSet, FilterListOption filter, string listText)
+    private static IReadOnlyList<DnsFilterParseDiagnostic> AddFilterList(DnsFilterRuleSet ruleSet, FilterListOption filter, string listText)
     {
         var format = Enum.TryParse<DnsFilterListFormat>(filter.Format, ignoreCase: true, out var parsedFormat)
             ? parsedFormat
             : DnsFilterListFormat.AutoDetect;
-        ruleSet.AddFromList(listText, format);
+
+        return ruleSet.AddFromList(listText, format);
+    }
+
+    /// <summary>
+    /// A list whose lines were mostly discarded is indistinguishable from a healthy one if only the
+    /// rule count is reported, so say how many lines were skipped and give a few examples.
+    /// </summary>
+    private void LogSkippedLines(FilterListOption filter, IReadOnlyList<DnsFilterParseDiagnostic> diagnostics)
+    {
+        if (diagnostics.Count is 0)
+            return;
+
+        var examples = string.Join(" | ", diagnostics.Take(3).Select(d => d.ToString()));
+        _logger.LogWarning(
+            "Skipped {SkippedLineCount} unparsable line(s) in filter list {FilterUrl}. First: {Examples}",
+            diagnostics.Count,
+            filter.Url,
+            examples);
     }
 
     private static string GetCacheFilePath(DnsProxyOptions options, FilterListOption filter)

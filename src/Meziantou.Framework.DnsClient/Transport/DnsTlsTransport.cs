@@ -21,7 +21,8 @@ internal sealed class DnsTlsTransport : IDnsTransport
         using var client = new TcpClient();
         await client.ConnectAsync(_endpoint.Address, _endpoint.Port, cancellationToken).ConfigureAwait(false);
 
-        await using var sslStream = new SslStream(client.GetStream(), leaveInnerStreamOpen: false);
+        var sslStream = new SslStream(client.GetStream(), leaveInnerStreamOpen: false);
+        await using var sslStreamScope = sslStream.ConfigureAwait(false);
         var sslOptions = new SslClientAuthenticationOptions
         {
             TargetHost = _host,

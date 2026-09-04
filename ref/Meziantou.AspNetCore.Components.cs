@@ -24,7 +24,7 @@ namespace Meziantou.AspNetCore.Components
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddClipboard(this Microsoft.Extensions.DependencyInjection.IServiceCollection serviceCollection) => throw null;
     }
 
-    public class DataGridColumn<TRowData> : Microsoft.AspNetCore.Components.ComponentBase
+    public class DataGridColumn<TRowData> : Microsoft.AspNetCore.Components.ComponentBase, System.IDisposable
     {
         public Meziantou.AspNetCore.Components.DataGrid<TRowData>? OwnerGrid { get => throw null; set { } }
         public string? Title { get => throw null; set { } }
@@ -33,6 +33,7 @@ namespace Meziantou.AspNetCore.Components
         public Microsoft.AspNetCore.Components.RenderFragment<TRowData>? ChildContent { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder? __builder) { }
         protected override void OnInitialized() { }
+        public void Dispose() { }
         protected override void OnParametersSet() { }
     }
 
@@ -42,8 +43,8 @@ namespace Meziantou.AspNetCore.Components
         public System.Collections.Generic.IEnumerable<TRowData>? Items { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment? ChildContent { get => throw null; set { } }
         public System.Func<TRowData, int, string?>? RowClass { get => throw null; set { } }
+        public System.Func<TRowData, object>? RowKey { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder? __builder) { }
-        protected override void OnAfterRender(bool firstRender) { }
     }
 
     public sealed class GenericFormField<TModel>
@@ -98,6 +99,7 @@ namespace Meziantou.AspNetCore.Components
 
     public class InputDateTime<TValue> : Microsoft.AspNetCore.Components.Forms.InputDate<TValue>
     {
+        public System.TimeSpan? Offset { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder) { }
         protected override string FormatValueAsString(TValue value) => throw null;
         protected override bool TryParseValueFromString(string? value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue result, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out string? validationErrorMessage) => throw null;
@@ -105,6 +107,7 @@ namespace Meziantou.AspNetCore.Components
 
     public sealed class InputEnumSelect<TEnum> : Microsoft.AspNetCore.Components.Forms.InputBase<TEnum>
     {
+        public string EmptyOptionText { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder) { }
         protected override bool TryParseValueFromString(string? value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TEnum result, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out string? validationErrorMessage) => throw null;
     }
@@ -171,6 +174,8 @@ namespace Meziantou.AspNetCore.Components
     {
         public TimeZoneService(Microsoft.JSInterop.IJSRuntime jsRuntime) { }
         public System.Threading.Tasks.ValueTask<System.TimeSpan> GetOffsetAsync() => throw null;
+        public System.Threading.Tasks.ValueTask<System.TimeSpan> GetOffsetAsync(System.DateTimeOffset instant) => throw null;
+        public System.Threading.Tasks.ValueTask<System.TimeZoneInfo?> GetTimeZoneAsync() => throw null;
         public System.Threading.Tasks.ValueTask<System.DateTimeOffset> GetLocalDateTimeAsync(System.DateTimeOffset dateTime) => throw null;
         public System.Threading.Tasks.ValueTask<System.DateTimeOffset> GetUtcDateTimeAsync(System.DateTime dateTime) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;

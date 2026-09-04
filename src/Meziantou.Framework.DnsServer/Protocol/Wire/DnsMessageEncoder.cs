@@ -5,6 +5,12 @@ namespace Meziantou.Framework.DnsServer.Protocol.Wire;
 
 internal static class DnsMessageEncoder
 {
+    /// <summary>The largest response the length-prefixed transports (RFC 7766, RFC 9250) can frame.</summary>
+    public const int MaxMessageSize = ushort.MaxValue;
+
+    /// <summary>The highest value a 12-bit RCODE can hold once the EDNS extension bits are included.</summary>
+    private const int MaxResponseCode = 0xFFF;
+
     public static DnsMessage DecodeQuery(ReadOnlySpan<byte> data)
     {
         if (data.Length < 12)
@@ -51,13 +57,17 @@ internal static class DnsMessageEncoder
             if (message.AdditionalRecords[i].Type is DnsQueryType.OPT)
             {
                 var optRecord = message.AdditionalRecords[i];
+                var extendedRCode = (byte)(optRecord.TimeToLive >> 24);
                 message.EdnsOptions = new DnsEdnsOptions
                 {
                     UdpPayloadSize = (ushort)optRecord.Class,
-                    ExtendedRCode = (byte)(optRecord.TimeToLive >> 24),
+                    ExtendedRCode = extendedRCode,
                     Version = (byte)((optRecord.TimeToLive >> 16) & 0xFF),
                     DnssecOk = (optRecord.TimeToLive & 0x8000) != 0,
                 };
+
+                // RFC 6891 6.1.3: the OPT record carries the upper 8 bits of a 12-bit RCODE.
+                message.ResponseCode = (DnsResponseCode)((extendedRCode << 4) | ((ushort)message.ResponseCode & 0x0F));
                 message.AdditionalRecords.RemoveAt(i);
                 break;
             }
@@ -68,6 +78,17 @@ internal static class DnsMessageEncoder
 
     public static byte[] EncodeResponse(DnsMessage message)
     {
+        var responseCode = (ushort)message.ResponseCode;
+        if (responseCode > MaxResponseCode)
+            throw new DnsProtocolException($"Response code {responseCode} is out of range. DNS response codes must be between 0 and {MaxResponseCode}.");
+
+        // RFC 6891 6.1.3: anything above 15 needs an OPT record to carry its upper bits.
+        var edns = message.EdnsOptions;
+        if (responseCode > 0x0F && edns is null)
+        {
+            edns = new DnsEdnsOptions();
+        }
+
         var writer = new DnsWireWriter(512);
 
         writer.WriteUInt16(message.Id);
@@ -88,19 +109,17 @@ internal static class DnsMessageEncoder
             flags |= 0x0020;
         if (message.CheckingDisabled)
             flags |= 0x0010;
-        flags |= (ushort)((ushort)message.ResponseCode & 0x000F);
+        flags |= (ushort)(responseCode & 0x000F);
 
         writer.WriteUInt16(flags);
-        writer.WriteUInt16((ushort)message.Questions.Count);
-        writer.WriteUInt16((ushort)message.Answers.Count);
-        writer.WriteUInt16((ushort)message.Authorities.Count);
-
-        var hasEdns = message.EdnsOptions is not null;
-        writer.WriteUInt16((ushort)(message.AdditionalRecords.Count + (hasEdns ? 1 : 0)));
+        writer.WriteUInt16(ToCount(message.Questions.Count, "question"));
+        writer.WriteUInt16(ToCount(message.Answers.Count, "answer"));
+        writer.WriteUInt16(ToCount(message.Authorities.Count, "authority"));
+        writer.WriteUInt16(ToCount(message.AdditionalRecords.Count + (edns is not null ? 1 : 0), "additional"));
 
         foreach (var question in message.Questions)
         {
-            writer.WriteDomainName(question.Name);
+            writer.WriteCompressibleDomainName(question.Name);
             writer.WriteUInt16((ushort)question.Type);
             writer.WriteUInt16((ushort)question.QueryClass);
         }
@@ -109,13 +128,15 @@ internal static class DnsMessageEncoder
         WriteRecords(ref writer, message.Authorities);
         WriteRecords(ref writer, message.AdditionalRecords);
 
-        if (message.EdnsOptions is { } edns)
+        if (edns is not null)
         {
             writer.WriteByte(0); // NAME: root domain
             writer.WriteUInt16((ushort)DnsQueryType.OPT);
             writer.WriteUInt16(edns.UdpPayloadSize);
 
-            uint ttl = (uint)(edns.ExtendedRCode << 24) | (uint)(edns.Version << 16);
+            // The upper 8 bits of the RCODE always come from ResponseCode, so that a handler only
+            // has to set one property to produce a correct extended response code.
+            uint ttl = (uint)((responseCode >> 4) << 24) | (uint)(edns.Version << 16);
             if (edns.DnssecOk)
                 ttl |= 0x8000;
             writer.WriteUInt32(ttl);
@@ -125,11 +146,49 @@ internal static class DnsMessageEncoder
         return writer.ToArray();
     }
 
+    /// <summary>
+    /// Encodes a response that fits within <paramref name="maxSize"/> bytes, setting the TC bit and
+    /// dropping sections as needed (RFC 1035 4.1.1). <paramref name="message"/> is updated in place to
+    /// match the bytes that are returned.
+    /// </summary>
+    public static byte[] EncodeResponse(DnsMessage message, int maxSize)
+    {
+        var bytes = EncodeResponse(message);
+        if (bytes.Length <= maxSize)
+            return bytes;
+
+        message.IsTruncated = true;
+        message.Answers.Clear();
+        message.Authorities.Clear();
+        message.AdditionalRecords.Clear();
+
+        bytes = EncodeResponse(message);
+        if (bytes.Length <= maxSize)
+            return bytes;
+
+        // An over-long question section can still push the message past the limit on its own.
+        message.Questions.Clear();
+
+        bytes = EncodeResponse(message);
+        if (bytes.Length <= maxSize)
+            return bytes;
+
+        throw new DnsProtocolException($"The DNS response header alone is {bytes.Length} bytes, which exceeds the {maxSize}-byte limit of this transport.");
+    }
+
+    private static ushort ToCount(int count, string section)
+    {
+        if (count > ushort.MaxValue)
+            throw new DnsProtocolException($"A DNS message cannot contain more than {ushort.MaxValue} {section} records, but {count} were provided.");
+
+        return (ushort)count;
+    }
+
     private static void WriteRecords(ref DnsWireWriter writer, IList<DnsResourceRecord> records)
     {
         foreach (var record in records)
         {
-            writer.WriteDomainName(record.Name);
+            writer.WriteCompressibleDomainName(record.Name);
             writer.WriteUInt16((ushort)record.Type);
             writer.WriteUInt16((ushort)record.Class);
             writer.WriteUInt32(record.TimeToLive);
@@ -140,6 +199,8 @@ internal static class DnsMessageEncoder
             var rdataStart = writer.Position;
             WriteRecordData(ref writer, record.Data);
             var rdLength = writer.Position - rdataStart;
+            if (rdLength > ushort.MaxValue)
+                throw new DnsProtocolException($"The data of the {record.Type} record for '{record.Name}' is {rdLength} bytes, which exceeds the {ushort.MaxValue}-byte maximum.");
 
             writer.WriteUInt16At((ushort)rdLength, rdLengthPosition);
         }
@@ -150,6 +211,8 @@ internal static class DnsMessageEncoder
         if (data is null)
             return;
 
+        // Only the record types defined in RFC 1035 may compress names inside their data;
+        // RFC 3597 3 forbids it for every type defined afterwards.
         switch (data)
         {
             case DnsARecordData a:
@@ -161,25 +224,25 @@ internal static class DnsMessageEncoder
                 break;
 
             case DnsCnameRecordData cname:
-                writer.WriteDomainName(cname.CanonicalName);
+                writer.WriteCompressibleDomainName(cname.CanonicalName);
                 break;
 
             case DnsMxRecordData mx:
                 writer.WriteUInt16(mx.Preference);
-                writer.WriteDomainName(mx.Exchange);
+                writer.WriteCompressibleDomainName(mx.Exchange);
                 break;
 
             case DnsNsRecordData ns:
-                writer.WriteDomainName(ns.NameServer);
+                writer.WriteCompressibleDomainName(ns.NameServer);
                 break;
 
             case DnsPtrRecordData ptr:
-                writer.WriteDomainName(ptr.DomainName);
+                writer.WriteCompressibleDomainName(ptr.DomainName);
                 break;
 
             case DnsSoaRecordData soa:
-                writer.WriteDomainName(soa.PrimaryNameServer);
-                writer.WriteDomainName(soa.ResponsibleMailbox);
+                writer.WriteCompressibleDomainName(soa.PrimaryNameServer);
+                writer.WriteCompressibleDomainName(soa.ResponsibleMailbox);
                 writer.WriteUInt32(soa.Serial);
                 writer.WriteInt32(soa.Refresh);
                 writer.WriteInt32(soa.Retry);
@@ -213,7 +276,7 @@ internal static class DnsMessageEncoder
             case DnsCaaRecordData caa:
                 writer.WriteByte(caa.Flags);
                 writer.WriteAsciiCharacterString(caa.Tag);
-                writer.WriteBytes(Encoding.ASCII.GetBytes(caa.Value));
+                writer.WriteAsciiString(caa.Value);
                 break;
 
             case DnsDnskeyRecordData dnskey:
@@ -345,14 +408,11 @@ internal static class DnsMessageEncoder
             var ttl = reader.ReadUInt32();
             var rdLength = reader.ReadUInt16();
 
-            var rdataStart = reader.Position;
-            var data = ParseRecordData(ref reader, type, rdLength);
-
-            var consumed = reader.Position - rdataStart;
-            if (consumed < rdLength)
-            {
-                reader.Skip(rdLength - consumed);
-            }
+            // Scope the reads to this record so a bad length cannot walk into the next one.
+            var previousLimit = reader.PushLimit(rdLength);
+            var data = ParseRecordData(ref reader, type);
+            reader.Skip(reader.Remaining);
+            reader.PopLimit(previousLimit);
 
             records.Add(new DnsResourceRecord
             {
@@ -365,7 +425,7 @@ internal static class DnsMessageEncoder
         }
     }
 
-    private static DnsResourceRecordData ParseRecordData(ref DnsWireReader reader, DnsQueryType type, ushort rdLength)
+    private static DnsResourceRecordData ParseRecordData(ref DnsWireReader reader, DnsQueryType type)
     {
         return type switch
         {
@@ -377,25 +437,25 @@ internal static class DnsMessageEncoder
             DnsQueryType.PTR => ParsePtrRecord(ref reader),
             DnsQueryType.SOA => ParseSoaRecord(ref reader),
             DnsQueryType.SRV => ParseSrvRecord(ref reader),
-            DnsQueryType.TXT => ParseTxtRecord(ref reader, rdLength),
-            DnsQueryType.CAA => ParseCaaRecord(ref reader, rdLength),
+            DnsQueryType.TXT => ParseTxtRecord(ref reader),
+            DnsQueryType.CAA => ParseCaaRecord(ref reader),
             DnsQueryType.NAPTR => ParseNaptrRecord(ref reader),
-            DnsQueryType.DNSKEY => ParseDnskeyRecord(ref reader, rdLength),
-            DnsQueryType.DS => ParseDsRecord(ref reader, rdLength),
-            DnsQueryType.RRSIG => ParseRrsigRecord(ref reader, rdLength),
-            DnsQueryType.NSEC => ParseNsecRecord(ref reader, rdLength),
-            DnsQueryType.NSEC3 => ParseNsec3Record(ref reader, rdLength),
+            DnsQueryType.DNSKEY => ParseDnskeyRecord(ref reader),
+            DnsQueryType.DS => ParseDsRecord(ref reader),
+            DnsQueryType.RRSIG => ParseRrsigRecord(ref reader),
+            DnsQueryType.NSEC => ParseNsecRecord(ref reader),
+            DnsQueryType.NSEC3 => ParseNsec3Record(ref reader),
             DnsQueryType.NSEC3PARAM => ParseNsec3ParamRecord(ref reader),
-            DnsQueryType.TLSA => ParseTlsaRecord(ref reader, rdLength),
-            DnsQueryType.SSHFP => ParseSshfpRecord(ref reader, rdLength),
-            DnsQueryType.SVCB or DnsQueryType.HTTPS => ParseSvcbRecord(ref reader, rdLength),
+            DnsQueryType.TLSA => ParseTlsaRecord(ref reader),
+            DnsQueryType.SSHFP => ParseSshfpRecord(ref reader),
+            DnsQueryType.SVCB or DnsQueryType.HTTPS => ParseSvcbRecord(ref reader),
             DnsQueryType.LOC => ParseLocRecord(ref reader),
             DnsQueryType.HINFO => ParseHinfoRecord(ref reader),
             DnsQueryType.RP => ParseRpRecord(ref reader),
             DnsQueryType.DNAME => ParseDnameRecord(ref reader),
-            DnsQueryType.OPT => ParseOptRecord(ref reader, rdLength),
-            DnsQueryType.URI => ParseUriRecord(ref reader, rdLength),
-            _ => ParseUnknownRecord(ref reader, rdLength),
+            DnsQueryType.OPT => ParseOptRecord(ref reader),
+            DnsQueryType.URI => ParseUriRecord(ref reader),
+            _ => ParseUnknownRecord(ref reader),
         };
     }
 
@@ -458,11 +518,10 @@ internal static class DnsMessageEncoder
         };
     }
 
-    private static DnsTxtRecordData ParseTxtRecord(ref DnsWireReader reader, ushort rdLength)
+    private static DnsTxtRecordData ParseTxtRecord(ref DnsWireReader reader)
     {
         var texts = new List<string>();
-        var endPosition = reader.Position + rdLength;
-        while (reader.Position < endPosition)
+        while (reader.Remaining > 0)
         {
             var length = reader.ReadByte();
             var text = Encoding.UTF8.GetString(reader.ReadBytes(length));
@@ -472,13 +531,12 @@ internal static class DnsMessageEncoder
         return new DnsTxtRecordData { Text = texts };
     }
 
-    private static DnsCaaRecordData ParseCaaRecord(ref DnsWireReader reader, ushort rdLength)
+    private static DnsCaaRecordData ParseCaaRecord(ref DnsWireReader reader)
     {
         var flags = reader.ReadByte();
         var tagLength = reader.ReadByte();
         var tag = Encoding.ASCII.GetString(reader.ReadBytes(tagLength));
-        var valueLength = rdLength - 2 - tagLength;
-        var value = Encoding.ASCII.GetString(reader.ReadBytes(valueLength));
+        var value = Encoding.ASCII.GetString(reader.ReadBytes(reader.Remaining));
 
         return new DnsCaaRecordData { Flags = flags, Tag = tag, Value = value };
     }
@@ -506,31 +564,30 @@ internal static class DnsMessageEncoder
         };
     }
 
-    private static DnsDnskeyRecordData ParseDnskeyRecord(ref DnsWireReader reader, ushort rdLength)
+    private static DnsDnskeyRecordData ParseDnskeyRecord(ref DnsWireReader reader)
     {
         return new DnsDnskeyRecordData
         {
             Flags = reader.ReadUInt16(),
             Protocol = reader.ReadByte(),
             Algorithm = reader.ReadByte(),
-            PublicKey = reader.ReadBytes(rdLength - 4).ToArray(),
+            PublicKey = reader.ReadBytes(reader.Remaining).ToArray(),
         };
     }
 
-    private static DnsDsRecordData ParseDsRecord(ref DnsWireReader reader, ushort rdLength)
+    private static DnsDsRecordData ParseDsRecord(ref DnsWireReader reader)
     {
         return new DnsDsRecordData
         {
             KeyTag = reader.ReadUInt16(),
             Algorithm = reader.ReadByte(),
             DigestType = reader.ReadByte(),
-            Digest = reader.ReadBytes(rdLength - 4).ToArray(),
+            Digest = reader.ReadBytes(reader.Remaining).ToArray(),
         };
     }
 
-    private static DnsRrsigRecordData ParseRrsigRecord(ref DnsWireReader reader, ushort rdLength)
+    private static DnsRrsigRecordData ParseRrsigRecord(ref DnsWireReader reader)
     {
-        var startPosition = reader.Position;
         var typeCovered = (DnsQueryType)reader.ReadUInt16();
         var algorithm = reader.ReadByte();
         var labels = reader.ReadByte();
@@ -539,8 +596,7 @@ internal static class DnsMessageEncoder
         var inception = reader.ReadUInt32();
         var keyTag = reader.ReadUInt16();
         var signerName = reader.ReadDomainName();
-        var signatureLength = rdLength - (reader.Position - startPosition);
-        var signature = reader.ReadBytes(signatureLength).ToArray();
+        var signature = reader.ReadBytes(reader.Remaining).ToArray();
 
         return new DnsRrsigRecordData
         {
@@ -556,12 +612,10 @@ internal static class DnsMessageEncoder
         };
     }
 
-    private static DnsNsecRecordData ParseNsecRecord(ref DnsWireReader reader, ushort rdLength)
+    private static DnsNsecRecordData ParseNsecRecord(ref DnsWireReader reader)
     {
-        var startPosition = reader.Position;
         var nextDomainName = reader.ReadDomainName();
-        var remaining = rdLength - (reader.Position - startPosition);
-        var typeBitMaps = ParseTypeBitMaps(ref reader, remaining);
+        var typeBitMaps = ParseTypeBitMaps(ref reader);
 
         return new DnsNsecRecordData
         {
@@ -570,9 +624,8 @@ internal static class DnsMessageEncoder
         };
     }
 
-    private static DnsNsec3RecordData ParseNsec3Record(ref DnsWireReader reader, ushort rdLength)
+    private static DnsNsec3RecordData ParseNsec3Record(ref DnsWireReader reader)
     {
-        var startPosition = reader.Position;
         var hashAlgorithm = reader.ReadByte();
         var flags = reader.ReadByte();
         var iterations = reader.ReadUInt16();
@@ -580,8 +633,7 @@ internal static class DnsMessageEncoder
         var salt = reader.ReadBytes(saltLength).ToArray();
         var hashLength = reader.ReadByte();
         var nextHashedOwnerName = reader.ReadBytes(hashLength).ToArray();
-        var remaining = rdLength - (reader.Position - startPosition);
-        var typeBitMaps = ParseTypeBitMaps(ref reader, remaining);
+        var typeBitMaps = ParseTypeBitMaps(ref reader);
 
         return new DnsNsec3RecordData
         {
@@ -605,42 +657,39 @@ internal static class DnsMessageEncoder
         };
     }
 
-    private static DnsTlsaRecordData ParseTlsaRecord(ref DnsWireReader reader, ushort rdLength)
+    private static DnsTlsaRecordData ParseTlsaRecord(ref DnsWireReader reader)
     {
         return new DnsTlsaRecordData
         {
             CertificateUsage = reader.ReadByte(),
             Selector = reader.ReadByte(),
             MatchingType = reader.ReadByte(),
-            CertificateAssociationData = reader.ReadBytes(rdLength - 3).ToArray(),
+            CertificateAssociationData = reader.ReadBytes(reader.Remaining).ToArray(),
         };
     }
 
-    private static DnsSshfpRecordData ParseSshfpRecord(ref DnsWireReader reader, ushort rdLength)
+    private static DnsSshfpRecordData ParseSshfpRecord(ref DnsWireReader reader)
     {
         return new DnsSshfpRecordData
         {
             Algorithm = reader.ReadByte(),
             FingerprintType = reader.ReadByte(),
-            Fingerprint = reader.ReadBytes(rdLength - 2).ToArray(),
+            Fingerprint = reader.ReadBytes(reader.Remaining).ToArray(),
         };
     }
 
-    private static DnsSvcbRecordData ParseSvcbRecord(ref DnsWireReader reader, ushort rdLength)
+    private static DnsSvcbRecordData ParseSvcbRecord(ref DnsWireReader reader)
     {
-        var startPosition = reader.Position;
         var priority = reader.ReadUInt16();
         var targetName = reader.ReadDomainName();
 
         var parameters = new List<DnsSvcParam>();
-        var remaining = rdLength - (reader.Position - startPosition);
-        while (remaining > 0)
+        while (reader.Remaining > 0)
         {
             var key = reader.ReadUInt16();
             var valueLength = reader.ReadUInt16();
             var value = reader.ReadBytes(valueLength).ToArray();
             parameters.Add(new DnsSvcParam { Key = key, Value = value });
-            remaining -= 4 + valueLength;
         }
 
         return new DnsSvcbRecordData
@@ -689,11 +738,10 @@ internal static class DnsMessageEncoder
         return new DnsDnameRecordData { Target = reader.ReadDomainName() };
     }
 
-    private static DnsOptRecordData ParseOptRecord(ref DnsWireReader reader, ushort rdLength)
+    private static DnsOptRecordData ParseOptRecord(ref DnsWireReader reader)
     {
         var options = new List<DnsEdnsOption>();
-        var endPosition = reader.Position + rdLength;
-        while (reader.Position < endPosition)
+        while (reader.Remaining > 0)
         {
             var code = reader.ReadUInt16();
             var length = reader.ReadUInt16();
@@ -704,27 +752,26 @@ internal static class DnsMessageEncoder
         return new DnsOptRecordData { Options = options };
     }
 
-    private static DnsUriRecordData ParseUriRecord(ref DnsWireReader reader, ushort rdLength)
+    private static DnsUriRecordData ParseUriRecord(ref DnsWireReader reader)
     {
         return new DnsUriRecordData
         {
             Priority = reader.ReadUInt16(),
             Weight = reader.ReadUInt16(),
-            Target = Encoding.UTF8.GetString(reader.ReadBytes(rdLength - 4)),
+            Target = Encoding.UTF8.GetString(reader.ReadBytes(reader.Remaining)),
         };
     }
 
-    private static DnsUnknownRecordData ParseUnknownRecord(ref DnsWireReader reader, ushort rdLength)
+    private static DnsUnknownRecordData ParseUnknownRecord(ref DnsWireReader reader)
     {
-        return new DnsUnknownRecordData { Data = reader.ReadBytes(rdLength).ToArray() };
+        return new DnsUnknownRecordData { Data = reader.ReadBytes(reader.Remaining).ToArray() };
     }
 
-    private static List<DnsQueryType> ParseTypeBitMaps(ref DnsWireReader reader, int length)
+    private static List<DnsQueryType> ParseTypeBitMaps(ref DnsWireReader reader)
     {
         var types = new List<DnsQueryType>();
-        var endPosition = reader.Position + length;
 
-        while (reader.Position < endPosition)
+        while (reader.Remaining > 0)
         {
             var windowBlock = reader.ReadByte();
             var bitmapLength = reader.ReadByte();

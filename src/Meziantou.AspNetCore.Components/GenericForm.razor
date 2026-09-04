@@ -22,6 +22,8 @@
 @code{
     internal string BaseEditorId { get; } = "form-" + Guid.NewGuid().ToString();
     private List<GenericFormField<TModel>>? fields;
+    private TModel? currentModel;
+    private bool hasBuiltFields;
 
     /// <summary>Gets or sets the model instance to edit in the form.</summary>
     [Parameter]
@@ -47,6 +49,11 @@
     {
         base.OnParametersSet();
 
+        // Rebuilding the fields recreates every cached render fragment and recompiles the expression trees behind them,
+        // so only do it when the model actually changed. OnParametersSet runs on every parameter change of the parent.
+        if (hasBuiltFields && EqualityComparer<TModel?>.Default.Equals(currentModel, Model))
+            return;
+
         if (fields != null)
         {
             foreach (var field in fields)
@@ -67,10 +74,17 @@
         {
             fields = null;
         }
+
+        currentModel = Model;
+        hasBuiltFields = true;
     }
 
     private void OnValueChanged(object? sender, EventArgs e)
     {
-        InvokeAsync(() => ModelChanged.InvokeAsync(Model));
+        _ = InvokeAsync(async () =>
+        {
+            await ModelChanged.InvokeAsync(Model);
+            StateHasChanged();
+        });
     }
 }

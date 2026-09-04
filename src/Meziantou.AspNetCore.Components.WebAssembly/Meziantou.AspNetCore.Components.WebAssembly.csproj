@@ -1,17 +1,12 @@
-<Project Sdk="Meziantou.NET.Sdk.Razor">
+<Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.4</Version>
+    <Version>2.1.0</Version>
     <IsTrimmable>true</IsTrimmable>
+    <!-- Microsoft.JSInterop, pulled in transitively, does not pass trim analysis (IL2065/IL2111) -->
     <SkipTrimmableValidation>true</SkipTrimmableValidation>
     <Description>Services for Blazor WebAssembly</Description>
-
-    <!-- https://github.com/dotnet/aspnetcore/issues/42200 -->
-    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
-
-    <!-- StaticWebAssets are duplicated when multitargeting -->
-    <NoWarn>$(NoWarn);NU5118</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +22,5 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.11" />
   </ItemGroup>
-
 
 </Project>

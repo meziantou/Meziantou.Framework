@@ -6,8 +6,15 @@ namespace Meziantou.Framework.DnsServer.Protocol.Wire;
 [StructLayout(LayoutKind.Auto)]
 internal ref struct DnsWireWriter
 {
+    /// <summary>The maximum length of a single label (RFC 1035 2.3.4).</summary>
+    private const int MaxLabelLength = 63;
+
+    /// <summary>The highest offset a compression pointer can address, as it only carries 14 bits.</summary>
+    private const int MaxPointerOffset = 0x3FFF;
+
     private byte[] _buffer;
     private int _position;
+    private Dictionary<string, int>? _nameOffsets;
 
     public DnsWireWriter()
         : this(512)
@@ -21,8 +28,6 @@ internal ref struct DnsWireWriter
     }
 
     public readonly int Position => _position;
-
-    public readonly ReadOnlySpan<byte> WrittenSpan => _buffer.AsSpan(0, _position);
 
     public byte[] ToArray()
     {
@@ -65,35 +70,88 @@ internal ref struct DnsWireWriter
         _position += data.Length;
     }
 
-    public void WriteDomainName(string name)
+    /// <summary>Writes a domain name in full, without using compression pointers.</summary>
+    public void WriteDomainName(string name) => WriteDomainNameCore(name, compress: false);
+
+    /// <summary>
+    /// Writes a domain name, reusing an earlier occurrence through a compression pointer when possible.
+    /// Only valid for owner names and for the record types defined in RFC 1035; RFC 3597 3 forbids
+    /// compression inside the data of any type defined later.
+    /// </summary>
+    public void WriteCompressibleDomainName(string name) => WriteDomainNameCore(name, compress: true);
+
+    private void WriteDomainNameCore(string name, bool compress)
     {
-        if (string.IsNullOrEmpty(name) || name is ".")
+        var span = name.AsSpan();
+        if (span.Length > 0 && span[^1] == '.')
+        {
+            span = span[..^1];
+        }
+
+        if (span.IsEmpty)
         {
             WriteByte(0);
             return;
         }
 
-        var span = name.AsSpan();
-        if (span[^1] == '.')
-        {
-            span = span[..^1];
-        }
+        var encodedLength = 1; // the terminating root label
+        var remaining = span;
 
-        foreach (var label in new LabelEnumerator(span))
+        while (!remaining.IsEmpty)
         {
-            var byteCount = Encoding.ASCII.GetByteCount(label);
-            if (byteCount is 0 or > 63)
+            if (compress)
             {
-                throw new DnsProtocolException($"Invalid domain name label length: {byteCount}. Labels must be between 1 and 63 bytes.");
+                _nameOffsets ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                var lookup = _nameOffsets.GetAlternateLookup<ReadOnlySpan<char>>();
+
+                if (lookup.TryGetValue(remaining, out var matchOffset))
+                {
+                    EnsureDomainNameLength(name, encodedLength + 2);
+                    WriteUInt16((ushort)(0xC000 | matchOffset));
+                    return;
+                }
+
+                if (_position <= MaxPointerOffset)
+                {
+                    lookup[remaining] = _position;
+                }
             }
 
-            WriteByte((byte)byteCount);
-            EnsureCapacity(byteCount);
-            Encoding.ASCII.GetBytes(label, _buffer.AsSpan(_position));
-            _position += byteCount;
+            var separatorIndex = remaining.IndexOf('.');
+            ReadOnlySpan<char> label;
+            if (separatorIndex < 0)
+            {
+                label = remaining;
+                remaining = [];
+            }
+            else
+            {
+                label = remaining[..separatorIndex];
+                remaining = remaining[(separatorIndex + 1)..];
+            }
+
+            if (label.IsEmpty || label.Length > MaxLabelLength)
+                throw new DnsProtocolException($"Invalid domain name label length: {label.Length}. Labels must be between 1 and {MaxLabelLength} bytes.");
+
+            if (!Ascii.IsValid(label))
+                throw new DnsProtocolException($"Domain name '{name}' contains non-ASCII characters. Convert internationalized names to their punycode (IDNA) form before encoding them.");
+
+            encodedLength += label.Length + 1;
+            EnsureDomainNameLength(name, encodedLength);
+
+            WriteByte((byte)label.Length);
+            EnsureCapacity(label.Length);
+            Ascii.FromUtf16(label, _buffer.AsSpan(_position), out var bytesWritten);
+            _position += bytesWritten;
         }
 
         WriteByte(0); // Root label
+    }
+
+    private static void EnsureDomainNameLength(string name, int encodedLength)
+    {
+        if (encodedLength > DnsWireReader.MaxDomainNameLength)
+            throw new DnsProtocolException($"Domain name '{name}' exceeds the maximum encoded length of {DnsWireReader.MaxDomainNameLength} bytes.");
     }
 
     public void WriteCharacterString(string value)
@@ -112,16 +170,34 @@ internal ref struct DnsWireWriter
 
     public void WriteAsciiCharacterString(string value)
     {
-        var byteCount = Encoding.ASCII.GetByteCount(value);
-        if (byteCount > 255)
+        EnsureAscii(value);
+        if (value.Length > 255)
         {
-            throw new DnsProtocolException($"Character string too long: {byteCount} bytes. Maximum is 255.");
+            throw new DnsProtocolException($"Character string too long: {value.Length} bytes. Maximum is 255.");
         }
 
-        WriteByte((byte)byteCount);
-        EnsureCapacity(byteCount);
-        Encoding.ASCII.GetBytes(value, _buffer.AsSpan(_position));
-        _position += byteCount;
+        WriteByte((byte)value.Length);
+        WriteAsciiCore(value);
+    }
+
+    /// <summary>Writes an ASCII string without a length prefix, for record data that runs to the end of the record.</summary>
+    public void WriteAsciiString(string value)
+    {
+        EnsureAscii(value);
+        WriteAsciiCore(value);
+    }
+
+    private void WriteAsciiCore(string value)
+    {
+        EnsureCapacity(value.Length);
+        Ascii.FromUtf16(value, _buffer.AsSpan(_position), out var bytesWritten);
+        _position += bytesWritten;
+    }
+
+    private static void EnsureAscii(string value)
+    {
+        if (!Ascii.IsValid(value))
+            throw new DnsProtocolException($"The value '{value}' contains non-ASCII characters and cannot be encoded in this DNS record.");
     }
 
     public void WriteUInt16At(ushort value, int position)
@@ -139,41 +215,5 @@ internal ref struct DnsWireWriter
         var newBuffer = new byte[newSize];
         _buffer.AsSpan(0, _position).CopyTo(newBuffer);
         _buffer = newBuffer;
-    }
-
-    [StructLayout(LayoutKind.Auto)]
-    private ref struct LabelEnumerator
-    {
-        private ReadOnlySpan<char> _remaining;
-
-        public LabelEnumerator(ReadOnlySpan<char> name)
-        {
-            _remaining = name;
-            Current = default;
-        }
-
-        public ReadOnlySpan<char> Current { get; private set; }
-
-        public readonly LabelEnumerator GetEnumerator() => this;
-
-        public bool MoveNext()
-        {
-            if (_remaining.IsEmpty)
-                return false;
-
-            var index = _remaining.IndexOf('.');
-            if (index == -1)
-            {
-                Current = _remaining;
-                _remaining = [];
-            }
-            else
-            {
-                Current = _remaining[..index];
-                _remaining = _remaining[(index + 1)..];
-            }
-
-            return true;
-        }
     }
 }

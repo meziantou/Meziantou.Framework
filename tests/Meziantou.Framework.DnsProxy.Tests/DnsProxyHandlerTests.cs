@@ -7,6 +7,7 @@ using Meziantou.Framework.DnsServer.Protocol;
 using Meziantou.Framework.DnsServer.Protocol.Records;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using DnsProxyProgram = global::Program;
 using DnsResponseCode = Meziantou.Framework.DnsServer.Protocol.DnsResponseCode;
@@ -229,6 +230,45 @@ public sealed class DnsProxyHandlerTests
         Assert.Equal(1, response[3] & 0x0F); // FORMERR
     }
 
+    [Fact(DisableParallelization = true)]
+    public async Task AppliesADnsRewriteRuleWithoutContactingAnUpstream()
+    {
+        var upstreamCallCount = 0;
+        await using var upstream = FakeUpstream.Start(context =>
+        {
+            upstreamCallCount++;
+            return context.CreateResponse();
+        });
+
+        await using var filterList = FakeFilterList.Start("||rewritten.example^$dnsrewrite=203.0.113.99");
+
+        using var scope = EnvironmentScope.ForUpstreams([upstream.Url], filterList.Url);
+        await using var factory = new WebApplicationFactory<DnsProxyProgram>();
+        await WaitForFilterRulesAsync(factory);
+
+        var response = await QueryAsync(factory, "rewritten.example", dnssecOk: false);
+
+        Assert.Equal(0, response[3] & 0x0F); // NOERROR
+        Assert.Equal(0, upstreamCallCount);
+        var answer = Assert.Single(ReadRecords(response), record => record.Type == 1);
+        Assert.Equal(1, answer.Class);
+    }
+
+    private static async Task WaitForFilterRulesAsync(WebApplicationFactory<DnsProxyProgram> factory)
+    {
+        var webClient = factory.CreateClient();
+        for (var i = 0; i < 100; i++)
+        {
+            var html = await webClient.GetStringAsync("/");
+            if (!html.Contains("<span class='mono'>LoadedFilterRules</span>: 0", StringComparison.Ordinal))
+                return;
+
+            await Task.Delay(50);
+        }
+
+        Assert.Fail("The filter list was never loaded.");
+    }
+
     private static DnsResourceRecord CreateARecord(DnsRequestContext context, string address)
     {
         return new DnsResourceRecord
@@ -414,6 +454,49 @@ public sealed class DnsProxyHandlerTests
         }
     }
 
+    /// <summary>Serves a filter list over loopback HTTP so the refresh service has something to download.</summary>
+    private sealed class FakeFilterList : IAsyncDisposable
+    {
+        private readonly WebApplication _app;
+
+        private FakeFilterList(WebApplication app, int port)
+        {
+            _app = app;
+            Url = $"http://127.0.0.1:{port}/filters.txt";
+        }
+
+        public string Url { get; }
+
+        public static FakeFilterList Start(string content)
+        {
+            var port = GetAvailableTcpPort();
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
+
+            var app = builder.Build();
+            app.MapGet("/filters.txt", () => Results.Text(content, "text/plain"));
+            app.StartAsync().GetAwaiter().GetResult();
+
+            return new FakeFilterList(app, port);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await _app.StopAsync();
+            await _app.DisposeAsync();
+        }
+
+        private static int GetAvailableTcpPort()
+        {
+            using var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            listener.Stop();
+
+            return port;
+        }
+    }
+
     /// <summary>
     /// Points every configured upstream at the given fake servers and keeps the proxy offline, restoring the previous
     /// environment on dispose.
@@ -434,14 +517,17 @@ public sealed class DnsProxyHandlerTests
             }
         }
 
-        public static EnvironmentScope ForUpstreams(params string[] upstreamUrls)
+        public static EnvironmentScope ForUpstreams(params string[] upstreamUrls) => ForUpstreams(upstreamUrls, filterListUrl: null);
+
+        public static EnvironmentScope ForUpstreams(string[] upstreamUrls, string? filterListUrl)
         {
             var values = new Dictionary<string, string?>(StringComparer.Ordinal)
             {
                 ["DnsProxy__DnsPort"] = "0",
                 ["DnsProxy__HttpPort"] = "0",
                 ["DnsProxy__FilterRefreshInterval"] = "01:00:00",
-                ["DnsProxy__Filters__0__Url"] = UnreachableFilterUrl,
+                ["DnsProxy__Filters__0__Url"] = filterListUrl ?? UnreachableFilterUrl,
+                ["DnsProxy__Filters__0__Format"] = "AdBlock",
                 ["DnsProxy__Filters__1__Url"] = UnreachableFilterUrl,
             };
 

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Cryptography;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
 using Meziantou.Framework.DnsClient.Response.Records;
@@ -8,12 +9,13 @@ namespace Meziantou.Framework.DnsClient.Protocol;
 
 internal static class DnsMessageEncoder
 {
-    [SuppressMessage("Security", "CA5394:Random is an insecure random number generator")]
-    public static byte[] EncodeQuery(DnsQueryMessage query)
+    public static byte[] EncodeQuery(DnsQueryMessage query, out ushort id)
     {
         var writer = new DnsWireWriter(512);
 
-        var id = query.Id ?? (ushort)Random.Shared.Next(0, ushort.MaxValue + 1);
+        // The query ID is the only thing an off-path attacker has to guess, so it must come from a CSPRNG rather
+        // than from a predictable PRNG such as Random.Shared.
+        id = query.Id ?? (ushort)RandomNumberGenerator.GetInt32(0, ushort.MaxValue + 1);
 
         // Header
         writer.WriteUInt16(id);
@@ -108,6 +110,15 @@ internal static class DnsMessageEncoder
         response.Authorities = ReadRecords(ref reader, header.AuthorityCount, preserveRawRecordData);
         response.AdditionalRecords = ReadRecords(ref reader, header.AdditionalCount, preserveRawRecordData);
 
+        // RFC 6891 6.1.3: the full RCODE is the OPT record's extended bits followed by the header's four bits.
+        // Without this, BADVERS (16) and every other extended code decodes as the header's low nibble - BADVERS
+        // would look like NoError.
+        var opt = response.AdditionalRecords.OfType<DnsOptRecord>().FirstOrDefault();
+        if (opt is not null && opt.ExtendedRCode is not 0)
+        {
+            header.ResponseCode = (DnsResponseCode)((opt.ExtendedRCode << 4) | (flags & 0x000F));
+        }
+
         return response;
     }
 
@@ -123,7 +134,11 @@ internal static class DnsMessageEncoder
             var rdLength = reader.ReadUInt16();
 
             var rdataStart = reader.Position;
-            var record = ParseRecord(ref reader, type, rdLength);
+
+            // Parse RDATA through a reader bounded to exactly rdLength bytes, so a length field inside the record
+            // cannot reach into the following record and silently desynchronize the rest of the message.
+            var rdataReader = reader.ReadWindow(rdLength);
+            var record = ParseRecord(ref rdataReader, type, rdLength);
 
             record.Name = name;
             record.RecordType = type;
@@ -141,13 +156,6 @@ internal static class DnsMessageEncoder
                 optRecord.ExtendedRCode = (byte)(ttl >> 24);
                 optRecord.EdnsVersion = (byte)(ttl >> 16);
                 optRecord.DnssecOk = ((ushort)ttl & 0x8000) != 0;
-            }
-
-            // Ensure we consumed exactly rdLength bytes
-            var consumed = reader.Position - rdataStart;
-            if (consumed < rdLength)
-            {
-                reader.Skip(rdLength - consumed);
             }
 
             records.Add(record);
@@ -171,8 +179,9 @@ internal static class DnsMessageEncoder
             DnsQueryType.TXT => ParseTxtRecord(ref reader, rdLength),
             DnsQueryType.CAA => ParseCaaRecord(ref reader, rdLength),
             DnsQueryType.NAPTR => ParseNaptrRecord(ref reader),
-            DnsQueryType.DNSKEY => ParseDnskeyRecord(ref reader, rdLength),
-            DnsQueryType.DS => ParseDsRecord(ref reader, rdLength),
+            // CDNSKEY and CDS are wire-identical to DNSKEY and DS (RFC 7344).
+            DnsQueryType.DNSKEY or DnsQueryType.CDNSKEY => ParseDnskeyRecord(ref reader, rdLength),
+            DnsQueryType.DS or DnsQueryType.CDS => ParseDsRecord(ref reader, rdLength),
             DnsQueryType.RRSIG => ParseRrsigRecord(ref reader, rdLength),
             DnsQueryType.NSEC => ParseNsecRecord(ref reader, rdLength),
             DnsQueryType.NSEC3 => ParseNsec3Record(ref reader, rdLength),
@@ -536,6 +545,9 @@ internal static class DnsMessageEncoder
         {
             var windowBlock = reader.ReadByte();
             var bitmapLength = reader.ReadByte();
+            if (bitmapLength is 0 or > 32)
+                throw new DnsProtocolException($"Invalid NSEC type bitmap window length: {bitmapLength}. It must be between 1 and 32 (RFC 4034 4.1.2).");
+
             var bitmap = reader.ReadBytes(bitmapLength);
 
             for (var i = 0; i < bitmapLength; i++)

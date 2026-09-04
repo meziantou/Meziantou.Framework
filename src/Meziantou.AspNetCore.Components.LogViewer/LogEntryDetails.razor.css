@@ -30,3 +30,7 @@ th {
     padding-right: 15px;
     vertical-align: top;
 }
+
+.value-error {
+    color: var(--color-log-error);
+}

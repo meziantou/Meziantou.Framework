@@ -19,6 +19,9 @@ internal sealed class DnsProxyHandler
     /// <summary>Upper 8 bits of BADVERS (16), reported through the OPT record per RFC 6891.</summary>
     private const byte BadVersionExtendedRCode = 1;
 
+    /// <summary>TTL of a record synthesized from a <c>$dnsrewrite</c> directive.</summary>
+    private const uint RewriteTimeToLive = 60;
+
     private readonly FilterEngineProvider _filterEngineProvider;
     private readonly FilteringPauseState _filteringPauseState;
     private readonly CustomDnsRecordProvider _customDnsRecordProvider;
@@ -112,7 +115,12 @@ internal sealed class DnsProxyHandler
                     Address = clientAddress,
                 });
 
-            if (filterResult.IsMatched && filterResult.Action == DnsFilterAction.Block)
+            if (filterResult.Action is DnsFilterAction.Rewrite && TryApplyRewrite(filterResult.Rewrite!, question, response))
+            {
+                return Complete(response, historyEntryBuilder, response.ResponseCode, "Rewritten");
+            }
+
+            if (filterResult.Action is DnsFilterAction.Block or DnsFilterAction.Rewrite)
             {
                 return Complete(response, historyEntryBuilder, DnsResponseCode.NameError, "Blocked");
             }
@@ -203,6 +211,47 @@ internal sealed class DnsProxyHandler
         return Enum.IsDefined((DnsFilterQueryType)queryType)
             ? (DnsFilterQueryType)queryType
             : DnsFilterQueryType.ANY;
+    }
+
+    /// <summary>
+    /// Applies a <c>$dnsrewrite</c> directive to the response. Returns <see langword="false"/> when
+    /// the directive cannot be represented, in which case the caller falls back to blocking.
+    /// </summary>
+    private static bool TryApplyRewrite(DnsFilterRewriteRule rewrite, DnsQuestion question, DnsMessage response)
+    {
+        response.ResponseCode = rewrite.ResponseCode switch
+        {
+            DnsFilterRewriteResponseCode.NoError => DnsResponseCode.NoError,
+            DnsFilterRewriteResponseCode.NameError => DnsResponseCode.NameError,
+            DnsFilterRewriteResponseCode.Refused => DnsResponseCode.Refused,
+            DnsFilterRewriteResponseCode.ServerFailure => DnsResponseCode.ServerFailure,
+            _ => DnsResponseCode.NameError,
+        };
+
+        if (rewrite.RecordType is not { } recordType || rewrite.Value is not { } value)
+            return true;
+
+        var answerType = (DnsQueryType)recordType;
+        if (question.Type is not DnsQueryType.ANY && question.Type != answerType)
+        {
+            // The rewrite targets a different record type than the one asked for; answer the
+            // question with an empty NOERROR rather than a record the client did not request.
+            return true;
+        }
+
+        if (!CustomDnsRecordProvider.TryCreateRecordData(answerType, value, out var data))
+            return false;
+
+        response.Answers.Add(new DnsResourceRecord
+        {
+            Name = question.Name,
+            Type = answerType,
+            Class = DnsQueryClass.IN,
+            TimeToLive = RewriteTimeToLive,
+            Data = data,
+        });
+
+        return true;
     }
 
     private async Task<ForwardResult> ForwardToUpstreamAsync(DnsQuestion question, DnsEdnsOptions? queryEdnsOptions, CancellationToken cancellationToken)

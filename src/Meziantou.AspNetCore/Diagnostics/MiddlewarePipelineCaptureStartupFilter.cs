@@ -14,7 +14,14 @@ internal sealed class MiddlewarePipelineCaptureStartupFilter(MiddlewarePipelineC
         return app =>
         {
             _captureState.Reset();
-            next(new MiddlewarePipelineCaptureApplicationBuilder(app, _captureState.Root));
+
+            var captureBuilder = new MiddlewarePipelineCaptureApplicationBuilder(app, _captureState.Root);
+            next(captureBuilder);
+
+            // Everything the application registers has been observed. Stop recording before the pipeline is built, so
+            // build-time registrations are not reported, then publish an immutable tree for readers.
+            captureBuilder.CloseRecording();
+            _captureState.Publish();
         };
     }
 }

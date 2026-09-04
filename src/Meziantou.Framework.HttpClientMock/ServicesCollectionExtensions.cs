@@ -6,9 +6,6 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Extension methods for registering <see cref="HttpClientMock"/> instances with the service collection.
 /// </summary>
-/// <summary>
-/// Extension methods for registering <see cref="HttpClientMock"/> instances with the service collection.
-/// </summary>
 public static class ServicesCollectionExtensions
 {
     /// <summary>Registers HTTP client mocks in the service collection.</summary>
@@ -17,6 +14,8 @@ public static class ServicesCollectionExtensions
     /// <returns>The service collection for chaining additional calls.</returns>
     public static IServiceCollection AddHttpClientMock(this IServiceCollection services, Action<HttpMockServiceBuilder> builder)
     {
+        ArgumentNullException.ThrowIfNull(builder);
+
         return AddHttpClientMock(services, (_, b) => builder(b));
     }
 
@@ -26,10 +25,13 @@ public static class ServicesCollectionExtensions
     /// <returns>The service collection for chaining additional calls.</returns>
     public static IServiceCollection AddHttpClientMock(this IServiceCollection services, Action<IServiceProvider, HttpMockServiceBuilder> builder)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(builder);
+
         services.AddTransient<HttpMessageHandlerBuilder>(serviceProvider =>
         {
             var instance = new HttpMockServiceBuilder();
-            builder?.Invoke(serviceProvider, instance);
+            builder.Invoke(serviceProvider, instance);
             return instance.Builder;
         });
 

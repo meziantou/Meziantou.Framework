@@ -27,6 +27,7 @@ namespace Meziantou.Framework.Scheduling
     {
         public string? Id { get => throw null; set { } }
         public string? Summary { get => throw null; set { } }
+        public string? Description { get => throw null; set { } }
         public Meziantou.Framework.Scheduling.Organizer? Organizer { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.Scheduling.Attendee> Attendees { get => throw null; }
         public System.DateTime Created { get => throw null; set { } }
@@ -60,12 +61,22 @@ namespace Meziantou.Framework.Scheduling
         public void ToIcs(System.IO.Stream stream) { }
         public void ToIcs(System.IO.TextWriter writer) { }
         public string ToIcs() => throw null;
+        public static Meziantou.Framework.Scheduling.InternetCalendar Parse(string ics) => throw null;
+        public static Meziantou.Framework.Scheduling.InternetCalendar Parse(System.ReadOnlySpan<char> ics) => throw null;
+        public static Meziantou.Framework.Scheduling.InternetCalendar Parse(System.IO.Stream stream) => throw null;
+        public static Meziantou.Framework.Scheduling.InternetCalendar Parse(System.IO.TextReader reader) => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> ics, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.InternetCalendar? calendar) => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> ics, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.InternetCalendar? calendar, out string? error) => throw null;
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? ics, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.InternetCalendar? calendar) => throw null;
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? ics, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.InternetCalendar? calendar, out string? error) => throw null;
+        public static bool TryParse(System.IO.TextReader reader, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.InternetCalendar? calendar, out string? error) => throw null;
     }
 
     public sealed class InternetCalendarUserAddress
     {
         public System.Uri Uri { get => throw null; }
         public InternetCalendarUserAddress(string email) { }
+        public InternetCalendarUserAddress(System.Uri uri) { }
         public override string ToString() => throw null;
     }
 

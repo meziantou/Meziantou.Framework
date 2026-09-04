@@ -9,6 +9,9 @@ public sealed class Event
     /// <summary>Gets or sets the event summary or title.</summary>
     public string? Summary { get; set; }
 
+    /// <summary>Gets or sets the event description.</summary>
+    public string? Description { get; set; }
+
     /// <summary>Gets or sets the event organizer.</summary>
     public Organizer? Organizer { get; set; }
 

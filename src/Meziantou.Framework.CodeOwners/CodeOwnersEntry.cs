@@ -1,43 +1,32 @@
-using System.Runtime.InteropServices;
-
 namespace Meziantou.Framework.CodeOwners;
 
 /// <summary>
-/// Represents a single code owner entry in a CODEOWNERS file, associating a file pattern with an owner.
+/// Represents a single line of a CODEOWNERS file, associating a file pattern with its owners.
 /// <example>
 /// <code>
 /// // Parse a CODEOWNERS file
-/// var entries = CodeOwnersParser.Parse("*.js @user1").ToArray();
+/// var entries = CodeOwnersParser.Parse("*.js @user1 @user2");
 /// var entry = entries[0];
 /// // entry.Pattern: "*.js"
-/// // entry.Member: "user1"
-/// // entry.EntryType: CodeOwnersEntryType.Username
+/// // entry.Owners: [ @user1, @user2 ]
 /// </code>
 /// </example>
 /// </summary>
-[StructLayout(LayoutKind.Auto)]
-public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
+/// <remarks>Entries are returned in the order they appear in the file. CODEOWNERS resolution is last-match-wins, so the last entry whose <see cref="Pattern"/> matches a path owns it.</remarks>
+public sealed class CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 {
-    private CodeOwnersEntry(int patternIndex, string pattern, CodeOwnersEntryType entryType, string? member, CodeOwnersSection? section)
+    internal CodeOwnersEntry(string pattern, IReadOnlyList<CodeOwner> owners, CodeOwnersSection? section)
     {
         Pattern = pattern;
-        PatternIndex = patternIndex;
-        Member = member;
+        Owners = owners;
         Section = section;
-        EntryType = entryType;
     }
-
-    /// <summary>Gets the zero-based index of the pattern in the CODEOWNERS file.</summary>
-    public int PatternIndex { get; }
 
     /// <summary>Gets the file pattern (e.g., "*.js", "/docs/*", or "*") that this entry applies to.</summary>
     public string Pattern { get; }
 
-    /// <summary>Gets the type of the owner (username, email address, or none).</summary>
-    public CodeOwnersEntryType EntryType { get; }
-
-    /// <summary>Gets the owner identifier (username without @ or email address), or null if no owner is assigned.</summary>
-    public string? Member { get; }
+    /// <summary>Gets the owners of the pattern. Empty when the entry explicitly leaves the pattern unowned.</summary>
+    public IReadOnlyList<CodeOwner> Owners { get; }
 
     /// <summary>Gets the section this entry belongs to, or null if not part of a section.</summary>
     public CodeOwnersSection? Section { get; }
@@ -45,9 +34,10 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
     /// <summary>Gets a value indicating whether this entry belongs to an optional section.</summary>
     public bool IsOptional => Section?.IsOptional ?? false;
 
+    /// <summary>Returns the entry as written in a CODEOWNERS file.</summary>
     public override string ToString()
     {
-        var result = $"{Pattern} {Member}";
+        var result = Owners.Count is 0 ? Pattern : Pattern + " " + string.Join(' ', Owners);
         if (IsOptional)
         {
             result += " (optional)";
@@ -56,37 +46,23 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
         return result;
     }
 
-    internal static CodeOwnersEntry FromUsername(int patternIndex, string pattern, string username, CodeOwnersSection? section)
+    public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as CodeOwnersEntry);
+
+    public bool Equals([NotNullWhen(true)] CodeOwnersEntry? other)
     {
-        return new CodeOwnersEntry(patternIndex, pattern, CodeOwnersEntryType.Username, username, section);
+        if (other is null)
+            return false;
+
+        if (ReferenceEquals(this, other))
+            return true;
+
+        return string.Equals(Pattern, other.Pattern, StringComparison.Ordinal) &&
+               Section == other.Section &&
+               Owners.SequenceEqual(other.Owners);
     }
 
-    internal static CodeOwnersEntry FromEmailAddress(int patternIndex, string pattern, string emailAddress, CodeOwnersSection? section)
-    {
-        return new CodeOwnersEntry(patternIndex, pattern, CodeOwnersEntryType.EmailAddress, emailAddress, section);
-    }
+    public override int GetHashCode() => HashCode.Combine(Pattern, Owners.Count, Section);
 
-    internal static CodeOwnersEntry FromNone(int patternIndex, string pattern, CodeOwnersSection? section)
-    {
-        return new CodeOwnersEntry(patternIndex, pattern, CodeOwnersEntryType.None, member: null, section);
-    }
-
-    public override bool Equals([NotNullWhen(true)] object? obj)
-    {
-        return obj is CodeOwnersEntry entry && Equals(entry);
-
-    }
-
-    public bool Equals(CodeOwnersEntry other)
-    {
-        return EntryType == other.EntryType &&
-               string.Equals(Pattern, other.Pattern, StringComparison.Ordinal) &&
-               string.Equals(Member, other.Member, StringComparison.Ordinal) &&
-               Section == other.Section;
-    }
-
-    public override int GetHashCode() => HashCode.Combine(Pattern, EntryType, Member, Section);
-
-    public static bool operator ==(CodeOwnersEntry left, CodeOwnersEntry right) => left.Equals(right);
-    public static bool operator !=(CodeOwnersEntry left, CodeOwnersEntry right) => !(left == right);
+    public static bool operator ==(CodeOwnersEntry? left, CodeOwnersEntry? right) => left is null ? right is null : left.Equals(right);
+    public static bool operator !=(CodeOwnersEntry? left, CodeOwnersEntry? right) => !(left == right);
 }

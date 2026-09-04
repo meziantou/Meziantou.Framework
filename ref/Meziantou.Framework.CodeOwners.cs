@@ -4,47 +4,102 @@
 
 namespace Meziantou.Framework.CodeOwners
 {
-    public readonly struct CodeOwnersEntry : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersEntry>
+    public readonly struct CodeOwner : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwner>
     {
-        public int PatternIndex { get => throw null; }
+        public Meziantou.Framework.CodeOwners.CodeOwnerType Type { get => throw null; }
+        public string Name { get => throw null; }
+        public override string ToString() => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public bool Equals(Meziantou.Framework.CodeOwners.CodeOwner other) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwner left, Meziantou.Framework.CodeOwners.CodeOwner right) => throw null;
+        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwner left, Meziantou.Framework.CodeOwners.CodeOwner right) => throw null;
+    }
+
+    public enum CodeOwnerType
+    {
+        Username = 0,
+        EmailAddress = 1,
+        Role = 2
+    }
+
+    public enum CodeOwnersDialect
+    {
+        GitHub = 0,
+        GitLab = 1
+    }
+
+    public sealed class CodeOwnersEntry : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersEntry>
+    {
         public string Pattern { get => throw null; }
-        public Meziantou.Framework.CodeOwners.CodeOwnersEntryType EntryType { get => throw null; }
-        public string? Member { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwner> Owners { get => throw null; }
         public Meziantou.Framework.CodeOwners.CodeOwnersSection? Section { get => throw null; }
         public bool IsOptional { get => throw null; }
         public override string ToString() => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.CodeOwners.CodeOwnersEntry other) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.CodeOwners.CodeOwnersEntry? other) => throw null;
         public override int GetHashCode() => throw null;
-        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersEntry left, Meziantou.Framework.CodeOwners.CodeOwnersEntry right) => throw null;
-        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersEntry left, Meziantou.Framework.CodeOwners.CodeOwnersEntry right) => throw null;
+        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersEntry? left, Meziantou.Framework.CodeOwners.CodeOwnersEntry? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersEntry? left, Meziantou.Framework.CodeOwners.CodeOwnersEntry? right) => throw null;
     }
 
-    public enum CodeOwnersEntryType
+    public sealed class CodeOwnersFile
     {
-        Username = 0,
-        EmailAddress = 1,
-        None = 2
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersEntry> Entries { get => throw null; }
+        public static Meziantou.Framework.CodeOwners.CodeOwnersFile Parse(string content, Meziantou.Framework.CodeOwners.CodeOwnersDialect dialect) => throw null;
+        public static bool TryParse(string content, Meziantou.Framework.CodeOwners.CodeOwnersDialect dialect, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file) => throw null;
+        public static bool TryParse(string content, Meziantou.Framework.CodeOwners.CodeOwnersDialect dialect, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file, out Meziantou.Framework.CodeOwners.CodeOwnersParseError error) => throw null;
+    }
+
+    public readonly struct CodeOwnersParseError : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersParseError>
+    {
+        public Meziantou.Framework.CodeOwners.CodeOwnersParseErrorKind Kind { get => throw null; }
+        public int LineNumber { get => throw null; }
+        public int LinePosition { get => throw null; }
+        public override string ToString() => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public bool Equals(Meziantou.Framework.CodeOwners.CodeOwnersParseError other) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersParseError left, Meziantou.Framework.CodeOwners.CodeOwnersParseError right) => throw null;
+        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersParseError left, Meziantou.Framework.CodeOwners.CodeOwnersParseError right) => throw null;
+    }
+
+    public enum CodeOwnersParseErrorKind
+    {
+        None = 0,
+        UnterminatedSectionHeader = 1,
+        UnterminatedRequiredReviewerCount = 2,
+        InvalidRequiredReviewerCount = 3,
+        EmptyOwner = 4,
+        InvalidOwner = 5
+    }
+
+    public sealed class CodeOwnersParseException : System.Exception
+    {
+        public Meziantou.Framework.CodeOwners.CodeOwnersParseError Error { get => throw null; }
+        public CodeOwnersParseException(string? message) { }
+        public CodeOwnersParseException(string? message, System.Exception? innerException) { }
     }
 
     public static class CodeOwnersParser
     {
-        public static System.Collections.Generic.IEnumerable<Meziantou.Framework.CodeOwners.CodeOwnersEntry> Parse(string content) => throw null;
+        [System.Obsolete("Use CodeOwnersFile.Parse instead.")]
+        public static Meziantou.Framework.CodeOwners.CodeOwnersFile Parse(string content) => throw null;
     }
 
-    public readonly struct CodeOwnersSection : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersSection>
+    public sealed class CodeOwnersSection : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersSection>
     {
         public string Name { get => throw null; }
-        public int RequiredReviewerCount { get => throw null; }
         public bool IsOptional { get => throw null; }
         public bool IsMandatory { get => throw null; }
-        public System.Collections.Generic.IReadOnlyCollection<string> DefaultOwners { get => throw null; }
+        public int RequiredReviewerCount { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwner> DefaultOwners { get => throw null; }
         public bool HasDefaultOwners { get => throw null; }
         public override string ToString() => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.CodeOwners.CodeOwnersSection other) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.CodeOwners.CodeOwnersSection? other) => throw null;
         public override int GetHashCode() => throw null;
-        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersSection left, Meziantou.Framework.CodeOwners.CodeOwnersSection right) => throw null;
-        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersSection left, Meziantou.Framework.CodeOwners.CodeOwnersSection right) => throw null;
+        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersSection? left, Meziantou.Framework.CodeOwners.CodeOwnersSection? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersSection? left, Meziantou.Framework.CodeOwners.CodeOwnersSection? right) => throw null;
     }
 }

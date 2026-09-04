@@ -19,32 +19,39 @@ internal readonly struct DiagnosticReporter
     public DiagnosticReporter(SymbolAnalysisContext context)
     {
         _reportDiagnostic = context.ReportDiagnostic;
+        Options = context.Options;
         CancellationToken = context.CancellationToken;
     }
 
     public DiagnosticReporter(OperationAnalysisContext context)
     {
         _reportDiagnostic = context.ReportDiagnostic;
+        Options = context.Options;
         CancellationToken = context.CancellationToken;
     }
 
     public DiagnosticReporter(OperationBlockAnalysisContext context)
     {
         _reportDiagnostic = context.ReportDiagnostic;
+        Options = context.Options;
         CancellationToken = context.CancellationToken;
     }
 
     public DiagnosticReporter(SyntaxNodeAnalysisContext context)
     {
         _reportDiagnostic = context.ReportDiagnostic;
+        Options = context.Options;
         CancellationToken = context.CancellationToken;
     }
 
     public DiagnosticReporter(CompilationAnalysisContext context)
     {
         _reportDiagnostic = context.ReportDiagnostic;
+        Options = context.Options;
         CancellationToken = context.CancellationToken;
     }
+
+    public AnalyzerOptions Options { get; }
 
     public CancellationToken CancellationToken { get; }
 

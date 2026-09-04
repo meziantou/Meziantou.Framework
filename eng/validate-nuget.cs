@@ -70,6 +70,11 @@ if (!ValidateFullPathPackageContents(rootPath, nugetDirectory, isDeltaBuild))
     return 1;
 }
 
+if (!ValidateFastEnumGeneratorPackageContents(nugetDirectory, isDeltaBuild))
+{
+    return 1;
+}
+
 // General validation
 Console.WriteLine("Validating NuGet packages");
 if (nupkgFiles.Length == 0)
@@ -155,6 +160,54 @@ static int RunProcessWithExitCode(string fileName, string[] arguments)
     process.WaitForExit();
 
     return process.ExitCode;
+}
+
+static bool ValidateFastEnumGeneratorPackageContents(FullPath nugetDirectory, bool isDeltaBuild)
+{
+    var packagePattern = new Regex(@"^Meziantou\.Framework\.FastEnumGenerator\.[0-9][0-9a-zA-Z.\-]*\.nupkg$", RegexOptions.NonBacktracking);
+    var packagePath = Directory.EnumerateFiles(nugetDirectory).FirstOrDefault(file => packagePattern.IsMatch(Path.GetFileName(file)));
+    if (packagePath is null)
+    {
+        if (isDeltaBuild)
+        {
+            Console.WriteLine("Meziantou.Framework.FastEnumGenerator package was not produced by delta build. Skipping package-content checks.");
+            return true;
+        }
+
+        Console.Error.WriteLine("ERROR: Package not found for Meziantou.Framework.FastEnumGenerator");
+        return false;
+    }
+
+    Console.WriteLine("Checking Meziantou.Framework.FastEnumGenerator package content");
+
+    using var zipFile = ZipFile.OpenRead(packagePath);
+    var entries = zipFile.Entries.Select(entry => entry.FullName).ToList();
+
+    // The analyzer and the code fixes are packed from a hardcoded output path, so a layout change can
+    // silently drop one of them.
+    var requiredEntries = new[]
+    {
+        "analyzers/dotnet/cs/Meziantou.Framework.FastEnumGenerator.dll",
+        "analyzers/dotnet/cs/Meziantou.Framework.FastEnumGenerator.CodeFixes.dll",
+        "build/Meziantou.Framework.FastEnumGenerator.targets",
+    };
+
+    foreach (var requiredEntry in requiredEntries)
+    {
+        if (!entries.Contains(requiredEntry, StringComparer.Ordinal))
+        {
+            Console.Error.WriteLine($"ERROR: Meziantou.Framework.FastEnumGenerator package does not contain '{requiredEntry}'");
+            return false;
+        }
+    }
+
+    if (entries.Any(entry => entry.StartsWith("lib/", StringComparison.Ordinal)))
+    {
+        Console.Error.WriteLine("ERROR: Meziantou.Framework.FastEnumGenerator is an analyzer-only package and must not contain a lib/ entry");
+        return false;
+    }
+
+    return true;
 }
 
 static bool ValidateFullPathPackageContents(FullPath rootPath, FullPath nugetDirectory, bool isDeltaBuild)

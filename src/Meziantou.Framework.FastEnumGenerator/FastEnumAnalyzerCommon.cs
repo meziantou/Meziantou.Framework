@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -16,7 +17,10 @@ internal static class FastEnumAnalyzerCommon
             if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, fastEnumAttribute))
                 continue;
 
-            if (attribute.ConstructorArguments.Length != 1 || attribute.ConstructorArguments[0].Value is not INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+            if (attribute.ConstructorArguments.Length != 1 || attribute.ConstructorArguments[0].Value is not INamedTypeSymbol enumType)
+                continue;
+
+            if (!IsSupportedEnumType(enumType))
                 continue;
 
             _ = result.Add(enumType);
@@ -25,7 +29,81 @@ internal static class FastEnumAnalyzerCommon
         return result.ToImmutable();
     }
 
-    internal static bool TryGetFastEnumInvocationMatch(IInvocationOperation invocationOperation, INamedTypeSymbol enumType, ImmutableHashSet<INamedTypeSymbol> fastEnumTypes, out FastEnumInvocationMatch match)
+    /// <summary>
+    /// Resolves the namespace the generated class is emitted into, so a code fix can add the matching
+    /// using directive. It is <c>ExtensionMethodNamespace</c> when set, and the enum's namespace otherwise.
+    /// </summary>
+    internal static string? GetGeneratedNamespace(Compilation compilation, INamedTypeSymbol fastEnumAttribute, INamedTypeSymbol enumType)
+    {
+        foreach (var attribute in compilation.Assembly.GetAttributes())
+        {
+            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, fastEnumAttribute))
+                continue;
+
+            if (attribute.ConstructorArguments.Length != 1 || !SymbolEqualityComparer.Default.Equals(attribute.ConstructorArguments[0].Value as INamedTypeSymbol, enumType))
+                continue;
+
+            foreach (var namedArgument in attribute.NamedArguments)
+            {
+                if (namedArgument is { Key: "ExtensionMethodNamespace", Value.Value: string value } && !string.IsNullOrEmpty(value))
+                    return value;
+            }
+        }
+
+        return enumType.ContainingNamespace is { IsGlobalNamespace: false } containingNamespace
+            ? containingNamespace.ToDisplayString()
+            : null;
+    }
+
+    /// <summary>
+    /// The generator skips enums it cannot emit code for. The analyzer must apply the same rule,
+    /// otherwise it suggests members that were never generated.
+    /// </summary>
+    internal static bool IsSupportedEnumType(INamedTypeSymbol type)
+    {
+        return type.TypeKind is TypeKind.Enum && HasEnumMembers(type);
+    }
+
+    internal static bool HasEnumMembers(INamedTypeSymbol enumType)
+    {
+        foreach (var member in enumType.GetMembers())
+        {
+            if (member is IFieldSymbol { ConstantValue: not null })
+                return true;
+        }
+
+        return false;
+    }
+
+    internal static bool SupportsExtensionMembers(Compilation compilation)
+    {
+        return compilation.GetCSharpLanguageVersion().IsCSharp14OrGreater();
+    }
+
+    /// <summary>
+    /// Members emitted inside an <c>extension(TEnum)</c> block only exist when the consuming
+    /// compilation supports extension members.
+    /// </summary>
+    internal static bool RequiresExtensionMembers(FastEnumMethodKind methodKind)
+    {
+        return methodKind is FastEnumMethodKind.Parse or FastEnumMethodKind.TryParse or FastEnumMethodKind.GetNames or FastEnumMethodKind.GetValues or FastEnumMethodKind.IsDefined;
+    }
+
+    internal static bool TryGetFastEnumInvocationMatch(IInvocationOperation invocationOperation, INamedTypeSymbol enumType, ImmutableHashSet<INamedTypeSymbol> fastEnumTypes, bool supportsExtensionMembers, out FastEnumInvocationMatch match)
+    {
+        if (!TryGetFastEnumInvocationMatchCore(invocationOperation, enumType, fastEnumTypes, out match))
+            return false;
+
+        if (!supportsExtensionMembers && RequiresExtensionMembers(match.MethodKind))
+        {
+            match = default;
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool TryGetFastEnumInvocationMatchCore(IInvocationOperation invocationOperation, INamedTypeSymbol enumType, ImmutableHashSet<INamedTypeSymbol> fastEnumTypes, out FastEnumInvocationMatch match)
     {
         if (TryGetEnumToStringInvocationMatch(invocationOperation, fastEnumTypes, out match))
             return true;
@@ -75,10 +153,12 @@ internal static class FastEnumAnalyzerCommon
     {
         if (!method.IsStatic || !SymbolEqualityComparer.Default.Equals(method.ContainingType, enumType))
         {
-            methodKind = default;
+            methodKind = FastEnumMethodKind.None;
             return false;
         }
 
+        // Unrecognized System.Enum members (Format, ToObject, GetUnderlyingType, TryFormat, ...) must map
+        // to None. Mapping them to `default` previously made every one of them look like Enum.Parse.
         methodKind = method.Name switch
         {
             nameof(Enum.Parse) => FastEnumMethodKind.Parse,
@@ -87,10 +167,10 @@ internal static class FastEnumAnalyzerCommon
             nameof(Enum.GetValues) => FastEnumMethodKind.GetValues,
             nameof(Enum.GetName) => FastEnumMethodKind.GetName,
             nameof(Enum.IsDefined) => FastEnumMethodKind.IsDefined,
-            _ => default,
+            _ => FastEnumMethodKind.None,
         };
 
-        return methodKind is FastEnumMethodKind.Parse or FastEnumMethodKind.TryParse or FastEnumMethodKind.GetNames or FastEnumMethodKind.GetValues or FastEnumMethodKind.GetName or FastEnumMethodKind.IsDefined;
+        return methodKind is not FastEnumMethodKind.None;
     }
 
     private static bool TryGetTargetEnumType(IInvocationOperation invocationOperation, out INamedTypeSymbol targetEnumType)

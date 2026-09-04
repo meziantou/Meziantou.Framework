@@ -7,6 +7,10 @@ namespace FastEnumGeneratorBenchmarks;
 public class FastEnumGeneratedMethodsBenchmark
 {
     private const FlagsEnum FlagsValue = FlagsEnum.Read | FlagsEnum.Write;
+
+    // Read|Write matches the declared ReadWrite member. Read|Execute does not, which is the case that
+    // has to be decomposed rather than looked up.
+    private const FlagsEnum FlagsCombinationValue = FlagsEnum.Read | FlagsEnum.Execute;
     private const MetadataFlagsEnum MetadataFlagsValue = MetadataFlagsEnum.Read | MetadataFlagsEnum.Write;
     private volatile int _simpleDefinedValue;
     private volatile int _flagsDefinedValue;
@@ -42,7 +46,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool HasFlag_default_simpleenum() => SimpleEnum.Two.HasFlag(SimpleEnum.One);
 
     [Benchmark]
-    public bool HasFlag_fast_simpleenum() => (SimpleEnum.Two & SimpleEnum.One) == SimpleEnum.One;
+    public bool HasFlag_fast_simpleenum() => SimpleEnum.Two.HasFlagFast(SimpleEnum.One);
 
     [Benchmark]
     public bool Parse_string_default_simpleenum() => Enum.Parse<SimpleEnum>("Two", ignoreCase: true) == SimpleEnum.Two;
@@ -72,7 +76,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool IsDefined_default_simpleenum() => Enum.IsDefined((SimpleEnum)_simpleDefinedValue);
 
     [Benchmark]
-    public bool IsDefined_fast_simpleenum() => SimpleEnum.IsDefined((SimpleEnum)_simpleDefinedValue);
+    public bool IsDefined_fast_simpleenum() => SimpleEnum.IsDefinedFast((SimpleEnum)_simpleDefinedValue);
 
     [Benchmark]
     public int GetNames_default_simpleenum() => Enum.GetNames<SimpleEnum>().Length;
@@ -93,6 +97,12 @@ public class FastEnumGeneratedMethodsBenchmark
     public string ToString_fast_flagsenum() => FlagsValue.ToStringFast();
 
     [Benchmark]
+    public string ToString_default_flagsenum_combination() => FlagsCombinationValue.ToString();
+
+    [Benchmark]
+    public string ToString_fast_flagsenum_combination() => FlagsCombinationValue.ToStringFast();
+
+    [Benchmark]
     public string GetName_default_flagsenum() => Enum.GetName(FlagsEnum.ReadWrite)!;
 
     [Benchmark]
@@ -102,7 +112,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool HasFlag_default_flagsenum() => FlagsValue.HasFlag(FlagsEnum.Write);
 
     [Benchmark]
-    public bool HasFlag_fast_flagsenum() => (FlagsValue & FlagsEnum.Write) == FlagsEnum.Write;
+    public bool HasFlag_fast_flagsenum() => FlagsValue.HasFlagFast(FlagsEnum.Write);
 
     [Benchmark]
     public bool Parse_string_default_flagsenum() => Enum.Parse<FlagsEnum>("Read, Write", ignoreCase: true) == FlagsValue;
@@ -132,7 +142,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool IsDefined_default_flagsenum() => Enum.IsDefined((FlagsEnum)_flagsDefinedValue);
 
     [Benchmark]
-    public bool IsDefined_fast_flagsenum() => FlagsEnum.IsDefined((FlagsEnum)_flagsDefinedValue);
+    public bool IsDefined_fast_flagsenum() => FlagsEnum.IsDefinedFast((FlagsEnum)_flagsDefinedValue);
 
     [Benchmark]
     public int GetNames_default_flagsenum() => Enum.GetNames<FlagsEnum>().Length;
@@ -162,7 +172,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool HasFlag_default_smallenum() => SmallEnum.ThirtyOne.HasFlag(SmallEnum.Three);
 
     [Benchmark]
-    public bool HasFlag_fast_smallenum() => (SmallEnum.ThirtyOne & SmallEnum.Three) == SmallEnum.Three;
+    public bool HasFlag_fast_smallenum() => SmallEnum.ThirtyOne.HasFlagFast(SmallEnum.Three);
 
     [Benchmark]
     public bool Parse_string_default_smallenum() => Enum.Parse<SmallEnum>("ThirtyOne", ignoreCase: true) == SmallEnum.ThirtyOne;
@@ -192,7 +202,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool IsDefined_default_smallenum() => Enum.IsDefined((SmallEnum)_smallDefinedValue);
 
     [Benchmark]
-    public bool IsDefined_fast_smallenum() => SmallEnum.IsDefined((SmallEnum)_smallDefinedValue);
+    public bool IsDefined_fast_smallenum() => SmallEnum.IsDefinedFast((SmallEnum)_smallDefinedValue);
 
     [Benchmark]
     public int GetNames_default_smallenum() => Enum.GetNames<SmallEnum>().Length;
@@ -222,7 +232,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool HasFlag_default_mediumenum() => MediumEnum.V23.HasFlag(MediumEnum.V03);
 
     [Benchmark]
-    public bool HasFlag_fast_mediumenum() => (MediumEnum.V23 & MediumEnum.V03) == MediumEnum.V03;
+    public bool HasFlag_fast_mediumenum() => MediumEnum.V23.HasFlagFast(MediumEnum.V03);
 
     [Benchmark]
     public bool Parse_string_default_mediumenum() => Enum.Parse<MediumEnum>("V23", ignoreCase: true) == MediumEnum.V23;
@@ -252,7 +262,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool IsDefined_default_mediumenum() => Enum.IsDefined((MediumEnum)_mediumDefinedValue);
 
     [Benchmark]
-    public bool IsDefined_fast_mediumenum() => MediumEnum.IsDefined((MediumEnum)_mediumDefinedValue);
+    public bool IsDefined_fast_mediumenum() => MediumEnum.IsDefinedFast((MediumEnum)_mediumDefinedValue);
 
     [Benchmark]
     public int GetNames_default_mediumenum() => Enum.GetNames<MediumEnum>().Length;
@@ -282,7 +292,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool HasFlag_default_largeenum() => LargeEnum.V080.HasFlag(LargeEnum.V016);
 
     [Benchmark]
-    public bool HasFlag_fast_largeenum() => (LargeEnum.V080 & LargeEnum.V016) == LargeEnum.V016;
+    public bool HasFlag_fast_largeenum() => LargeEnum.V080.HasFlagFast(LargeEnum.V016);
 
     [Benchmark]
     public bool Parse_string_default_largeenum() => Enum.Parse<LargeEnum>("V080", ignoreCase: true) == LargeEnum.V080;
@@ -312,7 +322,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool IsDefined_default_largeenum() => Enum.IsDefined((LargeEnum)_largeDefinedValue);
 
     [Benchmark]
-    public bool IsDefined_fast_largeenum() => LargeEnum.IsDefined((LargeEnum)_largeDefinedValue);
+    public bool IsDefined_fast_largeenum() => LargeEnum.IsDefinedFast((LargeEnum)_largeDefinedValue);
 
     [Benchmark]
     public int GetNames_default_largeenum() => Enum.GetNames<LargeEnum>().Length;
@@ -342,7 +352,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool HasFlag_default_metadataflagsenum() => MetadataFlagsValue.HasFlag(MetadataFlagsEnum.Write);
 
     [Benchmark]
-    public bool HasFlag_fast_metadataflagsenum() => (MetadataFlagsValue & MetadataFlagsEnum.Write) == MetadataFlagsEnum.Write;
+    public bool HasFlag_fast_metadataflagsenum() => MetadataFlagsValue.HasFlagFast(MetadataFlagsEnum.Write);
 
     [Benchmark]
     public bool Parse_string_default_metadataflagsenum() => Enum.Parse<MetadataFlagsEnum>("Read", ignoreCase: true) == MetadataFlagsEnum.Read;
@@ -372,7 +382,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool IsDefined_default_metadataflagsenum() => Enum.IsDefined((MetadataFlagsEnum)_metadataFlagsDefinedValue);
 
     [Benchmark]
-    public bool IsDefined_fast_metadataflagsenum() => MetadataFlagsEnum.IsDefined((MetadataFlagsEnum)_metadataFlagsDefinedValue);
+    public bool IsDefined_fast_metadataflagsenum() => MetadataFlagsEnum.IsDefinedFast((MetadataFlagsEnum)_metadataFlagsDefinedValue);
 
     [Benchmark]
     public int GetNames_default_metadataflagsenum() => Enum.GetNames<MetadataFlagsEnum>().Length;

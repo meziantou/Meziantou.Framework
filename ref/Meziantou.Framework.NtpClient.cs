@@ -4,12 +4,11 @@
 
 namespace Meziantou.Framework.Ntp
 {
-    public sealed class NtpClient : System.IDisposable
+    public sealed class NtpClient
     {
         public NtpClient(string server) { }
         public NtpClient(string server, Meziantou.Framework.Ntp.NtpClientOptions? options) { }
         public System.Threading.Tasks.Task<Meziantou.Framework.Ntp.NtpResponse> QueryAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public void Dispose() { }
     }
 
     public sealed class NtpClientOptions
@@ -17,6 +16,7 @@ namespace Meziantou.Framework.Ntp
         public int Port { get => throw null; set { } }
         public Meziantou.Framework.Ntp.NtpVersion Version { get => throw null; set { } }
         public System.TimeSpan Timeout { get => throw null; set { } }
+        public bool ValidateResponse { get => throw null; set { } }
     }
 
     public enum NtpLeapIndicator
@@ -34,7 +34,13 @@ namespace Meziantou.Framework.Ntp
         public byte Stratum { get => throw null; }
         public sbyte PollInterval { get => throw null; }
         public sbyte Precision { get => throw null; }
-        public System.DateTimeOffset ReferenceTimestamp { get => throw null; }
+        public System.TimeSpan RootDelay { get => throw null; }
+        public System.TimeSpan RootDispersion { get => throw null; }
+        public uint ReferenceIdentifier { get => throw null; }
+        public string? ReferenceIdentifierText { get => throw null; }
+        public bool IsKissOfDeath { get => throw null; }
+        public string? KissCode { get => throw null; }
+        public System.DateTimeOffset? ReferenceTimestamp { get => throw null; }
         public System.DateTimeOffset OriginateTimestamp { get => throw null; }
         public System.DateTimeOffset ReceiveTimestamp { get => throw null; }
         public System.DateTimeOffset TransmitTimestamp { get => throw null; }

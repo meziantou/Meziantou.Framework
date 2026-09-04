@@ -7,6 +7,7 @@ namespace Meziantou.Framework.Ntp
     public sealed class NtpServer : System.IDisposable
     {
         public int Port { get => throw null; }
+        public System.Threading.Tasks.Task Completion { get => throw null; }
         public NtpServer(Meziantou.Framework.Ntp.NtpServerOptions? options = null) { }
         public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public void Dispose() { }
@@ -15,7 +16,11 @@ namespace Meziantou.Framework.Ntp
     public sealed class NtpServerOptions
     {
         public int Port { get => throw null; set { } }
+        public System.Net.IPAddress BindAddress { get => throw null; set { } }
         public System.TimeProvider TimeProvider { get => throw null; set { } }
         public byte Stratum { get => throw null; set { } }
+        public string ReferenceIdentifier { get => throw null; set { } }
+        public System.TimeSpan RootDispersion { get => throw null; set { } }
+        public int MaxRequestsPerSecond { get => throw null; set { } }
     }
 }

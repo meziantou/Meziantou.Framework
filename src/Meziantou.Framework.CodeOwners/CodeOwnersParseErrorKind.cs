@@ -3,6 +3,9 @@ namespace Meziantou.Framework.CodeOwners;
 /// <summary>Specifies why a CODEOWNERS file is invalid.</summary>
 public enum CodeOwnersParseErrorKind
 {
+    /// <summary>No error. This is the value of a <see langword="default"/> <see cref="CodeOwnersParseError"/>.</summary>
+    None,
+
     /// <summary>A section header is missing its closing <c>]</c>.</summary>
     UnterminatedSectionHeader,
 

@@ -144,7 +144,7 @@ public sealed class CodeOwnersParserTests
         {
             Entry("doc/", User("user4")),
             Entry("*", new CodeOwnersSection("Section"), User("user1"), User("user2")),
-            Entry("*.js", new CodeOwnersSection("Optional Section", 0), User("user2"), User("user3")),
+            Entry("*.js", new CodeOwnersSection("Optional Section", isOptional: true), User("user2"), User("user3")),
         };
         Assert.Equal(expected, actual);
         Assert.True(actual[2].IsOptional);
@@ -181,7 +181,7 @@ public sealed class CodeOwnersParserTests
     {
         var actual = CodeOwnersFile.Parse("[Test][2]\n* @user1 @user2").Entries;
 
-        var expected = new[] { Entry("*", new CodeOwnersSection("Test", 2), User("user1"), User("user2")) };
+        var expected = new[] { Entry("*", new CodeOwnersSection("Test", requiredReviewerCount: 2), User("user1"), User("user2")) };
         Assert.Equal(expected, actual);
     }
 
@@ -190,7 +190,7 @@ public sealed class CodeOwnersParserTests
     {
         var actual = CodeOwnersFile.Parse("[Test] @defaultOwner default.owner@example.com\n*").Entries;
 
-        var section = new CodeOwnersSection("Test", 1, [User("defaultOwner"), Email("default.owner@example.com")]);
+        var section = new CodeOwnersSection("Test", requiredReviewerCount: 1, defaultOwners: [User("defaultOwner"), Email("default.owner@example.com")]);
         var expected = new[] { Entry("*", section, User("defaultOwner"), Email("default.owner@example.com")) };
         Assert.Equal(expected, actual);
     }
@@ -200,7 +200,7 @@ public sealed class CodeOwnersParserTests
     {
         var actual = CodeOwnersFile.Parse("[Test] @defaultOwner default.owner@example.com\n* @user1 @user2").Entries;
 
-        var section = new CodeOwnersSection("Test", 1, [User("defaultOwner"), Email("default.owner@example.com")]);
+        var section = new CodeOwnersSection("Test", requiredReviewerCount: 1, defaultOwners: [User("defaultOwner"), Email("default.owner@example.com")]);
         var expected = new[] { Entry("*", section, User("user1"), User("user2")) };
         Assert.Equal(expected, actual);
     }
@@ -210,18 +210,45 @@ public sealed class CodeOwnersParserTests
     {
         var actual = CodeOwnersFile.Parse("[Test][2] @defaultOwner default.owner@example.com\n*").Entries;
 
-        var section = new CodeOwnersSection("Test", 2, [User("defaultOwner"), Email("default.owner@example.com")]);
+        var section = new CodeOwnersSection("Test", requiredReviewerCount: 2, defaultOwners: [User("defaultOwner"), Email("default.owner@example.com")]);
         var expected = new[] { Entry("*", section, User("defaultOwner"), Email("default.owner@example.com")) };
         Assert.Equal(expected, actual);
     }
 
     [Fact]
-    public void SectionHeadingEdgeCase_OptionalOverridesRequiredReviewerCount()
+    public void OptionalSectionKeepsItsRequiredReviewerCount()
     {
         var actual = CodeOwnersFile.Parse("^[Test][2]\n* @user").Entries;
 
-        var expected = new[] { Entry("*", new CodeOwnersSection("Test", 0), User("user")) };
+        var expected = new[] { Entry("*", new CodeOwnersSection("Test", isOptional: true, requiredReviewerCount: 2), User("user")) };
         Assert.Equal(expected, actual);
+
+        var section = actual[0].Section!;
+        Assert.True(section.IsOptional);
+        Assert.False(section.IsMandatory);
+        Assert.Equal(2, section.RequiredReviewerCount);
+        Assert.True(actual[0].IsOptional);
+        Assert.Equal("^[Test][2]", section.ToString());
+    }
+
+    [Fact]
+    public void OptionalAndMandatorySectionsWithTheSameCountAreNotEqual()
+    {
+        var optional = CodeOwnersFile.Parse("^[Test][2]\n*").Entries[0].Section;
+        var mandatory = CodeOwnersFile.Parse("[Test][2]\n*").Entries[0].Section;
+
+        Assert.NotEqual(optional, mandatory);
+    }
+
+    [Fact]
+    public void DefaultParseErrorReportsNoError()
+    {
+        Assert.Equal(CodeOwnersParseErrorKind.None, default(CodeOwnersParseError).Kind);
+        Assert.Equal("no error", default(CodeOwnersParseError).ToString());
+
+        Assert.True(CodeOwnersFile.TryParse("* @user1", out _, out var error));
+        Assert.Equal(CodeOwnersParseErrorKind.None, error.Kind);
+        Assert.Equal(default, error);
     }
 
     [Fact]
@@ -239,9 +266,9 @@ public sealed class CodeOwnersParserTests
 
         var expected = new[]
         {
-            Entry("*", new CodeOwnersSection("Test1", 1), User("user")),
-            Entry("*", new CodeOwnersSection("Test2", 1)),
-            Entry("*", new CodeOwnersSection("Test3", 1, [User("defaultOwner2")]), User("defaultOwner2")),
+            Entry("*", new CodeOwnersSection("Test1", requiredReviewerCount: 1), User("user")),
+            Entry("*", new CodeOwnersSection("Test2", requiredReviewerCount: 1)),
+            Entry("*", new CodeOwnersSection("Test3", requiredReviewerCount: 1, defaultOwners: [User("defaultOwner2")]), User("defaultOwner2")),
         };
         Assert.Equal(expected, actual);
     }
@@ -262,10 +289,10 @@ public sealed class CodeOwnersParserTests
 
         var expected = new[]
         {
-            Entry("*", new CodeOwnersSection("Test1", 1), User("user1")),
-            Entry("*", new CodeOwnersSection("Test2", 1), User("user2")),
-            Entry("*", new CodeOwnersSection("Test3", 1)),
-            Entry("*", new CodeOwnersSection("Test4", 1)),
+            Entry("*", new CodeOwnersSection("Test1", requiredReviewerCount: 1), User("user1")),
+            Entry("*", new CodeOwnersSection("Test2", requiredReviewerCount: 1), User("user2")),
+            Entry("*", new CodeOwnersSection("Test3", requiredReviewerCount: 1)),
+            Entry("*", new CodeOwnersSection("Test4", requiredReviewerCount: 1)),
         };
         Assert.Equal(expected, actual);
     }
@@ -282,8 +309,8 @@ public sealed class CodeOwnersParserTests
 
         var expected = new[]
         {
-            Entry("*", new CodeOwnersSection("Test1", 1)),
-            Entry("*", new CodeOwnersSection("Test2", 2)),
+            Entry("*", new CodeOwnersSection("Test1", requiredReviewerCount: 1)),
+            Entry("*", new CodeOwnersSection("Test2", requiredReviewerCount: 2)),
         };
         Assert.Equal(expected, actual);
     }
@@ -304,10 +331,10 @@ public sealed class CodeOwnersParserTests
 
         var expected = new[]
         {
-            Entry("*", new CodeOwnersSection("Test1", 1, [User("defaultOwner1"), User("defaultOwner2")]), User("defaultOwner1"), User("defaultOwner2")),
-            Entry("*", new CodeOwnersSection("Test2", 2, [User("defaultOwner3"), User("defaultOwner4")]), User("defaultOwner3"), User("defaultOwner4")),
-            Entry("*", new CodeOwnersSection("Test3", 1, [User("defaultOwner5"), User("defaultOwner6")]), User("defaultOwner5"), User("defaultOwner6")),
-            Entry("*", new CodeOwnersSection("Test4", 2, [User("defaultOwner7"), User("defaultOwner8")]), User("defaultOwner7"), User("defaultOwner8")),
+            Entry("*", new CodeOwnersSection("Test1", requiredReviewerCount: 1, defaultOwners: [User("defaultOwner1"), User("defaultOwner2")]), User("defaultOwner1"), User("defaultOwner2")),
+            Entry("*", new CodeOwnersSection("Test2", requiredReviewerCount: 2, defaultOwners: [User("defaultOwner3"), User("defaultOwner4")]), User("defaultOwner3"), User("defaultOwner4")),
+            Entry("*", new CodeOwnersSection("Test3", requiredReviewerCount: 1, defaultOwners: [User("defaultOwner5"), User("defaultOwner6")]), User("defaultOwner5"), User("defaultOwner6")),
+            Entry("*", new CodeOwnersSection("Test4", requiredReviewerCount: 2, defaultOwners: [User("defaultOwner7"), User("defaultOwner8")]), User("defaultOwner7"), User("defaultOwner8")),
         };
         Assert.Equal(expected, actual);
     }
@@ -331,8 +358,8 @@ public sealed class CodeOwnersParserTests
         var expected = new[]
         {
             Entry("*", new CodeOwnersSection("Test1"), User("user1")),
-            Entry("*", new CodeOwnersSection("Test2", 2), User("user2")),
-            Entry("*", new CodeOwnersSection("Test3", 1, [User("defaultOwner")]), User("user3")),
+            Entry("*", new CodeOwnersSection("Test2", requiredReviewerCount: 2), User("user2")),
+            Entry("*", new CodeOwnersSection("Test3", requiredReviewerCount: 1, defaultOwners: [User("defaultOwner")]), User("user3")),
         };
         Assert.Equal(expected, actual);
     }
@@ -429,7 +456,7 @@ public sealed class CodeOwnersParserTests
     {
         var actual = CodeOwnersFile.Parse("[Test]\t@defaultOwner\n*").Entries;
 
-        var expected = new[] { Entry("*", new CodeOwnersSection("Test", 1, [User("defaultOwner")]), User("defaultOwner")) };
+        var expected = new[] { Entry("*", new CodeOwnersSection("Test", requiredReviewerCount: 1, defaultOwners: [User("defaultOwner")]), User("defaultOwner")) };
         Assert.Equal(expected, actual);
     }
 
@@ -459,7 +486,7 @@ public sealed class CodeOwnersParserTests
 
         var actual = CodeOwnersFile.Parse(Content).Entries;
 
-        var expected = new[] { Entry("*", new CodeOwnersSection("Other", 1, [User("defaultOwner2")]), User("defaultOwner2")) };
+        var expected = new[] { Entry("*", new CodeOwnersSection("Other", requiredReviewerCount: 1, defaultOwners: [User("defaultOwner2")]), User("defaultOwner2")) };
         Assert.Equal(expected, actual);
     }
 

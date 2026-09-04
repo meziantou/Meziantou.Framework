@@ -35,10 +35,13 @@ public readonly struct CodeOwnersParseError : IEquatable<CodeOwnersParseError>
     public int LinePosition { get; }
 
     /// <summary>Returns a description of the error and of its location.</summary>
-    public override string ToString() => $"line {LineNumber}, position {LinePosition}: {GetDescription(Kind)}";
+    public override string ToString() => Kind is CodeOwnersParseErrorKind.None
+        ? "no error"
+        : $"line {LineNumber}, position {LinePosition}: {GetDescription(Kind)}";
 
     private static string GetDescription(CodeOwnersParseErrorKind kind) => kind switch
     {
+        CodeOwnersParseErrorKind.None => "no error",
         CodeOwnersParseErrorKind.UnterminatedSectionHeader => "the section header is not terminated by ']'",
         CodeOwnersParseErrorKind.UnterminatedRequiredReviewerCount => "the required reviewer count is not terminated by ']'",
         CodeOwnersParseErrorKind.InvalidRequiredReviewerCount => "the required reviewer count is not a positive integer",

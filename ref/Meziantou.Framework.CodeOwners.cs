@@ -59,11 +59,12 @@ namespace Meziantou.Framework.CodeOwners
 
     public enum CodeOwnersParseErrorKind
     {
-        UnterminatedSectionHeader = 0,
-        UnterminatedRequiredReviewerCount = 1,
-        InvalidRequiredReviewerCount = 2,
-        EmptyOwner = 3,
-        InvalidOwner = 4
+        None = 0,
+        UnterminatedSectionHeader = 1,
+        UnterminatedRequiredReviewerCount = 2,
+        InvalidRequiredReviewerCount = 3,
+        EmptyOwner = 4,
+        InvalidOwner = 5
     }
 
     public sealed class CodeOwnersParseException : System.Exception
@@ -83,19 +84,19 @@ namespace Meziantou.Framework.CodeOwners
         public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file, out Meziantou.Framework.CodeOwners.CodeOwnersParseError error) => throw null;
     }
 
-    public readonly struct CodeOwnersSection : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersSection>
+    public sealed class CodeOwnersSection : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersSection>
     {
         public string Name { get => throw null; }
-        public int RequiredReviewerCount { get => throw null; }
         public bool IsOptional { get => throw null; }
         public bool IsMandatory { get => throw null; }
+        public int RequiredReviewerCount { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwner> DefaultOwners { get => throw null; }
         public bool HasDefaultOwners { get => throw null; }
         public override string ToString() => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.CodeOwners.CodeOwnersSection other) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.CodeOwners.CodeOwnersSection? other) => throw null;
         public override int GetHashCode() => throw null;
-        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersSection left, Meziantou.Framework.CodeOwners.CodeOwnersSection right) => throw null;
-        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersSection left, Meziantou.Framework.CodeOwners.CodeOwnersSection right) => throw null;
+        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersSection? left, Meziantou.Framework.CodeOwners.CodeOwnersSection? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersSection? left, Meziantou.Framework.CodeOwners.CodeOwnersSection? right) => throw null;
     }
 }

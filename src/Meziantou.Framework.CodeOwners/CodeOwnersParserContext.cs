@@ -112,11 +112,11 @@ internal struct CodeOwnersParserContext
         {
             entryOwners = owners;
         }
-        else if (_currentSection.HasValue && _currentSection.Value.HasDefaultOwners)
+        else if (_currentSection is { HasDefaultOwners: true })
         {
             // A pattern that declares no owner inherits the ones declared on the section header.
             // The list is shared: it is never mutated once the section is parsed.
-            entryOwners = _currentSection.Value.DefaultOwners;
+            entryOwners = _currentSection.DefaultOwners;
         }
         else
         {
@@ -127,7 +127,7 @@ internal struct CodeOwnersParserContext
         _entries.Add(new CodeOwnersEntry(pattern, entryOwners, _currentSection));
     }
 
-    private bool TryParseSection(out CodeOwnersSection section)
+    private bool TryParseSection([NotNullWhen(true)] out CodeOwnersSection? section)
     {
         // The line may not be a section after all, in which case everything consumed here must be restored
         // so the line can be parsed as a pattern.
@@ -158,12 +158,14 @@ internal struct CodeOwnersParserContext
                 ConsumeUntilEndOfLineOrEndOfFile();
             }
 
-            section = new CodeOwnersSection(name, isOptional ? 0 : requiredReviewerCount, defaultOwners);
+            // An optional section keeps the count written in the file: '^' says no approval is
+            // required, not that the header declared no count.
+            section = new CodeOwnersSection(name, isOptional, requiredReviewerCount, defaultOwners);
             return true;
         }
 
         _index = startIndex;
-        section = default;
+        section = null;
         return false;
     }
 

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
@@ -11,7 +12,7 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 /// <code language="razor">
 /// &lt;!-- Input --&gt;
 /// &lt;inline-style href="site.css" /&gt;
-/// 
+///
 /// &lt;!-- Output --&gt;
 /// &lt;style&gt;
 /// body { margin: 0; padding: 0; }
@@ -33,8 +34,9 @@ public sealed class InlineStyleTagHelper : InlineTagHelper
     /// <summary>Initializes a new instance of the <see cref="InlineStyleTagHelper"/> class.</summary>
     /// <param name="webHostEnvironment">The web host environment for accessing web root files.</param>
     /// <param name="cache">The memory cache for storing file contents.</param>
-    public InlineStyleTagHelper(IWebHostEnvironment webHostEnvironment, IMemoryCache cache)
-        : base(webHostEnvironment, cache)
+    /// <param name="logger">The logger used to report missing files.</param>
+    public InlineStyleTagHelper(IWebHostEnvironment webHostEnvironment, IMemoryCache cache, ILogger<InlineStyleTagHelper> logger)
+        : base(webHostEnvironment, cache, logger)
     {
     }
 
@@ -53,7 +55,6 @@ public sealed class InlineStyleTagHelper : InlineTagHelper
         output.TagName = "style";
         output.Attributes.RemoveAll("href");
         output.TagMode = TagMode.StartTagAndEndTag;
-        output.Content.AppendHtml(fileContent);
+        output.Content.AppendHtml(EscapeClosingTag(fileContent, "style"));
     }
 }
-

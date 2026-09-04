@@ -54,20 +54,29 @@ Inlines an image from `wwwroot` as a base64 data URI.
 
 ### `render-on-page-load`
 
-Defers rendering of non-critical content until the page loads.
+Defers rendering of non-critical content until the page loads. The `id` attribute is optional and only used
+if you need to reference the `<noscript>` element yourself.
 
 ```razor
-<render-on-page-load id="deferred-content">
+<render-on-page-load>
     <link rel="stylesheet" href="/css/non-critical.css" />
 </render-on-page-load>
 ```
 
-### `datetime`
+### `datetime-value`
 
-Formats a `DateTimeOffset` value into an ISO 8601 `datetime` attribute.
+Formats a `DateTimeOffset` value into an ISO 8601 `datetime` attribute on `<time>`, `<del>` or `<ins>`.
+The value is normalized to UTC and written with the `Z` designator.
 
 ```razor
-<time datetime="@Model.PublishedAt">Published</time>
+<time datetime-value="@Model.PublishedAt">Published</time>
+<!-- Outputs: <time datetime="2024-01-15T10:30:45.123Z">Published</time> -->
+```
+
+Literal `datetime` attributes are left untouched, so existing markup keeps working:
+
+```razor
+<time datetime="2024-01-01">Jan 1</time>
 ```
 
 ## Additional resources

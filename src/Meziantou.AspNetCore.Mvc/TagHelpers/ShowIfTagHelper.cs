@@ -9,7 +9,7 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 /// &lt;div show-if="@User.Identity.IsAuthenticated"&gt;
 ///   Welcome back, @User.Identity.Name!
 /// &lt;/div&gt;
-/// 
+///
 /// @* Show error message conditionally *@
 /// &lt;div class="alert alert-danger" show-if="@Model.HasErrors"&gt;
 ///     Please correct the errors below.

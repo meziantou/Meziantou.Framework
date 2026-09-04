@@ -30,6 +30,26 @@ builder.Services.AddHttpClient<MyApiClient>()
 await builder.Build().RunAsync();
 ```
 
+#### Behavior
+
+Only the options you set on the handler are applied. An option you leave unset is **not** sent to the
+browser, so the [Fetch defaults](https://fetch.spec.whatwg.org/#requestinit) keep applying
+(`cache: "default"`, `credentials: "same-origin"`, `mode: "cors"`). In the example above, only the
+`cache` option is set; credentials and mode are untouched.
+
+Options already set on an individual request always win over the handler defaults:
+
+```csharp
+// This request keeps force-cache, whatever the handler is configured with
+request.SetBrowserRequestCache(BrowserRequestCache.ForceCache);
+```
+
+> [!NOTE]
+> Before version 2.1.0, unset properties were sent using their `default` enum value, which meant
+> `credentials: "omit"` and `mode: "same-origin"` were applied even when only the cache was configured.
+> That broke cookie-based authentication and cross-origin requests. If you relied on that behavior, set
+> `DefaultBrowserRequestCredentials` and `DefaultBrowserRequestMode` explicitly.
+
 ## Additional Resources
 
 - [Bypass browser cache using HttpClient in Blazor WebAssembly](https://www.meziantou.net/bypass-browser-cache-using-httpclient-in-blazor-webassembly.htm)

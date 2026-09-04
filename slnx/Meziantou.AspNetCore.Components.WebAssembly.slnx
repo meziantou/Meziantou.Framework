@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.AspNetCore.Components.WebAssembly/Meziantou.AspNetCore.Components.WebAssembly.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.AspNetCore.Components.WebAssembly.Tests/Meziantou.AspNetCore.Components.WebAssembly.Tests.csproj" />
+  </Folder>
 </Solution>

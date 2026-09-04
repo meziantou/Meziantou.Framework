@@ -25,6 +25,7 @@ using Meziantou.Framework.Roslyn;
 - `Compilation.IsNet9OrGreater`
 - `ContextExtensions.ReportDiagnostic`
 - `DiagnosticReporter`
+- `DiagnosticReporter.CanReportDiagnostic`
 - `ExpressionSyntax.Parenthesize`
 - `GeneratedCodeExtensions.IsGeneratedCodeFile`
 - `IOperation.UnwrapImplicitConversions`
@@ -59,6 +60,19 @@ if (type.IsOrInheritsFrom(baseType))
 {
 }
 ````
+
+### Diagnostic filtering
+
+`DiagnosticReporter.CanReportDiagnostic` is a global filter evaluated before a diagnostic is reported. It defaults to `null`, so no filtering occurs. When it is set, every diagnostic reported through a `DiagnosticReporter` or through the `ReportDiagnostic` extension methods of the analysis contexts is evaluated, and returning `false` drops it:
+
+````csharp
+DiagnosticReporter.CanReportDiagnostic = (diagnostic, options, cancellationToken)
+    => diagnostic.Location.SourceTree?.IsGeneratedCode(options, cancellationToken) is not true;
+````
+
+The delegate gets the `Diagnostic` about to be reported, so the descriptor is available with `diagnostic.Descriptor` and the syntax tree with `diagnostic.Location.SourceTree`. The `AnalyzerOptions` and the `CancellationToken` are the ones of the context the diagnostic is reported from.
+
+The filter is meant to be set once, when the analyzer is initialized. As all types of this package are embedded, it only applies to the assembly that consumes the package. Diagnostics reported directly on a Roslyn context, such as `SymbolAnalysisContext.ReportDiagnostic(Diagnostic)`, don't go through the reporter and are not filtered.
 
 ## Type embedding
 

@@ -17,6 +17,15 @@ public sealed class PostgreSqlQueryResult
     /// <summary>Gets or sets the error to return. When set, result sets are ignored.</summary>
     public PostgreSqlQueryError? Error { get; set; }
 
+    /// <summary>
+    /// Gets or sets the number of rows affected, reported in the command completion tag.
+    /// When <see langword="null"/>, the number of rows in the result set is used, or zero when there is none.
+    /// </summary>
+    public int? AffectedRowCount { get; set; }
+
+    /// <summary>Gets or sets the transaction state reported to the client after this command.</summary>
+    public PostgreSqlTransactionStatus TransactionStatus { get; set; }
+
     /// <summary>Creates an error query result.</summary>
     public static PostgreSqlQueryResult FromError(PostgreSqlQueryError error)
     {

@@ -165,6 +165,7 @@
     <Project Path="tests/Meziantou.AspNetCore.Components.LogViewer.Tests/Meziantou.AspNetCore.Components.LogViewer.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.Components.Tests/Meziantou.AspNetCore.Components.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.Components.WebAssembly.Tests/Meziantou.AspNetCore.Components.WebAssembly.Tests.csproj" />
+    <Project Path="tests/Meziantou.AspNetCore.Mvc.Tests/Meziantou.AspNetCore.Mvc.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.ServiceDefaults.Tests/Meziantou.AspNetCore.ServiceDefaults.Tests.csproj" Id="a1514aa2-f75e-4dcc-bf6b-1860a8c44fcb" />
     <Project Path="tests/Meziantou.AspNetCore.Tests/Meziantou.AspNetCore.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.FileLogger.Tests/Meziantou.Extensions.Logging.FileLogger.Tests.csproj" />
@@ -194,6 +195,7 @@
     <Project Path="tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsServer.Tests/Meziantou.Framework.DnsServer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.FastEnumGenerator.InterceptorTests/Meziantou.Framework.FastEnumGenerator.InterceptorTests.csproj" />
     <Project Path="tests/Meziantou.Framework.FastEnumGenerator.Tests/Meziantou.Framework.FastEnumGenerator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FixedStringBuilder.Generator.Tests/Meziantou.Framework.FixedStringBuilder.Generator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FixedStringBuilder.Tests/Meziantou.Framework.FixedStringBuilder.Tests.csproj" />

@@ -46,7 +46,7 @@ public sealed class FastEnumCodeFixProvider : CodeFixProvider
             if (invocationSyntax is null || semanticModel.GetOperation(invocationSyntax, context.CancellationToken) is not IInvocationOperation invocationOperation)
                 continue;
 
-            if (!TryCreateReplacementInvocation(invocationOperation, invocationSyntax, out _))
+            if (!TryCreateReplacementInvocation(invocationOperation, invocationSyntax, out _, out _))
                 continue;
 
             var title = diagnostic.Id switch
@@ -56,7 +56,7 @@ public sealed class FastEnumCodeFixProvider : CodeFixProvider
                 UseFastEnumGetNamesDiagnosticId => "Use FastEnum GetNames",
                 UseFastEnumGetValuesDiagnosticId => "Use FastEnum GetValues",
                 UseFastEnumGetNameDiagnosticId => "Use FastEnum GetName",
-                UseFastEnumIsDefinedDiagnosticId => "Use FastEnum IsDefined",
+                UseFastEnumIsDefinedDiagnosticId => "Use FastEnum IsDefinedFast",
                 UseFastEnumToStringFastDiagnosticId => "Use FastEnum ToStringFast",
                 _ => "Use FastEnum API",
             };
@@ -80,49 +80,113 @@ public sealed class FastEnumCodeFixProvider : CodeFixProvider
         if (semanticModel is null || semanticModel.GetOperation(invocationSyntax, cancellationToken) is not IInvocationOperation invocationOperation)
             return document;
 
-        if (!TryCreateReplacementInvocation(invocationOperation, invocationSyntax, out var replacement))
+        if (!TryCreateReplacementInvocation(invocationOperation, invocationSyntax, out var replacement, out var requiredNamespace))
             return document;
 
         replacement = replacement.WithTriviaFrom(invocationSyntax).WithAdditionalAnnotations(Formatter.Annotation);
         var newRoot = root.ReplaceNode(invocationSyntax, replacement);
+
+        // The generated members live in the enum's namespace, or in ExtensionMethodNamespace when set.
+        // Without the import the rewritten call does not resolve.
+        if (requiredNamespace is not null)
+        {
+            newRoot = AddUsingDirectiveIfMissing(newRoot, invocationSyntax, requiredNamespace);
+        }
+
         return document.WithSyntaxRoot(newRoot);
     }
 
-    private static bool TryCreateReplacementInvocation(IInvocationOperation invocationOperation, InvocationExpressionSyntax invocationSyntax, out InvocationExpressionSyntax replacement)
+    private static SyntaxNode AddUsingDirectiveIfMissing(SyntaxNode root, SyntaxNode originalNode, string namespaceName)
     {
-        if (invocationOperation.SemanticModel is null)
+        if (root is not CompilationUnitSyntax compilationUnit)
+            return root;
+
+        if (IsNamespaceInScope(compilationUnit, originalNode, namespaceName))
+            return root;
+
+        var usingDirective = UsingDirective(ParseName(namespaceName)).WithAdditionalAnnotations(Formatter.Annotation);
+        return compilationUnit.AddUsings(usingDirective);
+    }
+
+    private static bool IsNamespaceInScope(CompilationUnitSyntax compilationUnit, SyntaxNode originalNode, string namespaceName)
+    {
+        foreach (var usingDirective in compilationUnit.Usings)
         {
-            replacement = null!;
-            return false;
+            if (usingDirective is { Alias: null, StaticKeyword.RawKind: 0, Name: { } name } && string.Equals(name.ToString(), namespaceName, StringComparison.Ordinal))
+                return true;
         }
+
+        // A call site inside the target namespace (or a nested one) already sees the generated class.
+        for (var node = originalNode; node is not null; node = node.Parent)
+        {
+            var declaredName = node switch
+            {
+                NamespaceDeclarationSyntax namespaceDeclaration => namespaceDeclaration.Name.ToString(),
+                FileScopedNamespaceDeclarationSyntax fileScopedNamespace => fileScopedNamespace.Name.ToString(),
+                _ => null,
+            };
+
+            if (declaredName is null)
+                continue;
+
+            if (string.Equals(declaredName, namespaceName, StringComparison.Ordinal))
+                return true;
+
+            foreach (var usingDirective in GetUsings(node))
+            {
+                if (usingDirective is { Alias: null, StaticKeyword.RawKind: 0, Name: { } name } && string.Equals(name.ToString(), namespaceName, StringComparison.Ordinal))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static SyntaxList<UsingDirectiveSyntax> GetUsings(SyntaxNode node)
+    {
+        return node switch
+        {
+            NamespaceDeclarationSyntax namespaceDeclaration => namespaceDeclaration.Usings,
+            FileScopedNamespaceDeclarationSyntax fileScopedNamespace => fileScopedNamespace.Usings,
+            _ => default,
+        };
+    }
+
+    private static bool TryCreateReplacementInvocation(IInvocationOperation invocationOperation, InvocationExpressionSyntax invocationSyntax, out InvocationExpressionSyntax replacement, out string? requiredNamespace)
+    {
+        requiredNamespace = null;
+        if (invocationOperation.SemanticModel is null)
+            return TryReturnNoReplacement(out replacement);
 
         var compilation = invocationOperation.SemanticModel.Compilation;
         var fastEnumAttribute = compilation.GetTypeByMetadataName(FastEnumAnalyzerCommon.FastEnumAttributeMetadataName);
         if (fastEnumAttribute is null)
-        {
-            replacement = null!;
-            return false;
-        }
+            return TryReturnNoReplacement(out replacement);
 
         var enumType = compilation.GetSpecialType(SpecialType.System_Enum);
         var fastEnumTypes = FastEnumAnalyzerCommon.GetFastEnumTypes(compilation, fastEnumAttribute);
-        if (!FastEnumAnalyzerCommon.TryGetFastEnumInvocationMatch(invocationOperation, enumType, fastEnumTypes, out var match))
-        {
-            replacement = null!;
-            return false;
-        }
+        var supportsExtensionMembers = FastEnumAnalyzerCommon.SupportsExtensionMembers(compilation);
+        if (!FastEnumAnalyzerCommon.TryGetFastEnumInvocationMatch(invocationOperation, enumType, fastEnumTypes, supportsExtensionMembers, out var match))
+            return TryReturnNoReplacement(out replacement);
 
-        return match.MethodKind switch
+        var created = match.MethodKind switch
         {
             FastEnumMethodKind.Parse => TryCreateParseReplacement(invocationOperation, invocationSyntax, match.EnumType, out replacement),
             FastEnumMethodKind.TryParse => TryCreateTryParseReplacement(invocationOperation, invocationSyntax, match.EnumType, out replacement),
-            FastEnumMethodKind.GetNames => TryCreateGetNamesReplacement(invocationOperation, invocationSyntax, match.EnumType, out replacement),
-            FastEnumMethodKind.GetValues => TryCreateGetValuesReplacement(invocationOperation, invocationSyntax, match.EnumType, out replacement),
+            FastEnumMethodKind.GetNames => TryCreateGetNamesReplacement(invocationOperation, invocationSyntax, match.EnumType, compilation, out replacement),
+            FastEnumMethodKind.GetValues => TryCreateGetValuesReplacement(invocationOperation, invocationSyntax, match.EnumType, compilation, out replacement),
             FastEnumMethodKind.GetName => TryCreateGetNameReplacement(invocationOperation, invocationSyntax, match.EnumType, out replacement),
             FastEnumMethodKind.IsDefined => TryCreateIsDefinedReplacement(invocationOperation, invocationSyntax, match.EnumType, out replacement),
             FastEnumMethodKind.ToString => TryCreateToStringReplacement(invocationSyntax, out replacement),
             _ => TryReturnNoReplacement(out replacement),
         };
+
+        if (created)
+        {
+            requiredNamespace = FastEnumAnalyzerCommon.GetGeneratedNamespace(compilation, fastEnumAttribute, match.EnumType);
+        }
+
+        return created;
     }
 
     private static bool TryCreateParseReplacement(IInvocationOperation invocationOperation, InvocationExpressionSyntax invocationSyntax, INamedTypeSymbol enumType, out InvocationExpressionSyntax replacement)
@@ -170,9 +234,13 @@ public sealed class FastEnumCodeFixProvider : CodeFixProvider
         return true;
     }
 
-    private static bool TryCreateGetNamesReplacement(IInvocationOperation invocationOperation, InvocationExpressionSyntax invocationSyntax, INamedTypeSymbol enumType, out InvocationExpressionSyntax replacement)
+    private static bool TryCreateGetNamesReplacement(IInvocationOperation invocationOperation, InvocationExpressionSyntax invocationSyntax, INamedTypeSymbol enumType, Compilation compilation, out InvocationExpressionSyntax replacement)
     {
         if (!TryGetArgumentsWithoutTypeOf(invocationOperation, invocationSyntax, out var arguments, out var operationArguments) || arguments.Count != 0 || operationArguments.Length != 0)
+            return TryReturnNoReplacement(out replacement);
+
+        // The generated member returns ReadOnlySpan<string> rather than string[].
+        if (!CanUseSpanResult(invocationOperation, compilation.GetSpecialType(SpecialType.System_String), compilation))
             return TryReturnNoReplacement(out replacement);
 
         arguments = arguments.Add(CreateNamedBooleanArgument("useMetadata", value: false));
@@ -180,13 +248,84 @@ public sealed class FastEnumCodeFixProvider : CodeFixProvider
         return true;
     }
 
-    private static bool TryCreateGetValuesReplacement(IInvocationOperation invocationOperation, InvocationExpressionSyntax invocationSyntax, INamedTypeSymbol enumType, out InvocationExpressionSyntax replacement)
+    private static bool TryCreateGetValuesReplacement(IInvocationOperation invocationOperation, InvocationExpressionSyntax invocationSyntax, INamedTypeSymbol enumType, Compilation compilation, out InvocationExpressionSyntax replacement)
     {
         if (!TryGetArgumentsWithoutTypeOf(invocationOperation, invocationSyntax, out var arguments, out var operationArguments) || arguments.Count != 0 || operationArguments.Length != 0)
             return TryReturnNoReplacement(out replacement);
 
+        // The generated member returns ReadOnlySpan<TEnum> rather than TEnum[] or Array.
+        if (!CanUseSpanResult(invocationOperation, enumType, compilation))
+            return TryReturnNoReplacement(out replacement);
+
         replacement = CreateStaticInvocation(enumType, nameof(Enum.GetValues), arguments);
         return true;
+    }
+
+    /// <summary>
+    /// Determines whether replacing the invocation with one returning <c>ReadOnlySpan&lt;T&gt;</c> still
+    /// compiles. A span cannot be assigned to an array, enumerated with LINQ, or captured in a lambda,
+    /// so anything not provably compatible is left alone.
+    /// </summary>
+    private static bool CanUseSpanResult(IInvocationOperation invocationOperation, ITypeSymbol elementType, Compilation compilation)
+    {
+        var spanTypeDefinition = compilation.GetTypeByMetadataName("System.ReadOnlySpan`1");
+        if (spanTypeDefinition is null)
+            return false;
+
+        var spanType = spanTypeDefinition.Construct(elementType);
+        var parent = invocationOperation.Parent;
+
+        // foreach binds against the span's own pattern-based enumerator, so the conversion the compiler
+        // inserted for the original array is irrelevant here.
+        if (parent is IForEachLoopOperation || parent is IConversionOperation { Parent: IForEachLoopOperation })
+            return true;
+
+        // The compiler inserts a conversion around the original array-returning call.
+        if (parent is IConversionOperation { IsImplicit: true } conversion)
+        {
+            if (conversion.Type is null || conversion.Type.TypeKind == TypeKind.Error)
+                return false;
+
+            if (!IsImplicitlyConvertible(spanType, conversion.Type, compilation))
+                return false;
+
+            parent = conversion.Parent;
+        }
+
+        return parent switch
+        {
+            null or IExpressionStatementOperation => true,
+
+            // `_ = ...` accepts any type.
+            ISimpleAssignmentOperation { Target: IDiscardOperation } => true,
+            ISimpleAssignmentOperation { Target.Type: { } targetType } => IsImplicitlyConvertible(spanType, targetType, compilation),
+
+            IVariableInitializerOperation { Parent: IVariableDeclaratorOperation declarator } =>
+                IsVarDeclaration(declarator) || IsImplicitlyConvertible(spanType, declarator.Symbol.Type, compilation),
+
+            IArgumentOperation { Parameter.Type: { } parameterType } => IsImplicitlyConvertible(spanType, parameterType, compilation),
+
+            // Member access such as `.Length` is fine when the span declares the same member; anything
+            // else (LINQ, ToArray on an array, ...) is not guaranteed to exist on a span.
+            IPropertyReferenceOperation propertyReference => !spanType.GetMembers(propertyReference.Property.Name).IsEmpty,
+            IArrayElementReferenceOperation => true,
+
+            _ => false,
+        };
+    }
+
+    private static bool IsVarDeclaration(IVariableDeclaratorOperation declarator)
+    {
+        return declarator.Syntax.Parent is VariableDeclarationSyntax { Type.IsVar: true };
+    }
+
+    private static bool IsImplicitlyConvertible(ITypeSymbol source, ITypeSymbol destination, Compilation compilation)
+    {
+        if (destination.TypeKind == TypeKind.Error)
+            return false;
+
+        var conversion = compilation.ClassifyCommonConversion(source, destination);
+        return conversion is { Exists: true, IsImplicit: true };
     }
 
     private static bool TryCreateGetNameReplacement(IInvocationOperation invocationOperation, InvocationExpressionSyntax invocationSyntax, INamedTypeSymbol enumType, out InvocationExpressionSyntax replacement)
@@ -194,11 +333,13 @@ public sealed class FastEnumCodeFixProvider : CodeFixProvider
         if (!TryGetArgumentsWithoutTypeOf(invocationOperation, invocationSyntax, out var arguments, out var operationArguments) || arguments.Count != 1 || operationArguments.Length != 1)
             return TryReturnNoReplacement(out replacement);
 
-        var valueExpression = GetValueExpression(arguments[0].Expression, operationArguments[0].Value, enumType);
+        if (!TryGetValueExpression(arguments[0].Expression, operationArguments[0].Value, enumType, out var valueExpression))
+            return TryReturnNoReplacement(out replacement);
+
         replacement = InvocationExpression(
             MemberAccessExpression(
                 SyntaxKind.SimpleMemberAccessExpression,
-                valueExpression,
+                ParenthesizeIfNeeded(valueExpression),
                 IdentifierName("GetName")));
         return true;
     }
@@ -208,8 +349,12 @@ public sealed class FastEnumCodeFixProvider : CodeFixProvider
         if (!TryGetArgumentsWithoutTypeOf(invocationOperation, invocationSyntax, out var arguments, out var operationArguments) || arguments.Count != 1 || operationArguments.Length != 1)
             return TryReturnNoReplacement(out replacement);
 
-        var valueExpression = GetValueExpression(arguments[0].Expression, operationArguments[0].Value, enumType);
-        replacement = CreateStaticInvocation(enumType, nameof(Enum.IsDefined), [Argument(valueExpression)]);
+        // Enum.IsDefined(Type, object) also accepts a member name or a boxed underlying value; neither can
+        // be cast to the enum type, so only rewrite when the argument already is the enum.
+        if (!TryGetValueExpression(arguments[0].Expression, operationArguments[0].Value, enumType, out var valueExpression))
+            return TryReturnNoReplacement(out replacement);
+
+        replacement = CreateStaticInvocation(enumType, "IsDefinedFast", [Argument(valueExpression)]);
         return true;
     }
 
@@ -271,13 +416,37 @@ public sealed class FastEnumCodeFixProvider : CodeFixProvider
             .WithNameColon(NameColon(IdentifierName(name)));
     }
 
-    private static ExpressionSyntax GetValueExpression(ExpressionSyntax expression, IOperation valueOperation, INamedTypeSymbol enumType)
+    private static bool TryGetValueExpression(ExpressionSyntax expression, IOperation valueOperation, INamedTypeSymbol enumType, out ExpressionSyntax valueExpression)
     {
-        if (SymbolEqualityComparer.Default.Equals(valueOperation.Type, enumType))
-            return expression;
+        // Look through the boxing conversion the compiler inserts for the `object` parameter.
+        var operation = valueOperation;
+        while (operation is IConversionOperation { IsImplicit: true } conversion)
+        {
+            operation = conversion.Operand;
+        }
 
-        var enumTypeSyntax = ParseTypeName(enumType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
-        return ParenthesizedExpression(CastExpression(enumTypeSyntax, ParenthesizedExpression(expression)));
+        if (!SymbolEqualityComparer.Default.Equals(operation.Type, enumType))
+        {
+            valueExpression = null!;
+            return false;
+        }
+
+        valueExpression = expression;
+        return true;
+    }
+
+    /// <summary>
+    /// <c>Enum.GetName(a | b)</c> must not become <c>a | b.GetName()</c>, which binds as <c>a | (b.GetName())</c>.
+    /// </summary>
+    private static ExpressionSyntax ParenthesizeIfNeeded(ExpressionSyntax expression)
+    {
+        return expression switch
+        {
+            IdentifierNameSyntax or QualifiedNameSyntax or MemberAccessExpressionSyntax or InvocationExpressionSyntax
+                or ParenthesizedExpressionSyntax or ElementAccessExpressionSyntax or LiteralExpressionSyntax
+                or ThisExpressionSyntax or BaseExpressionSyntax => expression,
+            _ => ParenthesizedExpression(expression),
+        };
     }
 
     private static bool TryReturnNoReplacement(out InvocationExpressionSyntax replacement)

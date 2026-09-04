@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated;
 
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.Color), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
@@ -15,6 +16,8 @@ using Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated;
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.UInt32BasedEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.Int64BasedEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.UInt64BasedEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
+[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.OutOfOrderEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
+[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.KeywordEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
 
 namespace Meziantou.Framework.FastEnumGenerator.GeneratorTests;
 
@@ -106,16 +109,16 @@ public sealed class FastEnumGeneratedBehaviorTests
     [InlineData(Permission.None, Permission.Read)]
     public void HasFlag_MatchesEnumHasFlag_Permission(Permission value, Permission flag)
     {
-        Assert.Equal((value & flag) == flag, value.HasFlag(flag));
+        Assert.Equal(value.HasFlag(flag), value.HasFlagFast(flag));
     }
 
     [Fact]
     public void IsDefinedGetNamesGetValues_WithoutMetadata_MatchEnumApis()
     {
-        Assert.Equal(Enum.IsDefined(typeof(Color), Color.Blue), Color.IsDefined(Color.Blue));
-        Assert.Equal(Enum.IsDefined(typeof(Color), (Color)42), Color.IsDefined((Color)42));
-        Assert.Equal(Enum.IsDefined(typeof(PermissionWithCombination), PermissionWithCombination.AandB), PermissionWithCombination.IsDefined(PermissionWithCombination.AandB));
-        Assert.Equal(Enum.IsDefined(typeof(PermissionWithCombination), PermissionWithCombination.A | PermissionWithCombination.C), PermissionWithCombination.IsDefined(PermissionWithCombination.A | PermissionWithCombination.C));
+        Assert.Equal(Enum.IsDefined(typeof(Color), Color.Blue), Color.IsDefinedFast(Color.Blue));
+        Assert.Equal(Enum.IsDefined(typeof(Color), (Color)42), Color.IsDefinedFast((Color)42));
+        Assert.Equal(Enum.IsDefined(typeof(PermissionWithCombination), PermissionWithCombination.AandB), PermissionWithCombination.IsDefinedFast(PermissionWithCombination.AandB));
+        Assert.Equal(Enum.IsDefined(typeof(PermissionWithCombination), PermissionWithCombination.A | PermissionWithCombination.C), PermissionWithCombination.IsDefinedFast(PermissionWithCombination.A | PermissionWithCombination.C));
         Assert.Equal(Enum.GetNames<Color>(), Color.GetNames(useMetadata: false).ToArray());
         Assert.Equal(Enum.GetValues<Color>(), Color.GetValues().ToArray());
         Assert.Equal(Enum.GetNames<PermissionWithCombination>(), PermissionWithCombination.GetNames(useMetadata: false).ToArray());
@@ -134,7 +137,7 @@ public sealed class FastEnumGeneratedBehaviorTests
     public void GetNameAndHasFlag_Work()
     {
         Assert.Equal("Green", Color.Green.GetName());
-        Assert.True((Permission.Read | Permission.Write).HasFlag(Permission.Write));
+        Assert.True((Permission.Read | Permission.Write).HasFlagFast(Permission.Write));
     }
 
     [Fact]
@@ -158,8 +161,8 @@ public sealed class FastEnumGeneratedBehaviorTests
     [Fact]
     public void IsDefinedGetNamesGetValues_Work()
     {
-        Assert.True(Color.IsDefined(Color.Blue));
-        Assert.False(Color.IsDefined((Color)42));
+        Assert.True(Color.IsDefinedFast(Color.Blue));
+        Assert.False(Color.IsDefinedFast((Color)42));
         Assert.Equal(["Blue", "Red", "Green"], Color.GetNames(useMetadata: false).ToArray());
         Assert.Equal(["Blue metadata", "Red metadata", "Green"], Color.GetNames(useMetadata: true).ToArray());
         Assert.Equal([Color.Blue, Color.Red, Color.Green], Color.GetValues().ToArray());
@@ -172,7 +175,7 @@ public sealed class FastEnumGeneratedBehaviorTests
         Assert.Equal("Blue", ColorWithAliases.Azure.ToStringFast());
         Assert.Equal("Blue", ColorWithAliases.Azure.ToStringFast(useMetadata: true));
         Assert.Equal("Blue", ColorWithAliases.Azure.GetName());
-        Assert.False(ColorWithAliases.Azure.HasFlag(ColorWithAliases.Red));
+        Assert.False(ColorWithAliases.Azure.HasFlagFast(ColorWithAliases.Red));
         Assert.Equal(ColorWithAliases.Blue, ColorWithAliases.Parse("Azure", ignoreCase: false));
         Assert.Equal(ColorWithAliases.Blue, ColorWithAliases.Parse("azure".AsSpan(), ignoreCase: true));
         Assert.Equal(ColorWithAliases.Blue, ColorWithAliases.Parse("azure", ignoreCase: true, useMetadata: true));
@@ -185,8 +188,8 @@ public sealed class FastEnumGeneratedBehaviorTests
         Assert.Equal(ColorWithAliases.Blue, parsedFromStringWithMetadata);
         Assert.True(ColorWithAliases.TryParse("Azure".AsSpan(), ignoreCase: false, useMetadata: true, out var parsedFromSpanWithMetadata));
         Assert.Equal(ColorWithAliases.Blue, parsedFromSpanWithMetadata);
-        Assert.True(ColorWithAliases.IsDefined(ColorWithAliases.Azure));
-        Assert.False(ColorWithAliases.IsDefined((ColorWithAliases)42));
+        Assert.True(ColorWithAliases.IsDefinedFast(ColorWithAliases.Azure));
+        Assert.False(ColorWithAliases.IsDefinedFast((ColorWithAliases)42));
         Assert.Equal(["Blue", "Azure", "Red"], ColorWithAliases.GetNames(useMetadata: false).ToArray());
         Assert.Equal(["Blue", "Azure", "Red"], ColorWithAliases.GetNames(useMetadata: true).ToArray());
         Assert.Equal([ColorWithAliases.Blue, ColorWithAliases.Azure, ColorWithAliases.Red], ColorWithAliases.GetValues().ToArray());
@@ -199,9 +202,9 @@ public sealed class FastEnumGeneratedBehaviorTests
         Assert.Equal("AandB", (PermissionWithCombination.A | PermissionWithCombination.B).ToStringFast());
         Assert.Equal("AandB", PermissionWithCombination.AandB.ToStringFast(useMetadata: true));
         Assert.Equal("AandB", PermissionWithCombination.AandB.GetName());
-        Assert.True(PermissionWithCombination.AandB.HasFlag(PermissionWithCombination.A));
-        Assert.True(PermissionWithCombination.AandB.HasFlag(PermissionWithCombination.B));
-        Assert.False(PermissionWithCombination.AandB.HasFlag(PermissionWithCombination.C));
+        Assert.True(PermissionWithCombination.AandB.HasFlagFast(PermissionWithCombination.A));
+        Assert.True(PermissionWithCombination.AandB.HasFlagFast(PermissionWithCombination.B));
+        Assert.False(PermissionWithCombination.AandB.HasFlagFast(PermissionWithCombination.C));
         Assert.Equal(PermissionWithCombination.AandB, PermissionWithCombination.Parse("AandB", ignoreCase: false));
         Assert.Equal(PermissionWithCombination.AandB, PermissionWithCombination.Parse("A, B".AsSpan(), ignoreCase: false));
         Assert.Equal(PermissionWithCombination.AandB, PermissionWithCombination.Parse("aandb", ignoreCase: true, useMetadata: true));
@@ -214,8 +217,8 @@ public sealed class FastEnumGeneratedBehaviorTests
         Assert.Equal(PermissionWithCombination.AandB, parsedFromStringWithMetadata);
         Assert.True(PermissionWithCombination.TryParse("A, C".AsSpan(), ignoreCase: false, useMetadata: true, out var parsedFromSpanWithMetadata));
         Assert.Equal(PermissionWithCombination.A | PermissionWithCombination.C, parsedFromSpanWithMetadata);
-        Assert.True(PermissionWithCombination.IsDefined(PermissionWithCombination.AandB));
-        Assert.False(PermissionWithCombination.IsDefined(PermissionWithCombination.A | PermissionWithCombination.C));
+        Assert.True(PermissionWithCombination.IsDefinedFast(PermissionWithCombination.AandB));
+        Assert.False(PermissionWithCombination.IsDefinedFast(PermissionWithCombination.A | PermissionWithCombination.C));
         Assert.Equal(["None", "A", "B", "AandB", "C"], PermissionWithCombination.GetNames(useMetadata: false).ToArray());
         Assert.Equal(["None", "A", "B", "AandB", "C"], PermissionWithCombination.GetNames(useMetadata: true).ToArray());
         Assert.Equal([PermissionWithCombination.None, PermissionWithCombination.A, PermissionWithCombination.B, PermissionWithCombination.AandB, PermissionWithCombination.C], PermissionWithCombination.GetValues().ToArray());
@@ -226,7 +229,7 @@ public sealed class FastEnumGeneratedBehaviorTests
     {
         var combined = PermissionWithDisplayMetadata.Read | PermissionWithDisplayMetadata.Write;
         Assert.Equal("Read, Write", combined.ToStringFast(useMetadata: false));
-        Assert.Equal("Write metadata, Read metadata", combined.ToStringFast(useMetadata: true));
+        Assert.Equal("Read metadata, Write metadata", combined.ToStringFast(useMetadata: true));
         Assert.Equal("Read metadata", PermissionWithDisplayMetadata.Read.ToStringFast(useMetadata: true));
 
         Assert.True(PermissionWithDisplayMetadata.TryParse("Read, Write", ignoreCase: false, useMetadata: false, out var parsedNonMetadata));
@@ -251,15 +254,15 @@ public sealed class FastEnumGeneratedBehaviorTests
     {
         Assert.Equal("Two", NonConsecutiveEnum.Two.GetName());
         Assert.Equal("5", ((NonConsecutiveEnum)5).ToStringFast());
-        Assert.True(NonConsecutiveEnum.IsDefined(NonConsecutiveEnum.Zero));
-        Assert.False(NonConsecutiveEnum.IsDefined((NonConsecutiveEnum)1));
+        Assert.True(NonConsecutiveEnum.IsDefinedFast(NonConsecutiveEnum.Zero));
+        Assert.False(NonConsecutiveEnum.IsDefinedFast((NonConsecutiveEnum)1));
         Assert.Equal(["Zero", "Two", "Nine"], NonConsecutiveEnum.GetNames(useMetadata: false).ToArray());
         Assert.Equal([NonConsecutiveEnum.Zero, NonConsecutiveEnum.Two, NonConsecutiveEnum.Nine], NonConsecutiveEnum.GetValues().ToArray());
 
         Assert.Equal("Ten", NonZeroEnum.Ten.GetName());
         Assert.Equal("42", ((NonZeroEnum)42).ToStringFast());
-        Assert.True(NonZeroEnum.IsDefined(NonZeroEnum.Ten));
-        Assert.False(NonZeroEnum.IsDefined((NonZeroEnum)0));
+        Assert.True(NonZeroEnum.IsDefinedFast(NonZeroEnum.Ten));
+        Assert.False(NonZeroEnum.IsDefinedFast((NonZeroEnum)0));
         Assert.True(NonZeroEnum.TryParse("Ten", ignoreCase: false, out var nonZeroParsed));
         Assert.Equal(NonZeroEnum.Ten, nonZeroParsed);
     }
@@ -269,36 +272,125 @@ public sealed class FastEnumGeneratedBehaviorTests
     {
         Assert.Equal("One", UInt64BasedEnum.One.GetName());
         Assert.Equal(UInt64BasedEnum.One, UInt64BasedEnum.Parse("One", ignoreCase: false));
-        Assert.Equal("4294967297", ((UInt64BasedEnum)4_294_967_297UL).GetName());
-        Assert.False(UInt64BasedEnum.IsDefined((UInt64BasedEnum)4_294_967_297UL));
+        Assert.Null(((UInt64BasedEnum)4_294_967_297UL).GetName());
+        Assert.Equal("4294967297", ((UInt64BasedEnum)4_294_967_297UL).ToStringFast());
+        Assert.False(UInt64BasedEnum.IsDefinedFast((UInt64BasedEnum)4_294_967_297UL));
     }
 
     [Fact]
     public void AllUnderlyingTypes_AreSupported()
     {
-        Assert.True(ByteBasedEnum.Two.HasFlag(ByteBasedEnum.Two));
+        Assert.True(ByteBasedEnum.Two.HasFlagFast(ByteBasedEnum.Two));
         Assert.Equal(ByteBasedEnum.One, ByteBasedEnum.Parse("One", ignoreCase: false));
 
-        Assert.True(SByteBasedEnum.Two.HasFlag(SByteBasedEnum.Two));
+        Assert.True(SByteBasedEnum.Two.HasFlagFast(SByteBasedEnum.Two));
         Assert.Equal(SByteBasedEnum.One, SByteBasedEnum.Parse("One", ignoreCase: false));
 
-        Assert.True(Int16BasedEnum.Two.HasFlag(Int16BasedEnum.Two));
+        Assert.True(Int16BasedEnum.Two.HasFlagFast(Int16BasedEnum.Two));
         Assert.Equal(Int16BasedEnum.One, Int16BasedEnum.Parse("One", ignoreCase: false));
 
-        Assert.True(UInt16BasedEnum.Two.HasFlag(UInt16BasedEnum.Two));
+        Assert.True(UInt16BasedEnum.Two.HasFlagFast(UInt16BasedEnum.Two));
         Assert.Equal(UInt16BasedEnum.One, UInt16BasedEnum.Parse("One", ignoreCase: false));
 
-        Assert.True(Int32BasedEnum.Two.HasFlag(Int32BasedEnum.Two));
+        Assert.True(Int32BasedEnum.Two.HasFlagFast(Int32BasedEnum.Two));
         Assert.Equal(Int32BasedEnum.One, Int32BasedEnum.Parse("One", ignoreCase: false));
 
-        Assert.True(UInt32BasedEnum.Two.HasFlag(UInt32BasedEnum.Two));
+        Assert.True(UInt32BasedEnum.Two.HasFlagFast(UInt32BasedEnum.Two));
         Assert.Equal(UInt32BasedEnum.One, UInt32BasedEnum.Parse("One", ignoreCase: false));
 
-        Assert.True(Int64BasedEnum.Two.HasFlag(Int64BasedEnum.Two));
+        Assert.True(Int64BasedEnum.Two.HasFlagFast(Int64BasedEnum.Two));
         Assert.Equal(Int64BasedEnum.One, Int64BasedEnum.Parse("One", ignoreCase: false));
 
-        Assert.True(UInt64BasedEnum.Two.HasFlag(UInt64BasedEnum.Two));
+        Assert.True(UInt64BasedEnum.Two.HasFlagFast(UInt64BasedEnum.Two));
         Assert.Equal(UInt64BasedEnum.One, UInt64BasedEnum.Parse("One", ignoreCase: false));
+    }
+
+    [Theory]
+    [InlineData(OutOfOrderEnum.Alpha)]
+    [InlineData(OutOfOrderEnum.Charlie)]
+    [InlineData((OutOfOrderEnum)99)]
+    public void GetNameAndToStringFast_MatchEnumApis_WhenDeclarationOrderDiffersFromValueOrder(OutOfOrderEnum value)
+    {
+        Assert.Equal(Enum.GetName(typeof(OutOfOrderEnum), value), value.GetName());
+        Assert.Equal(value.ToString(), value.ToStringFast());
+    }
+
+    [Fact]
+    public void GetNamesAndGetValues_UseValueOrder_LikeEnumApis()
+    {
+        Assert.Equal(Enum.GetNames<OutOfOrderEnum>(), OutOfOrderEnum.GetNames(useMetadata: false).ToArray());
+        Assert.Equal(Enum.GetValues<OutOfOrderEnum>(), OutOfOrderEnum.GetValues().ToArray());
+        Assert.Equal(Enum.GetNames<ColorWithAliases>(), ColorWithAliases.GetNames(useMetadata: false).ToArray());
+        Assert.Equal(Enum.GetValues<ColorWithAliases>(), ColorWithAliases.GetValues().ToArray());
+        Assert.Equal(Enum.GetNames<NonConsecutiveEnum>(), NonConsecutiveEnum.GetNames(useMetadata: false).ToArray());
+        Assert.Equal(Enum.GetValues<NonConsecutiveEnum>(), NonConsecutiveEnum.GetValues().ToArray());
+    }
+
+    [Theory]
+    [InlineData((Color)42)]
+    [InlineData((Color)(-1))]
+    public void GetName_ReturnsNull_ForUndefinedValues(Color value)
+    {
+        Assert.Null(Enum.GetName(typeof(Color), value));
+        Assert.Null(value.GetName());
+    }
+
+    [Theory]
+    [InlineData(Permission.None)]
+    [InlineData(Permission.Read | Permission.Write)]
+    [InlineData(Permission.Read | Permission.Write | Permission.Execute)]
+    [InlineData((Permission)8)]
+    [InlineData((Permission)9)]
+    public void ToStringFast_MatchesEnumToString_ForFlagCombinations(Permission value)
+    {
+        Assert.Equal(value.ToString(), value.ToStringFast());
+        Assert.Equal(Enum.GetName(typeof(Permission), value), value.GetName());
+    }
+
+    [Theory]
+    [InlineData(PermissionWithCombination.AandB)]
+    [InlineData(PermissionWithCombination.A | PermissionWithCombination.C)]
+    [InlineData(PermissionWithCombination.A | PermissionWithCombination.B | PermissionWithCombination.C)]
+    public void ToStringFast_MatchesEnumToString_ForCompositeFlagMembers(PermissionWithCombination value)
+    {
+        Assert.Equal(value.ToString(), value.ToStringFast());
+    }
+
+    [Fact]
+    public void KeywordNamedMembers_AreSupported()
+    {
+        Assert.Equal("class", KeywordEnum.@class.GetName());
+        Assert.Equal("event", KeywordEnum.@event.ToStringFast());
+        Assert.Equal(KeywordEnum.@new, KeywordEnum.Parse("new", ignoreCase: false));
+        Assert.True(KeywordEnum.IsDefinedFast(KeywordEnum.@class));
+        Assert.Equal(Enum.GetNames<KeywordEnum>(), KeywordEnum.GetNames(useMetadata: false).ToArray());
+    }
+
+    [Fact]
+    public void HasFlag_BindsToSystemEnum_WhichIsWhyTheGeneratedMemberIsNamedHasFlagFast()
+    {
+        // Inherited members win overload resolution over extension members, so a generated method named
+        // HasFlag would be unreachable. This pins the reason for the HasFlagFast/IsDefinedFast names.
+        Expression<Func<bool>> hasFlag = () => (Permission.Read | Permission.Write).HasFlag(Permission.Write);
+        Assert.Equal(typeof(Enum), ((MethodCallExpression)hasFlag.Body).Method.DeclaringType);
+
+        Assert.Null(typeof(Enum).GetMethod("HasFlagFast"));
+        Assert.Null(typeof(Enum).GetMethod("IsDefinedFast"));
+    }
+
+    [Fact]
+    public void GeneratedClassNames_AreDerivedFromTheEnumIdentity()
+    {
+        // Positional names would change whenever another [FastEnum] enum is added, which breaks
+        // assemblies already compiled against the generated extension methods.
+        var generatedTypes = typeof(FastEnumGeneratedBehaviorTests).Assembly.GetTypes()
+            .Where(static type => type.Name.StartsWith("FastEnumExtensions_", StringComparison.Ordinal))
+            .Select(static type => type.Name)
+            .ToArray();
+
+        Assert.NotEmpty(generatedTypes);
+        Assert.Contains(generatedTypes, static name => name.Contains(nameof(Color), StringComparison.Ordinal));
+        Assert.DoesNotContain(generatedTypes, static name => name is "FastEnumExtensions_0" or "FastEnumExtensions_1");
     }
 
     private delegate bool StringTryParseDelegate<TEnum>(string value, bool ignoreCase, out TEnum result)

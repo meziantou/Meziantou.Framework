@@ -1,6 +1,10 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using Windows.Wdk.Storage.FileSystem;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.Storage.FileSystem;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
@@ -9,19 +13,9 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 /// managed <see cref="Directory"/> APIs hide: those open a fresh handle per call, so they never trigger a
 /// restart scan.
 /// </summary>
-internal sealed partial class NativeDirectoryEnumerator : IDisposable
+internal sealed class NativeDirectoryEnumerator : IDisposable
 {
-    private const uint FileListDirectory = 0x0001;
-    private const uint FileShareAll = 0x0007;
-    private const uint OpenExisting = 3;
-    private const uint FileFlagBackupSemantics = 0x02000000;
-    private const int FileDirectoryInformation = 1;
     private const int BufferSize = 64 * 1024;
-
-    // Offsets into FILE_DIRECTORY_INFORMATION
-    private const int NextEntryOffsetOffset = 0;
-    private const int FileNameLengthOffset = 60;
-    private const int FileNameOffset = 64;
 
     private readonly SafeFileHandle _handle;
 
@@ -32,7 +26,14 @@ internal sealed partial class NativeDirectoryEnumerator : IDisposable
 
     public static NativeDirectoryEnumerator Open(string path)
     {
-        var handle = CreateFileW(path, FileListDirectory, FileShareAll, IntPtr.Zero, OpenExisting, FileFlagBackupSemantics, IntPtr.Zero);
+        var handle = PInvoke.CreateFile(
+            path,
+            (uint)FILE_ACCESS_RIGHTS.FILE_LIST_DIRECTORY,
+            FILE_SHARE_MODE.FILE_SHARE_READ | FILE_SHARE_MODE.FILE_SHARE_WRITE | FILE_SHARE_MODE.FILE_SHARE_DELETE,
+            lpSecurityAttributes: null,
+            FILE_CREATION_DISPOSITION.OPEN_EXISTING,
+            FILE_FLAGS_AND_ATTRIBUTES.FILE_FLAG_BACKUP_SEMANTICS,
+            hTemplateFile: null);
         if (handle.IsInvalid)
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
@@ -56,57 +57,60 @@ internal sealed partial class NativeDirectoryEnumerator : IDisposable
     /// <summary>Reads one batch of entries. Returns <see langword="false"/> once the enumeration is exhausted.</summary>
     private unsafe bool Query(bool restartScan, string? searchExpression, List<string> names)
     {
-        var buffer = Marshal.AllocHGlobal(BufferSize);
-        var searchExpressionPtr = searchExpression is null ? IntPtr.Zero : Marshal.StringToHGlobalUni(searchExpression);
-        var unicodeStringPtr = IntPtr.Zero;
+        var buffer = new byte[BufferSize];
+        var handleAcquired = false;
         try
         {
-            if (searchExpression is not null)
+            _handle.DangerousAddRef(ref handleAcquired);
+
+            fixed (char* searchExpressionPtr = searchExpression)
             {
-                var unicodeString = new UNICODE_STRING
+                var searchExpressionLength = checked((ushort)((searchExpression?.Length ?? 0) * sizeof(char)));
+                UNICODE_STRING? fileName = searchExpression is null ? null : new UNICODE_STRING
                 {
-                    Length = checked((ushort)(searchExpression.Length * sizeof(char))),
-                    MaximumLength = checked((ushort)(searchExpression.Length * sizeof(char))),
+                    Length = searchExpressionLength,
+                    MaximumLength = searchExpressionLength,
                     Buffer = searchExpressionPtr,
                 };
 
-                unicodeStringPtr = Marshal.AllocHGlobal(Marshal.SizeOf<UNICODE_STRING>());
-                Marshal.StructureToPtr(unicodeString, unicodeStringPtr, fDeleteOld: false);
+                var status = Windows.Wdk.PInvoke.NtQueryDirectoryFile(
+                    (HANDLE)_handle.DangerousGetHandle(),
+                    Event: default,
+                    ApcRoutine: null,
+                    ApcContext: null,
+                    IoStatusBlock: out _,
+                    buffer,
+                    FILE_INFORMATION_CLASS.FileDirectoryInformation,
+                    ReturnSingleEntry: false,
+                    fileName,
+                    restartScan);
+
+                // STATUS_NO_MORE_FILES and any other non-success status end the enumeration
+                if (status.Value is not 0)
+                    return false;
             }
 
-            var status = NtQueryDirectoryFile(_handle, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, out _, buffer, BufferSize,
-                FileDirectoryInformation, returnSingleEntry: false, unicodeStringPtr, restartScan);
-
-            // STATUS_NO_MORE_FILES and any other non-success status end the enumeration
-            if (status != 0)
-                return false;
-
-            var entry = (byte*)buffer;
-            while (true)
+            fixed (byte* bufferPtr = buffer)
             {
-                var nameLength = *(uint*)(entry + FileNameLengthOffset);
-                names.Add(new string((char*)(entry + FileNameOffset), 0, (int)(nameLength / sizeof(char))));
+                var entry = (FILE_DIRECTORY_INFORMATION*)bufferPtr;
+                while (true)
+                {
+                    names.Add(new string(entry->FileName.AsSpan((int)(entry->FileNameLength / sizeof(char)))));
 
-                var nextEntryOffset = *(uint*)(entry + NextEntryOffsetOffset);
-                if (nextEntryOffset is 0)
-                    break;
+                    if (entry->NextEntryOffset is 0)
+                        break;
 
-                entry += nextEntryOffset;
+                    entry = (FILE_DIRECTORY_INFORMATION*)((byte*)entry + entry->NextEntryOffset);
+                }
             }
 
             return true;
         }
         finally
         {
-            Marshal.FreeHGlobal(buffer);
-            if (unicodeStringPtr != IntPtr.Zero)
+            if (handleAcquired)
             {
-                Marshal.FreeHGlobal(unicodeStringPtr);
-            }
-
-            if (searchExpressionPtr != IntPtr.Zero)
-            {
-                Marshal.FreeHGlobal(searchExpressionPtr);
+                _handle.DangerousRelease();
             }
         }
     }
@@ -115,29 +119,4 @@ internal sealed partial class NativeDirectoryEnumerator : IDisposable
     {
         _handle.Dispose();
     }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct UNICODE_STRING
-    {
-        public ushort Length;
-        public ushort MaximumLength;
-        public IntPtr Buffer;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct IO_STATUS_BLOCK
-    {
-        public IntPtr Status;
-        public IntPtr Information;
-    }
-
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
-    private static partial SafeFileHandle CreateFileW(string fileName, uint desiredAccess, uint shareMode, IntPtr securityAttributes, uint creationDisposition, uint flagsAndAttributes, IntPtr templateFile);
-
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [LibraryImport("ntdll.dll")]
-    private static partial int NtQueryDirectoryFile(SafeFileHandle fileHandle, IntPtr @event, IntPtr apcRoutine, IntPtr apcContext,
-        out IO_STATUS_BLOCK ioStatusBlock, IntPtr fileInformation, uint length, int fileInformationClass,
-        [MarshalAs(UnmanagedType.U1)] bool returnSingleEntry, IntPtr fileName, [MarshalAs(UnmanagedType.U1)] bool restartScan);
 }

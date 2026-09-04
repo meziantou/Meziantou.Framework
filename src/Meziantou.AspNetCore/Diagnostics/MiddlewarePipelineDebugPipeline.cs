@@ -1,7 +1,7 @@
 namespace Meziantou.AspNetCore.Diagnostics;
 
 /// <summary>Represents a middleware pipeline.</summary>
-public sealed record MiddlewarePipelineDebugPipeline
+public sealed class MiddlewarePipelineDebugPipeline
 {
     /// <summary>Gets the middlewares registered in this pipeline.</summary>
     public required IReadOnlyList<MiddlewarePipelineDebugMiddleware> Middlewares { get; init; }

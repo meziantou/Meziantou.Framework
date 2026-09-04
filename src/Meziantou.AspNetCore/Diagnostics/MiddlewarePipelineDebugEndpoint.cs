@@ -4,11 +4,17 @@ using Microsoft.AspNetCore.Http;
 namespace Meziantou.AspNetCore.Diagnostics;
 
 /// <summary>Represents one endpoint in the endpoint data source collection.</summary>
-public sealed record MiddlewarePipelineDebugEndpoint
+public sealed class MiddlewarePipelineDebugEndpoint
 {
-    /// <summary>Gets the underlying endpoint instance.</summary>
+    /// <summary>
+    /// Gets the underlying endpoint instance, or <see langword="null"/> when the snapshot was deserialized.
+    /// </summary>
+    /// <remarks>
+    /// This property is excluded from serialization, so a snapshot obtained from the debug endpoint's JSON always has
+    /// it set to <see langword="null"/>. It is only populated on a snapshot created in the same process.
+    /// </remarks>
     [JsonIgnore]
-    public Endpoint Endpoint { get; init; } = default!;
+    public Endpoint? Endpoint { get; init; }
 
     /// <summary>Gets the endpoint display name.</summary>
     public string? DisplayName { get; init; }

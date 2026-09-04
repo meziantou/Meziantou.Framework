@@ -1,10 +1,21 @@
 namespace Meziantou.AspNetCore.Diagnostics;
 
 /// <summary>Represents a snapshot of the ASP.NET Core middleware pipeline and endpoint list.</summary>
-public sealed record MiddlewarePipelineDebugSnapshot
+public sealed class MiddlewarePipelineDebugSnapshot
 {
     /// <summary>Gets the middleware pipeline tree.</summary>
     public required MiddlewarePipelineDebugPipeline Pipeline { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the pipeline has been captured yet.
+    /// </summary>
+    /// <remarks>
+    /// The pipeline is captured while the host builds it. A snapshot taken before that — from an
+    /// <c>IHostedService</c> that starts before the web host, or before <c>StartAsync</c> — reports
+    /// <see langword="false"/> and an empty <see cref="Pipeline"/>. This distinguishes "not captured yet" from
+    /// "captured, and empty".
+    /// </remarks>
+    public required bool IsPipelineCaptured { get; init; }
 
     /// <summary>Gets the list of endpoints registered in the application.</summary>
     public required IReadOnlyList<MiddlewarePipelineDebugEndpoint> Endpoints { get; init; }
@@ -15,7 +26,16 @@ public sealed record MiddlewarePipelineDebugSnapshot
     {
         var sb = new StringBuilder();
         sb.AppendLine("Pipeline:");
-        AppendPipeline(sb, Pipeline, indentationLevel: 1);
+        if (IsPipelineCaptured)
+        {
+            AppendPipeline(sb, Pipeline, indentationLevel: 1);
+        }
+        else
+        {
+            AppendIndentation(sb, indentationLevel: 1);
+            sb.AppendLine("(not captured yet: the pipeline is captured when the host builds it)");
+        }
+
         sb.AppendLine();
         sb.AppendLine("Endpoints:");
         AppendEndpoints(sb, Endpoints);
@@ -36,11 +56,16 @@ public sealed record MiddlewarePipelineDebugSnapshot
             AppendIndentation(sb, indentationLevel);
             sb.Append("- ");
             sb.Append(middleware.Name);
-            sb.Append(" [");
-            sb.Append(middleware.DelegateType);
-            sb.Append("::");
-            sb.Append(middleware.DelegateMethod);
-            sb.AppendLine("]");
+            if (middleware.DelegateType is not null || middleware.DelegateMethod is not null)
+            {
+                sb.Append(" [");
+                sb.Append(middleware.DelegateType);
+                sb.Append("::");
+                sb.Append(middleware.DelegateMethod);
+                sb.Append(']');
+            }
+
+            sb.AppendLine();
 
             for (var branchIndex = 0; branchIndex < middleware.Branches.Count; branchIndex++)
             {

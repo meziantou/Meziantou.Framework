@@ -5,16 +5,28 @@ namespace Meziantou.AspNetCore.Diagnostics;
 
 internal sealed class MiddlewarePipelineCaptureState
 {
+    private static readonly MiddlewarePipelineDebugPipeline EmptyPipeline = new() { Middlewares = [] };
+
+    // Written once by the startup filter when configuration completes, read by any thread afterwards. Readers never
+    // touch Root, so appends during configuration cannot tear a read or throw "Collection was modified".
+    private volatile MiddlewarePipelineDebugPipeline? _publishedPipeline;
+
     public MiddlewarePipelineDescriptor Root { get; } = new();
 
     public void Reset()
     {
+        _publishedPipeline = null;
         Root.Middlewares.Clear();
     }
+
+    /// <summary>Projects the recorded pipeline into an immutable tree and publishes it to readers.</summary>
+    public void Publish() => _publishedPipeline = CreatePipeline(Root);
 
     public MiddlewarePipelineDebugSnapshot CreateSnapshot(IEnumerable<EndpointDataSource> endpointDataSources)
     {
         ArgumentNullException.ThrowIfNull(endpointDataSources);
+
+        var pipeline = _publishedPipeline;
 
         var endpoints = endpointDataSources
             .SelectMany(static dataSource => dataSource.Endpoints)
@@ -25,7 +37,8 @@ internal sealed class MiddlewarePipelineCaptureState
 
         return new MiddlewarePipelineDebugSnapshot
         {
-            Pipeline = CreatePipeline(Root),
+            Pipeline = pipeline ?? EmptyPipeline,
+            IsPipelineCaptured = pipeline is not null,
             Endpoints = endpoints,
         };
     }

@@ -7,9 +7,11 @@ A standalone DNS filter list parser and matching engine supporting hosts files, 
 - **Multiple list formats**: Hosts files (`0.0.0.0 domain`), domains-only lists, and AdGuard/Adblock DNS filtering syntax (`||domain^`)
 - **Auto-detection**: Automatically detects the filter list format when not specified
 - **AdGuard modifiers**: `$important`, `$badfilter`, `$dnstype`, `$denyallow`, `$dnsrewrite`, `$client`, `$ctag`
-- **Priority resolution**: Follows the AdGuard priority pipeline — `$important` block → `$important` allow → `@@` exception → normal block
+- **Priority resolution**: `$important` allow → `$important` block → `@@` exception → normal block. Within a level, a `$dnsrewrite` rule wins, then the more specific rule.
 - **Client-aware filtering**: Filter rules by client IP address, CIDR range, client name (`$client`), or client tags (`$ctag`)
-- **Efficient matching**: Hash-based exact domain and suffix lookups with regex fallback for wildcard and pattern rules
+- **Efficient matching**: Hash-based exact domain and suffix lookups. Wildcard rules anchored on a concrete domain suffix (`||ads-*.example.com^`) are reached through the same suffix index; only patterns with no indexable suffix are evaluated on every query, and those are gated behind a literal prefilter
+- **Strict parsing**: A rule carrying an unsupported modifier, or a modifier value that cannot be parsed, is discarded rather than silently applied without it. `ParseWithDiagnostics` reports every skipped line
+- **Punycode**: Rule patterns and queried names are both normalized to A-labels, so an internationalized domain matches the name DNS actually carries
 - **Thread-safe**: Concurrent query evaluation with atomic rule-set replacement via `Reload()`
 
 ## Usage
@@ -26,6 +28,7 @@ ruleSet.AddFromList("""
 var engine = new DnsFilterEngine(ruleSet);
 var result = engine.Evaluate("ads.example.com");
 // result.IsMatched == true, result.Action == DnsFilterAction.Block
+// An unmatched query returns DnsFilterAction.None, never Block.
 ```
 
 ### Load an AdGuard-style filter list
@@ -131,7 +134,35 @@ ruleSet.AddFromList("||example.com^$dnsrewrite=1.2.3.4", DnsFilterListFormat.AdB
 
 var engine = new DnsFilterEngine(ruleSet);
 var result = engine.Evaluate("example.com");
+// result.Action == DnsFilterAction.Rewrite  (not Block — the caller must synthesize an answer)
 // result.Rewrite.ResponseCode == DnsFilterRewriteResponseCode.NoError
 // result.Rewrite.RecordType == DnsFilterQueryType.A
 // result.Rewrite.Value == "1.2.3.4"
+```
+
+### See which lines were skipped
+
+`AddFromList` returns a diagnostic for every line that did not become a rule, so a list that
+silently fails to parse is visible instead of just producing fewer rules.
+
+```csharp
+var ruleSet = new DnsFilterRuleSet();
+var diagnostics = ruleSet.AddFromList(listText);
+
+foreach (var diagnostic in diagnostics)
+{
+    // Line 42: UnsupportedModifier 'third-party' (||example.com^$third-party)
+    Console.WriteLine(diagnostic);
+}
+```
+
+`DnsFilterListReader.ParseWithDiagnostics` exposes the same information, plus the format that
+auto-detection settled on.
+
+### Build rules without going through list text
+
+```csharp
+var ruleSet = new DnsFilterRuleSet();
+ruleSet.Add(DnsFilterRule.CreateBlock("ads.example.com", includeSubdomains: true));
+ruleSet.Add(DnsFilterRule.CreateAllow("safe.ads.example.com"));
 ```

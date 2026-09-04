@@ -472,7 +472,7 @@ public class AvatarGeneratorTests
         var svg = AvatarGenerator.CreateSvg(name, new AvatarOptions());
 
         Assert.Equal("AD", GetRenderedBigram(svg));
-        Assert.True(svg.Length < 512, $"Expected a bounded document, but got {svg.Length.ToString(CultureInfo.InvariantCulture)} characters.");
+        Assert.HasCountLessThan(512, svg);
     }
 
     [Fact]

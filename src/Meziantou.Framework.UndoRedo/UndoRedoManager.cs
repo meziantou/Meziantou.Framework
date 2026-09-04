@@ -1,3 +1,6 @@
+using System.ComponentModel;
+using System.Runtime.ExceptionServices;
+
 namespace Meziantou.Framework.UndoRedo;
 
 /// <summary>
@@ -24,10 +27,31 @@ namespace Meziantou.Framework.UndoRedo;
 /// await manager.RedoAsync();
 /// </code>
 /// </example>
-public sealed class UndoRedoManager
+public sealed class UndoRedoManager : INotifyPropertyChanged
 {
-    private readonly ActionHistory _history = new();
-    private readonly Stack<UndoRedoTransaction> _transactions = new();
+    private readonly ActionHistory _history;
+
+    // A list rather than a stack so the transaction being completed can reach the one enclosing it.
+    private readonly List<UndoRedoTransaction> _transactions = [];
+
+    /// <summary>Initializes a new instance of the <see cref="UndoRedoManager"/> class with an unbounded history.</summary>
+    public UndoRedoManager()
+        : this(int.MaxValue)
+    {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="UndoRedoManager"/> class keeping at most <paramref name="maxHistoryDepth"/> undo steps.</summary>
+    /// <param name="maxHistoryDepth">The maximum number of undo steps to keep. Once exceeded, the oldest steps are dropped and can no longer be undone.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxHistoryDepth"/> is not strictly positive.</exception>
+    public UndoRedoManager(int maxHistoryDepth)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxHistoryDepth, 1);
+
+        _history = new ActionHistory(maxHistoryDepth);
+    }
+
+    /// <summary>Gets the maximum number of undo steps kept in the history.</summary>
+    public int MaxHistoryDepth => _history.MaxDepth;
 
     /// <summary>Gets a value indicating whether an action is currently being executed, undone, or redone.</summary>
     /// <remarks>
@@ -36,40 +60,57 @@ public sealed class UndoRedoManager
     /// </remarks>
     public bool ActionIsExecuting { get; private set; }
 
-    /// <summary>Gets a value indicating whether there is at least one action that can be undone.</summary>
-    public bool CanUndo => _history.CanUndo;
+    /// <summary>Gets the number of transactions that are currently open.</summary>
+    /// <remarks>Undo, redo and <see cref="Clear"/> are unavailable while this is greater than zero.</remarks>
+    public int TransactionDepth => _transactions.Count;
 
-    /// <summary>Gets a value indicating whether there is at least one action that can be redone.</summary>
-    public bool CanRedo => _history.CanRedo;
+    /// <summary>Gets a value indicating whether <see cref="UndoAsync"/> would revert an action right now.</summary>
+    /// <remarks>This is <see langword="false"/> while a transaction is open or an action is executing, so it can be bound directly to a command's availability.</remarks>
+    public bool CanUndo => _transactions.Count == 0 && !ActionIsExecuting && _history.CanUndo;
+
+    /// <summary>Gets a value indicating whether <see cref="RedoAsync"/> would re-execute an action right now.</summary>
+    /// <remarks>This is <see langword="false"/> while a transaction is open or an action is executing, so it can be bound directly to a command's availability.</remarks>
+    public bool CanRedo => _transactions.Count == 0 && !ActionIsExecuting && _history.CanRedo;
 
     /// <summary>Occurs when the undo/redo buffers change (an action is recorded, undone, redone, or the history is cleared).</summary>
-    public event EventHandler? CollectionChanged;
+    /// <remarks>A handler that throws surfaces to the caller as an <see cref="UndoRedoNotificationException"/>, after the operation itself has completed.</remarks>
+    public event EventHandler? HistoryChanged;
+
+    /// <inheritdoc />
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>Executes an action and records it so it can later be undone.</summary>
     /// <param name="action">The action to execute and record.</param>
     /// <param name="cancellationToken">A token to cancel the execution.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">An action is currently executing, or <paramref name="action"/> is a transaction that is still open or belongs to another manager.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is cancelled.</exception>
+    /// <exception cref="UndoRedoNotificationException">A <see cref="HistoryChanged"/> handler failed. The action was recorded.</exception>
     public async ValueTask RecordActionAsync(IUndoRedoAction action, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(action);
         EnsureNoActionIsExecuting();
+        EnsureCanBeRecorded(action);
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (_transactions.Count > 0)
         {
-            var transaction = _transactions.Peek();
+            var transaction = _transactions[^1];
 
             // An action that fails to execute must not become part of the transaction, otherwise it
             // would be reverted on rollback and executed for the first time on redo.
-            if (!transaction.IsDelayed)
+            if (transaction.Mode is TransactionExecutionMode.Immediate)
             {
                 await ExecuteAsync(action, cancellationToken).ConfigureAwait(false);
-                transaction.Add(action);
-                transaction.MarkExecuted();
             }
-            else
+
+            var (merged, mergeFailure) = await TryToMergeAsync(transaction.LastAction, action, cancellationToken).ConfigureAwait(false);
+            if (!merged)
             {
                 transaction.Add(action);
             }
 
+            mergeFailure?.Throw();
             return;
         }
 
@@ -80,6 +121,7 @@ public sealed class UndoRedoManager
     /// <param name="execute">The delegate invoked to apply the change.</param>
     /// <param name="unexecute">The delegate invoked to revert the change.</param>
     /// <param name="cancellationToken">A token to cancel the execution.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="execute"/> or <paramref name="unexecute"/> is <see langword="null"/>.</exception>
     public ValueTask RecordActionAsync(Func<CancellationToken, ValueTask> execute, Func<CancellationToken, ValueTask> unexecute, CancellationToken cancellationToken = default)
         => RecordActionAsync(new UndoRedoDelegateAction(execute, unexecute), cancellationToken);
 
@@ -87,6 +129,7 @@ public sealed class UndoRedoManager
     /// <param name="execute">The delegate invoked to apply the change.</param>
     /// <param name="unexecute">The delegate invoked to revert the change.</param>
     /// <param name="cancellationToken">A token to cancel the execution.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="execute"/> or <paramref name="unexecute"/> is <see langword="null"/>.</exception>
     public ValueTask RecordActionAsync(Func<CancellationToken, ValueTask> execute, Action unexecute, CancellationToken cancellationToken = default)
         => RecordActionAsync(new UndoRedoDelegateAction(execute, unexecute), cancellationToken);
 
@@ -94,6 +137,7 @@ public sealed class UndoRedoManager
     /// <param name="execute">The delegate invoked to apply the change.</param>
     /// <param name="unexecute">The delegate invoked to revert the change.</param>
     /// <param name="cancellationToken">A token to cancel the execution.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="execute"/> or <paramref name="unexecute"/> is <see langword="null"/>.</exception>
     public ValueTask RecordActionAsync(Action execute, Func<CancellationToken, ValueTask> unexecute, CancellationToken cancellationToken = default)
         => RecordActionAsync(new UndoRedoDelegateAction(execute, unexecute), cancellationToken);
 
@@ -101,17 +145,21 @@ public sealed class UndoRedoManager
     /// <param name="execute">The delegate invoked to apply the change.</param>
     /// <param name="unexecute">The delegate invoked to revert the change.</param>
     /// <param name="cancellationToken">A token to cancel the execution.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="execute"/> or <paramref name="unexecute"/> is <see langword="null"/>.</exception>
     public ValueTask RecordActionAsync(Action execute, Action unexecute, CancellationToken cancellationToken = default)
         => RecordActionAsync(new UndoRedoDelegateAction(execute, unexecute), cancellationToken);
 
-    /// <summary>Reverts the most recently recorded action.</summary>
+    /// <summary>Reverts the most recently recorded action. Does nothing when there is none.</summary>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <exception cref="InvalidOperationException">An action is currently executing, or a transaction is open.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is cancelled.</exception>
+    /// <exception cref="AggregateException">A grouped action failed to revert and re-applying the actions already reverted failed too.</exception>
+    /// <exception cref="UndoRedoNotificationException">A <see cref="HistoryChanged"/> handler failed. The action was reverted.</exception>
     public async ValueTask UndoAsync(CancellationToken cancellationToken = default)
     {
         EnsureNoActionIsExecuting();
-
-        if (_transactions.Count > 0)
-            throw new InvalidOperationException("Cannot undo while a transaction is open.");
+        EnsureNoOpenTransaction("undo");
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (_history.PeekUndo() is not { } action)
             return;
@@ -127,17 +175,20 @@ public sealed class UndoRedoManager
         }
 
         _history.MoveTopUndoToRedo();
-        OnCollectionChanged();
+        OnHistoryChanged();
     }
 
-    /// <summary>Re-executes the most recently undone action.</summary>
+    /// <summary>Re-executes the most recently undone action. Does nothing when there is none.</summary>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <exception cref="InvalidOperationException">An action is currently executing, or a transaction is open.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is cancelled.</exception>
+    /// <exception cref="AggregateException">A grouped action failed and reverting the actions that already ran failed too.</exception>
+    /// <exception cref="UndoRedoNotificationException">A <see cref="HistoryChanged"/> handler failed. The action was re-executed.</exception>
     public async ValueTask RedoAsync(CancellationToken cancellationToken = default)
     {
         EnsureNoActionIsExecuting();
-
-        if (_transactions.Count > 0)
-            throw new InvalidOperationException("Cannot redo while a transaction is open.");
+        EnsureNoOpenTransaction("redo");
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (_history.PeekRedo() is not { } action)
             return;
@@ -153,131 +204,106 @@ public sealed class UndoRedoManager
         }
 
         _history.MoveTopRedoToUndo();
-        OnCollectionChanged();
+        OnHistoryChanged();
     }
 
     /// <summary>Empties both the undo and redo buffers.</summary>
+    /// <exception cref="InvalidOperationException">An action is currently executing, or a transaction is open.</exception>
+    /// <exception cref="UndoRedoNotificationException">A <see cref="HistoryChanged"/> handler failed. The history was cleared.</exception>
     public void Clear()
     {
         EnsureNoActionIsExecuting();
-
-        if (_transactions.Count > 0)
-            throw new InvalidOperationException("Cannot clear the history while a transaction is open.");
+        EnsureNoOpenTransaction("clear the history");
 
         _history.Clear();
-        OnCollectionChanged();
+        OnHistoryChanged();
     }
 
     /// <summary>Gets a snapshot of the actions that can be undone, most recent first.</summary>
-    /// <remarks>Each access allocates a new snapshot, so it stays stable while the history changes.</remarks>
+    /// <remarks>The snapshot is rebuilt when the history changes rather than on every access, so an instance obtained earlier stays unchanged.</remarks>
     public IReadOnlyList<IUndoRedoAction> UndoableActions => _history.UndoableActions;
 
     /// <summary>Gets a snapshot of the actions that can be redone, most recent first.</summary>
-    /// <remarks>Each access allocates a new snapshot, so it stays stable while the history changes.</remarks>
+    /// <remarks>The snapshot is rebuilt when the history changes rather than on every access, so an instance obtained earlier stays unchanged.</remarks>
     public IReadOnlyList<IUndoRedoAction> RedoableActions => _history.RedoableActions;
 
     /// <summary>Begins a transaction that groups subsequent recorded actions into a single undo step.</summary>
-    /// <param name="isDelayed">
-    /// When <see langword="true"/> (the default), actions added to the transaction are executed only when the
-    /// transaction is committed. When <see langword="false"/>, actions are executed as soon as they are recorded.
+    /// <param name="mode">
+    /// Whether the recorded actions run when the transaction is committed (<see cref="TransactionExecutionMode.Deferred"/>,
+    /// the default) or as they are recorded (<see cref="TransactionExecutionMode.Immediate"/>).
     /// </param>
     /// <returns>
-    /// A transaction that should be committed or rolled back. Disposing it commits the transaction unless it was already
-    /// completed, including when the scope is left because of an exception. Nested transactions must be completed from
-    /// the innermost out.
+    /// A transaction that must be committed with <see cref="UndoRedoTransaction.CommitAsync"/> to be kept. Disposing it
+    /// rolls it back unless it was already completed. Nested transactions must use the same <paramref name="mode"/> as the
+    /// transaction they are nested in, and must be completed from the innermost out.
     /// </returns>
-    public UndoRedoTransaction CreateTransaction(bool isDelayed = true)
+    /// <exception cref="InvalidOperationException">An action is currently executing, or <paramref name="mode"/> differs from the enclosing transaction's mode.</exception>
+    public UndoRedoTransaction CreateTransaction(TransactionExecutionMode mode = TransactionExecutionMode.Deferred)
     {
         EnsureNoActionIsExecuting();
 
-        var transaction = new UndoRedoTransaction(this, isDelayed);
-        _transactions.Push(transaction);
+        // Mixing the two modes would execute a nested immediate action before the deferred actions recorded
+        // before it, so undoing the group would not be the inverse of applying it.
+        if (_transactions.Count > 0 && _transactions[^1].Mode != mode)
+            throw new InvalidOperationException($"Cannot create a {mode} transaction inside a {_transactions[^1].Mode} one. Nested transactions must use the same execution mode.");
+
+        var transaction = new UndoRedoTransaction(this, mode);
+        _transactions.Add(transaction);
+        OnAvailabilityChanged();
         return transaction;
     }
 
-    /// <summary>Commits the innermost open transaction, recording it as a single undo step (or merging it into its parent transaction).</summary>
-    /// <param name="cancellationToken">A token to cancel the operation.</param>
-    public ValueTask CommitTransactionAsync(CancellationToken cancellationToken = default)
-    {
-        EnsureNoActionIsExecuting();
-
-        if (_transactions.Count == 0)
-            throw new InvalidOperationException("There is no transaction to commit.");
-
-        return CommitTransactionCoreAsync(cancellationToken);
-    }
-
     /// <summary>Commits <paramref name="transaction"/>, which must be the innermost open transaction.</summary>
-    internal ValueTask CommitTransactionAsync(UndoRedoTransaction transaction, CancellationToken cancellationToken)
+    internal async ValueTask CommitTransactionAsync(UndoRedoTransaction transaction, CancellationToken cancellationToken)
     {
         EnsureNoActionIsExecuting();
         EnsureIsInnermostTransaction(transaction, "commit");
+        cancellationToken.ThrowIfCancellationRequested();
 
-        return CommitTransactionCoreAsync(cancellationToken);
-    }
-
-    private async ValueTask CommitTransactionCoreAsync(CancellationToken cancellationToken)
-    {
-        var transaction = _transactions.Pop();
-        transaction.MarkCompleted();
-
-        if (!transaction.HasActions)
-            return;
-
-        // When the transaction is not delayed, its actions have already been executed.
-        var execute = transaction.IsDelayed;
-
-        if (_transactions.Count > 0)
+        if (transaction.HasActions)
         {
-            var parent = _transactions.Peek();
-            parent.Add(transaction);
-            if (execute && !parent.IsDelayed)
+            if (_transactions.Count > 1)
             {
-                await ExecuteAsync(transaction, cancellationToken).ConfigureAwait(false);
-                parent.MarkExecuted();
+                // The parent shares this transaction's mode, so the group is either already applied
+                // (immediate) or applied by the parent when it is itself committed (deferred).
+                _transactions[^2].Add(transaction);
             }
-
-            return;
+            else
+            {
+                // Record before completing the transaction: if an action fails, the transaction stays open
+                // so the caller can roll it back or retry once the cause is resolved.
+                await RecordActionCoreAsync(transaction, execute: transaction.Mode is TransactionExecutionMode.Deferred, cancellationToken).ConfigureAwait(false);
+            }
         }
 
-        await RecordActionCoreAsync(transaction, execute, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>Rolls back the innermost open transaction, reverting any actions that were already executed.</summary>
-    /// <param name="cancellationToken">A token to cancel the operation.</param>
-    public ValueTask RollbackTransactionAsync(CancellationToken cancellationToken = default)
-    {
-        EnsureNoActionIsExecuting();
-
-        if (_transactions.Count == 0)
-            throw new InvalidOperationException("There is no transaction to roll back.");
-
-        return RollbackTransactionCoreAsync(cancellationToken);
+        CompleteTransaction(transaction);
     }
 
     /// <summary>Rolls back <paramref name="transaction"/>, which must be the innermost open transaction.</summary>
-    internal ValueTask RollbackTransactionAsync(UndoRedoTransaction transaction, CancellationToken cancellationToken)
+    internal async ValueTask RollbackTransactionAsync(UndoRedoTransaction transaction, CancellationToken cancellationToken)
     {
         EnsureNoActionIsExecuting();
         EnsureIsInnermostTransaction(transaction, "roll back");
 
-        return RollbackTransactionCoreAsync(cancellationToken);
-    }
-
-    private async ValueTask RollbackTransactionCoreAsync(CancellationToken cancellationToken)
-    {
-        var transaction = _transactions.Pop();
-        transaction.MarkCompleted();
-
         ActionIsExecuting = true;
         try
         {
+            // The transaction is only completed once the revert succeeded, so a failed rollback can be retried.
             await transaction.UnExecuteCoreAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
             ActionIsExecuting = false;
         }
+
+        CompleteTransaction(transaction);
+    }
+
+    private void CompleteTransaction(UndoRedoTransaction transaction)
+    {
+        _transactions.RemoveAt(_transactions.Count - 1);
+        transaction.MarkCompleted();
+        OnAvailabilityChanged();
     }
 
     private void EnsureNoActionIsExecuting()
@@ -288,19 +314,74 @@ public sealed class UndoRedoManager
             throw new InvalidOperationException("Cannot change the undo/redo history while an action is executing.");
     }
 
+    private void EnsureNoOpenTransaction(string operation)
+    {
+        if (_transactions.Count > 0)
+            throw new InvalidOperationException($"Cannot {operation} while a transaction is open ({_transactions.Count} open). Commit or roll back the open transactions first.");
+    }
+
     private void EnsureIsInnermostTransaction(UndoRedoTransaction transaction, string operation)
     {
-        if (_transactions.Count == 0 || _transactions.Peek() != transaction)
+        if (_transactions.Count == 0 || _transactions[^1] != transaction)
             throw new InvalidOperationException($"Cannot {operation} this transaction because it is not the innermost open transaction. Complete the nested transactions first.");
+    }
+
+    private void EnsureCanBeRecorded(IUndoRedoAction action)
+    {
+        if (action is not UndoRedoTransaction transaction)
+            return;
+
+        if (!ReferenceEquals(transaction.Manager, this))
+            throw new InvalidOperationException("Cannot record a transaction created by another UndoRedoManager.");
+
+        if (!transaction.IsCompleted)
+            throw new InvalidOperationException("Cannot record a transaction that is still open. Commit it instead.");
     }
 
     private async ValueTask RecordActionCoreAsync(IUndoRedoAction action, bool execute, CancellationToken cancellationToken)
     {
         if (execute)
+        {
             await ExecuteAsync(action, cancellationToken).ConfigureAwait(false);
+        }
 
-        await _history.RecordAsync(action, cancellationToken).ConfigureAwait(false);
-        OnCollectionChanged();
+        var (merged, mergeFailure) = await TryToMergeAsync(_history.PeekUndo(), action, cancellationToken).ConfigureAwait(false);
+        if (merged)
+        {
+            _history.RecordMerged();
+        }
+        else
+        {
+            _history.Record(action);
+        }
+
+        OnHistoryChanged();
+
+        // The action is applied either way, so the buffers are made consistent before a failing merge
+        // implementation is reported; otherwise the change would stay applied with no undo entry.
+        mergeFailure?.Throw();
+    }
+
+    /// <summary>Attempts to merge <paramref name="action"/> into <paramref name="previous"/>, capturing rather than propagating a failure.</summary>
+    private async ValueTask<(bool Merged, ExceptionDispatchInfo? Failure)> TryToMergeAsync(IUndoRedoAction? previous, IUndoRedoAction action, CancellationToken cancellationToken)
+    {
+        if (!action.AllowToMergeWithPrevious || previous is null)
+            return (false, null);
+
+        // TryToMergeAsync is user code just like execute and unexecute, so it gets the same reentrancy guard.
+        ActionIsExecuting = true;
+        try
+        {
+            return (await previous.TryToMergeAsync(action, cancellationToken).ConfigureAwait(false), null);
+        }
+        catch (Exception exception)
+        {
+            return (false, ExceptionDispatchInfo.Capture(exception));
+        }
+        finally
+        {
+            ActionIsExecuting = false;
+        }
     }
 
     private async ValueTask ExecuteAsync(IUndoRedoAction action, CancellationToken cancellationToken)
@@ -316,5 +397,28 @@ public sealed class UndoRedoManager
         }
     }
 
-    private void OnCollectionChanged() => CollectionChanged?.Invoke(this, EventArgs.Empty);
+    private void OnHistoryChanged()
+    {
+        OnPropertyChanged(nameof(UndoableActions));
+        OnPropertyChanged(nameof(RedoableActions));
+        OnAvailabilityChanged();
+
+        try
+        {
+            HistoryChanged?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception exception)
+        {
+            throw new UndoRedoNotificationException($"A {nameof(HistoryChanged)} handler threw an exception. The undo/redo operation itself completed successfully and must not be retried.", exception);
+        }
+    }
+
+    private void OnAvailabilityChanged()
+    {
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
+        OnPropertyChanged(nameof(TransactionDepth));
+    }
+
+    private void OnPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

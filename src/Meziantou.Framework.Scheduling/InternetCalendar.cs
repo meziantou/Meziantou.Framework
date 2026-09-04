@@ -117,7 +117,16 @@ public sealed class InternetCalendar
 
             WriteAdditionalProperties(writer, @event.AdditionalProperties);
 
-            Utilities.WriteLine(writer, "DESCRIPTION:\\n");
+            if (@event.Description is { } description)
+            {
+                WriteTextProperty(writer, "DESCRIPTION", description);
+            }
+            else
+            {
+                // The escaped empty line this library has always written when no description is set.
+                Utilities.WriteLine(writer, "DESCRIPTION:\\n");
+            }
+
             Utilities.WriteLine(writer, "END:VEVENT");
         }
 
@@ -262,5 +271,101 @@ public sealed class InternetCalendar
         using var writer = new StringWriter();
         ToIcs(writer);
         return writer.ToString();
+    }
+
+    /// <summary>Parses an iCalendar object (RFC 5545).</summary>
+    /// <param name="ics">The iCalendar content to parse.</param>
+    /// <returns>The parsed calendar.</returns>
+    /// <exception cref="FormatException">The content is not a valid iCalendar object.</exception>
+    public static InternetCalendar Parse(string ics)
+    {
+        return Parse(ics.AsSpan());
+    }
+
+    /// <summary>Parses an iCalendar object (RFC 5545).</summary>
+    /// <param name="ics">The iCalendar content to parse.</param>
+    /// <returns>The parsed calendar.</returns>
+    /// <exception cref="FormatException">The content is not a valid iCalendar object.</exception>
+    public static InternetCalendar Parse(ReadOnlySpan<char> ics)
+    {
+        if (!TryParse(ics, out var calendar, out var error))
+            throw new FormatException("The iCalendar content is invalid: " + error);
+
+        return calendar;
+    }
+
+    /// <summary>Parses an iCalendar object (RFC 5545) read from a stream as UTF-8.</summary>
+    /// <param name="stream">The stream to read the iCalendar content from.</param>
+    /// <returns>The parsed calendar.</returns>
+    /// <exception cref="FormatException">The content is not a valid iCalendar object.</exception>
+    public static InternetCalendar Parse(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+
+        // RFC 5545 section 6 makes UTF-8 the default charset, and StreamReader honours a byte order mark.
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
+        return Parse(reader);
+    }
+
+    /// <summary>Parses an iCalendar object (RFC 5545).</summary>
+    /// <param name="reader">The text reader to read the iCalendar content from.</param>
+    /// <returns>The parsed calendar.</returns>
+    /// <exception cref="FormatException">The content is not a valid iCalendar object.</exception>
+    public static InternetCalendar Parse(TextReader reader)
+    {
+        if (!TryParse(reader, out var calendar, out var error))
+            throw new FormatException("The iCalendar content is invalid: " + error);
+
+        return calendar;
+    }
+
+    /// <summary>Attempts to parse an iCalendar object (RFC 5545).</summary>
+    /// <param name="ics">The iCalendar content to parse.</param>
+    /// <param name="calendar">When successful, contains the parsed calendar.</param>
+    /// <returns><see langword="true"/> if parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    public static bool TryParse(ReadOnlySpan<char> ics, [NotNullWhen(returnValue: true)] out InternetCalendar? calendar)
+    {
+        return TryParse(ics, out calendar, out _);
+    }
+
+    /// <summary>Attempts to parse an iCalendar object (RFC 5545).</summary>
+    /// <param name="ics">The iCalendar content to parse.</param>
+    /// <param name="calendar">When successful, contains the parsed calendar.</param>
+    /// <param name="error">When parsing fails, contains the error message.</param>
+    /// <returns><see langword="true"/> if parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    public static bool TryParse(ReadOnlySpan<char> ics, [NotNullWhen(returnValue: true)] out InternetCalendar? calendar, out string? error)
+    {
+        return InternetCalendarParser.TryParse(ics, out calendar, out error);
+    }
+
+    /// <summary>Attempts to parse an iCalendar object (RFC 5545).</summary>
+    /// <param name="ics">The iCalendar content to parse.</param>
+    /// <param name="calendar">When successful, contains the parsed calendar.</param>
+    /// <returns><see langword="true"/> if parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    public static bool TryParse([NotNullWhen(returnValue: true)] string? ics, [NotNullWhen(returnValue: true)] out InternetCalendar? calendar)
+    {
+        return TryParse(ics.AsSpan(), out calendar, out _);
+    }
+
+    /// <summary>Attempts to parse an iCalendar object (RFC 5545).</summary>
+    /// <param name="ics">The iCalendar content to parse.</param>
+    /// <param name="calendar">When successful, contains the parsed calendar.</param>
+    /// <param name="error">When parsing fails, contains the error message.</param>
+    /// <returns><see langword="true"/> if parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    public static bool TryParse([NotNullWhen(returnValue: true)] string? ics, [NotNullWhen(returnValue: true)] out InternetCalendar? calendar, out string? error)
+    {
+        return TryParse(ics.AsSpan(), out calendar, out error);
+    }
+
+    /// <summary>Attempts to parse an iCalendar object (RFC 5545).</summary>
+    /// <param name="reader">The text reader to read the iCalendar content from.</param>
+    /// <param name="calendar">When successful, contains the parsed calendar.</param>
+    /// <param name="error">When parsing fails, contains the error message.</param>
+    /// <returns><see langword="true"/> if parsing succeeded; otherwise, <see langword="false"/>.</returns>
+    public static bool TryParse(TextReader reader, [NotNullWhen(returnValue: true)] out InternetCalendar? calendar, out string? error)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+
+        return InternetCalendarParser.TryParse(reader, out calendar, out error);
     }
 }

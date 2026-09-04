@@ -73,6 +73,39 @@ produced.
 
 ## iCalendar
 
+`InternetCalendar` reads and writes events in the iCalendar format.
+
+### Reading
+
+`InternetCalendar.Parse` reads an iCalendar object from a string, a `ReadOnlySpan<char>`, a `TextReader` or
+a UTF-8 `Stream`, and `TryParse` reports why the content was rejected instead of throwing:
+
+````c#
+var calendar = InternetCalendar.Parse(File.ReadAllText("invite.ics"));
+foreach (var @event in calendar.Events)
+{
+    Console.WriteLine($"{@event.Start:g} {@event.Summary}");
+}
+
+if (!InternetCalendar.TryParse(content, out var parsed, out var error))
+{
+    Console.WriteLine(error);
+}
+````
+
+The parser unfolds content lines, decodes `TEXT` values and reads the three date-time forms of RFC 5545
+section 3.3.5: `20240102T080000Z` becomes a `Utc` value, `20240102T080000` a floating (`Unspecified`) one,
+and `DTSTART;TZID=America/New_York:20240102T080000` a wall-clock value together with `Event.TimeZone`,
+which `TimeZoneInfo.FindSystemTimeZoneById` resolves from the identifier. A `VTIMEZONE` component is not
+used to build the time zone, so an identifier the platform does not know is reported as an error rather
+than silently dropped.
+
+An event property the model does not have, such as `X-MICROSOFT-CDO-BUSYSTATUS`, goes to
+`Event.AdditionalProperties`; the components the model does not represent — `VTODO`, `VJOURNAL`,
+`VFREEBUSY`, `VALARM` and `VTIMEZONE` — are skipped.
+
+### Writing
+
 `InternetCalendar` writes events in the iCalendar format. Setting `Event.TimeZone` writes the start and end
 as `DTSTART;TZID=`/`DTEND;TZID=` and emits a matching `VTIMEZONE` component:
 

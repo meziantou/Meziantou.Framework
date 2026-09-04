@@ -15,6 +15,15 @@ public sealed class InternetCalendarUserAddress
         Uri = new Uri("mailto:" + email);
     }
 
+    /// <summary>Initializes a new instance of the <see cref="InternetCalendarUserAddress"/> class with the specified URI.</summary>
+    /// <param name="uri">The URI of the calendar user, such as a mailto URI.</param>
+    public InternetCalendarUserAddress(Uri uri)
+    {
+        ArgumentNullException.ThrowIfNull(uri);
+
+        Uri = uri;
+    }
+
     public override string ToString()
     {
         return Uri.ToString();

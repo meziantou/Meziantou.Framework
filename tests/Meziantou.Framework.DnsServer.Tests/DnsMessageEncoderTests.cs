@@ -794,9 +794,11 @@ public sealed class DnsMessageEncoderTests
         buffer[position++] = 0xC0;
         buffer[position] = 0x0C;
 
-        var allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+        // Per-thread, not process-wide: decoding is synchronous, and the tests around it run in
+        // parallel, so GC.GetTotalAllocatedBytes would measure their allocations too.
+        var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
         Assert.Throws<DnsProtocolException>(() => DnsMessageEncoder.DecodeQuery(buffer));
-        var allocated = GC.GetTotalAllocatedBytes(precise: true) - allocatedBefore;
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
 
         Assert.True(allocated < 64 * 1024, $"Rejecting the message allocated {allocated} bytes.");
     }

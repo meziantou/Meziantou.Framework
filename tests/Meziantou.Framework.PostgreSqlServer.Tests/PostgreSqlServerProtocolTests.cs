@@ -164,18 +164,20 @@ public sealed class PostgreSqlServerProtocolTests
         await server.StartAsync();
         var port = Assert.Single(server.Ports);
 
-        await using var connection = new NpgsqlConnection(CreateConnectionString(port));
-        await connection.OpenAsync();
-
-        await using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT 1 /* {Marker} */";
-        command.AllResultTypesAreUnknown = true;
-        var result = await command.ExecuteScalarAsync();
+        // Npgsql always uses the extended protocol, so the simple query path needs a raw client.
+        using var client = await RawPostgreSqlClient.ConnectAsync(port);
+        await client.AuthenticateClearTextAsync();
+        await client.SendSimpleQueryAsync($"SELECT 1 /* {Marker} */");
+        var messages = await client.ReadUntilReadyForQueryAsync();
 
         var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.Equal(123, Convert.ToInt32(result, CultureInfo.InvariantCulture));
-        Assert.True(capturedContext.RequestType is PostgreSqlQueryRequestType.SimpleQuery or PostgreSqlQueryRequestType.ExtendedQuery);
+        Assert.Equal(PostgreSqlQueryRequestType.SimpleQuery, capturedContext.RequestType);
         Assert.Contains(Marker, capturedContext.CommandText);
+
+        // A simple query describes its own result: RowDescription, DataRow, CommandComplete, ReadyForQuery.
+        Assert.Equal([(byte)'T', (byte)'D', (byte)'C', (byte)'Z'], messages.Select(message => message.Type));
+        Assert.Equal(["123"], messages[1].DataRowValues());
+        Assert.Equal("SELECT 1", messages[2].AsText());
     }
 
     [Fact]
@@ -198,22 +200,26 @@ public sealed class PostgreSqlServerProtocolTests
             (context, cancellationToken) =>
             {
                 _ = cancellationToken;
+                if (context.CommandText?.Contains(Marker, StringComparison.Ordinal) != true)
+                {
+                    return ValueTask.FromResult(new PostgreSqlQueryResult());
+                }
+
+                // Describe must announce the same shape the execution produces.
+                if (context.RequestType == PostgreSqlQueryRequestType.Describe)
+                {
+                    return ValueTask.FromResult(CreateScalarResult(PostgreSqlColumnType.Int32, 42));
+                }
+
                 if (context.RequestType == PostgreSqlQueryRequestType.ExtendedQuery &&
                     context.Parameters.Count == 2 &&
                     context.Parameters[0].AsInt32() == 42 &&
                     context.Parameters[1].AsBoolean() == true)
                 {
                     queryContextTask.TrySetResult(context);
-                    return ValueTask.FromResult(CreateScalarResult(PostgreSqlColumnType.Int32, 42));
                 }
 
-                if (context.CommandText?.Contains(Marker, StringComparison.Ordinal) == true)
-                {
-                    queryContextTask.TrySetResult(context);
-                    return ValueTask.FromResult(CreateScalarResult(PostgreSqlColumnType.Int32, 42));
-                }
-
-                return ValueTask.FromResult(new PostgreSqlQueryResult());
+                return ValueTask.FromResult(CreateScalarResult(PostgreSqlColumnType.Int32, 42));
             });
 
         await server.StartAsync();
@@ -263,10 +269,20 @@ public sealed class PostgreSqlServerProtocolTests
             (context, cancellationToken) =>
             {
                 _ = cancellationToken;
+                if (context.CommandText?.Contains(Marker, StringComparison.Ordinal) != true)
+                {
+                    return ValueTask.FromResult(new PostgreSqlQueryResult());
+                }
+
+                // Describe must announce the same shape the execution produces.
+                if (context.RequestType == PostgreSqlQueryRequestType.Describe)
+                {
+                    return ValueTask.FromResult(CreateScalarResult(PostgreSqlColumnType.Int32, 42));
+                }
+
                 if (context.RequestType == PostgreSqlQueryRequestType.ExtendedQuery &&
                     context.Parameters.Count == 1 &&
-                    ReferenceEquals(context.Parameters[0].Value, DBNull.Value) &&
-                    context.CommandText?.Contains(Marker, StringComparison.Ordinal) == true)
+                    ReferenceEquals(context.Parameters[0].Value, DBNull.Value))
                 {
                     queryContextTask.TrySetResult(context);
                     return ValueTask.FromResult(CreateScalarResult(PostgreSqlColumnType.Int32, 42));
@@ -343,6 +359,7 @@ public sealed class PostgreSqlServerProtocolTests
     {
         const string Marker = "cancel-query-marker";
         var queryCanceledTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var queryStartedTask = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var options = new PostgreSqlServerOptions
         {
@@ -357,8 +374,10 @@ public sealed class PostgreSqlServerProtocolTests
                 : PostgreSqlAuthenticationResult.Fail("invalid password")),
             async (context, cancellationToken) =>
             {
-                if (context.CommandText?.Contains(Marker, StringComparison.Ordinal) == true)
+                if (context.RequestType != PostgreSqlQueryRequestType.Describe &&
+                    context.CommandText?.Contains(Marker, StringComparison.Ordinal) == true)
                 {
+                    queryStartedTask.TrySetResult();
                     try
                     {
                         await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
@@ -383,9 +402,14 @@ public sealed class PostgreSqlServerProtocolTests
         command.CommandText = $"SELECT 1 /* {Marker} */";
         command.AllResultTypesAreUnknown = true;
 
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
-        _ = await Assert.ThrowsAnyAsync<Exception>(() => command.ExecuteNonQueryAsync(cancellationTokenSource.Token));
-        Assert.True(await queryCanceledTask.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+        // Cancel once the handler has actually started, rather than racing a wall-clock timer against the round trip.
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var executeTask = command.ExecuteNonQueryAsync(cancellationTokenSource.Token);
+        await queryStartedTask.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        await cancellationTokenSource.CancelAsync();
+
+        _ = await Assert.ThrowsAsync<OperationCanceledException>(() => executeTask);
+        Assert.True(await queryCanceledTask.Task.WaitAsync(TimeSpan.FromSeconds(30)));
     }
 
     [Fact]

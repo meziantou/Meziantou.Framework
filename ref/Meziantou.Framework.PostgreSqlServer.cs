@@ -4,16 +4,27 @@
 
 namespace Meziantou.Framework.PostgreSql
 {
-    public sealed class PostgreSqlServer : System.IDisposable
+    public sealed class PostgreSqlServer : System.IAsyncDisposable, System.IDisposable
     {
         public System.Collections.Generic.IReadOnlyList<int> Ports { get => throw null; }
         public PostgreSqlServer(Meziantou.Framework.PostgreSql.PostgreSqlServerOptions? options, Meziantou.Framework.PostgreSql.Handler.PostgreSqlAuthenticationDelegate authenticationHandler, Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryDelegate queryHandler) { }
+        public PostgreSqlServer(Meziantou.Framework.PostgreSql.PostgreSqlServerOptions? options, Meziantou.Framework.PostgreSql.Handler.PostgreSqlAuthenticationDelegate authenticationHandler, Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryDelegate queryHandler, Microsoft.Extensions.Logging.ILogger? logger) { }
         public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public void Dispose() { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
     }
 
     public sealed class PostgreSqlServerOptions
     {
+        public const int DefaultMaxMessageSize = 16777216;
+        public const int MaxStartupPacketSize = 10000;
+        public int MaxMessageSize { get => throw null; set { } }
+        public int MaxConcurrentConnections { get => throw null; set { } }
+        public int MaxPreparedStatementsPerConnection { get => throw null; set { } }
+        public int MaxPortalsPerConnection { get => throw null; set { } }
+        public System.TimeSpan HandshakeTimeout { get => throw null; set { } }
+        public System.TimeSpan IdleTimeout { get => throw null; set { } }
         public bool RequireEncryption { get => throw null; set { } }
         public Meziantou.Framework.PostgreSql.Handler.PostgreSqlAuthenticationMethod AuthenticationMethod { get => throw null; set { } }
         public string ServerVersion { get => throw null; set { } }
@@ -115,6 +126,9 @@ namespace Meziantou.Framework.PostgreSql.Handler
         public required string Name { get => throw null; init { } }
         public required object? Value { get => throw null; init { } }
         public required Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType Type { get => throw null; init { } }
+        public uint TypeOid { get => throw null; init { } }
+        public int FormatCode { get => throw null; init { } }
+        public System.ReadOnlyMemory? RawValue { get => throw null; init { } }
         public bool IsNull { get => throw null; }
         public string? AsString() => throw null;
         public int? AsInt32() => throw null;
@@ -122,6 +136,9 @@ namespace Meziantou.Framework.PostgreSql.Handler
         public bool? AsBoolean() => throw null;
         public double? AsDouble() => throw null;
         public decimal? AsDecimal() => throw null;
+        public System.Guid? AsGuid() => throw null;
+        public System.DateTime? AsDateTime() => throw null;
+        public System.DateTimeOffset? AsDateTimeOffset() => throw null;
         public byte[]? AsBinary() => throw null;
         public System.Text.Json.Nodes.JsonObject? AsJson() => throw null;
     }
@@ -129,7 +146,8 @@ namespace Meziantou.Framework.PostgreSql.Handler
     public enum PostgreSqlQueryRequestType
     {
         SimpleQuery = 0,
-        ExtendedQuery = 1
+        ExtendedQuery = 1,
+        Describe = 2
     }
 
     public sealed class PostgreSqlQueryResult
@@ -138,6 +156,8 @@ namespace Meziantou.Framework.PostgreSql.Handler
         public System.Collections.ObjectModel.Collection<Meziantou.Framework.PostgreSql.Handler.PostgreSqlResultSet> ResultSets { get => throw null; }
         public string? CommandTag { get => throw null; set { } }
         public Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryError? Error { get => throw null; set { } }
+        public int? AffectedRowCount { get => throw null; set { } }
+        public Meziantou.Framework.PostgreSql.Handler.PostgreSqlTransactionStatus TransactionStatus { get => throw null; set { } }
         public static Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryResult FromError(Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryError error) => throw null;
     }
 
@@ -145,6 +165,13 @@ namespace Meziantou.Framework.PostgreSql.Handler
     {
         public System.Collections.ObjectModel.Collection<Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumn> Columns { get => throw null; }
         public System.Collections.ObjectModel.Collection<System.Collections.Generic.IReadOnlyList<object?>> Rows { get => throw null; }
+    }
+
+    public enum PostgreSqlTransactionStatus
+    {
+        Idle = 0,
+        InTransaction = 1,
+        Failed = 2
     }
 }
 namespace Meziantou.Framework.PostgreSql.Hosting

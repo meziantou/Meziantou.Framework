@@ -124,6 +124,16 @@ internal static class PostgreSqlResponseSerializer
         return [];
     }
 
+    public static byte[] CreateEmptyQueryResponse()
+    {
+        return [];
+    }
+
+    public static byte[] CreatePortalSuspended()
+    {
+        return [];
+    }
+
     public static byte[] CreateParameterDescription(IReadOnlyList<uint> parameterTypeOids)
     {
         ArgumentNullException.ThrowIfNull(parameterTypeOids);
@@ -140,29 +150,46 @@ internal static class PostgreSqlResponseSerializer
         return stream.ToArray();
     }
 
-    public static byte[] CreateRowDescription(PostgreSqlResultSet resultSet)
+    public static byte[] CreateRowDescription(PostgreSqlResultSet resultSet, IReadOnlyList<int>? resultFormatCodes = null)
     {
         ArgumentNullException.ThrowIfNull(resultSet);
 
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
         WriteInt16BigEndian(writer, checked((short)resultSet.Columns.Count));
-        foreach (var column in resultSet.Columns)
+        for (var i = 0; i < resultSet.Columns.Count; i++)
         {
+            var column = resultSet.Columns[i];
             WriteNullTerminatedString(writer, column.Name);
             WriteInt32BigEndian(writer, 0);
             WriteInt16BigEndian(writer, 0);
             WriteUInt32BigEndian(writer, PostgreSqlTypeMapper.GetTypeOid(column.ColumnType));
             WriteInt16BigEndian(writer, PostgreSqlTypeMapper.GetTypeSize(column.ColumnType));
             WriteInt32BigEndian(writer, -1);
-            WriteInt16BigEndian(writer, 0);
+            WriteInt16BigEndian(writer, (short)ResolveResultFormatCode(resultFormatCodes, i));
         }
 
         writer.Flush();
         return stream.ToArray();
     }
 
-    public static byte[] CreateDataRow(PostgreSqlResultSet resultSet, IReadOnlyList<object?> row)
+    /// <summary>Resolves the format of a result column. Bind supplies zero codes (all text), one code for every column, or one per column.</summary>
+    public static int ResolveResultFormatCode(IReadOnlyList<int>? resultFormatCodes, int columnIndex)
+    {
+        if (resultFormatCodes is null || resultFormatCodes.Count == 0)
+        {
+            return 0;
+        }
+
+        if (resultFormatCodes.Count == 1)
+        {
+            return resultFormatCodes[0];
+        }
+
+        return columnIndex < resultFormatCodes.Count ? resultFormatCodes[columnIndex] : 0;
+    }
+
+    public static byte[] CreateDataRow(PostgreSqlResultSet resultSet, IReadOnlyList<object?> row, IReadOnlyList<int>? resultFormatCodes = null)
     {
         ArgumentNullException.ThrowIfNull(resultSet);
         ArgumentNullException.ThrowIfNull(row);
@@ -177,13 +204,13 @@ internal static class PostgreSqlResponseSerializer
         for (var i = 0; i < row.Count; i++)
         {
             var value = row[i];
-            if (value is null)
+            if (value is null or DBNull)
             {
                 WriteInt32BigEndian(writer, -1);
                 continue;
             }
 
-            var bytes = PostgreSqlValueConverter.EncodeResultValue(resultSet.Columns[i].ColumnType, value);
+            var bytes = PostgreSqlValueConverter.EncodeResultValue(resultSet.Columns[i].ColumnType, value, ResolveResultFormatCode(resultFormatCodes, i));
             WriteInt32BigEndian(writer, bytes.Length);
             writer.Write(bytes);
         }
@@ -192,16 +219,49 @@ internal static class PostgreSqlResponseSerializer
         return stream.ToArray();
     }
 
-    public static byte[] CreateCommandComplete(string commandTag, int rowCount)
+    public static byte[] CreateCommandComplete(string? commandTag, string defaultTag, int? affectedRowCount)
     {
-        ArgumentException.ThrowIfNullOrEmpty(commandTag);
-        var tag = rowCount >= 0 ? $"{commandTag} {rowCount.ToString(CultureInfo.InvariantCulture)}" : commandTag;
+        ArgumentException.ThrowIfNullOrEmpty(defaultTag);
+
+        string tag;
+        if (string.IsNullOrWhiteSpace(commandTag))
+        {
+            tag = $"{defaultTag} {(affectedRowCount ?? 0).ToString(CultureInfo.InvariantCulture)}";
+        }
+        else if (HasRowCount(commandTag))
+        {
+            // The caller already produced a complete tag such as "INSERT 0 1"; appending a count would corrupt it.
+            tag = commandTag;
+        }
+        else
+        {
+            tag = $"{commandTag} {(affectedRowCount ?? 0).ToString(CultureInfo.InvariantCulture)}";
+        }
 
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
         WriteNullTerminatedString(writer, tag);
         writer.Flush();
         return stream.ToArray();
+    }
+
+    private static bool HasRowCount(string commandTag)
+    {
+        var lastSeparator = commandTag.LastIndexOf(' ', StringComparison.Ordinal);
+        if (lastSeparator < 0 || lastSeparator == commandTag.Length - 1)
+        {
+            return false;
+        }
+
+        foreach (var character in commandTag.AsSpan(lastSeparator + 1))
+        {
+            if (!char.IsAsciiDigit(character))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static byte[] CreateAuthenticationSaslMessage(int code, string payloadText)

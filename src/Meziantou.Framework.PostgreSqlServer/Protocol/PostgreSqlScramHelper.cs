@@ -33,10 +33,15 @@ internal static class PostgreSqlScramHelper
         return result;
     }
 
-    public static bool TryParseClientFirstMessage(string message, [NotNullWhen(true)] out string? clientFirstMessageBare, [NotNullWhen(true)] out string? clientNonce)
+    public static bool TryParseClientFirstMessage(
+        string message,
+        [NotNullWhen(true)] out string? clientFirstMessageBare,
+        [NotNullWhen(true)] out string? clientNonce,
+        [NotNullWhen(true)] out string? gs2Header)
     {
         clientFirstMessageBare = null;
         clientNonce = null;
+        gs2Header = null;
         if (string.IsNullOrEmpty(message))
         {
             return false;
@@ -48,16 +53,43 @@ internal static class PostgreSqlScramHelper
             return false;
         }
 
+        // The gs2 flag is 'n' (client does not support channel binding) or 'y' (supports it but the server did
+        // not offer it). 'p' means the client demands channel binding, which this server never advertises.
+        gs2Header = message[..(gs2HeaderSeparatorIndex + 2)];
+        var flag = message[0];
+        if (flag is not 'n' and not 'y')
+        {
+            return false;
+        }
+
         clientFirstMessageBare = message[(gs2HeaderSeparatorIndex + 2)..];
         var attributes = ParseAttributes(clientFirstMessageBare);
         return attributes.TryGetValue("r", out clientNonce) && !string.IsNullOrWhiteSpace(clientNonce);
     }
 
-    public static bool TryParseClientFinalMessage(string message, [NotNullWhen(true)] out string? withoutProof, [NotNullWhen(true)] out byte[]? proof, [NotNullWhen(true)] out string? nonce)
+    /// <summary>Verifies that the client-final <c>c=</c> attribute repeats the gs2 header sent in client-first.</summary>
+    public static bool IsExpectedChannelBinding(string? channelBinding, string gs2Header)
+    {
+        if (channelBinding is null)
+        {
+            return false;
+        }
+
+        var expected = Convert.ToBase64String(Encoding.UTF8.GetBytes(gs2Header));
+        return string.Equals(channelBinding, expected, StringComparison.Ordinal);
+    }
+
+    public static bool TryParseClientFinalMessage(
+        string message,
+        [NotNullWhen(true)] out string? withoutProof,
+        [NotNullWhen(true)] out byte[]? proof,
+        [NotNullWhen(true)] out string? nonce,
+        out string? channelBinding)
     {
         withoutProof = null;
         proof = null;
         nonce = null;
+        channelBinding = null;
         if (string.IsNullOrWhiteSpace(message))
         {
             return false;
@@ -71,7 +103,16 @@ internal static class PostgreSqlScramHelper
             return false;
         }
 
-        proof = Convert.FromBase64String(proofValue);
+        _ = attributes.TryGetValue("c", out channelBinding);
+
+        // Honour the Try contract: malformed base64 is a parse failure, not an exception.
+        var proofBuffer = new byte[((proofValue.Length + 3) / 4) * 3];
+        if (!Convert.TryFromBase64String(proofValue, proofBuffer, out var proofLength))
+        {
+            return false;
+        }
+
+        proof = proofBuffer[..proofLength];
         var proofStart = message.IndexOf(",p=", StringComparison.Ordinal);
         if (proofStart < 0)
         {

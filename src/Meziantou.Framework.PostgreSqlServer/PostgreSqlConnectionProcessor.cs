@@ -45,122 +45,120 @@ internal sealed class PostgreSqlConnectionProcessor
         var startupParameters = new Dictionary<string, string>(StringComparer.Ordinal);
         int processId = default;
         int secretKey = default;
-        PostgreSqlBackendSession? backendSession = null;
 
         try
         {
-            var startupPacket = await PostgreSqlMessageReader.ReadStartupPacketAsync(input, cancellationToken).ConfigureAwait(false);
-            if (startupPacket is null)
+            using (var handshakeCts = CreateTimeoutTokenSource(_options.HandshakeTimeout, cancellationToken))
             {
-                return;
-            }
-
-            while (startupPacket.RequestCode == PostgreSqlConstants.SslRequestCode)
-            {
-                var serverCertificate = _options.GetTlsCertificate();
-                var canUpgradeToTls = serverCertificate is not null;
-                await writer.WriteSslResponseAsync(canUpgradeToTls, cancellationToken).ConfigureAwait(false);
-                if (!canUpgradeToTls)
+                var handshakeToken = handshakeCts?.Token ?? cancellationToken;
+                var startupPacket = await PostgreSqlMessageReader.ReadStartupPacketAsync(input, handshakeToken).ConfigureAwait(false);
+                if (startupPacket is null)
                 {
-                    startupPacket = await PostgreSqlMessageReader.ReadStartupPacketAsync(input, cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+
+                // An SSLRequest is answered at most once. Looping would let a client stack SslStreams on one connection.
+                if (startupPacket.RequestCode == PostgreSqlConstants.SslRequestCode)
+                {
+                    var serverCertificate = _options.GetTlsCertificate();
+                    var canUpgradeToTls = serverCertificate is not null;
+                    await writer.WriteSslResponseAsync(canUpgradeToTls, handshakeToken).ConfigureAwait(false);
+                    if (canUpgradeToTls)
+                    {
+                        sslStream = await UpgradeToTlsAsync(input, output, serverCertificate!, handshakeToken).ConfigureAwait(false);
+                        input = sslStream;
+                        output = sslStream;
+                        writer = new PostgreSqlMessageWriter(output);
+                    }
+
+                    startupPacket = await PostgreSqlMessageReader.ReadStartupPacketAsync(input, handshakeToken).ConfigureAwait(false);
                     if (startupPacket is null)
                     {
                         return;
                     }
 
-                    continue;
+                    if (startupPacket.RequestCode == PostgreSqlConstants.SslRequestCode)
+                    {
+                        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ErrorResponse, PostgreSqlResponseSerializer.CreateErrorResponse("FATAL", PostgreSqlConstants.SqlStates.ProtocolViolation, "Duplicate SSLRequest"), handshakeToken).ConfigureAwait(false);
+                        return;
+                    }
                 }
 
-                sslStream = await UpgradeToTlsAsync(input, output, serverCertificate!, cancellationToken).ConfigureAwait(false);
-                input = sslStream;
-                output = sslStream;
-                writer = new PostgreSqlMessageWriter(output);
-                startupPacket = await PostgreSqlMessageReader.ReadStartupPacketAsync(input, cancellationToken).ConfigureAwait(false);
-                if (startupPacket is null)
+                if (_options.RequireEncryption && sslStream is null)
+                {
+                    // Checked before the CancelRequest branch so no pre-authentication path escapes the requirement.
+                    await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ErrorResponse, PostgreSqlResponseSerializer.CreateErrorResponse("FATAL", PostgreSqlConstants.SqlStates.InvalidAuthorizationSpecification, "TLS is required"), handshakeToken).ConfigureAwait(false);
+                    return;
+                }
+
+                if (startupPacket.RequestCode == PostgreSqlConstants.CancelRequestCode)
+                {
+                    HandleCancelRequest(startupPacket.Payload, remoteEndPoint);
+                    return;
+                }
+
+                if (startupPacket.RequestCode != PostgreSqlConstants.ProtocolVersion3)
+                {
+                    await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ErrorResponse, PostgreSqlResponseSerializer.CreateErrorResponse("FATAL", PostgreSqlConstants.SqlStates.ProtocolViolation, "Unsupported protocol version"), handshakeToken).ConfigureAwait(false);
+                    return;
+                }
+
+                startupParameters = PostgreSqlMessageReader.ParseStartupParameters(startupPacket.Payload);
+                var userName = startupParameters.TryGetValue("user", out var startupUserName) ? startupUserName : null;
+                var database = startupParameters.TryGetValue("database", out var startupDatabase) ? startupDatabase : null;
+                if (!await AuthenticateAsync(input, writer, remoteEndPoint, startupParameters, userName, database, handshakeToken).ConfigureAwait(false))
                 {
                     return;
                 }
             }
 
-            if (startupPacket.RequestCode == PostgreSqlConstants.CancelRequestCode)
-            {
-                HandleCancelRequest(startupPacket.Payload);
-                return;
-            }
-
-            if (startupPacket.RequestCode != PostgreSqlConstants.ProtocolVersion3)
-            {
-                await writer.WriteMessageAsync((byte)'E', PostgreSqlResponseSerializer.CreateErrorResponse("FATAL", "08P01", "Unsupported protocol version"), cancellationToken).ConfigureAwait(false);
-                return;
-            }
-
-            startupParameters = PostgreSqlMessageReader.ParseStartupParameters(startupPacket.Payload);
-            if (_options.RequireEncryption && sslStream is null)
-            {
-                await writer.WriteMessageAsync((byte)'E', PostgreSqlResponseSerializer.CreateErrorResponse("FATAL", "28000", "TLS is required"), cancellationToken).ConfigureAwait(false);
-                return;
-            }
-
-            var userName = startupParameters.TryGetValue("user", out var startupUserName) ? startupUserName : null;
-            var database = startupParameters.TryGetValue("database", out var startupDatabase) ? startupDatabase : null;
-            if (!await AuthenticateAsync(input, writer, remoteEndPoint, startupParameters, userName, database, cancellationToken).ConfigureAwait(false))
-            {
-                return;
-            }
-
-            (processId, secretKey, backendSession) = _options.RegisterBackendSession();
+            (processId, secretKey, var backendSession) = _options.RegisterBackendSession();
             await WriteSessionInitializedMessagesAsync(writer, processId, secretKey, cancellationToken).ConfigureAwait(false);
 
-            var preparedStatements = new Dictionary<string, PostgreSqlStatement>(StringComparer.Ordinal);
-            var portals = new Dictionary<string, PostgreSqlPortal>(StringComparer.Ordinal);
+            var session = new PostgreSqlSessionState(remoteEndPoint, startupParameters, backendSession);
             while (!cancellationToken.IsCancellationRequested)
             {
-                var message = await PostgreSqlMessageReader.ReadMessageAsync(input, cancellationToken).ConfigureAwait(false);
+                PostgreSqlFrontendMessage? message;
+                using (var idleCts = CreateTimeoutTokenSource(_options.IdleTimeout, cancellationToken))
+                {
+                    message = await PostgreSqlMessageReader.ReadMessageAsync(input, _options.MaxMessageSize, idleCts?.Token ?? cancellationToken).ConfigureAwait(false);
+                }
+
                 if (message is null)
                 {
                     return;
                 }
 
-                switch (message.Type)
+                if (message.Type == PostgreSqlConstants.Frontend.Terminate)
                 {
-                    case (byte)'Q':
-                        await HandleSimpleQueryAsync(writer, remoteEndPoint, startupParameters, message, backendSession, cancellationToken).ConfigureAwait(false);
-                        break;
-                    case (byte)'P':
-                        HandleParseMessage(preparedStatements, message);
-                        await writer.WriteMessageAsync((byte)'1', PostgreSqlResponseSerializer.CreateParseComplete(), cancellationToken).ConfigureAwait(false);
-                        break;
-                    case (byte)'B':
-                        HandleBindMessage(preparedStatements, portals, message);
-                        await writer.WriteMessageAsync((byte)'2', PostgreSqlResponseSerializer.CreateBindComplete(), cancellationToken).ConfigureAwait(false);
-                        break;
-                    case (byte)'D':
-                        await HandleDescribeMessageAsync(writer, preparedStatements, portals, message, cancellationToken).ConfigureAwait(false);
-                        break;
-                    case (byte)'E':
-                        await HandleExecuteMessageAsync(writer, portals, remoteEndPoint, startupParameters, message, backendSession, cancellationToken).ConfigureAwait(false);
-                        break;
-                    case (byte)'C':
-                        HandleCloseMessage(preparedStatements, portals, message);
-                        await writer.WriteMessageAsync((byte)'3', PostgreSqlResponseSerializer.CreateCloseComplete(), cancellationToken).ConfigureAwait(false);
-                        break;
-                    case (byte)'S':
-                        await writer.WriteMessageAsync((byte)'Z', PostgreSqlResponseSerializer.CreateReadyForQuery(), cancellationToken).ConfigureAwait(false);
-                        break;
-                    case (byte)'H':
-                        break;
-                    case (byte)'X':
-                        return;
-                    default:
-                        await writer.WriteMessageAsync((byte)'E', PostgreSqlResponseSerializer.CreateErrorResponse("ERROR", "08P01", $"Unsupported frontend message '{(char)message.Type}'"), cancellationToken).ConfigureAwait(false);
-                        await writer.WriteMessageAsync((byte)'Z', PostgreSqlResponseSerializer.CreateReadyForQuery(), cancellationToken).ConfigureAwait(false);
-                        break;
+                    return;
+                }
+
+                // The extended query protocol requires the backend to skip messages until Sync once an error occurs.
+                if (session.InErrorState && message.Type != PostgreSqlConstants.Frontend.Sync)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    await DispatchMessageAsync(writer, session, message, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (InvalidDataException ex)
+                {
+                    _logger.LogDebug(ex, "Protocol error from {RemoteEndPoint}", remoteEndPoint);
+                    session.InErrorState = true;
+                    await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ErrorResponse, PostgreSqlResponseSerializer.CreateErrorResponse("ERROR", PostgreSqlConstants.SqlStates.ProtocolViolation, ex.Message), cancellationToken).ConfigureAwait(false);
                 }
             }
         }
         catch (AuthenticationException ex)
         {
-            _logger.LogDebug(ex, "TLS authentication failed");
+            _logger.LogDebug(ex, "TLS authentication failed for {RemoteEndPoint}", remoteEndPoint);
         }
         finally
         {
@@ -176,6 +174,56 @@ internal sealed class PostgreSqlConnectionProcessor
         }
     }
 
+    private static CancellationTokenSource? CreateTimeoutTokenSource(TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        if (timeout == Timeout.InfiniteTimeSpan)
+        {
+            return null;
+        }
+
+        var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cancellationTokenSource.CancelAfter(timeout);
+        return cancellationTokenSource;
+    }
+
+    private async ValueTask DispatchMessageAsync(PostgreSqlMessageWriter writer, PostgreSqlSessionState session, PostgreSqlFrontendMessage message, CancellationToken cancellationToken)
+    {
+        switch (message.Type)
+        {
+            case PostgreSqlConstants.Frontend.Query:
+                await HandleSimpleQueryAsync(writer, session, message, cancellationToken).ConfigureAwait(false);
+                break;
+            case PostgreSqlConstants.Frontend.Parse:
+                HandleParseMessage(session, message);
+                await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ParseComplete, PostgreSqlResponseSerializer.CreateParseComplete(), cancellationToken).ConfigureAwait(false);
+                break;
+            case PostgreSqlConstants.Frontend.Bind:
+                HandleBindMessage(session, message);
+                await writer.WriteMessageAsync(PostgreSqlConstants.Backend.BindComplete, PostgreSqlResponseSerializer.CreateBindComplete(), cancellationToken).ConfigureAwait(false);
+                break;
+            case PostgreSqlConstants.Frontend.Describe:
+                await HandleDescribeMessageAsync(writer, session, message, cancellationToken).ConfigureAwait(false);
+                break;
+            case PostgreSqlConstants.Frontend.Execute:
+                await HandleExecuteMessageAsync(writer, session, message, cancellationToken).ConfigureAwait(false);
+                break;
+            case PostgreSqlConstants.Frontend.Close:
+                HandleCloseMessage(session, message);
+                await writer.WriteMessageAsync(PostgreSqlConstants.Backend.CloseComplete, PostgreSqlResponseSerializer.CreateCloseComplete(), cancellationToken).ConfigureAwait(false);
+                break;
+            case PostgreSqlConstants.Frontend.Sync:
+                session.InErrorState = false;
+                await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ReadyForQuery, PostgreSqlResponseSerializer.CreateReadyForQuery(session.TransactionStatus), cancellationToken).ConfigureAwait(false);
+                break;
+            case PostgreSqlConstants.Frontend.Flush:
+                await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+                break;
+            default:
+                throw new InvalidDataException($"Unsupported frontend message '{(char)message.Type}'.");
+        }
+    }
+
+
     private async ValueTask<bool> AuthenticateAsync(
         Stream input,
         PostgreSqlMessageWriter writer,
@@ -185,6 +233,16 @@ internal sealed class PostgreSqlConnectionProcessor
         string? database,
         CancellationToken cancellationToken)
     {
+        // The per-method handlers return only the material specific to their mechanism; the context is built
+        // once here so a new shared property cannot be silently dropped from one of the three paths.
+        var material = _options.AuthenticationMethod switch
+        {
+            PostgreSqlAuthenticationMethod.ClearTextPassword => await HandleClearTextAuthenticationAsync(input, writer, cancellationToken).ConfigureAwait(false),
+            PostgreSqlAuthenticationMethod.Md5Password => await HandleMd5AuthenticationAsync(input, writer, cancellationToken).ConfigureAwait(false),
+            PostgreSqlAuthenticationMethod.ScramSha256 => await HandleScramAuthenticationAsync(input, writer, cancellationToken).ConfigureAwait(false),
+            _ => default,
+        };
+
         var context = new PostgreSqlAuthenticationContext
         {
             RemoteEndPoint = remoteEndPoint,
@@ -192,20 +250,35 @@ internal sealed class PostgreSqlConnectionProcessor
             UserName = userName,
             Database = database,
             StartupParameters = startupParameters,
+            Password = material.Password,
+            Md5Salt = material.Md5Salt,
+            Md5PasswordResponse = material.Md5PasswordResponse,
+            ScramSalt = material.ScramSalt,
+            ScramIterationCount = material.ScramIterationCount,
+            ScramClientProof = material.ScramClientProof,
+            ScramAuthMessage = material.ScramAuthMessage,
         };
 
-        context = _options.AuthenticationMethod switch
+        PostgreSqlAuthenticationResult result;
+        try
         {
-            PostgreSqlAuthenticationMethod.ClearTextPassword => await HandleClearTextAuthenticationAsync(input, writer, context, cancellationToken).ConfigureAwait(false),
-            PostgreSqlAuthenticationMethod.Md5Password => await HandleMd5AuthenticationAsync(input, writer, context, cancellationToken).ConfigureAwait(false),
-            PostgreSqlAuthenticationMethod.ScramSha256 => await HandleScramAuthenticationAsync(input, writer, context, cancellationToken).ConfigureAwait(false),
-            _ => context,
-        };
+            result = await _authenticationHandler(context, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Mirrors the query handler: a faulting callback becomes a protocol error, not a dropped connection.
+            _logger.LogError(ex, "Unhandled exception in PostgreSQL authentication handler for {RemoteEndPoint}", remoteEndPoint);
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ErrorResponse, PostgreSqlResponseSerializer.CreateErrorResponse("FATAL", PostgreSqlConstants.SqlStates.InternalError, "Unhandled authentication handler exception"), cancellationToken).ConfigureAwait(false);
+            return false;
+        }
 
-        var result = await _authenticationHandler(context, cancellationToken).ConfigureAwait(false);
         if (!result.IsAuthenticated)
         {
-            await writer.WriteMessageAsync((byte)'E', PostgreSqlResponseSerializer.CreateErrorResponse("FATAL", result.ErrorCode, result.ErrorMessage ?? "Authentication failed"), cancellationToken).ConfigureAwait(false);
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ErrorResponse, PostgreSqlResponseSerializer.CreateErrorResponse("FATAL", result.ErrorCode, result.ErrorMessage ?? "Authentication failed"), cancellationToken).ConfigureAwait(false);
             return false;
         }
 
@@ -213,66 +286,63 @@ internal sealed class PostgreSqlConnectionProcessor
         {
             if (!context.TryGetScramServerFinalMessage(out var serverFinalMessage))
             {
-                await writer.WriteMessageAsync((byte)'E', PostgreSqlResponseSerializer.CreateErrorResponse("FATAL", "28P01", "SCRAM validation did not provide server signature"), cancellationToken).ConfigureAwait(false);
+                _logger.LogError("The authentication handler for {RemoteEndPoint} reported success under SCRAM-SHA-256 without calling ValidatePassword, which is required to compute the server signature.", remoteEndPoint);
+                await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ErrorResponse, PostgreSqlResponseSerializer.CreateErrorResponse("FATAL", PostgreSqlConstants.SqlStates.InternalError, "The authentication handler must call ValidatePassword when SCRAM-SHA-256 is used."), cancellationToken).ConfigureAwait(false);
                 return false;
             }
 
-            await writer.WriteMessageAsync((byte)'R', PostgreSqlResponseSerializer.CreateAuthenticationSaslFinal(serverFinalMessage), cancellationToken).ConfigureAwait(false);
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.Authentication, PostgreSqlResponseSerializer.CreateAuthenticationSaslFinal(serverFinalMessage), cancellationToken).ConfigureAwait(false);
         }
 
-        await writer.WriteMessageAsync((byte)'R', PostgreSqlResponseSerializer.CreateAuthenticationOk(), cancellationToken).ConfigureAwait(false);
+        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.Authentication, PostgreSqlResponseSerializer.CreateAuthenticationOk(), cancellationToken).ConfigureAwait(false);
         return true;
     }
 
-    private static async ValueTask<PostgreSqlAuthenticationContext> HandleClearTextAuthenticationAsync(
-        Stream input,
-        PostgreSqlMessageWriter writer,
-        PostgreSqlAuthenticationContext context,
-        CancellationToken cancellationToken)
+    /// <summary>The mechanism-specific material collected during the authentication exchange.</summary>
+    private readonly record struct AuthenticationMaterial
     {
-        await writer.WriteMessageAsync((byte)'R', PostgreSqlResponseSerializer.CreateAuthenticationClearTextPassword(), cancellationToken).ConfigureAwait(false);
+        public string? Password { get; init; }
+
+        public byte[]? Md5Salt { get; init; }
+
+        public string? Md5PasswordResponse { get; init; }
+
+        public byte[]? ScramSalt { get; init; }
+
+        public int ScramIterationCount { get; init; }
+
+        public byte[]? ScramClientProof { get; init; }
+
+        public string? ScramAuthMessage { get; init; }
+    }
+
+    private async ValueTask<AuthenticationMaterial> HandleClearTextAuthenticationAsync(Stream input, PostgreSqlMessageWriter writer, CancellationToken cancellationToken)
+    {
+        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.Authentication, PostgreSqlResponseSerializer.CreateAuthenticationClearTextPassword(), cancellationToken).ConfigureAwait(false);
         var passwordMessage = await ReadRequiredPasswordMessageAsync(input, cancellationToken).ConfigureAwait(false);
-        return new PostgreSqlAuthenticationContext
+        return new AuthenticationMaterial
         {
-            RemoteEndPoint = context.RemoteEndPoint,
-            Method = context.Method,
-            UserName = context.UserName,
-            Database = context.Database,
-            StartupParameters = context.StartupParameters,
             Password = DecodeNullTerminatedString(passwordMessage.Payload),
         };
     }
 
-    private static async ValueTask<PostgreSqlAuthenticationContext> HandleMd5AuthenticationAsync(
-        Stream input,
-        PostgreSqlMessageWriter writer,
-        PostgreSqlAuthenticationContext context,
-        CancellationToken cancellationToken)
+    private async ValueTask<AuthenticationMaterial> HandleMd5AuthenticationAsync(Stream input, PostgreSqlMessageWriter writer, CancellationToken cancellationToken)
     {
         var salt = new byte[4];
         RandomNumberGenerator.Fill(salt);
-        await writer.WriteMessageAsync((byte)'R', PostgreSqlResponseSerializer.CreateAuthenticationMd5Password(salt), cancellationToken).ConfigureAwait(false);
+        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.Authentication, PostgreSqlResponseSerializer.CreateAuthenticationMd5Password(salt), cancellationToken).ConfigureAwait(false);
 
         var passwordMessage = await ReadRequiredPasswordMessageAsync(input, cancellationToken).ConfigureAwait(false);
-        return new PostgreSqlAuthenticationContext
+        return new AuthenticationMaterial
         {
-            RemoteEndPoint = context.RemoteEndPoint,
-            Method = context.Method,
-            UserName = context.UserName,
-            Database = context.Database,
-            StartupParameters = context.StartupParameters,
             Md5Salt = salt,
             Md5PasswordResponse = DecodeNullTerminatedString(passwordMessage.Payload),
         };
     }
 
-    private static async ValueTask<PostgreSqlAuthenticationContext> HandleScramAuthenticationAsync(
-        Stream input,
-        PostgreSqlMessageWriter writer,
-        PostgreSqlAuthenticationContext context,
-        CancellationToken cancellationToken)
+    private async ValueTask<AuthenticationMaterial> HandleScramAuthenticationAsync(Stream input, PostgreSqlMessageWriter writer, CancellationToken cancellationToken)
     {
-        await writer.WriteMessageAsync((byte)'R', PostgreSqlResponseSerializer.CreateAuthenticationSasl(["SCRAM-SHA-256"]), cancellationToken).ConfigureAwait(false);
+        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.Authentication, PostgreSqlResponseSerializer.CreateAuthenticationSasl(["SCRAM-SHA-256"]), cancellationToken).ConfigureAwait(false);
         var initialMessage = await ReadRequiredPasswordMessageAsync(input, cancellationToken).ConfigureAwait(false);
         var (mechanism, initialResponse) = ParseSaslInitialResponse(initialMessage.Payload);
         if (!string.Equals(mechanism, "SCRAM-SHA-256", StringComparison.Ordinal))
@@ -281,7 +351,7 @@ internal sealed class PostgreSqlConnectionProcessor
         }
 
         var clientFirstMessage = Encoding.UTF8.GetString(initialResponse);
-        if (!PostgreSqlScramHelper.TryParseClientFirstMessage(clientFirstMessage, out var clientFirstMessageBare, out var clientNonce))
+        if (!PostgreSqlScramHelper.TryParseClientFirstMessage(clientFirstMessage, out var clientFirstMessageBare, out var clientNonce, out var gs2Header))
         {
             throw new InvalidDataException("Invalid SCRAM client-first message.");
         }
@@ -291,11 +361,11 @@ internal sealed class PostgreSqlConnectionProcessor
         var salt = PostgreSqlScramHelper.CreateSalt();
         const int IterationCount = 4096;
         var serverFirstMessage = PostgreSqlScramHelper.BuildServerFirstMessage(fullNonce, salt, IterationCount);
-        await writer.WriteMessageAsync((byte)'R', PostgreSqlResponseSerializer.CreateAuthenticationSaslContinue(serverFirstMessage), cancellationToken).ConfigureAwait(false);
+        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.Authentication, PostgreSqlResponseSerializer.CreateAuthenticationSaslContinue(serverFirstMessage), cancellationToken).ConfigureAwait(false);
 
         var finalMessage = await ReadRequiredPasswordMessageAsync(input, cancellationToken).ConfigureAwait(false);
         var clientFinalMessage = Encoding.UTF8.GetString(finalMessage.Payload);
-        if (!PostgreSqlScramHelper.TryParseClientFinalMessage(clientFinalMessage, out var clientFinalWithoutProof, out var clientProof, out var clientFinalNonce))
+        if (!PostgreSqlScramHelper.TryParseClientFinalMessage(clientFinalMessage, out var clientFinalWithoutProof, out var clientProof, out var clientFinalNonce, out var channelBinding))
         {
             throw new InvalidDataException("Invalid SCRAM client-final message.");
         }
@@ -305,14 +375,15 @@ internal sealed class PostgreSqlConnectionProcessor
             throw new InvalidDataException("SCRAM nonce mismatch.");
         }
 
-        var authMessage = $"{clientFirstMessageBare},{serverFirstMessage},{clientFinalWithoutProof}";
-        return new PostgreSqlAuthenticationContext
+        // RFC 5802 5.1: c= must repeat the gs2 header sent in client-first, so a stripped -PLUS mechanism is detected.
+        if (!PostgreSqlScramHelper.IsExpectedChannelBinding(channelBinding, gs2Header))
         {
-            RemoteEndPoint = context.RemoteEndPoint,
-            Method = context.Method,
-            UserName = context.UserName,
-            Database = context.Database,
-            StartupParameters = context.StartupParameters,
+            throw new InvalidDataException("SCRAM channel binding mismatch.");
+        }
+
+        var authMessage = $"{clientFirstMessageBare},{serverFirstMessage},{clientFinalWithoutProof}";
+        return new AuthenticationMaterial
+        {
             ScramSalt = salt,
             ScramIterationCount = IterationCount,
             ScramClientProof = clientProof,
@@ -351,10 +422,10 @@ internal sealed class PostgreSqlConnectionProcessor
         return Encoding.UTF8.GetString(payload[..end]);
     }
 
-    private static async ValueTask<PostgreSqlFrontendMessage> ReadRequiredPasswordMessageAsync(Stream input, CancellationToken cancellationToken)
+    private async ValueTask<PostgreSqlFrontendMessage> ReadRequiredPasswordMessageAsync(Stream input, CancellationToken cancellationToken)
     {
-        var message = await PostgreSqlMessageReader.ReadMessageAsync(input, cancellationToken).ConfigureAwait(false);
-        if (message is null || message.Type != (byte)'p')
+        var message = await PostgreSqlMessageReader.ReadMessageAsync(input, _options.MaxMessageSize, cancellationToken).ConfigureAwait(false);
+        if (message is null || message.Type != PostgreSqlConstants.Frontend.PasswordMessage)
         {
             throw new InvalidDataException("Expected password message.");
         }
@@ -364,17 +435,17 @@ internal sealed class PostgreSqlConnectionProcessor
 
     private async ValueTask WriteSessionInitializedMessagesAsync(PostgreSqlMessageWriter writer, int processId, int secretKey, CancellationToken cancellationToken)
     {
-        await writer.WriteMessageAsync((byte)'S', PostgreSqlResponseSerializer.CreateParameterStatus("server_version", _options.ServerVersion), cancellationToken).ConfigureAwait(false);
-        await writer.WriteMessageAsync((byte)'S', PostgreSqlResponseSerializer.CreateParameterStatus("server_encoding", "UTF8"), cancellationToken).ConfigureAwait(false);
-        await writer.WriteMessageAsync((byte)'S', PostgreSqlResponseSerializer.CreateParameterStatus("client_encoding", "UTF8"), cancellationToken).ConfigureAwait(false);
-        await writer.WriteMessageAsync((byte)'S', PostgreSqlResponseSerializer.CreateParameterStatus("DateStyle", "ISO, MDY"), cancellationToken).ConfigureAwait(false);
-        await writer.WriteMessageAsync((byte)'S', PostgreSqlResponseSerializer.CreateParameterStatus("integer_datetimes", "on"), cancellationToken).ConfigureAwait(false);
-        await writer.WriteMessageAsync((byte)'S', PostgreSqlResponseSerializer.CreateParameterStatus("standard_conforming_strings", "on"), cancellationToken).ConfigureAwait(false);
-        await writer.WriteMessageAsync((byte)'K', PostgreSqlResponseSerializer.CreateBackendKeyData(processId, secretKey), cancellationToken).ConfigureAwait(false);
-        await writer.WriteMessageAsync((byte)'Z', PostgreSqlResponseSerializer.CreateReadyForQuery(), cancellationToken).ConfigureAwait(false);
+        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ParameterStatus, PostgreSqlResponseSerializer.CreateParameterStatus("server_version", _options.ServerVersion), cancellationToken).ConfigureAwait(false);
+        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ParameterStatus, PostgreSqlResponseSerializer.CreateParameterStatus("server_encoding", "UTF8"), cancellationToken).ConfigureAwait(false);
+        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ParameterStatus, PostgreSqlResponseSerializer.CreateParameterStatus("client_encoding", "UTF8"), cancellationToken).ConfigureAwait(false);
+        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ParameterStatus, PostgreSqlResponseSerializer.CreateParameterStatus("DateStyle", "ISO, MDY"), cancellationToken).ConfigureAwait(false);
+        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ParameterStatus, PostgreSqlResponseSerializer.CreateParameterStatus("integer_datetimes", "on"), cancellationToken).ConfigureAwait(false);
+        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ParameterStatus, PostgreSqlResponseSerializer.CreateParameterStatus("standard_conforming_strings", "on"), cancellationToken).ConfigureAwait(false);
+        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.BackendKeyData, PostgreSqlResponseSerializer.CreateBackendKeyData(processId, secretKey), cancellationToken).ConfigureAwait(false);
+        await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ReadyForQuery, PostgreSqlResponseSerializer.CreateReadyForQuery(), cancellationToken).ConfigureAwait(false);
     }
 
-    private void HandleCancelRequest(byte[] payload)
+    private void HandleCancelRequest(byte[] payload, EndPoint remoteEndPoint)
     {
         if (payload.Length < 8)
         {
@@ -383,10 +454,13 @@ internal sealed class PostgreSqlConnectionProcessor
 
         var processId = BinaryPrimitives.ReadInt32BigEndian(payload.AsSpan(0, 4));
         var secretKey = BinaryPrimitives.ReadInt32BigEndian(payload.AsSpan(4, 4));
-        _ = _options.TryCancelBackendSession(processId, secretKey);
+        if (!_options.TryCancelBackendSession(processId, secretKey))
+        {
+            _logger.LogDebug("Ignored cancel request for unknown session from {RemoteEndPoint}", remoteEndPoint);
+        }
     }
 
-    private static void HandleParseMessage(Dictionary<string, PostgreSqlStatement> preparedStatements, PostgreSqlFrontendMessage message)
+    private void HandleParseMessage(PostgreSqlSessionState session, PostgreSqlFrontendMessage message)
     {
         var payload = message.Payload.AsSpan();
         var index = 0;
@@ -399,7 +473,12 @@ internal sealed class PostgreSqlConnectionProcessor
 
         var parameterTypeCount = BinaryPrimitives.ReadInt16BigEndian(payload.Slice(index, 2));
         index += 2;
-        var parameterTypeOids = new List<uint>(Math.Max((int)parameterTypeCount, 0));
+        if (parameterTypeCount < 0)
+        {
+            throw new InvalidDataException("Invalid Parse message parameter type count.");
+        }
+
+        var parameterTypeOids = new List<uint>(parameterTypeCount);
         for (var i = 0; i < parameterTypeCount; i++)
         {
             if (index + 4 > payload.Length)
@@ -411,7 +490,13 @@ internal sealed class PostgreSqlConnectionProcessor
             index += 4;
         }
 
-        preparedStatements[statementName] = new PostgreSqlStatement
+        // The name is client-supplied and entries live for the connection, so the count is bounded.
+        if (!session.PreparedStatements.ContainsKey(statementName) && session.PreparedStatements.Count >= _options.MaxPreparedStatementsPerConnection)
+        {
+            throw new InvalidDataException($"The connection reached the limit of {_options.MaxPreparedStatementsPerConnection} prepared statements.");
+        }
+
+        session.PreparedStatements[statementName] = new PostgreSqlStatement
         {
             Name = statementName,
             Query = query,
@@ -419,13 +504,13 @@ internal sealed class PostgreSqlConnectionProcessor
         };
     }
 
-    private static void HandleBindMessage(Dictionary<string, PostgreSqlStatement> preparedStatements, Dictionary<string, PostgreSqlPortal> portals, PostgreSqlFrontendMessage message)
+    private void HandleBindMessage(PostgreSqlSessionState session, PostgreSqlFrontendMessage message)
     {
         var payload = message.Payload.AsSpan();
         var index = 0;
         var portalName = PostgreSqlMessageReader.ReadNullTerminatedString(payload, ref index);
         var statementName = PostgreSqlMessageReader.ReadNullTerminatedString(payload, ref index);
-        if (!preparedStatements.TryGetValue(statementName, out var statement))
+        if (!session.PreparedStatements.TryGetValue(statementName, out var statement))
         {
             throw new InvalidDataException($"Unknown prepared statement '{statementName}'.");
         }
@@ -438,7 +523,18 @@ internal sealed class PostgreSqlConnectionProcessor
 
         var parameterCount = BinaryPrimitives.ReadInt16BigEndian(payload.Slice(index, 2));
         index += 2;
-        var parameters = new List<PostgreSqlBoundParameter>(Math.Max((int)parameterCount, 0));
+        if (parameterCount < 0)
+        {
+            throw new InvalidDataException("Invalid Bind message parameter count.");
+        }
+
+        // The spec allows 0 (all text), 1 (applies to all), or exactly one code per parameter.
+        if (parameterFormatCodes.Count > 1 && parameterFormatCodes.Count != parameterCount)
+        {
+            throw new InvalidDataException($"Bind supplied {parameterFormatCodes.Count} parameter format codes for {parameterCount} parameters.");
+        }
+
+        var parameters = new List<PostgreSqlBoundParameter>(parameterCount);
         for (var i = 0; i < parameterCount; i++)
         {
             if (index + 4 > payload.Length)
@@ -459,6 +555,10 @@ internal sealed class PostgreSqlConnectionProcessor
                 value = payload.Slice(index, valueLength).ToArray();
                 index += valueLength;
             }
+            else if (valueLength != -1)
+            {
+                throw new InvalidDataException("Invalid Bind parameter length.");
+            }
 
             var typeOid = i < statement.ParameterTypeOids.Count ? statement.ParameterTypeOids[i] : 0u;
             var formatCode = ResolveFormatCode(parameterFormatCodes, i);
@@ -471,7 +571,12 @@ internal sealed class PostgreSqlConnectionProcessor
         }
 
         var resultFormatCodes = ReadFormatCodes(payload, ref index);
-        portals[portalName] = new PostgreSqlPortal
+        if (!session.Portals.ContainsKey(portalName) && session.Portals.Count >= _options.MaxPortalsPerConnection)
+        {
+            throw new InvalidDataException($"The connection reached the limit of {_options.MaxPortalsPerConnection} portals.");
+        }
+
+        session.Portals[portalName] = new PostgreSqlPortal
         {
             Name = portalName,
             Statement = statement,
@@ -480,58 +585,97 @@ internal sealed class PostgreSqlConnectionProcessor
         };
     }
 
-    private static async ValueTask HandleDescribeMessageAsync(
-        PostgreSqlMessageWriter writer,
-        Dictionary<string, PostgreSqlStatement> preparedStatements,
-        Dictionary<string, PostgreSqlPortal> portals,
-        PostgreSqlFrontendMessage message,
-        CancellationToken cancellationToken)
+    private async ValueTask HandleDescribeMessageAsync(PostgreSqlMessageWriter writer, PostgreSqlSessionState session, PostgreSqlFrontendMessage message, CancellationToken cancellationToken)
     {
         var payload = message.Payload.AsSpan();
-        var index = 0;
-        if (index >= payload.Length)
+        if (payload.IsEmpty)
         {
             throw new InvalidDataException("Invalid Describe message.");
         }
 
+        var index = 0;
         var describeType = payload[index++];
         var name = PostgreSqlMessageReader.ReadNullTerminatedString(payload, ref index);
-        if (describeType == (byte)'S')
+
+        PostgreSqlStatement statement;
+        PostgreSqlPortal? portal = null;
+        if (describeType == PostgreSqlConstants.DescribeTarget.Statement)
         {
-            if (preparedStatements.TryGetValue(name, out var statement))
+            if (!session.PreparedStatements.TryGetValue(name, out var describedStatement))
             {
-                await writer.WriteMessageAsync((byte)'t', PostgreSqlResponseSerializer.CreateParameterDescription(statement.ParameterTypeOids), cancellationToken).ConfigureAwait(false);
-                await writer.WriteMessageAsync((byte)'n', PostgreSqlResponseSerializer.CreateNoData(), cancellationToken).ConfigureAwait(false);
-                return;
-            }
-        }
-        else if (describeType == (byte)'P' && portals.TryGetValue(name, out var portal))
-        {
-            if (TryInferDescribeResultSet(portal.Statement.Query, out var describedResultSet))
-            {
-                await writer.WriteMessageAsync((byte)'T', PostgreSqlResponseSerializer.CreateRowDescription(describedResultSet), cancellationToken).ConfigureAwait(false);
-                portal.IsDescribed = true;
-            }
-            else
-            {
-                await writer.WriteMessageAsync((byte)'n', PostgreSqlResponseSerializer.CreateNoData(), cancellationToken).ConfigureAwait(false);
-                portal.IsDescribed = false;
+                throw new InvalidDataException($"Unknown prepared statement '{name}'.");
             }
 
-            return;
+            statement = describedStatement;
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ParameterDescription, PostgreSqlResponseSerializer.CreateParameterDescription(statement.ParameterTypeOids), cancellationToken).ConfigureAwait(false);
+        }
+        else if (describeType == PostgreSqlConstants.DescribeTarget.Portal)
+        {
+            if (!session.Portals.TryGetValue(name, out portal))
+            {
+                throw new InvalidDataException($"Unknown portal '{name}'.");
+            }
+
+            statement = portal.Statement;
+        }
+        else
+        {
+            throw new InvalidDataException($"Invalid Describe target '{(char)describeType}'.");
         }
 
-        await writer.WriteMessageAsync((byte)'E', PostgreSqlResponseSerializer.CreateErrorResponse("ERROR", "26000", $"Unknown describe target '{name}'"), cancellationToken).ConfigureAwait(false);
+        // The result shape is the callback's to decide; guessing it from the SQL text produced wrong
+        // column counts and types, and Execute must never emit a RowDescription of its own.
+        var context = new PostgreSqlQueryContext
+        {
+            RemoteEndPoint = session.RemoteEndPoint,
+            StartupParameters = session.StartupParameters,
+            RequestType = PostgreSqlQueryRequestType.Describe,
+            CommandText = statement.Query,
+            StatementName = statement.Name,
+            PortalName = portal?.Name,
+            Parameters = portal is null ? [] : DecodeParameters(portal),
+        };
+
+        var result = await ExecuteQueryHandlerAsync(context, session.BackendSession, cancellationToken).ConfigureAwait(false);
+        var describedResultSet = result.Error is null && result.ResultSets.Count > 0 ? result.ResultSets[0] : null;
+        if (portal is not null)
+        {
+            portal.DescribedColumnCount = describedResultSet?.Columns.Count ?? 0;
+        }
+
+        if (describedResultSet is not null && describedResultSet.Columns.Count > 0)
+        {
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.RowDescription, PostgreSqlResponseSerializer.CreateRowDescription(describedResultSet, portal?.ResultFormatCodes), cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.NoData, PostgreSqlResponseSerializer.CreateNoData(), cancellationToken).ConfigureAwait(false);
+        }
     }
 
-    private async ValueTask HandleExecuteMessageAsync(
-        PostgreSqlMessageWriter writer,
-        Dictionary<string, PostgreSqlPortal> portals,
-        EndPoint remoteEndPoint,
-        IReadOnlyDictionary<string, string> startupParameters,
-        PostgreSqlFrontendMessage message,
-        PostgreSqlBackendSession? backendSession,
-        CancellationToken cancellationToken)
+    private static PostgreSqlQueryParameter[] DecodeParameters(PostgreSqlPortal portal)
+    {
+        var parameters = new PostgreSqlQueryParameter[portal.Parameters.Count];
+        for (var i = 0; i < parameters.Length; i++)
+        {
+            var parameter = portal.Parameters[i];
+            var typeOid = parameter.TypeOid == 0 ? PostgreSqlTypeMapper.TextOid : parameter.TypeOid;
+            var decodedValue = PostgreSqlValueConverter.DecodeParameterValue(typeOid, parameter.FormatCode, parameter.RawValue);
+            parameters[i] = new PostgreSqlQueryParameter
+            {
+                Name = $"${i + 1}",
+                Type = PostgreSqlTypeMapper.GetColumnType(typeOid),
+                Value = decodedValue ?? DBNull.Value,
+                TypeOid = typeOid,
+                FormatCode = parameter.FormatCode,
+                RawValue = parameter.RawValue,
+            };
+        }
+
+        return parameters;
+    }
+
+    private async ValueTask HandleExecuteMessageAsync(PostgreSqlMessageWriter writer, PostgreSqlSessionState session, PostgreSqlFrontendMessage message, CancellationToken cancellationToken)
     {
         var payload = message.Payload.AsSpan();
         var index = 0;
@@ -541,61 +685,98 @@ internal sealed class PostgreSqlConnectionProcessor
             throw new InvalidDataException("Invalid Execute message.");
         }
 
-        _ = BinaryPrimitives.ReadInt32BigEndian(payload.Slice(index, 4));
-        if (!portals.TryGetValue(portalName, out var portal))
+        var maxRows = BinaryPrimitives.ReadInt32BigEndian(payload.Slice(index, 4));
+        if (maxRows < 0)
+        {
+            throw new InvalidDataException("Invalid Execute row limit.");
+        }
+
+        if (!session.Portals.TryGetValue(portalName, out var portal))
         {
             throw new InvalidDataException($"Unknown portal '{portalName}'.");
         }
 
-        var parameters = portal.Parameters
-            .Select((parameter, parameterIndex) =>
-            {
-                var typeOid = parameter.TypeOid == 0 ? 25u : parameter.TypeOid;
-                var columnType = PostgreSqlTypeMapper.GetColumnType(typeOid);
-                var decodedValue = PostgreSqlValueConverter.DecodeParameterValue(typeOid, parameter.FormatCode, parameter.RawValue);
-                return new PostgreSqlQueryParameter
-                {
-                    Name = $"${parameterIndex + 1}",
-                    Type = columnType,
-                    Value = decodedValue ?? DBNull.Value,
-                };
-            })
-            .ToArray();
+        if (string.IsNullOrWhiteSpace(portal.Statement.Query))
+        {
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.EmptyQueryResponse, PostgreSqlResponseSerializer.CreateEmptyQueryResponse(), cancellationToken).ConfigureAwait(false);
+            return;
+        }
 
         var context = new PostgreSqlQueryContext
         {
-            RemoteEndPoint = remoteEndPoint,
-            StartupParameters = startupParameters,
+            RemoteEndPoint = session.RemoteEndPoint,
+            StartupParameters = session.StartupParameters,
             RequestType = PostgreSqlQueryRequestType.ExtendedQuery,
             CommandText = portal.Statement.Query,
             StatementName = portal.Statement.Name,
             PortalName = portal.Name,
-            Parameters = parameters,
+            Parameters = DecodeParameters(portal),
         };
 
-        var result = await ExecuteQueryHandlerAsync(context, backendSession, cancellationToken).ConfigureAwait(false);
-        await WriteQueryResultAsync(writer, result, includeReadyForQuery: false, includeRowDescription: !portal.IsDescribed, cancellationToken).ConfigureAwait(false);
+        var result = await ExecuteQueryHandlerAsync(context, session.BackendSession, cancellationToken).ConfigureAwait(false);
+
+        // Describe already told the client the shape. If execution disagrees, the DataRows would desynchronise
+        // the connection, so this is reported as an error instead.
+        if (result.Error is null && portal.DescribedColumnCount is { } describedColumnCount)
+        {
+            var executedColumnCount = result.ResultSets.Count > 0 ? result.ResultSets[0].Columns.Count : 0;
+            if (executedColumnCount != describedColumnCount)
+            {
+                _logger.LogError(
+                    "The query handler described {DescribedColumnCount} column(s) for '{CommandText}' but returned {ExecutedColumnCount} on execution. Return the same columns for PostgreSqlQueryRequestType.Describe as for the execution.",
+                    describedColumnCount,
+                    portal.Statement.Query,
+                    executedColumnCount);
+                result = PostgreSqlQueryResult.FromError(new PostgreSqlQueryError
+                {
+                    Code = PostgreSqlConstants.SqlStates.InternalError,
+                    Message = $"The query handler described {describedColumnCount} column(s) but returned {executedColumnCount} on execution.",
+                });
+            }
+        }
+
+        UpdateTransactionStatus(session, result);
+
+        // Execute never emits RowDescription; the client learns the shape from Describe.
+        await WriteQueryResultAsync(writer, result, session, includeReadyForQuery: false, includeRowDescription: false, maxRows, portal.ResultFormatCodes, cancellationToken).ConfigureAwait(false);
     }
 
-    private async ValueTask HandleSimpleQueryAsync(
-        PostgreSqlMessageWriter writer,
-        EndPoint remoteEndPoint,
-        IReadOnlyDictionary<string, string> startupParameters,
-        PostgreSqlFrontendMessage message,
-        PostgreSqlBackendSession? backendSession,
-        CancellationToken cancellationToken)
+    private async ValueTask HandleSimpleQueryAsync(PostgreSqlMessageWriter writer, PostgreSqlSessionState session, PostgreSqlFrontendMessage message, CancellationToken cancellationToken)
     {
         var sqlText = DecodeNullTerminatedString(message.Payload);
+        if (string.IsNullOrWhiteSpace(sqlText))
+        {
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.EmptyQueryResponse, PostgreSqlResponseSerializer.CreateEmptyQueryResponse(), cancellationToken).ConfigureAwait(false);
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ReadyForQuery, PostgreSqlResponseSerializer.CreateReadyForQuery(session.TransactionStatus), cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
         var context = new PostgreSqlQueryContext
         {
-            RemoteEndPoint = remoteEndPoint,
-            StartupParameters = startupParameters,
+            RemoteEndPoint = session.RemoteEndPoint,
+            StartupParameters = session.StartupParameters,
             RequestType = PostgreSqlQueryRequestType.SimpleQuery,
             CommandText = sqlText,
         };
 
-        var result = await ExecuteQueryHandlerAsync(context, backendSession, cancellationToken).ConfigureAwait(false);
-        await WriteQueryResultAsync(writer, result, includeReadyForQuery: true, includeRowDescription: true, cancellationToken).ConfigureAwait(false);
+        var result = await ExecuteQueryHandlerAsync(context, session.BackendSession, cancellationToken).ConfigureAwait(false);
+        UpdateTransactionStatus(session, result);
+        await WriteQueryResultAsync(writer, result, session, includeReadyForQuery: true, includeRowDescription: true, maxRows: 0, resultFormatCodes: null, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static void UpdateTransactionStatus(PostgreSqlSessionState session, PostgreSqlQueryResult result)
+    {
+        session.TransactionStatus = result.TransactionStatus switch
+        {
+            PostgreSqlTransactionStatus.InTransaction => PostgreSqlConstants.TransactionStatus.InTransaction,
+            PostgreSqlTransactionStatus.Failed => PostgreSqlConstants.TransactionStatus.Failed,
+            _ => PostgreSqlConstants.TransactionStatus.Idle,
+        };
+
+        if (result.Error is not null && session.TransactionStatus == PostgreSqlConstants.TransactionStatus.InTransaction)
+        {
+            session.TransactionStatus = PostgreSqlConstants.TransactionStatus.Failed;
+        }
     }
 
     private async ValueTask<PostgreSqlQueryResult> ExecuteQueryHandlerAsync(PostgreSqlQueryContext context, PostgreSqlBackendSession? backendSession, CancellationToken cancellationToken)
@@ -612,20 +793,25 @@ internal sealed class PostgreSqlConnectionProcessor
 
             return await _queryHandler(context, commandCancellationTokenSource.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (commandCancellationTokenSource is not null && commandCancellationTokenSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The connection itself is going away; this is not a query error.
+            throw;
+        }
+        catch (OperationCanceledException) when (commandCancellationTokenSource is not null && commandCancellationTokenSource.IsCancellationRequested)
         {
             return PostgreSqlQueryResult.FromError(new PostgreSqlQueryError
             {
-                Code = "57014",
+                Code = PostgreSqlConstants.SqlStates.QueryCanceled,
                 Message = "canceling statement due to user request",
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in PostgreSQL query handler");
+            _logger.LogError(ex, "Unhandled exception in PostgreSQL query handler for {RemoteEndPoint}", context.RemoteEndPoint);
             return PostgreSqlQueryResult.FromError(new PostgreSqlQueryError
             {
-                Code = "XX000",
+                Code = PostgreSqlConstants.SqlStates.InternalError,
                 Message = "Unhandled query handler exception",
             });
         }
@@ -640,17 +826,29 @@ internal sealed class PostgreSqlConnectionProcessor
         }
     }
 
-    private static async ValueTask WriteQueryResultAsync(PostgreSqlMessageWriter writer, PostgreSqlQueryResult result, bool includeReadyForQuery, bool includeRowDescription, CancellationToken cancellationToken)
+    private static async ValueTask WriteQueryResultAsync(
+        PostgreSqlMessageWriter writer,
+        PostgreSqlQueryResult result,
+        PostgreSqlSessionState session,
+        bool includeReadyForQuery,
+        bool includeRowDescription,
+        int maxRows,
+        IReadOnlyList<int>? resultFormatCodes,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(writer);
         ArgumentNullException.ThrowIfNull(result);
 
         if (result.Error is not null)
         {
-            await writer.WriteMessageAsync((byte)'E', PostgreSqlResponseSerializer.CreateErrorResponse(result.Error), cancellationToken).ConfigureAwait(false);
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ErrorResponse, PostgreSqlResponseSerializer.CreateErrorResponse(result.Error), cancellationToken).ConfigureAwait(false);
             if (includeReadyForQuery)
             {
-                await writer.WriteMessageAsync((byte)'Z', PostgreSqlResponseSerializer.CreateReadyForQuery(), cancellationToken).ConfigureAwait(false);
+                await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ReadyForQuery, PostgreSqlResponseSerializer.CreateReadyForQuery(session.TransactionStatus), cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                session.InErrorState = true;
             }
 
             return;
@@ -658,16 +856,15 @@ internal sealed class PostgreSqlConnectionProcessor
 
         foreach (var notice in result.Notices)
         {
-            await writer.WriteMessageAsync((byte)'N', PostgreSqlResponseSerializer.CreateNoticeResponse(notice), cancellationToken).ConfigureAwait(false);
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.NoticeResponse, PostgreSqlResponseSerializer.CreateNoticeResponse(notice), cancellationToken).ConfigureAwait(false);
         }
 
         if (result.ResultSets.Count == 0)
         {
-            var commandTag = string.IsNullOrWhiteSpace(result.CommandTag) ? "OK" : result.CommandTag;
-            await writer.WriteMessageAsync((byte)'C', PostgreSqlResponseSerializer.CreateCommandComplete(commandTag, 0), cancellationToken).ConfigureAwait(false);
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.CommandComplete, PostgreSqlResponseSerializer.CreateCommandComplete(result.CommandTag, "OK", result.AffectedRowCount), cancellationToken).ConfigureAwait(false);
             if (includeReadyForQuery)
             {
-                await writer.WriteMessageAsync((byte)'Z', PostgreSqlResponseSerializer.CreateReadyForQuery(), cancellationToken).ConfigureAwait(false);
+                await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ReadyForQuery, PostgreSqlResponseSerializer.CreateReadyForQuery(session.TransactionStatus), cancellationToken).ConfigureAwait(false);
             }
 
             return;
@@ -677,42 +874,54 @@ internal sealed class PostgreSqlConnectionProcessor
         {
             if (includeRowDescription)
             {
-                await writer.WriteMessageAsync((byte)'T', PostgreSqlResponseSerializer.CreateRowDescription(resultSet), cancellationToken).ConfigureAwait(false);
+                await writer.WriteMessageAsync(PostgreSqlConstants.Backend.RowDescription, PostgreSqlResponseSerializer.CreateRowDescription(resultSet, resultFormatCodes), cancellationToken).ConfigureAwait(false);
             }
 
-            foreach (var row in resultSet.Rows)
+            var rowCount = resultSet.Rows.Count;
+            var suspended = maxRows > 0 && rowCount > maxRows;
+            var rowsToWrite = suspended ? maxRows : rowCount;
+            for (var i = 0; i < rowsToWrite; i++)
             {
-                await writer.WriteMessageAsync((byte)'D', PostgreSqlResponseSerializer.CreateDataRow(resultSet, row), cancellationToken).ConfigureAwait(false);
+                await writer.WriteMessageAsync(PostgreSqlConstants.Backend.DataRow, PostgreSqlResponseSerializer.CreateDataRow(resultSet, resultSet.Rows[i], resultFormatCodes), cancellationToken).ConfigureAwait(false);
             }
 
-            var commandTag = string.IsNullOrWhiteSpace(result.CommandTag) ? "SELECT" : result.CommandTag;
-            await writer.WriteMessageAsync((byte)'C', PostgreSqlResponseSerializer.CreateCommandComplete(commandTag, resultSet.Rows.Count), cancellationToken).ConfigureAwait(false);
+            if (suspended)
+            {
+                await writer.WriteMessageAsync(PostgreSqlConstants.Backend.PortalSuspended, PostgreSqlResponseSerializer.CreatePortalSuspended(), cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.CommandComplete, PostgreSqlResponseSerializer.CreateCommandComplete(result.CommandTag, "SELECT", result.AffectedRowCount ?? rowsToWrite), cancellationToken).ConfigureAwait(false);
         }
 
         if (includeReadyForQuery)
         {
-            await writer.WriteMessageAsync((byte)'Z', PostgreSqlResponseSerializer.CreateReadyForQuery(), cancellationToken).ConfigureAwait(false);
+            await writer.WriteMessageAsync(PostgreSqlConstants.Backend.ReadyForQuery, PostgreSqlResponseSerializer.CreateReadyForQuery(session.TransactionStatus), cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private static void HandleCloseMessage(Dictionary<string, PostgreSqlStatement> preparedStatements, Dictionary<string, PostgreSqlPortal> portals, PostgreSqlFrontendMessage message)
+    private static void HandleCloseMessage(PostgreSqlSessionState session, PostgreSqlFrontendMessage message)
     {
         var payload = message.Payload.AsSpan();
-        var index = 0;
-        if (index >= payload.Length)
+        if (payload.IsEmpty)
         {
             throw new InvalidDataException("Invalid Close message.");
         }
 
+        var index = 0;
         var closeType = payload[index++];
         var name = PostgreSqlMessageReader.ReadNullTerminatedString(payload, ref index);
-        if (closeType == (byte)'S')
+        if (closeType == PostgreSqlConstants.DescribeTarget.Statement)
         {
-            _ = preparedStatements.Remove(name);
+            _ = session.PreparedStatements.Remove(name);
         }
-        else if (closeType == (byte)'P')
+        else if (closeType == PostgreSqlConstants.DescribeTarget.Portal)
         {
-            _ = portals.Remove(name);
+            _ = session.Portals.Remove(name);
+        }
+        else
+        {
+            throw new InvalidDataException($"Invalid Close target '{(char)closeType}'.");
         }
     }
 
@@ -725,7 +934,12 @@ internal sealed class PostgreSqlConnectionProcessor
 
         var count = BinaryPrimitives.ReadInt16BigEndian(payload.Slice(index, 2));
         index += 2;
-        var result = new List<int>(Math.Max((int)count, 0));
+        if (count < 0)
+        {
+            throw new InvalidDataException("Invalid format code count.");
+        }
+
+        var result = new List<int>(count);
         for (var i = 0; i < count; i++)
         {
             if (index + 2 > payload.Length)
@@ -733,7 +947,13 @@ internal sealed class PostgreSqlConnectionProcessor
                 throw new InvalidDataException("Invalid format code value.");
             }
 
-            result.Add(BinaryPrimitives.ReadInt16BigEndian(payload.Slice(index, 2)));
+            var formatCode = BinaryPrimitives.ReadInt16BigEndian(payload.Slice(index, 2));
+            if (formatCode is not 0 and not 1)
+            {
+                throw new InvalidDataException($"Invalid format code '{formatCode}'.");
+            }
+
+            result.Add(formatCode);
             index += 2;
         }
 
@@ -752,52 +972,9 @@ internal sealed class PostgreSqlConnectionProcessor
             return formatCodes[0];
         }
 
-        return parameterIndex < formatCodes.Count ? formatCodes[parameterIndex] : formatCodes[^1];
+        return formatCodes[parameterIndex];
     }
 
-    private static bool TryInferDescribeResultSet(string query, [NotNullWhen(true)] out PostgreSqlResultSet? resultSet)
-    {
-        resultSet = null;
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            return false;
-        }
-
-        var trimmedQuery = query.TrimStart();
-        if (!trimmedQuery.StartsWith("select", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        var selectClause = trimmedQuery["select".Length..].Trim();
-        var fromIndex = selectClause.IndexOf(" from ", StringComparison.OrdinalIgnoreCase);
-        if (fromIndex >= 0)
-        {
-            selectClause = selectClause[..fromIndex];
-        }
-
-        var expressions = selectClause.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (expressions.Length == 0)
-        {
-            return false;
-        }
-
-        resultSet = new PostgreSqlResultSet();
-        for (var i = 0; i < expressions.Length; i++)
-        {
-            var expression = expressions[i];
-            var columnName = $"column{i + 1}";
-            var asIndex = expression.LastIndexOf(" as ", StringComparison.OrdinalIgnoreCase);
-            if (asIndex >= 0 && asIndex + 4 < expression.Length)
-            {
-                columnName = expression[(asIndex + 4)..].Trim();
-            }
-
-            resultSet.Columns.Add(new PostgreSqlColumn(columnName, PostgreSqlColumnType.Text, isNullable: true));
-        }
-
-        return true;
-    }
 
     private static async Task<SslStream> UpgradeToTlsAsync(Stream input, Stream output, X509Certificate2 certificate, CancellationToken cancellationToken)
     {
@@ -806,93 +983,24 @@ internal sealed class PostgreSqlConnectionProcessor
         ArgumentNullException.ThrowIfNull(certificate);
 
         var sslStream = new SslStream(new DuplexStream(input, output), leaveInnerStreamOpen: true);
-        await sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+        try
         {
-            ServerCertificate = certificate,
-            ClientCertificateRequired = false,
-            EnabledSslProtocols = SslProtocols.None,
-            CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
-        }, cancellationToken).ConfigureAwait(false);
+            await sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = certificate,
+                ClientCertificateRequired = false,
+                EnabledSslProtocols = SslProtocols.None,
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+            }, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // A failed handshake is remotely triggerable, so the native TLS context must not be left to the finalizer.
+            await sslStream.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+
         return sslStream;
     }
 
-    [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Input and output streams are owned and disposed by the caller.")]
-    private sealed class DuplexStream : Stream
-    {
-        private readonly Stream _readStream;
-        private readonly Stream _writeStream;
-
-        public DuplexStream(Stream readStream, Stream writeStream)
-        {
-            ArgumentNullException.ThrowIfNull(readStream);
-            ArgumentNullException.ThrowIfNull(writeStream);
-
-            _readStream = readStream;
-            _writeStream = writeStream;
-        }
-
-        public override bool CanRead => _readStream.CanRead;
-
-        public override bool CanSeek => false;
-
-        public override bool CanWrite => _writeStream.CanWrite;
-
-        public override long Length => throw new NotSupportedException();
-
-        public override long Position
-        {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
-        }
-
-        public override void Flush()
-        {
-            _writeStream.Flush();
-        }
-
-        public override Task FlushAsync(CancellationToken cancellationToken)
-        {
-            return _writeStream.FlushAsync(cancellationToken);
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            return _readStream.Read(buffer, offset, count);
-        }
-
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            return _readStream.ReadAsync(buffer, offset, count, cancellationToken);
-        }
-
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            return _readStream.ReadAsync(buffer, cancellationToken);
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException();
-        }
-
-        public override void SetLength(long value)
-        {
-            throw new NotSupportedException();
-        }
-
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            _writeStream.Write(buffer, offset, count);
-        }
-
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            return _writeStream.WriteAsync(buffer, offset, count, cancellationToken);
-        }
-
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            return _writeStream.WriteAsync(buffer, cancellationToken);
-        }
-    }
 }

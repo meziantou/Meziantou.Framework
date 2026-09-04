@@ -20,18 +20,23 @@ internal static class PostgreSqlMessageReader
             throw new InvalidDataException("Invalid PostgreSQL startup packet length.");
         }
 
+        // The length is attacker-controlled and arrives before any body byte, so it is validated before allocating.
+        if (length > PostgreSqlServerOptions.MaxStartupPacketSize)
+        {
+            throw new InvalidDataException($"PostgreSQL startup packet length {length} exceeds the maximum of {PostgreSqlServerOptions.MaxStartupPacketSize} bytes.");
+        }
+
         var body = new byte[length - 4];
         await stream.ReadExactlyAsync(body, cancellationToken).ConfigureAwait(false);
         var requestCode = BinaryPrimitives.ReadInt32BigEndian(body.AsSpan(0, 4));
-        var payload = body.AsSpan(4).ToArray();
         return new PostgreSqlStartupPacket
         {
             RequestCode = requestCode,
-            Payload = payload,
+            Payload = body[4..],
         };
     }
 
-    public static async ValueTask<PostgreSqlFrontendMessage?> ReadMessageAsync(Stream stream, CancellationToken cancellationToken)
+    public static async ValueTask<PostgreSqlFrontendMessage?> ReadMessageAsync(Stream stream, int maxMessageSize, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(stream);
 
@@ -46,6 +51,12 @@ internal static class PostgreSqlMessageReader
         if (length < 4)
         {
             throw new InvalidDataException("Invalid PostgreSQL frontend message length.");
+        }
+
+        // The length is attacker-controlled and arrives before any body byte, so it is validated before allocating.
+        if (length - 4 > maxMessageSize)
+        {
+            throw new InvalidDataException($"PostgreSQL message length {length - 4} exceeds the configured maximum of {maxMessageSize} bytes.");
         }
 
         var payload = new byte[length - 4];

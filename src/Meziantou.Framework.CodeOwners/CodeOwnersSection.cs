@@ -43,6 +43,7 @@ public readonly struct CodeOwnersSection : IEquatable<CodeOwnersSection>
     public bool IsMandatory => !IsOptional;
 
     /// <summary>Gets the default owners for patterns in this section when no explicit owners are specified.</summary>
+    /// <remarks>The owners are returned as written in the file, so usernames keep their leading <c>@</c>. <see cref="CodeOwnersEntry.Member"/> reports them without it.</remarks>
     public IReadOnlyCollection<string> DefaultOwners { get; }
 
     /// <summary>Gets a value indicating whether this section has default owners defined.</summary>

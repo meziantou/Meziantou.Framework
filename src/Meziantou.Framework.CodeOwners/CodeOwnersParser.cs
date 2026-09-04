@@ -12,7 +12,7 @@ namespace Meziantou.Framework.CodeOwners;
 ///     *.js @js-owner
 ///     docs/* docs@example.com
 ///     """;
-/// var entries = CodeOwnersParser.Parse(content).ToArray();
+/// var entries = CodeOwnersParser.Parse(content);
 /// // entries[0]: Pattern="*", Member="user1", EntryType=Username
 /// // entries[1]: Pattern="*", Member="user2", EntryType=Username
 /// // entries[2]: Pattern="*.js", Member="js-owner", EntryType=Username
@@ -24,11 +24,35 @@ public static class CodeOwnersParser
 {
     /// <summary>Parses the content of a CODEOWNERS file and returns the code owner entries.</summary>
     /// <param name="content">The content of the CODEOWNERS file.</param>
-    /// <returns>An enumerable collection of <see cref="CodeOwnersEntry"/> representing the parsed code owners.</returns>
-    public static IEnumerable<CodeOwnersEntry> Parse(string content)
+    /// <returns>The <see cref="CodeOwnersEntry"/> instances representing the parsed code owners.</returns>
+    /// <exception cref="CodeOwnersParseException"><paramref name="content"/> is not a valid CODEOWNERS file. Parsing stops at the first error.</exception>
+    public static IReadOnlyList<CodeOwnersEntry> Parse(string content)
     {
         var context = new CodeOwnersParserContext(content);
-        return context.Parse();
+        var entries = context.Parse();
+        if (context.HasError)
+            throw context.CreateException();
+
+        return entries;
+    }
+
+    /// <summary>Parses the content of a CODEOWNERS file and returns a value indicating whether it is valid.</summary>
+    /// <param name="content">The content of the CODEOWNERS file.</param>
+    /// <param name="entries">When this method returns <see langword="true"/>, contains the <see cref="CodeOwnersEntry"/> instances representing the parsed code owners; otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> when <paramref name="content"/> is a valid CODEOWNERS file; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>Use <see cref="Parse(string)"/> to know why the file is invalid.</remarks>
+    public static bool TryParse(string content, [NotNullWhen(true)] out IReadOnlyList<CodeOwnersEntry>? entries)
+    {
+        var context = new CodeOwnersParserContext(content);
+        var result = context.Parse();
+        if (context.HasError)
+        {
+            entries = null;
+            return false;
+        }
+
+        entries = result;
+        return true;
     }
 
     [StructLayout(LayoutKind.Auto)]
@@ -39,6 +63,7 @@ public static class CodeOwnersParser
 
         private readonly List<CodeOwnersEntry> _entries = [];
         private readonly string _content;
+        private (CodeOwnersErrorKind Kind, int Index)? _error;
         private CodeOwnersSection? _currentSection;
         private int _index;
         private int _patternIndex;
@@ -50,12 +75,56 @@ public static class CodeOwnersParser
 
         public List<CodeOwnersEntry> Parse()
         {
-            while (!EndOfFile)
+            while (!EndOfFile && _error is null)
             {
                 ParseLine();
             }
 
             return _entries;
+        }
+
+        public readonly bool HasError => _error is not null;
+
+        /// <summary>Records the first error found. Parsing stops as soon as one is set.</summary>
+        private void SetError(CodeOwnersErrorKind kind, int index)
+        {
+            _error ??= (kind, index);
+        }
+
+        public readonly CodeOwnersParseException CreateException()
+        {
+            var (kind, errorIndex) = _error.GetValueOrDefault();
+
+            // The character offset is only turned into a line and a position when the file is actually invalid.
+            var lineNumber = 1;
+            var lineStartIndex = 0;
+            var index = 0;
+            while (index < errorIndex)
+            {
+                var c = _content[index];
+                if (c is '\r')
+                {
+                    index++;
+                    if (index < _content.Length && _content[index] is '\n')
+                    {
+                        index++;
+                    }
+                }
+                else if (c is '\n')
+                {
+                    index++;
+                }
+                else
+                {
+                    index++;
+                    continue;
+                }
+
+                lineNumber++;
+                lineStartIndex = index;
+            }
+
+            return new CodeOwnersParseException(kind, lineNumber, Math.Max(1, errorIndex - lineStartIndex + 1));
         }
 
         private void ParseLine()
@@ -68,7 +137,7 @@ public static class CodeOwnersParser
             // Comment
             if (c == '#')
             {
-                ConsumeUntil('\n');
+                ConsumeUntilEndOfLineOrEndOfFile();
                 return;
             }
 
@@ -91,50 +160,135 @@ public static class CodeOwnersParser
 
         private bool TryParseSection(out CodeOwnersSection section)
         {
-            if (!EndOfFile)
+            // The line may not be a section after all, in which case everything consumed here must be restored
+            // so the line can be parsed as a pattern.
+            var startIndex = _index;
+
+            var isOptional = false;
+            if (Peek() == '^')
             {
-                if (TryConsumeEndOfLineOrEndOfFile())
-                {
-                    section = default;
-                    return false;
-                }
-
-                var isOptional = false;
-                var c = Peek();
-                if (c == '^')
-                {
-                    isOptional = true;
-                    Consume();
-                }
-
-                c = Peek();
-                if (c == '[')
-                {
-                    var name = ParseSectionName();
-
-                    var requiredReviewerCount = 1;
-                    if (Peek() == '[')
-                    {
-                        requiredReviewerCount = ParseSectionRequiredReviewerCount();
-                    }
-
-                    var defaultOwners = new List<string>();
-                    if (Peek() == ' ')
-                    {
-                        defaultOwners = ParseSectionDefaultOwners();
-                    }
-                    else
-                    {
-                        ConsumeUntilEndOfLineOrEndOfFile();
-                    }
-
-                    section = new CodeOwnersSection(name, isOptional ? 0 : requiredReviewerCount, defaultOwners);
-                    return true;
-                }
+                isOptional = true;
+                _ = Consume();
             }
 
+            if (Peek() == '[' && TryParseSectionName(out var name))
+            {
+                var requiredReviewerCount = 1;
+                if (Peek() == '[')
+                {
+                    requiredReviewerCount = ParseSectionRequiredReviewerCount();
+                }
+
+                var defaultOwners = new List<string>();
+                if (Peek() is ' ' or '\t')
+                {
+                    defaultOwners = ParseSectionDefaultOwners();
+                }
+                else
+                {
+                    ConsumeUntilEndOfLineOrEndOfFile();
+                }
+
+                section = new CodeOwnersSection(name, isOptional ? 0 : requiredReviewerCount, defaultOwners);
+                return true;
+            }
+
+            _index = startIndex;
             section = default;
             return false;
+        }
+
+        private bool TryParseSectionName(out string name)
+        {
+            var startIndex = _index;
+            _ = Consume();
+
+            // A section header cannot span multiple lines. Without this bound, an unclosed '[' would consume
+            // the remaining lines of the file and silently discard them.
+            var remaining = _content.AsSpan(_index);
+            var separatorIndex = remaining.IndexOfAny(']', '\r', '\n');
+            if (separatorIndex < 0 || remaining[separatorIndex] is not ']')
+            {
+                SetError(CodeOwnersErrorKind.UnterminatedSectionHeader, startIndex);
+                _index = startIndex;
+                name = string.Empty;
+                return false;
+            }
+
+            name = remaining[..separatorIndex].ToString();
+            _index += separatorIndex + 1;
+            return true;
+        }
+
+        private int ParseSectionRequiredReviewerCount()
+        {
+            var startIndex = _index;
+            _ = Consume();
+
+            var remaining = _content.AsSpan(_index);
+            var separatorIndex = remaining.IndexOfAny(']', '\r', '\n');
+            if (separatorIndex < 0 || remaining[separatorIndex] is not ']')
+            {
+                SetError(CodeOwnersErrorKind.UnterminatedRequiredReviewerCount, startIndex);
+                _index = startIndex;
+                return 1;
+            }
+
+            var requiredReviewerCountText = remaining[..separatorIndex];
+            _index += separatorIndex + 1;
+
+            // A count of 0 is how an optional section is represented, so it cannot be allowed here: it would make
+            // a section that is not prefixed by '^' report itself as optional.
+            if (!int.TryParse(requiredReviewerCountText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var requiredReviewerCount) || requiredReviewerCount < 1)
+            {
+                SetError(CodeOwnersErrorKind.InvalidRequiredReviewerCount, startIndex);
+                return 1;
+            }
+
+            return requiredReviewerCount;
+        }
+
+        private List<string> ParseSectionDefaultOwners()
+        {
+            var lineStartIndex = _index;
+            var line = ConsumeLine();
+
+            var defaultOwners = new List<string>();
+            var offset = 0;
+            while (offset < line.Length)
+            {
+                var tokenStart = line[offset..].IndexOfAnyExcept(' ', '\t');
+                if (tokenStart < 0)
+                    break;
+
+                offset += tokenStart;
+                var remaining = line[offset..];
+                var tokenEnd = remaining.IndexOfAny(' ', '\t');
+                var token = tokenEnd < 0 ? remaining : remaining[..tokenEnd];
+
+                // GitLab stops parsing default owners when encountering an unexpected token
+                // but keeps the default owners already parsed as valid.
+                if (token[0] is '[' or '#')
+                    break;
+
+                var defaultOwner = token.ToString();
+                if (defaultOwner is "@")
+                {
+                    SetError(CodeOwnersErrorKind.EmptyMember, lineStartIndex + offset);
+                }
+                else if (defaultOwner[0] is '@' || IsEmailAddress(defaultOwner))
+                {
+                    defaultOwners.Add(defaultOwner);
+                }
+                else
+                {
+                    SetError(CodeOwnersErrorKind.InvalidMember, lineStartIndex + offset);
+                }
+
+                offset += token.Length;
+            }
+
+            return defaultOwners;
         }
 
         private string? ParsePattern()
@@ -211,36 +365,57 @@ public static class CodeOwnersParser
                 // Inline comment
                 if (c == '#')
                 {
-                    ConsumeUntil('\n');
+                    ConsumeUntilEndOfLineOrEndOfFile();
                     break;
                 }
 
                 var isMember = c == '@';
-                var memberStart = isMember ? _index : _index - 1;
+                var tokenStartIndex = _index - 1;
+                var memberStart = isMember ? _index : tokenStartIndex;
 
                 var remaining = _content.AsSpan(_index);
                 var separatorIndex = remaining.IndexOfAny(MemberSeparatorSearchValues);
+                string member;
+                char? separator;
                 if (separatorIndex < 0)
                 {
-                    AddEntry(isMember, _content.AsSpan(memberStart).ToString(), pattern, patternIndex);
+                    member = _content.AsSpan(memberStart).ToString();
                     _index = _content.Length;
-                    return;
+                    separator = null;
+                }
+                else
+                {
+                    var memberLength = _index + separatorIndex - memberStart;
+                    member = _content.AsSpan(memberStart, memberLength).ToString();
+                    separator = remaining[separatorIndex];
+                    _index += separatorIndex;
                 }
 
-                var memberLength = _index + separatorIndex - memberStart;
-                var member = _content.AsSpan(memberStart, memberLength).ToString();
-                var separator = remaining[separatorIndex];
-                _index += separatorIndex;
-                if (separator is '\r' or '\n')
+                if (member.Length is 0)
+                {
+                    // A lone '@' does not identify anybody
+                    SetError(CodeOwnersErrorKind.EmptyMember, tokenStartIndex);
+                }
+                else if (isMember || IsEmailAddress(member))
                 {
                     AddEntry(isMember, member, pattern, patternIndex);
+                    foundMember = true;
+                }
+                else
+                {
+                    SetError(CodeOwnersErrorKind.InvalidMember, tokenStartIndex);
+                }
+
+                if (separator is null)
+                    break;
+
+                if (separator is '\r' or '\n')
+                {
                     _ = TryConsumeEndOfLineOrEndOfFile();
-                    return;
+                    break;
                 }
 
                 _index++;
-                AddEntry(isMember, member, pattern, patternIndex);
-                foundMember = true;
             }
 
             if (!foundMember)
@@ -249,6 +424,7 @@ public static class CodeOwnersParser
                 {
                     foreach (var defaultOwner in _currentSection.Value.DefaultOwners)
                     {
+                        // Default owners are validated when the section header is parsed
                         var isMember = defaultOwner[0] == '@';
                         AddEntry(isMember, isMember ? defaultOwner[1..] : defaultOwner, pattern, patternIndex);
                     }
@@ -276,98 +452,15 @@ public static class CodeOwnersParser
             }
         }
 
-        private string ParseSectionName()
+        private static bool IsEmailAddress(ReadOnlySpan<char> value)
         {
-            _ = Consume();
-            var remaining = _content.AsSpan(_index);
-            var separatorIndex = remaining.IndexOf(']');
-            if (separatorIndex < 0)
-            {
-                _index = _content.Length;
-                return remaining.ToString();
-            }
-
-            var sectionName = remaining[..separatorIndex].ToString();
-            _index += separatorIndex + 1;
-            return sectionName;
+            var index = value.IndexOf('@');
+            return index > 0 && index < value.Length - 1;
         }
 
-        private int ParseSectionRequiredReviewerCount()
-        {
-            if (Peek() == '[')
-            {
-                _ = Consume();
-            }
-            else
-            {
-                // If no count is specified in section headers, only one reviewer is required by default.
-                return 1;
-            }
+        private readonly bool EndOfFile => _index >= _content.Length;
 
-            var remaining = _content.AsSpan(_index);
-            var separatorIndex = remaining.IndexOf(']');
-            ReadOnlySpan<char> requiredReviewerCountText;
-            if (separatorIndex < 0)
-            {
-                requiredReviewerCountText = remaining;
-                _index = _content.Length;
-            }
-            else
-            {
-                requiredReviewerCountText = remaining[..separatorIndex];
-                _index += separatorIndex + 1;
-            }
-
-            var isParseValid = int.TryParse(requiredReviewerCountText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var requiredReviewerCount);
-            return isParseValid ? requiredReviewerCount : 1;
-        }
-
-        private List<string> ParseSectionDefaultOwners()
-        {
-            var start = _index;
-            ConsumeUntil('\n');
-            var length = _index - start;
-            if (_index > start && _content[_index - 1] == '\n')
-            {
-                length--;
-            }
-
-            var remaining = _content.AsSpan(start, length).Trim();
-            var defaultOwners = new List<string>();
-            while (!remaining.IsEmpty)
-            {
-                var tokenStart = remaining.IndexOfAnyExcept(' ', '\t');
-                if (tokenStart < 0)
-                    break;
-
-                remaining = remaining[tokenStart..];
-                var tokenEnd = remaining.IndexOfAny(' ', '\t');
-                ReadOnlySpan<char> token;
-                if (tokenEnd < 0)
-                {
-                    token = remaining;
-                    remaining = default;
-                }
-                else
-                {
-                    token = remaining[..tokenEnd];
-                    remaining = remaining[tokenEnd..];
-                }
-
-                // GitLab stops parsing default owners when encountering an unexpected token
-                // but keeps the default owners already parsed as valid.
-                if (token[0] is '[' or '#')
-                    break;
-
-                defaultOwners.Add(token.ToString());
-            }
-
-            return defaultOwners;
-        }
-
-        private bool EndOfFile => _index >= _content.Length;
-
-        private char? Peek()
+        private readonly char? Peek()
         {
             if (_index >= _content.Length)
                 return null;
@@ -413,19 +506,20 @@ public static class CodeOwnersParser
             return false;
         }
 
-        private void ConsumeUntil(char character)
+        /// <summary>Consumes the current line, including its line ending, and returns it without its line ending.</summary>
+        private ReadOnlySpan<char> ConsumeLine()
         {
-            if (EndOfFile)
-                return;
-
-            var index = _content.AsSpan(_index).IndexOf(character);
-            if (index < 0)
+            var remaining = _content.AsSpan(_index);
+            var endOfLineIndex = remaining.IndexOfAny('\r', '\n');
+            if (endOfLineIndex < 0)
             {
                 _index = _content.Length;
-                return;
+                return remaining;
             }
 
-            _index += index + 1;
+            _index += endOfLineIndex;
+            _ = TryConsumeEndOfLineOrEndOfFile();
+            return remaining[..endOfLineIndex];
         }
 
         private void ConsumeUntilEndOfLineOrEndOfFile()

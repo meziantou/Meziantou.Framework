@@ -27,9 +27,28 @@ namespace Meziantou.Framework.CodeOwners
         None = 2
     }
 
+    public enum CodeOwnersErrorKind
+    {
+        UnterminatedSectionHeader = 0,
+        UnterminatedRequiredReviewerCount = 1,
+        InvalidRequiredReviewerCount = 2,
+        EmptyMember = 3,
+        InvalidMember = 4
+    }
+
+    public sealed class CodeOwnersParseException : System.Exception
+    {
+        public Meziantou.Framework.CodeOwners.CodeOwnersErrorKind Kind { get => throw null; }
+        public int LineNumber { get => throw null; }
+        public int LinePosition { get => throw null; }
+        public CodeOwnersParseException(string? message) { }
+        public CodeOwnersParseException(string? message, System.Exception? innerException) { }
+    }
+
     public static class CodeOwnersParser
     {
-        public static System.Collections.Generic.IEnumerable<Meziantou.Framework.CodeOwners.CodeOwnersEntry> Parse(string content) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersEntry> Parse(string content) => throw null;
+        public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersEntry>? entries) => throw null;
     }
 
     public readonly struct CodeOwnersSection : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersSection>

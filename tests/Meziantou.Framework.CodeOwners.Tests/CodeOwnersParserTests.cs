@@ -364,4 +364,130 @@ public sealed class CodeOwnersParserTests
         };
         Assert.Equal(expected, actual);
     }
+
+    [Fact]
+    public void TryParseValidFile()
+    {
+        Assert.True(CodeOwnersParser.TryParse("[Test][2] @defaultOwner\n* @user1 docs@example.com\n", out var entries));
+        Assert.Equal(2, entries.Count);
+    }
+
+    [Theory]
+    [InlineData("[Backend\n*.cs @user1", CodeOwnersErrorKind.UnterminatedSectionHeader, 1, 1)]
+    [InlineData("* @user1\n[Backend", CodeOwnersErrorKind.UnterminatedSectionHeader, 2, 1)]
+    [InlineData("[Test][0]\n* @user1", CodeOwnersErrorKind.InvalidRequiredReviewerCount, 1, 7)]
+    [InlineData("[Test][-3]\n* @user1", CodeOwnersErrorKind.InvalidRequiredReviewerCount, 1, 7)]
+    [InlineData("[Test][abc]\n* @user1", CodeOwnersErrorKind.InvalidRequiredReviewerCount, 1, 7)]
+    [InlineData("[Test][2\n* @user1", CodeOwnersErrorKind.UnterminatedRequiredReviewerCount, 1, 7)]
+    [InlineData("* @ @user1", CodeOwnersErrorKind.EmptyMember, 1, 3)]
+    [InlineData("* @", CodeOwnersErrorKind.EmptyMember, 1, 3)]
+    [InlineData("[Test] @\n*", CodeOwnersErrorKind.EmptyMember, 1, 8)]
+    [InlineData("* justsometext", CodeOwnersErrorKind.InvalidMember, 1, 3)]
+    [InlineData("* missing.local.part@", CodeOwnersErrorKind.InvalidMember, 1, 3)]
+    [InlineData("[Test] justsometext\n*", CodeOwnersErrorKind.InvalidMember, 1, 8)]
+    public void ParseInvalidFileThrows(string content, CodeOwnersErrorKind kind, int lineNumber, int linePosition)
+    {
+        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse(content));
+
+        Assert.Equal(kind, exception.Kind);
+        Assert.Equal(lineNumber, exception.LineNumber);
+        Assert.Equal(linePosition, exception.LinePosition);
+        Assert.False(CodeOwnersParser.TryParse(content, out var entries));
+        Assert.Null(entries);
+    }
+
+    [Fact]
+    public void ParseThrowsOnTheFirstError()
+    {
+        const string Content = "* @user1\n" +
+                               "[Test][0]\n" +
+                               "*.js @\n" +
+                               "\n" +
+                               "*.go justsometext";
+
+        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse(Content));
+
+        Assert.Equal(CodeOwnersErrorKind.InvalidRequiredReviewerCount, exception.Kind);
+        Assert.Equal(2, exception.LineNumber);
+        Assert.Equal(7, exception.LinePosition);
+    }
+
+    [Fact]
+    public void ParseReportsTheLineNumberWithCarriageReturnLineEndings()
+    {
+        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse("* @user1\r*.js @\r"));
+
+        Assert.Equal(CodeOwnersErrorKind.EmptyMember, exception.Kind);
+        Assert.Equal(2, exception.LineNumber);
+        Assert.Equal(6, exception.LinePosition);
+    }
+
+    [Fact]
+    public void ParseCaretNotFollowedBySectionIsAPattern()
+    {
+        var actual = CodeOwnersParser.Parse("^file.txt @user1").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "^file.txt", "user1", section: null),
+        };
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ParseCaretFollowedBySpaceIsAPattern()
+    {
+        var actual = CodeOwnersParser.Parse("^ @user1").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "^", "user1", section: null),
+        };
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ParseDefaultOwnersSeparatedFromSectionNameByATab()
+    {
+        var actual = CodeOwnersParser.Parse("[Test]\t@defaultOwner\n*").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner", section: new CodeOwnersSection("Test", 1, ["@defaultOwner"])),
+        };
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ParseCommentAndPatternsWithCarriageReturnLineEndings()
+    {
+        const string Content = "# This is a comment.\r" +
+                               "*.js @user1\r" +
+                               "*.go @user2";
+
+        var actual = CodeOwnersParser.Parse(Content).ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*.js", "user1", section: null),
+            CodeOwnersEntry.FromUsername(1, "*.go", "user2", section: null),
+        };
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ParseSectionWithDefaultOwnersAndCarriageReturnLineEndings()
+    {
+        const string Content = "[Test] @defaultOwner1\r" +
+                               "[Other] @defaultOwner2\r" +
+                               "*";
+
+        var actual = CodeOwnersParser.Parse(Content).ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner2", section: new CodeOwnersSection("Other", 1, ["@defaultOwner2"])),
+        };
+        Assert.Equal(expected, actual);
+    }
 }

@@ -28,6 +28,7 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
     }
 
     /// <summary>Gets the zero-based index of the pattern in the CODEOWNERS file.</summary>
+    /// <remarks>This property is not part of the equality contract: two entries that only differ by their <see cref="PatternIndex"/> are equal.</remarks>
     public int PatternIndex { get; }
 
     /// <summary>Gets the file pattern (e.g., "*.js", "/docs/*", or "*") that this entry applies to.</summary>
@@ -77,6 +78,8 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 
     }
 
+    /// <summary>Determines whether the specified entry is equal to the current entry.</summary>
+    /// <remarks><see cref="PatternIndex"/> is intentionally excluded from the comparison.</remarks>
     public bool Equals(CodeOwnersEntry other)
     {
         return EntryType == other.EntryType &&

@@ -3,11 +3,13 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
 using Meziantou.Xunit;
+using Windows.Win32;
+using Windows.Win32.Security.Credentials;
 
 namespace Meziantou.Framework.Win32.Tests;
 
 [Collection("CredentialManagerTests")]
-public sealed partial class CredentialManagerTests
+public sealed class CredentialManagerTests
 {
     [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CredentialManager_01()
@@ -409,44 +411,19 @@ public sealed partial class CredentialManagerTests
         fixed (char* targetNamePtr = targetName)
         fixed (char* userNamePtr = userName)
         {
-            var credential = new NativeMethods.CREDENTIALW
+            var credential = new CREDENTIALW
             {
-                Type = 1, // CRED_TYPE_GENERIC
-                Persist = 1, // CRED_PERSIST_SESSION
+                Type = CRED_TYPE.CRED_TYPE_GENERIC,
+                Persist = CRED_PERSIST.CRED_PERSIST_SESSION,
                 TargetName = targetNamePtr,
                 UserName = userNamePtr,
                 CredentialBlob = blobPtr,
                 CredentialBlobSize = (uint)blob.Length,
             };
 
-            if (!NativeMethods.CredWriteW(in credential, Flags: 0))
+            if (!PInvoke.CredWrite(in credential, Flags: 0))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
         }
-    }
-
-    private static unsafe partial class NativeMethods
-    {
-        [StructLayout(LayoutKind.Sequential)]
-        public struct CREDENTIALW
-        {
-            public uint Flags;
-            public uint Type;
-            public char* TargetName;
-            public char* Comment;
-            public long LastWritten;
-            public uint CredentialBlobSize;
-            public byte* CredentialBlob;
-            public uint Persist;
-            public uint AttributeCount;
-            public nint Attributes;
-            public char* TargetAlias;
-            public char* UserName;
-        }
-
-        [LibraryImport("advapi32.dll", SetLastError = true)]
-        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static partial bool CredWriteW(in CREDENTIALW credential, uint Flags);
     }
 
     private sealed class IsolatedContext : IDisposable

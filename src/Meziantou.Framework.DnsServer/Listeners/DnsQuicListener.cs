@@ -13,14 +13,18 @@ namespace Meziantou.Framework.DnsServer.Listeners;
 
 internal sealed class DnsQuicListener : BackgroundService
 {
-    private readonly DnsServerOptions _options;
-    private readonly DnsRequestDelegateHolder _handlerHolder;
-    private readonly ILogger<DnsQuicListener> _logger;
+    /// <summary>How long shutdown waits for in-flight requests before dropping them.</summary>
+    private static readonly TimeSpan DrainTimeout = TimeSpan.FromSeconds(5);
 
-    public DnsQuicListener(DnsServerOptions options, DnsRequestDelegateHolder handlerHolder, ILogger<DnsQuicListener> logger)
+    private readonly DnsServerOptions _options;
+    private readonly DnsRequestProcessor _processor;
+    private readonly ILogger<DnsQuicListener> _logger;
+    private readonly PendingRequestTracker _pendingRequests = new();
+
+    public DnsQuicListener(DnsServerOptions options, DnsRequestProcessor processor, ILogger<DnsQuicListener> logger)
     {
         _options = options;
-        _handlerHolder = handlerHolder;
+        _processor = processor;
         _logger = logger;
     }
 
@@ -41,6 +45,16 @@ internal sealed class DnsQuicListener : BackgroundService
         await Task.WhenAll(tasks).ConfigureAwait(false);
     }
 
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await base.StopAsync(cancellationToken).ConfigureAwait(false);
+
+        if (!await _pendingRequests.DrainAsync(DrainTimeout).ConfigureAwait(false))
+        {
+            _logger.LogWarning("Some QUIC DNS requests were still running after {Timeout} and were abandoned", DrainTimeout);
+        }
+    }
+
     private async Task RunListenerAsync(Hosting.QuicListenerOptions listenerOptions, CancellationToken stoppingToken)
     {
         var endpoint = new IPEndPoint(listenerOptions.BindAddress, listenerOptions.Port);
@@ -53,6 +67,9 @@ internal sealed class DnsQuicListener : BackgroundService
             {
                 DefaultStreamErrorCode = 0,
                 DefaultCloseErrorCode = 0,
+                IdleTimeout = _options.QuicIdleTimeout,
+                MaxInboundBidirectionalStreams = _options.MaxConcurrentQueriesPerConnection,
+                MaxInboundUnidirectionalStreams = 0,
                 ServerAuthenticationOptions = new SslServerAuthenticationOptions
                 {
                     ApplicationProtocols = [new SslApplicationProtocol("doq")],
@@ -90,6 +107,7 @@ internal sealed class DnsQuicListener : BackgroundService
 
     private async Task HandleConnectionAsync(QuicConnection connection, CancellationToken stoppingToken)
     {
+        var streams = new List<Task>();
         try
         {
             await using (connection)
@@ -110,10 +128,18 @@ internal sealed class DnsQuicListener : BackgroundService
                         break;
                     }
 
+                    _pendingRequests.Begin();
+
 #pragma warning disable CA2025 // The stream is disposed inside HandleStreamAsync
-                    _ = HandleStreamAsync(stream, connection.RemoteEndPoint, stoppingToken);
+                    streams.Add(HandleStreamAsync(stream, connection.RemoteEndPoint, stoppingToken));
 #pragma warning restore CA2025
+
+                    // HandleStreamAsync never throws, so completed entries carry nothing worth observing.
+                    streams.RemoveAll(task => task.IsCompleted);
                 }
+
+                // Finish answering the queries already in flight before the connection is disposed.
+                await Task.WhenAll(streams).ConfigureAwait(false);
             }
         }
         catch (Exception ex)
@@ -136,10 +162,9 @@ internal sealed class DnsQuicListener : BackgroundService
                 var messageBytes = new byte[messageLength];
                 await stream.ReadExactlyAsync(messageBytes, stoppingToken).ConfigureAwait(false);
 
-                var query = DnsMessageEncoder.DecodeQuery(messageBytes);
-                var context = new DnsRequestContext(query, DnsServerProtocol.Quic, remoteEndPoint);
-                var response = await _handlerHolder.Handler(context, stoppingToken).ConfigureAwait(false);
-                var responseBytes = DnsMessageEncoder.EncodeResponse(response);
+                var responseBytes = await _processor.ProcessAsync(messageBytes, DnsServerProtocol.Quic, remoteEndPoint, DnsMessageEncoder.MaxMessageSize, stoppingToken).ConfigureAwait(false);
+                if (responseBytes is null)
+                    return;
 
                 // Write 2-byte length prefix + response (RFC 9250)
                 BinaryPrimitives.WriteUInt16BigEndian(lengthBytes, (ushort)responseBytes.Length);
@@ -151,9 +176,17 @@ internal sealed class DnsQuicListener : BackgroundService
         {
             // Expected during shutdown
         }
+        catch (QuicException)
+        {
+            // The peer reset the stream or closed the connection
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error handling QUIC DNS stream from {RemoteEndPoint}", remoteEndPoint);
+        }
+        finally
+        {
+            _pendingRequests.End();
         }
     }
 }

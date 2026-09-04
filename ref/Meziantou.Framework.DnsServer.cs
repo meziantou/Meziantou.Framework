@@ -38,6 +38,10 @@ namespace Meziantou.Framework.DnsServer.Hosting
 
     public sealed class DnsServerOptions
     {
+        public int MaxUdpResponseSize { get => throw null; set { } }
+        public System.TimeSpan TcpIdleTimeout { get => throw null; set { } }
+        public System.TimeSpan QuicIdleTimeout { get => throw null; set { } }
+        public int MaxConcurrentQueriesPerConnection { get => throw null; set { } }
         public Meziantou.Framework.DnsServer.Hosting.DnsServerOptions AddUdpListener(int port = 53, System.Net.IPAddress? bindAddress = null) => throw null;
         public Meziantou.Framework.DnsServer.Hosting.DnsServerOptions AddTcpListener(int port = 53, System.Net.IPAddress? bindAddress = null) => throw null;
         public Meziantou.Framework.DnsServer.Hosting.DnsServerOptions AddTlsListener(int port, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Net.IPAddress? bindAddress = null) => throw null;

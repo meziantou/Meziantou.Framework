@@ -30,6 +30,18 @@ public sealed class Event
     /// <summary>Gets or sets the end date and time of the event.</summary>
     public DateTime End { get; set; }
 
+    /// <summary>Gets or sets the time zone <see cref="Start"/> and <see cref="End"/> are expressed in.</summary>
+    /// <remarks>
+    /// <para>When set, the two properties are written as DTSTART;TZID= and DTEND;TZID= (RFC 5545 section 3.3.5 form 3),
+    /// and the calendar carries a matching VTIMEZONE component. When <see langword="null"/>, they are written as a UTC
+    /// or a floating date-time, as before.</para>
+    /// <para>A value whose <see cref="DateTime.Kind"/> is <see cref="DateTimeKind.Unspecified"/> is taken as a wall-clock
+    /// reading in this time zone. A <see cref="DateTimeKind.Utc"/> or <see cref="DateTimeKind.Local"/> value denotes an
+    /// instant and is converted to this time zone.</para>
+    /// <para><see cref="Created"/>, <see cref="LastModified"/> and <see cref="DateTimeStamp"/> are not affected.</para>
+    /// </remarks>
+    public TimeZoneInfo? TimeZone { get; set; }
+
     /// <summary>Gets or sets the recurrence rule for repeating events.</summary>
     public RecurrenceRule? RecurrenceRule { get; set; }
 

@@ -15,10 +15,6 @@ namespace Meziantou.Framework.Scheduling;
 /// </example>
 public sealed class InternetCalendar
 {
-    /// <summary>iCalendar requires CRLF between content lines (RFC 5545 section 3.1), which
-    /// <see cref="TextWriter.WriteLine()"/> does not guarantee: it emits <see cref="Environment.NewLine"/>.</summary>
-    private const string CrLf = "\r\n";
-
     /// <summary>The product identifier written as PRODID, in the FPI form suggested by RFC 5545 section 3.7.3.</summary>
     private const string ProductIdentifier = "-//Meziantou//Meziantou.Framework.Scheduling//EN";
 
@@ -72,51 +68,122 @@ public sealed class InternetCalendar
         END:VCALENDAR
         */
 
-        WriteLine(writer, "BEGIN:VCALENDAR");
+        // The identifiers are validated before the first write so an invalid one cannot produce partial output.
+        var timeZones = GetTimeZones();
+
+        Utilities.WriteLine(writer, "BEGIN:VCALENDAR");
         if (!string.IsNullOrEmpty(Version))
             WriteTextProperty(writer, "VERSION", Version);
 
         // PRODID is REQUIRED in a VCALENDAR (RFC 5545 section 3.6).
-        WriteLine(writer, "PRODID:" + ProductIdentifier);
+        Utilities.WriteLine(writer, "PRODID:" + ProductIdentifier);
 
         WriteAdditionalProperties(writer, AdditionalProperties);
 
+        // A VTIMEZONE must precede the components referencing its TZID.
+        foreach (var timeZone in timeZones)
+        {
+            VTimeZoneWriter.Write(writer, timeZone.TimeZone, timeZone.ReferenceDate);
+        }
+
         foreach (var @event in Events)
         {
-            WriteLine(writer, "BEGIN:VEVENT");
+            Utilities.WriteLine(writer, "BEGIN:VEVENT");
             if (!string.IsNullOrEmpty(@event.Id))
                 WriteTextProperty(writer, "UID", @event.Id);
 
-            WriteLine(writer, "STATUS:" + Utilities.StatusToString(@event.Status));
+            Utilities.WriteLine(writer, "STATUS:" + Utilities.StatusToString(@event.Status));
             if ((@event.Organizer?.Address) is not null)
-                WriteLine(writer, "ORGANIZER:" + @event.Organizer.Address);
+                Utilities.WriteLine(writer, "ORGANIZER:" + @event.Organizer.Address);
 
             foreach (var attendee in @event.Attendees)
             {
                 if (attendee is null)
                     continue;
 
-                WriteLine(writer, "ATTENDEE:" + attendee.Address);
+                Utilities.WriteLine(writer, "ATTENDEE:" + attendee.Address);
             }
 
-            WriteLine(writer, "CREATED:" + Utilities.DateTimeToString(@event.Created));
-            WriteLine(writer, "LAST-MODIFIED:" + Utilities.DateTimeToString(@event.LastModified));
-            WriteLine(writer, "DTSTAMP:" + Utilities.DateTimeToString(@event.DateTimeStamp));
-            WriteLine(writer, "DTSTART:" + Utilities.DateTimeToString(@event.Start));
-            WriteLine(writer, "DTEND:" + Utilities.DateTimeToString(@event.End));
+            Utilities.WriteLine(writer, "CREATED:" + Utilities.DateTimeToString(@event.Created));
+            Utilities.WriteLine(writer, "LAST-MODIFIED:" + Utilities.DateTimeToString(@event.LastModified));
+            Utilities.WriteLine(writer, "DTSTAMP:" + Utilities.DateTimeToString(@event.DateTimeStamp));
+            WriteDateTimeProperty(writer, "DTSTART", @event.Start, @event.TimeZone);
+            WriteDateTimeProperty(writer, "DTEND", @event.End, @event.TimeZone);
             if (@event.RecurrenceRule is not null)
-                WriteLine(writer, "RRULE:" + @event.RecurrenceRule.Text);
+                Utilities.WriteLine(writer, "RRULE:" + GetRecurrenceRuleValue(@event.RecurrenceRule, @event.TimeZone));
 
             if (!string.IsNullOrEmpty(@event.Summary))
                 WriteTextProperty(writer, "SUMMARY", @event.Summary);
 
             WriteAdditionalProperties(writer, @event.AdditionalProperties);
 
-            WriteLine(writer, "DESCRIPTION:\\n");
-            WriteLine(writer, "END:VEVENT");
+            Utilities.WriteLine(writer, "DESCRIPTION:\\n");
+            Utilities.WriteLine(writer, "END:VEVENT");
         }
 
-        WriteLine(writer, "END:VCALENDAR");
+        Utilities.WriteLine(writer, "END:VCALENDAR");
+    }
+
+    /// <summary>Collects the distinct time zones referenced by the events, with the earliest start each is used for.</summary>
+    private List<(TimeZoneInfo TimeZone, DateTime ReferenceDate)> GetTimeZones()
+    {
+        var result = new List<(TimeZoneInfo TimeZone, DateTime ReferenceDate)>();
+        var indexes = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var @event in Events)
+        {
+            if (@event?.TimeZone is not { } timeZone)
+                continue;
+
+            if (!Utilities.IsValidTimeZoneId(timeZone.Id))
+                throw new InvalidOperationException($"The time zone identifier '{timeZone.Id}' cannot be written as a TZID property parameter");
+
+            var referenceDate = Utilities.ToWallClock(@event.Start, timeZone);
+            if (indexes.TryGetValue(timeZone.Id, out var index))
+            {
+                if (referenceDate < result[index].ReferenceDate)
+                {
+                    result[index] = (result[index].TimeZone, referenceDate);
+                }
+            }
+            else
+            {
+                indexes.Add(timeZone.Id, result.Count);
+                result.Add((timeZone, referenceDate));
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Writes a date-time property, using the TZID form (RFC 5545 section 3.3.5) when the event has a time zone.</summary>
+    private static void WriteDateTimeProperty(TextWriter writer, string name, DateTime value, TimeZoneInfo? timeZone)
+    {
+        if (timeZone is null)
+        {
+            Utilities.WriteLine(writer, name + ':' + Utilities.DateTimeToString(value));
+            return;
+        }
+
+        // The identifier was validated before any output was written.
+        var wallClock = Utilities.ToWallClock(value, timeZone);
+        Utilities.WriteLine(writer, name + ";TZID=" + timeZone.Id + ':' + wallClock.ToString(Utilities.FloatingDateTimeFormat, CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>RFC 5545 section 3.3.10: when DTSTART carries a TZID, UNTIL must be a UTC date-time.</summary>
+    private static string GetRecurrenceRuleValue(RecurrenceRule recurrenceRule, TimeZoneInfo? timeZone)
+    {
+        var text = recurrenceRule.Text;
+        if (timeZone is null || recurrenceRule.EndDate is not { Kind: DateTimeKind.Unspecified } endDate)
+            return text;
+
+        // The bound has to be read the same way the occurrences it bounds are, so UNTIL goes through the
+        // RFC 5545 section 3.3.5 disambiguation rather than TimeZoneInfo.ConvertTimeToUtc, which throws on a
+        // time inside the gap of a forward transition and resolves an ambiguous one to its second occurrence.
+        var utc = Utilities.ToDateTimeOffset(endDate, timeZone).UtcDateTime;
+
+        // The replaced token is a fixed-length value this library itself produced, so the substitution is unambiguous.
+        var floating = ";UNTIL=" + endDate.ToString(Utilities.FloatingDateTimeFormat, CultureInfo.InvariantCulture);
+        return text.Replace(floating, ";UNTIL=" + utc.ToString(Utilities.UtcDateTimeFormat, CultureInfo.InvariantCulture), StringComparison.Ordinal);
     }
 
     private static void WriteAdditionalProperties(TextWriter writer, IDictionary<string, string> properties)
@@ -139,14 +206,7 @@ public sealed class InternetCalendar
         writer.Write(name);
         writer.Write(':');
         WriteEscaped(writer, value);
-        writer.Write(CrLf);
-    }
-
-    /// <summary>Writes a content line whose value is already in its final form.</summary>
-    private static void WriteLine(TextWriter writer, string line)
-    {
-        writer.Write(line);
-        writer.Write(CrLf);
+        writer.Write(Utilities.CrLf);
     }
 
     /// <summary>Escapes an iCalendar TEXT value per RFC 5545 section 3.3.11.</summary>

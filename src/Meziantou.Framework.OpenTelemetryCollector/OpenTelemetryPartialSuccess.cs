@@ -20,7 +20,8 @@ public sealed class OpenTelemetryPartialSuccess
     private long _rejectedCount;
     private string? _errorMessage;
 
-    internal OpenTelemetryPartialSuccess()
+    /// <summary>Initializes an instance that collects rejected records. Handlers receive one from the receiver; this constructor exists so they can be unit tested.</summary>
+    public OpenTelemetryPartialSuccess()
     {
     }
 

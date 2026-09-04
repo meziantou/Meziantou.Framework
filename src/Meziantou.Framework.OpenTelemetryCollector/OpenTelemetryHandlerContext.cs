@@ -2,16 +2,19 @@ namespace Meziantou.Framework.OpenTelemetryCollector;
 
 public readonly struct OpenTelemetryHandlerContext
 {
+    private readonly string? _method;
     private readonly OpenTelemetryPartialSuccess? _partialSuccess;
 
-    internal OpenTelemetryHandlerContext(OpenTelemetryTransport transport, string method, OpenTelemetryPartialSuccess partialSuccess)
+    /// <summary>Initializes a context. Handlers receive one from the receiver; this constructor exists so they can be unit tested.</summary>
+    public OpenTelemetryHandlerContext(OpenTelemetryTransport transport, string method, OpenTelemetryPartialSuccess partialSuccess)
     {
         Transport = transport;
-        Method = method;
+        _method = method;
         _partialSuccess = partialSuccess;
     }
 
-    public string Method { get; }
+    /// <summary>Gets the transport method that carried the request, or an empty string for a default instance.</summary>
+    public string Method => _method ?? "";
 
     public OpenTelemetryTransport Transport { get; }
 

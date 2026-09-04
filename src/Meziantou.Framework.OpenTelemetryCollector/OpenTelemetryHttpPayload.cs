@@ -13,6 +13,8 @@ internal static class OpenTelemetryHttpPayload
     public const string OctetStreamContentType = "application/octet-stream";
     public const string JsonContentType = "application/json";
 
+    private const int MaxInitialBufferSize = 1024 * 1024;
+
     private static readonly JsonParser OtlpJsonParser = new(JsonParser.Settings.Default.WithIgnoreUnknownFields(true));
 
     public static bool TryGetPayloadFormat(string? contentType, out OpenTelemetryPayloadFormat format)
@@ -45,34 +47,52 @@ internal static class OpenTelemetryHttpPayload
         return false;
     }
 
-    /// <summary>Reads the request body.</summary>
+    /// <summary>Reads the request body into a buffer the caller owns.</summary>
     /// <remarks>
     /// Decompression and request size limits are handled by ASP.NET Core, through the request decompression
     /// middleware and the server limits. Reading a body that could not be decompressed throws <see cref="InvalidDataException"/>.
+    /// <para>
+    /// The buffer is returned instead of a <see cref="byte"/> array so the payload is parsed in place: copying it out
+    /// would double the peak memory of every export request.
+    /// </para>
     /// </remarks>
-    public static async Task<byte[]> ReadPayloadAsync(HttpRequest request, CancellationToken cancellationToken)
+    public static async Task<MemoryStream> ReadPayloadAsync(HttpRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        using var buffer = new MemoryStream();
-        await request.Body.CopyToAsync(buffer, cancellationToken);
-        return buffer.ToArray();
+        // Content-Length is only a hint: it describes the compressed body when the request decompression middleware is
+        // used, and it is absent for chunked requests. It is capped because it is attacker controlled.
+        var capacity = request.ContentLength is > 0 and <= MaxInitialBufferSize ? (int)request.ContentLength.GetValueOrDefault() : 0;
+
+        var buffer = new MemoryStream(capacity);
+        try
+        {
+            await request.Body.CopyToAsync(buffer, cancellationToken);
+            return buffer;
+        }
+        catch
+        {
+            buffer.Dispose();
+            throw;
+        }
     }
 
-    public static TRequest Parse<TRequest>(MessageParser<TRequest> parser, OpenTelemetryPayloadFormat format, byte[] payload)
+    public static TRequest Parse<TRequest>(MessageParser<TRequest> parser, OpenTelemetryPayloadFormat format, MemoryStream payload)
         where TRequest : class, IMessage<TRequest>, new()
     {
         ArgumentNullException.ThrowIfNull(parser);
         ArgumentNullException.ThrowIfNull(payload);
 
+        // MemoryStream instances created with a capacity expose their buffer, so the payload is parsed without copying it.
+        var data = payload.GetBuffer().AsSpan(0, (int)payload.Length);
         if (format is OpenTelemetryPayloadFormat.Json)
         {
-            var node = JsonNode.Parse(payload) ?? throw new JsonException("The OTLP/JSON payload is null.");
+            var node = JsonNode.Parse(data) ?? throw new JsonException("The OTLP/JSON payload is null.");
             NormalizeIdentifiers(node);
             return OtlpJsonParser.Parse<TRequest>(node.ToJsonString());
         }
 
-        return parser.ParseFrom(payload);
+        return parser.ParseFrom(data);
     }
 
     /// <summary>Converts the hex-encoded identifiers of an OTLP/JSON payload to the base64 encoding used by the Protobuf JSON mapping.</summary>

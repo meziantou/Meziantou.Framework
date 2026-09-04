@@ -6,7 +6,7 @@ namespace Meziantou.Framework.OpenTelemetryCollector
 {
     public static class OpenTelemetryEndpointRouteBuilderExtensions
     {
-        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapOpenTelemetryReceiverEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints) => throw null;
+        public static Microsoft.AspNetCore.Builder.IEndpointConventionBuilder MapOpenTelemetryReceiverEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints) => throw null;
     }
 
     public abstract class OpenTelemetryHandler
@@ -21,6 +21,7 @@ namespace Meziantou.Framework.OpenTelemetryCollector
         public string Method { get => throw null; }
         public Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTransport Transport { get => throw null; }
         public Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryPartialSuccess PartialSuccess { get => throw null; }
+        public OpenTelemetryHandlerContext(Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTransport transport, string method, Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryPartialSuccess partialSuccess) { }
     }
 
     public enum OpenTelemetryItemType

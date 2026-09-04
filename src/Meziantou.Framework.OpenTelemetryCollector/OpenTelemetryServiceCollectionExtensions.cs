@@ -13,10 +13,16 @@ public static class OpenTelemetryServiceCollectionExtensions
 
         AddOpenTelemetryInfrastructure(services, configure);
         services.TryAddSingleton<TReceiver>();
-        services.AddSingleton<OpenTelemetryHandlerRegistration>(static serviceProvider => new OpenTelemetryHandlerRegistration(serviceProvider.GetRequiredService<TReceiver>()));
+
+        // Keyed on TReceiver, so calling this method twice for the same handler type does not dispatch every record twice.
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<OpenTelemetryHandlerRegistration, OpenTelemetryHandlerRegistration<TReceiver>>());
         return services;
     }
 
+    /// <remarks>
+    /// Unlike the overload taking a receiver type, this method always adds a registration. When the factory returns an
+    /// instance that is already registered, the duplicate is ignored when the handlers are resolved.
+    /// </remarks>
     public static IServiceCollection AddOpenTelemetryReceiver(this IServiceCollection services, Func<IServiceProvider, OpenTelemetryHandler> implementationFactory, Action<OpenTelemetryReceiverOptions>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(services);

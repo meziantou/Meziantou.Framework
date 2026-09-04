@@ -12,7 +12,10 @@ using Meziantou.Framework.DnsServer.Protocol.Records;
 using Meziantou.Framework.DnsServer.Protocol.Wire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Meziantou.Framework.DnsServer.Listeners;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 using ClientDns = Meziantou.Framework.DnsClient;
 using DnsResponseCode = Meziantou.Framework.DnsServer.Protocol.DnsResponseCode;
 
@@ -975,6 +978,68 @@ public sealed class DnsServerIntegrationTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Disposing the listener concurrently with StopAsync is what this test exercises")]
+    public async Task UdpListener_ConcurrentStopAndDispose_IsSafe()
+    {
+        // A host that fails to start unwinds by stopping and disposing the services it already
+        // started, and StopAsync waits for in-flight requests, so the two can overlap. This is a race,
+        // so it is repeated: it can only fail when the listener is actually unsafe.
+        for (var attempt = 0; attempt < 25; attempt++)
+        {
+            var options = new DnsServerOptions();
+            foreach (var port in GetAvailableUdpPorts(20))
+            {
+                options.AddUdpListener(port, IPAddress.Loopback);
+            }
+
+            var processor = new DnsRequestProcessor(new DnsRequestDelegateHolder(), options, NullLogger<DnsRequestProcessor>.Instance);
+            var listener = new DnsUdpListener(options, processor, NullLogger<DnsUdpListener>.Instance);
+
+            await listener.StartAsync(XunitCancellationToken);
+
+            await Task.WhenAll(
+                Task.Run(() => listener.StopAsync(CancellationToken.None), XunitCancellationToken),
+                Task.Run(listener.Dispose, XunitCancellationToken));
+        }
+    }
+
+    [Fact]
+    public async Task Udp_HostDisposedDuringAFailedStartup_DoesNotRaceTheListener()
+    {
+        // A hosted service registered after the DNS server fails once the UDP listener is already
+        // running, so the host unwinds and disposes it while ExecuteAsync is still starting up.
+        for (var attempt = 0; attempt < 20; attempt++)
+        {
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseUrls("http://127.0.0.1:0");
+            builder.AddDnsServer(options =>
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    options.AddUdpListener(GetAvailableUdpPort(), IPAddress.Loopback);
+                }
+            });
+            builder.Services.AddHostedService<FailingHostedService>();
+
+            await using var app = builder.Build();
+            app.MapDnsHandler((context, ct) => ValueTask.FromResult(context.CreateResponse()));
+
+            var exception = await Assert.ThrowsAnyAsync<Exception>(() => app.StartAsync(XunitCancellationToken));
+
+            // The startup failure has to be the one the service reported, not a collection-modified
+            // race inside the listener.
+            Assert.IsType<InvalidTimeZoneException>(exception);
+        }
+    }
+
+    private sealed class FailingHostedService : IHostedService
+    {
+        public Task StartAsync(CancellationToken cancellationToken) => throw new InvalidTimeZoneException("Simulated startup failure.");
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
     private static async Task<WebApplication> StartDohServerAsync()
     {
         var builder = WebApplication.CreateBuilder();
@@ -1042,6 +1107,32 @@ public sealed class DnsServerIntegrationTests
         query.Questions.Add(new DnsQuestion(name, type));
 
         return DnsMessageEncoder.EncodeResponse(query);
+    }
+
+    /// <summary>Reserves several distinct ports at once; probing them one at a time tends to hand back the same port twice.</summary>
+    private static List<int> GetAvailableUdpPorts(int count)
+    {
+        var sockets = new List<Socket>(count);
+        try
+        {
+            var ports = new List<int>(count);
+            for (var i = 0; i < count; i++)
+            {
+                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                sockets.Add(socket);
+                ports.Add(((IPEndPoint)socket.LocalEndPoint!).Port);
+            }
+
+            return ports;
+        }
+        finally
+        {
+            foreach (var socket in sockets)
+            {
+                socket.Dispose();
+            }
+        }
     }
 
     private static int GetAvailableUdpPort()

@@ -22,7 +22,10 @@ internal sealed class DnsUdpListener : BackgroundService
     private readonly DnsRequestProcessor _processor;
     private readonly ILogger<DnsUdpListener> _logger;
     private readonly PendingRequestTracker _pendingRequests = new();
-    private readonly List<(UdpClient Client, IPEndPoint Endpoint)> _listeners = [];
+
+    // Published once by StartAsync and never mutated afterwards: ExecuteAsync can still be iterating it
+    // when a failed startup makes the host dispose the services underneath it.
+    private (UdpClient Client, IPEndPoint Endpoint)[] _listeners = [];
 
     public DnsUdpListener(DnsServerOptions options, DnsRequestProcessor processor, ILogger<DnsUdpListener> logger)
     {
@@ -35,6 +38,7 @@ internal sealed class DnsUdpListener : BackgroundService
     {
         // Bind up front so that a port conflict surfaces as a startup failure rather than faulting the
         // background task later, which would take the whole host down with it.
+        var listeners = new List<(UdpClient Client, IPEndPoint Endpoint)>(_options.UdpListeners.Count);
         try
         {
             foreach (var listenerOptions in _options.UdpListeners)
@@ -49,21 +53,27 @@ internal sealed class DnsUdpListener : BackgroundService
                     client.Client.IOControl(SioUdpConnectionReset, [0, 0, 0, 0], optionOutValue: null);
                 }
 
-                _listeners.Add((client, endpoint));
+                listeners.Add((client, endpoint));
             }
         }
         catch
         {
-            DisposeListeners();
+            foreach (var (client, _) in listeners)
+            {
+                client.Dispose();
+            }
+
             throw;
         }
+
+        _listeners = [.. listeners];
 
         return base.StartAsync(cancellationToken);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var tasks = new List<Task>(_listeners.Count);
+        var tasks = new List<Task>(_listeners.Length);
         foreach (var (client, endpoint) in _listeners)
         {
             tasks.Add(RunListenerAsync(client, endpoint, stoppingToken));
@@ -92,12 +102,11 @@ internal sealed class DnsUdpListener : BackgroundService
 
     private void DisposeListeners()
     {
+        // UdpClient.Dispose is idempotent, so StopAsync and Dispose can both run this.
         foreach (var (client, _) in _listeners)
         {
             client.Dispose();
         }
-
-        _listeners.Clear();
     }
 
     private async Task RunListenerAsync(UdpClient udpClient, IPEndPoint endpoint, CancellationToken stoppingToken)
@@ -121,6 +130,11 @@ internal sealed class DnsUdpListener : BackgroundService
                 }
                 catch (ObjectDisposedException)
                 {
+                    break;
+                }
+                catch (SocketException exception) when (exception.SocketErrorCode is SocketError.OperationAborted or SocketError.Interrupted or SocketError.Shutdown)
+                {
+                    // The socket was closed underneath the pending receive; that is shutdown, not an error.
                     break;
                 }
                 catch (SocketException exception)

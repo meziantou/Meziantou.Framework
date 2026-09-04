@@ -6,19 +6,19 @@ namespace Meziantou.Framework.CodeOwners;
 
 /// <summary>Parses a CODEOWNERS file, stopping at the first error.</summary>
 [StructLayout(LayoutKind.Auto)]
-internal struct CodeOwnersParserContext
+internal ref struct CodeOwnersParserContext
 {
     private static readonly SearchValues<char> PatternSeparatorSearchValues = SearchValues.Create(" \t\r\n\\");
     private static readonly SearchValues<char> MemberSeparatorSearchValues = SearchValues.Create(" \t\r\n");
 
     private readonly List<CodeOwnersEntry> _entries = [];
-    private readonly string _content;
+    private readonly ReadOnlySpan<char> _content;
     private readonly CodeOwnersDialect _dialect;
     private (CodeOwnersParseErrorKind Kind, int Index)? _error;
     private CodeOwnersSection? _currentSection;
     private int _index;
 
-    public CodeOwnersParserContext(string content, CodeOwnersDialect dialect)
+    public CodeOwnersParserContext(ReadOnlySpan<char> content, CodeOwnersDialect dialect)
     {
         _content = content;
         _dialect = dialect;
@@ -180,7 +180,7 @@ internal struct CodeOwnersParserContext
 
         // A section header cannot span multiple lines. Without this bound, an unclosed '[' would consume
         // the remaining lines of the file and silently discard them.
-        var remaining = _content.AsSpan(_index);
+        var remaining = _content[_index..];
         var separatorIndex = remaining.IndexOfAny(']', '\r', '\n');
         if (separatorIndex < 0 || remaining[separatorIndex] is not ']')
         {
@@ -200,7 +200,7 @@ internal struct CodeOwnersParserContext
         var startIndex = _index;
         _ = Consume();
 
-        var remaining = _content.AsSpan(_index);
+        var remaining = _content[_index..];
         var separatorIndex = remaining.IndexOfAny(']', '\r', '\n');
         if (separatorIndex < 0 || remaining[separatorIndex] is not ']')
         {
@@ -279,7 +279,7 @@ internal struct CodeOwnersParserContext
 
     private string? ParsePattern()
     {
-        var remaining = _content.AsSpan(_index);
+        var remaining = _content[_index..];
         var separatorIndex = remaining.IndexOfAny(PatternSeparatorSearchValues);
         if (separatorIndex < 0)
         {
@@ -360,20 +360,20 @@ internal struct CodeOwnersParserContext
             var tokenStartIndex = _index - 1;
             var ownerStart = isUsername ? _index : tokenStartIndex;
 
-            var remaining = _content.AsSpan(_index);
+            var remaining = _content[_index..];
             var separatorIndex = remaining.IndexOfAny(MemberSeparatorSearchValues);
             string owner;
             char? separator;
             if (separatorIndex < 0)
             {
-                owner = _content.AsSpan(ownerStart).ToString();
+                owner = _content[ownerStart..].ToString();
                 _index = _content.Length;
                 separator = null;
             }
             else
             {
                 var ownerLength = _index + separatorIndex - ownerStart;
-                owner = _content.AsSpan(ownerStart, ownerLength).ToString();
+                owner = _content.Slice(ownerStart, ownerLength).ToString();
                 separator = remaining[separatorIndex];
                 _index += separatorIndex;
             }
@@ -512,7 +512,7 @@ internal struct CodeOwnersParserContext
     /// <summary>Consumes the current line, including its line ending, and returns it without its line ending.</summary>
     private ReadOnlySpan<char> ConsumeLine()
     {
-        var remaining = _content.AsSpan(_index);
+        var remaining = _content[_index..];
         var endOfLineIndex = remaining.IndexOfAny('\r', '\n');
         if (endOfLineIndex < 0)
         {
@@ -530,7 +530,7 @@ internal struct CodeOwnersParserContext
         if (EndOfFile)
             return;
 
-        var endOfLineIndex = _content.AsSpan(_index).IndexOfAny('\r', '\n');
+        var endOfLineIndex = _content[_index..].IndexOfAny('\r', '\n');
         if (endOfLineIndex < 0)
         {
             _index = _content.Length;
@@ -546,7 +546,7 @@ internal struct CodeOwnersParserContext
         if (EndOfFile)
             return;
 
-        var nextNonWhitespaceIndex = _content.AsSpan(_index).IndexOfAnyExcept(' ', '\t');
+        var nextNonWhitespaceIndex = _content[_index..].IndexOfAnyExcept(' ', '\t');
         if (nextNonWhitespaceIndex < 0)
         {
             _index = _content.Length;

@@ -376,6 +376,54 @@ public sealed class CodeOwnersParserTests
     }
 
     [Fact]
+    public void ParseSpan()
+    {
+        // The span is a slice of a larger buffer, so the parser cannot rely on it starting at index 0
+        var buffer = "<<[Test][2] @defaultOwner\n* @user1 docs@example.com\n>>".ToCharArray();
+        var actual = CodeOwnersFile.Parse(buffer.AsSpan(2, buffer.Length - 4), CodeOwnersDialect.GitLab).Entries;
+
+        var expected = new[] { Entry("*", new CodeOwnersSection("Test", requiredReviewerCount: 2, defaultOwners: [User("defaultOwner")]), User("user1"), Email("docs@example.com")) };
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void TryParseSpanValidFile()
+    {
+        var expected = new[] { Entry("*", User("user1")) };
+
+        Assert.True(CodeOwnersFile.TryParse("* @user1".AsSpan(), CodeOwnersDialect.GitLab, out var file, out var error));
+        Assert.Equal(expected, file.Entries);
+        Assert.Equal(default, error);
+
+        Assert.True(CodeOwnersFile.TryParse("* @user1".AsSpan(), CodeOwnersDialect.GitLab, out file));
+        Assert.Equal(expected, file.Entries);
+    }
+
+    [Fact]
+    public void ParseSpanInvalidFileReportsThePositionRelativeToTheSpan()
+    {
+        var buffer = "<<* @user1\n[Test][0]\n>>".ToCharArray();
+        var expected = new CodeOwnersParseError(CodeOwnersParseErrorKind.InvalidRequiredReviewerCount, 2, 7);
+
+        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersFile.Parse(buffer.AsSpan(2, buffer.Length - 4), CodeOwnersDialect.GitLab));
+        Assert.Equal(expected, exception.Error);
+
+        Assert.False(CodeOwnersFile.TryParse(buffer.AsSpan(2, buffer.Length - 4), CodeOwnersDialect.GitLab, out var file, out var error));
+        Assert.Null(file);
+        Assert.Equal(expected, error);
+
+        Assert.False(CodeOwnersFile.TryParse(buffer.AsSpan(2, buffer.Length - 4), CodeOwnersDialect.GitLab, out file));
+        Assert.Null(file);
+    }
+
+    [Fact]
+    public void ParseEmptySpan()
+    {
+        Assert.Empty(CodeOwnersFile.Parse([], CodeOwnersDialect.GitLab).Entries);
+        Assert.Empty(CodeOwnersFile.Parse(ReadOnlySpan<char>.Empty, CodeOwnersDialect.GitLab).Entries);
+    }
+
+    [Fact]
     public void ErrorAndExceptionMessageDescribeTheProblem()
     {
         Assert.False(CodeOwnersFile.TryParse("* @user1\n[Test][0]\n", CodeOwnersDialect.GitLab, out _, out var error));

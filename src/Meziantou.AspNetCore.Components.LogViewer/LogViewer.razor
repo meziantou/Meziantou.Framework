@@ -1,15 +1,15 @@
 @using System.Globalization
+@using System.Runtime.CompilerServices
 @if (Entries is not null)
 {
-    Prepare();
     <div class="log-viewer">
-        @if (_firstEntry is not null && TimestampDisplayFormat is TimestampDisplayFormat.DateTimeThenRelativeTime)
+        @if (_entries.Count > 0 && TimestampDisplayFormat is TimestampDisplayFormat.DateTimeThenRelativeTime)
         {
             <div class="log-entry">
                 <span class="log-timestamp">@FormatDateTime(_startTime)</span>
             </div>
         }
-        @foreach (var entry in Entries)
+        @foreach (var entry in _entries)
         {
             @RenderEntry(entry)
         }
@@ -19,41 +19,30 @@
 @code {
     private RenderFragment<LogEntry> RenderEntry => context =>
     @<text>
-        <div class="log-entry @(IsSelected(context) ? "selected" : "")">
+        <div class="log-entry @(IsSelected(context) ? "selected" : "")" @key="context">
             @if (ShowLineNumbers)
             {
-                <a class="log-linenumber" @onclick="(e) => SelectLine(context, e.CtrlKey)" @onclick:preventDefault="true">@GetLineNumber(context)</a>
+                <button type="button" class="log-linenumber" @onclick="(e) => SelectLine(context, e.CtrlKey || e.MetaKey)">@GetLineNumber(context)</button>
             }
 
             @if (TimestampDisplayFormat is TimestampDisplayFormat.FullDateTime)
             {
                 <span class="log-timestamp">@FormatDateTime(context.Timestamp)</span>
             }
-            else if (TimestampDisplayFormat is TimestampDisplayFormat.DateTimeThenRelativeTime)
+            else if (TimestampDisplayFormat is TimestampDisplayFormat.DateTimeThenRelativeTime or TimestampDisplayFormat.RelativeTimeStartingAtZero)
             {
                 <span class="log-timestamp">@FormatTimeSpan(context.Timestamp - _startTime)</span>
-            }
-            else if (TimestampDisplayFormat is TimestampDisplayFormat.RelativeTimeStartingAtZero)
-            {
-                if (ReferenceEquals(context, _firstEntry))
-                {
-                    <span class="log-timestamp">@TimeSpan.Zero</span>
-                }
-                else
-                {
-                    <span class="log-timestamp">@FormatTimeSpan(context.Timestamp - _startTime)</span>
-                }
             }
 
             <span class="log-content">
                 @if (IsExpandable(context))
                 {
-                    <span class="log-toggle-details @(IsOpened(context) ? "opened" : "")" @onclick="() => ToggleDetails(context)">▶</span>
+                    <button type="button" class="log-toggle-details @(IsOpened(context) ? "opened" : "")" aria-expanded="@(IsOpened(context) ? "true" : "false")" aria-label="Toggle child entries" @onclick="() => ToggleDetails(context)">&#9654;</button>
                 }
 
                 @if (context.Message is string text)
                 {
-                    <span class="log-message log-@GetLogLevelClassName(context.LogLevel)">@LogHighlighter.Highlight(text, LogHighlighters, "mez-logviewer")</span>
+                    <span class="log-message log-@GetLogLevelClassName(context.LogLevel)">@GetMessageMarkup(context, text)</span>
                 }
                 else if (context.Message is not null)
                 {
@@ -75,16 +64,27 @@
         }
     </text>;
 
-    private readonly HashSet<LogEntry> _openedEntries = new HashSet<LogEntry>();
-    private readonly HashSet<LogEntry> _selectedEntries = new HashSet<LogEntry>();
+    // Entries the user explicitly expanded or collapsed. Entries that are absent fall back to LogEntry.Expanded,
+    // so entries appended to an existing collection keep honoring their own default.
+    private readonly Dictionary<LogEntry, bool> _explicitOpenState = new Dictionary<LogEntry, bool>(ReferenceEqualityComparer.Instance);
+    private readonly HashSet<LogEntry> _selectedEntries = new HashSet<LogEntry>(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<LogEntry, int> _lineNumbers = new Dictionary<LogEntry, int>(ReferenceEqualityComparer.Instance);
+    // Weak keys, so cached markup is collected together with the entry it belongs to.
+    private readonly ConditionalWeakTable<LogEntry, CachedHighlight> _highlightCache = new ConditionalWeakTable<LogEntry, CachedHighlight>();
+    private IReadOnlyList<LogEntry> _entries = [];
     private IEnumerable<LogEntry>? _lastEntries;
-    private LogEntry? _firstEntry;
     private DateTimeOffset _startTime;
 
     /// <summary>
     /// Gets or sets the collection of log entries to display.
     /// </summary>
+    /// <remarks>
+    /// The sequence is snapshotted on each parameter change. Entries are tracked by reference, so a sequence that
+    /// creates new <see cref="LogEntry"/> instances every time it is enumerated is supported, but per-entry state
+    /// such as the expanded flag will not survive across renders.
+    /// The same <see cref="LogEntry"/> instance must not appear more than once in the tree: line numbers, selection
+    /// and expanded state are all keyed on the instance.
+    /// </remarks>
     [Parameter]
     public IEnumerable<LogEntry>? Entries { get; set; }
 
@@ -96,12 +96,14 @@
 
     /// <summary>
     /// Gets or sets the format string for displaying time spans. If not specified, uses the default format "G".
+    /// Values are formatted using <see cref="CultureInfo.InvariantCulture"/>.
     /// </summary>
     [Parameter]
     public string? TimeSpanStringFormat { get; set; }
 
     /// <summary>
     /// Gets or sets the format string for displaying date and time values. If not specified, uses the default format "R".
+    /// Values are formatted using <see cref="CultureInfo.InvariantCulture"/>.
     /// </summary>
     [Parameter]
     public string? DateTimeStringFormat { get; set; }
@@ -123,49 +125,37 @@
         if (!ReferenceEquals(_lastEntries, Entries))
         {
             _lastEntries = Entries;
-            _openedEntries.Clear();
-            if (Entries is not null)
-            {
-                SeedExpanded(Entries);
-            }
+            _explicitOpenState.Clear();
+            _selectedEntries.Clear();
+        }
+
+        // Snapshot the sequence. It is walked once to assign line numbers and again while rendering, and a computed
+        // IEnumerable would yield different LogEntry instances on each enumeration, breaking every per-entry lookup.
+        _entries = Entries is null ? [] : Entries as IReadOnlyList<LogEntry> ?? Entries.ToList();
+
+        _lineNumbers.Clear();
+        _startTime = DateTimeOffset.MaxValue;
+        var nextLineNumber = 1;
+        AssignLineNumbers(_entries, ref nextLineNumber);
+        if (_lineNumbers.Count is 0)
+        {
+            _startTime = DateTimeOffset.UtcNow;
         }
     }
 
-    // Computes the line-number map and the relative-time baseline before each render.
-    private void Prepare()
-    {
-        _lineNumbers.Clear();
-        _firstEntry = null;
-        var nextLineNumber = 1;
-        AssignLineNumbers(Entries!, ref nextLineNumber);
-        _startTime = _firstEntry?.Timestamp ?? DateTimeOffset.UtcNow;
-    }
-
-    private void AssignLineNumbers(IEnumerable<LogEntry> entries, ref int nextLineNumber)
+    private void AssignLineNumbers(IReadOnlyList<LogEntry> entries, ref int nextLineNumber)
     {
         foreach (var entry in entries)
         {
-            _firstEntry ??= entry;
             _lineNumbers[entry] = nextLineNumber++;
+            if (entry.Timestamp < _startTime)
+            {
+                _startTime = entry.Timestamp;
+            }
+
             if (entry.Children is { Count: > 0 } children)
             {
                 AssignLineNumbers(children, ref nextLineNumber);
-            }
-        }
-    }
-
-    private void SeedExpanded(IEnumerable<LogEntry> entries)
-    {
-        foreach (var entry in entries)
-        {
-            if (entry.Expanded)
-            {
-                _openedEntries.Add(entry);
-            }
-
-            if (entry.Children is { Count: > 0 } children)
-            {
-                SeedExpanded(children);
             }
         }
     }
@@ -174,35 +164,43 @@
 
     private static bool IsExpandable(LogEntry entry) => entry.Children is { Count: > 0 };
 
+    private MarkupString GetMessageMarkup(LogEntry entry, string text)
+    {
+        if (_highlightCache.TryGetValue(entry, out var cached) && cached.Matches(entry.Message, LogHighlighters))
+            return cached.Markup;
+
+        var markup = LogHighlighter.Highlight(text, LogHighlighters, "mez-logviewer");
+        _highlightCache.AddOrUpdate(entry, new CachedHighlight(entry.Message, LogHighlighters, markup));
+        return markup;
+    }
+
     private void SelectLine(LogEntry entry, bool append)
     {
         if (!append)
         {
             _selectedEntries.Clear();
         }
+        else if (_selectedEntries.Remove(entry))
+        {
+            return; // toggle the entry off
+        }
 
         _selectedEntries.Add(entry);
     }
 
-    private void ToggleDetails(LogEntry entry)
-    {
-        if (!_openedEntries.Remove(entry))
-        {
-            _openedEntries.Add(entry);
-        }
-    }
+    private void ToggleDetails(LogEntry entry) => _explicitOpenState[entry] = !IsOpened(entry);
 
     private bool IsSelected(LogEntry logEntry) => _selectedEntries.Contains(logEntry);
-    private bool IsOpened(LogEntry logEntry) => _openedEntries.Contains(logEntry);
+    private bool IsOpened(LogEntry logEntry) => _explicitOpenState.TryGetValue(logEntry, out var opened) ? opened : logEntry.Expanded;
 
     private string FormatTimeSpan(TimeSpan value)
     {
-        return value.ToString(TimeSpanStringFormat ?? "G");
+        return value.ToString(TimeSpanStringFormat ?? "G", CultureInfo.InvariantCulture);
     }
 
     private string FormatDateTime(DateTimeOffset value)
     {
-        return value.ToString(DateTimeStringFormat ?? "R");
+        return value.ToString(DateTimeStringFormat ?? "R", CultureInfo.InvariantCulture);
     }
 
     private static string GetLogLevelClassName(LogLevel logLevel)
@@ -217,5 +215,13 @@
             LogLevel.Critical => "critical",
             _ => "information",
         };
+    }
+
+    private sealed class CachedHighlight(object? message, IEnumerable<ILogHighlighter> highlighters, MarkupString markup)
+    {
+        public MarkupString Markup { get; } = markup;
+
+        public bool Matches(object? currentMessage, IEnumerable<ILogHighlighter> currentHighlighters)
+            => ReferenceEquals(message, currentMessage) && ReferenceEquals(highlighters, currentHighlighters);
     }
 }

@@ -266,6 +266,111 @@ public sealed class CronExpressionTests
         }
     }
 
+    [Fact]
+    public void GetNextOccurrences_NullTimeZone_ThrowsBeforeEnumeration()
+    {
+        var cron = CronExpression.Parse("0 9 * * *");
+
+        Assert.Throws<ArgumentNullException>(() => cron.GetNextOccurrences(new DateTime(2024, 01, 01), timeZone: null!));
+    }
+
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    // An IANA identifier does not resolve on Windows when globalization is invariant.
+    private static TimeZoneInfo NewYork => TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+
+    [Fact]
+    public void GetNextOccurrences_TimeZone_AcrossSpringForward_KeepsTheWallClockTime()
+    {
+        var cron = CronExpression.Parse("0 9 * * *");
+
+        var occurrences = cron.GetNextOccurrences(new DateTime(2024, 03, 09, 00, 00, 00), NewYork).Take(3).ToArray();
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 03, 09, 09, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 03, 10, 09, 00, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 03, 11, 09, 00, 00, TimeSpan.FromHours(-4)));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_TimeZone_AcrossFallBack_KeepsTheWallClockTime()
+    {
+        var cron = CronExpression.Parse("0 9 * * *");
+
+        var occurrences = cron.GetNextOccurrences(new DateTime(2024, 11, 02, 00, 00, 00), NewYork).Take(3).ToArray();
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 11, 02, 09, 00, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 11, 03, 09, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 11, 04, 09, 00, 00, TimeSpan.FromHours(-5)));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_TimeZone_InvalidLocalTime_UsesTheOffsetBeforeTheGap()
+    {
+        var cron = CronExpression.Parse("30 2 * * *");
+
+        var occurrences = cron.GetNextOccurrences(new DateTime(2024, 03, 10, 00, 00, 00), NewYork).Take(1).ToArray();
+
+        AssertOccurrences(occurrences, new DateTimeOffset(2024, 03, 10, 03, 30, 00, TimeSpan.FromHours(-4)));
+        Assert.Equal(new DateTime(2024, 03, 10, 07, 30, 00, DateTimeKind.Utc), occurrences[0].UtcDateTime);
+    }
+
+    [Fact]
+    public void GetNextOccurrences_TimeZone_AmbiguousLocalTime_UsesTheFirstOccurrence()
+    {
+        var cron = CronExpression.Parse("30 1 * * *");
+
+        var occurrences = cron.GetNextOccurrences(new DateTime(2024, 11, 03, 00, 00, 00), NewYork).Take(1).ToArray();
+
+        AssertOccurrences(occurrences, new DateTimeOffset(2024, 11, 03, 01, 30, 00, TimeSpan.FromHours(-4)));
+        Assert.Equal(new DateTime(2024, 11, 03, 05, 30, 00, DateTimeKind.Utc), occurrences[0].UtcDateTime);
+    }
+
+    [Fact]
+    public void GetNextOccurrences_TimeZone_Hourly_AcrossSpringForward_DropsTheInstantRepeatedByTheGap()
+    {
+        var cron = CronExpression.Parse("0 * * * *");
+
+        var occurrences = cron.GetNextOccurrences(new DateTime(2024, 03, 10, 00, 00, 00), NewYork).Take(5).ToArray();
+
+        // 02:00 does not exist and is read at the -05:00 offset in effect before the gap, which is the instant
+        // 03:00 already denotes. RFC 5545 section 3.8.5.3 keeps only one of the two.
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 03, 10, 00, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 03, 10, 01, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 03, 10, 03, 00, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 03, 10, 04, 00, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 03, 10, 05, 00, 00, TimeSpan.FromHours(-4)));
+
+        Assert.HasCount(occurrences.Length, occurrences.Select(occurrence => occurrence.UtcDateTime).Distinct());
+    }
+
+    [Fact]
+    public void GetNextOccurrences_TimeZoneId_MatchesTheTimeZoneInfoOverload()
+    {
+        var cron = CronExpression.Parse("0 9 * * *");
+        var startDate = new DateTime(2024, 03, 09, 00, 00, 00);
+
+        var expected = cron.GetNextOccurrences(startDate, NewYork).Take(4).ToArray();
+        var actual = cron.GetNextOccurrences(startDate, "America/New_York").Take(4).ToArray();
+
+        AssertOccurrences(actual, expected);
+    }
+#endif
+
+    private static void AssertOccurrences(IEnumerable<DateTimeOffset> occurrences, params DateTimeOffset[] expectedOccurrences)
+    {
+        var actualList = occurrences.ToList();
+        Assert.HasCount(expectedOccurrences.Length, actualList);
+        for (var i = 0; i < expectedOccurrences.Length; i++)
+        {
+            // DateTimeOffset.Equals compares the instants, so an occurrence with the wrong offset would
+            // still be equal to the expected one. The wall clock and the offset are compared instead.
+            Assert.Equal(expectedOccurrences[i].DateTime, actualList[i].DateTime);
+            Assert.Equal(expectedOccurrences[i].Offset, actualList[i].Offset);
+        }
+    }
+
     private static void AssertOccurrencesStartWith(IEnumerable<DateTime> occurrences, params DateTime[] expectedOccurrences)
     {
         var actualList = occurrences.Take(expectedOccurrences.Length).ToList();

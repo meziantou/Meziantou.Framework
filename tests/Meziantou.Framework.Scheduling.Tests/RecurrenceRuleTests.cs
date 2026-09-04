@@ -853,6 +853,301 @@ public partial class RecurrenceRuleTests
         TestGetHumanText("FREQ=HOURLY;COUNT=10", "fr-FR", "toutes les heures pour 10 fois");
     }
 
+    [Fact]
+    public void GetNextOccurrences_Utc_MatchesTheDateTimeOverload()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=3");
+        var startDate = new DateTime(2024, 03, 09, 09, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, TimeZoneInfo.Utc);
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 03, 09, 09, 00, 00, TimeSpan.Zero),
+            new DateTimeOffset(2024, 03, 10, 09, 00, 00, TimeSpan.Zero),
+            new DateTimeOffset(2024, 03, 11, 09, 00, 00, TimeSpan.Zero));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_NullTimeZone_ThrowsBeforeEnumeration()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+
+        Assert.Throws<ArgumentNullException>(() => rrule.GetNextOccurrences(new DateTime(2024, 01, 01), timeZone: null!));
+    }
+
+    [Fact]
+    public void GetNextOccurrence_TimeZone_ReturnsNullWhenTheRuleIsExhausted()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=0");
+
+        Assert.Null(rrule.GetNextOccurrence(new DateTime(2024, 01, 01, 09, 00, 00), TimeZoneInfo.Utc));
+    }
+
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    // An IANA identifier does not resolve on Windows when globalization is invariant.
+    private static TimeZoneInfo NewYork => TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+
+    private static TimeZoneInfo Sydney => TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
+
+    [Fact]
+    public void Daily_TimeZone_AcrossSpringForward_KeepsTheWallClockTime()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=3");
+        var startDate = new DateTime(2024, 03, 09, 09, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, NewYork);
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 03, 09, 09, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 03, 10, 09, 00, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 03, 11, 09, 00, 00, TimeSpan.FromHours(-4)));
+    }
+
+    [Fact]
+    public void Daily_TimeZone_AcrossFallBack_KeepsTheWallClockTime()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=3");
+        var startDate = new DateTime(2024, 11, 02, 09, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, NewYork);
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 11, 02, 09, 00, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 11, 03, 09, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 11, 04, 09, 00, 00, TimeSpan.FromHours(-5)));
+    }
+
+    [Fact]
+    public void Daily_TimeZone_InvalidLocalTime_UsesTheOffsetBeforeTheGap()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=2;BYMINUTE=30;BYSECOND=0;COUNT=2");
+        var startDate = new DateTime(2024, 03, 09, 02, 30, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, NewYork).ToArray();
+
+        // 02:30 does not exist on 2024-03-10: read with the -05:00 offset in effect before the gap, it is 07:30Z
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 03, 09, 02, 30, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 03, 10, 03, 30, 00, TimeSpan.FromHours(-4)));
+
+        Assert.Equal(new DateTime(2024, 03, 10, 07, 30, 00, DateTimeKind.Utc), occurrences[1].UtcDateTime);
+    }
+
+    [Fact]
+    public void Daily_TimeZone_AmbiguousLocalTime_UsesTheFirstOccurrence()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=1;BYMINUTE=30;BYSECOND=0;COUNT=3");
+        var startDate = new DateTime(2024, 11, 02, 01, 30, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, NewYork).ToArray();
+
+        // 01:30 happens twice on 2024-11-03 and RFC 5545 keeps the first one, at the -04:00 offset
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 11, 02, 01, 30, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 11, 03, 01, 30, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 11, 04, 01, 30, 00, TimeSpan.FromHours(-5)));
+
+        Assert.Equal(new DateTime(2024, 11, 03, 05, 30, 00, DateTimeKind.Utc), occurrences[1].UtcDateTime);
+    }
+
+    [Fact]
+    public void Hourly_TimeZone_AcrossSpringForward_DropsTheInstantRepeatedByTheGap()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=HOURLY;COUNT=5");
+        var startDate = new DateTime(2024, 03, 10, 00, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, NewYork).ToArray();
+
+        // 02:00 does not exist and is read at the -05:00 offset in effect before the gap, which is the instant
+        // 03:00 already denotes. RFC 5545 section 3.8.5.3 keeps only one of the two, and the duplicate does not
+        // count towards COUNT, so a fifth distinct occurrence is produced instead.
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 03, 10, 00, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 03, 10, 01, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 03, 10, 03, 00, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 03, 10, 04, 00, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 03, 10, 05, 00, 00, TimeSpan.FromHours(-4)));
+
+        Assert.HasCount(occurrences.Length, occurrences.Select(occurrence => occurrence.UtcDateTime).Distinct());
+    }
+
+    [Fact]
+    public void Minutely_TimeZone_AcrossSpringForward_DropsTheInstantsRepeatedByTheGap()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MINUTELY;INTERVAL=20;COUNT=6");
+        var startDate = new DateTime(2024, 03, 10, 01, 20, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, NewYork).ToArray();
+
+        // Every local time in the 02:00 gap is read at the -05:00 offset in effect before it, mapping the whole
+        // gap onto the instants of the hour that follows. Those repeats are not adjacent to the instances they
+        // duplicate, so suppressing them keeps the recurrence set increasing.
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 03, 10, 01, 20, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 03, 10, 01, 40, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 03, 10, 03, 00, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 03, 10, 03, 20, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 03, 10, 03, 40, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 03, 10, 04, 00, 00, TimeSpan.FromHours(-4)));
+
+        var instants = occurrences.Select(occurrence => occurrence.UtcDateTime).ToArray();
+        Assert.HasCount(instants.Length, instants.Distinct());
+        Assert.Equal(instants.Order().ToArray(), instants);
+    }
+
+    [Fact]
+    public void Hourly_TimeZone_AcrossFallBack_SkipsTheRepeatedHour()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=HOURLY;COUNT=4");
+        var startDate = new DateTime(2024, 11, 03, 00, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, NewYork).ToArray();
+
+        // Every wall clock keeps its first reading, so the second pass over 01:00 (06:00Z) is never produced
+        Assert.Equal(new DateTime(2024, 11, 03, 04, 00, 00, DateTimeKind.Utc), occurrences[0].UtcDateTime);
+        Assert.Equal(new DateTime(2024, 11, 03, 05, 00, 00, DateTimeKind.Utc), occurrences[1].UtcDateTime);
+        Assert.Equal(new DateTime(2024, 11, 03, 07, 00, 00, DateTimeKind.Utc), occurrences[2].UtcDateTime);
+        Assert.Equal(new DateTime(2024, 11, 03, 08, 00, 00, DateTimeKind.Utc), occurrences[3].UtcDateTime);
+    }
+
+    [Fact]
+    public void Daily_TimeZone_SouthernHemisphere_AcrossDaylightSavingStart()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=2");
+        var startDate = new DateTime(2024, 10, 05, 09, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, Sydney);
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 10, 05, 09, 00, 00, TimeSpan.FromHours(10)),
+            new DateTimeOffset(2024, 10, 06, 09, 00, 00, TimeSpan.FromHours(11)));
+    }
+
+    [Fact]
+    public void Daily_TimeZone_SouthernHemisphere_InvalidLocalTime()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=2;BYMINUTE=30;BYSECOND=0;COUNT=1");
+        var startDate = new DateTime(2024, 10, 06, 00, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, Sydney);
+
+        AssertOccurrences(occurrences, new DateTimeOffset(2024, 10, 06, 03, 30, 00, TimeSpan.FromHours(11)));
+    }
+
+    [Fact]
+    public void Daily_TimeZone_SouthernHemisphere_AmbiguousLocalTime()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=2;BYMINUTE=30;BYSECOND=0;COUNT=1");
+        var startDate = new DateTime(2024, 04, 07, 00, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, Sydney);
+
+        AssertOccurrences(occurrences, new DateTimeOffset(2024, 04, 07, 02, 30, 00, TimeSpan.FromHours(11)));
+    }
+
+    [Fact]
+    public void Daily_TimeZone_UtcUntil_IsComparedAsAnInstantNotAsAWallClock()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240310T120000Z");
+        var startDate = new DateTime(2024, 03, 08, 09, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, NewYork);
+
+        // 2024-03-10 09:00-04:00 is 13:00Z, which is past the UNTIL instant, so it is excluded.
+        // Comparing the wall clock instead would have kept it.
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 03, 08, 09, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 03, 09, 09, 00, 00, TimeSpan.FromHours(-5)));
+    }
+
+    [Fact]
+    public void Daily_TimeZone_Count_IsUnaffectedByATransition()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=5");
+        var startDate = new DateTime(2024, 03, 08, 09, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, NewYork).ToArray();
+
+        Assert.HasCount(5, occurrences);
+        Assert.All(occurrences, occurrence => Assert.Equal(new TimeSpan(09, 00, 00), occurrence.TimeOfDay));
+        Assert.Equal(
+            new[] { -5, -5, -4, -4, -4 },
+            occurrences.Select(occurrence => (int)occurrence.Offset.TotalHours).ToArray());
+    }
+
+    [Fact]
+    public void Monthly_TimeZone_BySetPosition_AcrossATransition()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;BYDAY=SU;BYSETPOS=2;BYHOUR=2;BYMINUTE=30;BYSECOND=0;COUNT=2");
+        var startDate = new DateTime(2024, 03, 01, 00, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, NewYork);
+
+        // The second Sunday of March 2024 is the 10th, where 02:30 falls in the gap
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 03, 10, 03, 30, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2024, 04, 14, 02, 30, 00, TimeSpan.FromHours(-4)));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_TimeZoneId_MatchesTheTimeZoneInfoOverload()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=4");
+        var startDate = new DateTime(2024, 03, 09, 09, 00, 00);
+
+        var expected = rrule.GetNextOccurrences(startDate, NewYork);
+        var actual = rrule.GetNextOccurrences(startDate, "America/New_York");
+
+        AssertOccurrences(actual, expected.ToArray());
+    }
+
+    [Fact]
+    public void GetNextOccurrences_UnknownTimeZoneId_ThrowsBeforeEnumeration()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+
+        Assert.Throws<TimeZoneNotFoundException>(() => rrule.GetNextOccurrences(new DateTime(2024, 01, 01), "Not/AZone"));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_ThroughIRecurrenceRule_UsesTheInstantBasedUntil()
+    {
+        IRecurrenceRule rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240310T120000Z");
+        var startDate = new DateTime(2024, 03, 08, 09, 00, 00);
+
+        // Extension methods bind statically, so this is what guards the dispatch back to RecurrenceRule
+        var occurrences = rrule.GetNextOccurrences(startDate, NewYork);
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 03, 08, 09, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 03, 09, 09, 00, 00, TimeSpan.FromHours(-5)));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_DateTimeOffsetStart_IsReducedToTheTimeZoneWallClock()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=1");
+        var startDate = new DateTimeOffset(2024, 03, 09, 12, 00, 00, TimeSpan.Zero);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, NewYork);
+
+        AssertOccurrences(occurrences, new DateTimeOffset(2024, 03, 09, 07, 00, 00, TimeSpan.FromHours(-5)));
+    }
+
+    [Fact]
+    public void GetNextOccurrence_TimeZone_ReturnsTheFirstOccurrence()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0");
+        var startDate = new DateTime(2024, 03, 10, 00, 00, 00);
+
+        var occurrence = rrule.GetNextOccurrence(startDate, NewYork);
+
+        Assert.NotNull(occurrence);
+        Assert.Equal(new DateTime(2024, 03, 10, 09, 00, 00), occurrence.Value.DateTime);
+        Assert.Equal(TimeSpan.FromHours(-4), occurrence.Value.Offset);
+    }
+#endif
+
     private static void TestGetHumanText(string rruleText, string cultureInfo, string expectedText)
     {
 #if INVARIANT_GLOBALIZATION_MODE_ENABLED

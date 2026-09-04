@@ -19,6 +19,8 @@ namespace Meziantou.Framework.Scheduling
         public static Meziantou.Framework.Scheduling.CronExpression Parse(System.ReadOnlySpan<char> expression) => throw null;
         public static bool TryParse(System.ReadOnlySpan<char> expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.CronExpression? cronExpression) => throw null;
         public System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrences(System.DateTime startDate) => throw null;
+        public System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(System.DateTime startDate, System.TimeZoneInfo timeZone) => throw null;
+        public System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(System.DateTimeOffset startDate, System.TimeZoneInfo timeZone) => throw null;
     }
 
     public sealed class Event
@@ -32,6 +34,7 @@ namespace Meziantou.Framework.Scheduling
         public System.DateTime DateTimeStamp { get => throw null; set { } }
         public System.DateTime Start { get => throw null; set { } }
         public System.DateTime End { get => throw null; set { } }
+        public System.TimeZoneInfo? TimeZone { get => throw null; set { } }
         public Meziantou.Framework.Scheduling.RecurrenceRule? RecurrenceRule { get => throw null; set { } }
         public Meziantou.Framework.Scheduling.EventStatus Status { get => throw null; set { } }
         public System.Collections.Generic.IDictionary<string, string> AdditionalProperties { get => throw null; }
@@ -94,6 +97,8 @@ namespace Meziantou.Framework.Scheduling
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? rrule, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.RecurrenceRule? recurrenceRule) => throw null;
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? rrule, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.RecurrenceRule? recurrenceRule, out string? error) => throw null;
         public virtual System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrences(System.DateTime startDate) => throw null;
+        public virtual System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(System.DateTime startDate, System.TimeZoneInfo timeZone) => throw null;
+        public System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(System.DateTimeOffset startDate, System.TimeZoneInfo timeZone) => throw null;
         protected abstract System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrencesInternal(System.DateTime startDate);
         public override string ToString() => throw null;
     }
@@ -102,6 +107,14 @@ namespace Meziantou.Framework.Scheduling
     {
         public static System.DateTime? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate) => throw null;
         public static System.DateTimeOffset? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate) => throw null;
+        public static System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate, System.TimeZoneInfo timeZone) => throw null;
+        public static System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate, System.TimeZoneInfo timeZone) => throw null;
+        public static System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate, string timeZoneId) => throw null;
+        public static System.Collections.Generic.IEnumerable<System.DateTimeOffset> GetNextOccurrences(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate, string timeZoneId) => throw null;
+        public static System.DateTimeOffset? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate, System.TimeZoneInfo timeZone) => throw null;
+        public static System.DateTimeOffset? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate, System.TimeZoneInfo timeZone) => throw null;
+        public static System.DateTimeOffset? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate, string timeZoneId) => throw null;
+        public static System.DateTimeOffset? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTimeOffset startDate, string timeZoneId) => throw null;
     }
 
     public static class RecurrenceRuleHumanizerExtensions

@@ -545,6 +545,39 @@ public sealed class CronExpression : IRecurrenceRule
         }
     }
 
+    /// <summary>Gets all occurrences of the expression, reading <paramref name="startDate"/> as a wall-clock time in <paramref name="timeZone"/>.</summary>
+    /// <param name="startDate">The wall-clock time to start generating occurrences from. Its <see cref="DateTime.Kind"/> is ignored.</param>
+    /// <param name="timeZone">The time zone the expression is evaluated in.</param>
+    /// <returns>An enumerable sequence of occurrences, each carrying the UTC offset in effect at that occurrence.</returns>
+    /// <remarks>
+    /// <para>The occurrences keep their wall-clock time across a daylight saving transition, so their UTC offset changes.
+    /// A local time made invalid or ambiguous by a transition is resolved as RFC 5545 section 3.3.5 requires: an ambiguous
+    /// time keeps its first occurrence, and an invalid time is read with the UTC offset in effect before the gap.</para>
+    /// <para>As a consequence, an hourly expression repeats an instant across a forward transition and skips the instants
+    /// of the repeated hour across a backward one.</para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="timeZone"/> is <see langword="null"/>.</exception>
+    public IEnumerable<DateTimeOffset> GetNextOccurrences(DateTime startDate, TimeZoneInfo timeZone)
+    {
+        ArgumentNullException.ThrowIfNull(timeZone);
+
+        return Utilities.ToDateTimeOffsets(GetNextOccurrences(DateTime.SpecifyKind(startDate, DateTimeKind.Unspecified)), timeZone);
+    }
+
+    /// <summary>Gets all occurrences of the expression, starting from the instant <paramref name="startDate"/> denotes.</summary>
+    /// <param name="startDate">The instant to start generating occurrences from. It is reduced to a wall-clock time in <paramref name="timeZone"/>.</param>
+    /// <param name="timeZone">The time zone the expression is evaluated in.</param>
+    /// <returns>An enumerable sequence of occurrences, each carrying the UTC offset in effect at that occurrence.</returns>
+    /// <remarks>Reducing an instant to a wall-clock time is lossy in the hour repeated by a backward transition, where both
+    /// readings denote the same wall clock. Use the <see cref="DateTime"/> overload to control which one is meant.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="timeZone"/> is <see langword="null"/>.</exception>
+    public IEnumerable<DateTimeOffset> GetNextOccurrences(DateTimeOffset startDate, TimeZoneInfo timeZone)
+    {
+        ArgumentNullException.ThrowIfNull(timeZone);
+
+        return GetNextOccurrences(TimeZoneInfo.ConvertTime(startDate, timeZone).DateTime, timeZone);
+    }
+
     private DateTime? GetNextOccurrence(DateTime from)
     {
         var current = from;

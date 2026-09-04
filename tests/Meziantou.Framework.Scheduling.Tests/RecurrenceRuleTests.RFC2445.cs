@@ -12,6 +12,27 @@ public partial class RecurrenceRuleTests
         AssertOccurrences(occurrences, checkEnd: false, expectedOccurrences.Length, expectedOccurrences);
     }
 
+    private static void AssertOccurrences(IEnumerable<DateTimeOffset> occurrences, params DateTimeOffset[] expectedOccurrences)
+    {
+        var occurrenceCount = 0;
+        using var enumerator1 = occurrences.GetEnumerator();
+        using (var enumerator2 = ((IEnumerable<DateTimeOffset>)expectedOccurrences).GetEnumerator())
+        {
+            while (enumerator1.MoveNext() && enumerator2.MoveNext())
+            {
+                occurrenceCount++;
+
+                // DateTimeOffset.Equals compares the instants, so an occurrence with the wrong offset would
+                // still be equal to the expected one. The wall clock and the offset are compared instead.
+                Assert.Equal(enumerator2.Current.DateTime, enumerator1.Current.DateTime);
+                Assert.Equal(enumerator2.Current.Offset, enumerator1.Current.Offset);
+            }
+        }
+
+        Assert.Equal(expectedOccurrences.Length, occurrenceCount);
+        Assert.False(enumerator1.MoveNext());
+    }
+
     private static void AssertOccurrences(IEnumerable<DateTime> occurrences, bool checkEnd, int? maxOccurences, params DateTime[] expectedOccurrences)
     {
         var occurrenceCount = 0;

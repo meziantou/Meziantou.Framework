@@ -793,6 +793,78 @@ public abstract class RecurrenceRule : IRecurrenceRule
         }
     }
 
+    /// <summary>Gets all occurrences of the recurrence, reading <paramref name="startDate"/> as a wall-clock time in <paramref name="timeZone"/>.</summary>
+    /// <param name="startDate">The wall-clock time to start generating occurrences from. Its <see cref="DateTime.Kind"/> is ignored.</param>
+    /// <param name="timeZone">The time zone the recurrence is expressed in, as an iCalendar DTSTART;TZID= would.</param>
+    /// <returns>An enumerable sequence of occurrences, each carrying the UTC offset in effect at that occurrence.</returns>
+    /// <remarks>
+    /// <para>The occurrences keep their wall-clock time across a daylight saving transition, so their UTC offset changes.
+    /// A local time made invalid or ambiguous by a transition is resolved as RFC 5545 section 3.3.5 requires: an ambiguous
+    /// time keeps its first occurrence, and an invalid time is read with the UTC offset in effect before the gap.</para>
+    /// <para>As a consequence, a sub-daily recurrence repeats an instant across a forward transition and skips the instants
+    /// of the repeated hour across a backward one.</para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="timeZone"/> is <see langword="null"/>.</exception>
+    public virtual IEnumerable<DateTimeOffset> GetNextOccurrences(DateTime startDate, TimeZoneInfo timeZone)
+    {
+        ArgumentNullException.ThrowIfNull(timeZone);
+
+        return Iterate(this, DateTime.SpecifyKind(startDate, DateTimeKind.Unspecified), timeZone);
+
+        static IEnumerable<DateTimeOffset> Iterate(RecurrenceRule rule, DateTime wallClockStart, TimeZoneInfo timeZone)
+        {
+            if (rule.Occurrences is 0)
+                yield break;
+
+            var count = 0;
+            DateTime? lastInstant = null;
+            foreach (var next in rule.GetNextOccurrencesInternal(wallClockStart))
+            {
+                var occurrence = Utilities.ToDateTimeOffset(next, timeZone);
+
+                // A duplicate is not part of the recurrence set, so it does not count towards COUNT either.
+                // Dropping it first also leaves the values below increasing, which is what lets UNTIL stop
+                // the enumeration instead of only filtering it.
+                if (Utilities.IsDuplicate(lastInstant, occurrence))
+                    continue;
+
+                if (rule.EndDate.HasValue && IsAfterEndDate(next, occurrence, rule.EndDate.Value))
+                    yield break;
+
+                lastInstant = occurrence.UtcDateTime;
+                yield return occurrence;
+
+                count++;
+                if (rule.Occurrences.HasValue && count >= rule.Occurrences.Value)
+                    yield break;
+            }
+        }
+
+        static bool IsAfterEndDate(DateTime wallClock, DateTimeOffset occurrence, DateTime endDate) => endDate.Kind switch
+        {
+            // A UTC UNTIL bounds the recurrence by instant, not by wall clock.
+            DateTimeKind.Utc => occurrence.UtcDateTime > endDate,
+            DateTimeKind.Local => occurrence.UtcDateTime > endDate.ToUniversalTime(),
+
+            // A floating UNTIL is a wall-clock reading in the recurrence's own time zone.
+            _ => wallClock > endDate,
+        };
+    }
+
+    /// <summary>Gets all occurrences of the recurrence, starting from the instant <paramref name="startDate"/> denotes.</summary>
+    /// <param name="startDate">The instant to start generating occurrences from. It is reduced to a wall-clock time in <paramref name="timeZone"/>.</param>
+    /// <param name="timeZone">The time zone the recurrence is expressed in, as an iCalendar DTSTART;TZID= would.</param>
+    /// <returns>An enumerable sequence of occurrences, each carrying the UTC offset in effect at that occurrence.</returns>
+    /// <remarks>Reducing an instant to a wall-clock time is lossy in the hour repeated by a backward transition, where both
+    /// readings denote the same wall clock. Use the <see cref="DateTime"/> overload to control which one is meant.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="timeZone"/> is <see langword="null"/>.</exception>
+    public IEnumerable<DateTimeOffset> GetNextOccurrences(DateTimeOffset startDate, TimeZoneInfo timeZone)
+    {
+        ArgumentNullException.ThrowIfNull(timeZone);
+
+        return GetNextOccurrences(TimeZoneInfo.ConvertTime(startDate, timeZone).DateTime, timeZone);
+    }
+
     /// <summary>When implemented in a derived class, generates the internal sequence of occurrence dates.</summary>
     /// <param name="startDate">The date to start generating occurrences from.</param>
     /// <returns>An enumerable sequence of occurrence dates.</returns>

@@ -3,10 +3,14 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.0.4</Version>
+    <Version>2.1.0</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Allow to create mocks for HttpClient</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../common/TypeNameHelper.cs" Link="TypeNameHelper.cs" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="11.0.0-preview.7.26381.103" />

@@ -39,6 +39,7 @@ namespace Meziantou.Framework
         public Meziantou.Framework.HttpMockServiceBuilder AddHttpClientMock(Meziantou.Framework.HttpClientMock mock) => throw null;
         public Meziantou.Framework.HttpMockServiceBuilder AddHttpClientMock(string name, Meziantou.Framework.HttpClientMock mock) => throw null;
         public Meziantou.Framework.HttpMockServiceBuilder AddHttpClientMock<T>(Meziantou.Framework.HttpClientMock mock) => throw null;
+        public Meziantou.Framework.HttpMockServiceBuilder ThrowOnUnknownHttpClient() => throw null;
     }
 
     public sealed class RequestCounter

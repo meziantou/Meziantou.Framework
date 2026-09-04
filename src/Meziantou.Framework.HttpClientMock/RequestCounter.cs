@@ -11,9 +11,11 @@ public sealed class RequestCounter(IHttpContextAccessor httpContextAccessor)
     private readonly ConcurrentDictionary<Key, long> _endpointCounter = [];
 
     /// <summary>Gets the total number of requests made to the mock server.</summary>
+    /// <remarks>A request is counted before its handler runs, so reading this from a handler includes the request being handled.</remarks>
     public long TotalCount => _totalCount;
 
     /// <summary>Gets the number of requests made to the current endpoint.</summary>
+    /// <remarks>A request is counted before its handler runs, so calling this from a handler includes the request being handled.</remarks>
     /// <returns>The number of requests made to the current endpoint.</returns>
     public long Get()
     {

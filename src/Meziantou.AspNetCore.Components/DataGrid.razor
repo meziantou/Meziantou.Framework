@@ -28,13 +28,16 @@
                 var index = 0;
                 foreach (var item in Items)
                 {
-                    @* Use @key to help the diff algorithm when updating the collection *@
-                    <tr @key="item?.GetHashCode()" class="@(RowClass?.Invoke(item, index++))">
+                    var rowIndex = index;
+                    @* Use @key to help the diff algorithm when updating the collection. The key must be unique among
+                       siblings, so it falls back to the row index unless the caller supplies a real key. *@
+                    <tr @key="RowKey is null ? rowIndex : RowKey(item)" class="@(RowClass?.Invoke(item, rowIndex))">
                         @foreach (var column in columns)
                         {
                             @column.CellTemplate(item)
                         }
                     </tr>
+                    index++;
                 }
             }
         }
@@ -59,22 +62,31 @@
     [Parameter]
     public Func<TRowData, int, string>? RowClass { get; set; }
 
+    /// <summary>
+    /// Gets or sets a function that returns a stable, unique key for each row, used as the <c>@key</c> of the row element.
+    /// Keys must be unique among the rendered rows; a duplicate key makes the renderer throw.
+    /// When not specified, the row index is used, which is always unique.
+    /// </summary>
+    [Parameter]
+    public Func<TRowData, object>? RowKey { get; set; }
+
     private readonly List<DataGridColumn<TRowData>> columns = new List<DataGridColumn<TRowData>>();
 
-    // GridColumn uses this method to add a column
+    // GridColumn uses these methods to register and unregister itself
     internal void AddColumn(DataGridColumn<TRowData> column)
     {
         columns.Add(column);
+
+        // Columns are instantiated while rendering ChildContent, so the columns collection is still empty when the
+        // table is first built. Requesting another render makes the renderer pick the columns up. This must not rely
+        // on OnAfterRender: static server-side rendering never calls it, which would leave the table permanently empty.
+        StateHasChanged();
     }
 
-    protected override void OnAfterRender(bool firstRender)
+    internal void RemoveColumn(DataGridColumn<TRowData> column)
     {
-        if (firstRender)
+        if (columns.Remove(column))
         {
-            // The first render will instantiate the GridColumn defined in the ChildContent.
-            // GridColumn calls AddColumn during its initialization. This means that until
-            // the first render is completed, the columns collection is empty.
-            // Calling StateHasChanged() will re-render the component, so the second time it will know the columns
             StateHasChanged();
         }
     }

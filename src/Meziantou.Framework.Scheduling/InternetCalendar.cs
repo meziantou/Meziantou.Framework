@@ -176,11 +176,10 @@ public sealed class InternetCalendar
         if (timeZone is null || recurrenceRule.EndDate is not { Kind: DateTimeKind.Unspecified } endDate)
             return text;
 
-        // TimeZoneInfo.ConvertTimeToUtc rejects a time that does not exist in the time zone, so a value in the
-        // gap of a forward transition is resolved rather than failing the whole write.
-        var utc = timeZone.IsInvalidTime(endDate)
-            ? DateTime.SpecifyKind(endDate - timeZone.BaseUtcOffset, DateTimeKind.Utc)
-            : TimeZoneInfo.ConvertTimeToUtc(endDate, timeZone);
+        // The bound has to be read the same way the occurrences it bounds are, so UNTIL goes through the
+        // RFC 5545 section 3.3.5 disambiguation rather than TimeZoneInfo.ConvertTimeToUtc, which throws on a
+        // time inside the gap of a forward transition and resolves an ambiguous one to its second occurrence.
+        var utc = Utilities.ToDateTimeOffset(endDate, timeZone).UtcDateTime;
 
         // The replaced token is a fixed-length value this library itself produced, so the substitution is unambiguous.
         var floating = ";UNTIL=" + endDate.ToString(Utilities.FloatingDateTimeFormat, CultureInfo.InvariantCulture);

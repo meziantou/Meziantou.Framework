@@ -367,6 +367,66 @@ public sealed class InternetCalendarTests
     }
 
     [Fact]
+    public void ToIcs_WritesARecurrenceUntilInAForwardGapAtTheOffsetBeforeIt()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+        rrule.EndDate = new DateTime(2024, 03, 10, 02, 30, 00, DateTimeKind.Unspecified);
+        var @event = CreateEvent();
+        @event.TimeZone = CreateTestTimeZone();
+        @event.RecurrenceRule = rrule;
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        // 02:30 does not exist on the transition day, so it is read at the -05:00 offset in effect before the gap
+        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=20240310T073000Z", GetContentLine(ics, "RRULE"));
+    }
+
+    [Fact]
+    public void ToIcs_WritesAnAmbiguousRecurrenceUntilAtItsFirstOccurrence()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+        rrule.EndDate = new DateTime(2024, 11, 03, 01, 30, 00, DateTimeKind.Unspecified);
+        var @event = CreateEvent();
+        @event.TimeZone = CreateTestTimeZone();
+        @event.RecurrenceRule = rrule;
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        // 01:30 happens twice and RFC 5545 keeps the first, at -04:00. TimeZoneInfo.ConvertTimeToUtc would have
+        // resolved it to the second one and written 20241103T063000Z.
+        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=20241103T053000Z", GetContentLine(ics, "RRULE"));
+    }
+
+    [Fact]
+    public void ToIcs_WritesARecurrenceUntilUsingTheStandardOffsetOfItsOwnPeriod()
+    {
+        // A time zone whose standard offset itself shifts, which is what makes BaseUtcOffset the wrong thing to
+        // subtract for a time inside the gap.
+        var daylightStart = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), month: 3, week: 2, DayOfWeek.Sunday);
+        var daylightEnd = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), month: 11, week: 1, DayOfWeek.Sunday);
+        var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+            new DateTime(2007, 1, 1),
+            DateTime.MaxValue.Date,
+            TimeSpan.FromHours(1),
+            daylightStart,
+            daylightEnd,
+            baseUtcOffsetDelta: TimeSpan.FromHours(1));
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("Test/Shifted", TimeSpan.FromHours(-5), "Test Shifted", "STD", "DST", [rule]);
+
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+        rrule.EndDate = new DateTime(2024, 03, 10, 02, 30, 00, DateTimeKind.Unspecified);
+        var @event = CreateEvent();
+        @event.TimeZone = timeZone;
+        @event.RecurrenceRule = rrule;
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        // The offset before the gap is -04:00, the base offset plus the rule's delta, so UNTIL is 06:30Z.
+        // Subtracting BaseUtcOffset alone would have written 07:30Z.
+        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=20240310T063000Z", GetContentLine(ics, "RRULE"));
+    }
+
+    [Fact]
     public void ToIcs_KeepsTheRecurrenceUntilUnchangedWithoutATimeZone()
     {
         var rrule = RecurrenceRule.Parse("FREQ=DAILY");

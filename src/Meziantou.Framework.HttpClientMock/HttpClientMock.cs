@@ -11,10 +11,14 @@ using Microsoft.Extensions.Logging;
 namespace Meziantou.Framework;
 
 /// <summary>A mock HTTP server for testing HTTP clients. Use this to simulate HTTP endpoints without requiring a real server.</summary>
+/// <remarks>
+/// The single-argument constructors all accept a reference type, so a bare <c>null</c> is ambiguous. Use a named
+/// argument to select one, for instance <c>new HttpClientMock(configureLogging: null, configureServices: services => ...)</c>.
+/// </remarks>
 /// <example>
 /// Create a mock server with a simple endpoint:
 /// <code>
-/// using var mock = new HttpClientMock();
+/// await using var mock = new HttpClientMock();
 /// mock.MapGet("/api/users", () => Results.Ok(new { name = "John" }));
 /// using var httpClient = mock.CreateHttpClient();
 /// var response = await httpClient.GetAsync("/api/users");
@@ -22,7 +26,8 @@ namespace Meziantou.Framework;
 /// </example>
 public sealed partial class HttpClientMock : IAsyncDisposable
 {
-    private bool _running;
+    private readonly Lock _lock = new();
+    private Task? _runTask;
 
     /// <summary>Initializes a new instance of the <see cref="HttpClientMock"/> class.</summary>
     public HttpClientMock()
@@ -72,7 +77,17 @@ public sealed partial class HttpClientMock : IAsyncDisposable
     /// <param name="configureServices">An action to configure services.</param>
     public HttpClientMock(Action<ILoggingBuilder>? configureLogging, Action<IServiceCollection>? configureServices)
     {
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            ContentRootPath = AppContext.BaseDirectory,
+            EnvironmentName = Environments.Production,
+        });
+
+        // The mock must not depend on ambient state, so the configuration of the host application
+        // ("appsettings.json", "ASPNETCORE_*"/"DOTNET_*" environment variables, command line) is discarded.
+        // Use configureServices to add the sources the mock actually needs.
+        builder.Configuration.Sources.Clear();
+
         builder.Services.Configure<ConsoleLifetimeOptions>(opts => opts.SuppressStatusMessages = true);
         builder.Services.AddHttpClient();
         builder.Services.AddSingleton<MatcherPolicy, SchemeMatcherPolicy>();
@@ -85,16 +100,18 @@ public sealed partial class HttpClientMock : IAsyncDisposable
 
         builder.WebHost.UseTestServer();
         Application = builder.Build();
-        Application.Use(async (context, next) =>
+        // WebApplication runs the routing middleware before any middleware added here, so the endpoint is already
+        // selected. Counting on the way in means a request is counted even when its handler throws, and that
+        // RequestCounter.Get() called from a handler includes the request being handled.
+        Application.Use((context, next) =>
         {
-            await next().ConfigureAwait(false);
             var counter = context.RequestServices.GetRequiredService<RequestCounter>();
             counter.IncrementTotal();
             counter.IncrementEndpoint(context);
+            return next();
         });
     }
 
-    /// <summary>Gets the underlying <see cref="WebApplication"/> instance.</summary>
     /// <summary>Gets the underlying <see cref="WebApplication"/> instance.</summary>
     public WebApplication Application { get; }
 
@@ -116,10 +133,17 @@ public sealed partial class HttpClientMock : IAsyncDisposable
 
     private void StartServer()
     {
-        if (!_running)
+        Task runTask;
+        lock (_lock)
         {
-            _running = true;
-            _ = Application.RunAsync();
+            runTask = _runTask ??= Application.RunAsync();
+        }
+
+        // The host disposes itself when startup fails. Observing the task reports the actual error instead of the
+        // ObjectDisposedException that using the disposed application would raise.
+        if (runTask.IsCompleted)
+        {
+            runTask.GetAwaiter().GetResult();
         }
     }
 
@@ -153,9 +177,6 @@ public sealed partial class HttpClientMock : IAsyncDisposable
     private static IEndpointConventionBuilder MapCore(string path, Func<string, IEndpointConventionBuilder> mapMethodFunc)
     {
         var (scheme, domain, pathOnly, query) = ParseUrl(path);
-        if (pathOnly is null)
-            throw new ArgumentException("path must be a URI with a path segment", nameof(path));
-
         var method = mapMethodFunc(pathOnly);
         var order = 0;
 
@@ -179,7 +200,7 @@ public sealed partial class HttpClientMock : IAsyncDisposable
         method.WithOrder(order);
         return method;
 
-        static (string? Scheme, string? Domain, string? Path, string? Query) ParseUrl(string path)
+        static (string? Scheme, string? Domain, string Path, string? Query) ParseUrl(string path)
         {
             if (path.Contains('#', StringComparison.Ordinal))
                 throw new ArgumentException("Fragment ('#') is not supported", nameof(path));

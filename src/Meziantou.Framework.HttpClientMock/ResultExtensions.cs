@@ -6,9 +6,6 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Extension methods for creating <see cref="IResult"/> instances with various content types.
 /// </summary>
-/// <summary>
-/// Extension methods for creating <see cref="IResult"/> instances with various content types.
-/// </summary>
 public static class ResultExtensions
 {
     /// <summary>Creates a result that returns raw JSON content.</summary>

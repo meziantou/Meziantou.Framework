@@ -103,7 +103,7 @@ internal sealed class CustomDnsRecordProvider
         }
     }
 
-    private static bool TryCreateRecordData(DnsQueryType type, string value, [NotNullWhen(true)] out DnsResourceRecordData? data)
+    internal static bool TryCreateRecordData(DnsQueryType type, string value, [NotNullWhen(true)] out DnsResourceRecordData? data)
     {
         data = type switch
         {

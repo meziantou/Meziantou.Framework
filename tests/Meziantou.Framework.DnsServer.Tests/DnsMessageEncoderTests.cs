@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Net;
 using Meziantou.Framework.DnsServer.Protocol;
 using Meziantou.Framework.DnsServer.Protocol.Records;
@@ -770,6 +771,323 @@ public sealed class DnsMessageEncoderTests
         Assert.HasCount(2, decoded.Questions);
         Assert.Equal(DnsQueryType.A, decoded.Questions[0].Type);
         Assert.Equal(DnsQueryType.AAAA, decoded.Questions[1].Type);
+    }
+
+    [Fact]
+    public void Decode_CompressionLoop_IsRejectedWithoutUnboundedWork()
+    {
+        // A long run of labels ending in a pointer back to the start of the name. Before the total
+        // length was bounded this expanded by ~570x before it was rejected.
+        var buffer = new byte[512];
+        BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(4), 1); // qdcount
+
+        var position = 12;
+        for (var i = 0; i < 6; i++)
+        {
+            buffer[position++] = 63;
+            for (var j = 0; j < 63; j++)
+            {
+                buffer[position++] = (byte)'a';
+            }
+        }
+
+        buffer[position++] = 0xC0;
+        buffer[position] = 0x0C;
+
+        var allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+        Assert.Throws<DnsProtocolException>(() => DnsMessageEncoder.DecodeQuery(buffer));
+        var allocated = GC.GetTotalAllocatedBytes(precise: true) - allocatedBefore;
+
+        Assert.True(allocated < 64 * 1024, $"Rejecting the message allocated {allocated} bytes.");
+    }
+
+    [Theory]
+    [InlineData(12)]  // points at itself
+    [InlineData(20)]  // points forward
+    public void Decode_NonBackwardsCompressionPointer_IsRejected(int target)
+    {
+        var buffer = new byte[64];
+        BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(4), 1);
+        buffer[12] = 0xC0;
+        buffer[13] = (byte)target;
+
+        Assert.Throws<DnsProtocolException>(() => DnsMessageEncoder.DecodeQuery(buffer));
+    }
+
+    [Fact]
+    public void Decode_DomainNameLongerThan255Bytes_IsRejected()
+    {
+        var buffer = new byte[600];
+        BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(4), 1);
+
+        var position = 12;
+        for (var i = 0; i < 8; i++) // 8 * 64 = 512 bytes of name
+        {
+            buffer[position++] = 63;
+            for (var j = 0; j < 63; j++)
+            {
+                buffer[position++] = (byte)'a';
+            }
+        }
+
+        var exception = Assert.Throws<DnsProtocolException>(() => DnsMessageEncoder.DecodeQuery(buffer));
+        Assert.Contains("255", exception.Message);
+    }
+
+    [Fact]
+    public void Decode_CaaTagLongerThanRecordData_ThrowsDnsProtocolException()
+    {
+        // RDLENGTH is 4 but the tag claims 64 bytes: the old code computed a negative value length.
+        var message = new List<byte>([0x12, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00]);
+        message.Add(0x00);                              // root owner name
+        message.AddRange([0x01, 0x01]);                 // CAA
+        message.AddRange([0x00, 0x01]);                 // IN
+        message.AddRange([0x00, 0x00, 0x00, 0x00]);     // TTL
+        message.AddRange([0x00, 0x04]);                 // RDLENGTH
+        message.Add(0x00);                              // flags
+        message.Add(0x40);                              // tag length
+        message.AddRange(Enumerable.Repeat((byte)0x41, 64));
+
+        Assert.Throws<DnsProtocolException>(() => DnsMessageEncoder.DecodeQuery(message.ToArray()));
+    }
+
+    [Fact]
+    public void Decode_TxtStringLongerThanRecordData_ThrowsDnsProtocolException()
+    {
+        // RDLENGTH is 2 but the character-string claims 32 bytes, which used to read into the next record.
+        var message = new List<byte>([0x12, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00]);
+        message.Add(0x00);
+        message.AddRange([0x00, 0x10]);                 // TXT
+        message.AddRange([0x00, 0x01]);
+        message.AddRange([0x00, 0x00, 0x00, 0x00]);
+        message.AddRange([0x00, 0x02]);                 // RDLENGTH
+        message.Add(0x20);                              // character-string length
+        message.AddRange(Enumerable.Repeat((byte)0x42, 40));
+
+        Assert.Throws<DnsProtocolException>(() => DnsMessageEncoder.DecodeQuery(message.ToArray()));
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "A fixed seed keeps the fuzzing reproducible")]
+    public void Decode_MalformedMessages_OnlyThrowDnsProtocolException()
+    {
+        // Every decode failure has to be a DnsProtocolException: the transports and the DoH endpoint
+        // rely on that to answer FORMERR / 400 instead of failing the request.
+        var random = new Random(Seed: 20260903);
+        var seed = CreateSimpleQuery("example.com", DnsQueryType.A);
+        seed.Answers.Add(new DnsResourceRecord
+        {
+            Name = "example.com",
+            Type = DnsQueryType.TXT,
+            Class = DnsQueryClass.IN,
+            TimeToLive = 60,
+            Data = new DnsTxtRecordData { Text = ["hello"] },
+        });
+
+        var template = DnsMessageEncoder.EncodeResponse(seed);
+
+        for (var iteration = 0; iteration < 5000; iteration++)
+        {
+            var candidate = template.ToArray();
+            var mutations = random.Next(1, 6);
+            for (var i = 0; i < mutations; i++)
+            {
+                candidate[random.Next(candidate.Length)] = (byte)random.Next(256);
+            }
+
+            try
+            {
+                DnsMessageEncoder.DecodeQuery(candidate);
+            }
+            catch (DnsProtocolException)
+            {
+                // The only failure the callers are prepared for.
+            }
+            catch (Exception exception)
+            {
+                Assert.Fail($"Decoding {Convert.ToHexString(candidate)} threw {exception.GetType().FullName}: {exception.Message}");
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "A fixed seed keeps the fuzzing reproducible")]
+    public void Decode_RandomBytes_OnlyThrowDnsProtocolException()
+    {
+        var random = new Random(Seed: 5309);
+        for (var iteration = 0; iteration < 5000; iteration++)
+        {
+            var candidate = new byte[random.Next(12, 600)];
+            random.NextBytes(candidate);
+
+            try
+            {
+                DnsMessageEncoder.DecodeQuery(candidate);
+            }
+            catch (DnsProtocolException)
+            {
+            }
+            catch (Exception exception)
+            {
+                Assert.Fail($"Decoding {Convert.ToHexString(candidate)} threw {exception.GetType().FullName}: {exception.Message}");
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(DnsResponseCode.BadVersion)]
+    [InlineData(DnsResponseCode.BadCookie)]
+    [InlineData(DnsResponseCode.BadKey)]
+    [InlineData(DnsResponseCode.Refused)]
+    [InlineData(DnsResponseCode.NoError)]
+    public void RoundTrip_ExtendedResponseCode(DnsResponseCode responseCode)
+    {
+        var message = new DnsMessage
+        {
+            Id = 42,
+            IsResponse = true,
+            ResponseCode = responseCode,
+            EdnsOptions = new DnsEdnsOptions(),
+        };
+
+        var decoded = DnsMessageEncoder.DecodeQuery(DnsMessageEncoder.EncodeResponse(message));
+
+        Assert.Equal(responseCode, decoded.ResponseCode);
+    }
+
+    [Fact]
+    public void Encode_ExtendedResponseCode_AddsAnOptRecordWhenEdnsIsAbsent()
+    {
+        var message = new DnsMessage
+        {
+            Id = 42,
+            IsResponse = true,
+            ResponseCode = DnsResponseCode.BadVersion,
+        };
+
+        var decoded = DnsMessageEncoder.DecodeQuery(DnsMessageEncoder.EncodeResponse(message));
+
+        Assert.Equal(DnsResponseCode.BadVersion, decoded.ResponseCode);
+        Assert.NotNull(decoded.EdnsOptions);
+    }
+
+    [Fact]
+    public void Encode_ResponseLargerThanTheTransportLimit_IsTruncated()
+    {
+        var message = new DnsMessage { Id = 1, IsResponse = true };
+        message.Questions.Add(new DnsQuestion("example.com", DnsQueryType.A));
+        for (var i = 0; i < 5000; i++)
+        {
+            message.Answers.Add(new DnsResourceRecord
+            {
+                Name = $"host{i}.example.com",
+                Type = DnsQueryType.A,
+                Class = DnsQueryClass.IN,
+                TimeToLive = 300,
+                Data = new DnsARecordData { Address = IPAddress.Loopback },
+            });
+        }
+
+        Assert.HasCountGreaterThan(ushort.MaxValue, DnsMessageEncoder.EncodeResponse(message));
+
+        var bytes = DnsMessageEncoder.EncodeResponse(message, ushort.MaxValue);
+
+        Assert.HasCountLessThanOrEqual(ushort.MaxValue, bytes);
+        var decoded = DnsMessageEncoder.DecodeQuery(bytes);
+        Assert.True(decoded.IsTruncated);
+        Assert.Empty(decoded.Answers);
+    }
+
+    [Fact]
+    public void Encode_ResponseWithAnOverLongQuestion_DropsTheQuestionToFit()
+    {
+        var message = new DnsMessage { Id = 1, IsResponse = true };
+        for (var i = 0; i < 20; i++)
+        {
+            message.Questions.Add(new DnsQuestion($"{new string('a', 60)}{i}.example.com", DnsQueryType.A));
+        }
+
+        var bytes = DnsMessageEncoder.EncodeResponse(message, 512);
+
+        Assert.HasCountLessThanOrEqual(512, bytes);
+        Assert.True(DnsMessageEncoder.DecodeQuery(bytes).IsTruncated);
+    }
+
+    [Fact]
+    public void Encode_NonAsciiDomainName_ThrowsInsteadOfCorruptingIt()
+    {
+        var message = new DnsMessage { Id = 1 };
+        message.Questions.Add(new DnsQuestion("café.example.com", DnsQueryType.A));
+
+        var exception = Assert.Throws<DnsProtocolException>(() => DnsMessageEncoder.EncodeResponse(message));
+        Assert.Contains("punycode", exception.Message);
+    }
+
+    [Fact]
+    public void Encode_DomainNameLongerThan255Bytes_Throws()
+    {
+        var message = new DnsMessage { Id = 1 };
+        message.Questions.Add(new DnsQuestion(string.Join('.', Enumerable.Repeat(new string('a', 63), 8)), DnsQueryType.A));
+
+        Assert.Throws<DnsProtocolException>(() => DnsMessageEncoder.EncodeResponse(message));
+    }
+
+    [Fact]
+    public void Encode_RepeatedNames_AreCompressed()
+    {
+        const string Name = "a-fairly-long-label.another-long-label.example.com";
+
+        var message = new DnsMessage { Id = 1, IsResponse = true };
+        message.Questions.Add(new DnsQuestion(Name, DnsQueryType.A));
+        for (var i = 0; i < 10; i++)
+        {
+            message.Answers.Add(new DnsResourceRecord
+            {
+                Name = Name,
+                Type = DnsQueryType.A,
+                Class = DnsQueryClass.IN,
+                TimeToLive = 300,
+                Data = new DnsARecordData { Address = IPAddress.Loopback },
+            });
+        }
+
+        var bytes = DnsMessageEncoder.EncodeResponse(message);
+
+        // Without compression the name alone would take 11 * 51 bytes.
+        Assert.HasCountLessThan(250, bytes, "the names were not compressed");
+
+        var decoded = DnsMessageEncoder.DecodeQuery(bytes);
+        Assert.Equal(Name, decoded.Questions[0].Name);
+        Assert.HasCount(10, decoded.Answers);
+        Assert.All(decoded.Answers, record => Assert.Equal(Name, record.Name));
+    }
+
+    [Fact]
+    public void Encode_CompressedNamesInsideRecordData_RoundTrip()
+    {
+        var message = new DnsMessage { Id = 1, IsResponse = true };
+        message.Questions.Add(new DnsQuestion("example.com", DnsQueryType.MX));
+        message.Answers.Add(new DnsResourceRecord
+        {
+            Name = "example.com",
+            Type = DnsQueryType.MX,
+            Class = DnsQueryClass.IN,
+            TimeToLive = 300,
+            Data = new DnsMxRecordData { Preference = 10, Exchange = "mail.example.com" },
+        });
+        message.Answers.Add(new DnsResourceRecord
+        {
+            Name = "example.com",
+            Type = DnsQueryType.NS,
+            Class = DnsQueryClass.IN,
+            TimeToLive = 300,
+            Data = new DnsNsRecordData { NameServer = "ns1.example.com" },
+        });
+
+        var decoded = DnsMessageEncoder.DecodeQuery(DnsMessageEncoder.EncodeResponse(message));
+
+        Assert.Equal("mail.example.com", Assert.IsType<DnsMxRecordData>(decoded.Answers[0].Data).Exchange);
+        Assert.Equal("ns1.example.com", Assert.IsType<DnsNsRecordData>(decoded.Answers[1].Data).NameServer);
     }
 
     private static DnsMessage CreateSimpleQuery(string name, DnsQueryType type)

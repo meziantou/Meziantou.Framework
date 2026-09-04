@@ -12,7 +12,9 @@ using Meziantou.Framework.DnsServer.Protocol.Records;
 using Meziantou.Framework.DnsServer.Protocol.Wire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using ClientDns = Meziantou.Framework.DnsClient;
+using DnsResponseCode = Meziantou.Framework.DnsServer.Protocol.DnsResponseCode;
 
 namespace Meziantou.Framework.DnsServer.Tests;
 
@@ -597,6 +599,437 @@ public sealed class DnsServerIntegrationTests
         Assert.True(tlsResponse.IsResponse);
         var tlsRecord = Assert.IsType<DnsARecordData>(Assert.Single(tlsResponse.Answers).Data);
         Assert.Equal(IPAddress.Parse("10.0.0.1"), tlsRecord.Address);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5359:Do Not Disable Certificate Validation")]
+    public async Task DoT_AlpnIsNegotiatedAndProtocolIsTls()
+    {
+        using var certificate = CreateSelfSignedCertificate();
+        var tlsPort = GetAvailableTcpPort();
+
+        DnsServerProtocol? observedProtocol = null;
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.ConfigureKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, 0));
+        builder.AddDnsServer(options => options.AddTlsListener(tlsPort, certificate, IPAddress.Loopback));
+
+        await using var app = builder.Build();
+        app.MapDnsHandler((context, ct) =>
+        {
+            observedProtocol = context.Protocol;
+            return ValueTask.FromResult(context.CreateResponse());
+        });
+
+        await app.StartAsync();
+        try
+        {
+            using var tcp = new TcpClient();
+            await tcp.ConnectAsync(IPAddress.Loopback, tlsPort, XunitCancellationToken);
+            await using var sslStream = new SslStream(tcp.GetStream(), leaveInnerStreamOpen: false);
+
+            // RFC 7858 3.1: a DNS over TLS client indicates the "dot" application protocol.
+            await sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = "127.0.0.1",
+                ApplicationProtocols = [new SslApplicationProtocol("dot")],
+                RemoteCertificateValidationCallback = (_, _, _, _) => true,
+            }, XunitCancellationToken);
+
+            Assert.Equal(new SslApplicationProtocol("dot"), sslStream.NegotiatedApplicationProtocol);
+
+            await SendLengthPrefixedQueryAsync(sslStream, CreateQueryBytes("dot.example.com", DnsQueryType.A));
+
+            Assert.Equal(DnsServerProtocol.Tls, observedProtocol);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Udp_ResponseNeverExceedsTheUdpSizeLimit()
+    {
+        var port = GetAvailableUdpPort();
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.AddDnsServer(options => options.AddUdpListener(port, IPAddress.Loopback));
+
+        await using var app = builder.Build();
+        app.MapDnsHandler((context, ct) =>
+        {
+            var response = context.CreateResponse();
+            for (var i = 0; i < 100; i++)
+            {
+                response.Answers.Add(new DnsResourceRecord
+                {
+                    Name = $"host{i}.example.com",
+                    Type = DnsQueryType.A,
+                    Class = DnsQueryClass.IN,
+                    TimeToLive = 300,
+                    Data = new DnsARecordData { Address = IPAddress.Loopback },
+                });
+            }
+
+            return ValueTask.FromResult(response);
+        });
+
+        await app.StartAsync();
+        try
+        {
+            // No EDNS in the query, so the classic 512-byte limit applies.
+            var responseBytes = await SendUdpQueryAsync(port, CreateQueryBytes("example.com", DnsQueryType.A));
+
+            Assert.NotNull(responseBytes);
+            Assert.HasCountLessThanOrEqual(512, responseBytes);
+            Assert.True(DnsMessageEncoder.DecodeQuery(responseBytes).IsTruncated);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Udp_MessageWithTheQrBitSet_IsDropped()
+    {
+        var port = GetAvailableUdpPort();
+        var handlerInvoked = false;
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.AddDnsServer(options => options.AddUdpListener(port, IPAddress.Loopback));
+
+        await using var app = builder.Build();
+        app.MapDnsHandler((context, ct) =>
+        {
+            handlerInvoked = true;
+            return ValueTask.FromResult(context.CreateResponse());
+        });
+
+        await app.StartAsync();
+        try
+        {
+            // RFC 5625 4.4: answering a response lets two servers be pointed at each other.
+            var query = CreateQueryBytes("example.com", DnsQueryType.A);
+            query[2] |= 0x80; // set QR
+
+            Assert.Null(await SendUdpQueryAsync(port, query, TimeSpan.FromSeconds(2)));
+            Assert.False(handlerInvoked);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Udp_UnsupportedEdnsVersion_IsAnsweredWithBadVersion()
+    {
+        var port = GetAvailableUdpPort();
+        var handlerInvoked = false;
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.AddDnsServer(options => options.AddUdpListener(port, IPAddress.Loopback));
+
+        await using var app = builder.Build();
+        app.MapDnsHandler((context, ct) =>
+        {
+            handlerInvoked = true;
+            return ValueTask.FromResult(context.CreateResponse());
+        });
+
+        await app.StartAsync();
+        try
+        {
+            var query = new DnsMessage { Id = 7, RecursionDesired = true, EdnsOptions = new DnsEdnsOptions { Version = 1 } };
+            query.Questions.Add(new DnsQuestion("example.com", DnsQueryType.A));
+
+            var responseBytes = await SendUdpQueryAsync(port, DnsMessageEncoder.EncodeResponse(query));
+
+            Assert.NotNull(responseBytes);
+            var response = DnsMessageEncoder.DecodeQuery(responseBytes);
+            Assert.Equal(DnsResponseCode.BadVersion, response.ResponseCode);
+            Assert.False(handlerInvoked);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Udp_MalformedQuery_IsAnsweredWithFormatError()
+    {
+        var port = GetAvailableUdpPort();
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.AddDnsServer(options => options.AddUdpListener(port, IPAddress.Loopback));
+
+        await using var app = builder.Build();
+        app.MapDnsHandler((context, ct) => ValueTask.FromResult(context.CreateResponse()));
+
+        await app.StartAsync();
+        try
+        {
+            // A complete header that claims one question, with no question following it.
+            var malformed = new byte[12];
+            BinaryPrimitives.WriteUInt16BigEndian(malformed.AsSpan(0), 0x4242);
+            BinaryPrimitives.WriteUInt16BigEndian(malformed.AsSpan(4), 1);
+
+            var responseBytes = await SendUdpQueryAsync(port, malformed);
+
+            Assert.NotNull(responseBytes);
+            var response = DnsMessageEncoder.DecodeQuery(responseBytes);
+            Assert.Equal(0x4242, response.Id);
+            Assert.True(response.IsResponse);
+            Assert.Equal(DnsResponseCode.FormError, response.ResponseCode);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task DoH_MalformedMessage_ReturnsBadRequest()
+    {
+        await using var app = await StartDohServerAsync();
+        try
+        {
+            var address = app.Urls.First(u => u.StartsWith("http://", StringComparison.Ordinal));
+            using var httpClient = new HttpClient { BaseAddress = new Uri(address) };
+
+            // A CAA record whose tag length exceeds its RDLENGTH.
+            var malformed = new List<byte>([0x12, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00]);
+            malformed.Add(0x00);
+            malformed.AddRange([0x01, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x40]);
+            malformed.AddRange(Enumerable.Repeat((byte)0x41, 64));
+
+            using var content = new ByteArrayContent(malformed.ToArray());
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/dns-message");
+
+            using var response = await httpClient.PostAsync("/dns-query", content, XunitCancellationToken);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task DoH_OversizedBody_ReturnsPayloadTooLarge()
+    {
+        await using var app = await StartDohServerAsync();
+        try
+        {
+            var address = app.Urls.First(u => u.StartsWith("http://", StringComparison.Ordinal));
+            using var httpClient = new HttpClient { BaseAddress = new Uri(address) };
+
+            using var content = new ByteArrayContent(new byte[70_000]);
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/dns-message");
+
+            using var response = await httpClient.PostAsync("/dns-query", content, XunitCancellationToken);
+
+            Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task DoH_Response_CarriesACacheControlHeader()
+    {
+        await using var app = await StartDohServerAsync();
+        try
+        {
+            var address = app.Urls.First(u => u.StartsWith("http://", StringComparison.Ordinal));
+            using var httpClient = new HttpClient { BaseAddress = new Uri(address) };
+
+            using var content = new ByteArrayContent(CreateQueryBytes("example.com", DnsQueryType.A));
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/dns-message");
+
+            using var response = await httpClient.PostAsync("/dns-query", content, XunitCancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            // RFC 8484 5.1: the freshness lifetime is the smallest TTL in the answer.
+            Assert.Equal(TimeSpan.FromSeconds(300), response.Headers.CacheControl?.MaxAge);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task MapDnsHandler_CalledTwice_Throws()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.AddDnsServer(_ => { });
+
+        await using var app = builder.Build();
+        app.MapDnsHandler((context, ct) => ValueTask.FromResult(context.CreateResponse()));
+
+        Assert.Throws<InvalidOperationException>(() => app.MapDnsHandler((context, ct) => ValueTask.FromResult(context.CreateResponse())));
+    }
+
+    [Fact]
+    public void AddDnsServer_TcpListenerWithoutAWebHost_Throws()
+    {
+        var builder = Host.CreateApplicationBuilder();
+
+        // Without Kestrel the TCP listener would silently never start.
+        var exception = Assert.Throws<InvalidOperationException>(() => builder.AddDnsServer(options => options.AddTcpListener(5353, IPAddress.Loopback)));
+        Assert.Contains("Kestrel", exception.Message);
+    }
+
+    [Fact]
+    public async Task Udp_BindFailure_IsReportedByStartAsync()
+    {
+        // Occupy the port first. The failure has to surface here rather than faulting the background
+        // service, which would silently stop the whole host a moment after a successful start.
+        using var squatter = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+        squatter.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+        var port = ((IPEndPoint)squatter.LocalEndPoint!).Port;
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.AddDnsServer(options => options.AddUdpListener(port, IPAddress.Loopback));
+
+        await using var app = builder.Build();
+        app.MapDnsHandler((context, ct) => ValueTask.FromResult(context.CreateResponse()));
+
+        await Assert.ThrowsAsync<SocketException>(() => app.StartAsync(XunitCancellationToken));
+        Assert.False(app.Lifetime.ApplicationStopping.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task Tcp_ResponseLargerThan64K_IsTruncatedInsteadOfCorruptingTheStream()
+    {
+        var port = GetAvailableTcpPort();
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.ConfigureKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, 0));
+        builder.AddDnsServer(options => options.AddTcpListener(port, IPAddress.Loopback));
+
+        await using var app = builder.Build();
+        app.MapDnsHandler((context, ct) =>
+        {
+            var response = context.CreateResponse();
+            for (var i = 0; i < 5000; i++)
+            {
+                response.Answers.Add(new DnsResourceRecord
+                {
+                    Name = $"host{i}.{new string('a', 60)}.example.com",
+                    Type = DnsQueryType.A,
+                    Class = DnsQueryClass.IN,
+                    TimeToLive = 300,
+                    Data = new DnsARecordData { Address = IPAddress.Loopback },
+                });
+            }
+
+            return ValueTask.FromResult(response);
+        });
+
+        await app.StartAsync();
+        try
+        {
+            using var tcp = new TcpClient();
+            await tcp.ConnectAsync(IPAddress.Loopback, port, XunitCancellationToken);
+            await using var stream = tcp.GetStream();
+
+            // Two queries on one connection: the second only arrives intact if the first response
+            // framed its length correctly.
+            for (var i = 0; i < 2; i++)
+            {
+                var query = CreateQueryBytes("example.com", DnsQueryType.A);
+                var lengthPrefix = new byte[2];
+                BinaryPrimitives.WriteUInt16BigEndian(lengthPrefix, (ushort)query.Length);
+                await stream.WriteAsync(lengthPrefix, XunitCancellationToken);
+                await stream.WriteAsync(query, XunitCancellationToken);
+                await stream.FlushAsync(XunitCancellationToken);
+
+                await stream.ReadExactlyAsync(lengthPrefix, XunitCancellationToken);
+                var responseLength = BinaryPrimitives.ReadUInt16BigEndian(lengthPrefix);
+                var responseBytes = new byte[responseLength];
+                await stream.ReadExactlyAsync(responseBytes, XunitCancellationToken);
+
+                var response = DnsMessageEncoder.DecodeQuery(responseBytes);
+                Assert.True(response.IsResponse);
+                Assert.True(response.IsTruncated);
+                Assert.Equal(1234, response.Id);
+            }
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    private static async Task<WebApplication> StartDohServerAsync()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.AddDnsServer(_ => { });
+
+        var app = builder.Build();
+        app.MapDnsHandler((context, ct) =>
+        {
+            var response = context.CreateResponse();
+            response.Answers.Add(new DnsResourceRecord
+            {
+                Name = "example.com",
+                Type = DnsQueryType.A,
+                Class = DnsQueryClass.IN,
+                TimeToLive = 300,
+                Data = new DnsARecordData { Address = IPAddress.Parse("1.2.3.4") },
+            });
+
+            return ValueTask.FromResult(response);
+        });
+        app.MapDnsOverHttps("/dns-query");
+
+        await app.StartAsync();
+        return app;
+    }
+
+    private static async Task<byte[]?> SendUdpQueryAsync(int port, byte[] query, TimeSpan? timeout = null)
+    {
+        using var client = new UdpClient();
+        await client.SendAsync(query, new IPEndPoint(IPAddress.Loopback, port));
+
+        using var cts = new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(10));
+        try
+        {
+            var result = await client.ReceiveAsync(cts.Token);
+            return result.Buffer;
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
+    }
+
+    private static async Task SendLengthPrefixedQueryAsync(Stream stream, byte[] query)
+    {
+        var lengthPrefix = new byte[2];
+        BinaryPrimitives.WriteUInt16BigEndian(lengthPrefix, (ushort)query.Length);
+        await stream.WriteAsync(lengthPrefix);
+        await stream.WriteAsync(query);
+        await stream.FlushAsync();
+
+        await stream.ReadExactlyAsync(lengthPrefix);
+        var responseLength = BinaryPrimitives.ReadUInt16BigEndian(lengthPrefix);
+        await stream.ReadExactlyAsync(new byte[responseLength]);
     }
 
     private static byte[] CreateQueryBytes(string name, DnsQueryType type)

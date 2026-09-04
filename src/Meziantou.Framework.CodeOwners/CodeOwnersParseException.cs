@@ -43,8 +43,8 @@ public sealed class CodeOwnersParseException : Exception
         CodeOwnersErrorKind.UnterminatedSectionHeader => "the section header is not terminated by ']'",
         CodeOwnersErrorKind.UnterminatedRequiredReviewerCount => "the required reviewer count is not terminated by ']'",
         CodeOwnersErrorKind.InvalidRequiredReviewerCount => "the required reviewer count is not a positive integer",
-        CodeOwnersErrorKind.EmptyMember => "'@' does not identify an owner",
-        CodeOwnersErrorKind.InvalidMember => "the owner is neither a username nor an email address",
+        CodeOwnersErrorKind.EmptyOwner => "'@' does not identify an owner",
+        CodeOwnersErrorKind.InvalidOwner => "the owner is neither a username nor an email address",
         _ => kind.ToString(),
     };
 }

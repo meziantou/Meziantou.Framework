@@ -4,27 +4,18 @@
 
 namespace Meziantou.Framework.CodeOwners
 {
-    public readonly struct CodeOwnersEntry : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersEntry>
+    public sealed class CodeOwnersEntry : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersEntry>
     {
-        public int PatternIndex { get => throw null; }
         public string Pattern { get => throw null; }
-        public Meziantou.Framework.CodeOwners.CodeOwnersEntryType EntryType { get => throw null; }
-        public string? Member { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersOwner> Owners { get => throw null; }
         public Meziantou.Framework.CodeOwners.CodeOwnersSection? Section { get => throw null; }
         public bool IsOptional { get => throw null; }
         public override string ToString() => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.CodeOwners.CodeOwnersEntry other) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.CodeOwners.CodeOwnersEntry? other) => throw null;
         public override int GetHashCode() => throw null;
-        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersEntry left, Meziantou.Framework.CodeOwners.CodeOwnersEntry right) => throw null;
-        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersEntry left, Meziantou.Framework.CodeOwners.CodeOwnersEntry right) => throw null;
-    }
-
-    public enum CodeOwnersEntryType
-    {
-        Username = 0,
-        EmailAddress = 1,
-        None = 2
+        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersEntry? left, Meziantou.Framework.CodeOwners.CodeOwnersEntry? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersEntry? left, Meziantou.Framework.CodeOwners.CodeOwnersEntry? right) => throw null;
     }
 
     public enum CodeOwnersErrorKind
@@ -32,8 +23,26 @@ namespace Meziantou.Framework.CodeOwners
         UnterminatedSectionHeader = 0,
         UnterminatedRequiredReviewerCount = 1,
         InvalidRequiredReviewerCount = 2,
-        EmptyMember = 3,
-        InvalidMember = 4
+        EmptyOwner = 3,
+        InvalidOwner = 4
+    }
+
+    public readonly struct CodeOwnersOwner : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersOwner>
+    {
+        public Meziantou.Framework.CodeOwners.CodeOwnersOwnerType Type { get => throw null; }
+        public string Name { get => throw null; }
+        public override string ToString() => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public bool Equals(Meziantou.Framework.CodeOwners.CodeOwnersOwner other) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersOwner left, Meziantou.Framework.CodeOwners.CodeOwnersOwner right) => throw null;
+        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersOwner left, Meziantou.Framework.CodeOwners.CodeOwnersOwner right) => throw null;
+    }
+
+    public enum CodeOwnersOwnerType
+    {
+        Username = 0,
+        EmailAddress = 1
     }
 
     public sealed class CodeOwnersParseException : System.Exception
@@ -57,7 +66,7 @@ namespace Meziantou.Framework.CodeOwners
         public int RequiredReviewerCount { get => throw null; }
         public bool IsOptional { get => throw null; }
         public bool IsMandatory { get => throw null; }
-        public System.Collections.Generic.IReadOnlyCollection<string> DefaultOwners { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersOwner> DefaultOwners { get => throw null; }
         public bool HasDefaultOwners { get => throw null; }
         public override string ToString() => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;

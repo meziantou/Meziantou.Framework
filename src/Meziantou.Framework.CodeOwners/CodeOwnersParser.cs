@@ -13,10 +13,9 @@ namespace Meziantou.Framework.CodeOwners;
 ///     docs/* docs@example.com
 ///     """;
 /// var entries = CodeOwnersParser.Parse(content);
-/// // entries[0]: Pattern="*", Member="user1", EntryType=Username
-/// // entries[1]: Pattern="*", Member="user2", EntryType=Username
-/// // entries[2]: Pattern="*.js", Member="js-owner", EntryType=Username
-/// // entries[3]: Pattern="docs/*", Member="docs@example.com", EntryType=EmailAddress
+/// // entries[0]: Pattern="*", Owners=[@user1, @user2]
+/// // entries[1]: Pattern="*.js", Owners=[@js-owner]
+/// // entries[2]: Pattern="docs/*", Owners=[docs@example.com]
 /// </code>
 /// </example>
 /// </summary>
@@ -66,7 +65,6 @@ public static class CodeOwnersParser
         private (CodeOwnersErrorKind Kind, int Index)? _error;
         private CodeOwnersSection? _currentSection;
         private int _index;
-        private int _patternIndex;
 
         public CodeOwnersParserContext(string content)
         {
@@ -153,9 +151,30 @@ public static class CodeOwnersParser
             if (string.IsNullOrEmpty(pattern))
                 return;
 
-            // Parse members (username or email)
-            ParseMembers(pattern, _patternIndex);
-            _patternIndex++;
+            ParseEntry(pattern);
+        }
+
+        private void ParseEntry(string pattern)
+        {
+            var owners = ParseOwners();
+            IReadOnlyList<CodeOwnersOwner> entryOwners;
+            if (owners is not null)
+            {
+                entryOwners = owners;
+            }
+            else if (_currentSection.HasValue && _currentSection.Value.HasDefaultOwners)
+            {
+                // A pattern that declares no owner inherits the ones declared on the section header.
+                // The list is shared: it is never mutated once the section is parsed.
+                entryOwners = _currentSection.Value.DefaultOwners;
+            }
+            else
+            {
+                // The pattern is explicitly left unowned
+                entryOwners = [];
+            }
+
+            _entries.Add(new CodeOwnersEntry(pattern, entryOwners, _currentSection));
         }
 
         private bool TryParseSection(out CodeOwnersSection section)
@@ -179,7 +198,7 @@ public static class CodeOwnersParser
                     requiredReviewerCount = ParseSectionRequiredReviewerCount();
                 }
 
-                var defaultOwners = new List<string>();
+                var defaultOwners = new List<CodeOwnersOwner>();
                 if (Peek() is ' ' or '\t')
                 {
                     defaultOwners = ParseSectionDefaultOwners();
@@ -248,12 +267,12 @@ public static class CodeOwnersParser
             return requiredReviewerCount;
         }
 
-        private List<string> ParseSectionDefaultOwners()
+        private List<CodeOwnersOwner> ParseSectionDefaultOwners()
         {
             var lineStartIndex = _index;
             var line = ConsumeLine();
 
-            var defaultOwners = new List<string>();
+            var defaultOwners = new List<CodeOwnersOwner>();
             var offset = 0;
             while (offset < line.Length)
             {
@@ -274,15 +293,19 @@ public static class CodeOwnersParser
                 var defaultOwner = token.ToString();
                 if (defaultOwner is "@")
                 {
-                    SetError(CodeOwnersErrorKind.EmptyMember, lineStartIndex + offset);
+                    SetError(CodeOwnersErrorKind.EmptyOwner, lineStartIndex + offset);
                 }
-                else if (defaultOwner[0] is '@' || IsEmailAddress(defaultOwner))
+                else if (defaultOwner[0] is '@')
                 {
-                    defaultOwners.Add(defaultOwner);
+                    defaultOwners.Add(CodeOwnersOwner.Username(defaultOwner[1..]));
+                }
+                else if (IsEmailAddress(defaultOwner))
+                {
+                    defaultOwners.Add(CodeOwnersOwner.EmailAddress(defaultOwner));
                 }
                 else
                 {
-                    SetError(CodeOwnersErrorKind.InvalidMember, lineStartIndex + offset);
+                    SetError(CodeOwnersErrorKind.InvalidOwner, lineStartIndex + offset);
                 }
 
                 offset += token.Length;
@@ -350,9 +373,10 @@ public static class CodeOwnersParser
             return sb.ToString();
         }
 
-        private void ParseMembers(string pattern, int patternIndex)
+        /// <summary>Parses the owners declared on the current line, or returns <see langword="null"/> when the line declares none.</summary>
+        private List<CodeOwnersOwner>? ParseOwners()
         {
-            var foundMember = false;
+            List<CodeOwnersOwner>? owners = null;
 
             while (!EndOfFile)
             {
@@ -369,41 +393,46 @@ public static class CodeOwnersParser
                     break;
                 }
 
-                var isMember = c == '@';
+                var isUsername = c == '@';
                 var tokenStartIndex = _index - 1;
-                var memberStart = isMember ? _index : tokenStartIndex;
+                var ownerStart = isUsername ? _index : tokenStartIndex;
 
                 var remaining = _content.AsSpan(_index);
                 var separatorIndex = remaining.IndexOfAny(MemberSeparatorSearchValues);
-                string member;
+                string owner;
                 char? separator;
                 if (separatorIndex < 0)
                 {
-                    member = _content.AsSpan(memberStart).ToString();
+                    owner = _content.AsSpan(ownerStart).ToString();
                     _index = _content.Length;
                     separator = null;
                 }
                 else
                 {
-                    var memberLength = _index + separatorIndex - memberStart;
-                    member = _content.AsSpan(memberStart, memberLength).ToString();
+                    var ownerLength = _index + separatorIndex - ownerStart;
+                    owner = _content.AsSpan(ownerStart, ownerLength).ToString();
                     separator = remaining[separatorIndex];
                     _index += separatorIndex;
                 }
 
-                if (member.Length is 0)
+                if (owner.Length is 0)
                 {
                     // A lone '@' does not identify anybody
-                    SetError(CodeOwnersErrorKind.EmptyMember, tokenStartIndex);
+                    SetError(CodeOwnersErrorKind.EmptyOwner, tokenStartIndex);
                 }
-                else if (isMember || IsEmailAddress(member))
+                else if (isUsername)
                 {
-                    AddEntry(isMember, member, pattern, patternIndex);
-                    foundMember = true;
+                    owners ??= [];
+                    owners.Add(CodeOwnersOwner.Username(owner));
+                }
+                else if (IsEmailAddress(owner))
+                {
+                    owners ??= [];
+                    owners.Add(CodeOwnersOwner.EmailAddress(owner));
                 }
                 else
                 {
-                    SetError(CodeOwnersErrorKind.InvalidMember, tokenStartIndex);
+                    SetError(CodeOwnersErrorKind.InvalidOwner, tokenStartIndex);
                 }
 
                 if (separator is null)
@@ -418,38 +447,7 @@ public static class CodeOwnersParser
                 _index++;
             }
 
-            if (!foundMember)
-            {
-                if (_currentSection.HasValue && _currentSection.Value.HasDefaultOwners)
-                {
-                    foreach (var defaultOwner in _currentSection.Value.DefaultOwners)
-                    {
-                        // Default owners are validated when the section header is parsed
-                        var isMember = defaultOwner[0] == '@';
-                        AddEntry(isMember, isMember ? defaultOwner[1..] : defaultOwner, pattern, patternIndex);
-                    }
-                }
-                else
-                {
-                    AddEntry(isMember: false, name: null, pattern, patternIndex);
-                }
-            }
-        }
-
-        private void AddEntry(bool isMember, string? name, string pattern, int patternIndex)
-        {
-            if (name is null)
-            {
-                _entries.Add(CodeOwnersEntry.FromNone(patternIndex, pattern, _currentSection));
-            }
-            else if (isMember)
-            {
-                _entries.Add(CodeOwnersEntry.FromUsername(patternIndex, pattern, name, _currentSection));
-            }
-            else
-            {
-                _entries.Add(CodeOwnersEntry.FromEmailAddress(patternIndex, pattern, name, _currentSection));
-            }
+            return owners;
         }
 
         private static bool IsEmailAddress(ReadOnlySpan<char> value)

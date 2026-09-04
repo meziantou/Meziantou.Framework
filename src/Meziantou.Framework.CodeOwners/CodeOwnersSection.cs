@@ -14,7 +14,7 @@ namespace Meziantou.Framework.CodeOwners;
 ///     ^[Optional]
 ///     docs/* @docs-owner
 ///     """;
-/// var entries = CodeOwnersParser.Parse(content).ToArray();
+/// var entries = CodeOwnersParser.Parse(content);
 /// // entries[0].Section: Name="Backend", RequiredReviewerCount=2
 /// // entries[1].Section: Name="Optional", IsOptional=true
 /// </code>
@@ -23,7 +23,7 @@ namespace Meziantou.Framework.CodeOwners;
 [StructLayout(LayoutKind.Auto)]
 public readonly struct CodeOwnersSection : IEquatable<CodeOwnersSection>
 {
-    internal CodeOwnersSection(string name, int requiredReviewerCount = 1, IReadOnlyCollection<string>? defaultOwners = null)
+    internal CodeOwnersSection(string name, int requiredReviewerCount = 1, IReadOnlyList<CodeOwnersOwner>? defaultOwners = null)
     {
         Name = name;
         RequiredReviewerCount = requiredReviewerCount;
@@ -42,13 +42,13 @@ public readonly struct CodeOwnersSection : IEquatable<CodeOwnersSection>
     /// <summary>Gets a value indicating whether this section is mandatory (requires at least 1 reviewer).</summary>
     public bool IsMandatory => !IsOptional;
 
-    /// <summary>Gets the default owners for patterns in this section when no explicit owners are specified.</summary>
-    /// <remarks>The owners are returned as written in the file, so usernames keep their leading <c>@</c>. <see cref="CodeOwnersEntry.Member"/> reports them without it.</remarks>
-    public IReadOnlyCollection<string> DefaultOwners { get; }
+    /// <summary>Gets the owners used by the patterns of this section that do not declare any owner.</summary>
+    public IReadOnlyList<CodeOwnersOwner> DefaultOwners { get; }
 
     /// <summary>Gets a value indicating whether this section has default owners defined.</summary>
     public bool HasDefaultOwners => DefaultOwners.Count > 0;
 
+    /// <summary>Returns the section header as written in a CODEOWNERS file.</summary>
     public override string ToString()
     {
         string result;
@@ -84,7 +84,7 @@ public readonly struct CodeOwnersSection : IEquatable<CodeOwnersSection>
     {
         return Name == other.Name &&
                RequiredReviewerCount == other.RequiredReviewerCount &&
-               DefaultOwners.SequenceEqual(other.DefaultOwners, StringComparer.Ordinal);
+               DefaultOwners.SequenceEqual(other.DefaultOwners);
     }
 
     public override int GetHashCode() => HashCode.Combine(Name, RequiredReviewerCount, DefaultOwners.Count);

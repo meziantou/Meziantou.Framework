@@ -13,8 +13,8 @@ public enum CodeOwnersErrorKind
     InvalidRequiredReviewerCount,
 
     /// <summary>An owner consists of a single <c>@</c>.</summary>
-    EmptyMember,
+    EmptyOwner,
 
     /// <summary>An owner is neither a username nor an email address.</summary>
-    InvalidMember,
+    InvalidOwner,
 }

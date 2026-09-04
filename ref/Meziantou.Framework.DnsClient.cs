@@ -24,6 +24,7 @@ namespace Meziantou.Framework.DnsClient
         public Meziantou.Framework.DnsClient.DnssecValidationMode DnssecValidationMode { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsClient.DnssecTrustAnchor> DnssecTrustAnchors { get => throw null; set { } }
         public System.TimeProvider TimeProvider { get => throw null; set { } }
+        public bool RetryTruncatedOverTcp { get => throw null; set { } }
         public System.Version HttpVersion { get => throw null; set { } }
         public System.Net.Http.HttpVersionPolicy HttpVersionPolicy { get => throw null; set { } }
         public System.Net.Http.HttpMessageHandler? HttpHandler { get => throw null; set { } }
@@ -59,7 +60,7 @@ namespace Meziantou.Framework.DnsClient
         public ushort KeyTag { get => throw null; }
         public byte Algorithm { get => throw null; }
         public byte DigestType { get => throw null; }
-        public byte[] Digest { get => throw null; }
+        public System.ReadOnlyMemory<byte> Digest { get => throw null; }
         public DnssecTrustAnchor(string name, ushort keyTag, byte algorithm, byte digestType, byte[] digest) { }
     }
 
@@ -277,7 +278,9 @@ namespace Meziantou.Framework.DnsClient.Response
         SignatureVerificationFailed = 12,
         InvalidDenialProof = 13,
         TrustChainIncomplete = 14,
-        InvalidData = 15
+        InvalidData = 15,
+        ChainQueryFailed = 16,
+        QueryBudgetExceeded = 17
     }
 
     public sealed class DnssecValidationResult

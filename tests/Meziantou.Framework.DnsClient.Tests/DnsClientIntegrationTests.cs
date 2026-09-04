@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using TestUtilities;
 using System.Net;
 using Meziantou.Framework.DnsClient.Query;
@@ -9,9 +10,60 @@ namespace Meziantou.Framework.DnsClient.Tests;
 
 public sealed class DnsClientIntegrationTests
 {
+    /// <summary>
+    /// These tests query public resolvers, so they fail for reasons that say nothing about this library: no network,
+    /// a restrictive egress policy, or an outage at the resolver. Probe once per endpoint and skip rather than fail,
+    /// so a red suite always means a real regression. Hermetic coverage lives in the other test classes.
+    /// </summary>
+    /// <remarks>
+    /// Reachability is tracked per (server, protocol) rather than globally, because the transports use different
+    /// ports: a network that allows 443 for DNS over HTTPS may still block 53 and 853.
+    /// </remarks>
+    private static readonly ConcurrentDictionary<(string Server, DnsClientProtocol Protocol), Lazy<bool>> Reachability = new();
+
     private const string CloudflareDoH = "https://cloudflare-dns.com/dns-query";
     private const string Quad9DoH = "https://dns.quad9.net/dns-query";
+    private const string CloudflareIP = "1.1.1.1";
+    private const string AdGuardDoQ = "dns.adguard-dns.com";
     private static readonly string[] DnsOverHttpsFallbackUrls = [CloudflareDoH, Quad9DoH];
+
+    private static bool IsReachable(string server, DnsClientProtocol protocol)
+    {
+        var probe = Reachability.GetOrAdd(
+            (server, protocol),
+            key => new Lazy<bool>(() => Probe(key.Server, key.Protocol), LazyThreadSafetyMode.ExecutionAndPublication));
+
+        return probe.Value;
+    }
+
+    private static bool Probe(string server, DnsClientProtocol protocol)
+    {
+        try
+        {
+            using var client = new DnsClient(server, protocol, new DnsClientOptions { Timeout = TimeSpan.FromSeconds(10) });
+            var response = client.QueryAsync("example.com", DnsQueryType.A).GetAwaiter().GetResult();
+            return response.Header.ResponseCode is DnsResponseCode.NoError;
+        }
+#pragma warning disable CA1031 // Any failure means this endpoint is unavailable; the reason does not change the outcome.
+        catch (Exception)
+        {
+            return false;
+        }
+#pragma warning restore CA1031
+    }
+
+    /// <summary>Skips unless at least one of the DNS over HTTPS resolvers the tests fall back over is reachable.</summary>
+    private static void SkipIfResolverUnreachable()
+    {
+        var reachable = Array.Exists(DnsOverHttpsFallbackUrls, url => IsReachable(url, DnsClientProtocol.Https));
+        global::Xunit.Assert.SkipUnless(reachable, $"No DNS over HTTPS resolver is reachable from this machine ({string.Join(", ", DnsOverHttpsFallbackUrls)}).");
+    }
+
+    /// <summary>Skips unless this specific server and protocol is reachable, for the tests that do not use the DoH fallback list.</summary>
+    private static void SkipIfEndpointUnreachable(string server, DnsClientProtocol protocol)
+    {
+        global::Xunit.Assert.SkipUnless(IsReachable(server, protocol), $"The DNS server '{server}' is not reachable over {protocol} from this machine.");
+    }
 
     private static DnsClient CreateDoHClient(string url = CloudflareDoH, TimeSpan? timeout = null)
     {
@@ -88,6 +140,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_A_Record()
     {
+        SkipIfResolverUnreachable();
+
         var response = await QueryWithFallbackAsync(DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
@@ -102,6 +156,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_AAAA_Record()
     {
+        SkipIfResolverUnreachable();
+
         var response = await QueryWithFallbackAsync(DnsQueryType.AAAA);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
@@ -113,6 +169,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_MX_Record()
     {
+        SkipIfResolverUnreachable();
+
         var response = await QueryWithFallbackAsync(DnsQueryType.MX, "google.com");
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
@@ -128,6 +186,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_TXT_Record()
     {
+        SkipIfResolverUnreachable();
+
         var response = await QueryWithFallbackAsync(DnsQueryType.TXT, "google.com");
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
@@ -139,6 +199,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_NS_Record()
     {
+        SkipIfResolverUnreachable();
+
         var response = await QueryWithFallbackAsync(DnsQueryType.NS);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
@@ -150,6 +212,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_SOA_Record()
     {
+        SkipIfResolverUnreachable();
+
         var response = await QueryWithFallbackAsync(DnsQueryType.SOA);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
@@ -166,6 +230,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_CNAME_Record()
     {
+        SkipIfResolverUnreachable();
+
         var response = await QueryWithFallbackAsync(DnsQueryType.CNAME, "www.microsoft.com");
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
@@ -178,6 +244,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_CAA_Record()
     {
+        SkipIfResolverUnreachable();
+
         var response = await QueryWithFallbackAsync(DnsQueryType.CAA, "google.com");
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
@@ -193,6 +261,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_HTTPS_Record()
     {
+        SkipIfResolverUnreachable();
+
         var response = await QueryWithFallbackAsync(DnsQueryType.HTTPS, "cloudflare.com");
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
@@ -203,6 +273,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_NxDomain()
     {
+        SkipIfResolverUnreachable();
+
         var response = await QueryWithFallbackAsync(DnsQueryType.A, "this-domain-surely-does-not-exist-xyz999.com");
 
         Assert.Equal(DnsResponseCode.NameError, response.Header.ResponseCode);
@@ -211,6 +283,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_RecursionDesired()
     {
+        SkipIfResolverUnreachable();
+
         using var client = CreateDoHClient();
         var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
@@ -221,6 +295,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task ReverseLookup_IPv4()
     {
+        SkipIfResolverUnreachable();
+
         using var client = CreateDoHClient();
         var response = await ReverseLookupWithRetryAsync(client, IPAddress.Parse("1.1.1.1"));
 
@@ -234,6 +310,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task ReverseLookup_IPv6()
     {
+        SkipIfResolverUnreachable();
+
         using var client = CreateDoHClient();
         var response = await ReverseLookupWithRetryAsync(client, IPAddress.Parse("2606:4700:4700::1111"));
 
@@ -245,6 +323,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_IDN_Unicode()
     {
+        SkipIfResolverUnreachable();
+
         using var client = CreateDoHClient();
         var response = await QueryWithRetryAsync(client, "münchen.de", DnsQueryType.A);
 
@@ -254,6 +334,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_Punycode()
     {
+        SkipIfResolverUnreachable();
+
         using var client = CreateDoHClient();
         var response = await QueryWithRetryAsync(client, "xn--mnchen-3ya.de", DnsQueryType.A);
 
@@ -263,6 +345,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_DNSSEC_AD_Flag()
     {
+        SkipIfResolverUnreachable();
+
         using var client = new DnsClient(CloudflareDoH, DnsClientProtocol.Https, new DnsClientOptions
         {
             DnssecOk = true,
@@ -289,6 +373,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_DNSSEC_LocalValidation()
     {
+        SkipIfResolverUnreachable();
+
         var response = await QueryWithLocalValidationFallbackAsync("cloudflare.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
@@ -298,6 +384,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_DNSKEY_Record()
     {
+        SkipIfResolverUnreachable();
+
         using var client = new DnsClient(CloudflareDoH, DnsClientProtocol.Https, new DnsClientOptions
         {
             DnssecOk = true,
@@ -329,6 +417,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_DS_Record()
     {
+        SkipIfResolverUnreachable();
+
         using var client = new DnsClient(CloudflareDoH, DnsClientProtocol.Https, new DnsClientOptions
         {
             DnssecOk = true,
@@ -360,6 +450,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_SRV_Record()
     {
+        SkipIfResolverUnreachable();
+
         var response = await QueryWithFallbackAsync(DnsQueryType.SRV, "_sip._tcp.example.com");
 
         // SRV might not exist for this domain, just check no protocol error
@@ -369,6 +461,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_WithDnsOverHttps_Quad9()
     {
+        SkipIfResolverUnreachable();
+
         using var client = CreateDoHClient(Quad9DoH, timeout: TimeSpan.FromSeconds(20));
         var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
@@ -379,6 +473,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_DefaultClassIsIN()
     {
+        SkipIfResolverUnreachable();
+
         using var client = CreateDoHClient();
         var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
@@ -390,6 +486,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_MultipleAnswers()
     {
+        SkipIfResolverUnreachable();
+
         using var client = CreateDoHClient();
         var response = await QueryWithRetryAsync(client, "google.com", DnsQueryType.A);
 
@@ -400,6 +498,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_RRSIG_Record()
     {
+        SkipIfResolverUnreachable();
+
         using var client = new DnsClient(CloudflareDoH, DnsClientProtocol.Https, new DnsClientOptions
         {
             DnssecOk = true,
@@ -432,6 +532,8 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_NSEC_InAuthoritySection()
     {
+        SkipIfResolverUnreachable();
+
         using var client = new DnsClient(CloudflareDoH, DnsClientProtocol.Https, new DnsClientOptions
         {
             DnssecOk = true,
@@ -458,7 +560,9 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_UDP()
     {
-        using var client = new DnsClient("1.1.1.1", DnsClientProtocol.Udp);
+        SkipIfEndpointUnreachable(CloudflareIP, DnsClientProtocol.Udp);
+
+        using var client = new DnsClient(CloudflareIP, DnsClientProtocol.Udp);
         var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
@@ -468,7 +572,9 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_TCP()
     {
-        using var client = new DnsClient("1.1.1.1", DnsClientProtocol.Tcp);
+        SkipIfEndpointUnreachable(CloudflareIP, DnsClientProtocol.Tcp);
+
+        using var client = new DnsClient(CloudflareIP, DnsClientProtocol.Tcp);
         var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
@@ -478,7 +584,9 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_DoT()
     {
-        using var client = new DnsClient("1.1.1.1", DnsClientProtocol.Tls);
+        SkipIfEndpointUnreachable(CloudflareIP, DnsClientProtocol.Tls);
+
+        using var client = new DnsClient(CloudflareIP, DnsClientProtocol.Tls);
         var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
@@ -488,10 +596,11 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_DoQ()
     {
-        if (!System.Net.Quic.QuicConnection.IsSupported)
-            return;
+        // A bare return would report this as a passing test that asserted nothing.
+        global::Xunit.Assert.SkipUnless(System.Net.Quic.QuicConnection.IsSupported, "QUIC is not supported on this platform.");
+        SkipIfEndpointUnreachable(AdGuardDoQ, DnsClientProtocol.Quic);
 
-        using var client = new DnsClient("dns.adguard-dns.com", DnsClientProtocol.Quic);
+        using var client = new DnsClient(AdGuardDoQ, DnsClientProtocol.Quic);
         var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);

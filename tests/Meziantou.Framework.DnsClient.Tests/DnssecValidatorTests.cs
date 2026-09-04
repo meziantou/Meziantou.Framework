@@ -39,6 +39,86 @@ public sealed class DnssecValidatorTests
     }
 
     [Fact]
+    public async Task ValidateAsync_BogusNxDomain_WhenWildcardDenialIsMissing()
+    {
+        var fixture = DnssecTestFixture.Create();
+        var result = await fixture.ValidateAsync(fixture.NxDomainMissingWildcardDenialResponse);
+
+        Assert.Equal(DnssecValidationStatus.Bogus, result.Status);
+        Assert.Contains(result.Issues, issue => issue.Code is DnssecValidationIssueCode.InvalidDenialProof);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_BogusNxDomain_WhenDenialComesFromAnUnrelatedZone()
+    {
+        var fixture = DnssecTestFixture.Create();
+        var result = await fixture.ValidateAsync(fixture.CrossZoneDenialResponse);
+
+        Assert.Equal(DnssecValidationStatus.Bogus, result.Status);
+        Assert.Contains(result.Issues, issue => issue.Code is DnssecValidationIssueCode.InvalidDenialProof);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_BogusWhenSignatureBytesAreTampered()
+    {
+        var fixture = DnssecTestFixture.Create();
+        var result = await fixture.ValidateAsync(fixture.TamperedSignatureResponse);
+
+        Assert.Equal(DnssecValidationStatus.Bogus, result.Status);
+        Assert.Contains(result.Issues, issue => issue.Code is DnssecValidationIssueCode.SignatureVerificationFailed);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_BogusWhenSignatureIsNotYetValid()
+    {
+        var fixture = DnssecTestFixture.Create();
+        var result = await fixture.ValidateAsync(fixture.NotYetValidSignatureResponse);
+
+        Assert.Equal(DnssecValidationStatus.Bogus, result.Status);
+        Assert.Contains(result.Issues, issue => issue.Code is DnssecValidationIssueCode.SignatureNotYetValid);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_BogusWhenKeyTagDoesNotMatchAnyDnskey()
+    {
+        var fixture = DnssecTestFixture.Create();
+        var result = await fixture.ValidateAsync(fixture.WrongKeyTagResponse);
+
+        Assert.Equal(DnssecValidationStatus.Bogus, result.Status);
+        Assert.Contains(result.Issues, issue => issue.Code is DnssecValidationIssueCode.MissingDnskey);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_BogusWhenRrsigIsStrippedFromASignedZone()
+    {
+        var fixture = DnssecTestFixture.Create();
+        var result = await fixture.ValidateAsync(fixture.StrippedSignatureResponse);
+
+        Assert.Equal(DnssecValidationStatus.Bogus, result.Status);
+        Assert.Contains(result.Issues, issue => issue.Code is DnssecValidationIssueCode.MissingRrsig);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_BogusWhenWildcardAnswerHasNoDenialOfTheQueriedName()
+    {
+        var fixture = DnssecTestFixture.Create();
+        var result = await fixture.ValidateAsync(fixture.WildcardWithoutDenialResponse);
+
+        Assert.Equal(DnssecValidationStatus.Bogus, result.Status);
+        Assert.Contains(result.Issues, issue => issue.Code is DnssecValidationIssueCode.InvalidDenialProof);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_BogusWhenAnswerDoesNotCorrespondToTheQuestion()
+    {
+        var fixture = DnssecTestFixture.Create();
+        var result = await fixture.ValidateAsync(fixture.UnrelatedAnswerResponse);
+
+        Assert.Equal(DnssecValidationStatus.Bogus, result.Status);
+        Assert.Contains(result.Issues, issue => issue.Code is DnssecValidationIssueCode.InvalidData);
+    }
+
+    [Fact]
     public async Task ValidateAsync_SecureNoData()
     {
         var fixture = DnssecTestFixture.Create();
@@ -179,7 +259,15 @@ public sealed class DnssecValidatorTests
             DnsResponseMessage insecureUnsignedResponse,
             DnsResponseMessage expiredSignatureResponse,
             DnsResponseMessage crossZoneSignedResponse,
-            DnsResponseMessage unsupportedAlgorithmResponse)
+            DnsResponseMessage unsupportedAlgorithmResponse,
+            DnsResponseMessage nxDomainMissingWildcardDenialResponse,
+            DnsResponseMessage crossZoneDenialResponse,
+            DnsResponseMessage tamperedSignatureResponse,
+            DnsResponseMessage notYetValidSignatureResponse,
+            DnsResponseMessage wrongKeyTagResponse,
+            DnsResponseMessage strippedSignatureResponse,
+            DnsResponseMessage wildcardWithoutDenialResponse,
+            DnsResponseMessage unrelatedAnswerResponse)
         {
             Responses = responses;
             TrustAnchors = trustAnchors;
@@ -192,6 +280,14 @@ public sealed class DnssecValidatorTests
             ExpiredSignatureResponse = expiredSignatureResponse;
             CrossZoneSignedResponse = crossZoneSignedResponse;
             UnsupportedAlgorithmResponse = unsupportedAlgorithmResponse;
+            NxDomainMissingWildcardDenialResponse = nxDomainMissingWildcardDenialResponse;
+            CrossZoneDenialResponse = crossZoneDenialResponse;
+            TamperedSignatureResponse = tamperedSignatureResponse;
+            NotYetValidSignatureResponse = notYetValidSignatureResponse;
+            WrongKeyTagResponse = wrongKeyTagResponse;
+            StrippedSignatureResponse = strippedSignatureResponse;
+            WildcardWithoutDenialResponse = wildcardWithoutDenialResponse;
+            UnrelatedAnswerResponse = unrelatedAnswerResponse;
         }
 
         private IReadOnlyDictionary<QueryKey, DnsResponseMessage> Responses { get; }
@@ -215,6 +311,22 @@ public sealed class DnssecValidatorTests
         public DnsResponseMessage CrossZoneSignedResponse { get; }
 
         public DnsResponseMessage UnsupportedAlgorithmResponse { get; }
+
+        public DnsResponseMessage NxDomainMissingWildcardDenialResponse { get; }
+
+        public DnsResponseMessage CrossZoneDenialResponse { get; }
+
+        public DnsResponseMessage TamperedSignatureResponse { get; }
+
+        public DnsResponseMessage NotYetValidSignatureResponse { get; }
+
+        public DnsResponseMessage WrongKeyTagResponse { get; }
+
+        public DnsResponseMessage StrippedSignatureResponse { get; }
+
+        public DnsResponseMessage WildcardWithoutDenialResponse { get; }
+
+        public DnsResponseMessage UnrelatedAnswerResponse { get; }
 
         public static DnssecTestFixture Create(bool dsMismatch = false, ushort? exampleKeyFlags = null)
         {
@@ -281,9 +393,21 @@ public sealed class DnssecValidatorTests
             var aliasSignature = CreateSignature([alias], DnsQueryType.CNAME, "example.com", exampleKey, exampleRsa, now);
             var cnameResponse = CreateMessage("alias.example.com", DnsQueryType.A, [alias, aliasSignature, a, aSignature]);
 
+            // A complete RFC 4035 5.4 NXDOMAIN proof needs two NSECs: one covering the queried name, and one showing
+            // that no wildcard at the closest encloser could have answered it.
             var nxDomainNsec = CreateNsec("a.example.com", "z.example.com", [DnsQueryType.NSEC, DnsQueryType.RRSIG]);
             var nxDomainNsecSignature = CreateSignature([nxDomainNsec], DnsQueryType.NSEC, "example.com", exampleKey, exampleRsa, now);
-            var nxDomainResponse = CreateMessage("missing.example.com", DnsQueryType.A, [], [nxDomainNsec, nxDomainNsecSignature], DnsResponseCode.NameError);
+            var nxDomainWildcardNsec = CreateNsec("example.com", "a.example.com", [DnsQueryType.SOA, DnsQueryType.NS, DnsQueryType.DNSKEY, DnsQueryType.NSEC, DnsQueryType.RRSIG]);
+            var nxDomainWildcardNsecSignature = CreateSignature([nxDomainWildcardNsec], DnsQueryType.NSEC, "example.com", exampleKey, exampleRsa, now);
+            var nxDomainResponse = CreateMessage("missing.example.com", DnsQueryType.A, [], [nxDomainNsec, nxDomainNsecSignature, nxDomainWildcardNsec, nxDomainWildcardNsecSignature], DnsResponseCode.NameError);
+
+            // The same response without the wildcard denial: signed, covering, but not a complete proof.
+            var nxDomainMissingWildcardDenialResponse = CreateMessage("missing.example.com", DnsQueryType.A, [], [nxDomainNsec, nxDomainNsecSignature], DnsResponseCode.NameError);
+
+            // A genuine, correctly signed NSEC from a zone the attacker controls, replayed to deny a name in another zone.
+            var attackerNsec = CreateNsec("a.attacker.example.com", "z.attacker.example.com", [DnsQueryType.NSEC, DnsQueryType.RRSIG]);
+            var attackerNsecSignature = CreateSignature([attackerNsec], DnsQueryType.NSEC, "attacker.example.com", attackerKey, attackerRsa, now);
+            var crossZoneDenialResponse = CreateMessage("missing.example.com", DnsQueryType.A, [], [attackerNsec, attackerNsecSignature], DnsResponseCode.NameError);
 
             var noDataNsec = CreateNsec("www.example.com", "z.example.com", [DnsQueryType.A, DnsQueryType.NSEC, DnsQueryType.RRSIG]);
             var noDataNsecSignature = CreateSignature([noDataNsec], DnsQueryType.NSEC, "example.com", exampleKey, exampleRsa, now);
@@ -298,12 +422,36 @@ public sealed class DnssecValidatorTests
             var unsupportedSignature = CreateUnsupportedSignature(a, exampleKey, now);
             var unsupportedAlgorithmResponse = CreateMessage("www.example.com", DnsQueryType.A, [a, unsupportedSignature]);
 
-            return new(responses, [trustAnchor], timeProvider, positiveAResponse, cnameResponse, nxDomainResponse, noDataResponse, insecureUnsignedResponse, expiredSignatureResponse, crossZoneSignedResponse, unsupportedAlgorithmResponse);
+            // A signature whose bytes were altered must not verify.
+            var tamperedSignature = CloneSignature(aSignature);
+            tamperedSignature.Signature[0] ^= 0xFF;
+            var tamperedSignatureResponse = CreateMessage("www.example.com", DnsQueryType.A, [a, tamperedSignature]);
+
+            var notYetValidSignature = CreateSignature([a], DnsQueryType.A, "example.com", exampleKey, exampleRsa, now, TimeSpan.FromHours(2), TimeSpan.FromHours(3));
+            var notYetValidSignatureResponse = CreateMessage("www.example.com", DnsQueryType.A, [a, notYetValidSignature]);
+
+            var wrongKeyTagSignature = CloneSignature(aSignature);
+            wrongKeyTagSignature.KeyTag = unchecked((ushort)(wrongKeyTagSignature.KeyTag + 1));
+            var wrongKeyTagResponse = CreateMessage("www.example.com", DnsQueryType.A, [a, wrongKeyTagSignature]);
+
+            // The zone is signed, so an answer with the RRSIG removed must be Bogus rather than treated as unsigned.
+            var strippedSignatureResponse = CreateMessage("www.example.com", DnsQueryType.A, [a]);
+
+            // A genuine wildcard signature (Labels = 2, i.e. "*.example.com") replayed for a name that has real data,
+            // with no NSEC proving the queried name is absent.
+            var wildcardA = CreateRecord(new DnsARecord { Address = IPAddress.Parse("192.0.2.99") }, "shadowed.example.com", DnsQueryType.A);
+            var wildcardSignature = CreateSignature([wildcardA], DnsQueryType.A, "example.com", exampleKey, exampleRsa, now, inceptionOffset: null, expirationOffset: null, labels: 2);
+            var wildcardWithoutDenialResponse = CreateMessage("shadowed.example.com", DnsQueryType.A, [wildcardA, wildcardSignature]);
+
+            // A correctly signed RRset for a name nobody asked about.
+            var unrelatedAnswerResponse = CreateMessage("bank.example.com", DnsQueryType.A, [a, aSignature]);
+
+            return new(responses, [trustAnchor], timeProvider, positiveAResponse, cnameResponse, nxDomainResponse, noDataResponse, insecureUnsignedResponse, expiredSignatureResponse, crossZoneSignedResponse, unsupportedAlgorithmResponse, nxDomainMissingWildcardDenialResponse, crossZoneDenialResponse, tamperedSignatureResponse, notYetValidSignatureResponse, wrongKeyTagResponse, strippedSignatureResponse, wildcardWithoutDenialResponse, unrelatedAnswerResponse);
         }
 
         public async Task<DnssecValidationResult> ValidateAsync(DnsResponseMessage response)
         {
-            var validator = new DnssecValidator(ResolveAsync, TrustAnchors, TimeProvider);
+            var validator = new DnssecValidator(ResolveAsync, TrustAnchors, TimeProvider, ednsUdpPayloadSize: 1232);
             return await validator.ValidateAsync(response, CancellationToken.None);
         }
 
@@ -392,14 +540,15 @@ public sealed class DnssecValidatorTests
         RSA signerRsa,
         DateTimeOffset now,
         TimeSpan? inceptionOffset = null,
-        TimeSpan? expirationOffset = null)
+        TimeSpan? expirationOffset = null,
+        byte? labels = null)
     {
         var signature = CreateRecord(
             new DnsRrsigRecord
             {
                 TypeCovered = typeCovered,
                 Algorithm = signerKey.Algorithm,
-                Labels = (byte)DnssecCanonicalizer.CountLabels(rrset[0].Name),
+                Labels = labels ?? (byte)DnssecCanonicalizer.CountLabels(rrset[0].Name),
                 OriginalTtl = rrset[0].TimeToLive,
                 SignatureExpiration = checked((uint)now.Add(expirationOffset ?? TimeSpan.FromHours(1)).ToUnixTimeSeconds()),
                 SignatureInception = checked((uint)now.Add(inceptionOffset ?? TimeSpan.FromHours(-1)).ToUnixTimeSeconds()),
@@ -411,6 +560,26 @@ public sealed class DnssecValidatorTests
 
         signature.Signature = signerRsa.SignData(DnssecCanonicalizer.GetSignedData(rrset, signature), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         return signature;
+    }
+
+    /// <summary>Copies an RRSIG so a test can corrupt one field without disturbing the fixture's other responses.</summary>
+    private static DnsRrsigRecord CloneSignature(DnsRrsigRecord signature)
+    {
+        return CreateRecord(
+            new DnsRrsigRecord
+            {
+                TypeCovered = signature.TypeCovered,
+                Algorithm = signature.Algorithm,
+                Labels = signature.Labels,
+                OriginalTtl = signature.OriginalTtl,
+                SignatureExpiration = signature.SignatureExpiration,
+                SignatureInception = signature.SignatureInception,
+                KeyTag = signature.KeyTag,
+                SignerName = signature.SignerName,
+                Signature = signature.Signature.ToArray(),
+            },
+            signature.Name,
+            DnsQueryType.RRSIG);
     }
 
     private static DnsRrsigRecord CreateUnsupportedSignature(DnsRecord record, DnsDnskeyRecord signerKey, DateTimeOffset now)

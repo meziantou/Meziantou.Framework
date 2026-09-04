@@ -103,17 +103,7 @@ public sealed class DnsClientTelemetryTests
         }
 
         private static byte[] CreateResponse(byte[] query, DnsResponseCode responseCode)
-        {
-            return
-            [
-                query[0], query[1],
-                0x81, (byte)(0x80 | (byte)responseCode),
-                0x00, 0x00,
-                0x00, 0x00,
-                0x00, 0x00,
-                0x00, 0x00,
-            ];
-        }
+            => DnsTestMessages.CreateEmptyResponse(query, responseCode);
     }
 
     private sealed class ThrowingTransport : IDnsTransport

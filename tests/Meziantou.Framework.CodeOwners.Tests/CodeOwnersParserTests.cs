@@ -490,4 +490,23 @@ public sealed class CodeOwnersParserTests
         };
         Assert.Equal(expected, actual);
     }
+
+    [Fact]
+    public void EntriesFromDifferentPatternsAreNotEqual()
+    {
+        var actual = CodeOwnersParser.Parse("* @user1\n* @user1").ToArray();
+
+        Assert.HasCount(2, actual);
+        Assert.NotEqual(actual[0], actual[1]);
+        Assert.HasCount(2, actual.Distinct().ToArray());
+    }
+
+    [Fact]
+    public void EntriesFromTheSamePatternAreEqual()
+    {
+        var actual = CodeOwnersParser.Parse("* @user1 @user1").ToArray();
+
+        Assert.HasCount(2, actual);
+        Assert.Equal(actual[0], actual[1]);
+    }
 }

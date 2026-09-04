@@ -28,7 +28,6 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
     }
 
     /// <summary>Gets the zero-based index of the pattern in the CODEOWNERS file.</summary>
-    /// <remarks>This property is not part of the equality contract: two entries that only differ by their <see cref="PatternIndex"/> are equal.</remarks>
     public int PatternIndex { get; }
 
     /// <summary>Gets the file pattern (e.g., "*.js", "/docs/*", or "*") that this entry applies to.</summary>
@@ -78,17 +77,16 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 
     }
 
-    /// <summary>Determines whether the specified entry is equal to the current entry.</summary>
-    /// <remarks><see cref="PatternIndex"/> is intentionally excluded from the comparison.</remarks>
     public bool Equals(CodeOwnersEntry other)
     {
-        return EntryType == other.EntryType &&
+        return PatternIndex == other.PatternIndex &&
+               EntryType == other.EntryType &&
                string.Equals(Pattern, other.Pattern, StringComparison.Ordinal) &&
                string.Equals(Member, other.Member, StringComparison.Ordinal) &&
                Section == other.Section;
     }
 
-    public override int GetHashCode() => HashCode.Combine(Pattern, EntryType, Member, Section);
+    public override int GetHashCode() => HashCode.Combine(PatternIndex, Pattern, EntryType, Member, Section);
 
     public static bool operator ==(CodeOwnersEntry left, CodeOwnersEntry right) => left.Equals(right);
     public static bool operator !=(CodeOwnersEntry left, CodeOwnersEntry right) => !(left == right);

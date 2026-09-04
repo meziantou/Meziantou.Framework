@@ -35,11 +35,15 @@ catch (CodeOwnersParseException ex)
 }
 ````
 
-Use `TryParse` when an invalid file should not throw:
+Use `TryParse` when an invalid file should not throw. An overload reports the same error without allocating an exception:
 
 ````c#
-if (CodeOwnersParser.TryParse(content, out IReadOnlyList<CodeOwnersEntry>? entries))
+if (CodeOwnersParser.TryParse(content, out IReadOnlyList<CodeOwnersEntry>? entries, out CodeOwnersError error))
 {
     // ...
+}
+else
+{
+    Console.WriteLine(error); // line 1, position 1: the section header is not terminated by ']'
 }
 ````

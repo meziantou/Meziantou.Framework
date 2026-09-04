@@ -36,6 +36,19 @@ namespace Meziantou.Framework.CodeOwners
         public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersEntry? left, Meziantou.Framework.CodeOwners.CodeOwnersEntry? right) => throw null;
     }
 
+    public readonly struct CodeOwnersError : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersError>
+    {
+        public Meziantou.Framework.CodeOwners.CodeOwnersErrorKind Kind { get => throw null; }
+        public int LineNumber { get => throw null; }
+        public int LinePosition { get => throw null; }
+        public override string ToString() => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public bool Equals(Meziantou.Framework.CodeOwners.CodeOwnersError other) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersError left, Meziantou.Framework.CodeOwners.CodeOwnersError right) => throw null;
+        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersError left, Meziantou.Framework.CodeOwners.CodeOwnersError right) => throw null;
+    }
+
     public enum CodeOwnersErrorKind
     {
         UnterminatedSectionHeader = 0,
@@ -47,9 +60,7 @@ namespace Meziantou.Framework.CodeOwners
 
     public sealed class CodeOwnersParseException : System.Exception
     {
-        public Meziantou.Framework.CodeOwners.CodeOwnersErrorKind Kind { get => throw null; }
-        public int LineNumber { get => throw null; }
-        public int LinePosition { get => throw null; }
+        public Meziantou.Framework.CodeOwners.CodeOwnersError Error { get => throw null; }
         public CodeOwnersParseException(string? message) { }
         public CodeOwnersParseException(string? message, System.Exception? innerException) { }
     }
@@ -58,6 +69,7 @@ namespace Meziantou.Framework.CodeOwners
     {
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersEntry> Parse(string content) => throw null;
         public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersEntry>? entries) => throw null;
+        public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersEntry>? entries, out Meziantou.Framework.CodeOwners.CodeOwnersError error) => throw null;
     }
 
     public readonly struct CodeOwnersSection : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersSection>

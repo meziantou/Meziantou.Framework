@@ -30,7 +30,7 @@ public static class CodeOwnersParser
         var context = new CodeOwnersParserContext(content);
         var entries = context.Parse();
         if (context.HasError)
-            throw context.CreateException();
+            throw new CodeOwnersParseException(context.CreateError());
 
         return entries;
     }
@@ -39,18 +39,30 @@ public static class CodeOwnersParser
     /// <param name="content">The content of the CODEOWNERS file.</param>
     /// <param name="entries">When this method returns <see langword="true"/>, contains the <see cref="CodeOwnersEntry"/> instances representing the parsed code owners; otherwise, <see langword="null"/>.</param>
     /// <returns><see langword="true"/> when <paramref name="content"/> is a valid CODEOWNERS file; otherwise, <see langword="false"/>.</returns>
-    /// <remarks>Use <see cref="Parse(string)"/> to know why the file is invalid.</remarks>
+    /// <remarks>Use the <see cref="TryParse(string, out IReadOnlyList{CodeOwnersEntry}, out CodeOwnersError)"/> overload to know why the file is invalid.</remarks>
     public static bool TryParse(string content, [NotNullWhen(true)] out IReadOnlyList<CodeOwnersEntry>? entries)
+    {
+        return TryParse(content, out entries, out _);
+    }
+
+    /// <summary>Parses the content of a CODEOWNERS file and returns a value indicating whether it is valid.</summary>
+    /// <param name="content">The content of the CODEOWNERS file.</param>
+    /// <param name="entries">When this method returns <see langword="true"/>, contains the <see cref="CodeOwnersEntry"/> instances representing the parsed code owners; otherwise, <see langword="null"/>.</param>
+    /// <param name="error">When this method returns <see langword="false"/>, contains the first error found in <paramref name="content"/>; otherwise, <see langword="default"/>.</param>
+    /// <returns><see langword="true"/> when <paramref name="content"/> is a valid CODEOWNERS file; otherwise, <see langword="false"/>.</returns>
+    public static bool TryParse(string content, [NotNullWhen(true)] out IReadOnlyList<CodeOwnersEntry>? entries, out CodeOwnersError error)
     {
         var context = new CodeOwnersParserContext(content);
         var result = context.Parse();
         if (context.HasError)
         {
             entries = null;
+            error = context.CreateError();
             return false;
         }
 
         entries = result;
+        error = default;
         return true;
     }
 
@@ -89,7 +101,7 @@ public static class CodeOwnersParser
             _error ??= (kind, index);
         }
 
-        public readonly CodeOwnersParseException CreateException()
+        public readonly CodeOwnersError CreateError()
         {
             var (kind, errorIndex) = _error.GetValueOrDefault();
 
@@ -122,7 +134,7 @@ public static class CodeOwnersParser
                 lineStartIndex = index;
             }
 
-            return new CodeOwnersParseException(kind, lineNumber, Math.Max(1, errorIndex - lineStartIndex + 1));
+            return new CodeOwnersError(kind, lineNumber, Math.Max(1, errorIndex - lineStartIndex + 1));
         }
 
         private void ParseLine()

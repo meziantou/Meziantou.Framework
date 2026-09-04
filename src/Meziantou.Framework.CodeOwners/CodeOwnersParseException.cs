@@ -21,30 +21,12 @@ public sealed class CodeOwnersParseException : Exception
     {
     }
 
-    internal CodeOwnersParseException(CodeOwnersErrorKind kind, int lineNumber, int linePosition)
-        : base($"The CODEOWNERS file is invalid at line {lineNumber}, position {linePosition}: {GetDescription(kind)}")
+    internal CodeOwnersParseException(CodeOwnersError error)
+        : base($"The CODEOWNERS file is invalid at {error}")
     {
-        Kind = kind;
-        LineNumber = lineNumber;
-        LinePosition = linePosition;
+        Error = error;
     }
 
-    /// <summary>Gets the kind of error that made the file invalid.</summary>
-    public CodeOwnersErrorKind Kind { get; }
-
-    /// <summary>Gets the one-based number of the line containing the error, or 0 when the position is unknown.</summary>
-    public int LineNumber { get; }
-
-    /// <summary>Gets the one-based position of the error within its line, or 0 when the position is unknown.</summary>
-    public int LinePosition { get; }
-
-    private static string GetDescription(CodeOwnersErrorKind kind) => kind switch
-    {
-        CodeOwnersErrorKind.UnterminatedSectionHeader => "the section header is not terminated by ']'",
-        CodeOwnersErrorKind.UnterminatedRequiredReviewerCount => "the required reviewer count is not terminated by ']'",
-        CodeOwnersErrorKind.InvalidRequiredReviewerCount => "the required reviewer count is not a positive integer",
-        CodeOwnersErrorKind.EmptyOwner => "'@' does not identify an owner",
-        CodeOwnersErrorKind.InvalidOwner => "the owner is neither a username nor an email address",
-        _ => kind.ToString(),
-    };
+    /// <summary>Gets the error that made the file invalid. Its <see cref="CodeOwnersError.LineNumber"/> is 0 when the exception was not created by the parser.</summary>
+    public CodeOwnersError Error { get; }
 }

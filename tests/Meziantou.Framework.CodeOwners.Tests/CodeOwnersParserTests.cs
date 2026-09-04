@@ -340,9 +340,20 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void TryParseValidFile()
     {
-        Assert.True(CodeOwnersParser.TryParse("[Test][2] @defaultOwner\n* @user1 docs@example.com\n", out var entries));
+        Assert.True(CodeOwnersParser.TryParse("[Test][2] @defaultOwner\n* @user1 docs@example.com\n", out var entries, out var error));
         Assert.HasCount(1, entries);
         Assert.HasCount(2, entries[0].Owners);
+        Assert.Equal(default, error);
+    }
+
+    [Fact]
+    public void ErrorAndExceptionMessageDescribeTheProblem()
+    {
+        Assert.False(CodeOwnersParser.TryParse("* @user1\n[Test][0]\n", out _, out var error));
+        Assert.Equal("line 2, position 7: the required reviewer count is not a positive integer", error.ToString());
+
+        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse("* @user1\n[Test][0]\n"));
+        Assert.Equal("The CODEOWNERS file is invalid at line 2, position 7: the required reviewer count is not a positive integer", exception.Message);
     }
 
     [Theory]
@@ -360,12 +371,16 @@ public sealed class CodeOwnersParserTests
     [InlineData("[Test] justsometext\n*", CodeOwnersErrorKind.InvalidOwner, 1, 8)]
     public void ParseInvalidFileThrows(string content, CodeOwnersErrorKind kind, int lineNumber, int linePosition)
     {
-        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse(content));
+        var expected = new CodeOwnersError(kind, lineNumber, linePosition);
 
-        Assert.Equal(kind, exception.Kind);
-        Assert.Equal(lineNumber, exception.LineNumber);
-        Assert.Equal(linePosition, exception.LinePosition);
-        Assert.False(CodeOwnersParser.TryParse(content, out var entries));
+        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse(content));
+        Assert.Equal(expected, exception.Error);
+
+        Assert.False(CodeOwnersParser.TryParse(content, out var entries, out var error));
+        Assert.Null(entries);
+        Assert.Equal(expected, error);
+
+        Assert.False(CodeOwnersParser.TryParse(content, out entries));
         Assert.Null(entries);
     }
 
@@ -380,9 +395,7 @@ public sealed class CodeOwnersParserTests
 
         var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse(Content));
 
-        Assert.Equal(CodeOwnersErrorKind.InvalidRequiredReviewerCount, exception.Kind);
-        Assert.Equal(2, exception.LineNumber);
-        Assert.Equal(7, exception.LinePosition);
+        Assert.Equal(new CodeOwnersError(CodeOwnersErrorKind.InvalidRequiredReviewerCount, 2, 7), exception.Error);
     }
 
     [Fact]
@@ -390,9 +403,7 @@ public sealed class CodeOwnersParserTests
     {
         var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse("* @user1\r*.js @\r"));
 
-        Assert.Equal(CodeOwnersErrorKind.EmptyOwner, exception.Kind);
-        Assert.Equal(2, exception.LineNumber);
-        Assert.Equal(6, exception.LinePosition);
+        Assert.Equal(new CodeOwnersError(CodeOwnersErrorKind.EmptyOwner, 2, 6), exception.Error);
     }
 
     [Fact]

@@ -25,6 +25,12 @@ internal sealed class CustomDnsRecordProvider
             return false;
         }
 
+        // Custom records are IN-class records, so they must not answer CH or HS queries.
+        if (question.QueryClass is not DnsQueryClass.IN)
+        {
+            return false;
+        }
+
         var normalizedQuestionName = NormalizeDomain(question.Name);
         var hasMatchingRecords = false;
         foreach (var record in _records)

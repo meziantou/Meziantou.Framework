@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +10,8 @@ using DnsProxyProgram = global::Program;
 
 namespace Meziantou.Framework.DnsProxy.Tests;
 
-public sealed class DnsProxyIntegrationTests
+[Collection("DnsProxyEnvironment")]
+public sealed partial class DnsProxyIntegrationTests
 {
     [Fact(DisableParallelization = true)]
     public async Task Proxy_StartsWithCustomConfiguration_AndProcessesRequests()
@@ -121,8 +123,7 @@ public sealed class DnsProxyIntegrationTests
         var customRecordAddress = IPAddress.Parse(CustomRecordAddress);
         AssertDnsResponseHasARecord(responseBeforePauseBytes, expectedId: 0x1234, expectedAddress: customRecordAddress);
 
-        using var disableContent = new StringContent("");
-        using var disableResponse = await webClient.PostAsync("/filtering/disable", disableContent);
+        using var disableResponse = await PostDisableFilteringAsync(webClient);
         Assert.Equal(HttpStatusCode.Redirect, disableResponse.StatusCode);
         Assert.Equal("/", disableResponse.Headers.Location?.ToString());
 
@@ -253,6 +254,39 @@ public sealed class DnsProxyIntegrationTests
         var address = new IPAddress(response.AsSpan(offset, rdLength));
         Assert.Equal(expectedAddress, address);
     }
+
+    [Fact]
+    public async Task DisableFilteringEndpoint_WithoutAntiforgeryToken_IsRejected()
+    {
+        await using var factory = new WebApplicationFactory<DnsProxyProgram>();
+        var webClient = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+        });
+
+        // A cross-site form post carries no antiforgery token and must not be able to turn filtering off.
+        using var content = new FormUrlEncodedContent([]);
+        using var response = await webClient.PostAsync("/filtering/disable", content, XunitCancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var html = await webClient.GetStringAsync("/", XunitCancellationToken);
+        Assert.Contains("Filtering is enabled.", html);
+    }
+
+    /// <summary>Submits the "disable filtering" form the way a browser would, including the antiforgery token and cookie.</summary>
+    private static async Task<HttpResponseMessage> PostDisableFilteringAsync(HttpClient webClient)
+    {
+        var html = await webClient.GetStringAsync("/");
+        var match = AntiforgeryFieldRegex().Match(html);
+        Assert.True(match.Success, "The diagnostics page does not contain an antiforgery field.");
+
+        using var content = new FormUrlEncodedContent([new KeyValuePair<string, string>(match.Groups["name"].Value, match.Groups["value"].Value)]);
+        return await webClient.PostAsync("/filtering/disable", content);
+    }
+
+    [GeneratedRegex("""<input type='hidden' name='(?<name>[^']+)' value='(?<value>[^']+)' />""", RegexOptions.None, matchTimeoutMilliseconds: 5000)]
+    private static partial Regex AntiforgeryFieldRegex();
 
     private static async Task<string> WaitForLoadedFilterRuleAsync(HttpClient webClient)
     {

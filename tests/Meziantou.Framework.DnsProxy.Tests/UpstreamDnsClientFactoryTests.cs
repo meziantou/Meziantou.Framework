@@ -29,8 +29,8 @@ public sealed class UpstreamDnsClientFactoryTests
             ],
         });
 
-        using var factory = new UpstreamDnsClientFactory(options, NullLogger<UpstreamDnsClientFactory>.Instance);
-        var upstreams = factory.GetUpstreams();
+        using var factory = new UpstreamDnsClientFactory(options, TimeProvider.System, NullLogger<UpstreamDnsClientFactory>.Instance);
+        var upstreams = factory.GetUpstreamDetails();
 
         var upstream = Assert.Single(upstreams);
         Assert.Equal("Custom (https://1.1.1.1/dns-query)", upstream.DisplayName);
@@ -53,8 +53,8 @@ public sealed class UpstreamDnsClientFactoryTests
             ],
         });
 
-        using var factory = new UpstreamDnsClientFactory(options, NullLogger<UpstreamDnsClientFactory>.Instance);
-        var upstream = Assert.Single(factory.GetUpstreams());
+        using var factory = new UpstreamDnsClientFactory(options, TimeProvider.System, NullLogger<UpstreamDnsClientFactory>.Instance);
+        var upstream = Assert.Single(factory.GetUpstreamDetails());
         var clientOptions = Assert.IsType<DnsClientOptions>(DnsClientOptionsField.GetValue(upstream.Client));
 
         Assert.Equal(DnssecValidationMode.Local, clientOptions.DnssecValidationMode);
@@ -79,8 +79,8 @@ public sealed class UpstreamDnsClientFactoryTests
             ],
         });
 
-        using var factory = new UpstreamDnsClientFactory(options, NullLogger<UpstreamDnsClientFactory>.Instance);
-        var upstream = Assert.Single(factory.GetUpstreams());
+        using var factory = new UpstreamDnsClientFactory(options, TimeProvider.System, NullLogger<UpstreamDnsClientFactory>.Instance);
+        var upstream = Assert.Single(factory.GetUpstreamDetails());
 
         Assert.Equal($"{name} ({url})", upstream.DisplayName);
         Assert.Equal(expectedEndpoint, upstream.Endpoint);
@@ -103,8 +103,8 @@ public sealed class UpstreamDnsClientFactoryTests
             ],
         });
 
-        using var factory = new UpstreamDnsClientFactory(options, NullLogger<UpstreamDnsClientFactory>.Instance);
-        var upstream = Assert.Single(factory.GetUpstreams());
+        using var factory = new UpstreamDnsClientFactory(options, TimeProvider.System, NullLogger<UpstreamDnsClientFactory>.Instance);
+        var upstream = Assert.Single(factory.GetUpstreamDetails());
         var clientOptions = Assert.IsType<DnsClientOptions>(DnsClientOptionsField.GetValue(upstream.Client));
         var resolver = Assert.IsType<Func<string, IReadOnlyList<IPAddress>>>(clientOptions.ServerAddressResolver);
 

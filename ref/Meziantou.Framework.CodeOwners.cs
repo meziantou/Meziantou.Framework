@@ -39,6 +39,9 @@ namespace Meziantou.Framework.CodeOwners
     public sealed class CodeOwnersFile
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersEntry> Entries { get => throw null; }
+        public static Meziantou.Framework.CodeOwners.CodeOwnersFile Parse(string content) => throw null;
+        public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file) => throw null;
+        public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file, out Meziantou.Framework.CodeOwners.CodeOwnersParseError error) => throw null;
     }
 
     public readonly struct CodeOwnersParseError : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersParseError>
@@ -72,8 +75,11 @@ namespace Meziantou.Framework.CodeOwners
 
     public static class CodeOwnersParser
     {
+        [System.Obsolete("Use CodeOwnersFile.Parse instead.")]
         public static Meziantou.Framework.CodeOwners.CodeOwnersFile Parse(string content) => throw null;
+        [System.Obsolete("Use CodeOwnersFile.TryParse instead.")]
         public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file) => throw null;
+        [System.Obsolete("Use CodeOwnersFile.TryParse instead.")]
         public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file, out Meziantou.Framework.CodeOwners.CodeOwnersParseError error) => throw null;
     }
 

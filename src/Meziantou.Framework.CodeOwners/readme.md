@@ -5,7 +5,7 @@
 Each entry is one line of the file: a pattern and the owners it declares.
 
 ````c#
-CodeOwnersFile file = CodeOwnersParser.Parse("* @user1 docs@example.com");
+CodeOwnersFile file = CodeOwnersFile.Parse("* @user1 docs@example.com");
 // file.Entries[0].Pattern: "*"
 // file.Entries[0].Owners[0]: Type=Username, Name="user1"
 // file.Entries[0].Owners[1]: Type=EmailAddress, Name="docs@example.com"
@@ -24,7 +24,7 @@ IReadOnlyList<CodeOwner> owners = owningEntry?.Owners ?? [];
 ````c#
 try
 {
-    CodeOwnersParser.Parse("[Section\n* @user1");
+    CodeOwnersFile.Parse("[Section\n* @user1");
 }
 catch (CodeOwnersParseException ex)
 {
@@ -38,7 +38,7 @@ catch (CodeOwnersParseException ex)
 Use `TryParse` when an invalid file should not throw. An overload reports the same error without allocating an exception:
 
 ````c#
-if (CodeOwnersParser.TryParse(content, out CodeOwnersFile? file, out CodeOwnersParseError error))
+if (CodeOwnersFile.TryParse(content, out CodeOwnersFile? file, out CodeOwnersParseError error))
 {
     // ...
 }
@@ -49,3 +49,5 @@ else
 ````
 
 A `CodeOwnersFile` only exists for a valid file: neither method hands back a partially parsed one.
+
+The `CodeOwnersParser` type is obsolete: its methods forward to `CodeOwnersFile` and will be removed in a future major version.

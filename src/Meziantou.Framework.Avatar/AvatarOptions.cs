@@ -13,14 +13,43 @@ public class AvatarOptions
     public const int DefaultSize = 64;
 
     /// <summary>
-    /// Gets the list of colors used for rendering.
+    /// Gets the mutable list of colors used for rendering.
     /// </summary>
+    /// <remarks>
+    /// The color is selected with <c>hash(name) % Palette.Count</c>, so the number of entries and their
+    /// order are part of the name-to-color mapping: adding or removing one entry re-colors nearly every name.
+    /// This instance is not thread-safe; do not mutate it while <see cref="AvatarGenerator.CreateSvg(string, AvatarOptions)"/> is running.
+    /// </remarks>
     public IList<AvatarColorPair> Palette { get; }
 
     /// <summary>
     /// Gets or sets the explicit bigram to render. If null, the bigram is extracted from the name.
     /// </summary>
+    /// <remarks>
+    /// The value must contain 1 or 2 grapheme clusters, no whitespace, and no character that is invalid
+    /// in an XML document. It does not affect the selected color, which always derives from the name.
+    /// </remarks>
     public string? Bigram { get; set; }
+
+    /// <summary>
+    /// Gets or sets the text announced by assistive technologies. If null, the bigram is used.
+    /// </summary>
+    /// <remarks>
+    /// Set this to the full name so the avatar announces as "John Doe" rather than "JD". Characters that
+    /// are invalid in an XML document are removed, so an untrusted display name can be passed directly.
+    /// Ignored when <see cref="IsDecorative"/> is <see langword="true"/>.
+    /// </remarks>
+    public string? AccessibleLabel { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the avatar is purely decorative and should be hidden
+    /// from assistive technologies. The default is <see langword="false"/>.
+    /// </summary>
+    /// <remarks>
+    /// Set this when the avatar sits next to the name it represents, so the name is not announced twice.
+    /// The generated element uses <c>aria-hidden</c> instead of <c>role</c> and <c>aria-label</c>.
+    /// </remarks>
+    public bool IsDecorative { get; set; }
 
     /// <summary>
     /// Gets or sets the shape of the avatar.

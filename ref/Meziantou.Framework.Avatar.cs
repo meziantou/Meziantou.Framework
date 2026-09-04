@@ -19,6 +19,7 @@ namespace Meziantou.Framework
 
     public static class AvatarGenerator
     {
+        public static string CreateSvg(string name) => throw null;
         public static string CreateSvg(string name, Meziantou.Framework.AvatarOptions options) => throw null;
     }
 
@@ -27,6 +28,8 @@ namespace Meziantou.Framework
         public const int DefaultSize = 64;
         public System.Collections.Generic.IList<Meziantou.Framework.AvatarColorPair> Palette { get => throw null; }
         public string? Bigram { get => throw null; set { } }
+        public string? AccessibleLabel { get => throw null; set { } }
+        public bool IsDecorative { get => throw null; set { } }
         public Meziantou.Framework.AvatarShape Shape { get => throw null; set { } }
         public int Size { get => throw null; set { } }
     }

@@ -1,8 +1,12 @@
 namespace Meziantou.Framework;
 
 /// <summary>
-/// Represents a foreground/background color pair used to render an avatar.
+/// Represents a background/foreground color pair used to render an avatar.
 /// </summary>
+/// <remarks>
+/// This is a struct, so <see langword="default"/> bypasses the constructor and leaves both colors null.
+/// <see cref="AvatarGenerator.CreateSvg(string, AvatarOptions)"/> rejects such an entry in the palette.
+/// </remarks>
 public readonly record struct AvatarColorPair
 {
     /// <summary>

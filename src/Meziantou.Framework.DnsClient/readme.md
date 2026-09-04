@@ -1,13 +1,13 @@
 # Meziantou.Framework.DnsClient
 
-A comprehensive DNS client library supporting multiple transport protocols, all standard DNS record types, DNSSEC, EDNS(0), internationalized domain names, and reverse DNS lookups.
+A DNS client library supporting multiple transport protocols, the common DNS record types (with raw access to the rest), DNSSEC validation, EDNS(0), internationalized domain names, and reverse DNS lookups.
 
 ## Features
 
 - **Multiple protocols**: UDP, TCP, DNS over TLS (DoT), DNS over HTTPS (DoH), DNS over QUIC (DoQ)
-- **All DNS record types**: A, AAAA, MX, TXT, CNAME, NS, SOA, SRV, PTR, CAA, NAPTR, SVCB, HTTPS, and more
-- **DNSSEC support**: Request and parse DNSKEY, DS, RRSIG, NSEC, NSEC3 records
-- **EDNS(0)**: Configurable UDP payload size, DNSSEC OK flag, extended RCODE
+- **Typed record parsing**: A, AAAA, MX, TXT, CNAME, NS, SOA, SRV, PTR, CAA, NAPTR, SVCB, HTTPS, LOC, HINFO, RP, DNAME, URI, TLSA, SSHFP and the DNSSEC types. Any other type is returned as `DnsUnknownRecord` with its raw RDATA.
+- **DNSSEC**: request and parse DNSKEY, DS, RRSIG, NSEC and NSEC3 records, plus local chain-of-trust validation against the IANA root anchors
+- **EDNS(0)**: configurable UDP payload size (default 1232, per RFC 9715), DNSSEC OK flag, extended RCODE
 - **IDN/Punycode**: Automatic Unicode to punycode conversion for internationalized domain names
 - **Reverse DNS**: Helper for PTR lookups on IPv4 and IPv6 addresses
 - **OpenTelemetry**: Built-in `ActivitySource` tracing for DNS queries
@@ -66,3 +66,23 @@ Console.WriteLine($"Local DNSSEC validation: {response.DnssecValidationResult.St
 ```
 
 `DnsResponseHeader.AuthenticatedData` exposes the upstream resolver's AD flag. Use `DnssecValidationMode.Local` when the client must validate the DNSSEC chain locally.
+
+A `Secure` status means the answer records are signed by a chain of trust rooted in the configured anchors **and** that they answer the question that was asked. `Insecure` means the zone is provably unsigned, `Bogus` means validation failed, and `Indeterminate` means validation could not be completed (for example a chain query failed).
+
+## Response validation
+
+Every response is checked against the query it answers: the transaction identifier, the QR bit, the opcode and the echoed question must all match, or `DnsProtocolException` is thrown. Over UDP the socket is also connected to the server so the operating system drops datagrams from other sources, and a truncated (TC) answer is automatically re-issued over TCP.
+
+## Exceptions
+
+`QueryAsync`, `ReverseLookupAsync` and `SendAsync` can throw:
+
+| Exception | Cause |
+| --- | --- |
+| `DnsProtocolException` | The response is malformed, or does not answer the query that was sent. |
+| `TimeoutException` | `DnsClientOptions.Timeout` elapsed. Caller cancellation surfaces as `OperationCanceledException` instead. |
+| `OperationCanceledException` | The caller's `CancellationToken` was cancelled. |
+| `SocketException`, `IOException` | The transport failed (UDP, TCP, DoT, DoQ). |
+| `HttpRequestException` | The DNS over HTTPS request failed. |
+| `AuthenticationException` | The TLS handshake failed (DoT). |
+| `ObjectDisposedException` | The client was disposed. |

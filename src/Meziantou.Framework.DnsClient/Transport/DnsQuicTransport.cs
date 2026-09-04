@@ -33,8 +33,10 @@ internal sealed class DnsQuicTransport : IDnsTransport
             },
         };
 
-        await using var connection = await QuicConnection.ConnectAsync(connectionOptions, cancellationToken).ConfigureAwait(false);
-        await using var stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, cancellationToken).ConfigureAwait(false);
+        var connection = await QuicConnection.ConnectAsync(connectionOptions, cancellationToken).ConfigureAwait(false);
+        await using var connectionScope = connection.ConfigureAwait(false);
+        var stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, cancellationToken).ConfigureAwait(false);
+        await using var streamScope = stream.ConfigureAwait(false);
 
         // RFC 9250: 2-byte length prefix
         var lengthPrefix = new byte[2];

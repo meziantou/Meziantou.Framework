@@ -51,7 +51,7 @@ internal ref struct DnsWireWriter
         _buffer[_position++] = value;
     }
 
-    public void WriteBytes(ReadOnlySpan<byte> data)
+    public void WriteBytes(scoped ReadOnlySpan<byte> data)
     {
         EnsureCapacity(data.Length);
         data.CopyTo(_buffer.AsSpan(_position));
@@ -66,25 +66,27 @@ internal ref struct DnsWireWriter
             return;
         }
 
-        // Remove trailing dot if present
         var span = name.AsSpan();
-        if (span[^1] == '.')
+        if (DnsName.EndsWithUnescapedDot(span))
         {
             span = span[..^1];
         }
 
-        foreach (var label in new LabelEnumerator(span))
+        var totalLength = 1; // the terminating root label
+        Span<byte> labelBuffer = stackalloc byte[DnsName.MaxLabelLength];
+
+        foreach (var label in DnsName.EnumerateLabels(span))
         {
-            var byteCount = Encoding.ASCII.GetByteCount(label);
-            if (byteCount is 0 or > 63)
-            {
-                throw new DnsProtocolException($"Invalid domain name label length: {byteCount}. Labels must be between 1 and 63 bytes.");
-            }
+            var byteCount = DnsName.DecodeLabel(label, labelBuffer);
+            if (byteCount is 0)
+                throw new DnsProtocolException("Invalid domain name: labels must be between 1 and 63 bytes.");
+
+            totalLength += byteCount + 1;
+            if (totalLength > DnsName.MaxLength)
+                throw new DnsProtocolException($"Domain name exceeds the maximum length of {DnsName.MaxLength} bytes.");
 
             WriteByte((byte)byteCount);
-            EnsureCapacity(byteCount);
-            Encoding.ASCII.GetBytes(label, _buffer.AsSpan(_position));
-            _position += byteCount;
+            WriteBytes(labelBuffer[..byteCount]);
         }
 
         WriteByte(0); // Root label
@@ -105,41 +107,5 @@ internal ref struct DnsWireWriter
         var newBuffer = new byte[newSize];
         _buffer.AsSpan(0, _position).CopyTo(newBuffer);
         _buffer = newBuffer;
-    }
-
-    [StructLayout(LayoutKind.Auto)]
-    private ref struct LabelEnumerator
-    {
-        private ReadOnlySpan<char> _remaining;
-
-        public LabelEnumerator(ReadOnlySpan<char> name)
-        {
-            _remaining = name;
-            Current = default;
-        }
-
-        public ReadOnlySpan<char> Current { get; private set; }
-
-        public readonly LabelEnumerator GetEnumerator() => this;
-
-        public bool MoveNext()
-        {
-            if (_remaining.IsEmpty)
-                return false;
-
-            var index = _remaining.IndexOf('.');
-            if (index == -1)
-            {
-                Current = _remaining;
-                _remaining = [];
-            }
-            else
-            {
-                Current = _remaining[..index];
-                _remaining = _remaining[(index + 1)..];
-            }
-
-            return true;
-        }
     }
 }

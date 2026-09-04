@@ -88,20 +88,59 @@ public sealed class DefaultHttpRequestMatcherTests
     }
 
     [Fact]
-    public void UserInfo_IsIncludedInFingerprint()
+    public void UserInfo_IsIgnoredInFingerprint()
     {
+        // Credentials are stripped when a request is captured, so a hand-written recording that still carries them
+        // must match the same request coming through the handler.
         var entry1 = new HttpRecordingEntry { Method = "GET", RequestUri = "https://example.com/api", StatusCode = 200 };
         var entry2 = new HttpRecordingEntry { Method = "GET", RequestUri = "https://user:password@example.com/api", StatusCode = 200 };
+
+        Assert.Equal(_matcher.ComputeFingerprint(entry1), _matcher.ComputeFingerprint(entry2));
+    }
+
+    [Fact]
+    public void DifferentUserInfo_SameFingerprint()
+    {
+        var entry1 = new HttpRecordingEntry { Method = "GET", RequestUri = "https://user:password1@example.com/api", StatusCode = 200 };
+        var entry2 = new HttpRecordingEntry { Method = "GET", RequestUri = "https://user:password2@example.com/api", StatusCode = 200 };
+
+        Assert.Equal(_matcher.ComputeFingerprint(entry1), _matcher.ComputeFingerprint(entry2));
+    }
+
+    [Fact]
+    public void DifferentRequestBody_DifferentFingerprint()
+    {
+        var entry1 = new HttpRecordingEntry { Method = "POST", RequestUri = "https://example.com/graphql", StatusCode = 200, RequestBody = """{"query":"getUser"}"""u8.ToArray() };
+        var entry2 = new HttpRecordingEntry { Method = "POST", RequestUri = "https://example.com/graphql", StatusCode = 200, RequestBody = """{"query":"deleteAll"}"""u8.ToArray() };
 
         Assert.NotEqual(_matcher.ComputeFingerprint(entry1), _matcher.ComputeFingerprint(entry2));
     }
 
     [Fact]
-    public void DifferentUserInfo_DifferentFingerprint()
+    public void SameRequestBody_SameFingerprint()
     {
-        var entry1 = new HttpRecordingEntry { Method = "GET", RequestUri = "https://user:password1@example.com/api", StatusCode = 200 };
-        var entry2 = new HttpRecordingEntry { Method = "GET", RequestUri = "https://user:password2@example.com/api", StatusCode = 200 };
+        var entry1 = new HttpRecordingEntry { Method = "POST", RequestUri = "https://example.com/graphql", StatusCode = 200, RequestBody = "payload"u8.ToArray() };
+        var entry2 = new HttpRecordingEntry { Method = "POST", RequestUri = "https://example.com/graphql", StatusCode = 200, RequestBody = "payload"u8.ToArray() };
 
-        Assert.NotEqual(_matcher.ComputeFingerprint(entry1), _matcher.ComputeFingerprint(entry2));
+        Assert.Equal(_matcher.ComputeFingerprint(entry1), _matcher.ComputeFingerprint(entry2));
+    }
+
+    [Fact]
+    public void EmptyAndMissingRequestBody_SameFingerprint()
+    {
+        var entry1 = new HttpRecordingEntry { Method = "POST", RequestUri = "https://example.com/api", StatusCode = 200, RequestBody = [] };
+        var entry2 = new HttpRecordingEntry { Method = "POST", RequestUri = "https://example.com/api", StatusCode = 200 };
+
+        Assert.Equal(_matcher.ComputeFingerprint(entry1), _matcher.ComputeFingerprint(entry2));
+    }
+
+    [Fact]
+    public void IgnoringRequestBody_DifferentBodies_SameFingerprint()
+    {
+        var matcher = DefaultHttpRequestMatcher.IgnoringRequestBody;
+        var entry1 = new HttpRecordingEntry { Method = "POST", RequestUri = "https://example.com/api", StatusCode = 200, RequestBody = "a"u8.ToArray() };
+        var entry2 = new HttpRecordingEntry { Method = "POST", RequestUri = "https://example.com/api", StatusCode = 200, RequestBody = "b"u8.ToArray() };
+
+        Assert.Equal(matcher.ComputeFingerprint(entry1), matcher.ComputeFingerprint(entry2));
     }
 }

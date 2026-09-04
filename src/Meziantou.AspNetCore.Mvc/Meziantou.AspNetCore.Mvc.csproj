@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
-    <Version>2.0.0</Version>
+    <Version>3.0.0</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>TagHelpers for Razor Pages</Description>
   </PropertyGroup>

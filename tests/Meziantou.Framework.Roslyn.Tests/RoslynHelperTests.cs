@@ -242,6 +242,115 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public async Task DiagnosticReporter_DoesNotFilterDiagnosticsByDefault()
+    {
+        using var scope = await DiagnosticFilterScope.EnterAsync(TestContext.Current.CancellationToken);
+
+        Assert.Null(DiagnosticReporter.CanReportDiagnostic);
+    }
+
+    [Fact]
+    public async Task DiagnosticReporter_CanReportDiagnosticReceivesTheDiagnosticAndTheContextData()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample;
+            """);
+        var symbol = GetRequiredType(compilation, "Sample");
+        var descriptor = CreateDescriptor("MFTEST100");
+        var options = new AnalyzerOptions([]);
+        using var cancellationTokenSource = new CancellationTokenSource();
+        Diagnostic? reported = null;
+
+        // A DiagnosticAnalyzer cannot be defined in this assembly (RS1041), so the context is created directly
+#pragma warning disable CS0618
+        var context = new SymbolAnalysisContext(symbol, compilation, options, diagnostic => reported = diagnostic, _ => true, cancellationTokenSource.Token);
+#pragma warning restore CS0618
+
+        Diagnostic? filteredDiagnostic = null;
+        AnalyzerOptions? filteredOptions = null;
+        CancellationToken filteredCancellationToken = default;
+
+        using (var scope = await DiagnosticFilterScope.EnterAsync(TestContext.Current.CancellationToken))
+        {
+            // The filter is global, so the diagnostics of the tests running concurrently must not be filtered
+            DiagnosticReporter.CanReportDiagnostic = (diagnostic, analyzerOptions, cancellationToken) =>
+            {
+                if (!ReferenceEquals(diagnostic.Descriptor, descriptor))
+                    return true;
+
+                filteredDiagnostic = diagnostic;
+                filteredOptions = analyzerOptions;
+                filteredCancellationToken = cancellationToken;
+                return false;
+            };
+
+            context.ReportDiagnostic(descriptor, symbol);
+        }
+
+        Assert.Null(reported);
+        Assert.NotNull(filteredDiagnostic);
+        Assert.Same(descriptor, filteredDiagnostic.Descriptor);
+        Assert.Same(compilation.SyntaxTrees.Single(), filteredDiagnostic.Location.SourceTree);
+        Assert.Same(options, filteredOptions);
+        Assert.Equal(cancellationTokenSource.Token, filteredCancellationToken);
+    }
+
+    [Fact]
+    public async Task DiagnosticReporter_CanReportDiagnosticReportsTheDiagnosticWhenItReturnsTrue()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample;
+            """);
+        var symbol = GetRequiredType(compilation, "Sample");
+        var descriptor = CreateDescriptor("MFTEST101");
+        Diagnostic? reported = null;
+
+        // A DiagnosticAnalyzer cannot be defined in this assembly (RS1041), so the context is created directly
+#pragma warning disable CS0618
+        var context = new SymbolAnalysisContext(symbol, compilation, new AnalyzerOptions([]), diagnostic => reported = diagnostic, _ => true, cancellationToken: default);
+#pragma warning restore CS0618
+
+        using (var scope = await DiagnosticFilterScope.EnterAsync(TestContext.Current.CancellationToken))
+        {
+            DiagnosticReporter.CanReportDiagnostic = (diagnostic, analyzerOptions, cancellationToken) => true;
+
+            context.ReportDiagnostic(descriptor, symbol);
+        }
+
+        Assert.NotNull(reported);
+        Assert.Same(descriptor, reported.Descriptor);
+    }
+
+    [Fact]
+    public async Task DiagnosticReporter_CanReportDiagnosticFiltersTheDiagnosticsOfAnAnalyzer()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+            }
+            """);
+
+        ImmutableArray<Diagnostic> diagnostics;
+        using (var scope = await DiagnosticFilterScope.EnterAsync(TestContext.Current.CancellationToken))
+        {
+            // The filter is global, so the diagnostics of the tests running concurrently must not be filtered
+            DiagnosticReporter.CanReportDiagnostic = (diagnostic, analyzerOptions, cancellationToken)
+                => diagnostic.Id is not DiagnosticFilterAnalyzer.DiagnosticId || !diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains("dropped", StringComparison.Ordinal);
+
+            diagnostics = await compilation
+                .WithAnalyzers([new DiagnosticFilterAnalyzer()])
+                .GetAnalyzerDiagnosticsAsync(TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(
+            [
+                "Message context-kept",
+                "Message reporter-kept",
+            ],
+            diagnostics.Select(diagnostic => diagnostic.GetMessage(CultureInfo.InvariantCulture)).OrderBy(message => message, StringComparer.Ordinal));
+    }
+
+    [Fact]
     public void ReportDiagnostic_DeclaresMessageArgsAsParams()
     {
         var messageArgsParameters = typeof(ContextExtensions).GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -2137,8 +2246,73 @@ public sealed class RoslynHelperTests
 
     private static DiagnosticDescriptor CreateDescriptor()
     {
-        return new DiagnosticDescriptor("MFTEST001", "Title", "Message", "Category", DiagnosticSeverity.Warning, isEnabledByDefault: true);
+        return CreateDescriptor("MFTEST001");
     }
+
+    private static DiagnosticDescriptor CreateDescriptor(string id)
+    {
+        return new DiagnosticDescriptor(id, "Title", "Message", "Category", DiagnosticSeverity.Warning, isEnabledByDefault: true);
+    }
+
+    /// <summary>
+    /// <see cref="DiagnosticReporter.CanReportDiagnostic"/> is global, so the tests that set it must not run concurrently.
+    /// </summary>
+    private sealed class DiagnosticFilterScope : IDisposable
+    {
+        private static readonly SemaphoreSlim Semaphore = new(initialCount: 1, maxCount: 1);
+
+        private DiagnosticFilterScope()
+        {
+        }
+
+        public static async Task<DiagnosticFilterScope> EnterAsync(CancellationToken cancellationToken)
+        {
+            await Semaphore.WaitAsync(cancellationToken);
+
+            return new DiagnosticFilterScope();
+        }
+
+        public void Dispose()
+        {
+            DiagnosticReporter.CanReportDiagnostic = null;
+            Semaphore.Release();
+        }
+    }
+
+    // RS1036/RS1038/RS1041 only apply to analyzers shipped in an analyzer package. This one only exists to exercise the extension methods.
+#pragma warning disable RS1036 // A project containing analyzers or source generators should specify the property '<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>'
+#pragma warning disable RS1038 // This compiler extension should not be implemented in an assembly containing a reference to Microsoft.CodeAnalysis.Workspaces
+#pragma warning disable RS1041 // This compiler extension should not be implemented in an assembly with target framework
+    [DiagnosticAnalyzer(LanguageNames.CSharp)]
+    private sealed class DiagnosticFilterAnalyzer : DiagnosticAnalyzer
+    {
+        public const string DiagnosticId = "MFTEST004";
+
+        private static readonly DiagnosticDescriptor Descriptor = new(DiagnosticId, "Title", "Message {0}", "Category", DiagnosticSeverity.Warning, isEnabledByDefault: true);
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];
+
+        public override void Initialize(AnalysisContext context)
+        {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+            context.RegisterSyntaxNodeAction(AnalyzeClassDeclaration, SyntaxKind.ClassDeclaration);
+        }
+
+        private static void AnalyzeClassDeclaration(SyntaxNodeAnalysisContext context)
+        {
+            var declaration = (ClassDeclarationSyntax)context.Node;
+            DiagnosticReporter reporter = context;
+
+            reporter.ReportDiagnostic(Descriptor, declaration, "reporter-kept");
+            reporter.ReportDiagnostic(Descriptor, declaration, "reporter-dropped");
+            context.ReportDiagnostic(Descriptor, declaration, "context-kept");
+            context.ReportDiagnostic(Descriptor, declaration, "context-dropped");
+        }
+    }
+#pragma warning restore RS1041
+#pragma warning restore RS1038
+#pragma warning restore RS1036
 
     // RS1036/RS1038/RS1041 only apply to analyzers shipped in an analyzer package. This one only exists to exercise the extension methods.
 #pragma warning disable RS1036 // A project containing analyzers or source generators should specify the property '<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>'

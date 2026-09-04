@@ -253,6 +253,7 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
                 public static ITypeSymbol? GetFlowType(IOperation operation, CancellationToken cancellationToken) => LocalDataFlowAnalysis.GetActualType(operation, cancellationToken);
                 public static ITypeSymbol? GetUnwrappedType(IOperation operation, CancellationToken cancellationToken) => LocalDataFlowAnalysis.GetActualType(operation, useDataFlowAnalysis: false, cancellationToken);
                 public static string ReporterName => typeof(DiagnosticReporter).Name;
+                public static void SetDiagnosticFilter() => DiagnosticReporter.CanReportDiagnostic = (diagnostic, options, cancellationToken) => diagnostic.Location.SourceTree?.IsGeneratedCode(options, cancellationToken) is not true;
                 public static DiagnosticInvocationReportOptions InvocationReportOptions => DiagnosticInvocationReportOptions.ReportOnMember | DiagnosticInvocationReportOptions.ReportOnArguments;
             }
             """;
@@ -403,6 +404,7 @@ public sealed class RoslynPackageTests(RoslynPackageFixture fixture) : IClassFix
         "ContextExtensions.cs",
         "ContextExtensions.g.cs",
         "DiagnosticFieldReportOptions.cs",
+        "DiagnosticFilter.cs",
         "DiagnosticInvocationReportOptions.cs",
         "DiagnosticMethodReportOptions.cs",
         "DiagnosticParameterReportOptions.cs",

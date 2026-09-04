@@ -21,12 +21,12 @@ public sealed class CodeOwnersParseException : Exception
     {
     }
 
-    internal CodeOwnersParseException(CodeOwnersError error)
+    internal CodeOwnersParseException(CodeOwnersParseError error)
         : base($"The CODEOWNERS file is invalid at {error}")
     {
         Error = error;
     }
 
-    /// <summary>Gets the error that made the file invalid. Its <see cref="CodeOwnersError.LineNumber"/> is 0 when the exception was not created by the parser.</summary>
-    public CodeOwnersError Error { get; }
+    /// <summary>Gets the error that made the file invalid. Its <see cref="CodeOwnersParseError.LineNumber"/> is 0 when the exception was not created by the parser.</summary>
+    public CodeOwnersParseError Error { get; }
 }

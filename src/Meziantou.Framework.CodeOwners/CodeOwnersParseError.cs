@@ -8,7 +8,7 @@ namespace Meziantou.Framework.CodeOwners;
 /// <code>
 /// if (!CodeOwnersParser.TryParse("[Section\n* @user1", out var entries, out var error))
 /// {
-///     // error.Kind: CodeOwnersErrorKind.UnterminatedSectionHeader
+///     // error.Kind: CodeOwnersParseErrorKind.UnterminatedSectionHeader
 ///     // error.LineNumber: 1
 ///     // error.LinePosition: 1
 /// }
@@ -16,9 +16,9 @@ namespace Meziantou.Framework.CodeOwners;
 /// </example>
 /// </summary>
 [StructLayout(LayoutKind.Auto)]
-public readonly struct CodeOwnersError : IEquatable<CodeOwnersError>
+public readonly struct CodeOwnersParseError : IEquatable<CodeOwnersParseError>
 {
-    internal CodeOwnersError(CodeOwnersErrorKind kind, int lineNumber, int linePosition)
+    internal CodeOwnersParseError(CodeOwnersParseErrorKind kind, int lineNumber, int linePosition)
     {
         Kind = kind;
         LineNumber = lineNumber;
@@ -26,7 +26,7 @@ public readonly struct CodeOwnersError : IEquatable<CodeOwnersError>
     }
 
     /// <summary>Gets the kind of error.</summary>
-    public CodeOwnersErrorKind Kind { get; }
+    public CodeOwnersParseErrorKind Kind { get; }
 
     /// <summary>Gets the one-based number of the line containing the error, or 0 when the position is unknown.</summary>
     public int LineNumber { get; }
@@ -37,22 +37,22 @@ public readonly struct CodeOwnersError : IEquatable<CodeOwnersError>
     /// <summary>Returns a description of the error and of its location.</summary>
     public override string ToString() => $"line {LineNumber}, position {LinePosition}: {GetDescription(Kind)}";
 
-    private static string GetDescription(CodeOwnersErrorKind kind) => kind switch
+    private static string GetDescription(CodeOwnersParseErrorKind kind) => kind switch
     {
-        CodeOwnersErrorKind.UnterminatedSectionHeader => "the section header is not terminated by ']'",
-        CodeOwnersErrorKind.UnterminatedRequiredReviewerCount => "the required reviewer count is not terminated by ']'",
-        CodeOwnersErrorKind.InvalidRequiredReviewerCount => "the required reviewer count is not a positive integer",
-        CodeOwnersErrorKind.EmptyOwner => "'@' does not identify an owner",
-        CodeOwnersErrorKind.InvalidOwner => "the owner is neither a username nor an email address",
+        CodeOwnersParseErrorKind.UnterminatedSectionHeader => "the section header is not terminated by ']'",
+        CodeOwnersParseErrorKind.UnterminatedRequiredReviewerCount => "the required reviewer count is not terminated by ']'",
+        CodeOwnersParseErrorKind.InvalidRequiredReviewerCount => "the required reviewer count is not a positive integer",
+        CodeOwnersParseErrorKind.EmptyOwner => "'@' does not identify an owner",
+        CodeOwnersParseErrorKind.InvalidOwner => "the owner is neither a username nor an email address",
         _ => kind.ToString(),
     };
 
     public override bool Equals([NotNullWhen(true)] object? obj)
     {
-        return obj is CodeOwnersError error && Equals(error);
+        return obj is CodeOwnersParseError error && Equals(error);
     }
 
-    public bool Equals(CodeOwnersError other)
+    public bool Equals(CodeOwnersParseError other)
     {
         return Kind == other.Kind &&
                LineNumber == other.LineNumber &&
@@ -61,6 +61,6 @@ public readonly struct CodeOwnersError : IEquatable<CodeOwnersError>
 
     public override int GetHashCode() => HashCode.Combine(Kind, LineNumber, LinePosition);
 
-    public static bool operator ==(CodeOwnersError left, CodeOwnersError right) => left.Equals(right);
-    public static bool operator !=(CodeOwnersError left, CodeOwnersError right) => !(left == right);
+    public static bool operator ==(CodeOwnersParseError left, CodeOwnersParseError right) => left.Equals(right);
+    public static bool operator !=(CodeOwnersParseError left, CodeOwnersParseError right) => !(left == right);
 }

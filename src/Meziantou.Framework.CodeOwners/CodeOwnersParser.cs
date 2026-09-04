@@ -39,7 +39,7 @@ public static class CodeOwnersParser
     /// <param name="content">The content of the CODEOWNERS file.</param>
     /// <param name="entries">When this method returns <see langword="true"/>, contains the <see cref="CodeOwnersEntry"/> instances representing the parsed code owners; otherwise, <see langword="null"/>.</param>
     /// <returns><see langword="true"/> when <paramref name="content"/> is a valid CODEOWNERS file; otherwise, <see langword="false"/>.</returns>
-    /// <remarks>Use the <see cref="TryParse(string, out IReadOnlyList{CodeOwnersEntry}, out CodeOwnersError)"/> overload to know why the file is invalid.</remarks>
+    /// <remarks>Use the <see cref="TryParse(string, out IReadOnlyList{CodeOwnersEntry}, out CodeOwnersParseError)"/> overload to know why the file is invalid.</remarks>
     public static bool TryParse(string content, [NotNullWhen(true)] out IReadOnlyList<CodeOwnersEntry>? entries)
     {
         return TryParse(content, out entries, out _);
@@ -50,7 +50,7 @@ public static class CodeOwnersParser
     /// <param name="entries">When this method returns <see langword="true"/>, contains the <see cref="CodeOwnersEntry"/> instances representing the parsed code owners; otherwise, <see langword="null"/>.</param>
     /// <param name="error">When this method returns <see langword="false"/>, contains the first error found in <paramref name="content"/>; otherwise, <see langword="default"/>.</param>
     /// <returns><see langword="true"/> when <paramref name="content"/> is a valid CODEOWNERS file; otherwise, <see langword="false"/>.</returns>
-    public static bool TryParse(string content, [NotNullWhen(true)] out IReadOnlyList<CodeOwnersEntry>? entries, out CodeOwnersError error)
+    public static bool TryParse(string content, [NotNullWhen(true)] out IReadOnlyList<CodeOwnersEntry>? entries, out CodeOwnersParseError error)
     {
         var context = new CodeOwnersParserContext(content);
         var result = context.Parse();
@@ -74,7 +74,7 @@ public static class CodeOwnersParser
 
         private readonly List<CodeOwnersEntry> _entries = [];
         private readonly string _content;
-        private (CodeOwnersErrorKind Kind, int Index)? _error;
+        private (CodeOwnersParseErrorKind Kind, int Index)? _error;
         private CodeOwnersSection? _currentSection;
         private int _index;
 
@@ -96,12 +96,12 @@ public static class CodeOwnersParser
         public readonly bool HasError => _error is not null;
 
         /// <summary>Records the first error found. Parsing stops as soon as one is set.</summary>
-        private void SetError(CodeOwnersErrorKind kind, int index)
+        private void SetError(CodeOwnersParseErrorKind kind, int index)
         {
             _error ??= (kind, index);
         }
 
-        public readonly CodeOwnersError CreateError()
+        public readonly CodeOwnersParseError CreateError()
         {
             var (kind, errorIndex) = _error.GetValueOrDefault();
 
@@ -134,7 +134,7 @@ public static class CodeOwnersParser
                 lineStartIndex = index;
             }
 
-            return new CodeOwnersError(kind, lineNumber, Math.Max(1, errorIndex - lineStartIndex + 1));
+            return new CodeOwnersParseError(kind, lineNumber, Math.Max(1, errorIndex - lineStartIndex + 1));
         }
 
         private void ParseLine()
@@ -240,7 +240,7 @@ public static class CodeOwnersParser
             var separatorIndex = remaining.IndexOfAny(']', '\r', '\n');
             if (separatorIndex < 0 || remaining[separatorIndex] is not ']')
             {
-                SetError(CodeOwnersErrorKind.UnterminatedSectionHeader, startIndex);
+                SetError(CodeOwnersParseErrorKind.UnterminatedSectionHeader, startIndex);
                 _index = startIndex;
                 name = string.Empty;
                 return false;
@@ -260,7 +260,7 @@ public static class CodeOwnersParser
             var separatorIndex = remaining.IndexOfAny(']', '\r', '\n');
             if (separatorIndex < 0 || remaining[separatorIndex] is not ']')
             {
-                SetError(CodeOwnersErrorKind.UnterminatedRequiredReviewerCount, startIndex);
+                SetError(CodeOwnersParseErrorKind.UnterminatedRequiredReviewerCount, startIndex);
                 _index = startIndex;
                 return 1;
             }
@@ -272,7 +272,7 @@ public static class CodeOwnersParser
             // a section that is not prefixed by '^' report itself as optional.
             if (!int.TryParse(requiredReviewerCountText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var requiredReviewerCount) || requiredReviewerCount < 1)
             {
-                SetError(CodeOwnersErrorKind.InvalidRequiredReviewerCount, startIndex);
+                SetError(CodeOwnersParseErrorKind.InvalidRequiredReviewerCount, startIndex);
                 return 1;
             }
 
@@ -305,7 +305,7 @@ public static class CodeOwnersParser
                 var defaultOwner = token.ToString();
                 if (defaultOwner is "@")
                 {
-                    SetError(CodeOwnersErrorKind.EmptyOwner, lineStartIndex + offset);
+                    SetError(CodeOwnersParseErrorKind.EmptyOwner, lineStartIndex + offset);
                 }
                 else if (defaultOwner[0] is '@')
                 {
@@ -317,7 +317,7 @@ public static class CodeOwnersParser
                 }
                 else
                 {
-                    SetError(CodeOwnersErrorKind.InvalidOwner, lineStartIndex + offset);
+                    SetError(CodeOwnersParseErrorKind.InvalidOwner, lineStartIndex + offset);
                 }
 
                 offset += token.Length;
@@ -430,7 +430,7 @@ public static class CodeOwnersParser
                 if (owner.Length is 0)
                 {
                     // A lone '@' does not identify anybody
-                    SetError(CodeOwnersErrorKind.EmptyOwner, tokenStartIndex);
+                    SetError(CodeOwnersParseErrorKind.EmptyOwner, tokenStartIndex);
                 }
                 else if (isUsername)
                 {
@@ -444,7 +444,7 @@ public static class CodeOwnersParser
                 }
                 else
                 {
-                    SetError(CodeOwnersErrorKind.InvalidOwner, tokenStartIndex);
+                    SetError(CodeOwnersParseErrorKind.InvalidOwner, tokenStartIndex);
                 }
 
                 if (separator is null)

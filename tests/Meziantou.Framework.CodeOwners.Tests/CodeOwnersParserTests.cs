@@ -357,21 +357,21 @@ public sealed class CodeOwnersParserTests
     }
 
     [Theory]
-    [InlineData("[Backend\n*.cs @user1", CodeOwnersErrorKind.UnterminatedSectionHeader, 1, 1)]
-    [InlineData("* @user1\n[Backend", CodeOwnersErrorKind.UnterminatedSectionHeader, 2, 1)]
-    [InlineData("[Test][0]\n* @user1", CodeOwnersErrorKind.InvalidRequiredReviewerCount, 1, 7)]
-    [InlineData("[Test][-3]\n* @user1", CodeOwnersErrorKind.InvalidRequiredReviewerCount, 1, 7)]
-    [InlineData("[Test][abc]\n* @user1", CodeOwnersErrorKind.InvalidRequiredReviewerCount, 1, 7)]
-    [InlineData("[Test][2\n* @user1", CodeOwnersErrorKind.UnterminatedRequiredReviewerCount, 1, 7)]
-    [InlineData("* @ @user1", CodeOwnersErrorKind.EmptyOwner, 1, 3)]
-    [InlineData("* @", CodeOwnersErrorKind.EmptyOwner, 1, 3)]
-    [InlineData("[Test] @\n*", CodeOwnersErrorKind.EmptyOwner, 1, 8)]
-    [InlineData("* justsometext", CodeOwnersErrorKind.InvalidOwner, 1, 3)]
-    [InlineData("* missing.local.part@", CodeOwnersErrorKind.InvalidOwner, 1, 3)]
-    [InlineData("[Test] justsometext\n*", CodeOwnersErrorKind.InvalidOwner, 1, 8)]
-    public void ParseInvalidFileThrows(string content, CodeOwnersErrorKind kind, int lineNumber, int linePosition)
+    [InlineData("[Backend\n*.cs @user1", CodeOwnersParseErrorKind.UnterminatedSectionHeader, 1, 1)]
+    [InlineData("* @user1\n[Backend", CodeOwnersParseErrorKind.UnterminatedSectionHeader, 2, 1)]
+    [InlineData("[Test][0]\n* @user1", CodeOwnersParseErrorKind.InvalidRequiredReviewerCount, 1, 7)]
+    [InlineData("[Test][-3]\n* @user1", CodeOwnersParseErrorKind.InvalidRequiredReviewerCount, 1, 7)]
+    [InlineData("[Test][abc]\n* @user1", CodeOwnersParseErrorKind.InvalidRequiredReviewerCount, 1, 7)]
+    [InlineData("[Test][2\n* @user1", CodeOwnersParseErrorKind.UnterminatedRequiredReviewerCount, 1, 7)]
+    [InlineData("* @ @user1", CodeOwnersParseErrorKind.EmptyOwner, 1, 3)]
+    [InlineData("* @", CodeOwnersParseErrorKind.EmptyOwner, 1, 3)]
+    [InlineData("[Test] @\n*", CodeOwnersParseErrorKind.EmptyOwner, 1, 8)]
+    [InlineData("* justsometext", CodeOwnersParseErrorKind.InvalidOwner, 1, 3)]
+    [InlineData("* missing.local.part@", CodeOwnersParseErrorKind.InvalidOwner, 1, 3)]
+    [InlineData("[Test] justsometext\n*", CodeOwnersParseErrorKind.InvalidOwner, 1, 8)]
+    public void ParseInvalidFileThrows(string content, CodeOwnersParseErrorKind kind, int lineNumber, int linePosition)
     {
-        var expected = new CodeOwnersError(kind, lineNumber, linePosition);
+        var expected = new CodeOwnersParseError(kind, lineNumber, linePosition);
 
         var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse(content));
         Assert.Equal(expected, exception.Error);
@@ -395,7 +395,7 @@ public sealed class CodeOwnersParserTests
 
         var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse(Content));
 
-        Assert.Equal(new CodeOwnersError(CodeOwnersErrorKind.InvalidRequiredReviewerCount, 2, 7), exception.Error);
+        Assert.Equal(new CodeOwnersParseError(CodeOwnersParseErrorKind.InvalidRequiredReviewerCount, 2, 7), exception.Error);
     }
 
     [Fact]
@@ -403,7 +403,7 @@ public sealed class CodeOwnersParserTests
     {
         var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse("* @user1\r*.js @\r"));
 
-        Assert.Equal(new CodeOwnersError(CodeOwnersErrorKind.EmptyOwner, 2, 6), exception.Error);
+        Assert.Equal(new CodeOwnersParseError(CodeOwnersParseErrorKind.EmptyOwner, 2, 6), exception.Error);
     }
 
     [Fact]

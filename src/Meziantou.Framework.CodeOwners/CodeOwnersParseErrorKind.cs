@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.CodeOwners;
 
 /// <summary>Specifies why a CODEOWNERS file is invalid.</summary>
-public enum CodeOwnersErrorKind
+public enum CodeOwnersParseErrorKind
 {
     /// <summary>A section header is missing its closing <c>]</c>.</summary>
     UnterminatedSectionHeader,

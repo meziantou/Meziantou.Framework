@@ -28,7 +28,7 @@ try
 }
 catch (CodeOwnersParseException ex)
 {
-    // ex.Kind: CodeOwnersErrorKind.UnterminatedSectionHeader
+    // ex.Kind: CodeOwnersParseErrorKind.UnterminatedSectionHeader
     // ex.LineNumber: 1
     // ex.LinePosition: 1
     Console.WriteLine(ex.Message);
@@ -38,7 +38,7 @@ catch (CodeOwnersParseException ex)
 Use `TryParse` when an invalid file should not throw. An overload reports the same error without allocating an exception:
 
 ````c#
-if (CodeOwnersParser.TryParse(content, out IReadOnlyList<CodeOwnersEntry>? entries, out CodeOwnersError error))
+if (CodeOwnersParser.TryParse(content, out IReadOnlyList<CodeOwnersEntry>? entries, out CodeOwnersParseError error))
 {
     // ...
 }

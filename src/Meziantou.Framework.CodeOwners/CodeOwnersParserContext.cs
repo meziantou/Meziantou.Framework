@@ -12,13 +12,15 @@ internal struct CodeOwnersParserContext
 
     private readonly List<CodeOwnersEntry> _entries = [];
     private readonly string _content;
+    private readonly CodeOwnersDialect _dialect;
     private (CodeOwnersParseErrorKind Kind, int Index)? _error;
     private CodeOwnersSection? _currentSection;
     private int _index;
 
-    public CodeOwnersParserContext(string content)
+    public CodeOwnersParserContext(string content, CodeOwnersDialect dialect)
     {
         _content = content;
+        _dialect = dialect;
     }
 
     public List<CodeOwnersEntry> Parse()
@@ -89,8 +91,9 @@ internal struct CodeOwnersParserContext
             return;
         }
 
-        // Section
-        if (TryParseSection(out var section))
+        // Section. Sections are a GitLab extension: in the GitHub syntax a line starting with '[' is a
+        // pattern, because '[' opens a character class.
+        if (_dialect is CodeOwnersDialect.GitLab && TryParseSection(out var section))
         {
             _currentSection = section;
             return;

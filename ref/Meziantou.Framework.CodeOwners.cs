@@ -22,6 +22,12 @@ namespace Meziantou.Framework.CodeOwners
         EmailAddress = 1
     }
 
+    public enum CodeOwnersDialect
+    {
+        GitHub = 0,
+        GitLab = 1
+    }
+
     public sealed class CodeOwnersEntry : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersEntry>
     {
         public string Pattern { get => throw null; }
@@ -39,9 +45,9 @@ namespace Meziantou.Framework.CodeOwners
     public sealed class CodeOwnersFile
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.CodeOwners.CodeOwnersEntry> Entries { get => throw null; }
-        public static Meziantou.Framework.CodeOwners.CodeOwnersFile Parse(string content) => throw null;
-        public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file) => throw null;
-        public static bool TryParse(string content, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file, out Meziantou.Framework.CodeOwners.CodeOwnersParseError error) => throw null;
+        public static Meziantou.Framework.CodeOwners.CodeOwnersFile Parse(string content, Meziantou.Framework.CodeOwners.CodeOwnersDialect dialect) => throw null;
+        public static bool TryParse(string content, Meziantou.Framework.CodeOwners.CodeOwnersDialect dialect, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file) => throw null;
+        public static bool TryParse(string content, Meziantou.Framework.CodeOwners.CodeOwnersDialect dialect, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.CodeOwners.CodeOwnersFile? file, out Meziantou.Framework.CodeOwners.CodeOwnersParseError error) => throw null;
     }
 
     public readonly struct CodeOwnersParseError : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersParseError>

@@ -13,14 +13,14 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ParseEmptyCodeOwners()
     {
-        var actual = CodeOwnersFile.Parse("").Entries;
+        var actual = CodeOwnersFile.Parse("", CodeOwnersDialect.GitLab).Entries;
         Assert.Empty(actual);
     }
 
     [Fact]
     public void ParseSingleLineCodeOwners()
     {
-        var actual = CodeOwnersFile.Parse("* @user1 @user2").Entries;
+        var actual = CodeOwnersFile.Parse("* @user1 @user2", CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[] { Entry("*", User("user1"), User("user2")) };
         Assert.Equal(expected, actual);
@@ -29,7 +29,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ParseSingleLineCodeOwnersWithEscapedPatternCharacters()
     {
-        var actual = CodeOwnersFile.Parse("foo\\ bar\\@baz @user1").Entries;
+        var actual = CodeOwnersFile.Parse("foo\\ bar\\@baz @user1", CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[] { Entry("foo bar@baz", User("user1")) };
         Assert.Equal(expected, actual);
@@ -38,7 +38,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ParseSingleLineCodeOwnersWithSection()
     {
-        var actual = CodeOwnersFile.Parse("[Test]\n* @user1 @user2").Entries;
+        var actual = CodeOwnersFile.Parse("[Test]\n* @user1 @user2", CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[] { Entry("*", new CodeOwnersSection("Test"), User("user1"), User("user2")) };
         Assert.Equal(expected, actual);
@@ -92,7 +92,7 @@ public sealed class CodeOwnersParserTests
                                "/apps/ @octocat\n" +
                                "/apps/github";
 
-        var actual = CodeOwnersFile.Parse(Content).Entries;
+        var actual = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[]
         {
@@ -112,7 +112,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ParseLineEndingWithSpaces()
     {
-        var actual = CodeOwnersFile.Parse("* @user1 @user2  ").Entries;
+        var actual = CodeOwnersFile.Parse("* @user1 @user2  ", CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[] { Entry("*", User("user1"), User("user2")) };
         Assert.Equal(expected, actual);
@@ -122,8 +122,8 @@ public sealed class CodeOwnersParserTests
     public void ParseTwice()
     {
         const string Content = "* @user1 @user2  ";
-        var parse1 = CodeOwnersFile.Parse(Content).Entries;
-        var parse2 = CodeOwnersFile.Parse(Content).Entries;
+        var parse1 = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
+        var parse2 = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
         Assert.Equal(parse2, parse1);
     }
 
@@ -138,7 +138,7 @@ public sealed class CodeOwnersParserTests
                                "^[Optional Section]\n" +
                                "*.js @user2 @user3\n";
 
-        var actual = CodeOwnersFile.Parse(Content).Entries;
+        var actual = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[]
         {
@@ -161,7 +161,7 @@ public sealed class CodeOwnersParserTests
                                "app/\n" +
                                " ";
 
-        var actual = CodeOwnersFile.Parse(Content).Entries;
+        var actual = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[]
         {
@@ -179,7 +179,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ParseCodeOwnersWithRequiredReviewerCount()
     {
-        var actual = CodeOwnersFile.Parse("[Test][2]\n* @user1 @user2").Entries;
+        var actual = CodeOwnersFile.Parse("[Test][2]\n* @user1 @user2", CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[] { Entry("*", new CodeOwnersSection("Test", requiredReviewerCount: 2), User("user1"), User("user2")) };
         Assert.Equal(expected, actual);
@@ -188,7 +188,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ParseCodeOwnersWithDefaultOwners()
     {
-        var actual = CodeOwnersFile.Parse("[Test] @defaultOwner default.owner@example.com\n*").Entries;
+        var actual = CodeOwnersFile.Parse("[Test] @defaultOwner default.owner@example.com\n*", CodeOwnersDialect.GitLab).Entries;
 
         var section = new CodeOwnersSection("Test", requiredReviewerCount: 1, defaultOwners: [User("defaultOwner"), Email("default.owner@example.com")]);
         var expected = new[] { Entry("*", section, User("defaultOwner"), Email("default.owner@example.com")) };
@@ -198,7 +198,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ParseCodeOwnersWithDefaultOwnersOverriden()
     {
-        var actual = CodeOwnersFile.Parse("[Test] @defaultOwner default.owner@example.com\n* @user1 @user2").Entries;
+        var actual = CodeOwnersFile.Parse("[Test] @defaultOwner default.owner@example.com\n* @user1 @user2", CodeOwnersDialect.GitLab).Entries;
 
         var section = new CodeOwnersSection("Test", requiredReviewerCount: 1, defaultOwners: [User("defaultOwner"), Email("default.owner@example.com")]);
         var expected = new[] { Entry("*", section, User("user1"), User("user2")) };
@@ -208,7 +208,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ParseCodeOwnersWithRequiredReviewerCountAndDefaultOwners()
     {
-        var actual = CodeOwnersFile.Parse("[Test][2] @defaultOwner default.owner@example.com\n*").Entries;
+        var actual = CodeOwnersFile.Parse("[Test][2] @defaultOwner default.owner@example.com\n*", CodeOwnersDialect.GitLab).Entries;
 
         var section = new CodeOwnersSection("Test", requiredReviewerCount: 2, defaultOwners: [User("defaultOwner"), Email("default.owner@example.com")]);
         var expected = new[] { Entry("*", section, User("defaultOwner"), Email("default.owner@example.com")) };
@@ -218,7 +218,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void OptionalSectionKeepsItsRequiredReviewerCount()
     {
-        var actual = CodeOwnersFile.Parse("^[Test][2]\n* @user").Entries;
+        var actual = CodeOwnersFile.Parse("^[Test][2]\n* @user", CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[] { Entry("*", new CodeOwnersSection("Test", isOptional: true, requiredReviewerCount: 2), User("user")) };
         Assert.Equal(expected, actual);
@@ -234,8 +234,8 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void OptionalAndMandatorySectionsWithTheSameCountAreNotEqual()
     {
-        var optional = CodeOwnersFile.Parse("^[Test][2]\n*").Entries[0].Section;
-        var mandatory = CodeOwnersFile.Parse("[Test][2]\n*").Entries[0].Section;
+        var optional = CodeOwnersFile.Parse("^[Test][2]\n*", CodeOwnersDialect.GitLab).Entries[0].Section;
+        var mandatory = CodeOwnersFile.Parse("[Test][2]\n*", CodeOwnersDialect.GitLab).Entries[0].Section;
 
         Assert.NotEqual(optional, mandatory);
     }
@@ -246,7 +246,7 @@ public sealed class CodeOwnersParserTests
         Assert.Equal(CodeOwnersParseErrorKind.None, default(CodeOwnersParseError).Kind);
         Assert.Equal("no error", default(CodeOwnersParseError).ToString());
 
-        Assert.True(CodeOwnersFile.TryParse("* @user1", out _, out var error));
+        Assert.True(CodeOwnersFile.TryParse("* @user1", CodeOwnersDialect.GitLab, out _, out var error));
         Assert.Equal(CodeOwnersParseErrorKind.None, error.Kind);
         Assert.Equal(default, error);
     }
@@ -262,7 +262,7 @@ public sealed class CodeOwnersParserTests
                                "[Test3] @defaultOwner2 [2] @defaultOwner3\n" +
                                "*\n";
 
-        var actual = CodeOwnersFile.Parse(Content).Entries;
+        var actual = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[]
         {
@@ -285,7 +285,7 @@ public sealed class CodeOwnersParserTests
                                "[Test4] # [2] @defaultOwner2\n" +
                                "*\n";
 
-        var actual = CodeOwnersFile.Parse(Content).Entries;
+        var actual = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[]
         {
@@ -305,7 +305,7 @@ public sealed class CodeOwnersParserTests
                                "[Test2][2]@defaultOwner2\n" +
                                "*\n";
 
-        var actual = CodeOwnersFile.Parse(Content).Entries;
+        var actual = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[]
         {
@@ -327,7 +327,7 @@ public sealed class CodeOwnersParserTests
                                "[Test4][2] \t @defaultOwner7  \t\t  @defaultOwner8\n" +
                                "*\n";
 
-        var actual = CodeOwnersFile.Parse(Content).Entries;
+        var actual = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[]
         {
@@ -353,7 +353,7 @@ public sealed class CodeOwnersParserTests
                                "* @user3\r\n" +
                                " ";
 
-        var actual = CodeOwnersFile.Parse(Content).Entries;
+        var actual = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[]
         {
@@ -367,7 +367,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void TryParseValidFile()
     {
-        Assert.True(CodeOwnersFile.TryParse("[Test][2] @defaultOwner\n* @user1 docs@example.com\n", out var file, out var error));
+        Assert.True(CodeOwnersFile.TryParse("[Test][2] @defaultOwner\n* @user1 docs@example.com\n", CodeOwnersDialect.GitLab, out var file, out var error));
         Assert.HasCount(1, file.Entries);
         Assert.HasCount(2, file.Entries[0].Owners);
         Assert.Equal(default, error);
@@ -376,10 +376,10 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ErrorAndExceptionMessageDescribeTheProblem()
     {
-        Assert.False(CodeOwnersFile.TryParse("* @user1\n[Test][0]\n", out _, out var error));
+        Assert.False(CodeOwnersFile.TryParse("* @user1\n[Test][0]\n", CodeOwnersDialect.GitLab, out _, out var error));
         Assert.Equal("line 2, position 7: the required reviewer count is not a positive integer", error.ToString());
 
-        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersFile.Parse("* @user1\n[Test][0]\n"));
+        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersFile.Parse("* @user1\n[Test][0]\n", CodeOwnersDialect.GitLab));
         Assert.Equal("The CODEOWNERS file is invalid at line 2, position 7: the required reviewer count is not a positive integer", exception.Message);
     }
 
@@ -400,14 +400,14 @@ public sealed class CodeOwnersParserTests
     {
         var expected = new CodeOwnersParseError(kind, lineNumber, linePosition);
 
-        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersFile.Parse(content));
+        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersFile.Parse(content, CodeOwnersDialect.GitLab));
         Assert.Equal(expected, exception.Error);
 
-        Assert.False(CodeOwnersFile.TryParse(content, out var file, out var error));
+        Assert.False(CodeOwnersFile.TryParse(content, CodeOwnersDialect.GitLab, out var file, out var error));
         Assert.Null(file);
         Assert.Equal(expected, error);
 
-        Assert.False(CodeOwnersFile.TryParse(content, out file));
+        Assert.False(CodeOwnersFile.TryParse(content, CodeOwnersDialect.GitLab, out file));
         Assert.Null(file);
     }
 
@@ -420,7 +420,7 @@ public sealed class CodeOwnersParserTests
                                "\n" +
                                "*.go justsometext";
 
-        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersFile.Parse(Content));
+        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab));
 
         Assert.Equal(new CodeOwnersParseError(CodeOwnersParseErrorKind.InvalidRequiredReviewerCount, 2, 7), exception.Error);
     }
@@ -428,7 +428,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ParseReportsTheLineNumberWithCarriageReturnLineEndings()
     {
-        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersFile.Parse("* @user1\r*.js @\r"));
+        var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersFile.Parse("* @user1\r*.js @\r", CodeOwnersDialect.GitLab));
 
         Assert.Equal(new CodeOwnersParseError(CodeOwnersParseErrorKind.EmptyOwner, 2, 6), exception.Error);
     }
@@ -436,7 +436,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ParseCaretNotFollowedBySectionIsAPattern()
     {
-        var actual = CodeOwnersFile.Parse("^file.txt @user1").Entries;
+        var actual = CodeOwnersFile.Parse("^file.txt @user1", CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[] { Entry("^file.txt", User("user1")) };
         Assert.Equal(expected, actual);
@@ -445,7 +445,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ParseCaretFollowedBySpaceIsAPattern()
     {
-        var actual = CodeOwnersFile.Parse("^ @user1").Entries;
+        var actual = CodeOwnersFile.Parse("^ @user1", CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[] { Entry("^", User("user1")) };
         Assert.Equal(expected, actual);
@@ -454,7 +454,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ParseDefaultOwnersSeparatedFromSectionNameByATab()
     {
-        var actual = CodeOwnersFile.Parse("[Test]\t@defaultOwner\n*").Entries;
+        var actual = CodeOwnersFile.Parse("[Test]\t@defaultOwner\n*", CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[] { Entry("*", new CodeOwnersSection("Test", requiredReviewerCount: 1, defaultOwners: [User("defaultOwner")]), User("defaultOwner")) };
         Assert.Equal(expected, actual);
@@ -467,7 +467,7 @@ public sealed class CodeOwnersParserTests
                                "*.js @user1\r" +
                                "*.go @user2";
 
-        var actual = CodeOwnersFile.Parse(Content).Entries;
+        var actual = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[]
         {
@@ -484,7 +484,7 @@ public sealed class CodeOwnersParserTests
                                "[Other] @defaultOwner2\r" +
                                "*";
 
-        var actual = CodeOwnersFile.Parse(Content).Entries;
+        var actual = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
 
         var expected = new[] { Entry("*", new CodeOwnersSection("Other", requiredReviewerCount: 1, defaultOwners: [User("defaultOwner2")]), User("defaultOwner2")) };
         Assert.Equal(expected, actual);
@@ -493,7 +493,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void EntriesFromDifferentLinesAreNotEqual()
     {
-        var actual = CodeOwnersFile.Parse("* @user1\n*.js @user1").Entries;
+        var actual = CodeOwnersFile.Parse("* @user1\n*.js @user1", CodeOwnersDialect.GitLab).Entries;
 
         Assert.HasCount(2, actual);
         Assert.NotEqual(actual[0], actual[1]);
@@ -502,7 +502,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void IdenticalLinesProduceEqualEntries()
     {
-        var actual = CodeOwnersFile.Parse("* @user1\n* @user1").Entries;
+        var actual = CodeOwnersFile.Parse("* @user1\n* @user1", CodeOwnersDialect.GitLab).Entries;
 
         Assert.HasCount(2, actual);
         Assert.Equal(actual[0], actual[1]);
@@ -511,7 +511,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void LastMatchingEntryOwnsThePath()
     {
-        var actual = CodeOwnersFile.Parse("* @global1 @global2\n*.js @js-owner1 @js-owner2").Entries;
+        var actual = CodeOwnersFile.Parse("* @global1 @global2\n*.js @js-owner1 @js-owner2", CodeOwnersDialect.GitLab).Entries;
 
         var winner = actual.Last(entry => entry.Pattern is "*.js");
         Assert.Equal([User("js-owner1"), User("js-owner2")], winner.Owners);
@@ -520,7 +520,7 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void OwnerToStringRoundTrips()
     {
-        var actual = CodeOwnersFile.Parse("[Test][2] @defaultOwner\n*.js @user1 docs@example.com").Entries;
+        var actual = CodeOwnersFile.Parse("[Test][2] @defaultOwner\n*.js @user1 docs@example.com", CodeOwnersDialect.GitLab).Entries;
 
         Assert.Equal("@user1", actual[0].Owners[0].ToString());
         Assert.Equal("docs@example.com", actual[0].Owners[1].ToString());
@@ -537,7 +537,72 @@ public sealed class CodeOwnersParserTests
         var invalid = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse("[Test][0]"));
 #pragma warning restore CS0618
 
-        Assert.Equal(CodeOwnersFile.Parse(Content).Entries, parsed.Entries);
+        Assert.Equal(CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries, parsed.Entries);
         Assert.Equal(new CodeOwnersParseError(CodeOwnersParseErrorKind.InvalidRequiredReviewerCount, 1, 7), invalid.Error);
+    }
+
+    [Fact]
+    public void GitHubDialectParsesACharacterClassAsAPattern()
+    {
+        // '[abc].txt' is a valid gitignore-style pattern. GitLab reads the same line as a section header.
+        var github = CodeOwnersFile.Parse("[abc].txt @user1", CodeOwnersDialect.GitHub).Entries;
+        Assert.Equal([Entry("[abc].txt", User("user1"))], github);
+
+        var gitlab = CodeOwnersFile.Parse("[abc].txt @user1", CodeOwnersDialect.GitLab).Entries;
+        Assert.Empty(gitlab);
+    }
+
+    [Fact]
+    public void GitHubDialectHasNoSections()
+    {
+        const string Content = "[Backend]\n" +
+                               "* @user1\n";
+
+        var github = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitHub).Entries;
+        Assert.Equal([Entry("[Backend]"), Entry("*", User("user1"))], github);
+        Assert.All(github, entry => Assert.Null(entry.Section));
+
+        var gitlab = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
+        Assert.Equal([Entry("*", new CodeOwnersSection("Backend"), User("user1"))], gitlab);
+    }
+
+    [Fact]
+    public void GitHubDialectTreatsTheOptionalSectionMarkerAsAPatternCharacter()
+    {
+        const string Content = "^[Test][2]\n" +
+                               "* @user1\n";
+
+        var github = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitHub).Entries;
+        Assert.Equal([Entry("^[Test][2]"), Entry("*", User("user1"))], github);
+
+        var gitlab = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
+        Assert.True(gitlab[0].IsOptional);
+    }
+
+    [Theory]
+    [InlineData("[Backend\n*.cs @user1")]
+    [InlineData("[Test][0]\n* @user1")]
+    [InlineData("[Test][2\n* @user1")]
+    public void GitHubDialectDoesNotReportSectionErrors(string content)
+    {
+        // These are only errors because GitLab reads the line as a section header.
+        Assert.True(CodeOwnersFile.TryParse(content, CodeOwnersDialect.GitHub, out var github));
+        Assert.HasCount(2, github.Entries);
+
+        Assert.False(CodeOwnersFile.TryParse(content, CodeOwnersDialect.GitLab, out _));
+    }
+
+    [Fact]
+    public void BothDialectsAgreeOnAFileWithoutSections()
+    {
+        const string Content = "* @user1 @user2\n" +
+                               "*.js @js-owner #comment\n" +
+                               "docs/* docs@example.com\n" +
+                               "/apps/github\n";
+
+        var github = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitHub).Entries;
+        var gitlab = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries;
+
+        Assert.Equal(github, gitlab);
     }
 }

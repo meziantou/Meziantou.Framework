@@ -2,10 +2,12 @@
 
 `Meziantou.Framework.CodeOwners` parses [CODEOWNERS file](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/about-code-owners). These files are common on GitHub and GitLab.
 
+Parsing takes the dialect of the file, because the two hosts do not accept the same syntax: sections (`[Name]`, `^[Name]`, `[Name][2]`) are a GitLab extension, and in the GitHub syntax a line starting with `[` is a pattern, since `[` opens a character class.
+
 Each entry is one line of the file: a pattern and the owners it declares.
 
 ````c#
-CodeOwnersFile file = CodeOwnersFile.Parse("* @user1 docs@example.com");
+CodeOwnersFile file = CodeOwnersFile.Parse("* @user1 docs@example.com", CodeOwnersDialect.GitHub);
 // file.Entries[0].Pattern: "*"
 // file.Entries[0].Owners[0]: Type=Username, Name="user1"
 // file.Entries[0].Owners[1]: Type=EmailAddress, Name="docs@example.com"
@@ -24,7 +26,7 @@ IReadOnlyList<CodeOwner> owners = owningEntry?.Owners ?? [];
 ````c#
 try
 {
-    CodeOwnersFile.Parse("[Section\n* @user1");
+    CodeOwnersFile.Parse("[Section\n* @user1", CodeOwnersDialect.GitLab);
 }
 catch (CodeOwnersParseException ex)
 {
@@ -38,7 +40,7 @@ catch (CodeOwnersParseException ex)
 Use `TryParse` when an invalid file should not throw. An overload reports the same error without allocating an exception:
 
 ````c#
-if (CodeOwnersFile.TryParse(content, out CodeOwnersFile? file, out CodeOwnersParseError error))
+if (CodeOwnersFile.TryParse(content, CodeOwnersDialect.GitHub, out CodeOwnersFile? file, out CodeOwnersParseError error))
 {
     // ...
 }
@@ -50,4 +52,4 @@ else
 
 A `CodeOwnersFile` only exists for a valid file: neither method hands back a partially parsed one.
 
-The `CodeOwnersParser` type is obsolete: its `Parse` method forwards to `CodeOwnersFile` and will be removed in a future major version.
+The `CodeOwnersParser` type is obsolete: its `Parse` method forwards to `CodeOwnersFile` using the GitLab dialect, and will be removed in a future major version.

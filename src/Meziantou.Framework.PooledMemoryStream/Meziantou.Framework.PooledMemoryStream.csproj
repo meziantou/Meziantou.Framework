@@ -5,6 +5,7 @@
     <Version>2.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>A pooled, recyclable MemoryStream backed by a shared pool of fixed-size byte arrays, implementing IBufferWriter&lt;byte&gt;.</Description>
+    <PackageTags>memorystream, pooling, buffer, ibufferwriter, performance</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

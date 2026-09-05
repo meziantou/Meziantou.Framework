@@ -6,6 +6,7 @@
     <Version>2.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Utilities to process ANSI escape sequences and formatting</Description>
+    <PackageTags>ansi, escape-sequences, console, terminal, formatting, colors</PackageTags>
   </PropertyGroup>
 
 </Project>

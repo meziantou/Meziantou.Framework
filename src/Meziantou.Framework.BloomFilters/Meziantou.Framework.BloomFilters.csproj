@@ -5,6 +5,7 @@
     <Version>2.0.3</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>High-performance in-memory Bloom filters and counting Bloom filters with atomic concurrent writes and segmented storage</Description>
+    <PackageTags>bloom-filter, counting-bloom-filter, probabilistic, data-structures, performance</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

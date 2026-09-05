@@ -4,7 +4,8 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>2.0.0</Version>
     <IsTrimmable>true</IsTrimmable>
-    <Description>Helpers for ASP.NET Core middleware diagnostics</Description>
+    <Description>Helpers for ASP.NET Core middleware pipeline diagnostics and default response cache-control headers</Description>
+    <PackageTags>aspnetcore, middleware, diagnostics, cache-control, http</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

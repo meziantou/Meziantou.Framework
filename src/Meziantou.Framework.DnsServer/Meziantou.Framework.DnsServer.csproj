@@ -5,6 +5,7 @@
     <Version>2.1.0</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>A DNS server library supporting UDP, TCP, DNS over TLS, DNS over HTTPS, and DNS over QUIC with ASP.NET Core hosting integration</Description>
+    <PackageTags>dns, dns-server, doh, dot, doq, aspnetcore, networking</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

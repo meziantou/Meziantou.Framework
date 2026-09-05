@@ -6,6 +6,7 @@
     <Version>2.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>QR and barcode generation with SVG, PNG, and console renderers</Description>
+    <PackageTags>qrcode, barcode, svg, png, console</PackageTags>
     <NoWarn>$(NoWarn);CA1814</NoWarn>
   </PropertyGroup>
 

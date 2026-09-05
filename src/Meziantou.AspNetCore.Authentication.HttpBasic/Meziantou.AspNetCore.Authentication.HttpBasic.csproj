@@ -5,6 +5,7 @@
     <Version>2.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>HTTP Basic authentication for ASP.NET Core with support for ASP.NET Core Identity</Description>
+    <PackageTags>aspnetcore, authentication, http-basic, basic-authentication, identity, security</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

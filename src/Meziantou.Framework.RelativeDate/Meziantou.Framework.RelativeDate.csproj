@@ -6,6 +6,7 @@
     <Version>4.0.3</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Format a DateTime or DateTimeOffset using a relative format (e.g. 5 minutes ago)</Description>
+    <PackageTags>date, relative-date, humanize, formatting, time</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

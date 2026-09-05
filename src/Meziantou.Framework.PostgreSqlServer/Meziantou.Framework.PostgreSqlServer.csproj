@@ -5,6 +5,7 @@
     <Version>2.0.0</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>A PostgreSQL wire-protocol server library with callback-based authentication and query handling</Description>
+    <PackageTags>postgresql, postgres, server, wire-protocol, testing</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

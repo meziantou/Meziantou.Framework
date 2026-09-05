@@ -6,6 +6,7 @@
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
     <Version>3.0.3</Version>
     <Description>Allow to manipulate Windows Access Tokens</Description>
+    <PackageTags>windows, win32, access-token, privileges, security</PackageTags>
 
     <MeziantouPolyfill_ExcludedPolyfills>T:System.Diagnostics.CodeAnalysis.UnscopedRefAttribute</MeziantouPolyfill_ExcludedPolyfills>
   </PropertyGroup>

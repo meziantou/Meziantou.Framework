@@ -6,6 +6,7 @@
     <Version>3.0.5</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Components and services for Blazor</Description>
+    <PackageTags>aspnetcore, blazor, components, razor, ui</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

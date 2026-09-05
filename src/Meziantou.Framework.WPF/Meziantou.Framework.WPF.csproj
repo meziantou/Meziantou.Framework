@@ -6,6 +6,7 @@
     <UseWPF>true</UseWPF>
     <Version>4.0.0</Version>
     <Description>Collection of Commands, Markup extensions, and DependencyProperty for WPF</Description>
+    <PackageTags>wpf, xaml, mvvm, commands, markup-extension</PackageTags>
   </PropertyGroup>
 
 </Project>

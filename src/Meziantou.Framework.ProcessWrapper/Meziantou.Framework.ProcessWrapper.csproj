@@ -6,6 +6,7 @@
     <Version>2.0.4</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Fluent API for wrapping System.Diagnostics.Process</Description>
+    <PackageTags>process, fluent, cli, diagnostics</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

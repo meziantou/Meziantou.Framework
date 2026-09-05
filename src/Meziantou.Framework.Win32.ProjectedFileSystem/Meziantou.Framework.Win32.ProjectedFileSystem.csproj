@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <Description>.NET wrapper for Windows Projected File System (ProjFS)</Description>
+    <PackageTags>windows, win32, projfs, virtual-file-system, file-system</PackageTags>
     <Version>3.0.3</Version>
   </PropertyGroup>
 

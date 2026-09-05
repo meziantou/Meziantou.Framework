@@ -6,6 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Version>4.0.1</Version>
     <Description>Provide an OpenFolderDialog that uses Vista+ design</Description>
+    <PackageTags>windows, win32, dialog, folder-picker, ui</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

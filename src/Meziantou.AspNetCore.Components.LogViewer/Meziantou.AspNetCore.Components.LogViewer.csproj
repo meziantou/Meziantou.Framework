@@ -6,6 +6,7 @@
     <Version>2.0.4</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>A log viewer component for Blazor</Description>
+    <PackageTags>aspnetcore, blazor, components, logging, log-viewer, ui</PackageTags>
 
     <!-- StaticWebAssets are duplicated when multitargeting -->
     <NoWarn>$(NoWarn);NU5118</NoWarn>

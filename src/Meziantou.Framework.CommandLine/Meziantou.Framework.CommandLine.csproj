@@ -5,7 +5,8 @@
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>4.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
-    <Description>Basic command line parser</Description>
+    <Description>Command-line argument parsing, argument escaping, and interactive console prompts</Description>
+    <PackageTags>command-line, cli, arguments, parser, console, prompt</PackageTags>
     <DefineConstants>$(DefineConstants);CommandLineBuilder_PUBLIC</DefineConstants>
   </PropertyGroup>
 

@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Language.Shell</RootNamespace>
     <Description>Immutable, round-trip shell script concrete syntax tree for bash, sh, zsh, PowerShell, PowerShell Core, and cmd, with diagnostics, trivia, source locations, and editing helpers.</Description>
+    <PackageTags>shell, bash, powershell, syntax-tree, cst, parser</PackageTags>
     <Version>1.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>

@@ -5,6 +5,7 @@
     <Version>4.0.4</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Template parser and evaluator. The template syntax is customizable. The code sections use C#.</Description>
+    <PackageTags>template, template-engine, csharp, rendering, codegen</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,6 +6,7 @@
     <Version>4.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Class to parse and displaying values, such as file size, in Bytes</Description>
+    <PackageTags>byte-size, file-size, units, formatting, parsing</PackageTags>
   </PropertyGroup>
 
 </Project>

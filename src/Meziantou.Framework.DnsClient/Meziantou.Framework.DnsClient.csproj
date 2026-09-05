@@ -5,6 +5,7 @@
     <Version>2.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>A DNS client supporting UDP, TCP, DNS over TLS, DNS over HTTPS, DNS over QUIC, DNSSEC, EDNS, IDN, and reverse lookups</Description>
+    <PackageTags>dns, dns-client, doh, dot, doq, dnssec, networking</PackageTags>
   </PropertyGroup>
 
 </Project>

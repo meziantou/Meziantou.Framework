@@ -3,6 +3,7 @@
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
     <Version>1.0.11</Version>
     <Description>Source helpers for Roslyn analyzers and source generators</Description>
+    <PackageTags>roslyn, analyzer, source-generator, codegen, compiler</PackageTags>
 
     <developmentDependency>true</developmentDependency>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>

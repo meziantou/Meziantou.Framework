@@ -7,6 +7,7 @@
 
     <Version>2.0.7</Version>
     <Description>CLI to render templates using Meziantou.Framework.Templating</Description>
+    <PackageTags>template, template-engine, cli, dotnet-tool</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Language.Regex</RootNamespace>
     <Description>Immutable, round-trip regular-expression pattern concrete syntax tree for .NET, JavaScript, PCRE/Perl, and POSIX ERE/BRE, with diagnostics, trivia, source locations, and editing helpers.</Description>
+    <PackageTags>regex, syntax-tree, cst, parser, pcre</PackageTags>
     <Version>1.0.0</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>

@@ -8,6 +8,7 @@
 
     <Version>1.0.2</Version>
     <Description>CLI to convert HTML to Markdown using Meziantou.Framework.HtmlToMarkdown</Description>
+    <PackageTags>html, markdown, converter, cli, dotnet-tool</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

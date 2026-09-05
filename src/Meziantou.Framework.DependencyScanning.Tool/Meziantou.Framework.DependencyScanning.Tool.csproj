@@ -6,6 +6,7 @@
     <IsTrimmable>false</IsTrimmable>
     <Version>2.0.11</Version>
     <Description>CLI tool to update dependencies in source repositories</Description>
+    <PackageTags>dependencies, scanner, nuget, npm, docker, cli, dotnet-tool</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

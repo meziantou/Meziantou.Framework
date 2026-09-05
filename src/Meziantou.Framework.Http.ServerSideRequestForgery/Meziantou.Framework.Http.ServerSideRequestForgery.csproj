@@ -5,6 +5,7 @@
     <Version>2.0.3</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Protects outbound SocketsHttpHandler requests against SSRF by validating schemes and resolved IP addresses.</Description>
+    <PackageTags>ssrf, security, http, httpclient, validation</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

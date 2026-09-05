@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Description>Wrapper for Windows Perceived types</Description>
+    <Description>Determine the perceived type of a file (text, image, audio, video, and so on) from its extension using Windows APIs</Description>
+    <PackageTags>windows, win32, perceived-type, file-type, shell</PackageTags>
     <Version>3.0.1</Version>
   </PropertyGroup>
 

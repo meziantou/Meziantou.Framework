@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>2.1.0</Version>
     <Description>In-memory OpenTelemetry collector receiver for Meziantou.Framework.OpenTelemetryCollector</Description>
+    <PackageTags>opentelemetry, otlp, collector, in-memory, testing</PackageTags>
     <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 

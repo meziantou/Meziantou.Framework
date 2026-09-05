@@ -6,6 +6,7 @@
     <Version>3.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Stopwatch without any allocation</Description>
+    <PackageTags>stopwatch, timing, performance, allocation-free, struct</PackageTags>
   </PropertyGroup>
 
 </Project>

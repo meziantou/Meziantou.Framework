@@ -5,6 +5,7 @@
     <Version>3.0.3</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Provide a SemanticVersion class to parse, compare, format semantic versions</Description>
+    <PackageTags>semver, semantic-versioning, version, parsing, comparison</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

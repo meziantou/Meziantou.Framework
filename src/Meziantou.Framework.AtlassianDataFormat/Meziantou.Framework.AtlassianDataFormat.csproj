@@ -5,6 +5,7 @@
     <Version>1.0.0</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Parse the Atlassian Document Format (ADF) used by Jira, Confluence, and Bitbucket, and convert it to Markdown</Description>
+    <PackageTags>atlassian, adf, jira, confluence, bitbucket, markdown, parser</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

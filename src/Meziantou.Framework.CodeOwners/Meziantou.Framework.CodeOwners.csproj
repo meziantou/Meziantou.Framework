@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>CODEOWNERS file parser</Description>
+    <PackageTags>codeowners, github, gitlab, git, parser</PackageTags>
     <Version>6.0.0</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>

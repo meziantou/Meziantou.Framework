@@ -6,6 +6,7 @@
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
     <Version>4.0.3</Version>
     <Description>Allow to access the Windows Change Journal to quickly detect changed files</Description>
+    <PackageTags>windows, win32, change-journal, usn-journal, ntfs, file-system</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

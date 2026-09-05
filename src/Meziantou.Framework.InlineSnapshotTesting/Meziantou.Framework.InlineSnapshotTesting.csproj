@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Enables verification of objects using inline snapshots</Description>
+    <PackageTags>snapshot-testing, inline-snapshot, approval-tests, testing, assertions</PackageTags>
     <DefineConstants>$(DefineConstants);MEZIANTOU_INLINE_SNAPSHOT_TESTING</DefineConstants>
 
     <Version>6.0.7</Version>

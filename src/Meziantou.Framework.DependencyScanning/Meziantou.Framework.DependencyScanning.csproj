@@ -5,6 +5,7 @@
     <IsTrimmable>false</IsTrimmable>
     <Version>3.0.11</Version>
     <Description>Find dependencies in source files. Support multiple package managers such as NuGet, npm, Docker, PyPi, and so on</Description>
+    <PackageTags>dependencies, scanner, nuget, npm, docker, pypi, dependency-update</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

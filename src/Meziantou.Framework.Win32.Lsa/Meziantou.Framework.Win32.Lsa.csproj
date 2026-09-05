@@ -6,6 +6,7 @@
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
     <Version>3.0.2</Version>
     <Description>.NET wrapper to get or set private data stored in Local Security Authority (LSA)</Description>
+    <PackageTags>windows, win32, lsa, secrets, security</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

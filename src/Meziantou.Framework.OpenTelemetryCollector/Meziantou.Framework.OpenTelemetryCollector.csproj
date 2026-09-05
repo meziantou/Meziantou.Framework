@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>3.0.0</Version>
     <Description>OpenTelemetry OTLP collector endpoint abstractions for HTTP and gRPC with configurable receiver mappings</Description>
+    <PackageTags>opentelemetry, otlp, collector, telemetry, grpc, http</PackageTags>
     <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 

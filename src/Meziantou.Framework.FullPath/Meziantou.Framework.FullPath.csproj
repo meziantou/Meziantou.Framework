@@ -6,6 +6,7 @@
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>3.0.4</Version>
     <Description>FullPath makes it easier to deal with paths</Description>
+    <PackageTags>path, file-system, io, full-path, normalization</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

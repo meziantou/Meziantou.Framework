@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>A replacement for CodeDom to generate C# files</Description>
+    <PackageTags>codedom, code-generation, codegen, csharp</PackageTags>
     <Version>6.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>

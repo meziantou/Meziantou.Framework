@@ -5,6 +5,7 @@
     <RootNamespace>Meziantou.Framework.Assertions</RootNamespace>
     <Version>2.0.6</Version>
     <Description>Assertion helpers for .NET tests</Description>
+    <PackageTags>assertions, testing, unit-tests, assert, analyzer</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

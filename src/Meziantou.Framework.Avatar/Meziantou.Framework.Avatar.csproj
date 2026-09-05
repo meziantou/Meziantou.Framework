@@ -6,6 +6,7 @@
     <Version>2.1.0</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Generate deterministic avatar SVG images from names and bigrams</Description>
+    <PackageTags>avatar, identicon, initials, svg, image</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

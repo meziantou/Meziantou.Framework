@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.HumanReadable</RootNamespace>
     <Description>One-way serializer to a human readable format</Description>
+    <PackageTags>serializer, human-readable, snapshot-testing, diagnostics</PackageTags>
     <Version>4.0.3</Version>
   </PropertyGroup>
 

@@ -3,6 +3,7 @@
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
     <Version>2.0.2</Version>
     <Description>Roslyn source generator and analyzer for custom fixed-length string structs</Description>
+    <PackageTags>string-builder, fixed-string, source-generator, analyzer, roslyn</PackageTags>
 
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>

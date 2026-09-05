@@ -82,10 +82,25 @@ runs:
           exit 0
         }
 
-        # Same command as AppleContainerRuntime.BuildProbeArguments, so this answers exactly the question the tests ask.
+        # Same command as AppleContainerRuntime.BuildProbeArguments.
         container ls -q
         if ($LASTEXITCODE -ne 0) {
           Write-Host "::warning::The Apple container service started but 'container ls -q' failed with exit code $LASTEXITCODE."
+          "available=false" >> $env:GITHUB_OUTPUT
+          exit 0
+        }
+
+        # A service that answers is not proof the runtime works: on GitHub-hosted macOS agents 'container ls -q'
+        # succeeds and only the virtual machine fails to boot, with 'Virtualization is not available on this
+        # hardware'. Booting a container is what the tests actually need, so that is what decides availability.
+        # renovate: datasource=docker depName=busybox
+        $image = "busybox:1.37"
+        container run --rm $image true
+        if ($LASTEXITCODE -ne 0) {
+          # Stopping the service makes the probe fail, which is what turns the container tests back into skips.
+          # Left running, they would run and fail on every test that starts a container.
+          Write-Host "::warning::The Apple container service answers but no container can boot on this agent. Stopping the service so the runtime probe fails and the container tests skip."
+          container system stop
           "available=false" >> $env:GITHUB_OUTPUT
           exit 0
         }

@@ -28,7 +28,8 @@
         "/^\\.github/actions/setup-apple-container/action\\.yml$/"
       ],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\$version = \"(?<currentValue>[^\"]+)\""
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\$version = \"(?<currentValue>[^\"]+)\"",
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\$image = \"[^\":]+:(?<currentValue>[^\"]+)\""
       ]
     }
   ],

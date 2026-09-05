@@ -425,8 +425,8 @@ jobs:
             uses: ./.github/actions/setup-wslc
 
           # Apple's runtime is not preinstalled on the macOS agents, so without this step the AppleContainer tests
-          # skip. The action never fails the job: whether the agents can run the runtime at all is reported by the
-          # debug_apple_container job.
+          # skip. The action never fails the job, and it leaves the runtime running only when a container actually
+          # booted, so agents that cannot run one keep skipping instead of failing.
           - name: Setup Apple container
             if: startsWith(matrix.runs-on, 'macos') && matrix.test-group.id == 'TemporaryContainers' && steps.build-project.outputs.has-project == 'true'
             uses: ./.github/actions/setup-apple-container
@@ -478,9 +478,9 @@ jobs:
         run: wslc version
 
   # Debug job: reports whether the macOS agents can actually run Apple's container runtime, independently of the
-  # test run. Apple boots a virtual machine per container and GitHub-hosted macOS agents are themselves virtual
-  # machines without nested virtualization (actions/runner-images#13565), so this is expected to report that the
-  # runtime is unavailable. The job does not fail on that outcome: it exists to tell us the day it changes.
+  # test run. The runtime installs and its service starts there, but a container cannot boot: the agents are
+  # themselves virtual machines and Apple's framework reports 'Virtualization is not available on this hardware'
+  # (actions/runner-images#13565). The job does not fail on that outcome; it exists to tell us the day it changes.
   debug_apple_container:
     runs-on: macos-26
     timeout-minutes: 30
@@ -489,16 +489,13 @@ jobs:
       - name: Setup Apple container
         id: setup
         uses: ./.github/actions/setup-apple-container
-      - name: Run a container
-        if: steps.setup.outputs.available == 'true'
-        run: container run --rm busybox:1.37 echo "hello from container"
       - name: Report the outcome
         run: |
           if ("${{ steps.setup.outputs.available }}" -eq "true") {
-            $message = "Apple's container runtime answered on ${{ runner.os }} ${{ runner.arch }}. AppleContainerContainerTests can be made required."
+            $message = "Apple's container runtime booted a container on ${{ runner.os }} ${{ runner.arch }}. AppleContainerContainerTests now runs there and can be made required."
           }
           else {
-            $message = "Apple's container runtime did not answer on ${{ runner.os }} ${{ runner.arch }}, so AppleContainerContainerTests skips. The warnings above name the step that failed."
+            $message = "Apple's container runtime cannot run a container on ${{ runner.os }} ${{ runner.arch }}, so AppleContainerContainerTests skips. The warnings above name the step that failed."
           }
 
           Write-Host $message

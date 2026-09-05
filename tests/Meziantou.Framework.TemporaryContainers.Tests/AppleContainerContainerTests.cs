@@ -6,10 +6,11 @@ namespace Meziantou.Framework.TemporaryContainers.Tests;
 public sealed class AppleContainerContainerTests() : ContainerRuntimeTestsBase(ContainerRuntime.AppleContainer)
 {
     // Unlike WslcContainerTests, this class does not make the runtime required on CI. The macOS agents install it
-    // (.github/actions/setup-apple-container), but Apple boots a virtual machine per container and the GitHub-hosted
-    // macOS agents are themselves virtual machines without nested virtualization, so the service cannot start there
-    // (actions/runner-images#13565). The debug_apple_container job reports the day that changes; requiring the
-    // runtime here before then would only turn the macOS legs red.
+    // (.github/actions/setup-apple-container) and its service does start there, so the 'container ls -q' probe
+    // behind IsSupportedAsync answers; only booting the virtual machine a container needs fails, with
+    // 'Virtualization is not available on this hardware' (actions/runner-images#13565). The setup action therefore
+    // stops the service when no container can boot, which is what keeps these tests skipping rather than failing.
+    // The debug_apple_container job reports the day that changes.
 
     [Fact]
     public async Task PauseAsync_IsNotSupported()

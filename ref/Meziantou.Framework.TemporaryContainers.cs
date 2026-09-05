@@ -374,7 +374,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.TemporaryContainers.LogEntry> GetLogsAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = null) => throw null;
     }
 
-    public class TemporaryVolume : System.IAsyncDisposable
+    public sealed class TemporaryVolume : System.IAsyncDisposable
     {
         public string Name { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.VolumeDefinition Definition { get => throw null; }
@@ -398,7 +398,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public void Deconstruct(out string Target) => throw null;
     }
 
-    public class VolumeDefinition
+    public sealed class VolumeDefinition
     {
         public Meziantou.Framework.TemporaryContainers.ContainerRuntime Runtime { get => throw null; set { } }
         public string? Name { get => throw null; set { } }
@@ -407,7 +407,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public Meziantou.Framework.TemporaryContainers.ContainerLabelCollection Labels { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.VolumeDriverOptionCollection DriverOptions { get => throw null; }
         public VolumeDefinition(Meziantou.Framework.TemporaryContainers.VolumeDefinition other) { }
-        public virtual Meziantou.Framework.TemporaryContainers.TemporaryVolume CreateVolume() => throw null;
+        public Meziantou.Framework.TemporaryContainers.TemporaryVolume CreateVolume() => throw null;
     }
 
     public sealed class VolumeDriverOptionCollection : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Collections.IEnumerable

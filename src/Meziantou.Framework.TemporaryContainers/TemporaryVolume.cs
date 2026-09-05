@@ -4,7 +4,7 @@ namespace Meziantou.Framework.TemporaryContainers;
 
 /// <summary>A temporary volume created from a <see cref="VolumeDefinition"/>. Dispose the instance to remove the volume.</summary>
 /// <remarks>Disposing only removes the volume when this instance created it and <see cref="VolumeDefinition.ReuseId"/> is not set. A volume that already existed when <see cref="EnsureCreatedAsync(CancellationToken)"/> ran is adopted and left behind, so pointing a definition at an existing volume never destroys it.</remarks>
-public class TemporaryVolume : IAsyncDisposable
+public sealed class TemporaryVolume : IAsyncDisposable
 {
     private readonly VolumeDefinition _definition;
     private ContainerRuntime? _runtime;

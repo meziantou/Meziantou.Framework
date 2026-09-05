@@ -12,7 +12,7 @@ namespace Meziantou.Framework.TemporaryContainers;
 /// await container.StartAsync();
 /// </code>
 /// </example>
-public class VolumeDefinition
+public sealed class VolumeDefinition
 {
     private ContainerRuntime _runtime = ContainerRuntime.Auto;
 
@@ -64,7 +64,7 @@ public class VolumeDefinition
 
     /// <summary>Creates a <see cref="TemporaryVolume"/> from a deep copy of this definition. Later changes to this definition do not affect the returned volume.</summary>
     /// <returns>A new volume.</returns>
-    public virtual TemporaryVolume CreateVolume()
+    public TemporaryVolume CreateVolume()
     {
         return new TemporaryVolume(new VolumeDefinition(this));
     }

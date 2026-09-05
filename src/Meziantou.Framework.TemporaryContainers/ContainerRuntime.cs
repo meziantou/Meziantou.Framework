@@ -15,6 +15,9 @@ public abstract class ContainerRuntime
     /// <summary>Use the <c>docker</c> CLI.</summary>
     public static ContainerRuntime Docker { get; } = new DockerContainerRuntime(nameof(Docker), DockerContainerRuntime.Flavor.Docker);
 
+    /// <summary>Use the Docker Engine API, over the unix socket or the named pipe of the daemon, without going through the <c>docker</c> CLI.</summary>
+    public static ContainerRuntime DockerApi { get; } = new DockerApiRuntime();
+
     /// <summary>Use the <c>podman</c> CLI.</summary>
     public static ContainerRuntime Podman { get; } = new DockerContainerRuntime(nameof(Podman), DockerContainerRuntime.Flavor.Podman);
 

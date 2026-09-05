@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -12,6 +13,8 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 internal sealed class DockerApiRuntime : ContainerRuntime
 {
+    private static readonly char[] ContainerPathSeparators = ['/', '\\'];
+
     private readonly DockerRegistryAuthProvider _authProvider;
     private DockerApiConnection? _connection;
 
@@ -51,12 +54,14 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
     internal override async Task StartAsync(string id, CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(HttpMethod.Post, "/containers/" + Uri.EscapeDataString(id) + "/start", content: null, cancellationToken).ConfigureAwait(false);
+        // An adopted container is already running, and the daemon reports that with '304 Not Modified' instead of a success status.
+        using var response = await SendAsync(HttpMethod.Post, "/containers/" + Uri.EscapeDataString(id) + "/start", content: null, cancellationToken, allowedStatusCode: HttpStatusCode.NotModified).ConfigureAwait(false);
     }
 
     internal override async Task StopAsync(string id, CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(HttpMethod.Post, "/containers/" + Uri.EscapeDataString(id) + "/stop", content: null, cancellationToken).ConfigureAwait(false);
+        // Same as StartAsync: a container that already exited is reported with '304 Not Modified'.
+        using var response = await SendAsync(HttpMethod.Post, "/containers/" + Uri.EscapeDataString(id) + "/stop", content: null, cancellationToken, allowedStatusCode: HttpStatusCode.NotModified).ConfigureAwait(false);
     }
 
     internal override async Task RestartAsync(string id, CancellationToken cancellationToken)
@@ -81,12 +86,12 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
     internal override async Task DeleteAsync(string id, CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(HttpMethod.Delete, "/containers/" + Uri.EscapeDataString(id) + "?force=1", content: null, cancellationToken, allowNotFound: true).ConfigureAwait(false);
+        using var response = await SendAsync(HttpMethod.Delete, "/containers/" + Uri.EscapeDataString(id) + "?force=1", content: null, cancellationToken, allowedStatusCode: HttpStatusCode.NotFound).ConfigureAwait(false);
     }
 
     internal override async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(HttpMethod.Get, "/containers/" + Uri.EscapeDataString(id) + "/json", content: null, cancellationToken, allowNotFound: true).ConfigureAwait(false);
+        using var response = await SendAsync(HttpMethod.Get, "/containers/" + Uri.EscapeDataString(id) + "/json", content: null, cancellationToken, allowedStatusCode: HttpStatusCode.NotFound).ConfigureAwait(false);
         return response.StatusCode != HttpStatusCode.NotFound;
     }
 
@@ -152,24 +157,108 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return new ExecResult(inspectExecResult.ExitCode, standardOutput, standardError);
     }
 
-    internal override Task<Stream> OpenReadAsync(string id, string path, CancellationToken cancellationToken)
+    internal override async Task<Stream> OpenReadAsync(string id, string path, CancellationToken cancellationToken)
     {
-        throw new NotSupportedException("The Docker API runtime does not support reading files from containers.");
+        using var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, path), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+        await using var archive = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        return await DockerApiTarArchive.ReadSingleFileAsync(archive, path, cancellationToken).ConfigureAwait(false);
     }
 
-    internal override Task WriteFileAsync(string id, string path, Stream content, CancellationToken cancellationToken)
+    internal override async Task WriteFileAsync(string id, string path, Stream content, CancellationToken cancellationToken)
     {
-        throw new NotSupportedException("The Docker API runtime does not support writing files to containers.");
+        await using var archive = await DockerApiTarArchive.CreateForFileAsync(GetContainerPathName(path), content, cancellationToken).ConfigureAwait(false);
+        await PutArchiveAsync(id, GetContainerParentPath(path), archive, cancellationToken).ConfigureAwait(false);
     }
 
-    internal override Task CopyToContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
+    internal override async Task CopyToContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
     {
-        throw new NotSupportedException("The Docker API runtime does not support copying files to containers.");
+        // 'docker cp' copies into an existing directory under the name of the source, and renames the source to the destination otherwise.
+        var destinationIsDirectory = await StatPathAsync(id, destination, cancellationToken).ConfigureAwait(false) is { IsDirectory: true };
+        var targetDirectory = destinationIsDirectory ? destination : GetContainerParentPath(destination);
+        var entryName = GetContainerPathName(destinationIsDirectory ? source : destination);
+
+        if (Directory.Exists(source))
+        {
+            await using var directoryArchive = await DockerApiTarArchive.CreateForDirectoryAsync(source, entryName + "/", additionalFile: null, cancellationToken).ConfigureAwait(false);
+            await PutArchiveAsync(id, targetDirectory, directoryArchive, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        await using var file = File.OpenRead(source);
+        await using var archive = await DockerApiTarArchive.CreateForFileAsync(entryName, file, cancellationToken).ConfigureAwait(false);
+        await PutArchiveAsync(id, targetDirectory, archive, cancellationToken).ConfigureAwait(false);
     }
 
-    internal override Task CopyFromContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
+    internal override async Task CopyFromContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
     {
-        throw new NotSupportedException("The Docker API runtime does not support copying files from containers.");
+        var sourceIsDirectory = await StatPathAsync(id, source, cancellationToken).ConfigureAwait(false) is { IsDirectory: true };
+        using var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, source), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+        await using var archive = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+
+        if (sourceIsDirectory)
+        {
+            // A destination directory that does not exist yet takes the place of the copied one, so the archive's own top-level directory is dropped.
+            var destinationExists = Directory.Exists(destination);
+            Directory.CreateDirectory(destination);
+            await DockerApiTarArchive.ExtractToDirectoryAsync(archive, destination, stripFirstSegment: !destinationExists, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        // Same as CopyToContainerAsync, the other way around: an existing directory receives the file under its own name.
+        var targetFile = Directory.Exists(destination) ? Path.Combine(destination, GetContainerPathName(source)) : destination;
+        if (Path.GetDirectoryName(Path.GetFullPath(targetFile)) is { } parent)
+            Directory.CreateDirectory(parent);
+
+        await using var content = await DockerApiTarArchive.ReadSingleFileAsync(archive, source, cancellationToken).ConfigureAwait(false);
+        await using var file = File.Create(targetFile);
+        await content.CopyToAsync(file, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task PutArchiveAsync(string id, string directory, Stream archive, CancellationToken cancellationToken)
+    {
+        using var content = new StreamContent(archive);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-tar");
+        using var response = await SendAsync(HttpMethod.Put, BuildArchiveEndpoint(id, directory), content, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Reads the metadata the daemon reports for a container path. Returns <see langword="null"/> when the path does not exist.</summary>
+    private async Task<DockerApiModels.ContainerPathStat?> StatPathAsync(string id, string path, CancellationToken cancellationToken)
+    {
+        using var response = await SendAsync(HttpMethod.Head, BuildArchiveEndpoint(id, path), content: null, cancellationToken, allowedStatusCode: HttpStatusCode.NotFound).ConfigureAwait(false);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return null;
+
+        if (!response.Headers.TryGetValues("X-Docker-Container-Path-Stat", out var values) || values.FirstOrDefault() is not { Length: > 0 } encoded)
+            return null;
+
+        var buffer = new byte[encoded.Length];
+        if (!Convert.TryFromBase64String(encoded, buffer, out var written))
+            return null;
+
+        return JsonSerializer.Deserialize(buffer.AsSpan(0, written), DockerApiJsonContext.Default.ContainerPathStat);
+    }
+
+    private static string BuildArchiveEndpoint(string id, string path)
+        => "/containers/" + Uri.EscapeDataString(id) + "/archive?path=" + Uri.EscapeDataString(path);
+
+    /// <summary>The last segment of a container path. <see cref="Path"/> cannot do it: it splits on the separators of the host, and the path of a Windows container reaches a Linux host unchanged.</summary>
+    private static string GetContainerPathName(string path)
+    {
+        var trimmed = path.TrimEnd(ContainerPathSeparators);
+        var separatorIndex = trimmed.LastIndexOfAny(ContainerPathSeparators);
+        return separatorIndex < 0 ? trimmed : trimmed[(separatorIndex + 1)..];
+    }
+
+    /// <summary>The directory a container path lives in. See <see cref="GetContainerPathName"/> for why <see cref="Path"/> is not used.</summary>
+    private static string GetContainerParentPath(string path)
+    {
+        var trimmed = path.TrimEnd(ContainerPathSeparators);
+        return trimmed.LastIndexOfAny(ContainerPathSeparators) switch
+        {
+            < 0 => ".",
+            0 => "/",
+            var separatorIndex => trimmed[..separatorIndex],
+        };
     }
 
     internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
@@ -212,8 +301,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
                 return existing.ImageId;
 
             case DockerfileImage dockerfile:
-                _ = dockerfile;
-                throw new NotSupportedException("The Docker API runtime does not support Dockerfile image builds.");
+                return await BuildImageAsync(dockerfile, cancellationToken).ConfigureAwait(false);
 
             case ArchiveImage archive:
                 _ = archive;
@@ -224,9 +312,47 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         }
     }
 
+    private async Task<string> BuildImageAsync(DockerfileImage dockerfile, CancellationToken cancellationToken)
+    {
+        var tag = "meziantou-tc/" + Guid.NewGuid().ToString("N") + ":latest";
+        var contextDirectory = Path.GetFullPath(dockerfile.ContextDirectory);
+        var dockerfileName = Path.GetRelativePath(contextDirectory, Path.GetFullPath(dockerfile.DockerfilePath)).Replace('\\', '/');
+
+        // The daemon only ever sees the build context, so a Dockerfile stored outside of it is added to the archive under a name of our own.
+        (string SourcePath, string EntryName)? additionalFile = null;
+        if (Path.IsPathRooted(dockerfileName) || dockerfileName.StartsWith("../", StringComparison.Ordinal))
+        {
+            dockerfileName = "Dockerfile.meziantou-tc-" + Guid.NewGuid().ToString("N");
+            additionalFile = (dockerfile.DockerfilePath, dockerfileName);
+        }
+
+        await using var context = await DockerApiTarArchive.CreateForDirectoryAsync(contextDirectory, entryPrefix: "", additionalFile, cancellationToken).ConfigureAwait(false);
+        using var content = new StreamContent(context);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-tar");
+
+        var endpoint = "/build?rm=1&dockerfile=" + Uri.EscapeDataString(dockerfileName) + "&t=" + Uri.EscapeDataString(tag);
+        using var response = await SendAsync(HttpMethod.Post, endpoint, content, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+
+        // The daemon answers as soon as the build starts, so a failure is only reported in the stream of messages that follows.
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        using var reader = new StreamReader(stream);
+        while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
+        {
+            if (line.Length is 0)
+                continue;
+
+            var progress = JsonSerializer.Deserialize(line, DockerApiJsonContext.Default.PullProgress);
+            var errorMessage = progress?.ErrorDetail?.Message ?? progress?.Error;
+            if (!string.IsNullOrEmpty(errorMessage))
+                throw new InvalidOperationException("Unable to build the image from '" + dockerfile.DockerfilePath + "': " + errorMessage);
+        }
+
+        return tag;
+    }
+
     private async Task<bool> ImageExistsAsync(string imageName, CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(HttpMethod.Get, "/images/" + Uri.EscapeDataString(imageName) + "/json", content: null, cancellationToken, allowNotFound: true).ConfigureAwait(false);
+        using var response = await SendAsync(HttpMethod.Get, "/images/" + Uri.EscapeDataString(imageName) + "/json", content: null, cancellationToken, allowedStatusCode: HttpStatusCode.NotFound).ConfigureAwait(false);
         return response.StatusCode != HttpStatusCode.NotFound;
     }
 
@@ -255,7 +381,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         }
     }
 
-    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string endpoint, HttpContent? content, CancellationToken cancellationToken, bool allowNotFound = false, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead)
+    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string endpoint, HttpContent? content, CancellationToken cancellationToken, HttpStatusCode? allowedStatusCode = null, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead)
     {
         var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
         using var request = new HttpRequestMessage(method, BuildEndpoint(connection, endpoint))
@@ -265,7 +391,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
         var response = await connection.HttpClient.SendAsync(request, completionOption, cancellationToken).ConfigureAwait(false);
 
-        if (response.IsSuccessStatusCode || allowNotFound && response.StatusCode == HttpStatusCode.NotFound)
+        if (response.IsSuccessStatusCode || response.StatusCode == allowedStatusCode)
             return response;
 
         throw await CreateRequestExceptionAsync(response, method.Method, request.RequestUri?.AbsolutePath ?? endpoint, cancellationToken).ConfigureAwait(false);

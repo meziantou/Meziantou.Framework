@@ -145,4 +145,17 @@ internal static class DockerApiModels
         public string? Password { get; set; }
         public string? IdentityToken { get; set; }
     }
+
+    /// <summary>The metadata the daemon reports for a container path in the <c>X-Docker-Container-Path-Stat</c> header.</summary>
+    internal sealed class ContainerPathStat
+    {
+        public string? Name { get; set; }
+        public long Size { get; set; }
+        public uint Mode { get; set; }
+        public string? LinkTarget { get; set; }
+
+        /// <summary>The mode is a Go <c>os.FileMode</c>, whose highest bit marks a directory.</summary>
+        [JsonIgnore]
+        public bool IsDirectory => (Mode & 0x8000_0000) != 0;
+    }
 }

@@ -54,7 +54,7 @@ public sealed class DockerRuntimeAdapterTests
         Assert.True(runtime.SupportsPause);
         Assert.True(runtime.SupportsRestart);
         Assert.True(runtime.LogsIncludeTimestamps);
-        Assert.Equal("rm -f abc", string.Join(' ', runtime.BuildRemoveArguments("abc")));
+        Assert.Equal("rm -f -v abc", string.Join(' ', runtime.BuildRemoveArguments("abc")));
         Assert.Equal("cp src abc:/dst", string.Join(' ', runtime.BuildCopyToContainerArguments("abc", "src", "/dst")));
         Assert.Equal("cp abc:/src dst", string.Join(' ', runtime.BuildCopyFromContainerArguments("abc", "/src", "dst")));
         Assert.Contains("--timestamps", runtime.BuildLogsArguments("abc"));
@@ -67,6 +67,7 @@ public sealed class DockerRuntimeAdapterTests
         var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Podman);
 
         Assert.Equal("version", string.Join(' ', runtime.BuildProbeArguments()));
+        Assert.Equal("rm -f -v abc", string.Join(' ', runtime.BuildRemoveArguments("abc")));
     }
 
     [Fact]
@@ -75,6 +76,27 @@ public sealed class DockerRuntimeAdapterTests
         var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
 
         Assert.Equal("list -q", string.Join(' ', runtime.BuildProbeArguments()));
+
+        // wslc has no '-v' flag on 'rm', and no volume commands at all.
+        Assert.Equal("rm -f abc", string.Join(' ', runtime.BuildRemoveArguments("abc")));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateVolumeArguments(new VolumeDefinition(), "vol"));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildDeleteVolumeArguments("vol"));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildVolumeExistsArguments("vol"));
+    }
+
+    [Fact]
+    public void BuildsVolumeArguments()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
+        var definition = new VolumeDefinition { Driver = "local" };
+        definition.Labels.Add("owner", "meziantou");
+        definition.DriverOptions.Add("size", "10m");
+
+        Assert.Equal("volume create --driver local --label owner=meziantou --opt size=10m my-volume", string.Join(' ', runtime.BuildCreateVolumeArguments(definition, "my-volume")));
+
+        // '--force' is not used: podman would remove the containers still using the volume.
+        Assert.Equal("volume rm my-volume", string.Join(' ', runtime.BuildDeleteVolumeArguments("my-volume")));
+        Assert.Equal("volume inspect my-volume", string.Join(' ', runtime.BuildVolumeExistsArguments("my-volume")));
     }
 
     [Fact]

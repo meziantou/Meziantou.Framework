@@ -80,6 +80,14 @@ internal static class DockerApiModels
         public NetworkingConfig? NetworkingConfig { get; set; }
     }
 
+    internal sealed class VolumeCreateRequest
+    {
+        public string? Name { get; set; }
+        public string? Driver { get; set; }
+        public Dictionary<string, string>? DriverOpts { get; set; }
+        public Dictionary<string, string>? Labels { get; set; }
+    }
+
     internal sealed class EmptyObject
     {
         public static EmptyObject Instance { get; } = new EmptyObject();

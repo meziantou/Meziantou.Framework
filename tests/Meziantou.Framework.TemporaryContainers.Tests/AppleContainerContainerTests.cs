@@ -14,4 +14,12 @@ public sealed class AppleContainerContainerTests() : ContainerRuntimeTestsBase(C
 
     [Fact]
     public Task FailedCommand_ReportsWhatTheRuntimeComplainedAbout() => AssertFailedCommandReportsWhatTheRuntimeComplainedAboutAsync();
+
+    // AssertVolumeSharedBetweenContainersAsync is not run here: apple/container 1.1.0 hangs on any operation against
+    // a container that mounts a volume a deleted container used, which takes the whole test host down with it.
+    [Fact]
+    public Task Volume_IsCreatedWithTheContainerAndRemovedOnDemand() => AssertVolumeLifecycleAsync();
+
+    [Fact]
+    public Task Volume_ReadOnlyMountRejectsWrites() => AssertReadOnlyVolumeMountAsync();
 }

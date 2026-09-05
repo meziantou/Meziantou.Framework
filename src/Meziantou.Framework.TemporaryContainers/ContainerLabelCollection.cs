@@ -2,7 +2,7 @@ using System.Collections;
 
 namespace Meziantou.Framework.TemporaryContainers;
 
-/// <summary>A collection of labels applied to a container.</summary>
+/// <summary>A collection of labels applied to a container or a volume.</summary>
 public sealed class ContainerLabelCollection : IEnumerable<KeyValuePair<string, string>>
 {
     private readonly Dictionary<string, string> _labels;

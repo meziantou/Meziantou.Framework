@@ -20,7 +20,7 @@ public sealed class DockerCreateArgumentBuilderTests
         definition.Resources.MemoryLimit = 536870912;
         definition.Command.Add("--appendonly");
 
-        var args = DockerCreateArgumentBuilder.Build(definition, "redis:8", "missing");
+        var args = DockerCreateArgumentBuilder.Build(definition, "redis:8", "missing", quotedMountFieldsSupported: true);
 
         Assert.Equal("create", args[0]);
         Assert.Contains("--name", args);
@@ -47,9 +47,45 @@ public sealed class DockerCreateArgumentBuilderTests
             ReuseId = "my-reuse-id",
         };
 
-        var args = DockerCreateArgumentBuilder.Build(definition, "redis:8", pullPolicyValue: null);
+        var args = DockerCreateArgumentBuilder.Build(definition, "redis:8", pullPolicyValue: null, quotedMountFieldsSupported: true);
 
         Assert.Contains($"{DockerCreateArgumentBuilder.ReuseLabel}=my-reuse-id", args);
+    }
+
+    [Fact]
+    public void MapsVolumeAndTmpfsMounts()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("alpine"));
+        definition.Mounts.AddVolume("data", "/var/lib/data");
+        definition.Mounts.AddVolume("config", "/etc/app", readOnly: true);
+        definition.Mounts.AddTmpfs("/scratch");
+
+        var args = DockerCreateArgumentBuilder.Build(definition, "alpine", pullPolicyValue: null, quotedMountFieldsSupported: true);
+
+        Assert.Contains("type=volume,source=data,target=/var/lib/data", args);
+        Assert.Contains("type=volume,source=config,target=/etc/app,readonly", args);
+        Assert.Contains("--tmpfs", args);
+        Assert.Contains("/scratch", args);
+    }
+
+    [Fact]
+    public void QuotesMountFieldsContainingASeparator()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("alpine"));
+        definition.Mounts.AddBindMount("""/host/a,b""", """/container/c"d""", readOnly: true);
+
+        var args = DockerCreateArgumentBuilder.Build(definition, "alpine", pullPolicyValue: null, quotedMountFieldsSupported: true);
+
+        Assert.Contains("""type=bind,"source=/host/a,b","target=/container/c""d",readonly""", args);
+    }
+
+    [Fact]
+    public void ThrowsWhenAMountFieldCannotBeQuoted()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("alpine"));
+        definition.Mounts.AddBindMount("/host/a,b", "/container");
+
+        Assert.Throws<NotSupportedException>(() => DockerCreateArgumentBuilder.Build(definition, "alpine", pullPolicyValue: null, quotedMountFieldsSupported: false));
     }
 
     [Fact]
@@ -60,7 +96,7 @@ public sealed class DockerCreateArgumentBuilderTests
         definition.Entrypoint.Add("-c");
         definition.Command.Add("echo hi");
 
-        var args = DockerCreateArgumentBuilder.Build(definition, "alpine", pullPolicyValue: null);
+        var args = DockerCreateArgumentBuilder.Build(definition, "alpine", pullPolicyValue: null, quotedMountFieldsSupported: true);
 
         Assert.Contains("--entrypoint", args);
         Assert.Contains("/bin/sh", args);

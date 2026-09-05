@@ -55,13 +55,13 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     internal override async Task StartAsync(string id, CancellationToken cancellationToken)
     {
         // An adopted container is already running, and the daemon reports that with '304 Not Modified' instead of a success status.
-        using var response = await SendAsync(HttpMethod.Post, "/containers/" + Uri.EscapeDataString(id) + "/start", content: null, cancellationToken, allowedStatusCode: HttpStatusCode.NotModified).ConfigureAwait(false);
+        using var response = await SendAsync(HttpMethod.Post, "/containers/" + Uri.EscapeDataString(id) + "/start", content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotModified]).ConfigureAwait(false);
     }
 
     internal override async Task StopAsync(string id, CancellationToken cancellationToken)
     {
         // Same as StartAsync: a container that already exited is reported with '304 Not Modified'.
-        using var response = await SendAsync(HttpMethod.Post, "/containers/" + Uri.EscapeDataString(id) + "/stop", content: null, cancellationToken, allowedStatusCode: HttpStatusCode.NotModified).ConfigureAwait(false);
+        using var response = await SendAsync(HttpMethod.Post, "/containers/" + Uri.EscapeDataString(id) + "/stop", content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotModified]).ConfigureAwait(false);
     }
 
     internal override async Task RestartAsync(string id, CancellationToken cancellationToken)
@@ -86,12 +86,41 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
     internal override async Task DeleteAsync(string id, CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(HttpMethod.Delete, "/containers/" + Uri.EscapeDataString(id) + "?force=1", content: null, cancellationToken, allowedStatusCode: HttpStatusCode.NotFound).ConfigureAwait(false);
+        // 'v=1' removes the anonymous volumes the image declared, which would otherwise pile up after every run. Named
+        // volumes are never touched by it.
+        using var response = await SendAsync(HttpMethod.Delete, "/containers/" + Uri.EscapeDataString(id) + "?force=1&v=1", content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotFound]).ConfigureAwait(false);
     }
 
     internal override async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(HttpMethod.Get, "/containers/" + Uri.EscapeDataString(id) + "/json", content: null, cancellationToken, allowedStatusCode: HttpStatusCode.NotFound).ConfigureAwait(false);
+        using var response = await SendAsync(HttpMethod.Get, "/containers/" + Uri.EscapeDataString(id) + "/json", content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotFound]).ConfigureAwait(false);
+        return response.StatusCode != HttpStatusCode.NotFound;
+    }
+
+    internal override async Task CreateVolumeAsync(VolumeDefinition definition, string name, CancellationToken cancellationToken)
+    {
+        var payload = new DockerApiModels.VolumeCreateRequest
+        {
+            Name = name,
+            Driver = definition.Driver,
+            DriverOpts = definition.DriverOptions.Count > 0 ? definition.DriverOptions.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal) : null,
+            Labels = definition.Labels.Count > 0 ? definition.Labels.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal) : null,
+        };
+
+        using var content = CreateJsonContent(payload, DockerApiJsonContext.Default.VolumeCreateRequest);
+        using var response = await SendAsync(HttpMethod.Post, "/volumes/create", content, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task DeleteVolumeAsync(string name, CancellationToken cancellationToken)
+    {
+        // A volume still used by a container answers 409, which the caller detects by probing the volume again rather
+        // than by an exception, so removal behaves like the CLI runtimes.
+        using var response = await SendAsync(HttpMethod.Delete, "/volumes/" + Uri.EscapeDataString(name) + "?force=1", content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotFound, HttpStatusCode.Conflict]).ConfigureAwait(false);
+    }
+
+    internal override async Task<bool> VolumeExistsAsync(string name, CancellationToken cancellationToken)
+    {
+        using var response = await SendAsync(HttpMethod.Get, "/volumes/" + Uri.EscapeDataString(name), content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotFound]).ConfigureAwait(false);
         return response.StatusCode != HttpStatusCode.NotFound;
     }
 
@@ -224,7 +253,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     /// <summary>Reads the metadata the daemon reports for a container path. Returns <see langword="null"/> when the path does not exist.</summary>
     private async Task<DockerApiModels.ContainerPathStat?> StatPathAsync(string id, string path, CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(HttpMethod.Head, BuildArchiveEndpoint(id, path), content: null, cancellationToken, allowedStatusCode: HttpStatusCode.NotFound).ConfigureAwait(false);
+        using var response = await SendAsync(HttpMethod.Head, BuildArchiveEndpoint(id, path), content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotFound]).ConfigureAwait(false);
         if (response.StatusCode == HttpStatusCode.NotFound)
             return null;
 
@@ -352,7 +381,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
     private async Task<bool> ImageExistsAsync(string imageName, CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(HttpMethod.Get, "/images/" + Uri.EscapeDataString(imageName) + "/json", content: null, cancellationToken, allowedStatusCode: HttpStatusCode.NotFound).ConfigureAwait(false);
+        using var response = await SendAsync(HttpMethod.Get, "/images/" + Uri.EscapeDataString(imageName) + "/json", content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotFound]).ConfigureAwait(false);
         return response.StatusCode != HttpStatusCode.NotFound;
     }
 
@@ -381,7 +410,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         }
     }
 
-    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string endpoint, HttpContent? content, CancellationToken cancellationToken, HttpStatusCode? allowedStatusCode = null, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead)
+    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string endpoint, HttpContent? content, CancellationToken cancellationToken, HttpStatusCode[]? allowedStatusCodes = null, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead)
     {
         var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
         using var request = new HttpRequestMessage(method, BuildEndpoint(connection, endpoint))
@@ -391,7 +420,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
         var response = await connection.HttpClient.SendAsync(request, completionOption, cancellationToken).ConfigureAwait(false);
 
-        if (response.IsSuccessStatusCode || response.StatusCode == allowedStatusCode)
+        if (response.IsSuccessStatusCode || allowedStatusCodes is not null && Array.IndexOf(allowedStatusCodes, response.StatusCode) >= 0)
             return response;
 
         throw await CreateRequestExceptionAsync(response, method.Method, request.RequestUri?.AbsolutePath ?? endpoint, cancellationToken).ConfigureAwait(false);

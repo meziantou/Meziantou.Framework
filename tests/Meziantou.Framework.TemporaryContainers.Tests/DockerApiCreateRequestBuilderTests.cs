@@ -22,6 +22,7 @@ public sealed class DockerApiCreateRequestBuilderTests
         definition.Ports.Add(15432, 5432);
         definition.Mounts.AddBindMount("/host", "/container", readOnly: true);
         definition.Mounts.AddVolume("volume-name", "/var/lib/data");
+        definition.Mounts.AddVolume("config-volume", "/etc/app", readOnly: true);
         definition.Mounts.AddTmpfs("/tmpfs");
         definition.Network.Network = "my-network";
         definition.Network.Alias = "my-alias";
@@ -49,7 +50,8 @@ public sealed class DockerApiCreateRequestBuilderTests
         Assert.Equal("15432", payload.HostConfig.PortBindings["5432/tcp"]![0]!.HostPort);
         var mounts = Assert.IsType<List<DockerApiModels.Mount>>(payload.HostConfig.Mounts);
         Assert.Single(mounts, mount => mount.Type == "bind" && mount.Source == "/host" && mount.Target == "/container" && mount.ReadOnly);
-        Assert.Single(mounts, mount => mount.Type == "volume" && mount.Source == "volume-name" && mount.Target == "/var/lib/data");
+        Assert.Single(mounts, mount => mount.Type == "volume" && mount.Source == "volume-name" && mount.Target == "/var/lib/data" && !mount.ReadOnly);
+        Assert.Single(mounts, mount => mount.Type == "volume" && mount.Source == "config-volume" && mount.Target == "/etc/app" && mount.ReadOnly);
         Assert.Equal(string.Empty, payload.HostConfig.Tmpfs!["/tmpfs"]);
         Assert.True(payload.HostConfig.ReadonlyRootfs);
         Assert.Equal(536870912, payload.HostConfig.Memory);

@@ -57,6 +57,9 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
         yield return Podman;
     }
 
+    internal override async Task<ContainerRuntime> GetEffectiveRuntimeAsync(CancellationToken cancellationToken)
+        => await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+
     internal override bool SupportsPause => ResolvedRuntime.SupportsPause;
 
     internal override bool SupportsRestart => ResolvedRuntime.SupportsRestart;
@@ -160,4 +163,22 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
 
     internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
         => ResolvedRuntime.ResolvePortMap(info, definition);
+
+    internal override async Task CreateVolumeAsync(VolumeDefinition definition, string name, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.CreateVolumeAsync(definition, name, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task DeleteVolumeAsync(string name, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.DeleteVolumeAsync(name, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task<bool> VolumeExistsAsync(string name, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.VolumeExistsAsync(name, cancellationToken).ConfigureAwait(false);
+    }
 }

@@ -576,6 +576,148 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         Assert.Equal(ContainerState.Running, (await container.InspectAsync(XunitCancellationToken)).State);
     }
 
+    /// <summary>Shared assertion that the library creates the volume a container mounts, that the volume outlives the
+    /// container, and that it is removed on demand (called from the runtimes that support volumes).</summary>
+    protected Task AssertVolumeLifecycleAsync()
+    {
+        return ContainerTestHelper.RunWithRuntimeRetryAsync(async () =>
+        {
+            var mountPath = UseWindowsContainerImages ? "C:/data" : "/data";
+            var filePath = mountPath + "/payload.txt";
+
+            // The volume is declared first so it is disposed last: a runtime refuses to remove a volume a container
+            // still references, and that failure would be swallowed by the best-effort cleanup.
+            await using var volume = new VolumeDefinition { Runtime = Runtime }.CreateVolume();
+            Assert.False(await volume.ExistsAsync(XunitCancellationToken));
+
+            var definition = CreateHttpServerDefinition();
+            definition.Mounts.AddVolume(volume, mountPath);
+            await using (var container = await StartWithRetryAsync(definition))
+            {
+                // Starting the container is what creates the volume: nothing called EnsureCreatedAsync.
+                Assert.True(await volume.ExistsAsync(XunitCancellationToken), "Starting the container did not create the volume it mounts.");
+
+                await WriteThroughMountAsync(container, filePath, "content written through the mount");
+                Assert.Equal("content written through the mount", await ReadThroughMountAsync(container, filePath));
+            }
+
+            Assert.True(await volume.ExistsAsync(XunitCancellationToken), "The volume did not survive the container that mounted it.");
+
+            await volume.DeleteAsync(XunitCancellationToken);
+            Assert.False(await volume.ExistsAsync(XunitCancellationToken), "The volume was not removed.");
+        }, XunitCancellationToken);
+    }
+
+    /// <summary>Shared assertion that a volume carries its content from one container to the next (called from the
+    /// runtimes that support it). Apple's <c>container</c> 1.1.0 hangs on any operation against a container that
+    /// mounts a volume a deleted container used, so this is not run for every runtime.</summary>
+    protected Task AssertVolumeSharedBetweenContainersAsync()
+    {
+        return ContainerTestHelper.RunWithRuntimeRetryAsync(async () =>
+        {
+            var mountPath = UseWindowsContainerImages ? "C:/data" : "/data";
+            var filePath = mountPath + "/payload.txt";
+
+            await using var volume = new VolumeDefinition { Runtime = Runtime }.CreateVolume();
+
+            var writerDefinition = CreateHttpServerDefinition();
+            writerDefinition.Mounts.AddVolume(volume, mountPath);
+            await using (var writer = await StartWithRetryAsync(writerDefinition))
+            {
+                await WriteThroughMountAsync(writer, filePath, "content from the first container");
+            }
+
+            var readerDefinition = CreateHttpServerDefinition();
+            readerDefinition.Mounts.AddVolume(volume, mountPath);
+            await using (var reader = await StartWithRetryAsync(readerDefinition))
+            {
+                Assert.Equal("content from the first container", await ReadThroughMountAsync(reader, filePath));
+            }
+        }, XunitCancellationToken);
+    }
+
+    /// <summary>Writes a file inside a mount from within the container. The copy commands cannot be used for this:
+    /// on Windows containers <c>docker cp</c> writes into the container's own layer instead of the mounted volume, so
+    /// the content never reaches the volume.</summary>
+    private async Task WriteThroughMountAsync(TemporaryContainer container, string path, string content)
+    {
+        var exec = await container.ExecAsync(options =>
+        {
+            if (UseWindowsContainerImages)
+            {
+                options.Command.Add("powershell");
+                options.Command.Add("-NoProfile");
+                options.Command.Add("-Command");
+                options.Command.Add($"Set-Content -Path {path} -Value '{content}' -NoNewline");
+            }
+            else
+            {
+                options.Command.Add("sh");
+                options.Command.Add("-c");
+                options.Command.Add($"printf %s '{content}' > {path}");
+            }
+        }, XunitCancellationToken);
+
+        Assert.Equal(0, exec.ExitCode);
+    }
+
+    /// <summary>Reads a file inside a mount from within the container. See <see cref="WriteThroughMountAsync"/> for why the copy commands are not used.</summary>
+    private async Task<string> ReadThroughMountAsync(TemporaryContainer container, string path)
+    {
+        var exec = await container.ExecAsync(options =>
+        {
+            if (UseWindowsContainerImages)
+            {
+                options.Command.Add("powershell");
+                options.Command.Add("-NoProfile");
+                options.Command.Add("-Command");
+                options.Command.Add($"Get-Content -Raw {path}");
+            }
+            else
+            {
+                options.Command.Add("cat");
+                options.Command.Add(path);
+            }
+        }, XunitCancellationToken);
+
+        Assert.Equal(0, exec.ExitCode);
+        return exec.StandardOutput.Trim();
+    }
+
+    /// <summary>Shared assertion that a read-only volume mount rejects writes (called from the runtimes that support volumes).</summary>
+    protected Task AssertReadOnlyVolumeMountAsync()
+    {
+        return ContainerTestHelper.RunWithRuntimeRetryAsync(async () =>
+        {
+            var mountPath = UseWindowsContainerImages ? "C:/data" : "/data";
+
+            await using var volume = new VolumeDefinition { Runtime = Runtime }.CreateVolume();
+
+            var definition = CreateHttpServerDefinition();
+            definition.Mounts.AddVolume(volume, mountPath, readOnly: true);
+            await using var container = await StartWithRetryAsync(definition);
+
+            var exec = await container.ExecAsync(options =>
+            {
+                if (UseWindowsContainerImages)
+                {
+                    options.Command.Add("powershell");
+                    options.Command.Add("-NoProfile");
+                    options.Command.Add("-Command");
+                    options.Command.Add($"Set-Content -Path {mountPath}/denied.txt -Value 'nope'");
+                }
+                else
+                {
+                    options.Command.Add("sh");
+                    options.Command.Add("-c");
+                    options.Command.Add($"echo nope > {mountPath}/denied.txt");
+                }
+            }, XunitCancellationToken);
+
+            Assert.NotEqual(0, exec.ExitCode);
+        }, XunitCancellationToken);
+    }
+
     protected ContainerDefinition CreateHttpServerDefinition()
     {
         var definition = new ContainerDefinition(new RegistryImage(ContainerImage))

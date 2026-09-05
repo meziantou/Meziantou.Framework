@@ -150,6 +150,18 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
 
     internal abstract ContainerInfo ParseInspect(string output);
 
+    internal virtual IReadOnlyList<string> BuildCreateVolumeArguments(VolumeDefinition definition, string name)
+        => throw CreateVolumesNotSupportedException();
+
+    internal virtual IReadOnlyList<string> BuildDeleteVolumeArguments(string name)
+        => throw CreateVolumesNotSupportedException();
+
+    internal virtual IReadOnlyList<string> BuildVolumeExistsArguments(string name)
+        => throw CreateVolumesNotSupportedException();
+
+    private NotSupportedException CreateVolumesNotSupportedException()
+        => new($"The '{this}' runtime does not support volumes.");
+
     /// <summary>Last chance to adjust the definition before a new container is created. Not called when an existing container is adopted through <see cref="ContainerDefinition.ReuseId"/>.</summary>
     internal virtual void PrepareDefinitionForCreate(ContainerDefinition definition)
     {
@@ -226,6 +238,22 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
     internal override async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken)
     {
         var result = await Cli.RunBufferedAsync(BuildExistsArguments(id), cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        return result.ExitCode == 0;
+    }
+
+    internal override async Task CreateVolumeAsync(VolumeDefinition definition, string name, CancellationToken cancellationToken)
+    {
+        await Cli.RunBufferedAsync(BuildCreateVolumeArguments(definition, name), cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task DeleteVolumeAsync(string name, CancellationToken cancellationToken)
+    {
+        await Cli.RunBufferedAsync(BuildDeleteVolumeArguments(name), cancellationToken, allowNonZero: true).ConfigureAwait(false);
+    }
+
+    internal override async Task<bool> VolumeExistsAsync(string name, CancellationToken cancellationToken)
+    {
+        var result = await Cli.RunBufferedAsync(BuildVolumeExistsArguments(name), cancellationToken, allowNonZero: true).ConfigureAwait(false);
         return result.ExitCode == 0;
     }
 

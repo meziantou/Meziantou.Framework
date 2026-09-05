@@ -37,10 +37,21 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
 
     protected ContainerRuntime Runtime { get; }
 
+    /// <summary>Gets a value indicating whether the runtime must be available in the current environment. When it is, an unavailable runtime fails the tests instead of skipping them, so a broken setup cannot silently turn the suite into a no-op.</summary>
+    protected virtual bool IsRuntimeRequired => false;
+
     /// <summary>Checking that the runtime answers is asynchronous, so the skip gate cannot live in the constructor.</summary>
     public async ValueTask InitializeAsync()
     {
-        global::Xunit.Assert.SkipUnless(await Runtime.IsSupportedAsync(XunitCancellationToken), $"The '{Runtime}' container runtime is not available on this system.");
+        var isSupported = await Runtime.IsSupportedAsync(XunitCancellationToken);
+        if (IsRuntimeRequired)
+        {
+            global::Xunit.Assert.True(isSupported, $"The '{Runtime}' container runtime must be available in this environment, but it did not answer.");
+        }
+        else
+        {
+            global::Xunit.Assert.SkipUnless(isSupported, $"The '{Runtime}' container runtime is not available on this system.");
+        }
 
         _useWindowsContainerImages = DetectUseWindowsContainerImages(Runtime);
     }

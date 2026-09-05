@@ -419,6 +419,19 @@ jobs:
                 Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
               }
 
+          # wslc ships with WSL, and only the pre-release channel provides it. The Wslc tests fail instead of
+          # skipping on Windows agents, so this step is what keeps them running.
+          - name: Install WSL containers (wslc)
+            if: startsWith(matrix.runs-on, 'windows') && matrix.test-group.id == 'TemporaryContainers' && steps.build-project.outputs.has-project == 'true'
+            run: |
+              wsl --update --pre-release
+              if ($LASTEXITCODE -ne 0) { throw "wsl --update --pre-release failed with exit code $LASTEXITCODE" }
+
+              # Diagnostics only: a missing wslc must surface as a Wslc test failure, not as a broken setup step
+              try { wsl --version } catch { Write-Host "::warning::wsl --version failed: $_" }
+              try { wslc version } catch { Write-Host "::warning::wslc version failed: $_" }
+              exit 0
+
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
         run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
@@ -453,6 +466,18 @@ jobs:
               retention-days: 3
               path: |
                 **/*.coverage
+
+  # Debug job: reports which wslc the Windows agents provide, independently of the test run
+  debug_wslc:
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 30
+    steps:
+      - name: Install WSL containers (wslc)
+        run: wsl --update --pre-release
+      - name: WSL version
+        run: wsl --version
+      - name: wslc version
+        run: wslc version
 
   test_trimming:
     runs-on: ubuntu-26.04
@@ -625,7 +650,7 @@ jobs:
   final_status_check:
     runs-on: ubuntu-slim
     if: always()
-    needs: [ build_eng_scripts, validate_generated_files, create_nuget, validate_nuget, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
+    needs: [ build_eng_scripts, validate_generated_files, create_nuget, validate_nuget, run_analyzers, compute_test_matrix, build_and_test, debug_wslc, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
     steps:
       - name: Check previous jobs status
         env:

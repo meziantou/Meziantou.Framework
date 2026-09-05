@@ -596,12 +596,8 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
                 // Starting the container is what creates the volume: nothing called EnsureCreatedAsync.
                 Assert.True(await volume.ExistsAsync(XunitCancellationToken), "Starting the container did not create the volume it mounts.");
 
-                using var payload = new MemoryStream(Encoding.UTF8.GetBytes("content written through the mount"));
-                await container.WriteFileAsync(filePath, payload, XunitCancellationToken);
-
-                await using var stream = await container.OpenReadAsync(filePath, XunitCancellationToken);
-                using var streamReader = new StreamReader(stream);
-                Assert.Equal("content written through the mount", await streamReader.ReadToEndAsync(XunitCancellationToken));
+                await WriteThroughMountAsync(container, filePath, "content written through the mount");
+                Assert.Equal("content written through the mount", await ReadThroughMountAsync(container, filePath));
             }
 
             Assert.True(await volume.ExistsAsync(XunitCancellationToken), "The volume did not survive the container that mounted it.");
@@ -627,19 +623,64 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
             writerDefinition.Mounts.AddVolume(volume, mountPath);
             await using (var writer = await StartWithRetryAsync(writerDefinition))
             {
-                using var payload = new MemoryStream(Encoding.UTF8.GetBytes("content from the first container"));
-                await writer.WriteFileAsync(filePath, payload, XunitCancellationToken);
+                await WriteThroughMountAsync(writer, filePath, "content from the first container");
             }
 
             var readerDefinition = CreateHttpServerDefinition();
             readerDefinition.Mounts.AddVolume(volume, mountPath);
             await using (var reader = await StartWithRetryAsync(readerDefinition))
             {
-                await using var stream = await reader.OpenReadAsync(filePath, XunitCancellationToken);
-                using var streamReader = new StreamReader(stream);
-                Assert.Equal("content from the first container", await streamReader.ReadToEndAsync(XunitCancellationToken));
+                Assert.Equal("content from the first container", await ReadThroughMountAsync(reader, filePath));
             }
         }, XunitCancellationToken);
+    }
+
+    /// <summary>Writes a file inside a mount from within the container. The copy commands cannot be used for this:
+    /// on Windows containers <c>docker cp</c> writes into the container's own layer instead of the mounted volume, so
+    /// the content never reaches the volume.</summary>
+    private async Task WriteThroughMountAsync(TemporaryContainer container, string path, string content)
+    {
+        var exec = await container.ExecAsync(options =>
+        {
+            if (UseWindowsContainerImages)
+            {
+                options.Command.Add("powershell");
+                options.Command.Add("-NoProfile");
+                options.Command.Add("-Command");
+                options.Command.Add($"Set-Content -Path {path} -Value '{content}' -NoNewline");
+            }
+            else
+            {
+                options.Command.Add("sh");
+                options.Command.Add("-c");
+                options.Command.Add($"printf %s '{content}' > {path}");
+            }
+        }, XunitCancellationToken);
+
+        Assert.Equal(0, exec.ExitCode);
+    }
+
+    /// <summary>Reads a file inside a mount from within the container. See <see cref="WriteThroughMountAsync"/> for why the copy commands are not used.</summary>
+    private async Task<string> ReadThroughMountAsync(TemporaryContainer container, string path)
+    {
+        var exec = await container.ExecAsync(options =>
+        {
+            if (UseWindowsContainerImages)
+            {
+                options.Command.Add("powershell");
+                options.Command.Add("-NoProfile");
+                options.Command.Add("-Command");
+                options.Command.Add($"Get-Content -Raw {path}");
+            }
+            else
+            {
+                options.Command.Add("cat");
+                options.Command.Add(path);
+            }
+        }, XunitCancellationToken);
+
+        Assert.Equal(0, exec.ExitCode);
+        return exec.StandardOutput.Trim();
     }
 
     /// <summary>Shared assertion that a read-only volume mount rejects writes (called from the runtimes that support volumes).</summary>

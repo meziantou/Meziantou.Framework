@@ -39,6 +39,9 @@ public abstract class ContainerRuntime
             throw CreateUnavailableRuntimeException(this);
     }
 
+    /// <summary>The runtime that actually runs the commands. Only <see cref="Auto"/> differs from the instance itself, and resolving it may run a command or open a connection.</summary>
+    internal virtual Task<ContainerRuntime> GetEffectiveRuntimeAsync(CancellationToken cancellationToken) => Task.FromResult(this);
+
     internal virtual bool SupportsPause => false;
 
     internal virtual bool SupportsRestart => false;
@@ -92,6 +95,15 @@ public abstract class ContainerRuntime
         => throw CreateNotSupportedException();
 
     internal virtual IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
+        => throw CreateNotSupportedException();
+
+    internal virtual Task CreateVolumeAsync(VolumeDefinition definition, string name, CancellationToken cancellationToken)
+        => throw CreateNotSupportedException();
+
+    internal virtual Task DeleteVolumeAsync(string name, CancellationToken cancellationToken)
+        => throw CreateNotSupportedException();
+
+    internal virtual Task<bool> VolumeExistsAsync(string name, CancellationToken cancellationToken)
         => throw CreateNotSupportedException();
 
     private NotSupportedException CreateNotSupportedException() => new($"The '{this}' runtime cannot execute container operations.");

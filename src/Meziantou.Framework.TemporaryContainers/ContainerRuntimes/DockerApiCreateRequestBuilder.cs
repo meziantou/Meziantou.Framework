@@ -64,6 +64,18 @@ internal static class DockerApiCreateRequestBuilder
                         Type = "volume",
                         Source = volume.Name,
                         Target = volume.Target,
+                        ReadOnly = volume.ReadOnly,
+                    });
+                    break;
+
+                case OwnedVolumeMount owned:
+                    mounts ??= [];
+                    mounts.Add(new DockerApiModels.Mount
+                    {
+                        Type = "volume",
+                        Source = owned.Volume.Name,
+                        Target = owned.Target,
+                        ReadOnly = owned.ReadOnly,
                     });
                     break;
 

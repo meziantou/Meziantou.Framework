@@ -7,8 +7,6 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 /// <summary>CLI dialect for Apple's <c>container</c> runtime (macOS). Best-effort: verified against the documented CLI, not executed in CI on non-macOS hosts.</summary>
 internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 {
-    private const string ReuseNamePrefix = "meziantou-tc-";
-
     public AppleContainerRuntime(string name, string? executablePath = null)
         : base(name, executablePath)
     {
@@ -89,22 +87,24 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 
     internal override async Task<string?> FindReusableContainerAsync(string reuseId, CancellationToken cancellationToken)
     {
-        var name = GetReuseName(reuseId);
+        var name = ResourceNaming.GetReuseName(reuseId);
         var result = await Cli.RunBufferedAsync(["inspect", name], cancellationToken, allowNonZero: true).ConfigureAwait(false);
         return result.ExitCode == 0 ? name : null;
     }
 
     internal override IReadOnlyList<string> BuildCreateArguments(ContainerDefinition definition, string imageRef)
     {
-        if (definition.Resources.ReadOnlyRootFilesystem)
-            throw new NotSupportedException("Apple's container runtime does not support a read-only root filesystem.");
-        if (definition.Network.Network is not null || definition.Network.Alias is not null)
-            throw new NotSupportedException("Apple's container runtime does not support custom network options.");
+        if (definition.Network.Alias is not null)
+            throw new NotSupportedException("Apple's container runtime does not support network aliases.");
 
         var args = new List<string> { "create" };
 
-        var name = definition.ReuseId is { } reuseId ? GetReuseName(reuseId) : definition.Name;
+        var name = definition.ReuseId is { } reuseId ? ResourceNaming.GetReuseName(reuseId) : definition.Name;
         AddOption(args, "--name", name);
+        AddOption(args, "--network", definition.Network.Network);
+
+        if (definition.Resources.ReadOnlyRootFilesystem)
+            args.Add("--read-only");
         AddOption(args, "--user", definition.User);
         AddOption(args, "--workdir", definition.WorkingDirectory);
 
@@ -150,6 +150,32 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 
         return args;
     }
+
+    internal override IReadOnlyList<string> BuildCreateVolumeArguments(VolumeDefinition definition, string name)
+    {
+        if (definition.Driver is not null)
+            throw new NotSupportedException("Apple's container runtime does not support volume drivers.");
+
+        var args = new List<string> { "volume", "create" };
+        foreach (var (labelName, labelValue) in definition.Labels)
+        {
+            args.Add("--label");
+            args.Add($"{labelName}={labelValue}");
+        }
+
+        foreach (var (optionName, optionValue) in definition.DriverOptions)
+        {
+            args.Add("--opt");
+            args.Add($"{optionName}={optionValue}");
+        }
+
+        args.Add(name);
+        return args;
+    }
+
+    internal override IReadOnlyList<string> BuildDeleteVolumeArguments(string name) => ["volume", "delete", name];
+
+    internal override IReadOnlyList<string> BuildVolumeExistsArguments(string name) => ["volume", "inspect", name];
 
     internal override IReadOnlyList<string> BuildStartArguments(string id) => ["start", id];
 
@@ -346,29 +372,43 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
         switch (mount)
         {
             case BindMount bind:
-                args.Add("--volume");
-                args.Add(bind.ReadOnly ? $"{bind.Source}:{bind.Target}:ro" : $"{bind.Source}:{bind.Target}");
+                AddMountDescriptor(args, "bind", bind.Source, bind.Target, bind.ReadOnly);
                 break;
 
             case VolumeMount volume:
-                args.Add("--volume");
-                args.Add($"{volume.Name}:{volume.Target}");
+                AddMountDescriptor(args, "volume", volume.Name, volume.Target, volume.ReadOnly);
                 break;
 
-            case TmpfsMount:
-                throw new NotSupportedException("Apple's container runtime does not support tmpfs mounts.");
+            case OwnedVolumeMount owned:
+                AddMountDescriptor(args, "volume", owned.Volume.Name, owned.Target, owned.ReadOnly);
+                break;
+
+            case TmpfsMount tmpfs:
+                args.Add("--tmpfs");
+                args.Add(tmpfs.Target);
+                break;
 
             default:
                 throw new NotSupportedException($"Mount type '{mount.GetType()}' is not supported.");
         }
     }
 
-    private static string GetReuseName(string reuseId)
+    private static void AddMountDescriptor(List<string> args, string type, string source, string target, bool readOnly)
     {
-        var builder = new StringBuilder(ReuseNamePrefix, ReuseNamePrefix.Length + reuseId.Length);
-        foreach (var ch in reuseId)
-            builder.Append(char.IsAsciiLetterOrDigit(ch) || ch is '_' or '.' or '-' ? ch : '-');
+        // Apple's parser splits the descriptor on ',' without honouring quotes, so a value containing one cannot be
+        // expressed at all.
+        EnsureDescriptorValue(source);
+        EnsureDescriptorValue(target);
 
-        return builder.ToString();
+        args.Add("--mount");
+        args.Add(readOnly
+            ? $"type={type},source={source},target={target},readonly"
+            : $"type={type},source={source},target={target}");
+    }
+
+    private static void EnsureDescriptorValue(string value)
+    {
+        if (value.Contains(',', StringComparison.Ordinal))
+            throw new NotSupportedException($"Apple's container runtime cannot mount '{value}' because the path contains a comma.");
     }
 }

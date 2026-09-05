@@ -16,4 +16,13 @@ public sealed class DockerApiContainerTests() : ContainerRuntimeTestsBase(Contai
 
     [Fact]
     public Task StartAsync_ContainerExitsBeforeTheReadyMessage_ReportsWhatTheContainerPrinted() => AssertStartFailureReportsContainerOutputAsync();
+
+    [Fact]
+    public Task Volume_IsCreatedWithTheContainerAndRemovedOnDemand() => AssertVolumeLifecycleAsync();
+
+    [Fact]
+    public Task Volume_CarriesItsContentToTheNextContainer() => AssertVolumeSharedBetweenContainersAsync();
+
+    [Fact]
+    public Task Volume_ReadOnlyMountRejectsWrites() => AssertReadOnlyVolumeMountAsync();
 }

@@ -11,6 +11,7 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 [JsonSerializable(typeof(DockerApiModels.ExecInspectResponse))]
 [JsonSerializable(typeof(DockerInspectResult))]
 [JsonSerializable(typeof(DockerApiModels.CreateContainerRequest))]
+[JsonSerializable(typeof(DockerApiModels.VolumeCreateRequest))]
 [JsonSerializable(typeof(DockerApiModels.ExecCreateRequest))]
 [JsonSerializable(typeof(DockerApiModels.ExecStartRequest))]
 [JsonSerializable(typeof(DockerApiModels.AuthConfigFile))]

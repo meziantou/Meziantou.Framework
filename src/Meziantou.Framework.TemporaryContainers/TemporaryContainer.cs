@@ -1,3 +1,5 @@
+using Meziantou.Framework.TemporaryContainers.Internals;
+
 namespace Meziantou.Framework.TemporaryContainers;
 
 /// <summary>A temporary container created from a <see cref="ContainerDefinition"/>. Dispose the instance to remove the container (unless <see cref="ContainerDefinition.ReuseId"/> is set).</summary>
@@ -49,6 +51,7 @@ public partial class TemporaryContainer : IAsyncDisposable
             return;
 
         await EnsureRuntimeSupportedAsync(cancellationToken).ConfigureAwait(false);
+        await EnsureOwnedVolumesCreatedAsync(cancellationToken).ConfigureAwait(false);
 
         _id = await Runtime.EnsureCreatedAsync(_definition, cancellationToken).ConfigureAwait(false);
 
@@ -131,6 +134,20 @@ public partial class TemporaryContainer : IAsyncDisposable
         catch
         {
             // Best-effort cleanup: ignore failures during disposal.
+        }
+    }
+
+    /// <summary>Creates the volumes added through <see cref="ContainerMountCollection.AddVolume(TemporaryVolume, string, bool)"/>, so a mount never silently resolves to an empty volume the runtime auto-created.</summary>
+    private async Task EnsureOwnedVolumesCreatedAsync(CancellationToken cancellationToken)
+    {
+        ContainerRuntime? effectiveRuntime = null;
+        foreach (var mount in _definition.Mounts)
+        {
+            if (mount is not OwnedVolumeMount owned)
+                continue;
+
+            effectiveRuntime ??= await Runtime.GetEffectiveRuntimeAsync(cancellationToken).ConfigureAwait(false);
+            await owned.Volume.EnsureCreatedAsync(effectiveRuntime, cancellationToken).ConfigureAwait(false);
         }
     }
 

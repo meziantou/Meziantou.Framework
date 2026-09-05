@@ -15,4 +15,13 @@ public sealed class PodmanContainerTests() : ContainerRuntimeTestsBase(Container
 
     [Fact]
     public Task FailedCommand_ReportsWhatTheRuntimeComplainedAbout() => AssertFailedCommandReportsWhatTheRuntimeComplainedAboutAsync();
+
+    [Fact]
+    public Task Volume_IsCreatedWithTheContainerAndRemovedOnDemand() => AssertVolumeLifecycleAsync();
+
+    [Fact]
+    public Task Volume_CarriesItsContentToTheNextContainer() => AssertVolumeSharedBetweenContainersAsync();
+
+    [Fact]
+    public Task Volume_ReadOnlyMountRejectsWrites() => AssertReadOnlyVolumeMountAsync();
 }

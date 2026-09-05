@@ -500,12 +500,14 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         }
     }
 
-    [Fact]
-    public async Task FailedCommand_ReportsWhatTheRuntimeComplainedAbout()
+    /// <summary>Shared assertion that a failing runtime command reports what the runtime printed (called from the
+    /// relevant subclasses). It is not run for every runtime: wslc has no copy command, so the adapter streams the
+    /// file itself and a missing source fails as a <see cref="FileNotFoundException"/> before any command runs.</summary>
+    protected async Task AssertFailedCommandReportsWhatTheRuntimeComplainedAboutAsync()
     {
         await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
 
-        // The source is missing on the host, so every runtime rejects the copy before it touches the container.
+        // The source is missing on the host, so the runtime rejects the copy before it touches the container.
         // Asking for a missing path *inside* the container is not equivalent: 'container copy' never returns for
         // apple/container, which hangs the test host rather than failing.
         var missingSource = Path.Combine(Path.GetTempPath(), "MezTC-missing-" + Guid.NewGuid().ToString("N"));

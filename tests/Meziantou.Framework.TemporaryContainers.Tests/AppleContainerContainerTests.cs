@@ -11,4 +11,7 @@ public sealed class AppleContainerContainerTests() : ContainerRuntimeTestsBase(C
         await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
         await Assert.ThrowsAsync<NotSupportedException>(() => container.PauseAsync(XunitCancellationToken));
     }
+
+    [Fact]
+    public Task FailedCommand_ReportsWhatTheRuntimeComplainedAbout() => AssertFailedCommandReportsWhatTheRuntimeComplainedAboutAsync();
 }

@@ -82,11 +82,26 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         foreach (var line in lookup.StandardOutput.Split('\n'))
         {
             var trimmed = line.Trim();
-            if (IsContainerId(trimmed))
-                return trimmed;
+            if (!IsContainerId(trimmed))
+                continue;
+
+            return _flavor is Flavor.Wslc
+                ? await ExpandContainerIdAsync(trimmed, cancellationToken).ConfigureAwait(false)
+                : trimmed;
         }
 
         return null;
+    }
+
+    /// <summary>Expands a truncated id to the one the runtime reports for the container. 'wslc list -q' only prints the short id, where docker has '--no-trunc', and an adopted container has to report the same id as the run that created it.</summary>
+    private async Task<string> ExpandContainerIdAsync(string id, CancellationToken cancellationToken)
+    {
+        var result = await Cli.RunBufferedAsync(BuildInspectArguments(id), cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        if (result.ExitCode != 0)
+            return id;
+
+        var info = ParseInspect(result.StandardOutput);
+        return string.IsNullOrEmpty(info.Id) ? id : info.Id;
     }
 
     internal override IReadOnlyList<string> BuildCreateArguments(ContainerDefinition definition, string imageRef)

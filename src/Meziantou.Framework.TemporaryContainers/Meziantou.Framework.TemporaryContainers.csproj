@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>1.0.8</Version>
     <IsTrimmable>true</IsTrimmable>
-    <Description>Manage temporary containers for integration tests using the docker, podman, apple/container, or wslc CLI.</Description>
+    <Description>Manage temporary containers for integration tests using the Docker Engine API, or the docker, podman, apple/container, or wslc CLI.</Description>
   </PropertyGroup>
 
   <ItemGroup>

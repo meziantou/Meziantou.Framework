@@ -6,6 +6,25 @@ namespace Meziantou.Framework.TemporaryContainers.Tests;
 
 public sealed class DockerApiRuntimeTests
 {
+    /// <summary>The Docker Engine API has its own volume endpoints, which no other test exercises. It is skipped when the daemon does not answer.</summary>
+    [Fact]
+    public async Task Volumes_CreateExistsAndDelete()
+    {
+        var runtime = new DockerApiRuntime();
+        global::Xunit.Assert.SkipUnless(await runtime.IsSupportedAsync(XunitCancellationToken), "The Docker Engine API is not available on this system.");
+
+        await using var volume = new VolumeDefinition { Runtime = runtime }.CreateVolume();
+        volume.Definition.Labels.Add("owner", "meziantou");
+
+        Assert.False(await volume.ExistsAsync(XunitCancellationToken));
+
+        await volume.EnsureCreatedAsync(XunitCancellationToken);
+        Assert.True(await volume.ExistsAsync(XunitCancellationToken));
+
+        await volume.DeleteAsync(XunitCancellationToken);
+        Assert.False(await volume.ExistsAsync(XunitCancellationToken));
+    }
+
     [Fact]
     public async Task ReadMultiplexedLogsAsync_SplitsFramesIntoLines()
     {

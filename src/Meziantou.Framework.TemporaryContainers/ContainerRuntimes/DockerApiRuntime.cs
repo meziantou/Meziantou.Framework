@@ -81,12 +81,41 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
     internal override async Task DeleteAsync(string id, CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(HttpMethod.Delete, "/containers/" + Uri.EscapeDataString(id) + "?force=1", content: null, cancellationToken, allowNotFound: true).ConfigureAwait(false);
+        // 'v=1' removes the anonymous volumes the image declared, which would otherwise pile up after every run. Named
+        // volumes are never touched by it.
+        using var response = await SendAsync(HttpMethod.Delete, "/containers/" + Uri.EscapeDataString(id) + "?force=1&v=1", content: null, cancellationToken, allowNotFound: true).ConfigureAwait(false);
     }
 
     internal override async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken)
     {
         using var response = await SendAsync(HttpMethod.Get, "/containers/" + Uri.EscapeDataString(id) + "/json", content: null, cancellationToken, allowNotFound: true).ConfigureAwait(false);
+        return response.StatusCode != HttpStatusCode.NotFound;
+    }
+
+    internal override async Task CreateVolumeAsync(VolumeDefinition definition, string name, CancellationToken cancellationToken)
+    {
+        var payload = new DockerApiModels.VolumeCreateRequest
+        {
+            Name = name,
+            Driver = definition.Driver,
+            DriverOpts = definition.DriverOptions.Count > 0 ? definition.DriverOptions.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal) : null,
+            Labels = definition.Labels.Count > 0 ? definition.Labels.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal) : null,
+        };
+
+        using var content = CreateJsonContent(payload, DockerApiJsonContext.Default.VolumeCreateRequest);
+        using var response = await SendAsync(HttpMethod.Post, "/volumes/create", content, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task DeleteVolumeAsync(string name, CancellationToken cancellationToken)
+    {
+        // A volume still used by a container answers 409, which the caller detects by probing the volume again rather
+        // than by an exception, so removal behaves like the CLI runtimes.
+        using var response = await SendAsync(HttpMethod.Delete, "/volumes/" + Uri.EscapeDataString(name) + "?force=1", content: null, cancellationToken, allowNotFound: true, allowConflict: true).ConfigureAwait(false);
+    }
+
+    internal override async Task<bool> VolumeExistsAsync(string name, CancellationToken cancellationToken)
+    {
+        using var response = await SendAsync(HttpMethod.Get, "/volumes/" + Uri.EscapeDataString(name), content: null, cancellationToken, allowNotFound: true).ConfigureAwait(false);
         return response.StatusCode != HttpStatusCode.NotFound;
     }
 
@@ -255,7 +284,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         }
     }
 
-    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string endpoint, HttpContent? content, CancellationToken cancellationToken, bool allowNotFound = false, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead)
+    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string endpoint, HttpContent? content, CancellationToken cancellationToken, bool allowNotFound = false, bool allowConflict = false, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead)
     {
         var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
         using var request = new HttpRequestMessage(method, BuildEndpoint(connection, endpoint))
@@ -265,8 +294,12 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
         var response = await connection.HttpClient.SendAsync(request, completionOption, cancellationToken).ConfigureAwait(false);
 
-        if (response.IsSuccessStatusCode || allowNotFound && response.StatusCode == HttpStatusCode.NotFound)
+        if (response.IsSuccessStatusCode
+            || allowNotFound && response.StatusCode == HttpStatusCode.NotFound
+            || allowConflict && response.StatusCode == HttpStatusCode.Conflict)
+        {
             return response;
+        }
 
         throw await CreateRequestExceptionAsync(response, method.Method, request.RequestUri?.AbsolutePath ?? endpoint, cancellationToken).ConfigureAwait(false);
     }

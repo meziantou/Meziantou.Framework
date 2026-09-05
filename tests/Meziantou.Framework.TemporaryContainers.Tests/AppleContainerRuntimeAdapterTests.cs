@@ -40,18 +40,57 @@ public sealed class AppleContainerRuntimeAdapterTests
     }
 
     [Fact]
+    public void BuildCreateMapsMountsAndResources()
+    {
+        var runtime = CreateRuntime();
+        var definition = new ContainerDefinition(new RegistryImage("nginx"));
+        definition.Resources.ReadOnlyRootFilesystem = true;
+        definition.Network.Network = "my-network";
+        definition.Mounts.AddBindMount("/host", "/container", readOnly: true);
+        definition.Mounts.AddVolume("data", "/var/lib/data");
+        definition.Mounts.AddVolume("config", "/etc/app", readOnly: true);
+        definition.Mounts.AddTmpfs("/scratch");
+
+        var args = runtime.BuildCreateArguments(definition, "nginx");
+
+        Assert.Contains("--read-only", args);
+        Assert.Contains("--network", args);
+        Assert.Contains("my-network", args);
+        Assert.Contains("type=bind,source=/host,target=/container,readonly", args);
+        Assert.Contains("type=volume,source=data,target=/var/lib/data", args);
+        Assert.Contains("type=volume,source=config,target=/etc/app,readonly", args);
+        Assert.Contains("--tmpfs", args);
+        Assert.Contains("/scratch", args);
+    }
+
+    [Fact]
+    public void BuildsVolumeArguments()
+    {
+        var runtime = CreateRuntime();
+        var definition = new VolumeDefinition();
+        definition.Labels.Add("owner", "meziantou");
+        definition.DriverOptions.Add("size", "10m");
+
+        Assert.Equal("volume create --label owner=meziantou --opt size=10m my-volume", string.Join(' ', runtime.BuildCreateVolumeArguments(definition, "my-volume")));
+        Assert.Equal("volume delete my-volume", string.Join(' ', runtime.BuildDeleteVolumeArguments("my-volume")));
+        Assert.Equal("volume inspect my-volume", string.Join(' ', runtime.BuildVolumeExistsArguments("my-volume")));
+    }
+
+    [Fact]
     public void ThrowsForUnsupportedOptions()
     {
         var runtime = CreateRuntime();
 
-        var readOnly = new ContainerDefinition(new RegistryImage("nginx"));
-        readOnly.Resources.ReadOnlyRootFilesystem = true;
-        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(readOnly, "nginx"));
+        var alias = new ContainerDefinition(new RegistryImage("nginx"));
+        alias.Network.Alias = "my-alias";
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(alias, "nginx"));
 
-        var tmpfs = new ContainerDefinition(new RegistryImage("nginx"));
-        tmpfs.Mounts.AddTmpfs("/tmp");
-        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(tmpfs, "nginx"));
+        // Apple's parser splits the mount descriptor on ',' without honouring quotes.
+        var comma = new ContainerDefinition(new RegistryImage("nginx"));
+        comma.Mounts.AddBindMount("/host/a,b", "/container");
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(comma, "nginx"));
 
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateVolumeArguments(new VolumeDefinition { Driver = "local" }, "my-volume"));
         Assert.Throws<NotSupportedException>(() => runtime.BuildPauseArguments("abc"));
         Assert.Throws<NotSupportedException>(() => runtime.BuildRestartArguments("abc"));
     }

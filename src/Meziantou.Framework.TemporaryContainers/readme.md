@@ -31,6 +31,33 @@ await using var container = definition.CreateContainer();
 await container.StartAsync();
 ```
 
+## Volumes and mounts
+
+```c#
+var definition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));
+definition.Mounts.AddBindMount("/host/data", "/data", readOnly: true);
+definition.Mounts.AddVolume("existing-volume", "/var/lib/redis");
+definition.Mounts.AddTmpfs("/scratch");
+```
+
+A `TemporaryVolume` creates the volume and removes it when disposed, so a test can share data between two containers without leaving anything behind:
+
+```c#
+await using var volume = new VolumeDefinition().CreateVolume();
+
+var definition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));
+definition.Mounts.AddVolume(volume, "/data"); // add `readOnly: true` for a read-only mount
+
+await using var container = definition.CreateContainer();
+await container.StartAsync(); // creates the volume if needed, then the container
+```
+
+Declare the volume before the containers that mount it, so it is disposed last: a runtime refuses to remove a volume a container still references.
+
+The volume is only removed when the library created it. A `VolumeDefinition.Name` that already exists is adopted and left behind, and a volume with a `ReuseId` is kept so the next run can reuse it. Anonymous volumes declared by the image are removed with the container.
+
+Runtime differences: `wslc` has no volume commands; Apple's `container` has no volume driver, its mount descriptors cannot contain a comma, and (as of 1.1.0) it hangs on a container that mounts a volume a deleted container used, so a volume there is best kept to a single container.
+
 ## Database helpers
 
 `CreateRedis`, `CreatePostgreSql`, `CreateMongoDb`, and `CreateSqlServer` return pre-configured definitions whose container exposes `GetConnectionString()`.

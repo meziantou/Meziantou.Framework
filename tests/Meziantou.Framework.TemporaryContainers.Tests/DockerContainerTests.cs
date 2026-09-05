@@ -13,4 +13,13 @@ public sealed class DockerContainerTests() : ContainerRuntimeTestsBase(Container
 
     [Fact]
     public Task FailedCommand_ReportsWhatTheRuntimeComplainedAbout() => AssertFailedCommandReportsWhatTheRuntimeComplainedAboutAsync();
+
+    [Fact]
+    public Task Volume_IsCreatedWithTheContainerAndRemovedOnDemand() => AssertVolumeLifecycleAsync();
+
+    [Fact]
+    public Task Volume_CarriesItsContentToTheNextContainer() => AssertVolumeSharedBetweenContainersAsync();
+
+    [Fact]
+    public Task Volume_ReadOnlyMountRejectsWrites() => AssertReadOnlyVolumeMountAsync();
 }

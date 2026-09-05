@@ -134,6 +134,8 @@ namespace Meziantou.Framework.TemporaryContainers
         public void Add(Meziantou.Framework.TemporaryContainers.IMount mount) { }
         public void AddBindMount(string hostPath, string containerPath, bool readOnly = false) { }
         public void AddVolume(string volumeName, string containerPath) { }
+        public void AddVolume(string volumeName, string containerPath, bool readOnly) { }
+        public void AddVolume(Meziantou.Framework.TemporaryContainers.TemporaryVolume volume, string containerPath, bool readOnly = false) { }
         public void AddTmpfs(string containerPath) { }
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.TemporaryContainers.IMount> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
@@ -371,6 +373,17 @@ namespace Meziantou.Framework.TemporaryContainers
         public System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.TemporaryContainers.LogEntry> GetLogsAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = null) => throw null;
     }
 
+    public class TemporaryVolume : System.IAsyncDisposable
+    {
+        public string Name { get => throw null; }
+        public Meziantou.Framework.TemporaryContainers.VolumeDefinition Definition { get => throw null; }
+        public Meziantou.Framework.TemporaryContainers.ContainerRuntime Runtime { get => throw null; }
+        public System.Threading.Tasks.Task EnsureCreatedAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<bool> ExistsAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task DeleteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+    }
+
     public sealed class TmpfsMount : Meziantou.Framework.TemporaryContainers.IMount, System.IEquatable<Meziantou.Framework.TemporaryContainers.TmpfsMount>
     {
         public string Target { get => throw null; init { } }
@@ -384,18 +397,41 @@ namespace Meziantou.Framework.TemporaryContainers
         public void Deconstruct(out string Target) => throw null;
     }
 
+    public class VolumeDefinition
+    {
+        public Meziantou.Framework.TemporaryContainers.ContainerRuntime Runtime { get => throw null; set { } }
+        public string? Name { get => throw null; set { } }
+        public string? Driver { get => throw null; set { } }
+        public string? ReuseId { get => throw null; set { } }
+        public Meziantou.Framework.TemporaryContainers.ContainerLabelCollection Labels { get => throw null; }
+        public Meziantou.Framework.TemporaryContainers.VolumeDriverOptionCollection DriverOptions { get => throw null; }
+        public VolumeDefinition(Meziantou.Framework.TemporaryContainers.VolumeDefinition other) { }
+        public virtual Meziantou.Framework.TemporaryContainers.TemporaryVolume CreateVolume() => throw null;
+    }
+
+    public sealed class VolumeDriverOptionCollection : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public void Add(string name, string value) { }
+        public bool Remove(string name) => throw null;
+        public bool Contains(string name) => throw null;
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, string>> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+    }
+
     public sealed class VolumeMount : Meziantou.Framework.TemporaryContainers.IMount, System.IEquatable<Meziantou.Framework.TemporaryContainers.VolumeMount>
     {
         public string Name { get => throw null; init { } }
         public string Target { get => throw null; init { } }
-        public VolumeMount(string Name, string Target) { }
+        public bool ReadOnly { get => throw null; init { } }
+        public VolumeMount(string Name, string Target, bool ReadOnly = false) { }
         public override string ToString() => throw null;
         public static bool operator !=(Meziantou.Framework.TemporaryContainers.VolumeMount? left, Meziantou.Framework.TemporaryContainers.VolumeMount? right) => throw null;
         public static bool operator ==(Meziantou.Framework.TemporaryContainers.VolumeMount? left, Meziantou.Framework.TemporaryContainers.VolumeMount? right) => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
         public bool Equals(Meziantou.Framework.TemporaryContainers.VolumeMount? other) => throw null;
-        public void Deconstruct(out string Name, out string Target) => throw null;
+        public void Deconstruct(out string Name, out string Target, out bool ReadOnly) => throw null;
     }
 
     public static class Wait

@@ -1,4 +1,5 @@
 using System.Collections;
+using Meziantou.Framework.TemporaryContainers.Internals;
 
 namespace Meziantou.Framework.TemporaryContainers;
 
@@ -43,6 +44,25 @@ public sealed class ContainerMountCollection : IEnumerable<IMount>
     public void AddVolume(string volumeName, string containerPath)
     {
         _mounts.Add(new VolumeMount(volumeName, containerPath));
+    }
+
+    /// <summary>Adds a named volume mount.</summary>
+    /// <param name="volumeName">The volume name.</param>
+    /// <param name="containerPath">The path inside the container.</param>
+    /// <param name="readOnly">Whether the mount is read-only.</param>
+    public void AddVolume(string volumeName, string containerPath, bool readOnly)
+    {
+        _mounts.Add(new VolumeMount(volumeName, containerPath, readOnly));
+    }
+
+    /// <summary>Adds a mount for a <see cref="TemporaryVolume"/>. The volume is created, if needed, when the container is created.</summary>
+    /// <param name="volume">The volume to mount.</param>
+    /// <param name="containerPath">The path inside the container.</param>
+    /// <param name="readOnly">Whether the mount is read-only.</param>
+    public void AddVolume(TemporaryVolume volume, string containerPath, bool readOnly = false)
+    {
+        ArgumentNullException.ThrowIfNull(volume);
+        _mounts.Add(new OwnedVolumeMount(volume, containerPath, readOnly));
     }
 
     /// <summary>Adds a tmpfs (in-memory) mount.</summary>

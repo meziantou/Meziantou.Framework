@@ -121,7 +121,7 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         if (_flavor is Flavor.Wslc)
             pullPolicyValue = null;
 
-        return DockerCreateArgumentBuilder.Build(definition, imageRef, pullPolicyValue);
+        return DockerCreateArgumentBuilder.Build(definition, imageRef, pullPolicyValue, quotedMountFieldsSupported: _flavor is Flavor.Docker);
     }
 
     internal override IReadOnlyList<string> BuildStartArguments(string id) => ["start", id];
@@ -136,7 +136,10 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
 
     internal override IReadOnlyList<string> BuildKillArguments(string id) => ["kill", id];
 
-    internal override IReadOnlyList<string> BuildRemoveArguments(string id) => ["rm", "-f", id];
+    // '-v' removes the anonymous volumes the image declared, which would otherwise pile up after every run. Named
+    // volumes are never touched by it. wslc has no such flag.
+    internal override IReadOnlyList<string> BuildRemoveArguments(string id)
+        => _flavor is Flavor.Wslc ? ["rm", "-f", id] : ["rm", "-f", "-v", id];
 
     internal override IReadOnlyList<string> BuildExistsArguments(string id)
         => _flavor is Flavor.Wslc
@@ -185,6 +188,53 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
     internal override ContainerInfo ParseInspect(string output)
     {
         return DockerContainerInfoParser.ParseInspectOutput(output);
+    }
+
+    internal override IReadOnlyList<string> BuildCreateVolumeArguments(VolumeDefinition definition, string name)
+    {
+        EnsureVolumesSupported();
+
+        var args = new List<string> { "volume", "create" };
+        if (definition.Driver is { } driver)
+        {
+            args.Add("--driver");
+            args.Add(driver);
+        }
+
+        foreach (var (labelName, labelValue) in definition.Labels)
+        {
+            args.Add("--label");
+            args.Add($"{labelName}={labelValue}");
+        }
+
+        foreach (var (optionName, optionValue) in definition.DriverOptions)
+        {
+            args.Add("--opt");
+            args.Add($"{optionName}={optionValue}");
+        }
+
+        args.Add(name);
+        return args;
+    }
+
+    // '--force' is deliberately not used: on docker it only hides the not-found error, which the caller already
+    // tolerates, while on podman it also removes the containers using the volume.
+    internal override IReadOnlyList<string> BuildDeleteVolumeArguments(string name)
+    {
+        EnsureVolumesSupported();
+        return ["volume", "rm", name];
+    }
+
+    internal override IReadOnlyList<string> BuildVolumeExistsArguments(string name)
+    {
+        EnsureVolumesSupported();
+        return ["volume", "inspect", name];
+    }
+
+    private void EnsureVolumesSupported()
+    {
+        if (_flavor is Flavor.Wslc)
+            throw new NotSupportedException("The 'wslc' CLI does not have volume commands.");
     }
 
     internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition) => info.Ports;

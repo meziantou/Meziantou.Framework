@@ -4,7 +4,8 @@ internal static class DockerCreateArgumentBuilder
 {
     public const string ReuseLabel = "meziantou.tc.reuse";
 
-    public static List<string> Build(ContainerDefinition definition, string imageRef, string? pullPolicyValue)
+    /// <param name="quotedMountFieldsSupported">Whether the runtime parses the <c>--mount</c> descriptor as a CSV record, which is the only way to express a value containing a comma. Docker does; podman and wslc split on the comma instead.</param>
+    public static List<string> Build(ContainerDefinition definition, string imageRef, string? pullPolicyValue, bool quotedMountFieldsSupported)
     {
         var args = new List<string> { "create" };
 
@@ -53,7 +54,7 @@ internal static class DockerCreateArgumentBuilder
         }
 
         foreach (var mount in definition.Mounts)
-            AppendMount(args, mount);
+            AppendMount(args, mount, quotedMountFieldsSupported);
 
         var entrypoint = new List<string>(definition.Entrypoint);
         if (entrypoint.Count > 0)
@@ -79,21 +80,20 @@ internal static class DockerCreateArgumentBuilder
         }
     }
 
-    private static void AppendMount(List<string> args, IMount mount)
+    private static void AppendMount(List<string> args, IMount mount, bool quotedMountFieldsSupported)
     {
         switch (mount)
         {
             case BindMount bind:
-                args.Add("--mount");
-                var descriptor = $"type=bind,source={bind.Source},target={bind.Target}";
-                if (bind.ReadOnly)
-                    descriptor += ",readonly";
-                args.Add(descriptor);
+                AddMountDescriptor(args, "bind", bind.Source, bind.Target, bind.ReadOnly, quotedMountFieldsSupported);
                 break;
 
             case VolumeMount volume:
-                args.Add("--mount");
-                args.Add($"type=volume,source={volume.Name},target={volume.Target}");
+                AddMountDescriptor(args, "volume", volume.Name, volume.Target, volume.ReadOnly, quotedMountFieldsSupported);
+                break;
+
+            case OwnedVolumeMount owned:
+                AddMountDescriptor(args, "volume", owned.Volume.Name, owned.Target, owned.ReadOnly, quotedMountFieldsSupported);
                 break;
 
             case TmpfsMount tmpfs:
@@ -104,5 +104,34 @@ internal static class DockerCreateArgumentBuilder
             default:
                 throw new NotSupportedException($"Mount type '{mount.GetType()}' is not supported.");
         }
+    }
+
+    private static void AddMountDescriptor(List<string> args, string type, string source, string target, bool readOnly, bool quotedMountFieldsSupported)
+    {
+        var descriptor = new StringBuilder("type=").Append(type);
+        AppendMountField(descriptor, "source", source, quotedMountFieldsSupported);
+        AppendMountField(descriptor, "target", target, quotedMountFieldsSupported);
+        if (readOnly)
+            descriptor.Append(",readonly");
+
+        args.Add("--mount");
+        args.Add(descriptor.ToString());
+    }
+
+    /// <summary>Appends one <c>key=value</c> field to a <c>--mount</c> descriptor, quoting it when the value would otherwise be read as several fields.</summary>
+    private static void AppendMountField(StringBuilder descriptor, string key, string value, bool quotedMountFieldsSupported)
+    {
+        descriptor.Append(',');
+        if (!value.Contains(',', StringComparison.Ordinal) && !value.Contains('"', StringComparison.Ordinal))
+        {
+            descriptor.Append(key).Append('=').Append(value);
+            return;
+        }
+
+        if (!quotedMountFieldsSupported)
+            throw new NotSupportedException($"The runtime cannot mount '{value}' because the path contains a comma or a quote.");
+
+        // The whole descriptor is one CSV record, so a field holding a separator is quoted and its own quotes doubled.
+        descriptor.Append('"').Append(key).Append('=').Append(value.Replace("\"", "\"\"", StringComparison.Ordinal)).Append('"');
     }
 }

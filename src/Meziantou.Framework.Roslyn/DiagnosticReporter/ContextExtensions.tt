@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Roslyn;
 
 internal static partial class ContextExtensions
 {
-<# foreach (string type in new string[] { "SyntaxNodeAnalysisContext", "SymbolAnalysisContext", "OperationAnalysisContext", "OperationBlockAnalysisContext", "CompilationAnalysisContext" }) { #>
+<# foreach (string type in new string[] { "SyntaxNodeAnalysisContext", "SymbolAnalysisContext", "OperationAnalysisContext", "OperationBlockAnalysisContext", "CompilationAnalysisContext", "SemanticModelAnalysisContext", "SyntaxTreeAnalysisContext", "CodeBlockAnalysisContext", "AdditionalFileAnalysisContext" }) { #>
     public static void ReportDiagnostic(this <#= type #> context, DiagnosticDescriptor descriptor, IEnumerable<Location> locations, params object?[]? messageArgs) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, locations, messageArgs);
 
     public static void ReportDiagnostic(this <#= type #> context, DiagnosticDescriptor descriptor, ImmutableDictionary<string, string?>? properties, IEnumerable<Location> locations, params object?[]? messageArgs) => ReportDiagnostic(new DiagnosticReporter(context), descriptor, properties, locations, messageArgs);

@@ -70,6 +70,8 @@ DiagnosticReporter.CanReportDiagnostic = (diagnostic, options, cancellationToken
     => diagnostic.Location.SourceTree?.IsGeneratedCode(options, cancellationToken) is not true;
 ````
 
+`DiagnosticReporter` converts implicitly from every analysis context that can report a diagnostic: `SyntaxNodeAnalysisContext`, `SymbolAnalysisContext`, `OperationAnalysisContext`, `OperationBlockAnalysisContext`, `CompilationAnalysisContext`, `SemanticModelAnalysisContext`, `SyntaxTreeAnalysisContext`, `CodeBlockAnalysisContext` and `AdditionalFileAnalysisContext`. The `ReportDiagnostic` extension methods are available on all of them.
+
 The delegate gets the `Diagnostic` about to be reported, so the descriptor is available with `diagnostic.Descriptor` and the syntax tree with `diagnostic.Location.SourceTree`. The `AnalyzerOptions` and the `CancellationToken` are the ones of the context the diagnostic is reported from.
 
 The filter is meant to be set once, when the analyzer is initialized. As all types of this package are embedded, it only applies to the assembly that consumes the package. Diagnostics reported directly on a Roslyn context, such as `SymbolAnalysisContext.ReportDiagnostic(Diagnostic)`, don't go through the reporter and are not filtered.

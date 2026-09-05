@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.Text;
 using Meziantou.Framework.Roslyn;
 
 namespace Meziantou.Framework.Roslyn.Tests;
@@ -232,11 +233,14 @@ public sealed class RoslynHelperTests
 
         Assert.Equal(
             [
+                "Message CodeBlockAnalysisContext",
                 "Message CompilationAnalysisContext",
                 "Message OperationAnalysisContext",
                 "Message OperationBlockAnalysisContext",
+                "Message SemanticModelAnalysisContext",
                 "Message SymbolAnalysisContext",
                 "Message SyntaxNodeAnalysisContext",
+                "Message SyntaxTreeAnalysisContext",
             ],
             diagnostics.Select(diagnostic => diagnostic.GetMessage(CultureInfo.InvariantCulture)).Distinct(StringComparer.Ordinal).OrderBy(message => message, StringComparer.Ordinal));
     }
@@ -346,8 +350,25 @@ public sealed class RoslynHelperTests
             [
                 "Message context-kept",
                 "Message reporter-kept",
+                "Message tree-kept",
             ],
             diagnostics.Select(diagnostic => diagnostic.GetMessage(CultureInfo.InvariantCulture)).OrderBy(message => message, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task DiagnosticReporter_ReportsTheDiagnosticsOfAnAdditionalFileAnalysisContext()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample;
+            """);
+
+        var diagnostics = await compilation
+            .WithAnalyzers([new AdditionalFileAnalyzer()], new AnalyzerOptions([new TestAdditionalText("sample.txt", "content")]))
+            .GetAnalyzerDiagnosticsAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            ["Message sample.txt"],
+            diagnostics.Select(diagnostic => diagnostic.GetMessage(CultureInfo.InvariantCulture)));
     }
 
     [Fact]
@@ -2297,6 +2318,7 @@ public sealed class RoslynHelperTests
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.RegisterSyntaxNodeAction(AnalyzeClassDeclaration, SyntaxKind.ClassDeclaration);
+            context.RegisterSyntaxTreeAction(AnalyzeSyntaxTree);
         }
 
         private static void AnalyzeClassDeclaration(SyntaxNodeAnalysisContext context)
@@ -2309,10 +2331,54 @@ public sealed class RoslynHelperTests
             context.ReportDiagnostic(Descriptor, declaration, "context-kept");
             context.ReportDiagnostic(Descriptor, declaration, "context-dropped");
         }
+
+        private static void AnalyzeSyntaxTree(SyntaxTreeAnalysisContext context)
+        {
+            var location = context.Tree.GetRoot(context.CancellationToken).GetLocation();
+
+            context.ReportDiagnostic(Descriptor, location, "tree-kept");
+            context.ReportDiagnostic(Descriptor, location, "tree-dropped");
+        }
     }
 #pragma warning restore RS1041
 #pragma warning restore RS1038
 #pragma warning restore RS1036
+
+    // RS1036/RS1038/RS1041 only apply to analyzers shipped in an analyzer package. This one only exists to exercise the extension methods.
+#pragma warning disable RS1036 // A project containing analyzers or source generators should specify the property '<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>'
+#pragma warning disable RS1038 // This compiler extension should not be implemented in an assembly containing a reference to Microsoft.CodeAnalysis.Workspaces
+#pragma warning disable RS1041 // This compiler extension should not be implemented in an assembly with target framework
+    [DiagnosticAnalyzer(LanguageNames.CSharp)]
+    private sealed class AdditionalFileAnalyzer : DiagnosticAnalyzer
+    {
+        private static readonly DiagnosticDescriptor Descriptor = new("MFTEST005", "Title", "Message {0}", "Category", DiagnosticSeverity.Warning, isEnabledByDefault: true);
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];
+
+        public override void Initialize(AnalysisContext context)
+        {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+            context.RegisterAdditionalFileAction(AnalyzeAdditionalFile);
+        }
+
+        private static void AnalyzeAdditionalFile(AdditionalFileAnalysisContext context)
+        {
+            var location = Location.Create(context.AdditionalFile.Path, new TextSpan(0, 0), new LinePositionSpan(new LinePosition(0, 0), new LinePosition(0, 0)));
+
+            context.ReportDiagnostic(Descriptor, location, Path.GetFileName(context.AdditionalFile.Path));
+        }
+    }
+#pragma warning restore RS1041
+#pragma warning restore RS1038
+#pragma warning restore RS1036
+
+    private sealed class TestAdditionalText(string path, string text) : AdditionalText
+    {
+        public override string Path { get; } = path;
+
+        public override SourceText GetText(CancellationToken cancellationToken = default) => SourceText.From(text);
+    }
 
     // RS1036/RS1038/RS1041 only apply to analyzers shipped in an analyzer package. This one only exists to exercise the extension methods.
 #pragma warning disable RS1036 // A project containing analyzers or source generators should specify the property '<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>'
@@ -2372,6 +2438,9 @@ public sealed class RoslynHelperTests
             context.RegisterOperationAction(operationContext => ReportWhenOptionsMatch(operationContext, operationContext.Options, operationContext.Operation.Syntax.GetLocation(), nameof(OperationAnalysisContext)), OperationKind.Invocation);
             context.RegisterOperationBlockAction(operationBlockContext => ReportWhenOptionsMatch(operationBlockContext, operationBlockContext.Options, operationBlockContext.OperationBlocks[0].Syntax.GetLocation(), nameof(OperationBlockAnalysisContext)));
             context.RegisterCompilationAction(compilationContext => ReportWhenOptionsMatch(compilationContext, compilationContext.Options, location: null, nameof(CompilationAnalysisContext)));
+            context.RegisterSemanticModelAction(semanticModelContext => ReportWhenOptionsMatch(semanticModelContext, semanticModelContext.Options, semanticModelContext.SemanticModel.SyntaxTree.GetRoot(semanticModelContext.CancellationToken).GetLocation(), nameof(SemanticModelAnalysisContext)));
+            context.RegisterSyntaxTreeAction(syntaxTreeContext => ReportWhenOptionsMatch(syntaxTreeContext, syntaxTreeContext.Options, syntaxTreeContext.Tree.GetRoot(syntaxTreeContext.CancellationToken).GetLocation(), nameof(SyntaxTreeAnalysisContext)));
+            context.RegisterCodeBlockAction(codeBlockContext => ReportWhenOptionsMatch(codeBlockContext, codeBlockContext.Options, codeBlockContext.CodeBlock.GetLocation(), nameof(CodeBlockAnalysisContext)));
         }
 
         private static void ReportWhenOptionsMatch(DiagnosticReporter reporter, AnalyzerOptions options, Location? location, string contextName)

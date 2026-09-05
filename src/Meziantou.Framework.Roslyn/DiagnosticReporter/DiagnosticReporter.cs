@@ -51,6 +51,34 @@ internal readonly struct DiagnosticReporter
         CancellationToken = context.CancellationToken;
     }
 
+    public DiagnosticReporter(SemanticModelAnalysisContext context)
+    {
+        _reportDiagnostic = context.ReportDiagnostic;
+        Options = context.Options;
+        CancellationToken = context.CancellationToken;
+    }
+
+    public DiagnosticReporter(SyntaxTreeAnalysisContext context)
+    {
+        _reportDiagnostic = context.ReportDiagnostic;
+        Options = context.Options;
+        CancellationToken = context.CancellationToken;
+    }
+
+    public DiagnosticReporter(CodeBlockAnalysisContext context)
+    {
+        _reportDiagnostic = context.ReportDiagnostic;
+        Options = context.Options;
+        CancellationToken = context.CancellationToken;
+    }
+
+    public DiagnosticReporter(AdditionalFileAnalysisContext context)
+    {
+        _reportDiagnostic = context.ReportDiagnostic;
+        Options = context.Options;
+        CancellationToken = context.CancellationToken;
+    }
+
     /// <summary>
     /// Gets or sets a filter evaluated before a diagnostic is reported by any <see cref="DiagnosticReporter"/>. When the filter returns <see langword="false"/>, the diagnostic is not reported.
     /// </summary>
@@ -77,4 +105,8 @@ internal readonly struct DiagnosticReporter
     public static implicit operator DiagnosticReporter(OperationBlockAnalysisContext context) => new(context);
     public static implicit operator DiagnosticReporter(SyntaxNodeAnalysisContext context) => new(context);
     public static implicit operator DiagnosticReporter(CompilationAnalysisContext context) => new(context);
+    public static implicit operator DiagnosticReporter(SemanticModelAnalysisContext context) => new(context);
+    public static implicit operator DiagnosticReporter(SyntaxTreeAnalysisContext context) => new(context);
+    public static implicit operator DiagnosticReporter(CodeBlockAnalysisContext context) => new(context);
+    public static implicit operator DiagnosticReporter(AdditionalFileAnalysisContext context) => new(context);
 }

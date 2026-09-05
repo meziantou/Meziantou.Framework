@@ -1,0 +1,93 @@
+name: 'Setup Apple container'
+description: 'Installs Apple''s container runtime on macOS agents and starts the API service it needs to answer'
+
+outputs:
+  available:
+    description: 'true when the container CLI answers the same probe the library uses, false when the runtime could not be installed or started'
+    value: ${{ steps.start-service.outputs.available }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Apple container
+      id: install
+      shell: pwsh
+      run: |
+        # GitHub runs pwsh steps with $ErrorActionPreference = 'stop', and PowerShell 7.4 turns a non-zero exit code
+        # from a native command into an error on top of that. Both are relaxed here so the failures below reach their
+        # '::warning::' instead of taking the step down.
+        $ErrorActionPreference = "Continue"
+        $PSNativeCommandUseErrorActionPreference = $false
+
+        # The installer package is attached to each release and its file name carries the version, so it cannot be
+        # downloaded through the version-less '/releases/latest/download/' redirect. Renovate keeps the pin fresh.
+        # renovate: datasource=github-releases depName=apple/container
+        $version = "1.3.1"
+        $url = "https://github.com/apple/container/releases/download/$version/container-$version-installer-signed.pkg"
+        $package = Join-Path ([System.IO.Path]::GetTempPath()) "container-$version-installer-signed.pkg"
+
+        # Every failure below is reported as a warning rather than thrown: the container tests skip when the runtime
+        # does not answer, and the debug_apple_container job is where a broken setup is meant to surface. Failing here
+        # would take down the whole test matrix leg over a runtime that is optional on macOS.
+        try {
+          Write-Host "Downloading $url"
+          Invoke-WebRequest -Uri $url -OutFile $package
+
+          sudo installer -pkg $package -target /
+          if ($LASTEXITCODE -ne 0) { throw "installer exited with code $LASTEXITCODE" }
+        }
+        catch {
+          Write-Host "::warning::Could not install Apple container $version. $_"
+          "installed=false" >> $env:GITHUB_OUTPUT
+          exit 0
+        }
+
+        # The package installs under /usr/local, which the agents already have on PATH, but a change to the package
+        # layout should leave a readable message instead of an unexplained 'command not found'.
+        if (-not (Get-Command container -ErrorAction SilentlyContinue)) {
+          if (Test-Path -LiteralPath "/usr/local/bin/container") {
+            Add-Content -LiteralPath $env:GITHUB_PATH -Value "/usr/local/bin"
+          }
+          else {
+            Write-Host "::warning::'container' is not on PATH and /usr/local/bin/container does not exist after installing the package."
+            "installed=false" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+        }
+
+        "installed=true" >> $env:GITHUB_OUTPUT
+
+    - name: Start the Apple container service
+      id: start-service
+      shell: pwsh
+      run: |
+        # GitHub runs pwsh steps with $ErrorActionPreference = 'stop', and PowerShell 7.4 turns a non-zero exit code
+        # from a native command into an error on top of that. Both are relaxed here so the failures below reach their
+        # '::warning::' instead of taking the step down.
+        $ErrorActionPreference = "Continue"
+        $PSNativeCommandUseErrorActionPreference = $false
+
+        if ("${{ steps.install.outputs.installed }}" -ne "true") {
+          "available=false" >> $env:GITHUB_OUTPUT
+          exit 0
+        }
+
+        container --version
+
+        # Without '--enable-kernel-install' the first start prompts for the default Linux kernel and hangs the job.
+        container system start --enable-kernel-install --timeout 120
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "::warning::'container system start' failed with exit code $LASTEXITCODE. Apple's runtime boots a virtual machine per container, which GitHub-hosted macOS agents cannot do (no nested virtualization)."
+          "available=false" >> $env:GITHUB_OUTPUT
+          exit 0
+        }
+
+        # Same command as AppleContainerRuntime.BuildProbeArguments, so this answers exactly the question the tests ask.
+        container ls -q
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "::warning::The Apple container service started but 'container ls -q' failed with exit code $LASTEXITCODE."
+          "available=false" >> $env:GITHUB_OUTPUT
+          exit 0
+        }
+
+        "available=true" >> $env:GITHUB_OUTPUT

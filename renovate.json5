@@ -18,6 +18,18 @@
         "using the <c>(?<depName>[^<]+):(?<currentValue>[^<@]+)</c> image"
       ],
       "datasourceTemplate": "docker"
+    },
+    {
+      // Apple ships 'container' as an installer package whose file name carries the version, so the download URL
+      // cannot go through the version-less '/releases/latest/download/' redirect and the version has to be pinned.
+      "customType": "regex",
+      "description": "Apple's container runtime installed on the macOS CI agents",
+      "managerFilePatterns": [
+        "/^\\.github/actions/setup-apple-container/action\\.yml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\$version = \"(?<currentValue>[^\"]+)\""
+      ]
     }
   ],
   "packageRules": [

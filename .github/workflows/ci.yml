@@ -424,6 +424,13 @@ jobs:
             if: startsWith(matrix.runs-on, 'windows') && matrix.test-group.id == 'TemporaryContainers' && steps.build-project.outputs.has-project == 'true'
             uses: ./.github/actions/setup-wslc
 
+          # Apple's runtime is not preinstalled on the macOS agents, so without this step the AppleContainer tests
+          # skip. The action never fails the job: whether the agents can run the runtime at all is reported by the
+          # debug_apple_container job.
+          - name: Setup Apple container
+            if: startsWith(matrix.runs-on, 'macos') && matrix.test-group.id == 'TemporaryContainers' && steps.build-project.outputs.has-project == 'true'
+            uses: ./.github/actions/setup-apple-container
+
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
         run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
@@ -469,6 +476,33 @@ jobs:
         uses: ./.github/actions/setup-wslc
       - name: wslc version
         run: wslc version
+
+  # Debug job: reports whether the macOS agents can actually run Apple's container runtime, independently of the
+  # test run. Apple boots a virtual machine per container and GitHub-hosted macOS agents are themselves virtual
+  # machines without nested virtualization (actions/runner-images#13565), so this is expected to report that the
+  # runtime is unavailable. The job does not fail on that outcome: it exists to tell us the day it changes.
+  debug_apple_container:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup Apple container
+        id: setup
+        uses: ./.github/actions/setup-apple-container
+      - name: Run a container
+        if: steps.setup.outputs.available == 'true'
+        run: container run --rm busybox:1.37 echo "hello from container"
+      - name: Report the outcome
+        run: |
+          if ("${{ steps.setup.outputs.available }}" -eq "true") {
+            $message = "Apple's container runtime answered on ${{ runner.os }} ${{ runner.arch }}. AppleContainerContainerTests can be made required."
+          }
+          else {
+            $message = "Apple's container runtime did not answer on ${{ runner.os }} ${{ runner.arch }}, so AppleContainerContainerTests skips. The warnings above name the step that failed."
+          }
+
+          Write-Host $message
+          $message >> $env:GITHUB_STEP_SUMMARY
 
   test_trimming:
     runs-on: ubuntu-26.04
@@ -641,7 +675,7 @@ jobs:
   final_status_check:
     runs-on: ubuntu-slim
     if: always()
-    needs: [ build_eng_scripts, validate_generated_files, create_nuget, validate_nuget, run_analyzers, compute_test_matrix, build_and_test, debug_wslc, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
+    needs: [ build_eng_scripts, validate_generated_files, create_nuget, validate_nuget, run_analyzers, compute_test_matrix, build_and_test, debug_wslc, debug_apple_container, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
     steps:
       - name: Check previous jobs status
         env:

@@ -16,6 +16,12 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 
     internal override string ExecutableName => "container";
 
+    // 'container' is not a distinctive name: WSL containers installs a container.exe alias for wslc, which answers
+    // the probe below and would then be driven with Apple's CLI dialect. Apple's runtime only exists on macOS, so
+    // nothing else can legitimately claim the name there.
+    public override Task<bool> IsSupportedAsync(CancellationToken cancellationToken = default)
+        => OperatingSystem.IsMacOS() ? base.IsSupportedAsync(cancellationToken) : Task.FromResult(false);
+
     // 'container --version' is answered by the CLI itself, so the probe has to go through the API server: listing the
     // containers is the cheapest command that does.
     internal override IReadOnlyList<string> BuildProbeArguments() => ["ls", "-q"];

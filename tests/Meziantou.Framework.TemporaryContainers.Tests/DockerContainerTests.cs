@@ -10,4 +10,7 @@ public sealed class DockerContainerTests() : ContainerRuntimeTestsBase(Container
 
     [Fact]
     public Task StartAsync_ContainerExitsBeforeTheReadyMessage_ReportsWhatTheContainerPrinted() => AssertStartFailureReportsContainerOutputAsync();
+
+    [Fact]
+    public Task FailedCommand_ReportsWhatTheRuntimeComplainedAbout() => AssertFailedCommandReportsWhatTheRuntimeComplainedAboutAsync();
 }

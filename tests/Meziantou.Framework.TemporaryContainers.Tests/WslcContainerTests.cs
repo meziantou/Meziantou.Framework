@@ -1,6 +1,12 @@
+using Meziantou.Xunit;
+
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
 // Each test starts its own container. Running them all at once saturates the CI agents and makes the container
 // runtimes fail transiently (image pull races, port collisions), so this class does not run in parallel.
 [TestClass(DisableParallelization = true)]
-public sealed class WslcContainerTests() : ContainerRuntimeTestsBase(ContainerRuntime.Wslc);
+public sealed class WslcContainerTests() : ContainerRuntimeTestsBase(ContainerRuntime.Wslc)
+{
+    // The Windows CI agents install WSL, so a missing wslc there means the CI setup regressed. Skipping would hide it.
+    protected override bool IsRuntimeRequired => OperatingSystem.IsWindows() && TestEnvironment.IsOnGitHubActions();
+}

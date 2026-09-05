@@ -7,4 +7,7 @@ public sealed class PodmanContainerTests() : ContainerRuntimeTestsBase(Container
 {
     [Fact]
     public Task PauseAndUnpause() => AssertPauseUnpauseAsync();
+
+    [Fact]
+    public Task FailedCommand_ReportsWhatTheRuntimeComplainedAbout() => AssertFailedCommandReportsWhatTheRuntimeComplainedAboutAsync();
 }

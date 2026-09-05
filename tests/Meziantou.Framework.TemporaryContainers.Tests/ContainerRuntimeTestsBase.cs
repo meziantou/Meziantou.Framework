@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using System.Text.Json;
 using Meziantou.Extensions.Logging.Xunit.v3;
+using Meziantou.Framework.TemporaryContainers.Internals;
 using Meziantou.Xunit;
 using Microsoft.Extensions.Logging;
 
@@ -85,7 +86,8 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     private static bool TryGetRuntimeExecutable(ContainerRuntime runtime, out string executable)
     {
         string? commandName;
-        if (runtime == ContainerRuntime.Docker)
+        // The Docker API runtime talks to the daemon the docker CLI talks to, so the CLI is what reports its OS.
+        if (runtime == ContainerRuntime.Docker || runtime is DockerApiRuntime)
         {
             commandName = "docker";
         }
@@ -564,7 +566,7 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     /// <summary>Shared pause/unpause assertion for runtimes that support it (called from the relevant subclasses).</summary>
     protected async Task AssertPauseUnpauseAsync()
     {
-        global::Xunit.Assert.SkipUnless(!UseWindowsContainerImages || Runtime != ContainerRuntime.Docker, "docker pause is not implemented for Windows process-isolated containers");
+        global::Xunit.Assert.SkipUnless(!UseWindowsContainerImages || (Runtime != ContainerRuntime.Docker && Runtime is not DockerApiRuntime), "docker pause is not implemented for Windows process-isolated containers");
 
         await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
 

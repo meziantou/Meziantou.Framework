@@ -31,8 +31,8 @@ runs:
         }
 
         if (-not $wslc) {
-          # Reported as a warning so the missing runtime surfaces where it is meaningful: the version step of
-          # the debug job, and the Wslc tests themselves
+          # Reported as a warning so the missing runtime surfaces where it is meaningful: the Wslc tests
+          # themselves, which fail instead of skipping on the CI agents
           Write-Host "::warning::wslc.exe was not found. Searched: $($candidates -join ', ') and $env:ProgramFiles\WindowsApps"
           Get-AppxPackage -Name "*WindowsSubsystemForLinux*" | Format-List -Property Name, Version, InstallLocation | Out-String | Write-Host
           Get-ChildItem -LiteralPath (Join-Path $env:ProgramFiles "WSL") -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name | Out-String | Write-Host

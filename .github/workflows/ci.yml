@@ -459,17 +459,6 @@ jobs:
               path: |
                 **/*.coverage
 
-  # Debug job: reports which wslc the Windows agents provide, independently of the test run
-  debug_wslc:
-    runs-on: windows-2025-vs2026
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup wslc
-        uses: ./.github/actions/setup-wslc
-      - name: wslc version
-        run: wslc version
-
   test_trimming:
     runs-on: ubuntu-26.04
     timeout-minutes: 60
@@ -641,7 +630,7 @@ jobs:
   final_status_check:
     runs-on: ubuntu-slim
     if: always()
-    needs: [ build_eng_scripts, validate_generated_files, create_nuget, validate_nuget, run_analyzers, compute_test_matrix, build_and_test, debug_wslc, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
+    needs: [ build_eng_scripts, validate_generated_files, create_nuget, validate_nuget, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
     steps:
       - name: Check previous jobs status
         env:

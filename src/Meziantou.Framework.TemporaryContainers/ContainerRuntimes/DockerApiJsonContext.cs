@@ -17,5 +17,6 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 [JsonSerializable(typeof(DockerApiModels.AuthConfigFile))]
 [JsonSerializable(typeof(DockerApiModels.CredentialHelperGetResponse))]
 [JsonSerializable(typeof(DockerApiModels.RegistryAuthHeader))]
+[JsonSerializable(typeof(DockerApiModels.ContainerPathStat))]
 [JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
 internal sealed partial class DockerApiJsonContext : JsonSerializerContext;

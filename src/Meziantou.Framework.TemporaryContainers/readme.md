@@ -1,8 +1,8 @@
 # Meziantou.Framework.TemporaryContainers
 
-Manage temporary containers for integration tests by driving a container runtime CLI, so no daemon SDK is required.
+Manage temporary containers for integration tests by driving a container runtime CLI or the Docker Engine API, so no daemon SDK is required.
 
-Supported runtimes (auto-detected, or set `ContainerDefinition.Runtime`): `docker`, `podman`, Apple's `container` (macOS), and `wslc` (Windows/WSL).
+Supported runtimes (auto-detected, or set `ContainerDefinition.Runtime`): the Docker Engine API, `docker`, `podman`, Apple's `container` (macOS), and `wslc` (Windows/WSL).
 
 ```c#
 var definition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));

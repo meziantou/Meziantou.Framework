@@ -184,6 +184,7 @@ namespace Meziantou.Framework.TemporaryContainers
     {
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Auto { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Docker { get => throw null; }
+        public static Meziantou.Framework.TemporaryContainers.ContainerRuntime DockerApi { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Podman { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime AppleContainer { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Wslc { get => throw null; }

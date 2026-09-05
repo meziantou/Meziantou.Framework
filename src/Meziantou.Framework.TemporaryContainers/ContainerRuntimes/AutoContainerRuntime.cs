@@ -5,7 +5,6 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 internal sealed class AutoContainerRuntime : ContainerRuntime
 {
-    private readonly DockerApiRuntime _dockerApiRuntime = new();
     private ContainerRuntime? _resolvedRuntime;
 
     public AutoContainerRuntime()
@@ -45,7 +44,7 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
     /// <summary>The runtime resolved by a previous operation. The container resolves the runtime before it runs anything, so the members that cannot await do not have to resolve it themselves.</summary>
     private ContainerRuntime ResolvedRuntime => _resolvedRuntime ?? throw CreateUnavailableRuntimeException(this);
 
-    private IEnumerable<ContainerRuntime> GetAllCandidates()
+    private static IEnumerable<ContainerRuntime> GetAllCandidates()
     {
         if (OperatingSystem.IsWindows())
             yield return Wslc;
@@ -53,7 +52,7 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
         if (OperatingSystem.IsMacOS())
             yield return AppleContainer;
 
-        yield return _dockerApiRuntime;
+        yield return DockerApi;
         yield return Docker;
         yield return Podman;
     }

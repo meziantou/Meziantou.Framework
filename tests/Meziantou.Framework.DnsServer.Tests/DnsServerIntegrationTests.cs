@@ -1015,9 +1015,11 @@ public sealed class DnsServerIntegrationTests
             builder.WebHost.UseUrls("http://127.0.0.1:0");
             builder.AddDnsServer(options =>
             {
-                for (var i = 0; i < 4; i++)
+                // The ports are reserved in one go: 4 separate calls can hand back the same port twice, and the
+                // duplicate listener then fails the startup with a SocketException instead of the expected one.
+                foreach (var port in GetAvailableUdpPorts(4))
                 {
-                    options.AddUdpListener(GetAvailableUdpPort(), IPAddress.Loopback);
+                    options.AddUdpListener(port, IPAddress.Loopback);
                 }
             });
             builder.Services.AddHostedService<FailingHostedService>();

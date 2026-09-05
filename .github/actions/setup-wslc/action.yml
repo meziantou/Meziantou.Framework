@@ -1,0 +1,43 @@
+name: 'Setup wslc'
+description: 'Installs the pre-release WSL, which ships the wslc container CLI, and puts wslc.exe on the PATH'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install the pre-release WSL
+      shell: pwsh
+      run: |
+        # wslc ships inside WSL itself, and only the pre-release channel carries it (WSL 2.9.3 or higher)
+        wsl --update --pre-release
+        if ($LASTEXITCODE -ne 0) { throw "wsl --update --pre-release failed with exit code $LASTEXITCODE" }
+
+        wsl --version
+
+    - name: Locate wslc.exe
+      shell: pwsh
+      run: |
+        # The runner captured its PATH before WSL was updated, so a freshly installed wslc.exe does not
+        # resolve yet. Find it and publish its directory to the jobs that come next.
+        $candidates = @(
+          Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\wslc.exe"
+          Join-Path $env:ProgramFiles "WSL\wslc.exe"
+          Join-Path $env:SystemRoot "System32\wslc.exe"
+        )
+
+        $wslc = $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+        if (-not $wslc) {
+          $wslc = Get-ChildItem -LiteralPath (Join-Path $env:ProgramFiles "WindowsApps") -Filter "wslc.exe" -Recurse -ErrorAction SilentlyContinue
+            | Select-Object -First 1 -ExpandProperty FullName
+        }
+
+        if (-not $wslc) {
+          # Reported as a warning so the missing runtime surfaces where it is meaningful: the version step of
+          # the debug job, and the Wslc tests themselves
+          Write-Host "::warning::wslc.exe was not found. Searched: $($candidates -join ', ') and $env:ProgramFiles\WindowsApps"
+          Get-AppxPackage -Name "*WindowsSubsystemForLinux*" | Format-List -Property Name, Version, InstallLocation | Out-String | Write-Host
+          Get-ChildItem -LiteralPath (Join-Path $env:ProgramFiles "WSL") -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name | Out-String | Write-Host
+          exit 0
+        }
+
+        Write-Host "Found wslc: $wslc"
+        Add-Content -LiteralPath $env:GITHUB_PATH -Value (Split-Path -Parent $wslc)

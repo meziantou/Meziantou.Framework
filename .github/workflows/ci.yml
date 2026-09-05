@@ -419,18 +419,10 @@ jobs:
                 Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
               }
 
-          # wslc ships with WSL, and only the pre-release channel provides it. The Wslc tests fail instead of
-          # skipping on Windows agents, so this step is what keeps them running.
-          - name: Install WSL containers (wslc)
+          # The Wslc tests fail instead of skipping on Windows agents, so this step is what keeps them running
+          - name: Setup wslc
             if: startsWith(matrix.runs-on, 'windows') && matrix.test-group.id == 'TemporaryContainers' && steps.build-project.outputs.has-project == 'true'
-            run: |
-              wsl --update --pre-release
-              if ($LASTEXITCODE -ne 0) { throw "wsl --update --pre-release failed with exit code $LASTEXITCODE" }
-
-              # Diagnostics only: a missing wslc must surface as a Wslc test failure, not as a broken setup step
-              try { wsl --version } catch { Write-Host "::warning::wsl --version failed: $_" }
-              try { wslc version } catch { Write-Host "::warning::wslc version failed: $_" }
-              exit 0
+            uses: ./.github/actions/setup-wslc
 
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
@@ -472,10 +464,9 @@ jobs:
     runs-on: windows-2025-vs2026
     timeout-minutes: 30
     steps:
-      - name: Install WSL containers (wslc)
-        run: wsl --update --pre-release
-      - name: WSL version
-        run: wsl --version
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup wslc
+        uses: ./.github/actions/setup-wslc
       - name: wslc version
         run: wslc version
 

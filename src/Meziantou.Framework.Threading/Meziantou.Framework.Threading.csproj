@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
     <Description>Types and extension methods to help with threading</Description>
+    <PackageTags>threading, concurrency, async, synchronization, collections</PackageTags>
     <Version>3.1.1</Version>
     <RootNamespace>Meziantou.Framework</RootNamespace>
   </PropertyGroup>

@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Represent sensitive data which should be difficult to accidentally disclose, even accounting for some types of application bugs.</Description>
+    <PackageTags>security, sensitive-data, secrets, memory, protection</PackageTags>
     <Version>2.0.3</Version>
     <IsTrimmable>true</IsTrimmable>
     <RootNamespace>Meziantou.Framework</RootNamespace>

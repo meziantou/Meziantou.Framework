@@ -6,6 +6,7 @@
     <IsTrimmable>true</IsTrimmable>
     <IsAotCompatible>true</IsAotCompatible>
     <Description>HAR 1.2 (HTTP Archive) format parser and writer</Description>
+    <PackageTags>har, http-archive, http, parser, serialization</PackageTags>
   </PropertyGroup>
 
 </Project>

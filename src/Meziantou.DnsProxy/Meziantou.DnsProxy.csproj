@@ -6,6 +6,7 @@
     <IsPackable>true</IsPackable>
     <Version>2.0.2</Version>
     <Description>DNS proxy service with filtering and diagnostics UI</Description>
+    <PackageTags>dns, dns-proxy, dns-server, dns-filter, adblock, networking</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

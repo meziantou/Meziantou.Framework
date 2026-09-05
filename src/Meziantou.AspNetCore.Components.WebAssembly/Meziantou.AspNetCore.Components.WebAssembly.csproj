@@ -7,6 +7,7 @@
     <!-- Microsoft.JSInterop, pulled in transitively, does not pass trim analysis (IL2065/IL2111) -->
     <SkipTrimmableValidation>true</SkipTrimmableValidation>
     <Description>Services for Blazor WebAssembly</Description>
+    <PackageTags>aspnetcore, blazor, webassembly, wasm, components</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

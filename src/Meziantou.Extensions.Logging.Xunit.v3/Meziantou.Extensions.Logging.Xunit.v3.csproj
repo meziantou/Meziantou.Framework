@@ -5,7 +5,7 @@
     <IsTrimmable>false</IsTrimmable>
 
     <Description>Microsoft.Extension.Logging.ILogger implementation for xunit.v3</Description>
-    <PackageTags>xunit, xunit.v3, logger</PackageTags>
+    <PackageTags>xunit, xunit.v3, logging, logger, ilogger, testing</PackageTags>
     <Version>3.0.5</Version>
   </PropertyGroup>
 

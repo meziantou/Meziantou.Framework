@@ -8,6 +8,7 @@
     <ToolCommandName>meziantou.validate-nuget-package</ToolCommandName>
     <Version>2.0.6</Version>
     <Description>CLI tool to validate NuGet packages follows best-practices</Description>
+    <PackageTags>nuget, package, validation, cli, dotnet-tool</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

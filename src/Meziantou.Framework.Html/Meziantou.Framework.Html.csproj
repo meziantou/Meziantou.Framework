@@ -5,6 +5,7 @@
     <Version>3.0.2</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>HTML parser for .NET</Description>
+    <PackageTags>html, parser, dom, xpath, scraping</PackageTags>
     <DefineConstants>$(DefineConstants);HTML_PUBLIC</DefineConstants>
   </PropertyGroup>
 

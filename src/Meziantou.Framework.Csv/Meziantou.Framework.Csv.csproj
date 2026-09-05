@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>CSV reader and writer</Description>
+    <PackageTags>csv, tsv, parser, reader, writer</PackageTags>
     <Version>5.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>

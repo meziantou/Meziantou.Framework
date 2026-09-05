@@ -3,6 +3,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>1.0.3</Version>
     <Description>MSBuild task for embedding text and binary files as C# constants</Description>
+    <PackageTags>msbuild, source-generator, constants, embedded-resources, codegen</PackageTags>
 
     <developmentDependency>true</developmentDependency>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>

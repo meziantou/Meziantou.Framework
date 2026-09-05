@@ -6,6 +6,7 @@
     <IsTrimmable>true</IsTrimmable>
     <IsAotCompatible>true</IsAotCompatible>
     <Description>Classes to generate a tracing file that can be opened by Chromium browsers and other tools</Description>
+    <PackageTags>tracing, chromium, trace-event, perfetto, profiling, diagnostics</PackageTags>
   </PropertyGroup>
 
 </Project>

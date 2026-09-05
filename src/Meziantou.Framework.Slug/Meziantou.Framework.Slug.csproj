@@ -6,6 +6,7 @@
     <Version>2.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Compute a slug from any string value</Description>
+    <PackageTags>slug, slugify, url, text, normalization</PackageTags>
   </PropertyGroup>
 
 </Project>

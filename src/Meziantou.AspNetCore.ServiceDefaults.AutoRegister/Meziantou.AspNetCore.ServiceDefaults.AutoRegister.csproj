@@ -2,7 +2,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
     <Version>2.0.1</Version>
-    <Description>Auto register services and map routes</Description>
+    <Description>Source generator that automatically registers services and maps routes for applications using Meziantou.AspNetCore.ServiceDefaults</Description>
+    <PackageTags>aspnetcore, service-defaults, source-generator, dependency-injection, routing</PackageTags>
 
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>

@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>2.0.4</Version>
     <Description>Create a snapshot of the current execution context to ease investigation</Description>
+    <PackageTags>diagnostics, snapshot, environment, troubleshooting</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

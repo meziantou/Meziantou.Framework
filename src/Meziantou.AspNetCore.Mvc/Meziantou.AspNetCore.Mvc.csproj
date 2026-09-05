@@ -6,6 +6,7 @@
     <Version>3.0.0</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>TagHelpers for Razor Pages</Description>
+    <PackageTags>aspnetcore, mvc, razor-pages, taghelper, html</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,6 +6,7 @@
     <Version>2.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Fixed-length string builder value types for low-allocation text operations</Description>
+    <PackageTags>string-builder, fixed-string, low-allocation, performance, struct</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

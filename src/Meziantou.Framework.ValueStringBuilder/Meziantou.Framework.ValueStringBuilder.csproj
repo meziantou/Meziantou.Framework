@@ -6,6 +6,7 @@
     <Version>3.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>A high-performance value-type string builder with pooled buffers</Description>
+    <PackageTags>string-builder, low-allocation, performance, pooling, struct</PackageTags>
     <DefineConstants>$(DefineConstants);PUBLIC_VALUESTRINGBUILDER</DefineConstants>
   </PropertyGroup>
 

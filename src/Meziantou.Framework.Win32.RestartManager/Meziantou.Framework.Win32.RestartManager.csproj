@@ -5,6 +5,7 @@
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
     <Description>C# wrapper for Windows RestartManager</Description>
+    <PackageTags>windows, win32, restart-manager, file-lock, process</PackageTags>
     <Version>4.0.2</Version>
   </PropertyGroup>
 

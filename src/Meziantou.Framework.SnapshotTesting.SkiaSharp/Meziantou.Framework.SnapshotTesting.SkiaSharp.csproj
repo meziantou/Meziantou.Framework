@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Enables verification of SkiaSharp images using file-based snapshots</Description>
+    <PackageTags>snapshot-testing, skiasharp, image, testing</PackageTags>
     <Version>1.0.5</Version>
   </PropertyGroup>
 

@@ -5,6 +5,7 @@
     <Version>4.0.0</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Async-first undo/redo framework based on the command pattern, with transactions and action merging.</Description>
+    <PackageTags>undo, redo, command-pattern, transactions, async</PackageTags>
   </PropertyGroup>
 
 </Project>

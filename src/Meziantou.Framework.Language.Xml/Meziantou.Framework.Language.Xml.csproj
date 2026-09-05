@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Language.Xml</RootNamespace>
     <Description>Immutable XML syntax tree with diagnostics, editing helpers, and XPath navigation.</Description>
+    <PackageTags>xml, syntax-tree, cst, parser, xpath</PackageTags>
     <Version>2.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>

@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Locate and resolve external diff tools</Description>
+    <PackageTags>diff, diff-tool, merge-tool, testing</PackageTags>
     <Version>2.0.4</Version>
   </PropertyGroup>
 

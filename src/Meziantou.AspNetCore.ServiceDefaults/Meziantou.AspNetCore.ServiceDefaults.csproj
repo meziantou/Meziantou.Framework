@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>2.0.6</Version>
-    <Description>Default configuration for meziantou applications</Description>
+    <Description>Opinionated ASP.NET Core defaults for OpenTelemetry, health checks, resilience, service discovery, and security</Description>
+    <PackageTags>aspnetcore, service-defaults, opentelemetry, health-checks, resilience, service-discovery, aspire</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

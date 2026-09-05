@@ -6,6 +6,7 @@
     <IsTrimmable>true</IsTrimmable>
     <IsAotCompatible>true</IsAotCompatible>
     <Description>Provide types to cache http response as described in RFC 7234</Description>
+    <PackageTags>http, caching, http-cache, rfc7234, httpclient</PackageTags>
   </PropertyGroup>
 
 </Project>

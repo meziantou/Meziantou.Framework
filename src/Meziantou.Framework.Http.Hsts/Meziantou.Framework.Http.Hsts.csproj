@@ -6,6 +6,7 @@
     <Version>2.1.0</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Provide an HttpClientHandler to upgrade request from http to https if an HSTS policy is set for the domain</Description>
+    <PackageTags>http, https, hsts, security, httpclient</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

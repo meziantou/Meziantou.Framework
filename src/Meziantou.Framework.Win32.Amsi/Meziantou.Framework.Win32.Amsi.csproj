@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <Description>.NET wrapper for the Antimalware Scan Interface (AMSI)</Description>
+    <PackageTags>windows, win32, amsi, antimalware, security</PackageTags>
     <Version>3.0.2</Version>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
   </PropertyGroup>

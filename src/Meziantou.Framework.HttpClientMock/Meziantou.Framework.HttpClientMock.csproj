@@ -6,6 +6,7 @@
     <Version>2.1.0</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Allow to create mocks for HttpClient</Description>
+    <PackageTags>httpclient, mock, http, testing, unit-tests</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

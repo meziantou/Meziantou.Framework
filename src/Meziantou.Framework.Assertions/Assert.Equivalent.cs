@@ -16,26 +16,59 @@ public partial class Assert
 
     public static void Equivalent(object? expected, object? actual, EquivalentOptions? options, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        var failure = GetStructuralDifference(expected, actual, new StructuralPath(), new HashSet<StructuralReferencePair>(), [], StructuralComparisonOptions.Create(options));
+        var comparisonOptions = StructuralComparisonOptions.Create(options);
+
+        // Comparing two values that are not walked structurally needs none of the state the walk carries, so the
+        // common case of a scalar or a string allocates nothing.
+        if (TryCompareStructuralLeaves(expected, actual, comparisonOptions, out var areEquivalent))
+        {
+            if (areEquivalent)
+                return;
+
+            throw new AssertionException(ErrorFormatter.Format(new EquivalentAssertionError(expected, actual, StructuralPath.Root, "Values differ.", message, actualExpression, expectedExpression)));
+        }
+
+        var failure = GetStructuralDifference(expected, actual, new StructuralPath(), new HashSet<StructuralReferencePair>(), [], comparisonOptions);
         if (failure is null)
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new EquivalentAssertionError(failure.Value.ExpectedValue, failure.Value.ActualValue, failure.Value.Path, failure.Value.Reason, message, actualExpression, expectedExpression)));
     }
 
-    private static StructuralDifference? GetStructuralDifference(object? expected, object? actual, StructuralPath path, HashSet<StructuralReferencePair> visited, List<StructuralReferencePair> visitedAdditions, StructuralComparisonOptions options)
+    /// <summary>Compares the values when neither of them needs to be walked, and reports whether it could.</summary>
+    private static bool TryCompareStructuralLeaves(object? expected, object? actual, StructuralComparisonOptions options, out bool areEquivalent)
     {
         if (object.ReferenceEquals(expected, actual))
-            return null;
+        {
+            areEquivalent = true;
+            return true;
+        }
 
         if (expected is null || actual is null)
-            return ValuesEqual(expected, actual) ? null : new StructuralDifference(path.ToString(), expected, actual, "Values differ.");
+        {
+            areEquivalent = ValuesEqual(expected, actual);
+            return true;
+        }
 
+        if (IsSimpleStructuralValue(expected.GetType()) || IsSimpleStructuralValue(actual.GetType()))
+        {
+            areEquivalent = StructuralValuesEqual(expected, actual, options);
+            return true;
+        }
+
+        areEquivalent = false;
+        return false;
+    }
+
+    private static StructuralDifference? GetStructuralDifference(object? expected, object? actual, StructuralPath path, HashSet<StructuralReferencePair> visited, List<StructuralReferencePair> visitedAdditions, StructuralComparisonOptions options)
+    {
+        if (TryCompareStructuralLeaves(expected, actual, options, out var areEquivalent))
+            return areEquivalent ? null : new StructuralDifference(path.ToString(), expected, actual, "Values differ.");
+
+        Debug.Assert(expected is not null);
+        Debug.Assert(actual is not null);
         var expectedType = expected.GetType();
         var actualType = actual.GetType();
-        if (IsSimpleStructuralValue(expectedType) || IsSimpleStructuralValue(actualType))
-            return StructuralValuesEqual(expected, actual, options) ? null : new StructuralDifference(path.ToString(), expected, actual, "Values differ.");
-
         if (!expectedType.IsValueType && !actualType.IsValueType)
         {
             var pair = new StructuralReferencePair(expected, actual);
@@ -236,6 +269,8 @@ public partial class Assert
     /// </summary>
     private sealed class StructuralPath
     {
+        public const string Root = "$";
+
         private readonly List<StructuralPathSegment> _segments = [];
 
         public int Depth => _segments.Count;
@@ -248,7 +283,7 @@ public partial class Assert
 
         public override string ToString()
         {
-            var builder = new StringBuilder("$");
+            var builder = new StringBuilder(Root);
             foreach (var segment in _segments)
             {
                 if (segment.MemberName is null)

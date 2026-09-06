@@ -64,7 +64,8 @@ public partial class Assert
             }
             else
             {
-                firstIndexes ??= FirstIndexLookup<T>.Create(actualSnapshot.Items, duplicateIndex, comparer);
+                // Sizing the lookup for the whole sequence, when its length is known, avoids growing it repeatedly.
+                firstIndexes ??= FirstIndexLookup<T>.Create(actualSnapshot.Items, duplicateIndex, comparer, TryGetKnownCount(actual, out var knownCount) ? knownCount : duplicateIndex);
                 firstIndex = firstIndexes.Add(item, duplicateIndex);
             }
 
@@ -112,7 +113,7 @@ public partial class Assert
             }
             else
             {
-                firstIndexes ??= FirstIndexLookup<T>.Create(actualSnapshot.Items, duplicateIndex, comparer);
+                firstIndexes ??= FirstIndexLookup<T>.Create(actualSnapshot.Items, duplicateIndex, comparer, duplicateIndex);
                 firstIndex = firstIndexes.Add(item, duplicateIndex);
             }
 
@@ -173,9 +174,9 @@ public partial class Assert
             _indexes = new Dictionary<NullableKey<T>, int>(capacity, NullableKeyComparer<T>.Create(comparer));
         }
 
-        public static FirstIndexLookup<T> Create(IReadOnlyList<T> items, int count, IEqualityComparer<T> comparer)
+        public static FirstIndexLookup<T> Create(IReadOnlyList<T> items, int count, IEqualityComparer<T> comparer, int capacity)
         {
-            var lookup = new FirstIndexLookup<T>(comparer, count);
+            var lookup = new FirstIndexLookup<T>(comparer, capacity);
             for (var index = 0; index < count; index++)
             {
                 lookup.Add(items[index], index);

@@ -17,6 +17,7 @@ namespace Meziantou.Framework.Roslyn;
 internal static partial class GeneratedCodeExtensions
 {
     private const string GeneratedCodeOptionName = "generated_code";
+    private const string GeneratedCodeAttributeMetadataName = "System.CodeDom.Compiler.GeneratedCodeAttribute";
 
     /// <summary>
     /// Indicates whether the syntax tree is considered as generated code, using the same heuristics as the Roslyn analyzer driver:
@@ -47,6 +48,59 @@ internal static partial class GeneratedCodeExtensions
             return isGeneratedCode;
 
         return syntaxTree.IsGeneratedCode(cancellationToken);
+    }
+
+    /// <summary>
+    /// Indicates whether the symbol is considered as generated code, using the same heuristics as the Roslyn analyzer driver:
+    /// the symbol, or one of the symbols containing it, is decorated with <c>[System.CodeDom.Compiler.GeneratedCode]</c>.
+    /// </summary>
+    /// <remarks>
+    /// A symbol declared in more than one file, such as a partial type, is never considered as generated code, and the
+    /// walk stops there instead of continuing with the containing symbols. Namespaces are skipped, as they carry no
+    /// attribute and are almost always declared more than once. The walk ends with the assembly, so an
+    /// <c>[assembly: GeneratedCode]</c> attribute makes every symbol of the assembly generated code.
+    /// This complements <see cref="IsGeneratedCode(SyntaxTree, CancellationToken)"/>, which only looks at the file.
+    /// </remarks>
+    /// <param name="symbol">The symbol to inspect, along with the symbols containing it.</param>
+    /// <param name="compilation">The compilation the symbol belongs to, used to resolve the attribute type.</param>
+    public static bool IsGeneratedCodeSymbol(this ISymbol symbol, Compilation compilation)
+    {
+        return symbol.IsGeneratedCodeSymbol(compilation.GetTypeByMetadataName(GeneratedCodeAttributeMetadataName));
+    }
+
+    /// <summary>
+    /// Indicates whether the symbol is considered as generated code, using the same heuristics as the Roslyn analyzer driver:
+    /// the symbol, or one of the symbols containing it, is decorated with <paramref name="generatedCodeAttribute"/>.
+    /// Use this overload to resolve the attribute type once instead of once per symbol.
+    /// </summary>
+    /// <param name="symbol">The symbol to inspect, along with the symbols containing it.</param>
+    /// <param name="generatedCodeAttribute">
+    /// The <c>System.CodeDom.Compiler.GeneratedCodeAttribute</c> type of the compilation. When <see langword="null"/>,
+    /// no symbol is considered as generated code, which is what happens when the compilation cannot resolve the type.
+    /// </param>
+    public static bool IsGeneratedCodeSymbol(this ISymbol symbol, INamedTypeSymbol? generatedCodeAttribute)
+    {
+        if (generatedCodeAttribute is null)
+            return false;
+
+        for (var current = symbol; current is not null; current = current.ContainingSymbol)
+        {
+            // A namespace is declared in as many files as needed, so the check below would stop the walk immediately
+            if (current.Kind is SymbolKind.Namespace)
+                continue;
+
+            // A symbol declared in several files is only partially generated at most, so it is not generated code
+            if (current.DeclaringSyntaxReferences.Length > 1)
+                return false;
+
+            foreach (var attribute in current.GetAttributes())
+            {
+                if (SymbolEqualityComparer.Default.Equals(generatedCodeAttribute, attribute.AttributeClass))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

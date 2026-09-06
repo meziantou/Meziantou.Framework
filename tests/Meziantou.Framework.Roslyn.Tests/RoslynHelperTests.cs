@@ -1509,6 +1509,38 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void GetAllMembers_WithoutInterfaceMembers_OnlyReturnsMembersFromBaseTypes()
+    {
+        var compilation = CreateCompilation("""
+            public interface ISample
+            {
+                void InterfaceOnly();
+            }
+
+            public class Base
+            {
+                public void BaseOnly() { }
+            }
+
+            public class Sample : Base, ISample
+            {
+                public void InterfaceOnly() { }
+            }
+            """);
+        var type = GetRequiredType(compilation, "Sample");
+        var baseType = GetRequiredType(compilation, "Base");
+        var sampleInterface = GetRequiredType(compilation, "ISample");
+        var baseOnly = GetRequiredMethod(baseType, "BaseOnly");
+        var interfaceOnly = GetRequiredMethod(sampleInterface, "InterfaceOnly");
+
+        var members = type.GetAllMembers(includeInterfaceMembers: false).ToArray();
+
+        Assert.Contains(baseOnly, members);
+        Assert.DoesNotContain(interfaceOnly, members);
+        Assert.DoesNotContain(interfaceOnly, type.GetAllMembers("InterfaceOnly", includeInterfaceMembers: false));
+    }
+
+    [Fact]
     public void InheritsFrom_ReturnsTrueForBaseTypesAndConstrainedTypeParameters()
     {
         var compilation = CreateCompilation("""

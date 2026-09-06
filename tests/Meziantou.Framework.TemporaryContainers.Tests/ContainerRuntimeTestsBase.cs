@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text.Json;
 using Meziantou.Extensions.Logging.Xunit.v3;
@@ -17,6 +18,9 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     private const string WindowsTempDirectory = "C:/Windows/Temp";
     private const string LinuxHttpServerCommand = "mkdir -p /www; printf 'hello from container' > /www/index.html; echo SERVER READY; exec httpd -f -p 8080 -h /www";
     private const string WindowsHttpServerCommand = "$content='hello from container'; New-Item -ItemType Directory -Path C:/www -Force | Out-Null; Set-Content -Path C:/www/index.html -Value $content -NoNewline; $listener=[System.Net.HttpListener]::new(); $listener.Prefixes.Add('http://+:8080/'); $listener.Start(); Write-Output 'SERVER READY'; while ($true) { $context=$listener.GetContext(); $bytes=[System.Text.Encoding]::UTF8.GetBytes($content); $context.Response.ContentLength64=$bytes.Length; $context.Response.OutputStream.Write($bytes, 0, $bytes.Length); $context.Response.OutputStream.Close(); }";
+
+    // A runtime that boots on demand needs a few probes before it answers, but a genuinely missing one must still fail fast enough to be readable.
+    private static readonly TimeSpan RuntimeStartupTimeout = TimeSpan.FromMinutes(2);
 
     private bool _useWindowsContainerImages;
 
@@ -43,20 +47,35 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     /// <summary>Checking that the runtime answers is asynchronous, so the skip gate cannot live in the constructor.</summary>
     public async ValueTask InitializeAsync()
     {
-        var isSupported = await Runtime.IsSupportedAsync(XunitCancellationToken);
         if (IsRuntimeRequired)
         {
-            global::Xunit.Assert.True(isSupported, $"The '{Runtime}' container runtime must be available in this environment, but it did not answer.");
+            global::Xunit.Assert.True(await WaitUntilRuntimeAnswersAsync(XunitCancellationToken), $"The '{Runtime}' container runtime must be available in this environment, but it did not answer.");
         }
         else
         {
-            global::Xunit.Assert.SkipUnless(isSupported, $"The '{Runtime}' container runtime is not available on this system.");
+            global::Xunit.Assert.SkipUnless(await Runtime.IsSupportedAsync(XunitCancellationToken), $"The '{Runtime}' container runtime is not available on this system.");
         }
 
         _useWindowsContainerImages = DetectUseWindowsContainerImages(Runtime);
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+
+    /// <summary>Waits for a required runtime to answer. It can still be starting when the first test of the class runs: wslc boots its WSL virtual machine on demand and the probe fails until it is up, so a single failed probe would report a broken setup for what is only a cold start.</summary>
+    private async Task<bool> WaitUntilRuntimeAnswersAsync(CancellationToken cancellationToken)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        while (true)
+        {
+            if (await Runtime.IsSupportedAsync(cancellationToken))
+                return true;
+
+            if (stopwatch.Elapsed >= RuntimeStartupTimeout)
+                return false;
+
+            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+        }
+    }
 
     private static bool DetectUseWindowsContainerImages(ContainerRuntime runtime)
     {

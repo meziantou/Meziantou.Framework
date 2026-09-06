@@ -36,7 +36,13 @@ internal static partial class LocalDataFlowAnalysis
             if (value is null || value == operation)
                 return operation.Type;
 
-            operation = value.UnwrapImplicitConversions();
+            // Some values have no type, such as the null literal of "Type type = null;". The type of the
+            // current operation is more accurate than no type at all.
+            var unwrappedValue = value.UnwrapImplicitConversions();
+            if (unwrappedValue.Type is null)
+                return operation.Type;
+
+            operation = unwrappedValue;
         }
     }
 

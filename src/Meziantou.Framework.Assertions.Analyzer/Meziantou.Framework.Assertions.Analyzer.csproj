@@ -7,6 +7,7 @@
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <NoWarn>$(NoWarn);RS1041</NoWarn>
+    <IncludeRoslynHelpers>true</IncludeRoslynHelpers>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,10 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="../Meziantou.Framework.Roslyn/**/*.cs" LinkBase="Roslyn" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
   </ItemGroup>
-
-  <Import Project="../Meziantou.Framework.Roslyn/buildTransitive/Meziantou.Framework.Roslyn.targets" />
-
 </Project>

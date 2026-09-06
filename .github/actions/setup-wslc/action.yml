@@ -8,8 +8,28 @@ runs:
       shell: pwsh
       run: |
         # wslc ships inside WSL itself, and only the pre-release channel carries it (WSL 2.9.3 or higher)
-        wsl --update --pre-release
-        if ($LASTEXITCODE -ne 0) { throw "wsl --update --pre-release failed with exit code $LASTEXITCODE" }
+        # The update service intermittently answers with a transient error (e.g. Forbidden (403),
+        # Wsl/UpdatePackage/0x80190193), so retry a few times before giving up.
+        $maxAttempts = 3
+        $baseDelaySeconds = 5
+
+        for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+          Write-Host "Updating WSL (attempt $attempt/$maxAttempts)"
+          wsl --update --pre-release
+          $exitCode = $LASTEXITCODE
+
+          if ($exitCode -eq 0) {
+            break
+          }
+
+          if ($attempt -eq $maxAttempts) {
+            throw "wsl --update --pre-release failed with exit code $exitCode"
+          }
+
+          $delaySeconds = [int]($baseDelaySeconds * [math]::Pow(2, $attempt - 1))
+          Write-Host "Retrying WSL update in $delaySeconds second(s)."
+          Start-Sleep -Seconds $delaySeconds
+        }
 
         wsl --version
 

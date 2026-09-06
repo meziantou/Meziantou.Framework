@@ -56,8 +56,7 @@ public sealed class DnsProxyHandlerTests
             return response;
         });
 
-        using var scope = EnvironmentScope.ForUpstreams(upstream.Url);
-        await using var factory = new WebApplicationFactory<DnsProxyProgram>();
+        await using var factory = DnsProxyApplicationFactory.ForUpstreams(upstream.Url);
 
         var response = await QueryAsync(factory, "signed.example", dnssecOk: true);
 
@@ -79,8 +78,7 @@ public sealed class DnsProxyHandlerTests
             return response;
         });
 
-        using var scope = EnvironmentScope.ForUpstreams(upstream.Url);
-        await using var factory = new WebApplicationFactory<DnsProxyProgram>();
+        await using var factory = DnsProxyApplicationFactory.ForUpstreams(upstream.Url);
 
         _ = await QueryAsync(factory, "unsigned.example", dnssecOk: false);
 
@@ -98,8 +96,7 @@ public sealed class DnsProxyHandlerTests
             return response;
         });
 
-        using var scope = EnvironmentScope.ForUpstreams(upstream.Url);
-        await using var factory = new WebApplicationFactory<DnsProxyProgram>();
+        await using var factory = DnsProxyApplicationFactory.ForUpstreams(upstream.Url);
 
         var response = await QueryAsync(factory, "payload.example", dnssecOk: false, udpPayloadSize: 512);
 
@@ -112,8 +109,7 @@ public sealed class DnsProxyHandlerTests
     {
         await using var upstream = FakeUpstream.Start(context => context.CreateResponse());
 
-        using var scope = EnvironmentScope.ForUpstreams(upstream.Url);
-        await using var factory = new WebApplicationFactory<DnsProxyProgram>();
+        await using var factory = DnsProxyApplicationFactory.ForUpstreams(upstream.Url);
 
         var response = await QueryAsync(factory, "badvers.example", dnssecOk: false, ednsVersion: 1);
 
@@ -133,8 +129,7 @@ public sealed class DnsProxyHandlerTests
             return response;
         });
 
-        using var scope = EnvironmentScope.ForUpstreams(upstream.Url);
-        await using var factory = new WebApplicationFactory<DnsProxyProgram>();
+        await using var factory = DnsProxyApplicationFactory.ForUpstreams(upstream.Url);
 
         var response = await QueryAsync(factory, "opt.example", dnssecOk: true);
 
@@ -160,8 +155,7 @@ public sealed class DnsProxyHandlerTests
             return response;
         });
 
-        using var scope = EnvironmentScope.ForUpstreams(broken.Url, healthy.Url);
-        await using var factory = new WebApplicationFactory<DnsProxyProgram>();
+        await using var factory = DnsProxyApplicationFactory.ForUpstreams(broken.Url, healthy.Url);
 
         var response = await QueryAsync(factory, "failover.example", dnssecOk: false);
 
@@ -189,8 +183,7 @@ public sealed class DnsProxyHandlerTests
             return response;
         });
 
-        using var scope = EnvironmentScope.ForUpstreams(nxdomain.Url, second.Url);
-        await using var factory = new WebApplicationFactory<DnsProxyProgram>();
+        await using var factory = DnsProxyApplicationFactory.ForUpstreams(nxdomain.Url, second.Url);
 
         var response = await QueryAsync(factory, "missing.example", dnssecOk: false);
 
@@ -208,8 +201,7 @@ public sealed class DnsProxyHandlerTests
             return response;
         });
 
-        using var scope = EnvironmentScope.ForUpstreams(broken.Url);
-        await using var factory = new WebApplicationFactory<DnsProxyProgram>();
+        await using var factory = DnsProxyApplicationFactory.ForUpstreams(broken.Url);
 
         var response = await QueryAsync(factory, "allbroken.example", dnssecOk: false);
 
@@ -221,8 +213,7 @@ public sealed class DnsProxyHandlerTests
     {
         await using var upstream = FakeUpstream.Start(context => context.CreateResponse());
 
-        using var scope = EnvironmentScope.ForUpstreams(upstream.Url);
-        await using var factory = new WebApplicationFactory<DnsProxyProgram>();
+        await using var factory = DnsProxyApplicationFactory.ForUpstreams(upstream.Url);
 
         var query = BuildQuery(["first.example", "second.example"], dnssecOk: false, udpPayloadSize: 1232, ednsVersion: 0);
         var response = await SendAsync(factory, query);
@@ -242,8 +233,7 @@ public sealed class DnsProxyHandlerTests
 
         await using var filterList = FakeFilterList.Start("||rewritten.example^$dnsrewrite=203.0.113.99");
 
-        using var scope = EnvironmentScope.ForUpstreams([upstream.Url], filterList.Url);
-        await using var factory = new WebApplicationFactory<DnsProxyProgram>();
+        await using var factory = DnsProxyApplicationFactory.ForUpstreams([upstream.Url], filterList.Url);
         await WaitForFilterRulesAsync(factory);
 
         var response = await QueryAsync(factory, "rewritten.example", dnssecOk: false);
@@ -498,37 +488,30 @@ public sealed class DnsProxyHandlerTests
     }
 
     /// <summary>
-    /// Points every configured upstream at the given fake servers and keeps the proxy offline, restoring the previous
-    /// environment on dispose.
+    /// Applies the test configuration to a single host instead of the process-wide environment variables, so
+    /// concurrently running tests cannot observe each other's settings.
     /// </summary>
-    private sealed class EnvironmentScope : IDisposable
+    private sealed class DnsProxyApplicationFactory : WebApplicationFactory<DnsProxyProgram>
     {
         private const int ConfiguredUpstreamCount = 6;
         private const string UnreachableFilterUrl = "http://127.0.0.1:1/filters.txt";
 
-        private readonly Dictionary<string, string?> _previousValues = [];
+        private readonly Dictionary<string, string> _settings;
 
-        private EnvironmentScope(Dictionary<string, string?> values)
+        private DnsProxyApplicationFactory(Dictionary<string, string> settings) => _settings = settings;
+
+        public static DnsProxyApplicationFactory ForUpstreams(params string[] upstreamUrls) => ForUpstreams(upstreamUrls, filterListUrl: null);
+
+        public static DnsProxyApplicationFactory ForUpstreams(string[] upstreamUrls, string? filterListUrl)
         {
-            foreach (var (name, value) in values)
+            var settings = new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                _previousValues[name] = Environment.GetEnvironmentVariable(name);
-                Environment.SetEnvironmentVariable(name, value);
-            }
-        }
-
-        public static EnvironmentScope ForUpstreams(params string[] upstreamUrls) => ForUpstreams(upstreamUrls, filterListUrl: null);
-
-        public static EnvironmentScope ForUpstreams(string[] upstreamUrls, string? filterListUrl)
-        {
-            var values = new Dictionary<string, string?>(StringComparer.Ordinal)
-            {
-                ["DnsProxy__DnsPort"] = "0",
-                ["DnsProxy__HttpPort"] = "0",
-                ["DnsProxy__FilterRefreshInterval"] = "01:00:00",
-                ["DnsProxy__Filters__0__Url"] = filterListUrl ?? UnreachableFilterUrl,
-                ["DnsProxy__Filters__0__Format"] = "AdBlock",
-                ["DnsProxy__Filters__1__Url"] = UnreachableFilterUrl,
+                ["DnsProxy:DnsPort"] = "0",
+                ["DnsProxy:HttpPort"] = "0",
+                ["DnsProxy:FilterRefreshInterval"] = "01:00:00",
+                ["DnsProxy:Filters:0:Url"] = filterListUrl ?? UnreachableFilterUrl,
+                ["DnsProxy:Filters:0:Format"] = "AdBlock",
+                ["DnsProxy:Filters:1:Url"] = UnreachableFilterUrl,
             };
 
             // appsettings.json declares six upstreams; every one of them must point at a fake server, otherwise a
@@ -536,19 +519,19 @@ public sealed class DnsProxyHandlerTests
             for (var i = 0; i < ConfiguredUpstreamCount; i++)
             {
                 var url = upstreamUrls[Math.Min(i, upstreamUrls.Length - 1)];
-                values[$"DnsProxy__Upstreams__{i}__Url"] = url;
-                values[$"DnsProxy__Upstreams__{i}__Name"] = $"Fake {i}";
-                values[$"DnsProxy__Upstreams__{i}__Priority"] = i.ToString(CultureInfo.InvariantCulture);
+                settings[$"DnsProxy:Upstreams:{i}:Url"] = url;
+                settings[$"DnsProxy:Upstreams:{i}:Name"] = $"Fake {i}";
+                settings[$"DnsProxy:Upstreams:{i}:Priority"] = i.ToString(CultureInfo.InvariantCulture);
             }
 
-            return new EnvironmentScope(values);
+            return new DnsProxyApplicationFactory(settings);
         }
 
-        public void Dispose()
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            foreach (var (name, value) in _previousValues)
+            foreach (var (name, value) in _settings)
             {
-                Environment.SetEnvironmentVariable(name, value);
+                builder.UseSetting(name, value);
             }
         }
     }

@@ -142,6 +142,47 @@ public partial class Assert
         }
     }
 
+    private static bool IsDefaultComparer<T>(IEqualityComparer<T>? comparer)
+    {
+        return comparer is null || object.ReferenceEquals(comparer, EqualityComparer<T>.Default);
+    }
+
+    private static bool TryGetSpan<T>(IEnumerable<T> source, out ReadOnlySpan<T> span)
+    {
+        switch (source)
+        {
+            case T[] array:
+                span = array;
+                return true;
+
+            case List<T> list:
+                span = CollectionsMarshal.AsSpan(list);
+                return true;
+
+            default:
+                span = default;
+                return false;
+        }
+    }
+
+    /// <summary>Compares two spans the way <see cref="EqualityComparer{T}.Default"/> would, element by element.</summary>
+    private static bool DefaultComparerSpansEqual<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual)
+    {
+        if (expected.Length != actual.Length)
+            return false;
+
+        if (BitwiseEquatable<T>.IsSupported)
+            return BitwiseSequenceEqual(expected, actual);
+
+        for (var i = 0; i < expected.Length; i++)
+        {
+            if (!EqualityComparer<T>.Default.Equals(expected[i], actual[i]))
+                return false;
+        }
+
+        return true;
+    }
+
     private static bool BitwiseSequenceEqual<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual)
     {
         if (expected.IsEmpty)
@@ -213,6 +254,11 @@ public partial class Assert
 
     private static void EqualCollections<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer, string? message, string? actualExpression, string? expectedExpression)
     {
+        // Arrays and lists are the common case. Comparing them in place skips the snapshots, which only exist to
+        // describe the failure, and lets the comparison be vectorized. Anything else falls through to the general path.
+        if (IsDefaultComparer(comparer) && TryGetSpan(expected, out var expectedSpan) && TryGetSpan(actual, out var actualSpan) && DefaultComparerSpansEqual(expectedSpan, actualSpan))
+            return;
+
         using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
         comparer ??= EqualityComparer<T>.Default;

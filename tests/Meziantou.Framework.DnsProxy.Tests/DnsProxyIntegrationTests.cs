@@ -13,72 +13,46 @@ namespace Meziantou.Framework.DnsProxy.Tests;
 [Collection("DnsProxyEnvironment")]
 public sealed partial class DnsProxyIntegrationTests
 {
-    [Fact(DisableParallelization = true)]
+    [Fact]
     public async Task Proxy_StartsWithCustomConfiguration_AndProcessesRequests()
     {
         const int DnsPort = 0;
         const int HttpPort = 5080;
         const string FilterRefreshInterval = "00:10:00";
-        const string DnsPortVariableName = "DnsProxy__DnsPort";
-        const string HttpPortVariableName = "DnsProxy__HttpPort";
-        const string FilterRefreshIntervalVariableName = "DnsProxy__FilterRefreshInterval";
-        const string Upstream0UrlVariableName = "DnsProxy__Upstreams__0__Url";
-        const string Upstream1UrlVariableName = "DnsProxy__Upstreams__1__Url";
-        const string Upstream2UrlVariableName = "DnsProxy__Upstreams__2__Url";
-        const string BootstrapDnsServersVariableName = "DnsProxy__BootstrapDnsServers__0";
 
-        var previousDnsPort = Environment.GetEnvironmentVariable(DnsPortVariableName);
-        var previousHttpPort = Environment.GetEnvironmentVariable(HttpPortVariableName);
-        var previousFilterRefreshInterval = Environment.GetEnvironmentVariable(FilterRefreshIntervalVariableName);
-        var previousUpstream0Url = Environment.GetEnvironmentVariable(Upstream0UrlVariableName);
-        var previousUpstream1Url = Environment.GetEnvironmentVariable(Upstream1UrlVariableName);
-        var previousUpstream2Url = Environment.GetEnvironmentVariable(Upstream2UrlVariableName);
-        var previousBootstrapDnsServers = Environment.GetEnvironmentVariable(BootstrapDnsServersVariableName);
-
-        Environment.SetEnvironmentVariable(DnsPortVariableName, DnsPort.ToString(CultureInfo.InvariantCulture));
-        Environment.SetEnvironmentVariable(HttpPortVariableName, HttpPort.ToString(CultureInfo.InvariantCulture));
-        Environment.SetEnvironmentVariable(FilterRefreshIntervalVariableName, FilterRefreshInterval);
-        Environment.SetEnvironmentVariable(Upstream0UrlVariableName, "https://1.1.1.1/dns-query");
-        Environment.SetEnvironmentVariable(Upstream1UrlVariableName, "https://9.9.9.9/dns-query");
-        Environment.SetEnvironmentVariable(Upstream2UrlVariableName, "https://dns.nextdns.io/dns-query");
-        Environment.SetEnvironmentVariable(BootstrapDnsServersVariableName, "1.1.1.1");
-
-        try
+        using var baseFactory = new WebApplicationFactory<DnsProxyProgram>();
+        using var factory = baseFactory.WithWebHostBuilder(builder =>
         {
-            await using var factory = new WebApplicationFactory<DnsProxyProgram>();
-            var webClient = factory.CreateClient();
-            var html = await webClient.GetStringAsync("/", XunitCancellationToken);
+            builder.UseSetting("DnsProxy:DnsPort", DnsPort.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting("DnsProxy:HttpPort", HttpPort.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting("DnsProxy:FilterRefreshInterval", FilterRefreshInterval);
+            builder.UseSetting("DnsProxy:Upstreams:0:Url", "https://1.1.1.1/dns-query");
+            builder.UseSetting("DnsProxy:Upstreams:1:Url", "https://9.9.9.9/dns-query");
+            builder.UseSetting("DnsProxy:Upstreams:2:Url", "https://dns.nextdns.io/dns-query");
+            builder.UseSetting("DnsProxy:BootstrapDnsServers:0", "1.1.1.1");
+        });
+        var webClient = factory.CreateClient();
+        var html = await webClient.GetStringAsync("/", XunitCancellationToken);
 
-            Assert.Contains($"<span class='mono'>DnsPort</span>: {DnsPort}", html);
-            Assert.Contains($"<span class='mono'>HttpPort</span>: {HttpPort}", html);
-            Assert.Contains($"<span class='mono'>FilterRefreshInterval</span>: {FilterRefreshInterval}", html);
+        Assert.Contains($"<span class='mono'>DnsPort</span>: {DnsPort}", html);
+        Assert.Contains($"<span class='mono'>HttpPort</span>: {HttpPort}", html);
+        Assert.Contains($"<span class='mono'>FilterRefreshInterval</span>: {FilterRefreshInterval}", html);
 
-            var query = CreateAQuery("localhost", id: 0x1234);
-            using var request = new HttpRequestMessage(HttpMethod.Post, "/dns-query")
-            {
-                Content = new ByteArrayContent(query),
-            };
-            request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/dns-message");
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/dns-message"));
-            using var response = await webClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var responseBytes = await response.Content.ReadAsByteArrayAsync();
-            AssertDnsResponseHasARecord(responseBytes, expectedId: 0x1234, expectedAddress: IPAddress.Parse("127.0.0.1"));
-
-            var htmlAfterQuery = await webClient.GetStringAsync("/");
-            Assert.Contains("localhost A", htmlAfterQuery);
-            Assert.Contains("CustomRecord", htmlAfterQuery);
-        }
-        finally
+        var query = CreateAQuery("localhost", id: 0x1234);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/dns-query")
         {
-            Environment.SetEnvironmentVariable(DnsPortVariableName, previousDnsPort);
-            Environment.SetEnvironmentVariable(HttpPortVariableName, previousHttpPort);
-            Environment.SetEnvironmentVariable(FilterRefreshIntervalVariableName, previousFilterRefreshInterval);
-            Environment.SetEnvironmentVariable(Upstream0UrlVariableName, previousUpstream0Url);
-            Environment.SetEnvironmentVariable(Upstream1UrlVariableName, previousUpstream1Url);
-            Environment.SetEnvironmentVariable(Upstream2UrlVariableName, previousUpstream2Url);
-            Environment.SetEnvironmentVariable(BootstrapDnsServersVariableName, previousBootstrapDnsServers);
-        }
+            Content = new ByteArrayContent(query),
+        };
+        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/dns-message");
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/dns-message"));
+        using var response = await webClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        var responseBytes = await response.Content.ReadAsByteArrayAsync();
+        AssertDnsResponseHasARecord(responseBytes, expectedId: 0x1234, expectedAddress: IPAddress.Parse("127.0.0.1"));
+
+        var htmlAfterQuery = await webClient.GetStringAsync("/");
+        Assert.Contains("localhost A", htmlAfterQuery);
+        Assert.Contains("CustomRecord", htmlAfterQuery);
     }
 
     [Fact]
@@ -258,7 +232,23 @@ public sealed partial class DnsProxyIntegrationTests
     [Fact]
     public async Task DisableFilteringEndpoint_WithoutAntiforgeryToken_IsRejected()
     {
-        await using var factory = new WebApplicationFactory<DnsProxyProgram>();
+        const int DnsPort = 0;
+        const int HttpPort = 5080;
+
+        using var baseFactory = new WebApplicationFactory<DnsProxyProgram>();
+        using var factory = baseFactory.WithWebHostBuilder(builder =>
+        {
+            // The default DnsPort is a fixed port, so relying on it would make the test fail with
+            // "Address already in use" whenever another host binds it, such as the same test running
+            // in the process of another target framework.
+            builder.UseSetting("DnsProxy:DnsPort", DnsPort.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting("DnsProxy:HttpPort", HttpPort.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting("DnsProxy:Filters:0:Url", "");
+            builder.UseSetting("DnsProxy:Filters:1:Url", "");
+            builder.UseSetting("DnsProxy:Upstreams:0:Endpoint", "");
+            builder.UseSetting("DnsProxy:Upstreams:1:Endpoint", "");
+            builder.UseSetting("DnsProxy:Upstreams:2:Endpoint", "");
+        });
         var webClient = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false,

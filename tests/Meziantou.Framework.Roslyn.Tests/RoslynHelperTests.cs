@@ -1437,6 +1437,78 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void GetAllMembers_ReturnsMembersFromImplementedInterfaces()
+    {
+        var compilation = CreateCompilation("""
+            public interface IBase
+            {
+                void BaseInterfaceOnly();
+            }
+
+            public interface ISample : IBase
+            {
+                void SampleInterfaceOnly();
+            }
+
+            public class Sample : ISample
+            {
+                public void BaseInterfaceOnly() { }
+                public void SampleInterfaceOnly() { }
+            }
+            """);
+        var type = GetRequiredType(compilation, "Sample");
+        var baseInterface = GetRequiredType(compilation, "IBase");
+        var sampleInterface = GetRequiredType(compilation, "ISample");
+
+        var members = type.GetAllMembers().ToArray();
+
+        Assert.Contains(GetRequiredMethod(baseInterface, "BaseInterfaceOnly"), members);
+        Assert.Contains(GetRequiredMethod(sampleInterface, "SampleInterfaceOnly"), members);
+    }
+
+    [Fact]
+    public void GetAllMembers_ReturnsMembersFromBaseInterfaces()
+    {
+        var compilation = CreateCompilation("""
+            public interface IBase
+            {
+                void BaseInterfaceOnly();
+            }
+
+            public interface ISample : IBase;
+            """);
+        var type = GetRequiredType(compilation, "ISample");
+        var baseInterface = GetRequiredType(compilation, "IBase");
+        var baseInterfaceOnly = GetRequiredMethod(baseInterface, "BaseInterfaceOnly");
+
+        Assert.Contains(baseInterfaceOnly, type.GetAllMembers());
+    }
+
+    [Fact]
+    public void GetAllMembers_WithName_ReturnsMatchingMembersFromInterfaces()
+    {
+        var compilation = CreateCompilation("""
+            public interface IBase
+            {
+                void BaseInterfaceOnly();
+            }
+
+            public interface ISample : IBase;
+
+            public class Sample : ISample
+            {
+                public void BaseInterfaceOnly() { }
+            }
+            """);
+        var type = GetRequiredType(compilation, "Sample");
+        var baseInterface = GetRequiredType(compilation, "IBase");
+        var baseInterfaceOnly = GetRequiredMethod(baseInterface, "BaseInterfaceOnly");
+
+        Assert.Contains(baseInterfaceOnly, type.GetAllMembers("BaseInterfaceOnly"));
+        Assert.DoesNotContain(baseInterfaceOnly, type.GetAllMembers("Unknown"));
+    }
+
+    [Fact]
     public void InheritsFrom_ReturnsTrueForBaseTypesAndConstrainedTypeParameters()
     {
         var compilation = CreateCompilation("""

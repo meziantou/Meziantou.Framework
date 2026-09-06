@@ -31,25 +31,51 @@ internal static partial class TypeSymbolExtensions
         return allInterfaces.Add(namedType);
     }
 
+    /// <summary>
+    /// Enumerates the members of <paramref name="symbol"/>, of its base types and of all the interfaces it implements.
+    /// </summary>
     public static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol? symbol)
     {
-        while (symbol is not null)
+        var type = symbol;
+        while (type is not null)
         {
-            foreach (var member in symbol.GetMembers())
+            foreach (var member in type.GetMembers())
                 yield return member;
 
-            symbol = symbol.BaseType;
+            type = type.BaseType;
+        }
+
+        if (symbol is not null)
+        {
+            foreach (var @interface in symbol.AllInterfaces)
+            {
+                foreach (var member in @interface.GetMembers())
+                    yield return member;
+            }
         }
     }
 
+    /// <summary>
+    /// Enumerates the members named <paramref name="name"/> of <paramref name="symbol"/>, of its base types and of all the interfaces it implements.
+    /// </summary>
     public static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol? symbol, string name)
     {
-        while (symbol is not null)
+        var type = symbol;
+        while (type is not null)
         {
-            foreach (var member in symbol.GetMembers(name))
+            foreach (var member in type.GetMembers(name))
                 yield return member;
 
-            symbol = symbol.BaseType;
+            type = type.BaseType;
+        }
+
+        if (symbol is not null)
+        {
+            foreach (var @interface in symbol.AllInterfaces)
+            {
+                foreach (var member in @interface.GetMembers(name))
+                    yield return member;
+            }
         }
     }
 

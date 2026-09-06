@@ -8,6 +8,7 @@
     <Description>Source Generator to generate strongly-typed id with all needed helpers such as converters for System.Text.Json, Newtonsoft.Json, or MongoDB.</Description>
     <PackageTags>strongly-typed-id, source-generator, roslyn, ddd, codegen</PackageTags>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddAnnotationsToPackage</TargetsForTfmSpecificContentInPackage>
+    <IncludeRoslynHelpers>true</IncludeRoslynHelpers>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,10 +26,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
-    <Compile Include="../Meziantou.Framework.Roslyn/**/*.cs" LinkBase="Roslyn" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="4.3.1" PrivateAssets="all" />
   </ItemGroup>
-
-  <Import Project="../Meziantou.Framework.Roslyn/buildTransitive/Meziantou.Framework.Roslyn.targets" />
-
 </Project>

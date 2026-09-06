@@ -5,13 +5,12 @@
     <NoWarn>$(NoWarn);RS1041</NoWarn>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_YAML_SOURCE_GENERATOR</DefineConstants>
+    <IncludeRoslynHelpers>true</IncludeRoslynHelpers>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.6.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" PrivateAssets="all" />
-    <Compile Include="../Meziantou.Framework.Roslyn/**/*.cs" LinkBase="Roslyn" />
-
     <EmbeddedResource Include="../Meziantou.Framework.Yaml/Serialization/YamlThrowHelper.cs" LogicalName="Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.cs" />
   </ItemGroup>
 
@@ -26,7 +25,4 @@
     <Compile Include="../Meziantou.Framework.Yaml/YamlSnakeCaseLowerNamingPolicy.cs" Link="YamlSnakeCaseLowerNamingPolicy.cs" />
     <Compile Include="../Meziantou.Framework.Yaml/YamlSnakeCaseUpperNamingPolicy.cs" Link="YamlSnakeCaseUpperNamingPolicy.cs" />
   </ItemGroup>
-
-  <Import Project="../Meziantou.Framework.Roslyn/buildTransitive/Meziantou.Framework.Roslyn.targets" />
-
 </Project>

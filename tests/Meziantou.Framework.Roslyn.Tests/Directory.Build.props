@@ -7,11 +7,7 @@
 
     <!-- The sources are shipped as content files, so warnings are disabled by default. Enable them here to validate the sources. -->
     <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_ROSLYN_ENABLE_WARNINGS</DefineConstants>
+
+    <IncludeRoslynHelpers>true</IncludeRoslynHelpers>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)../../src/Meziantou.Framework.Roslyn/**/*.cs" LinkBase="RoslynSources" />
-  </ItemGroup>
-
-  <Import Project="$(MSBuildThisFileDirectory)../../src/Meziantou.Framework.Roslyn/buildTransitive/Meziantou.Framework.Roslyn.targets" />
 </Project>

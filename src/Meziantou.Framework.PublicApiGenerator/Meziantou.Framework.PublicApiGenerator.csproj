@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.5</Version>
+    <Version>2.0.6</Version>
     <Description>Generate compilable C# public API stubs from .NET assemblies.</Description>
     <PackageTags>public-api, api-approval, api-diff, reflection, testing</PackageTags>
   </PropertyGroup>

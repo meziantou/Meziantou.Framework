@@ -6,7 +6,7 @@
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.AtlassianDataFormatTool</RootNamespace>
 
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <Description>CLI to convert Atlassian Document Format (ADF) documents to Markdown using Meziantou.Framework.AtlassianDataFormat</Description>
     <PackageTags>atlassian, adf, jira, confluence, markdown, cli, dotnet-tool</PackageTags>
   </PropertyGroup>

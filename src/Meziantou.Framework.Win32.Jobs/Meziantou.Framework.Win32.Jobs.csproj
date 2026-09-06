@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
-    <Version>4.0.1</Version>
+    <Version>4.0.2</Version>
     <Description>.NET wrapper for Windows Job Objects</Description>
     <PackageTags>windows, win32, job-objects, process, resources</PackageTags>
 

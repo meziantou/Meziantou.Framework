@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Parser and evaluator for expressions such as "author:meziantou AND status:opened"</Description>
     <PackageTags>query-language, search, filtering, parser, dsl</PackageTags>
-    <Version>2.0.2</Version>
+    <Version>2.0.3</Version>
   </PropertyGroup>
 
   <ItemGroup>

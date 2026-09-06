@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>4.0.1</Version>
+    <Version>4.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Command-line argument parsing, argument escaping, and interactive console prompts</Description>
     <PackageTags>command-line, cli, arguments, parser, console, prompt</PackageTags>

@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
     <Description>Source generator that automatically registers services and maps routes for applications using Meziantou.AspNetCore.ServiceDefaults</Description>
     <PackageTags>aspnetcore, service-defaults, source-generator, dependency-injection, routing</PackageTags>
 

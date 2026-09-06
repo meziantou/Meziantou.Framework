@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Http</RootNamespace>
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Helpers to work with HTTP, such as parsing RFC 8288 Link header values</Description>
     <PackageTags>http, link-header, rfc8288, httpclient, headers</PackageTags>

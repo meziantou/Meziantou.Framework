@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>4.0.2</Version>
+    <Version>4.0.3</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Class to parse and displaying values, such as file size, in Bytes</Description>
     <PackageTags>byte-size, file-size, units, formatting, parsing</PackageTags>

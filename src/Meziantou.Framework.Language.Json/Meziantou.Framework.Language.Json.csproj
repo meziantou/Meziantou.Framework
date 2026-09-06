@@ -5,7 +5,7 @@
     <RootNamespace>Meziantou.Framework.Language.Json</RootNamespace>
     <Description>Immutable JSON concrete syntax tree with diagnostics, trivia, source locations, and editing helpers.</Description>
     <PackageTags>json, syntax-tree, cst, parser, diagnostics</PackageTags>
-    <Version>2.0.3</Version>
+    <Version>2.0.4</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

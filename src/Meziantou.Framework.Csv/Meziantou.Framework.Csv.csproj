@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>CSV reader and writer</Description>
     <PackageTags>csv, tsv, parser, reader, writer</PackageTags>
-    <Version>5.0.1</Version>
+    <Version>5.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

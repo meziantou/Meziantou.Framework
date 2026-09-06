@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.6</Version>
+    <Version>2.0.7</Version>
     <Description>Opinionated ASP.NET Core defaults for OpenTelemetry, health checks, resilience, service discovery, and security</Description>
     <PackageTags>aspnetcore, service-defaults, opentelemetry, health-checks, resilience, service-discovery, aspire</PackageTags>
   </PropertyGroup>

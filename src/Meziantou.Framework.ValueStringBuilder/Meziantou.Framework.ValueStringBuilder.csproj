@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>3.0.1</Version>
+    <Version>3.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>A high-performance value-type string builder with pooled buffers</Description>
     <PackageTags>string-builder, low-allocation, performance, pooling, struct</PackageTags>

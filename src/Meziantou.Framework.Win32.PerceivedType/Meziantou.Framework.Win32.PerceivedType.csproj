@@ -5,7 +5,7 @@
     <IsTrimmable>false</IsTrimmable>
     <Description>Determine the perceived type of a file (text, image, audio, video, and so on) from its extension using Windows APIs</Description>
     <PackageTags>windows, win32, perceived-type, file-type, shell</PackageTags>
-    <Version>3.0.1</Version>
+    <Version>3.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>

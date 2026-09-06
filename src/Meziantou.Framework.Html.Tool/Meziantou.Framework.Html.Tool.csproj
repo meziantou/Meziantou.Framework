@@ -6,7 +6,7 @@
     <IsTrimmable>false</IsTrimmable>
 
     <ToolCommandName>meziantou.html</ToolCommandName>
-    <Version>2.0.6</Version>
+    <Version>2.0.7</Version>
     <Description>CLI to edit HTML files</Description>
     <PackageTags>html, xpath, cli, dotnet-tool</PackageTags>
   </PropertyGroup>

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 
 namespace Meziantou.AspNetCore.Mvc.Tests;
 
@@ -188,7 +189,7 @@ public sealed class TagHelpersTests
     [Fact]
     public async Task CachedContent_CanBeEvictedUnderMemoryPressure()
     {
-        using var host = new TestHost();
+        using var host = new TestHost(watchFiles: false);
         host.Directory.CreateTextFile("app.js", "console.log(1)");
 
         var helper = host.CreateScriptTagHelper();
@@ -197,7 +198,7 @@ public sealed class TagHelpersTests
 
         Assert.NotEqual(0, host.Cache.Count);
 
-        // Compact never removes CacheItemPriority.NeverRemove entries
+        // Entries must not use CacheItemPriority.NeverRemove, which Compact never evicts
         host.Cache.Compact(1.0);
         Assert.Equal(0, host.Cache.Count);
     }
@@ -245,12 +246,12 @@ public sealed class TagHelpersTests
         private readonly PhysicalFileProvider _fileProvider;
         private readonly IWebHostEnvironment _environment;
 
-        public TestHost(MemoryCacheOptions? options = null)
+        public TestHost(MemoryCacheOptions? options = null, bool watchFiles = true)
         {
             Directory = TemporaryDirectory.Create();
             Cache = new MemoryCache(options ?? new MemoryCacheOptions());
             _fileProvider = new PhysicalFileProvider(Directory.FullPath);
-            _environment = new TestWebHostEnvironment(Directory.FullPath, _fileProvider);
+            _environment = new TestWebHostEnvironment(Directory.FullPath, watchFiles ? _fileProvider : new NonWatchingFileProvider(_fileProvider));
         }
 
         public TemporaryDirectory Directory { get; }
@@ -271,6 +272,25 @@ public sealed class TagHelpersTests
             Cache.Dispose();
             Directory.Dispose();
         }
+    }
+
+    // PhysicalFileProvider.Watch hands out a token that expires on its own: the watcher starts after the test has
+    // written the file, and macOS FSEvents replays that write to the newly created stream about 10ms later. Tests
+    // asserting on the cache content use this wrapper so no entry is evicted behind their back.
+    private sealed class NonWatchingFileProvider : IFileProvider
+    {
+        private readonly IFileProvider _fileProvider;
+
+        public NonWatchingFileProvider(IFileProvider fileProvider)
+        {
+            _fileProvider = fileProvider;
+        }
+
+        public IDirectoryContents GetDirectoryContents(string subpath) => _fileProvider.GetDirectoryContents(subpath);
+
+        public IFileInfo GetFileInfo(string subpath) => _fileProvider.GetFileInfo(subpath);
+
+        public IChangeToken Watch(string filter) => NullChangeToken.Singleton;
     }
 
     private sealed class TestWebHostEnvironment : IWebHostEnvironment

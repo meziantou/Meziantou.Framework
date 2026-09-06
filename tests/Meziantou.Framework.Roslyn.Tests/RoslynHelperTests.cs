@@ -820,6 +820,47 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void GetActualType_ReturnsTheDeclaredTypeWhenTheValueHasNoType()
+    {
+        var compilation = CreateCompilation("""
+            using System;
+            public class Sample
+            {
+                public void M()
+                {
+                    Type type = null;
+                    object boxed = type;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.Equal("System.Type", boxed.GetActualType(default)?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted)));
+    }
+
+    [Fact]
+    public void GetActualType_ReturnsTheAssignedTypeWhenTheValueHasNoType()
+    {
+        var compilation = CreateCompilation("""
+            using System;
+            public class Sample
+            {
+                public void M()
+                {
+                    object value = default(int);
+                    value = null;
+                    object boxed = value;
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var boxed = GetInitializerOperation(semanticModel, "boxed");
+
+        Assert.Equal(SpecialType.System_Object, boxed.GetActualType(default)?.SpecialType);
+    }
+
+    [Fact]
     public void GetActualType_WithoutDataFlowAnalysis_OnlyUnwrapsConversions()
     {
         var compilation = CreateCompilation("""

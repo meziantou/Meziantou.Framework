@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text.Json;
 using Meziantou.Extensions.Logging.Xunit.v3;
+using Meziantou.Framework.TemporaryContainers.Internals;
 using Meziantou.Xunit;
 using Microsoft.Extensions.Logging;
 
@@ -736,6 +737,77 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
             Assert.NotEqual(0, exec.ExitCode);
         }, XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Cleanup_RemovesTheContainerOfARunThatIsOver()
+    {
+        await using var container = CreateOrphanedDefinition().CreateContainer();
+        await container.EnsureCreatedAsync(XunitCancellationToken);
+
+        await Runtime.CleanupAsync(XunitCancellationToken);
+
+        Assert.False(await container.ExistsAsync(XunitCancellationToken), "The cleanup left behind the container of a run that is over.");
+    }
+
+    [Fact]
+    public async Task Cleanup_KeepsTheContainersOfTheCurrentRun()
+    {
+        await using var container = CreateHttpServerDefinition().CreateContainer();
+        await container.EnsureCreatedAsync(XunitCancellationToken);
+
+        await Runtime.CleanupAsync(new ContainerCleanupOptions { Scope = ContainerCleanupScope.All }, XunitCancellationToken);
+
+        Assert.True(await container.ExistsAsync(XunitCancellationToken), "The cleanup removed a container the current run is using.");
+    }
+
+    /// <summary>Shared assertion that the cleanup removes the volume of a run that is over (called from the runtimes that support volumes).</summary>
+    protected async Task AssertCleanupRemovesOrphanedVolumeAsync()
+    {
+        await using var volume = new VolumeDefinition { Runtime = Runtime, Identity = CreateDeadRunIdentity() }.CreateVolume();
+        await volume.EnsureCreatedAsync(XunitCancellationToken);
+        Assert.True(await volume.ExistsAsync(XunitCancellationToken));
+
+        await Runtime.CleanupAsync(XunitCancellationToken);
+
+        Assert.False(await volume.ExistsAsync(XunitCancellationToken), "The cleanup left behind the volume of a run that is over.");
+    }
+
+    /// <summary>Shared assertion that the reaper starts, acknowledges the session, and removes nothing when it is stopped cleanly (called from the runtimes driven by a docker-compatible socket).</summary>
+    protected async Task AssertReaperLifecycleAsync()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The reaper image only runs on Linux containers.");
+
+        await using var container = CreateHttpServerDefinition().CreateContainer();
+        await container.EnsureCreatedAsync(XunitCancellationToken);
+
+        string reaperContainerId;
+        await using (var reaper = await Runtime.StartReaperAsync(XunitCancellationToken))
+        {
+            reaperContainerId = reaper.ContainerId;
+            Assert.NotEmpty(reaperContainerId);
+            Assert.True(await Runtime.ExistsAsync(reaperContainerId, XunitCancellationToken), "The reaper container is not running.");
+        }
+
+        Assert.False(await Runtime.ExistsAsync(reaperContainerId, XunitCancellationToken), "Disposing the reaper left its container behind.");
+
+        // A reaper that is stopped cleanly must not remove what the run still owns.
+        Assert.True(await container.ExistsAsync(XunitCancellationToken), "Disposing the reaper removed a container of the current run.");
+    }
+
+    /// <summary>A definition whose container looks like the leftover of a run that is over: the process id is the one of this process, but the start time is not, which is exactly what a reused process id looks like.</summary>
+    private ContainerDefinition CreateOrphanedDefinition()
+    {
+        var definition = CreateHttpServerDefinition();
+        definition.Identity = CreateDeadRunIdentity();
+        return definition;
+    }
+
+    private static SessionIdentity CreateDeadRunIdentity()
+        => SessionIdentity.Current with
+        {
+            SessionId = Guid.NewGuid().ToString("N"),
+            ProcessStartTime = "0",
+        };
 
     protected ContainerDefinition CreateHttpServerDefinition()
     {

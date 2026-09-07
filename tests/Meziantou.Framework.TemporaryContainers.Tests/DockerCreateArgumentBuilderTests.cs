@@ -49,7 +49,7 @@ public sealed class DockerCreateArgumentBuilderTests
 
         var args = DockerCreateArgumentBuilder.Build(definition, "redis:8", pullPolicyValue: null, quotedMountFieldsSupported: true);
 
-        Assert.Contains($"{DockerCreateArgumentBuilder.ReuseLabel}=my-reuse-id", args);
+        Assert.Contains($"{ResourceLabels.ReuseId}=my-reuse-id", args);
     }
 
     [Fact]

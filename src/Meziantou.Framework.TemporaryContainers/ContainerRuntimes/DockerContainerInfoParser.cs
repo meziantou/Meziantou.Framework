@@ -14,6 +14,32 @@ internal static class DockerContainerInfoParser
         return ParseInspectResult(parsed[0]);
     }
 
+    /// <summary>Reads an inspect output that may describe several containers. A malformed or empty output means no container, which is what a listing on an empty daemon reports.</summary>
+    public static IReadOnlyList<ContainerInfo> ParseInspectOutputs(string output)
+    {
+        if (string.IsNullOrWhiteSpace(output))
+            return [];
+
+        DockerInspectResult[]? parsed;
+        try
+        {
+            parsed = JsonSerializer.Deserialize(output, DockerInspectJsonContext.Default.DockerInspectResultArray);
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+
+        if (parsed is null)
+            return [];
+
+        var results = new List<ContainerInfo>(parsed.Length);
+        foreach (var result in parsed)
+            results.Add(ParseInspectResult(result));
+
+        return results;
+    }
+
     public static ContainerInfo ParseInspectResult(DockerInspectResult result)
     {
         var ports = new Dictionary<int, int>();

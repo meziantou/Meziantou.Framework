@@ -25,4 +25,10 @@ public sealed class DockerApiContainerTests() : ContainerRuntimeTestsBase(Contai
 
     [Fact]
     public Task Volume_ReadOnlyMountRejectsWrites() => AssertReadOnlyVolumeMountAsync();
+
+    [Fact]
+    public Task Cleanup_RemovesTheVolumeOfARunThatIsOver() => AssertCleanupRemovesOrphanedVolumeAsync();
+
+    [Fact]
+    public Task Reaper_WatchesTheSessionAndStopsWithIt() => AssertReaperLifecycleAsync();
 }

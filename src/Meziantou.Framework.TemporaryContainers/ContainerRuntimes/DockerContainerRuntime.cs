@@ -71,11 +71,11 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         IReadOnlyList<string> lookupArgs;
         if (_flavor is Flavor.Wslc)
         {
-            lookupArgs = ["list", "-a", "-q", "--filter", $"label={DockerCreateArgumentBuilder.ReuseLabel}={reuseId}"];
+            lookupArgs = ["list", "-a", "-q", "--filter", $"label={ResourceLabels.ReuseId}={reuseId}"];
         }
         else
         {
-            lookupArgs = ["ps", "-a", "--no-trunc", "--filter", $"label={DockerCreateArgumentBuilder.ReuseLabel}={reuseId}", "--format", "{{.ID}}"];
+            lookupArgs = ["ps", "-a", "--no-trunc", "--filter", $"label={ResourceLabels.ReuseId}={reuseId}", "--format", "{{.ID}}"];
         }
 
         var lookup = await Cli.RunBufferedAsync(lookupArgs, cancellationToken, allowNonZero: true).ConfigureAwait(false);
@@ -201,7 +201,7 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
             args.Add(driver);
         }
 
-        foreach (var (labelName, labelValue) in definition.Labels)
+        foreach (var (labelName, labelValue) in ResourceLabels.Build(definition.Labels, definition.ReuseId, sessionOwned: true, definition.Identity))
         {
             args.Add("--label");
             args.Add($"{labelName}={labelValue}");
@@ -230,6 +230,88 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         EnsureVolumesSupported();
         return ["volume", "inspect", name];
     }
+
+    internal override bool SupportsVolumes => _flavor is not Flavor.Wslc;
+
+    internal override bool SupportsReaper => _flavor is not Flavor.Wslc;
+
+    internal IReadOnlyList<string> BuildListManagedContainersArguments()
+        => _flavor is Flavor.Wslc
+            ? ["list", "-a", "-q", "--filter", $"label={ResourceLabels.Managed}"]
+            : ["ps", "-a", "--no-trunc", "--filter", $"label={ResourceLabels.Managed}", "--format", "{{.ID}}"];
+
+    internal IReadOnlyList<string> BuildListManagedVolumesArguments()
+    {
+        EnsureVolumesSupported();
+        return ["volume", "ls", "--filter", $"label={ResourceLabels.Managed}", "--format", "{{.Name}}"];
+    }
+
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedContainersAsync(CancellationToken cancellationToken)
+    {
+        var list = await Cli.RunBufferedAsync(BuildListManagedContainersArguments(), cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        var ids = new List<string>();
+        foreach (var line in list.StandardOutput.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (IsContainerId(trimmed))
+                ids.Add(trimmed);
+        }
+
+        if (ids.Count == 0)
+            return [];
+
+        var resources = new List<ManagedResource>(ids.Count);
+        foreach (var batch in GetInspectBatches(ids))
+        {
+            // A container removed in the meantime makes the command fail while the others are still reported, so the
+            // exit code is ignored and whatever was printed is parsed.
+            var inspectArgs = new List<string> { "inspect" };
+            inspectArgs.AddRange(batch);
+            var inspect = await Cli.RunBufferedAsync(inspectArgs, cancellationToken, allowNonZero: true).ConfigureAwait(false);
+            foreach (var info in DockerContainerInfoParser.ParseInspectOutputs(inspect.StandardOutput))
+            {
+                if (!string.IsNullOrEmpty(info.Id))
+                    resources.Add(new ManagedResource(info.Id, info.Labels));
+            }
+        }
+
+        return resources;
+    }
+
+    /// <summary>Groups the resources to inspect. docker and podman inspect a whole batch at once; wslc only documents a single argument, so it is asked one at a time.</summary>
+    private IEnumerable<IReadOnlyList<string>> GetInspectBatches(List<string> names)
+    {
+        if (_flavor is not Flavor.Wslc)
+        {
+            yield return names;
+            yield break;
+        }
+
+        foreach (var name in names)
+            yield return [name];
+    }
+
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedVolumesAsync(CancellationToken cancellationToken)
+    {
+        var list = await Cli.RunBufferedAsync(BuildListManagedVolumesArguments(), cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        var names = new List<string>();
+        foreach (var line in list.StandardOutput.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (!string.IsNullOrEmpty(trimmed))
+                names.Add(trimmed);
+        }
+
+        if (names.Count == 0)
+            return [];
+
+        var inspectArgs = new List<string> { "volume", "inspect" };
+        inspectArgs.AddRange(names);
+        var inspect = await Cli.RunBufferedAsync(inspectArgs, cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        return DockerVolumeInspectResult.Parse(inspect.StandardOutput);
+    }
+
+
 
     private void EnsureVolumesSupported()
     {

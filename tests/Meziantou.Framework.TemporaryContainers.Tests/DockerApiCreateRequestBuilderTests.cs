@@ -40,7 +40,7 @@ public sealed class DockerApiCreateRequestBuilderTests
         Assert.Equal("1000:1000", payload.User);
         Assert.Equal("/work", payload.WorkingDir);
         Assert.Equal("labelvalue", payload.Labels!["label"]);
-        Assert.Equal("reuse-id", payload.Labels[DockerCreateArgumentBuilder.ReuseLabel]);
+        Assert.Equal("reuse-id", payload.Labels[ResourceLabels.ReuseId]);
         Assert.Contains("KEY=VALUE", payload.Env!);
         Assert.Equal("/bin/sh", Assert.Single(payload.Entrypoint!));
         Assert.Equal(["-c", "echo hi"], payload.Cmd);

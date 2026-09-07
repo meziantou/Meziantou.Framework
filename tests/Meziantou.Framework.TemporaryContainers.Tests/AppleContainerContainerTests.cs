@@ -22,4 +22,7 @@ public sealed class AppleContainerContainerTests() : ContainerRuntimeTestsBase(C
 
     [Fact]
     public Task Volume_ReadOnlyMountRejectsWrites() => AssertReadOnlyVolumeMountAsync();
+
+    [Fact]
+    public Task Cleanup_RemovesTheVolumeOfARunThatIsOver() => AssertCleanupRemovesOrphanedVolumeAsync();
 }

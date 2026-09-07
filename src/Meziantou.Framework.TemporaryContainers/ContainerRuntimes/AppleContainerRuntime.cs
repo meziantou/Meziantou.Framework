@@ -114,7 +114,7 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
         if (definition.Resources.CpuLimit is { } cpu)
             AddOption(args, "--cpus", cpu.ToString(CultureInfo.InvariantCulture));
 
-        foreach (var (labelName, labelValue) in definition.Labels)
+        foreach (var (labelName, labelValue) in ResourceLabels.Build(definition.Labels, definition.ReuseId, definition.SessionOwned, definition.Identity))
         {
             args.Add("--label");
             args.Add($"{labelName}={labelValue}");
@@ -157,7 +157,7 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
             throw new NotSupportedException("Apple's container runtime does not support volume drivers.");
 
         var args = new List<string> { "volume", "create" };
-        foreach (var (labelName, labelValue) in definition.Labels)
+        foreach (var (labelName, labelValue) in ResourceLabels.Build(definition.Labels, definition.ReuseId, sessionOwned: true, definition.Identity))
         {
             args.Add("--label");
             args.Add($"{labelName}={labelValue}");
@@ -171,6 +171,53 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 
         args.Add(name);
         return args;
+    }
+
+    // Apple's CLI has no label filter, so everything is listed and filtered here. Both listings report the same shape
+    // as 'inspect', labels included, which spares an inspect per resource.
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedContainersAsync(CancellationToken cancellationToken)
+    {
+        var result = await Cli.RunBufferedAsync(["ls", "-a", "--format", "json"], cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        return ParseManagedResources(result.StandardOutput);
+    }
+
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedVolumesAsync(CancellationToken cancellationToken)
+    {
+        var result = await Cli.RunBufferedAsync(["volume", "ls", "--format", "json"], cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        return ParseManagedResources(result.StandardOutput);
+    }
+
+    internal static IReadOnlyList<ManagedResource> ParseManagedResources(string output)
+    {
+        if (string.IsNullOrWhiteSpace(output))
+            return [];
+
+        AppleInspectResult[]? parsed;
+        try
+        {
+            parsed = JsonSerializer.Deserialize(output, AppleInspectJsonContext.Default.AppleInspectResultArray);
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+
+        if (parsed is null)
+            return [];
+
+        var resources = new List<ManagedResource>();
+        foreach (var item in parsed)
+        {
+            var labels = item.Configuration?.Labels;
+            if (labels is null || !labels.ContainsKey(ResourceLabels.Managed))
+                continue;
+
+            var id = item.Id ?? item.Configuration?.Id;
+            if (!string.IsNullOrEmpty(id))
+                resources.Add(new ManagedResource(id, labels));
+        }
+
+        return resources;
     }
 
     internal override IReadOnlyList<string> BuildDeleteVolumeArguments(string name) => ["volume", "delete", name];

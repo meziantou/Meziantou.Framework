@@ -71,7 +71,11 @@ public sealed class AppleContainerRuntimeAdapterTests
         definition.Labels.Add("owner", "meziantou");
         definition.DriverOptions.Add("size", "10m");
 
-        Assert.Equal("volume create --label owner=meziantou --opt size=10m my-volume", string.Join(' ', runtime.BuildCreateVolumeArguments(definition, "my-volume")));
+        // The library also stamps the labels that identify the run, whose values change from one run to the next.
+        var createArguments = string.Join(' ', runtime.BuildCreateVolumeArguments(definition, "my-volume"));
+        Assert.StartsWith("volume create --label owner=meziantou --label ", createArguments);
+        Assert.Contains($"--label {ResourceLabels.Managed}=1", createArguments);
+        Assert.EndsWith("--opt size=10m my-volume", createArguments);
         Assert.Equal("volume delete my-volume", string.Join(' ', runtime.BuildDeleteVolumeArguments("my-volume")));
         Assert.Equal("volume inspect my-volume", string.Join(' ', runtime.BuildVolumeExistsArguments("my-volume")));
     }

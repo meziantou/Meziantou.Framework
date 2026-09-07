@@ -58,6 +58,69 @@ The volume is only removed when the library created it. A `VolumeDefinition.Name
 
 Runtime differences: `wslc` has no volume commands; Apple's `container` has no volume driver, its mount descriptors cannot contain a comma, and (as of 1.1.0) it hangs on a container that mounts a volume a deleted container used, so a volume there is best kept to a single container.
 
+## Cleaning up leftovers
+
+Every container and volume the library creates is labelled with the run that created it, so a later run can tell its own leftovers from the resources it must not touch. Disposal already removes them; the labels are what makes a run that was interrupted (a debugger stopped, a killed test host) recoverable.
+
+```c#
+// Removes the containers and volumes whose creating process is gone. Nothing else is touched:
+// not the resources of a live process, not those created on another machine, not the reused ones.
+var result = await ContainerRuntime.Auto.CleanupAsync();
+Console.WriteLine($"{result.RemovedCount} leftovers removed");
+```
+
+Call it once when a test run starts (an xUnit assembly fixture, a `[ModuleInitializer]`, a script). `ContainerCleanupOptions` widens or narrows what it removes:
+
+```c#
+await ContainerRuntime.Docker.CleanupAsync(new ContainerCleanupOptions
+{
+    Scope = ContainerCleanupScope.All,          // every resource of this library, not only the orphaned ones
+    MinimumAge = TimeSpan.FromHours(1),         // ... that is at least one hour old
+    IncludeVolumes = false,                     // ... and only containers
+    IncludeReusedResources = true,              // ... including the containers kept alive by a ReuseId
+});
+```
+
+The resources of the current process are never removed, whatever the scope, so a cleanup at the beginning of a run cannot take down the containers that run is about to use.
+
+### Removing the containers as soon as the process dies
+
+A cleanup only runs when a later run calls it. To have the leftovers removed right away, even when the process is killed, start a reaper: a watchdog container that holds a connection to this process and removes what the process created once that connection is gone.
+
+```c#
+// Keep it alive for as long as the containers it watches.
+await using var reaper = await ContainerRuntime.Docker.StartReaperAsync();
+```
+
+It is opt-in: it starts a container of its own ([`testcontainers/ryuk`](https://github.com/testcontainers/moby-ryuk), configurable through `ContainerReaperOptions`) and mounts the daemon socket into it. It needs a docker-compatible socket, so it works with the Docker Engine API, `docker`, and `podman`, but not with Apple's `container` or `wslc`. Disposing it stops the watchdog without removing anything, so a run that ends normally disposes its containers itself.
+
+The containers kept alive by a `ReuseId` are not part of a session: neither the reaper nor the default cleanup removes them.
+
+## Sharing a container between test processes
+
+Set the same `ReuseId` in every process. The first one creates the container, the others adopt it, and it is not removed on dispose:
+
+```c#
+var definition = ContainerDefinition.CreatePostgreSql();
+definition.ReuseId = "my-integration-tests";
+
+await using var container = definition.CreateContainer();
+await container.StartAsync(); // creates the container, or adopts the one another process created
+```
+
+The container is named after the reuse identifier, so two processes that start at the same time cannot both create one: the runtime rejects the second name and that process adopts the container the first one created. An adopted container keeps the ports it was created with, so `GetMappedPort` reports the same host port in every process.
+
+Nothing removes a reused container on its own. Remove it when it is no longer needed with `CleanupAsync` and `IncludeReusedResources`, for instance the ones that have been around for a day:
+
+```c#
+await ContainerRuntime.Auto.CleanupAsync(new ContainerCleanupOptions
+{
+    Scope = ContainerCleanupScope.All,
+    IncludeReusedResources = true,
+    MinimumAge = TimeSpan.FromDays(1),
+});
+```
+
 ## Database helpers
 
 `CreateRedis`, `CreatePostgreSql`, `CreateMongoDb`, and `CreateSqlServer` return pre-configured definitions whose container exposes `GetConnectionString()`.

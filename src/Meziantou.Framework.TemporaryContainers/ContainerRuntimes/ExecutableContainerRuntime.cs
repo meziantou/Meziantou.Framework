@@ -184,8 +184,20 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
 
         var imageRef = await PrepareImageAsync(definition.Image, definition.PullPolicy, cancellationToken).ConfigureAwait(false);
         var args = BuildCreateArguments(definition, imageRef);
-        var createResult = await Cli.RunBufferedAsync(args, cancellationToken).ConfigureAwait(false);
-        return createResult.StandardOutput.Trim();
+        try
+        {
+            var createResult = await Cli.RunBufferedAsync(args, cancellationToken).ConfigureAwait(false);
+            return createResult.StandardOutput.Trim();
+        }
+        catch (ContainerRuntimeException) when (definition.ReuseId is not null)
+        {
+            // Another process created the container between the lookup and the creation, and the runtime refused the
+            // name it already uses. Adopting it is the whole point of a reuse identifier.
+            if (await FindReusableContainerAsync(definition.ReuseId, cancellationToken).ConfigureAwait(false) is { } concurrentId)
+                return concurrentId;
+
+            throw;
+        }
     }
 
     internal override async Task StartAsync(string id, CancellationToken cancellationToken)

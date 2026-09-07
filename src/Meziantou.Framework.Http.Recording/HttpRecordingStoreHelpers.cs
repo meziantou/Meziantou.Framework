@@ -47,7 +47,8 @@ internal static class HttpRecordingStoreHelpers
                 throw new InvalidDataException($"The recording file '{filePath}' contains a null entry at index {i}.");
             }
 
-            // 'required' is not a null check: a JSON document can set these to null and deserialization accepts it.
+            // 'required' is not a null check: a JSON document can set these to null and the deserializer accepts it,
+            // as 'HttpRecordingSerializerContext' keeps 'RespectNullableAnnotations' off so this check owns the message.
             if (string.IsNullOrEmpty(entry.Method))
             {
                 throw new InvalidDataException($"The entry at index {i} in the recording file '{filePath}' has no HTTP method.");

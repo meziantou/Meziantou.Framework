@@ -221,7 +221,9 @@ internal static partial class Program
     [JsonSourceGenerationOptions(
        GenerationMode = JsonSourceGenerationMode.Serialization | JsonSourceGenerationMode.Metadata,
        WriteIndented = true,
-       DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault)]
+       DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+       RespectNullableAnnotations = true,
+       RespectRequiredConstructorParameters = true)]
     [JsonSerializable(typeof(Result))]
     private sealed partial class ResultContext : JsonSerializerContext
     {

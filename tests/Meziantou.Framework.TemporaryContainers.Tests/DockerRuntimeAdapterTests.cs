@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using Meziantou.Framework.TemporaryContainers.Internals;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
@@ -268,6 +270,163 @@ public sealed class DockerRuntimeAdapterTests
     public void TryParseLoadedImage_ReturnsNullWithoutAMarker(string output)
     {
         Assert.Null(ContainerImageOutputParser.TryParseLoadedImage(output));
+    }
+
+    [Fact]
+    public void IsTransient_DockerApiResponse_ServerErrorIsTransient()
+    {
+        Assert.True(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.ServiceUnavailable)));
+        Assert.True(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.InternalServerError)));
+        Assert.True(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.TooManyRequests)));
+        Assert.True(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.RequestTimeout)));
+    }
+
+    [Fact]
+    public void IsTransient_DockerApiResponse_ClientErrorIsPermanent()
+    {
+        Assert.False(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.NotFound)));
+        Assert.False(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.Unauthorized)));
+        Assert.False(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.Conflict)));
+    }
+
+    [Fact]
+    public void IsTransient_InBandPullFailure_IsClassifiedFromItsMessage()
+    {
+        // The daemon reports a failed pull in the body of a response whose status is a success, so there is no status
+        // code to classify: these are the messages the pull stream actually carries.
+        Assert.True(TransientError.IsTransient(NoStatusCode("net/http: TLS handshake timeout")));
+        Assert.True(TransientError.IsTransient(NoStatusCode("toomanyrequests: You have reached your pull rate limit.")));
+        Assert.True(TransientError.IsTransient(NoStatusCode("received unexpected HTTP status: 503 Service Unavailable")));
+        Assert.True(TransientError.IsTransient(NoStatusCode("unexpected EOF")));
+
+        Assert.False(TransientError.IsTransient(NoStatusCode("manifest for busybox:nope not found: manifest unknown")));
+        Assert.False(TransientError.IsTransient(NoStatusCode("pull access denied, repository does not exist")));
+
+        static DockerApiException NoStatusCode(string message)
+            => new("Unable to pull image 'busybox:1.37': " + message, statusCode: null);
+    }
+
+    [Fact]
+    public void IsTransient_CliFailure_IsClassifiedFromItsStandardError()
+    {
+        // Every CLI exits with the same code whatever the registry answered, so the standard error is the only clue.
+        Assert.True(TransientError.IsTransient(CliFailure("Error response from daemon: toomanyrequests: too many requests")));
+        Assert.True(TransientError.IsTransient(CliFailure("Error response from daemon: net/http: TLS handshake timeout")));
+
+        Assert.False(TransientError.IsTransient(CliFailure("Error response from daemon: unauthorized: authentication required")));
+        Assert.False(TransientError.IsTransient(CliFailure("Error response from daemon: manifest unknown")));
+
+        static ContainerRuntimeException CliFailure(string standardError)
+            => new("The command failed.", ContainerRuntime.Docker, "docker pull busybox:1.37", exitCode: 1, standardOutput: "", standardError);
+    }
+
+    [Fact]
+    public void IsTransient_TransportFailures()
+    {
+        Assert.True(TransientError.IsTransient(new HttpRequestException("connection closed")));
+        Assert.True(TransientError.IsTransient(new IOException("the socket was closed")));
+        Assert.True(TransientError.IsTransient(new SocketException()));
+        Assert.True(TransientError.IsTransient(new TimeoutException()));
+
+        Assert.False(TransientError.IsTransient(new InvalidOperationException("boom")));
+        Assert.False(TransientError.IsTransient(new NotSupportedException("boom")));
+    }
+
+    [Fact]
+    public async Task RetryStrategy_ReturnsWithoutRetryingWhenTheFirstAttemptSucceeds()
+    {
+        var attempts = 0;
+        var result = await RetryStrategy.ExecuteAsync(_ =>
+        {
+            attempts++;
+            return Task.FromResult("ok");
+        }, TransientError.IsTransient, onRetry: null, TimeSpan.Zero, CancellationToken.None);
+
+        Assert.Equal("ok", result);
+        Assert.Equal(1, attempts);
+    }
+
+    [Fact]
+    public async Task RetryStrategy_RetriesATransientFailureUntilItSucceeds()
+    {
+        var attempts = 0;
+        var result = await RetryStrategy.ExecuteAsync(_ =>
+        {
+            attempts++;
+            return attempts < 2 ? throw new IOException("boom") : Task.FromResult("ok");
+        }, TransientError.IsTransient, onRetry: null, TimeSpan.Zero, CancellationToken.None);
+
+        Assert.Equal("ok", result);
+        Assert.Equal(2, attempts);
+    }
+
+    [Fact]
+    public async Task RetryStrategy_GivesUpAfterMaxAttemptsAndRethrowsTheLastFailure()
+    {
+        var attempts = 0;
+        var exception = await Assert.ThrowsAsync<IOException>(() => RetryStrategy.ExecuteAsync(_ =>
+        {
+            attempts++;
+            throw new IOException("boom " + attempts);
+        }, TransientError.IsTransient, onRetry: null, TimeSpan.Zero, CancellationToken.None));
+
+        Assert.Equal(RetryStrategy.MaxAttempts, attempts);
+        Assert.Equal("boom 3", exception.Message);
+    }
+
+    [Fact]
+    public async Task RetryStrategy_DoesNotRetryAPermanentFailure()
+    {
+        var attempts = 0;
+        await Assert.ThrowsAsync<DockerApiException>(() => RetryStrategy.ExecuteAsync(_ =>
+        {
+            attempts++;
+            throw new DockerApiException("manifest unknown", HttpStatusCode.NotFound);
+        }, TransientError.IsTransient, onRetry: null, TimeSpan.Zero, CancellationToken.None));
+
+        Assert.Equal(1, attempts);
+    }
+
+    [Fact]
+    public async Task RetryStrategy_DoesNotRetryWhenTheCallerCancelled()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var attempts = 0;
+        await Assert.ThrowsAsync<IOException>(() => RetryStrategy.ExecuteAsync(_ =>
+        {
+            attempts++;
+            throw new IOException("boom");
+        }, TransientError.IsTransient, onRetry: null, TimeSpan.Zero, cts.Token));
+
+        Assert.Equal(1, attempts);
+    }
+
+    [Fact]
+    public async Task RetryStrategy_ReportsEveryRetry()
+    {
+        var reported = new List<int>();
+        await Assert.ThrowsAsync<IOException>(() => RetryStrategy.ExecuteAsync(_ => throw new IOException("boom"),
+            TransientError.IsTransient,
+            (_, attempt, _) => reported.Add(attempt),
+            TimeSpan.Zero,
+            CancellationToken.None));
+
+        Assert.Equal([1, 2], reported);
+    }
+
+    [Fact]
+    public void RetryStrategy_DelayGrowsExponentiallyAndCarriesAJitter()
+    {
+        var baseDelay = TimeSpan.FromSeconds(1);
+        foreach (var attempt in Enumerable.Range(1, RetryStrategy.MaxAttempts))
+        {
+            var backoff = baseDelay * Math.Pow(2, attempt - 1);
+            var delay = RetryStrategy.GetDelay(attempt, baseDelay);
+
+            Assert.InRange(delay, backoff, backoff * 1.25);
+        }
     }
 
     /// <summary>Writes a CLI that exits with <paramref name="exitCode"/> whatever it is asked to do, so the outcome of the probe can be forced.</summary>

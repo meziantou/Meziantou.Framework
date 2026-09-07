@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
@@ -114,7 +115,19 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
         }
     }
 
-    internal abstract Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, CancellationToken cancellationToken);
+    internal abstract Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, ILogger? logger, CancellationToken cancellationToken);
+
+    /// <summary>Runs the pull command of the runtime, running it again when the registry fails for a reason that a second attempt can resolve.</summary>
+    /// <remarks>A pull is idempotent, and the layers that were already fetched are cached by the runtime, so an attempt that follows a failure resumes instead of downloading everything again.</remarks>
+    private protected async Task PullImageAsync(IReadOnlyList<string> args, string imageName, ILogger? logger, CancellationToken cancellationToken)
+    {
+        await RetryStrategy.ExecuteAsync(
+            async ct => await Cli.RunBufferedAsync(args, ct).ConfigureAwait(false),
+            TransientError.IsTransient,
+            Log.CreateImagePullRetryCallback(logger, imageName),
+            RetryStrategy.DefaultBaseDelay,
+            cancellationToken).ConfigureAwait(false);
+    }
 
     internal abstract Task<string?> FindReusableContainerAsync(string reuseId, CancellationToken cancellationToken);
 
@@ -182,7 +195,7 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
 
         PrepareDefinitionForCreate(definition);
 
-        var imageRef = await PrepareImageAsync(definition.Image, definition.PullPolicy, cancellationToken).ConfigureAwait(false);
+        var imageRef = await PrepareImageAsync(definition.Image, definition.PullPolicy, definition.Logging.Logger, cancellationToken).ConfigureAwait(false);
         var args = BuildCreateArguments(definition, imageRef);
         try
         {

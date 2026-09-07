@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
@@ -56,13 +57,13 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 
     internal override bool SupportsRestart => false;
 
-    internal override async Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, CancellationToken cancellationToken)
+    internal override async Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, ILogger? logger, CancellationToken cancellationToken)
     {
         switch (source)
         {
             case RegistryImage registry:
                 if (pullPolicy is PullPolicy.Always)
-                    await Cli.RunBufferedAsync(["image", "pull", registry.Name], cancellationToken).ConfigureAwait(false);
+                    await PullImageAsync(["image", "pull", registry.Name], registry.Name, logger, cancellationToken).ConfigureAwait(false);
                 return registry.Name;
 
             case DockerfileImage dockerfile:

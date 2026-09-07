@@ -13,8 +13,16 @@
     <InternalsVisibleTo Include="Meziantou.Framework.Http.Hsts.Tests" />
   </ItemGroup>
 
+  <!-- The preload resources are committed compressed with both gzip (.bin) and Zstandard (.zst). Only the
+       format the target framework can decompress is embedded, so the assembly never carries both copies.
+       Zstandard is part of the BCL from .NET 11 on. See HstsPreloadList.cs. -->
+  <PropertyGroup>
+    <HstsPreloadResourceExtension>.bin</HstsPreloadResourceExtension>
+    <HstsPreloadResourceExtension Condition="$([MSBuild]::VersionGreaterThanOrEquals($([MSBuild]::GetTargetFrameworkVersion('$(TargetFramework)')), '11.0'))">.zst</HstsPreloadResourceExtension>
+  </PropertyGroup>
+
   <ItemGroup>
-    <EmbeddedResource Include="*.bin">
+    <EmbeddedResource Include="*$(HstsPreloadResourceExtension)">
       <LogicalName>%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>

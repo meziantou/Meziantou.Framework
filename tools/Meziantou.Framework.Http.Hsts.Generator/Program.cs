@@ -43,13 +43,14 @@ foreach (var entry in entries)
     buckets[entry.SegmentCount - 1].Add(entry);
 }
 
+// Sorted for the manifest, which is what a human reviews; the payload re-orders its own copy
 foreach (var bucket in buckets)
 {
     bucket.Sort((x, y) => string.CompareOrdinal(x.Name, y.Name));
 }
 
-// The manifest is the only reviewable form of this data: the .bin resources are opaque in a pull request diff,
-// so the added and removed hosts would otherwise be visible nowhere.
+// The manifest is the only reviewable form of this data: the compressed resources are opaque in a pull request
+// diff, so the added and removed hosts would otherwise be visible nowhere.
 var manifest = BuildManifest();
 CheckEntryCountAgainstTheCommittedManifest();
 
@@ -64,7 +65,7 @@ foreach (var (name, content) in preloadFiles)
     File.WriteAllBytes(outputPath / name, content);
 }
 
-foreach (var file in Directory.GetFiles(outputPath, "preload_*.bin"))
+foreach (var file in Directory.GetFiles(outputPath, "preload_*"))
 {
     if (!preloadFiles.ContainsKey(Path.GetFileName(file)))
     {
@@ -158,39 +159,78 @@ Dictionary<string, byte[]> BuildPreloadData()
         if (bucket.Count == 0)
             continue;
 
-        // The reader binary-searches the names in place, so the layout is: the entry count, one length byte
-        // per name, the concatenated names, then the include_subdomains bits.
-        using var ms = new MemoryStream();
-        using (var gz = new GZipStream(ms, CompressionLevel.SmallestSize))
-        using (var writer = new BinaryWriter(gz))
+        // The same payload is written in both formats: a target framework embeds only the one it can read,
+        // gzip before .NET 11 and Zstandard from .NET 11 on, so neither assembly carries the other's copy.
+        // Zstandard is used where it exists because it makes the resource about 10% smaller and the list
+        // loads faster from it. The checksum keeps the corrupted-resource detection gzip provided with its CRC.
+        var payload = BuildBucketPayload(bucket);
+        var baseName = GetResourceBaseName(segmentCount);
+        files.Add(baseName + ".bin", Compress(payload, stream => new GZipStream(stream, CompressionLevel.SmallestSize)));
+        files.Add(baseName + ".zst", Compress(payload, stream => new ZstandardStream(stream, new ZstandardCompressionOptions
         {
-            writer.Write(bucket.Count);
-            foreach (var entry in bucket)
-            {
-                writer.Write(checked((byte)entry.Name.Length));
-            }
-
-            foreach (var entry in bucket)
-            {
-                writer.Write(Encoding.ASCII.GetBytes(entry.Name));
-            }
-
-            var bitmap = new byte[(bucket.Count + 7) / 8];
-            for (var i = 0; i < bucket.Count; i++)
-            {
-                if (bucket[i].IncludeSubdomains)
-                {
-                    bitmap[i >> 3] |= (byte)(1 << (i & 7));
-                }
-            }
-
-            writer.Write(bitmap);
-        }
-
-        files.Add(GetResourceName(segmentCount), ms.ToArray());
+            Quality = ZstandardCompressionOptions.MaxQuality,
+            AppendChecksum = true,
+        }, leaveOpen: false)));
     }
 
     return files;
+}
+
+// A lookup is an exact match, so the reader jumps straight to the names of the probe's length and binary
+// -searches them as fixed-width records. That is what the order here is for: names by length first, then
+// ordinally within a length, which lets the length of each name be dropped in favour of one count per
+// length. The layout is the entry count, the longest name length, how many names there are of each length
+// from 1 up, the names, then the include_subdomains bits in the same order.
+// The names are known to fit a byte each: LoadEntries rejects anything longer than 253.
+static byte[] BuildBucketPayload(List<Data> bucket)
+{
+    var ordered = bucket.OrderBy(entry => entry.Name.Length).ThenBy(entry => entry.Name, StringComparer.Ordinal).ToList();
+    var longestNameLength = ordered[^1].Name.Length;
+    var countsByLength = new int[longestNameLength + 1];
+    foreach (var entry in ordered)
+    {
+        countsByLength[entry.Name.Length]++;
+    }
+
+    using var ms = new MemoryStream();
+    using (var writer = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
+    {
+        writer.Write(ordered.Count);
+        writer.Write(longestNameLength);
+        for (var length = 1; length <= longestNameLength; length++)
+        {
+            writer.Write(countsByLength[length]);
+        }
+
+        foreach (var entry in ordered)
+        {
+            writer.Write(Encoding.ASCII.GetBytes(entry.Name));
+        }
+
+        var bitmap = new byte[(ordered.Count + 7) / 8];
+        for (var i = 0; i < ordered.Count; i++)
+        {
+            if (ordered[i].IncludeSubdomains)
+            {
+                bitmap[i >> 3] |= (byte)(1 << (i & 7));
+            }
+        }
+
+        writer.Write(bitmap);
+    }
+
+    return ms.ToArray();
+}
+
+static byte[] Compress(byte[] payload, Func<Stream, Stream> createCompressionStream)
+{
+    using var ms = new MemoryStream();
+    using (var compression = createCompressionStream(ms))
+    {
+        compression.Write(payload);
+    }
+
+    return ms.ToArray();
 }
 
 string BuildGeneratedCode()
@@ -199,7 +239,7 @@ string BuildGeneratedCode()
     for (var segmentCount = 1; segmentCount <= maxSegments; segmentCount++)
     {
         var count = buckets[segmentCount - 1].Count;
-        var resource = count == 0 ? "null" : $"\"{GetResourceName(segmentCount)}\"";
+        var resource = count == 0 ? "null" : $"\"{GetResourceBaseName(segmentCount)}\"";
         sb.Append($"        ({resource}, {count.ToString(CultureInfo.InvariantCulture)}),\n");
     }
 
@@ -215,7 +255,7 @@ string BuildGeneratedCode()
             // Commit date: {{commitDate.ToString("O", CultureInfo.InvariantCulture)}}
             // Entries: {{entries.Count.ToString(CultureInfo.InvariantCulture)}}
             // The index is the label count minus one; see preload-hosts.txt for the host names themselves.
-            private static (string? ResourceName, int EntryCount)[] GetResources() =>
+            private static (string? ResourceBaseName, int EntryCount)[] GetResources() =>
             [
         {{sb.ToString().TrimEnd('\n')}}
             ];
@@ -223,7 +263,9 @@ string BuildGeneratedCode()
         """.ReplaceLineEndings("\n") + "\n";
 }
 
-static string GetResourceName(int segmentCount) => $"preload_{segmentCount.ToString(CultureInfo.InvariantCulture)}.bin";
+// The extension is the consumer's business: it appends the one matching the format its target framework
+// reads. See HstsPreloadList.cs.
+static string GetResourceBaseName(int segmentCount) => $"preload_{segmentCount.ToString(CultureInfo.InvariantCulture)}";
 
 static async Task<(List<Data> entries, string fileUrl, string commit, DateTimeOffset commitDate)> LoadEntries()
 {

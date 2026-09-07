@@ -13,4 +13,20 @@
     <ProjectReference Include="../../src/Meziantou.Framework.Http.Hsts/Meziantou.Framework.Http.Hsts.csproj" />
   </ItemGroup>
 
+  <!-- The reviewable form of the preload data, so a test can check the whole of what the library loaded
+       against it. -->
+  <ItemGroup>
+    <EmbeddedResource Include="../../src/Meziantou.Framework.Http.Hsts/preload-hosts.txt">
+      <LogicalName>%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- Both compressed forms of the preload resources, so a test can assert they still hold the same data.
+       The library itself embeds only one of them per target framework. -->
+  <ItemGroup Condition="$([MSBuild]::VersionGreaterThanOrEquals($([MSBuild]::GetTargetFrameworkVersion('$(TargetFramework)')), '11.0'))">
+    <EmbeddedResource Include="../../src/Meziantou.Framework.Http.Hsts/preload_*.bin;../../src/Meziantou.Framework.Http.Hsts/preload_*.zst">
+      <LogicalName>%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

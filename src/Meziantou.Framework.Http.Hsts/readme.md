@@ -49,7 +49,7 @@ if (policies.TryGetPolicy("github.com", out var policy))
 }
 ```
 
-Enumerating the collection is a moment-in-time view that materializes the ~95,000 preloaded host names as it goes, so prefer `MustUpgradeRequest` or `TryGetPolicy` to answer a question about one host.
+Enumerating the collection is a moment-in-time view that materializes the ~95,000 preloaded host names as it goes, and it does not yield them in any particular order, so prefer `MustUpgradeRequest` or `TryGetPolicy` to answer a question about one host.
 
 ## Redirects
 
@@ -98,7 +98,7 @@ Configure the primary handler not to follow redirects, or pass `maxAutomaticRedi
 
 ## Dropping the preload list
 
-The preload list holds about 95,000 host names. It is stored as a sorted blob that is searched in place and shared between every collection, so it costs roughly 2 MB of managed memory and a few tens of milliseconds, paid once per process and only when something asks for it. `new HstsDomainPolicyCollection(includePreloadDomains: false)` skips it for one collection.
+The preload list holds about 95,000 host names. It is stored as a blob that is searched in place and shared between every collection, so it costs roughly 1.5 MB of managed memory and a few milliseconds, paid once per process and only when something asks for it. `new HstsDomainPolicyCollection(includePreloadDomains: false)` skips it for one collection.
 
 An application that never wants it can turn it off process-wide with a feature switch, which also keeps `HstsDomainPolicyCollection.Default` from loading it:
 
@@ -108,4 +108,4 @@ An application that never wants it can turn it off process-wide with a feature s
 </ItemGroup>
 ```
 
-The embedded resources holding the list still ship inside the assembly (about 600 KB); the switch only stops them being read.
+The embedded resources holding the list still ship inside the assembly (about 530 KB on .NET 11, where they are compressed with Zstandard, and about 610 KB on .NET 10, where they are compressed with gzip); the switch only stops them being read.

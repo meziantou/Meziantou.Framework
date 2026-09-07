@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 /// <summary>Runtime implementation for docker-compatible CLIs (docker, podman, and wslc).</summary>
@@ -39,13 +41,15 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
 
     internal override bool SupportsRestart => _flavor is not Flavor.Wslc;
 
-    internal override async Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, CancellationToken cancellationToken)
+    internal override async Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, ILogger? logger, CancellationToken cancellationToken)
     {
         switch (source)
         {
             case RegistryImage registry:
+                // PullPolicy.IfMissing is not handled here: it is passed to the create command as '--pull=missing',
+                // which is where a registry failure surfaces for that policy.
                 if (pullPolicy is PullPolicy.Always)
-                    await Cli.RunBufferedAsync(["pull", registry.Name], cancellationToken).ConfigureAwait(false);
+                    await PullImageAsync(["pull", registry.Name], registry.Name, logger, cancellationToken).ConfigureAwait(false);
                 return registry.Name;
 
             case DockerfileImage dockerfile:

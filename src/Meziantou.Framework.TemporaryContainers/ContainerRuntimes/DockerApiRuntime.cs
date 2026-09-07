@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Meziantou.Framework;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
@@ -38,7 +39,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         if (definition.ReuseId is { } reuseId && await FindReusableContainerAsync(reuseId, cancellationToken).ConfigureAwait(false) is { } reusedContainerId)
             return reusedContainerId;
 
-        var imageRef = await PrepareImageAsync(definition.Image, definition.PullPolicy, cancellationToken).ConfigureAwait(false);
+        var imageRef = await PrepareImageAsync(definition.Image, definition.PullPolicy, definition.Logging.Logger, cancellationToken).ConfigureAwait(false);
         var payload = DockerApiCreateRequestBuilder.Build(definition, imageRef);
         using var content = CreateJsonContent(payload, DockerApiJsonContext.Default.CreateContainerRequest);
         var endpoint = "/containers/create";
@@ -374,13 +375,13 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return null;
     }
 
-    private async Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, CancellationToken cancellationToken)
+    private async Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, ILogger? logger, CancellationToken cancellationToken)
     {
         switch (source)
         {
             case RegistryImage registry:
-                if (pullPolicy is PullPolicy.Always || pullPolicy is PullPolicy.IfMissing && !await ImageExistsAsync(registry.Name, cancellationToken).ConfigureAwait(false))
-                    await PullImageAsync(registry.Name, cancellationToken).ConfigureAwait(false);
+                if (pullPolicy is PullPolicy.Always || pullPolicy is PullPolicy.IfMissing && !await ImageExistsAsync(registry.Name, logger, cancellationToken).ConfigureAwait(false))
+                    await PullImageAsync(registry.Name, logger, cancellationToken).ConfigureAwait(false);
 
                 return registry.Name;
 
@@ -437,13 +438,35 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return tag;
     }
 
-    private async Task<bool> ImageExistsAsync(string imageName, CancellationToken cancellationToken)
+    private Task<bool> ImageExistsAsync(string imageName, ILogger? logger, CancellationToken cancellationToken)
+    {
+        return RetryStrategy.ExecuteAsync(
+            ct => ImageExistsCoreAsync(imageName, ct),
+            TransientError.IsTransient,
+            Log.CreateImageLookupRetryCallback(logger, imageName),
+            RetryStrategy.DefaultBaseDelay,
+            cancellationToken);
+    }
+
+    private async Task<bool> ImageExistsCoreAsync(string imageName, CancellationToken cancellationToken)
     {
         using var response = await SendAsync(HttpMethod.Get, "/images/" + Uri.EscapeDataString(imageName) + "/json", content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotFound]).ConfigureAwait(false);
         return response.StatusCode != HttpStatusCode.NotFound;
     }
 
-    private async Task PullImageAsync(string imageName, CancellationToken cancellationToken)
+    /// <summary>Pulls the image, running the whole pull again when the registry fails for a reason that a second attempt can resolve.</summary>
+    /// <remarks>A pull is idempotent, and the layers that were already fetched are cached by the daemon, so an attempt that follows a failure resumes instead of downloading everything again.</remarks>
+    private Task PullImageAsync(string imageName, ILogger? logger, CancellationToken cancellationToken)
+    {
+        return RetryStrategy.ExecuteAsync(
+            ct => PullImageCoreAsync(imageName, ct),
+            TransientError.IsTransient,
+            Log.CreateImagePullRetryCallback(logger, imageName),
+            RetryStrategy.DefaultBaseDelay,
+            cancellationToken);
+    }
+
+    private async Task PullImageCoreAsync(string imageName, CancellationToken cancellationToken)
     {
         var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
         var endpoint = "/images/create?fromImage=" + Uri.EscapeDataString(imageName);
@@ -463,8 +486,11 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         {
             var progress = JsonSerializer.Deserialize(line, DockerApiJsonContext.Default.PullProgress);
             var errorMessage = progress?.ErrorDetail?.Message ?? progress?.Error;
+
+            // The daemon answers a pull with a success as soon as it starts, so a failure is only ever reported here.
+            // It carries no status code, which is why the classification of a transient failure falls back to the text.
             if (!string.IsNullOrEmpty(errorMessage))
-                throw new InvalidOperationException("Unable to pull image '" + imageName + "': " + errorMessage);
+                throw new DockerApiException("Unable to pull image '" + imageName + "': " + errorMessage, statusCode: null);
         }
     }
 
@@ -509,7 +535,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         if (!string.IsNullOrEmpty(daemonMessage))
             message += ": " + daemonMessage;
 
-        return new InvalidOperationException(message);
+        return new DockerApiException(message, response.StatusCode);
     }
 
     internal static async IAsyncEnumerable<LogEntry> ReadMultiplexedLogsAsync(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)

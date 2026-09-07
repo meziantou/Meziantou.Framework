@@ -5,7 +5,7 @@
     <IsTrimmable>true</IsTrimmable>
     <Description>A high-performance .NET YAML library providing parsing and serialization of object graphs, NativeAOT ready.</Description>
     <PackageTags>yaml, parser, serialization, nativeaot, performance</PackageTags>
-    <Version>1.0.9</Version>
+    <Version>1.0.10</Version>
   </PropertyGroup>
 
   <ItemGroup>

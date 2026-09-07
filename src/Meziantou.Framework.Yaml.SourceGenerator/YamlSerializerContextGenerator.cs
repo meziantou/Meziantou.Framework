@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -1385,16 +1385,19 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         return true;
     }
 
+    // SyntaxKind.UnionDeclaration was introduced in Roslyn 5.6. The generator compiles against an older
+    // Roslyn, so the value is used directly instead of naming the enum member. The generator still
+    // detects unions when it runs inside a compiler that supports them.
+    private const int UnionDeclarationRawKind = 9082;
+
     private static bool IsCSharpUnionDeclaration(INamedTypeSymbol type)
     {
         foreach (var syntaxReference in type.DeclaringSyntaxReferences)
         {
-#pragma warning disable RSEXPERIMENTAL006 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-            if (syntaxReference.GetSyntax().IsKind(SyntaxKind.UnionDeclaration))
+            if (syntaxReference.GetSyntax().IsKind((SyntaxKind)UnionDeclarationRawKind))
             {
                 return true;
             }
-#pragma warning restore RSEXPERIMENTAL006 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
         }
 
         return false;

@@ -2,14 +2,14 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 internal static class DockerCreateArgumentBuilder
 {
-    public const string ReuseLabel = "meziantou.tc.reuse";
-
     /// <param name="quotedMountFieldsSupported">Whether the runtime parses the <c>--mount</c> descriptor as a CSV record, which is the only way to express a value containing a comma. Docker does; podman and wslc split on the comma instead.</param>
     public static List<string> Build(ContainerDefinition definition, string imageRef, string? pullPolicyValue, bool quotedMountFieldsSupported)
     {
         var args = new List<string> { "create" };
 
-        AddOption(args, "--name", definition.Name);
+        // A reused container gets a deterministic name so the daemon itself rejects a second creation: two processes
+        // that start at the same time would otherwise both find nothing and both create one.
+        AddOption(args, "--name", definition.Name ?? (definition.ReuseId is { } reuseId ? ResourceNaming.GetReuseName(reuseId) : null));
         AddOption(args, "--hostname", definition.Hostname);
         AddOption(args, "--user", definition.User);
         AddOption(args, "--workdir", definition.WorkingDirectory);
@@ -27,16 +27,10 @@ internal static class DockerCreateArgumentBuilder
         AddOption(args, "--network", definition.Network.Network);
         AddOption(args, "--network-alias", definition.Network.Alias);
 
-        foreach (var (name, value) in definition.Labels)
+        foreach (var (name, value) in ResourceLabels.Build(definition.Labels, definition.ReuseId, definition.SessionOwned, definition.Identity))
         {
             args.Add("--label");
             args.Add($"{name}={value}");
-        }
-
-        if (definition.ReuseId is { } reuseId)
-        {
-            args.Add("--label");
-            args.Add($"{ReuseLabel}={reuseId}");
         }
 
         foreach (var (name, value) in definition.Environment)

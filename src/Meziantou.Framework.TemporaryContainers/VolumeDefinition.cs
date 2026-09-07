@@ -34,6 +34,7 @@ public sealed class VolumeDefinition
         ReuseId = other.ReuseId;
         Labels = new ContainerLabelCollection(other.Labels);
         DriverOptions = new VolumeDriverOptionCollection(other.DriverOptions);
+        Identity = other.Identity;
     }
 
     /// <summary>Gets or sets the container runtime to use.</summary>
@@ -61,6 +62,9 @@ public sealed class VolumeDefinition
 
     /// <summary>Gets the driver-specific options.</summary>
     public VolumeDriverOptionCollection DriverOptions { get; }
+
+    /// <summary>The run recorded in the labels of the volume. Defaults to the current one; the tests use it to create a volume that looks like the leftover of a run that is over.</summary>
+    internal Internals.SessionIdentity? Identity { get; set; }
 
     /// <summary>Creates a <see cref="TemporaryVolume"/> from a deep copy of this definition. Later changes to this definition do not affect the returned volume.</summary>
     /// <returns>A new volume.</returns>

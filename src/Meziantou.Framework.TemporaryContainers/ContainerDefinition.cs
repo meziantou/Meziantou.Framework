@@ -58,6 +58,8 @@ public class ContainerDefinition
         Network = new ContainerNetworkOptions(other.Network);
         Resources = new ContainerResourceOptions(other.Resources);
         Logging = new ContainerLoggingOptions(other.Logging);
+        SessionOwned = other.SessionOwned;
+        Identity = other.Identity;
     }
 
     /// <summary>Gets or sets the image the container is created from.</summary>
@@ -124,6 +126,12 @@ public class ContainerDefinition
 
     /// <summary>Gets the logging options.</summary>
     public ContainerLoggingOptions Logging { get; }
+
+    /// <summary>Whether the container belongs to the current run. The reaper container is the only one that does not: it must outlive the session it watches, so it is not labelled with it and does not remove itself.</summary>
+    internal bool SessionOwned { get; set; } = true;
+
+    /// <summary>The run recorded in the labels of the container. Defaults to the current one; the tests use it to create a container that looks like the leftover of a run that is over.</summary>
+    internal Internals.SessionIdentity? Identity { get; set; }
 
     /// <summary>Creates a <see cref="TemporaryContainer"/> from a deep copy of this definition. Later changes to this definition do not affect the returned container.</summary>
     /// <returns>A new container.</returns>

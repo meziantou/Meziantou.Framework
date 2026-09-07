@@ -60,6 +60,22 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
     internal override async Task<ContainerRuntime> GetEffectiveRuntimeAsync(CancellationToken cancellationToken)
         => await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
 
+    internal override bool SupportsVolumes => ResolvedRuntime.SupportsVolumes;
+
+    internal override bool SupportsReaper => ResolvedRuntime.SupportsReaper;
+
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedContainersAsync(CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.ListManagedContainersAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedVolumesAsync(CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.ListManagedVolumesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     internal override bool SupportsPause => ResolvedRuntime.SupportsPause;
 
     internal override bool SupportsRestart => ResolvedRuntime.SupportsRestart;

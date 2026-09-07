@@ -80,6 +80,17 @@ internal static class DockerApiModels
         public NetworkingConfig? NetworkingConfig { get; set; }
     }
 
+    internal sealed class VolumeListResponse
+    {
+        public List<VolumeSummary>? Volumes { get; set; }
+    }
+
+    internal sealed class VolumeSummary
+    {
+        public string? Name { get; set; }
+        public Dictionary<string, string>? Labels { get; set; }
+    }
+
     internal sealed class VolumeCreateRequest
     {
         public string? Name { get; set; }

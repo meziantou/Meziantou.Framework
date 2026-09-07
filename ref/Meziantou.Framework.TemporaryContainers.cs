@@ -19,6 +19,29 @@ namespace Meziantou.Framework.TemporaryContainers
         public void Deconstruct(out string Source, out string Target, out bool ReadOnly) => throw null;
     }
 
+    public sealed class ContainerCleanupOptions
+    {
+        public Meziantou.Framework.TemporaryContainers.ContainerCleanupScope Scope { get => throw null; set { } }
+        public System.TimeSpan MinimumAge { get => throw null; set { } }
+        public bool IncludeContainers { get => throw null; set { } }
+        public bool IncludeVolumes { get => throw null; set { } }
+        public bool IncludeReusedResources { get => throw null; set { } }
+    }
+
+    public sealed class ContainerCleanupResult
+    {
+        public System.Collections.Generic.IReadOnlyList<string> RemovedContainers { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> RemovedVolumes { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<System.Exception> Errors { get => throw null; }
+        public int RemovedCount { get => throw null; }
+    }
+
+    public enum ContainerCleanupScope
+    {
+        Orphaned = 0,
+        All = 1
+    }
+
     public sealed class ContainerCommandCollection : System.Collections.Generic.IEnumerable<string>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
@@ -173,6 +196,21 @@ namespace Meziantou.Framework.TemporaryContainers
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
+    public sealed class ContainerReaper : System.IAsyncDisposable
+    {
+        public string SessionId { get => throw null; }
+        public string ContainerId { get => throw null; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+    }
+
+    public sealed class ContainerReaperOptions
+    {
+        public Meziantou.Framework.TemporaryContainers.ImageSource Image { get => throw null; set { } }
+        public string? SocketPath { get => throw null; set { } }
+        public System.TimeSpan ConnectionTimeout { get => throw null; set { } }
+        public System.TimeSpan ReconnectionTimeout { get => throw null; set { } }
+    }
+
     public sealed class ContainerResourceOptions
     {
         public long? MemoryLimit { get => throw null; set { } }
@@ -188,8 +226,12 @@ namespace Meziantou.Framework.TemporaryContainers
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Podman { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime AppleContainer { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Wslc { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerCleanupResult> CleanupAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerCleanupResult> CleanupAsync(Meziantou.Framework.TemporaryContainers.ContainerCleanupOptions options, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public virtual System.Threading.Tasks.Task<bool> IsSupportedAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public override string ToString() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerReaper> StartReaperAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerReaper> StartReaperAsync(Meziantou.Framework.TemporaryContainers.ContainerReaperOptions options, System.Threading.CancellationToken cancellationToken = null) => throw null;
     }
 
     public sealed class ContainerRuntimeException : System.Exception

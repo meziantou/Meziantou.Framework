@@ -6,9 +6,7 @@ internal static class DockerApiCreateRequestBuilder
 {
     public static DockerApiModels.CreateContainerRequest Build(ContainerDefinition definition, string imageRef)
     {
-        var labels = definition.Labels.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal);
-        if (definition.ReuseId is { } reuseId)
-            labels[DockerCreateArgumentBuilder.ReuseLabel] = reuseId;
+        var labels = ResourceLabels.Build(definition.Labels, definition.ReuseId, definition.SessionOwned, definition.Identity);
 
         var hostConfig = new DockerApiModels.HostConfig
         {

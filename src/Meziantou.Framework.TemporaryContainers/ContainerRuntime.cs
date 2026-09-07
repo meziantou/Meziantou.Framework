@@ -3,7 +3,7 @@ using Meziantou.Framework.TemporaryContainers.Internals;
 namespace Meziantou.Framework.TemporaryContainers;
 
 /// <summary>Identifies the container runtime CLI used to manage containers.</summary>
-public abstract class ContainerRuntime
+public abstract partial class ContainerRuntime
 {
     private readonly string _name;
 

@@ -85,6 +85,20 @@ public sealed class DockerRuntimeAdapterTests
     }
 
     [Fact]
+    public void BuildsListArgumentsForTheCleanup()
+    {
+        var docker = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
+        var wslc = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
+
+        Assert.Equal($"ps -a --no-trunc --filter label={ResourceLabels.Managed} --format {{{{.ID}}}}", string.Join(' ', docker.BuildListManagedContainersArguments()));
+        Assert.Equal($"volume ls --filter label={ResourceLabels.Managed} --format {{{{.Name}}}}", string.Join(' ', docker.BuildListManagedVolumesArguments()));
+
+        // wslc has no '--format' for its listing and no volume commands at all.
+        Assert.Equal($"list -a -q --filter label={ResourceLabels.Managed}", string.Join(' ', wslc.BuildListManagedContainersArguments()));
+        Assert.Throws<NotSupportedException>(() => wslc.BuildListManagedVolumesArguments());
+    }
+
+    [Fact]
     public void BuildsVolumeArguments()
     {
         var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
@@ -92,7 +106,11 @@ public sealed class DockerRuntimeAdapterTests
         definition.Labels.Add("owner", "meziantou");
         definition.DriverOptions.Add("size", "10m");
 
-        Assert.Equal("volume create --driver local --label owner=meziantou --opt size=10m my-volume", string.Join(' ', runtime.BuildCreateVolumeArguments(definition, "my-volume")));
+        // The library also stamps the labels that identify the run, whose values change from one run to the next.
+        var createArguments = string.Join(' ', runtime.BuildCreateVolumeArguments(definition, "my-volume"));
+        Assert.StartsWith("volume create --driver local --label owner=meziantou --label ", createArguments);
+        Assert.Contains($"--label {ResourceLabels.Managed}=1", createArguments);
+        Assert.EndsWith("--opt size=10m my-volume", createArguments);
 
         // '--force' is not used: podman would remove the containers still using the volume.
         Assert.Equal("volume rm my-volume", string.Join(' ', runtime.BuildDeleteVolumeArguments("my-volume")));

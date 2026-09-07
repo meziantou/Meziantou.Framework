@@ -31,6 +31,8 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
     internal override bool SupportsRestart => true;
 
+    internal override bool SupportsReaper => true;
+
     internal override async Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {
         if (definition.ReuseId is { } reuseId && await FindReusableContainerAsync(reuseId, cancellationToken).ConfigureAwait(false) is { } reusedContainerId)
@@ -40,10 +42,25 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         var payload = DockerApiCreateRequestBuilder.Build(definition, imageRef);
         using var content = CreateJsonContent(payload, DockerApiJsonContext.Default.CreateContainerRequest);
         var endpoint = "/containers/create";
-        if (!string.IsNullOrEmpty(definition.Name))
-            endpoint += "?name=" + Uri.EscapeDataString(definition.Name);
 
-        using var response = await SendAsync(HttpMethod.Post, endpoint, content, cancellationToken).ConfigureAwait(false);
+        // A reused container gets a deterministic name so the daemon itself rejects a second creation: two processes
+        // that start at the same time would otherwise both find nothing and both create one.
+        var name = definition.Name is { Length: > 0 } definitionName
+            ? definitionName
+            : definition.ReuseId is { } namedReuseId ? ResourceNaming.GetReuseName(namedReuseId) : null;
+
+        if (name is not null)
+            endpoint += "?name=" + Uri.EscapeDataString(name);
+
+        using var response = await SendAsync(HttpMethod.Post, endpoint, content, cancellationToken, allowedStatusCodes: definition.ReuseId is null ? null : [HttpStatusCode.Conflict]).ConfigureAwait(false);
+        if (response.StatusCode is HttpStatusCode.Conflict)
+        {
+            // Another process created the container between the lookup and the creation. Adopting it is the whole
+            // point of a reuse identifier.
+            return await FindReusableContainerAsync(definition.ReuseId!, cancellationToken).ConfigureAwait(false)
+                ?? throw new InvalidOperationException($"Unable to create the container: the name '{name}' is already used by a container that does not belong to this library.");
+        }
+
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         var createResponse = JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.CreateContainerResponse);
         if (string.IsNullOrWhiteSpace(createResponse?.Id))
@@ -104,7 +121,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
             Name = name,
             Driver = definition.Driver,
             DriverOpts = definition.DriverOptions.Count > 0 ? definition.DriverOptions.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal) : null,
-            Labels = definition.Labels.Count > 0 ? definition.Labels.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal) : null,
+            Labels = ResourceLabels.Build(definition.Labels, definition.ReuseId, sessionOwned: true, definition.Identity),
         };
 
         using var content = CreateJsonContent(payload, DockerApiJsonContext.Default.VolumeCreateRequest);
@@ -295,9 +312,50 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return info.Ports;
     }
 
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedContainersAsync(CancellationToken cancellationToken)
+    {
+        var endpoint = "/containers/json?all=1&filters=" + Uri.EscapeDataString(BuildManagedLabelFilter());
+        using var response = await SendAsync(HttpMethod.Get, endpoint, content: null, cancellationToken).ConfigureAwait(false);
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        var containers = JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.ContainerSummaryArray);
+        if (containers is null)
+            return [];
+
+        var resources = new List<ManagedResource>(containers.Length);
+        foreach (var container in containers)
+        {
+            if (!string.IsNullOrEmpty(container.Id))
+                resources.Add(new ManagedResource(container.Id, container.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal)));
+        }
+
+        return resources;
+    }
+
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedVolumesAsync(CancellationToken cancellationToken)
+    {
+        var endpoint = "/volumes?filters=" + Uri.EscapeDataString(BuildManagedLabelFilter());
+        using var response = await SendAsync(HttpMethod.Get, endpoint, content: null, cancellationToken).ConfigureAwait(false);
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        var volumes = JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.VolumeListResponse);
+        if (volumes?.Volumes is null)
+            return [];
+
+        var resources = new List<ManagedResource>(volumes.Volumes.Count);
+        foreach (var volume in volumes.Volumes)
+        {
+            if (!string.IsNullOrEmpty(volume.Name))
+                resources.Add(new ManagedResource(volume.Name, volume.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal)));
+        }
+
+        return resources;
+    }
+
+    private static string BuildManagedLabelFilter()
+        => "{\"label\":[\"" + ResourceLabels.Managed + "\"]}";
+
     private async Task<string?> FindReusableContainerAsync(string reuseId, CancellationToken cancellationToken)
     {
-        var labelFilter = JsonEncodedText.Encode(DockerCreateArgumentBuilder.ReuseLabel + "=" + reuseId).ToString();
+        var labelFilter = JsonEncodedText.Encode(ResourceLabels.ReuseId + "=" + reuseId).ToString();
         var filters = "{\"label\":[\"" + labelFilter + "\"]}";
 
         var endpoint = "/containers/json?all=1&filters=" + Uri.EscapeDataString(filters);

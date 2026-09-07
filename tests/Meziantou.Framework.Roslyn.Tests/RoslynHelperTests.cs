@@ -1501,10 +1501,11 @@ public sealed class RoslynHelperTests
         var baseInterface = GetRequiredType(compilation, "IBase");
         var sampleInterface = GetRequiredType(compilation, "ISample");
 
-        var members = type.GetAllMembers().ToArray();
+        var members = type.GetAllMembers(includeInterfaceMembers: true).ToArray();
 
         Assert.Contains(GetRequiredMethod(baseInterface, "BaseInterfaceOnly"), members);
         Assert.Contains(GetRequiredMethod(sampleInterface, "SampleInterfaceOnly"), members);
+        Assert.DoesNotContain(GetRequiredMethod(baseInterface, "BaseInterfaceOnly"), type.GetAllMembers());
     }
 
     [Fact]
@@ -1523,6 +1524,43 @@ public sealed class RoslynHelperTests
         var baseInterfaceOnly = GetRequiredMethod(baseInterface, "BaseInterfaceOnly");
 
         Assert.Contains(baseInterfaceOnly, type.GetAllMembers());
+        Assert.Contains(baseInterfaceOnly, type.GetAllMembers(includeInterfaceMembers: false));
+        Assert.Contains(baseInterfaceOnly, type.GetAllMembers("BaseInterfaceOnly"));
+        Assert.Contains(baseInterfaceOnly, type.GetAllMembers("BaseInterfaceOnly", includeInterfaceMembers: false));
+    }
+
+    [Fact]
+    public void GetAllMembers_OnInterface_DoesNotReturnDuplicatedMembers()
+    {
+        var compilation = CreateCompilation("""
+            public interface IRoot
+            {
+                void RootOnly();
+            }
+
+            public interface ILeft : IRoot;
+
+            public interface IRight : IRoot;
+
+            public interface ISample : ILeft, IRight
+            {
+                void SampleOnly();
+            }
+            """);
+        var type = GetRequiredType(compilation, "ISample");
+        var rootInterface = GetRequiredType(compilation, "IRoot");
+        var rootOnly = GetRequiredMethod(rootInterface, "RootOnly");
+        var sampleOnly = GetRequiredMethod(type, "SampleOnly");
+
+        foreach (var includeInterfaceMembers in new[] { false, true })
+        {
+            var members = type.GetAllMembers(includeInterfaceMembers).ToArray();
+
+            Assert.Equal(1, members.Count(member => SymbolEqualityComparer.Default.Equals(member, rootOnly)));
+            Assert.Equal(1, members.Count(member => SymbolEqualityComparer.Default.Equals(member, sampleOnly)));
+            Assert.Equal(1, type.GetAllMembers("RootOnly", includeInterfaceMembers).Count(member => SymbolEqualityComparer.Default.Equals(member, rootOnly)));
+            Assert.Equal(1, type.GetAllMembers("SampleOnly", includeInterfaceMembers).Count(member => SymbolEqualityComparer.Default.Equals(member, sampleOnly)));
+        }
     }
 
     [Fact]
@@ -1545,8 +1583,9 @@ public sealed class RoslynHelperTests
         var baseInterface = GetRequiredType(compilation, "IBase");
         var baseInterfaceOnly = GetRequiredMethod(baseInterface, "BaseInterfaceOnly");
 
-        Assert.Contains(baseInterfaceOnly, type.GetAllMembers("BaseInterfaceOnly"));
-        Assert.DoesNotContain(baseInterfaceOnly, type.GetAllMembers("Unknown"));
+        Assert.Contains(baseInterfaceOnly, type.GetAllMembers("BaseInterfaceOnly", includeInterfaceMembers: true));
+        Assert.DoesNotContain(baseInterfaceOnly, type.GetAllMembers("Unknown", includeInterfaceMembers: true));
+        Assert.DoesNotContain(baseInterfaceOnly, type.GetAllMembers("BaseInterfaceOnly"));
     }
 
     [Fact]

@@ -37,8 +37,9 @@ internal static partial class TypeSymbolExtensions
     /// <param name="symbol">The type whose members are enumerated.</param>
     /// <param name="includeInterfaceMembers">
     /// <see langword="true"/> to also enumerate the members of all the interfaces implemented by <paramref name="symbol"/>; otherwise, <see langword="false"/>.
+    /// This parameter is ignored when <paramref name="symbol"/> is an interface as the members of its base interfaces are always enumerated.
     /// </param>
-    public static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol? symbol, bool includeInterfaceMembers = true)
+    public static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol? symbol, bool includeInterfaceMembers = false)
     {
         var type = symbol;
         while (type is not null)
@@ -49,7 +50,7 @@ internal static partial class TypeSymbolExtensions
             type = type.BaseType;
         }
 
-        if (includeInterfaceMembers && symbol is not null)
+        if (symbol is not null && (includeInterfaceMembers || symbol.TypeKind is TypeKind.Interface))
         {
             foreach (var @interface in symbol.AllInterfaces)
             {
@@ -66,8 +67,9 @@ internal static partial class TypeSymbolExtensions
     /// <param name="name">The name of the members to enumerate.</param>
     /// <param name="includeInterfaceMembers">
     /// <see langword="true"/> to also enumerate the members of all the interfaces implemented by <paramref name="symbol"/>; otherwise, <see langword="false"/>.
+    /// This parameter is ignored when <paramref name="symbol"/> is an interface as the members of its base interfaces are always enumerated.
     /// </param>
-    public static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol? symbol, string name, bool includeInterfaceMembers = true)
+    public static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol? symbol, string name, bool includeInterfaceMembers = false)
     {
         var type = symbol;
         while (type is not null)
@@ -78,7 +80,7 @@ internal static partial class TypeSymbolExtensions
             type = type.BaseType;
         }
 
-        if (includeInterfaceMembers && symbol is not null)
+        if (symbol is not null && (includeInterfaceMembers || symbol.TypeKind is TypeKind.Interface))
         {
             foreach (var @interface in symbol.AllInterfaces)
             {

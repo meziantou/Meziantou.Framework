@@ -81,7 +81,7 @@ await ContainerRuntime.Docker.CleanupAsync(new ContainerCleanupOptions
 });
 ```
 
-The resources of the current process are never removed, whatever the scope, so a cleanup at the beginning of a run cannot take down the containers that run is about to use.
+The resources of the current process are never removed, whatever the scope, so a cleanup at the beginning of a run cannot take down the containers that run is about to use. The runs of *other* processes are only spared by the default scope: `ContainerCleanupScope.All` removes the containers another run started against the same daemon while it is still using them, so keep it for a daemon nothing else is running against.
 
 ### Removing the containers as soon as the process dies
 

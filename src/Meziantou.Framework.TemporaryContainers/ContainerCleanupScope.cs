@@ -7,5 +7,6 @@ public enum ContainerCleanupScope
     Orphaned,
 
     /// <summary>Every resource created by this library, whatever created it, except the ones the current process created.</summary>
+    /// <remarks>Another run using the same daemon right now is not spared: its containers are removed while it uses them. Only use this when nothing else is running against the daemon.</remarks>
     All,
 }

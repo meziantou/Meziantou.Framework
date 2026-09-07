@@ -749,13 +749,16 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         Assert.False(await container.ExistsAsync(XunitCancellationToken), "The cleanup left behind the container of a run that is over.");
     }
 
+    // The scope is deliberately left to its default: a ContainerCleanupScope.All sweep removes the resources of every
+    // other run against this daemon, and the test hosts of the two target frameworks run at the same time. That the
+    // current run is spared whatever the scope is asserted by ContainerCleanupTests instead.
     [Fact]
     public async Task Cleanup_KeepsTheContainersOfTheCurrentRun()
     {
         await using var container = CreateHttpServerDefinition().CreateContainer();
         await container.EnsureCreatedAsync(XunitCancellationToken);
 
-        await Runtime.CleanupAsync(new ContainerCleanupOptions { Scope = ContainerCleanupScope.All }, XunitCancellationToken);
+        await Runtime.CleanupAsync(XunitCancellationToken);
 
         Assert.True(await container.ExistsAsync(XunitCancellationToken), "The cleanup removed a container the current run is using.");
     }

@@ -1044,6 +1044,20 @@ internal sealed class GeneratedConstrainedEnvelope<T>
     public int GetVersion() => Version;
 }
 
+/// <summary>
+/// Mirrors the System.Text.Json repro from https://github.com/dotnet/runtime/issues/133369: an unconstrained
+/// generic type whose only constructor is private. The accessor must not name the closed type <c>Wrapper&lt;int&gt;</c>.
+/// </summary>
+internal sealed class GeneratedPrivateCtorGenericWrapper<T>
+{
+#pragma warning disable IDE0051 // Remove unused private member
+    [YamlConstructor]
+    private GeneratedPrivateCtorGenericWrapper(T value) => Value = value;
+#pragma warning restore IDE0051
+
+    public T Value { get; }
+}
+
 internal struct GeneratedUnmanagedHolder<T>
     where T : unmanaged
 {
@@ -1240,6 +1254,8 @@ internal sealed class GeneratedYamlIgnoreConditions
 [YamlSerializable(typeof(GeneratedOtherGenericPayload))]
 [YamlSerializable(typeof(GeneratedConstrainedEnvelope<GeneratedGenericPayload>))]
 [YamlSerializable(typeof(GeneratedConstrainedEnvelope<GeneratedOtherGenericPayload>))]
+[YamlSerializable(typeof(GeneratedPrivateCtorGenericWrapper<int>))]
+[YamlSerializable(typeof(GeneratedPrivateCtorGenericWrapper<string>))]
 [YamlSerializable(typeof(GeneratedUnmanagedHolder<double>))]
 [YamlSerializable(typeof(GeneratedGenericOuter<object>.Inner<int>))]
 [YamlSerializable(typeof(GeneratedPopulateChild))]
@@ -3567,6 +3583,28 @@ extra_list:
         var extra = value.GetExtra();
         Assert.True(extra.TryGetValue("Unknown", out var unknown));
         Assert.Equal("42", unknown?.ToString());
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateConstructorOfUnconstrainedGenericTypeWithValueTypeArgument()
+    {
+        var context = new TestYamlSerializerContext();
+
+        var value = YamlSerializer.Deserialize("Value: 42\n", context.GeneratedPrivateCtorGenericWrapperInt32);
+
+        Assert.NotNull(value);
+        Assert.Equal(42, value.Value);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesPrivateConstructorOfUnconstrainedGenericTypeWithReferenceTypeArgument()
+    {
+        var context = new TestYamlSerializerContext();
+
+        var value = YamlSerializer.Deserialize("Value: hello\n", context.GeneratedPrivateCtorGenericWrapperString);
+
+        Assert.NotNull(value);
+        Assert.Equal("hello", value.Value);
     }
 
     [Fact]

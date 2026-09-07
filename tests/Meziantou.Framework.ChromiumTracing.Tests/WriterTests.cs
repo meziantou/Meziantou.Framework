@@ -494,6 +494,7 @@ public sealed partial class WriterTests
     private sealed class UnserializableArgument;
 
     [JsonSerializable(typeof(CustomPayload))]
+    [JsonSourceGenerationOptions(RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true)]
     private sealed partial class CustomJsonContext : JsonSerializerContext
     {
     }

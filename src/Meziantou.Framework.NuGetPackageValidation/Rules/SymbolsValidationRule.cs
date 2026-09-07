@@ -483,6 +483,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
     private sealed record CompilerData(string? Version);
 
     [JsonSerializable(typeof(SourceLinkJson))]
+    [JsonSourceGenerationOptions(RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true)]
     private sealed partial class SourceLinkContext : JsonSerializerContext
     {
     }

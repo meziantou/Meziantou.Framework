@@ -235,7 +235,13 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
         return options;
     }
 
-    [JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, WriteIndented = false, IgnoreReadOnlyProperties = false, GenerationMode = JsonSourceGenerationMode.Default)]
+    [JsonSourceGenerationOptions(
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = false,
+        IgnoreReadOnlyProperties = false,
+        GenerationMode = JsonSourceGenerationMode.Default,
+        RespectNullableAnnotations = true,
+        RespectRequiredConstructorParameters = true)]
     [JsonSerializable(typeof(ChromiumTracingAsyncBeginEvent))]
     [JsonSerializable(typeof(ChromiumTracingAsyncEndEvent))]
     [JsonSerializable(typeof(ChromiumTracingAsyncInstantEvent))]

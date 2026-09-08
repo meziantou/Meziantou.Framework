@@ -15,32 +15,32 @@ The `syntax` command dumps a syntax tree. It is the only command today; the tool
 Dump a file, detecting the language from its extension:
 
 ```bash
-meziantou.language syntax --input app.csproj
+Meziantou.Framework.Language.Tool syntax --input app.csproj
 ```
 
 Write the dump to a file instead of the standard output:
 
 ```bash
-meziantou.language syntax --input appsettings.json --output tree.json
+Meziantou.Framework.Language.Tool syntax --input appsettings.json --output tree.json
 ```
 
 Read from the standard input, where the language cannot be detected and must be set:
 
 ```bash
-echo '{"a":[1,2]}' | meziantou.language syntax --language json
+echo '{"a":[1,2]}' | Meziantou.Framework.Language.Tool syntax --language json
 ```
 
 Parse a regular expression in a given dialect, or a script in a given shell dialect:
 
 ```bash
-meziantou.language syntax --language regex-pcre --input pattern.txt
-meziantou.language syntax --language zsh --input script
+Meziantou.Framework.Language.Tool syntax --language regex-pcre --input pattern.txt
+Meziantou.Framework.Language.Tool syntax --language zsh --input script
 ```
 
 Keep only the shape of the tree:
 
 ```bash
-meziantou.language syntax --input page.svg --no-tokens --no-text
+Meziantou.Framework.Language.Tool syntax --input page.svg --no-tokens --no-text
 ```
 
 ## Output
@@ -83,7 +83,7 @@ Description:
   Inspect JSON, XML, regular expression, and shell documents
 
 Usage:
-  meziantou.language [command] [options]
+  Meziantou.Framework.Language.Tool [command] [options]
 
 Options:
   -?, -h, --help  Show help and usage information
@@ -100,7 +100,7 @@ Description:
   Dump the syntax tree of a JSON, XML, regular expression, or shell document as JSON
 
 Usage:
-  meziantou.language syntax [options]
+  Meziantou.Framework.Language.Tool syntax [options]
 
 Options:
   --input <input>        Path to the file to parse. If omitted, reads from stdin

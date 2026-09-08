@@ -1,6 +1,7 @@
 #pragma warning disable CA1848 // Use the LoggerMessage delegates
 using System.Diagnostics;
 using Meziantou.Extensions.Logging.Xunit.v3;
+using Meziantou.Framework.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -66,12 +67,11 @@ public sealed class HostTests
             .Build();
 
         using var activitySource = new ActivitySource("Meziantou.Extensions.Logging.InMemory.Tests");
-        using var listener = new ActivityListener
+        using var listener = new ScopedActivityListener(new ScopedActivityListenerOptions
         {
             ShouldListenTo = source => source == activitySource,
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-        };
-        ActivitySource.AddActivityListener(listener);
+            SamplingResult = ActivitySamplingResult.AllDataAndRecorded,
+        });
 
         var logger = host.Services.GetRequiredService<ILogger<HostTests>>();
         using var activity = activitySource.StartActivity("operation");

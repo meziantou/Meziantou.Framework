@@ -1,8 +1,8 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using Meziantou.DnsProxy;
 using Meziantou.DnsProxy.Filtering;
+using Meziantou.Framework.Diagnostics;
 using Meziantou.Framework.DnsFilter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -87,9 +87,8 @@ public sealed class FilterEngineProviderTests
             ],
         });
 
-        var activities = new ConcurrentQueue<Activity>();
-        using var listener = CreateDnsProxyActivityListener(activities.Enqueue);
-        ActivitySource.AddActivityListener(listener);
+        // The scope only reports the activities started by this test, so no extra filtering is needed to ignore the other tests
+        using var listener = new ScopedActivityListener(new ScopedActivityListenerOptions { SourceNames = ["Meziantou.DnsProxy"] });
 
         using var serviceProvider = CreateServiceProvider(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -104,12 +103,8 @@ public sealed class FilterEngineProviderTests
 
         await provider.RefreshAsync(CancellationToken.None);
 
-        var loadActivity = Assert.Single(activities, activity =>
-            activity.OperationName == "dns_proxy.filters.load" &&
-            Equals(filterUrl, activity.GetTagItem("dns_proxy.filter.url")));
-        var refreshActivity = Assert.Single(activities, activity =>
-            activity.OperationName == "dns_proxy.filters.refresh" &&
-            activity.SpanId == loadActivity.ParentSpanId);
+        var loadActivity = Assert.Single(listener.Activities, activity => activity.OperationName == "dns_proxy.filters.load");
+        var refreshActivity = Assert.Single(listener.Activities, activity => activity.OperationName == "dns_proxy.filters.refresh");
 
         Assert.Equal(refreshActivity.SpanId, loadActivity.ParentSpanId);
         Assert.Equal(ActivityStatusCode.Ok, refreshActivity.Status);
@@ -268,17 +263,6 @@ public sealed class FilterEngineProviderTests
             .AddHttpClient(Options.DefaultName)
             .ConfigurePrimaryHttpMessageHandler(() => new DelegateHttpMessageHandler(responseFactory));
         return services.BuildServiceProvider();
-    }
-
-    private static ActivityListener CreateDnsProxyActivityListener(Action<Activity> activityStopped)
-    {
-        return new ActivityListener
-        {
-            ShouldListenTo = static source => source.Name == "Meziantou.DnsProxy",
-            Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            SampleUsingParentId = static (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = activityStopped,
-        };
     }
 
     private sealed class DelegateHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory) : HttpMessageHandler

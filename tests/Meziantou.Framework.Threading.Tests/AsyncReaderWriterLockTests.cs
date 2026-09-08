@@ -191,6 +191,102 @@ public class AsyncReaderWriterLockTests
     }
 
     [Fact]
+    public async Task CancelingWritersAtEveryPosition_PreservesTheOrderOfTheOthers()
+    {
+        // A canceled waiter is unlinked from the queue. The survivors must keep their FIFO order whether the
+        // canceled waiter was the head, the tail, or in the middle, and consecutive cancellations must not
+        // corrupt the queue.
+        var rwLock = new AsyncReaderWriterLock();
+        var held = await rwLock.WriterLockAsync();
+
+        var sources = new CancellationTokenSource[10];
+        var waiters = new Task<AsyncReaderWriterLock.Releaser>[sources.Length];
+        for (var i = 0; i < sources.Length; i++)
+        {
+            sources[i] = new CancellationTokenSource();
+            waiters[i] = rwLock.WriterLockAsync(sources[i].Token);
+        }
+
+        int[] canceled = [0, 3, 4, 7, 9];
+        foreach (var index in canceled)
+        {
+            await sources[index].CancelAsync();
+            await Assert.ThrowsAsync<TaskCanceledException>(() => waiters[index]);
+        }
+
+        var current = held;
+        int[] survivors = [1, 2, 5, 6, 8];
+        foreach (var index in survivors)
+        {
+            Assert.False(waiters[index].IsCompleted);
+            current.Dispose();
+            current = await waiters[index].WaitAsync(TimeSpan.FromSeconds(30));
+        }
+
+        // The queue is empty again, so a writer that arrives now must still be reachable.
+        var late = rwLock.WriterLockAsync();
+        current.Dispose();
+        (await late.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
+
+        foreach (var source in sources)
+        {
+            source.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task CancelingSomeQueuedReaders_AdmitsOnlyTheRemainingOnes()
+    {
+        var rwLock = new AsyncReaderWriterLock();
+        var held = await rwLock.WriterLockAsync();
+
+        var sources = new CancellationTokenSource[6];
+        var waiters = new Task<AsyncReaderWriterLock.Releaser>[sources.Length];
+        for (var i = 0; i < sources.Length; i++)
+        {
+            sources[i] = new CancellationTokenSource();
+            waiters[i] = rwLock.ReaderLockAsync(sources[i].Token);
+        }
+
+        int[] canceled = [0, 2, 5];
+        foreach (var index in canceled)
+        {
+            await sources[index].CancelAsync();
+            await Assert.ThrowsAsync<TaskCanceledException>(() => waiters[index]);
+        }
+
+        held.Dispose();
+
+        // The remaining readers are admitted together, and the reader count must match them exactly: a writer
+        // can only run once every one of them has released.
+        int[] survivors = [1, 3, 4];
+        var releasers = new List<AsyncReaderWriterLock.Releaser>(survivors.Length);
+        foreach (var index in survivors)
+        {
+            releasers.Add(await waiters[index].WaitAsync(TimeSpan.FromSeconds(30)));
+        }
+
+        var writer = rwLock.WriterLockAsync();
+        foreach (var releaser in releasers)
+        {
+            Assert.False(writer.IsCompleted);
+            releaser.Dispose();
+        }
+
+        var writerReleaser = await writer.WaitAsync(TimeSpan.FromSeconds(30));
+
+        // The reader queue is empty again, so a reader that arrives now must still be reachable.
+        var late = rwLock.ReaderLockAsync();
+        writerReleaser.Dispose();
+        (await late.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
+
+        foreach (var source in sources)
+        {
+            source.Dispose();
+        }
+    }
+
+    [Fact]
     public async Task ReaderContinuationsAreNotInlinedOnTheReleasingThread()
     {
         // The waiting readers used to share a TaskCompletionSource created without

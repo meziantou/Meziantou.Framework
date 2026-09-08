@@ -91,6 +91,77 @@ public class AsyncLockTests
     }
 
     [Fact]
+    public async Task LockAsync_CancelingWaitersAtEveryPosition_PreservesTheOrderOfTheOthers()
+    {
+        // A canceled waiter is unlinked from the queue. The survivors must keep their FIFO order whether the
+        // canceled waiter was the head, the tail, or in the middle, and consecutive cancellations must not
+        // corrupt the queue.
+        var asyncLock = new AsyncLock();
+        var held = await asyncLock.LockAsync();
+
+        var sources = new CancellationTokenSource[10];
+        var waiters = new Task<AsyncLock.AsyncLockLease>[sources.Length];
+        for (var i = 0; i < sources.Length; i++)
+        {
+            sources[i] = new CancellationTokenSource();
+            waiters[i] = asyncLock.LockAsync(sources[i].Token).AsTask();
+        }
+
+        int[] canceled = [0, 3, 4, 7, 9];
+        foreach (var index in canceled)
+        {
+            await sources[index].CancelAsync();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiters[index]);
+        }
+
+        var current = held;
+        int[] survivors = [1, 2, 5, 6, 8];
+        foreach (var index in survivors)
+        {
+            Assert.False(waiters[index].IsCompleted);
+            current.Dispose();
+            current = await waiters[index].WaitAsync(Timeout);
+        }
+
+        // The queue is empty again, so a waiter that arrives now must still be reachable.
+        var late = asyncLock.LockAsync().AsTask();
+        current.Dispose();
+        (await late.WaitAsync(Timeout)).Dispose();
+
+        foreach (var source in sources)
+        {
+            source.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task LockAsync_CancelingEveryWaiter_LeavesTheLockFree()
+    {
+        var asyncLock = new AsyncLock();
+        var held = await asyncLock.LockAsync();
+
+        using var cts = new CancellationTokenSource();
+        var waiters = new Task<AsyncLock.AsyncLockLease>[10];
+        for (var i = 0; i < waiters.Length; i++)
+        {
+            waiters[i] = asyncLock.LockAsync(cts.Token).AsTask();
+        }
+
+        await cts.CancelAsync();
+        foreach (var waiter in waiters)
+        {
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiter);
+        }
+
+        // Releasing must not hand the lock to one of the canceled waiters, and a waiter that arrives after the
+        // queue emptied must still be reachable.
+        var late = asyncLock.LockAsync().AsTask();
+        held.Dispose();
+        (await late.WaitAsync(Timeout)).Dispose();
+        Assert.True(asyncLock.TryLock(out _));
+    }
+
+    [Fact]
     public async Task LockAsync_ProvidesMutualExclusion()
     {
         var asyncLock = new AsyncLock();

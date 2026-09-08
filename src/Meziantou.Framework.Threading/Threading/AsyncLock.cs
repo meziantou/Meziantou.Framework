@@ -21,7 +21,8 @@ namespace Meziantou.Framework.Threading;
 [DebuggerDisplay("Signaled: {_signaled}")]
 public sealed class AsyncLock
 {
-    private readonly Queue<WaiterCompletionSource> _signalAwaiters = new();
+    private readonly WaiterQueue<WaiterCompletionSource> _signalAwaiters = new();
+    private readonly Lock _lock = new();
     private readonly bool _allowInliningAwaiters;
     private readonly Action<object> _onCancellationRequestHandler;
     private bool _signaled = true;
@@ -57,7 +58,7 @@ public sealed class AsyncLock
 
         WaiterCompletionSource waiter;
         bool canceled;
-        lock (_signalAwaiters)
+        lock (_lock)
         {
             if (_signaled)
             {
@@ -93,7 +94,7 @@ public sealed class AsyncLock
     {
         if (_signaled)
         {
-            lock (_signalAwaiters)
+            lock (_lock)
             {
                 if (_signaled)
                 {
@@ -110,14 +111,11 @@ public sealed class AsyncLock
 
     internal void Release()
     {
-        WaiterCompletionSource? toRelease = null;
-        lock (_signalAwaiters)
+        WaiterCompletionSource? toRelease;
+        lock (_lock)
         {
-            if (_signalAwaiters.Count > 0)
-            {
-                toRelease = _signalAwaiters.Dequeue();
-            }
-            else if (!_signaled)
+            toRelease = _signalAwaiters.Dequeue();
+            if (toRelease is null && !_signaled)
             {
                 _signaled = true;
             }
@@ -134,9 +132,9 @@ public sealed class AsyncLock
     {
         var tcs = (WaiterCompletionSource)state;
         bool removed;
-        lock (_signalAwaiters)
+        lock (_lock)
         {
-            removed = RemoveMidQueue(_signalAwaiters, tcs);
+            removed = _signalAwaiters.Remove(tcs);
         }
 
         // We only cancel the task if we removed it from the queue.
@@ -149,29 +147,6 @@ public sealed class AsyncLock
             tcs.TrySetCanceled(tcs.CancellationToken);
             tcs.Registration.Dispose();
         }
-    }
-
-    private static bool RemoveMidQueue<T>(Queue<T> queue, T valueToRemove)
-        where T : class
-    {
-        var originalCount = queue.Count;
-        var dequeueCounter = 0;
-        var found = false;
-        while (dequeueCounter < originalCount)
-        {
-            dequeueCounter++;
-            var dequeued = queue.Dequeue();
-            if (!found && dequeued == valueToRemove)
-            { // only find 1 match
-                found = true;
-            }
-            else
-            {
-                queue.Enqueue(dequeued);
-            }
-        }
-
-        return found;
     }
 
     /// <summary>Represents a disposable lease for an <see cref="AsyncLock"/>. Disposing the lease releases the lock.</summary>
@@ -192,7 +167,7 @@ public sealed class AsyncLock
         }
     }
 
-    private sealed class WaiterCompletionSource : TaskCompletionSource<AsyncLockLease>
+    private sealed class WaiterCompletionSource : TaskCompletionSource<AsyncLockLease>, IWaiterQueueNode<WaiterCompletionSource>
     {
         internal WaiterCompletionSource(AsyncLock owner, bool allowInliningContinuations, CancellationToken cancellationToken)
             : base(GetOptions(allowInliningContinuations))
@@ -203,6 +178,10 @@ public sealed class AsyncLock
 
         internal CancellationToken CancellationToken { get; }
         internal CancellationTokenRegistration Registration { get; }
+
+        public WaiterCompletionSource? Previous { get; set; }
+        public WaiterCompletionSource? Next { get; set; }
+        public bool IsQueued { get; set; }
 
         private static TaskCreationOptions GetOptions(bool allowInliningContinuations)
         {

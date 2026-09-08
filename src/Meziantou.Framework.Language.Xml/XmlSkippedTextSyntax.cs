@@ -9,8 +9,8 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public sealed class XmlSkippedTextSyntax : XmlSyntaxNode
 {
-    public XmlSkippedTextSyntax(string text)
-        : base(XmlSyntaxKind.XmlSkippedText, text, [new XmlSyntaxToken(XmlSyntaxKind.SkippedTextToken, text)])
+    public XmlSkippedTextSyntax(string text, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlSkippedText, text, [new XmlSyntaxToken(XmlSyntaxKind.SkippedTextToken, text, fullStart: fullStart)], fullStart)
     {
         Text = text;
     }

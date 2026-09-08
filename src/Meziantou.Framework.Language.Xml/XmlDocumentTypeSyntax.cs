@@ -11,8 +11,8 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public sealed class XmlDocumentTypeSyntax : XmlSyntaxNode
 {
-    public XmlDocumentTypeSyntax(string name, string? value, string fullText)
-        : base(XmlSyntaxKind.XmlDocumentType, fullText, [new XmlSyntaxToken(XmlSyntaxKind.DocumentTypeToken, fullText)])
+    public XmlDocumentTypeSyntax(string name, string? value, string fullText, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlDocumentType, fullText, [new XmlSyntaxToken(XmlSyntaxKind.DocumentTypeToken, fullText, fullStart: fullStart)], fullStart)
     {
         Name = name;
         Value = value;

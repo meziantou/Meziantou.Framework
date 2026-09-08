@@ -14,10 +14,11 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public abstract class XmlSyntaxNode
 {
-    protected XmlSyntaxNode(XmlSyntaxKind kind, string fullText, IReadOnlyList<XmlSyntaxToken>? tokens = null)
+    protected XmlSyntaxNode(XmlSyntaxKind kind, string fullText, IReadOnlyList<XmlSyntaxToken>? tokens = null, int fullStart = 0)
     {
         Kind = kind;
         FullText = fullText ?? string.Empty;
+        FullSpan = new TextSpan(fullStart, FullText.Length);
         Tokens = tokens ?? [];
         foreach (var token in Tokens)
         {
@@ -31,8 +32,29 @@ public abstract class XmlSyntaxNode
     public IReadOnlyList<XmlSyntaxToken> Tokens { get; }
     public XmlSyntaxTree? SyntaxTree { get; internal set; }
     public XmlSyntaxNode? Parent => ParentNode;
-    public TextSpan Span => new(0, ToFullString().Length);
-    public TextSpan FullSpan => Span;
+
+    /// <summary>
+    /// The absolute span of this node in <see cref="XmlSyntaxTree.Text"/>. Always equal to <see cref="FullSpan"/>.
+    /// </summary>
+    /// <remarks>
+    /// The other <c>Meziantou.Framework.Language.*</c> parsers narrow this span to the outermost tokens that carry
+    /// text, so it excludes the leading and trailing trivia that <see cref="FullSpan"/> covers. That would be wrong
+    /// here: the XML parser does not tokenize structural punctuation, so an element owns only its name token and
+    /// narrowing to it would move the span past the element's own <c>&lt;</c>. Nor is there anything to exclude —
+    /// the parser emits no trivia, because whitespace between tags is an <see cref="XmlTextSyntax"/> node.
+    /// </remarks>
+    public TextSpan Span => FullSpan;
+
+    /// <summary>
+    /// The absolute span of this node in <see cref="XmlSyntaxTree.Text"/>, covering exactly the text
+    /// <see cref="ToFullString"/> returns.
+    /// </summary>
+    /// <remarks>
+    /// A node built by <see cref="SyntaxFactory"/> or returned from a <c>With*</c> method is detached and reports a
+    /// span starting at 0, since it belongs to no document yet. Inserting it re-parses the document, which gives
+    /// every node a fresh absolute position.
+    /// </remarks>
+    public TextSpan FullSpan { get; }
     public bool ContainsDiagnostics => SyntaxTree is not null && SyntaxTree.Diagnostics.Count > 0;
     public bool ContainsSkippedText => Kind == XmlSyntaxKind.XmlSkippedText || DescendantNodes().Any(node => node.Kind == XmlSyntaxKind.XmlSkippedText);
     internal XmlSyntaxNode? ParentNode { get; set; }

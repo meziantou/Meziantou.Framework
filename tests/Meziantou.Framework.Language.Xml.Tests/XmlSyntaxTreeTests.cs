@@ -511,6 +511,200 @@ public sealed class XmlSyntaxTreeTests
         Assert.Contains(nonNamespacedAttributes, attribute => attribute.Name == "flag" && attribute.Value == "local");
     }
 
+    [Theory]
+    [MemberData(nameof(RoundTripSamples))]
+    public void Positions_AreAbsoluteOffsetsIntoTheSourceText(string text)
+    {
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        foreach (var node in EnumerateNodes(tree.Root))
+        {
+            Assert.Equal(node.ToFullString(), text.Substring(node.FullSpan.Start, node.FullSpan.Length));
+        }
+
+        foreach (var token in tree.Root.DescendantTokens())
+        {
+            Assert.Equal(token.Text, text.Substring(token.Span.Start, token.Span.Length));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(RoundTripSamples))]
+    public void Span_EqualsFullSpan(string text)
+    {
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        foreach (var node in EnumerateNodes(tree.Root))
+        {
+            Assert.Equal(node.FullSpan.Start, node.Span.Start);
+            Assert.Equal(node.FullSpan.Length, node.Span.Length);
+        }
+    }
+
+    [Fact]
+    public void Positions_NestedElements()
+    {
+        const string Text = "<root><a>x</a></root>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+        var root = Assert.IsType<XmlElementSyntax>(tree.Root.ChildNodes[0]);
+        var inner = Assert.IsType<XmlElementSyntax>(root.Content[0]);
+
+        AssertSpan(0, 21, root.FullSpan);
+        AssertSpan(6, 8, inner.FullSpan);
+        AssertSpan(7, 1, Assert.Single(inner.Tokens).Span);
+        AssertSpan(9, 1, inner.Content[0].FullSpan);
+
+        var endTag = Assert.IsType<XmlEndTagSyntax>(inner.EndTag);
+        AssertSpan(10, 4, endTag.FullSpan);
+        AssertSpan(12, 1, Assert.Single(endTag.Tokens).Span);
+    }
+
+    [Fact]
+    public void Positions_EveryAttributeIsAnchoredToItsOwnStart()
+    {
+        const string Text = "<book id='1' name='x' />";
+        var tree = XmlSyntaxTree.ParseText(Text);
+        var element = Assert.IsType<XmlElementSyntax>(tree.Root.ChildNodes[0]);
+
+        AssertSpan(6, 6, element.Attributes[0].FullSpan);
+        AssertSpan(6, 2, element.Attributes[0].Tokens[0].Span);
+        AssertSpan(10, 1, element.Attributes[0].Tokens[1].Span);
+
+        AssertSpan(13, 8, element.Attributes[1].FullSpan);
+        AssertSpan(13, 4, element.Attributes[1].Tokens[0].Span);
+        AssertSpan(19, 1, element.Attributes[1].Tokens[1].Span);
+    }
+
+    [Fact]
+    public void Positions_DeclarationPseudoAttributes()
+    {
+        const string Text = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<root />";
+        var tree = XmlSyntaxTree.ParseText(Text);
+        var declaration = Assert.IsType<XmlDeclarationSyntax>(tree.Root.ChildNodes[0]);
+        var versionAttribute = Assert.IsType<XmlAttributeSyntax>(declaration.VersionAttribute);
+        var encodingAttribute = Assert.IsType<XmlAttributeSyntax>(declaration.EncodingAttribute);
+
+        AssertSpan(0, 39, declaration.FullSpan);
+
+        // A pseudo-attribute segment starts at the whitespace separating it from what precedes it, so the name token
+        // is what lines up with the name in the source.
+        Assert.Equal(Text.IndexOf("version", StringComparison.Ordinal), versionAttribute.Tokens[0].Span.Start);
+        Assert.Equal(Text.IndexOf("encoding", StringComparison.Ordinal), encodingAttribute.Tokens[0].Span.Start);
+        Assert.Equal(versionAttribute.ToFullString(), Text.Substring(versionAttribute.FullSpan.Start, versionAttribute.FullSpan.Length));
+        Assert.Equal(encodingAttribute.ToFullString(), Text.Substring(encodingAttribute.FullSpan.Start, encodingAttribute.FullSpan.Length));
+
+        AssertSpan(40, 8, tree.Root.ChildNodes[2].FullSpan);
+    }
+
+    [Fact]
+    public void Positions_CommentSkipsItsOpeningDelimiter()
+    {
+        var tree = XmlSyntaxTree.ParseText("<a><!--c--></a>");
+        var element = Assert.IsType<XmlElementSyntax>(tree.Root.ChildNodes[0]);
+        var comment = Assert.IsType<XmlCommentSyntax>(element.Content[0]);
+
+        AssertSpan(3, 8, comment.FullSpan);
+        AssertSpan(7, 1, Assert.Single(comment.Tokens).Span);
+    }
+
+    [Fact]
+    public void Positions_CDataSectionSkipsItsOpeningDelimiter()
+    {
+        var tree = XmlSyntaxTree.ParseText("<a><![CDATA[d]]></a>");
+        var element = Assert.IsType<XmlElementSyntax>(tree.Root.ChildNodes[0]);
+        var cdata = Assert.IsType<XmlCDataSectionSyntax>(element.Content[0]);
+
+        AssertSpan(3, 13, cdata.FullSpan);
+        AssertSpan(12, 1, Assert.Single(cdata.Tokens).Span);
+    }
+
+    [Fact]
+    public void Positions_LeadingWhitespaceShiftsTheRootElement()
+    {
+        var tree = XmlSyntaxTree.ParseText("\n  <root/>");
+
+        AssertSpan(0, 3, tree.Root.ChildNodes[0].FullSpan);
+        AssertSpan(3, 7, tree.Root.ChildNodes[1].FullSpan);
+    }
+
+    [Fact]
+    public void Positions_UnclosedElementCoversTheRecoveredText()
+    {
+        const string Text = "<root><a></root>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+        var root = Assert.IsType<XmlElementSyntax>(tree.Root.ChildNodes[0]);
+
+        AssertSpan(0, 16, root.FullSpan);
+
+        var inner = Assert.IsType<XmlElementSyntax>(root.Content[0]);
+        AssertSpan(6, 10, inner.FullSpan);
+
+        var skipped = Assert.IsType<XmlSkippedTextSyntax>(inner.Content[0]);
+        AssertSpan(9, 7, skipped.FullSpan);
+    }
+
+    [Fact]
+    public void Positions_UnexpectedEndTagMatchesItsDiagnostic()
+    {
+        var tree = XmlSyntaxTree.ParseText("</a>");
+        var skipped = Assert.IsType<XmlSkippedTextSyntax>(tree.Root.ChildNodes[0]);
+        var diagnostic = Assert.Single(tree.Diagnostics);
+
+        AssertSpan(0, 4, skipped.FullSpan);
+        AssertSpan(diagnostic.Span.Start, diagnostic.Span.Length, skipped.FullSpan);
+    }
+
+    [Fact]
+    public void Positions_UnterminatedComment()
+    {
+        var tree = XmlSyntaxTree.ParseText("<a><!--x");
+        var element = Assert.IsType<XmlElementSyntax>(tree.Root.ChildNodes[0]);
+        var comment = Assert.IsType<XmlCommentSyntax>(element.Content[0]);
+
+        AssertSpan(3, 5, comment.FullSpan);
+        AssertSpan(7, 1, Assert.Single(comment.Tokens).Span);
+    }
+
+    [Fact]
+    public void Positions_InvalidStartTag()
+    {
+        var tree = XmlSyntaxTree.ParseText("<1bad>");
+        var skipped = Assert.IsType<XmlSkippedTextSyntax>(tree.Root.ChildNodes[0]);
+
+        AssertSpan(0, 6, skipped.FullSpan);
+    }
+
+    [Fact]
+    public void Positions_DetachedNodesStartAtZeroAndAreRestoredWhenReinserted()
+    {
+        const string Text = "<root><item /></root>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+        var root = Assert.IsType<XmlElementSyntax>(tree.Root.ChildNodes[0]);
+        var item = Assert.IsType<XmlElementSyntax>(root.Content[0]);
+
+        AssertSpan(6, 8, item.FullSpan);
+
+        var renamed = item.WithName("other");
+        Assert.Equal(0, renamed.FullSpan.Start);
+
+        var updated = tree.Root.ReplaceNode(item, renamed);
+        var updatedRoot = Assert.IsType<XmlElementSyntax>(updated.ChildNodes[0]);
+        var reinserted = Assert.IsType<XmlElementSyntax>(updatedRoot.Content[0]);
+
+        Assert.Equal(6, reinserted.FullSpan.Start);
+        Assert.Equal(reinserted.ToFullString(), updated.ToFullString().Substring(reinserted.FullSpan.Start, reinserted.FullSpan.Length));
+    }
+
+    // The XML parser never emits missing tokens, so there is no zero-width-token case to cover here the way the
+    // JSON and regex parsers need.
+    private static void AssertSpan(int expectedStart, int expectedLength, TextSpan actual)
+    {
+        Assert.Equal(expectedStart, actual.Start);
+        Assert.Equal(expectedLength, actual.Length);
+    }
+
+    private static IEnumerable<XmlSyntaxNode> EnumerateNodes(XmlSyntaxNode root) => [root, .. root.DescendantNodes()];
+
     private static XmlNamespaceManager CreateNamespaceManager()
     {
         var namespaceManager = new XmlNamespaceManager(new NameTable());

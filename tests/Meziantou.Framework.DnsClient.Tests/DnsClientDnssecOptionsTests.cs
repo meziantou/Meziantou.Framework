@@ -2,6 +2,7 @@ using System.Net;
 using Meziantou.Framework.DnsClient.Protocol;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
+using Meziantou.Framework.DnsClient.Response.Records;
 using Meziantou.Framework.DnsClient.Transport;
 
 using DnsResponseCode = Meziantou.Framework.DnsClient.Response.DnsResponseCode;
@@ -84,6 +85,69 @@ public sealed class DnsClientDnssecOptionsTests
         Assert.Equal(HttpVersionPolicy.RequestVersionOrLower, handler.RequestVersionPolicy);
     }
 
+    [Fact]
+    public async Task QueryAsync_Https_ResponseWithAnAgeHeader_ReducesTheRecordTimeToLives()
+    {
+        // RFC 8484 5.1: a response replayed by an HTTP cache still carries the TTLs the resolver first sent, so the
+        // time it spent in that cache has to come out of them.
+        using var handler = new TimeToLiveHttpMessageHandler(age: TimeSpan.FromSeconds(250));
+        using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
+        {
+            HttpHandler = handler,
+        });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, TestContext.Current.CancellationToken);
+
+        Assert.Equal(350u, Assert.Single(response.Answers).TimeToLive);
+        Assert.Equal(650u, Assert.Single(response.Authorities).TimeToLive);
+    }
+
+    [Fact]
+    public async Task QueryAsync_Https_ResponseWithoutAnAgeHeader_KeepsTheRecordTimeToLives()
+    {
+        using var handler = new TimeToLiveHttpMessageHandler(age: null);
+        using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
+        {
+            HttpHandler = handler,
+        });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, TestContext.Current.CancellationToken);
+
+        Assert.Equal(600u, Assert.Single(response.Answers).TimeToLive);
+        Assert.Equal(900u, Assert.Single(response.Authorities).TimeToLive);
+    }
+
+    [Fact]
+    public async Task QueryAsync_Https_ResponseWithAnAgeLongerThanTheTimeToLives_ClampsThemToZero()
+    {
+        using var handler = new TimeToLiveHttpMessageHandler(age: TimeSpan.FromSeconds(5000));
+        using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
+        {
+            HttpHandler = handler,
+        });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0u, Assert.Single(response.Answers).TimeToLive);
+        Assert.Equal(0u, Assert.Single(response.Authorities).TimeToLive);
+    }
+
+    [Fact]
+    public async Task QueryAsync_Https_ResponseWithAnAgeHeader_LeavesTheOptRecordMetadataIntact()
+    {
+        using var handler = new TimeToLiveHttpMessageHandler(age: TimeSpan.FromSeconds(250), optTimeToLive: 0x01008000);
+        using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
+        {
+            HttpHandler = handler,
+        });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, TestContext.Current.CancellationToken);
+        var opt = Assert.IsType<DnsOptRecord>(Assert.Single(response.AdditionalRecords));
+
+        Assert.Equal(0x01008000u, opt.TimeToLive);
+        Assert.True(opt.DnssecOk);
+    }
+
     private static bool IsCheckingDisabled(byte[] query)
     {
         var flags = (query[2] << 8) | query[3];
@@ -113,14 +177,41 @@ public sealed class DnsClientDnssecOptionsTests
     {
         public byte[] LastQuery { get; private set; } = [];
 
-        public Task<byte[]> SendAsync(byte[] query, CancellationToken cancellationToken)
+        public Task<DnsTransportResponse> SendAsync(byte[] query, CancellationToken cancellationToken)
         {
             LastQuery = query;
-            return Task.FromResult(CreateEmptyResponse(query));
+            return Task.FromResult(new DnsTransportResponse(CreateEmptyResponse(query)));
         }
 
         public void Dispose()
         {
+        }
+    }
+
+    /// <summary>Answers every query with an A record of TTL 600 and an SOA authority record of TTL 900.</summary>
+    private sealed class TimeToLiveHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly TimeSpan? _age;
+        private readonly uint _optTimeToLive;
+
+        public TimeToLiveHttpMessageHandler(TimeSpan? age, uint optTimeToLive = 0)
+        {
+            _age = age;
+            _optTimeToLive = optTimeToLive;
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var query = await request.Content!.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            var body = DnsTestMessages.CreateResponseWithTimeToLives(query, answerTimeToLive: 600, authorityTimeToLive: 900, _optTimeToLive);
+
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(body),
+            };
+
+            response.Headers.Age = _age;
+            return response;
         }
     }
 
@@ -317,10 +408,10 @@ public sealed class DnsClientDnssecOptionsTests
 
         public byte[] LastQuery { get; private set; } = [];
 
-        public Task<byte[]> SendAsync(byte[] query, CancellationToken cancellationToken)
+        public Task<DnsTransportResponse> SendAsync(byte[] query, CancellationToken cancellationToken)
         {
             LastQuery = query;
-            return Task.FromResult(_respond(query));
+            return Task.FromResult(new DnsTransportResponse(_respond(query)));
         }
 
         public void Dispose()

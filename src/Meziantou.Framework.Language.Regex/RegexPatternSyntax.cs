@@ -139,7 +139,7 @@ public sealed class RegexPatternSyntax : RegexSyntaxNode
         if (SyntaxTree is { } tree)
             return tree.Reparse(text).Root;
 
-        return RegexSyntaxTree.ParseText(text, new RegexParseOptions(Flavor ?? RegexFlavor.Net)).Root;
+        return RegexSyntaxTree.ParseText(text, new RegexParseOptions(Dialect ?? RegexDialect.Net)).Root;
     }
 
     private RegexPatternSyntax ReplaceSpan(TextSpan span, string newText)

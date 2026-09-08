@@ -15,11 +15,11 @@ internal partial class PerlStyleRegexParser
 {
     /// <summary>
     /// Whether <c>\p{…}</c> is recognized. JavaScript reads it as an identity escape unless the pattern opted into
-    /// Unicode mode, so the answer depends on the options as well as the flavor.
+    /// Unicode mode, so the answer depends on the options as well as the dialect.
     /// </summary>
     private bool SupportsUnicodeCategories =>
-        Flavor.HasFeature(RegexFlavorFeatures.UnicodeCategories) &&
-        (!Flavor.HasFeature(RegexFlavorFeatures.UnicodeCategoriesRequireUnicodeFlag) ||
+        Dialect.HasFeature(RegexDialectFeatures.UnicodeCategories) &&
+        (!Dialect.HasFeature(RegexDialectFeatures.UnicodeCategoriesRequireUnicodeFlag) ||
             (Options & RegexPatternOptions.Unicode) != RegexPatternOptions.None);
 
     /// <summary>Parses a backslash escape used as an atom of a sequence.</summary>
@@ -42,13 +42,13 @@ internal partial class PerlStyleRegexParser
                 Scanner.Position += 2;
                 return WithOptions(new RegexAnchorSyntax(Scanner.Token(RegexSyntaxKind.AnchorToken, start, leadingTrivia)));
 
-            // Where the flavor has no such anchor the escape is not an anchor at all: it falls through and stands for
+            // Where the dialect has no such anchor the escape is not an anchor at all: it falls through and stands for
             // the letter, which is what an engine without it does.
-            case 'A' or 'G' or 'z' or 'Z' when Flavor.HasFeature(RegexFlavorFeatures.AnchorsAZ):
+            case 'A' or 'G' or 'z' or 'Z' when Dialect.HasFeature(RegexDialectFeatures.AnchorsAZ):
                 Scanner.Position += 2;
                 return WithOptions(new RegexAnchorSyntax(Scanner.Token(RegexSyntaxKind.AnchorToken, start, leadingTrivia)));
 
-            case 'K' when Flavor.HasFeature(RegexFlavorFeatures.KeepOut):
+            case 'K' when Dialect.HasFeature(RegexDialectFeatures.KeepOut):
                 Scanner.Position += 2;
                 return WithOptions(new RegexAnchorSyntax(Scanner.Token(RegexSyntaxKind.AnchorToken, start, leadingTrivia)));
 
@@ -59,16 +59,16 @@ internal partial class PerlStyleRegexParser
             case 'p' or 'P' when SupportsUnicodeCategories:
                 return ParseUnicodeCategory(leadingTrivia);
 
-            case 'Q' when Flavor.HasFeature(RegexFlavorFeatures.QuotedLiterals):
+            case 'Q' when Dialect.HasFeature(RegexDialectFeatures.QuotedLiterals):
                 return ParseQuotedLiteral(leadingTrivia);
 
             // "\E" with no "\Q" in front of it closes nothing and matches nothing, which the engines simply ignore.
-            case 'E' when Flavor.HasFeature(RegexFlavorFeatures.QuotedLiterals):
+            case 'E' when Dialect.HasFeature(RegexDialectFeatures.QuotedLiterals):
                 Scanner.Position += 2;
                 return WithOptions(new RegexCharacterEscapeSyntax(Scanner.Token(RegexSyntaxKind.EscapeToken, start, leadingTrivia, string.Empty)));
 
             default:
-                return TryParseFlavorEscape(leadingTrivia) ?? ParseBackreferenceOrEscape(leadingTrivia);
+                return TryParseDialectEscape(leadingTrivia) ?? ParseBackreferenceOrEscape(leadingTrivia);
         }
     }
 
@@ -135,12 +135,12 @@ internal partial class PerlStyleRegexParser
         Scanner.Position++;
         var openBraceToken = Scanner.Token(RegexSyntaxKind.OpenBraceToken, braceStart);
 
-        // Flavors that name a property as well as a value accept "Script=Greek", so the separator has to be part of
+        // Dialects that name a property as well as a value accept "Script=Greek", so the separator has to be part of
         // the name rather than the character that ends it.
-        var namesProperties = Flavor.HasFeature(RegexFlavorFeatures.UnicodePropertyNames);
+        var namesProperties = Dialect.HasFeature(RegexDialectFeatures.UnicodePropertyNames);
         var nameStart = Scanner.Position;
 
-        // "\p{^L}" is the other way of writing "\P{L}" where the flavor has it.
+        // "\p{^L}" is the other way of writing "\P{L}" where the dialect has it.
         if (namesProperties && Scanner.Current == '^')
         {
             Scanner.Position++;
@@ -162,14 +162,14 @@ internal partial class PerlStyleRegexParser
             Scanner.Position++;
             closeBraceToken = Scanner.Token(RegexSyntaxKind.CloseBraceToken, closeStart);
 
-            // An empty name is wrong in every flavor, whatever set of names it recognizes.
+            // An empty name is wrong in every dialect, whatever set of names it recognizes.
             if (name.Length == 0)
             {
                 AddDiagnostic(nameToken.Span, RegexDiagnosticIds.UnrecognizedUnicodeProperty, "The property name is empty.");
             }
 
-            // The known-name set is .NET's own. Another flavor has a different and larger one, so checking a name
-            // against this table there would reject properties that flavor really does have.
+            // The known-name set is .NET's own. Another dialect has a different and larger one, so checking a name
+            // against this table there would reject properties that dialect really does have.
             else if (!namesProperties && !NetUnicodeCategoryNames.IsDefined(name))
             {
                 AddDiagnostic(nameToken.Span, RegexDiagnosticIds.UnrecognizedUnicodeProperty, $"Unknown Unicode property or block name '{name}'.");
@@ -202,8 +202,8 @@ internal partial class PerlStyleRegexParser
         RegexSyntaxToken? startToken = null;
         RegexSyntaxToken? openNameToken = null;
 
-        // "\k" introduces a named backreference only where the flavor has named groups at all.
-        if (ch == 'k' && Flavor.HasFeature(RegexFlavorFeatures.NamedGroups))
+        // "\k" introduces a named backreference only where the dialect has named groups at all.
+        if (ch == 'k' && Dialect.HasFeature(RegexDialectFeatures.NamedGroups))
         {
             if (Scanner.Position + 1 < Text.Length)
             {
@@ -542,7 +542,7 @@ internal partial class PerlStyleRegexParser
 
         if (remaining > 0)
         {
-            // Where the flavor allows it, an escape that is not well formed is not an error: it stands for its own
+            // Where the dialect allows it, an escape that is not well formed is not an error: it stands for its own
             // letter, and the characters it failed to consume are read again as ordinary text.
             if (AllowsMalformedNumericEscape)
             {

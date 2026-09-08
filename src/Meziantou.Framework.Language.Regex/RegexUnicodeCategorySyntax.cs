@@ -24,7 +24,7 @@ public sealed class RegexUnicodeCategorySyntax : RegexAtomSyntax
     /// <summary>Returns <see langword="true"/> for the negated form, spelled <c>\P{…}</c> or <c>\p{^…}</c>.</summary>
     public bool IsNegated => CategoryStartToken.Text is [.., 'P'] || NameToken?.Text is ['^', ..];
 
-    /// <summary>The category or block name, without the <c>^</c> that some flavors negate it with.</summary>
+    /// <summary>The category or block name, without the <c>^</c> that some dialects negate it with.</summary>
     public string Name => NameToken?.Text is { } text ? text.TrimStart('^') : string.Empty;
 
     public override void Accept(RegexSyntaxVisitor visitor) => visitor.VisitUnicodeCategory(this);

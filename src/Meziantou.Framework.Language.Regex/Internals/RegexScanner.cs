@@ -80,17 +80,17 @@ internal sealed class RegexScanner
     }
 
     /// <summary>Reports where the trivia at the reading position ends, without claiming it.</summary>
-    public int PeekTriviaEnd(RegexPatternOptions options, RegexFlavor flavor)
+    public int PeekTriviaEnd(RegexPatternOptions options, RegexDialect dialect)
     {
-        EnsureTrivia(options, flavor);
+        EnsureTrivia(options, dialect);
 
         return _triviaEnd;
     }
 
     /// <summary>Claims the trivia at the reading position and reports whatever went wrong inside it.</summary>
-    public IReadOnlyList<RegexSyntaxTrivia> TakeTrivia(RegexPatternOptions options, RegexFlavor flavor)
+    public IReadOnlyList<RegexSyntaxTrivia> TakeTrivia(RegexPatternOptions options, RegexDialect dialect)
     {
-        EnsureTrivia(options, flavor);
+        EnsureTrivia(options, dialect);
         Position = _triviaEnd;
 
         if (_triviaDiagnostics is not null)
@@ -106,7 +106,7 @@ internal sealed class RegexScanner
         return trivia;
     }
 
-    private void EnsureTrivia(RegexPatternOptions options, RegexFlavor flavor)
+    private void EnsureTrivia(RegexPatternOptions options, RegexDialect dialect)
     {
         if (_triviaStart == Position && _triviaOptions == options)
             return;
@@ -115,7 +115,7 @@ internal sealed class RegexScanner
         _triviaOptions = options;
         _triviaCache = null;
         _triviaDiagnostics = null;
-        _triviaEnd = ScanTrivia(Position, options, flavor);
+        _triviaEnd = ScanTrivia(Position, options, dialect);
     }
 
     /// <summary>Scans the trivia starting at <paramref name="start"/> and returns where it ends.</summary>
@@ -125,11 +125,11 @@ internal sealed class RegexScanner
     /// test is the <c>else</c> of the extended-mode one rather than nested inside it. A <c>#</c> comment ends at a line
     /// feed and does not include it, so the line feed is picked up by the whitespace pass on the next turn.
     /// </remarks>
-    private int ScanTrivia(int start, RegexPatternOptions options, RegexFlavor flavor)
+    private int ScanTrivia(int start, RegexPatternOptions options, RegexDialect dialect)
     {
         var extended = (options & RegexPatternOptions.IgnorePatternWhitespace) != RegexPatternOptions.None &&
-            flavor.HasFeature(RegexFlavorFeatures.IgnorePatternWhitespace);
-        var comments = flavor.HasFeature(RegexFlavorFeatures.CommentGroups);
+            dialect.HasFeature(RegexDialectFeatures.IgnorePatternWhitespace);
+        var comments = dialect.HasFeature(RegexDialectFeatures.CommentGroups);
         var position = start;
 
         while (true)

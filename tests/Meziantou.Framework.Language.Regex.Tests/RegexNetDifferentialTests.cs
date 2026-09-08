@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Language.Regex.Tests;
 #if NET11_0_OR_GREATER
 
 /// <summary>
-/// The .NET flavor exists to agree with the runtime, so the runtime is the oracle: a pattern is valid for us exactly
+/// The .NET dialect exists to agree with the runtime, so the runtime is the oracle: a pattern is valid for us exactly
 /// when <see cref="SysRegex"/> accepts it. A disagreement is a bug in the parser, never in the assertion.
 /// </summary>
 /// <remarks>
@@ -118,7 +118,7 @@ public sealed class RegexNetDifferentialTests
     {
         foreach (var pattern in RegexCorpus.Read("NetValid.txt"))
         {
-            var tree = RegexSyntaxTree.ParseText(pattern, RegexFlavor.Net);
+            var tree = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net);
             var runtime = new SysRegex(pattern, SysRegexOptions.None, TimeSpan.FromSeconds(5));
 
             // Group 0 is the whole match and has no syntax, so it is not in our table.
@@ -141,7 +141,7 @@ public sealed class RegexNetDifferentialTests
 
     private static void AssertAgreesWithRuntime(string pattern, SysRegexOptions options)
     {
-        var parseOptions = new RegexParseOptions(RegexFlavor.Net) { PatternOptions = RegexOptionsInterop.ToPatternOptions(options) };
+        var parseOptions = new RegexParseOptions(RegexDialect.Net) { PatternOptions = RegexOptionsInterop.ToPatternOptions(options) };
         var tree = RegexSyntaxTree.ParseText(pattern, parseOptions);
 
         RegexSyntaxAssert.TextIsFaithful(pattern, tree);

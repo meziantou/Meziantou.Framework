@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Language.Regex.Internals;
 
 /// <summary>Parses a pattern the way PCRE and Perl do.</summary>
 /// <remarks>
-/// Most of PCRE is the Perl grammar the shared parser already reads, narrowed or widened by flavor features. What is
+/// Most of PCRE is the Perl grammar the shared parser already reads, narrowed or widened by dialect features. What is
 /// here is what PCRE has and the others do not: the <c>\g</c> reference family, subroutine calls, callouts, the extra
 /// shorthand classes, and the two numeric escapes with braces.
 /// </remarks>
@@ -43,7 +43,7 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
 
     protected override bool AllowsBracelessProperty => true;
 
-    protected override RegexAtomSyntax? TryParseFlavorGroupHeader(RegexSyntaxToken openParenToken, int questionStart)
+    protected override RegexAtomSyntax? TryParseDialectGroupHeader(RegexSyntaxToken openParenToken, int questionStart)
     {
         // A subroutine call runs another group's pattern at this point. "(?&name)" is the Perl spelling and
         // "(?P>name)" the Python one; both are recursion by name rather than by number.
@@ -60,7 +60,7 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
         return null;
     }
 
-    protected override RegexAtomSyntax? TryParseFlavorEscape(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    protected override RegexAtomSyntax? TryParseDialectEscape(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
     {
         return Scanner.Peek() switch
         {

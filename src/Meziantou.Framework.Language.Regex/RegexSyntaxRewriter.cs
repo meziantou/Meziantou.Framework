@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Language.Regex;
 /// <para>
 /// Override any <c>Visit</c> method and return a different node to replace it. Returning the node unchanged, which is
 /// what the base implementations do, means "leave this alone and keep looking inside it", so every node type is
-/// descended into regardless of flavor.
+/// descended into regardless of dialect.
 /// </para>
 /// <para>
 /// A replaced node is spliced into the source text and the pattern is reparsed once, the same mechanism
@@ -138,7 +138,7 @@ public class RegexSyntaxRewriter : RegexSyntaxVisitor<RegexSyntaxNode?>
         if (pattern.SyntaxTree is { } tree)
             return tree.Reparse(builder.ToString()).Root;
 
-        return RegexSyntaxTree.ParseText(builder.ToString(), new RegexParseOptions(pattern.Flavor ?? RegexFlavor.Net)).Root;
+        return RegexSyntaxTree.ParseText(builder.ToString(), new RegexParseOptions(pattern.Dialect ?? RegexDialect.Net)).Root;
     }
 
     /// <summary>Finds the node that replaced <paramref name="original"/> in the reparsed pattern.</summary>

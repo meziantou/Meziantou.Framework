@@ -9,7 +9,7 @@ public sealed class NetParserTests
     private static T ParseSingleAtom<T>(string pattern)
         where T : RegexSyntaxNode
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.Net);
         Assert.Empty(tree.Diagnostics);
 
         var term = Assert.Single(tree.Root.Alternation.Branches[0].Terms);
@@ -20,7 +20,7 @@ public sealed class NetParserTests
     [Fact]
     public void ALiteralIsOneAtomPerCodeUnit()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("abc", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("abc", RegexDialect.Net);
 
         var terms = tree.Root.Alternation.Branches[0].Terms;
         Assert.Equal(3, terms.Count);
@@ -34,7 +34,7 @@ public sealed class NetParserTests
     [Fact]
     public void AQuantifierBindsOneCodeUnitOfASurrogatePair()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("\U0001F600*", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("\U0001F600*", RegexDialect.Net);
 
         var terms = tree.Root.Alternation.Branches[0].Terms;
         Assert.Equal(2, terms.Count);
@@ -109,7 +109,7 @@ public sealed class NetParserTests
     [InlineData("(?i:a)", typeof(RegexOptionsGroupSyntax))]
     public void AGroupHeaderSelectsTheNodeType(string pattern, Type expected)
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.Net);
         Assert.Empty(tree.Diagnostics);
 
         var group = Assert.Single(tree.Root.DescendantNodes().OfType<RegexGroupSyntax>());
@@ -133,7 +133,7 @@ public sealed class NetParserTests
     [Fact]
     public void ABalancingGroupReportsBothNames()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("(?<a>x)(?<b-a>y)", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("(?<a>x)(?<b-a>y)", RegexDialect.Net);
         Assert.Empty(tree.Diagnostics);
 
         var balancing = Assert.Single(tree.Root.DescendantNodes().OfType<RegexBalancingGroupSyntax>());
@@ -144,7 +144,7 @@ public sealed class NetParserTests
     [Fact]
     public void ABalancingGroupMayOnlyPop()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("(a)(?<-1>b)", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("(a)(?<-1>b)", RegexDialect.Net);
         Assert.Empty(tree.Diagnostics);
 
         var balancing = Assert.Single(tree.Root.DescendantNodes().OfType<RegexBalancingGroupSyntax>());
@@ -155,7 +155,7 @@ public sealed class NetParserTests
     [Fact]
     public void ANumberedBackreferenceReportsItsGroup()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(@"(a)\1", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful(@"(a)\1", RegexDialect.Net);
 
         var backreference = Assert.Single(tree.Root.DescendantNodes().OfType<RegexBackreferenceSyntax>());
         Assert.Equal(1, backreference.Number);
@@ -168,11 +168,11 @@ public sealed class NetParserTests
     [Fact]
     public void TenIsAnOctalEscapeUntilThereAreTenGroups()
     {
-        var withoutGroups = RegexSyntaxAssert.TextIsFaithful(@"\10", RegexFlavor.Net);
+        var withoutGroups = RegexSyntaxAssert.TextIsFaithful(@"\10", RegexDialect.Net);
         Assert.Empty(withoutGroups.Diagnostics);
         Assert.Single(withoutGroups.Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
 
-        var withGroups = RegexSyntaxAssert.TextIsFaithful(@"(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)\10", RegexFlavor.Net);
+        var withGroups = RegexSyntaxAssert.TextIsFaithful(@"(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)\10", RegexDialect.Net);
         Assert.Empty(withGroups.Diagnostics);
         Assert.Equal(10, Assert.Single(withGroups.Root.DescendantNodes().OfType<RegexBackreferenceSyntax>()).Number);
     }
@@ -183,7 +183,7 @@ public sealed class NetParserTests
     [InlineData(@"(?<n>a)\<n>")]
     public void ANamedBackreferenceReportsItsName(string pattern)
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.Net);
         Assert.Empty(tree.Diagnostics);
 
         Assert.Equal("n", Assert.Single(tree.Root.DescendantNodes().OfType<RegexNamedBackreferenceSyntax>()).Name);
@@ -192,7 +192,7 @@ public sealed class NetParserTests
     [Fact]
     public void AConditionalOnAGroupReferenceKeepsTheReferenceAndBothBranches()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("(x)(?(1)a|b)", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("(x)(?(1)a|b)", RegexDialect.Net);
         Assert.Empty(tree.Diagnostics);
 
         var conditional = Assert.Single(tree.Root.DescendantNodes().OfType<RegexConditionalSyntax>());
@@ -205,7 +205,7 @@ public sealed class NetParserTests
     [Fact]
     public void AConditionOnAnUndefinedNameIsAnExpression()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("(?(foo)a|b)", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("(?(foo)a|b)", RegexDialect.Net);
         Assert.Empty(tree.Diagnostics);
 
         var conditional = Assert.Single(tree.Root.DescendantNodes().OfType<RegexConditionalSyntax>());
@@ -215,7 +215,7 @@ public sealed class NetParserTests
     [Fact]
     public void AConditionalConditionDoesNotTakeACaptureNumber()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("(?(foo)a|b)(x)", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("(?(foo)a|b)(x)", RegexDialect.Net);
 
         var capture = Assert.Single(tree.Captures);
         Assert.Equal(1, capture.Number);
@@ -297,7 +297,7 @@ public sealed class NetParserTests
     [Fact]
     public void ABraceThatDoesNotOpenABoundIsAnOrdinaryCharacter()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("a{a}", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("a{a}", RegexDialect.Net);
         Assert.Empty(tree.Diagnostics);
 
         Assert.Empty(tree.Root.DescendantNodes().OfType<RegexQuantifiedSyntax>());
@@ -307,7 +307,7 @@ public sealed class NetParserTests
     [Fact]
     public void AnEmptyBranchIsStillABranch()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("a||b", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("a||b", RegexDialect.Net);
 
         Assert.Equal(3, tree.Root.Alternation.Branches.Count);
         Assert.Empty(tree.Root.Alternation.Branches[1].Terms);

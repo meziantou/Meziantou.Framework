@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Language.Regex;
 /// </remarks>
 public static class RegexOptionsInterop
 {
-    /// <summary>Maps the .NET options that affect parsing onto flavor-neutral options.</summary>
+    /// <summary>Maps the .NET options that affect parsing onto dialect-neutral options.</summary>
     public static RegexPatternOptions ToPatternOptions(SysRegexOptions options)
     {
         var result = RegexPatternOptions.None;
@@ -47,7 +47,7 @@ public static class RegexOptionsInterop
         return result;
     }
 
-    /// <summary>Maps flavor-neutral options back onto .NET options. Options with no .NET equivalent are dropped.</summary>
+    /// <summary>Maps dialect-neutral options back onto .NET options. Options with no .NET equivalent are dropped.</summary>
     public static SysRegexOptions ToRegexOptions(RegexPatternOptions options)
     {
         var result = SysRegexOptions.None;

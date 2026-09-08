@@ -12,10 +12,10 @@ using System.Globalization;
 
 namespace Meziantou.Framework.Language.Regex.Internals;
 
-/// <summary>The Perl-derived grammar, parameterized by what the flavor supports.</summary>
+/// <summary>The Perl-derived grammar, parameterized by what the dialect supports.</summary>
 /// <remarks>
 /// Ported from the .NET engine, which is the most complete of the Perl-derived grammars, and then narrowed by feature
-/// flags for the flavors that have less. The alternative, a parser per flavor, would have four copies of the same
+/// flags for the dialects that have less. The alternative, a parser per dialect, would have four copies of the same
 /// escape and character-class handling and four places for them to drift apart.
 /// </remarks>
 internal abstract partial class PerlStyleRegexParser : RegexParser
@@ -75,10 +75,10 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             case ')' when GroupCloseLength(start) > 0:
                 return SkipOneCharacter(leadingTrivia, RegexDiagnosticIds.InsufficientOpeningParentheses, "Unmatched ')'.");
 
-            // Only a character that is a quantifier in this flavor can be one with nothing to repeat. In a basic
+            // Only a character that is a quantifier in this dialect can be one with nothing to repeat. In a basic
             // expression "+" and "?" are ordinary characters, so reporting them here would invent an error.
             case '*':
-            case '+' or '?' when Flavor.HasFeature(RegexFlavorFeatures.PlusAndQuestionQuantifiers):
+            case '+' or '?' when Dialect.HasFeature(RegexDialectFeatures.PlusAndQuestionQuantifiers):
                 return SkipOneCharacter(leadingTrivia, RegexDiagnosticIds.QuantifierAfterNothing, $"Quantifier '{Scanner.Current}' has nothing to repeat.");
 
             case '{' when IsQuantifierAt(Scanner.Position):
@@ -124,15 +124,15 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             _inConditionalTest = false;
 
             // A backtracking verb is "(*NAME)", so it is decided before the "(?" headers are looked at.
-            if (Scanner.Current == '*' && Flavor.HasFeature(RegexFlavorFeatures.BacktrackingVerbs))
+            if (Scanner.Current == '*' && Dialect.HasFeature(RegexDialectFeatures.BacktrackingVerbs))
                 return ParseBacktrackingVerb(openParenToken);
 
             // "(" at the end, "(x" where x is not "?", and "(?)" are all plain groups. The "?" of "(?)" is left where
             // it is on purpose: the engine leaves it too, and the body parse then reports it as a quantifier with
-            // nothing to repeat. A flavor without the "(?…)" family treats every one of them the same way.
+            // nothing to repeat. A dialect without the "(?…)" family treats every one of them the same way.
             if (Scanner.IsAtEnd || Scanner.Current != '?' ||
                 (Scanner.Peek() == ')' && !AllowsEmptyOptionGroup) ||
-                !Flavor.HasFeature(RegexFlavorFeatures.ExtendedGroupSyntax))
+                !Dialect.HasFeature(RegexDialectFeatures.ExtendedGroupSyntax))
             {
                 return ParsePlainGroup(openParenToken);
             }
@@ -143,37 +143,37 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             switch (Scanner.Current)
             {
                 case ':':
-                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.NonCapturingGroup, RegexFlavorFeatures.NonCapturingGroups);
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.NonCapturingGroup, RegexDialectFeatures.NonCapturingGroups);
 
                 case '=':
                 case '!':
-                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.Lookaround, RegexFlavorFeatures.Lookahead);
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.Lookaround, RegexDialectFeatures.Lookahead);
 
                 case '>':
-                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.AtomicGroup, RegexFlavorFeatures.AtomicGroups);
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.AtomicGroup, RegexDialectFeatures.AtomicGroups);
 
                 case '|':
-                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.BranchResetGroup, RegexFlavorFeatures.BranchReset);
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.BranchResetGroup, RegexDialectFeatures.BranchReset);
 
                 case '<':
                 case '\'':
                     return ParseAngledGroup(openParenToken, questionStart);
 
-                case 'P' when Flavor.HasFeature(RegexFlavorFeatures.PythonNamedGroups) && Scanner.Peek() == '<':
+                case 'P' when Dialect.HasFeature(RegexDialectFeatures.PythonNamedGroups) && Scanner.Peek() == '<':
                     return ParseAngledGroup(openParenToken, questionStart);
 
                 case '(':
                     return ParseConditional(openParenToken, questionStart);
 
                 case 'R':
-                case >= '0' and <= '9' when Flavor.HasFeature(RegexFlavorFeatures.Recursion):
-                    if (Flavor.HasFeature(RegexFlavorFeatures.Recursion))
+                case >= '0' and <= '9' when Dialect.HasFeature(RegexDialectFeatures.Recursion):
+                    if (Dialect.HasFeature(RegexDialectFeatures.Recursion))
                         return ParseRecursion(openParenToken, questionStart);
 
                     goto default;
 
                 default:
-                    return TryParseFlavorGroupHeader(openParenToken, questionStart)
+                    return TryParseDialectGroupHeader(openParenToken, questionStart)
                         ?? ParseOptionsConstruct(openParenToken, questionStart, inConditionalTest);
             }
         }
@@ -183,19 +183,19 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         }
     }
 
-    /// <summary>Parses a <c>(?…</c> header that only some flavors have, or returns null to fall through.</summary>
-    protected virtual RegexAtomSyntax? TryParseFlavorGroupHeader(RegexSyntaxToken openParenToken, int questionStart) => null;
+    /// <summary>Parses a <c>(?…</c> header that only some dialects have, or returns null to fall through.</summary>
+    protected virtual RegexAtomSyntax? TryParseDialectGroupHeader(RegexSyntaxToken openParenToken, int questionStart) => null;
 
-    /// <summary>Parses a backslash escape that only some flavors have, or returns null to fall through.</summary>
+    /// <summary>Parses a backslash escape that only some dialects have, or returns null to fall through.</summary>
     /// <remarks>The reading position is on the backslash.</remarks>
-    protected virtual RegexAtomSyntax? TryParseFlavorEscape(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia) => null;
+    protected virtual RegexAtomSyntax? TryParseDialectEscape(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia) => null;
 
     /// <summary>Whether the reading position is inside a character class, where a few escapes differ.</summary>
     protected bool IsInCharacterClass { get; private set; }
 
     /// <summary>Whether <c>\</c> followed by <paramref name="ch"/> may simply stand for that character.</summary>
     protected virtual bool AllowsIdentityEscape(char ch) =>
-        !Flavor.HasFeature(RegexFlavorFeatures.StrictEscapes) ||
+        !Dialect.HasFeature(RegexDialectFeatures.StrictEscapes) ||
         UsesEcmaScriptBehavior ||
         !RegexCharacterTables.IsBoundaryWordChar(ch);
 
@@ -283,7 +283,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     /// </remarks>
     protected virtual bool IsShorthandClassLetterInClass(char letter) => IsCoreShorthandClassLetter(letter);
 
-    /// <summary>The six shorthand classes every flavor has.</summary>
+    /// <summary>The six shorthand classes every dialect has.</summary>
     private static bool IsCoreShorthandClassLetter(char letter) => letter is 'd' or 'D' or 's' or 'S' or 'w' or 'W';
 
     /// <summary>Maps an inline option letter onto the options it sets, reporting whether the letter is one at all.</summary>
@@ -326,18 +326,18 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
 
     /// <summary>Parses a group whose header is <c>(?</c> plus one character.</summary>
     /// <remarks>
-    /// A header the flavor does not have is reported and then read as a non-capturing group, so the body is still
+    /// A header the dialect does not have is reported and then read as a non-capturing group, so the body is still
     /// parsed and every character is still accounted for.
     /// </remarks>
-    private RegexGroupSyntax ParseSimpleHeaderGroup(RegexSyntaxToken openParenToken, int questionStart, RegexSyntaxKind kind, RegexFlavorFeatures required)
+    private RegexGroupSyntax ParseSimpleHeaderGroup(RegexSyntaxToken openParenToken, int questionStart, RegexSyntaxKind kind, RegexDialectFeatures required)
     {
         Scanner.Position++;
         var groupKindToken = Scanner.Token(RegexSyntaxKind.GroupKindToken, questionStart);
         _ignoreNextParen = false;
 
-        if (!Flavor.HasFeature(required))
+        if (!Dialect.HasFeature(required))
         {
-            AddDiagnostic(groupKindToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"The '{groupKindToken.Text}' grouping construct is not supported by the {Flavor.Name} flavor.");
+            AddDiagnostic(groupKindToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"The '{groupKindToken.Text}' grouping construct is not supported by the {Dialect.Name} dialect.");
             kind = RegexSyntaxKind.NonCapturingGroup;
         }
 
@@ -441,9 +441,9 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             var lookbehindKindToken = Scanner.Token(RegexSyntaxKind.GroupKindToken, questionStart);
             _ignoreNextParen = false;
 
-            if (!Flavor.HasFeature(RegexFlavorFeatures.Lookbehind))
+            if (!Dialect.HasFeature(RegexDialectFeatures.Lookbehind))
             {
-                AddDiagnostic(lookbehindKindToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"The '{lookbehindKindToken.Text}' grouping construct is not supported by the {Flavor.Name} flavor.");
+                AddDiagnostic(lookbehindKindToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"The '{lookbehindKindToken.Text}' grouping construct is not supported by the {Dialect.Name} dialect.");
             }
 
             var lookbehindBody = ParseAlternation(insideGroup: true);
@@ -458,10 +458,10 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         var groupKindToken = Scanner.Token(RegexSyntaxKind.GroupKindToken, questionStart);
         _ignoreNextParen = false;
 
-        var namedSpelling = close == '\'' ? RegexFlavorFeatures.QuoteNamedGroups : RegexFlavorFeatures.AngleNamedGroups;
-        if (!Flavor.HasFeature(namedSpelling))
+        var namedSpelling = close == '\'' ? RegexDialectFeatures.QuoteNamedGroups : RegexDialectFeatures.AngleNamedGroups;
+        if (!Dialect.HasFeature(namedSpelling))
         {
-            AddDiagnostic(groupKindToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"The '{groupKindToken.Text}' grouping construct is not supported by the {Flavor.Name} flavor.");
+            AddDiagnostic(groupKindToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"The '{groupKindToken.Text}' grouping construct is not supported by the {Dialect.Name} dialect.");
         }
 
         var nameToken = ReadGroupNameOrNumber(close, openParenToken.Span.Start, out var capnum, out var startsWithHyphen);
@@ -475,9 +475,9 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             var hyphenStart = Scanner.Position;
             Scanner.Position++;
             hyphenToken = Scanner.Token(RegexSyntaxKind.HyphenToken, hyphenStart);
-            if (!Flavor.HasFeature(RegexFlavorFeatures.BalancingGroups))
+            if (!Dialect.HasFeature(RegexDialectFeatures.BalancingGroups))
             {
-                AddDiagnostic(hyphenToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"Balancing groups are not supported by the {Flavor.Name} flavor.");
+                AddDiagnostic(hyphenToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"Balancing groups are not supported by the {Dialect.Name} dialect.");
             }
 
             previousNameToken = ReadBalancingTarget(close);
@@ -646,9 +646,9 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     private RegexConditionalSyntax ParseConditional(RegexSyntaxToken openParenToken, int questionStart)
     {
         var questionToken = Scanner.Token(RegexSyntaxKind.QuestionToken, questionStart);
-        if (!Flavor.HasFeature(RegexFlavorFeatures.Conditionals))
+        if (!Dialect.HasFeature(RegexDialectFeatures.Conditionals))
         {
-            AddDiagnostic(questionToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"Conditional alternations are not supported by the {Flavor.Name} flavor.");
+            AddDiagnostic(questionToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"Conditional alternations are not supported by the {Dialect.Name} dialect.");
         }
 
         var conditionStart = Scanner.Position;
@@ -757,13 +757,13 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     private RegexAtomSyntax ParseOptionsConstruct(RegexSyntaxToken openParenToken, int questionStart, bool inConditionalTest)
     {
         var questionToken = Scanner.Token(RegexSyntaxKind.QuestionToken, questionStart);
-        if (!Flavor.HasFeature(RegexFlavorFeatures.InlineOptions))
+        if (!Dialect.HasFeature(RegexDialectFeatures.InlineOptions))
         {
-            AddDiagnostic(questionToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"Inline options are not supported by the {Flavor.Name} flavor.");
+            AddDiagnostic(questionToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"Inline options are not supported by the {Dialect.Name} dialect.");
         }
 
         var optionsStart = Scanner.Position;
-        var optionsToken = inConditionalTest || !Flavor.HasFeature(RegexFlavorFeatures.InlineOptions) ? null : ScanInlineOptions(optionsStart);
+        var optionsToken = inConditionalTest || !Dialect.HasFeature(RegexDialectFeatures.InlineOptions) ? null : ScanInlineOptions(optionsStart);
 
         if (Scanner.Current == ')')
         {

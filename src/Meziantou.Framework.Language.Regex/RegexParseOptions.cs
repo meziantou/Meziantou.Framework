@@ -6,14 +6,14 @@ public sealed record RegexParseOptions
     /// <summary>The default value of <see cref="MaxRecursionDepth"/>.</summary>
     public const int DefaultMaxRecursionDepth = 128;
 
-    public RegexParseOptions(RegexFlavor flavor)
+    public RegexParseOptions(RegexDialect dialect)
     {
-        ArgumentNullException.ThrowIfNull(flavor);
-        Flavor = flavor;
+        ArgumentNullException.ThrowIfNull(dialect);
+        Dialect = dialect;
     }
 
-    /// <summary>The flavor to parse the pattern as.</summary>
-    public RegexFlavor Flavor { get; init; }
+    /// <summary>The dialect to parse the pattern as.</summary>
+    public RegexDialect Dialect { get; init; }
 
     /// <summary>
     /// The maximum number of nested groups and character classes the parser descends into before reporting

@@ -97,6 +97,73 @@ public sealed class JsonSyntaxTreeTests
         Assert.All(tree.Diagnostics, diagnostic => Assert.Equal(JsonDiagnosticSeverity.Error, diagnostic.Severity));
     }
 
+    public static TheoryData<string> UnexpectedTokenInContainerSamples => new()
+    {
+        "[:]",
+        "[:",
+        "[}]",
+        "[1, :, 2]",
+        "[[:]]",
+        """{"a":]}""",
+        """{"a":]""",
+        "{]}",
+        "{:}",
+        """{"a":}, "b":1}""",
+        """{"a":{"b":]}}""",
+    };
+
+    [Theory]
+    [MemberData(nameof(UnexpectedTokenInContainerSamples))]
+    public void ParseText_UnexpectedTokenInContainer_TerminatesAndKeepsSkippedText(string text)
+    {
+        var tree = ParseWithTimeout(text);
+
+        Assert.NotEmpty(tree.Diagnostics);
+        Assert.Equal(text, tree.Root.ToFullString());
+        Assert.All(tree.Diagnostics, diagnostic => Assert.Equal(JsonDiagnosticSeverity.Error, diagnostic.Severity));
+        Assert.True(tree.Diagnostics.Count <= text.Length * 2, $"Expected a bounded number of diagnostics, got {tree.Diagnostics.Count}.");
+    }
+
+    [Fact]
+    public void ParseText_UnexpectedTokenAfterValue_StillRecoversFollowingMembers()
+    {
+        const string Text = """{"a":], "b":2}""";
+
+        var tree = ParseWithTimeout(Text);
+        var obj = Assert.IsType<JsonObjectSyntax>(tree.Root.Value);
+
+        var member = obj.GetMember("b");
+
+        Assert.Equal(Text, tree.Root.ToFullString());
+        Assert.NotNull(member);
+        Assert.Equal("2", Assert.IsType<JsonNumberSyntax>(member.Value).Text);
+    }
+
+    [Fact]
+    public void ParseText_UnexpectedTokenInArray_StillRecoversFollowingElements()
+    {
+        const string Text = "[1, :, 2]";
+
+        var tree = ParseWithTimeout(Text);
+        var array = Assert.IsType<JsonArraySyntax>(tree.Root.Value);
+
+        Assert.Equal(Text, tree.Root.ToFullString());
+        Assert.Contains(array.Elements, element => element.Value is JsonNumberSyntax { Text: "1" });
+        Assert.Contains(array.Elements, element => element.Value is JsonNumberSyntax { Text: "2" });
+    }
+
+    /// <summary>Parses <paramref name="text"/> on a dedicated thread so a parser that fails to make progress fails the test instead of hanging the test run.</summary>
+    private static JsonSyntaxTree ParseWithTimeout(string text)
+    {
+        JsonSyntaxTree? tree = null;
+        var thread = new Thread(() => tree = JsonSyntaxTree.ParseText(text)) { IsBackground = true };
+        thread.Start();
+
+        Assert.True(thread.Join(TimeSpan.FromSeconds(30)), $"Parsing '{text}' did not complete; the parser is likely stuck on a token it never consumes.");
+
+        return tree!;
+    }
+
     [Fact]
     public void ParseText_CommentsAreTriviaWithSourceLocations()
     {

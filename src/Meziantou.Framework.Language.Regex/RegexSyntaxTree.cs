@@ -23,8 +23,8 @@ public sealed class RegexSyntaxTree
     public SourceText SourceText { get; }
     public RegexParseOptions Options { get; }
 
-    /// <summary>The flavor the pattern was parsed as.</summary>
-    public RegexFlavor Flavor => Options.Flavor;
+    /// <summary>The dialect the pattern was parsed as.</summary>
+    public RegexDialect Dialect => Options.Dialect;
 
     /// <summary>
     /// The options in effect at the start of the pattern, including the ones read from a JavaScript literal's flags.
@@ -41,14 +41,14 @@ public sealed class RegexSyntaxTree
     public IReadOnlyList<RegexDiagnostic> GetDiagnostics() => Diagnostics;
 
     /// <summary>Parses <paramref name="pattern"/> as a complete pattern. Never throws; problems are reported as diagnostics.</summary>
-    public static RegexSyntaxTree ParseText([StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexFlavor flavor)
+    public static RegexSyntaxTree ParseText([StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexDialect dialect)
     {
-        ArgumentNullException.ThrowIfNull(flavor);
+        ArgumentNullException.ThrowIfNull(dialect);
 
-        return ParseText(pattern, new RegexParseOptions(flavor));
+        return ParseText(pattern, new RegexParseOptions(dialect));
     }
 
-    /// <inheritdoc cref="ParseText(string, RegexFlavor)"/>
+    /// <inheritdoc cref="ParseText(string, RegexDialect)"/>
     public static RegexSyntaxTree ParseText([StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexParseOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -61,7 +61,7 @@ public sealed class RegexSyntaxTree
     /// <see cref="PatternOptions"/> and keeping the delimiters on the root so the literal round-trips.
     /// </summary>
     /// <remarks>
-    /// The flavor is always <see cref="RegexFlavor.JavaScript"/>: only that flavor has literals. Text that follows the
+    /// The dialect is always <see cref="RegexDialect.JavaScript"/>: only that dialect has literals. Text that follows the
     /// flags is reported as <c>REGEX0204</c> and kept as skipped text.
     /// </remarks>
     public static RegexSyntaxTree ParseJavaScriptLiteral(string literal)
@@ -69,7 +69,7 @@ public sealed class RegexSyntaxTree
         var text = literal ?? string.Empty;
         var parsed = JavaScriptLiteral.Split(text);
 
-        return Parse(text, new RegexParseOptions(RegexFlavor.JavaScript) { PatternOptions = parsed.Options }, parsed);
+        return Parse(text, new RegexParseOptions(RegexDialect.JavaScript) { PatternOptions = parsed.Options }, parsed);
     }
 
     private static RegexSyntaxTree Parse(string text, RegexParseOptions options, JavaScriptLiteral? literal)
@@ -84,12 +84,12 @@ public sealed class RegexSyntaxTree
         return new RegexSyntaxTree(text, options, root, [.. parser.Diagnostics], parser.Captures, options.PatternOptions);
     }
 
-    /// <summary>The flavor family selects the parser; flavor features handle the differences within a family.</summary>
-    private static RegexParser CreateParser(string text, RegexParseOptions options, JavaScriptLiteral? literal) => options.Flavor.Family switch
+    /// <summary>The dialect family selects the parser; dialect features handle the differences within a family.</summary>
+    private static RegexParser CreateParser(string text, RegexParseOptions options, JavaScriptLiteral? literal) => options.Dialect.Family switch
     {
-        RegexFlavorFamily.JavaScript => new JavaScriptRegexParser(text, options, literal),
-        RegexFlavorFamily.Pcre => new PcreRegexParser(text, options),
-        RegexFlavorFamily.Posix => new PosixRegexParser(text, options),
+        RegexDialectFamily.JavaScript => new JavaScriptRegexParser(text, options, literal),
+        RegexDialectFamily.Pcre => new PcreRegexParser(text, options),
+        RegexDialectFamily.Posix => new PosixRegexParser(text, options),
         _ => new NetRegexParser(text, options),
     };
 
@@ -158,7 +158,7 @@ public sealed class RegexSyntaxTree
 
     /// <summary>
     /// Compares this tree with <paramref name="other"/> structurally, ignoring extended-mode whitespace and comments.
-    /// Two patterns parsed as different flavors, or with different options, are never equivalent.
+    /// Two patterns parsed as different dialects, or with different options, are never equivalent.
     /// </summary>
     /// <remarks>
     /// Identical text is a shortcut only when the options match as well. The same characters read with and without
@@ -170,7 +170,7 @@ public sealed class RegexSyntaxTree
         if (other is null)
             return false;
 
-        if (other.Flavor != Flavor || other.PatternOptions != PatternOptions)
+        if (other.Dialect != Dialect || other.PatternOptions != PatternOptions)
             return false;
 
         return string.Equals(Text, other.Text, StringComparison.Ordinal) || Root.IsEquivalentTo(other.Root);

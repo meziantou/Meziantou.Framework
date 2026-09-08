@@ -31,7 +31,7 @@ public sealed class RegexSyntaxVisitorTests
     [Fact]
     public void VisitorReachesEveryNodeOfATree()
     {
-        var tree = RegexSyntaxTree.ParseText(@"(?<n>a|[b-d])\k<n>{2,3}?", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText(@"(?<n>a|[b-d])\k<n>{2,3}?", RegexDialect.Net);
         var counter = new NodeCounter();
 
         counter.Visit(tree.Root);
@@ -42,7 +42,7 @@ public sealed class RegexSyntaxVisitorTests
     [Fact]
     public void TypedVisitorReturnsAValue()
     {
-        var tree = RegexSyntaxTree.ParseText("a|b", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("a|b", RegexDialect.Net);
 
         Assert.Equal(RegexSyntaxKind.Pattern, new KindReader().Visit(tree.Root));
     }
@@ -50,7 +50,7 @@ public sealed class RegexSyntaxVisitorTests
     [Fact]
     public void DescendantNodesAreReturnedInSourceOrder()
     {
-        var tree = RegexSyntaxTree.ParseText("(ab)|c", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("(ab)|c", RegexDialect.Net);
 
         var starts = tree.Root.DescendantNodes().Select(node => node.FullSpan.Start).ToArray();
 
@@ -61,7 +61,7 @@ public sealed class RegexSyntaxVisitorTests
     public void DescendantTokensReproduceTheSource()
     {
         const string Pattern = @"(?<n>a|[b-d])\k<n>{2,3}?";
-        var tree = RegexSyntaxTree.ParseText(Pattern, RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText(Pattern, RegexDialect.Net);
 
         Assert.Equal(Pattern, string.Concat(tree.Root.DescendantTokens().Select(token => token.ToFullString())));
     }

@@ -1,19 +1,19 @@
 namespace Meziantou.Framework.Language.Regex;
 
-/// <summary>The optional constructs a <see cref="RegexFlavor"/> supports.</summary>
+/// <summary>The optional constructs a <see cref="RegexDialect"/> supports.</summary>
 /// <remarks>
 /// <para>
 /// A feature records a difference <em>within</em> a grammar family. Differences between families are handled by
-/// <see cref="RegexFlavorFamily"/>, which selects the parser.
+/// <see cref="RegexDialectFamily"/>, which selects the parser.
 /// </para>
 /// <para>
-/// A construct the flavor does not have is not parsed as that construct. Where there is an ordinary reading it is used
+/// A construct the dialect does not have is not parsed as that construct. Where there is an ordinary reading it is used
 /// instead -- <c>\A</c> is the letter <c>A</c> where there is no such anchor -- and where there is not, the construct
 /// is reported as invalid.
 /// </para>
 /// </remarks>
 [Flags]
-public enum RegexFlavorFeatures : long
+public enum RegexDialectFeatures : long
 {
     None = 0,
 
@@ -95,7 +95,7 @@ public enum RegexFlavorFeatures : long
     Backreferences = 1L << 21,
 
     /// <summary>
-    /// An unrecognized alphabetic escape such as <c>\q</c> is an error. Where the flavor lacks this, the escape stands
+    /// An unrecognized alphabetic escape such as <c>\q</c> is an error. Where the dialect lacks this, the escape stands
     /// for the character itself.
     /// </summary>
     StrictEscapes = 1L << 22,

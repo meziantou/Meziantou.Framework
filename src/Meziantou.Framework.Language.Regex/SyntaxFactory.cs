@@ -10,26 +10,26 @@ namespace Meziantou.Framework.Language.Regex;
 /// </remarks>
 public static class SyntaxFactory
 {
-    /// <summary>Creates a literal that matches <paramref name="value"/> exactly, escaping it where the flavor needs it.</summary>
-    public static RegexAtomSyntax Literal(char value, RegexFlavor flavor)
+    /// <summary>Creates a literal that matches <paramref name="value"/> exactly, escaping it where the dialect needs it.</summary>
+    public static RegexAtomSyntax Literal(char value, RegexDialect dialect)
     {
-        ArgumentNullException.ThrowIfNull(flavor);
+        ArgumentNullException.ThrowIfNull(dialect);
 
-        return NeedsEscape(value, flavor)
+        return NeedsEscape(value, dialect)
             ? new RegexCharacterEscapeSyntax(new RegexSyntaxToken(RegexSyntaxKind.EscapeToken, $"\\{value}", value.ToString()))
             : new RegexLiteralSyntax(new RegexSyntaxToken(RegexSyntaxKind.LiteralToken, value.ToString()));
     }
 
     /// <summary>Creates a sequence that matches <paramref name="value"/> literally, escaping every character that needs it.</summary>
-    public static RegexSequenceSyntax LiteralText(string value, RegexFlavor flavor)
+    public static RegexSequenceSyntax LiteralText(string value, RegexDialect dialect)
     {
         ArgumentNullException.ThrowIfNull(value);
-        ArgumentNullException.ThrowIfNull(flavor);
+        ArgumentNullException.ThrowIfNull(dialect);
 
         var terms = new List<RegexTermSyntax>(value.Length);
         foreach (var ch in value)
         {
-            terms.Add(Literal(ch, flavor));
+            terms.Add(Literal(ch, dialect));
         }
 
         return new RegexSequenceSyntax(terms);
@@ -169,15 +169,15 @@ public static class SyntaxFactory
     }
 
     /// <summary>Creates a range such as <c>a-z</c>, for use inside a character class.</summary>
-    public static RegexCharacterRangeSyntax CharacterRange(char first, char last, RegexFlavor flavor)
+    public static RegexCharacterRangeSyntax CharacterRange(char first, char last, RegexDialect dialect)
     {
-        ArgumentNullException.ThrowIfNull(flavor);
+        ArgumentNullException.ThrowIfNull(dialect);
         ArgumentOutOfRangeException.ThrowIfLessThan(last, first);
 
         return new RegexCharacterRangeSyntax(
-            Literal(first, flavor),
+            Literal(first, dialect),
             new RegexSyntaxToken(RegexSyntaxKind.HyphenToken, "-"),
-            Literal(last, flavor));
+            Literal(last, dialect));
     }
 
     private static RegexSyntaxToken? Modifier(RegexQuantifierMode mode) => mode switch
@@ -189,12 +189,12 @@ public static class SyntaxFactory
 
     private static string FormatCount(int value) => value.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-    /// <summary>Returns whether a character has to be escaped to match itself in this flavor.</summary>
+    /// <summary>Returns whether a character has to be escaped to match itself in this dialect.</summary>
     /// <remarks>
     /// <para>
     /// Escaping is not a superset game: adding a backslash can <em>create</em> a construct. In POSIX basic expressions
     /// a bare <c>(</c> is already the literal and <c>\(</c> is what opens a group, so escaping it there would produce
-    /// the opposite of what the caller asked for. The set therefore has to be chosen per flavor rather than by taking
+    /// the opposite of what the caller asked for. The set therefore has to be chosen per dialect rather than by taking
     /// the union.
     /// </para>
     /// <para>
@@ -203,14 +203,14 @@ public static class SyntaxFactory
     /// which matter once extended mode is on.
     /// </para>
     /// </remarks>
-    private static bool NeedsEscape(char value, RegexFlavor flavor) => flavor.Family switch
+    private static bool NeedsEscape(char value, RegexDialect dialect) => dialect.Family switch
     {
         // Basic expressions: the escaped forms are the constructs, so only the unescaped specials are escaped here.
-        RegexFlavorFamily.Posix when flavor.HasFeature(RegexFlavorFeatures.EscapedGroupDelimiters) =>
+        RegexDialectFamily.Posix when dialect.HasFeature(RegexDialectFeatures.EscapedGroupDelimiters) =>
             value is '.' or '*' or '[' or ']' or '^' or '$' or '\\',
 
         // Extended expressions have no backslash escapes beyond the specials themselves.
-        RegexFlavorFamily.Posix =>
+        RegexDialectFamily.Posix =>
             value is '.' or '*' or '+' or '?' or '[' or ']' or '(' or ')' or '{' or '}' or '|' or '^' or '$' or '\\',
 
         _ => RegexCharacterTables.IsSpecialOrSpace(value) || value is ']' or '}' or '-',

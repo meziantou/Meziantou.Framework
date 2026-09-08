@@ -4,17 +4,17 @@
 
 It is a parser, not an engine: nothing in it matches text. Use `System.Text.RegularExpressions` for that.
 
-- parse a pattern in the flavor you choose, without rewriting anything
+- parse a pattern in the dialect you choose, without rewriting anything
 - keep every character, including extended-mode whitespace and comments
 - report syntax issues through diagnostics (parsing never throws, whatever the input)
 - edit nodes/tokens/trivia and serialize back with `ToFullString()`
 - walk or rewrite the tree with visitors
 
-The .NET flavor's scanner is ported from [dotnet/runtime](https://github.com/dotnet/runtime)'s own `RegexParser`, so its grammar decisions come from the engine rather than being re-derived. See `THIRD-PARTY-NOTICES.TXT`. A differential test runs every sample and several thousand generated patterns through both this parser and `System.Text.RegularExpressions`, asserting they agree on what is valid.
+The .NET dialect's scanner is ported from [dotnet/runtime](https://github.com/dotnet/runtime)'s own `RegexParser`, so its grammar decisions come from the engine rather than being re-derived. See `THIRD-PARTY-NOTICES.TXT`. A differential test runs every sample and several thousand generated patterns through both this parser and `System.Text.RegularExpressions`, asserting they agree on what is valid.
 
-## Flavors
+## Dialects
 
-| `RegexFlavor` | Family | Notes |
+| `RegexDialect` | Family | Notes |
 | --- | --- | --- |
 | `Net` | .NET | balancing groups, character class subtraction, conditionals, `(?#…)`, extended mode |
 | `JavaScript` | ECMAScript | the `u` and `v` flags, `\u{…}`, `[]` and `[^]`, class set operations, no `\A`/`\Z`/`\z`/`\G`, no atomic groups, no extended mode, no inline options |
@@ -22,13 +22,13 @@ The .NET flavor's scanner is ported from [dotnet/runtime](https://github.com/dot
 | `PosixExtended` | POSIX | extended regular expressions (ERE) |
 | `PosixBasic` | POSIX | basic regular expressions (BRE): `\(…\)` groups, `\{n,m\}` bounds, GNU `\|`, `\+`, `\?`; a bare `(` or `{` is an ordinary character |
 
-Flavors within a family share a parser; `RegexFlavor.Features` records what each one supports.
+Dialects within a family share a parser; `RegexDialect.Features` records what each one supports.
 
-Where a construct the flavor lacks has an ordinary reading, that is what it gets: `\A` is the letter `A` in JavaScript, and `[a-z-[aeiou]]` in PCRE is the class `[a-z-[aeiou]` followed by a `]`. Where it does not — a grouping construct that flavor simply has no syntax for, such as `(?>…)` in JavaScript — it is reported and then read as a non-capturing group so the body still parses and every character is still accounted for.
+Where a construct the dialect lacks has an ordinary reading, that is what it gets: `\A` is the letter `A` in JavaScript, and `[a-z-[aeiou]]` in PCRE is the class `[a-z-[aeiou]` followed by a `]`. Where it does not — a grouping construct that dialect simply has no syntax for, such as `(?>…)` in JavaScript — it is reported and then read as a non-capturing group so the body still parses and every character is still accounted for.
 
 ### What is covered
 
-Every flavor parses its own grammar into its own node types, not into a pile of literals:
+Every dialect parses its own grammar into its own node types, not into a pile of literals:
 
 - **`Net`** is complete against Microsoft's regular-expression language reference, balancing groups
   (`(?<c-o>…)`, `(?'c-o'…)`, and the pop-only `(?<-o>…)`) included, with capture numbering that matches the engine.
@@ -42,7 +42,7 @@ Every flavor parses its own grammar into its own node types, not into a pile of 
   `\|`, `\+`, and `\?` extensions, and the positional rules that make `^`, `$`, and `*` ordinary characters where
   they cannot be special.
 
-Two notes on how faithful each flavor is, since they were checked against the engines themselves rather than against
+Two notes on how faithful each dialect is, since they were checked against the engines themselves rather than against
 a reading of the grammars:
 
 - **`JavaScript` follows whichever grammar the flags select.** Without `u` or `v` the web-compatibility grammar
@@ -54,7 +54,7 @@ a reading of the grammars:
   is what the engines see. The shorthand classes it does accept -- `\w`, `\s`, `\b` and their negations -- are the
   GNU extensions.
 
-Java, Python, and RE2/Go are not flavors.
+Java, Python, and RE2/Go are not dialects.
 
 ## Parsing
 
@@ -69,7 +69,7 @@ const string Pattern = """
     $
     """;
 
-var tree = RegexSyntaxTree.ParseText(Pattern, RegexFlavor.Net);
+var tree = RegexSyntaxTree.ParseText(Pattern, RegexDialect.Net);
 
 // Nothing is lost: the tree reproduces the input character for character.
 Console.WriteLine(tree.Root.ToFullString() == Pattern);   // True
@@ -104,7 +104,7 @@ Console.WriteLine(tree.Root.ToFullString());     // /a+b/giu
 The options an engine is given alongside a pattern change how it is read, so they are part of parsing:
 
 ```csharp
-var options = new RegexParseOptions(RegexFlavor.Net)
+var options = new RegexParseOptions(RegexDialect.Net)
 {
     PatternOptions = RegexPatternOptions.IgnorePatternWhitespace,
     MaxRecursionDepth = 64,
@@ -135,7 +135,7 @@ A pattern body is always an alternation of sequences, even when it has a single 
 uniform means a consumer never has to handle two spellings of the same thing.
 
 ```csharp
-var tree = RegexSyntaxTree.ParseText("ab|c", RegexFlavor.Net);
+var tree = RegexSyntaxTree.ParseText("ab|c", RegexDialect.Net);
 
 Console.WriteLine(tree.Root.Alternation.Branches.Count);           // 2
 Console.WriteLine(tree.Root.Alternation.Branches[0].Terms.Count);  // 2
@@ -149,7 +149,7 @@ points instead, so the pair is one atom and `RegexLiteralSyntax.CodePoint` repor
 readable after the fact:
 
 ```csharp
-var tree = RegexSyntaxTree.ParseText("a(?i)b", RegexFlavor.Net);
+var tree = RegexSyntaxTree.ParseText("a(?i)b", RegexDialect.Net);
 var literals = tree.Root.DescendantNodes().OfType<RegexLiteralSyntax>().ToArray();
 
 Console.WriteLine(literals[0].Options);   // None
@@ -160,7 +160,7 @@ Capture groups are numbered the way the engine numbers them, which is not the or
 take the first free numbers after every explicitly numbered one.
 
 ```csharp
-var tree = RegexSyntaxTree.ParseText("(a)(?<x>b)(c)", RegexFlavor.Net);
+var tree = RegexSyntaxTree.ParseText("(a)(?<x>b)(c)", RegexDialect.Net);
 
 foreach (var capture in tree.Captures)
 {
@@ -174,7 +174,7 @@ A pattern has no trivia unless extended mode is in effect, which `(?x)` can swit
 `(?#…)` comment is trivia in every mode.
 
 ```csharp
-var tree = RegexSyntaxTree.ParseText("a(?#note)b", RegexFlavor.Net);
+var tree = RegexSyntaxTree.ParseText("a(?#note)b", RegexDialect.Net);
 
 foreach (var comment in tree.Root.DescendantComments())
 {
@@ -190,11 +190,11 @@ Edits splice text and reparse, so untouched formatting is preserved exactly. Whe
 trivia of its own, the whitespace in front of the original node is kept:
 
 ```csharp
-var options = new RegexParseOptions(RegexFlavor.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
+var options = new RegexParseOptions(RegexDialect.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
 var tree = RegexSyntaxTree.ParseText("a   b # keep this\n", options);
 var second = tree.Root.DescendantNodes().OfType<RegexLiteralSyntax>().Last();
 
-var updated = tree.Root.ReplaceNode(second, SyntaxFactory.Literal('z', RegexFlavor.Net));
+var updated = tree.Root.ReplaceNode(second, SyntaxFactory.Literal('z', RegexDialect.Net));
 
 Console.WriteLine(updated.ToFullString());   // a   z # keep this
 ```
@@ -202,7 +202,7 @@ Console.WriteLine(updated.ToFullString());   // a   z # keep this
 `ReplaceToken` and `ReplaceTrivia` work the same way. For text-based edits, use `WithChanges`:
 
 ```csharp
-var tree = RegexSyntaxTree.ParseText("ab+c", RegexFlavor.Net);
+var tree = RegexSyntaxTree.ParseText("ab+c", RegexDialect.Net);
 var updated = tree.WithChanges(new RegexTextChange(new TextSpan(2, 1), "*"));
 
 Console.WriteLine(updated.Text);   // ab*c
@@ -213,11 +213,11 @@ becoming ordinary characters.
 
 `GetChanges` reports what actually differs between two trees, with the common prefix and suffix trimmed, and
 `IsEquivalentTo` compares them structurally, so two patterns that differ only in extended-mode formatting are
-equivalent. Trees parsed with different flavors, or with different options, are never equivalent — the same characters
+equivalent. Trees parsed with different dialects, or with different options, are never equivalent — the same characters
 read with and without extended mode are genuinely different trees:
 
 ```csharp
-var options = new RegexParseOptions(RegexFlavor.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
+var options = new RegexParseOptions(RegexDialect.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
 var spaced = RegexSyntaxTree.ParseText("a  b   # note\n", options);
 var tight = RegexSyntaxTree.ParseText("ab", options);
 
@@ -226,20 +226,20 @@ Console.WriteLine(spaced.IsEquivalentTo(tight));   // True
 
 ## Building trees
 
-`SyntaxFactory` creates nodes programmatically and escapes for the target flavor only when needed:
+`SyntaxFactory` creates nodes programmatically and escapes for the target dialect only when needed:
 
 ```csharp
 var pattern = SyntaxFactory.Sequence(
     SyntaxFactory.Anchor(RegexAnchorKind.Caret),
     SyntaxFactory.Quantified(SyntaxFactory.ClassEscape('d'), min: 1, max: 3),
-    SyntaxFactory.Literal('.', RegexFlavor.Net));
+    SyntaxFactory.Literal('.', RegexDialect.Net));
 
 Console.WriteLine(pattern.ToFullString());   // ^\d{1,3}\.
 ```
 
 ## Visitors and rewriters
 
-`RegexSyntaxVisitor`, `RegexSyntaxVisitor<TResult>`, and `RegexSyntaxRewriter` cover every node type across all flavors,
+`RegexSyntaxVisitor`, `RegexSyntaxVisitor<TResult>`, and `RegexSyntaxRewriter` cover every node type across all dialects,
 so one walker handles any tree. A rewriter descends into every node whatever its type, returns the original instance
 when nothing changed, and keeps the exact text of everything it did not touch:
 
@@ -275,6 +275,6 @@ pattern is short enough that it costs nothing worth saving.
 Every node stores its own text, so a tree costs memory in proportion to the pattern's length times its depth: a
 20,000-character pattern is roughly 16 MB. That is fine for patterns and would not be for documents.
 
-The .NET flavor follows the current .NET engine. The engine changes between releases — .NET 10 rejects
+The .NET dialect follows the current .NET engine. The engine changes between releases — .NET 10 rejects
 `(?(name)(?n))`, which .NET 11 accepts, and knows fewer Unicode block names — so on an older runtime this parser may
 accept a pattern that runtime's own engine would not.

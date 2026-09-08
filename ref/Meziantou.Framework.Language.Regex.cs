@@ -287,22 +287,22 @@ namespace Meziantou.Framework.Language.Regex
     }
 
     [System.Diagnostics.DebuggerDisplay("{Name}")]
-    public sealed class RegexFlavor
+    public sealed class RegexDialect
     {
-        public static Meziantou.Framework.Language.Regex.RegexFlavor Net { get => throw null; }
-        public static Meziantou.Framework.Language.Regex.RegexFlavor JavaScript { get => throw null; }
-        public static Meziantou.Framework.Language.Regex.RegexFlavor PcrePerl { get => throw null; }
-        public static Meziantou.Framework.Language.Regex.RegexFlavor PosixExtended { get => throw null; }
-        public static Meziantou.Framework.Language.Regex.RegexFlavor PosixBasic { get => throw null; }
+        public static Meziantou.Framework.Language.Regex.RegexDialect Net { get => throw null; }
+        public static Meziantou.Framework.Language.Regex.RegexDialect JavaScript { get => throw null; }
+        public static Meziantou.Framework.Language.Regex.RegexDialect PcrePerl { get => throw null; }
+        public static Meziantou.Framework.Language.Regex.RegexDialect PosixExtended { get => throw null; }
+        public static Meziantou.Framework.Language.Regex.RegexDialect PosixBasic { get => throw null; }
         public string Name { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexFlavorFamily Family { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexFlavorFeatures Features { get => throw null; }
-        public bool HasFeature(Meziantou.Framework.Language.Regex.RegexFlavorFeatures feature) => throw null;
-        public static bool TryParse(string? name, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Language.Regex.RegexFlavor? flavor) => throw null;
+        public Meziantou.Framework.Language.Regex.RegexDialectFamily Family { get => throw null; }
+        public Meziantou.Framework.Language.Regex.RegexDialectFeatures Features { get => throw null; }
+        public bool HasFeature(Meziantou.Framework.Language.Regex.RegexDialectFeatures feature) => throw null;
+        public static bool TryParse(string? name, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Language.Regex.RegexDialect? dialect) => throw null;
         public override string ToString() => throw null;
     }
 
-    public enum RegexFlavorFamily
+    public enum RegexDialectFamily
     {
         Net = 0,
         JavaScript = 1,
@@ -311,7 +311,7 @@ namespace Meziantou.Framework.Language.Regex
     }
 
     [System.Flags]
-    public enum RegexFlavorFeatures
+    public enum RegexDialectFeatures
     {
         None = 0L,
         ExtendedGroupSyntax = 1L,
@@ -467,10 +467,10 @@ namespace Meziantou.Framework.Language.Regex
     public sealed class RegexParseOptions : System.IEquatable<Meziantou.Framework.Language.Regex.RegexParseOptions>
     {
         public const int DefaultMaxRecursionDepth = 128;
-        public Meziantou.Framework.Language.Regex.RegexFlavor Flavor { get => throw null; init { } }
+        public Meziantou.Framework.Language.Regex.RegexDialect Dialect { get => throw null; init { } }
         public int MaxRecursionDepth { get => throw null; init { } }
         public Meziantou.Framework.Language.Regex.RegexPatternOptions PatternOptions { get => throw null; init { } }
-        public RegexParseOptions(Meziantou.Framework.Language.Regex.RegexFlavor flavor) { }
+        public RegexParseOptions(Meziantou.Framework.Language.Regex.RegexDialect dialect) { }
         public override string ToString() => throw null;
         public static bool operator !=(Meziantou.Framework.Language.Regex.RegexParseOptions? left, Meziantou.Framework.Language.Regex.RegexParseOptions? right) => throw null;
         public static bool operator ==(Meziantou.Framework.Language.Regex.RegexParseOptions? left, Meziantou.Framework.Language.Regex.RegexParseOptions? right) => throw null;
@@ -716,7 +716,7 @@ namespace Meziantou.Framework.Language.Regex
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexSyntaxToken> Tokens { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxTree? SyntaxTree { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexSyntaxNode? Parent { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexFlavor? Flavor { get => throw null; }
+        public Meziantou.Framework.Language.Regex.RegexDialect? Dialect { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexPatternOptions Options { get => throw null; }
         public Meziantou.Framework.Language.Regex.TextSpan Span { get => throw null; }
         public Meziantou.Framework.Language.Regex.TextSpan FullSpan { get => throw null; }
@@ -794,14 +794,14 @@ namespace Meziantou.Framework.Language.Regex
         public string Text { get => throw null; }
         public Meziantou.Framework.Language.Regex.SourceText SourceText { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexParseOptions Options { get => throw null; }
-        public Meziantou.Framework.Language.Regex.RegexFlavor Flavor { get => throw null; }
+        public Meziantou.Framework.Language.Regex.RegexDialect Dialect { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexPatternOptions PatternOptions { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexPatternSyntax Root { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexDiagnostic> Diagnostics { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexCaptureInfo> Captures { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexPatternSyntax GetRoot() => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexDiagnostic> GetDiagnostics() => throw null;
-        public static Meziantou.Framework.Language.Regex.RegexSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern, Meziantou.Framework.Language.Regex.RegexFlavor flavor) => throw null;
+        public static Meziantou.Framework.Language.Regex.RegexSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern, Meziantou.Framework.Language.Regex.RegexDialect dialect) => throw null;
         public static Meziantou.Framework.Language.Regex.RegexSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern, Meziantou.Framework.Language.Regex.RegexParseOptions options) => throw null;
         public static Meziantou.Framework.Language.Regex.RegexSyntaxTree ParseJavaScriptLiteral(string literal) => throw null;
         public Meziantou.Framework.Language.Regex.RegexSyntaxTree WithChanges(params Meziantou.Framework.Language.Regex.RegexTextChange[] changes) => throw null;
@@ -951,8 +951,8 @@ namespace Meziantou.Framework.Language.Regex
 
     public static class SyntaxFactory
     {
-        public static Meziantou.Framework.Language.Regex.RegexAtomSyntax Literal(char value, Meziantou.Framework.Language.Regex.RegexFlavor flavor) => throw null;
-        public static Meziantou.Framework.Language.Regex.RegexSequenceSyntax LiteralText(string value, Meziantou.Framework.Language.Regex.RegexFlavor flavor) => throw null;
+        public static Meziantou.Framework.Language.Regex.RegexAtomSyntax Literal(char value, Meziantou.Framework.Language.Regex.RegexDialect dialect) => throw null;
+        public static Meziantou.Framework.Language.Regex.RegexSequenceSyntax LiteralText(string value, Meziantou.Framework.Language.Regex.RegexDialect dialect) => throw null;
         public static Meziantou.Framework.Language.Regex.RegexAnyCharacterSyntax AnyCharacter() => throw null;
         public static Meziantou.Framework.Language.Regex.RegexAnchorSyntax Anchor(Meziantou.Framework.Language.Regex.RegexAnchorKind kind) => throw null;
         public static Meziantou.Framework.Language.Regex.RegexCharacterClassEscapeSyntax ClassEscape(char letter) => throw null;
@@ -963,7 +963,7 @@ namespace Meziantou.Framework.Language.Regex
         public static Meziantou.Framework.Language.Regex.RegexQuantifiedSyntax Quantified(Meziantou.Framework.Language.Regex.RegexAtomSyntax atom, char quantifier, Meziantou.Framework.Language.Regex.RegexQuantifierMode mode = 0) => throw null;
         public static Meziantou.Framework.Language.Regex.RegexQuantifiedSyntax Quantified(Meziantou.Framework.Language.Regex.RegexAtomSyntax atom, int min, int? max, Meziantou.Framework.Language.Regex.RegexQuantifierMode mode = 0) => throw null;
         public static Meziantou.Framework.Language.Regex.RegexCharacterClassSyntax CharacterClass(bool negated, params System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Regex.RegexSyntaxNode> members) => throw null;
-        public static Meziantou.Framework.Language.Regex.RegexCharacterRangeSyntax CharacterRange(char first, char last, Meziantou.Framework.Language.Regex.RegexFlavor flavor) => throw null;
+        public static Meziantou.Framework.Language.Regex.RegexCharacterRangeSyntax CharacterRange(char first, char last, Meziantou.Framework.Language.Regex.RegexDialect dialect) => throw null;
     }
 
     public readonly struct TextLine : System.IEquatable<Meziantou.Framework.Language.Regex.TextLine>

@@ -6,11 +6,11 @@ namespace Meziantou.Framework.Language.Regex.Tests;
 /// </summary>
 public sealed class RegexOracleAuditTests
 {
-    private static RegexParseOptions Options(RegexFlavor flavor, RegexPatternOptions options = RegexPatternOptions.None) =>
-        new(flavor) { PatternOptions = options };
+    private static RegexParseOptions Options(RegexDialect dialect, RegexPatternOptions options = RegexPatternOptions.None) =>
+        new(dialect) { PatternOptions = options };
 
     private static RegexParseOptions SetMode =>
-        Options(RegexFlavor.JavaScript, RegexPatternOptions.Unicode | RegexPatternOptions.UnicodeSets);
+        Options(RegexDialect.JavaScript, RegexPatternOptions.Unicode | RegexPatternOptions.UnicodeSets);
 
     private static RegexSyntaxTree Accepts(string pattern, RegexParseOptions options)
     {
@@ -37,11 +37,11 @@ public sealed class RegexOracleAuditTests
     [InlineData("net")]
     [InlineData("javascript")]
     [InlineData("pcre")]
-    public void ADoubleDashIsNotAnOperatorOutsideTheSetGrammar(string flavorName)
+    public void ADoubleDashIsNotAnOperatorOutsideTheSetGrammar(string dialectName)
     {
-        Assert.True(RegexFlavor.TryParse(flavorName, out var flavor));
+        Assert.True(RegexDialect.TryParse(dialectName, out var dialect));
 
-        var tree = RegexSyntaxAssert.TextIsFaithful("[a--b]", flavor);
+        var tree = RegexSyntaxAssert.TextIsFaithful("[a--b]", dialect);
 
         Assert.Single(tree.Root.DescendantNodes().OfType<RegexCharacterRangeSyntax>());
         Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0009");
@@ -69,16 +69,16 @@ public sealed class RegexOracleAuditTests
     [InlineData(@"\-")]
     public void TheWebCompatibilityGrammarAcceptsWhatTheStrictOneDoesNot(string pattern)
     {
-        Accepts(pattern, Options(RegexFlavor.JavaScript));
-        Rejects(pattern, Options(RegexFlavor.JavaScript, RegexPatternOptions.Unicode));
+        Accepts(pattern, Options(RegexDialect.JavaScript));
+        Rejects(pattern, Options(RegexDialect.JavaScript, RegexPatternOptions.Unicode));
     }
 
     /// <summary>A named backreference is only an identity escape while the pattern declares no name at all.</summary>
     [Fact]
     public void ANamedBackreferenceIsStillCheckedOnceThePatternHasNames()
     {
-        Accepts(@"(?<n>a)\k<n>", Options(RegexFlavor.JavaScript));
-        Rejects(@"(?<n>a)\k<other>", Options(RegexFlavor.JavaScript));
+        Accepts(@"(?<n>a)\k<n>", Options(RegexDialect.JavaScript));
+        Rejects(@"(?<n>a)\k<other>", Options(RegexDialect.JavaScript));
     }
 
     /// <summary>An assertion matches nothing, so repeating it means nothing.</summary>
@@ -90,8 +90,8 @@ public sealed class RegexOracleAuditTests
     [InlineData("(?<=a)*")]
     public void AnAssertionCannotBeQuantified(string pattern)
     {
-        Rejects(pattern, Options(RegexFlavor.JavaScript));
-        Rejects(pattern, Options(RegexFlavor.JavaScript, RegexPatternOptions.Unicode));
+        Rejects(pattern, Options(RegexDialect.JavaScript));
+        Rejects(pattern, Options(RegexDialect.JavaScript, RegexPatternOptions.Unicode));
     }
 
     /// <summary>Lookahead is the one assertion the web-compatibility grammar lets you repeat.</summary>
@@ -100,8 +100,8 @@ public sealed class RegexOracleAuditTests
     [InlineData("(?!a)*")]
     public void LookaheadIsQuantifiableOnlyInTheWebCompatibilityGrammar(string pattern)
     {
-        Accepts(pattern, Options(RegexFlavor.JavaScript));
-        Rejects(pattern, Options(RegexFlavor.JavaScript, RegexPatternOptions.Unicode));
+        Accepts(pattern, Options(RegexDialect.JavaScript));
+        Rejects(pattern, Options(RegexDialect.JavaScript, RegexPatternOptions.Unicode));
     }
 
     [Theory]
@@ -113,15 +113,15 @@ public sealed class RegexOracleAuditTests
     [InlineData(@"\$")]
     public void TheStrictGrammarStillAcceptsWhatItShould(string pattern)
     {
-        Accepts(pattern, Options(RegexFlavor.JavaScript, RegexPatternOptions.Unicode));
+        Accepts(pattern, Options(RegexDialect.JavaScript, RegexPatternOptions.Unicode));
     }
 
     [Fact]
     public void AnEmptyPropertyNameIsRejectedEverywhere()
     {
-        Rejects(@"\p{}", Options(RegexFlavor.JavaScript, RegexPatternOptions.Unicode));
-        Rejects(@"\p{}", Options(RegexFlavor.Net));
-        Rejects(@"\p{}", Options(RegexFlavor.PcrePerl));
+        Rejects(@"\p{}", Options(RegexDialect.JavaScript, RegexPatternOptions.Unicode));
+        Rejects(@"\p{}", Options(RegexDialect.Net));
+        Rejects(@"\p{}", Options(RegexDialect.PcrePerl));
     }
 
     // ---- PCRE ----
@@ -134,7 +134,7 @@ public sealed class RegexOracleAuditTests
     [InlineData(@"\E")]
     [InlineData(@"\<n>")]
     [InlineData(@"\c(")]
-    public void PcreAcceptsWhatPcre2Accepts(string pattern) => Accepts(pattern, Options(RegexFlavor.PcrePerl));
+    public void PcreAcceptsWhatPcre2Accepts(string pattern) => Accepts(pattern, Options(RegexDialect.PcrePerl));
 
     /// <summary>A subroutine call has to name a group that exists, whichever way it is spelled.</summary>
     [Theory]
@@ -144,13 +144,13 @@ public sealed class RegexOracleAuditTests
     [InlineData(@"\g{-1}")]
     public void ARecursionIntoNothingIsReported(string pattern)
     {
-        Rejects(pattern, Options(RegexFlavor.PcrePerl));
-        Accepts("(?<n>a)" + pattern, Options(RegexFlavor.PcrePerl));
+        Rejects(pattern, Options(RegexDialect.PcrePerl));
+        Accepts("(?<n>a)" + pattern, Options(RegexDialect.PcrePerl));
     }
 
     /// <summary><c>(?R)</c> restarts the whole pattern, so it never names a group that could be missing.</summary>
     [Fact]
-    public void RecursingIntoTheWholePatternIsAlwaysValid() => Accepts("(?R)", Options(RegexFlavor.PcrePerl));
+    public void RecursingIntoTheWholePatternIsAlwaysValid() => Accepts("(?R)", Options(RegexDialect.PcrePerl));
 
     [Theory]
     [InlineData(@"\x{41}", "A")]
@@ -158,7 +158,7 @@ public sealed class RegexOracleAuditTests
     [InlineData(@"\x4", "")]
     public void AHexEscapeMayBeShortOrBraced(string pattern, string value)
     {
-        var escape = Assert.Single(Accepts(pattern, Options(RegexFlavor.PcrePerl)).Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
+        var escape = Assert.Single(Accepts(pattern, Options(RegexDialect.PcrePerl)).Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
 
         Assert.Equal(value, escape.Value);
     }
@@ -166,7 +166,7 @@ public sealed class RegexOracleAuditTests
     [Fact]
     public void ABracelessPropertyNamesOneLetter()
     {
-        var category = Assert.Single(Accepts(@"\pL", Options(RegexFlavor.PcrePerl)).Root.DescendantNodes().OfType<RegexUnicodeCategorySyntax>());
+        var category = Assert.Single(Accepts(@"\pL", Options(RegexDialect.PcrePerl)).Root.DescendantNodes().OfType<RegexUnicodeCategorySyntax>());
 
         Assert.Equal("L", category.Name);
     }
@@ -180,13 +180,13 @@ public sealed class RegexOracleAuditTests
     [Theory]
     [InlineData("ere")]
     [InlineData("bre")]
-    public void PosixDoesNotInterpretPerlEscapes(string flavorName)
+    public void PosixDoesNotInterpretPerlEscapes(string dialectName)
     {
-        Assert.True(RegexFlavor.TryParse(flavorName, out var flavor));
+        Assert.True(RegexDialect.TryParse(dialectName, out var dialect));
 
         foreach (var pattern in new[] { @"\x41", @"A", @"\cA", @"\n", @"\k<n>", @"\k", @"\e" })
         {
-            var tree = Accepts(pattern, Options(flavor));
+            var tree = Accepts(pattern, Options(dialect));
 
             Assert.Empty(tree.Root.DescendantNodes().OfType<RegexNamedBackreferenceSyntax>());
             foreach (var escape in tree.Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>())
@@ -197,12 +197,12 @@ public sealed class RegexOracleAuditTests
         }
     }
 
-    /// <summary>The shorthand classes POSIX flavors do have are the GNU ones, and they still work.</summary>
+    /// <summary>The shorthand classes POSIX dialects do have are the GNU ones, and they still work.</summary>
     [Theory]
     [InlineData(@"\w")]
     [InlineData(@"\S")]
     [InlineData(@"\b")]
-    public void PosixKeepsTheGnuShorthands(string pattern) => Accepts(pattern, Options(RegexFlavor.PosixExtended));
+    public void PosixKeepsTheGnuShorthands(string pattern) => Accepts(pattern, Options(RegexDialect.PosixExtended));
 
     // ---- review follow-ups ----
 
@@ -269,12 +269,12 @@ public sealed class RegexOracleAuditTests
     [Fact]
     public void EquivalenceComparesOptionsEvenWhenTheTextMatches()
     {
-        var plain = RegexSyntaxTree.ParseText("a", RegexFlavor.Net);
-        var ignoringCase = RegexSyntaxTree.ParseText("a", Options(RegexFlavor.Net, RegexPatternOptions.IgnoreCase));
+        var plain = RegexSyntaxTree.ParseText("a", RegexDialect.Net);
+        var ignoringCase = RegexSyntaxTree.ParseText("a", Options(RegexDialect.Net, RegexPatternOptions.IgnoreCase));
 
         Assert.False(plain.IsEquivalentTo(ignoringCase));
         Assert.False(ignoringCase.IsEquivalentTo(plain));
-        Assert.True(plain.IsEquivalentTo(RegexSyntaxTree.ParseText("a", RegexFlavor.Net)));
+        Assert.True(plain.IsEquivalentTo(RegexSyntaxTree.ParseText("a", RegexDialect.Net)));
     }
 
     /// <summary>
@@ -284,7 +284,7 @@ public sealed class RegexOracleAuditTests
     [Fact]
     public void BuildingANodeDoesNotStealATokenFromAnotherTree()
     {
-        var source = RegexSyntaxTree.ParseText("ab", RegexFlavor.Net);
+        var source = RegexSyntaxTree.ParseText("ab", RegexDialect.Net);
         var borrowed = source.Root.DescendantTokens().First(t => t.Text == "a");
         var owner = borrowed.Parent;
 
@@ -298,7 +298,7 @@ public sealed class RegexOracleAuditTests
     [Fact]
     public void AParsedTreeStillReportsTheOwnerOfEveryToken()
     {
-        var tree = RegexSyntaxTree.ParseText(@"(?<n>a|[b-d])\k<n>{2,3}?", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText(@"(?<n>a|[b-d])\k<n>{2,3}?", RegexDialect.Net);
 
         foreach (var token in tree.Root.DescendantTokens())
         {
@@ -335,11 +335,11 @@ public sealed class RegexOracleAuditTests
     [Fact]
     public void TheAngleBackreferenceIsNetOnly()
     {
-        Assert.Single(Accepts(@"(?<n>a)\<n>", Options(RegexFlavor.Net)).Root.DescendantNodes().OfType<RegexNamedBackreferenceSyntax>());
+        Assert.Single(Accepts(@"(?<n>a)\<n>", Options(RegexDialect.Net)).Root.DescendantNodes().OfType<RegexNamedBackreferenceSyntax>());
 
-        foreach (var flavor in new[] { RegexFlavor.PcrePerl, RegexFlavor.PosixExtended, RegexFlavor.PosixBasic })
+        foreach (var dialect in new[] { RegexDialect.PcrePerl, RegexDialect.PosixExtended, RegexDialect.PosixBasic })
         {
-            var tree = RegexSyntaxAssert.TextIsFaithful(@"\<n>", Options(flavor));
+            var tree = RegexSyntaxAssert.TextIsFaithful(@"\<n>", Options(dialect));
 
             Assert.Empty(tree.Root.DescendantNodes().OfType<RegexNamedBackreferenceSyntax>());
         }

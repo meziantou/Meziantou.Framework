@@ -13,7 +13,7 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
 
     /// <summary>
     /// ECMAScript has two grammars, and which one applies is decided by the <c>u</c> and <c>v</c> flags rather than by
-    /// the flavor.
+    /// the dialect.
     /// </summary>
     /// <remarks>
     /// Without them the web-compatibility grammar applies: an escape that is not well formed stands for its own

@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Language.Regex;
 
-/// <summary>Identifies the grammar family a <see cref="RegexFlavor"/> belongs to, which selects the parser.</summary>
-public enum RegexFlavorFamily
+/// <summary>Identifies the grammar family a <see cref="RegexDialect"/> belongs to, which selects the parser.</summary>
+public enum RegexDialectFamily
 {
     /// <summary>The .NET grammar, as implemented by <c>System.Text.RegularExpressions</c>.</summary>
     Net,

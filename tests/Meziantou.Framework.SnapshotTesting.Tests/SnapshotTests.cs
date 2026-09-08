@@ -983,7 +983,10 @@ public sealed partial class SnapshotTests
         Assert.Equal("actual", File.ReadAllText(actualPath));
     }
 
-    [Fact]
+    // The lock is released after 250ms and SnapshotEngine.WriteAllBytesWithRetry gives up after ~840ms. The
+    // release runs on the thread pool, so tests running beside this one can delay it past that budget and let
+    // the IOException escape.
+    [Fact(DisableParallelization = true)]
     public async Task Validate_RetriesWhenActualFileIsLocked()
     {
         using var directory = TemporaryDirectory.Create();
@@ -1055,7 +1058,8 @@ public sealed partial class SnapshotTests
         Assert.Equal("the message", exception.Message);
     }
 
-    [Theory]
+    // Sets the process-wide SNAPSHOTTESTING_STRATEGY variable, which every 'new SnapshotSettings()' reads, so it must not run beside any other test
+    [Theory(DisableParallelization = true)]
     [InlineData("DISALLOW", nameof(SnapshotUpdateStrategy.Disallow))]
     [InlineData("overwrite", nameof(SnapshotUpdateStrategy.Overwrite))]
     [InlineData("mErGeToOlSyNc", nameof(SnapshotUpdateStrategy.MergeToolSync))]
@@ -1069,7 +1073,8 @@ public sealed partial class SnapshotTests
         Assert.Same(GetSnapshotUpdateStrategy(expectedStrategyName), settings.SnapshotUpdateStrategy);
     }
 
-    [Fact]
+    // Sets the process-wide SNAPSHOTTESTING_STRATEGY variable, which every 'new SnapshotSettings()' reads, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public void SnapshotUpdateStrategy_Default_InvalidEnvironmentVariableValue_UsesDisallow()
     {
         using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, "invalid");
@@ -1079,7 +1084,8 @@ public sealed partial class SnapshotTests
         Assert.Same(SnapshotUpdateStrategy.Disallow, settings.SnapshotUpdateStrategy);
     }
 
-    [Fact]
+    // Sets the process-wide SNAPSHOTTESTING_STRATEGY variable, which every 'new SnapshotSettings()' reads, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public void SnapshotUpdateStrategy_ExplicitSetting_HasPriorityOverEnvironmentVariable()
     {
         using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, nameof(SnapshotUpdateStrategy.Overwrite));

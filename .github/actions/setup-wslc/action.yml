@@ -9,9 +9,12 @@ runs:
       run: |
         # wslc ships inside WSL itself, and only the pre-release channel carries it (WSL 2.9.3 or higher)
         # The update service intermittently answers with a transient error (e.g. Forbidden (403),
-        # Wsl/UpdatePackage/0x80190193), so retry a few times before giving up.
-        $maxAttempts = 3
+        # Wsl/UpdatePackage/0x80190193), so retry a few times before giving up. The service can answer with it
+        # for a minute or so while the other agents of the same run are served normally, so the attempts span
+        # roughly 65 seconds. The delay is capped as it would otherwise keep doubling.
+        $maxAttempts = 5
         $baseDelaySeconds = 5
+        $maxDelaySeconds = 30
 
         for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
           Write-Host "Updating WSL (attempt $attempt/$maxAttempts)"
@@ -26,7 +29,7 @@ runs:
             throw "wsl --update --pre-release failed with exit code $exitCode"
           }
 
-          $delaySeconds = [int]($baseDelaySeconds * [math]::Pow(2, $attempt - 1))
+          $delaySeconds = [math]::Min([int]($baseDelaySeconds * [math]::Pow(2, $attempt - 1)), $maxDelaySeconds)
           Write-Host "Retrying WSL update in $delaySeconds second(s)."
           Start-Sleep -Seconds $delaySeconds
         }

@@ -1,6 +1,8 @@
 namespace Meziantou.Framework.CommandLineTests;
 
-[Collection("PromptTests")]
+// UsingConsole redirects Console.In and Console.Out, which are process-wide, so no test of this class can run
+// beside another test.
+[TestClass(DisableParallelization = true)]
 public class PromptTests
 {
     [Fact]

@@ -48,6 +48,7 @@ jobs:
             # Staged explicitly: `git add .` would also pick up anything else the build left in the tree
             git add `
               src/Meziantou.Framework.Http.Hsts/preload_*.bin `
+              src/Meziantou.Framework.Http.Hsts/preload_*.zst `
               src/Meziantou.Framework.Http.Hsts/preload-hosts.txt `
               src/Meziantou.Framework.Http.Hsts/HstsPreloadList.g.cs `
               src/Meziantou.Framework.Http.Hsts/Meziantou.Framework.Http.Hsts.csproj
@@ -61,7 +62,7 @@ jobs:
             git push origin update-hsts-preload --force
             $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             # No backticks in the string: pwsh treats them as escape characters inside double quotes
-            $body = "Update HSTS preload list`n`nReview the host names added and removed in preload-hosts.txt; the preload_N.bin resources hold the same data in the form the library reads.`n`nCreated by: $runUrl"
+            $body = "Update HSTS preload list`n`nReview the host names added and removed in preload-hosts.txt; the preload_N.bin and preload_N.zst resources hold the same data in the two compressed forms the library reads.`n`nCreated by: $runUrl"
             $openPr = gh pr list --head update-hsts-preload --state open --json number --jq '.[0].number // empty'
             if ($openPr) {
               gh pr edit $openPr --title "Update HSTS preload list" --body $body

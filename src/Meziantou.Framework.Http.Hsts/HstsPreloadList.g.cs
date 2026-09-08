@@ -9,11 +9,11 @@ partial class HstsPreloadList
     // Commit date: 2026-08-31T14:31:18.0000000+00:00
     // Entries: 94644
     // The index is the label count minus one; see preload-hosts.txt for the host names themselves.
-    private static (string? ResourceName, int EntryCount)[] GetResources() =>
+    private static (string? ResourceBaseName, int EntryCount)[] GetResources() =>
     [
-        ("preload_1.bin", 51),
-        ("preload_2.bin", 86321),
-        ("preload_3.bin", 8119),
-        ("preload_4.bin", 153),
+        ("preload_1", 51),
+        ("preload_2", 86321),
+        ("preload_3", 8119),
+        ("preload_4", 153),
     ];
 }

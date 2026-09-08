@@ -707,6 +707,75 @@ public sealed class XmlSyntaxTreeTests
         Assert.Equal(reinserted.ToFullString(), updated.ToFullString().Substring(reinserted.FullSpan.Start, reinserted.FullSpan.Length));
     }
 
+    [Fact]
+    public void DescendantTokens_IncludesTheNodesOwnTokens()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root id='1'><item /></root>");
+        var root = Assert.IsType<XmlElementSyntax>(tree.Root.ChildNodes[0]);
+
+        // The element's own name token comes first, then its attribute's, then the descendants'.
+        Assert.Equal(["root", "id", "1", "item", "root"], root.DescendantTokens().Select(token => token.Text));
+    }
+
+    [Fact]
+    public void DescendantNodesAndTokens_IncludesTheNodesOwnTokens()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root id='1'><item /></root>");
+        var root = Assert.IsType<XmlElementSyntax>(tree.Root.ChildNodes[0]);
+
+        var ownTokens = root.DescendantNodesAndTokens().TakeWhile(item => item.IsToken).Select(item => item.Token.Text);
+        Assert.Equal(["root"], ownTokens);
+    }
+
+    [Fact]
+    public void DocumentType_WithName_RenamesTheDeclaration()
+    {
+        var tree = XmlSyntaxTree.ParseText("<!DOCTYPE html><root />");
+        var documentType = Assert.IsType<XmlDocumentTypeSyntax>(tree.Root.ChildNodes[0]);
+
+        var renamed = documentType.WithName("other");
+
+        Assert.Equal("other", renamed.Name);
+        Assert.Equal("<!DOCTYPE other>", renamed.ToFullString());
+    }
+
+    [Fact]
+    public void DocumentType_WithName_KeepsTheExternalIdentifier()
+    {
+        var tree = XmlSyntaxTree.ParseText("<!DOCTYPE html PUBLIC \"-//W3C//DTD\"><root />");
+        var documentType = Assert.IsType<XmlDocumentTypeSyntax>(tree.Root.ChildNodes[0]);
+
+        var renamed = documentType.WithName("other");
+
+        Assert.Equal("other", renamed.Name);
+        Assert.Equal("<!DOCTYPE other PUBLIC \"-//W3C//DTD\">", renamed.ToFullString());
+    }
+
+    [Fact]
+    public void DocumentType_RenderedTextAlwaysCarriesTheName()
+    {
+        Assert.Equal("<!DOCTYPE html>", SyntaxFactory.DocumentType("html").ToFullString());
+
+        // A value that is only the part after the name gets the name put back in front of it.
+        Assert.Equal("<!DOCTYPE html PUBLIC \"x\">", SyntaxFactory.DocumentType("html", "PUBLIC \"x\"").ToFullString());
+
+        // A value that is already the whole content, as the parser produces, is used as it stands.
+        Assert.Equal("<!DOCTYPE html PUBLIC \"x\">", SyntaxFactory.DocumentType("html", "html PUBLIC \"x\"").ToFullString());
+
+        // A value merely starting with the same characters is not the name.
+        Assert.Equal("<!DOCTYPE html htmlx>", SyntaxFactory.DocumentType("html", "htmlx").ToFullString());
+    }
+
+    [Fact]
+    public void DocumentType_RoundTripsThroughTheParser()
+    {
+        var documentType = SyntaxFactory.DocumentType("html", "PUBLIC \"x\"");
+        var reparsed = Assert.IsType<XmlDocumentTypeSyntax>(XmlSyntaxTree.ParseText(documentType.ToFullString()).Root.ChildNodes[0]);
+
+        Assert.Equal(documentType.Name, reparsed.Name);
+        Assert.Equal(documentType.ToFullString(), reparsed.ToFullString());
+    }
+
     // The XML parser never emits missing tokens, so there is no zero-width-token case to cover here the way the
     // JSON and regex parsers need.
     private static void AssertSpan(int expectedStart, int expectedLength, TextSpan actual)

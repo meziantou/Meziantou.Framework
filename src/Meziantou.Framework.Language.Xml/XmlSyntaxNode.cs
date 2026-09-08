@@ -86,16 +86,17 @@ public abstract class XmlSyntaxNode
         }
     }
 
+    /// <summary>Returns this node's own tokens, then every descendant node and token.</summary>
     public IEnumerable<XmlSyntaxNodeOrToken> DescendantNodesAndTokens()
     {
+        foreach (var token in Tokens)
+        {
+            yield return new XmlSyntaxNodeOrToken(token);
+        }
+
         foreach (var child in ChildNodes)
         {
             yield return new XmlSyntaxNodeOrToken(child);
-            foreach (var token in child.Tokens)
-            {
-                yield return new XmlSyntaxNodeOrToken(token);
-            }
-
             foreach (var descendant in child.DescendantNodesAndTokens())
             {
                 yield return descendant;
@@ -123,15 +124,16 @@ public abstract class XmlSyntaxNode
         }
     }
 
+    /// <summary>Returns this node's own tokens, then every token in its descendants.</summary>
     public IEnumerable<XmlSyntaxToken> DescendantTokens()
     {
+        foreach (var token in Tokens)
+        {
+            yield return token;
+        }
+
         foreach (var child in ChildNodes)
         {
-            foreach (var token in child.Tokens)
-            {
-                yield return token;
-            }
-
             foreach (var token in child.DescendantTokens())
             {
                 yield return token;

@@ -112,8 +112,7 @@ internal static class ServerSideRequestForgeryConnectPipeline
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var requestUri = context.InitialRequestMessage?.RequestUri ?? throw new InvalidOperationException("The request URI cannot be null.");
-        EnsureConnectionIsNotToAProxy(handler, requestUri, context.DnsEndPoint, options);
+        EnsureConnectionIsNotToAProxy(handler, context.InitialRequestMessage, context.DnsEndPoint, options);
         return ConnectAsync(context, options, dnsIpAddressResolver, cancellationToken);
     }
 
@@ -229,9 +228,12 @@ internal static class ServerSideRequestForgeryConnectPipeline
         return !options.UnsafeIpNetworks.Any(network => network.Contains(normalizedAddress));
     }
 
-    internal static void EnsureConnectionIsNotToAProxy(SocketsHttpHandler handler, Uri requestUri, DnsEndPoint dnsEndPoint, ServerSideRequestForgeryOptions options)
+    internal static void EnsureConnectionIsNotToAProxy(SocketsHttpHandler handler, HttpRequestMessage request, DnsEndPoint dnsEndPoint, ServerSideRequestForgeryOptions options)
     {
-        if (!IsConnectionToAProxy(handler, requestUri, dnsEndPoint))
+        ArgumentNullException.ThrowIfNull(request);
+
+        var requestUri = request.RequestUri ?? throw new InvalidOperationException("The request URI cannot be null.");
+        if (!IsConnectionToAProxy(handler, request, requestUri, dnsEndPoint))
             return;
 
         Log.RejectedProxyConnection(options.Logger, FormatRequestOrigin(requestUri), dnsEndPoint.Host);
@@ -239,13 +241,22 @@ internal static class ServerSideRequestForgeryConnectPipeline
         throw new ServerSideRequestForgeryException("The connection targets a proxy. The request's real destination is established by the proxy and is not visible here, so it cannot be validated. Set SocketsHttpHandler.UseProxy to false, or send requests that need SSRF protection through a handler that does not use a proxy.");
     }
 
-    private static bool IsConnectionToAProxy(SocketsHttpHandler handler, Uri requestUri, DnsEndPoint dnsEndPoint)
+    private static bool IsConnectionToAProxy(SocketsHttpHandler handler, HttpRequestMessage request, Uri requestUri, DnsEndPoint dnsEndPoint)
     {
         // Reading the proxy here rather than when the callback is installed keeps the check correct when the
         // proxy is assigned after ConfigureSsrf, or when HttpClient.DefaultProxy changes later.
         var proxy = handler.UseProxy ? handler.Proxy ?? HttpClient.DefaultProxy : null;
         if (proxy is null)
             return false;
+
+        // A tunnelled destination is opened by a CONNECT request the pool builds itself, targeting the proxy and
+        // naming the real destination only in the Host header. The proxy has already been consulted by then, for
+        // a destination this callback never receives, so asking it anything here answers about the wrong URI: a
+        // proxy that applies to some destinations only (a PAC script, a custom IWebProxy) reports DIRECT for
+        // everything reachable from here and would hide the destination it does proxy behind its own address.
+        // The tunnel request is therefore the signal, and it is conclusive on its own.
+        if (request.Method == HttpMethod.Connect)
+            return true;
 
         // Asking about the request URI alone is not enough. For an https target the pool substitutes the proxy's
         // own URI as the initial request, and GetProxy then returns that same URI - which is indistinguishable

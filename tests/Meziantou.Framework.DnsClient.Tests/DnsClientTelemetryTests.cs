@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Meziantou.Framework.Diagnostics;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
 using Meziantou.Framework.DnsClient.Transport;
@@ -12,15 +13,13 @@ public sealed class DnsClientTelemetryTests
     {
         const string QuestionName = "success.example.com";
 
-        var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var listener = CreateDnsClientActivityListener(QuestionName, activity => activityTask.TrySetResult(activity));
-        ActivitySource.AddActivityListener(listener);
+        using var listener = CreateDnsClientActivityListener();
         using var transport = new ResponseTransport(DnsResponseCode.NoError);
         using var client = new DnsClient(transport, DnsClientProtocol.Udp, options: null);
 
         await client.QueryAsync(QuestionName, DnsQueryType.A, TestContext.Current.CancellationToken);
 
-        var activity = await activityTask.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        var activity = Assert.Single(listener.Activities);
         Assert.Equal("dns.query", activity.OperationName);
         Assert.Equal(ActivityKind.Client, activity.Kind);
         Assert.Equal(ActivityStatusCode.Ok, activity.Status);
@@ -36,15 +35,13 @@ public sealed class DnsClientTelemetryTests
     {
         const string QuestionName = "missing.example.com";
 
-        var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var listener = CreateDnsClientActivityListener(QuestionName, activity => activityTask.TrySetResult(activity));
-        ActivitySource.AddActivityListener(listener);
+        using var listener = CreateDnsClientActivityListener();
         using var transport = new ResponseTransport(DnsResponseCode.NameError);
         using var client = new DnsClient(transport, DnsClientProtocol.Udp, options: null);
 
         await client.QueryAsync(QuestionName, DnsQueryType.A, TestContext.Current.CancellationToken);
 
-        var activity = await activityTask.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        var activity = Assert.Single(listener.Activities);
         Assert.Equal(ActivityStatusCode.Error, activity.Status);
         Assert.Equal("DNS response code: NameError", activity.StatusDescription);
         Assert.Equal(nameof(DnsResponseCode.NameError), activity.GetTagItem("dns.response.code"));
@@ -55,34 +52,20 @@ public sealed class DnsClientTelemetryTests
     {
         const string QuestionName = "exception.example.com";
 
-        var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var listener = CreateDnsClientActivityListener(QuestionName, activity => activityTask.TrySetResult(activity));
-        ActivitySource.AddActivityListener(listener);
+        using var listener = CreateDnsClientActivityListener();
         using var transport = new ThrowingTransport();
         using var client = new DnsClient(transport, DnsClientProtocol.Udp, options: null);
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.QueryAsync(QuestionName, DnsQueryType.A, TestContext.Current.CancellationToken));
 
-        var activity = await activityTask.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        var activity = Assert.Single(listener.Activities);
         Assert.Equal(ActivityStatusCode.Error, activity.Status);
         Assert.Equal(exception.Message, activity.StatusDescription);
     }
 
-    private static ActivityListener CreateDnsClientActivityListener(string questionName, Action<Activity> onActivityStopped)
-    {
-        return new ActivityListener
-        {
-            ShouldListenTo = source => source.Name == "Meziantou.Framework.DnsClient",
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
-            ActivityStopped = activity =>
-            {
-                if (Equals(activity.GetTagItem("dns.question.name"), questionName))
-                {
-                    onActivityStopped(activity);
-                }
-            },
-        };
-    }
+    // The scope only reports the activities started by the current test, so the tests of this class can run in parallel
+    private static ScopedActivityListener CreateDnsClientActivityListener()
+        => new(new ScopedActivityListenerOptions { SourceNames = ["Meziantou.Framework.DnsClient"] });
 
     private sealed class ResponseTransport : IDnsTransport
     {

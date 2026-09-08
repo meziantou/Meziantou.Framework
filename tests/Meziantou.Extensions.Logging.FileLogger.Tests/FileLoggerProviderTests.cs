@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Text.Json;
 using Meziantou.Framework;
+using Meziantou.Framework.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -210,12 +211,7 @@ public sealed class FileLoggerProviderTests
         });
 
         using var activitySource = new ActivitySource("Test");
-        using var listener = new ActivityListener
-        {
-            ShouldListenTo = source => source.Name is "Test",
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
-        };
-        ActivitySource.AddActivityListener(listener);
+        using var listener = new ScopedActivityListener(new ScopedActivityListenerOptions { ShouldListenTo = source => source == activitySource });
 
         using var activity = activitySource.StartActivity("Test");
         Assert.NotNull(activity);

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Meziantou.Framework.Diagnostics;
 
 namespace Meziantou.Framework.Tests;
 
@@ -135,14 +136,12 @@ public class ProcessWrapperTests
     [Fact]
     public async Task ExecuteAsync_EmitsActivity_WithProcessPathAndExitCode()
     {
-        var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var listener = CreateProcessWrapperActivityListener(activity => activityTask.TrySetResult(activity));
-        ActivitySource.AddActivityListener(listener);
+        using var listener = CreateProcessWrapperActivityListener();
 
         var processResult = await CreateEchoCommand("test")
             .ExecuteAsync();
 
-        var activity = await activityTask.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var activity = Assert.Single(listener.Activities);
 
         Assert.Equal(0, processResult.ExitCode);
         Assert.Equal("process.execute", activity.OperationName);
@@ -154,17 +153,14 @@ public class ProcessWrapperTests
     [Fact]
     public async Task ExecuteAsync_DoesNotChangeTheAmbientActivityOfTheCaller()
     {
-        var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var listener = CreateProcessWrapperActivityListener(activity => activityTask.TrySetResult(activity));
-        ActivitySource.AddActivityListener(listener);
+        using var listener = CreateProcessWrapperActivityListener();
 
         using var ambientSource = new ActivitySource("Meziantou.Framework.ProcessWrapper.Tests.Ambient");
-        using var ambientListener = new ActivityListener
+        using var ambientListener = new ScopedActivityListener(new ScopedActivityListenerOptions
         {
-            ShouldListenTo = static source => source.Name == "Meziantou.Framework.ProcessWrapper.Tests.Ambient",
-            Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-        };
-        ActivitySource.AddActivityListener(ambientListener);
+            ShouldListenTo = source => source == ambientSource,
+            SamplingResult = ActivitySamplingResult.AllDataAndRecorded,
+        });
 
         using var ambientActivity = ambientSource.StartActivity("ambient");
         Assert.NotNull(ambientActivity);
@@ -172,7 +168,7 @@ public class ProcessWrapperTests
         await CreateEchoCommand("test").ExecuteAsync();
 
         // The process activity is emitted, but it must not replace the caller's ambient activity.
-        var processActivity = await activityTask.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var processActivity = Assert.Single(listener.Activities);
         Assert.Equal("process.execute", processActivity.OperationName);
         Assert.Same(ambientActivity, Activity.Current);
     }
@@ -853,9 +849,7 @@ public class ProcessWrapperTests
     [Fact]
     public async Task Validation_FailIfNonZeroExitCode_SetsActivityStatusToError()
     {
-        var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var listener = CreateProcessWrapperActivityListener(activity => activityTask.TrySetResult(activity));
-        ActivitySource.AddActivityListener(listener);
+        using var listener = CreateProcessWrapperActivityListener();
 
         ProcessWrapper command;
         if (OperatingSystem.IsWindows())
@@ -873,7 +867,7 @@ public class ProcessWrapperTests
 
         await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
 
-        var activity = await activityTask.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var activity = Assert.Single(listener.Activities);
         Assert.Equal(ActivityStatusCode.Error, activity.Status);
         var processPath = Assert.IsType<string>(activity.GetTagItem("process.executable.path"));
         Assert.NotNull(activity.StatusDescription);
@@ -1939,16 +1933,13 @@ public class ProcessWrapperTests
         }
     }
 
-    private static ActivityListener CreateProcessWrapperActivityListener(Action<Activity> activityStopped)
-    {
-        return new ActivityListener
+    // The scope only reports the activities started by the current test
+    private static ScopedActivityListener CreateProcessWrapperActivityListener()
+        => new(new ScopedActivityListenerOptions
         {
-            ShouldListenTo = static source => source.Name == "Meziantou.Framework.ProcessWrapper",
-            Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            SampleUsingParentId = static (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = activityStopped,
-        };
-    }
+            SourceNames = ["Meziantou.Framework.ProcessWrapper"],
+            SamplingResult = ActivitySamplingResult.AllDataAndRecorded,
+        });
 
     private static ProcessWrapper CreateEchoBase()
     {

@@ -189,6 +189,13 @@ public sealed class JsonSyntaxTree
                 if (Current.Kind is JsonSyntaxKind.CloseBraceToken or JsonSyntaxKind.EndOfFileToken)
                     continue;
 
+                if (member.Value.FullSpan.Length == 0)
+                {
+                    // The current token cannot start a value, so skip it to guarantee the loop makes progress.
+                    childNodes.Add(ParseSkippedTextUntil(JsonSyntaxKind.CommaToken, JsonSyntaxKind.CloseBraceToken, JsonSyntaxKind.EndOfFileToken));
+                    continue;
+                }
+
                 AddDiagnostic(Current.FullSpan, "JSON0009", "Expected a comma or the end of the object.");
             }
 
@@ -252,6 +259,13 @@ public sealed class JsonSyntaxTree
 
                 if (Current.Kind is JsonSyntaxKind.CloseBracketToken or JsonSyntaxKind.EndOfFileToken)
                     continue;
+
+                if (value.FullSpan.Length == 0)
+                {
+                    // The current token cannot start a value, so skip it to guarantee the loop makes progress.
+                    childNodes.Add(ParseSkippedTextUntil(JsonSyntaxKind.CommaToken, JsonSyntaxKind.CloseBracketToken, JsonSyntaxKind.EndOfFileToken));
+                    continue;
+                }
 
                 AddDiagnostic(Current.FullSpan, "JSON0009", "Expected a comma or the end of the array.");
             }

@@ -203,10 +203,11 @@ public sealed class DnsClient : IDisposable
     private async Task<DnsResponseMessage> ExchangeAsync(DnsQueryMessage message, CancellationToken cancellationToken, IDnsTransport? transport = null)
     {
         var queryBytes = DnsMessageEncoder.EncodeQuery(message, out var queryId);
-        var responseBytes = await (transport ?? _transport).SendAsync(queryBytes, cancellationToken).ConfigureAwait(false);
+        var transportResponse = await (transport ?? _transport).SendAsync(queryBytes, cancellationToken).ConfigureAwait(false);
         var response = DnsMessageEncoder.DecodeResponse(
-            responseBytes,
-            preserveRawRecordData: _options.DnssecValidationMode is DnssecValidationMode.Local);
+            transportResponse.Data,
+            preserveRawRecordData: _options.DnssecValidationMode is DnssecValidationMode.Local,
+            ageInSeconds: transportResponse.AgeInSeconds);
 
         ValidateResponseMatchesQuery(message, queryId, response);
         return response;

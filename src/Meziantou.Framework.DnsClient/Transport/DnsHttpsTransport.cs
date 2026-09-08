@@ -42,7 +42,7 @@ internal sealed class DnsHttpsTransport : IDnsTransport
         return new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) }, disposeHandler: true);
     }
 
-    public async Task<byte[]> SendAsync(byte[] query, CancellationToken cancellationToken)
+    public async Task<DnsTransportResponse> SendAsync(byte[] query, CancellationToken cancellationToken)
     {
         // RFC 8484: DNS over HTTPS using POST with application/dns-message
         using var content = new ByteArrayContent(query);
@@ -62,7 +62,8 @@ internal sealed class DnsHttpsTransport : IDnsTransport
         if (response.Content.Headers.ContentLength > MaxResponseLength)
             throw new DnsProtocolException($"The DNS over HTTPS response declares {response.Content.Headers.ContentLength} bytes, which exceeds the {MaxResponseLength}-byte maximum for a DNS message.");
 
-        return await ReadBodyAsync(response.Content, cancellationToken).ConfigureAwait(false);
+        var body = await ReadBodyAsync(response.Content, cancellationToken).ConfigureAwait(false);
+        return new DnsTransportResponse(body, GetAgeInSeconds(response));
     }
 
     /// <summary>
@@ -90,6 +91,23 @@ internal sealed class DnsHttpsTransport : IDnsTransport
                 ArrayPool<byte>.Shared.Return(buffer);
             }
         }
+    }
+
+    /// <summary>
+    /// RFC 8484 5.1: a response served from an HTTP cache still carries the TTLs the server originally sent, so the
+    /// time it spent in that cache has to be taken out of them. The <c>Age</c> header is how far the message is into
+    /// its lifetime.
+    /// </summary>
+    private static uint GetAgeInSeconds(HttpResponseMessage response)
+    {
+        if (response.Headers.Age is not { } age)
+            return 0;
+
+        var seconds = age.TotalSeconds;
+        if (seconds <= 0)
+            return 0;
+
+        return seconds >= uint.MaxValue ? uint.MaxValue : (uint)seconds;
     }
 
     public void Dispose()

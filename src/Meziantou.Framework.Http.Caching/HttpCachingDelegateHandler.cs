@@ -352,6 +352,22 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
         var freshResponseTime = _timeProvider.GetUtcNow();
 
+        // RFC 5861: an error status from the origin is the situation stale-if-error exists for, exactly as
+        // it is on the conditional path. An entry without a validator must not lose the fallback merely
+        // because the request could not be made conditional.
+        if (cacheResult is not null && IsStaleIfErrorStatus(freshResponse.StatusCode))
+        {
+            var errorAge = cacheResult.CalculateCurrentAge(freshResponseTime);
+            if (CanServeStaleOnError(cacheResult, errorAge, cacheResult.FreshnessLifetime))
+            {
+                freshResponse.Dispose();
+
+                // RFC 7234 Section 5.5: Add Warning headers
+                var warnings = "110 - \"Response is Stale\", 111 - \"Revalidation Failed\"";
+                return CreateCachedResponse(request, cacheResult, errorAge, warnings);
+            }
+        }
+
         await StoreAsync(request, freshResponse, requestTime, freshResponseTime, cancellationToken).ConfigureAwait(false);
 
         // Set RequestMessage if it's not already set by the base handler

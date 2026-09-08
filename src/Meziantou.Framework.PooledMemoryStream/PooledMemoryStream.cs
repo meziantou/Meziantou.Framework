@@ -45,6 +45,11 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     private int _cursorIndex;
     private long _cursorStart;
 
+    // Index of the segment appends go into. Every segment after it is empty: either blocks reserved ahead of time by
+    // EnsureCapacityAtLeast, or the remainder of a reservation the append point has not reached yet. The index only
+    // ever moves forward, so segments before it are frozen and the logical order of the data is the segment order.
+    private int _appendIndex;
+
     /// <summary>Initializes a new instance using <see cref="PooledMemoryStreamOptions.Default"/>.</summary>
     public PooledMemoryStream()
         : this(PooledMemoryStreamOptions.Default, initialCapacity: 0)
@@ -439,14 +444,14 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         if (count == 0)
             return;
 
-        if (_segments.Count == 0 || count > _segments[^1].Array.Length - _segments[^1].Used)
+        if (_appendIndex >= _segments.Count || count > _segments[_appendIndex].Array.Length - _segments[_appendIndex].Used)
             throw new InvalidOperationException("Cannot advance past the end of the reserved buffer.");
 
         // Subtract rather than add: _length + count can overflow long on a stream near Int64.MaxValue.
         if (_length > long.MaxValue - count)
             throw new IOException("Stream was too long.");
 
-        CollectionsMarshal.AsSpan(_segments)[_segments.Count - 1].Used += count;
+        CollectionsMarshal.AsSpan(_segments)[_appendIndex].Used += count;
         _length += count;
         _position = _length;
     }
@@ -480,6 +485,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
             _length = 0;
             _position = 0;
             _capacity = 0;
+            _appendIndex = 0;
             ResetCursor();
         }
 
@@ -590,35 +596,66 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
         var needed = Math.Max(sizeHint, 1);
 
-        if (_segments.Count > 0)
+        if (_appendIndex < _segments.Count)
         {
-            var last = _segments[^1];
-            if (last.Array.Length - last.Used >= needed)
-                return _segments.Count - 1;
+            var current = _segments[_appendIndex];
+            if (current.Array.Length - current.Used >= needed)
+                return _appendIndex;
+
+            // The region has to be contiguous, so the only other candidate is the next reserved block. Move on to it
+            // only when the current one already holds data: skipping an empty block would strand its capacity, and
+            // inserting the new block in front of it keeps it available for later appends instead.
+            if (current.Used > 0 && _appendIndex + 1 < _segments.Count && _segments[_appendIndex + 1].Array.Length >= needed)
+                return ++_appendIndex;
         }
 
         var desired = Math.Max(needed, _options.GetBlockSize(_capacity));
-        return AddSegment(_options.GetContiguousBlockSize(desired));
+        return AddAppendSegment(_options.GetContiguousBlockSize(desired));
     }
 
     private int EnsureAppendCapacity()
     {
-        if (_segments.Count > 0)
+        // Walk forward through the blocks reserved after the append point instead of always targeting the last one:
+        // otherwise every block a reservation rented but the last stays empty and the stream grows past its capacity.
+        while (_appendIndex < _segments.Count)
         {
-            var last = _segments[^1];
-            if (last.Used < last.Array.Length)
-                return _segments.Count - 1;
+            var segment = _segments[_appendIndex];
+            if (segment.Used < segment.Array.Length)
+                return _appendIndex;
+
+            _appendIndex++;
         }
 
-        return AddSegment(_options.GetBlockSize(_capacity));
+        return AddAppendSegment(_options.GetBlockSize(_capacity));
     }
 
-    private int AddSegment(int size)
+    private int AddAppendSegment(int size)
+    {
+        // The new block belongs at the append point, which is not necessarily the end of the chain: blocks reserved
+        // by EnsureCapacityAtLeast sit after it and have to stay usable rather than be stranded behind the new one.
+        var index = _appendIndex < _segments.Count && _segments[_appendIndex].Used > 0 ? _appendIndex + 1 : _appendIndex;
+        var array = PooledBufferPool.Shared.Rent(size);
+        if (index < _segments.Count)
+        {
+            // Inserting shifts every later segment, and the cursor caches an index.
+            _segments.Insert(index, new Segment(array));
+            ResetCursor();
+        }
+        else
+        {
+            _segments.Add(new Segment(array));
+        }
+
+        _capacity += array.Length;
+        _appendIndex = index;
+        return index;
+    }
+
+    private void AddReservedSegment(int size)
     {
         var array = PooledBufferPool.Shared.Rent(size);
         _segments.Add(new Segment(array));
         _capacity += array.Length;
-        return _segments.Count - 1;
     }
 
     private void EnsureCapacityAtLeast(long target)
@@ -627,7 +664,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         // GetContiguousBlockSize(70_000) is 1 MiB, so a 70 KB reservation used to allocate 15x what was asked for.
         while (_capacity < target)
         {
-            AddSegment(_options.GetReservationBlockSize(target - _capacity));
+            AddReservedSegment(_options.GetReservationBlockSize(target - _capacity));
         }
     }
 
@@ -643,6 +680,10 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
             _segments.RemoveAt(_segments.Count - 1);
             PooledBufferPool.Shared.Return(last.Array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
         }
+
+        // Only empty trailing blocks are dropped, so whatever is left last still holds data and can host appends.
+        if (_appendIndex >= _segments.Count)
+            _appendIndex = Math.Max(_segments.Count - 1, 0);
     }
 
     private void Truncate(long value)
@@ -674,6 +715,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
                 }
 
                 _length = value;
+                _appendIndex = Math.Max(_segments.Count - 1, 0);
                 return;
             }
 
@@ -700,6 +742,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
         _segments.Add(new Segment(array) { Used = (int)_length });
         _capacity = array.Length;
+        _appendIndex = 0;
         ResetCursor();
         return ClearTail(array);
     }

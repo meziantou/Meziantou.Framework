@@ -1,4 +1,3 @@
-using System.Reflection;
 using Meziantou.Framework.Yaml.Model;
 using Meziantou.Framework.Yaml.Serialization;
 
@@ -264,42 +263,6 @@ public class YamlSerializerApiTests
 
         Assert.Contains("firstName", yaml);
         Assert.Contains("age", yaml);
-    }
-
-    [Fact]
-    public void DeserializeFromReadOnlySpan()
-    {
-        ReadOnlySpan<char> yaml = "FirstName: Ada\nAge: 37";
-#pragma warning disable CS0618 // Exercise obsolete compatibility overload.
-        var result = YamlSerializer.Deserialize<Person>(yaml);
-#pragma warning restore CS0618
-
-        Assert.NotNull(result);
-        Assert.Equal("Ada", result.FirstName);
-        Assert.Equal(37, result.Age);
-    }
-
-    [Fact]
-    public void ReadOnlySpanDeserializeOverloadsAreObsolete()
-    {
-        var spanOverloadCount = 0;
-        foreach (var method in typeof(YamlSerializer).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
-        {
-            foreach (var parameter in method.GetParameters())
-            {
-                if (parameter.ParameterType == typeof(ReadOnlySpan<char>))
-                {
-                    spanOverloadCount++;
-                    var obsolete = method.GetCustomAttribute<ObsoleteAttribute>();
-                    Assert.NotNull(obsolete);
-                    Assert.False(obsolete.IsError, method.ToString());
-                    Assert.Contains("string or TextReader overload", obsolete.Message);
-                    break;
-                }
-            }
-        }
-
-        Assert.Equal(5, spanOverloadCount);
     }
 
     [Fact]

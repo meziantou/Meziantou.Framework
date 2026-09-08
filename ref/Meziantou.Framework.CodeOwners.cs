@@ -84,12 +84,6 @@ namespace Meziantou.Framework.CodeOwners
         public CodeOwnersParseException(string? message, System.Exception? innerException) { }
     }
 
-    public static class CodeOwnersParser
-    {
-        [System.Obsolete("Use CodeOwnersFile.Parse instead.")]
-        public static Meziantou.Framework.CodeOwners.CodeOwnersFile Parse(string content) => throw null;
-    }
-
     public sealed class CodeOwnersSection : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersSection>
     {
         public string Name { get => throw null; }

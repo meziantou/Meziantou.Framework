@@ -579,19 +579,6 @@ public sealed class CodeOwnersParserTests
     }
 
     [Fact]
-    public void ObsoleteCodeOwnersParserForwardsToCodeOwnersFile()
-    {
-        const string Content = "* @user1 docs@example.com";
-#pragma warning disable CS0618 // Type or member is obsolete
-        var parsed = CodeOwnersParser.Parse(Content);
-        var invalid = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersParser.Parse("[Test][0]"));
-#pragma warning restore CS0618
-
-        Assert.Equal(CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab).Entries, parsed.Entries);
-        Assert.Equal(new CodeOwnersParseError(CodeOwnersParseErrorKind.InvalidRequiredReviewerCount, 1, 7), invalid.Error);
-    }
-
-    [Fact]
     public void GitHubDialectParsesACharacterClassAsAPattern()
     {
         // '[abc].txt' is a valid gitignore-style pattern. GitLab reads the same line as a section header.

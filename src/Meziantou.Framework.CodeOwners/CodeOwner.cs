@@ -6,7 +6,7 @@ namespace Meziantou.Framework.CodeOwners;
 /// Represents a single owner of a <see cref="CodeOwnersEntry"/>.
 /// <example>
 /// <code>
-/// var entries = CodeOwnersParser.Parse("*.js @user1 docs@example.com");
+/// var entries = CodeOwnersFile.Parse("*.js @user1 docs@example.com", CodeOwnersDialect.GitLab);
 /// // entries[0].Owners[0]: Type=Username, Name="user1"
 /// // entries[0].Owners[1]: Type=EmailAddress, Name="docs@example.com"
 /// </code>

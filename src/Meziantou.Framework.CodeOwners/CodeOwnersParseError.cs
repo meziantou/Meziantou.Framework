@@ -6,7 +6,7 @@ namespace Meziantou.Framework.CodeOwners;
 /// Describes why a CODEOWNERS file is invalid, and where.
 /// <example>
 /// <code>
-/// if (!CodeOwnersParser.TryParse("[Section\n* @user1", out var entries, out var error))
+/// if (!CodeOwnersFile.TryParse("[Section\n* @user1", CodeOwnersDialect.GitLab, out var file, out var error))
 /// {
 ///     // error.Kind: CodeOwnersParseErrorKind.UnterminatedSectionHeader
 ///     // error.LineNumber: 1

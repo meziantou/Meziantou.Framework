@@ -5,7 +5,7 @@ namespace Meziantou.Framework.CodeOwners;
 /// <example>
 /// <code>
 /// // Parse a CODEOWNERS file
-/// var entries = CodeOwnersParser.Parse("*.js @user1 @user2");
+/// var entries = CodeOwnersFile.Parse("*.js @user1 @user2", CodeOwnersDialect.GitLab);
 /// var entry = entries[0];
 /// // entry.Pattern: "*.js"
 /// // entry.Owners: [ @user1, @user2 ]

@@ -53,7 +53,8 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(expected, Assert.IsType<ImmutableArray<string>>(variables[pathKey]));
     }
 
-    [Fact]
+    // Sets CONTEXTSNAPSHOT_TEST_* and snapshots the process environment, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public void SecretShapedEnvironmentVariablesAreRedactedByDefault()
     {
         Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", "super-secret");
@@ -74,7 +75,8 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
         }
     }
 
-    [Fact]
+    // Sets CONTEXTSNAPSHOT_TEST_API_TOKEN and snapshots the process environment, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public void EnvironmentVariableRedactionCanBeOverridden()
     {
         Environment.SetEnvironmentVariable("CONTEXTSNAPSHOT_TEST_API_TOKEN", "super-secret");

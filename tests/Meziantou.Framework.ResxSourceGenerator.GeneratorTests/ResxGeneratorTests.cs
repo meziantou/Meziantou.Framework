@@ -6,14 +6,23 @@ namespace Meziantou.Framework.ResxSourceGenerator.GeneratorTests;
 
 public class ResxGeneratorTests
 {
-    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    // Ambient UI culture is restored in a finally block, but a leak would be observed by anything running beside this test
+    [Fact(DisableParallelization = true), RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void FormatString()
     {
-        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
-        Assert.Equal("Hello world!", Resource1.FormatHello("world"));
+        var previousUICulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+            Assert.Equal("Hello world!", Resource1.FormatHello("world"));
 
-        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
-        Assert.Equal("Bonjour le monde!", Resource1.FormatHello("le monde"));
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
+            Assert.Equal("Bonjour le monde!", Resource1.FormatHello("le monde"));
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousUICulture;
+        }
     }
 
     [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
@@ -23,14 +32,23 @@ public class ResxGeneratorTests
         Assert.Equal("Bonjour {0}!", Resource1.ResourceManager.GetString("Hello", CultureInfo.GetCultureInfo("fr")));
     }
 
-    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    // Ambient UI culture is restored in a finally block, but a leak would be observed by anything running beside this test
+    [Fact(DisableParallelization = true), RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void StringValue()
     {
-        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
-        Assert.Equal("value", Resource1.Sample);
+        var previousUICulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+            Assert.Equal("value", Resource1.Sample);
 
-        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
-        Assert.Equal("valeur", Resource1.Sample);
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
+            Assert.Equal("valeur", Resource1.Sample);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousUICulture;
+        }
     }
 
     [Fact]

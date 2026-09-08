@@ -983,7 +983,10 @@ public sealed partial class SnapshotTests
         Assert.Equal("actual", File.ReadAllText(actualPath));
     }
 
-    [Fact]
+    // The lock is released after 250ms and SnapshotEngine.WriteAllBytesWithRetry gives up after ~840ms. The
+    // release runs on the thread pool, so tests running beside this one can delay it past that budget and let
+    // the IOException escape.
+    [Fact(DisableParallelization = true)]
     public async Task Validate_RetriesWhenActualFileIsLocked()
     {
         using var directory = TemporaryDirectory.Create();

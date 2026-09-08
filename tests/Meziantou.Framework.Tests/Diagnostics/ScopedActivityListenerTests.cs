@@ -473,44 +473,19 @@ public sealed class ScopedActivityListenerTests
     }
 
     [Fact]
-    public async Task IsInScope_IsFalseOutsideTheScopeAndAfterDispose()
-    {
-        using var source = CreateSource();
-
-        ScopedActivityListener? listener = null;
-        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        // The task is started before the scope, so it does not flow the AsyncLocal of the scope
-        var task = Task.Run(async () =>
-        {
-            await gate.Task;
-            return listener!.IsInScope;
-        }, TestContext.Current.CancellationToken);
-
-        listener = CreateListener(source);
-        try
-        {
-            Assert.True(listener.IsInScope);
-            gate.SetResult();
-            Assert.False(await task);
-        }
-        finally
-        {
-            listener.Dispose();
-        }
-
-        Assert.False(listener.IsInScope);
-    }
-
-    [Fact]
     public void Dispose_IsIdempotent()
     {
         using var source = CreateSource();
+        using var alwaysOn = CreateAlwaysOnListener(source);
         var listener = CreateListener(source);
 
         listener.Dispose();
         listener.Dispose();
 
-        Assert.False(listener.IsInScope);
+        using (source.StartActivity("op"))
+        {
+        }
+
+        Assert.Empty(listener.Activities);
     }
 }

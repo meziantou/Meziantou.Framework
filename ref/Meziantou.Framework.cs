@@ -1104,8 +1104,6 @@ namespace Meziantou.Framework.Diagnostics
 
     public sealed class ScopedActivityListener : System.IDisposable
     {
-        public System.Guid Id { get => throw null; }
-        public bool IsInScope { get => throw null; }
         public System.Collections.Generic.IReadOnlyCollection<System.Diagnostics.Activity> Activities { get => throw null; }
         public event System.EventHandler<Meziantou.Framework.Diagnostics.ActivityEventArgs>? ActivityStarted;
         public event System.EventHandler<Meziantou.Framework.Diagnostics.ActivityEventArgs>? ActivityStopped;

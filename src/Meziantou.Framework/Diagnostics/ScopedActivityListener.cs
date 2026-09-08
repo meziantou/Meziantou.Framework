@@ -48,6 +48,7 @@ public sealed class ScopedActivityListener : IDisposable
     private static bool s_inCallback;
 
     private readonly AsyncLocal<Guid> _currentScopeId = new();
+    private readonly Guid _scopeId = Guid.NewGuid();
     private readonly ActivityListener _listener;
     private readonly ActivitySamplingResult _samplingResult;
     private readonly bool _captureChildActivities;
@@ -79,8 +80,7 @@ public sealed class ScopedActivityListener : IDisposable
         _captureChildActivities = options.CaptureChildActivities;
         _activities = new CapturedActivityCollection(options.MaxActivityCount);
 
-        Id = Guid.NewGuid();
-        _currentScopeId.Value = Id;
+        _currentScopeId.Value = _scopeId;
 
         var shouldListenTo = options.ShouldListenTo;
         if (shouldListenTo is null && options.SourceNames is { } sourceNames)
@@ -100,12 +100,6 @@ public sealed class ScopedActivityListener : IDisposable
 
         ActivitySource.AddActivityListener(_listener);
     }
-
-    /// <summary>Gets the identifier of the scope. It is the value flowed through the <see cref="AsyncLocal{T}"/> used to detect the scope.</summary>
-    public Guid Id { get; }
-
-    /// <summary>Gets a value indicating whether the calling asynchronous flow is inside this scope.</summary>
-    public bool IsInScope => !_disposed && _currentScopeId.Value == Id;
 
     /// <summary>Gets the activities captured so far, in completion order. The collection is safe to enumerate while new activities are captured.</summary>
     public IReadOnlyCollection<Activity> Activities => _activities;
@@ -191,12 +185,14 @@ public sealed class ScopedActivityListener : IDisposable
         _capturedSpanIds.Clear();
     }
 
+    private bool IsInScope => _currentScopeId.Value == _scopeId;
+
     private ActivitySamplingResult Sample(ActivitySpanId parentSpanId)
     {
         if (_disposed)
             return ActivitySamplingResult.None;
 
-        if (_currentScopeId.Value == Id)
+        if (IsInScope)
             return _samplingResult;
 
         if (_captureChildActivities && parentSpanId != default && _capturedSpanIds.ContainsKey(parentSpanId))
@@ -242,7 +238,7 @@ public sealed class ScopedActivityListener : IDisposable
 
     private bool ShouldCapture(Activity activity)
     {
-        if (_currentScopeId.Value == Id)
+        if (IsInScope)
             return true;
 
         if (!_captureChildActivities)

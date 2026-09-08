@@ -9,8 +9,8 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public sealed class XmlProcessingInstructionSyntax : XmlSyntaxNode
 {
-    public XmlProcessingInstructionSyntax(string target, string? data, string fullText)
-        : base(XmlSyntaxKind.XmlProcessingInstruction, fullText, [new XmlSyntaxToken(XmlSyntaxKind.ProcessingInstructionToken, fullText)])
+    public XmlProcessingInstructionSyntax(string target, string? data, string fullText, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlProcessingInstruction, fullText, fullStart, [new XmlSyntaxToken(XmlSyntaxKind.ProcessingInstructionToken, fullText, fullStart: fullStart)])
     {
         Target = target;
         Data = data;

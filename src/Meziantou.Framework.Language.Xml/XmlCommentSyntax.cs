@@ -9,11 +9,17 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public sealed class XmlCommentSyntax : XmlSyntaxNode
 {
-    public XmlCommentSyntax(string text, string fullText)
-        : base(XmlSyntaxKind.XmlComment, fullText, [new XmlSyntaxToken(XmlSyntaxKind.CommentToken, text)])
+    private const string OpeningDelimiter = "<!--";
+
+    public XmlCommentSyntax(string text, string fullText, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlComment, fullText, fullStart, [new XmlSyntaxToken(XmlSyntaxKind.CommentToken, text, fullStart: fullStart + GetTextOffset(fullText))])
     {
         Text = text;
     }
+
+    /// <summary>The offset of the comment text inside <paramref name="fullText"/>, which the parser always opens with <c>&lt;!--</c>.</summary>
+    private static int GetTextOffset(string fullText)
+        => fullText.StartsWith(OpeningDelimiter, StringComparison.Ordinal) ? OpeningDelimiter.Length : 0;
 
     public string Text { get; }
 

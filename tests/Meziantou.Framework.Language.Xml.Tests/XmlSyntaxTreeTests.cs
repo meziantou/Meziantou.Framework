@@ -511,6 +511,162 @@ public sealed class XmlSyntaxTreeTests
         Assert.Contains(nonNamespacedAttributes, attribute => attribute.Name == "flag" && attribute.Value == "local");
     }
 
+    [Theory]
+    [MemberData(nameof(RoundTripSamples))]
+    public void ParseText_EveryNodeSpanSlicesBackToItsOwnText(string text)
+    {
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        foreach (var node in tree.Root.DescendantNodes())
+        {
+            Assert.Equal(node.ToFullString(), text.Substring(node.Span.Start, node.Span.Length));
+            Assert.Equal(node.Span, node.FullSpan);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(RoundTripSamples))]
+    public void ParseText_EveryTokenSpanSlicesBackToItsOwnText(string text)
+    {
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        foreach (var token in tree.Root.DescendantTokens())
+        {
+            Assert.Equal(token.Text, text.Substring(token.Span.Start, token.Span.Length));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(RoundTripSamples))]
+    public void ParseText_ChildSpansAreContainedInTheirParentSpan(string text)
+    {
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        foreach (var node in tree.Root.DescendantNodes())
+        {
+            var parent = node.Parent;
+            if (parent is null || parent is XmlDocumentSyntax)
+                continue;
+
+            Assert.True(node.Span.Start >= parent.Span.Start, $"{node.Kind} starts before its {parent.Kind} parent");
+            Assert.True(node.Span.End <= parent.Span.End, $"{node.Kind} ends after its {parent.Kind} parent");
+        }
+    }
+
+    [Fact]
+    public void ParseText_NodesCarryAbsoluteSourcePositions()
+    {
+        const string Text = "<?xml version=\"1.0\"?><root attr=\"value\"><child>sample</child><!--c--><![CDATA[data]]></root>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+
+        Assert.Equal(new TextSpan(0, Text.Length), tree.Root.Span);
+
+        var declaration = Assert.IsType<XmlDeclarationSyntax>(tree.Root.ChildNodes[0]);
+        Assert.Equal(0, declaration.Span.Start);
+        Assert.Equal("<?xml version=\"1.0\"?>".Length, declaration.Span.Length);
+
+        var root = Assert.IsType<XmlElementSyntax>(tree.Root.ChildNodes[1]);
+        Assert.Equal(Text.IndexOf("<root", StringComparison.Ordinal), root.Span.Start);
+
+        var attribute = Assert.Single(root.Attributes);
+        Assert.Equal(Text.IndexOf("attr=", StringComparison.Ordinal), attribute.Span.Start);
+
+        var child = Assert.IsType<XmlElementSyntax>(root.Content[0]);
+        Assert.Equal(Text.IndexOf("<child>", StringComparison.Ordinal), child.Span.Start);
+
+        var comment = Assert.IsType<XmlCommentSyntax>(root.Content[1]);
+        Assert.Equal(Text.IndexOf("<!--c-->", StringComparison.Ordinal), comment.Span.Start);
+
+        var cdata = Assert.IsType<XmlCDataSectionSyntax>(root.Content[2]);
+        Assert.Equal(Text.IndexOf("<![CDATA[", StringComparison.Ordinal), cdata.Span.Start);
+
+        var endTag = Assert.IsType<XmlEndTagSyntax>(root.ChildNodes[^1]);
+        Assert.Equal(Text.IndexOf("</root>", StringComparison.Ordinal), endTag.Span.Start);
+    }
+
+    [Fact]
+    public void ParseText_TokensCarryAbsoluteSourcePositions()
+    {
+        const string Text = "<root attr=\"value\"><!--note--><![CDATA[data]]>text</root>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+        var root = Assert.IsType<XmlElementSyntax>(tree.Root.ChildNodes[0]);
+
+        var nameToken = Assert.Single(root.Tokens);
+        Assert.Equal(Text.IndexOf("root", StringComparison.Ordinal), nameToken.Span.Start);
+        Assert.Equal(nameToken.Span, nameToken.FullSpan);
+
+        var attribute = Assert.Single(root.Attributes);
+        Assert.Equal(Text.IndexOf("attr", StringComparison.Ordinal), attribute.Tokens[0].Span.Start);
+        Assert.Equal(Text.IndexOf("value", StringComparison.Ordinal), attribute.Tokens[1].Span.Start);
+
+        var comment = Assert.IsType<XmlCommentSyntax>(root.Content[0]);
+        Assert.Equal(Text.IndexOf("note", StringComparison.Ordinal), Assert.Single(comment.Tokens).Span.Start);
+
+        var cdata = Assert.IsType<XmlCDataSectionSyntax>(root.Content[1]);
+        Assert.Equal(Text.IndexOf("data", StringComparison.Ordinal), Assert.Single(cdata.Tokens).Span.Start);
+
+        var text = Assert.IsType<XmlTextSyntax>(root.Content[2]);
+        Assert.Equal(Text.IndexOf("text", StringComparison.Ordinal), Assert.Single(text.Tokens).Span.Start);
+    }
+
+    [Fact]
+    public void ParseText_DeclarationPseudoAttributesCarryAbsoluteSourcePositions()
+    {
+        const string Text = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<root />";
+        var tree = XmlSyntaxTree.ParseText(Text);
+        var declaration = Assert.IsType<XmlDeclarationSyntax>(tree.Root.ChildNodes[0]);
+
+        var version = Assert.IsType<XmlAttributeSyntax>(declaration.VersionAttribute);
+        Assert.Equal(version.ToFullString(), Text.Substring(version.Span.Start, version.Span.Length));
+        Assert.Equal(Text.IndexOf("version", StringComparison.Ordinal), version.Tokens[0].Span.Start);
+        Assert.Equal(Text.IndexOf("1.0", StringComparison.Ordinal), version.Tokens[1].Span.Start);
+
+        var encoding = Assert.IsType<XmlAttributeSyntax>(declaration.EncodingAttribute);
+        Assert.Equal(encoding.ToFullString(), Text.Substring(encoding.Span.Start, encoding.Span.Length));
+        Assert.Equal(Text.IndexOf("encoding", StringComparison.Ordinal), encoding.Tokens[0].Span.Start);
+    }
+
+    [Fact]
+    public void ParseText_SkippedTextCarriesAbsoluteSourcePositions()
+    {
+        const string Text = "<root/></unexpected>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+
+        var skipped = Assert.IsType<XmlSkippedTextSyntax>(tree.Root.ChildNodes[1]);
+        Assert.Equal(Text.IndexOf("</unexpected>", StringComparison.Ordinal), skipped.Span.Start);
+        Assert.Equal("</unexpected>", Text.Substring(skipped.Span.Start, skipped.Span.Length));
+    }
+
+    [Fact]
+    public void ParseText_DiagnosticSpanMatchesTheNodeItReportsOn()
+    {
+        const string Text = "<a/><root><child/>";
+        var tree = XmlSyntaxTree.ParseText(Text);
+
+        var diagnostic = Assert.Single(tree.Diagnostics, item => item.Id == "XML0001");
+        var element = tree.Root.DescendantNodes().OfType<XmlElementSyntax>().Single(item => item.Name == "root");
+        Assert.Equal(element.Span, diagnostic.Span);
+        Assert.Equal(Text.IndexOf("<root>", StringComparison.Ordinal), diagnostic.Span.Start);
+    }
+
+    [Fact]
+    public void DescendantTokens_IncludesTheTokensOfTheNodeItself()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root/>");
+        var root = Assert.IsType<XmlElementSyntax>(tree.Root.ChildNodes[0]);
+
+        Assert.Equal(["root"], root.DescendantTokens().Select(token => token.Text));
+    }
+
+    [Fact]
+    public void SyntaxFactory_BuiltNodesAreAnchoredAtZero()
+    {
+        var element = SyntaxFactory.Element("item", [SyntaxFactory.Attribute("id", "1")], [], isSelfClosing: true);
+
+        Assert.Equal(0, element.Span.Start);
+        Assert.Equal(element.ToFullString().Length, element.Span.Length);
+    }
+
     private static XmlNamespaceManager CreateNamespaceManager()
     {
         var namespaceManager = new XmlNamespaceManager(new NameTable());

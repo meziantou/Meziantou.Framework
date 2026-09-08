@@ -9,11 +9,24 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public sealed class XmlAttributeSyntax : XmlSyntaxNode
 {
-    public XmlAttributeSyntax(string name, string value, string fullText)
-        : base(XmlSyntaxKind.XmlAttribute, fullText, [new XmlSyntaxToken(XmlSyntaxKind.IdentifierToken, name), new XmlSyntaxToken(XmlSyntaxKind.AttributeValueToken, value)])
+    public XmlAttributeSyntax(string name, string value, string fullText, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlAttribute, fullText, fullStart, BuildTokens(name, value, fullText, fullStart))
     {
         Name = name;
         Value = value;
+    }
+
+    private static XmlSyntaxToken[] BuildTokens(string name, string value, string fullText, int fullStart)
+    {
+        // The declaration parser hands over an attribute whose text keeps the whitespace that separates it from the
+        // previous one, so the name is not always at offset 0.
+        var nameStart = GetAttributeNameStart(fullText);
+        var valueStart = TryGetAttributeValueSpan(fullText, out var valueSpan, out _) ? valueSpan.Start : 0;
+        return
+        [
+            new XmlSyntaxToken(XmlSyntaxKind.IdentifierToken, name, fullStart: fullStart + (nameStart < 0 ? 0 : nameStart)),
+            new XmlSyntaxToken(XmlSyntaxKind.AttributeValueToken, value, fullStart: fullStart + valueStart),
+        ];
     }
 
     public string Name { get; }
@@ -42,7 +55,7 @@ public sealed class XmlAttributeSyntax : XmlSyntaxNode
             builder.Append(fullText.AsSpan(0, valueSpan.Start));
             builder.Append(escapedValue);
             builder.Append(fullText.AsSpan(valueSpan.End));
-            return new XmlAttributeSyntax(Name, value, builder.ToString());
+            return new XmlAttributeSyntax(Name, value, builder.ToString(), FullSpan.Start);
         }
 
         return SyntaxFactory.Attribute(Name, value);
@@ -60,7 +73,7 @@ public sealed class XmlAttributeSyntax : XmlSyntaxNode
         if (string.Equals(updated, fullText, StringComparison.Ordinal))
             return this;
 
-        return new XmlAttributeSyntax(Name, Value, updated);
+        return new XmlAttributeSyntax(Name, Value, updated, FullSpan.Start);
     }
 
     public XmlAttributeSyntax WithTrailingTrivia(IEnumerable<XmlSyntaxTrivia>? trailingTrivia)
@@ -86,7 +99,7 @@ public sealed class XmlAttributeSyntax : XmlSyntaxNode
         if (string.Equals(updated, fullText, StringComparison.Ordinal))
             return this;
 
-        return new XmlAttributeSyntax(Name, Value, updated);
+        return new XmlAttributeSyntax(Name, Value, updated, FullSpan.Start);
     }
 
     private static bool TryGetAttributeValueSpan(string attributeText, out TextSpan span, out char quoteCharacter)

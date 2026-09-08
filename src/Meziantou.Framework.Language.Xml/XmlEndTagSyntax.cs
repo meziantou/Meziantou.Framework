@@ -11,10 +11,25 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public sealed class XmlEndTagSyntax : XmlSyntaxNode
 {
-    public XmlEndTagSyntax(string name, string fullText)
-        : base(XmlSyntaxKind.XmlEndTag, fullText, [new XmlSyntaxToken(XmlSyntaxKind.IdentifierToken, name)])
+    public XmlEndTagSyntax(string name, string fullText, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlEndTag, fullText, fullStart, [new XmlSyntaxToken(XmlSyntaxKind.IdentifierToken, name, fullStart: fullStart + GetNameOffset(fullText))])
     {
         Name = name;
+    }
+
+    /// <summary>The offset of the name inside <paramref name="fullText"/>, which opens with <c>&lt;/</c> and may then hold whitespace.</summary>
+    private static int GetNameOffset(string fullText)
+    {
+        if (fullText.Length < 2 || fullText[0] != '<' || fullText[1] != '/')
+            return 0;
+
+        var current = 2;
+        while (current < fullText.Length && char.IsWhiteSpace(fullText[current]))
+        {
+            current++;
+        }
+
+        return current;
     }
 
     public string Name { get; }
@@ -25,7 +40,7 @@ public sealed class XmlEndTagSyntax : XmlSyntaxNode
         if (string.Equals(name, Name, StringComparison.Ordinal))
             return this;
 
-        return new XmlEndTagSyntax(name, $"</{name}>");
+        return new XmlEndTagSyntax(name, $"</{name}>", FullSpan.Start);
     }
 
     public override void Accept(XmlSyntaxVisitor visitor) => visitor.VisitEndTag(this);

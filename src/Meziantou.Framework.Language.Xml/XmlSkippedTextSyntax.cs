@@ -9,8 +9,8 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public sealed class XmlSkippedTextSyntax : XmlSyntaxNode
 {
-    public XmlSkippedTextSyntax(string text)
-        : base(XmlSyntaxKind.XmlSkippedText, text, [new XmlSyntaxToken(XmlSyntaxKind.SkippedTextToken, text)])
+    public XmlSkippedTextSyntax(string text, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlSkippedText, text, fullStart, [new XmlSyntaxToken(XmlSyntaxKind.SkippedTextToken, text, fullStart: fullStart)])
     {
         Text = text;
     }
@@ -23,7 +23,7 @@ public sealed class XmlSkippedTextSyntax : XmlSyntaxNode
         if (string.Equals(text, Text, StringComparison.Ordinal))
             return this;
 
-        return new XmlSkippedTextSyntax(text);
+        return new XmlSkippedTextSyntax(text, FullSpan.Start);
     }
 
     public override void Accept(XmlSyntaxVisitor visitor) => visitor.VisitSkippedText(this);

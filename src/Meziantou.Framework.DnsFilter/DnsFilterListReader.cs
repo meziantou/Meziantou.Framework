@@ -16,7 +16,10 @@ namespace Meziantou.Framework.DnsFilter;
 /// </remarks>
 public static class DnsFilterListReader
 {
-    private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(100);
+    // Only the backtracking fallback needs a deadline; NonBacktracking is bounded by construction.
+    // This is a wall-clock budget, so it must stay well above any plausible thread stall: a match
+    // that costs microseconds of CPU still fails if the thread is descheduled past the deadline.
+    private static readonly TimeSpan BacktrackingRegexTimeout = TimeSpan.FromSeconds(2);
 
     private static readonly string[] LocalhostNames =
     [
@@ -645,11 +648,15 @@ public static class DnsFilterListReader
     private static Regex? TryCreateRegex(string pattern)
     {
         // NonBacktracking guarantees linear-time matching, which is what makes a hostile pattern in
-        // a third-party list harmless. Not every construct is supported, so fall back to the
-        // backtracking engine (still bounded by the match timeout) when it is not.
+        // a third-party list harmless. The timeout is explicitly infinite there: the engine is
+        // already bounded by the input length, and a wall-clock deadline only adds a way for a match
+        // to spuriously report a non-match when the thread is descheduled mid-match. Passing it
+        // explicitly also pins the behaviour against a host that sets REGEX_DEFAULT_MATCH_TIMEOUT.
+        // Not every construct is supported, so fall back to the backtracking engine, where a
+        // timeout is the only bound.
         try
         {
-            return new Regex(pattern, RegexOptions.NonBacktracking | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
+            return new Regex(pattern, RegexOptions.NonBacktracking | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         }
         catch (NotSupportedException)
         {
@@ -661,7 +668,7 @@ public static class DnsFilterListReader
 
         try
         {
-            return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
+            return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, BacktrackingRegexTimeout);
         }
         catch (ArgumentException)
         {

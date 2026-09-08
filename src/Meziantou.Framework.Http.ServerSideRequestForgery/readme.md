@@ -88,6 +88,13 @@ handler.ConfigureSsrf(options);
 
 Requests the proxy is configured to bypass are connected to directly and are validated normally.
 
+The rejection does not depend on what the proxy reports for the destinations it can be asked about here. An
+`https` destination is reached over a `CONNECT` tunnel the connection pool opens with a request of its own, which
+targets the *proxy* and carries the real destination only in a `Host` header. A proxy that applies to some
+destinations only - a PAC script, or a custom `IWebProxy` - answers DIRECT for every destination reachable from
+the connection callback, and would otherwise hide the destination it does proxy behind its own address. The tunnel
+request is therefore treated as a proxy connection on its own.
+
 ## HTTP/3
 
 Validation runs from `SocketsHttpHandler.ConnectCallback`, which the runtime uses only for TCP connections. An

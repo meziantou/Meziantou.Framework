@@ -306,6 +306,66 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     }
 
     [Fact]
+    public async Task ConnectCallback_RejectsATunnelToAProxyThatOnlyAppliesToTheTarget()
+    {
+        var options = CreateProxyTestOptions();
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = true,
+            Proxy = new DestinationSpecificWebProxy(new Uri("http://127.0.0.1:9"), proxiedHost: "example.invalid"),
+        };
+        handler.ConfigureSsrf(options, new FakeDnsIpAddressResolver([IPAddress.Loopback]));
+        using var httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("https://example.invalid/"), TestContext.Current.CancellationToken));
+
+        // The proxy applies to the target only, so it reports DIRECT for every destination this callback can ask
+        // about - including the proxy URI the pool substitutes for the request. Without the tunnel check the
+        // connection to the proxy is validated as a direct one and the request fails with a socket error.
+        Assert.IsType<ServerSideRequestForgeryException>(exception.InnerException);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_RejectsATunnelRequestNoDestinationReportsTheProxyFor()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        var proxy = new DestinationSpecificWebProxy(new Uri("http://proxy.invalid:8080"), proxiedHost: "hidden.invalid");
+        using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = proxy };
+
+        // What the pool builds to open an https tunnel: the proxy's own URI, the real destination only in Host.
+        using var tunnelRequest = new HttpRequestMessage(HttpMethod.Connect, "http://proxy.invalid:8080/");
+        tunnelRequest.Headers.Host = "hidden.invalid:443";
+
+        var exception = Assert.Throws<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            tunnelRequest,
+            new DnsEndPoint("proxy.invalid", 8080),
+            options));
+
+        Assert.Contains("targets a proxy", exception.Message);
+    }
+
+    [Fact]
+    public void EnsureConnectionIsNotToAProxy_DoesNotThrowOnAConnectRequestWhenNoProxyIsConfigured()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        using var handler = new SocketsHttpHandler
+        {
+            UseProxy = false,
+            Proxy = new WebProxy("http://proxy.invalid:8080", BypassOnLocal: false),
+        };
+
+        using var request = new HttpRequestMessage(HttpMethod.Connect, "https://example.com/");
+
+        // No proxy can tunnel this connection, so the request URI is the real destination and gets validated.
+        ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
+            handler,
+            request,
+            new DnsEndPoint("example.com", 443),
+            options);
+    }
+
+    [Fact]
     public void EnsureConnectionIsNotToAProxy_LogsRejectionReason()
     {
         using var loggerProvider = new InMemoryLoggerProvider();
@@ -319,9 +379,11 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             Proxy = new WebProxy("http://proxy.invalid:8080", BypassOnLocal: false),
         };
 
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/");
+
         Assert.Throws<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
             handler,
-            new Uri("https://example.com/"),
+            request,
             new DnsEndPoint("proxy.invalid", 8080),
             options));
 
@@ -338,9 +400,11 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             Proxy = new WebProxy("http://proxy.invalid:8080", BypassOnLocal: false),
         };
 
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/");
+
         ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
             handler,
-            new Uri("https://example.com/"),
+            request,
             new DnsEndPoint("example.com", 443),
             options);
     }
@@ -352,11 +416,12 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         var proxy = new CountingWebProxy(new Uri("http://proxy.invalid:8080"));
         using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = proxy };
 
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/");
         for (var i = 0; i < 5; i++)
         {
             ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
                 handler,
-                new Uri("https://example.com/"),
+                request,
                 new DnsEndPoint("example.com", 443),
                 options);
         }
@@ -373,17 +438,19 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         var proxy = new CountingWebProxy(new Uri("http://proxy.invalid:8080"));
         using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = proxy };
 
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/");
+
         // Populate the cache with a connection that is not to the proxy.
         ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
             handler,
-            new Uri("https://example.com/"),
+            request,
             new DnsEndPoint("example.com", 443),
             options);
 
         // A later connection that does target the proxy must still be rejected off the cached probe result.
         var exception = Assert.Throws<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
             handler,
-            new Uri("https://example.com/"),
+            request,
             new DnsEndPoint("proxy.invalid", 8080),
             options));
 
@@ -399,21 +466,33 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         var second = new CountingWebProxy(new Uri("http://proxy-two.invalid:9090"));
 
         using var handler = new SocketsHttpHandler { UseProxy = true, Proxy = first };
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://example.com/");
         ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
             handler,
-            new Uri("https://example.com/"),
+            request,
             new DnsEndPoint("example.com", 443),
             options);
 
         handler.Proxy = second;
         Assert.Throws<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.EnsureConnectionIsNotToAProxy(
             handler,
-            new Uri("https://example.com/"),
+            request,
             new DnsEndPoint("proxy-two.invalid", 9090),
             options));
 
         Assert.Equal(2, first.ProbeQueryCount);
         Assert.Equal(2, second.ProbeQueryCount);
+    }
+
+    // A proxy that applies to one destination only. Everything else - the probe destinations and the proxy URI the
+    // pool substitutes for a tunnelled request - is reported as bypassed.
+    private sealed class DestinationSpecificWebProxy(Uri proxyUri, string proxiedHost) : IWebProxy
+    {
+        public ICredentials? Credentials { get; set; }
+
+        public Uri? GetProxy(Uri destination) => IsBypassed(destination) ? destination : proxyUri;
+
+        public bool IsBypassed(Uri host) => !string.Equals(host.Host, proxiedHost, StringComparison.OrdinalIgnoreCase);
     }
 
     private sealed class CountingWebProxy(Uri proxyUri) : IWebProxy

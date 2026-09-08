@@ -13,7 +13,6 @@ internal sealed class DockerPackageUpdater : PackageUpdater
     // registries that already return everything keep doing so.
     private const int MaxPages = 100;
 
-    private static readonly HttpClient HttpClient = new();
     public override VersioningStrategy VersioningStrategy { get; set; } = DockerVersioningStrategy.Instance;
 
     protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.DockerImage && dependency.Name is not null;
@@ -122,7 +121,7 @@ internal sealed class DockerPackageUpdater : PackageUpdater
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         }
 
-        return await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        return await SharedHttpClient.Instance.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<List<string>> ReadTagsAsync(HttpResponseMessage response, CancellationToken cancellationToken)
@@ -162,7 +161,7 @@ internal sealed class DockerPackageUpdater : PackageUpdater
         }
 
         var tokenUri = BuildTokenUri(realm, service, scope);
-        using var tokenResponse = await HttpClient.GetAsync(tokenUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        using var tokenResponse = await SharedHttpClient.Instance.GetAsync(tokenUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         tokenResponse.EnsureSuccessStatusCode();
 
         await using var tokenStream = await tokenResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);

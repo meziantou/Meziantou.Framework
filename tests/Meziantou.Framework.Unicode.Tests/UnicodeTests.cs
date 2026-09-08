@@ -264,6 +264,62 @@ public sealed class UnicodeTests
         Assert.Equal(297334, Unicode.AllCharacters.Count);
     }
 
+    [Fact]
+    public void AllCharacters_AgreesWithLookup()
+    {
+        // The data resource stores runs of code points that share their properties. Enumerating
+        // walks those runs while a lookup binary searches them, so the two reach an entry by
+        // different paths and are worth checking against each other.
+        var failures = new List<string>();
+        var count = 0;
+        foreach (var info in Unicode.AllCharacters)
+        {
+            count++;
+            if (failures.Count >= 10)
+                continue;
+
+            if (!Unicode.TryGetCharacterInfo(info.Rune, out var found))
+            {
+                failures.Add($"U+{info.Rune.Value:X4}: enumerated but not found by lookup");
+            }
+            else if (found != info)
+            {
+                failures.Add($"U+{info.Rune.Value:X4}: lookup returned {found.Name} instead of {info.Name}");
+            }
+        }
+
+        Assert.Empty(failures);
+        Assert.Equal(Unicode.AllCharacters.Count, count);
+    }
+
+    [Theory]
+    [InlineData(0x1D15E, "1D157 1D165")]
+    [InlineData(0x2F800, "4E3D")]
+    [InlineData(0x1E030, "<super> 0430")]
+    [InlineData(0x00A0, "<noBreak> 0020")]
+    public void GetCharacterInfo_RebuildsDecompositionMapping(int codePoint, string expected)
+    {
+        // Mappings are stored as code points, so the hexadecimal text is rebuilt on access.
+        // Supplementary code points are the ones that do not fit the four-digit padding.
+        var info = Unicode.GetCharacterInfo(new Rune(codePoint));
+
+        Assert.NotNull(info);
+        Assert.Equal(expected, info.Value.DecompositionMapping);
+    }
+
+    [Fact]
+    public void GetCharacterInfo_ReturnsTheSameNameInstanceOnEveryLookup()
+    {
+        // Names are decoded from the resource on demand and cached, so a second lookup must not
+        // pay for decoding again.
+        var first = Unicode.GetCharacterInfo(new Rune(0x1F600));
+        var second = Unicode.GetCharacterInfo(new Rune(0x1F600));
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Same(first.Value.Name, second.Value.Name);
+    }
+
     [Theory]
     [InlineData(0x4E00, "<CJK Ideograph>")]
     [InlineData(0xAC00, "<Hangul Syllable>")]

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.0.3</Version>
+    <Version>2.0.4</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Unicode helpers for confusable character normalization and character metadata.</Description>
     <PackageTags>unicode, confusables, homoglyph, normalization, text</PackageTags>
@@ -14,8 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources/UnicodeData.bin.gz">
-      <LogicalName>Meziantou.Framework.Resources.UnicodeData.bin.gz</LogicalName>
+    <EmbeddedResource Include="Resources/UnicodeData.bin">
+      <LogicalName>Meziantou.Framework.Resources.UnicodeData.bin</LogicalName>
       <WithCulture>false</WithCulture>
     </EmbeddedResource>
   </ItemGroup>

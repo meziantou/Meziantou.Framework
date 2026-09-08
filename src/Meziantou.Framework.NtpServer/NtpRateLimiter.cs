@@ -10,7 +10,9 @@ namespace Meziantou.Framework.Ntp;
 /// Source addresses on a UDP server are attacker-controlled and trivially spoofed, so the limiter
 /// cannot allocate an entry per address without becoming a memory-exhaustion vector itself. Addresses
 /// are mapped onto a fixed number of buckets instead; colliding addresses share a budget, which makes
-/// the limit conservative rather than leaky.
+/// the limit conservative rather than leaky. A bucket therefore counts every request that lands in it
+/// for the whole window, and never restarts its window because the source address changed: rotating
+/// through colliding addresses cannot clear a budget that is already being spent.
 /// </remarks>
 internal sealed class NtpRateLimiter
 {
@@ -39,27 +41,13 @@ internal sealed class NtpRateLimiter
     {
         isFirstRejection = false;
 
-        var hash = address.GetHashCode();
-        var index = (int)((uint)hash % BucketCount);
+        var index = (int)((uint)address.GetHashCode() % BucketCount);
         var now = _timeProvider.GetTimestamp();
 
         lock (_lock)
         {
             ref var bucket = ref _buckets[index];
             var inWindow = bucket.Count > 0 && _timeProvider.GetElapsedTime(bucket.WindowStart, now) < Window;
-
-            if (bucket.Hash != hash)
-            {
-                // Refuse to hand the bucket to a different address while its current occupant is over
-                // the limit: otherwise a flood of spoofed addresses would clear the limiter on every
-                // packet, disabling it exactly when it is needed.
-                if (inWindow && bucket.Count > _maxRequestsPerWindow)
-                    return false;
-
-                bucket = new Bucket { Hash = hash, WindowStart = now, Count = 1 };
-                return true;
-            }
-
             if (!inWindow)
             {
                 bucket.WindowStart = now;
@@ -79,7 +67,6 @@ internal sealed class NtpRateLimiter
     [StructLayout(LayoutKind.Auto)]
     private struct Bucket
     {
-        public int Hash;
         public long WindowStart;
         public int Count;
     }

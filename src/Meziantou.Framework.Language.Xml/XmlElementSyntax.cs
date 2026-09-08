@@ -18,8 +18,9 @@ public sealed class XmlElementSyntax : XmlSyntaxNode
         XmlEndTagSyntax? endTag,
         bool isSelfClosing,
         string fullText,
-        string startTagText)
-        : base(isSelfClosing ? XmlSyntaxKind.XmlEmptyElement : XmlSyntaxKind.XmlElement, fullText, [new XmlSyntaxToken(XmlSyntaxKind.IdentifierToken, name, name)])
+        string startTagText,
+        int fullStart = 0)
+        : base(isSelfClosing ? XmlSyntaxKind.XmlEmptyElement : XmlSyntaxKind.XmlElement, fullText, fullStart, [new XmlSyntaxToken(XmlSyntaxKind.IdentifierToken, name, name, fullStart: fullStart + GetNameOffset(startTagText))])
     {
         Name = name;
         Attributes = attributes ?? [];
@@ -117,7 +118,8 @@ public sealed class XmlElementSyntax : XmlSyntaxNode
             EndTag,
             isSelfClosing: false,
             StartTagText + text + endTagText,
-            StartTagText);
+            StartTagText,
+            FullSpan.Start);
     }
 
     public XmlElementSyntax WithLeadingTrivia(params ReadOnlySpan<XmlSyntaxTrivia> leadingTrivia)
@@ -163,7 +165,14 @@ public sealed class XmlElementSyntax : XmlSyntaxNode
         var endTagText = EndTag?.ToFullString() ?? string.Empty;
         var innerTextLength = ToFullString().Length - StartTagText.Length - endTagText.Length;
         var innerText = innerTextLength > 0 ? ToFullString().Substring(StartTagText.Length, innerTextLength) : string.Empty;
-        return new XmlElementSyntax(Name, Attributes, Content, EndTag, IsSelfClosing, startTagText + innerText + endTagText, startTagText);
+        return new XmlElementSyntax(Name, Attributes, Content, EndTag, IsSelfClosing, startTagText + innerText + endTagText, startTagText, FullSpan.Start);
+    }
+
+    /// <summary>The offset of the name inside the start tag, which opens with <c>&lt;</c> and may then hold whitespace.</summary>
+    private static int GetNameOffset(string startTagText)
+    {
+        var nameStart = GetElementNameStart(startTagText);
+        return nameStart < 0 ? 0 : nameStart;
     }
 
     private static int GetElementNameStart(string startTagText)

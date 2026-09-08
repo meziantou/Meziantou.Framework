@@ -9,8 +9,8 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public sealed class XmlTextSyntax : XmlSyntaxNode
 {
-    public XmlTextSyntax(string text)
-        : base(XmlSyntaxKind.XmlText, text, [new XmlSyntaxToken(XmlSyntaxKind.TextToken, text)])
+    public XmlTextSyntax(string text, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlText, text, fullStart, [new XmlSyntaxToken(XmlSyntaxKind.TextToken, text, fullStart: fullStart)])
     {
         Text = text;
     }
@@ -23,7 +23,7 @@ public sealed class XmlTextSyntax : XmlSyntaxNode
         if (string.Equals(text, Text, StringComparison.Ordinal))
             return this;
 
-        return new XmlTextSyntax(text);
+        return new XmlTextSyntax(text, FullSpan.Start);
     }
 
     public override void Accept(XmlSyntaxVisitor visitor) => visitor.VisitText(this);

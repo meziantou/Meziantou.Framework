@@ -14,10 +14,11 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public abstract class XmlSyntaxNode
 {
-    protected XmlSyntaxNode(XmlSyntaxKind kind, string fullText, IReadOnlyList<XmlSyntaxToken>? tokens = null)
+    protected XmlSyntaxNode(XmlSyntaxKind kind, string fullText, int fullStart = 0, IReadOnlyList<XmlSyntaxToken>? tokens = null)
     {
         Kind = kind;
         FullText = fullText ?? string.Empty;
+        FullSpan = new TextSpan(fullStart, FullText.Length);
         Tokens = tokens ?? [];
         foreach (var token in Tokens)
         {
@@ -31,8 +32,16 @@ public abstract class XmlSyntaxNode
     public IReadOnlyList<XmlSyntaxToken> Tokens { get; }
     public XmlSyntaxTree? SyntaxTree { get; internal set; }
     public XmlSyntaxNode? Parent => ParentNode;
-    public TextSpan Span => new(0, ToFullString().Length);
-    public TextSpan FullSpan => Span;
+
+    /// <summary>The absolute span of this node in the source text.</summary>
+    /// <remarks>
+    /// Equal to <see cref="FullSpan"/>. The two differ elsewhere only to exclude a node's leading and trailing
+    /// trivia, and the XML parser attaches no trivia to nodes: whitespace stays inside the node's own text.
+    /// </remarks>
+    public TextSpan Span => FullSpan;
+
+    /// <summary>The absolute span of this node in the source text, including everything it round-trips.</summary>
+    public TextSpan FullSpan { get; }
     public bool ContainsDiagnostics => SyntaxTree is not null && SyntaxTree.Diagnostics.Count > 0;
     public bool ContainsSkippedText => Kind == XmlSyntaxKind.XmlSkippedText || DescendantNodes().Any(node => node.Kind == XmlSyntaxKind.XmlSkippedText);
     internal XmlSyntaxNode? ParentNode { get; set; }
@@ -66,14 +75,14 @@ public abstract class XmlSyntaxNode
 
     public IEnumerable<XmlSyntaxNodeOrToken> DescendantNodesAndTokens()
     {
+        foreach (var token in Tokens)
+        {
+            yield return new XmlSyntaxNodeOrToken(token);
+        }
+
         foreach (var child in ChildNodes)
         {
             yield return new XmlSyntaxNodeOrToken(child);
-            foreach (var token in child.Tokens)
-            {
-                yield return new XmlSyntaxNodeOrToken(token);
-            }
-
             foreach (var descendant in child.DescendantNodesAndTokens())
             {
                 yield return descendant;
@@ -103,13 +112,13 @@ public abstract class XmlSyntaxNode
 
     public IEnumerable<XmlSyntaxToken> DescendantTokens()
     {
+        foreach (var token in Tokens)
+        {
+            yield return token;
+        }
+
         foreach (var child in ChildNodes)
         {
-            foreach (var token in child.Tokens)
-            {
-                yield return token;
-            }
-
             foreach (var token in child.DescendantTokens())
             {
                 yield return token;

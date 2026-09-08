@@ -18,7 +18,8 @@ public sealed class XmlSyntaxToken
         string? valueText = null,
         bool isMissing = false,
         IReadOnlyList<XmlSyntaxTrivia>? leadingTrivia = null,
-        IReadOnlyList<XmlSyntaxTrivia>? trailingTrivia = null)
+        IReadOnlyList<XmlSyntaxTrivia>? trailingTrivia = null,
+        int fullStart = 0)
     {
         Kind = kind;
         Text = text ?? string.Empty;
@@ -26,13 +27,18 @@ public sealed class XmlSyntaxToken
         IsMissing = isMissing;
         LeadingTrivia = leadingTrivia ?? [];
         TrailingTrivia = trailingTrivia ?? [];
+
+        var leadingLength = SumTextLength(LeadingTrivia);
+        Span = new TextSpan(fullStart + leadingLength, Text.Length);
+        FullSpan = new TextSpan(fullStart, leadingLength + Text.Length + SumTextLength(TrailingTrivia));
     }
 
     public XmlSyntaxKind Kind { get; }
     public string Text { get; }
     public string ValueText { get; }
     public bool IsMissing { get; }
-    public TextSpan Span => new(0, Text.Length);
+    public TextSpan Span { get; }
+    public TextSpan FullSpan { get; }
     public IReadOnlyList<XmlSyntaxTrivia> LeadingTrivia { get; }
     public IReadOnlyList<XmlSyntaxTrivia> TrailingTrivia { get; }
     internal XmlSyntaxNode? Parent { get; set; }
@@ -58,7 +64,7 @@ public sealed class XmlSyntaxToken
         return buffer.ToString();
     }
 
-    public XmlSyntaxToken WithText(string text) => new(Kind, text, valueText: null, IsMissing, LeadingTrivia, TrailingTrivia);
+    public XmlSyntaxToken WithText(string text) => new(Kind, text, valueText: null, IsMissing, LeadingTrivia, TrailingTrivia, FullSpan.Start);
 
     public XmlSyntaxToken WithLeadingTrivia(IEnumerable<XmlSyntaxTrivia>? leadingTrivia)
     {
@@ -66,7 +72,7 @@ public sealed class XmlSyntaxToken
         if (trivia.SequenceEqual(LeadingTrivia))
             return this;
 
-        return new XmlSyntaxToken(Kind, Text, ValueText, IsMissing, trivia, TrailingTrivia);
+        return new XmlSyntaxToken(Kind, Text, ValueText, IsMissing, trivia, TrailingTrivia, FullSpan.Start);
     }
 
     public XmlSyntaxToken WithTrailingTrivia(IEnumerable<XmlSyntaxTrivia>? trailingTrivia)
@@ -75,6 +81,17 @@ public sealed class XmlSyntaxToken
         if (trivia.SequenceEqual(TrailingTrivia))
             return this;
 
-        return new XmlSyntaxToken(Kind, Text, ValueText, IsMissing, LeadingTrivia, trivia);
+        return new XmlSyntaxToken(Kind, Text, ValueText, IsMissing, LeadingTrivia, trivia, FullSpan.Start);
+    }
+
+    private static int SumTextLength(IReadOnlyList<XmlSyntaxTrivia> trivia)
+    {
+        var length = 0;
+        foreach (var item in trivia)
+        {
+            length += item.Text.Length;
+        }
+
+        return length;
     }
 }

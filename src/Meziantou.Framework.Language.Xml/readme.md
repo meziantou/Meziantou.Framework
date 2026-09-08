@@ -8,6 +8,7 @@
 - save back while preserving untouched text and formatting
 - support for XML namespaces in queries and edits
 - support invalid XML documents (for example with unclosed tags) and report diagnostics
+- report the absolute source position of every node and token through `Span` / `FullSpan`
 
 ```csharp
 using System.Xml;

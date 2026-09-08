@@ -14,13 +14,13 @@ public sealed class XmlDeclarationSyntax : XmlSyntaxNode
     private readonly IReadOnlyList<XmlSyntaxNode> _childNodes;
     private readonly List<DeclarationAttributeSegment> _attributeSegments;
 
-    public XmlDeclarationSyntax(string version, string? encoding, string? standalone, string fullText)
-        : base(XmlSyntaxKind.XmlDeclaration, fullText, [new XmlSyntaxToken(XmlSyntaxKind.DeclarationToken, fullText)])
+    public XmlDeclarationSyntax(string version, string? encoding, string? standalone, string fullText, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlDeclaration, fullText, fullStart, [new XmlSyntaxToken(XmlSyntaxKind.DeclarationToken, fullText, fullStart: fullStart)])
     {
         Version = version;
         Encoding = encoding;
         Standalone = standalone;
-        _attributeSegments = ParseAttributeSegments(fullText);
+        _attributeSegments = ParseAttributeSegments(fullText, fullStart);
         _childNodes = _attributeSegments.Select(item => (XmlSyntaxNode)item.Attribute).ToArray();
         VersionAttribute = _attributeSegments.FirstOrDefault(item => string.Equals(item.Attribute.Name, "version", StringComparison.Ordinal)).Attribute;
         EncodingAttribute = _attributeSegments.FirstOrDefault(item => string.Equals(item.Attribute.Name, "encoding", StringComparison.Ordinal)).Attribute;
@@ -129,7 +129,7 @@ public sealed class XmlDeclarationSyntax : XmlSyntaxNode
         return false;
     }
 
-    private static List<DeclarationAttributeSegment> ParseAttributeSegments(string declarationText)
+    private static List<DeclarationAttributeSegment> ParseAttributeSegments(string declarationText, int fullStart)
     {
         if (declarationText.Length == 0)
             return [];
@@ -210,7 +210,7 @@ public sealed class XmlDeclarationSyntax : XmlSyntaxNode
                 continue;
 
             var attributeText = declarationText[attributeStart..attributeEnd];
-            var attribute = new XmlAttributeSyntax(name, value, attributeText);
+            var attribute = new XmlAttributeSyntax(name, value, attributeText, fullStart + attributeStart);
             result.Add(new DeclarationAttributeSegment(attribute, TextSpan.FromBounds(attributeStart, attributeEnd)));
         }
 

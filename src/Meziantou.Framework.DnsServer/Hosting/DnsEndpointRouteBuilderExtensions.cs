@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Net;
 using Meziantou.Framework.DnsServer.Handler;
 using Meziantou.Framework.DnsServer.Protocol;
+using Meziantou.Framework.DnsServer.Protocol.Records;
 using Meziantou.Framework.DnsServer.Protocol.Wire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -122,7 +123,8 @@ public static class DnsEndpointRouteBuilderExtensions
             return Results.BadRequest("Invalid DNS message.");
         }
 
-        // RFC 8484 5.1: the response is cacheable for as long as its shortest record TTL.
+        // RFC 8484 5.1: the response is cacheable for as long as its shortest record TTL, and no
+        // longer than the authority SOA MINIMUM when there is no answer.
         httpContext.Response.Headers.CacheControl = GetCacheControl(responseBytes);
 
         return Results.Bytes(responseBytes, DnsMessageContentType);
@@ -136,7 +138,22 @@ public static class DnsEndpointRouteBuilderExtensions
             var response = DnsMessageEncoder.DecodeQuery(responseBytes);
             foreach (var record in response.Answers.Concat(response.Authorities).Concat(response.AdditionalRecords))
             {
-                minimumTtl = minimumTtl is { } current ? Math.Min(current, record.TimeToLive) : record.TimeToLive;
+                minimumTtl = Math.Min(minimumTtl ?? uint.MaxValue, record.TimeToLive);
+            }
+
+            // RFC 8484 5.1: when the answer section is empty, an SOA in the authority section caps the
+            // lifetime at its MINIMUM field, which is what bounds negative caching (RFC 2308 5). Without
+            // this an NXDOMAIN or NODATA answer could be held by HTTP caches for the whole SOA TTL and
+            // hide a record created in the meantime.
+            if (response.Answers.Count is 0)
+            {
+                foreach (var authority in response.Authorities)
+                {
+                    if (authority.Data is DnsSoaRecordData soa)
+                    {
+                        minimumTtl = Math.Min(minimumTtl ?? uint.MaxValue, soa.Minimum);
+                    }
+                }
             }
         }
         catch (DnsProtocolException)

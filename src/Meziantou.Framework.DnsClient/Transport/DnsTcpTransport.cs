@@ -13,7 +13,7 @@ internal sealed class DnsTcpTransport : IDnsTransport
         _endpoint = endpoint;
     }
 
-    public async Task<byte[]> SendAsync(byte[] query, CancellationToken cancellationToken)
+    public async Task<DnsTransportResponse> SendAsync(byte[] query, CancellationToken cancellationToken)
     {
         using var client = new TcpClient();
         await client.ConnectAsync(_endpoint.Address, _endpoint.Port, cancellationToken).ConfigureAwait(false);
@@ -35,7 +35,7 @@ internal sealed class DnsTcpTransport : IDnsTransport
         var response = new byte[responseLength];
         await stream.ReadExactlyAsync(response, cancellationToken).ConfigureAwait(false);
 
-        return response;
+        return new DnsTransportResponse(response);
     }
 
     public void Dispose()

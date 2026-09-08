@@ -163,6 +163,63 @@ public sealed class DnsWireFormatTests
     }
 
     [Fact]
+    public void DecodeResponse_WithAnAge_SubtractsItFromEveryRecordTimeToLive()
+    {
+        var message = CreateResponseWithTimeToLives(answerTimeToLive: 600, authorityTimeToLive: 900);
+
+        var response = DnsMessageEncoder.DecodeResponse(message, ageInSeconds: 250);
+
+        Assert.Equal(350u, Assert.Single(response.Answers).TimeToLive);
+        Assert.Equal(650u, Assert.Single(response.Authorities).TimeToLive);
+    }
+
+    [Fact]
+    public void DecodeResponse_WithAnAgeLongerThanTheTimeToLive_ClampsToZero()
+    {
+        var message = CreateResponseWithTimeToLives(answerTimeToLive: 600, authorityTimeToLive: 900);
+
+        var response = DnsMessageEncoder.DecodeResponse(message, ageInSeconds: 5000);
+
+        Assert.Equal(0u, Assert.Single(response.Answers).TimeToLive);
+        Assert.Equal(0u, Assert.Single(response.Authorities).TimeToLive);
+    }
+
+    [Fact]
+    public void DecodeResponse_WithAnAge_LeavesTheOptRecordMetadataIntact()
+    {
+        // The OPT record's TTL field holds the extended RCODE, the EDNS version and the DO flag, not a lifetime.
+        var message = CreateResponseWithTimeToLives(answerTimeToLive: 600, authorityTimeToLive: 900, optTimeToLive: 0x01008000);
+
+        var response = DnsMessageEncoder.DecodeResponse(message, ageInSeconds: 250);
+        var opt = Assert.IsType<Response.Records.DnsOptRecord>(Assert.Single(response.AdditionalRecords));
+
+        Assert.Equal(0x01008000u, opt.TimeToLive);
+        Assert.Equal(1, opt.ExtendedRCode);
+        Assert.Equal(0, opt.EdnsVersion);
+        Assert.True(opt.DnssecOk);
+    }
+
+    [Fact]
+    public void DecodeResponse_WithoutAnAge_KeepsTheTimeToLivesFromTheWire()
+    {
+        var message = CreateResponseWithTimeToLives(answerTimeToLive: 600, authorityTimeToLive: 900);
+
+        var response = DnsMessageEncoder.DecodeResponse(message);
+
+        Assert.Equal(600u, Assert.Single(response.Answers).TimeToLive);
+        Assert.Equal(900u, Assert.Single(response.Authorities).TimeToLive);
+    }
+
+    private static byte[] CreateResponseWithTimeToLives(uint answerTimeToLive, uint authorityTimeToLive, uint optTimeToLive = 0)
+    {
+        var message = new DnsQueryMessage();
+        message.Questions.Add(new DnsQuestion("example.com", DnsQueryType.A, DnsQueryClass.IN));
+
+        var query = DnsMessageEncoder.EncodeQuery(message, out _);
+        return DnsTestMessages.CreateResponseWithTimeToLives(query, answerTimeToLive, authorityTimeToLive, optTimeToLive);
+    }
+
+    [Fact]
     public void DecodeResponse_Default_DoesNotPreserveRawRecordData()
     {
         var response = DnsMessageEncoder.DecodeResponse(CreateResponseWithARecord());

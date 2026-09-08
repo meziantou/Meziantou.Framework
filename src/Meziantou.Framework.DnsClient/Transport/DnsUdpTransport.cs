@@ -12,7 +12,7 @@ internal sealed class DnsUdpTransport : IDnsTransport
         _endpoint = endpoint;
     }
 
-    public async Task<byte[]> SendAsync(byte[] query, CancellationToken cancellationToken)
+    public async Task<DnsTransportResponse> SendAsync(byte[] query, CancellationToken cancellationToken)
     {
         using var client = new UdpClient(_endpoint.AddressFamily);
 
@@ -27,7 +27,7 @@ internal sealed class DnsUdpTransport : IDnsTransport
         {
             var result = await client.ReceiveAsync(cancellationToken).ConfigureAwait(false);
             if (result.RemoteEndPoint.Equals(_endpoint))
-                return result.Buffer;
+                return new DnsTransportResponse(result.Buffer);
 
             // A datagram from an unexpected source: ignore it and keep waiting rather than failing the query, so a
             // single stray packet cannot deny service. The caller's timeout bounds this loop.

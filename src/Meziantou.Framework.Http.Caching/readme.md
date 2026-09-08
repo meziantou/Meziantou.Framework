@@ -272,7 +272,7 @@ This is particularly useful for versioned resources (e.g., `/assets/script.v123.
 | `Expires` | `<date>` | Expiration date (fallback if `max-age` not present) |
 | `ETag` | `<value>` | Entity tag for conditional requests |
 | `Last-Modified` | `<date>` | Last modification date for conditional requests |
-| | `stale-if-error=<seconds>` | Serve the stale response when revalidation fails or the origin cannot be reached (RFC 5861) |
+| | `stale-if-error=<seconds>` | Serve the stale response when the origin cannot be reached or answers with 500, 502, 503 or 504 (RFC 5861) |
 | `Vary` | `<headers>` | Headers that affect response variant |
 | `No-Vary-Search` | `key-order`, `params`, `except` | Query parameters that do not affect the response |
 | `Age` | `<seconds>` | Age of cached response (added when serving from cache) |

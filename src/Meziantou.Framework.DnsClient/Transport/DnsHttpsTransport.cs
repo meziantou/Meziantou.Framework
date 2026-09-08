@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Net.Http.Headers;
 
 namespace Meziantou.Framework.DnsClient.Transport;
@@ -61,11 +62,34 @@ internal sealed class DnsHttpsTransport : IDnsTransport
         if (response.Content.Headers.ContentLength > MaxResponseLength)
             throw new DnsProtocolException($"The DNS over HTTPS response declares {response.Content.Headers.ContentLength} bytes, which exceeds the {MaxResponseLength}-byte maximum for a DNS message.");
 
-        var body = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
-        if (body.Length > MaxResponseLength)
-            throw new DnsProtocolException($"The DNS over HTTPS response is {body.Length} bytes, which exceeds the {MaxResponseLength}-byte maximum for a DNS message.");
+        return await ReadBodyAsync(response.Content, cancellationToken).ConfigureAwait(false);
+    }
 
-        return body;
+    /// <summary>
+    /// Reads the body without trusting the declared length. At most one byte beyond the maximum is read, so a server
+    /// sending an unknown-length or endless body cannot make the client buffer more than a DNS message can hold.
+    /// </summary>
+    private static async Task<byte[]> ReadBodyAsync(HttpContent content, CancellationToken cancellationToken)
+    {
+        var stream = await content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        await using (stream.ConfigureAwait(false))
+        {
+            const int MaxReadLength = MaxResponseLength + 1;
+
+            var buffer = ArrayPool<byte>.Shared.Rent(MaxReadLength);
+            try
+            {
+                var length = await stream.ReadAtLeastAsync(buffer.AsMemory(0, MaxReadLength), MaxReadLength, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                if (length > MaxResponseLength)
+                    throw new DnsProtocolException($"The DNS over HTTPS response exceeds the {MaxResponseLength}-byte maximum for a DNS message.");
+
+                return buffer.AsSpan(0, length).ToArray();
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
     }
 
     public void Dispose()

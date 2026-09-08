@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace Meziantou.Framework.Language.Regex.Internals;
 
-/// <summary>The grammar every flavor shares: alternation, sequence, and quantifier.</summary>
+/// <summary>The grammar every dialect shares: alternation, sequence, and quantifier.</summary>
 /// <remarks>
 /// <para>
 /// The engine this is modelled on scans a run of ordinary characters and then splits the last one off if a quantifier
@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Language.Regex.Internals;
 /// </para>
 /// <para>
 /// A quantifier applied to a quantifier is recovery rather than a fatal error, which is also what lets the same code
-/// read <c>a*+</c> as a possessive quantifier for the flavors that have them.
+/// read <c>a*+</c> as a possessive quantifier for the dialects that have them.
 /// </para>
 /// </remarks>
 internal abstract class RegexParser
@@ -34,7 +34,7 @@ internal abstract class RegexParser
     protected string Text { get; }
     protected RegexScanner Scanner { get; }
     protected RegexParseOptions ParseOptions { get; }
-    protected RegexFlavor Flavor => ParseOptions.Flavor;
+    protected RegexDialect Dialect => ParseOptions.Dialect;
 
     /// <summary>The options in effect at the reading position.</summary>
     protected RegexPatternOptions Options { get; set; }
@@ -102,7 +102,7 @@ internal abstract class RegexParser
         };
     }
 
-    /// <summary>Reads the opening delimiter of a JavaScript literal. Every other flavor has none.</summary>
+    /// <summary>Reads the opening delimiter of a JavaScript literal. Every other dialect has none.</summary>
     protected virtual RegexSyntaxToken? ReadLiteralPrefix() => null;
 
     /// <summary>Reads the closing delimiter, flags, and any trailing content of a JavaScript literal.</summary>
@@ -118,7 +118,7 @@ internal abstract class RegexParser
     protected abstract RegexAtomSyntax ParseAtom(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia);
 
     // The delimiters below are virtual because a POSIX basic expression spells them with a backslash: "\(" opens a
-    // group and a bare "(" is a character, which is the reverse of every other flavor. Everything that reads a
+    // group and a bare "(" is a character, which is the reverse of every other dialect. Everything that reads a
     // delimiter goes through these, so the grammar skeleton itself does not care which spelling is in use.
 
     /// <summary>The length of the alternation separator at <paramref name="position"/>, or 0 when there is none.</summary>
@@ -161,7 +161,7 @@ internal abstract class RegexParser
         var start = Scanner.Position;
         var branches = new List<RegexSequenceSyntax>();
         var barTokens = new List<RegexSyntaxToken>();
-        var supportsAlternation = Flavor.HasFeature(RegexFlavorFeatures.Alternation);
+        var supportsAlternation = Dialect.HasFeature(RegexDialectFeatures.Alternation);
 
         while (true)
         {
@@ -193,7 +193,7 @@ internal abstract class RegexParser
     {
         var start = Scanner.Position;
         var terms = new List<RegexTermSyntax>();
-        var supportsAlternation = Flavor.HasFeature(RegexFlavorFeatures.Alternation);
+        var supportsAlternation = Dialect.HasFeature(RegexDialectFeatures.Alternation);
 
         while (true)
         {
@@ -278,7 +278,7 @@ internal abstract class RegexParser
 
         var ch = Text[position];
         if (ch is '+' or '?')
-            return Flavor.HasFeature(RegexFlavorFeatures.PlusAndQuestionQuantifiers);
+            return Dialect.HasFeature(RegexDialectFeatures.PlusAndQuestionQuantifiers);
 
         return ch == '*';
     }
@@ -432,8 +432,8 @@ internal abstract class RegexParser
 
         var kind = next switch
         {
-            '?' when Flavor.HasFeature(RegexFlavorFeatures.LazyQuantifiers) => RegexSyntaxKind.QuestionToken,
-            '+' when Flavor.HasFeature(RegexFlavorFeatures.PossessiveQuantifiers) => RegexSyntaxKind.PlusToken,
+            '?' when Dialect.HasFeature(RegexDialectFeatures.LazyQuantifiers) => RegexSyntaxKind.QuestionToken,
+            '+' when Dialect.HasFeature(RegexDialectFeatures.PossessiveQuantifiers) => RegexSyntaxKind.PlusToken,
             _ => RegexSyntaxKind.None,
         };
 
@@ -447,25 +447,25 @@ internal abstract class RegexParser
         return Scanner.Token(kind, start, trivia);
     }
 
-    // ---- helpers shared by the flavor parsers ----
+    // ---- helpers shared by the dialect parsers ----
 
     /// <summary>
     /// Whether the pattern is read with ECMAScript behaviour: <c>[^]</c> is an empty negated class, octal escapes stop
     /// early, and a numeric backreference takes the longest prefix that names an existing group.
     /// </summary>
     /// <remarks>
-    /// It is either asked for through .NET's own ECMAScript option or implied by the flavor, because for JavaScript
+    /// It is either asked for through .NET's own ECMAScript option or implied by the dialect, because for JavaScript
     /// those are simply the rules rather than an option.
     /// </remarks>
     protected bool UsesEcmaScriptBehavior =>
         (Options & RegexPatternOptions.EcmaScript) != RegexPatternOptions.None ||
-        Flavor.Family == RegexFlavorFamily.JavaScript;
+        Dialect.Family == RegexDialectFamily.JavaScript;
 
     /// <summary>
     /// Whether an empty character class is allowed. In ECMAScript <c>[]</c> matches nothing and <c>[^]</c> matches
-    /// anything; in .NET the same text is an unterminated class, so this follows the flavor rather than the options.
+    /// anything; in .NET the same text is an unterminated class, so this follows the dialect rather than the options.
     /// </summary>
-    protected bool AllowsEmptyCharacterClass => Flavor.Family == RegexFlavorFamily.JavaScript;
+    protected bool AllowsEmptyCharacterClass => Dialect.Family == RegexDialectFamily.JavaScript;
 
     /// <summary>
     /// Whether the class set grammar is in effect: nested classes, <c>&amp;&amp;</c> and <c>--</c> operators, and
@@ -473,14 +473,14 @@ internal abstract class RegexParser
     /// </summary>
     protected bool UsesUnicodeSetsMode =>
         (Options & RegexPatternOptions.UnicodeSets) != RegexPatternOptions.None &&
-        Flavor.HasFeature(RegexFlavorFeatures.ClassSetOperations);
+        Dialect.HasFeature(RegexDialectFeatures.ClassSetOperations);
 
     /// <summary>Whether the pattern is read as a sequence of code points rather than of UTF-16 code units.</summary>
     protected bool UsesUnicodeMode => (Options & RegexPatternOptions.Unicode) != RegexPatternOptions.None;
 
-    protected int PeekTriviaEnd() => Scanner.PeekTriviaEnd(Options, Flavor);
+    protected int PeekTriviaEnd() => Scanner.PeekTriviaEnd(Options, Dialect);
 
-    protected IReadOnlyList<RegexSyntaxTrivia> TakeTrivia() => Scanner.TakeTrivia(Options, Flavor);
+    protected IReadOnlyList<RegexSyntaxTrivia> TakeTrivia() => Scanner.TakeTrivia(Options, Dialect);
 
     /// <summary>Stamps the options in effect onto a node as it is built.</summary>
     protected TNode WithOptions<TNode>(TNode node)

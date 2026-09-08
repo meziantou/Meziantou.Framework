@@ -7,12 +7,12 @@ namespace Meziantou.Framework.Language.Regex.Tests;
 public sealed class RegexInlineOptionsTests
 {
     private static RegexSyntaxTree ParseExtended(string pattern) =>
-        RegexSyntaxAssert.TextIsFaithful(pattern, new RegexParseOptions(RegexFlavor.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace });
+        RegexSyntaxAssert.TextIsFaithful(pattern, new RegexParseOptions(RegexDialect.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace });
 
     [Fact]
     public void WhitespaceIsLiteralOutsideExtendedMode()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("a b", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("a b", RegexDialect.Net);
 
         Assert.Equal(3, tree.Root.Alternation.Branches[0].Terms.Count);
         Assert.Empty(tree.Root.DescendantTrivia());
@@ -30,7 +30,7 @@ public sealed class RegexInlineOptionsTests
     [Fact]
     public void InlineOptionsTurnExtendedModeOnPartWayThrough()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("a b(?x)c d", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("a b(?x)c d", RegexDialect.Net);
 
         // "a b" is three terms; after "(?x)" the space between "c" and "d" is trivia, so those are two.
         var terms = tree.Root.Alternation.Branches[0].Terms;
@@ -50,7 +50,7 @@ public sealed class RegexInlineOptionsTests
     [Fact]
     public void ACommentGroupIsTriviaEvenOutsideExtendedMode()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("a(?#note)b", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("a(?#note)b", RegexDialect.Net);
 
         var comment = Assert.Single(tree.Root.DescendantTrivia(), trivia => trivia.Kind == RegexSyntaxKind.InlineCommentTrivia);
         Assert.Equal("(?#note)", comment.Text);
@@ -79,7 +79,7 @@ public sealed class RegexInlineOptionsTests
     [Fact]
     public void OptionsAreRestoredByTheEnclosingCloseParenthesis()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("(?:(?i)a)b", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("(?:(?i)a)b", RegexDialect.Net);
 
         var literals = tree.Root.DescendantNodes().OfType<RegexLiteralSyntax>().ToArray();
         Assert.Equal(RegexPatternOptions.IgnoreCase, literals[0].Options);
@@ -93,7 +93,7 @@ public sealed class RegexInlineOptionsTests
     [Fact]
     public void OptionsAreNotRestoredByAnAlternationBar()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("(?:a(?i)b|c)", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("(?:a(?i)b|c)", RegexDialect.Net);
 
         var literals = tree.Root.DescendantNodes().OfType<RegexLiteralSyntax>().ToArray();
         Assert.Equal(RegexPatternOptions.None, literals[0].Options);
@@ -104,7 +104,7 @@ public sealed class RegexInlineOptionsTests
     [Fact]
     public void AnOptionsGroupScopesItsOptionsToItsBody()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("(?i:a)b", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("(?i:a)b", RegexDialect.Net);
 
         var group = Assert.Single(tree.Root.DescendantNodes().OfType<RegexOptionsGroupSyntax>());
         Assert.Equal("i", group.OptionsText);
@@ -118,7 +118,7 @@ public sealed class RegexInlineOptionsTests
     [Fact]
     public void ExplicitCaptureStopsUnnamedGroupsFromCapturing()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("(?n)(a)(?<x>b)", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("(?n)(a)(?<x>b)", RegexDialect.Net);
 
         var capture = Assert.Single(tree.Captures);
         Assert.Equal("x", capture.Name);
@@ -128,7 +128,7 @@ public sealed class RegexInlineOptionsTests
     [Fact]
     public void AnInlineOptionSetterCannotBeQuantified()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("(?i)*", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful("(?i)*", RegexDialect.Net);
 
         Assert.Single(tree.Diagnostics, diagnostic => diagnostic.Id == "REGEX0005");
     }

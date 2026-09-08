@@ -4,13 +4,13 @@ namespace Meziantou.Framework.Language.Regex.Internals;
 /// <remarks>
 /// <para>
 /// The identifiers are banded: <c>REGEX0001</c>-<c>REGEX0019</c> are structural facts about brackets, parentheses, and
-/// quantifiers that every flavor shares; <c>REGEX0030</c>-<c>REGEX0034</c> concern escapes, backreferences, and Unicode
+/// quantifiers that every dialect shares; <c>REGEX0030</c>-<c>REGEX0034</c> concern escapes, backreferences, and Unicode
 /// properties, which POSIX has none of; <c>REGEX0050</c>-<c>REGEX0056</c> are constructs only .NET has;
 /// <c>REGEX0070</c>, <c>REGEX0090</c>, and <c>REGEX0110</c> are reserved for JavaScript, PCRE, and POSIX; and
 /// <c>REGEX0200</c> and up belong to the parser itself rather than to the grammar.
 /// </para>
 /// <para>
-/// A construct the flavor does not have is not reported at all. It is simply not that construct: <c>\A</c> is the
+/// A construct the dialect does not have is not reported at all. It is simply not that construct: <c>\A</c> is the
 /// letter <c>A</c> where there is no such anchor, which is what an engine without it does.
 /// </para>
 /// <para>
@@ -20,7 +20,7 @@ namespace Meziantou.Framework.Language.Regex.Internals;
 /// </remarks>
 internal static class RegexDiagnosticIds
 {
-    // ---- structural, every flavor ----
+    // ---- structural, every dialect ----
     public const string InsufficientOpeningParentheses = "REGEX0001";
     public const string InsufficientClosingParentheses = "REGEX0002";
     public const string UnterminatedBracket = "REGEX0003";

@@ -51,24 +51,24 @@ public sealed class RegexSyntaxTreeTests
 
     [Theory]
     [MemberData(nameof(Patterns))]
-    public void ParseText_RoundTripsExactly(string pattern) => RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.Net);
+    public void ParseText_RoundTripsExactly(string pattern) => RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.Net);
 
     [Theory]
     [MemberData(nameof(Patterns))]
     public void ParseText_ReportsNothingForValidPatterns(string pattern)
     {
-        var tree = RegexSyntaxTree.ParseText(pattern, RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net);
 
         Assert.Empty(tree.Diagnostics);
     }
 
     [Fact]
-    public void ParseText_ExposesTheFlavorAndTheText()
+    public void ParseText_ExposesTheDialectAndTheText()
     {
-        var tree = RegexSyntaxTree.ParseText("a+", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("a+", RegexDialect.Net);
 
         Assert.Equal("a+", tree.Text);
-        Assert.Equal(RegexFlavor.Net, tree.Flavor);
+        Assert.Equal(RegexDialect.Net, tree.Dialect);
         Assert.Equal(RegexSyntaxKind.Pattern, tree.Root.Kind);
         Assert.Same(tree.Root, tree.GetRoot());
     }
@@ -76,7 +76,7 @@ public sealed class RegexSyntaxTreeTests
     [Fact]
     public void ParseText_TreatsNullAsAnEmptyPattern()
     {
-        var tree = RegexSyntaxTree.ParseText(null!, RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText(null!, RegexDialect.Net);
 
         Assert.Equal("", tree.Text);
         Assert.Empty(tree.Diagnostics);
@@ -85,7 +85,7 @@ public sealed class RegexSyntaxTreeTests
     [Fact]
     public void Root_AlwaysHasOneAlternationOfSequences()
     {
-        var tree = RegexSyntaxTree.ParseText("ab", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("ab", RegexDialect.Net);
 
         var branch = Assert.Single(tree.Root.Alternation.Branches);
         Assert.False(tree.Root.Alternation.HasAlternatives);
@@ -95,7 +95,7 @@ public sealed class RegexSyntaxTreeTests
     [Fact]
     public void Alternation_KeepsOneBranchPerBar()
     {
-        var tree = RegexSyntaxTree.ParseText("a|b|c", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("a|b|c", RegexDialect.Net);
 
         Assert.Equal(3, tree.Root.Alternation.Branches.Count);
         Assert.Equal(2, tree.Root.Alternation.BarTokens.Count);
@@ -105,7 +105,7 @@ public sealed class RegexSyntaxTreeTests
     [Fact]
     public void Quantifier_ReportsItsBounds()
     {
-        var tree = RegexSyntaxTree.ParseText("a{2,5}?", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("a{2,5}?", RegexDialect.Net);
 
         var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.Root.Alternation.Branches[0].Terms[0]);
         var quantifier = Assert.IsType<RegexRangeQuantifierSyntax>(quantified.Quantifier);
@@ -122,7 +122,7 @@ public sealed class RegexSyntaxTreeTests
     [InlineData("a{3,}", 3, null)]
     public void Quantifier_ReportsSimpleBounds(string pattern, int min, int? max)
     {
-        var tree = RegexSyntaxTree.ParseText(pattern, RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net);
 
         var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.Root.Alternation.Branches[0].Terms[0]);
         Assert.Equal(min, quantified.Quantifier.MinCount);
@@ -132,7 +132,7 @@ public sealed class RegexSyntaxTreeTests
     [Fact]
     public void IsEquivalentTo_IgnoresExtendedModeWhitespace()
     {
-        var options = new RegexParseOptions(RegexFlavor.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
+        var options = new RegexParseOptions(RegexDialect.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
         var spaced = RegexSyntaxTree.ParseText("a  b   # note\n", options);
         var tight = RegexSyntaxTree.ParseText("ab", options);
 
@@ -140,10 +140,10 @@ public sealed class RegexSyntaxTreeTests
     }
 
     [Fact]
-    public void IsEquivalentTo_IsFalseAcrossFlavors()
+    public void IsEquivalentTo_IsFalseAcrossDialects()
     {
-        var net = RegexSyntaxTree.ParseText("a", RegexFlavor.Net);
-        var javaScript = RegexSyntaxTree.ParseText("a", RegexFlavor.JavaScript);
+        var net = RegexSyntaxTree.ParseText("a", RegexDialect.Net);
+        var javaScript = RegexSyntaxTree.ParseText("a", RegexDialect.JavaScript);
 
         Assert.False(net.IsEquivalentTo(javaScript));
     }
@@ -151,7 +151,7 @@ public sealed class RegexSyntaxTreeTests
     [Fact]
     public void GetChanges_TrimsTheCommonPrefixAndSuffix()
     {
-        var before = RegexSyntaxTree.ParseText("ab+c", RegexFlavor.Net);
+        var before = RegexSyntaxTree.ParseText("ab+c", RegexDialect.Net);
         var after = before.WithChanges(new RegexTextChange(new TextSpan(2, 1), "*"));
 
         var change = Assert.Single(after.GetChanges(before));
@@ -163,7 +163,7 @@ public sealed class RegexSyntaxTreeTests
     [Fact]
     public void Captures_AreNumberedTheWayTheEngineNumbersThem()
     {
-        var tree = RegexSyntaxTree.ParseText("(a)(?<x>b)(c)", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("(a)(?<x>b)(c)", RegexDialect.Net);
 
         Assert.Equal([1, 2, 3], tree.Captures.Select(capture => capture.Number));
 

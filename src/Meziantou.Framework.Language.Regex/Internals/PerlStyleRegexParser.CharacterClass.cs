@@ -96,7 +96,7 @@ internal abstract partial class PerlStyleRegexParser
 
             // A subtraction reached through a range dash, as in "[a-[b]]": the dash was already claimed by the
             // look-ahead that started the range, so the character it would have ranged to is a plain member instead.
-            if (!firstChar && inRange && Scanner.Current == '[' && Flavor.HasFeature(RegexFlavorFeatures.CharacterClassSubtraction))
+            if (!firstChar && inRange && Scanner.Current == '[' && Dialect.HasFeature(RegexDialectFeatures.CharacterClassSubtraction))
             {
                 inRange = false;
                 members.Add(rangeStart!);
@@ -106,7 +106,7 @@ internal abstract partial class PerlStyleRegexParser
             }
 
             // A subtraction with a dash of its own, as in "[a-z-[b]]".
-            if (!firstChar && !inRange && Scanner.Current == '-' && Scanner.Peek() == '[' && Flavor.HasFeature(RegexFlavorFeatures.CharacterClassSubtraction))
+            if (!firstChar && !inRange && Scanner.Current == '-' && Scanner.Peek() == '[' && Dialect.HasFeature(RegexDialectFeatures.CharacterClassSubtraction))
             {
                 var hyphenStart = Scanner.Position;
                 Scanner.Position++;
@@ -115,7 +115,7 @@ internal abstract partial class PerlStyleRegexParser
                 continue;
             }
 
-            if (!inRange && Flavor.HasFeature(RegexFlavorFeatures.PosixBracketExpressions) && TryParsePosixBracket(out var bracket))
+            if (!inRange && Dialect.HasFeature(RegexDialectFeatures.PosixBracketExpressions) && TryParsePosixBracket(out var bracket))
             {
                 members.Add(bracket);
                 firstChar = false;
@@ -513,7 +513,7 @@ internal abstract partial class PerlStyleRegexParser
         return WithOptions(new RegexClassSubtractionSyntax(hyphenToken, nested));
     }
 
-    /// <summary>Reads <c>[:alpha:]</c>, <c>[.ch.]</c>, or <c>[=a=]</c> for the flavors that have them.</summary>
+    /// <summary>Reads <c>[:alpha:]</c>, <c>[.ch.]</c>, or <c>[=a=]</c> for the dialects that have them.</summary>
     private bool TryParsePosixBracket(out RegexSyntaxNode node)
     {
         node = null!;

@@ -29,13 +29,13 @@ public sealed class RegexRoundTripFuzzTests
         " ", "\t", "\n", "\r\n", "\r", "#comment\n", "#comment",
     ];
 
-    private static readonly RegexFlavor[] Flavors =
+    private static readonly RegexDialect[] Dialects =
     [
-        RegexFlavor.Net,
-        RegexFlavor.JavaScript,
-        RegexFlavor.PcrePerl,
-        RegexFlavor.PosixExtended,
-        RegexFlavor.PosixBasic,
+        RegexDialect.Net,
+        RegexDialect.JavaScript,
+        RegexDialect.PcrePerl,
+        RegexDialect.PosixExtended,
+        RegexDialect.PosixBasic,
     ];
 
     /// <summary>Generates the same patterns the differential test uses, so a failure there is reproducible here.</summary>
@@ -66,7 +66,7 @@ public sealed class RegexRoundTripFuzzTests
         var random = new DeterministicRandom(seed + 1000);
         foreach (var pattern in GenerateFragmentSequences(seed, count: 400))
         {
-            RegexSyntaxAssert.TextIsFaithful(pattern, Flavors[random.Next(Flavors.Length)]);
+            RegexSyntaxAssert.TextIsFaithful(pattern, Dialects[random.Next(Dialects.Length)]);
         }
     }
 
@@ -75,7 +75,7 @@ public sealed class RegexRoundTripFuzzTests
     [InlineData(1)]
     public void RandomFragmentSequences_RoundTripExactlyInExtendedMode(int seed)
     {
-        var options = new RegexParseOptions(RegexFlavor.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
+        var options = new RegexParseOptions(RegexDialect.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
         foreach (var pattern in GenerateFragmentSequences(seed + 50, count: 400))
         {
             RegexSyntaxAssert.TextIsFaithful(pattern, options);
@@ -99,7 +99,7 @@ public sealed class RegexRoundTripFuzzTests
                 builder.Append(Alphabet[random.Next(Alphabet.Length)]);
             }
 
-            RegexSyntaxAssert.TextIsFaithful(builder.ToString(), RegexFlavor.Net);
+            RegexSyntaxAssert.TextIsFaithful(builder.ToString(), RegexDialect.Net);
         }
     }
 
@@ -125,7 +125,7 @@ public sealed class RegexRoundTripFuzzTests
 
         for (var length = 0; length <= Pattern.Length; length++)
         {
-            RegexSyntaxAssert.TextIsFaithful(Pattern[..length], RegexFlavor.Net);
+            RegexSyntaxAssert.TextIsFaithful(Pattern[..length], RegexDialect.Net);
         }
     }
 
@@ -136,18 +136,18 @@ public sealed class RegexRoundTripFuzzTests
 
         for (var length = 0; length <= Pattern.Length; length++)
         {
-            RegexSyntaxAssert.TextIsFaithful(Pattern[..length], RegexFlavor.Net);
+            RegexSyntaxAssert.TextIsFaithful(Pattern[..length], RegexDialect.Net);
         }
     }
 
     [Fact]
     public void ParseText_NeverThrows()
     {
-        foreach (var flavor in Flavors)
+        foreach (var dialect in Dialects)
         {
             foreach (var pattern in GenerateFragmentSequences(seed: 7, count: 200))
             {
-                Assert.Null(Record.Exception(() => RegexSyntaxTree.ParseText(pattern, flavor)));
+                Assert.Null(Record.Exception(() => RegexSyntaxTree.ParseText(pattern, dialect)));
             }
         }
     }

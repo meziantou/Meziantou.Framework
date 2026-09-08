@@ -14,10 +14,10 @@ public sealed class RegexReviewFeedbackTests
     [Fact]
     public void MutatingTheListPassedToASequenceDoesNotChangeTheNode()
     {
-        var terms = new List<RegexTermSyntax> { SyntaxFactory.Literal('a', RegexFlavor.Net) };
+        var terms = new List<RegexTermSyntax> { SyntaxFactory.Literal('a', RegexDialect.Net) };
         var sequence = new RegexSequenceSyntax(terms);
 
-        terms.Add(SyntaxFactory.Literal('b', RegexFlavor.Net));
+        terms.Add(SyntaxFactory.Literal('b', RegexDialect.Net));
 
         Assert.Single(sequence.Terms);
         Assert.Equal("a", sequence.ToFullString());
@@ -26,11 +26,11 @@ public sealed class RegexReviewFeedbackTests
     [Fact]
     public void MutatingTheListsPassedToAnAlternationDoesNotChangeTheNode()
     {
-        var branches = new List<RegexSequenceSyntax> { SyntaxFactory.LiteralText("a", RegexFlavor.Net) };
+        var branches = new List<RegexSequenceSyntax> { SyntaxFactory.LiteralText("a", RegexDialect.Net) };
         var bars = new List<RegexSyntaxToken>();
         var alternation = new RegexAlternationSyntax(branches, bars);
 
-        branches.Add(SyntaxFactory.LiteralText("b", RegexFlavor.Net));
+        branches.Add(SyntaxFactory.LiteralText("b", RegexDialect.Net));
         bars.Add(new RegexSyntaxToken(RegexSyntaxKind.BarToken, "|"));
 
         Assert.Single(alternation.Branches);
@@ -41,10 +41,10 @@ public sealed class RegexReviewFeedbackTests
     [Fact]
     public void MutatingTheListPassedToACharacterClassDoesNotChangeTheNode()
     {
-        var members = new List<RegexSyntaxNode> { SyntaxFactory.Literal('a', RegexFlavor.Net) };
+        var members = new List<RegexSyntaxNode> { SyntaxFactory.Literal('a', RegexDialect.Net) };
         var characterClass = SyntaxFactory.CharacterClass(negated: false, members);
 
-        members.Add(SyntaxFactory.Literal('b', RegexFlavor.Net));
+        members.Add(SyntaxFactory.Literal('b', RegexDialect.Net));
 
         Assert.Single(characterClass.Members);
         Assert.Equal("[a]", characterClass.ToFullString());
@@ -84,7 +84,7 @@ public sealed class RegexReviewFeedbackTests
     [Fact]
     public void TheRewriterVisitsNodesInSourceOrder()
     {
-        var tree = RegexSyntaxTree.ParseText("aaa", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("aaa", RegexDialect.Net);
 
         var rewritten = new ReplaceFirstLiteral('a', 'z').Visit(tree.Root);
 
@@ -99,7 +99,7 @@ public sealed class RegexReviewFeedbackTests
     [InlineData(0)]
     public void ARecursionDepthBelowOneIsRejectedWhereItIsSet(int depth)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new RegexParseOptions(RegexFlavor.Net) { MaxRecursionDepth = depth });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RegexParseOptions(RegexDialect.Net) { MaxRecursionDepth = depth });
     }
 
     // ---- equivalence ----
@@ -111,14 +111,14 @@ public sealed class RegexReviewFeedbackTests
     [Fact]
     public void TwoTreesWithTheSameTextButDifferentOptionsAreNotEquivalent()
     {
-        var plain = RegexSyntaxTree.ParseText("a b", RegexFlavor.Net);
-        var extended = RegexSyntaxTree.ParseText("a b", new RegexParseOptions(RegexFlavor.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace });
+        var plain = RegexSyntaxTree.ParseText("a b", RegexDialect.Net);
+        var extended = RegexSyntaxTree.ParseText("a b", new RegexParseOptions(RegexDialect.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace });
 
         Assert.False(plain.IsEquivalentTo(extended));
         Assert.False(extended.IsEquivalentTo(plain));
     }
 
-    // ---- flavor gating of group headers ----
+    // ---- dialect gating of group headers ----
 
     [Theory]
     [InlineData("javascript", "(?>a)")]
@@ -130,13 +130,13 @@ public sealed class RegexReviewFeedbackTests
     [InlineData("pcre", "(?<a-b>x)")]
     [InlineData("ere", "(?:a)")]
     [InlineData("ere", "(?=a)")]
-    public void AGroupHeaderTheFlavorLacksIsReported(string flavorName, string pattern)
+    public void AGroupHeaderTheDialectLacksIsReported(string dialectName, string pattern)
     {
-        Assert.True(RegexFlavor.TryParse(flavorName, out var flavor));
+        Assert.True(RegexDialect.TryParse(dialectName, out var dialect));
 
-        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, flavor);
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, dialect);
 
-        Assert.NotEmpty(tree.Diagnostics, $"[{pattern}] should not be accepted by {flavorName}");
+        Assert.NotEmpty(tree.Diagnostics, $"[{pattern}] should not be accepted by {dialectName}");
     }
 
     [Theory]
@@ -148,7 +148,7 @@ public sealed class RegexReviewFeedbackTests
     [InlineData("(*SKIP)a", typeof(RegexBacktrackingVerbSyntax))]
     public void PcreConstructsAreTheirOwnNodeTypes(string pattern, Type expected)
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.PcrePerl);
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PcrePerl);
 
         Assert.Contains(tree.Root.DescendantNodes(), expected.IsInstanceOfType, $"[{pattern}] produced no {expected.Name}");
     }
@@ -159,7 +159,7 @@ public sealed class RegexReviewFeedbackTests
     [InlineData(@"\Q\E", "")]
     public void AQuotedLiteralKeepsItsTextAndDelimiters(string pattern, string value)
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.PcrePerl);
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PcrePerl);
 
         var quoted = Assert.Single(tree.Root.DescendantNodes().OfType<RegexQuotedLiteralSyntax>());
         Assert.Equal(value, quoted.Value);
@@ -171,7 +171,7 @@ public sealed class RegexReviewFeedbackTests
     [Fact]
     public void JavaScriptReadsAnEmptyNegatedClass()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("[^]", RegexFlavor.JavaScript);
+        var tree = RegexSyntaxAssert.TextIsFaithful("[^]", RegexDialect.JavaScript);
 
         Assert.Empty(tree.Diagnostics);
         var characterClass = Assert.Single(tree.Root.DescendantNodes().OfType<RegexCharacterClassSyntax>());
@@ -263,7 +263,7 @@ public sealed class RegexReviewFeedbackTests
         var tree = RegexSyntaxTree.ParseJavaScriptLiteral("/ab/gi");
         var first = tree.Root.DescendantNodes().OfType<RegexLiteralSyntax>().First();
 
-        var updated = tree.Root.ReplaceNode(first, SyntaxFactory.Literal('z', RegexFlavor.JavaScript));
+        var updated = tree.Root.ReplaceNode(first, SyntaxFactory.Literal('z', RegexDialect.JavaScript));
 
         Assert.Equal("/zb/gi", updated.ToFullString());
         Assert.True(updated.IsJavaScriptLiteral);
@@ -273,16 +273,16 @@ public sealed class RegexReviewFeedbackTests
     // ---- Unicode property names ----
 
     /// <summary>
-    /// The known-name set is .NET's own. Flavors that name a property as well as a value have a different and larger
+    /// The known-name set is .NET's own. Dialects that name a property as well as a value have a different and larger
     /// one, so checking a name against the .NET table there would reject properties they really do have.
     /// </summary>
     [Theory]
     [InlineData("pcre")]
     [InlineData("javascript")]
-    public void APropertyEqualsValueNameIsAcceptedWhereTheFlavorHasIt(string flavorName)
+    public void APropertyEqualsValueNameIsAcceptedWhereTheDialectHasIt(string dialectName)
     {
-        Assert.True(RegexFlavor.TryParse(flavorName, out var flavor));
-        var options = new RegexParseOptions(flavor) { PatternOptions = RegexPatternOptions.Unicode };
+        Assert.True(RegexDialect.TryParse(dialectName, out var dialect));
+        var options = new RegexParseOptions(dialect) { PatternOptions = RegexPatternOptions.Unicode };
 
         var tree = RegexSyntaxAssert.TextIsFaithful(@"\p{Script=Greek}", options);
 
@@ -297,7 +297,7 @@ public sealed class RegexReviewFeedbackTests
     [Fact]
     public void APropertyEqualsValueNameIsNotAcceptedForNet()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(@"\p{Script=Greek}", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful(@"\p{Script=Greek}", RegexDialect.Net);
 
         Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0032");
     }
@@ -305,22 +305,22 @@ public sealed class RegexReviewFeedbackTests
     [Fact]
     public void AnUnknownCategoryNameIsStillReportedForNet()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(@"\p{Bogus}", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful(@"\p{Bogus}", RegexDialect.Net);
 
         Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0034");
     }
 
-    /// <summary>A category escape is not one where the flavor does not have it.</summary>
+    /// <summary>A category escape is not one where the dialect does not have it.</summary>
     [Theory]
     [InlineData("javascript")]
     [InlineData("ere")]
-    public void ALowercaseCategoryEscapeIsNotOneWhereTheFlavorLacksIt(string flavorName)
+    public void ALowercaseCategoryEscapeIsNotOneWhereTheDialectLacksIt(string dialectName)
     {
-        Assert.True(RegexFlavor.TryParse(flavorName, out var flavor));
+        Assert.True(RegexDialect.TryParse(dialectName, out var dialect));
 
         foreach (var pattern in new[] { @"\p{L}", @"[\p{L}]" })
         {
-            var tree = RegexSyntaxAssert.TextIsFaithful(pattern, flavor);
+            var tree = RegexSyntaxAssert.TextIsFaithful(pattern, dialect);
 
             Assert.Empty(tree.Root.DescendantNodes().OfType<RegexUnicodeCategorySyntax>());
         }

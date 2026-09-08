@@ -1,11 +1,11 @@
 namespace Meziantou.Framework.Language.Regex.Tests;
 
-/// <summary>The PCRE constructs the other flavors do not have.</summary>
+/// <summary>The PCRE constructs the other dialects do not have.</summary>
 public sealed class RegexPcreTests
 {
     private static RegexSyntaxTree Parse(string pattern)
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.PcrePerl);
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PcrePerl);
         Assert.Empty(tree.Diagnostics, $"[{pattern}] reported {string.Join(",", tree.Diagnostics.Select(d => d.Id))}");
 
         return tree;
@@ -96,7 +96,7 @@ public sealed class RegexPcreTests
     [InlineData(@"\N{U+D800}")]
     public void AMalformedBracedNumericEscapeIsReported(string pattern)
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.PcrePerl);
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PcrePerl);
 
         Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0012");
     }
@@ -144,19 +144,19 @@ public sealed class RegexPcreTests
     [InlineData(@"\g", "REGEX0019")]
     public void AReferenceToNothingIsReported(string pattern, string id)
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.PcrePerl);
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PcrePerl);
 
         Assert.Contains(tree.Diagnostics, d => d.Id == id);
     }
 
-    /// <summary>None of this belongs to .NET, so the .NET flavor must not quietly accept it.</summary>
+    /// <summary>None of this belongs to .NET, so the .NET dialect must not quietly accept it.</summary>
     [Theory]
     [InlineData("(?&n)")]
     [InlineData("(?C1)")]
     [InlineData(@"\o{101}")]
     public void NetDoesNotAcceptThePcreConstructs(string pattern)
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.Net);
 
         Assert.NotEmpty(tree.Diagnostics);
     }

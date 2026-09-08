@@ -34,7 +34,7 @@ public sealed class RegexDiagnosticTests
     [InlineData("(?(1)a|b)", "REGEX0056", 3)]
     public void PatternReportsTheExpectedDiagnostic(string pattern, string id, int spanStart)
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.Net);
 
         var diagnostic = Assert.Single(tree.Diagnostics, candidate => candidate.Id == id, $"[{pattern}] reported {string.Join(", ", tree.Diagnostics.Select(d => d.Id))}");
         Assert.Equal(spanStart, diagnostic.Span.Start);
@@ -45,7 +45,7 @@ public sealed class RegexDiagnosticTests
     public void NestingBeyondTheConfiguredDepthIsReportedAndStillRoundTrips()
     {
         var pattern = new string('(', 300) + "a" + new string(')', 300);
-        var options = new RegexParseOptions(RegexFlavor.Net) { MaxRecursionDepth = 8 };
+        var options = new RegexParseOptions(RegexDialect.Net) { MaxRecursionDepth = 8 };
 
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, options);
 
@@ -57,7 +57,7 @@ public sealed class RegexDiagnosticTests
     {
         var pattern = new string('(', 5000) + "a" + new string(')', 5000);
 
-        var tree = RegexSyntaxTree.ParseText(pattern, RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net);
 
         Assert.Equal(pattern, tree.Root.ToFullString());
         Assert.NotEmpty(tree.Diagnostics);
@@ -68,7 +68,7 @@ public sealed class RegexDiagnosticTests
     {
         var pattern = new string('a', 20000);
 
-        var tree = RegexSyntaxTree.ParseText(pattern, RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net);
 
         Assert.Equal(pattern, tree.Root.ToFullString());
         Assert.Empty(tree.Diagnostics);

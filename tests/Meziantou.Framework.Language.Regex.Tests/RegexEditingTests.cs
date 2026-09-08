@@ -5,10 +5,10 @@ public sealed class RegexEditingTests
     [Fact]
     public void ReplaceNode_SwapsANodeAndKeepsEverythingElse()
     {
-        var tree = RegexSyntaxTree.ParseText("a|b|c", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("a|b|c", RegexDialect.Net);
         var middle = tree.Root.Alternation.Branches[1];
 
-        var updated = tree.Root.ReplaceNode(middle, SyntaxFactory.LiteralText("xy", RegexFlavor.Net));
+        var updated = tree.Root.ReplaceNode(middle, SyntaxFactory.LiteralText("xy", RegexDialect.Net));
 
         Assert.Equal("a|xy|c", updated.ToFullString());
     }
@@ -16,7 +16,7 @@ public sealed class RegexEditingTests
     [Fact]
     public void ReplaceToken_SwapsATokenAndKeepsEverythingElse()
     {
-        var tree = RegexSyntaxTree.ParseText("ab", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("ab", RegexDialect.Net);
         var first = tree.Root.DescendantTokens().First(token => token.Text == "a");
 
         var updated = tree.Root.ReplaceToken(first, first.WithText("z"));
@@ -27,11 +27,11 @@ public sealed class RegexEditingTests
     [Fact]
     public void ReplaceNode_KeepsTheTriviaInFrontOfTheNodeItReplaces()
     {
-        var options = new RegexParseOptions(RegexFlavor.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
+        var options = new RegexParseOptions(RegexDialect.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
         var tree = RegexSyntaxTree.ParseText("a   b # note\n", options);
         var second = tree.Root.DescendantNodes().OfType<RegexLiteralSyntax>().Last();
 
-        var updated = tree.Root.ReplaceNode(second, SyntaxFactory.Literal('z', RegexFlavor.Net));
+        var updated = tree.Root.ReplaceNode(second, SyntaxFactory.Literal('z', RegexDialect.Net));
 
         Assert.Equal("a   z # note\n", updated.ToFullString());
     }
@@ -39,7 +39,7 @@ public sealed class RegexEditingTests
     [Fact]
     public void ReplaceTrivia_SwapsACommentAndKeepsEverythingElse()
     {
-        var tree = RegexSyntaxTree.ParseText("a(?#note)b", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("a(?#note)b", RegexDialect.Net);
         var comment = Assert.Single(tree.Root.DescendantComments());
 
         var updated = tree.Root.ReplaceTrivia(comment, comment.WithText("(?#other)"));
@@ -48,21 +48,21 @@ public sealed class RegexEditingTests
     }
 
     [Fact]
-    public void WithChanges_ReparsesInTheSameFlavor()
+    public void WithChanges_ReparsesInTheSameDialect()
     {
-        var tree = RegexSyntaxTree.ParseText("a*", RegexFlavor.PcrePerl);
+        var tree = RegexSyntaxTree.ParseText("a*", RegexDialect.PcrePerl);
 
         var updated = tree.WithChanges(new RegexTextChange(new TextSpan(2, 0), "+"));
 
         Assert.Equal("a*+", updated.Text);
-        Assert.Equal(RegexFlavor.PcrePerl, updated.Flavor);
+        Assert.Equal(RegexDialect.PcrePerl, updated.Dialect);
         Assert.Empty(updated.Diagnostics);
     }
 
     [Fact]
     public void WithChanges_AppliesSeveralEditsFromTheEndBackwards()
     {
-        var tree = RegexSyntaxTree.ParseText("abc", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("abc", RegexDialect.Net);
 
         var updated = tree.WithChanges(
             new RegexTextChange(new TextSpan(0, 1), "x"),
@@ -74,8 +74,8 @@ public sealed class RegexEditingTests
     [Fact]
     public void GetChanges_ReportsNothingForAnIdenticalTree()
     {
-        var tree = RegexSyntaxTree.ParseText("a+", RegexFlavor.Net);
-        var same = RegexSyntaxTree.ParseText("a+", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("a+", RegexDialect.Net);
+        var same = RegexSyntaxTree.ParseText("a+", RegexDialect.Net);
 
         Assert.Empty(tree.GetChanges(same));
     }
@@ -83,8 +83,8 @@ public sealed class RegexEditingTests
     [Fact]
     public void GetChanges_DoesNotSplitASurrogatePair()
     {
-        var before = RegexSyntaxTree.ParseText("a\U0001F600b", RegexFlavor.Net);
-        var after = RegexSyntaxTree.ParseText("a\U0001F601b", RegexFlavor.Net);
+        var before = RegexSyntaxTree.ParseText("a\U0001F600b", RegexDialect.Net);
+        var after = RegexSyntaxTree.ParseText("a\U0001F601b", RegexDialect.Net);
 
         var change = Assert.Single(after.GetChanges(before));
         Assert.Equal(1, change.Span.Start);
@@ -94,7 +94,7 @@ public sealed class RegexEditingTests
     [Fact]
     public void Rewriter_ReplacesEveryMatchingNodeAndKeepsTheRest()
     {
-        var tree = RegexSyntaxTree.ParseText("a(?#note)b|a", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("a(?#note)b|a", RegexDialect.Net);
 
         var rewritten = new LiteralRenamer('a', 'z').Visit(tree.Root);
 
@@ -104,7 +104,7 @@ public sealed class RegexEditingTests
     [Fact]
     public void Rewriter_ReturnsTheSameInstanceWhenNothingChanges()
     {
-        var tree = RegexSyntaxTree.ParseText("xyz", RegexFlavor.Net);
+        var tree = RegexSyntaxTree.ParseText("xyz", RegexDialect.Net);
 
         var rewritten = new LiteralRenamer('a', 'z').Visit(tree.Root);
 

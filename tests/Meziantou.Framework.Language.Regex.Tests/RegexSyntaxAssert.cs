@@ -8,9 +8,9 @@ namespace Meziantou.Framework.Language.Regex.Tests;
 /// </remarks>
 internal static class RegexSyntaxAssert
 {
-    public static RegexSyntaxTree TextIsFaithful(string text, RegexFlavor flavor)
+    public static RegexSyntaxTree TextIsFaithful(string text, RegexDialect dialect)
     {
-        var tree = RegexSyntaxTree.ParseText(text, flavor);
+        var tree = RegexSyntaxTree.ParseText(text, dialect);
         TextIsFaithful(text, tree);
 
         return tree;
@@ -33,7 +33,7 @@ internal static class RegexSyntaxAssert
         }
         catch (Exception exception)
         {
-            Assert.Fail($"[{text}] as {tree.Flavor} with {tree.PatternOptions}: {exception.Message}");
+            Assert.Fail($"[{text}] as {tree.Dialect} with {tree.PatternOptions}: {exception.Message}");
         }
     }
 

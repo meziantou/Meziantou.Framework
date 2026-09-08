@@ -16,7 +16,7 @@ public sealed class RegexCorpusTests
         var count = 0;
         foreach (var pattern in RegexCorpus.Read(name))
         {
-            RegexSyntaxAssert.TextIsFaithful(pattern, RegexFlavor.Net);
+            RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.Net);
             count++;
         }
 
@@ -31,7 +31,7 @@ public sealed class RegexCorpusTests
         {
             for (var length = 0; length <= pattern.Length; length++)
             {
-                RegexSyntaxAssert.TextIsFaithful(pattern[..length], RegexFlavor.Net);
+                RegexSyntaxAssert.TextIsFaithful(pattern[..length], RegexDialect.Net);
             }
         }
     }
@@ -41,7 +41,7 @@ public sealed class RegexCorpusTests
     {
         foreach (var pattern in RegexCorpus.Read("NetValid.txt"))
         {
-            var tree = RegexSyntaxTree.ParseText(pattern, RegexFlavor.Net);
+            var tree = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net);
 
             Assert.Empty(tree.Diagnostics, $"[{pattern}] should parse cleanly");
         }
@@ -52,7 +52,7 @@ public sealed class RegexCorpusTests
     {
         foreach (var pattern in RegexCorpus.Read("NetInvalid.txt"))
         {
-            var tree = RegexSyntaxTree.ParseText(pattern, RegexFlavor.Net);
+            var tree = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net);
 
             Assert.NotEmpty(tree.Diagnostics, $"[{pattern}] should report at least one diagnostic");
         }
@@ -60,15 +60,15 @@ public sealed class RegexCorpusTests
 
     [Theory]
     [MemberData(nameof(CorpusNames))]
-    public void EveryPatternIsParsedByEveryFlavorWithoutThrowing(string name)
+    public void EveryPatternIsParsedByEveryDialectWithoutThrowing(string name)
     {
-        RegexFlavor[] flavors = [RegexFlavor.Net, RegexFlavor.JavaScript, RegexFlavor.PcrePerl, RegexFlavor.PosixExtended, RegexFlavor.PosixBasic];
+        RegexDialect[] dialects = [RegexDialect.Net, RegexDialect.JavaScript, RegexDialect.PcrePerl, RegexDialect.PosixExtended, RegexDialect.PosixBasic];
 
         foreach (var pattern in RegexCorpus.Read(name))
         {
-            foreach (var flavor in flavors)
+            foreach (var dialect in dialects)
             {
-                RegexSyntaxAssert.TextIsFaithful(pattern, flavor);
+                RegexSyntaxAssert.TextIsFaithful(pattern, dialect);
             }
         }
     }

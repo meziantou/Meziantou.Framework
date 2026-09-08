@@ -129,8 +129,8 @@ public abstract class RegexSyntaxNode
 
     public RegexSyntaxNode? Parent => ParentNode;
 
-    /// <summary>The flavor the node was parsed as, or <see langword="null"/> when the node is not attached to a tree.</summary>
-    public RegexFlavor? Flavor => SyntaxTree?.Flavor ?? Ancestors().Select(node => node.SyntaxTree?.Flavor).FirstOrDefault(flavor => flavor is not null);
+    /// <summary>The dialect the node was parsed as, or <see langword="null"/> when the node is not attached to a tree.</summary>
+    public RegexDialect? Dialect => SyntaxTree?.Dialect ?? Ancestors().Select(node => node.SyntaxTree?.Dialect).FirstOrDefault(dialect => dialect is not null);
 
     /// <summary>The options in effect at the first character of this node.</summary>
     /// <remarks>
@@ -417,7 +417,7 @@ public abstract class RegexSyntaxNode
             parent = parent.ParentNode;
         }
 
-        return RegexSyntaxTree.ParseText(ToFullString(), Flavor ?? RegexFlavor.Net).Root;
+        return RegexSyntaxTree.ParseText(ToFullString(), Dialect ?? RegexDialect.Net).Root;
     }
 
     internal static string BuildFullText(IEnumerable<RegexSyntaxNode> nodes)

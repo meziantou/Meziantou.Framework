@@ -3,13 +3,13 @@ namespace Meziantou.Framework.Language.Regex.Internals;
 /// <summary>Parses POSIX basic and extended regular expressions.</summary>
 /// <remarks>
 /// <para>
-/// POSIX is the Perl grammar with almost everything taken away, which the flavor features already express: no inline
+/// POSIX is the Perl grammar with almost everything taken away, which the dialect features already express: no inline
 /// options, no lookaround, no named groups, and no Unicode categories.
 /// </para>
 /// <para>
 /// What features cannot express is that a basic expression spells its delimiters with a backslash. <c>\(</c> opens a
 /// group, <c>\{</c> opens a bound, <c>\|</c> separates branches, and the bare characters are ordinary text -- the
-/// reverse of every other flavor. The grammar skeleton asks for each delimiter by length rather than matching a
+/// reverse of every other dialect. The grammar skeleton asks for each delimiter by length rather than matching a
 /// character, so overriding those is all it takes.
 /// </para>
 /// <para>
@@ -25,7 +25,7 @@ internal sealed class PosixRegexParser : PerlStyleRegexParser
     {
     }
 
-    private bool DelimitersAreEscaped => Flavor.HasFeature(RegexFlavorFeatures.EscapedGroupDelimiters);
+    private bool DelimitersAreEscaped => Dialect.HasFeature(RegexDialectFeatures.EscapedGroupDelimiters);
 
     /// <summary>
     /// POSIX has no character escapes. The shorthand classes it does have -- <c>\w</c>, <c>\s</c>, <c>\b</c> and

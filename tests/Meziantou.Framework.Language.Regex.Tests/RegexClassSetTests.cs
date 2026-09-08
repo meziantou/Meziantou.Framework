@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Language.Regex.Tests;
 /// </summary>
 public sealed class RegexClassSetTests
 {
-    private static RegexParseOptions SetMode => new(RegexFlavor.JavaScript)
+    private static RegexParseOptions SetMode => new(RegexDialect.JavaScript)
     {
         PatternOptions = RegexPatternOptions.Unicode | RegexPatternOptions.UnicodeSets,
     };
@@ -99,7 +99,7 @@ public sealed class RegexClassSetTests
     [Fact]
     public void TheSetGrammarNeedsTheFlag()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful("[a--b]", RegexFlavor.JavaScript);
+        var tree = RegexSyntaxAssert.TextIsFaithful("[a--b]", RegexDialect.JavaScript);
 
         Assert.Empty(tree.Root.DescendantNodes().OfType<RegexClassSetOperationSyntax>());
     }
@@ -107,7 +107,7 @@ public sealed class RegexClassSetTests
     [Fact]
     public void NetDoesNotHaveTheSetGrammar()
     {
-        var tree = RegexSyntaxAssert.TextIsFaithful(@"[\w&&\p{L}]", RegexFlavor.Net);
+        var tree = RegexSyntaxAssert.TextIsFaithful(@"[\w&&\p{L}]", RegexDialect.Net);
 
         Assert.Empty(tree.Root.DescendantNodes().OfType<RegexClassSetOperationSyntax>());
     }

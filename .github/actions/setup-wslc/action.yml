@@ -9,15 +9,19 @@ runs:
       run: |
         # wslc ships inside WSL itself, and only the pre-release channel carries it (WSL 2.9.3 or higher)
         # The update service intermittently answers with a transient error (e.g. Forbidden (403),
-        # Wsl/UpdatePackage/0x80190193), so retry a few times before giving up. The service can answer with it
-        # for a minute or so while the other agents of the same run are served normally, so the attempts span
-        # roughly 65 seconds. The delay is capped as it would otherwise keep doubling.
-        $maxAttempts = 5
+        # Wsl/UpdatePackage/0x80190193). It keeps answering with it for several minutes while the other
+        # agents of the same run are served normally, so retry until the time budget below is spent instead
+        # of a fixed number of attempts. The delay is capped as it would otherwise keep doubling.
+        $timeoutSeconds = 300
         $baseDelaySeconds = 5
         $maxDelaySeconds = 30
 
-        for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
-          Write-Host "Updating WSL (attempt $attempt/$maxAttempts)"
+        $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $attempt = 0
+
+        while ($true) {
+          $attempt++
+          Write-Host "Updating WSL (attempt $attempt, $([int]$stopwatch.Elapsed.TotalSeconds)s of ${timeoutSeconds}s elapsed)"
           wsl --update --pre-release
           $exitCode = $LASTEXITCODE
 
@@ -25,11 +29,11 @@ runs:
             break
           }
 
-          if ($attempt -eq $maxAttempts) {
-            throw "wsl --update --pre-release failed with exit code $exitCode"
+          $delaySeconds = [math]::Min([int]($baseDelaySeconds * [math]::Pow(2, $attempt - 1)), $maxDelaySeconds)
+          if (($stopwatch.Elapsed.TotalSeconds + $delaySeconds) -ge $timeoutSeconds) {
+            throw "wsl --update --pre-release failed with exit code $exitCode after $attempt attempt(s) in $([int]$stopwatch.Elapsed.TotalSeconds) second(s)"
           }
 
-          $delaySeconds = [math]::Min([int]($baseDelaySeconds * [math]::Pow(2, $attempt - 1)), $maxDelaySeconds)
           Write-Host "Retrying WSL update in $delaySeconds second(s)."
           Start-Sleep -Seconds $delaySeconds
         }

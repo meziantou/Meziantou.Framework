@@ -1095,6 +1095,34 @@ namespace Meziantou.Framework.DataAnnotations
         public override bool IsValid(object? value) => throw null;
     }
 }
+namespace Meziantou.Framework.Diagnostics
+{
+    public sealed class ActivityEventArgs : System.EventArgs
+    {
+        public System.Diagnostics.Activity Activity { get => throw null; }
+    }
+
+    public sealed class ScopedActivityListener : System.IDisposable
+    {
+        public System.Guid Id { get => throw null; }
+        public bool IsInScope { get => throw null; }
+        public System.Collections.Generic.IReadOnlyCollection<System.Diagnostics.Activity> Activities { get => throw null; }
+        public event System.EventHandler<Meziantou.Framework.Diagnostics.ActivityEventArgs>? ActivityStarted;
+        public event System.EventHandler<Meziantou.Framework.Diagnostics.ActivityEventArgs>? ActivityStopped;
+        public ScopedActivityListener(Meziantou.Framework.Diagnostics.ScopedActivityListenerOptions? options) { }
+        public System.Collections.Generic.IAsyncEnumerable<System.Diagnostics.Activity> GetActivitiesAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public void Dispose() { }
+    }
+
+    public sealed class ScopedActivityListenerOptions
+    {
+        public System.Func<System.Diagnostics.ActivitySource, bool>? ShouldListenTo { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<string>? SourceNames { get => throw null; set { } }
+        public System.Diagnostics.ActivitySamplingResult SamplingResult { get => throw null; set { } }
+        public bool CaptureChildActivities { get => throw null; set { } }
+        public int MaxActivityCount { get => throw null; set { } }
+    }
+}
 namespace Meziantou.Framework.Text
 {
     public static class Utf8Extensions

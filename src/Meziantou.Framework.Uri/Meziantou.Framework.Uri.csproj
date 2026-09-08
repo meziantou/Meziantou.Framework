@@ -5,7 +5,7 @@
     <IsTrimmable>true</IsTrimmable>
     <Description>Helpers to manipulate URIs, including an implementation of the WHATWG URL Pattern API</Description>
     <PackageTags>uri, url, urlpattern, whatwg, parsing</PackageTags>
-    <Version>2.0.6</Version>
+    <Version>2.0.7</Version>
     <RootNamespace>Meziantou.Framework</RootNamespace>
   </PropertyGroup>
 

@@ -3,7 +3,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Enables verification of SixLabors.ImageSharp images using file-based snapshots</Description>
     <PackageTags>snapshot-testing, imagesharp, image, testing</PackageTags>
-    <Version>2.0.9</Version>
+    <Version>2.0.10</Version>
   </PropertyGroup>
 
   <ItemGroup>

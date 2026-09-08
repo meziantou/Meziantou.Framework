@@ -53,7 +53,11 @@ public sealed class FunctionalTests
             """, XunitCancellationToken);
 
         var console = new ConsoleHelper(_testOutputHelper);
-        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "DotNetSdk"], console.ConfigureConsole);
+
+        // --minimum-age 0: the .NET release index publishes every channel's latest SDK on the same day, so on a
+        // release day the default 7-day filter rejects all of them and nothing is updated. The age policy is not
+        // what this test covers.
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "DotNetSdk", "--minimum-age", "0"], console.ConfigureConsole);
         Assert.Equal(0, result);
 
         var dependencies = await DependencyScanner.ScanDirectoryAsync(tempDir.FullPath, options: null, XunitCancellationToken);

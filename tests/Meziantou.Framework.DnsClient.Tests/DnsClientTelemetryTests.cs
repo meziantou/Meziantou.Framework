@@ -76,9 +76,9 @@ public sealed class DnsClientTelemetryTests
             _responseCode = responseCode;
         }
 
-        public Task<byte[]> SendAsync(byte[] query, CancellationToken cancellationToken)
+        public Task<DnsTransportResponse> SendAsync(byte[] query, CancellationToken cancellationToken)
         {
-            return Task.FromResult(CreateResponse(query, _responseCode));
+            return Task.FromResult(new DnsTransportResponse(CreateResponse(query, _responseCode)));
         }
 
         public void Dispose()
@@ -91,7 +91,7 @@ public sealed class DnsClientTelemetryTests
 
     private sealed class ThrowingTransport : IDnsTransport
     {
-        public Task<byte[]> SendAsync(byte[] query, CancellationToken cancellationToken)
+        public Task<DnsTransportResponse> SendAsync(byte[] query, CancellationToken cancellationToken)
         {
             throw new InvalidOperationException("Could not send DNS query.");
         }

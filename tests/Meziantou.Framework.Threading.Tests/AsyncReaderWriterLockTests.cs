@@ -191,6 +191,29 @@ public class AsyncReaderWriterLockTests
     }
 
     [Fact]
+    public async Task CancelingTheQueuedWriter_ReleasesTheReadersBlockedBehindIt_WhileAnotherReaderHoldsTheLock()
+    {
+        var rwLock = new AsyncReaderWriterLock();
+        using var cts = new CancellationTokenSource();
+
+        var reader1 = await rwLock.ReaderLockAsync();
+        var queuedWriter = rwLock.WriterLockAsync(cts.Token);
+        var reader2 = rwLock.ReaderLockAsync(); // queued behind the writer
+
+        await cts.CancelAsync();
+        await Assert.ThrowsAsync<TaskCanceledException>(() => queuedWriter);
+
+        // No writer is left, so the queued reader can join the reader already holding the lock.
+        var releaser2 = await reader2.WaitAsync(TimeSpan.FromSeconds(30));
+
+        reader1.Dispose();
+        releaser2.Dispose();
+
+        // Both readers must have been accounted for, otherwise the lock never becomes free again.
+        (await rwLock.WriterLockAsync().WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
+    }
+
+    [Fact]
     public async Task CancelingWritersAtEveryPosition_PreservesTheOrderOfTheOthers()
     {
         // A canceled waiter is unlinked from the queue. The survivors must keep their FIFO order whether the

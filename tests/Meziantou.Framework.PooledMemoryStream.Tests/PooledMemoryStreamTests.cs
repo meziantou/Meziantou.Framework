@@ -257,6 +257,82 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public void Capacity_ReservedBlocksAreFilledBeforeRentingMore()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4, 16] };
+        using var stream = new PooledMemoryStream(options, initialCapacity: 20);
+        Assert.Equal(20, stream.Capacity);
+
+        // The reservation is a 16-byte block followed by a 4-byte one. Appends used to target the last block only,
+        // so these 20 bytes filled the 4-byte block and then rented another 16 instead of using the reserved one.
+        var data = CreateData(20, seed: 20);
+        stream.Write(data);
+
+        Assert.Equal(20, stream.Capacity);
+        Assert.Equal(20, stream.Length);
+        Assert.Equal(data, stream.ToArray());
+    }
+
+    [Fact]
+    public void Capacity_ReservedOnAnExistingStream_IsUsedByLaterWrites()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [16, 64] };
+        using var stream = new PooledMemoryStream(options);
+        var first = CreateData(10, seed: 21);
+        stream.Write(first);
+
+        stream.Capacity = 200;
+        var capacity = stream.Capacity;
+
+        var second = CreateData(capacity - first.Length, seed: 22);
+        stream.Write(second);
+
+        Assert.Equal(capacity, stream.Capacity);
+        Assert.Equal(capacity, stream.Length);
+        Assert.Equal([.. first, .. second], stream.ToArray());
+    }
+
+    [Fact]
+    public void IBufferWriter_FillsReservedBlocksBeforeRentingMore()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [16, 64] };
+        using var stream = new PooledMemoryStream(options, initialCapacity: 128);
+        var capacity = stream.Capacity;
+        IBufferWriter<byte> writer = stream;
+
+        for (var i = 0; i < capacity / 16; i++)
+        {
+            writer.GetSpan(16)[..16].Fill((byte)i);
+            writer.Advance(16);
+        }
+
+        Assert.Equal(capacity, stream.Capacity);
+        Assert.Equal(capacity, stream.Length);
+
+        var result = stream.ToArray();
+        for (var i = 0; i < result.Length; i++)
+            Assert.Equal((byte)(i / 16), result[i]);
+    }
+
+    [Fact]
+    public void IBufferWriter_LargeRequest_DoesNotStrandReservedBlocks()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [16, 64] };
+        using var stream = new PooledMemoryStream(options, initialCapacity: 128);
+        IBufferWriter<byte> writer = stream;
+
+        // Larger than any reserved block, so a new one is rented; the reserved blocks must stay usable behind it.
+        writer.GetSpan(200)[..200].Fill(1);
+        writer.Advance(200);
+        var capacity = stream.Capacity;
+
+        stream.Write(CreateData(128, seed: 23));
+
+        Assert.Equal(capacity, stream.Capacity);
+        Assert.Equal(328, stream.Length);
+    }
+
+    [Fact]
     public void Constructor_WithInitialCapacity()
     {
         using var stream = new PooledMemoryStream(1234);
@@ -684,6 +760,71 @@ public sealed class PooledMemoryStreamTests
 
             Assert.Equal(reference.Length, pooled.Length);
             Assert.Equal(reference.Position, pooled.Position);
+        }
+
+        Assert.Equal(reference.ToArray(), pooled.ToArray());
+    }
+
+    [Fact]
+    public void ParityWithMemoryStream_RandomCapacityAndBufferWriterOperations()
+    {
+        var state = 987u;
+        using var pooled = new PooledMemoryStream(SmallTiers());
+        IBufferWriter<byte> writer = pooled;
+        using var reference = new MemoryStream();
+
+        for (var i = 0; i < 2000; i++)
+        {
+            switch (NextRandom(ref state, 7))
+            {
+                case 0: // write
+                    var data = CreateData(NextRandom(ref state, 100), seed: (int)NextRandom(ref state));
+                    pooled.Write(data);
+                    reference.Write(data);
+                    break;
+                case 1: // seek
+                    var pos = NextRandom(ref state, (int)reference.Length + 50);
+                    pooled.Position = pos;
+                    reference.Position = pos;
+                    break;
+                case 2: // set length
+                    var len = NextRandom(ref state, (int)reference.Length + 100);
+                    pooled.SetLength(len);
+                    reference.SetLength(len);
+                    break;
+                case 3: // read
+                    var count = NextRandom(ref state, 50);
+                    var bufA = new byte[count];
+                    var bufB = new byte[count];
+                    Assert.Equal(reference.Read(bufB, 0, count), pooled.Read(bufA, 0, count));
+                    Assert.Equal(bufB, bufA);
+                    break;
+                case 4: // reserve capacity ahead of the writes
+                    pooled.Capacity = (int)pooled.Length + NextRandom(ref state, 500);
+                    break;
+                case 5: // release the unused capacity
+                    pooled.Capacity = (int)pooled.Length;
+                    break;
+                case 6: // append through IBufferWriter
+                    var hint = NextRandom(ref state, 200);
+                    var span = writer.GetSpan(hint);
+                    Assert.HasCountGreaterThanOrEqual(Math.Max(hint, 1), span);
+
+                    var advance = NextRandom(ref state, span.Length) + 1;
+                    reference.Position = reference.Length;
+                    for (var j = 0; j < advance; j++)
+                    {
+                        span[j] = (byte)(j + i);
+                        reference.WriteByte((byte)(j + i));
+                    }
+
+                    writer.Advance(advance);
+                    break;
+            }
+
+            Assert.Equal(reference.Length, pooled.Length);
+            Assert.Equal(reference.Position, pooled.Position);
+            Assert.True(pooled.Capacity >= pooled.Length);
         }
 
         Assert.Equal(reference.ToArray(), pooled.ToArray());

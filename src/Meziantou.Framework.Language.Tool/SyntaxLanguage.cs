@@ -1,0 +1,99 @@
+using Meziantou.Framework.Language.Regex;
+using Meziantou.Framework.Language.Shell;
+
+namespace Meziantou.Framework.Language.Tool;
+
+/// <summary>A language the tool can parse, together with the dialect of the languages that have one.</summary>
+internal sealed class SyntaxLanguage
+{
+    private const string RegexPrefix = "regex";
+
+    private SyntaxLanguage(SyntaxLanguageFamily family, RegexDialect? regexDialect = null, ShellDialect? shellDialect = null)
+    {
+        Family = family;
+        RegexDialect = regexDialect;
+        ShellDialect = shellDialect;
+    }
+
+    public SyntaxLanguageFamily Family { get; }
+    public RegexDialect? RegexDialect { get; }
+    public ShellDialect? ShellDialect { get; }
+
+    public static SyntaxLanguage Json { get; } = new(SyntaxLanguageFamily.Json);
+    public static SyntaxLanguage Xml { get; } = new(SyntaxLanguageFamily.Xml);
+
+    /// <summary>The values <c>--language</c> documents, in the order the help text lists them.</summary>
+    public static string SupportedValues { get; } = "json, xml, regex, regex-dotnet, regex-javascript, regex-pcre, regex-ere, regex-bre, sh, bash, zsh, powershell, pwsh, cmd";
+
+    /// <summary>
+    /// Resolves a <c>--language</c> value. The order matters: <c>posix</c> is an alias of both the POSIX shell and
+    /// POSIX extended regular expressions, and the bare name is the shell, the <c>regex-</c> prefixed one the regex.
+    /// </summary>
+    public static bool TryParse(string? value, [NotNullWhen(true)] out SyntaxLanguage? language)
+    {
+        var name = value?.Trim().ToLowerInvariant();
+        switch (name)
+        {
+            case "json":
+                language = Json;
+                return true;
+
+            case "xml":
+                language = Xml;
+                return true;
+
+            case RegexPrefix:
+                language = new SyntaxLanguage(SyntaxLanguageFamily.Regex, regexDialect: RegexDialect.Net);
+                return true;
+        }
+
+        if (name is not null && name.StartsWith(RegexPrefix + "-", StringComparison.Ordinal))
+        {
+            if (RegexDialect.TryParse(name[(RegexPrefix.Length + 1)..], out var regexDialect))
+            {
+                language = new SyntaxLanguage(SyntaxLanguageFamily.Regex, regexDialect: regexDialect);
+                return true;
+            }
+
+            language = null;
+            return false;
+        }
+
+        if (ShellDialect.TryParse(name, out var shellDialect))
+        {
+            language = new SyntaxLanguage(SyntaxLanguageFamily.Shell, shellDialect: shellDialect);
+            return true;
+        }
+
+        language = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Resolves the language from the file extension. Regular expressions are never detected: a pattern has no file
+    /// form, so <c>--language</c> is the only way to ask for one.
+    /// </summary>
+    public static bool TryDetectFromExtension(FullPath path, [NotNullWhen(true)] out SyntaxLanguage? language)
+    {
+        var name = path.Extension.ToLowerInvariant() switch
+        {
+            ".json" or ".jsonc" or ".json5" or ".webmanifest" => "json",
+            ".xml" or ".xsd" or ".xsl" or ".xslt" or ".svg" or ".rss" or ".atom" or ".config" or ".csproj"
+                or ".vbproj" or ".fsproj" or ".props" or ".targets" or ".nuspec" or ".resx" or ".plist" or ".xaml" => "xml",
+            ".sh" => "sh",
+            ".bash" => "bash",
+            ".zsh" => "zsh",
+            ".ps1" or ".psm1" or ".psd1" => "pwsh",
+            ".bat" or ".cmd" => "cmd",
+            _ => null,
+        };
+
+        if (name is null)
+        {
+            language = null;
+            return false;
+        }
+
+        return TryParse(name, out language);
+    }
+}

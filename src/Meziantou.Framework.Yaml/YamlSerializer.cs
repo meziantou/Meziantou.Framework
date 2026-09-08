@@ -678,57 +678,6 @@ public static class YamlSerializer
             return false;
         }
     }
-    /// <summary>Deserializes YAML from a span of characters.</summary>
-    /// <typeparam name="T">The destination CLR type.</typeparam>
-    /// <param name="yaml">The YAML payload as a span.</param>
-    /// <param name="options">The serializer options. If <see langword="null"/>, <see cref="YamlSerializerOptions.Default"/> is used.</param>
-    /// <returns>The deserialized value.</returns>
-    [Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", error: false)]
-    public static T? Deserialize<T>(ReadOnlySpan<char> yaml, YamlSerializerOptions? options = null)
-    {
-        return Deserialize<T>(yaml.ToString(), options);
-    }
-
-    /// <summary>Deserializes YAML from a span of characters using generated metadata from a serializer context.</summary>
-    /// <typeparam name="T">The destination CLR type.</typeparam>
-    /// <param name="yaml">The YAML payload as a span.</param>
-    /// <param name="context">The source-generated serializer context.</param>
-    /// <returns>The deserialized value.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null"/>.</exception>
-    /// <exception cref="InvalidOperationException">No generated metadata is available for <typeparamref name="T"/> in <paramref name="context"/>.</exception>
-    [Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", error: false)]
-    public static T? Deserialize<T>(ReadOnlySpan<char> yaml, YamlSerializerContext context)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-        return Deserialize<T>(yaml.ToString(), context);
-    }
-
-    /// <summary>Deserializes YAML from a span of characters using an explicit destination type.</summary>
-    /// <param name="yaml">The YAML payload as a span.</param>
-    /// <param name="returnType">The destination CLR type.</param>
-    /// <param name="options">The serializer options. If <see langword="null"/>, <see cref="YamlSerializerOptions.Default"/> is used.</param>
-    /// <returns>The deserialized value.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="returnType"/> is <see langword="null"/>.</exception>
-    [Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", error: false)]
-    public static object? Deserialize(ReadOnlySpan<char> yaml, Type returnType, YamlSerializerOptions? options = null)
-    {
-        return Deserialize(yaml.ToString(), returnType, options);
-    }
-
-    /// <summary>Deserializes YAML from a span of characters using an explicit destination type and generated metadata from a serializer context.</summary>
-    /// <param name="yaml">The YAML payload as a span.</param>
-    /// <param name="returnType">The destination CLR type.</param>
-    /// <param name="context">The source-generated serializer context.</param>
-    /// <returns>The deserialized value.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="returnType"/> or <paramref name="context"/> is <see langword="null"/>.</exception>
-    /// <exception cref="InvalidOperationException">No generated metadata is available for <paramref name="returnType"/> in <paramref name="context"/>.</exception>
-    [Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", error: false)]
-    public static object? Deserialize(ReadOnlySpan<char> yaml, Type returnType, YamlSerializerContext context)
-    {
-        ArgumentNullException.ThrowIfNull(returnType);
-        ArgumentNullException.ThrowIfNull(context);
-        return Deserialize(yaml.ToString(), returnType, context);
-    }
 
     /// <summary>Serializes a value using explicit type metadata.</summary>
     /// <typeparam name="T">The represented CLR type.</typeparam>
@@ -900,19 +849,6 @@ public static class YamlSerializer
         ArgumentNullException.ThrowIfNull(yaml);
         ArgumentNullException.ThrowIfNull(typeInfo);
         return DeserializeCore(typeInfo, yaml);
-    }
-
-    /// <summary>Deserializes a payload using explicit type metadata from a character span.</summary>
-    /// <typeparam name="T">The represented CLR type.</typeparam>
-    /// <param name="yaml">The YAML payload as a span.</param>
-    /// <param name="typeInfo">The metadata used for deserialization.</param>
-    /// <returns>The deserialized value.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="typeInfo"/> is <see langword="null"/>.</exception>
-    [Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", error: false)]
-    public static T? Deserialize<T>(ReadOnlySpan<char> yaml, YamlTypeInfo<T> typeInfo)
-    {
-        ArgumentNullException.ThrowIfNull(typeInfo);
-        return DeserializeCore(typeInfo, yaml.ToString());
     }
 
     /// <summary>

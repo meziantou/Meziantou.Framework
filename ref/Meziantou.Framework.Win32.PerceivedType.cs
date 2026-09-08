@@ -43,7 +43,6 @@ namespace Meziantou.Framework.Win32
         NativeSupport = 4,
         GdiPlus = 16,
         WmSdk = 32,
-        ZipFolder = 64,
-        Mime = 128
+        ZipFolder = 64
     }
 }

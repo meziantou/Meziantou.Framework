@@ -72,9 +72,6 @@ The `PerceivedTypeSource` enum indicates where the perceived type information co
 - `WmSdk` - Supported by Windows Media SDK
 - `ZipFolder` - Supported by Windows compressed folders
 
-`Mime` is also declared, but `PERCEIVEDFLAG` has no MIME value, so Windows never reports it.
-It is obsolete and kept only so the enum stays source and binary compatible.
-
 ## Platform Support
 
 This library is **Windows-only** and requires Windows XP or later (Windows 5.1.2600+).

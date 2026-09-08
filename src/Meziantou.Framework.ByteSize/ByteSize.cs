@@ -385,12 +385,6 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// <summary>Divides a byte size by a factor.</summary>
     public static ByteSize operator /(ByteSize value, long divisor) => new(value.Value / divisor);
 
-    [Obsolete("Multiplying two sizes yields bytes squared, which is not a size. Use the ByteSize * long overload to scale a size. This overload will be removed in the next major version.")]
-    public static ByteSize operator *(ByteSize value1, ByteSize value2) => new(checked(value1.Value * value2.Value));
-
-    [Obsolete("Dividing two sizes yields a dimensionless ratio, not a size. Use the ByteSize / long overload to scale a size, or divide the Value properties to get a ratio. This overload will be removed in the next major version.")]
-    public static ByteSize operator /(ByteSize value1, ByteSize value2) => new(value1.Value / value2.Value);
-
     public static implicit operator ByteSize(long value) => new(value);
 
     /// <summary>Adds two byte size values.</summary>
@@ -403,9 +397,6 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// <returns>The result of the subtraction.</returns>
     public ByteSize Subtract(ByteSize other) => this - other;
 
-    [Obsolete("Misspelled. Use " + nameof(Subtract) + " instead. This method will be removed in the next major version.")]
-    public ByteSize Substract(ByteSize other) => this - other;
-
     /// <summary>Scales this byte size by a factor.</summary>
     /// <param name="multiplier">The factor to scale by.</param>
     /// <returns>The scaled byte size.</returns>
@@ -415,15 +406,6 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// <param name="divisor">The factor to divide by.</param>
     /// <returns>The divided byte size.</returns>
     public ByteSize Divide(long divisor) => this / divisor;
-
-    // Computed inline rather than delegating to the obsolete operators, so this file does not
-    // need to suppress its own obsoletion warnings.
-
-    [Obsolete("Multiplying two sizes yields bytes squared, which is not a size. Use the Multiply(long) overload to scale a size. This overload will be removed in the next major version.")]
-    public ByteSize Multiply(ByteSize other) => new(checked(Value * other.Value));
-
-    [Obsolete("Dividing two sizes yields a dimensionless ratio, not a size. Use the Divide(long) overload to scale a size, or divide the Value properties to get a ratio. This overload will be removed in the next major version.")]
-    public ByteSize Divide(ByteSize other) => new(Value / other.Value);
 
     private static bool TryParseUnit(ReadOnlySpan<char> unit, out ByteSizeUnit result, out int parsedLength)
     {

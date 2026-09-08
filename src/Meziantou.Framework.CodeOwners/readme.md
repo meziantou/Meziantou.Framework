@@ -65,5 +65,3 @@ In the GitLab dialect an owner can also be a role, written `@@developer`, `@@mai
 CodeOwnersFile file = CodeOwnersFile.Parse("*.md @@maintainers", CodeOwnersDialect.GitLab);
 // file.Entries[0].Owners[0]: Type=Role, Name="maintainers"
 ````
-
-The `CodeOwnersParser` type is obsolete: its `Parse` method forwards to `CodeOwnersFile` using the GitLab dialect, and will be removed in a future major version.

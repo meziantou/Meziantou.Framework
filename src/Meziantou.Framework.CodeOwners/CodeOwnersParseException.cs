@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.CodeOwners;
 
-/// <summary>The exception thrown by <see cref="CodeOwnersParser.Parse(string)"/> when a CODEOWNERS file is invalid.</summary>
+/// <summary>The exception thrown by <see cref="CodeOwnersFile.Parse(string, CodeOwnersDialect)"/> when a CODEOWNERS file is invalid.</summary>
 public sealed class CodeOwnersParseException : Exception
 {
     /// <summary>Initializes a new instance of <see cref="CodeOwnersParseException"/>.</summary>

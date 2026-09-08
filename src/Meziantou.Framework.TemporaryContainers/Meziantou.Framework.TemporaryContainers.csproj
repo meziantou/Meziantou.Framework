@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Manage temporary containers for integration tests using the Docker Engine API, or the docker, podman, apple/container, or wslc CLI.</Description>
     <PackageTags>docker, podman, containers, integration-tests, testing</PackageTags>

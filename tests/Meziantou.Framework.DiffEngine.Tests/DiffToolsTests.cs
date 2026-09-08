@@ -1,5 +1,8 @@
 namespace Meziantou.Framework.DiffEngine.Tests;
 
+// Almost every test overrides the DiffEngine_* and PATH environment variables, which are process-wide, so no
+// test of this class can run beside another test.
+[TestClass(DisableParallelization = true)]
 public sealed class DiffToolsTests
 {
     [Fact]

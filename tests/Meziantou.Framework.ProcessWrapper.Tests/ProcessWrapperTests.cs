@@ -132,7 +132,8 @@ public class ProcessWrapperTests
         Assert.True(processResult.StartDate <= processResult.ExitDate);
     }
 
-    [Fact]
+    // Listens to the ProcessWrapper ActivitySource, which reports the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteAsync_EmitsActivity_WithProcessPathAndExitCode()
     {
         var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -151,7 +152,8 @@ public class ProcessWrapperTests
         Assert.False(string.IsNullOrWhiteSpace(processPath));
     }
 
-    [Fact]
+    // Listens to the ProcessWrapper ActivitySource, which reports the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteAsync_DoesNotChangeTheAmbientActivityOfTheCaller()
     {
         var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -485,7 +487,8 @@ public class ProcessWrapperTests
         Assert.Equal("\"my tool\" arg \"with spaces\" \"C:\\path with spaces\\\\\" \"with\\\"quote\" \"\"", command.ToString());
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ProcessResult_ToString_ReturnsCommandAndExitCode()
     {
         using var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
@@ -508,7 +511,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ProcessResult_ToString_WithIncludeArguments_IncludesArguments()
     {
         using var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
@@ -608,7 +612,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithCredentials_PropagatesToProcessStartInfo()
     {
         if (!OperatingSystem.IsWindows())
@@ -635,7 +640,8 @@ public class ProcessWrapperTests
         Assert.Equal("test-password", capturedStartInfo.PasswordInClearText);
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithCredentialsAndNetworkOnly_PropagatesToProcessStartInfo()
     {
         if (!OperatingSystem.IsWindows())
@@ -661,7 +667,8 @@ public class ProcessWrapperTests
         Assert.True(capturedStartInfo.UseCredentialsForNetworkingOnly);
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithSecureStringCredentials_PropagatesToProcessStartInfo()
     {
         if (!OperatingSystem.IsWindows())
@@ -791,7 +798,8 @@ public class ProcessWrapperTests
         Assert.Equal(1, ex.ExitCode);
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task Validation_FailIfNonZeroExitCode_DefaultLogVerbosity_IncludesProcessPathWithoutArguments()
     {
         using var fakeProcess = FakeProcess.Create(42, outputText: "", errorText: "");
@@ -814,7 +822,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task Validation_FailIfNonZeroExitCode_WithLogVerbosityIncludeArguments_IncludesArguments()
     {
         using var fakeProcess = FakeProcess.Create(42, outputText: "", errorText: "");
@@ -831,7 +840,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task Validation_FailIfNonZeroExitCode_WithDefaultLogVerbosityIncludeArguments_IncludesArguments()
     {
         using var fakeProcess = FakeProcess.Create(42, outputText: "", errorText: "");
@@ -850,7 +860,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Listens to the ProcessWrapper ActivitySource, which reports the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task Validation_FailIfNonZeroExitCode_SetsActivityStatusToError()
     {
         var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -1365,7 +1376,8 @@ public class ProcessWrapperTests
     }
 
 #if NET11_0_OR_GREATER
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithKillOnParentExit_PropagatesToProcessStartInfo()
     {
         if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid())
@@ -1389,7 +1401,8 @@ public class ProcessWrapperTests
         Assert.True(capturedStartInfo.KillOnParentExit);
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithStartDetached_PropagatesToProcessStartInfo()
     {
         ProcessStartInfo? capturedStartInfo = null;
@@ -1410,7 +1423,8 @@ public class ProcessWrapperTests
         Assert.True(capturedStartInfo.StartDetached);
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithStartSuspended_PropagatesToProcessStartInfo()
     {
         if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
@@ -1434,7 +1448,8 @@ public class ProcessWrapperTests
         Assert.True(capturedStartInfo.StartSuspended);
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithPipeOperator_PreservesNet11StartInfoOptions()
     {
         var capturedStartInfos = new List<ProcessStartInfo>();
@@ -1507,7 +1522,8 @@ public class ProcessWrapperTests
         Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").StartAndForget());
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ProcessInstance_Signal_WhenSafeHandleIsUnavailable_Throws()
     {
         var fakeProcess = FakeProcess.CreatePending(0);
@@ -1716,7 +1732,8 @@ public class ProcessWrapperTests
         _ = Assert.Throws<ArgumentNullException>(() => command.WithInterceptor((IProcessStartInfoInterceptor)null!));
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_UsesCustomProcessFactory()
     {
         using var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
@@ -1740,7 +1757,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteAsync_WithCustomProcessFactory_CancellationKillsProcess()
     {
         var fakeProcess = FakeProcess.CreatePending(0);
@@ -1759,7 +1777,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithPipeOperator_UsesCustomProcessFactory()
     {
         var downstreamProcess = FakeProcess.Create(0, outputText: "final output\n", errorText: "");
@@ -1776,7 +1795,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithInstanceProcessFactory_OverridesGlobalFactory()
     {
         var globalProcess = FakeProcess.Create(0, outputText: "global output\n", errorText: "");
@@ -1794,7 +1814,8 @@ public class ProcessWrapperTests
         });
     }
 
-    [Fact]
+    // Registers process-wide ProcessWrapper interceptors, which observe the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithGlobalProcessWrapperInterceptor_Applies()
     {
         await RunWithGlobalInterceptorsAsync(
@@ -1818,7 +1839,8 @@ public class ProcessWrapperTests
         Assert.Equal("instance-wrapper", processResult.Output.StandardOutput.First().Text);
     }
 
-    [Fact]
+    // Registers process-wide ProcessWrapper interceptors, which observe the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithGlobalProcessStartInfoInterceptor_Applies()
     {
         await RunWithGlobalInterceptorsAsync(
@@ -1842,7 +1864,8 @@ public class ProcessWrapperTests
         Assert.Equal("instance-startinfo", processResult.Output.StandardOutput.First().Text);
     }
 
-    [Fact]
+    // Registers process-wide ProcessWrapper interceptors, which observe the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_Interceptors_RunInExpectedOrder()
     {
         var events = new List<string>();
@@ -1861,7 +1884,8 @@ public class ProcessWrapperTests
         Assert.Equal(["global-wrapper", "instance-wrapper", "global-startinfo", "instance-startinfo"], events);
     }
 
-    [Fact]
+    // Registers process-wide ProcessWrapper interceptors, which observe the processes started by every other test, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task ExecuteBufferedAsync_WithPipeOperator_AppliesGlobalProcessStartInfoInterceptorsToEachStage()
     {
         var interceptor = new CountingProcessStartInfoInterceptor();

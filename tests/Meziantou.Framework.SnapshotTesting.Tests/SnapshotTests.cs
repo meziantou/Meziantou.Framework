@@ -1055,7 +1055,8 @@ public sealed partial class SnapshotTests
         Assert.Equal("the message", exception.Message);
     }
 
-    [Theory]
+    // Sets the process-wide SNAPSHOTTESTING_STRATEGY variable, which every 'new SnapshotSettings()' reads, so it must not run beside any other test
+    [Theory(DisableParallelization = true)]
     [InlineData("DISALLOW", nameof(SnapshotUpdateStrategy.Disallow))]
     [InlineData("overwrite", nameof(SnapshotUpdateStrategy.Overwrite))]
     [InlineData("mErGeToOlSyNc", nameof(SnapshotUpdateStrategy.MergeToolSync))]
@@ -1069,7 +1070,8 @@ public sealed partial class SnapshotTests
         Assert.Same(GetSnapshotUpdateStrategy(expectedStrategyName), settings.SnapshotUpdateStrategy);
     }
 
-    [Fact]
+    // Sets the process-wide SNAPSHOTTESTING_STRATEGY variable, which every 'new SnapshotSettings()' reads, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public void SnapshotUpdateStrategy_Default_InvalidEnvironmentVariableValue_UsesDisallow()
     {
         using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, "invalid");
@@ -1079,7 +1081,8 @@ public sealed partial class SnapshotTests
         Assert.Same(SnapshotUpdateStrategy.Disallow, settings.SnapshotUpdateStrategy);
     }
 
-    [Fact]
+    // Sets the process-wide SNAPSHOTTESTING_STRATEGY variable, which every 'new SnapshotSettings()' reads, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public void SnapshotUpdateStrategy_ExplicitSetting_HasPriorityOverEnvironmentVariable()
     {
         using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, nameof(SnapshotUpdateStrategy.Overwrite));

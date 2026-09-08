@@ -6,13 +6,12 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 
 internal sealed class DotNetSdkUpdater : PackageUpdater
 {
-    private static readonly HttpClient HttpClient = new();
     public override VersioningStrategy VersioningStrategy { get; set; } = SemanticVersioningStrategy.Strict;
 
     protected override async IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         // Only get latest SDK
-        var index = await HttpClient.GetFromJsonAsync<DotNetReleaseIndex>("https://raw.githubusercontent.com/dotnet/core/main/release-notes/releases-index.json", cancellationToken).ConfigureAwait(false);
+        var index = await SharedHttpClient.Instance.GetFromJsonAsync<DotNetReleaseIndex>("https://raw.githubusercontent.com/dotnet/core/main/release-notes/releases-index.json", cancellationToken).ConfigureAwait(false);
         if (index?.Releases is null)
         {
             yield break;

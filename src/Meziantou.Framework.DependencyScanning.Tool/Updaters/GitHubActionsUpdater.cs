@@ -14,7 +14,6 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
     // newest release can sit behind the Link header rather than in the first response.
     private const int MaxPages = 10;
 
-    private static readonly HttpClient HttpClient = new();
     public override VersioningStrategy VersioningStrategy { get; set; } = GitHubActionsVersioningStrategy.Instance;
 
     protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.GitHubActions && dependency.Name is not null;
@@ -100,7 +99,7 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
         try
         {
             using var request = CreateTagsRequest(uri);
-            using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            using var response = await SharedHttpClient.Instance.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
             {
                 // Without this the caller cannot tell "rate limited" from "no newer tag exists"

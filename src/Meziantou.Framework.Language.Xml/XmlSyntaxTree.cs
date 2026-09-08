@@ -4,15 +4,15 @@ namespace Meziantou.Framework.Language.Xml;
 /// <example>
 /// <code>
 /// var tree = XmlSyntaxTree.ParseText(xml);
-/// var updated = tree.WithChanges(new XmlTextChange(new TextSpan(0, 0), "&lt;!--generated--&gt;"));
+/// var updated = tree.WithChanges(new TextChange(new TextSpan(0, 0), "&lt;!--generated--&gt;"));
 /// </code>
 /// </example>
 public sealed class XmlSyntaxTree
 {
-    private XmlSyntaxTree(string text, XmlDocumentSyntax root, IReadOnlyList<XmlDiagnostic> diagnostics)
+    private XmlSyntaxTree(SourceText sourceText, XmlDocumentSyntax root, IReadOnlyList<Diagnostic> diagnostics)
     {
-        Text = text;
-        SourceText = SourceText.From(text);
+        Text = sourceText.Text;
+        SourceText = sourceText;
         Root = root;
         Diagnostics = diagnostics;
         Root.SetParentAndTree(parent: null, this);
@@ -21,32 +21,32 @@ public sealed class XmlSyntaxTree
     public string Text { get; }
     public SourceText SourceText { get; }
     public XmlDocumentSyntax Root { get; }
-    public IReadOnlyList<XmlDiagnostic> Diagnostics { get; }
+    public IReadOnlyList<Diagnostic> Diagnostics { get; }
 
     public XmlDocumentSyntax GetRoot() => Root;
-    public IReadOnlyList<XmlDiagnostic> GetDiagnostics() => Diagnostics;
+    public IReadOnlyList<Diagnostic> GetDiagnostics() => Diagnostics;
 
     public static XmlSyntaxTree ParseText([StringSyntax(StringSyntaxAttribute.Xml)] string text)
     {
-        var parser = new XmlParser(text ?? string.Empty);
+        var parser = new XmlParser(SourceText.From(text));
         return parser.Parse();
     }
 
-    public XmlSyntaxTree WithChanges(params XmlTextChange[] changes) => WithChanges((IEnumerable<XmlTextChange>)changes);
+    public XmlSyntaxTree WithChanges(params TextChange[] changes) => WithChanges((IEnumerable<TextChange>)changes);
 
-    public XmlSyntaxTree WithChanges(IEnumerable<XmlTextChange> changes)
+    public XmlSyntaxTree WithChanges(IEnumerable<TextChange> changes)
     {
         ArgumentNullException.ThrowIfNull(changes);
         return ParseText(SourceText.WithChanges(changes).Text);
     }
 
-    public IReadOnlyList<XmlTextChange> GetChanges(XmlSyntaxTree oldTree)
+    public IReadOnlyList<TextChange> GetChanges(XmlSyntaxTree oldTree)
     {
         ArgumentNullException.ThrowIfNull(oldTree);
         if (string.Equals(Text, oldTree.Text, StringComparison.Ordinal))
             return [];
 
-        return [new XmlTextChange(new TextSpan(0, oldTree.Text.Length), Text)];
+        return [new TextChange(new TextSpan(0, oldTree.Text.Length), Text)];
     }
 
     public bool IsEquivalentTo(XmlSyntaxTree? other)
@@ -100,15 +100,17 @@ public sealed class XmlSyntaxTree
     private sealed class XmlParser
     {
         private const string XmlDeclarationPrefix = "<?xml";
+        private readonly SourceText _source;
         private readonly string _text;
-        private readonly List<XmlDiagnostic> _diagnostics = [];
+        private readonly List<Diagnostic> _diagnostics = [];
         private readonly List<XmlSyntaxNode> _documentNodes = [];
         private readonly Stack<ElementBuilder> _elementStack = new();
         private int _position;
 
-        public XmlParser(string text)
+        public XmlParser(SourceText source)
         {
-            _text = text ?? string.Empty;
+            _source = source;
+            _text = source.Text;
         }
 
         public XmlSyntaxTree Parse()
@@ -167,11 +169,11 @@ public sealed class XmlSyntaxTree
             while (_elementStack.Count > 0)
             {
                 var unclosedElement = _elementStack.Pop();
-                _diagnostics.Add(new XmlDiagnostic(
+                _diagnostics.Add(new Diagnostic(
                     Id: "XML0001",
                     Message: $"Missing end tag for '{unclosedElement.Name}'.",
-                    Severity: XmlDiagnosticSeverity.Error,
-                    Span: new TextSpan(unclosedElement.Start, _text.Length - unclosedElement.Start)));
+                    Severity: DiagnosticSeverity.Error,
+                    Location: new Location(new TextSpan(unclosedElement.Start, _text.Length - unclosedElement.Start), _source)));
 
                 var fullText = _text.Substring(unclosedElement.Start);
                 var element = new XmlElementSyntax(
@@ -188,7 +190,7 @@ public sealed class XmlSyntaxTree
             }
 
             var root = new XmlDocumentSyntax(_documentNodes, _text);
-            return new XmlSyntaxTree(_text, root, _diagnostics);
+            return new XmlSyntaxTree(_source, root, _diagnostics);
         }
 
         private bool IsAtEnd => _position >= _text.Length;
@@ -535,7 +537,7 @@ public sealed class XmlSyntaxTree
 
         private void AddDiagnostic(int start, int length, string id, string message)
         {
-            _diagnostics.Add(new XmlDiagnostic(id, message, XmlDiagnosticSeverity.Error, new TextSpan(start, length)));
+            _diagnostics.Add(new Diagnostic(id, message, DiagnosticSeverity.Error, new Location(new TextSpan(start, length), _source)));
         }
 
         private bool Match(string token)

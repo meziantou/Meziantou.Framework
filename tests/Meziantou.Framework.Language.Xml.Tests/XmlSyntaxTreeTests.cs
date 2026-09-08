@@ -43,7 +43,7 @@ public sealed class XmlSyntaxTreeTests
         Assert.Null(exception);
         Assert.NotEmpty(tree.Diagnostics);
         Assert.Contains(tree.Diagnostics, diagnostic => diagnostic.Id == "XML0001" || diagnostic.Id == "XML0002");
-        Assert.All(tree.Diagnostics, diagnostic => Assert.Equal(XmlDiagnosticSeverity.Error, diagnostic.Severity));
+        Assert.All(tree.Diagnostics, diagnostic => Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity));
     }
 
     [Fact]
@@ -511,6 +511,18 @@ public sealed class XmlSyntaxTreeTests
         Assert.Contains(nonNamespacedAttributes, attribute => attribute.Name == "flag" && attribute.Value == "local");
     }
 
+    [Fact]
+    public void Diagnostics_AreLocatedInTheTreesOwnSourceText()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root>\n  <item>\n</root>");
+
+        Assert.All(tree.Diagnostics, diagnostic => Assert.Same(tree.SourceText, diagnostic.Location.SourceText));
+
+        // The mismatched end tag on the third line, then the unclosed <item> indented on the second.
+        Assert.Equal(new LinePosition(2, 0), tree.Diagnostics[0].Location.GetLineSpan().Start);
+        Assert.Equal(new LinePosition(1, 2), tree.Diagnostics[1].Location.GetLineSpan().Start);
+    }
+
     [Theory]
     [MemberData(nameof(RoundTripSamples))]
     public void Positions_AreAbsoluteOffsetsIntoTheSourceText(string text)
@@ -651,7 +663,7 @@ public sealed class XmlSyntaxTreeTests
         var diagnostic = Assert.Single(tree.Diagnostics);
 
         AssertSpan(0, 4, skipped.FullSpan);
-        AssertSpan(diagnostic.Span.Start, diagnostic.Span.Length, skipped.FullSpan);
+        AssertSpan(diagnostic.Location.SourceSpan.Start, diagnostic.Location.SourceSpan.Length, skipped.FullSpan);
     }
 
     [Fact]

@@ -13,4 +13,8 @@
     <InternalsVisibleTo Include="Meziantou.Framework.Language.Xml.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Language.Common/Meziantou.Framework.Language.Common.csproj" />
+  </ItemGroup>
+
 </Project>

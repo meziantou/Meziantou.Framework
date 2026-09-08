@@ -592,7 +592,7 @@ internal sealed partial class CmdParser
 
     private void AddDiagnostic(TextSpan span, string id, string message)
     {
-        _diagnostics.Add(new ShellDiagnostic(id, message, ShellDiagnosticSeverity.Error, span));
+        _diagnostics.Add(new Diagnostic(id, message, DiagnosticSeverity.Error, new Location(span, _source)));
     }
 
     private int GetLineBreakLength(int position) => position < _text.Length ? SourceText.GetLineBreakLength(_text, position) : 0;

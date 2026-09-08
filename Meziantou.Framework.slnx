@@ -86,6 +86,7 @@
     <Project Path="src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
     <Project Path="src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <Project Path="src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+    <Project Path="src/Meziantou.Framework.Language.Common/Meziantou.Framework.Language.Common.csproj" />
     <Project Path="src/Meziantou.Framework.Language.Json/Meziantou.Framework.Language.Json.csproj" />
     <Project Path="src/Meziantou.Framework.Language.Regex/Meziantou.Framework.Language.Regex.csproj" />
     <Project Path="src/Meziantou.Framework.Language.Shell/Meziantou.Framework.Language.Shell.csproj" />
@@ -220,6 +221,7 @@
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.Tests/Meziantou.Framework.HumanReadableSerializer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.JsonPath.Tests/Meziantou.Framework.JsonPath.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Language.Common.Tests/Meziantou.Framework.Language.Common.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Language.Json.Tests/Meziantou.Framework.Language.Json.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Language.Regex.Tests/Meziantou.Framework.Language.Regex.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Language.Shell.Tests/Meziantou.Framework.Language.Shell.Tests.csproj" />

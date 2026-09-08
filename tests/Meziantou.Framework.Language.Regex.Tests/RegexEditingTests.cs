@@ -52,7 +52,7 @@ public sealed class RegexEditingTests
     {
         var tree = RegexSyntaxTree.ParseText("a*", RegexDialect.PcrePerl);
 
-        var updated = tree.WithChanges(new RegexTextChange(new TextSpan(2, 0), "+"));
+        var updated = tree.WithChanges(new TextChange(new TextSpan(2, 0), "+"));
 
         Assert.Equal("a*+", updated.Text);
         Assert.Equal(RegexDialect.PcrePerl, updated.Dialect);
@@ -65,8 +65,8 @@ public sealed class RegexEditingTests
         var tree = RegexSyntaxTree.ParseText("abc", RegexDialect.Net);
 
         var updated = tree.WithChanges(
-            new RegexTextChange(new TextSpan(0, 1), "x"),
-            new RegexTextChange(new TextSpan(2, 1), "z"));
+            new TextChange(new TextSpan(0, 1), "x"),
+            new TextChange(new TextSpan(2, 1), "z"));
 
         Assert.Equal("xbz", updated.Text);
     }

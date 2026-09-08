@@ -284,7 +284,7 @@ public sealed class ShellSyntaxTreeTests
         var tree = ShellSyntaxTree.ParseText("echo 'unterminated", ShellDialect.Bash);
 
         Assert.NotEmpty(tree.Diagnostics);
-        Assert.All(tree.Diagnostics, diagnostic => Assert.Equal(ShellDiagnosticSeverity.Error, diagnostic.Severity));
+        Assert.All(tree.Diagnostics, diagnostic => Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity));
         Assert.Equal("SHELL0003", tree.Diagnostics[0].Id);
     }
 
@@ -372,7 +372,7 @@ public sealed class ShellSyntaxTreeTests
     public void WithChanges_ReparsesInTheSameDialect()
     {
         var tree = ShellSyntaxTree.ParseText("echo old", ShellDialect.Zsh);
-        var updated = tree.WithChanges(new ShellTextChange(new TextSpan(5, 3), "new"));
+        var updated = tree.WithChanges(new TextChange(new TextSpan(5, 3), "new"));
 
         Assert.Equal("echo new", updated.Text);
         Assert.Equal(ShellDialect.Zsh, updated.Dialect);
@@ -398,17 +398,6 @@ public sealed class ShellSyntaxTreeTests
     }
 
     [Fact]
-    public void SourceText_PutsBothHalvesOfACrlfOnTheSameLine()
-    {
-        var text = SourceText.From("a\r\nb");
-
-        Assert.Equal(0, text.GetLine(0).LineNumber);
-        Assert.Equal(0, text.GetLine(1).LineNumber);
-        Assert.Equal(0, text.GetLine(2).LineNumber);
-        Assert.Equal(1, text.GetLine(3).LineNumber);
-    }
-
-    [Fact]
     public void SourceText_ToStringReturnsTheText()
     {
         const string Text = "a\nb\nc";
@@ -424,5 +413,15 @@ public sealed class ShellSyntaxTreeTests
         Assert.Equal(3, tree.SourceText.Lines.Count);
         Assert.Equal("b", tree.SourceText.Lines[1].Text);
         Assert.Equal(1, tree.SourceText.GetLine(2).LineNumber);
+    }
+
+    [Fact]
+    public void Diagnostics_AreLocatedInTheTreesOwnSourceText()
+    {
+        var tree = ShellSyntaxTree.ParseText("echo a\necho 'unterminated", ShellDialect.Bash);
+        var diagnostic = tree.Diagnostics[0];
+
+        Assert.Same(tree.SourceText, diagnostic.Location.SourceText);
+        Assert.Equal(1, diagnostic.Location.GetLineSpan().Start.Line);
     }
 }

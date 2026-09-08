@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Language</RootNamespace>
+    <Description>Primitives shared by the Meziantou.Framework.Language parsers: source text, lines, spans, text changes, locations, and diagnostics.</Description>
+    <PackageTags>syntax-tree, cst, parser, diagnostics, source-text</PackageTags>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Common.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Json" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Regex" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Shell" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Xml" />
+  </ItemGroup>
+
+</Project>

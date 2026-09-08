@@ -94,7 +94,7 @@ public sealed class JsonSyntaxTreeTests
         Assert.NotEmpty(tree.Diagnostics);
         Assert.True(tree.Root.ContainsSkippedText);
         Assert.Equal(Text, tree.Root.ToFullString());
-        Assert.All(tree.Diagnostics, diagnostic => Assert.Equal(JsonDiagnosticSeverity.Error, diagnostic.Severity));
+        Assert.All(tree.Diagnostics, diagnostic => Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity));
     }
 
     public static TheoryData<string> UnexpectedTokenInContainerSamples => new()
@@ -120,7 +120,7 @@ public sealed class JsonSyntaxTreeTests
 
         Assert.NotEmpty(tree.Diagnostics);
         Assert.Equal(text, tree.Root.ToFullString());
-        Assert.All(tree.Diagnostics, diagnostic => Assert.Equal(JsonDiagnosticSeverity.Error, diagnostic.Severity));
+        Assert.All(tree.Diagnostics, diagnostic => Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity));
         Assert.True(tree.Diagnostics.Count <= text.Length * 2, $"Expected a bounded number of diagnostics, got {tree.Diagnostics.Count}.");
     }
 
@@ -235,7 +235,7 @@ public sealed class JsonSyntaxTreeTests
     {
         var tree = JsonSyntaxTree.ParseText("""{"a":1}""");
 
-        var updated = tree.WithChanges(new JsonTextChange(new TextSpan(5, 1), "2"));
+        var updated = tree.WithChanges(new TextChange(new TextSpan(5, 1), "2"));
 
         Assert.Equal("""{"a":2}""", updated.Root.ToFullString());
     }
@@ -508,5 +508,15 @@ public sealed class JsonSyntaxTreeTests
 
             return base.VisitMember(node);
         }
+    }
+
+    [Fact]
+    public void Diagnostics_AreLocatedInTheTreesOwnSourceText()
+    {
+        var tree = JsonSyntaxTree.ParseText("{\n  \"a\": \n}");
+        var diagnostic = tree.Diagnostics[0];
+
+        Assert.Same(tree.SourceText, diagnostic.Location.SourceText);
+        Assert.Equal(1, diagnostic.Location.GetLineSpan().Start.Line);
     }
 }

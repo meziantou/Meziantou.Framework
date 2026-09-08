@@ -12,16 +12,6 @@ namespace Meziantou.Framework.Language.Xml
         public static Meziantou.Framework.Language.Xml.XmlDocumentSyntax Format(Meziantou.Framework.Language.Xml.XmlDocumentSyntax document, Meziantou.Framework.Language.Xml.XmlFormattingOptions? options) => throw null;
     }
 
-    public sealed class SourceText
-    {
-        public string Text { get => throw null; }
-        public int Length { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.TextLine> Lines { get => throw null; }
-        public static Meziantou.Framework.Language.Xml.SourceText From(string text) => throw null;
-        public Meziantou.Framework.Language.Xml.SourceText WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Xml.XmlTextChange> changes) => throw null;
-        public override string ToString() => throw null;
-    }
-
     public static class SyntaxFactory
     {
         public static Meziantou.Framework.Language.Xml.XmlSyntaxTree ParseText(string text) => throw null;
@@ -41,32 +31,6 @@ namespace Meziantou.Framework.Language.Xml
         public static Meziantou.Framework.Language.Xml.XmlProcessingInstructionSyntax ProcessingInstruction(string target, string? data) => throw null;
         public static Meziantou.Framework.Language.Xml.XmlDocumentTypeSyntax DocumentType(string name, string? value = null) => throw null;
         public static Meziantou.Framework.Language.Xml.XmlSkippedTextSyntax SkippedText(string text) => throw null;
-    }
-
-    public readonly struct TextLine : System.IEquatable<Meziantou.Framework.Language.Xml.TextLine>
-    {
-        public int LineNumber { get => throw null; init { } }
-        public int Start { get => throw null; init { } }
-        public int End { get => throw null; init { } }
-        public string Text { get => throw null; init { } }
-        public TextLine(int LineNumber, int Start, int End, string Text) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.Language.Xml.TextLine left, Meziantou.Framework.Language.Xml.TextLine right) => throw null;
-        public static bool operator ==(Meziantou.Framework.Language.Xml.TextLine left, Meziantou.Framework.Language.Xml.TextLine right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object obj) => throw null;
-        public bool Equals(Meziantou.Framework.Language.Xml.TextLine other) => throw null;
-        public void Deconstruct(out int LineNumber, out int Start, out int End, out string Text) => throw null;
-    }
-
-    public readonly struct TextSpan
-    {
-        public int Start { get => throw null; }
-        public int Length { get => throw null; }
-        public int End { get => throw null; }
-        public TextSpan(int start, int length) { }
-        public static Meziantou.Framework.Language.Xml.TextSpan FromBounds(int start, int end) => throw null;
-        public override string ToString() => throw null;
     }
 
     public sealed class XmlAttributeSyntax : Meziantou.Framework.Language.Xml.XmlSyntaxNode
@@ -115,39 +79,6 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlDeclarationSyntax WithStandalone(string? standalone) => throw null;
         public override void Accept(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
-    }
-
-    public sealed class XmlDiagnostic : System.IEquatable<Meziantou.Framework.Language.Xml.XmlDiagnostic>
-    {
-        public string Id { get => throw null; init { } }
-        public string Message { get => throw null; init { } }
-        public Meziantou.Framework.Language.Xml.XmlDiagnosticSeverity Severity { get => throw null; init { } }
-        public Meziantou.Framework.Language.Xml.TextSpan Span { get => throw null; init { } }
-        public XmlDiagnostic(string Id, string Message, Meziantou.Framework.Language.Xml.XmlDiagnosticSeverity Severity, Meziantou.Framework.Language.Xml.TextSpan Span) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.Language.Xml.XmlDiagnostic? left, Meziantou.Framework.Language.Xml.XmlDiagnostic? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.Language.Xml.XmlDiagnostic? left, Meziantou.Framework.Language.Xml.XmlDiagnostic? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.Language.Xml.XmlDiagnostic? other) => throw null;
-        public void Deconstruct(out string Id, out string Message, out Meziantou.Framework.Language.Xml.XmlDiagnosticSeverity Severity, out Meziantou.Framework.Language.Xml.TextSpan Span) => throw null;
-    }
-
-    public sealed class XmlDiagnosticDescriptor
-    {
-        public string Id { get => throw null; }
-        public string Title { get => throw null; }
-        public string MessageFormat { get => throw null; }
-        public Meziantou.Framework.Language.Xml.XmlDiagnosticSeverity DefaultSeverity { get => throw null; }
-        public XmlDiagnosticDescriptor(string id, string title, string messageFormat, Meziantou.Framework.Language.Xml.XmlDiagnosticSeverity defaultSeverity) { }
-    }
-
-    public enum XmlDiagnosticSeverity
-    {
-        Hidden = 0,
-        Info = 1,
-        Warning = 2,
-        Error = 3
     }
 
     public sealed class XmlDocumentSyntax : Meziantou.Framework.Language.Xml.XmlSyntaxNode, System.Xml.XPath.IXPathNavigable
@@ -293,8 +224,8 @@ namespace Meziantou.Framework.Language.Xml
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxToken> Tokens { get => throw null; }
         public Meziantou.Framework.Language.Xml.XmlSyntaxTree? SyntaxTree { get => throw null; }
         public Meziantou.Framework.Language.Xml.XmlSyntaxNode? Parent { get => throw null; }
-        public Meziantou.Framework.Language.Xml.TextSpan Span { get => throw null; }
-        public Meziantou.Framework.Language.Xml.TextSpan FullSpan { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public bool ContainsDiagnostics { get => throw null; }
         public bool ContainsSkippedText { get => throw null; }
         protected XmlSyntaxNode(Meziantou.Framework.Language.Xml.XmlSyntaxKind kind, string fullText, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxToken>? tokens = null, int fullStart = 0) { }
@@ -357,8 +288,8 @@ namespace Meziantou.Framework.Language.Xml
         public string Text { get => throw null; }
         public string ValueText { get => throw null; }
         public bool IsMissing { get => throw null; }
-        public Meziantou.Framework.Language.Xml.TextSpan Span { get => throw null; }
-        public Meziantou.Framework.Language.Xml.TextSpan FullSpan { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxTrivia> LeadingTrivia { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxTrivia> TrailingTrivia { get => throw null; }
         public XmlSyntaxToken(Meziantou.Framework.Language.Xml.XmlSyntaxKind kind, string text, string? valueText = null, bool isMissing = false, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxTrivia>? leadingTrivia = null, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlSyntaxTrivia>? trailingTrivia = null, int fullStart = 0) { }
@@ -371,15 +302,15 @@ namespace Meziantou.Framework.Language.Xml
     public sealed class XmlSyntaxTree
     {
         public string Text { get => throw null; }
-        public Meziantou.Framework.Language.Xml.SourceText SourceText { get => throw null; }
+        public Meziantou.Framework.Language.SourceText SourceText { get => throw null; }
         public Meziantou.Framework.Language.Xml.XmlDocumentSyntax Root { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlDiagnostic> Diagnostics { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> Diagnostics { get => throw null; }
         public Meziantou.Framework.Language.Xml.XmlDocumentSyntax GetRoot() => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlDiagnostic> GetDiagnostics() => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public static Meziantou.Framework.Language.Xml.XmlSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Xml")] string text) => throw null;
-        public Meziantou.Framework.Language.Xml.XmlSyntaxTree WithChanges(params Meziantou.Framework.Language.Xml.XmlTextChange[] changes) => throw null;
-        public Meziantou.Framework.Language.Xml.XmlSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Xml.XmlTextChange> changes) => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Xml.XmlTextChange> GetChanges(Meziantou.Framework.Language.Xml.XmlSyntaxTree oldTree) => throw null;
+        public Meziantou.Framework.Language.Xml.XmlSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;
+        public Meziantou.Framework.Language.Xml.XmlSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.Xml.XmlSyntaxTree oldTree) => throw null;
         public bool IsEquivalentTo(Meziantou.Framework.Language.Xml.XmlSyntaxTree? other) => throw null;
     }
 
@@ -388,8 +319,8 @@ namespace Meziantou.Framework.Language.Xml
     {
         public Meziantou.Framework.Language.Xml.XmlSyntaxKind Kind { get => throw null; }
         public string Text { get => throw null; }
-        public Meziantou.Framework.Language.Xml.TextSpan Span { get => throw null; }
-        public Meziantou.Framework.Language.Xml.TextSpan FullSpan { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public XmlSyntaxTrivia(Meziantou.Framework.Language.Xml.XmlSyntaxKind kind, string text, int start = 0) { }
         public Meziantou.Framework.Language.Xml.XmlSyntaxTrivia WithText(string text) => throw null;
     }
@@ -426,13 +357,6 @@ namespace Meziantou.Framework.Language.Xml
         public virtual TResult VisitProcessingInstruction(Meziantou.Framework.Language.Xml.XmlProcessingInstructionSyntax node) => throw null;
         public virtual TResult VisitDocumentType(Meziantou.Framework.Language.Xml.XmlDocumentTypeSyntax node) => throw null;
         public virtual TResult VisitSkippedText(Meziantou.Framework.Language.Xml.XmlSkippedTextSyntax node) => throw null;
-    }
-
-    public readonly struct XmlTextChange
-    {
-        public Meziantou.Framework.Language.Xml.TextSpan Span { get => throw null; }
-        public string NewText { get => throw null; }
-        public XmlTextChange(Meziantou.Framework.Language.Xml.TextSpan span, string newText) { }
     }
 
     public sealed class XmlTextSyntax : Meziantou.Framework.Language.Xml.XmlSyntaxNode

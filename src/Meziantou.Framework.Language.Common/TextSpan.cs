@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Language.Xml;
+namespace Meziantou.Framework.Language;
 
 /// <summary>Represents a contiguous character range in text.</summary>
 /// <example>
@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Language.Xml;
 /// </code>
 /// </example>
 [StructLayout(LayoutKind.Auto)]
-public readonly struct TextSpan
+public readonly struct TextSpan : IEquatable<TextSpan>
 {
     public TextSpan(int start, int length)
     {
@@ -29,8 +29,15 @@ public readonly struct TextSpan
     {
         ArgumentOutOfRangeException.ThrowIfNegative(start);
         ArgumentOutOfRangeException.ThrowIfLessThan(end, start);
+
         return new TextSpan(start, end - start);
     }
+
+    public bool Equals(TextSpan other) => Start == other.Start && Length == other.Length;
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is TextSpan other && Equals(other);
+    public override int GetHashCode() => HashCode.Combine(Start, Length);
+    public static bool operator ==(TextSpan left, TextSpan right) => left.Equals(right);
+    public static bool operator !=(TextSpan left, TextSpan right) => !left.Equals(right);
 
     public override string ToString() => $"[{Start}..{End})";
 }

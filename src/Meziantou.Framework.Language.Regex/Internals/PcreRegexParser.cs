@@ -8,8 +8,8 @@ namespace Meziantou.Framework.Language.Regex.Internals;
 /// </remarks>
 internal sealed class PcreRegexParser : PerlStyleRegexParser
 {
-    public PcreRegexParser(string text, RegexParseOptions parseOptions)
-        : base(text, parseOptions)
+    public PcreRegexParser(SourceText source, RegexParseOptions parseOptions)
+        : base(source, parseOptions)
     {
     }
 

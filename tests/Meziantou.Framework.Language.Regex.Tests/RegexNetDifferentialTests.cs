@@ -147,7 +147,7 @@ public sealed class RegexNetDifferentialTests
         RegexSyntaxAssert.TextIsFaithful(pattern, tree);
 
         var runtimeError = GetRuntimeError(pattern, options);
-        var errors = tree.Diagnostics.Where(diagnostic => diagnostic.Severity == RegexDiagnosticSeverity.Error).ToArray();
+        var errors = tree.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error).ToArray();
         var reported = string.Join(", ", errors.Select(diagnostic => $"{diagnostic.Id} {diagnostic.Message}"));
 
         var reportedAnError = errors.Length > 0;

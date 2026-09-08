@@ -29,30 +29,6 @@ namespace Meziantou.Framework.Language.Json
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor) => throw null;
     }
 
-    public sealed class JsonDiagnostic : System.IEquatable<Meziantou.Framework.Language.Json.JsonDiagnostic>
-    {
-        public string Id { get => throw null; init { } }
-        public string Message { get => throw null; init { } }
-        public Meziantou.Framework.Language.Json.JsonDiagnosticSeverity Severity { get => throw null; init { } }
-        public Meziantou.Framework.Language.Json.TextSpan Span { get => throw null; init { } }
-        public JsonDiagnostic(string Id, string Message, Meziantou.Framework.Language.Json.JsonDiagnosticSeverity Severity, Meziantou.Framework.Language.Json.TextSpan Span) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.Language.Json.JsonDiagnostic? left, Meziantou.Framework.Language.Json.JsonDiagnostic? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.Language.Json.JsonDiagnostic? left, Meziantou.Framework.Language.Json.JsonDiagnostic? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.Language.Json.JsonDiagnostic? other) => throw null;
-        public void Deconstruct(out string Id, out string Message, out Meziantou.Framework.Language.Json.JsonDiagnosticSeverity Severity, out Meziantou.Framework.Language.Json.TextSpan Span) => throw null;
-    }
-
-    public enum JsonDiagnosticSeverity
-    {
-        Hidden = 0,
-        Info = 1,
-        Warning = 2,
-        Error = 3
-    }
-
     public sealed class JsonDocumentSyntax : Meziantou.Framework.Language.Json.JsonSyntaxNode
     {
         public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxNode> ChildNodes { get => throw null; }
@@ -195,8 +171,8 @@ namespace Meziantou.Framework.Language.Json
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxToken> Tokens { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonSyntaxTree? SyntaxTree { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonSyntaxNode? Parent { get => throw null; }
-        public Meziantou.Framework.Language.Json.TextSpan Span { get => throw null; }
-        public Meziantou.Framework.Language.Json.TextSpan FullSpan { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public bool ContainsDiagnostics { get => throw null; }
         public bool ContainsSkippedText { get => throw null; }
         protected JsonSyntaxNode(Meziantou.Framework.Language.Json.JsonSyntaxKind kind, string fullText, int fullStart = 0, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxToken>? tokens = null) { }
@@ -247,8 +223,8 @@ namespace Meziantou.Framework.Language.Json
         public string Text { get => throw null; }
         public string ValueText { get => throw null; }
         public bool IsMissing { get => throw null; }
-        public Meziantou.Framework.Language.Json.TextSpan Span { get => throw null; }
-        public Meziantou.Framework.Language.Json.TextSpan FullSpan { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxTrivia> LeadingTrivia { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxTrivia> TrailingTrivia { get => throw null; }
         public JsonSyntaxToken(Meziantou.Framework.Language.Json.JsonSyntaxKind kind, string text, string? valueText = null, bool isMissing = false, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxTrivia>? leadingTrivia = null, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxTrivia>? trailingTrivia = null, int fullStart = 0) { }
@@ -261,15 +237,15 @@ namespace Meziantou.Framework.Language.Json
     public sealed class JsonSyntaxTree
     {
         public string Text { get => throw null; }
-        public Meziantou.Framework.Language.Json.SourceText SourceText { get => throw null; }
+        public Meziantou.Framework.Language.SourceText SourceText { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonDocumentSyntax Root { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonDiagnostic> Diagnostics { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> Diagnostics { get => throw null; }
         public Meziantou.Framework.Language.Json.JsonDocumentSyntax GetRoot() => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonDiagnostic> GetDiagnostics() => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string text) => throw null;
-        public Meziantou.Framework.Language.Json.JsonSyntaxTree WithChanges(params Meziantou.Framework.Language.Json.JsonTextChange[] changes) => throw null;
-        public Meziantou.Framework.Language.Json.JsonSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Json.JsonTextChange> changes) => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonTextChange> GetChanges(Meziantou.Framework.Language.Json.JsonSyntaxTree oldTree) => throw null;
+        public Meziantou.Framework.Language.Json.JsonSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;
+        public Meziantou.Framework.Language.Json.JsonSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.Json.JsonSyntaxTree oldTree) => throw null;
         public bool IsEquivalentTo(Meziantou.Framework.Language.Json.JsonSyntaxTree? other) => throw null;
     }
 
@@ -278,8 +254,8 @@ namespace Meziantou.Framework.Language.Json
     {
         public Meziantou.Framework.Language.Json.JsonSyntaxKind Kind { get => throw null; }
         public string Text { get => throw null; }
-        public Meziantou.Framework.Language.Json.TextSpan Span { get => throw null; }
-        public Meziantou.Framework.Language.Json.TextSpan FullSpan { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public JsonSyntaxTrivia(Meziantou.Framework.Language.Json.JsonSyntaxKind kind, string text, int start = 0) { }
         public Meziantou.Framework.Language.Json.JsonSyntaxTrivia WithText(string text) => throw null;
     }
@@ -314,26 +290,9 @@ namespace Meziantou.Framework.Language.Json
         public virtual TResult VisitSkippedText(Meziantou.Framework.Language.Json.JsonSkippedTextSyntax node) => throw null;
     }
 
-    public readonly struct JsonTextChange
-    {
-        public Meziantou.Framework.Language.Json.TextSpan Span { get => throw null; }
-        public string NewText { get => throw null; }
-        public JsonTextChange(Meziantou.Framework.Language.Json.TextSpan span, string newText) { }
-    }
-
     public abstract class JsonValueSyntax : Meziantou.Framework.Language.Json.JsonSyntaxNode
     {
         protected JsonValueSyntax(Meziantou.Framework.Language.Json.JsonSyntaxKind kind, string fullText, int fullStart = 0, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxToken>? tokens = null) : base(default(Meziantou.Framework.Language.Json.JsonSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.JsonSyntaxToken>)) { }
-    }
-
-    public sealed class SourceText
-    {
-        public string Text { get => throw null; }
-        public int Length { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Json.TextLine> Lines { get => throw null; }
-        public static Meziantou.Framework.Language.Json.SourceText From(string text) => throw null;
-        public Meziantou.Framework.Language.Json.SourceText WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Json.JsonTextChange> changes) => throw null;
-        public override string ToString() => throw null;
     }
 
     public static class SyntaxFactory
@@ -355,31 +314,5 @@ namespace Meziantou.Framework.Language.Json
         public static Meziantou.Framework.Language.Json.JsonLiteralSyntax FalseLiteral() => throw null;
         public static Meziantou.Framework.Language.Json.JsonLiteralSyntax NullLiteral() => throw null;
         public static Meziantou.Framework.Language.Json.JsonSkippedTextSyntax SkippedText(string text) => throw null;
-    }
-
-    public readonly struct TextLine : System.IEquatable<Meziantou.Framework.Language.Json.TextLine>
-    {
-        public int LineNumber { get => throw null; init { } }
-        public int Start { get => throw null; init { } }
-        public int End { get => throw null; init { } }
-        public string Text { get => throw null; init { } }
-        public TextLine(int LineNumber, int Start, int End, string Text) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.Language.Json.TextLine left, Meziantou.Framework.Language.Json.TextLine right) => throw null;
-        public static bool operator ==(Meziantou.Framework.Language.Json.TextLine left, Meziantou.Framework.Language.Json.TextLine right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object obj) => throw null;
-        public bool Equals(Meziantou.Framework.Language.Json.TextLine other) => throw null;
-        public void Deconstruct(out int LineNumber, out int Start, out int End, out string Text) => throw null;
-    }
-
-    public readonly struct TextSpan
-    {
-        public int Start { get => throw null; }
-        public int Length { get => throw null; }
-        public int End { get => throw null; }
-        public TextSpan(int start, int length) { }
-        public static Meziantou.Framework.Language.Json.TextSpan FromBounds(int start, int end) => throw null;
-        public override string ToString() => throw null;
     }
 }

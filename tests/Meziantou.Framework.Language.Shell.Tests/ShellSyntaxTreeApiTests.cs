@@ -7,7 +7,7 @@ public sealed class ShellSyntaxTreeApiTests
     public void GetChanges_ReportsOnlyTheTextThatDiffers()
     {
         var original = ShellSyntaxTree.ParseText("echo one\necho two\necho three\n", ShellDialect.Bash);
-        var updated = original.WithChanges(new ShellTextChange(new TextSpan(14, 3), "TWO"));
+        var updated = original.WithChanges(new TextChange(new TextSpan(14, 3), "TWO"));
 
         var change = Assert.Single(updated.GetChanges(original));
 

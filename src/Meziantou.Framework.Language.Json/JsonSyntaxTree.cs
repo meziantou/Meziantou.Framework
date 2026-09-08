@@ -3,10 +3,10 @@ namespace Meziantou.Framework.Language.Json;
 /// <summary>Represents an immutable JSON syntax tree with source text and diagnostics.</summary>
 public sealed class JsonSyntaxTree
 {
-    private JsonSyntaxTree(string text, JsonDocumentSyntax root, IReadOnlyList<JsonDiagnostic> diagnostics)
+    private JsonSyntaxTree(SourceText sourceText, JsonDocumentSyntax root, IReadOnlyList<Diagnostic> diagnostics)
     {
-        Text = text;
-        SourceText = SourceText.From(text);
+        Text = sourceText.Text;
+        SourceText = sourceText;
         Root = root;
         Diagnostics = diagnostics;
         Root.SetParentAndTree(parent: null, this);
@@ -15,34 +15,34 @@ public sealed class JsonSyntaxTree
     public string Text { get; }
     public SourceText SourceText { get; }
     public JsonDocumentSyntax Root { get; }
-    public IReadOnlyList<JsonDiagnostic> Diagnostics { get; }
+    public IReadOnlyList<Diagnostic> Diagnostics { get; }
 
     public JsonDocumentSyntax GetRoot() => Root;
-    public IReadOnlyList<JsonDiagnostic> GetDiagnostics() => Diagnostics;
+    public IReadOnlyList<Diagnostic> GetDiagnostics() => Diagnostics;
 
     public static JsonSyntaxTree ParseText([StringSyntax(StringSyntaxAttribute.Json)] string text)
     {
-        var parser = new JsonParser(text ?? string.Empty);
+        var parser = new JsonParser(SourceText.From(text));
 
         return parser.Parse();
     }
 
-    public JsonSyntaxTree WithChanges(params JsonTextChange[] changes) => WithChanges((IEnumerable<JsonTextChange>)changes);
+    public JsonSyntaxTree WithChanges(params TextChange[] changes) => WithChanges((IEnumerable<TextChange>)changes);
 
-    public JsonSyntaxTree WithChanges(IEnumerable<JsonTextChange> changes)
+    public JsonSyntaxTree WithChanges(IEnumerable<TextChange> changes)
     {
         ArgumentNullException.ThrowIfNull(changes);
 
         return ParseText(SourceText.WithChanges(changes).Text);
     }
 
-    public IReadOnlyList<JsonTextChange> GetChanges(JsonSyntaxTree oldTree)
+    public IReadOnlyList<TextChange> GetChanges(JsonSyntaxTree oldTree)
     {
         ArgumentNullException.ThrowIfNull(oldTree);
         if (string.Equals(Text, oldTree.Text, StringComparison.Ordinal))
             return [];
 
-        return [new JsonTextChange(new TextSpan(0, oldTree.Text.Length), Text)];
+        return [new TextChange(new TextSpan(0, oldTree.Text.Length), Text)];
     }
 
     public bool IsEquivalentTo(JsonSyntaxTree? other)
@@ -55,15 +55,17 @@ public sealed class JsonSyntaxTree
 
     private sealed class JsonParser
     {
+        private readonly SourceText _source;
         private readonly string _text;
-        private readonly List<JsonDiagnostic> _diagnostics = [];
+        private readonly List<Diagnostic> _diagnostics = [];
         private readonly List<JsonSyntaxToken> _tokens;
         private int _position;
 
-        public JsonParser(string text)
+        public JsonParser(SourceText source)
         {
-            _text = text ?? string.Empty;
-            var lexer = new JsonLexer(_text);
+            _source = source;
+            _text = source.Text;
+            var lexer = new JsonLexer(source);
             _tokens = lexer.Lex();
             _diagnostics.AddRange(lexer.Diagnostics);
         }
@@ -98,7 +100,7 @@ public sealed class JsonSyntaxTree
             var endOfFileToken = ConsumeToken();
             var root = new JsonDocumentSyntax(childNodes, endOfFileToken, _text);
 
-            return new JsonSyntaxTree(_text, root, _diagnostics);
+            return new JsonSyntaxTree(_source, root, _diagnostics);
         }
 
         private JsonSyntaxToken Current => Peek(0);
@@ -298,7 +300,7 @@ public sealed class JsonSyntaxTree
 
         private void AddDiagnostic(TextSpan span, string id, string message)
         {
-            _diagnostics.Add(new JsonDiagnostic(id, message, JsonDiagnosticSeverity.Error, span));
+            _diagnostics.Add(new Diagnostic(id, message, DiagnosticSeverity.Error, new Location(span, _source)));
         }
 
         private static JsonSyntaxToken MissingToken(JsonSyntaxKind kind, int position)
@@ -309,16 +311,18 @@ public sealed class JsonSyntaxTree
 
     private sealed class JsonLexer
     {
+        private readonly SourceText _source;
         private readonly string _text;
-        private readonly List<JsonDiagnostic> _diagnostics = [];
+        private readonly List<Diagnostic> _diagnostics = [];
         private int _position;
 
-        public JsonLexer(string text)
+        public JsonLexer(SourceText source)
         {
-            _text = text ?? string.Empty;
+            _source = source;
+            _text = source.Text;
         }
 
-        public IReadOnlyList<JsonDiagnostic> Diagnostics => _diagnostics;
+        public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
 
         public List<JsonSyntaxToken> Lex()
         {
@@ -399,7 +403,7 @@ public sealed class JsonSyntaxTree
 
                 if (Current is '\r' or '\n')
                 {
-                    _position += GetLineBreakLength(_text, _position);
+                    _position += SourceText.GetLineBreakLength(_text, _position);
                     AddTrivia(ref trivia, JsonSyntaxKind.EndOfLineTrivia, start);
                     continue;
                 }
@@ -467,7 +471,7 @@ public sealed class JsonSyntaxTree
 
                 if (current is '\r' or '\n')
                 {
-                    AddDiagnostic(_position, GetLineBreakLength(_text, _position), "JSON0011", "Line breaks are not allowed in JSON strings.");
+                    AddDiagnostic(_position, SourceText.GetLineBreakLength(_text, _position), "JSON0011", "Line breaks are not allowed in JSON strings.");
                 }
 
                 valueBuilder.Append(current);
@@ -695,20 +699,12 @@ public sealed class JsonSyntaxTree
 
         private void AddDiagnostic(int start, int length, string id, string message)
         {
-            _diagnostics.Add(new JsonDiagnostic(id, message, JsonDiagnosticSeverity.Error, new TextSpan(start, Math.Max(0, length))));
+            _diagnostics.Add(new Diagnostic(id, message, DiagnosticSeverity.Error, new Location(new TextSpan(start, Math.Max(0, length)), _source)));
         }
 
         private static bool IsTokenBoundary(char value)
         {
             return value is '\0' or ' ' or '\t' or '\f' or '\v' or '\r' or '\n' or '{' or '}' or '[' or ']' or ':' or ',' or '"';
-        }
-
-        private static int GetLineBreakLength(string text, int index)
-        {
-            if (text[index] == '\r')
-                return index + 1 < text.Length && text[index + 1] == '\n' ? 2 : 1;
-
-            return text[index] == '\n' ? 1 : 0;
         }
 
         private static int GetHexValue(char value)

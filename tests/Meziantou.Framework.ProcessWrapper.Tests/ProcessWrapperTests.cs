@@ -1465,7 +1465,8 @@ public class ProcessWrapperTests
             startInfo => Assert.True(startInfo.StartDetached));
     }
 
-    [Fact]
+    // Registers process-wide interceptors, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
     public async Task StartAndForget_AppliesConfigurationAndInterceptors()
     {
         using var temporaryDirectory = TemporaryDirectory.Create();
@@ -1501,7 +1502,9 @@ public class ProcessWrapperTests
         Assert.Equal("wrapper start-info argument", output.Trim());
     }
 
-    [Fact]
+    // Registers a process-wide interceptor that turns validation on for every wrapper created while it is
+    // alive, which makes StartAndForget throw in any test running beside it
+    [Fact(DisableParallelization = true)]
     public void StartAndForget_WithUnsupportedConfiguration_Throws()
     {
         Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithOutputStream(OutputTarget.ToTextDelegate(_ => { })).StartAndForget());

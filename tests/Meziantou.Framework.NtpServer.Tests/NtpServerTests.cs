@@ -502,6 +502,13 @@ public sealed class NtpServerTests : IAsyncLifetime
         var port = server.Port;
         server.Dispose();
 
+        // Every test here binds an ephemeral port, so the port the server just released can be handed to
+        // another server started in parallel, which then answers the query and the assertion never fires.
+        // Holding the port with a socket that never replies keeps it out of that pool; the bind also fails
+        // if Dispose stopped releasing the socket, which is the behavior under test.
+        using var placeholder = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) { ExclusiveAddressUse = true };
+        placeholder.Bind(new IPEndPoint(IPAddress.Loopback, port));
+
         var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = port, Timeout = TimeSpan.FromSeconds(1) });
 
         await Assert.ThrowsAnyAsync<Exception>(() => client.QueryAsync(XunitCancellationToken));

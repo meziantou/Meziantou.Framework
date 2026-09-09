@@ -16,15 +16,17 @@ namespace Meziantou.Framework.Language.Json.Syntax.InternalSyntax;
 internal sealed class LanguageParser
 {
     private readonly Lexer _lexer;
+    private readonly Blender? _blender;
     private readonly List<PendingDiagnostic> _pending = [];
     private GreenToken _current;
     private int _currentFullStart;
     private int _previousTokenTextEnd;
     private bool _previousTokenEndedTheLine;
 
-    public LanguageParser(SourceText source)
+    public LanguageParser(SourceText source, Blender? blender = null)
     {
         _lexer = new Lexer(source);
+        _blender = blender;
         _current = _lexer.Lex();
         _currentFullStart = _lexer.Position - _current.FullWidth;
     }
@@ -91,6 +93,9 @@ internal sealed class LanguageParser
 
     private GreenNode ParseValue(TerminatorState terminators)
     {
+        if (TryReuse(Blender.NodeContext.Value) is { } reused)
+            return reused;
+
         switch (CurrentKind)
         {
             case SyntaxKind.OpenBraceToken:
@@ -169,6 +174,9 @@ internal sealed class LanguageParser
 
     private JsonMemberSyntax ParseMember()
     {
+        if (TryReuse(Blender.NodeContext.Member) is JsonMemberSyntax reused)
+            return reused;
+
         var mark = _pending.Count;
         var start = _currentFullStart;
 
@@ -224,6 +232,25 @@ internal sealed class LanguageParser
         var node = new JsonArraySyntax(openBracket, SyntaxFactory.ListNode(elements.ToArray()), closeBracket);
 
         return (JsonArraySyntax)Finish(node, start, mark);
+    }
+
+    /// <summary>Takes the node the previous tree already has here, and moves the lexer past its text.</summary>
+    private GreenNode? TryReuse(Blender.NodeContext context)
+    {
+        if (_blender?.TryTakeNode(_currentFullStart, context) is not { } reused)
+            return null;
+
+        // The reused node stands in for tokens that were never read, so the state the diagnostics depend on has to be
+        // brought up to date from the node itself.
+        var lastToken = reused.GetLastTerminal();
+        _previousTokenTextEnd = _currentFullStart + reused.FullWidth - (lastToken?.GetTrailingTriviaWidth() ?? 0);
+        _previousTokenEndedTheLine = EndsTheLine((lastToken as GreenToken)?.TrailingTrivia);
+
+        _lexer.Position = _currentFullStart + reused.FullWidth;
+        _current = _lexer.Lex();
+        _currentFullStart = _lexer.Position - _current.FullWidth;
+
+        return reused;
     }
 
     private static JsonMemberSyntax MissingMember()

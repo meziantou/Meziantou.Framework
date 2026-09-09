@@ -19,15 +19,19 @@ public sealed class JsonSyntaxTree : SyntaxTree
     private readonly JsonDocumentSyntax _root;
     private IReadOnlyList<Diagnostic>? _diagnostics;
 
-    private JsonSyntaxTree(SourceText text, Green.JsonDocumentSyntax green, string? path)
+    private JsonSyntaxTree(SourceText text, Green.JsonDocumentSyntax green, string? path, int reusedNodeCount = 0)
     {
         _text = text;
         FilePath = path;
+        ReusedNodeCount = reusedNodeCount;
         _root = (JsonDocumentSyntax)green.CreateRed();
         _root.AttachToTree(this);
     }
 
     public override string? FilePath { get; }
+
+    /// <summary>Gets how many nodes this tree took from the one it was derived from rather than parsing again.</summary>
+    internal int ReusedNodeCount { get; }
 
     public override SourceText GetText() => _text;
 
@@ -96,7 +100,29 @@ public sealed class JsonSyntaxTree : SyntaxTree
 
     protected override SyntaxNode GetRootCore() => _root;
 
-    protected override SyntaxTree WithChangedTextCore(SourceText newText) => ParseText(newText, FilePath);
+    /// <summary>
+    /// Reparses <paramref name="newText"/>, keeping the parts of this tree the edit did not reach.
+    /// </summary>
+    /// <remarks>
+    /// The change is worked out from the two texts rather than taken from the caller, so the result is a function of
+    /// the texts alone and no mistake in a list of edits can produce a tree that does not match its own text.
+    /// </remarks>
+    protected override SyntaxTree WithChangedTextCore(SourceText newText)
+    {
+        var changes = newText.GetChangeRanges(_text);
+        if (changes.Count == 0)
+            return this;
+
+        // Reusing needs somewhere to reuse from, and a document that was mostly rewritten has nothing worth keeping.
+        var change = changes[0];
+        if (_text.Length == 0 || newText.Length == 0 || change.Span.Length > _text.Length * 4 / 5)
+            return ParseText(newText, FilePath);
+
+        var blender = new Green.Blender(_text, newText, change, _root);
+        var green = new Green.LanguageParser(newText, blender).ParseDocument();
+
+        return new JsonSyntaxTree(newText, green, FilePath, blender.ReusedNodeCount);
+    }
 
     protected override SyntaxTree WithRootCore(SyntaxNode root) => Create((JsonDocumentSyntax)root, FilePath);
 }

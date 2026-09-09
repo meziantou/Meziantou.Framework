@@ -9,9 +9,19 @@ inputs:
     description: Output delta project path
     required: true
   traversal-after-import:
-    description: Project imported after traversal project references
+    description: |
+      Project imported after traversal project references in the generated file.
+      Empty means DeltaBuild's own default, which is a file that does not exist,
+      so the generated project imports nothing.
     required: false
-    default: build.platform-exclusions.proj
+    default: ""
+  properties:
+    description: |
+      Newline-separated MSBuild properties (NAME=VALUE) applied to the evaluation of the
+      input project. DeltaBuild has no --property option, so they are passed as environment
+      variables, which MSBuild reads as global properties.
+    required: false
+    default: ""
   full-rebuild-triggers:
     description: |
       Newline-separated list of full rebuild trigger globs or paths.
@@ -75,6 +85,7 @@ runs:
         INPUT_PROJECT: ${{ inputs.input-project }}
         OUTPUT_PROJECT: ${{ inputs.output-project }}
         TRAVERSAL_AFTER_IMPORT: ${{ inputs.traversal-after-import }}
+        MSBUILD_PROPERTIES: ${{ inputs.properties }}
         FULL_REBUILD_TRIGGERS: ${{ inputs.full-rebuild-triggers }}
         BASE_COMMIT: ${{ inputs.base-commit }}
         TEST_PROJECTS_ONLY: ${{ inputs.test-projects-only }}
@@ -87,9 +98,24 @@ runs:
           "generate"
           "--input", $env:INPUT_PROJECT
           "--output", $env:OUTPUT_PROJECT
-          "--traversal-after-import", $env:TRAVERSAL_AFTER_IMPORT
           "--no-output-if-empty"
         )
+
+        if ($env:TRAVERSAL_AFTER_IMPORT) {
+          $arguments += @("--traversal-after-import", $env:TRAVERSAL_AFTER_IMPORT)
+        }
+
+        # MSBuild reads environment variables as global properties, so this is how the
+        # properties reach the evaluation of the input project.
+        $env:MSBUILD_PROPERTIES -split "`n" | ForEach-Object {
+          $property = $_.Trim()
+          if ($property) {
+            $name, $value = $property.Split("=", 2)
+            if (-not $value) { throw "Invalid property, expected NAME=VALUE: $property" }
+            Write-Host "Setting property $name=$value"
+            Set-Item -Path "env:$name" -Value $value
+          }
+        }
 
         if ($env:TEST_PROJECTS_ONLY -eq "true") {
           $arguments += "--test-projects-only"

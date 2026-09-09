@@ -149,12 +149,12 @@ jobs:
         id: build-project
         uses: ./.github/actions/deltabuild
         with:
-          # This job only builds, so it uses the traversal that keeps the projects whose tests
-          # cannot run on Linux. They compile everywhere, and this is the only job that reports
-          # the IDExxxx diagnostics for them.
-          input-project: eng/build.all-platforms.proj
+          input-project: eng/build.proj
           output-project: eng/delta.proj
-          traversal-after-import: build.exclusions.proj
+          # This job only builds, so it keeps the projects whose tests cannot run on Linux.
+          # They compile everywhere, and this is the only job that reports the IDExxxx
+          # diagnostics for them.
+          properties: SkipUnsupportedPlatforms=false
           base-commit: ${{ case(github.event_name == 'push', github.event.before, '') }}
           run-generate: ${{ case(github.event_name == 'pull_request' || github.event_name == 'push', 'true', 'false') }}
           full-rebuild-triggers: |
@@ -170,7 +170,7 @@ jobs:
       # diagnostics are only reported in Release with IsOfficialBuild
       - name: Build all projects
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration Release /p:IsOfficialBuild=true /bl:build.binlog
+        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration Release /p:IsOfficialBuild=true /p:SkipUnsupportedPlatforms=false /bl:build.binlog
 
       - name: Skip build
         if: steps.build-project.outputs.has-project != 'true'
@@ -224,12 +224,11 @@ jobs:
         id: affected-tests
         uses: ./.github/actions/deltabuild
         with:
-          # This job runs on Linux, so eng/build.proj would drop the Windows-only test projects
-          # before the matrix is computed and they would never reach the Windows jobs. The
-          # per-job traversal below still uses eng/build.proj, which drops them again on the
-          # platforms that cannot run them.
-          input-project: eng/build.all-platforms.proj
-          traversal-after-import: build.exclusions.proj
+          input-project: eng/build.proj
+          # This job runs on Linux and feeds every platform, so it must also list the projects
+          # that only run on Windows. The per-job traversal below keeps the default and drops
+          # them again on the platforms that cannot run them.
+          properties: SkipUnsupportedPlatforms=false
           # A .json output makes DeltaBuild write the affected project paths, relative to the
           # folder containing the output file, instead of a traversal project.
           output-project: affected-test-projects.json
@@ -451,7 +450,7 @@ jobs:
             with:
               name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
               # A group can legitimately produce no test result when all its projects are
-              # excluded on the current platform (eng/build.platform-exclusions.proj)
+              # excluded on the current platform (SkipUnsupportedPlatforms in eng/build.proj)
               if-no-files-found: warn
               retention-days: 3
               path: |

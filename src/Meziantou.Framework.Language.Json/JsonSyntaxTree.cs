@@ -1,721 +1,102 @@
+using Green = Meziantou.Framework.Language.Json.Syntax.InternalSyntax;
+
 namespace Meziantou.Framework.Language.Json;
 
-/// <summary>Represents an immutable JSON syntax tree with source text and diagnostics.</summary>
-public sealed class JsonSyntaxTree
+/// <summary>A parsed JSON document.</summary>
+/// <remarks>
+/// Parsing never throws and never gives up: whatever the text says, the tree reproduces it exactly, and anything wrong
+/// with it is reported through <see cref="GetDiagnostics"/>. Comments and trailing commas are accepted and kept.
+/// </remarks>
+/// <example>
+/// <code>
+/// var tree = JsonSyntaxTree.ParseText("""{ "name": "value" }""");
+/// var name = ((JsonObjectSyntax)tree.GetRoot().Value!).GetMember("name");
+/// </code>
+/// </example>
+public sealed class JsonSyntaxTree : SyntaxTree
 {
-    private JsonSyntaxTree(SourceText sourceText, JsonDocumentSyntax root, IReadOnlyList<Diagnostic> diagnostics)
+    private readonly SourceText _text;
+    private readonly JsonDocumentSyntax _root;
+    private IReadOnlyList<Diagnostic>? _diagnostics;
+
+    private JsonSyntaxTree(SourceText text, Green.JsonDocumentSyntax green, string? path)
     {
-        Text = sourceText.Text;
-        SourceText = sourceText;
-        Root = root;
-        Diagnostics = diagnostics;
-        Root.SetParentAndTree(parent: null, this);
+        _text = text;
+        FilePath = path;
+        _root = (JsonDocumentSyntax)green.CreateRed();
+        _root.AttachToTree(this);
     }
 
-    public string Text { get; }
-    public SourceText SourceText { get; }
-    public JsonDocumentSyntax Root { get; }
-    public IReadOnlyList<Diagnostic> Diagnostics { get; }
+    public override string? FilePath { get; }
 
-    public JsonDocumentSyntax GetRoot() => Root;
-    public IReadOnlyList<Diagnostic> GetDiagnostics() => Diagnostics;
+    public override SourceText GetText() => _text;
 
-    public static JsonSyntaxTree ParseText([StringSyntax(StringSyntaxAttribute.Json)] string text)
+    /// <summary>Gets the root of the tree.</summary>
+    public new JsonDocumentSyntax GetRoot() => _root;
+
+    /// <summary>Parses <paramref name="text"/>.</summary>
+    /// <param name="text">The JSON to read.</param>
+    /// <param name="path">Where the text came from, for the diagnostics to refer to.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    public static JsonSyntaxTree ParseText([StringSyntax(StringSyntaxAttribute.Json)] string text, string? path = null)
     {
-        var parser = new JsonParser(SourceText.From(text));
+        ArgumentNullException.ThrowIfNull(text);
 
-        return parser.Parse();
+        return ParseText(SourceText.From(text), path);
     }
 
+    /// <summary>Parses <paramref name="text"/>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    public static JsonSyntaxTree ParseText(SourceText text, string? path = null)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        return new JsonSyntaxTree(text, new Green.LanguageParser(text).ParseDocument(), path);
+    }
+
+    /// <summary>Creates a tree over <paramref name="root"/>, taking its text from the root itself.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="root"/> is <see langword="null"/>.</exception>
+    public static JsonSyntaxTree Create(JsonDocumentSyntax root, string? path = null)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+
+        return new JsonSyntaxTree(SourceText.From(root.ToFullString()), (Green.JsonDocumentSyntax)root.Green, path);
+    }
+
+    /// <summary>Gets every diagnostic in the tree, in source order.</summary>
+    public new IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics ??= [.. base.GetDiagnostics()];
+
+    /// <summary>Returns a tree over <paramref name="newText"/>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="newText"/> is <see langword="null"/>.</exception>
+    public new JsonSyntaxTree WithChangedText(SourceText newText) => (JsonSyntaxTree)base.WithChangedText(newText);
+
+    /// <summary>Returns a tree over this text with <paramref name="changes"/> applied.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="changes"/> is <see langword="null"/>.</exception>
     public JsonSyntaxTree WithChanges(params TextChange[] changes) => WithChanges((IEnumerable<TextChange>)changes);
 
+    /// <summary>Returns a tree over this text with <paramref name="changes"/> applied.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="changes"/> is <see langword="null"/>.</exception>
     public JsonSyntaxTree WithChanges(IEnumerable<TextChange> changes)
     {
         ArgumentNullException.ThrowIfNull(changes);
 
-        return ParseText(SourceText.WithChanges(changes).Text);
+        return WithChangedText(_text.WithChanges(changes));
     }
 
-    public IReadOnlyList<TextChange> GetChanges(JsonSyntaxTree oldTree)
-    {
-        ArgumentNullException.ThrowIfNull(oldTree);
-        if (string.Equals(Text, oldTree.Text, StringComparison.Ordinal))
-            return [];
+    /// <summary>Returns a tree whose root is <paramref name="root"/>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="root"/> is <see langword="null"/>.</exception>
+    public JsonSyntaxTree WithRoot(JsonDocumentSyntax root) => Create(root, FilePath);
 
-        return [new TextChange(new TextSpan(0, oldTree.Text.Length), Text)];
-    }
+    /// <summary>Describes how <paramref name="oldTree"/> would have to change to become this one.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="oldTree"/> is <see langword="null"/>.</exception>
+    public IReadOnlyList<TextChange> GetChanges(JsonSyntaxTree oldTree) => base.GetChanges(oldTree);
 
-    public bool IsEquivalentTo(JsonSyntaxTree? other)
-    {
-        if (other is null)
-            return false;
+    /// <summary>Determines whether the two trees have the same structure and text.</summary>
+    public bool IsEquivalentTo(JsonSyntaxTree? other) => base.IsEquivalentTo(other);
 
-        return string.Equals(Text, other.Text, StringComparison.Ordinal);
-    }
+    protected override SyntaxNode GetRootCore() => _root;
 
-    private sealed class JsonParser
-    {
-        private readonly SourceText _source;
-        private readonly string _text;
-        private readonly List<Diagnostic> _diagnostics = [];
-        private readonly List<JsonSyntaxToken> _tokens;
-        private int _position;
+    protected override SyntaxTree WithChangedTextCore(SourceText newText) => ParseText(newText, FilePath);
 
-        public JsonParser(SourceText source)
-        {
-            _source = source;
-            _text = source.Text;
-            var lexer = new JsonLexer(source);
-            _tokens = lexer.Lex();
-            _diagnostics.AddRange(lexer.Diagnostics);
-        }
-
-        public JsonSyntaxTree Parse()
-        {
-            var childNodes = new List<JsonSyntaxNode>();
-            var hasRootValue = false;
-            while (Current.Kind != JsonSyntaxKind.EndOfFileToken)
-            {
-                if (hasRootValue)
-                {
-                    AddDiagnostic(Current.FullSpan, "JSON0010", "Unexpected data after the root JSON value.");
-                }
-
-                if (Current.Kind == JsonSyntaxKind.BadToken)
-                {
-                    childNodes.Add(ParseSkippedTextUntil(JsonSyntaxKind.EndOfFileToken));
-                    continue;
-                }
-
-                var value = ParseValue();
-                childNodes.Add(value);
-                hasRootValue = true;
-
-                if (value.FullSpan.Length == 0 && Current.Kind != JsonSyntaxKind.EndOfFileToken)
-                {
-                    childNodes.Add(ParseSkippedTextUntil(JsonSyntaxKind.EndOfFileToken));
-                }
-            }
-
-            var endOfFileToken = ConsumeToken();
-            var root = new JsonDocumentSyntax(childNodes, endOfFileToken, _text);
-
-            return new JsonSyntaxTree(_source, root, _diagnostics);
-        }
-
-        private JsonSyntaxToken Current => Peek(0);
-
-        private JsonSyntaxToken Peek(int offset)
-        {
-            var index = _position + offset;
-            if (index >= _tokens.Count)
-                return _tokens[^1];
-
-            return _tokens[index];
-        }
-
-        private JsonSyntaxToken ConsumeToken()
-        {
-            var current = Current;
-            _position++;
-
-            return current;
-        }
-
-        private JsonSyntaxToken ConsumeToken(JsonSyntaxKind kind, string diagnosticId, string message)
-        {
-            if (Current.Kind == kind)
-                return ConsumeToken();
-
-            AddDiagnostic(Current.FullSpan, diagnosticId, message);
-
-            return MissingToken(kind, Current.FullSpan.Start);
-        }
-
-        private JsonValueSyntax ParseValue()
-        {
-            switch (Current.Kind)
-            {
-                case JsonSyntaxKind.OpenBraceToken:
-                    return ParseObject();
-                case JsonSyntaxKind.OpenBracketToken:
-                    return ParseArray();
-                case JsonSyntaxKind.StringToken:
-                    return new JsonStringSyntax(ConsumeToken());
-                case JsonSyntaxKind.NumberToken:
-                    return new JsonNumberSyntax(ConsumeToken());
-                case JsonSyntaxKind.TrueKeyword:
-                case JsonSyntaxKind.FalseKeyword:
-                case JsonSyntaxKind.NullKeyword:
-                    return new JsonLiteralSyntax(ConsumeToken());
-                case JsonSyntaxKind.BadToken:
-                    return ParseSkippedTextUntil(JsonSyntaxKind.CommaToken, JsonSyntaxKind.CloseBraceToken, JsonSyntaxKind.CloseBracketToken, JsonSyntaxKind.EndOfFileToken);
-                default:
-                    AddDiagnostic(Current.FullSpan, "JSON0007", "Expected a JSON value.");
-
-                    return new JsonSkippedTextSyntax([], Current.FullSpan.Start);
-            }
-        }
-
-        private JsonObjectSyntax ParseObject()
-        {
-            var openBraceToken = ConsumeToken(JsonSyntaxKind.OpenBraceToken, "JSON0006", "Expected '{'.");
-            var childNodes = new List<JsonSyntaxNode>();
-
-            while (Current.Kind is not JsonSyntaxKind.EndOfFileToken and not JsonSyntaxKind.CloseBraceToken)
-            {
-                if (Current.Kind == JsonSyntaxKind.CommaToken)
-                {
-                    AddDiagnostic(Current.FullSpan, "JSON0005", "Unexpected comma.");
-                    var comma = ConsumeToken();
-                    childNodes.Add(new JsonSkippedTextSyntax([comma], comma.FullSpan.Start));
-                    continue;
-                }
-
-                if (Current.Kind == JsonSyntaxKind.BadToken)
-                {
-                    childNodes.Add(ParseSkippedTextUntil(JsonSyntaxKind.CommaToken, JsonSyntaxKind.CloseBraceToken, JsonSyntaxKind.EndOfFileToken));
-                    continue;
-                }
-
-                var member = ParseMember();
-                if (Current.Kind == JsonSyntaxKind.CommaToken)
-                {
-                    member = member.WithCommaToken(ConsumeToken());
-                    childNodes.Add(member);
-                    continue;
-                }
-
-                childNodes.Add(member);
-
-                if (Current.Kind is JsonSyntaxKind.CloseBraceToken or JsonSyntaxKind.EndOfFileToken)
-                    continue;
-
-                if (member.Value.FullSpan.Length == 0)
-                {
-                    // The current token cannot start a value, so skip it to guarantee the loop makes progress.
-                    childNodes.Add(ParseSkippedTextUntil(JsonSyntaxKind.CommaToken, JsonSyntaxKind.CloseBraceToken, JsonSyntaxKind.EndOfFileToken));
-                    continue;
-                }
-
-                AddDiagnostic(Current.FullSpan, "JSON0009", "Expected a comma or the end of the object.");
-            }
-
-            var closeBraceToken = Current.Kind == JsonSyntaxKind.CloseBraceToken
-                ? ConsumeToken()
-                : ConsumeToken(JsonSyntaxKind.CloseBraceToken, "JSON0006", "Expected '}'.");
-
-            return new JsonObjectSyntax(openBraceToken, childNodes, closeBraceToken);
-        }
-
-        private JsonMemberSyntax ParseMember()
-        {
-            JsonSyntaxToken nameToken;
-            if (Current.Kind == JsonSyntaxKind.StringToken)
-            {
-                nameToken = ConsumeToken();
-            }
-            else
-            {
-                AddDiagnostic(Current.FullSpan, "JSON0008", "Expected a JSON property name.");
-                nameToken = MissingToken(JsonSyntaxKind.StringToken, Current.FullSpan.Start);
-            }
-
-            var colonToken = ConsumeToken(JsonSyntaxKind.ColonToken, "JSON0006", "Expected ':'.");
-            var value = ParseValue();
-
-            return new JsonMemberSyntax(nameToken, colonToken, value);
-        }
-
-        private JsonArraySyntax ParseArray()
-        {
-            var openBracketToken = ConsumeToken(JsonSyntaxKind.OpenBracketToken, "JSON0006", "Expected '['.");
-            var childNodes = new List<JsonSyntaxNode>();
-
-            while (Current.Kind is not JsonSyntaxKind.EndOfFileToken and not JsonSyntaxKind.CloseBracketToken)
-            {
-                if (Current.Kind == JsonSyntaxKind.CommaToken)
-                {
-                    AddDiagnostic(Current.FullSpan, "JSON0007", "Expected a JSON value.");
-                    var missingValue = new JsonSkippedTextSyntax([], Current.FullSpan.Start);
-                    childNodes.Add(new JsonArrayElementSyntax(missingValue, ConsumeToken()));
-                    continue;
-                }
-
-                if (Current.Kind == JsonSyntaxKind.BadToken)
-                {
-                    childNodes.Add(ParseSkippedTextUntil(JsonSyntaxKind.CommaToken, JsonSyntaxKind.CloseBracketToken, JsonSyntaxKind.EndOfFileToken));
-                    continue;
-                }
-
-                var value = ParseValue();
-                var element = new JsonArrayElementSyntax(value);
-                if (Current.Kind == JsonSyntaxKind.CommaToken)
-                {
-                    element = element.WithCommaToken(ConsumeToken());
-                    childNodes.Add(element);
-                    continue;
-                }
-
-                childNodes.Add(element);
-
-                if (Current.Kind is JsonSyntaxKind.CloseBracketToken or JsonSyntaxKind.EndOfFileToken)
-                    continue;
-
-                if (value.FullSpan.Length == 0)
-                {
-                    // The current token cannot start a value, so skip it to guarantee the loop makes progress.
-                    childNodes.Add(ParseSkippedTextUntil(JsonSyntaxKind.CommaToken, JsonSyntaxKind.CloseBracketToken, JsonSyntaxKind.EndOfFileToken));
-                    continue;
-                }
-
-                AddDiagnostic(Current.FullSpan, "JSON0009", "Expected a comma or the end of the array.");
-            }
-
-            var closeBracketToken = Current.Kind == JsonSyntaxKind.CloseBracketToken
-                ? ConsumeToken()
-                : ConsumeToken(JsonSyntaxKind.CloseBracketToken, "JSON0006", "Expected ']'.");
-
-            return new JsonArraySyntax(openBracketToken, childNodes, closeBracketToken);
-        }
-
-        private JsonSkippedTextSyntax ParseSkippedTextUntil(params JsonSyntaxKind[] stopKinds)
-        {
-            var tokens = new List<JsonSyntaxToken>();
-            var fullStart = Current.FullSpan.Start;
-            while (Current.Kind != JsonSyntaxKind.EndOfFileToken && !stopKinds.Contains(Current.Kind))
-            {
-                AddDiagnostic(Current.FullSpan, "JSON0005", $"Unexpected token '{Current.Text}'.");
-                tokens.Add(ConsumeToken());
-            }
-
-            if (tokens.Count == 0 && Current.Kind == JsonSyntaxKind.BadToken)
-            {
-                AddDiagnostic(Current.FullSpan, "JSON0005", $"Unexpected token '{Current.Text}'.");
-                tokens.Add(ConsumeToken());
-            }
-
-            return new JsonSkippedTextSyntax(tokens, fullStart);
-        }
-
-        private void AddDiagnostic(TextSpan span, string id, string message)
-        {
-            _diagnostics.Add(new Diagnostic(id, message, DiagnosticSeverity.Error, new Location(span, _source)));
-        }
-
-        private static JsonSyntaxToken MissingToken(JsonSyntaxKind kind, int position)
-        {
-            return new JsonSyntaxToken(kind, string.Empty, valueText: string.Empty, isMissing: true, fullStart: position);
-        }
-    }
-
-    private sealed class JsonLexer
-    {
-        private readonly SourceText _source;
-        private readonly string _text;
-        private readonly List<Diagnostic> _diagnostics = [];
-        private int _position;
-
-        public JsonLexer(SourceText source)
-        {
-            _source = source;
-            _text = source.Text;
-        }
-
-        public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
-
-        public List<JsonSyntaxToken> Lex()
-        {
-            var tokens = new List<JsonSyntaxToken>();
-            while (true)
-            {
-                var token = ReadToken();
-                tokens.Add(token);
-                if (token.Kind == JsonSyntaxKind.EndOfFileToken)
-                    break;
-            }
-
-            return tokens;
-        }
-
-        private bool IsAtEnd => _position >= _text.Length;
-        private char Current => _position < _text.Length ? _text[_position] : '\0';
-        private char LookAhead => _position + 1 < _text.Length ? _text[_position + 1] : '\0';
-
-        private JsonSyntaxToken ReadToken()
-        {
-            var leadingTrivia = ReadLeadingTrivia();
-            var fullStart = leadingTrivia.Count > 0 ? leadingTrivia[0].Span.Start : _position;
-
-            if (IsAtEnd)
-                return new JsonSyntaxToken(JsonSyntaxKind.EndOfFileToken, string.Empty, leadingTrivia: leadingTrivia, fullStart: fullStart);
-
-            var tokenStart = _position;
-            switch (Current)
-            {
-                case '{':
-                    _position++;
-                    return CreateToken(JsonSyntaxKind.OpenBraceToken, tokenStart, leadingTrivia, fullStart);
-                case '}':
-                    _position++;
-                    return CreateToken(JsonSyntaxKind.CloseBraceToken, tokenStart, leadingTrivia, fullStart);
-                case '[':
-                    _position++;
-                    return CreateToken(JsonSyntaxKind.OpenBracketToken, tokenStart, leadingTrivia, fullStart);
-                case ']':
-                    _position++;
-                    return CreateToken(JsonSyntaxKind.CloseBracketToken, tokenStart, leadingTrivia, fullStart);
-                case ':':
-                    _position++;
-                    return CreateToken(JsonSyntaxKind.ColonToken, tokenStart, leadingTrivia, fullStart);
-                case ',':
-                    _position++;
-                    return CreateToken(JsonSyntaxKind.CommaToken, tokenStart, leadingTrivia, fullStart);
-                case '"':
-                    return ReadStringToken(leadingTrivia, fullStart);
-                case '-' or >= '0' and <= '9':
-                    return ReadNumberToken(leadingTrivia, fullStart);
-                case >= 'a' and <= 'z':
-                case >= 'A' and <= 'Z':
-                case '_':
-                    return ReadIdentifierOrBadToken(leadingTrivia, fullStart);
-                default:
-                    return ReadBadToken(leadingTrivia, fullStart);
-            }
-        }
-
-        private List<JsonSyntaxTrivia> ReadLeadingTrivia()
-        {
-            List<JsonSyntaxTrivia>? trivia = null;
-            while (!IsAtEnd)
-            {
-                var start = _position;
-                if (Current is ' ' or '\t' or '\f' or '\v')
-                {
-                    while (!IsAtEnd && (Current is ' ' or '\t' or '\f' or '\v'))
-                    {
-                        _position++;
-                    }
-
-                    AddTrivia(ref trivia, JsonSyntaxKind.WhitespaceTrivia, start);
-                    continue;
-                }
-
-                if (Current is '\r' or '\n')
-                {
-                    _position += SourceText.GetLineBreakLength(_text, _position);
-                    AddTrivia(ref trivia, JsonSyntaxKind.EndOfLineTrivia, start);
-                    continue;
-                }
-
-                if (Current == '/' && LookAhead == '/')
-                {
-                    _position += 2;
-                    while (!IsAtEnd && Current is not '\r' and not '\n')
-                    {
-                        _position++;
-                    }
-
-                    AddTrivia(ref trivia, JsonSyntaxKind.SingleLineCommentTrivia, start);
-                    continue;
-                }
-
-                if (Current == '/' && LookAhead == '*')
-                {
-                    _position += 2;
-                    while (!IsAtEnd && !(Current == '*' && LookAhead == '/'))
-                    {
-                        _position++;
-                    }
-
-                    if (IsAtEnd)
-                    {
-                        AddDiagnostic(start, _text.Length - start, "JSON0001", "Unterminated block comment.");
-                        AddTrivia(ref trivia, JsonSyntaxKind.MultiLineCommentTrivia, start);
-                        continue;
-                    }
-
-                    _position += 2;
-                    AddTrivia(ref trivia, JsonSyntaxKind.MultiLineCommentTrivia, start);
-                    continue;
-                }
-
-                break;
-            }
-
-            return trivia ?? [];
-        }
-
-        private JsonSyntaxToken ReadStringToken(IReadOnlyList<JsonSyntaxTrivia> leadingTrivia, int fullStart)
-        {
-            var start = _position;
-            var valueBuilder = new StringBuilder();
-            _position++;
-            var isTerminated = false;
-
-            while (!IsAtEnd)
-            {
-                var current = Current;
-                if (current == '"')
-                {
-                    _position++;
-                    isTerminated = true;
-                    break;
-                }
-
-                if (current == '\\')
-                {
-                    ReadEscapeSequence(valueBuilder, start);
-                    continue;
-                }
-
-                if (current is '\r' or '\n')
-                {
-                    AddDiagnostic(_position, SourceText.GetLineBreakLength(_text, _position), "JSON0011", "Line breaks are not allowed in JSON strings.");
-                }
-
-                valueBuilder.Append(current);
-                _position++;
-            }
-
-            if (!isTerminated)
-            {
-                AddDiagnostic(start, _text.Length - start, "JSON0002", "Unterminated string literal.");
-            }
-
-            var text = _text[start.._position];
-
-            return new JsonSyntaxToken(JsonSyntaxKind.StringToken, text, valueBuilder.ToString(), leadingTrivia: leadingTrivia, fullStart: fullStart);
-        }
-
-        private void ReadEscapeSequence(StringBuilder valueBuilder, int stringStart)
-        {
-            var escapeStart = _position;
-            _position++;
-            if (IsAtEnd)
-            {
-                AddDiagnostic(stringStart, _text.Length - stringStart, "JSON0002", "Unterminated string literal.");
-                return;
-            }
-
-            switch (Current)
-            {
-                case '"':
-                    valueBuilder.Append('"');
-                    _position++;
-                    break;
-                case '\\':
-                    valueBuilder.Append('\\');
-                    _position++;
-                    break;
-                case '/':
-                    valueBuilder.Append('/');
-                    _position++;
-                    break;
-                case 'b':
-                    valueBuilder.Append('\b');
-                    _position++;
-                    break;
-                case 'f':
-                    valueBuilder.Append('\f');
-                    _position++;
-                    break;
-                case 'n':
-                    valueBuilder.Append('\n');
-                    _position++;
-                    break;
-                case 'r':
-                    valueBuilder.Append('\r');
-                    _position++;
-                    break;
-                case 't':
-                    valueBuilder.Append('\t');
-                    _position++;
-                    break;
-                case 'u':
-                    ReadUnicodeEscape(valueBuilder, escapeStart);
-                    break;
-                default:
-                    AddDiagnostic(escapeStart, Math.Min(2, _text.Length - escapeStart), "JSON0003", "Invalid escape sequence.");
-                    valueBuilder.Append(Current);
-                    _position++;
-                    break;
-            }
-        }
-
-        private void ReadUnicodeEscape(StringBuilder valueBuilder, int escapeStart)
-        {
-            if (_position + 4 >= _text.Length)
-            {
-                AddDiagnostic(escapeStart, _text.Length - escapeStart, "JSON0003", "Invalid unicode escape sequence.");
-                _position++;
-                return;
-            }
-
-            var value = 0;
-            for (var index = 1; index <= 4; index++)
-            {
-                var digit = _text[_position + index];
-                var digitValue = GetHexValue(digit);
-                if (digitValue < 0)
-                {
-                    AddDiagnostic(escapeStart, 6, "JSON0003", "Invalid unicode escape sequence.");
-                    _position++;
-                    return;
-                }
-
-                value = (value * 16) + digitValue;
-            }
-
-            valueBuilder.Append((char)value);
-            _position += 5;
-        }
-
-        private JsonSyntaxToken ReadNumberToken(IReadOnlyList<JsonSyntaxTrivia> leadingTrivia, int fullStart)
-        {
-            var start = _position;
-            var hasDigits = false;
-            if (Current == '-')
-            {
-                _position++;
-            }
-
-            if (Current == '0')
-            {
-                hasDigits = true;
-                _position++;
-                if (Current is >= '0' and <= '9')
-                {
-                    AddDiagnostic(start, _position - start + 1, "JSON0004", "JSON numbers cannot contain leading zeroes.");
-                    while (Current is >= '0' and <= '9')
-                    {
-                        _position++;
-                    }
-                }
-            }
-            else
-            {
-                while (Current is >= '0' and <= '9')
-                {
-                    hasDigits = true;
-                    _position++;
-                }
-            }
-
-            if (!hasDigits)
-            {
-                AddDiagnostic(start, _position - start, "JSON0004", "Invalid number literal.");
-            }
-
-            if (Current == '.')
-            {
-                _position++;
-                var fractionStart = _position;
-                while (Current is >= '0' and <= '9')
-                {
-                    _position++;
-                }
-
-                if (_position == fractionStart)
-                {
-                    AddDiagnostic(fractionStart, 0, "JSON0004", "Expected at least one digit after the decimal point.");
-                }
-            }
-
-            if (Current is 'e' or 'E')
-            {
-                _position++;
-                if (Current is '+' or '-')
-                {
-                    _position++;
-                }
-
-                var exponentStart = _position;
-                while (Current is >= '0' and <= '9')
-                {
-                    _position++;
-                }
-
-                if (_position == exponentStart)
-                {
-                    AddDiagnostic(exponentStart, 0, "JSON0004", "Expected at least one digit in the exponent.");
-                }
-            }
-
-            var text = _text[start.._position];
-
-            return new JsonSyntaxToken(JsonSyntaxKind.NumberToken, text, text, leadingTrivia: leadingTrivia, fullStart: fullStart);
-        }
-
-        private JsonSyntaxToken ReadIdentifierOrBadToken(IReadOnlyList<JsonSyntaxTrivia> leadingTrivia, int fullStart)
-        {
-            var start = _position;
-            while (!IsAtEnd && !IsTokenBoundary(Current))
-            {
-                _position++;
-            }
-
-            var text = _text[start.._position];
-
-            return text switch
-            {
-                "true" => new JsonSyntaxToken(JsonSyntaxKind.TrueKeyword, text, text, leadingTrivia: leadingTrivia, fullStart: fullStart),
-                "false" => new JsonSyntaxToken(JsonSyntaxKind.FalseKeyword, text, text, leadingTrivia: leadingTrivia, fullStart: fullStart),
-                "null" => new JsonSyntaxToken(JsonSyntaxKind.NullKeyword, text, text, leadingTrivia: leadingTrivia, fullStart: fullStart),
-                _ => new JsonSyntaxToken(JsonSyntaxKind.BadToken, text, text, leadingTrivia: leadingTrivia, fullStart: fullStart),
-            };
-        }
-
-        private JsonSyntaxToken ReadBadToken(IReadOnlyList<JsonSyntaxTrivia> leadingTrivia, int fullStart)
-        {
-            var start = _position;
-            while (!IsAtEnd && !IsTokenBoundary(Current))
-            {
-                _position++;
-            }
-
-            if (_position == start)
-            {
-                _position++;
-            }
-
-            var text = _text[start.._position];
-
-            return new JsonSyntaxToken(JsonSyntaxKind.BadToken, text, text, leadingTrivia: leadingTrivia, fullStart: fullStart);
-        }
-
-        private JsonSyntaxToken CreateToken(JsonSyntaxKind kind, int tokenStart, IReadOnlyList<JsonSyntaxTrivia> leadingTrivia, int fullStart)
-        {
-            var text = _text[tokenStart.._position];
-
-            return new JsonSyntaxToken(kind, text, text, leadingTrivia: leadingTrivia, fullStart: fullStart);
-        }
-
-        private void AddTrivia(ref List<JsonSyntaxTrivia>? trivia, JsonSyntaxKind kind, int start)
-        {
-            trivia ??= [];
-            trivia.Add(new JsonSyntaxTrivia(kind, _text[start.._position], start));
-        }
-
-        private void AddDiagnostic(int start, int length, string id, string message)
-        {
-            _diagnostics.Add(new Diagnostic(id, message, DiagnosticSeverity.Error, new Location(new TextSpan(start, Math.Max(0, length)), _source)));
-        }
-
-        private static bool IsTokenBoundary(char value)
-        {
-            return value is '\0' or ' ' or '\t' or '\f' or '\v' or '\r' or '\n' or '{' or '}' or '[' or ']' or ':' or ',' or '"';
-        }
-
-        private static int GetHexValue(char value)
-        {
-            return value switch
-            {
-                >= '0' and <= '9' => value - '0',
-                >= 'a' and <= 'f' => value - 'a' + 10,
-                >= 'A' and <= 'F' => value - 'A' + 10,
-                _ => -1,
-            };
-        }
-    }
+    protected override SyntaxTree WithRootCore(SyntaxNode root) => Create((JsonDocumentSyntax)root, FilePath);
 }

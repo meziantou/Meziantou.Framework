@@ -12,7 +12,7 @@ internal sealed class TestListSyntax : TestValueSyntax
     {
     }
 
-    public SyntaxToken OpenParenToken => new(this, Green.GetSlot(0), Position, index: 0);
+    public SyntaxToken OpenParenToken => new(this, Green.GetSlot(0), Position, GetChildIndex(0));
 
     public SeparatedSyntaxList<TestValueSyntax> Values
     {
@@ -24,7 +24,7 @@ internal sealed class TestListSyntax : TestValueSyntax
         }
     }
 
-    public SyntaxToken CloseParenToken => new(this, Green.GetSlot(2), GetChildPosition(2), index: ChildNodesAndTokens().Count - 1);
+    public SyntaxToken CloseParenToken => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
 
     internal override SyntaxNode? GetNodeSlot(int index) => index == 1 ? GetRed(ref _values, 1) : null;
     internal override SyntaxNode? GetCachedSlot(int index) => index == 1 ? _values : null;

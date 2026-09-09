@@ -135,6 +135,25 @@ public abstract class SyntaxNode
         return result;
     }
 
+    /// <summary>Gets the place of the child in <paramref name="slot"/> among the children, counting a list slot as its own children.</summary>
+    /// <remarks>
+    /// This is the index a token needs to know where it sits, which is what lets a caller step from it to the next
+    /// token without searching for it first.
+    /// </remarks>
+    internal int GetChildIndex(int slot)
+    {
+        var index = 0;
+        for (var i = 0; i < slot; i++)
+        {
+            if (Green.GetSlot(i) is { } child)
+            {
+                index += child.IsList ? child.SlotCount : 1;
+            }
+        }
+
+        return index;
+    }
+
     /// <summary>Gets the position of the child in <paramref name="index"/>.</summary>
     /// <remarks>
     /// Already-created siblings answer this without re-summing widths, so walking a long list stays linear rather

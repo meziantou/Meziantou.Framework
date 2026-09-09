@@ -10,7 +10,7 @@ internal sealed class TestAtomSyntax : TestValueSyntax
     {
     }
 
-    public SyntaxToken IdentifierToken => new(this, Green.GetSlot(0), Position, index: 0);
+    public SyntaxToken IdentifierToken => new(this, Green.GetSlot(0), Position, GetChildIndex(0));
 
     public string Name => IdentifierToken.ValueText;
 

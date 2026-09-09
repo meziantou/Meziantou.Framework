@@ -14,7 +14,7 @@ internal sealed class TestRootSyntax : TestSyntaxNode
 
     public TestValueSyntax? Value => GetRedAtZero(ref _value);
 
-    public SyntaxToken EndOfFileToken => new(this, Green.GetSlot(1), GetChildPosition(1), index: Value is null ? 0 : 1);
+    public SyntaxToken EndOfFileToken => new(this, Green.GetSlot(1), GetChildPosition(1), GetChildIndex(1));
 
     internal override SyntaxNode? GetNodeSlot(int index) => index == 0 ? GetRedAtZero(ref _value) : null;
     internal override SyntaxNode? GetCachedSlot(int index) => index == 0 ? _value : null;

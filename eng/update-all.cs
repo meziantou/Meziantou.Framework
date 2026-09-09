@@ -216,8 +216,8 @@ void RunUpdateBomStep(FullPath rootPath)
 void RunUpdateTrimmableStep(FullPath rootPath)
 {
     var srcPath = rootPath / "src";
-    var trimmableCsprojPath = rootPath / "tests" / "Trimmable" / "Trimmable.csproj";
-    var trimmableWpfCsprojPath = rootPath / "tests" / "Trimmable.Wpf" / "Trimmable.Wpf.csproj";
+    var trimmableCsprojPath = rootPath / "eng" / "Trimmable" / "Trimmable.csproj";
+    var trimmableWpfCsprojPath = rootPath / "eng" / "Trimmable.Wpf" / "Trimmable.Wpf.csproj";
     var trimmableDir = trimmableCsprojPath.Parent;
 
     var trimmableProjects = new List<string>();
@@ -312,8 +312,8 @@ void RunUpdateTrimmableStep(FullPath rootPath)
     if (normalizedExisting != newContent)
     {
         File.WriteAllText(trimmableCsprojPath, newContent, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        updatedFiles.Add("tests/Trimmable/Trimmable.csproj");
-        WriteIfNotLlm("WARNING: tests/Trimmable/Trimmable.csproj was not up-to-date");
+        updatedFiles.Add("eng/Trimmable/Trimmable.csproj");
+        WriteIfNotLlm("WARNING: eng/Trimmable/Trimmable.csproj was not up-to-date");
     }
 }
 

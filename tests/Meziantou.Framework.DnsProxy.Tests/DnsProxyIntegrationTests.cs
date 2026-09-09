@@ -20,12 +20,17 @@ public sealed partial class DnsProxyIntegrationTests
         const int HttpPort = 5080;
         const string FilterRefreshInterval = "00:10:00";
 
+        // The block-list cache defaults to the user profile, which the two target framework test processes would
+        // share, and where the cached lists would be read back by the next run through FilterEngineProvider.
+        using var blockListCacheDirectory = TemporaryDirectory.Create();
+
         using var baseFactory = new WebApplicationFactory<DnsProxyProgram>();
         using var factory = baseFactory.WithWebHostBuilder(builder =>
         {
             builder.UseSetting("DnsProxy:DnsPort", DnsPort.ToString(CultureInfo.InvariantCulture));
             builder.UseSetting("DnsProxy:HttpPort", HttpPort.ToString(CultureInfo.InvariantCulture));
             builder.UseSetting("DnsProxy:FilterRefreshInterval", FilterRefreshInterval);
+            builder.UseSetting("DnsProxy:BlockListCacheFolderPath", blockListCacheDirectory.FullPath);
             builder.UseSetting("DnsProxy:Upstreams:0:Url", "https://1.1.1.1/dns-query");
             builder.UseSetting("DnsProxy:Upstreams:1:Url", "https://9.9.9.9/dns-query");
             builder.UseSetting("DnsProxy:Upstreams:2:Url", "https://dns.nextdns.io/dns-query");
@@ -127,11 +132,16 @@ public sealed partial class DnsProxyIntegrationTests
         const string CustomRecordDomain = "blocked-custom-record.example";
         const string CustomRecordAddress = "203.0.113.124";
 
+        // The block-list cache defaults to the user profile, which the two target framework test processes would
+        // share, and where the cached lists would be read back by the next run through FilterEngineProvider.
+        using var blockListCacheDirectory = TemporaryDirectory.Create();
+
         using var baseFactory = new WebApplicationFactory<DnsProxyProgram>();
         using var factory = baseFactory.WithWebHostBuilder(builder =>
         {
             builder.UseSetting("DnsProxy:DnsPort", DnsPort.ToString(CultureInfo.InvariantCulture));
             builder.UseSetting("DnsProxy:HttpPort", HttpPort.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting("DnsProxy:BlockListCacheFolderPath", blockListCacheDirectory.FullPath);
             builder.UseSetting("DnsProxy:Filters:0:Url", "https://filters.example/list.txt");
             builder.UseSetting("DnsProxy:Filters:0:Format", "AdBlock");
             builder.UseSetting("DnsProxy:Filters:1:Url", "");

@@ -497,18 +497,27 @@ public sealed class DnsProxyHandlerTests
         private const string UnreachableFilterUrl = "http://127.0.0.1:1/filters.txt";
 
         private readonly Dictionary<string, string> _settings;
+        private readonly TemporaryDirectory _blockListCacheDirectory;
 
-        private DnsProxyApplicationFactory(Dictionary<string, string> settings) => _settings = settings;
+        private DnsProxyApplicationFactory(Dictionary<string, string> settings, TemporaryDirectory blockListCacheDirectory)
+        {
+            _settings = settings;
+            _blockListCacheDirectory = blockListCacheDirectory;
+        }
 
         public static DnsProxyApplicationFactory ForUpstreams(params string[] upstreamUrls) => ForUpstreams(upstreamUrls, filterListUrl: null);
 
         public static DnsProxyApplicationFactory ForUpstreams(string[] upstreamUrls, string? filterListUrl)
         {
+            // The block-list cache defaults to the user profile, which the two target framework test processes would
+            // share, and where the cached lists would be read back by the next run through FilterEngineProvider.
+            var blockListCacheDirectory = TemporaryDirectory.Create();
             var settings = new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["DnsProxy:DnsPort"] = "0",
                 ["DnsProxy:HttpPort"] = "0",
                 ["DnsProxy:FilterRefreshInterval"] = "01:00:00",
+                ["DnsProxy:BlockListCacheFolderPath"] = blockListCacheDirectory.FullPath,
                 ["DnsProxy:Filters:0:Url"] = filterListUrl ?? UnreachableFilterUrl,
                 ["DnsProxy:Filters:0:Format"] = "AdBlock",
                 ["DnsProxy:Filters:1:Url"] = UnreachableFilterUrl,
@@ -524,7 +533,7 @@ public sealed class DnsProxyHandlerTests
                 settings[$"DnsProxy:Upstreams:{i}:Priority"] = i.ToString(CultureInfo.InvariantCulture);
             }
 
-            return new DnsProxyApplicationFactory(settings);
+            return new DnsProxyApplicationFactory(settings, blockListCacheDirectory);
         }
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -532,6 +541,20 @@ public sealed class DnsProxyHandlerTests
             foreach (var (name, value) in _settings)
             {
                 builder.UseSetting(name, value);
+            }
+        }
+
+        /// <summary>
+        /// <see cref="WebApplicationFactory{TEntryPoint}.DisposeAsync"/> ends by calling this method once the host is
+        /// stopped, so the cache folder is deleted on the async disposal path the tests use as well as the sync one.
+        /// </summary>
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+
+            if (disposing)
+            {
+                _blockListCacheDirectory.Dispose();
             }
         }
     }

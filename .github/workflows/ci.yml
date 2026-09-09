@@ -149,8 +149,12 @@ jobs:
         id: build-project
         uses: ./.github/actions/deltabuild
         with:
-          input-project: eng/build.proj
+          # This job only builds, so it uses the traversal that keeps the projects whose tests
+          # cannot run on Linux. They compile everywhere, and this is the only job that reports
+          # the IDExxxx diagnostics for them.
+          input-project: eng/build.all-platforms.proj
           output-project: eng/delta.proj
+          traversal-after-import: build.exclusions.proj
           base-commit: ${{ case(github.event_name == 'push', github.event.before, '') }}
           run-generate: ${{ case(github.event_name == 'pull_request' || github.event_name == 'push', 'true', 'false') }}
           full-rebuild-triggers: |
@@ -225,6 +229,7 @@ jobs:
           # per-job traversal below still uses eng/build.proj, which drops them again on the
           # platforms that cannot run them.
           input-project: eng/build.all-platforms.proj
+          traversal-after-import: build.exclusions.proj
           # A .json output makes DeltaBuild write the affected project paths, relative to the
           # folder containing the output file, instead of a traversal project.
           output-project: affected-test-projects.json

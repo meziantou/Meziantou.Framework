@@ -3,10 +3,10 @@
     <IsTraversal>true</IsTraversal>
   </PropertyGroup>
 
-  <!-- Same projects as build.proj, minus the platform exclusions: the CI job that computes the
-       test matrix runs on Linux, but the matrix must also contain the projects that only run on
-       Windows. The per-job traversal still uses build.proj, so those projects are dropped again
-       on the runners that cannot run them. -->
+  <!-- Same projects as build.proj, without the exclusions that only apply to running tests.
+       Used by the jobs that must see every project regardless of the runner: the job that
+       computes the test matrix (it runs on Linux but feeds the Windows jobs) and the analyzer
+       job (it only builds). Jobs that run tests use build.proj instead. -->
   <ItemGroup>
     <ProjectReference Include="../**/*.*proj" Exclude="../eng/*.*proj" />
   </ItemGroup>

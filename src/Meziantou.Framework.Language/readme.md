@@ -1,6 +1,6 @@
-# Meziantou.Framework.Language.Common
+# Meziantou.Framework.Language
 
-`Meziantou.Framework.Language.Common` holds the primitives the
+`Meziantou.Framework.Language` holds the primitives the
 `Meziantou.Framework.Language.*` parsers share: source text and its lines, character
 spans, text changes, locations, and diagnostics.
 

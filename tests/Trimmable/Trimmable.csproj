@@ -46,7 +46,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.HttpArchive\Meziantou.Framework.HttpArchive.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.LLMContext\Meziantou.Framework.LLMContext.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Language.Common\Meziantou.Framework.Language.Common.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Language\Meziantou.Framework.Language.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Language.Json\Meziantou.Framework.Language.Json.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Language.Regex\Meziantou.Framework.Language.Regex.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Language.Shell\Meziantou.Framework.Language.Shell.csproj" />
@@ -112,7 +112,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.HttpArchive" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JsonPath" />
     <TrimmerRootAssembly Include="Meziantou.Framework.LLMContext" />
-    <TrimmerRootAssembly Include="Meziantou.Framework.Language.Common" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Language" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Language.Json" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Language.Regex" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Language.Shell" />

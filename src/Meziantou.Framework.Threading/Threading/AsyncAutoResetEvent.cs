@@ -18,7 +18,8 @@ namespace Meziantou.Framework.Threading;
 [DebuggerDisplay("Signaled: {_signaled}")]
 public sealed class AsyncAutoResetEvent
 {
-    private readonly Queue<WaiterCompletionSource> _signalAwaiters = new();
+    private readonly WaiterQueue<WaiterCompletionSource> _signalAwaiters = new();
+    private readonly Lock _lock = new();
     private readonly bool _allowInliningAwaiters;
     internal readonly Action<object> _onCancellationRequestHandler;
     private bool _signaled;
@@ -57,7 +58,7 @@ public sealed class AsyncAutoResetEvent
 
         WaiterCompletionSource waiter;
         bool canceled;
-        lock (_signalAwaiters)
+        lock (_lock)
         {
             if (_signaled)
             {
@@ -89,14 +90,11 @@ public sealed class AsyncAutoResetEvent
     /// <summary>Sets the state of the event to signaled, allowing one waiting task to proceed.</summary>
     public void Set()
     {
-        WaiterCompletionSource? toRelease = null;
-        lock (_signalAwaiters)
+        WaiterCompletionSource? toRelease;
+        lock (_lock)
         {
-            if (_signalAwaiters.Count > 0)
-            {
-                toRelease = _signalAwaiters.Dequeue();
-            }
-            else if (!_signaled)
+            toRelease = _signalAwaiters.Dequeue();
+            if (toRelease is null && !_signaled)
             {
                 _signaled = true;
             }
@@ -113,9 +111,9 @@ public sealed class AsyncAutoResetEvent
     {
         var tcs = (WaiterCompletionSource)state;
         bool removed;
-        lock (_signalAwaiters)
+        lock (_lock)
         {
-            removed = RemoveMidQueue(_signalAwaiters, tcs);
+            removed = _signalAwaiters.Remove(tcs);
         }
 
         // We only cancel the task if we removed it from the queue.
@@ -130,30 +128,7 @@ public sealed class AsyncAutoResetEvent
         }
     }
 
-    private static bool RemoveMidQueue<T>(Queue<T> queue, T valueToRemove)
-        where T : class
-    {
-        var originalCount = queue.Count;
-        var dequeueCounter = 0;
-        var found = false;
-        while (dequeueCounter < originalCount)
-        {
-            dequeueCounter++;
-            var dequeued = queue.Dequeue();
-            if (!found && dequeued == valueToRemove)
-            { // only find 1 match
-                found = true;
-            }
-            else
-            {
-                queue.Enqueue(dequeued);
-            }
-        }
-
-        return found;
-    }
-
-    private sealed class WaiterCompletionSource : TaskCompletionSource
+    private sealed class WaiterCompletionSource : TaskCompletionSource, IWaiterQueueNode<WaiterCompletionSource>
     {
         internal WaiterCompletionSource(AsyncAutoResetEvent owner, bool allowInliningContinuations, CancellationToken cancellationToken)
             : base(GetOptions(allowInliningContinuations))
@@ -164,6 +139,10 @@ public sealed class AsyncAutoResetEvent
 
         internal CancellationToken CancellationToken { get; }
         internal CancellationTokenRegistration Registration { get; }
+
+        public WaiterCompletionSource? Previous { get; set; }
+        public WaiterCompletionSource? Next { get; set; }
+        public bool IsQueued { get; set; }
 
         private static TaskCreationOptions GetOptions(bool allowInliningContinuations)
         {

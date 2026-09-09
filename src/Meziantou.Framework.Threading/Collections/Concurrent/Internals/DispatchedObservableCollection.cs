@@ -8,8 +8,11 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     private readonly ConcurrentQueue<PendingEvent<T>> _pendingEvents = new();
     private readonly ConcurrentObservableCollection<T> _collection;
     private readonly SynchronizationContext _synchronizationContext;
+    private readonly Lock _drainLock = new();
 
-    private volatile bool _isProcessingPending;
+    // Set while a drain is scheduled or running, and cleared only once that drain has no event left to process. A flag
+    // cleared when the drain starts lets a producer schedule a second drain while the first one is still running.
+    private int _isDrainScheduled;
 
     public DispatchedObservableCollection(ConcurrentObservableCollection<T> collection, SynchronizationContext synchronizationContext)
         : base(collection)
@@ -212,9 +215,8 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         if (!_collection.IsOnSynchronizationContextThread())
         {
-            if (!_isProcessingPending)
+            if (TryScheduleDrain())
             {
-                _isProcessingPending = true;
                 _synchronizationContext.Post(static state => ((DispatchedObservableCollection<T>)state!).ProcessPendingEvents(), this);
             }
 
@@ -224,48 +226,74 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         ProcessPendingEvents();
     }
 
+    private bool TryScheduleDrain() => Interlocked.CompareExchange(ref _isDrainScheduled, 1, 0) == 0;
+
     private void ProcessPendingEvents()
     {
-        _isProcessingPending = false;
-        while (_pendingEvents.TryDequeue(out var pendingEvent))
+        // The drainer holds the lock for the whole drain instead of per event, so the handlers of two drains cannot
+        // interleave and mutate Items concurrently. It is only ever contended when the synchronization context runs its
+        // callbacks on several threads, which it must not do; the lock is reentrant, so a handler modifying the
+        // collection still processes its own event immediately.
+        lock (_drainLock)
         {
-            switch (pendingEvent.Type)
+            try
             {
-                case PendingEventType.Add:
-                    AddItem(pendingEvent.Item);
-                    break;
+                do
+                {
+                    while (_pendingEvents.TryDequeue(out var pendingEvent))
+                    {
+                        switch (pendingEvent.Type)
+                        {
+                            case PendingEventType.Add:
+                                AddItem(pendingEvent.Item);
+                                break;
 
-                case PendingEventType.AddRange:
-                    AddItems(pendingEvent.Items!);
-                    break;
+                            case PendingEventType.AddRange:
+                                AddItems(pendingEvent.Items!);
+                                break;
 
-                case PendingEventType.Remove:
-                    RemoveItem(pendingEvent.Item);
-                    break;
+                            case PendingEventType.Remove:
+                                RemoveItem(pendingEvent.Item);
+                                break;
 
-                case PendingEventType.Clear:
-                    ClearItems();
-                    break;
+                            case PendingEventType.Clear:
+                                ClearItems();
+                                break;
 
-                case PendingEventType.Insert:
-                    InsertItem(pendingEvent.Index, pendingEvent.Item);
-                    break;
+                            case PendingEventType.Insert:
+                                InsertItem(pendingEvent.Index, pendingEvent.Item);
+                                break;
 
-                case PendingEventType.InsertRange:
-                    InsertItems(pendingEvent.Index, pendingEvent.Items!);
-                    break;
+                            case PendingEventType.InsertRange:
+                                InsertItems(pendingEvent.Index, pendingEvent.Items!);
+                                break;
 
-                case PendingEventType.RemoveAt:
-                    RemoveItemAt(pendingEvent.Index);
-                    break;
+                            case PendingEventType.RemoveAt:
+                                RemoveItemAt(pendingEvent.Index);
+                                break;
 
-                case PendingEventType.Replace:
-                    ReplaceItem(pendingEvent.Index, pendingEvent.Item);
-                    break;
+                            case PendingEventType.Replace:
+                                ReplaceItem(pendingEvent.Index, pendingEvent.Item);
+                                break;
 
-                case PendingEventType.Reset:
-                    Reset(pendingEvent.Items!);
-                    break;
+                            case PendingEventType.Reset:
+                                Reset(pendingEvent.Items!);
+                                break;
+                        }
+                    }
+
+                    // Publish that no drain is running any more before looking at the queue again: an event enqueued
+                    // between the last dequeue and this write found the flag set and scheduled no drain of its own.
+                    Volatile.Write(ref _isDrainScheduled, 0);
+                }
+                while (!_pendingEvents.IsEmpty && TryScheduleDrain());
+            }
+            catch
+            {
+                // A handler that throws must not leave the flag set: no drain would ever be scheduled again. The events
+                // still queued are processed by the drain the next modification schedules.
+                Volatile.Write(ref _isDrainScheduled, 0);
+                throw;
             }
         }
     }

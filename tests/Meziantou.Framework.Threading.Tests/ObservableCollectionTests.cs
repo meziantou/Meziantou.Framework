@@ -7,6 +7,9 @@ namespace Meziantou.Framework.Tests.Collections.Concurrent;
 
 public sealed partial class ObservableCollectionTests : IDisposable
 {
+    // A thread pool work item can stay queued for a long time, so the notifications get a generous budget
+    private static readonly TimeSpan NotificationTimeout = TimeSpan.FromSeconds(60);
+
     private readonly SynchronizationContext? _previousSynchronizationContext = SynchronizationContext.Current;
     private readonly SynchronizationContext _synchronizationContext = new();
 
@@ -381,6 +384,164 @@ public sealed partial class ObservableCollectionTests : IDisposable
             var observable = new ConcurrentObservableCollection<int>().AsObservable;
 
             Assert.Throws<InvalidOperationException>(() => observable.Count);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+        }
+    }
+
+    [Fact]
+    public void CollectionCreatedWithoutSynchronizationContextCanBeReadFromItsNotifications()
+    {
+        RunWithoutSynchronizationContext(() =>
+        {
+            var collection = new ConcurrentObservableCollection<int>();
+            var observable = collection.AsObservable;
+
+            using var notified = new ManualResetEventSlim(initialState: false);
+            List<int>? itemsDuringNotification = null;
+            Exception? exception = null;
+            observable.CollectionChanged += (sender, e) =>
+            {
+                try
+                {
+                    // The default synchronization context runs the notifications on the thread pool, where the collection
+                    // used to consider itself accessed from a foreign thread
+                    itemsDuringNotification = observable.ToList();
+                }
+                catch (Exception ex)
+                {
+                    exception = ex;
+                }
+                finally
+                {
+                    notified.Set();
+                }
+            };
+
+            collection.Add(1);
+
+            Assert.True(notified.Wait(NotificationTimeout, TestContext.Current.CancellationToken));
+            Assert.Null(exception);
+            Assert.Equal([1], itemsDuringNotification);
+        });
+    }
+
+    [Fact]
+    public void CollectionCreatedWithoutSynchronizationContextRaisesTheNotificationsOneAtATime()
+    {
+        const int ThreadCount = 4;
+        const int ItemsPerThread = 250;
+        const int TotalItemCount = ThreadCount * ItemsPerThread;
+
+        RunWithoutSynchronizationContext(() =>
+        {
+            var collection = new ConcurrentObservableCollection<int>();
+            var observable = collection.AsObservable;
+
+            using var completed = new ManualResetEventSlim(initialState: false);
+            var runningNotifications = 0;
+            var overlappingNotifications = 0;
+            var notificationCount = 0;
+            List<int>? itemsAtTheLastNotification = null;
+            observable.CollectionChanged += (sender, e) =>
+            {
+                if (Interlocked.Increment(ref runningNotifications) > 1)
+                {
+                    Interlocked.Increment(ref overlappingNotifications);
+                }
+
+                try
+                {
+                    // Widen the window during which a second drain could enter the handler
+                    Thread.Yield();
+
+                    if (Interlocked.Increment(ref notificationCount) == TotalItemCount)
+                    {
+                        itemsAtTheLastNotification = observable.ToList();
+                        completed.Set();
+                    }
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref runningNotifications);
+                }
+            };
+
+            var threads = new List<Thread>(ThreadCount);
+            for (var i = 0; i < ThreadCount; i++)
+            {
+                var firstItem = i * ItemsPerThread;
+                var thread = new Thread(() =>
+                {
+                    for (var j = 0; j < ItemsPerThread; j++)
+                    {
+                        collection.Add(firstItem + j);
+                    }
+                });
+
+                thread.Start();
+                threads.Add(thread);
+            }
+
+            foreach (var thread in threads)
+            {
+                thread.Join();
+            }
+
+            Assert.True(completed.Wait(NotificationTimeout, TestContext.Current.CancellationToken));
+            Assert.Equal(0, Volatile.Read(ref overlappingNotifications));
+
+            // The items are enqueued while the collection holds its lock, so the observable collection ends up in the
+            // same order as the source one
+            Assert.Equal(collection.ToList(), itemsAtTheLastNotification);
+        });
+    }
+
+    [Fact]
+    public void SerializedThreadPoolSynchronizationContextSendRunsTheCallbackOnTheDrain()
+    {
+        // Running the callback inline on the calling thread would let it run concurrently with a posted one
+        var context = new SerializedThreadPoolSynchronizationContext();
+
+        SynchronizationContext? callbackContext = null;
+        Thread? callbackThread = null;
+        context.Send(_ =>
+        {
+            callbackContext = SynchronizationContext.Current;
+            callbackThread = Thread.CurrentThread;
+        }, state: null);
+
+        Assert.Same(context, callbackContext);
+        Assert.NotSame(Thread.CurrentThread, callbackThread);
+    }
+
+    [Fact]
+    public void SerializedThreadPoolSynchronizationContextSendRethrowsTheCallbackException()
+    {
+        var context = new SerializedThreadPoolSynchronizationContext();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => context.Send(_ => throw new InvalidOperationException("dummy"), state: null));
+        Assert.Equal("dummy", exception.Message);
+    }
+
+    [Fact]
+    public void SerializedThreadPoolSynchronizationContextCopyIsTheSameInstance()
+    {
+        // The collection recognizes its thread by comparing the context instances, so a copy must not be a new one
+        var context = new SerializedThreadPoolSynchronizationContext();
+
+        Assert.Same(context, context.CreateCopy());
+    }
+
+    private static void RunWithoutSynchronizationContext(Action action)
+    {
+        var previousSynchronizationContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(null);
+        try
+        {
+            action();
         }
         finally
         {

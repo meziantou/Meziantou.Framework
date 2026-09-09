@@ -10,6 +10,8 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// <remarks>
 /// The collection itself can be modified from any thread. The collection exposed by <see cref="AsObservable"/> raises
 /// its change notifications on the thread associated with the <see cref="SynchronizationContext"/> provided to the constructor.
+/// That context must run its callbacks one at a time, as the UI ones do: the notifications mutate the state exposed by
+/// <see cref="AsObservable"/>, so a context running two callbacks concurrently would corrupt it.
 /// </remarks>
 /// <example>
 /// <code>
@@ -40,9 +42,10 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
 
     /// <summary>Initializes a new instance of the <see cref="ConcurrentObservableCollection{T}"/> class using the synchronization context of the current thread.</summary>
     /// <remarks>
-    /// When the current thread has no synchronization context, a default <see cref="SynchronizationContext"/> is used and the collection
-    /// returned by <see cref="AsObservable"/> raises its change notifications on the thread pool. Use the
-    /// <see cref="ConcurrentObservableCollection{T}(SynchronizationContext)"/> constructor to bind the collection to a specific thread.
+    /// When the current thread has no synchronization context, the collection uses an internal one that raises the change notifications on
+    /// the thread pool, one at a time. No thread owns the collection returned by <see cref="AsObservable"/> in that case: it can only be
+    /// read from the change notifications it raises. Use the <see cref="ConcurrentObservableCollection{T}(SynchronizationContext)"/>
+    /// constructor to bind the collection to a specific thread.
     /// </remarks>
     public ConcurrentObservableCollection()
         : this(GetCurrentSynchronizationContext())
@@ -50,7 +53,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     }
 
     /// <summary>Initializes a new instance of the <see cref="ConcurrentObservableCollection{T}"/> class with the specified synchronization context.</summary>
-    /// <param name="synchronizationContext">The synchronization context used to raise collection change notifications.</param>
+    /// <param name="synchronizationContext">The synchronization context used to raise collection change notifications. It must run its callbacks one at a time.</param>
     public ConcurrentObservableCollection(SynchronizationContext synchronizationContext)
     {
         _synchronizationContext = synchronizationContext ?? throw new ArgumentNullException(nameof(synchronizationContext));
@@ -77,7 +80,10 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
 
     private static SynchronizationContext GetCurrentSynchronizationContext()
     {
-        return SynchronizationContext.Current ?? new SynchronizationContext();
+        // The base SynchronizationContext posts each callback to the thread pool on its own, so the notifications would run
+        // concurrently and none of them would see the context as the current one. The fallback has to serialize them and to
+        // install itself while they run, otherwise the collection cannot be read from its own change notifications.
+        return SynchronizationContext.Current ?? new SerializedThreadPoolSynchronizationContext();
     }
 
     /// <summary>

@@ -1,8 +1,10 @@
 <Project>
   <!-- Projects excluded from the traversal on every platform. Kept separate from
-       build.platform-exclusions.proj so build.all-platforms.proj can reuse them. -->
+       build.platform-exclusions.proj so build.all-platforms.proj can reuse them.
+       The trimming harnesses are published directly by the test_trimming CI jobs; building
+       them as part of the traversal would only duplicate that work. -->
   <ItemGroup>
-    <ProjectReference Remove="../tests/Trimmable/Trimmable.csproj" />
-    <ProjectReference Remove="../tests/Trimmable.Wpf/Trimmable.Wpf.csproj" />
+    <ProjectReference Remove="Trimmable/Trimmable.csproj" />
+    <ProjectReference Remove="Trimmable.Wpf/Trimmable.Wpf.csproj" />
   </ItemGroup>
 </Project>

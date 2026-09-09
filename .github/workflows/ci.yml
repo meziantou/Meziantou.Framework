@@ -480,7 +480,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
-      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained tests/Trimmable/Trimmable.csproj
+      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
     runs-on: windows-2025-vs2026
@@ -493,7 +493,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
-      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained tests/Trimmable.Wpf/Trimmable.Wpf.csproj
+      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable.Wpf/Trimmable.Wpf.csproj
 
   merge_coverage:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_code_coverage }}

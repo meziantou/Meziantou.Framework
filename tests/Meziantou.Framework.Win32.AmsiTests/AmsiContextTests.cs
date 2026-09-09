@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Win32.AmsiTests;
 [Collection("AmsiContextTests")]
 public class AmsiContextTests
 {
-    [Fact, SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
+    [Fact, RunIf(TestOperatingSystems.Windows), SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public void AmsiShouldDetectMalware_Buffer()
     {
         using var application = AmsiContext.Create("MyApplication");
@@ -13,7 +13,7 @@ public class AmsiContextTests
         Assert.False(application.IsMalware(new byte[] { 0, 0, 0, 0 }, "EICAR"));
     }
 
-    [Fact, SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
+    [Fact, RunIf(TestOperatingSystems.Windows), SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public void AmsiShouldDetectMalware_String()
     {
         using var application = AmsiContext.Create("MyApplication");
@@ -21,7 +21,7 @@ public class AmsiContextTests
         Assert.False(application.IsMalware("0000", "EICAR"));
     }
 
-    [Fact, SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
+    [Fact, RunIf(TestOperatingSystems.Windows), SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public void AmsiSessionShouldDetectMalware_Buffer()
     {
         using var application = AmsiContext.Create("MyApplication");
@@ -30,7 +30,7 @@ public class AmsiContextTests
         Assert.False(session.IsMalware([0, 0, 0, 0], "EICAR"));
     }
 
-    [Fact, SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
+    [Fact, RunIf(TestOperatingSystems.Windows), SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public void AmsiSessionShouldDetectMalware_String()
     {
         using var application = AmsiContext.Create("MyApplication");

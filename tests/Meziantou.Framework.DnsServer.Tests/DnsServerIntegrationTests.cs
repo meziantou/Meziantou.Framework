@@ -1009,7 +1009,9 @@ public sealed class DnsServerIntegrationTests
     {
         // A hosted service registered after the DNS server fails once the UDP listener is already
         // running, so the host unwinds and disposes it while ExecuteAsync is still starting up.
-        for (var attempt = 0; attempt < 20; attempt++)
+        var completedAttempts = 0;
+        var portCollisions = 0;
+        while (completedAttempts < 20)
         {
             var builder = WebApplication.CreateBuilder();
             builder.WebHost.UseUrls("http://127.0.0.1:0");
@@ -1029,9 +1031,21 @@ public sealed class DnsServerIntegrationTests
 
             var exception = await Assert.ThrowsAnyAsync<Exception>(() => app.StartAsync(XunitCancellationToken));
 
+            // The ports are probed by binding and releasing them, so anything else on the machine can take
+            // one back before the listener binds it - the other target framework running this same test, for
+            // one. That collision says nothing about the race under test, so re-roll the attempt rather than
+            // read the SocketException as the startup failure. A run that only ever collides still fails.
+            if (exception is SocketException { SocketErrorCode: SocketError.AddressAlreadyInUse })
+            {
+                portCollisions++;
+                Assert.True(portCollisions <= 20, "Could not reserve the listener ports often enough to exercise the race.");
+                continue;
+            }
+
             // The startup failure has to be the one the service reported, not a collection-modified
             // race inside the listener.
             Assert.IsType<InvalidTimeZoneException>(exception);
+            completedAttempts++;
         }
     }
 

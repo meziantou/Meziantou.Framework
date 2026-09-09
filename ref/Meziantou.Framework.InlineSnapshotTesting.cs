@@ -4,11 +4,6 @@
 
 namespace Meziantou.Framework.InlineSnapshotTesting
 {
-    public class AssertionExceptionBuilder
-    {
-        public virtual System.Exception CreateException(string message) => throw null;
-    }
-
     public abstract class AssertionMessageFormatter
     {
         public abstract string FormatMessage(string? expected, string? actual);
@@ -97,7 +92,6 @@ namespace Meziantou.Framework.InlineSnapshotTesting
         public Meziantou.Framework.InlineSnapshotTesting.Serialization.SnapshotSerializer SnapshotSerializer { get => throw null; set { } }
         public Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer SnapshotComparer { get => throw null; set { } }
         public Meziantou.Framework.InlineSnapshotTesting.AssertionMessageFormatter ErrorMessageFormatter { get => throw null; set { } }
-        public Meziantou.Framework.InlineSnapshotTesting.AssertionExceptionBuilder AssertionExceptionCreator { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.InlineSnapshotTesting.Scrubber> Scrubbers { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.InlineSnapshotTesting.MergeTool>? MergeTools { get => throw null; set { } }
         public bool ValidateSourceFilePathUsingPdbInfoWhenAvailable { get => throw null; set { } }

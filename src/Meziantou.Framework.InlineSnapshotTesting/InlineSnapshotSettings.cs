@@ -83,18 +83,6 @@ public sealed record InlineSnapshotSettings
         }
     } = InlineDiffAssertionMessageFormatter.Instance;
 
-    /// <summary>Gets or sets the builder used to create assertion exceptions when snapshots don't match.</summary>
-    public AssertionExceptionBuilder AssertionExceptionCreator
-    {
-        get;
-        set
-        {
-            ArgumentNullException.ThrowIfNull(value);
-
-            field = value;
-        }
-    } = AssertionExceptionBuilder.Default;
-
     /// <summary>Gets the list of scrubbers applied to snapshots after serialization.</summary>
     public IList<Scrubber> Scrubbers { get; }
 
@@ -135,7 +123,6 @@ public sealed record InlineSnapshotSettings
         SnapshotSerializer = {SnapshotSerializer},
         SnapshotComparer = {SnapshotComparer},
         ErrorMessageFormatter = {ErrorMessageFormatter},
-        AssertionExceptionCreator = {AssertionExceptionCreator},
         AllowedStringFormats = {AllowedStringFormats},
         MergeTools = {MergeTools},
         ValidateSourceFilePathUsingPdbInfoWhenAvailable = {ValidateSourceFilePathUsingPdbInfoWhenAvailable},
@@ -157,7 +144,6 @@ public sealed record InlineSnapshotSettings
     {
         Scrubbers = [];
         AllowedStringFormats = options.AllowedStringFormats;
-        AssertionExceptionCreator = options.AssertionExceptionCreator;
         AutoDetectContinuousEnvironment = options.AutoDetectContinuousEnvironment;
         EndOfLine = options.EndOfLine;
         ErrorMessageFormatter = options.ErrorMessageFormatter;
@@ -187,7 +173,7 @@ public sealed record InlineSnapshotSettings
             ErrorMessageFormatter.FormatMessage(expected, actual) +
             "\n\n" +
             GetResolutionGuidanceMessage();
-        throw AssertionExceptionCreator.CreateException(errorMessage);
+        throw new InlineSnapshotAssertionException(errorMessage);
     }
 
     private static string GetResolutionGuidanceMessage() =>

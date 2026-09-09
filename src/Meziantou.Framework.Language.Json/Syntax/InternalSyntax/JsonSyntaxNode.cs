@@ -21,4 +21,6 @@ internal abstract class JsonSyntaxNode : GreenNode
 
     /// <summary>JSON separates the elements of a list with a comma.</summary>
     internal override GreenNode? CreateSeparator() => SyntaxFactory.Token(SyntaxKind.CommaToken);
+
+    internal override bool IsEndOfLineTrivia(GreenNode trivia) => trivia.RawKind == (int)SyntaxKind.EndOfLineTrivia;
 }

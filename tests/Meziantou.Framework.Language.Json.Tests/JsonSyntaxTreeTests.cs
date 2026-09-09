@@ -534,6 +534,79 @@ public sealed class JsonSyntaxTreeTests
     }
 
     [Fact]
+    public void RemoveNode_TakesTheMemberAndItsComma()
+    {
+        var tree = JsonSyntaxTree.ParseText("""{"a":1,"b":2,"c":3}""");
+        var members = Assert.IsType<JsonObjectSyntax>(tree.GetRoot().Value).Members;
+
+        var updated = tree.GetRoot().RemoveNode(members[1], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("""{"a":1,"c":3}""", updated.ToFullString());
+        Assert.Equal(2, Assert.IsType<JsonObjectSyntax>(updated.Value).Members.Count);
+    }
+
+    [Fact]
+    public void RemoveNode_OfTheLastMember_TakesTheCommaBeforeIt()
+    {
+        var tree = JsonSyntaxTree.ParseText("""{"a":1,"b":2}""");
+        var members = Assert.IsType<JsonObjectSyntax>(tree.GetRoot().Value).Members;
+
+        var updated = tree.GetRoot().RemoveNode(members[1], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("""{"a":1}""", updated.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNode_KeepingLeadingTrivia_KeepsTheCommentThatDescribedIt()
+    {
+        const string Text = """
+{
+  // this one matters
+  "a": 1,
+  "b": 2
+}
+""";
+        var tree = JsonSyntaxTree.ParseText(Text);
+        var members = Assert.IsType<JsonObjectSyntax>(tree.GetRoot().Value).Members;
+
+        var kept = tree.GetRoot().RemoveNode(members[0], SyntaxRemoveOptions.KeepLeadingTrivia);
+        var dropped = tree.GetRoot().RemoveNode(members[0], SyntaxRemoveOptions.KeepNoTrivia);
+
+        // Keeping the trivia moves the comment onto what follows; the indentation is not tidied up, only preserved.
+        Assert.Contains("// this one matters", kept.ToFullString());
+        Assert.DoesNotContain("// this one matters", dropped.ToFullString());
+        Assert.Equal("{\n  \"b\": 2\n}", dropped.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNodes_TakesSeveralMembersAtOnce()
+    {
+        var tree = JsonSyntaxTree.ParseText("""{"a":1,"b":2,"c":3,"d":4}""");
+        var members = Assert.IsType<JsonObjectSyntax>(tree.GetRoot().Value).Members;
+
+        var updated = tree.GetRoot().RemoveNodes([members[0], members[2]], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("""{"b":2,"d":4}""", updated.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNode_LeavesTheDocumentReadableAndItsSpansConsistent()
+    {
+        var tree = JsonSyntaxTree.ParseText("""{"a":[1,2,3],"b":{"c":4},"d":5}""");
+        var members = Assert.IsType<JsonObjectSyntax>(tree.GetRoot().Value).Members;
+
+        var updated = tree.GetRoot().RemoveNode(members[1], SyntaxRemoveOptions.KeepNoTrivia);
+        var text = updated.ToFullString();
+
+        Assert.Equal("""{"a":[1,2,3],"d":5}""", text);
+        Assert.Empty(JsonSyntaxTree.ParseText(text).GetDiagnostics());
+        foreach (var token in updated.DescendantTokens())
+        {
+            Assert.Equal(token.Text, text.Substring(token.Span.Start, token.Span.Length));
+        }
+    }
+
+    [Fact]
     public void FindTokenAndFindNode_LandOnWhatIsAtThePosition()
     {
         const string Text = """{ "name": [1, 2] }""";

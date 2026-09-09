@@ -124,11 +124,169 @@ public static class SyntaxNodeExtensions
         => root.SpliceIntoList(nodeInList, newNodes, removeOriginal: false, insertBefore: false);
 
     /// <summary>Returns <paramref name="root"/> without <paramref name="node"/>.</summary>
+    /// <param name="root">The tree to rebuild.</param>
+    /// <param name="node">The node to take out. Its separator goes with it when it sits in a separated list.</param>
+    /// <param name="options">What to keep of the trivia around it. Anything kept moves onto what now stands in its place.</param>
     /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException"><paramref name="node"/> is not part of <paramref name="root"/>, or is the only thing in its place.</exception>
-    public static TRoot RemoveNode<TRoot>(this TRoot root, SyntaxNode node)
+    /// <exception cref="ArgumentException"><paramref name="node"/> is not part of <paramref name="root"/>.</exception>
+    public static TRoot RemoveNode<TRoot>(this TRoot root, SyntaxNode node, SyntaxRemoveOptions options)
         where TRoot : SyntaxNode
-        => root.SpliceIntoList(node, [], removeOriginal: true, insertBefore: true);
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return root.RemoveNodes([node], options);
+    }
+
+    /// <summary>Returns <paramref name="root"/> without <paramref name="nodes"/>.</summary>
+    /// <param name="root">The tree to rebuild.</param>
+    /// <param name="nodes">The nodes to take out. Naming both a node and something inside it removes the node, once.</param>
+    /// <param name="options">What to keep of the trivia around them.</param>
+    /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">One of <paramref name="nodes"/> is not part of <paramref name="root"/>.</exception>
+    public static TRoot RemoveNodes<TRoot>(this TRoot root, IEnumerable<SyntaxNode> nodes, SyntaxRemoveOptions options)
+        where TRoot : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(nodes);
+
+        var targets = nodes.ToArray();
+        foreach (var target in targets)
+        {
+            ArgumentNullException.ThrowIfNull(target, nameof(nodes));
+        }
+
+        // Asking for a node and for something inside it is asking for the node.
+        var pending = new HashSet<SyntaxNode>(targets);
+        var replacer = new SyntaxReplacer();
+        var groups = new Dictionary<(SyntaxNode Parent, int Slot), List<int>>();
+
+        foreach (var target in targets)
+        {
+            if (target.Ancestors().Any(pending.Contains))
+                continue;
+
+            if (!TryLocate(target, out var parent, out var slot, out var indexInList))
+                throw new ArgumentException("The node is not part of this tree.", nameof(nodes));
+
+            if (!groups.TryGetValue((parent, slot), out var indices))
+            {
+                groups[(parent, slot)] = indices = [];
+            }
+
+            indices.Add(indexInList);
+        }
+
+        if (groups.Count == 0)
+            throw new ArgumentException("There was nothing to remove.", nameof(nodes));
+
+        foreach (var ((parent, slot), indices) in groups)
+        {
+            var owner = parent;
+            var slotIndex = slot;
+            var removedIndices = indices;
+            replacer.EditSlots(parent, slots => RemoveFromSlot(owner, slots, slotIndex, removedIndices, options));
+        }
+
+        return Rebuild(root, replacer, "The node is not part of this tree.", nameof(nodes));
+    }
+
+    /// <summary>Takes the named items out of one slot and finds a home for whatever trivia is being kept.</summary>
+    private static GreenNode?[] RemoveFromSlot(SyntaxNode parent, GreenNode?[] slots, int slot, List<int> indices, SyntaxRemoveOptions options)
+    {
+        if (indices.Contains(-1))
+        {
+            // The node filled the slot on its own rather than sitting in a list.
+            var removedAlone = slots[slot] is { } only ? new[] { only } : [];
+            slots[slot] = null;
+
+            return AttachToNeighbouringSlot(slots, slot, SyntaxNodeRemover.ResidualTrivia(removedAlone, options, parent.Green));
+        }
+
+        var items = GreenNodeList.ToArray(slots[slot]);
+        var removing = new HashSet<int>();
+        foreach (var index in indices)
+        {
+            removing.Add(index);
+
+            // A separated list has to keep alternating, so the separator that went with the node goes too: the one
+            // after it, or the one before it when nothing follows.
+            if (index + 1 < items.Length && !removing.Contains(index + 1))
+            {
+                removing.Add(index + 1);
+            }
+            else if (index > 0)
+            {
+                removing.Add(index - 1);
+            }
+        }
+
+        var removed = new List<GreenNode>();
+        var kept = new List<GreenNode?>();
+        var insertionIndex = -1;
+        for (var i = 0; i < items.Length; i++)
+        {
+            if (removing.Contains(i))
+            {
+                if (items[i] is { } item)
+                {
+                    removed.Add(item);
+                }
+
+                insertionIndex = insertionIndex < 0 ? kept.Count : insertionIndex;
+                continue;
+            }
+
+            kept.Add(items[i]);
+        }
+
+        var residual = SyntaxNodeRemover.ResidualTrivia(removed, options, parent.Green);
+        if (residual is not null && insertionIndex >= 0)
+        {
+            if (insertionIndex < kept.Count)
+            {
+                kept[insertionIndex] = SyntaxNodeRemover.PrependLeadingTrivia(kept[insertionIndex]!, residual);
+                residual = null;
+            }
+            else if (kept.Count > 0)
+            {
+                kept[^1] = SyntaxNodeRemover.AppendTrailingTrivia(kept[^1]!, residual);
+                residual = null;
+            }
+        }
+
+        slots[slot] = InternalSyntax.SyntaxList.ListNode([.. kept]);
+
+        return residual is null ? slots : AttachToNeighbouringSlot(slots, slot, residual);
+    }
+
+    /// <summary>Puts kept trivia on the nearest thing left in the parent once its own slot has emptied.</summary>
+    private static GreenNode?[] AttachToNeighbouringSlot(GreenNode?[] slots, int slot, GreenNode? residual)
+    {
+        if (residual is null)
+            return slots;
+
+        for (var i = slot + 1; i < slots.Length; i++)
+        {
+            if (slots[i] is { } following)
+            {
+                slots[i] = SyntaxNodeRemover.PrependLeadingTrivia(following, residual);
+
+                return slots;
+            }
+        }
+
+        for (var i = slot - 1; i >= 0; i--)
+        {
+            if (slots[i] is { } preceding)
+            {
+                slots[i] = SyntaxNodeRemover.AppendTrailingTrivia(preceding, residual);
+
+                return slots;
+            }
+        }
+
+        return slots;
+    }
 
     /// <summary>Returns <paramref name="node"/> carrying <paramref name="annotations"/> as well as the ones it already has.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="node"/> or <paramref name="annotations"/> is <see langword="null"/>.</exception>

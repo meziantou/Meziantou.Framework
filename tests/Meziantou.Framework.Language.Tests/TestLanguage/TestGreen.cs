@@ -30,6 +30,8 @@ internal static class TestGreen
         public override string KindText => Kind.ToString();
 
         internal override GreenNode? CreateSeparator() => Token(TestSyntaxKind.CommaToken, ",");
+
+        internal override bool IsEndOfLineTrivia(GreenNode trivia) => trivia.RawKind == (int)TestSyntaxKind.EndOfLineTrivia;
     }
 
     public sealed class Atom : Node

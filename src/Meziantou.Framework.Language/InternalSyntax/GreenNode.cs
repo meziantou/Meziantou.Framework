@@ -248,6 +248,16 @@ internal abstract class GreenNode
     internal virtual object? GetValue() => null;
 
     /// <summary>
+    /// Determines whether <paramref name="trivia"/> ends a line in this language.
+    /// </summary>
+    /// <remarks>
+    /// Asked of a node, about one of the trivia below it, because a trivium is shared across languages and so does
+    /// not know which kind number its own language uses for a line break. Each language overrides this once, on the
+    /// base class of its own nodes.
+    /// </remarks>
+    internal virtual bool IsEndOfLineTrivia(GreenNode trivia) => false;
+
+    /// <summary>
     /// Creates the token a language puts between the elements of a separated list, or <see langword="null"/> when it
     /// has none.
     /// </summary>

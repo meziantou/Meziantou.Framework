@@ -22,6 +22,7 @@ internal sealed class SyntaxReplacer
     private readonly Dictionary<SyntaxNode, GreenNode?> _nodes = [];
     private readonly Dictionary<(GreenNode Green, int Position), GreenNode?> _tokens = [];
     private readonly Dictionary<(GreenNode Green, int Position), GreenNode?> _trivia = [];
+    private readonly Dictionary<SyntaxNode, Func<GreenNode?[], GreenNode?[]>> _slotEdits = [];
     private TextSpan? _bounds;
     private bool _replacedAnything;
 
@@ -49,6 +50,19 @@ internal sealed class SyntaxReplacer
         Extend(oldTrivia.FullSpan);
     }
 
+    /// <summary>
+    /// Registers a change to the slots of <paramref name="node"/>, applied once everything below it has been rebuilt.
+    /// </summary>
+    /// <remarks>
+    /// Running after the children means a change to a node and a change to something inside it both take effect: the
+    /// walk still goes all the way down, and each change is applied on the way back out.
+    /// </remarks>
+    public void EditSlots(SyntaxNode node, Func<GreenNode?[], GreenNode?[]> edit)
+    {
+        _slotEdits[node] = edit;
+        Extend(node.FullSpan);
+    }
+
     /// <summary>Rebuilds <paramref name="root"/> and reports whether anything was actually replaced.</summary>
     public GreenNode Rebuild(SyntaxNode root, out bool replacedAnything)
     {
@@ -73,7 +87,8 @@ internal sealed class SyntaxReplacer
         }
 
         var green = node.Green;
-        if (!CouldContainATarget(node.FullSpan))
+        var hasSlotEdit = _slotEdits.TryGetValue(node, out var edit);
+        if (!hasSlotEdit && !CouldContainATarget(node.FullSpan))
             return green;
 
         GreenNode?[]? newSlots = null;
@@ -92,6 +107,12 @@ internal sealed class SyntaxReplacer
 
             newSlots ??= CopySlots(green);
             newSlots[i] = newChild;
+        }
+
+        if (hasSlotEdit)
+        {
+            newSlots = edit!(newSlots ?? CopySlots(green));
+            _replacedAnything = true;
         }
 
         return newSlots is null ? green : green.WithSlots(newSlots);

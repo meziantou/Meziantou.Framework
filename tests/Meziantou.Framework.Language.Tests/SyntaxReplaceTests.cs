@@ -131,15 +131,201 @@ public sealed class SyntaxReplaceTests
     }
 
     [Fact]
-    public void RemoveNode_TakesItOutOfTheList()
+    public void RemoveNode_TakesTheSeparatorWithIt()
     {
         var root = TestSyntax.ParseRoot("(a,b)");
         var values = Assert.IsType<TestListSyntax>(root.Value).Values;
 
-        var updated = root.RemoveNode(values[0]);
+        var updated = root.RemoveNode(values[0], SyntaxRemoveOptions.KeepNoTrivia);
 
         Assert.Equal("(b)", updated.ToFullString());
         Assert.Equal(1, Assert.IsType<TestListSyntax>(updated.Value).Values.Count);
+    }
+
+    [Fact]
+    public void RemoveNode_OfTheLastElement_TakesTheSeparatorBeforeIt()
+    {
+        var root = TestSyntax.ParseRoot("(a,b)");
+        var values = Assert.IsType<TestListSyntax>(root.Value).Values;
+
+        var updated = root.RemoveNode(values[1], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("(a)", updated.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNode_OfTheOnlyElement_EmptiesTheList()
+    {
+        var root = TestSyntax.ParseRoot("(a)");
+        var values = Assert.IsType<TestListSyntax>(root.Value).Values;
+
+        var updated = root.RemoveNode(values[0], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("()", updated.ToFullString());
+        Assert.Equal(0, Assert.IsType<TestListSyntax>(updated.Value).Values.Count);
+    }
+
+    [Fact]
+    public void RemoveNode_LeavesTriviaThatBelongedToTheTokensAroundIt()
+    {
+        var root = TestSyntax.ParseRoot("( a )");
+        var values = Assert.IsType<TestListSyntax>(root.Value).Values;
+
+        var updated = root.RemoveNode(values[0], SyntaxRemoveOptions.KeepNoTrivia);
+
+        // Both spaces sit on the parentheses -- one trails "(" and the other trails "a" -- so only the second goes.
+        Assert.Equal("( )", updated.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNode_KeepingLeadingTrivia_MovesItOntoWhatFollows()
+    {
+        var root = TestSyntax.ParseRoot("(\n  a,\n  b\n)");
+        var values = Assert.IsType<TestListSyntax>(root.Value).Values;
+
+        var kept = root.RemoveNode(values[0], SyntaxRemoveOptions.KeepLeadingTrivia);
+        var dropped = root.RemoveNode(values[0], SyntaxRemoveOptions.KeepNoTrivia);
+
+        // The two spaces that were in front of "a" end up in front of "b".
+        Assert.Equal("(\n    b\n)", kept.ToFullString());
+        Assert.Equal("(\n  b\n)", dropped.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNode_KeepingLeadingTrivia_MovesItOntoWhatPrecedesWhenNothingFollows()
+    {
+        var root = TestSyntax.ParseRoot("(a,\n  b)");
+        var values = Assert.IsType<TestListSyntax>(root.Value).Values;
+
+        var kept = root.RemoveNode(values[1], SyntaxRemoveOptions.KeepLeadingTrivia);
+        var dropped = root.RemoveNode(values[1], SyntaxRemoveOptions.KeepNoTrivia);
+
+        // Nothing follows "b", so the indentation in front of it ends up after "a" instead.
+        Assert.Equal("(a  )", kept.ToFullString());
+        Assert.Equal("(a)", dropped.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNode_KeepingTrailingTrivia_KeepsWhatCameAfterIt()
+    {
+        var root = TestSyntax.ParseRoot("(a , b)");
+        var values = Assert.IsType<TestListSyntax>(root.Value).Values;
+
+        var updated = root.RemoveNode(values[0], SyntaxRemoveOptions.KeepTrailingTrivia);
+
+        // The space after "a" and the one after the comma both survive.
+        Assert.Equal("(  b)", updated.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNode_KeepingEndOfLine_LeavesTheLineBreakBehind()
+    {
+        var root = TestSyntax.ParseRoot("(a,\nb)");
+        var values = Assert.IsType<TestListSyntax>(root.Value).Values;
+
+        var kept = root.RemoveNode(values[0], SyntaxRemoveOptions.KeepEndOfLine);
+        var dropped = root.RemoveNode(values[0], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("(\nb)", kept.ToFullString());
+        Assert.Equal("(b)", dropped.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNode_KeepingEndOfLine_AddsNothingWhenAnotherOptionAlreadyKeptOne()
+    {
+        var root = TestSyntax.ParseRoot("(a,\nb)");
+        var values = Assert.IsType<TestListSyntax>(root.Value).Values;
+
+        var both = root.RemoveNode(values[0], SyntaxRemoveOptions.KeepTrailingTrivia | SyntaxRemoveOptions.KeepEndOfLine);
+        var trailingOnly = root.RemoveNode(values[0], SyntaxRemoveOptions.KeepTrailingTrivia);
+
+        Assert.Equal(trailingOnly.ToFullString(), both.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNodes_TakesSeveralOutAtOnce()
+    {
+        var root = TestSyntax.ParseRoot("(a,b,c,d)");
+        var values = Assert.IsType<TestListSyntax>(root.Value).Values;
+
+        var updated = root.RemoveNodes([values[0], values[2]], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("(b,d)", updated.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNodes_TakingEveryElement_EmptiesTheList()
+    {
+        var root = TestSyntax.ParseRoot("(a,b,c)");
+        var values = Assert.IsType<TestListSyntax>(root.Value).Values;
+
+        var updated = root.RemoveNodes(values.ToArray(), SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("()", updated.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNodes_FromDifferentLists_AppliesBoth()
+    {
+        var root = TestSyntax.ParseRoot("((a,b),(c,d))");
+        var outer = Assert.IsType<TestListSyntax>(root.Value).Values;
+        var first = Assert.IsType<TestListSyntax>(outer[0]).Values[0];
+        var second = Assert.IsType<TestListSyntax>(outer[1]).Values[1];
+
+        var updated = root.RemoveNodes([first, second], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("((b),(c))", updated.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNodes_OfANodeAndSomethingInsideIt_RemovesTheNodeOnce()
+    {
+        var root = TestSyntax.ParseRoot("((a,b),c)");
+        var outer = Assert.IsType<TestListSyntax>(root.Value).Values;
+        var inner = Assert.IsType<TestListSyntax>(outer[0]);
+
+        var updated = root.RemoveNodes([inner, inner.Values[0]], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("(c)", updated.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNodes_AtDifferentDepths_AppliesBoth()
+    {
+        var root = TestSyntax.ParseRoot("((a,b),c,d)");
+        var outer = Assert.IsType<TestListSyntax>(root.Value).Values;
+        var inner = Assert.IsType<TestListSyntax>(outer[0]);
+
+        // One removal is inside a node the other removal is a sibling of, so both have to survive the same rebuild.
+        var updated = root.RemoveNodes([inner.Values[1], outer[1]], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("((a),d)", updated.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNode_LeavesSpansConsistent()
+    {
+        var root = TestSyntax.ParseRoot("( a , (b, c) , d )");
+        var values = Assert.IsType<TestListSyntax>(root.Value).Values;
+
+        var updated = root.RemoveNode(values[1], SyntaxRemoveOptions.KeepNoTrivia);
+        var text = updated.ToFullString();
+
+        foreach (var token in updated.DescendantTokens())
+        {
+            Assert.Equal(token.Text, text.Substring(token.Span.Start, token.Span.Length));
+        }
+    }
+
+    [Fact]
+    public void RemoveNode_OfANodeFromAnotherTree_SaysSo()
+    {
+        var root = TestSyntax.ParseRoot("(a)");
+        var stranger = Assert.IsType<TestListSyntax>(TestSyntax.ParseRoot("(b)").Value).Values[0];
+
+        var exception = Assert.Throws<ArgumentException>(() => root.RemoveNode(stranger, SyntaxRemoveOptions.KeepNoTrivia));
+
+        Assert.Equal("nodes", exception.ParamName);
     }
 
     [Fact]

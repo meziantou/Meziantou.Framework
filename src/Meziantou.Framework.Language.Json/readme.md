@@ -95,6 +95,40 @@ Console.WriteLine(updated.ToFullString()); // { "version": "2.0.0", "other": 1 }
 
 There are `WithX` methods on every node too, and `SyntaxFactory` to build nodes from scratch.
 
+## Removing a node
+
+Removing an element takes its comma with it. What to do with the trivia around it is a choice you have to make,
+because the default quietly throws away any comment describing it:
+
+```csharp
+var tree = JsonSyntaxTree.ParseText("""
+{
+  // the one that matters
+  "a": 1,
+  "b": 2
+}
+""");
+var members = ((JsonObjectSyntax)tree.GetRoot().Value!).Members;
+
+tree.GetRoot().RemoveNode(members[0], SyntaxRemoveOptions.KeepNoTrivia);
+// {
+//   "b": 2
+// }
+
+tree.GetRoot().RemoveNode(members[0], SyntaxRemoveOptions.KeepLeadingTrivia);
+// {
+//   // the one that matters
+//     "b": 2
+// }
+```
+
+Anything kept moves onto whatever now stands where the node was — the thing after it, or the thing before it when
+nothing follows. It is preserved, not tidied up: nothing here reformats.
+
+`SyntaxRemoveOptions` also has `KeepTrailingTrivia`, `KeepExteriorTrivia` (both), and `KeepEndOfLine`, which keeps one
+line break out of what was removed so the lines either side do not run together. `RemoveNodes` takes several at once;
+naming both a node and something inside it removes the node, once.
+
 ## Finding a node again after an edit
 
 An annotation is a marker you attach to a node and find again in the tree an edit produced, wherever it ended up:

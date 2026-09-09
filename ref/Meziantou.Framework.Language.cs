@@ -312,7 +312,8 @@ namespace Meziantou.Framework.Language
         public static TRoot ReplaceNode<TRoot>(this TRoot root, Meziantou.Framework.Language.SyntaxNode oldNode, System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNode> newNodes) where TRoot : Meziantou.Framework.Language.SyntaxNode => throw null;
         public static TRoot InsertNodesBefore<TRoot>(this TRoot root, Meziantou.Framework.Language.SyntaxNode nodeInList, System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNode> newNodes) where TRoot : Meziantou.Framework.Language.SyntaxNode => throw null;
         public static TRoot InsertNodesAfter<TRoot>(this TRoot root, Meziantou.Framework.Language.SyntaxNode nodeInList, System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNode> newNodes) where TRoot : Meziantou.Framework.Language.SyntaxNode => throw null;
-        public static TRoot RemoveNode<TRoot>(this TRoot root, Meziantou.Framework.Language.SyntaxNode node) where TRoot : Meziantou.Framework.Language.SyntaxNode => throw null;
+        public static TRoot RemoveNode<TRoot>(this TRoot root, Meziantou.Framework.Language.SyntaxNode node, Meziantou.Framework.Language.SyntaxRemoveOptions options) where TRoot : Meziantou.Framework.Language.SyntaxNode => throw null;
+        public static TRoot RemoveNodes<TRoot>(this TRoot root, System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNode> nodes, Meziantou.Framework.Language.SyntaxRemoveOptions options) where TRoot : Meziantou.Framework.Language.SyntaxNode => throw null;
         public static TNode WithAdditionalAnnotations<TNode>(this TNode node, params Meziantou.Framework.Language.SyntaxAnnotation[] annotations) where TNode : Meziantou.Framework.Language.SyntaxNode => throw null;
         public static TNode WithoutAnnotations<TNode>(this TNode node, params Meziantou.Framework.Language.SyntaxAnnotation[] annotations) where TNode : Meziantou.Framework.Language.SyntaxNode => throw null;
         public static TNode WithoutAnnotations<TNode>(this TNode node, string annotationKind) where TNode : Meziantou.Framework.Language.SyntaxNode => throw null;
@@ -393,6 +394,16 @@ namespace Meziantou.Framework.Language
             public void Reset() { }
             public readonly void Dispose() { }
         }
+    }
+
+    [System.Flags]
+    public enum SyntaxRemoveOptions
+    {
+        KeepNoTrivia = 0,
+        KeepLeadingTrivia = 1,
+        KeepTrailingTrivia = 2,
+        KeepExteriorTrivia = 3,
+        KeepEndOfLine = 4
     }
 
     [System.Diagnostics.DebuggerDisplay("{GetDebuggerDisplay(),nq}")]

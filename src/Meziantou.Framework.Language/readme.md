@@ -35,7 +35,9 @@ var updated = root.ReplaceNode(oldNode, newNode);
 untouchedSibling.IsIncrementallyIdenticalTo(updatedSibling); // true
 ```
 
-`ReplaceNode` returns the type it was given, so editing a document gives back a document.
+`ReplaceNode` returns the type it was given, so editing a document gives back a document. `RemoveNode` does too, and
+takes `SyntaxRemoveOptions` saying what to do with the trivia around what it takes out — the comment in front of a
+node would otherwise disappear with it, silently.
 
 Other things the split buys: `SeparatedSyntaxList<T>`, where the elements and the separators
 between them share one sequence (which is why a trailing comma needs no special case);

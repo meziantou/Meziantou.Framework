@@ -288,6 +288,56 @@ public static class SyntaxNodeExtensions
         return slots;
     }
 
+    /// <summary>Returns <paramref name="node"/> with <paramref name="trivia"/> in front of its first token.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> is <see langword="null"/>.</exception>
+    public static TNode WithLeadingTrivia<TNode>(this TNode node, params SyntaxTrivia[] trivia)
+        where TNode : SyntaxNode
+        => node.WithLeadingTrivia((IEnumerable<SyntaxTrivia>?)trivia);
+
+    /// <summary>Returns <paramref name="node"/> with <paramref name="trivia"/> in front of its first token.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> is <see langword="null"/>.</exception>
+    public static TNode WithLeadingTrivia<TNode>(this TNode node, IEnumerable<SyntaxTrivia>? trivia)
+        where TNode : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        var first = node.GetFirstToken();
+
+        return first.RawKind == 0 ? node : node.ReplaceToken(first, first.WithLeadingTrivia(trivia));
+    }
+
+    /// <summary>Returns <paramref name="node"/> with <paramref name="trivia"/> after its last token.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> is <see langword="null"/>.</exception>
+    public static TNode WithTrailingTrivia<TNode>(this TNode node, params SyntaxTrivia[] trivia)
+        where TNode : SyntaxNode
+        => node.WithTrailingTrivia((IEnumerable<SyntaxTrivia>?)trivia);
+
+    /// <summary>Returns <paramref name="node"/> with <paramref name="trivia"/> after its last token.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> is <see langword="null"/>.</exception>
+    public static TNode WithTrailingTrivia<TNode>(this TNode node, IEnumerable<SyntaxTrivia>? trivia)
+        where TNode : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        var last = node.GetLastToken();
+
+        return last.RawKind == 0 ? node : node.ReplaceToken(last, last.WithTrailingTrivia(trivia));
+    }
+
+    /// <summary>Returns <paramref name="node"/> surrounded by the trivia that surrounds <paramref name="source"/>.</summary>
+    /// <remarks>
+    /// Replacing a node does not carry its trivia over, because the replacement may want its own. This is how a caller
+    /// asks for the trivia of the node being replaced to be kept.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> or <paramref name="source"/> is <see langword="null"/>.</exception>
+    public static TNode WithTriviaFrom<TNode>(this TNode node, SyntaxNode source)
+        where TNode : SyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        return node.WithLeadingTrivia(source.GetLeadingTrivia()).WithTrailingTrivia(source.GetTrailingTrivia());
+    }
+
     /// <summary>Returns <paramref name="node"/> carrying <paramref name="annotations"/> as well as the ones it already has.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="node"/> or <paramref name="annotations"/> is <see langword="null"/>.</exception>
     public static TNode WithAdditionalAnnotations<TNode>(this TNode node, params SyntaxAnnotation[] annotations)

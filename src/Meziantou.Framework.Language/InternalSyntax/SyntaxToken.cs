@@ -18,7 +18,12 @@ internal class SyntaxToken : GreenNode
         AdjustFlagsAndWidth(trailingTrivia);
         FullWidth += text.Length;
 
-        if (!isMissing)
+        // Trivia is never missing and passes IsNotMissing up, so a missing token has to take the flag back off.
+        if (isMissing)
+        {
+            ClearFlags(NodeFlags.IsNotMissing);
+        }
+        else
         {
             SetFlags(NodeFlags.IsNotMissing);
         }
@@ -35,7 +40,12 @@ internal class SyntaxToken : GreenNode
         AdjustFlagsAndWidth(trailingTrivia);
         FullWidth += text.Length;
 
-        if (!isMissing)
+        // Trivia is never missing and passes IsNotMissing up, so a missing token has to take the flag back off.
+        if (isMissing)
+        {
+            ClearFlags(NodeFlags.IsNotMissing);
+        }
+        else
         {
             SetFlags(NodeFlags.IsNotMissing);
         }

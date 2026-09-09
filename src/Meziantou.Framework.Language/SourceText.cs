@@ -103,11 +103,23 @@ public sealed class SourceText
 
         var prefix = oldSpan.CommonPrefixLength(newSpan);
 
+        // Never split a surrogate pair: neither half is text on its own, so an edit that changes one of them changes
+        // the character both belong to.
+        if (prefix > 0 && char.IsHighSurrogate(oldSpan[prefix - 1]))
+        {
+            prefix--;
+        }
+
         var maxSuffix = Math.Min(oldSpan.Length, newSpan.Length) - prefix;
         var suffix = 0;
         while (suffix < maxSuffix && oldSpan[^(suffix + 1)] == newSpan[^(suffix + 1)])
         {
             suffix++;
+        }
+
+        if (suffix > 0 && char.IsLowSurrogate(oldSpan[^suffix]))
+        {
+            suffix--;
         }
 
         var changedOldSpan = TextSpan.FromBounds(prefix, oldSpan.Length - suffix);

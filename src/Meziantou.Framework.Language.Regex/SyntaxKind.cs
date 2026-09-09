@@ -1,9 +1,12 @@
 namespace Meziantou.Framework.Language.Regex;
 
 /// <summary>Identifies the kind of regular-expression syntax node, token, or trivia.</summary>
-public enum RegexSyntaxKind
+public enum SyntaxKind
 {
-    None,
+    None = 0,
+
+    /// <summary>A sequence of children held in one slot. Shared by every language, and so fixed at 1.</summary>
+    List = 1,
 
     // ---- Structure ----
     Pattern,

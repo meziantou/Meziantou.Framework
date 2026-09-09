@@ -1,0 +1,520 @@
+<#@ template debug="true" hostspecific="false" language="C#" #>
+<#@ output extension=".g.cs" #>
+<#
+    // The shape of every regular-expression node, in source order.
+    //
+    // A slot is written "<kind>:<Name>[:<Type>]", where the kind is one of:
+    //   t   a token            t?  a token the source may not have
+    //   n   a child node       n?  a child node the source may not have
+    //   l   a list of nodes    s   a list of nodes with separators between them
+    //   tl  a list of tokens
+    //
+    // Only the structure is described here. Everything a node computes from its own text -- a name, a value, whether
+    // it is negated -- stays in the hand-written half of the partial class, where it can be read and changed without
+    // going through the generator.
+    var nodes = new[]
+    {
+        Node("RegexAlternationSyntax", "RegexSyntaxNode", "Alternation", "s:Branches:RegexSequenceSyntax"),
+        Node("RegexAnchorSyntax", "RegexAtomSyntax", "Anchor", "t:AnchorToken"),
+        Node("RegexAnyCharacterSyntax", "RegexAtomSyntax", "AnyCharacter", "t:DotToken"),
+        Node("RegexAtomicGroupSyntax", "RegexGroupSyntax", "AtomicGroup", "t:OpenParenToken", "t:GroupKindToken", "n:Alternation:RegexAlternationSyntax", "t:CloseParenToken"),
+        Node("RegexBackreferenceSyntax", "RegexAtomSyntax", "Backreference", "t:BackreferenceToken"),
+        Node("RegexBacktrackingVerbSyntax", "RegexAtomSyntax", "BacktrackingVerb", "t:OpenParenToken", "t:VerbToken", "t:CloseParenToken"),
+        Node("RegexBalancingGroupSyntax", "RegexGroupSyntax", "BalancingGroup", "t:OpenParenToken", "t:GroupKindToken", "t?:NameToken", "t:HyphenToken", "t?:PreviousNameToken", "t?:CloseNameToken", "n:Alternation:RegexAlternationSyntax", "t:CloseParenToken").WithExtra("int number"),
+        Node("RegexBranchResetGroupSyntax", "RegexGroupSyntax", "BranchResetGroup", "t:OpenParenToken", "t:GroupKindToken", "n:Alternation:RegexAlternationSyntax", "t:CloseParenToken"),
+        Node("RegexCalloutSyntax", "RegexAtomSyntax", "Callout", "t:OpenParenToken", "t:QuestionToken", "t?:BodyToken", "t:CloseParenToken"),
+        Node("RegexCapturingGroupSyntax", "RegexGroupSyntax", "CapturingGroup", "t:OpenParenToken", "n:Alternation:RegexAlternationSyntax", "t:CloseParenToken").WithExtra("int number"),
+        Node("RegexCharacterClassEscapeSyntax", "RegexAtomSyntax", "CharacterClassEscape", "t:EscapeToken"),
+        Node("RegexCharacterClassSyntax", "RegexAtomSyntax", "CharacterClass", "t:OpenBracketToken", "t?:CaretToken", "l:Members:RegexSyntaxNode", "t:CloseBracketToken"),
+        Node("RegexCharacterEscapeSyntax", "RegexAtomSyntax", "CharacterEscape", "t:EscapeToken"),
+        Node("RegexCharacterRangeSyntax", "RegexSyntaxNode", "CharacterRange", "n:Start:RegexSyntaxNode", "t:HyphenToken", "n?:End:RegexSyntaxNode"),
+        Node("RegexClassSetOperationSyntax", "RegexSyntaxNode", "ClassSetOperation", "s:Operands:RegexSyntaxNode"),
+        Node("RegexClassStringLiteralSyntax", "RegexSyntaxNode", "ClassStringLiteral", "t:StartToken", "t?:TextToken", "t?:CloseBraceToken"),
+        Node("RegexClassSubtractionSyntax", "RegexSyntaxNode", "ClassSubtraction", "t:HyphenToken", "n:Subtracted:RegexCharacterClassSyntax"),
+        Node("RegexCollatingElementSyntax", "RegexSyntaxNode", "CollatingElement", "t:StartToken", "t?:TextToken", "t?:EndToken"),
+        Node("RegexConditionalReferenceSyntax", "RegexSyntaxNode", "ConditionalReference", "t:OpenParenToken", "t?:NameToken", "t:CloseParenToken"),
+        Node("RegexConditionalSyntax", "RegexGroupSyntax", "Conditional", "t:OpenParenToken", "t:QuestionToken", "n?:Condition:RegexSyntaxNode", "n:Alternation:RegexAlternationSyntax", "t:CloseParenToken"),
+        Node("RegexInlineOptionsSyntax", "RegexAtomSyntax", "InlineOptions", "t:OpenParenToken", "t:QuestionToken", "t?:OptionsToken", "t:CloseParenToken").WithExtra("RegexPatternOptions appliedOptions"),
+        Node("RegexLiteralSyntax", "RegexAtomSyntax", "Literal", "t:LiteralToken"),
+        Node("RegexLookaroundSyntax", "RegexGroupSyntax", "Lookaround", "t:OpenParenToken", "t:GroupKindToken", "n:Alternation:RegexAlternationSyntax", "t:CloseParenToken"),
+        Node("RegexNamedBackreferenceSyntax", "RegexAtomSyntax", "NamedBackreference", "t:StartToken", "t?:OpenNameToken", "t?:NameToken", "t?:CloseNameToken"),
+        Node("RegexNamedGroupSyntax", "RegexGroupSyntax", "NamedGroup", "t:OpenParenToken", "t:GroupKindToken", "t?:NameToken", "t?:CloseNameToken", "n:Alternation:RegexAlternationSyntax", "t:CloseParenToken").WithExtra("int number"),
+        Node("RegexNonCapturingGroupSyntax", "RegexGroupSyntax", "NonCapturingGroup", "t:OpenParenToken", "t:GroupKindToken", "n:Alternation:RegexAlternationSyntax", "t:CloseParenToken"),
+        Node("RegexOptionsGroupSyntax", "RegexGroupSyntax", "OptionsGroup", "t:OpenParenToken", "t:QuestionToken", "t?:OptionsToken", "t?:ColonToken", "n:Alternation:RegexAlternationSyntax", "t:CloseParenToken"),
+        Node("RegexPatternSyntax", "RegexSyntaxNode", "Pattern", "t?:OpenSlashToken", "n:Alternation:RegexAlternationSyntax", "t?:CloseSlashToken", "t?:FlagsToken", "t?:TrailingToken", "t:EndOfPatternToken"),
+        Node("RegexPosixCharacterClassSyntax", "RegexSyntaxNode", "PosixCharacterClass", "t:StartToken", "t?:NameToken", "t?:EndToken"),
+        Node("RegexQuantifiedSyntax", "RegexTermSyntax", "Quantified", "n:Term:RegexTermSyntax", "n:Quantifier:RegexQuantifierSyntax"),
+        Node("RegexQuotedLiteralSyntax", "RegexAtomSyntax", "QuotedLiteral", "t:StartToken", "t?:TextToken", "t?:EndToken"),
+        Node("RegexRangeQuantifierSyntax", "RegexQuantifierSyntax", "RangeQuantifier", "t:OpenBraceToken", "t:MinToken", "t?:CommaToken", "t?:MaxToken", "t:CloseBraceToken", "t?:ModifierToken"),
+        Node("RegexRecursionSyntax", "RegexAtomSyntax", "Recursion", "t:OpenParenToken", "t:QuestionToken", "t?:TargetToken", "t:CloseParenToken"),
+        Node("RegexSequenceSyntax", "RegexSyntaxNode", "Sequence", "l:Terms:RegexTermSyntax"),
+        Node("RegexSimpleQuantifierSyntax", "RegexQuantifierSyntax", "SimpleQuantifier", "t:OperatorToken", "t?:ModifierToken"),
+        Node("RegexSkippedTextSyntax", "RegexAtomSyntax", "SkippedText", "tl:Tokens"),
+        Node("RegexUnicodeCategorySyntax", "RegexAtomSyntax", "UnicodeCategory", "t:CategoryStartToken", "t?:OpenBraceToken", "t?:NameToken", "t?:CloseBraceToken"),
+    };
+
+    // Some bases declare a member abstract that its concrete nodes fill from a slot, so those slots say override.
+    var abstractSlots = new Dictionary<string, string[]>(StringComparer.Ordinal)
+    {
+        ["RegexGroupSyntax"] = new[] { "OpenParenToken", "CloseParenToken" },
+        ["RegexQuantifierSyntax"] = new[] { "ModifierToken" },
+    };
+#>
+// <auto-generated />
+// Generated from Syntax.tt. Edit the template, then run: dotnet run ./eng/update-all.cs
+#nullable enable
+
+using Meziantou.Framework.Language.InternalSyntax;
+using GreenNode = Meziantou.Framework.Language.InternalSyntax.GreenNode;
+
+#pragma warning disable MA0048 // File name must match type name
+
+namespace Meziantou.Framework.Language.Regex.Syntax.InternalSyntax
+{
+<# foreach (var node in nodes) { #>
+internal sealed partial class <#= node.Name #> : <#= node.Base #>
+{
+<# foreach (var slot in node.Slots) { #>
+    private readonly GreenNode<#= slot.Optional ? "?" : "" #> _<#= Camel(slot.Name) #>;
+<# } #>
+
+    public <#= node.Name #>(<#= GreenParameters(node) #>)
+        : this(<#= GreenParameterNames(node, "diagnostics: null, annotations: null") #>)
+    {
+    }
+
+    private <#= node.Name #>(<#= GreenParameters(node) #>, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+        : base(SyntaxKind.<#= node.Kind #>, <#= BaseArguments(node) #>, diagnostics, annotations)
+    {
+        SlotCount = <#= node.Slots.Length #>;
+<# foreach (var slot in node.Slots) { #>
+        AdjustFlagsAndWidth(<#= Camel(slot.Name) #>);
+        _<#= Camel(slot.Name) #> = <#= Camel(slot.Name) #>;
+<# } #>
+<# foreach (var extra in node.Extra) { #>
+        <#= Pascal(ExtraName(extra)) #> = <#= ExtraName(extra) #>;
+<# } #>
+    }
+
+<# foreach (var extra in node.Extra) { #>
+    public <#= ExtraType(extra) #> <#= Pascal(ExtraName(extra)) #> { get; }
+
+<# } #>
+    internal override GreenNode? GetSlot(int index) => index switch
+    {
+<# for (var i = 0; i < node.Slots.Length; i++) { #>
+        <#= i #> => _<#= Camel(node.Slots[i].Name) #>,
+<# } #>
+        _ => null,
+    };
+
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new <#= node.Name #>(<#= SlotsFromSpan(node) #>, GetDiagnostics(), GetAnnotations());
+
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new <#= node.Name #>(<#= GreenArguments(node, "diagnostics, GetAnnotations()") #>);
+
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new <#= node.Name #>(<#= GreenArguments(node, "GetDiagnostics(), annotations") #>);
+
+    internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Regex.<#= node.Name #>(this, parent, position);
+}
+
+<# } #>
+}
+
+namespace Meziantou.Framework.Language.Regex
+{
+<# foreach (var node in nodes) { #>
+public sealed partial class <#= node.Name #> : <#= node.Base #>
+{
+<# foreach (var slot in node.Slots) { if (slot.Kind is "n" or "n?" or "l" or "s") { #>
+    private SyntaxNode? _<#= Camel(slot.Name) #>;
+<# } } #>
+
+    internal <#= node.Name #>(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
+    {
+    }
+
+<# for (var i = 0; i < node.Slots.Length; i++) { var slot = node.Slots[i]; var over = abstractSlots.TryGetValue(node.Base, out var declared) && Array.IndexOf(declared, slot.Name) >= 0 ? "override " : ""; #>
+<# if (slot.Kind is "t" or "t?") { #>
+    public <#= over #>SyntaxToken <#= slot.Name #> => new(this, Green.GetSlot(<#= i #>), GetChildPosition(<#= i #>), GetChildIndex(<#= i #>));
+<# } else if (slot.Kind == "tl") { #>
+    public SyntaxTokenList <#= slot.Name #> => new(this, Green.GetSlot(<#= i #>), GetChildPosition(<#= i #>), GetChildIndex(<#= i #>));
+<# } else if (slot.Kind == "l") { #>
+    public SyntaxList<<#= slot.Type #>> <#= slot.Name #> => new(GetRed(ref _<#= Camel(slot.Name) #>, <#= i #>));
+<# } else if (slot.Kind == "s") { #>
+    public SeparatedSyntaxList<<#= slot.Type #>> <#= slot.Name #>
+    {
+        get
+        {
+            var red = GetRed(ref _<#= Camel(slot.Name) #>, <#= i #>);
+
+            return red is null ? default : new SeparatedSyntaxList<<#= slot.Type #>>(new SyntaxNodeOrTokenList(red, GetChildIndex(<#= i #>)));
+        }
+    }
+<# } else if (slot.Kind == "n") { #>
+    public <#= slot.Type #> <#= slot.Name #> => (<#= slot.Type #>)GetRed(ref _<#= Camel(slot.Name) #>, <#= i #>)!;
+<# } else { #>
+    public <#= slot.Type #>? <#= slot.Name #> => (<#= slot.Type #>?)GetRed(ref _<#= Camel(slot.Name) #>, <#= i #>);
+<# } #>
+
+<# } #>
+<# foreach (var extra in node.Extra) { #>
+    public <#= ExtraType(extra) #> <#= Pascal(ExtraName(extra)) #> => ((Syntax.InternalSyntax.<#= node.Name #>)Green).<#= Pascal(ExtraName(extra)) #>;
+
+<# } #>
+    /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
+    public <#= node.Name #> Update(<#= RedParameters(node) #>)
+    {
+        if (<#= UnchangedCondition(node) #>)
+            return this;
+
+        return SyntaxFactory.<#= FactoryName(node) #>(<#= RedArguments(node) #>).WithAnnotationsFrom(this);
+    }
+
+<# for (var i = 0; i < node.Slots.Length; i++) { var slot = node.Slots[i]; #>
+    /// <summary>Returns this node with <paramref name="<#= Camel(slot.Name) #>"/> in place of its <see cref="<#= slot.Name #>"/>.</summary>
+    public <#= node.Name #> With<#= slot.Name #>(<#= RedSlotType(slot) #> <#= Camel(slot.Name) #>) => Update(<#= WithArguments(node, i) #>);
+
+<# } #>
+    internal override SyntaxNode? GetNodeSlot(int index) => index switch
+    {
+<# for (var i = 0; i < node.Slots.Length; i++) { if (node.Slots[i].Kind is "n" or "n?" or "l" or "s") { #>
+        <#= i #> => GetRed(ref _<#= Camel(node.Slots[i].Name) #>, <#= i #>),
+<# } } #>
+        _ => null,
+    };
+
+    internal override SyntaxNode? GetCachedSlot(int index) => index switch
+    {
+<# for (var i = 0; i < node.Slots.Length; i++) { if (node.Slots[i].Kind is "n" or "n?" or "l" or "s") { #>
+        <#= i #> => _<#= Camel(node.Slots[i].Name) #>,
+<# } } #>
+        _ => null,
+    };
+
+    public override void Accept(RegexSyntaxVisitor visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        visitor.Visit<#= node.Kind #>(this);
+    }
+
+    public override TResult? Accept<TResult>(RegexSyntaxVisitor<TResult> visitor)
+        where TResult : default
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        return visitor.Visit<#= node.Kind #>(this);
+    }
+}
+
+<# } #>
+
+public abstract partial class RegexSyntaxVisitor
+{
+<# foreach (var node in nodes) { #>
+    public virtual void Visit<#= node.Kind #>(<#= node.Name #> node) => DefaultVisit(node);
+<# } #>
+}
+
+public abstract partial class RegexSyntaxVisitor<TResult>
+{
+<# foreach (var node in nodes) { #>
+    public virtual TResult? Visit<#= node.Kind #>(<#= node.Name #> node) => DefaultVisit(node);
+<# } #>
+}
+
+public partial class RegexSyntaxRewriter
+{
+<# foreach (var node in nodes) { #>
+    public override SyntaxNode? Visit<#= node.Kind #>(<#= node.Name #> node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node.Update(<#= RewriteArguments(node) #>);
+    }
+
+<# } #>
+}
+
+public static partial class SyntaxFactory
+{
+<# foreach (var node in nodes) { #>
+    /// <summary>Builds a <see cref="<#= node.Name #>"/> from its parts.</summary>
+    public static <#= node.Name #> <#= node.Kind #>(<#= FactoryParameters(node) #>)
+        => (<#= node.Name #>)new Syntax.InternalSyntax.<#= node.Name #>(<#= FactoryArguments(node) #>).CreateRed();
+
+<# } #>
+}
+}
+<#+
+record Slot(string Kind, string Name, string Type)
+{
+    public bool Optional => Kind is "t?" or "n?" or "l" or "s" or "tl";
+}
+
+record NodeDef(string Name, string Base, string Kind, Slot[] Slots, string[] Extra)
+{
+    public NodeDef WithExtra(params string[] extra) => this with { Extra = extra };
+}
+
+static NodeDef Node(string name, string baseName, string kind, params string[] slots)
+{
+    var parsed = new Slot[slots.Length];
+    for (var i = 0; i < slots.Length; i++)
+    {
+        var parts = slots[i].Split(':');
+        parsed[i] = new Slot(parts[0], parts[1], parts.Length > 2 ? parts[2] : "");
+    }
+
+    return new NodeDef(name, baseName, kind, parsed, Array.Empty<string>());
+}
+
+static string Camel(string name) => char.ToLowerInvariant(name[0]) + name.Substring(1);
+static string Pascal(string name) => char.ToUpperInvariant(name[0]) + name.Substring(1);
+static string ExtraType(string extra) => extra.Split(' ')[0];
+static string ExtraName(string extra) => extra.Split(' ')[1];
+
+static string GreenParameters(NodeDef node)
+{
+    var parts = new List<string>();
+    foreach (var slot in node.Slots)
+    {
+        parts.Add("GreenNode" + (slot.Optional ? "?" : "") + " " + Camel(slot.Name));
+    }
+
+    parts.Add("RegexPatternOptions options");
+    if (node.Base == "RegexGroupSyntax")
+    {
+        parts.Add("RegexPatternOptions innerOptions");
+    }
+
+    foreach (var extra in node.Extra)
+    {
+        parts.Add(extra);
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string GreenParameterNames(NodeDef node, string tail)
+{
+    var parts = new List<string>();
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(Camel(slot.Name));
+    }
+
+    parts.Add("options");
+    if (node.Base == "RegexGroupSyntax")
+    {
+        parts.Add("innerOptions");
+    }
+
+    foreach (var extra in node.Extra)
+    {
+        parts.Add(ExtraName(extra));
+    }
+
+    parts.Add(tail);
+
+    return string.Join(", ", parts);
+}
+
+static string GreenArguments(NodeDef node, string tail)
+{
+    var parts = new List<string>();
+    foreach (var slot in node.Slots)
+    {
+        parts.Add("_" + Camel(slot.Name));
+    }
+
+    parts.Add("Options");
+    if (node.Base == "RegexGroupSyntax")
+    {
+        parts.Add("InnerOptions");
+    }
+
+    foreach (var extra in node.Extra)
+    {
+        parts.Add(Pascal(ExtraName(extra)));
+    }
+
+    parts.Add(tail);
+
+    return string.Join(", ", parts);
+}
+
+static string BaseArguments(NodeDef node)
+{
+    return node.Base == "RegexGroupSyntax" ? "options, innerOptions" : "options";
+}
+
+static string SlotsFromSpan(NodeDef node)
+{
+    var parts = new List<string>();
+    for (var i = 0; i < node.Slots.Length; i++)
+    {
+        parts.Add("slots[" + i + "]" + (node.Slots[i].Optional ? "" : "!"));
+    }
+
+    parts.Add("Options");
+    if (node.Base == "RegexGroupSyntax")
+    {
+        parts.Add("InnerOptions");
+    }
+
+    foreach (var extra in node.Extra)
+    {
+        parts.Add(Pascal(ExtraName(extra)));
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string RedSlotType(Slot slot) => slot.Kind switch
+{
+    "t" or "t?" => "SyntaxToken",
+    "tl" => "SyntaxTokenList",
+    "l" => "SyntaxList<" + slot.Type + ">",
+    "s" => "SeparatedSyntaxList<" + slot.Type + ">",
+    "n" => slot.Type,
+    _ => slot.Type + "?",
+};
+
+static string RedParameters(NodeDef node)
+{
+    var parts = new List<string>();
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(RedSlotType(slot) + " " + Camel(slot.Name));
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string RedArguments(NodeDef node)
+{
+    var parts = new List<string>();
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(Camel(slot.Name));
+    }
+
+    parts.Add("Options");
+    if (node.Base == "RegexGroupSyntax")
+    {
+        parts.Add("InnerOptions");
+    }
+
+    foreach (var extra in node.Extra)
+    {
+        parts.Add(Pascal(ExtraName(extra)));
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string UnchangedCondition(NodeDef node)
+{
+    var parts = new List<string>();
+    for (var i = 0; i < node.Slots.Length; i++)
+    {
+        var slot = node.Slots[i];
+        parts.Add(slot.Kind switch
+        {
+            "t" or "t?" => Camel(slot.Name) + ".Node == Green.GetSlot(" + i + ")",
+            "tl" => Camel(slot.Name) + ".Node == Green.GetSlot(" + i + ")",
+            "l" or "s" => Camel(slot.Name) + ".Green == Green.GetSlot(" + i + ")",
+            "n" => "ReferenceEquals(" + Camel(slot.Name) + ".Green, Green.GetSlot(" + i + "))",
+            _ => "ReferenceEquals(" + Camel(slot.Name) + "?.Green, Green.GetSlot(" + i + "))",
+        });
+    }
+
+    return string.Join(" && ", parts);
+}
+
+static string WithArguments(NodeDef node, int index)
+{
+    var parts = new List<string>();
+    for (var i = 0; i < node.Slots.Length; i++)
+    {
+        parts.Add(i == index ? Camel(node.Slots[i].Name) : node.Slots[i].Name);
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string FactoryName(NodeDef node) => node.Kind;
+
+static string RewriteArguments(NodeDef node)
+{
+    var parts = new List<string>();
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(slot.Kind switch
+        {
+            "t" or "t?" => "VisitToken(node." + slot.Name + ")",
+            "tl" => "VisitList(node." + slot.Name + ")",
+            "l" or "s" => "VisitList(node." + slot.Name + ")",
+            "n" => "(" + slot.Type + "?)Visit(node." + slot.Name + ") ?? node." + slot.Name,
+            _ => "(" + slot.Type + "?)Visit(node." + slot.Name + ")",
+        });
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string FactoryParameters(NodeDef node)
+{
+    var parts = new List<string>();
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(RedSlotType(slot) + " " + Camel(slot.Name));
+    }
+
+    parts.Add("RegexPatternOptions options");
+    if (node.Base == "RegexGroupSyntax")
+    {
+        parts.Add("RegexPatternOptions innerOptions");
+    }
+
+    foreach (var extra in node.Extra)
+    {
+        parts.Add(extra);
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string FactoryArguments(NodeDef node)
+{
+    var parts = new List<string>();
+    foreach (var slot in node.Slots)
+    {
+        var name = Camel(slot.Name);
+        parts.Add(slot.Kind switch
+        {
+            "t" => "SyntaxFactory.Required(" + name + ")",
+            "t?" => name + ".Node",
+            "tl" => name + ".Node",
+            "l" or "s" => name + ".Green",
+            "n" => name + ".Green",
+            _ => name + "?.Green",
+        });
+    }
+
+    parts.Add("options");
+    if (node.Base == "RegexGroupSyntax")
+    {
+        parts.Add("innerOptions");
+    }
+
+    foreach (var extra in node.Extra)
+    {
+        parts.Add(ExtraName(extra));
+    }
+
+    return string.Join(", ", parts);
+}
+#>

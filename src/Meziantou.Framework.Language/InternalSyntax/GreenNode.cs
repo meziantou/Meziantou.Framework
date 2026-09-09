@@ -326,7 +326,13 @@ internal abstract class GreenNode
 
     internal SyntaxNode CreateRed() => CreateRed(parent: null, position: 0);
 
-    /// <summary>Determines whether the two nodes have the same structure and text, ignoring diagnostics and annotations.</summary>
+    /// <summary>
+    /// Determines whether the two nodes have the same structure and text, ignoring trivia, diagnostics and annotations.
+    /// </summary>
+    /// <remarks>
+    /// Trivia takes no part, so two nodes written with different whitespace or comments around the same tokens are
+    /// equivalent. Use <see cref="SyntaxNode.IsIncrementallyIdenticalTo"/> to ask whether they are the very same node.
+    /// </remarks>
     public bool IsEquivalentTo(GreenNode? other)
     {
         if (ReferenceEquals(this, other))
@@ -344,7 +350,7 @@ internal abstract class GreenNode
             if (ReferenceEquals(left, right))
                 continue;
 
-            if (left.RawKind != right.RawKind || left.FullWidth != right.FullWidth || left.SlotCount != right.SlotCount)
+            if (left.RawKind != right.RawKind || left.SlotCount != right.SlotCount)
                 return false;
 
             if (left.IsMissing != right.IsMissing)

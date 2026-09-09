@@ -14,8 +14,8 @@ public sealed class RegexInlineOptionsTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("a b", RegexDialect.Net);
 
-        Assert.Equal(3, tree.Root.Alternation.Branches[0].Terms.Count);
-        Assert.Empty(tree.Root.DescendantTrivia());
+        Assert.Equal(3, tree.GetRoot().Alternation.Branches[0].Terms.Count);
+        Assert.Empty(tree.GetRoot().DescendantTrivia());
     }
 
     [Fact]
@@ -23,8 +23,8 @@ public sealed class RegexInlineOptionsTests
     {
         var tree = ParseExtended("a b");
 
-        Assert.Equal(2, tree.Root.Alternation.Branches[0].Terms.Count);
-        Assert.Single(tree.Root.DescendantTrivia(), trivia => trivia.Kind == RegexSyntaxKind.WhitespaceTrivia);
+        Assert.Equal(2, tree.GetRoot().Alternation.Branches[0].Terms.Count);
+        Assert.Single(tree.GetRoot().DescendantTrivia(), trivia => trivia.Kind() == SyntaxKind.WhitespaceTrivia);
     }
 
     [Fact]
@@ -33,9 +33,9 @@ public sealed class RegexInlineOptionsTests
         var tree = RegexSyntaxAssert.TextIsFaithful("a b(?x)c d", RegexDialect.Net);
 
         // "a b" is three terms; after "(?x)" the space between "c" and "d" is trivia, so those are two.
-        var terms = tree.Root.Alternation.Branches[0].Terms;
+        var terms = tree.GetRoot().Alternation.Branches[0].Terms;
         Assert.Equal(6, terms.Count);
-        Assert.Single(tree.Root.DescendantTrivia(), trivia => trivia.Kind == RegexSyntaxKind.WhitespaceTrivia);
+        Assert.Single(tree.GetRoot().DescendantTrivia(), trivia => trivia.Kind() == SyntaxKind.WhitespaceTrivia);
     }
 
     [Fact]
@@ -43,8 +43,8 @@ public sealed class RegexInlineOptionsTests
     {
         var tree = ParseExtended("a#one\rtwo\nb");
 
-        var comment = Assert.Single(tree.Root.DescendantTrivia(), trivia => trivia.Kind == RegexSyntaxKind.PatternCommentTrivia);
-        Assert.Equal("#one\rtwo", comment.Text);
+        var comment = Assert.Single(tree.GetRoot().DescendantTrivia(), trivia => trivia.Kind() == SyntaxKind.PatternCommentTrivia);
+        Assert.Equal("#one\rtwo", comment.ToString());
     }
 
     [Fact]
@@ -52,9 +52,9 @@ public sealed class RegexInlineOptionsTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("a(?#note)b", RegexDialect.Net);
 
-        var comment = Assert.Single(tree.Root.DescendantTrivia(), trivia => trivia.Kind == RegexSyntaxKind.InlineCommentTrivia);
-        Assert.Equal("(?#note)", comment.Text);
-        Assert.Equal(2, tree.Root.Alternation.Branches[0].Terms.Count);
+        var comment = Assert.Single(tree.GetRoot().DescendantTrivia(), trivia => trivia.Kind() == SyntaxKind.InlineCommentTrivia);
+        Assert.Equal("(?#note)", comment.ToString());
+        Assert.Equal(2, tree.GetRoot().Alternation.Branches[0].Terms.Count);
     }
 
     [Fact]
@@ -62,9 +62,9 @@ public sealed class RegexInlineOptionsTests
     {
         var tree = ParseExtended("[ a # b ]");
 
-        var characterClass = Assert.Single(tree.Root.DescendantNodes().OfType<RegexCharacterClassSyntax>());
+        var characterClass = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexCharacterClassSyntax>());
         Assert.Equal("[ a # b ]", characterClass.ToFullString());
-        Assert.Empty(tree.Root.DescendantTrivia());
+        Assert.Empty(tree.GetRoot().DescendantTrivia());
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public sealed class RegexInlineOptionsTests
     {
         var tree = ParseExtended("a{2,3} ?");
 
-        var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.Root.Alternation.Branches[0].Terms[0]);
+        var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.GetRoot().Alternation.Branches[0].Terms[0]);
         Assert.Equal(RegexQuantifierMode.Lazy, quantified.Mode);
     }
 
@@ -81,7 +81,7 @@ public sealed class RegexInlineOptionsTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("(?:(?i)a)b", RegexDialect.Net);
 
-        var literals = tree.Root.DescendantNodes().OfType<RegexLiteralSyntax>().ToArray();
+        var literals = tree.GetRoot().DescendantNodes().OfType<RegexLiteralSyntax>().ToArray();
         Assert.Equal(RegexPatternOptions.IgnoreCase, literals[0].Options);
         Assert.Equal(RegexPatternOptions.None, literals[1].Options);
     }
@@ -95,7 +95,7 @@ public sealed class RegexInlineOptionsTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("(?:a(?i)b|c)", RegexDialect.Net);
 
-        var literals = tree.Root.DescendantNodes().OfType<RegexLiteralSyntax>().ToArray();
+        var literals = tree.GetRoot().DescendantNodes().OfType<RegexLiteralSyntax>().ToArray();
         Assert.Equal(RegexPatternOptions.None, literals[0].Options);
         Assert.Equal(RegexPatternOptions.IgnoreCase, literals[1].Options);
         Assert.Equal(RegexPatternOptions.IgnoreCase, literals[2].Options);
@@ -106,11 +106,11 @@ public sealed class RegexInlineOptionsTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("(?i:a)b", RegexDialect.Net);
 
-        var group = Assert.Single(tree.Root.DescendantNodes().OfType<RegexOptionsGroupSyntax>());
+        var group = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexOptionsGroupSyntax>());
         Assert.Equal("i", group.OptionsText);
         Assert.Equal(RegexPatternOptions.IgnoreCase, group.InnerOptions);
 
-        var literals = tree.Root.DescendantNodes().OfType<RegexLiteralSyntax>().ToArray();
+        var literals = tree.GetRoot().DescendantNodes().OfType<RegexLiteralSyntax>().ToArray();
         Assert.Equal(RegexPatternOptions.IgnoreCase, literals[0].Options);
         Assert.Equal(RegexPatternOptions.None, literals[1].Options);
     }
@@ -130,6 +130,6 @@ public sealed class RegexInlineOptionsTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("(?i)*", RegexDialect.Net);
 
-        Assert.Single(tree.Diagnostics, diagnostic => diagnostic.Id == "REGEX0005");
+        Assert.Single(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "REGEX0005");
     }
 }

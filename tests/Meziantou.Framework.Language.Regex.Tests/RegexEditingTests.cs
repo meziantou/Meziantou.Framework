@@ -6,9 +6,9 @@ public sealed class RegexEditingTests
     public void ReplaceNode_SwapsANodeAndKeepsEverythingElse()
     {
         var tree = RegexSyntaxTree.ParseText("a|b|c", RegexDialect.Net);
-        var middle = tree.Root.Alternation.Branches[1];
+        var middle = tree.GetRoot().Alternation.Branches[1];
 
-        var updated = tree.Root.ReplaceNode(middle, SyntaxFactory.LiteralText("xy", RegexDialect.Net));
+        var updated = tree.GetRoot().ReplaceNode(middle, SyntaxFactory.LiteralText("xy", RegexDialect.Net));
 
         Assert.Equal("a|xy|c", updated.ToFullString());
     }
@@ -17,21 +17,21 @@ public sealed class RegexEditingTests
     public void ReplaceToken_SwapsATokenAndKeepsEverythingElse()
     {
         var tree = RegexSyntaxTree.ParseText("ab", RegexDialect.Net);
-        var first = tree.Root.DescendantTokens().First(token => token.Text == "a");
+        var first = tree.GetRoot().DescendantTokens().First(token => token.Text == "a");
 
-        var updated = tree.Root.ReplaceToken(first, first.WithText("z"));
+        var updated = tree.GetRoot().ReplaceToken(first, SyntaxFactory.Token(SyntaxKind.LiteralToken, "z").WithTriviaFrom(first));
 
         Assert.Equal("zb", updated.ToFullString());
     }
 
     [Fact]
-    public void ReplaceNode_KeepsTheTriviaInFrontOfTheNodeItReplaces()
+    public void ReplaceNode_CanCarryOverTheTriviaOfTheNodeItReplaces()
     {
         var options = new RegexParseOptions(RegexDialect.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
         var tree = RegexSyntaxTree.ParseText("a   b # note\n", options);
-        var second = tree.Root.DescendantNodes().OfType<RegexLiteralSyntax>().Last();
+        var second = tree.GetRoot().DescendantNodes().OfType<RegexLiteralSyntax>().Last();
 
-        var updated = tree.Root.ReplaceNode(second, SyntaxFactory.Literal('z', RegexDialect.Net));
+        var updated = tree.GetRoot().ReplaceNode(second, SyntaxFactory.Literal('z', RegexDialect.Net).WithTriviaFrom(second));
 
         Assert.Equal("a   z # note\n", updated.ToFullString());
     }
@@ -40,9 +40,9 @@ public sealed class RegexEditingTests
     public void ReplaceTrivia_SwapsACommentAndKeepsEverythingElse()
     {
         var tree = RegexSyntaxTree.ParseText("a(?#note)b", RegexDialect.Net);
-        var comment = Assert.Single(tree.Root.DescendantComments());
+        var comment = Assert.Single(tree.GetRoot().DescendantComments());
 
-        var updated = tree.Root.ReplaceTrivia(comment, comment.WithText("(?#other)"));
+        var updated = tree.GetRoot().ReplaceTrivia(comment, SyntaxFactory.Trivia(comment.Kind(), "(?#other)"));
 
         Assert.Equal("a(?#other)b", updated.ToFullString());
     }
@@ -54,9 +54,9 @@ public sealed class RegexEditingTests
 
         var updated = tree.WithChanges(new TextChange(new TextSpan(2, 0), "+"));
 
-        Assert.Equal("a*+", updated.Text);
+        Assert.Equal("a*+", updated.GetText().Text);
         Assert.Equal(RegexDialect.PcrePerl, updated.Dialect);
-        Assert.Empty(updated.Diagnostics);
+        Assert.Empty(updated.GetDiagnostics());
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class RegexEditingTests
             new TextChange(new TextSpan(0, 1), "x"),
             new TextChange(new TextSpan(2, 1), "z"));
 
-        Assert.Equal("xbz", updated.Text);
+        Assert.Equal("xbz", updated.GetText().Text);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public sealed class RegexEditingTests
     {
         var tree = RegexSyntaxTree.ParseText("a(?#note)b|a", RegexDialect.Net);
 
-        var rewritten = new LiteralRenamer('a', 'z').Visit(tree.Root);
+        var rewritten = new LiteralRenamer('a', 'z').Visit(tree.GetRoot());
 
         Assert.Equal("z(?#note)b|z", rewritten?.ToFullString());
     }
@@ -106,19 +106,19 @@ public sealed class RegexEditingTests
     {
         var tree = RegexSyntaxTree.ParseText("xyz", RegexDialect.Net);
 
-        var rewritten = new LiteralRenamer('a', 'z').Visit(tree.Root);
+        var rewritten = new LiteralRenamer('a', 'z').Visit(tree.GetRoot());
 
-        Assert.Same(tree.Root, rewritten);
+        Assert.Same(tree.GetRoot(), rewritten);
     }
 
     private sealed class LiteralRenamer(char from, char to) : RegexSyntaxRewriter
     {
-        public override RegexSyntaxNode? VisitLiteral(RegexLiteralSyntax node)
+        public override SyntaxNode? VisitLiteral(RegexLiteralSyntax node)
         {
             if (node.Value != from)
                 return base.VisitLiteral(node);
 
-            return new RegexLiteralSyntax(node.LiteralToken.WithText(to.ToString()));
+            return node.WithLiteralToken(SyntaxFactory.Token(SyntaxKind.LiteralToken, to.ToString()).WithTriviaFrom(node.LiteralToken));
         }
     }
 }

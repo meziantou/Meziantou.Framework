@@ -39,47 +39,47 @@ internal static class RegexSyntaxAssert
 
     private static void Verify(string text, RegexSyntaxTree tree)
     {
-        Assert.Equal(text, tree.Text);
-        Assert.Equal(text, tree.Root.ToFullString());
+        Assert.Equal(text, tree.GetText().Text);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
 
-        foreach (var node in tree.Root.DescendantNodesAndSelf())
+        foreach (var node in tree.GetRoot().DescendantNodesAndSelf())
         {
             var span = node.FullSpan;
             var insideSource = span.Start >= 0 && span.End <= text.Length;
-            Assert.True(insideSource, $"{node.Kind} has span {span} outside a source of length {text.Length}.");
+            Assert.True(insideSource, $"{node.Kind()} has span {span} outside a source of length {text.Length}.");
             Assert.Equal(text[span.Start..span.End], node.ToFullString());
 
             if (node.Parent is { } parent)
             {
                 Assert.True(
                     parent.FullSpan.Start <= span.Start && span.End <= parent.FullSpan.End,
-                    $"{node.Kind} {span} escapes its parent {parent.Kind} {parent.FullSpan}.");
+                    $"{node.Kind()} {span} escapes its parent {parent.Kind()} {parent.FullSpan}.");
             }
         }
 
         var position = 0;
-        foreach (var token in tree.Root.DescendantTokens())
+        foreach (var token in tree.GetRoot().DescendantTokens())
         {
             var insideSource = token.FullSpan.End <= text.Length;
-            Assert.True(insideSource, $"{token.Kind} has span {token.FullSpan} outside a source of length {text.Length}.");
+            Assert.True(insideSource, $"{token.Kind()} has span {token.FullSpan} outside a source of length {text.Length}.");
 
             foreach (var trivia in token.LeadingTrivia)
             {
-                position = AssertClaims(text, position, trivia.Span, trivia.Text, trivia.Kind);
+                position = AssertClaims(text, position, trivia.Span, trivia.ToString(), trivia.Kind());
             }
 
-            position = AssertClaims(text, position, token.Span, token.Text, token.Kind);
+            position = AssertClaims(text, position, token.Span, token.Text, token.Kind());
 
             foreach (var trivia in token.TrailingTrivia)
             {
-                position = AssertClaims(text, position, trivia.Span, trivia.Text, trivia.Kind);
+                position = AssertClaims(text, position, trivia.Span, trivia.ToString(), trivia.Kind());
             }
         }
 
         // Everything the source contains has to be claimed by exactly one token or one piece of trivia.
         Assert.Equal(text.Length, position);
 
-        foreach (var diagnostic in tree.Diagnostics)
+        foreach (var diagnostic in tree.GetDiagnostics())
         {
             var spanIsInsideSource = diagnostic.Location.SourceSpan.Start >= 0 && diagnostic.Location.SourceSpan.End <= text.Length;
             Assert.True(spanIsInsideSource, $"{diagnostic.Id} has span {diagnostic.Location.SourceSpan} outside a source of length {text.Length}.");
@@ -89,7 +89,7 @@ internal static class RegexSyntaxAssert
     }
 
     /// <summary>Asserts that the next piece of the source starts exactly where the previous one stopped.</summary>
-    private static int AssertClaims(string text, int position, TextSpan span, string claimed, RegexSyntaxKind kind)
+    private static int AssertClaims(string text, int position, TextSpan span, string claimed, SyntaxKind kind)
     {
         var startsWherePreviousStopped = span.Start == position;
         Assert.True(startsWherePreviousStopped, $"{kind} starts at {span.Start} but the previous piece stopped at {position}.");

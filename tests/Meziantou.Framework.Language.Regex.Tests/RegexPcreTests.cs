@@ -6,7 +6,7 @@ public sealed class RegexPcreTests
     private static RegexSyntaxTree Parse(string pattern)
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PcrePerl);
-        Assert.Empty(tree.Diagnostics, $"[{pattern}] reported {string.Join(",", tree.Diagnostics.Select(d => d.Id))}");
+        Assert.Empty(tree.GetDiagnostics(), $"[{pattern}] reported {string.Join(",", tree.GetDiagnostics().Select(d => d.Id))}");
 
         return tree;
     }
@@ -21,7 +21,7 @@ public sealed class RegexPcreTests
     [InlineData(@"(?<n>a)\g'n'")]
     public void EverySubroutineSpellingIsARecursionNode(string pattern)
     {
-        Assert.Single(Parse(pattern).Root.DescendantNodes().OfType<RegexRecursionSyntax>());
+        Assert.Single(Parse(pattern).GetRoot().DescendantNodes().OfType<RegexRecursionSyntax>());
     }
 
     [Theory]
@@ -32,7 +32,7 @@ public sealed class RegexPcreTests
     [InlineData(@"(?<n>a)(?P=n)", "n")]
     public void EveryReferenceSpellingIsANamedBackreferenceNode(string pattern, string name)
     {
-        var reference = Assert.Single(Parse(pattern).Root.DescendantNodes().OfType<RegexNamedBackreferenceSyntax>());
+        var reference = Assert.Single(Parse(pattern).GetRoot().DescendantNodes().OfType<RegexNamedBackreferenceSyntax>());
 
         Assert.Equal(name, reference.Name);
     }
@@ -44,7 +44,7 @@ public sealed class RegexPcreTests
     [InlineData(@"(?C""text"")", @"""text""")]
     public void ACalloutKeepsItsBody(string pattern, string value)
     {
-        var callout = Assert.Single(Parse(pattern).Root.DescendantNodes().OfType<RegexCalloutSyntax>());
+        var callout = Assert.Single(Parse(pattern).GetRoot().DescendantNodes().OfType<RegexCalloutSyntax>());
 
         Assert.Equal(value, callout.Value);
     }
@@ -60,7 +60,7 @@ public sealed class RegexPcreTests
     [InlineData(@"[\h\v]")]
     public void TheExtraShorthandClassesAreClassEscapes(string pattern)
     {
-        Assert.NotEmpty(Parse(pattern).Root.DescendantNodes().OfType<RegexCharacterClassEscapeSyntax>());
+        Assert.NotEmpty(Parse(pattern).GetRoot().DescendantNodes().OfType<RegexCharacterClassEscapeSyntax>());
     }
 
     /// <summary><c>\R</c> and <c>\X</c> are capitals without a lower-case counterpart, so they negate nothing.</summary>
@@ -72,7 +72,7 @@ public sealed class RegexPcreTests
     [InlineData(@"\X", false)]
     public void OnlyTheLettersThatComeInPairsAreNegations(string pattern, bool negated)
     {
-        var escape = Assert.Single(Parse(pattern).Root.DescendantNodes().OfType<RegexCharacterClassEscapeSyntax>());
+        var escape = Assert.Single(Parse(pattern).GetRoot().DescendantNodes().OfType<RegexCharacterClassEscapeSyntax>());
 
         Assert.Equal(negated, escape.IsNegated);
     }
@@ -83,7 +83,7 @@ public sealed class RegexPcreTests
     [InlineData(@"\N{U+1F600}", "\U0001F600")]
     public void ABracedNumericEscapeNamesItsCharacter(string pattern, string value)
     {
-        var escape = Assert.Single(Parse(pattern).Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
+        var escape = Assert.Single(Parse(pattern).GetRoot().DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
 
         Assert.Equal(value, escape.Value);
     }
@@ -98,15 +98,15 @@ public sealed class RegexPcreTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PcrePerl);
 
-        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0012");
+        Assert.Contains(tree.GetDiagnostics(), d => d.Id == "REGEX0012");
     }
 
     /// <summary><c>\N</c> alone is "any character except a newline"; <c>\N{…}</c> names a code point.</summary>
     [Fact]
     public void TheBraceDecidesWhichEscapeBackslashNIs()
     {
-        Assert.NotEmpty(Parse(@"\Na").Root.DescendantNodes().OfType<RegexCharacterClassEscapeSyntax>());
-        Assert.NotEmpty(Parse(@"\N{U+0041}").Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
+        Assert.NotEmpty(Parse(@"\Na").GetRoot().DescendantNodes().OfType<RegexCharacterClassEscapeSyntax>());
+        Assert.NotEmpty(Parse(@"\N{U+0041}").GetRoot().DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
     }
 
     [Theory]
@@ -115,7 +115,7 @@ public sealed class RegexPcreTests
     [InlineData(@"\p{L}", "L", false)]
     public void APropertyMayBeNegatedEitherWay(string pattern, string name, bool negated)
     {
-        var category = Assert.Single(Parse(pattern).Root.DescendantNodes().OfType<RegexUnicodeCategorySyntax>());
+        var category = Assert.Single(Parse(pattern).GetRoot().DescendantNodes().OfType<RegexUnicodeCategorySyntax>());
 
         Assert.Equal(name, category.Name);
         Assert.Equal(negated, category.IsNegated);
@@ -133,7 +133,7 @@ public sealed class RegexPcreTests
     [InlineData("(*PRUNE)a", "PRUNE")]
     public void ABacktrackingVerbKeepsItsName(string pattern, string name)
     {
-        var verb = Assert.Single(Parse(pattern).Root.DescendantNodes().OfType<RegexBacktrackingVerbSyntax>());
+        var verb = Assert.Single(Parse(pattern).GetRoot().DescendantNodes().OfType<RegexBacktrackingVerbSyntax>());
 
         Assert.Equal(name, verb.Name);
     }
@@ -146,7 +146,7 @@ public sealed class RegexPcreTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PcrePerl);
 
-        Assert.Contains(tree.Diagnostics, d => d.Id == id);
+        Assert.Contains(tree.GetDiagnostics(), d => d.Id == id);
     }
 
     /// <summary>None of this belongs to .NET, so the .NET dialect must not quietly accept it.</summary>
@@ -158,6 +158,6 @@ public sealed class RegexPcreTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.Net);
 
-        Assert.NotEmpty(tree.Diagnostics);
+        Assert.NotEmpty(tree.GetDiagnostics());
     }
 }

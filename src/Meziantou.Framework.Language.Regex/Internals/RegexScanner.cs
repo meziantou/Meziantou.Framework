@@ -7,7 +7,11 @@
 //
 // Changes: ScanBlank becomes ScanTrivia, which produces trivia and diagnostics instead of only advancing a position.
 
-namespace Meziantou.Framework.Language.Regex.Internals;
+using Meziantou.Framework.Language.InternalSyntax;
+using Meziantou.Framework.Language.Regex.Internals;
+using GreenToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
+
+namespace Meziantou.Framework.Language.Regex.Syntax.InternalSyntax;
 
 /// <summary>Reads a pattern one character at a time and turns spans of it into tokens and trivia.</summary>
 /// <remarks>
@@ -31,7 +35,7 @@ internal sealed class RegexScanner
     private int _triviaStart = -1;
     private int _triviaEnd;
     private RegexPatternOptions _triviaOptions;
-    private List<RegexSyntaxTrivia>? _triviaCache;
+    private List<GreenNode?>? _triviaCache;
     private List<Diagnostic>? _triviaDiagnostics;
 
     public RegexScanner(SourceText source, List<Diagnostic> diagnostics)
@@ -65,21 +69,16 @@ internal sealed class RegexScanner
         _diagnostics.Add(new Diagnostic(id, message, DiagnosticSeverity.Error, new Location(span, Source)));
 
     /// <summary>Builds a token covering the text from <paramref name="start"/> to the reading position.</summary>
-    public RegexSyntaxToken Token(RegexSyntaxKind kind, int start, IReadOnlyList<RegexSyntaxTrivia>? leadingTrivia = null, string? valueText = null)
-    {
-        var text = Text[start..Position];
-        var fullStart = leadingTrivia is { Count: > 0 } ? leadingTrivia[0].Span.Start : start;
-
-        return new RegexSyntaxToken(kind, text, valueText, isMissing: false, leadingTrivia, trailingTrivia: null, fullStart);
-    }
+    /// <remarks>
+    /// The token records its width, not where it is. Its position comes from where it ends up in the tree, which is
+    /// what lets the same token stand at more than one place.
+    /// </remarks>
+    public ScannedToken Token(SyntaxKind kind, int start, GreenNode? leadingTrivia = null, string? valueText = null)
+        => new(SyntaxFactory.Token(kind, Text[start..Position], leadingTrivia, valueText), start, Position);
 
     /// <summary>Builds a zero-width token standing in for one the source did not contain.</summary>
-    public RegexSyntaxToken MissingToken(RegexSyntaxKind kind, IReadOnlyList<RegexSyntaxTrivia>? leadingTrivia = null)
-    {
-        var fullStart = leadingTrivia is { Count: > 0 } ? leadingTrivia[0].Span.Start : Position;
-
-        return new RegexSyntaxToken(kind, string.Empty, string.Empty, isMissing: true, leadingTrivia, trailingTrivia: null, fullStart);
-    }
+    public ScannedToken MissingToken(SyntaxKind kind, GreenNode? leadingTrivia = null)
+        => new(SyntaxFactory.MissingToken(kind, leadingTrivia), Position, Position);
 
     /// <summary>Reports where the trivia at the reading position ends, without claiming it.</summary>
     public int PeekTriviaEnd(RegexPatternOptions options, RegexDialect dialect)
@@ -90,7 +89,7 @@ internal sealed class RegexScanner
     }
 
     /// <summary>Claims the trivia at the reading position and reports whatever went wrong inside it.</summary>
-    public IReadOnlyList<RegexSyntaxTrivia> TakeTrivia(RegexPatternOptions options, RegexDialect dialect)
+    public GreenNode? TakeTrivia(RegexPatternOptions options, RegexDialect dialect)
     {
         EnsureTrivia(options, dialect);
         Position = _triviaEnd;
@@ -100,7 +99,7 @@ internal sealed class RegexScanner
             _diagnostics.AddRange(_triviaDiagnostics);
         }
 
-        var trivia = (IReadOnlyList<RegexSyntaxTrivia>?)_triviaCache ?? [];
+        var trivia = _triviaCache is null ? null : SyntaxFactory.List(_triviaCache.ToArray());
         _triviaStart = -1;
         _triviaCache = null;
         _triviaDiagnostics = null;
@@ -146,7 +145,7 @@ internal sealed class RegexScanner
 
                 if (position > whitespaceStart)
                 {
-                    Add(new RegexSyntaxTrivia(RegexSyntaxKind.WhitespaceTrivia, Text[whitespaceStart..position], whitespaceStart));
+                    Add(SyntaxFactory.Trivia(SyntaxKind.WhitespaceTrivia, Text[whitespaceStart..position]));
                 }
             }
 
@@ -156,7 +155,7 @@ internal sealed class RegexScanner
                 var lineFeed = Text.AsSpan(position).IndexOf('\n');
                 position = lineFeed < 0 ? Text.Length : position + lineFeed;
 
-                Add(new RegexSyntaxTrivia(RegexSyntaxKind.PatternCommentTrivia, Text[commentStart..position], commentStart));
+                Add(SyntaxFactory.Trivia(SyntaxKind.PatternCommentTrivia, Text[commentStart..position]));
             }
             else if (comments && position + 2 < Text.Length && Text[position + 2] == '#' && Text[position + 1] == '?' && Text[position] == '(')
             {
@@ -172,7 +171,7 @@ internal sealed class RegexScanner
                     position += closeParen + 1;
                 }
 
-                Add(new RegexSyntaxTrivia(RegexSyntaxKind.InlineCommentTrivia, Text[commentStart..position], commentStart));
+                Add(SyntaxFactory.Trivia(SyntaxKind.InlineCommentTrivia, Text[commentStart..position]));
             }
             else
             {
@@ -182,7 +181,7 @@ internal sealed class RegexScanner
 
         return position;
 
-        void Add(RegexSyntaxTrivia trivia)
+        void Add(GreenNode trivia)
         {
             _triviaCache ??= [];
             _triviaCache.Add(trivia);

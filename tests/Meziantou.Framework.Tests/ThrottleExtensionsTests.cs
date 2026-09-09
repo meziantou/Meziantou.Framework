@@ -48,11 +48,14 @@ public class ThrottleExtensionsTests
 
         timeProvider.Advance(TimeSpan.FromSeconds(2));
 
-        // The invocation is queued to the thread pool, so it can be delayed well beyond the interval
-        // when the pool is saturated by the tests running beside this one. Block on the signal the
-        // action itself sets instead of spinning, and give it a budget large enough to survive that.
-        Assert.True(invoked.Wait(TimeSpan.FromSeconds(30)), "The throttled action was not invoked");
+        // Advancing the time only queues the invocation to the thread pool. Every test of the process runs
+        // in parallel, and the sibling process running the other target framework competes for the same CPU,
+        // so the work item can sit in the queue for a long time: waiting for it with a short spin turned a
+        // slow agent into a failure. The budget below is not an assertion about the scheduling latency, it
+        // only exists so an invocation that never happens fails the test instead of hanging the run.
+        Assert.True(invoked.Wait(TimeSpan.FromSeconds(60)), "The throttled action was not invoked");
 
+        // Setting the event happens after the list is updated, so waiting for it publishes the writes
         Assert.Single(observed);
         Assert.Equal(observed[0].First, observed[0].Second);
     }

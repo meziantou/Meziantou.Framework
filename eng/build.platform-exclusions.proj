@@ -2,12 +2,11 @@
   <Import Project="build.exclusions.proj" />
 
   <!-- These projects build everywhere (EnableWindowsTargeting is set in Directory.Build.props),
-       but their tests cannot run off Windows: the WPF and Windows Forms ones need the
-       Microsoft.WindowsDesktop.App runtime, and the ProjectedFileSystem one is x64-only and
-       P/Invokes ProjectedFSLib. Only the traversals that run tests use this file;
-       build.all-platforms.proj keeps them so they are still compiled and analyzed. -->
+       but their tests cannot run off Windows: WPF and Windows Forms need the
+       Microsoft.WindowsDesktop.App runtime, which only ships for Windows. Only the traversals
+       that run tests use this file; build.all-platforms.proj keeps them so they are still
+       compiled and analyzed. -->
   <ItemGroup Condition="$([MSBuild]::IsOsPlatform('Windows')) == false">
-    <ProjectReference Remove="../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj" />
     <ProjectReference Remove="../tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
     <ProjectReference Remove="../tests/Meziantou.Framework.Threading.Windows.Tests/Meziantou.Framework.Threading.Windows.Tests.csproj" />
   </ItemGroup>

@@ -54,7 +54,21 @@ public readonly struct SyntaxList<TNode> : IReadOnlyList<TNode>, IEquatable<Synt
     public TNode? FirstOrDefault() => Count > 0 ? this[0] : null;
     public TNode? LastOrDefault() => Count > 0 ? this[Count - 1] : null;
 
-    public int IndexOf(TNode node) => GreenNodeList.IndexOf(_node?.Green, node?.Green);
+    /// <summary>Returns the position of <paramref name="node"/> in this list, or -1.</summary>
+    /// <remarks>
+    /// Elements are matched by which one they are, not by the immutable node behind them: that node is shared, so
+    /// two elements holding the same text are usually the same node and would both answer with the first position.
+    /// </remarks>
+    public int IndexOf(TNode node)
+    {
+        for (var i = 0; i < Count; i++)
+        {
+            if (ReferenceEquals(this[i], node))
+                return i;
+        }
+
+        return -1;
+    }
 
     /// <summary>Finds the first node matching <paramref name="predicate"/>, or -1.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null"/>.</exception>

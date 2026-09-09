@@ -58,7 +58,21 @@ public readonly struct SyntaxNodeOrTokenList : IReadOnlyList<SyntaxNodeOrToken>,
     public SyntaxNodeOrToken FirstOrDefault() => Count > 0 ? this[0] : default;
     public SyntaxNodeOrToken LastOrDefault() => Count > 0 ? this[Count - 1] : default;
 
-    public int IndexOf(SyntaxNodeOrToken nodeOrToken) => GreenNodeList.IndexOf(_node?.Green, nodeOrToken.UnderlyingNode);
+    /// <summary>Returns the position of <paramref name="nodeOrToken"/> in this list, or -1.</summary>
+    /// <remarks>
+    /// Items are matched by which one they are, not by the immutable node behind them: that node is shared, so two
+    /// items holding the same text are usually the same node and would both answer with the first position.
+    /// </remarks>
+    public int IndexOf(SyntaxNodeOrToken nodeOrToken)
+    {
+        for (var i = 0; i < Count; i++)
+        {
+            if (this[i] == nodeOrToken)
+                return i;
+        }
+
+        return -1;
+    }
 
     /// <summary>Returns a detached list with <paramref name="nodeOrToken"/> appended.</summary>
     public SyntaxNodeOrTokenList Add(SyntaxNodeOrToken nodeOrToken) => Insert(Count, nodeOrToken);

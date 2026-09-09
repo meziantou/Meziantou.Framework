@@ -53,7 +53,21 @@ public readonly struct SyntaxTokenList : IReadOnlyList<SyntaxToken>, IEquatable<
     public SyntaxToken FirstOrDefault() => Count > 0 ? this[0] : default;
     public SyntaxToken LastOrDefault() => Count > 0 ? this[Count - 1] : default;
 
-    public int IndexOf(SyntaxToken token) => GreenNodeList.IndexOf(_node, token.Node);
+    /// <summary>Returns the position of <paramref name="token"/> in this list, or -1.</summary>
+    /// <remarks>
+    /// Tokens are matched by which one they are, not by the immutable token behind them: that token is shared, so
+    /// two entries spelled the same are usually the same token and would both answer with the first position.
+    /// </remarks>
+    public int IndexOf(SyntaxToken token)
+    {
+        for (var i = 0; i < Count; i++)
+        {
+            if (this[i] == token)
+                return i;
+        }
+
+        return -1;
+    }
 
     /// <summary>Returns a detached list with <paramref name="token"/> appended.</summary>
     public SyntaxTokenList Add(SyntaxToken token) => Insert(Count, token);

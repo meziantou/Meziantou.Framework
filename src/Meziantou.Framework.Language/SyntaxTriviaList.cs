@@ -45,7 +45,21 @@ public readonly struct SyntaxTriviaList : IReadOnlyList<SyntaxTrivia>, IEquatabl
     public SyntaxTrivia FirstOrDefault() => Count > 0 ? this[0] : default;
     public SyntaxTrivia LastOrDefault() => Count > 0 ? this[Count - 1] : default;
 
-    public int IndexOf(SyntaxTrivia trivia) => GreenNodeList.IndexOf(_node, trivia.UnderlyingNode);
+    /// <summary>Returns the position of <paramref name="trivia"/> in this list, or -1.</summary>
+    /// <remarks>
+    /// Trivia is matched by which entry it is, not by the immutable trivium behind it: a run of spaces is interned,
+    /// so two entries holding the same text are usually the same trivium and would both answer with the first.
+    /// </remarks>
+    public int IndexOf(SyntaxTrivia trivia)
+    {
+        for (var i = 0; i < Count; i++)
+        {
+            if (this[i] == trivia)
+                return i;
+        }
+
+        return -1;
+    }
 
     /// <summary>Returns a detached list with <paramref name="trivia"/> appended.</summary>
     public SyntaxTriviaList Add(SyntaxTrivia trivia) => Insert(Count, trivia);

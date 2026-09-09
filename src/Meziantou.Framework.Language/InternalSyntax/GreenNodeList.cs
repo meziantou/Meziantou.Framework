@@ -71,15 +71,4 @@ internal static class GreenNodeList
         return SyntaxList.List(result);
     }
 
-    public static int IndexOf(GreenNode? node, GreenNode? item)
-    {
-        var count = Count(node);
-        for (var i = 0; i < count; i++)
-        {
-            if (ReferenceEquals(ElementAt(node, i), item))
-                return i;
-        }
-
-        return -1;
-    }
 }

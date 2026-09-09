@@ -357,4 +357,85 @@ public sealed class SyntaxReplaceTests
             Assert.Equal(token.Text, text.Substring(token.Span.Start, token.Span.Length));
         }
     }
+
+    /// <summary>
+    /// Two elements that are the same immutable node are still two elements. Locating one by the node behind it
+    /// would always answer with the first, because that node is shared.
+    /// </summary>
+    [Fact]
+    public void SyntaxList_LocatesARepeatedElementByWhichOneItIs()
+    {
+        var atom = TestSyntax.Atom("a");
+        var list = new SyntaxList<TestValueSyntax>([atom, atom]);
+
+        Assert.Equal(0, list.IndexOf(list[0]));
+        Assert.Equal(1, list.IndexOf(list[1]));
+    }
+
+    [Fact]
+    public void SyntaxList_RemoveAndReplaceTakeTheElementTheyWereGiven()
+    {
+        var atom = TestSyntax.Atom("a");
+        var list = new SyntaxList<TestValueSyntax>([atom, atom, TestSyntax.Atom("b")]);
+
+        var removed = list.Remove(list[1]);
+        Assert.Equal(["a", "b"], removed.Select(value => value.ToFullString()));
+
+        var replaced = list.Replace(list[1], TestSyntax.Atom("z"));
+        Assert.Equal(["a", "z", "b"], replaced.Select(value => value.ToFullString()));
+    }
+
+    [Fact]
+    public void SyntaxTokenList_LocatesARepeatedTokenByWhichOneItIs()
+    {
+        var comma = TestSyntax.Atom("a").IdentifierToken;
+        var list = new SyntaxTokenList([comma, comma]);
+
+        Assert.Equal(0, list.IndexOf(list[0]));
+        Assert.Equal(1, list.IndexOf(list[1]));
+    }
+
+    [Fact]
+    public void SyntaxTriviaList_LocatesARepeatedTriviumByWhichOneItIs()
+    {
+        var list = TestSyntax.ParseRoot("  a").Value!.GetLeadingTrivia();
+        var doubled = list.Add(list[0]);
+
+        Assert.Equal(0, doubled.IndexOf(doubled[0]));
+        Assert.Equal(1, doubled.IndexOf(doubled[1]));
+    }
+
+    [Fact]
+    public void SyntaxNodeOrTokenList_LocatesARepeatedItemByWhichOneItIs()
+    {
+        var atom = TestSyntax.Atom("a");
+        var list = new SyntaxNodeOrTokenList([atom, atom]);
+
+        Assert.Equal(0, list.IndexOf(list[0]));
+        Assert.Equal(1, list.IndexOf(list[1]));
+    }
+
+    /// <summary>
+    /// A batch naming one node in the tree and one from somewhere else is rejected, the way a single foreign node is.
+    /// Replacing what it can and ignoring the rest would leave the caller believing the whole batch had applied.
+    /// </summary>
+    [Fact]
+    public void ReplaceNodes_RejectsABatchHoldingANodeFromAnotherTree()
+    {
+        var root = TestSyntax.ParseRoot("(a, b)");
+        var mine = root.Value!.DescendantNodes().OfType<TestAtomSyntax>().First();
+        var foreign = TestSyntax.ParseRoot("(x)").Value!.DescendantNodes().OfType<TestAtomSyntax>().First();
+
+        Assert.Throws<ArgumentException>(() => root.ReplaceNodes<TestRootSyntax, TestValueSyntax>([mine, foreign], (_, _) => TestSyntax.Atom("z")));
+    }
+
+    [Fact]
+    public void ReplaceTokens_RejectsABatchHoldingATokenFromAnotherTree()
+    {
+        var root = TestSyntax.ParseRoot("(a, b)");
+        var mine = root.DescendantTokens().First();
+        var foreign = TestSyntax.ParseRoot("(x)").DescendantTokens().First();
+
+        Assert.Throws<ArgumentException>(() => root.ReplaceTokens([mine, foreign], (_, _) => mine));
+    }
 }

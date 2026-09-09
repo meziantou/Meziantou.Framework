@@ -43,6 +43,7 @@ public static class SyntaxNodeExtensions
         foreach (var node in nodes)
         {
             ArgumentNullException.ThrowIfNull(node, nameof(nodes));
+            EnsureInTree(root, node, "One of the nodes is not part of this tree.", nameof(nodes));
             replacer.ReplaceNode(node, computeReplacement(node, node).Green);
         }
 
@@ -69,6 +70,7 @@ public static class SyntaxNodeExtensions
         var replacer = new SyntaxReplacer();
         foreach (var token in tokens)
         {
+            EnsureInTree(root, token.Parent, "One of the tokens is not part of this tree.", nameof(tokens));
             replacer.ReplaceToken(token, computeReplacement(token, token).Node);
         }
 
@@ -95,6 +97,7 @@ public static class SyntaxNodeExtensions
         var replacer = new SyntaxReplacer();
         foreach (var item in trivia)
         {
+            EnsureInTree(root, item.Token.Parent, "One of the trivia is not part of this tree.", nameof(trivia));
             replacer.ReplaceTrivia(item, computeReplacement(item, item).UnderlyingNode);
         }
 
@@ -573,6 +576,23 @@ public static class SyntaxNodeExtensions
         }
 
         return false;
+    }
+
+    /// <summary>Rejects a target that is not part of the tree being rebuilt.</summary>
+    /// <remarks>
+    /// Each target is checked as it is registered, so a batch holding one target from the tree and one from
+    /// somewhere else is rejected rather than half applied. Rebuilding alone cannot tell the difference: it only
+    /// knows whether anything at all was replaced.
+    /// </remarks>
+    private static void EnsureInTree(SyntaxNode root, SyntaxNode? node, string message, string parameterName)
+    {
+        for (var current = node; current is not null; current = current.Parent)
+        {
+            if (ReferenceEquals(current, root))
+                return;
+        }
+
+        throw new ArgumentException(message, parameterName);
     }
 
     private static TRoot Rebuild<TRoot>(TRoot root, SyntaxReplacer replacer, string message, string parameterName)

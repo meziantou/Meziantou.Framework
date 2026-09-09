@@ -1,4 +1,9 @@
-namespace Meziantou.Framework.Language.Shell.Internals;
+using System.Runtime.InteropServices;
+using Meziantou.Framework.Language.InternalSyntax;
+using GreenFactory = Meziantou.Framework.Language.Shell.Syntax.InternalSyntax.SyntaxFactory;
+using Red = Meziantou.Framework.Language.Shell;
+
+namespace Meziantou.Framework.Language.Shell.Syntax.InternalSyntax;
 
 /// <summary>Parser for the POSIX shell family (<c>sh</c>, <c>bash</c>, and <c>zsh</c>).</summary>
 /// <remarks>
@@ -10,7 +15,7 @@ internal sealed partial class PosixParser
     private readonly PosixLexer _lexer;
     private readonly List<Diagnostic> _diagnostics = [];
     private readonly ShellParseOptions _options;
-    private readonly List<ShellSyntaxTrivia> _pendingTrivia = [];
+    private readonly List<GreenNode?> _pendingTrivia = [];
     private readonly List<PendingHereDocument> _pendingHereDocuments = [];
     private int _pendingTriviaStart;
     private int _depth;
@@ -32,9 +37,9 @@ internal sealed partial class PosixParser
     {
         var statements = ParseStatementList(ParseContext.TopLevel);
         var (trivia, fullStart) = TakeTrivia();
-        var endOfFileToken = new ShellSyntaxToken(ShellSyntaxKind.EndOfFileToken, string.Empty, string.Empty, leadingTrivia: trivia, fullStart: fullStart);
+        var endOfFileToken = new ScannedToken(SyntaxKind.EndOfFileToken, string.Empty, string.Empty, leadingTrivia: trivia, fullStart: fullStart);
 
-        return new ShellScriptSyntax(statements, endOfFileToken, _lexer.Text);
+        return new ShellScriptSyntax(statements, endOfFileToken);
     }
 
     // ---- statements ----
@@ -42,7 +47,7 @@ internal sealed partial class PosixParser
     private ShellStatementListSyntax ParseStatementList(ParseContext context)
     {
         var statements = new List<ShellStatementSyntax>();
-        var separators = new List<ShellSyntaxToken>();
+        var separators = new List<ScannedToken>();
 
         while (true)
         {
@@ -59,7 +64,7 @@ internal sealed partial class PosixParser
                 // The separator belongs to the statement in front of it, so pad first to land at the right index.
                 while (separators.Count + 1 < statements.Count)
                 {
-                    separators.Add(MissingToken(ShellSyntaxKind.SemicolonToken, separator.FullSpan.Start));
+                    separators.Add(MissingToken(SyntaxKind.SemicolonToken, separator.FullSpan.Start));
                 }
 
                 if (separators.Count < statements.Count)
@@ -70,8 +75,8 @@ internal sealed partial class PosixParser
                 {
                     // A separator with nothing in front of it is not valid; keep it so the text still round-trips.
                     AddDiagnostic(separator.Span, "SHELL0002", $"Unexpected '{separator.Text}'.");
-                    statements.Add(new ShellSkippedTextSyntax([separator], separator.FullSpan.Start));
-                    separators.Add(MissingToken(ShellSyntaxKind.SemicolonToken, _lexer.Position));
+                    statements.Add(new ShellSkippedTextSyntax(ParserHelpers.SkippedTokens([separator])));
+                    separators.Add(MissingToken(SyntaxKind.SemicolonToken, _lexer.Position));
                 }
 
                 continue;
@@ -81,7 +86,7 @@ internal sealed partial class PosixParser
             // still needs a placeholder; without one the next `;` would be rebuilt against the wrong statement.
             while (separators.Count < statements.Count)
             {
-                separators.Add(MissingToken(ShellSyntaxKind.SemicolonToken, _lexer.Position));
+                separators.Add(MissingToken(SyntaxKind.SemicolonToken, _lexer.Position));
             }
 
             var statement = ParseAndOrList();
@@ -103,26 +108,26 @@ internal sealed partial class PosixParser
             }
         }
 
-        return new ShellStatementListSyntax(statements, separators);
+        return new ShellStatementListSyntax(ParserHelpers.Separated(statements, separators));
     }
 
     private ShellStatementSyntax ParseAndOrList()
     {
         var first = ParsePipeline();
         List<ShellStatementSyntax>? pipelines = null;
-        List<ShellSyntaxToken>? operators = null;
+        List<ScannedToken>? operators = null;
 
         while (true)
         {
             AccumulateInlineTrivia();
             var kind = _lexer.Current switch
             {
-                '&' when _lexer.Peek(1) == '&' => ShellSyntaxKind.AmpersandAmpersandToken,
-                '|' when _lexer.Peek(1) == '|' => ShellSyntaxKind.PipePipeToken,
-                _ => ShellSyntaxKind.None,
+                '&' when _lexer.Peek(1) == '&' => SyntaxKind.AmpersandAmpersandToken,
+                '|' when _lexer.Peek(1) == '|' => SyntaxKind.PipePipeToken,
+                _ => SyntaxKind.None,
             };
 
-            if (kind == ShellSyntaxKind.None)
+            if (kind == SyntaxKind.None)
                 break;
 
             pipelines ??= [first];
@@ -137,7 +142,7 @@ internal sealed partial class PosixParser
         if (pipelines is null)
             return first;
 
-        return new ShellCommandListSyntax(pipelines, operators);
+        return new ShellCommandListSyntax(ParserHelpers.Separated(pipelines, operators));
     }
 
     /// <summary>
@@ -146,7 +151,7 @@ internal sealed partial class PosixParser
     /// </summary>
     private ShellStatementSyntax TryAttachZshAlways(ShellStatementSyntax statement)
     {
-        if (statement.Kind != ShellSyntaxKind.PosixGroup || !_options.Dialect.HasFeature(ShellDialectFeatures.ZshExtensions))
+        if (statement.Kind != SyntaxKind.PosixGroup || !_options.Dialect.HasFeature(ShellDialectFeatures.ZshExtensions))
             return statement;
 
         AccumulateInlineTrivia();
@@ -162,16 +167,16 @@ internal sealed partial class PosixParser
     {
         AccumulateInlineTrivia();
 
-        ShellSyntaxToken? bangToken = null;
+        ScannedToken bangToken = default;
         if (_lexer.Current == '!' && (PosixLexer.IsWordBoundary(_lexer.Peek(1)) || _lexer.Peek(1) == '\0'))
         {
-            bangToken = ReadOperatorToken(ShellSyntaxKind.ExclamationToken, length: 1);
+            bangToken = ReadOperatorToken(SyntaxKind.ExclamationToken, length: 1);
             AccumulateInlineTrivia();
         }
 
         var first = TryAttachZshAlways(ParseCommandOrCompound());
         List<ShellStatementSyntax>? commands = null;
-        List<ShellSyntaxToken>? operators = null;
+        List<ScannedToken>? operators = null;
 
         while (true)
         {
@@ -183,17 +188,17 @@ internal sealed partial class PosixParser
             commands ??= [first];
             operators ??= [];
             operators.Add(isPipeAmpersand
-                ? ReadOperatorToken(ShellSyntaxKind.PipeAmpersandToken, length: 2)
-                : ReadOperatorToken(ShellSyntaxKind.PipeToken, length: 1));
+                ? ReadOperatorToken(SyntaxKind.PipeAmpersandToken, length: 2)
+                : ReadOperatorToken(SyntaxKind.PipeToken, length: 1));
 
             AccumulateStatementTrivia();
             commands.Add(TryAttachZshAlways(ParseCommandOrCompound()));
         }
 
-        if (commands is null && bangToken is null)
+        if (commands is null && !bangToken.IsPresent)
             return first;
 
-        return new ShellPipelineSyntax(bangToken, commands ?? [first], operators ?? []);
+        return new ShellPipelineSyntax(bangToken, ParserHelpers.Separated(commands ?? [first], operators ?? []));
     }
 
     private ShellStatementSyntax ParseSimpleCommand()
@@ -241,10 +246,10 @@ internal sealed partial class PosixParser
             var (trivia, fullStart) = TakeTrivia();
             AddDiagnostic(new TextSpan(_lexer.Position, 0), "SHELL0001", "Expected a command.");
 
-            return new ShellSkippedTextSyntax([MissingToken(ShellSyntaxKind.BareTextToken, fullStart, trivia)], fullStart);
+            return new ShellSkippedTextSyntax(ParserHelpers.SkippedTokens([MissingToken(SyntaxKind.BareTextToken, fullStart, trivia)]));
         }
 
-        return new ShellCommandSyntax(elements);
+        return new ShellCommandSyntax(ParserHelpers.List(elements));
     }
 
     // ---- command parts ----
@@ -276,14 +281,14 @@ internal sealed partial class PosixParser
         var (trivia, fullStart) = TakeTrivia();
         var nameStart = _lexer.Position;
         _lexer.Position = scan;
-        var nameToken = _lexer.CreateToken(ShellSyntaxKind.VariableNameToken, nameStart, trivia, fullStart);
+        var nameToken = _lexer.CreateToken(SyntaxKind.VariableNameToken, nameStart, trivia, fullStart);
 
         var equalsStart = _lexer.Position;
         _lexer.Position += isAppend ? 2 : 1;
         var equalsToken = _lexer.CreateToken(
-            isAppend ? ShellSyntaxKind.PlusEqualsToken : ShellSyntaxKind.EqualsToken,
+            isAppend ? SyntaxKind.PlusEqualsToken : SyntaxKind.EqualsToken,
             equalsStart,
-            [],
+            leadingTrivia: null,
             equalsStart);
 
         if (_lexer.Current == '(' && _options.Dialect.HasFeature(ShellDialectFeatures.Arrays))
@@ -316,18 +321,18 @@ internal sealed partial class PosixParser
             return false;
 
         var (kind, length) = ReadRedirectionOperatorKind(operatorStart);
-        if (kind == ShellSyntaxKind.None)
+        if (kind == SyntaxKind.None)
             return false;
 
         var (trivia, fullStart) = TakeTrivia();
 
-        ShellSyntaxToken? ioNumberToken = null;
+        ScannedToken ioNumberToken = default;
         if (hasIoNumber)
         {
             var ioStart = _lexer.Position;
             _lexer.Position = scan;
-            ioNumberToken = _lexer.CreateToken(ShellSyntaxKind.IoNumberToken, ioStart, trivia, fullStart);
-            trivia = [];
+            ioNumberToken = _lexer.CreateToken(SyntaxKind.IoNumberToken, ioStart, trivia, fullStart);
+            trivia = null;
             fullStart = _lexer.Position;
         }
 
@@ -347,34 +352,34 @@ internal sealed partial class PosixParser
         }
 
         redirection = new ShellRedirectionSyntax(ioNumberToken, operatorToken, target);
-        if (kind is ShellSyntaxKind.LessThanLessThanToken or ShellSyntaxKind.LessThanLessThanDashToken)
+        if (kind is SyntaxKind.LessThanLessThanToken or SyntaxKind.LessThanLessThanDashToken)
         {
-            _pendingHereDocuments.Add(new PendingHereDocument(redirection, target?.Value ?? string.Empty));
+            _pendingHereDocuments.Add(new PendingHereDocument(redirection, target?.WordValue() ?? string.Empty));
         }
 
         return true;
     }
 
-    private (ShellSyntaxKind Kind, int Length) ReadRedirectionOperatorKind(int position)
+    private (SyntaxKind Kind, int Length) ReadRedirectionOperatorKind(int position)
     {
         var text = _lexer.Text;
         char At(int offset) => position + offset < text.Length ? text[position + offset] : '\0';
 
         return (At(0), At(1), At(2)) switch
         {
-            ('<', '<', '<') when _options.Dialect.HasFeature(ShellDialectFeatures.HereString) => (ShellSyntaxKind.LessThanLessThanLessThanToken, 3),
-            ('<', '<', '-') => (ShellSyntaxKind.LessThanLessThanDashToken, 3),
-            ('<', '<', _) => (ShellSyntaxKind.LessThanLessThanToken, 2),
-            ('<', '&', _) => (ShellSyntaxKind.LessThanAmpersandToken, 2),
-            ('<', '>', _) => (ShellSyntaxKind.LessThanGreaterThanToken, 2),
-            ('<', _, _) => (ShellSyntaxKind.LessThanToken, 1),
-            ('>', '>', _) => (ShellSyntaxKind.GreaterThanGreaterThanToken, 2),
-            ('>', '&', _) => (ShellSyntaxKind.GreaterThanAmpersandToken, 2),
-            ('>', '|', _) => (ShellSyntaxKind.GreaterThanPipeToken, 2),
-            ('>', _, _) => (ShellSyntaxKind.GreaterThanToken, 1),
-            ('&', '>', '>') => (ShellSyntaxKind.AmpersandGreaterThanGreaterThanToken, 3),
-            ('&', '>', _) => (ShellSyntaxKind.AmpersandGreaterThanToken, 2),
-            _ => (ShellSyntaxKind.None, 0),
+            ('<', '<', '<') when _options.Dialect.HasFeature(ShellDialectFeatures.HereString) => (SyntaxKind.LessThanLessThanLessThanToken, 3),
+            ('<', '<', '-') => (SyntaxKind.LessThanLessThanDashToken, 3),
+            ('<', '<', _) => (SyntaxKind.LessThanLessThanToken, 2),
+            ('<', '&', _) => (SyntaxKind.LessThanAmpersandToken, 2),
+            ('<', '>', _) => (SyntaxKind.LessThanGreaterThanToken, 2),
+            ('<', _, _) => (SyntaxKind.LessThanToken, 1),
+            ('>', '>', _) => (SyntaxKind.GreaterThanGreaterThanToken, 2),
+            ('>', '&', _) => (SyntaxKind.GreaterThanAmpersandToken, 2),
+            ('>', '|', _) => (SyntaxKind.GreaterThanPipeToken, 2),
+            ('>', _, _) => (SyntaxKind.GreaterThanToken, 1),
+            ('&', '>', '>') => (SyntaxKind.AmpersandGreaterThanGreaterThanToken, 3),
+            ('&', '>', _) => (SyntaxKind.AmpersandGreaterThanToken, 2),
+            _ => (SyntaxKind.None, 0),
         };
     }
 
@@ -383,14 +388,14 @@ internal sealed partial class PosixParser
     private bool IsAndOrOperator() =>
         (_lexer.Current == '&' && _lexer.Peek(1) == '&') || (_lexer.Current == '|' && _lexer.Peek(1) == '|');
 
-    private ShellSyntaxToken ReadSeparatorToken()
+    private ScannedToken ReadSeparatorToken()
     {
-        var kind = _lexer.Current == ';' ? ShellSyntaxKind.SemicolonToken : ShellSyntaxKind.AmpersandToken;
+        var kind = _lexer.Current == ';' ? SyntaxKind.SemicolonToken : SyntaxKind.AmpersandToken;
 
         return ReadOperatorToken(kind, length: 1);
     }
 
-    private ShellSyntaxToken ReadOperatorToken(ShellSyntaxKind kind, int length)
+    private ScannedToken ReadOperatorToken(SyntaxKind kind, int length)
     {
         var (trivia, fullStart) = TakeTrivia();
         var start = _lexer.Position;
@@ -404,10 +409,10 @@ internal sealed partial class PosixParser
         var (trivia, fullStart) = TakeTrivia();
         var start = _lexer.Position;
         _lexer.Position = Math.Min(_lexer.Position + 1, _lexer.Text.Length);
-        var token = _lexer.CreateToken(ShellSyntaxKind.BadToken, start, trivia, fullStart);
+        var token = _lexer.CreateToken(SyntaxKind.BadToken, start, trivia, fullStart);
         AddDiagnostic(token.Span, "SHELL0002", $"Unexpected '{token.Text}'.");
 
-        return new ShellSkippedTextSyntax([token], fullStart);
+        return new ShellSkippedTextSyntax(ParserHelpers.SkippedTokens([token]));
     }
 
     // ---- words ----
@@ -419,7 +424,7 @@ internal sealed partial class PosixParser
 
         while (!_lexer.IsAtEnd && (!IsWordTerminator(_lexer.Current) || IsAtProcessSubstitution()))
         {
-            var (trivia, fullStart) = isFirst ? TakeTrivia() : ([], _lexer.Position);
+            var (trivia, fullStart) = isFirst ? TakeTrivia() : (null, _lexer.Position);
             isFirst = false;
 
             var positionBefore = _lexer.Position;
@@ -430,10 +435,10 @@ internal sealed partial class PosixParser
             }
         }
 
-        return new ShellWordSyntax(parts);
+        return new ShellWordSyntax(ParserHelpers.List(parts));
     }
 
-    private ShellWordPartSyntax ParseWordPart(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellWordPartSyntax ParseWordPart(GreenNode? leadingTrivia, int fullStart)
     {
         if (IsAtProcessSubstitution())
             return ParseProcessSubstitution(leadingTrivia, fullStart);
@@ -451,7 +456,7 @@ internal sealed partial class PosixParser
         };
     }
 
-    private ShellLiteralWordPartSyntax ParseLiteralRun(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellLiteralWordPartSyntax ParseLiteralRun(GreenNode? leadingTrivia, int fullStart)
     {
         var start = _lexer.Position;
         while (!_lexer.IsAtEnd && !IsWordTerminator(_lexer.Current) && !IsWordPartStart(_lexer.Current))
@@ -469,24 +474,24 @@ internal sealed partial class PosixParser
             _lexer.Position++;
         }
 
-        return new ShellLiteralWordPartSyntax(_lexer.CreateToken(ShellSyntaxKind.BareTextToken, start, leadingTrivia, fullStart));
+        return new ShellLiteralWordPartSyntax(_lexer.CreateToken(SyntaxKind.BareTextToken, start, leadingTrivia, fullStart));
     }
 
     private static bool IsWordPartStart(char value) => value is '\'' or '"' or '`' or '$' or '\\' or '*' or '?' or '[';
 
-    private ShellGlobSyntax ParseGlob(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellGlobSyntax ParseGlob(GreenNode? leadingTrivia, int fullStart)
     {
         var start = _lexer.Position;
-        ShellSyntaxKind kind;
+        SyntaxKind kind;
         if (_lexer.Current == '*' && _lexer.Peek(1) == '*')
         {
             // `**` matches across directory separators, so it is one glob rather than two.
-            kind = ShellSyntaxKind.AsteriskAsteriskToken;
+            kind = SyntaxKind.AsteriskAsteriskToken;
             _lexer.Position += 2;
         }
         else
         {
-            kind = _lexer.Current == '*' ? ShellSyntaxKind.AsteriskToken : ShellSyntaxKind.QuestionToken;
+            kind = _lexer.Current == '*' ? SyntaxKind.AsteriskToken : SyntaxKind.QuestionToken;
             _lexer.Position++;
         }
 
@@ -529,12 +534,12 @@ internal sealed partial class PosixParser
         return -1;
     }
 
-    private ShellGlobSyntax ParseBracketExpression(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellGlobSyntax ParseBracketExpression(GreenNode? leadingTrivia, int fullStart)
     {
         var start = _lexer.Position;
         _lexer.Position = FindBracketExpressionEnd();
 
-        return new ShellGlobSyntax(_lexer.CreateToken(ShellSyntaxKind.BracketExpressionToken, start, leadingTrivia, fullStart));
+        return new ShellGlobSyntax(_lexer.CreateToken(SyntaxKind.BracketExpressionToken, start, leadingTrivia, fullStart));
     }
 
     /// <summary>
@@ -573,7 +578,7 @@ internal sealed partial class PosixParser
     /// special before <c>$</c>, <c>`</c>, <c>"</c>, <c>\</c>, and a line break; anywhere else it stays literal,
     /// so <c>"a\qb"</c> really is <c>a\qb</c>.
     /// </summary>
-    private ShellEscapeSequenceSyntax ParseEscapeSequence(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart, bool inDoubleQuotes = false)
+    private ShellEscapeSequenceSyntax ParseEscapeSequence(GreenNode? leadingTrivia, int fullStart, bool inDoubleQuotes = false)
     {
         var start = _lexer.Position;
         _lexer.Position++;
@@ -599,14 +604,14 @@ internal sealed partial class PosixParser
             _lexer.Position++;
         }
 
-        return new ShellEscapeSequenceSyntax(_lexer.CreateToken(ShellSyntaxKind.EscapeToken, start, leadingTrivia, fullStart, value));
+        return new ShellEscapeSequenceSyntax(_lexer.CreateToken(SyntaxKind.EscapeToken, start, leadingTrivia, fullStart, value));
     }
 
-    private ShellQuotedStringSyntax ParseSingleQuotedString(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellQuotedStringSyntax ParseSingleQuotedString(GreenNode? leadingTrivia, int fullStart)
     {
         var quoteStart = _lexer.Position;
         _lexer.Position++;
-        var openToken = _lexer.CreateToken(ShellSyntaxKind.SingleQuoteToken, quoteStart, leadingTrivia, fullStart);
+        var openToken = _lexer.CreateToken(SyntaxKind.SingleQuoteToken, quoteStart, leadingTrivia, fullStart);
 
         var contentStart = _lexer.Position;
         while (!_lexer.IsAtEnd && _lexer.Current != '\'')
@@ -615,34 +620,34 @@ internal sealed partial class PosixParser
         }
 
         var content = _lexer.Position > contentStart
-            ? new ShellLiteralWordPartSyntax(_lexer.CreateToken(ShellSyntaxKind.BareTextToken, contentStart, [], contentStart))
+            ? new ShellLiteralWordPartSyntax(_lexer.CreateToken(SyntaxKind.BareTextToken, contentStart, null, contentStart))
             : null;
 
-        ShellSyntaxToken closeToken;
+        ScannedToken closeToken;
         if (_lexer.IsAtEnd)
         {
             AddDiagnostic(openToken.Span, "SHELL0003", "Unterminated single-quoted string.");
-            closeToken = MissingToken(ShellSyntaxKind.SingleQuoteToken, _lexer.Position);
+            closeToken = MissingToken(SyntaxKind.SingleQuoteToken, _lexer.Position);
         }
         else
         {
             var closeStart = _lexer.Position;
             _lexer.Position++;
-            closeToken = _lexer.CreateToken(ShellSyntaxKind.SingleQuoteToken, closeStart, [], closeStart);
+            closeToken = _lexer.CreateToken(SyntaxKind.SingleQuoteToken, closeStart, null, closeStart);
         }
 
-        return new ShellQuotedStringSyntax(openToken, content is null ? [] : [content], closeToken);
+        return new ShellQuotedStringSyntax(openToken, (GreenNode?)content, closeToken);
     }
 
     /// <summary>
     /// Reads the bash <c>$'...'</c> form. Unlike a plain single-quoted string it resolves ANSI-C escapes, so
     /// <c>$'a\tb'</c> holds a real tab.
     /// </summary>
-    private ShellQuotedStringSyntax ParseAnsiCQuotedString(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellQuotedStringSyntax ParseAnsiCQuotedString(GreenNode? leadingTrivia, int fullStart)
     {
         var quoteStart = _lexer.Position;
         _lexer.Position += 2;
-        var openToken = _lexer.CreateToken(ShellSyntaxKind.DollarSingleQuoteToken, quoteStart, leadingTrivia, fullStart);
+        var openToken = _lexer.CreateToken(SyntaxKind.DollarSingleQuoteToken, quoteStart, leadingTrivia, fullStart);
 
         var contentStart = _lexer.Position;
         var value = new StringBuilder();
@@ -668,27 +673,27 @@ internal sealed partial class PosixParser
 
         var contentEnd = _lexer.Position;
         ShellWordPartSyntax? content = contentEnd > contentStart
-            ? new ShellLiteralWordPartSyntax(new ShellSyntaxToken(
-                ShellSyntaxKind.BareTextToken,
+            ? new ShellLiteralWordPartSyntax(new ScannedToken(
+                SyntaxKind.BareTextToken,
                 _lexer.Text[contentStart..contentEnd],
                 value.ToString(),
                 fullStart: contentStart))
             : null;
 
-        ShellSyntaxToken closeToken;
+        ScannedToken closeToken;
         if (!terminated)
         {
             AddDiagnostic(openToken.Span, "SHELL0003", "Unterminated quoted string.");
-            closeToken = MissingToken(ShellSyntaxKind.SingleQuoteToken, _lexer.Position);
+            closeToken = MissingToken(SyntaxKind.SingleQuoteToken, _lexer.Position);
         }
         else
         {
             var closeStart = _lexer.Position;
             _lexer.Position++;
-            closeToken = _lexer.CreateToken(ShellSyntaxKind.SingleQuoteToken, closeStart, [], closeStart);
+            closeToken = _lexer.CreateToken(SyntaxKind.SingleQuoteToken, closeStart, null, closeStart);
         }
 
-        return new ShellQuotedStringSyntax(openToken, content is null ? [] : [content], closeToken);
+        return new ShellQuotedStringSyntax(openToken, (GreenNode?)content, closeToken);
     }
 
     /// <summary>Appends the character named by the ANSI-C escape at the current position, then consumes it.</summary>
@@ -771,12 +776,12 @@ internal sealed partial class PosixParser
     }
 
     private ShellQuotedStringSyntax ParseDoubleQuotedString(
-        IReadOnlyList<ShellSyntaxTrivia> leadingTrivia,
+        GreenNode? leadingTrivia,
         int fullStart,
-        ShellSyntaxKind openKind = ShellSyntaxKind.DoubleQuoteToken)
+        SyntaxKind openKind = SyntaxKind.DoubleQuoteToken)
     {
         var quoteStart = _lexer.Position;
-        _lexer.Position += openKind == ShellSyntaxKind.DollarDoubleQuoteToken ? 2 : 1;
+        _lexer.Position += openKind == SyntaxKind.DollarDoubleQuoteToken ? 2 : 1;
         var openToken = _lexer.CreateToken(openKind, quoteStart, leadingTrivia, fullStart);
 
         var parts = new List<ShellWordPartSyntax>();
@@ -785,9 +790,9 @@ internal sealed partial class PosixParser
             var positionBefore = _lexer.Position;
             parts.Add(_lexer.Current switch
             {
-                '\\' => ParseEscapeSequence([], _lexer.Position, inDoubleQuotes: true),
-                '`' => ParseBackquoteSubstitution([], _lexer.Position),
-                '$' => ParseDollarPart([], _lexer.Position),
+                '\\' => ParseEscapeSequence(null, _lexer.Position, inDoubleQuotes: true),
+                '`' => ParseBackquoteSubstitution(null, _lexer.Position),
+                '$' => ParseDollarPart(null, _lexer.Position),
                 _ => ParseDoubleQuotedLiteral(),
             });
 
@@ -797,20 +802,20 @@ internal sealed partial class PosixParser
             }
         }
 
-        ShellSyntaxToken closeToken;
+        ScannedToken closeToken;
         if (_lexer.IsAtEnd)
         {
             AddDiagnostic(openToken.Span, "SHELL0003", "Unterminated double-quoted string.");
-            closeToken = MissingToken(ShellSyntaxKind.DoubleQuoteToken, _lexer.Position);
+            closeToken = MissingToken(SyntaxKind.DoubleQuoteToken, _lexer.Position);
         }
         else
         {
             var closeStart = _lexer.Position;
             _lexer.Position++;
-            closeToken = _lexer.CreateToken(ShellSyntaxKind.DoubleQuoteToken, closeStart, [], closeStart);
+            closeToken = _lexer.CreateToken(SyntaxKind.DoubleQuoteToken, closeStart, null, closeStart);
         }
 
-        return new ShellQuotedStringSyntax(openToken, parts, closeToken);
+        return new ShellQuotedStringSyntax(openToken, ParserHelpers.List(parts), closeToken);
     }
 
     private ShellLiteralWordPartSyntax ParseDoubleQuotedLiteral()
@@ -821,10 +826,10 @@ internal sealed partial class PosixParser
             _lexer.Position++;
         }
 
-        return new ShellLiteralWordPartSyntax(_lexer.CreateToken(ShellSyntaxKind.BareTextToken, start, [], start));
+        return new ShellLiteralWordPartSyntax(_lexer.CreateToken(SyntaxKind.BareTextToken, start, null, start));
     }
 
-    private ShellWordPartSyntax ParseDollarPart(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellWordPartSyntax ParseDollarPart(GreenNode? leadingTrivia, int fullStart)
     {
         var next = _lexer.Peek(1);
 
@@ -832,7 +837,7 @@ internal sealed partial class PosixParser
             return ParseAnsiCQuotedString(leadingTrivia, fullStart);
 
         if (next == '"' && _options.Dialect.HasFeature(ShellDialectFeatures.DollarQuoting))
-            return ParseDoubleQuotedString(leadingTrivia, fullStart, ShellSyntaxKind.DollarDoubleQuoteToken);
+            return ParseDoubleQuotedString(leadingTrivia, fullStart, SyntaxKind.DollarDoubleQuoteToken);
 
         if (next == '(' && _lexer.Peek(2) == '(' && _options.Dialect.HasFeature(ShellDialectFeatures.ArithmeticExpansion))
             return ParseArithmeticExpansion(leadingTrivia, fullStart);
@@ -850,14 +855,14 @@ internal sealed partial class PosixParser
         var start = _lexer.Position;
         _lexer.Position++;
 
-        return new ShellLiteralWordPartSyntax(_lexer.CreateToken(ShellSyntaxKind.BareTextToken, start, leadingTrivia, fullStart));
+        return new ShellLiteralWordPartSyntax(_lexer.CreateToken(SyntaxKind.BareTextToken, start, leadingTrivia, fullStart));
     }
 
-    private ShellVariableReferenceSyntax ParseSimpleVariableReference(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellVariableReferenceSyntax ParseSimpleVariableReference(GreenNode? leadingTrivia, int fullStart)
     {
         var dollarStart = _lexer.Position;
         _lexer.Position++;
-        var dollarToken = _lexer.CreateToken(ShellSyntaxKind.DollarToken, dollarStart, leadingTrivia, fullStart);
+        var dollarToken = _lexer.CreateToken(SyntaxKind.DollarToken, dollarStart, leadingTrivia, fullStart);
 
         var nameStart = _lexer.Position;
         if (PosixLexer.IsNameStart(_lexer.Current))
@@ -872,20 +877,20 @@ internal sealed partial class PosixParser
             _lexer.Position++;
         }
 
-        var nameToken = _lexer.CreateToken(ShellSyntaxKind.VariableNameToken, nameStart, [], nameStart);
+        var nameToken = _lexer.CreateToken(SyntaxKind.VariableNameToken, nameStart, null, nameStart);
 
         return new ShellVariableReferenceSyntax(dollarToken, openBraceToken: null, nameToken, closeBraceToken: null);
     }
 
-    private ShellVariableReferenceSyntax ParseBracedVariableReference(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellVariableReferenceSyntax ParseBracedVariableReference(GreenNode? leadingTrivia, int fullStart)
     {
         var dollarStart = _lexer.Position;
         _lexer.Position++;
-        var dollarToken = _lexer.CreateToken(ShellSyntaxKind.DollarToken, dollarStart, leadingTrivia, fullStart);
+        var dollarToken = _lexer.CreateToken(SyntaxKind.DollarToken, dollarStart, leadingTrivia, fullStart);
 
         var braceStart = _lexer.Position;
         _lexer.Position++;
-        var openBraceToken = _lexer.CreateToken(ShellSyntaxKind.OpenBraceToken, braceStart, [], braceStart);
+        var openBraceToken = _lexer.CreateToken(SyntaxKind.OpenBraceToken, braceStart, null, braceStart);
 
         // The whole expansion body is kept as one token; `${var:-default}` round-trips without modeling operators.
         var nameStart = _lexer.Position;
@@ -911,29 +916,29 @@ internal sealed partial class PosixParser
             _lexer.Position++;
         }
 
-        var nameToken = _lexer.CreateToken(ShellSyntaxKind.VariableNameToken, nameStart, [], nameStart);
+        var nameToken = _lexer.CreateToken(SyntaxKind.VariableNameToken, nameStart, null, nameStart);
 
-        ShellSyntaxToken closeBraceToken;
+        ScannedToken closeBraceToken;
         if (_lexer.IsAtEnd)
         {
             AddDiagnostic(openBraceToken.Span, "SHELL0005", "Unterminated parameter expansion.");
-            closeBraceToken = MissingToken(ShellSyntaxKind.CloseBraceToken, _lexer.Position);
+            closeBraceToken = MissingToken(SyntaxKind.CloseBraceToken, _lexer.Position);
         }
         else
         {
             var closeStart = _lexer.Position;
             _lexer.Position++;
-            closeBraceToken = _lexer.CreateToken(ShellSyntaxKind.CloseBraceToken, closeStart, [], closeStart);
+            closeBraceToken = _lexer.CreateToken(SyntaxKind.CloseBraceToken, closeStart, null, closeStart);
         }
 
         return new ShellVariableReferenceSyntax(dollarToken, openBraceToken, nameToken, closeBraceToken);
     }
 
-    private ShellWordPartSyntax ParseCommandSubstitution(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellWordPartSyntax ParseCommandSubstitution(GreenNode? leadingTrivia, int fullStart)
     {
         var start = _lexer.Position;
         _lexer.Position += 2;
-        var openToken = _lexer.CreateToken(ShellSyntaxKind.DollarOpenParenToken, start, leadingTrivia, fullStart);
+        var openToken = _lexer.CreateToken(SyntaxKind.DollarOpenParenToken, start, leadingTrivia, fullStart);
 
         if (!TryEnterRecursion(openToken.Span))
             return new ShellLiteralWordPartSyntax(ConsumeRestAsText(openToken));
@@ -942,27 +947,27 @@ internal sealed partial class PosixParser
         _depth--;
 
         var (trivia, closeFullStart) = TakeTrivia();
-        ShellSyntaxToken closeToken;
+        ScannedToken closeToken;
         if (_lexer.IsAtEnd)
         {
             AddDiagnostic(openToken.Span, "SHELL0006", "Unterminated command substitution.");
-            closeToken = MissingToken(ShellSyntaxKind.CloseParenToken, closeFullStart, trivia);
+            closeToken = MissingToken(SyntaxKind.CloseParenToken, closeFullStart, trivia);
         }
         else
         {
             var closeStart = _lexer.Position;
             _lexer.Position++;
-            closeToken = _lexer.CreateToken(ShellSyntaxKind.CloseParenToken, closeStart, trivia, closeFullStart);
+            closeToken = _lexer.CreateToken(SyntaxKind.CloseParenToken, closeStart, trivia, closeFullStart);
         }
 
         return new ShellCommandSubstitutionSyntax(openToken, statements, closeToken);
     }
 
-    private ShellWordPartSyntax ParseBackquoteSubstitution(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellWordPartSyntax ParseBackquoteSubstitution(GreenNode? leadingTrivia, int fullStart)
     {
         var start = _lexer.Position;
         _lexer.Position++;
-        var openToken = _lexer.CreateToken(ShellSyntaxKind.BacktickToken, start, leadingTrivia, fullStart);
+        var openToken = _lexer.CreateToken(SyntaxKind.BacktickToken, start, leadingTrivia, fullStart);
 
         if (!TryEnterRecursion(openToken.Span))
             return new ShellLiteralWordPartSyntax(ConsumeRestAsText(openToken));
@@ -973,27 +978,27 @@ internal sealed partial class PosixParser
         _depth--;
 
         var (trivia, closeFullStart) = TakeTrivia();
-        ShellSyntaxToken closeToken;
+        ScannedToken closeToken;
         if (_lexer.IsAtEnd)
         {
             AddDiagnostic(openToken.Span, "SHELL0006", "Unterminated command substitution.");
-            closeToken = MissingToken(ShellSyntaxKind.BacktickToken, closeFullStart, trivia);
+            closeToken = MissingToken(SyntaxKind.BacktickToken, closeFullStart, trivia);
         }
         else
         {
             var closeStart = _lexer.Position;
             _lexer.Position++;
-            closeToken = _lexer.CreateToken(ShellSyntaxKind.BacktickToken, closeStart, trivia, closeFullStart);
+            closeToken = _lexer.CreateToken(SyntaxKind.BacktickToken, closeStart, trivia, closeFullStart);
         }
 
         return new ShellCommandSubstitutionSyntax(openToken, statements, closeToken);
     }
 
-    private ShellWordPartSyntax ParseArithmeticExpansion(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellWordPartSyntax ParseArithmeticExpansion(GreenNode? leadingTrivia, int fullStart)
     {
         var start = _lexer.Position;
         _lexer.Position += 3;
-        var openToken = _lexer.CreateToken(ShellSyntaxKind.DollarOpenParenToken, start, leadingTrivia, fullStart);
+        var openToken = _lexer.CreateToken(SyntaxKind.DollarOpenParenToken, start, leadingTrivia, fullStart);
 
         // `$(( ))` nests like `$( )` does, so it needs the same depth guard.
         if (!TryEnterRecursion(openToken.Span))
@@ -1022,17 +1027,17 @@ internal sealed partial class PosixParser
 
         // Whatever trivia the expression left pending sits between it and `))`, so the close token owns it.
         var (closeTrivia, closeFullStart) = TakeTrivia();
-        ShellSyntaxToken closeToken;
+        ScannedToken closeToken;
         if (_lexer.IsAtEnd)
         {
             AddDiagnostic(openToken.Span, "SHELL0007", "Unterminated arithmetic expansion.");
-            closeToken = MissingToken(ShellSyntaxKind.CloseParenToken, closeFullStart, closeTrivia);
+            closeToken = MissingToken(SyntaxKind.CloseParenToken, closeFullStart, closeTrivia);
         }
         else
         {
             var closeStart = _lexer.Position;
             _lexer.Position += 2;
-            closeToken = _lexer.CreateToken(ShellSyntaxKind.CloseParenToken, closeStart, closeTrivia, closeFullStart);
+            closeToken = _lexer.CreateToken(SyntaxKind.CloseParenToken, closeStart, closeTrivia, closeFullStart);
         }
 
         _depth--;
@@ -1043,11 +1048,11 @@ internal sealed partial class PosixParser
     // ---- helpers ----
 
     /// <summary>Consumes the text between two offsets as one token, for expression text no grammar here fits.</summary>
-    private ShellSyntaxToken ReadRawExpressionToken(int start, int end)
+    private ScannedToken ReadRawExpressionToken(int start, int end)
     {
         _lexer.Position = Math.Clamp(end, start, _lexer.Text.Length);
 
-        return _lexer.CreateToken(ShellSyntaxKind.BareTextToken, start, [], start);
+        return _lexer.CreateToken(SyntaxKind.BareTextToken, start, null, start);
     }
 
     /// <summary>
@@ -1099,13 +1104,13 @@ internal sealed partial class PosixParser
     }
 
     /// <summary>Folds the remaining text into a single token so a too-deeply-nested script still round-trips.</summary>
-    private ShellSyntaxToken ConsumeRestAsText(ShellSyntaxToken openToken)
+    private ScannedToken ConsumeRestAsText(ScannedToken openToken)
     {
         var start = _lexer.Position;
         _lexer.Position = _lexer.Text.Length;
         var text = openToken.Text + _lexer.Text[start..];
 
-        return new ShellSyntaxToken(ShellSyntaxKind.BadToken, text, text, leadingTrivia: openToken.LeadingTrivia, fullStart: openToken.FullSpan.Start);
+        return new ScannedToken(SyntaxKind.BadToken, text, text, leadingTrivia: openToken.Green?.LeadingTrivia, fullStart: openToken.FullSpan.Start);
     }
 
     private void AccumulateInlineTrivia()
@@ -1115,7 +1120,7 @@ internal sealed partial class PosixParser
             _pendingTriviaStart = _lexer.Position;
         }
 
-        _pendingTrivia.AddRange(_lexer.ReadInlineTrivia());
+        AddTrivia(_lexer.ReadInlineTrivia());
     }
 
     private void AccumulateStatementTrivia()
@@ -1125,24 +1130,42 @@ internal sealed partial class PosixParser
             _pendingTriviaStart = _lexer.Position;
         }
 
-        _pendingTrivia.AddRange(_lexer.ReadStatementTrivia());
+        AddTrivia(_lexer.ReadStatementTrivia());
     }
 
-    private (IReadOnlyList<ShellSyntaxTrivia> Trivia, int FullStart) TakeTrivia()
+    /// <summary>Adds a green trivia node to the pending buffer as the pieces it was built from.</summary>
+    private void AddTrivia(GreenNode? trivia)
+    {
+        if (trivia is null)
+            return;
+
+        if (!trivia.IsList)
+        {
+            _pendingTrivia.Add(trivia);
+            return;
+        }
+
+        for (var index = 0; index < trivia.SlotCount; index++)
+        {
+            _pendingTrivia.Add(trivia.GetSlot(index));
+        }
+    }
+
+    private (GreenNode? Trivia, int FullStart) TakeTrivia()
     {
         if (_pendingTrivia.Count == 0)
-            return ([], _lexer.Position);
+            return (null, _lexer.Position);
 
-        var trivia = _pendingTrivia.ToArray();
+        var trivia = GreenFactory.List(CollectionsMarshal.AsSpan(_pendingTrivia));
         var start = _pendingTriviaStart;
         _pendingTrivia.Clear();
 
         return (trivia, start);
     }
 
-    private static ShellSyntaxToken MissingToken(ShellSyntaxKind kind, int position, IReadOnlyList<ShellSyntaxTrivia>? leadingTrivia = null)
+    private static ScannedToken MissingToken(SyntaxKind kind, int position, GreenNode? leadingTrivia = null)
     {
-        return new ShellSyntaxToken(kind, string.Empty, string.Empty, isMissing: true, leadingTrivia: leadingTrivia, fullStart: position);
+        return new ScannedToken(kind, string.Empty, string.Empty, isMissing: true, leadingTrivia: leadingTrivia, fullStart: position);
     }
 
     private void AddDiagnostic(TextSpan span, string id, string message)

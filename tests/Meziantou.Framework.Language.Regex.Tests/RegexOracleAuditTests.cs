@@ -15,7 +15,7 @@ public sealed class RegexOracleAuditTests
     private static RegexSyntaxTree Accepts(string pattern, RegexParseOptions options)
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, options);
-        Assert.Empty(tree.Diagnostics, $"[{pattern}] reported {string.Join(",", tree.Diagnostics.Select(d => d.Id))}");
+        Assert.Empty(tree.GetDiagnostics(), $"[{pattern}] reported {string.Join(",", tree.GetDiagnostics().Select(d => d.Id))}");
 
         return tree;
     }
@@ -24,7 +24,7 @@ public sealed class RegexOracleAuditTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, options);
 
-        Assert.NotEmpty(tree.Diagnostics, $"[{pattern}] should not be accepted");
+        Assert.NotEmpty(tree.GetDiagnostics(), $"[{pattern}] should not be accepted");
     }
 
     // ---- a regression the class set work introduced ----
@@ -43,8 +43,8 @@ public sealed class RegexOracleAuditTests
 
         var tree = RegexSyntaxAssert.TextIsFaithful("[a--b]", dialect);
 
-        Assert.Single(tree.Root.DescendantNodes().OfType<RegexCharacterRangeSyntax>());
-        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0009");
+        Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexCharacterRangeSyntax>());
+        Assert.Contains(tree.GetDiagnostics(), d => d.Id == "REGEX0009");
     }
 
     // ---- JavaScript: two grammars, chosen by the flag ----
@@ -158,7 +158,7 @@ public sealed class RegexOracleAuditTests
     [InlineData(@"\x4", "")]
     public void AHexEscapeMayBeShortOrBraced(string pattern, string value)
     {
-        var escape = Assert.Single(Accepts(pattern, Options(RegexDialect.PcrePerl)).Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
+        var escape = Assert.Single(Accepts(pattern, Options(RegexDialect.PcrePerl)).GetRoot().DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
 
         Assert.Equal(value, escape.Value);
     }
@@ -166,7 +166,7 @@ public sealed class RegexOracleAuditTests
     [Fact]
     public void ABracelessPropertyNamesOneLetter()
     {
-        var category = Assert.Single(Accepts(@"\pL", Options(RegexDialect.PcrePerl)).Root.DescendantNodes().OfType<RegexUnicodeCategorySyntax>());
+        var category = Assert.Single(Accepts(@"\pL", Options(RegexDialect.PcrePerl)).GetRoot().DescendantNodes().OfType<RegexUnicodeCategorySyntax>());
 
         Assert.Equal("L", category.Name);
     }
@@ -188,8 +188,8 @@ public sealed class RegexOracleAuditTests
         {
             var tree = Accepts(pattern, Options(dialect));
 
-            Assert.Empty(tree.Root.DescendantNodes().OfType<RegexNamedBackreferenceSyntax>());
-            foreach (var escape in tree.Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>())
+            Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexNamedBackreferenceSyntax>());
+            foreach (var escape in tree.GetRoot().DescendantNodes().OfType<RegexCharacterEscapeSyntax>())
             {
                 // The value is the letter itself, not what Perl would have made of it.
                 Assert.Equal(escape.EscapeToken.Text[1..], escape.Value);
@@ -235,7 +235,7 @@ public sealed class RegexOracleAuditTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, SetMode);
 
-        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0072");
+        Assert.Contains(tree.GetDiagnostics(), d => d.Id == "REGEX0072");
     }
 
     [Theory]
@@ -248,7 +248,7 @@ public sealed class RegexOracleAuditTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, SetMode);
 
-        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0071");
+        Assert.Contains(tree.GetDiagnostics(), d => d.Id == "REGEX0071");
     }
 
     /// <summary>A backslash escapes the brace too, so the scan cannot stop at the first one it sees.</summary>
@@ -257,7 +257,7 @@ public sealed class RegexOracleAuditTests
     [InlineData(@"[\q{a\}b}]")]
     public void AnEscapedBraceDoesNotCloseAStringDisjunction(string pattern)
     {
-        var literal = Assert.Single(Accepts(pattern, SetMode).Root.DescendantNodes().OfType<RegexClassStringLiteralSyntax>());
+        var literal = Assert.Single(Accepts(pattern, SetMode).GetRoot().DescendantNodes().OfType<RegexClassStringLiteralSyntax>());
 
         Assert.Contains('}', literal.Value);
     }
@@ -285,13 +285,13 @@ public sealed class RegexOracleAuditTests
     public void BuildingANodeDoesNotStealATokenFromAnotherTree()
     {
         var source = RegexSyntaxTree.ParseText("ab", RegexDialect.Net);
-        var borrowed = source.Root.DescendantTokens().First(t => t.Text == "a");
+        var borrowed = source.GetRoot().DescendantTokens().First(t => t.Text == "a");
         var owner = borrowed.Parent;
 
-        _ = new RegexLiteralSyntax(borrowed);
+        _ = SyntaxFactory.Literal(borrowed, RegexPatternOptions.None);
 
         Assert.Same(owner, borrowed.Parent);
-        Assert.Equal("ab", source.Root.ToFullString());
+        Assert.Equal("ab", source.GetRoot().ToFullString());
     }
 
     /// <summary>Attaching to a tree is what records ownership, and it still does.</summary>
@@ -300,7 +300,7 @@ public sealed class RegexOracleAuditTests
     {
         var tree = RegexSyntaxTree.ParseText(@"(?<n>a|[b-d])\k<n>{2,3}?", RegexDialect.Net);
 
-        foreach (var token in tree.Root.DescendantTokens())
+        foreach (var token in tree.GetRoot().DescendantTokens())
         {
             Assert.NotNull(token.Parent);
         }
@@ -315,7 +315,7 @@ public sealed class RegexOracleAuditTests
         var tree = RegexSyntaxTree.ParseJavaScriptLiteral(literal);
         RegexSyntaxAssert.TextIsFaithful(literal, tree);
 
-        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0209");
+        Assert.Contains(tree.GetDiagnostics(), d => d.Id == "REGEX0209");
     }
 
     /// <summary>Text that never claimed to be a literal is a bare pattern, not an unterminated one.</summary>
@@ -328,20 +328,20 @@ public sealed class RegexOracleAuditTests
         var tree = RegexSyntaxTree.ParseJavaScriptLiteral(literal);
         RegexSyntaxAssert.TextIsFaithful(literal, tree);
 
-        Assert.DoesNotContain(tree.Diagnostics, d => d.Id == "REGEX0209");
+        Assert.DoesNotContain(tree.GetDiagnostics(), d => d.Id == "REGEX0209");
     }
 
     /// <summary>Only .NET spells a named backreference <c>\&lt;name&gt;</c>.</summary>
     [Fact]
     public void TheAngleBackreferenceIsNetOnly()
     {
-        Assert.Single(Accepts(@"(?<n>a)\<n>", Options(RegexDialect.Net)).Root.DescendantNodes().OfType<RegexNamedBackreferenceSyntax>());
+        Assert.Single(Accepts(@"(?<n>a)\<n>", Options(RegexDialect.Net)).GetRoot().DescendantNodes().OfType<RegexNamedBackreferenceSyntax>());
 
         foreach (var dialect in new[] { RegexDialect.PcrePerl, RegexDialect.PosixExtended, RegexDialect.PosixBasic })
         {
             var tree = RegexSyntaxAssert.TextIsFaithful(@"\<n>", Options(dialect));
 
-            Assert.Empty(tree.Root.DescendantNodes().OfType<RegexNamedBackreferenceSyntax>());
+            Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexNamedBackreferenceSyntax>());
         }
     }
 }

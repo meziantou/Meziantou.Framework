@@ -2,66 +2,37 @@ namespace Meziantou.Framework.Language.Shell;
 
 /// <summary>Represents a simple command: optional assignments, a command name, arguments, and redirections.</summary>
 /// <remarks>
-/// <see cref="ChildNodes"/> keeps the parts in source order, so a command such as <c>echo &gt;out hi</c> round-trips
+/// <see cref="Elements"/> keeps the parts in source order, so a command such as <c>echo &gt;out hi</c> round-trips
 /// exactly. Use <see cref="Name"/>, <see cref="Arguments"/>, <see cref="Assignments"/>, and <see cref="Redirections"/>
 /// to read the parts by role.
 /// </remarks>
-public sealed class ShellCommandSyntax : ShellStatementSyntax
+public sealed partial class ShellCommandSyntax
 {
-    private readonly IReadOnlyList<ShellSyntaxNode> _childNodes;
-
-    public ShellCommandSyntax(IReadOnlyList<ShellSyntaxNode>? elements)
-        : base(ShellSyntaxKind.Command, BuildFullText(elements ?? []), GetFullStart(elements))
-    {
-        _childNodes = elements ?? [];
-        Assignments = [.. _childNodes.OfType<ShellAssignmentSyntax>()];
-        Redirections = [.. _childNodes.OfType<ShellRedirectionSyntax>()];
-
-        var words = _childNodes.OfType<ShellWordSyntax>().ToArray();
-        Name = words.Length > 0 ? words[0] : null;
-        Arguments = words.Length > 1 ? words[1..] : [];
-    }
-
     /// <summary>The command name, or <see langword="null"/> for an assignment-only or redirection-only command.</summary>
-    public ShellWordSyntax? Name { get; }
+    public ShellWordSyntax? Name => Elements.OfType<ShellWordSyntax>().FirstOrDefault();
 
-    public IReadOnlyList<ShellWordSyntax> Arguments { get; }
+    /// <summary>Every word after the command name.</summary>
+    public IReadOnlyList<ShellWordSyntax> Arguments => [.. Elements.OfType<ShellWordSyntax>().Skip(1)];
 
     /// <summary>The assignments that prefix the command, as in <c>FOO=bar cmd</c>.</summary>
-    public IReadOnlyList<ShellAssignmentSyntax> Assignments { get; }
+    public IReadOnlyList<ShellAssignmentSyntax> Assignments => [.. Elements.OfType<ShellAssignmentSyntax>()];
 
-    public IReadOnlyList<ShellRedirectionSyntax> Redirections { get; }
-
-    /// <summary>The assignments, words, and redirections of this command, in source order.</summary>
-    public override IReadOnlyList<ShellSyntaxNode> ChildNodes => _childNodes;
-
-    /// <summary>The command name with quotes and escapes resolved, or <see langword="null"/> when it needs runtime expansion.</summary>
-    public string? NameValue => Name?.Value;
-
-    public ShellCommandSyntax WithChildNodes(IEnumerable<ShellSyntaxNode>? elements)
-    {
-        var updated = elements?.ToArray() ?? [];
-        if (updated.SequenceEqual(ChildNodes))
-            return this;
-
-        return new ShellCommandSyntax(updated);
-    }
+    public IReadOnlyList<ShellRedirectionSyntax> Redirections => [.. Elements.OfType<ShellRedirectionSyntax>()];
 
     /// <summary>Replaces the arguments while keeping the command name, assignments, and redirections in place.</summary>
-    public ShellCommandSyntax WithArguments(IEnumerable<ShellWordSyntax>? arguments)
+    /// <exception cref="ArgumentNullException"><paramref name="arguments"/> is <see langword="null"/>.</exception>
+    public ShellCommandSyntax WithArguments(IEnumerable<ShellWordSyntax> arguments)
     {
-        var replacements = arguments?.ToArray() ?? [];
-        if (replacements.SequenceEqual(Arguments))
-            return this;
+        ArgumentNullException.ThrowIfNull(arguments);
 
         // A word built by SyntaxFactory carries no trivia, so without a separator it would run into the command name
         // or the word before it. Words that bring their own leading trivia keep the spacing they were given.
-        var updated = Array.ConvertAll(replacements, SyntaxFactory.WithLeadingSpace);
+        var replacements = arguments.Select(SyntaxFactory.WithLeadingSpace).ToArray();
 
-        var elements = new List<ShellSyntaxNode>(ChildNodes.Count);
+        var elements = new List<ShellSyntaxNode>(Elements.Count);
         var seenName = false;
         var inserted = false;
-        foreach (var child in ChildNodes)
+        foreach (var child in Elements)
         {
             if (child is not ShellWordSyntax)
             {
@@ -79,20 +50,18 @@ public sealed class ShellCommandSyntax : ShellStatementSyntax
             if (!inserted)
             {
                 inserted = true;
-                elements.AddRange(updated);
+                elements.AddRange(replacements);
             }
         }
 
         if (!inserted)
         {
-            elements.AddRange(updated);
+            elements.AddRange(replacements);
         }
 
-        return new ShellCommandSyntax(elements);
+        return WithElements(new SyntaxList<ShellSyntaxNode>(elements));
     }
 
-    public override void Accept(ShellSyntaxVisitor visitor) => visitor.VisitCommand(this);
-    public override TResult Accept<TResult>(ShellSyntaxVisitor<TResult> visitor) => visitor.VisitCommand(this);
-
-    private static int GetFullStart(IReadOnlyList<ShellSyntaxNode>? elements) => elements is { Count: > 0 } ? elements[0].FullSpan.Start : 0;
+    /// <summary>The command name with quotes and escapes resolved, or <see langword="null"/> when it needs runtime expansion.</summary>
+    public string? NameValue => Name?.Value;
 }

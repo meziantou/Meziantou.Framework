@@ -8,12 +8,16 @@
 // Changes: ScanCharClass builds member nodes instead of a RegexCharClass, and the explicit stack of parent classes
 // becomes recursion bounded by RegexParseOptions.MaxRecursionDepth. Which characters it consumes is unchanged.
 
-namespace Meziantou.Framework.Language.Regex.Internals;
+using Meziantou.Framework.Language.InternalSyntax;
+using Meziantou.Framework.Language.Regex.Internals;
+using ScannedToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
+
+namespace Meziantou.Framework.Language.Regex.Syntax.InternalSyntax;
 
 internal abstract partial class PerlStyleRegexParser
 {
     /// <summary>Parses a character class, guarding against input that nests subtractions without end.</summary>
-    private RegexAtomSyntax ParseCharacterClass(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    private RegexAtomSyntax ParseCharacterClass(GreenNode? leadingTrivia)
     {
         var start = Scanner.Position;
         if (!TryEnterRecursion(new TextSpan(start, 1)))
@@ -23,7 +27,7 @@ internal abstract partial class PerlStyleRegexParser
         {
             Scanner.Position++;
 
-            return ParseCharacterClassBody(Scanner.Token(RegexSyntaxKind.OpenBracketToken, start, leadingTrivia));
+            return ParseCharacterClassBody(Scanner.Token(SyntaxKind.OpenBracketToken, start, leadingTrivia));
         }
         finally
         {
@@ -38,7 +42,7 @@ internal abstract partial class PerlStyleRegexParser
     /// Whitespace and <c>#</c> are ordinary characters in here even in extended mode, because the engine never scans
     /// trivia from inside a class. Nothing below may call the trivia scanner.
     /// </remarks>
-    private RegexCharacterClassSyntax ParseCharacterClassBody(RegexSyntaxToken openBracketToken)
+    private RegexCharacterClassSyntax ParseCharacterClassBody(ScannedToken openBracketToken)
     {
         // A few escapes are allowed inside a class and nowhere else, so the reader has to know where it is.
         var wasInCharacterClass = IsInCharacterClass;
@@ -53,16 +57,16 @@ internal abstract partial class PerlStyleRegexParser
         }
     }
 
-    private RegexCharacterClassSyntax ParseCharacterClassMembers(RegexSyntaxToken openBracketToken)
+    private RegexCharacterClassSyntax ParseCharacterClassMembers(ScannedToken openBracketToken)
     {
-        RegexSyntaxToken? caretToken = null;
+        ScannedToken caretToken = default;
         var firstChar = true;
 
         if (Scanner.Current == '^')
         {
             var caretStart = Scanner.Position;
             Scanner.Position++;
-            caretToken = Scanner.Token(RegexSyntaxKind.CaretToken, caretStart);
+            caretToken = Scanner.Token(SyntaxKind.CaretToken, caretStart);
 
             // Under ECMAScript "[^]" is an empty negated class rather than a class containing "]".
             if (UsesEcmaScriptBehavior && Scanner.Current == ']')
@@ -79,10 +83,10 @@ internal abstract partial class PerlStyleRegexParser
 
         var members = new List<RegexSyntaxNode>();
         RegexSyntaxNode? rangeStart = null;
-        RegexSyntaxToken? rangeHyphen = null;
+        ScannedToken rangeHyphen = default;
         var rangeStartValue = '\0';
         var inRange = false;
-        RegexSyntaxToken? closeBracketToken = null;
+        ScannedToken closeBracketToken = default;
 
         while (!Scanner.IsAtEnd)
         {
@@ -90,7 +94,7 @@ internal abstract partial class PerlStyleRegexParser
             {
                 var closeStart = Scanner.Position;
                 Scanner.Position++;
-                closeBracketToken = Scanner.Token(RegexSyntaxKind.CloseBracketToken, closeStart);
+                closeBracketToken = Scanner.Token(SyntaxKind.CloseBracketToken, closeStart);
                 break;
             }
 
@@ -110,7 +114,7 @@ internal abstract partial class PerlStyleRegexParser
             {
                 var hyphenStart = Scanner.Position;
                 Scanner.Position++;
-                members.Add(ParseSubtraction(Scanner.Token(RegexSyntaxKind.HyphenToken, hyphenStart)));
+                members.Add(ParseSubtraction(Scanner.Token(SyntaxKind.HyphenToken, hyphenStart)));
                 firstChar = false;
                 continue;
             }
@@ -172,8 +176,8 @@ internal abstract partial class PerlStyleRegexParser
                 {
                     // Where this is allowed there is no range at all: the dash between them is an ordinary member.
                     members.Add(rangeStart!);
-                    members.Add(WithOptions(new RegexLiteralSyntax(
-                        new RegexSyntaxToken(RegexSyntaxKind.LiteralToken, rangeHyphen!.Text, fullStart: rangeHyphen.FullSpan.Start))));
+                    members.Add(new RegexLiteralSyntax(
+                        SyntaxFactory.Token(SyntaxKind.LiteralToken, rangeHyphen.Text, rangeHyphen.Green!.LeadingTrivia), Options));
                     members.Add(element.Node);
                     inRange = false;
                 }
@@ -181,8 +185,8 @@ internal abstract partial class PerlStyleRegexParser
                 {
                     // The engine rejects a shorthand class as a range endpoint outright. Keeping the range in the tree
                     // is the recovery: it accounts for every character, and the diagnostic says what is wrong with it.
-                    AddDiagnostic(element.Node.Span, RegexDiagnosticIds.ShorthandClassInCharacterRange, $"Shorthand class '{element.Node}' cannot be an endpoint of a character range.");
-                    members.Add(WithOptions(new RegexCharacterRangeSyntax(rangeStart!, rangeHyphen!, element.Node)));
+                    AddDiagnostic(JustParsedSpan(element.Node), RegexDiagnosticIds.ShorthandClassInCharacterRange, $"Shorthand class '{element.Node}' cannot be an endpoint of a character range.");
+                    members.Add(new RegexCharacterRangeSyntax(rangeStart!, rangeHyphen!, element.Node, Options));
                     inRange = false;
                 }
                 else
@@ -226,7 +230,7 @@ internal abstract partial class PerlStyleRegexParser
                 Scanner.Position++;
                 rangeStart = element.Node;
                 rangeStartValue = element.Value;
-                rangeHyphen = Scanner.Token(RegexSyntaxKind.HyphenToken, hyphenStart);
+                rangeHyphen = Scanner.Token(SyntaxKind.HyphenToken, hyphenStart);
                 inRange = true;
             }
             else
@@ -242,19 +246,19 @@ internal abstract partial class PerlStyleRegexParser
             // Unreachable while the look-ahead that starts a range demands a character after the dash, but a class that
             // lost its endpoint must still account for the two members it does have.
             members.Add(rangeStart!);
-            members.Add(WithOptions(new RegexCharacterRangeSyntax(rangeStart!, rangeHyphen!, null)));
+            members.Add(new RegexCharacterRangeSyntax(rangeStart!, rangeHyphen, end: null, Options));
         }
 
-        if (closeBracketToken is null)
+        if (!closeBracketToken.IsPresent)
         {
             AddDiagnostic(
                 TextSpan.FromBounds(openBracketToken.Span.Start, Math.Max(openBracketToken.Span.Start, Scanner.Position)),
                 RegexDiagnosticIds.UnterminatedBracket,
                 "Unterminated character class: expected ']'.");
-            closeBracketToken = Scanner.MissingToken(RegexSyntaxKind.CloseBracketToken);
+            closeBracketToken = Scanner.MissingToken(SyntaxKind.CloseBracketToken);
         }
 
-        return WithOptions(new RegexCharacterClassSyntax(openBracketToken, caretToken, members, closeBracketToken));
+        return new RegexCharacterClassSyntax(openBracketToken, caretToken, SyntaxFactory.ListNode([.. members]), closeBracketToken, Options);
     }
 
     /// <summary>The length of a class set operator at <paramref name="position"/>, or 0.</summary>
@@ -282,14 +286,14 @@ internal abstract partial class PerlStyleRegexParser
         {
             Scanner.Position++;
 
-            return WithOptions(new RegexLiteralSyntax(Scanner.Token(RegexSyntaxKind.LiteralToken, start)));
+            return new RegexLiteralSyntax(Scanner.Token(SyntaxKind.LiteralToken, start), Options);
         }
 
         try
         {
             Scanner.Position++;
 
-            return ParseCharacterClassBody(Scanner.Token(RegexSyntaxKind.OpenBracketToken, start));
+            return ParseCharacterClassBody(Scanner.Token(SyntaxKind.OpenBracketToken, start));
         }
         finally
         {
@@ -302,7 +306,7 @@ internal abstract partial class PerlStyleRegexParser
     {
         var start = Scanner.Position;
         Scanner.Position += 3;
-        var startToken = Scanner.Token(RegexSyntaxKind.QuoteStartToken, start);
+        var startToken = Scanner.Token(SyntaxKind.QuoteStartToken, start);
 
         // A backslash escapes the character after it, the closing brace included, so the scan cannot simply stop at
         // the first "}".
@@ -313,14 +317,14 @@ internal abstract partial class PerlStyleRegexParser
         }
 
         ValidateClassStringContent(textStart, Scanner.Position);
-        var textToken = Scanner.Position > textStart ? Scanner.Token(RegexSyntaxKind.QuoteTextToken, textStart) : null;
+        var textToken = Scanner.Position > textStart ? Scanner.Token(SyntaxKind.QuoteTextToken, textStart) : default;
 
-        RegexSyntaxToken? closeBraceToken = null;
+        ScannedToken closeBraceToken = default;
         if (Scanner.Current == '}')
         {
             var closeStart = Scanner.Position;
             Scanner.Position++;
-            closeBraceToken = Scanner.Token(RegexSyntaxKind.CloseBraceToken, closeStart);
+            closeBraceToken = Scanner.Token(SyntaxKind.CloseBraceToken, closeStart);
         }
         else
         {
@@ -330,7 +334,7 @@ internal abstract partial class PerlStyleRegexParser
                 "Unterminated '\\q{...}' string disjunction.");
         }
 
-        return WithOptions(new RegexClassStringLiteralSyntax(startToken, textToken, closeBraceToken));
+        return new RegexClassStringLiteralSyntax(startToken, textToken, closeBraceToken, Options);
     }
 
     /// <summary>The characters a class set has to have escaped, because unescaped they mean something else.</summary>
@@ -374,10 +378,10 @@ internal abstract partial class PerlStyleRegexParser
     {
         var start = Scanner.Position;
         Scanner.Position += 2;
-        var token = Scanner.Token(RegexSyntaxKind.BadToken, start);
+        var token = Scanner.Token(SyntaxKind.BadToken, start);
         AddDiagnostic(token.Span, RegexDiagnosticIds.ReservedClassSetPunctuator, $"'{token.Text}' is reserved and may not appear here.");
 
-        return WithOptions(new RegexSkippedTextSyntax([token], token.FullSpan.Start));
+        return new RegexSkippedTextSyntax(token, Options);
     }
 
     /// <summary>
@@ -391,15 +395,14 @@ internal abstract partial class PerlStyleRegexParser
     private RegexClassSetOperationSyntax ParseClassSetOperation(RegexSyntaxNode first)
     {
         var operands = new List<RegexSyntaxNode> { first };
-        var operators = new List<RegexSyntaxToken>();
-        var start = first.FullSpan.Start;
+        var operators = new List<ScannedToken>();
 
         string? expected = null;
         while (ClassSetOperatorLength(Scanner.Position) is var length && length > 0)
         {
             var operatorStart = Scanner.Position;
             Scanner.Position += length;
-            var operatorToken = Scanner.Token(RegexSyntaxKind.ClassSetOperatorToken, operatorStart);
+            var operatorToken = Scanner.Token(SyntaxKind.ClassSetOperatorToken, operatorStart);
             operators.Add(operatorToken);
 
             expected ??= operatorToken.Text;
@@ -417,7 +420,7 @@ internal abstract partial class PerlStyleRegexParser
             operands.Add(ReadClassSetOperand());
         }
 
-        return WithOptions(new RegexClassSetOperationSyntax(operands, operators, start));
+        return new RegexClassSetOperationSyntax(Interleave(operands, operators), Options);
     }
 
     /// <summary>Keeps an operator that has no single operand before it, so the text is still accounted for.</summary>
@@ -425,7 +428,7 @@ internal abstract partial class PerlStyleRegexParser
     {
         var start = Scanner.Position;
         Scanner.Position += ClassSetOperatorLength(start);
-        var token = Scanner.Token(RegexSyntaxKind.BadToken, start);
+        var token = Scanner.Token(SyntaxKind.BadToken, start);
 
         AddDiagnostic(
             token.Span,
@@ -434,7 +437,7 @@ internal abstract partial class PerlStyleRegexParser
                 ? "A class set operator needs an operand before it."
                 : "A class set operator takes a single operand on each side.");
 
-        return WithOptions(new RegexSkippedTextSyntax([token], token.FullSpan.Start));
+        return new RegexSkippedTextSyntax(token, Options);
     }
 
     /// <summary>Reads one operand of a set operation: a nested class, a string disjunction, or a single member.</summary>
@@ -454,28 +457,28 @@ internal abstract partial class PerlStyleRegexParser
         {
             var hyphenStart = Scanner.Position;
             Scanner.Position++;
-            var hyphenToken = Scanner.Token(RegexSyntaxKind.HyphenToken, hyphenStart);
+            var hyphenToken = Scanner.Token(SyntaxKind.HyphenToken, hyphenStart);
             var end = ReadClassElement();
 
-            return WithOptions(new RegexCharacterRangeSyntax(element.Node, hyphenToken, end.Node));
+            return new RegexCharacterRangeSyntax(element.Node, hyphenToken, end.Node, Options);
         }
 
         return element.Node;
     }
 
-    private void AddRange(List<RegexSyntaxNode> members, RegexSyntaxNode start, RegexSyntaxToken hyphen, ClassElement end, char startValue)
+    private void AddRange(List<RegexSyntaxNode> members, RegexSyntaxNode start, ScannedToken hyphen, ClassElement end, char startValue)
     {
-        var range = WithOptions(new RegexCharacterRangeSyntax(start, hyphen, end.Node));
+        var range = new RegexCharacterRangeSyntax(start, hyphen, end.Node, Options);
         if (startValue > end.Value)
         {
-            AddDiagnostic(range.Span, RegexDiagnosticIds.ReversedCharacterRange, $"Character range '{range}' is reversed.");
+            AddDiagnostic(JustParsedSpan(range), RegexDiagnosticIds.ReversedCharacterRange, $"Character range '{range}' is reversed.");
         }
 
         members.Add(range);
     }
 
     /// <summary>Parses the <c>[…]</c> a subtraction removes, which must be the last thing in its class.</summary>
-    private RegexClassSubtractionSyntax ParseSubtraction(RegexSyntaxToken hyphenToken)
+    private RegexClassSubtractionSyntax ParseSubtraction(ScannedToken hyphenToken)
     {
         var start = Scanner.Position;
         RegexCharacterClassSyntax nested;
@@ -485,7 +488,7 @@ internal abstract partial class PerlStyleRegexParser
             try
             {
                 Scanner.Position++;
-                nested = ParseCharacterClassBody(Scanner.Token(RegexSyntaxKind.OpenBracketToken, start));
+                nested = ParseCharacterClassBody(Scanner.Token(SyntaxKind.OpenBracketToken, start));
             }
             finally
             {
@@ -495,22 +498,22 @@ internal abstract partial class PerlStyleRegexParser
         else
         {
             Scanner.Position++;
-            var openBracketToken = Scanner.Token(RegexSyntaxKind.OpenBracketToken, start);
+            var openBracketToken = Scanner.Token(SyntaxKind.OpenBracketToken, start);
             var rest = Scanner.Position;
             Scanner.Position = Text.Length;
-            nested = WithOptions(new RegexCharacterClassSyntax(
+            nested = new RegexCharacterClassSyntax(
                 openBracketToken,
                 caretToken: null,
-                [WithOptions(new RegexSkippedTextSyntax([Scanner.Token(RegexSyntaxKind.BadToken, rest)], rest))],
-                Scanner.MissingToken(RegexSyntaxKind.CloseBracketToken)));
+                new RegexSkippedTextSyntax(Scanner.Token(SyntaxKind.BadToken, rest), Options),
+                Scanner.MissingToken(SyntaxKind.CloseBracketToken), Options);
         }
 
         if (!Scanner.IsAtEnd && Scanner.Current != ']')
         {
-            AddDiagnostic(nested.Span, RegexDiagnosticIds.ExclusionGroupNotLast, "A character class subtraction must be the last element of the character class.");
+            AddDiagnostic(JustParsedSpan(nested), RegexDiagnosticIds.ExclusionGroupNotLast, "A character class subtraction must be the last element of the character class.");
         }
 
-        return WithOptions(new RegexClassSubtractionSyntax(hyphenToken, nested));
+        return new RegexClassSubtractionSyntax(hyphenToken, nested, Options);
     }
 
     /// <summary>Reads <c>[:alpha:]</c>, <c>[.ch.]</c>, or <c>[=a=]</c> for the dialects that have them.</summary>
@@ -528,19 +531,19 @@ internal abstract partial class PerlStyleRegexParser
 
         var start = Scanner.Position;
         Scanner.Position += 2;
-        var startToken = Scanner.Token(RegexSyntaxKind.PosixClassStartToken, start);
+        var startToken = Scanner.Token(SyntaxKind.PosixClassStartToken, start);
 
         var nameStart = Scanner.Position;
         Scanner.Position = closeIndex;
-        var nameToken = Scanner.Token(RegexSyntaxKind.PosixClassNameToken, nameStart);
+        var nameToken = Scanner.Token(SyntaxKind.PosixClassNameToken, nameStart);
 
         var endStart = Scanner.Position;
         Scanner.Position += 2;
-        var endToken = Scanner.Token(RegexSyntaxKind.PosixClassEndToken, endStart);
+        var endToken = Scanner.Token(SyntaxKind.PosixClassEndToken, endStart);
 
         node = marker == ':'
-            ? WithOptions(new RegexPosixCharacterClassSyntax(startToken, nameToken, endToken))
-            : WithOptions(new RegexCollatingElementSyntax(startToken, nameToken, endToken));
+            ? new RegexPosixCharacterClassSyntax(startToken, nameToken, endToken, Options)
+            : new RegexCollatingElementSyntax(startToken, nameToken, endToken, Options);
 
         return true;
     }
@@ -556,20 +559,20 @@ internal abstract partial class PerlStyleRegexParser
             {
                 case var letter when IsShorthandClassLetterInClass(letter):
                     Scanner.Position += 2;
-                    return new ClassElement(WithOptions(new RegexCharacterClassEscapeSyntax(Scanner.Token(RegexSyntaxKind.ClassEscapeToken, start))), '\0', IsTranslated: false, IsClassEscape: true, IsDashEscape: false);
+                    return new ClassElement(new RegexCharacterClassEscapeSyntax(Scanner.Token(SyntaxKind.ClassEscapeToken, start), Options), '\0', IsTranslated: false, IsClassEscape: true, IsDashEscape: false);
 
                 case 'p' or 'P' when SupportsUnicodeCategories:
-                    return new ClassElement(ParseUnicodeCategory([]), '\0', IsTranslated: false, IsClassEscape: true, IsDashEscape: false);
+                    return new ClassElement(ParseUnicodeCategory(leadingTrivia: null), '\0', IsTranslated: false, IsClassEscape: true, IsDashEscape: false);
 
                 case '-':
                     Scanner.Position += 2;
-                    return new ClassElement(WithOptions(new RegexCharacterEscapeSyntax(Scanner.Token(RegexSyntaxKind.EscapeToken, start, leadingTrivia: null, "-"))), '-', IsTranslated: false, IsClassEscape: false, IsDashEscape: true);
+                    return new ClassElement(new RegexCharacterEscapeSyntax(Scanner.Token(SyntaxKind.EscapeToken, start, leadingTrivia: null, "-"), Options), '-', IsTranslated: false, IsClassEscape: false, IsDashEscape: true);
 
                 default:
                     Scanner.Position++;
                     var value = ScanCharEscape();
                     return new ClassElement(
-                        WithOptions(new RegexCharacterEscapeSyntax(Scanner.Token(RegexSyntaxKind.EscapeToken, start, leadingTrivia: null, value))),
+                        new RegexCharacterEscapeSyntax(Scanner.Token(SyntaxKind.EscapeToken, start, leadingTrivia: null, value), Options),
                         value.Length > 0 ? value[0] : '\0',
                         IsTranslated: true,
                         IsClassEscape: false,
@@ -580,7 +583,7 @@ internal abstract partial class PerlStyleRegexParser
         var ch = Scanner.Current;
         Scanner.Position++;
 
-        return new ClassElement(WithOptions(new RegexLiteralSyntax(Scanner.Token(RegexSyntaxKind.LiteralToken, start))), ch, IsTranslated: false, IsClassEscape: false, IsDashEscape: false);
+        return new ClassElement(new RegexLiteralSyntax(Scanner.Token(SyntaxKind.LiteralToken, start), Options), ch, IsTranslated: false, IsClassEscape: false, IsDashEscape: false);
     }
 
     /// <summary>One member of a class, with what the parser needs to know about it to read the next one.</summary>

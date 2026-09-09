@@ -1,144 +1,59 @@
+using Meziantou.Framework.Language.InternalSyntax;
+using Green = Meziantou.Framework.Language.Json.Syntax.InternalSyntax;
+
 namespace Meziantou.Framework.Language.Json;
 
-/// <summary>Represents the root JSON document node and provides replacement helpers.</summary>
+/// <summary>A whole JSON document.</summary>
+/// <remarks>
+/// <see cref="Values"/> is a list rather than a single value so that a document with trailing garbage keeps every
+/// part of its text. A well-formed document has exactly one.
+/// </remarks>
 public sealed class JsonDocumentSyntax : JsonSyntaxNode
 {
-    private readonly IReadOnlyList<JsonSyntaxNode> _childNodes;
+    private SyntaxNode? _values;
 
-    public JsonDocumentSyntax(IReadOnlyList<JsonSyntaxNode> childNodes, JsonSyntaxToken endOfFileToken, string? fullText = null)
-        : base(JsonSyntaxKind.JsonDocument, fullText ?? BuildDocumentText(childNodes, endOfFileToken), tokens: [endOfFileToken])
+    internal JsonDocumentSyntax(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
     {
-        _childNodes = childNodes ?? [];
-        EndOfFileToken = endOfFileToken;
     }
 
-    public override IReadOnlyList<JsonSyntaxNode> ChildNodes => _childNodes;
-    public JsonValueSyntax? Value => ChildNodes.OfType<JsonValueSyntax>().FirstOrDefault();
-    public JsonSyntaxToken EndOfFileToken { get; }
+    /// <summary>Gets the values the document holds, which is one for a well-formed document.</summary>
+    public SyntaxList<JsonValueSyntax> Values => new(GetRedAtZero(ref _values));
 
-    public JsonDocumentSyntax WithChildNodes(IEnumerable<JsonSyntaxNode> childNodes)
+    /// <summary>Gets the root value, or <see langword="null"/> when the document has none.</summary>
+    public JsonValueSyntax? Value => Values.Count > 0 ? Values[0] : null;
+
+    public SyntaxToken EndOfFileToken => new(this, Green.GetSlot(1), GetChildPosition(1), GetChildIndex(1));
+
+    /// <summary>Returns this document with the given parts, or itself when nothing changed.</summary>
+    public JsonDocumentSyntax Update(SyntaxList<JsonValueSyntax> values, SyntaxToken endOfFileToken)
     {
-        var nodes = childNodes?.ToArray() ?? [];
-        if (nodes.SequenceEqual(ChildNodes))
+        if (values.Green == Green.GetSlot(0) && endOfFileToken.Node == Green.GetSlot(1))
             return this;
 
-        return JsonSyntaxTree.ParseText(BuildFullText(nodes) + EndOfFileToken.ToFullString()).Root;
+        return SyntaxFactory.JsonDocument(values, endOfFileToken).WithAnnotationsFrom(this);
     }
 
-    public override JsonDocumentSyntax ReplaceNode(JsonSyntaxNode oldNode, JsonSyntaxNode newNode)
+    public JsonDocumentSyntax WithValues(SyntaxList<JsonValueSyntax> values) => Update(values, EndOfFileToken);
+    public JsonDocumentSyntax WithValue(JsonValueSyntax? value) => WithValues(value is null ? default : new SyntaxList<JsonValueSyntax>(value));
+    public JsonDocumentSyntax WithEndOfFileToken(SyntaxToken endOfFileToken) => Update(Values, endOfFileToken);
+    public JsonDocumentSyntax AddValues(params JsonValueSyntax[] items) => WithValues(Values.AddRange(items));
+
+    internal override SyntaxNode? GetNodeSlot(int index) => index == 0 ? GetRedAtZero(ref _values) : null;
+    internal override SyntaxNode? GetCachedSlot(int index) => index == 0 ? _values : null;
+
+    public override void Accept(JsonSyntaxVisitor visitor)
     {
-        ArgumentNullException.ThrowIfNull(oldNode);
-        ArgumentNullException.ThrowIfNull(newNode);
+        ArgumentNullException.ThrowIfNull(visitor);
 
-        if (TryGetNodeSpan(this, oldNode, out var span) || TryFindUniqueTextSpan(oldNode.ToFullString(), out span))
-            return ReplaceSpan(span, newNode.ToFullString());
-
-        return this;
+        visitor.VisitJsonDocument(this);
     }
 
-    public override JsonDocumentSyntax ReplaceToken(JsonSyntaxToken oldToken, JsonSyntaxToken newToken)
+    public override TResult? Accept<TResult>(JsonSyntaxVisitor<TResult> visitor)
+        where TResult : default
     {
-        ArgumentNullException.ThrowIfNull(oldToken);
-        ArgumentNullException.ThrowIfNull(newToken);
+        ArgumentNullException.ThrowIfNull(visitor);
 
-        if (oldToken.Parent is not null && oldToken.FullSpan.End <= ToFullString().Length)
-            return ReplaceSpan(oldToken.FullSpan, newToken.ToFullString());
-
-        if (TryFindUniqueTextSpan(oldToken.ToFullString(), out var span))
-            return ReplaceSpan(span, newToken.ToFullString());
-
-        return this;
-    }
-
-    public override JsonDocumentSyntax ReplaceTrivia(JsonSyntaxTrivia oldTrivia, JsonSyntaxTrivia newTrivia)
-    {
-        ArgumentNullException.ThrowIfNull(oldTrivia);
-        ArgumentNullException.ThrowIfNull(newTrivia);
-
-        if (ContainsTrivia(oldTrivia) && oldTrivia.FullSpan.End <= ToFullString().Length)
-            return ReplaceSpan(oldTrivia.FullSpan, newTrivia.Text);
-
-        if (TryFindUniqueTextSpan(oldTrivia.Text, out var span))
-            return ReplaceSpan(span, newTrivia.Text);
-
-        return this;
-    }
-
-    public override void Accept(JsonSyntaxVisitor visitor) => visitor.VisitDocument(this);
-    public override TResult Accept<TResult>(JsonSyntaxVisitor<TResult> visitor) => visitor.VisitDocument(this);
-
-    private JsonDocumentSyntax ReplaceSpan(TextSpan span, string newText)
-    {
-        var source = ToFullString();
-        if (span.Start < 0 || span.End > source.Length)
-            return this;
-
-        var builder = new StringBuilder(source.Length - span.Length + newText.Length);
-        builder.Append(source.AsSpan(0, span.Start));
-        builder.Append(newText);
-        builder.Append(source.AsSpan(span.End));
-
-        return JsonSyntaxTree.ParseText(builder.ToString()).Root;
-    }
-
-    private static bool TryGetNodeSpan(JsonSyntaxNode current, JsonSyntaxNode targetNode, out TextSpan span)
-    {
-        if (ReferenceEquals(current, targetNode))
-        {
-            span = current.FullSpan;
-            return true;
-        }
-
-        foreach (var child in current.ChildNodes)
-        {
-            if (TryGetNodeSpan(child, targetNode, out span))
-                return true;
-        }
-
-        span = default;
-        return false;
-    }
-
-    private bool ContainsTrivia(JsonSyntaxTrivia trivia)
-    {
-        foreach (var currentTrivia in DescendantTrivia())
-        {
-            if (ReferenceEquals(currentTrivia, trivia))
-                return true;
-        }
-
-        return false;
-    }
-
-    private bool TryFindUniqueTextSpan(string text, out TextSpan span)
-    {
-        if (text.Length == 0)
-        {
-            span = default;
-            return false;
-        }
-
-        var source = ToFullString();
-        var firstIndex = source.IndexOf(text, StringComparison.Ordinal);
-        if (firstIndex < 0)
-        {
-            span = default;
-            return false;
-        }
-
-        var secondIndex = source.IndexOf(text, firstIndex + text.Length, StringComparison.Ordinal);
-        if (secondIndex >= 0)
-        {
-            span = default;
-            return false;
-        }
-
-        span = TextSpan.FromBounds(firstIndex, firstIndex + text.Length);
-        return true;
-    }
-
-    private static string BuildDocumentText(IReadOnlyList<JsonSyntaxNode>? childNodes, JsonSyntaxToken endOfFileToken)
-    {
-        return BuildFullText(childNodes ?? []) + endOfFileToken.ToFullString();
+        return visitor.VisitJsonDocument(this);
     }
 }

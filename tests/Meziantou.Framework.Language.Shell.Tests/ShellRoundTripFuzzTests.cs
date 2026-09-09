@@ -137,7 +137,7 @@ public sealed class ShellRoundTripFuzzTests
 
         var tree = ShellSyntaxAssert.TextIsFaithful(Script, ShellDialect.Bash);
 
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
     }
 
     private static readonly string[] PowerShellFragments =
@@ -254,7 +254,7 @@ public sealed class ShellRoundTripFuzzTests
         }
 
         // pwsh 7 parses the whole script without an error, so neither should this parser.
-        Assert.Empty(ShellSyntaxTree.ParseText(Script, ShellDialect.PowerShellCore).Diagnostics);
+        Assert.Empty(ShellSyntaxTree.ParseText(Script, ShellDialect.PowerShellCore).GetDiagnostics());
     }
 
     private static readonly string[] CmdFragments =
@@ -351,7 +351,7 @@ public sealed class ShellRoundTripFuzzTests
         }
 
         // cmd.exe runs this script, so a diagnostic on the whole text would be a false positive.
-        Assert.Empty(ShellSyntaxTree.ParseText(Script, ShellDialect.Cmd).Diagnostics);
+        Assert.Empty(ShellSyntaxTree.ParseText(Script, ShellDialect.Cmd).GetDiagnostics());
     }
 
     /// <summary>
@@ -369,6 +369,66 @@ public sealed class ShellRoundTripFuzzTests
             _state ^= _state << 5;
 
             return (int)(_state % (uint)exclusiveUpperBound);
+        }
+    }
+
+    public static TheoryData<string> DialectSamples => new()
+    {
+        "", "ls", "ls -l | wc -l", "echo hi > out.txt", "FOO=bar cmd arg", "a && b || c",
+        "if [ -f x ]; then echo yes; else echo no; fi",
+        "for i in 1 2 3; do echo $i; done",
+        "while read line; do echo \"$line\"; done < file",
+        "case $x in a) echo A;; b|c) echo BC;; esac",
+        "f() { echo hi; }",
+        "cat <<EOF\nbody\nEOF\n",
+        "echo $(date) ${HOME} `pwd`",
+        "echo 'single' \"double $x\"",
+        "( cd /tmp && ls )",
+        "# just a comment\n",
+        "echo \\\n  continued",
+    };
+
+    [Theory]
+    [MemberData(nameof(DialectSamples))]
+    public void PosixRoundTrips(string text) => AssertRoundTrip(text, ShellDialect.Bash);
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Get-ChildItem")]
+    [InlineData("Get-ChildItem | Where-Object { $_.Length -gt 10 }")]
+    [InlineData("$x = 1 + 2")]
+    [InlineData("if ($x -eq 1) { 'one' } else { 'other' }")]
+    [InlineData("function Test-Thing { param($a, $b) $a + $b }")]
+    [InlineData("foreach ($i in 1..3) { $i }")]
+    [InlineData("try { risky } catch [System.Exception] { 'oops' } finally { 'done' }")]
+    [InlineData("@{ a = 1; b = 2 }")]
+    [InlineData("@(1, 2, 3)")]
+    [InlineData("\"expandable $x string\"")]
+    [InlineData("# comment\nGet-Date")]
+    public void PowerShellRoundTrips(string text) => AssertRoundTrip(text, ShellDialect.PowerShell);
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("echo hello")]
+    [InlineData("set X=1")]
+    [InlineData("if exist file.txt (echo yes) else (echo no)")]
+    [InlineData("for %%i in (1 2 3) do echo %%i")]
+    [InlineData(":label\ngoto label")]
+    [InlineData("call :sub")]
+    [InlineData("rem a comment\necho after")]
+    [InlineData("echo %PATH%")]
+    public void CmdRoundTrips(string text) => AssertRoundTrip(text, ShellDialect.Cmd);
+
+    private static void AssertRoundTrip(string text, ShellDialect dialect)
+    {
+        var tree = ShellSyntaxTree.ParseText(text, dialect);
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(text, string.Concat(tree.GetRoot().DescendantTokens().Select(token => token.ToFullString())));
+
+        foreach (var node in tree.GetRoot().DescendantNodesAndSelf())
+        {
+            Assert.Equal(node.ToFullString(), text.Substring(node.FullSpan.Start, node.FullSpan.Length));
         }
     }
 }

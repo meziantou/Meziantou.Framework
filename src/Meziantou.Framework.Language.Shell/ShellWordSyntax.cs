@@ -1,20 +1,8 @@
 namespace Meziantou.Framework.Language.Shell;
 
 /// <summary>Represents a single shell word: a command name, an argument, or a redirection target.</summary>
-public sealed class ShellWordSyntax : ShellSyntaxNode
+public sealed partial class ShellWordSyntax
 {
-    private readonly IReadOnlyList<ShellSyntaxNode> _childNodes;
-
-    public ShellWordSyntax(IReadOnlyList<ShellWordPartSyntax> parts)
-        : base(ShellSyntaxKind.Word, BuildFullText(parts ?? []), GetFullStart(parts))
-    {
-        Parts = parts ?? [];
-        _childNodes = [.. Parts];
-    }
-
-    public IReadOnlyList<ShellWordPartSyntax> Parts { get; }
-    public override IReadOnlyList<ShellSyntaxNode> ChildNodes => _childNodes;
-
     /// <summary>
     /// Returns the word text with quotes and escapes resolved, or <see langword="null"/> when the value depends on
     /// runtime expansion (a variable reference or command substitution).
@@ -38,7 +26,7 @@ public sealed class ShellWordSyntax : ShellSyntaxNode
                         builder.Append(glob.GlobToken.Text);
                         break;
                     case ShellQuotedStringSyntax quoted:
-                        var quotedValue = new ShellWordSyntax(quoted.Parts).Value;
+                        var quotedValue = SyntaxFactory.ShellWord(quoted.Parts).Value;
                         if (quotedValue is null)
                             return null;
 
@@ -67,24 +55,6 @@ public sealed class ShellWordSyntax : ShellSyntaxNode
         }
     }
 
-    /// <summary>
-    /// Replaces the whole word with a single literal <paramref name="text"/>, keeping the leading trivia of the
-    /// original word so surrounding whitespace and comments survive the edit.
-    /// </summary>
-    public ShellWordSyntax WithText(string text)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-
-        var leadingTrivia = DescendantTokens().FirstOrDefault()?.LeadingTrivia;
-        var token = new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, text, text, leadingTrivia: leadingTrivia, fullStart: FullSpan.Start);
-
-        return new ShellWordSyntax([new ShellLiteralWordPartSyntax(token)]);
-    }
-
-    /// <summary>
-    /// Returns the text of an expandable string when every part is literal, or <see langword="null"/> when it
-    /// embeds a variable or subexpression whose value is only known at runtime.
-    /// </summary>
     private static string? GetExpandableStringValue(PowerShellExpandableStringSyntax expandable)
     {
         var builder = new StringBuilder();
@@ -106,17 +76,15 @@ public sealed class ShellWordSyntax : ShellSyntaxNode
         return builder.ToString();
     }
 
-    public ShellWordSyntax WithParts(IEnumerable<ShellWordPartSyntax>? parts)
+    /// <summary>Returns this word rewritten as a single literal part holding <paramref name="text"/>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    public ShellWordSyntax WithText(string text)
     {
-        var updated = parts?.ToArray() ?? [];
-        if (updated.SequenceEqual(Parts))
-            return this;
+        ArgumentNullException.ThrowIfNull(text);
 
-        return new ShellWordSyntax(updated);
+        var replacement = SyntaxFactory.Literal(text);
+        var leading = GetLeadingTrivia();
+
+        return WithParts(new SyntaxList<ShellWordPartSyntax>(leading.Count == 0 ? replacement : replacement.WithLeadingTrivia(leading)));
     }
-
-    public override void Accept(ShellSyntaxVisitor visitor) => visitor.VisitWord(this);
-    public override TResult Accept<TResult>(ShellSyntaxVisitor<TResult> visitor) => visitor.VisitWord(this);
-
-    private static int GetFullStart(IReadOnlyList<ShellWordPartSyntax>? parts) => parts is { Count: > 0 } ? parts[0].FullSpan.Start : 0;
 }

@@ -14,7 +14,7 @@ public sealed class RegexClassSetTests
     private static RegexSyntaxTree Parse(string pattern)
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, SetMode);
-        Assert.Empty(tree.Diagnostics, $"[{pattern}] reported {string.Join(",", tree.Diagnostics.Select(d => d.Id))}");
+        Assert.Empty(tree.GetDiagnostics(), $"[{pattern}] reported {string.Join(",", tree.GetDiagnostics().Select(d => d.Id))}");
 
         return tree;
     }
@@ -25,7 +25,7 @@ public sealed class RegexClassSetTests
     [InlineData("[[a-z][0-9]]", 3)]
     public void AClassMayContainAnother(string pattern, int classes)
     {
-        Assert.HasCount(classes, Parse(pattern).Root.DescendantNodes().OfType<RegexCharacterClassSyntax>().ToArray());
+        Assert.HasCount(classes, Parse(pattern).GetRoot().DescendantNodes().OfType<RegexCharacterClassSyntax>().ToArray());
     }
 
     [Theory]
@@ -39,7 +39,7 @@ public sealed class RegexClassSetTests
     [InlineData(@"[^\w--\d]", "--", 2)]
     public void AnOperationKeepsItsOperatorAndOperands(string pattern, string op, int operands)
     {
-        var operation = Assert.Single(Parse(pattern).Root.DescendantNodes().OfType<RegexClassSetOperationSyntax>());
+        var operation = Assert.Single(Parse(pattern).GetRoot().DescendantNodes().OfType<RegexClassSetOperationSyntax>());
 
         Assert.Equal(op, operation.OperatorText);
         Assert.HasCount(operands, operation.Operands);
@@ -52,7 +52,7 @@ public sealed class RegexClassSetTests
     [InlineData(@"[\q{a|b|c}]", new[] { "a", "b", "c" })]
     public void AStringDisjunctionListsItsAlternatives(string pattern, string[] alternatives)
     {
-        var literal = Assert.Single(Parse(pattern).Root.DescendantNodes().OfType<RegexClassStringLiteralSyntax>());
+        var literal = Assert.Single(Parse(pattern).GetRoot().DescendantNodes().OfType<RegexClassStringLiteralSyntax>());
 
         Assert.Equal(alternatives, literal.Alternatives);
     }
@@ -62,9 +62,9 @@ public sealed class RegexClassSetTests
     {
         var tree = Parse(@"[\q{ab}--\q{b}]");
 
-        var operation = Assert.Single(tree.Root.DescendantNodes().OfType<RegexClassSetOperationSyntax>());
+        var operation = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexClassSetOperationSyntax>());
         Assert.HasCount(2, operation.Operands);
-        Assert.HasCount(2, tree.Root.DescendantNodes().OfType<RegexClassStringLiteralSyntax>().ToArray());
+        Assert.HasCount(2, tree.GetRoot().DescendantNodes().OfType<RegexClassStringLiteralSyntax>().ToArray());
     }
 
     /// <summary>
@@ -80,7 +80,7 @@ public sealed class RegexClassSetTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, SetMode);
 
-        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0070");
+        Assert.Contains(tree.GetDiagnostics(), d => d.Id == "REGEX0070");
     }
 
     /// <summary>A single dash is still a range, so the doubled form is the only operator.</summary>
@@ -91,8 +91,8 @@ public sealed class RegexClassSetTests
     {
         var tree = Parse(pattern);
 
-        Assert.Empty(tree.Root.DescendantNodes().OfType<RegexClassSetOperationSyntax>());
-        Assert.Single(tree.Root.DescendantNodes().OfType<RegexCharacterRangeSyntax>());
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexClassSetOperationSyntax>());
+        Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexCharacterRangeSyntax>());
     }
 
     /// <summary>Without the flag the grammar is off, so the same text is an ordinary class.</summary>
@@ -101,7 +101,7 @@ public sealed class RegexClassSetTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("[a--b]", RegexDialect.JavaScript);
 
-        Assert.Empty(tree.Root.DescendantNodes().OfType<RegexClassSetOperationSyntax>());
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexClassSetOperationSyntax>());
     }
 
     [Fact]
@@ -109,6 +109,6 @@ public sealed class RegexClassSetTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(@"[\w&&\p{L}]", RegexDialect.Net);
 
-        Assert.Empty(tree.Root.DescendantNodes().OfType<RegexClassSetOperationSyntax>());
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexClassSetOperationSyntax>());
     }
 }

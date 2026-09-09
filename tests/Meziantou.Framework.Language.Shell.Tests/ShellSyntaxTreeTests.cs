@@ -70,8 +70,8 @@ public sealed class ShellSyntaxTreeTests
         {
             var tree = ShellSyntaxTree.ParseText(text, dialect);
 
-            Assert.Equal(text, tree.Root.ToFullString());
-            Assert.Equal(text, tree.Text);
+            Assert.Equal(text, tree.GetRoot().ToFullString());
+            Assert.Equal(text, tree.GetText().Text);
         }
     }
 
@@ -83,7 +83,7 @@ public sealed class ShellSyntaxTreeTests
         {
             var tree = ShellSyntaxTree.ParseText(text, dialect);
 
-            Assert.Equal(text, tree.Root.ToFullString());
+            Assert.Equal(text, tree.GetRoot().ToFullString());
         }
     }
 
@@ -102,8 +102,8 @@ public sealed class ShellSyntaxTreeTests
     {
         var tree = ShellSyntaxTree.ParseText("echo hello world", ShellDialect.Bash);
 
-        Assert.Empty(tree.Diagnostics);
-        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        Assert.Empty(tree.GetDiagnostics());
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
         Assert.Equal("echo", command.NameValue);
         Assert.Equal(2, command.Arguments.Count);
         Assert.Equal("hello", command.Arguments[0].Value);
@@ -115,10 +115,10 @@ public sealed class ShellSyntaxTreeTests
     {
         var tree = ShellSyntaxTree.ParseText("ls | grep foo | wc -l", ShellDialect.Bash);
 
-        var pipeline = Assert.IsType<ShellPipelineSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        var pipeline = Assert.IsType<ShellPipelineSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
         Assert.Equal(3, pipeline.Commands.Count);
         Assert.Equal(2, pipeline.OperatorTokens.Count);
-        Assert.All(pipeline.OperatorTokens, token => Assert.Equal(ShellSyntaxKind.PipeToken, token.Kind));
+        Assert.All(pipeline.OperatorTokens, token => Assert.Equal(SyntaxKind.PipeToken, token.Kind()));
     }
 
     [Fact]
@@ -126,10 +126,10 @@ public sealed class ShellSyntaxTreeTests
     {
         var tree = ShellSyntaxTree.ParseText("a && b || c", ShellDialect.Bash);
 
-        var list = Assert.IsType<ShellCommandListSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        var list = Assert.IsType<ShellCommandListSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
         Assert.Equal(3, list.Pipelines.Count);
-        Assert.Equal(ShellSyntaxKind.AmpersandAmpersandToken, list.OperatorTokens[0].Kind);
-        Assert.Equal(ShellSyntaxKind.PipePipeToken, list.OperatorTokens[1].Kind);
+        Assert.Equal(SyntaxKind.AmpersandAmpersandToken, list.OperatorTokens[0].Kind());
+        Assert.Equal(SyntaxKind.PipePipeToken, list.OperatorTokens[1].Kind());
     }
 
     [Fact]
@@ -137,8 +137,8 @@ public sealed class ShellSyntaxTreeTests
     {
         var tree = ShellSyntaxTree.ParseText("cd /tmp; ls; pwd", ShellDialect.Bash);
 
-        Assert.Equal(3, tree.Root.Statements.Statements.Count);
-        Assert.Equal(2, tree.Root.Statements.SeparatorTokens.Count);
+        Assert.Equal(3, tree.GetRoot().Statements.Statements.Count);
+        Assert.Equal(2, tree.GetRoot().Statements.SeparatorTokens.Count);
     }
 
     [Fact]
@@ -146,11 +146,11 @@ public sealed class ShellSyntaxTreeTests
     {
         var tree = ShellSyntaxTree.ParseText("cd /tmp\nls\npwd\n", ShellDialect.Bash);
 
-        Assert.Equal(3, tree.Root.Statements.Statements.Count);
+        Assert.Equal(3, tree.GetRoot().Statements.Statements.Count);
 
         // `SeparatorTokens[i]` follows `Statements[i]`, so a statement ended by a line break gets a missing separator
         // rather than none; a real `;` further down the script would otherwise be rebuilt at the wrong index.
-        Assert.All(tree.Root.Statements.SeparatorTokens, separator =>
+        Assert.All(tree.GetRoot().Statements.SeparatorTokens, separator =>
         {
             Assert.True(separator.IsMissing);
             Assert.Empty(separator.Text);
@@ -171,7 +171,7 @@ public sealed class ShellSyntaxTreeTests
 
         foreach (var (text, dialect) in cases)
         {
-            var list = ShellSyntaxAssert.TextIsFaithful(text, dialect).Root.Statements;
+            var list = ShellSyntaxAssert.TextIsFaithful(text, dialect).GetRoot().Statements;
 
             // The real separator sits on the statement it follows; the ones before it are placeholders.
             Assert.All(list.SeparatorTokens.Take(list.Statements.Count - 2), separator => Assert.True(separator.IsMissing));
@@ -184,7 +184,7 @@ public sealed class ShellSyntaxTreeTests
     {
         var tree = ShellSyntaxTree.ParseText("FOO=bar BAZ=qux run --now", ShellDialect.Bash);
 
-        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
         Assert.Equal(2, command.Assignments.Count);
         Assert.Equal("FOO", command.Assignments[0].Name);
         Assert.Equal("bar", command.Assignments[0].Value?.Value);
@@ -196,12 +196,12 @@ public sealed class ShellSyntaxTreeTests
     {
         var tree = ShellSyntaxTree.ParseText("run 2> errors.log >> out.log", ShellDialect.Bash);
 
-        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
         Assert.Equal(2, command.Redirections.Count);
-        Assert.Equal("2", command.Redirections[0].IoNumberToken?.Text);
+        Assert.Equal("2", command.Redirections[0].IoNumberToken.Text);
         Assert.Equal("errors.log", command.Redirections[0].Target?.Value);
-        Assert.Equal(ShellSyntaxKind.GreaterThanGreaterThanToken, command.Redirections[1].OperatorToken.Kind);
-        Assert.Null(command.Redirections[1].IoNumberToken);
+        Assert.Equal(SyntaxKind.GreaterThanGreaterThanToken, command.Redirections[1].OperatorToken.Kind());
+        Assert.False(command.Redirections[1].IoNumberToken.IsPresent());
     }
 
     [Fact]
@@ -210,7 +210,7 @@ public sealed class ShellSyntaxTreeTests
         const string Text = "echo >out hi";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
 
-        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
         Assert.Equal("echo", command.NameValue);
         Assert.Equal("hi", Assert.Single(command.Arguments).Value);
         Assert.Equal(Text, command.ToFullString());
@@ -222,12 +222,12 @@ public sealed class ShellSyntaxTreeTests
         const string Text = "# leading\necho hi # trailing\n";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
 
-        var comments = tree.Root.DescendantComments().ToArray();
+        var comments = tree.GetRoot().DescendantComments().ToArray();
 
         Assert.HasCount(2, comments);
-        Assert.Equal("# leading", comments[0].Text);
+        Assert.Equal("# leading", comments[0].ToString());
         Assert.Equal(0, comments[0].Span.Start);
-        Assert.Equal("# trailing", comments[1].Text);
+        Assert.Equal("# trailing", comments[1].ToString());
         Assert.Equal(Text.IndexOf("# trailing", StringComparison.Ordinal), comments[1].Span.Start);
     }
 
@@ -236,9 +236,9 @@ public sealed class ShellSyntaxTreeTests
     {
         var tree = ShellSyntaxTree.ParseText("echo abc#def", ShellDialect.Bash);
 
-        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
         Assert.Equal("abc#def", Assert.Single(command.Arguments).Value);
-        Assert.Empty(tree.Root.DescendantComments());
+        Assert.Empty(tree.GetRoot().DescendantComments());
     }
 
     [Fact]
@@ -246,7 +246,7 @@ public sealed class ShellSyntaxTreeTests
     {
         var tree = ShellSyntaxTree.ParseText("echo $HOME ${PATH} $1", ShellDialect.Bash);
 
-        var names = tree.Root.DescendantNodes().OfType<ShellVariableReferenceSyntax>().Select(reference => reference.Name).ToArray();
+        var names = tree.GetRoot().DescendantNodes().OfType<ShellVariableReferenceSyntax>().Select(reference => reference.Name).ToArray();
 
         Assert.Equal(["HOME", "PATH", "1"], names);
     }
@@ -256,7 +256,7 @@ public sealed class ShellSyntaxTreeTests
     {
         var tree = ShellSyntaxTree.ParseText("echo $(date -u)", ShellDialect.Bash);
 
-        var substitution = Assert.Single(tree.Root.DescendantNodes().OfType<ShellCommandSubstitutionSyntax>());
+        var substitution = Assert.Single(tree.GetRoot().DescendantNodes().OfType<ShellCommandSubstitutionSyntax>());
         var inner = Assert.IsType<ShellCommandSyntax>(Assert.Single(substitution.Statements.Statements));
 
         Assert.False(substitution.IsBackquoted);
@@ -274,7 +274,7 @@ public sealed class ShellSyntaxTreeTests
 
         var tree = ShellSyntaxTree.ParseText("echo $((1 + 2))", dialect);
 
-        var expansion = Assert.Single(tree.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
+        var expansion = Assert.Single(tree.GetRoot().DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
         Assert.Equal("1 + 2", expansion.ExpressionText);
     }
 
@@ -283,9 +283,9 @@ public sealed class ShellSyntaxTreeTests
     {
         var tree = ShellSyntaxTree.ParseText("echo 'unterminated", ShellDialect.Bash);
 
-        Assert.NotEmpty(tree.Diagnostics);
-        Assert.All(tree.Diagnostics, diagnostic => Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity));
-        Assert.Equal("SHELL0003", tree.Diagnostics[0].Id);
+        Assert.NotEmpty(tree.GetDiagnostics());
+        Assert.All(tree.GetDiagnostics(), diagnostic => Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity));
+        Assert.Equal("SHELL0003", tree.GetDiagnostics()[0].Id);
     }
 
     [Fact]
@@ -294,9 +294,9 @@ public sealed class ShellSyntaxTreeTests
         const string Text = "; echo hi";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
 
-        Assert.Equal(Text, tree.Root.ToFullString());
-        Assert.True(tree.Root.ContainsSkippedText);
-        Assert.Contains(tree.Diagnostics, diagnostic => diagnostic.Id == "SHELL0002");
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
+        Assert.True(tree.GetRoot().ContainsSkippedText);
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0002");
     }
 
     [Fact]
@@ -307,8 +307,8 @@ public sealed class ShellSyntaxTreeTests
 
         var tree = ShellSyntaxTree.ParseText(text, options);
 
-        Assert.Equal(text, tree.Root.ToFullString());
-        Assert.Contains(tree.Diagnostics, diagnostic => diagnostic.Id == "SHELL0100");
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0100");
     }
 
     public static TheoryData<string, ShellDialect> DeeplyNestedScripts()
@@ -353,7 +353,7 @@ public sealed class ShellSyntaxTreeTests
         // Checking faithfulness walks every node and token, and the equivalence check walks the tree a second time.
         var tree = ShellSyntaxAssert.TextIsFaithful(text, dialect);
 
-        Assert.True(tree.Root.IsEquivalentTo(ShellSyntaxTree.ParseText(text, dialect).Root));
+        Assert.True(tree.GetRoot().IsEquivalentTo(ShellSyntaxTree.ParseText(text, dialect).GetRoot()));
     }
 
     [Fact]
@@ -361,7 +361,7 @@ public sealed class ShellSyntaxTreeTests
     {
         const string Text = "  echo hi  ";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
-        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
 
         Assert.Equal(2, command.Span.Start);
         Assert.Equal(9, command.Span.End);
@@ -374,7 +374,7 @@ public sealed class ShellSyntaxTreeTests
         var tree = ShellSyntaxTree.ParseText("echo old", ShellDialect.Zsh);
         var updated = tree.WithChanges(new TextChange(new TextSpan(5, 3), "new"));
 
-        Assert.Equal("echo new", updated.Text);
+        Assert.Equal("echo new", updated.GetText().Text);
         Assert.Equal(ShellDialect.Zsh, updated.Dialect);
     }
 
@@ -402,7 +402,7 @@ public sealed class ShellSyntaxTreeTests
     {
         const string Text = "a\nb\nc";
 
-        Assert.Equal(Text, ShellSyntaxTree.ParseText(Text, ShellDialect.Bash).SourceText.ToString());
+        Assert.Equal(Text, ShellSyntaxTree.ParseText(Text, ShellDialect.Bash).GetText().ToString());
     }
 
     [Fact]
@@ -410,18 +410,18 @@ public sealed class ShellSyntaxTreeTests
     {
         var tree = ShellSyntaxTree.ParseText("a\nb\nc", ShellDialect.Bash);
 
-        Assert.Equal(3, tree.SourceText.Lines.Count);
-        Assert.Equal("b", tree.SourceText.Lines[1].Text);
-        Assert.Equal(1, tree.SourceText.GetLine(2).LineNumber);
+        Assert.Equal(3, tree.GetText().Lines.Count);
+        Assert.Equal("b", tree.GetText().Lines[1].Text);
+        Assert.Equal(1, tree.GetText().GetLine(2).LineNumber);
     }
 
     [Fact]
     public void Diagnostics_AreLocatedInTheTreesOwnSourceText()
     {
         var tree = ShellSyntaxTree.ParseText("echo a\necho 'unterminated", ShellDialect.Bash);
-        var diagnostic = tree.Diagnostics[0];
+        var diagnostic = tree.GetDiagnostics()[0];
 
-        Assert.Same(tree.SourceText, diagnostic.Location.SourceText);
+        Assert.Same(tree.GetText(), diagnostic.Location.SourceText);
         Assert.Equal(1, diagnostic.Location.GetLineSpan().Start.Line);
     }
 }

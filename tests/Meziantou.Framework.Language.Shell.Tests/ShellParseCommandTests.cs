@@ -41,7 +41,7 @@ public sealed class ShellParseCommandTests
         Assert.Equal(Text, statement.ToFullString());
         Assert.Equal(0, statement.Span.Start);
         Assert.Equal(Text.Length, statement.Span.End);
-        Assert.Equal(Text, statement.SyntaxTree.Root.ToFullString());
+        Assert.Equal(Text, statement.SyntaxTree.GetRoot().ToFullString());
     }
 
     [Fact]
@@ -51,8 +51,8 @@ public sealed class ShellParseCommandTests
         var statement = ShellSyntaxTree.ParseCommand(Text, ShellDialect.Bash);
 
         Assert.Equal("echo one", statement.ToFullString());
-        Assert.Contains(statement.SyntaxTree!.Diagnostics, diagnostic => diagnostic.Id == "SHELL0101");
-        Assert.Equal(Text, statement.SyntaxTree.Root.ToFullString());
+        Assert.Contains(((ShellSyntaxTree)statement.SyntaxTree!).GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0101");
+        Assert.Equal(Text, statement.SyntaxTree.GetRoot().ToFullString());
     }
 
     [Fact]
@@ -60,8 +60,9 @@ public sealed class ShellParseCommandTests
     {
         var statement = ShellSyntaxTree.ParseCommand("   ", ShellDialect.Bash);
 
+        // Nothing was parsed, so there is no tree for the result to belong to.
         Assert.IsType<ShellSkippedTextSyntax>(statement);
-        Assert.NotNull(statement.SyntaxTree);
+        Assert.Null(statement.SyntaxTree);
     }
 
     [Theory]
@@ -94,7 +95,7 @@ public sealed class ShellParseCommandTests
         // The body is a statement of its own that follows the command, but it belongs to it.
         var command = ShellSyntaxTree.ParseCommand(text, ShellDialect.Bash);
 
-        Assert.DoesNotContain(command.SyntaxTree!.Diagnostics, diagnostic => diagnostic.Id == "SHELL0101");
+        Assert.DoesNotContain(((ShellSyntaxTree)command.SyntaxTree!).GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0101");
     }
 
     [Fact]
@@ -102,6 +103,6 @@ public sealed class ShellParseCommandTests
     {
         var command = ShellSyntaxTree.ParseCommand("cat <<EOF\nbody\nEOF\nls -l\n", ShellDialect.Bash);
 
-        Assert.Contains(command.SyntaxTree!.Diagnostics, diagnostic => diagnostic.Id == "SHELL0101");
+        Assert.Contains(((ShellSyntaxTree)command.SyntaxTree!).GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0101");
     }
 }

@@ -10,7 +10,11 @@
 
 using System.Globalization;
 
-namespace Meziantou.Framework.Language.Regex.Internals;
+using Meziantou.Framework.Language.InternalSyntax;
+using Meziantou.Framework.Language.Regex.Internals;
+using ScannedToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
+
+namespace Meziantou.Framework.Language.Regex.Syntax.InternalSyntax;
 
 /// <summary>The Perl-derived grammar, parameterized by what the dialect supports.</summary>
 /// <remarks>
@@ -45,7 +49,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     {
     }
 
-    protected override RegexAtomSyntax ParseAtom(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    protected override RegexAtomSyntax ParseAtom(GreenNode? leadingTrivia)
     {
         var start = Scanner.Position;
 
@@ -66,11 +70,11 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             case '^':
             case '$':
                 Scanner.Position++;
-                return WithOptions(new RegexAnchorSyntax(Scanner.Token(RegexSyntaxKind.AnchorToken, start, leadingTrivia)));
+                return new RegexAnchorSyntax(Scanner.Token(SyntaxKind.AnchorToken, start, leadingTrivia), Options);
 
             case '.':
                 Scanner.Position++;
-                return WithOptions(new RegexAnyCharacterSyntax(Scanner.Token(RegexSyntaxKind.DotToken, start, leadingTrivia)));
+                return new RegexAnyCharacterSyntax(Scanner.Token(SyntaxKind.DotToken, start, leadingTrivia), Options);
 
             case ')' when GroupCloseLength(start) > 0:
                 return SkipOneCharacter(leadingTrivia, RegexDiagnosticIds.InsufficientOpeningParentheses, "Unmatched ')'.");
@@ -97,7 +101,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
                     Scanner.Position++;
                 }
 
-                return WithOptions(new RegexLiteralSyntax(Scanner.Token(RegexSyntaxKind.LiteralToken, start, leadingTrivia)));
+                return new RegexLiteralSyntax(Scanner.Token(SyntaxKind.LiteralToken, start, leadingTrivia), Options);
         }
     }
 
@@ -107,7 +111,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     /// diagnostic plus a node that still covers the text, and every character it consumed in one step is kept as its
     /// own token so the parts of a header are addressable.
     /// </remarks>
-    private RegexAtomSyntax ParseGroup(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia, int openLength)
+    private RegexAtomSyntax ParseGroup(GreenNode? leadingTrivia, int openLength)
     {
         var start = Scanner.Position;
         if (!TryEnterRecursion(new TextSpan(start, 1)))
@@ -116,7 +120,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         try
         {
             Scanner.Position += openLength;
-            var openParenToken = Scanner.Token(RegexSyntaxKind.OpenParenToken, start, leadingTrivia);
+            var openParenToken = Scanner.Token(SyntaxKind.OpenParenToken, start, leadingTrivia);
             OptionsStack.Push(Options);
 
             // The flag applies to this parenthesis only, never to anything nested inside it.
@@ -143,17 +147,17 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             switch (Scanner.Current)
             {
                 case ':':
-                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.NonCapturingGroup, RegexDialectFeatures.NonCapturingGroups);
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, SyntaxKind.NonCapturingGroup, RegexDialectFeatures.NonCapturingGroups);
 
                 case '=':
                 case '!':
-                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.Lookaround, RegexDialectFeatures.Lookahead);
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, SyntaxKind.Lookaround, RegexDialectFeatures.Lookahead);
 
                 case '>':
-                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.AtomicGroup, RegexDialectFeatures.AtomicGroups);
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, SyntaxKind.AtomicGroup, RegexDialectFeatures.AtomicGroups);
 
                 case '|':
-                    return ParseSimpleHeaderGroup(openParenToken, questionStart, RegexSyntaxKind.BranchResetGroup, RegexDialectFeatures.BranchReset);
+                    return ParseSimpleHeaderGroup(openParenToken, questionStart, SyntaxKind.BranchResetGroup, RegexDialectFeatures.BranchReset);
 
                 case '<':
                 case '\'':
@@ -184,11 +188,11 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     }
 
     /// <summary>Parses a <c>(?…</c> header that only some dialects have, or returns null to fall through.</summary>
-    protected virtual RegexAtomSyntax? TryParseDialectGroupHeader(RegexSyntaxToken openParenToken, int questionStart) => null;
+    protected virtual RegexAtomSyntax? TryParseDialectGroupHeader(ScannedToken openParenToken, int questionStart) => null;
 
     /// <summary>Parses a backslash escape that only some dialects have, or returns null to fall through.</summary>
     /// <remarks>The reading position is on the backslash.</remarks>
-    protected virtual RegexAtomSyntax? TryParseDialectEscape(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia) => null;
+    protected virtual RegexAtomSyntax? TryParseDialectEscape(GreenNode? leadingTrivia) => null;
 
     /// <summary>Whether the reading position is inside a character class, where a few escapes differ.</summary>
     protected bool IsInCharacterClass { get; private set; }
@@ -306,7 +310,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         return option != RegexPatternOptions.None;
     }
 
-    private RegexCapturingGroupSyntax ParsePlainGroup(RegexSyntaxToken openParenToken)
+    private RegexCapturingGroupSyntax ParsePlainGroup(ScannedToken openParenToken)
     {
         // ExplicitCapture and the condition of a conditional both suppress the capture, but the group is still spelled
         // with a bare "(", so it stays a capturing-group node with number 0.
@@ -316,10 +320,9 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
 
         var alternation = ParseAlternation(insideGroup: true);
         var closeParenToken = ReadCloseParen(openParenToken);
-        var group = WithOptions(new RegexCapturingGroupSyntax(openParenToken, alternation, closeParenToken, number));
-        group.InnerOptions = alternation.Options;
+        var group = new RegexCapturingGroupSyntax(openParenToken, alternation, closeParenToken, Options, alternation.Options, number);
         RestoreOptions();
-        NoteCaptureSpan(number, group.Span);
+        NoteCaptureSpan(number, TextSpan.FromBounds(openParenToken.Span.Start, closeParenToken.End));
 
         return group;
     }
@@ -329,39 +332,37 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     /// A header the dialect does not have is reported and then read as a non-capturing group, so the body is still
     /// parsed and every character is still accounted for.
     /// </remarks>
-    private RegexGroupSyntax ParseSimpleHeaderGroup(RegexSyntaxToken openParenToken, int questionStart, RegexSyntaxKind kind, RegexDialectFeatures required)
+    private RegexGroupSyntax ParseSimpleHeaderGroup(ScannedToken openParenToken, int questionStart, SyntaxKind kind, RegexDialectFeatures required)
     {
         Scanner.Position++;
-        var groupKindToken = Scanner.Token(RegexSyntaxKind.GroupKindToken, questionStart);
+        var groupKindToken = Scanner.Token(SyntaxKind.GroupKindToken, questionStart);
         _ignoreNextParen = false;
 
         if (!Dialect.HasFeature(required))
         {
             AddDiagnostic(groupKindToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"The '{groupKindToken.Text}' grouping construct is not supported by the {Dialect.Name} dialect.");
-            kind = RegexSyntaxKind.NonCapturingGroup;
+            kind = SyntaxKind.NonCapturingGroup;
         }
 
         var alternation = ParseAlternation(insideGroup: true);
         var closeParenToken = ReadCloseParen(openParenToken);
         RegexGroupSyntax group = kind switch
         {
-            RegexSyntaxKind.AtomicGroup => new RegexAtomicGroupSyntax(openParenToken, groupKindToken, alternation, closeParenToken),
-            RegexSyntaxKind.Lookaround => new RegexLookaroundSyntax(openParenToken, groupKindToken, alternation, closeParenToken),
-            RegexSyntaxKind.BranchResetGroup => new RegexBranchResetGroupSyntax(openParenToken, groupKindToken, alternation, closeParenToken),
-            _ => new RegexNonCapturingGroupSyntax(openParenToken, groupKindToken, alternation, closeParenToken),
+            SyntaxKind.AtomicGroup => new RegexAtomicGroupSyntax(openParenToken, groupKindToken, alternation, closeParenToken, Options, alternation.Options),
+            SyntaxKind.Lookaround => new RegexLookaroundSyntax(openParenToken, groupKindToken, alternation, closeParenToken, Options, alternation.Options),
+            SyntaxKind.BranchResetGroup => new RegexBranchResetGroupSyntax(openParenToken, groupKindToken, alternation, closeParenToken, Options, alternation.Options),
+            _ => new RegexNonCapturingGroupSyntax(openParenToken, groupKindToken, alternation, closeParenToken, Options, alternation.Options),
         };
 
-        WithOptions(group);
-        group.InnerOptions = alternation.Options;
         RestoreOptions();
 
         return group;
     }
 
     /// <summary>Parses <c>(?R)</c> and <c>(?1)</c>, which restart the pattern or one of its groups.</summary>
-    private RegexRecursionSyntax ParseRecursion(RegexSyntaxToken openParenToken, int questionStart)
+    private RegexRecursionSyntax ParseRecursion(ScannedToken openParenToken, int questionStart)
     {
-        var questionToken = Scanner.Token(RegexSyntaxKind.QuestionToken, questionStart);
+        var questionToken = Scanner.Token(SyntaxKind.QuestionToken, questionStart);
         _ignoreNextParen = false;
 
         var targetStart = Scanner.Position;
@@ -374,18 +375,18 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             ReadDecimal(out _);
         }
 
-        var targetToken = Scanner.Token(RegexSyntaxKind.RecursionToken, targetStart);
+        var targetToken = Scanner.Token(SyntaxKind.RecursionToken, targetStart);
         ReportUnknownRecursionTarget(targetToken);
         var closeParenToken = ReadCloseParen(openParenToken);
         RestoreOptions();
 
-        return WithOptions(new RegexRecursionSyntax(openParenToken, questionToken, targetToken, closeParenToken));
+        return new RegexRecursionSyntax(openParenToken, questionToken, targetToken, closeParenToken, Options);
     }
 
     /// <summary>Reports a recursion into a group that does not exist. <c>R</c> means the whole pattern, so it always does.</summary>
-    private protected void ReportUnknownRecursionTarget(RegexSyntaxToken? targetToken)
+    private protected void ReportUnknownRecursionTarget(ScannedToken targetToken)
     {
-        if (targetToken is null || targetToken.Text is "R" or "")
+        if (!targetToken.IsPresent || targetToken.Text is "R" or "")
             return;
 
         var target = targetToken.Text;
@@ -406,7 +407,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     }
 
     /// <summary>Parses a backtracking control verb such as <c>(*SKIP)</c>.</summary>
-    private RegexBacktrackingVerbSyntax ParseBacktrackingVerb(RegexSyntaxToken openParenToken)
+    private RegexBacktrackingVerbSyntax ParseBacktrackingVerb(ScannedToken openParenToken)
     {
         var verbStart = Scanner.Position;
         Scanner.Position++;
@@ -415,15 +416,15 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             Scanner.Position++;
         }
 
-        var verbToken = Scanner.Token(RegexSyntaxKind.VerbToken, verbStart);
+        var verbToken = Scanner.Token(SyntaxKind.VerbToken, verbStart);
         var closeParenToken = ReadCloseParen(openParenToken);
         RestoreOptions();
 
-        return WithOptions(new RegexBacktrackingVerbSyntax(openParenToken, verbToken, closeParenToken));
+        return new RegexBacktrackingVerbSyntax(openParenToken, verbToken, closeParenToken, Options);
     }
 
     /// <summary>Parses <c>(?&lt;…</c>, <c>(?'…</c>, and <c>(?P&lt;…</c>: lookbehind, a named group, or a balancing group.</summary>
-    private RegexAtomSyntax ParseAngledGroup(RegexSyntaxToken openParenToken, int questionStart)
+    private RegexAtomSyntax ParseAngledGroup(ScannedToken openParenToken, int questionStart)
     {
         // "(?P<" is the Python spelling of "(?<"; the extra letter is part of the header and nothing else.
         if (Scanner.Current == 'P')
@@ -438,7 +439,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         if (close == '>' && Scanner.Current is '=' or '!')
         {
             Scanner.Position++;
-            var lookbehindKindToken = Scanner.Token(RegexSyntaxKind.GroupKindToken, questionStart);
+            var lookbehindKindToken = Scanner.Token(SyntaxKind.GroupKindToken, questionStart);
             _ignoreNextParen = false;
 
             if (!Dialect.HasFeature(RegexDialectFeatures.Lookbehind))
@@ -448,14 +449,13 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
 
             var lookbehindBody = ParseAlternation(insideGroup: true);
             var lookbehindClose = ReadCloseParen(openParenToken);
-            var lookbehind = WithOptions(new RegexLookaroundSyntax(openParenToken, lookbehindKindToken, lookbehindBody, lookbehindClose));
-            lookbehind.InnerOptions = lookbehindBody.Options;
+            var lookbehind = new RegexLookaroundSyntax(openParenToken, lookbehindKindToken, lookbehindBody, lookbehindClose, Options, lookbehindBody.Options);
             RestoreOptions();
 
             return lookbehind;
         }
 
-        var groupKindToken = Scanner.Token(RegexSyntaxKind.GroupKindToken, questionStart);
+        var groupKindToken = Scanner.Token(SyntaxKind.GroupKindToken, questionStart);
         _ignoreNextParen = false;
 
         var namedSpelling = close == '\'' ? RegexDialectFeatures.QuoteNamedGroups : RegexDialectFeatures.AngleNamedGroups;
@@ -465,8 +465,8 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         }
 
         var nameToken = ReadGroupNameOrNumber(close, openParenToken.Span.Start, out var capnum, out var startsWithHyphen);
-        RegexSyntaxToken? hyphenToken = null;
-        RegexSyntaxToken? previousNameToken = null;
+        ScannedToken hyphenToken = default;
+        ScannedToken previousNameToken = default;
 
         // A balancing group may name only the group it pops, as "(?<-1>x)" does, so a leading hyphen is enough on
         // its own to make the rest of the header a pop target.
@@ -474,7 +474,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         {
             var hyphenStart = Scanner.Position;
             Scanner.Position++;
-            hyphenToken = Scanner.Token(RegexSyntaxKind.HyphenToken, hyphenStart);
+            hyphenToken = Scanner.Token(SyntaxKind.HyphenToken, hyphenStart);
             if (!Dialect.HasFeature(RegexDialectFeatures.BalancingGroups))
             {
                 AddDiagnostic(hyphenToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"Balancing groups are not supported by the {Dialect.Name} dialect.");
@@ -484,7 +484,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         }
 
         // The engine accepts the header only when it named something: a group to push, a group to pop, or both.
-        if (capnum == -1 && previousNameToken is null)
+        if (capnum == -1 && !previousNameToken.IsPresent)
         {
             AddDiagnostic(
                 TextSpan.FromBounds(openParenToken.Span.Start, Math.Max(openParenToken.Span.Start, Scanner.Position)),
@@ -498,28 +498,26 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         var closeParenToken = ReadCloseParen(openParenToken);
 
         RegexGroupSyntax result;
-        if (hyphenToken is not null)
+        if (hyphenToken.IsPresent)
         {
             var number = capnum > 0 ? capnum : ResolveDeclaredNumber(nameToken);
-            result = new RegexBalancingGroupSyntax(openParenToken, groupKindToken, nameToken, hyphenToken, previousNameToken, closeNameToken, alternationBody, closeParenToken, number);
+            result = new RegexBalancingGroupSyntax(openParenToken, groupKindToken, nameToken, hyphenToken, previousNameToken, closeNameToken, alternationBody, closeParenToken, Options, alternationBody.Options, number);
             NoteCaptureSpan(number, TextSpan.FromBounds(openParenToken.Span.Start, closeParenToken.Span.End));
         }
         else
         {
             var number = capnum > 0 ? capnum : ResolveDeclaredNumber(nameToken);
-            result = new RegexNamedGroupSyntax(openParenToken, groupKindToken, nameToken, closeNameToken, alternationBody, closeParenToken, number);
+            result = new RegexNamedGroupSyntax(openParenToken, groupKindToken, nameToken, closeNameToken, alternationBody, closeParenToken, Options, alternationBody.Options, number);
             NoteCaptureSpan(number, TextSpan.FromBounds(openParenToken.Span.Start, closeParenToken.Span.End));
         }
 
-        WithOptions(result);
-        result.InnerOptions = alternationBody.Options;
         RestoreOptions();
 
         return result;
     }
 
     /// <summary>Reads the name or number a named group declares, reporting what the engine reports about it.</summary>
-    private RegexSyntaxToken? ReadGroupNameOrNumber(char close, int groupStart, out int capnum, out bool startsWithHyphen)
+    private ScannedToken ReadGroupNameOrNumber(char close, int groupStart, out int capnum, out bool startsWithHyphen)
     {
         capnum = -1;
         startsWithHyphen = false;
@@ -530,7 +528,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         if (char.IsAsciiDigit(ch))
         {
             capnum = ReadDecimal(out _);
-            var token = Scanner.Token(RegexSyntaxKind.NameToken, start);
+            var token = Scanner.Token(SyntaxKind.NameToken, start);
 
             // Group zero is the whole match and cannot be declared, so the engine does not note it either.
             if (ch != '0')
@@ -558,7 +556,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         {
             var name = ReadCaptureName();
             NoteCaptureName(name, groupStart);
-            var token = Scanner.Token(RegexSyntaxKind.NameToken, start);
+            var token = Scanner.Token(SyntaxKind.NameToken, start);
             if (!Scanner.IsAtEnd && Scanner.Current != close && Scanner.Current != '-')
             {
                 AddDiagnostic(token.Span, RegexDiagnosticIds.CaptureGroupNameInvalid, "Invalid capture group name.");
@@ -573,16 +571,16 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         {
             startsWithHyphen = true;
 
-            return null;
+            return default;
         }
 
         AddDiagnostic(new TextSpan(start, Math.Min(1, Text.Length - start)), RegexDiagnosticIds.CaptureGroupNameInvalid, "Invalid capture group name.");
 
-        return null;
+        return default;
     }
 
     /// <summary>Reads the group a balancing group pops, which must already exist.</summary>
-    private RegexSyntaxToken? ReadBalancingTarget(char close)
+    private ScannedToken ReadBalancingTarget(char close)
     {
         var start = Scanner.Position;
         var ch = Scanner.Current;
@@ -590,7 +588,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         if (char.IsAsciiDigit(ch))
         {
             var number = ReadDecimal(out _);
-            var token = Scanner.Token(RegexSyntaxKind.NameToken, start);
+            var token = Scanner.Token(SyntaxKind.NameToken, start);
             if (!CaptureTable.ContainsNumber(number))
             {
                 AddDiagnostic(token.Span, RegexDiagnosticIds.UndefinedNumberedReference, FormattableString.Invariant($"Reference to undefined group number {number}."));
@@ -606,7 +604,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         if (RegexCharacterTables.IsBoundaryWordChar(ch))
         {
             var name = ReadCaptureName();
-            var token = Scanner.Token(RegexSyntaxKind.NameToken, start);
+            var token = Scanner.Token(SyntaxKind.NameToken, start);
             if (!CaptureTable.TryGetNumber(name, out _))
             {
                 AddDiagnostic(token.Span, RegexDiagnosticIds.UndefinedNamedReference, $"Reference to undefined group name '{name}'.");
@@ -621,31 +619,31 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
 
         AddDiagnostic(new TextSpan(start, Math.Min(1, Math.Max(0, Text.Length - start))), RegexDiagnosticIds.CaptureGroupNameInvalid, "Invalid capture group name.");
 
-        return null;
+        return default;
     }
 
-    private RegexSyntaxToken? ReadNameTerminator(char close)
+    private ScannedToken ReadNameTerminator(char close)
     {
         if (Scanner.Current != close)
         {
             AddDiagnostic(new TextSpan(Scanner.Position, 0), RegexDiagnosticIds.InvalidGroupingConstruct, "Invalid grouping construct.");
 
-            return null;
+            return default;
         }
 
         var start = Scanner.Position;
         Scanner.Position++;
 
-        return Scanner.Token(RegexSyntaxKind.CloseNameToken, start);
+        return Scanner.Token(SyntaxKind.CloseNameToken, start);
     }
 
-    private int ResolveDeclaredNumber(RegexSyntaxToken? nameToken) =>
-        nameToken is not null && CaptureTable.TryGetNumber(nameToken.Text, out var number) ? number : 0;
+    private int ResolveDeclaredNumber(ScannedToken nameToken) =>
+        nameToken.IsPresent && CaptureTable.TryGetNumber(nameToken.Text, out var number) ? number : 0;
 
     /// <summary>Parses <c>(?(…)yes|no)</c>.</summary>
-    private RegexConditionalSyntax ParseConditional(RegexSyntaxToken openParenToken, int questionStart)
+    private RegexConditionalSyntax ParseConditional(ScannedToken openParenToken, int questionStart)
     {
-        var questionToken = Scanner.Token(RegexSyntaxKind.QuestionToken, questionStart);
+        var questionToken = Scanner.Token(SyntaxKind.QuestionToken, questionStart);
         if (!Dialect.HasFeature(RegexDialectFeatures.Conditionals))
         {
             AddDiagnostic(questionToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"Conditional alternations are not supported by the {Dialect.Name} dialect.");
@@ -662,19 +660,18 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             ReportIllegalConditionHeader(conditionStart);
             _ignoreNextParen = true;
             _inConditionalTest = true;
-            condition = ParseAtom([]);
+            condition = ParseAtom(leadingTrivia: null);
             _inConditionalTest = false;
         }
 
         var alternation = ParseAlternation(insideGroup: true);
-        if (alternation.Branches.Count > 2)
+        if (alternation.BranchCount > 2)
         {
-            AddDiagnostic(alternation.Span, RegexDiagnosticIds.AlternationHasTooManyConditions, "A conditional alternation has too many branches.");
+            AddDiagnostic(JustParsedSpan(alternation), RegexDiagnosticIds.AlternationHasTooManyConditions, "A conditional alternation has too many branches.");
         }
 
         var closeParenToken = ReadCloseParen(openParenToken);
-        var conditional = WithOptions(new RegexConditionalSyntax(openParenToken, questionToken, condition, alternation, closeParenToken));
-        conditional.InnerOptions = alternation.Options;
+        var conditional = new RegexConditionalSyntax(openParenToken, questionToken, condition, alternation, closeParenToken, Options, alternation.Options);
         RestoreOptions();
 
         return conditional;
@@ -684,13 +681,13 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     private RegexConditionalReferenceSyntax? ReadConditionalReference(int conditionStart)
     {
         Scanner.Position++;
-        var openParenToken = Scanner.Token(RegexSyntaxKind.OpenParenToken, conditionStart);
+        var openParenToken = Scanner.Token(SyntaxKind.OpenParenToken, conditionStart);
 
         var nameStart = Scanner.Position;
         if (char.IsAsciiDigit(Scanner.Current))
         {
             var number = ReadDecimal(out _);
-            var nameToken = Scanner.Token(RegexSyntaxKind.NameToken, nameStart);
+            var nameToken = Scanner.Token(SyntaxKind.NameToken, nameStart);
             if (Scanner.Current != ')')
             {
                 AddDiagnostic(nameToken.Span, RegexDiagnosticIds.AlternationHasMalformedReference, FormattableString.Invariant($"Malformed conditional alternation reference '{number}'."));
@@ -699,13 +696,13 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             {
                 var closeStart = Scanner.Position;
                 Scanner.Position++;
-                var closeToken = Scanner.Token(RegexSyntaxKind.CloseParenToken, closeStart);
+                var closeToken = Scanner.Token(SyntaxKind.CloseParenToken, closeStart);
                 if (!CaptureTable.ContainsNumber(number))
                 {
                     AddDiagnostic(nameToken.Span, RegexDiagnosticIds.AlternationHasUndefinedReference, FormattableString.Invariant($"Conditional alternation refers to undefined group number {number}."));
                 }
 
-                return WithOptions(new RegexConditionalReferenceSyntax(openParenToken, nameToken, closeToken));
+                return new RegexConditionalReferenceSyntax(openParenToken, nameToken, closeToken, Options);
             }
 
             Scanner.Position = conditionStart;
@@ -718,12 +715,12 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             var name = ReadCaptureName();
             if (CaptureTable.TryGetNumber(name, out _) && Scanner.Current == ')')
             {
-                var nameToken = Scanner.Token(RegexSyntaxKind.NameToken, nameStart);
+                var nameToken = Scanner.Token(SyntaxKind.NameToken, nameStart);
                 var closeStart = Scanner.Position;
                 Scanner.Position++;
-                var closeToken = Scanner.Token(RegexSyntaxKind.CloseParenToken, closeStart);
+                var closeToken = Scanner.Token(SyntaxKind.CloseParenToken, closeStart);
 
-                return WithOptions(new RegexConditionalReferenceSyntax(openParenToken, nameToken, closeToken));
+                return new RegexConditionalReferenceSyntax(openParenToken, nameToken, closeToken, Options);
             }
         }
 
@@ -754,26 +751,26 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     /// An option setter with no body ends at its own <c>)</c>, and the options it set stay in effect until the
     /// enclosing group closes, so the entry this construct pushed is discarded rather than restored.
     /// </remarks>
-    private RegexAtomSyntax ParseOptionsConstruct(RegexSyntaxToken openParenToken, int questionStart, bool inConditionalTest)
+    private RegexAtomSyntax ParseOptionsConstruct(ScannedToken openParenToken, int questionStart, bool inConditionalTest)
     {
-        var questionToken = Scanner.Token(RegexSyntaxKind.QuestionToken, questionStart);
+        var questionToken = Scanner.Token(SyntaxKind.QuestionToken, questionStart);
         if (!Dialect.HasFeature(RegexDialectFeatures.InlineOptions))
         {
             AddDiagnostic(questionToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"Inline options are not supported by the {Dialect.Name} dialect.");
         }
 
         var optionsStart = Scanner.Position;
-        var optionsToken = inConditionalTest || !Dialect.HasFeature(RegexDialectFeatures.InlineOptions) ? null : ScanInlineOptions(optionsStart);
+        var optionsToken = inConditionalTest || !Dialect.HasFeature(RegexDialectFeatures.InlineOptions) ? default : ScanInlineOptions(optionsStart);
 
         if (Scanner.Current == ')')
         {
             var closeStart = Scanner.Position;
             Scanner.Position++;
-            var closeToken = Scanner.Token(RegexSyntaxKind.CloseParenToken, closeStart);
+            var closeToken = Scanner.Token(SyntaxKind.CloseParenToken, closeStart);
             OptionsStack.Pop();
             _ignoreNextParen = false;
 
-            return WithOptions(new RegexInlineOptionsSyntax(openParenToken, questionToken, optionsToken, closeToken) { AppliedOptions = Options });
+            return new RegexInlineOptionsSyntax(openParenToken, questionToken, optionsToken, closeToken, Options, Options);
         }
 
         if (Scanner.Current != ':')
@@ -785,8 +782,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
 
             var recoveredBody = ParseAlternation(insideGroup: true);
             var recoveredClose = ReadCloseParen(openParenToken);
-            var recovered = WithOptions(new RegexOptionsGroupSyntax(openParenToken, questionToken, optionsToken, null, recoveredBody, recoveredClose));
-            recovered.InnerOptions = recoveredBody.Options;
+            var recovered = new RegexOptionsGroupSyntax(openParenToken, questionToken, optionsToken, default, recoveredBody, recoveredClose, Options, recoveredBody.Options);
             RestoreOptions();
 
             return recovered;
@@ -794,20 +790,19 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
 
         var colonStart = Scanner.Position;
         Scanner.Position++;
-        var colonToken = Scanner.Token(RegexSyntaxKind.ColonToken, colonStart);
+        var colonToken = Scanner.Token(SyntaxKind.ColonToken, colonStart);
         _ignoreNextParen = false;
 
         var body = ParseAlternation(insideGroup: true);
         var closeParenToken = ReadCloseParen(openParenToken);
-        var group = WithOptions(new RegexOptionsGroupSyntax(openParenToken, questionToken, optionsToken, colonToken, body, closeParenToken));
-        group.InnerOptions = body.Options;
+        var group = new RegexOptionsGroupSyntax(openParenToken, questionToken, optionsToken, colonToken, body, closeParenToken, Options, body.Options);
         RestoreOptions();
 
         return group;
     }
 
     /// <summary>Reads an <c>imnsx-imnsx</c> run and applies it, stopping at the first character it does not know.</summary>
-    private RegexSyntaxToken? ScanInlineOptions(int start)
+    private ScannedToken ScanInlineOptions(int start)
     {
         var off = false;
         while (!Scanner.IsAtEnd)
@@ -832,10 +827,10 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             Scanner.Position++;
         }
 
-        return Scanner.Position > start ? Scanner.Token(RegexSyntaxKind.OptionsToken, start) : null;
+        return Scanner.Position > start ? Scanner.Token(SyntaxKind.OptionsToken, start) : default;
     }
 
-    private protected RegexSyntaxToken ReadCloseParen(RegexSyntaxToken openParenToken)
+    private protected ScannedToken ReadCloseParen(ScannedToken openParenToken)
     {
         var trivia = TakeTrivia();
         var closeLength = GroupCloseLength(Scanner.Position);
@@ -844,7 +839,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             var start = Scanner.Position;
             Scanner.Position += closeLength;
 
-            return Scanner.Token(RegexSyntaxKind.CloseParenToken, start, trivia);
+            return Scanner.Token(SyntaxKind.CloseParenToken, start, trivia);
         }
 
         AddDiagnostic(
@@ -852,7 +847,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             RegexDiagnosticIds.InsufficientClosingParentheses,
             "Unterminated group: expected ')'.");
 
-        return Scanner.MissingToken(RegexSyntaxKind.CloseParenToken, trivia);
+        return Scanner.MissingToken(SyntaxKind.CloseParenToken, trivia);
     }
 
     private protected void RestoreOptions()

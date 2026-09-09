@@ -1,31 +1,46 @@
+using Meziantou.Framework.Language.InternalSyntax;
+
 namespace Meziantou.Framework.Language.Xml;
 
-/// <summary>Represents source text that could not be parsed into a valid XML construct.</summary>
-/// <example>
-/// <code>
-/// var node = new XmlSkippedTextSyntax("&lt;invalid");
-/// var updated = node.WithText("&lt;still-invalid");
-/// </code>
-/// </example>
-public sealed class XmlSkippedTextSyntax : XmlSyntaxNode
+/// <summary>Text the parser could make nothing of, kept so the document still reproduces its source.</summary>
+public sealed class XmlSkippedTextSyntax : XmlNodeSyntax
 {
-    public XmlSkippedTextSyntax(string text, int fullStart = 0)
-        : base(XmlSyntaxKind.XmlSkippedText, text, [new XmlSyntaxToken(XmlSyntaxKind.SkippedTextToken, text, fullStart: fullStart)], fullStart)
+    internal XmlSkippedTextSyntax(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
     {
-        Text = text;
     }
 
-    public string Text { get; }
+    public SyntaxTokenList Tokens => new(this, Green.GetSlot(0), Position, GetChildIndex(0));
 
-    public XmlSkippedTextSyntax WithText(string text)
+    /// <summary>Gets the text the parser could make nothing of.</summary>
+    public string Text => ToString();
+
+    /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
+    public XmlSkippedTextSyntax Update(SyntaxTokenList tokens)
     {
-        ArgumentNullException.ThrowIfNull(text);
-        if (string.Equals(text, Text, StringComparison.Ordinal))
+        if (tokens.Node == Green.GetSlot(0))
             return this;
 
-        return new XmlSkippedTextSyntax(text);
+        return SyntaxFactory.XmlSkippedText(tokens).WithAnnotationsFrom(this);
     }
 
-    public override void Accept(XmlSyntaxVisitor visitor) => visitor.VisitSkippedText(this);
-    public override TResult Accept<TResult>(XmlSyntaxVisitor<TResult> visitor) => visitor.VisitSkippedText(this);
+    public XmlSkippedTextSyntax WithTokens(SyntaxTokenList tokens) => Update(tokens);
+
+    internal override SyntaxNode? GetNodeSlot(int index) => null;
+    internal override SyntaxNode? GetCachedSlot(int index) => null;
+
+    public override void Accept(XmlSyntaxVisitor visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        visitor.VisitSkippedText(this);
+    }
+
+    public override TResult? Accept<TResult>(XmlSyntaxVisitor<TResult> visitor)
+        where TResult : default
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        return visitor.VisitSkippedText(this);
+    }
 }

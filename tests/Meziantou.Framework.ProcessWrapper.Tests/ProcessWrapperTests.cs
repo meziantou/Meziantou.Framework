@@ -1275,8 +1275,12 @@ public class ProcessWrapperTests
         var pipeline = CreateLargeOutputCommand(1024 * 1024)
             | CreateExitImmediatelyCommand().WithValidation(ProcessValidationMode.None);
 
+        // The budget only exists to turn a deadlock into a failure instead of a run that never ends, so it has
+        // to be far larger than the pipeline ever legitimately takes: every test in this class spawns processes
+        // in parallel, and starting the upstream powershell.exe on a saturated CI agent has already taken more
+        // than 30 seconds.
         var execution = pipeline.ExecuteBufferedAsync();
-        var completed = await Task.WhenAny(execution, Task.Delay(TimeSpan.FromSeconds(30)));
+        var completed = await Task.WhenAny(execution, Task.Delay(TimeSpan.FromMinutes(2)));
 
         Assert.Same(execution, completed);
         await execution;

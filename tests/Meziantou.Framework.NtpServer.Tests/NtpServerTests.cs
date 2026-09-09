@@ -497,21 +497,35 @@ public sealed class NtpServerTests : IAsyncLifetime
     [Fact]
     public async Task Dispose_StopsListening()
     {
-        var server = new NtpServer(new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback });
-        await server.StartAsync(XunitCancellationToken);
-        var port = server.Port;
-        server.Dispose();
-
         // Every test here binds an ephemeral port, so the port the server just released can be handed to
-        // another server started in parallel, which then answers the query and the assertion never fires.
-        // Holding the port with a socket that never replies keeps it out of that pool; the bind also fails
-        // if Dispose stopped releasing the socket, which is the behavior under test.
-        using var placeholder = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) { ExclusiveAddressUse = true };
-        placeholder.Bind(new IPEndPoint(IPAddress.Loopback, port));
+        // another server started in parallel -- in this process or in the sibling process running the other
+        // target framework -- which then answers the query and the assertion never fires. Holding the port
+        // with a socket that never replies keeps it out of that pool; the bind also fails if Dispose stopped
+        // releasing the socket, which is the behavior under test, so only retry it a few times before letting
+        // the failure through.
+        for (var attempt = 1; ; attempt++)
+        {
+            var server = new NtpServer(new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback });
+            await server.StartAsync(XunitCancellationToken);
+            var port = server.Port;
+            server.Dispose();
 
-        var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = port, Timeout = TimeSpan.FromSeconds(1) });
+            using var placeholder = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) { ExclusiveAddressUse = true };
+            try
+            {
+                placeholder.Bind(new IPEndPoint(IPAddress.Loopback, port));
+            }
+            catch (SocketException) when (attempt < 5)
+            {
+                // Somebody else won the race for the port before the placeholder could take it over
+                continue;
+            }
 
-        await Assert.ThrowsAnyAsync<Exception>(() => client.QueryAsync(XunitCancellationToken));
+            var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = port, Timeout = TimeSpan.FromSeconds(1) });
+
+            await Assert.ThrowsAnyAsync<Exception>(() => client.QueryAsync(XunitCancellationToken));
+            return;
+        }
     }
 
     [Fact]

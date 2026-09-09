@@ -97,6 +97,43 @@ namespace Meziantou.Framework.Language
         public override string ToString() => throw null;
     }
 
+    public sealed class SyntaxAnnotation : System.IEquatable<Meziantou.Framework.Language.SyntaxAnnotation>
+    {
+        public string? Kind { get => throw null; }
+        public string? Data { get => throw null; }
+        public SyntaxAnnotation(string? kind) { }
+        public SyntaxAnnotation(string? kind, string? data) { }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Language.SyntaxAnnotation? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.Language.SyntaxAnnotation? left, Meziantou.Framework.Language.SyntaxAnnotation? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Language.SyntaxAnnotation? left, Meziantou.Framework.Language.SyntaxAnnotation? right) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    [System.Diagnostics.DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
+    public abstract class SyntaxNode
+    {
+        public int RawKind { get => throw null; }
+        public string Language { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxNode? Parent { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
+        public int SpanStart { get => throw null; }
+        public bool ContainsDiagnostics { get => throw null; }
+        public bool ContainsAnnotations { get => throw null; }
+        public bool ContainsSkippedText { get => throw null; }
+        public bool IsMissing { get => throw null; }
+        protected T GetRedAtZero<T>(ref T field) where T : Meziantou.Framework.Language.SyntaxNode => throw null;
+        protected T GetRed<T>(ref T field, int slot) where T : Meziantou.Framework.Language.SyntaxNode => throw null;
+        public override string ToString() => throw null;
+        public virtual string ToFullString() => throw null;
+        public void WriteTo(System.IO.TextWriter writer) { }
+        public bool IsEquivalentTo([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Language.SyntaxNode? other) => throw null;
+        public bool IsIncrementallyIdenticalTo([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Language.SyntaxNode? other) => throw null;
+        public bool Contains(Meziantou.Framework.Language.SyntaxNode? node) => throw null;
+    }
+
     public readonly struct TextChange : System.IEquatable<Meziantou.Framework.Language.TextChange>
     {
         public Meziantou.Framework.Language.TextSpan Span { get => throw null; }

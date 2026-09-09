@@ -911,4 +911,42 @@ public sealed class JsonSyntaxTreeTests
         Assert.Equal("[1,2]", array.InsertNodesAfter(array.Elements[0], []).ToFullString());
         Assert.Equal("[1,2]", array.InsertNodesBefore(array.Elements[0], []).ToFullString());
     }
+
+    /// <summary>
+    /// A node covering exactly the span asked for is not necessarily the one wanted: by default the outermost of
+    /// the nodes sharing that span is, which is what the option is for.
+    /// </summary>
+    [Fact]
+    public void FindNode_ReturnsTheOutermostNodeSharingTheSpanUnlessAskedForTheInnermost()
+    {
+        var root = JsonSyntaxTree.ParseText("1").GetRoot();
+
+        Assert.IsType<JsonDocumentSyntax>(root.FindNode(root.FullSpan));
+        Assert.IsType<JsonNumberSyntax>(root.FindNode(root.FullSpan, getInnermostNodeForTie: true));
+    }
+
+    /// <summary>A rewriter that overrides VisitTrivia takes part in an ordinary rewrite.</summary>
+    [Fact]
+    public void Rewriter_PutsTheTriviaOfEveryTokenThroughVisitTrivia()
+    {
+        var tree = JsonSyntaxTree.ParseText("/*hello*/1");
+        var rewriter = new CommentRemover();
+
+        var rewritten = rewriter.Visit(tree.GetRoot());
+
+        Assert.Equal("1", rewritten?.ToFullString());
+        Assert.True(rewriter.Visited > 0);
+    }
+
+    private sealed class CommentRemover : JsonSyntaxRewriter
+    {
+        public int Visited { get; private set; }
+
+        public override SyntaxTrivia VisitTrivia(SyntaxTrivia trivia)
+        {
+            Visited++;
+
+            return trivia.IsKind(SyntaxKind.MultiLineCommentTrivia) ? default : trivia;
+        }
+    }
 }

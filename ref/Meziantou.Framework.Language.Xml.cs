@@ -366,6 +366,7 @@ namespace Meziantou.Framework.Language.Xml
     {
         public virtual Meziantou.Framework.Language.SyntaxToken VisitToken(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public virtual Meziantou.Framework.Language.SyntaxTrivia VisitTrivia(Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
+        public virtual Meziantou.Framework.Language.SyntaxTriviaList VisitList(Meziantou.Framework.Language.SyntaxTriviaList list) => throw null;
         public virtual Meziantou.Framework.Language.SyntaxList<TNode> VisitList<TNode>(Meziantou.Framework.Language.SyntaxList<TNode> list) where TNode : Meziantou.Framework.Language.Xml.XmlSyntaxNode => throw null;
         public virtual Meziantou.Framework.Language.SyntaxTokenList VisitList(Meziantou.Framework.Language.SyntaxTokenList list) => throw null;
         public override Meziantou.Framework.Language.SyntaxNode? VisitDocument(Meziantou.Framework.Language.Xml.XmlDocumentSyntax node) => throw null;

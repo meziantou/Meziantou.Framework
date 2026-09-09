@@ -21,6 +21,14 @@ public readonly struct SyntaxTriviaList : IReadOnlyList<SyntaxTrivia>, IEquatabl
         _index = index;
     }
 
+    /// <summary>Creates a detached list holding <paramref name="trivia"/>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="trivia"/> is <see langword="null"/>.</exception>
+    public SyntaxTriviaList(IEnumerable<SyntaxTrivia> trivia)
+        : this(token: default, ToGreen(trivia), position: 0, index: 0)
+    {
+        ArgumentNullException.ThrowIfNull(trivia);
+    }
+
     internal GreenNode? Node => _node;
 
     public int Count => GreenNodeList.Count(_node);

@@ -532,6 +532,12 @@ internal sealed partial class PosixCaseClauseSyntax : ShellSyntaxNode
 
     internal override bool IsSeparatedListSlot(int index) => index is 1;
 
+    internal override GreenNode? CreateSeparator(int index) => index switch
+    {
+        1 => SyntaxFactory.Token(SyntaxKind.PipeToken),
+        _ => base.CreateSeparator(index),
+    };
+
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PosixCaseClauseSyntax(_openParenToken, _patterns, _closeParenToken, _body, _terminatorToken, diagnostics, GetAnnotations());
 
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PosixCaseClauseSyntax(_openParenToken, _patterns, _closeParenToken, _body, _terminatorToken, GetDiagnostics(), annotations);
@@ -1102,6 +1108,12 @@ internal sealed partial class PowerShellArrayLiteralSyntax : ShellExpressionSynt
 
     internal override bool IsSeparatedListSlot(int index) => index is 0;
 
+    internal override GreenNode? CreateSeparator(int index) => index switch
+    {
+        0 => SyntaxFactory.Token(SyntaxKind.CommaToken),
+        _ => base.CreateSeparator(index),
+    };
+
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PowerShellArrayLiteralSyntax(_elements, diagnostics, GetAnnotations());
 
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PowerShellArrayLiteralSyntax(_elements, GetDiagnostics(), annotations);
@@ -1195,6 +1207,12 @@ internal sealed partial class PowerShellAttributeSyntax : ShellSyntaxNode
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new PowerShellAttributeSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], slots[3], slots[4], RequiredSlot(slots[5]), GetDiagnostics(), GetAnnotations());
 
     internal override bool IsSeparatedListSlot(int index) => index is 3;
+
+    internal override GreenNode? CreateSeparator(int index) => index switch
+    {
+        3 => SyntaxFactory.Token(SyntaxKind.CommaToken),
+        _ => base.CreateSeparator(index),
+    };
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PowerShellAttributeSyntax(_openBracketToken, _nameToken, _openParenToken, _arguments, _closeParenToken, _closeBracketToken, diagnostics, GetAnnotations());
 
@@ -1313,6 +1331,12 @@ internal sealed partial class PowerShellCatchClauseSyntax : ShellSyntaxNode
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new PowerShellCatchClauseSyntax(RequiredSlot(slots[0]), slots[1], RequiredSlot(slots[2]), GetDiagnostics(), GetAnnotations());
 
     internal override bool IsSeparatedListSlot(int index) => index is 1;
+
+    internal override GreenNode? CreateSeparator(int index) => index switch
+    {
+        1 => SyntaxFactory.Token(SyntaxKind.CommaToken),
+        _ => base.CreateSeparator(index),
+    };
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PowerShellCatchClauseSyntax(_catchKeyword, _typeFilters, _body, diagnostics, GetAnnotations());
 
@@ -1816,6 +1840,12 @@ internal sealed partial class PowerShellFunctionDefinitionSyntax : ShellStatemen
 
     internal override bool IsSeparatedListSlot(int index) => index is 3;
 
+    internal override GreenNode? CreateSeparator(int index) => index switch
+    {
+        3 => SyntaxFactory.Token(SyntaxKind.CommaToken),
+        _ => base.CreateSeparator(index),
+    };
+
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PowerShellFunctionDefinitionSyntax(Kind, _keyword, _nameToken, _openParenToken, _parameters, _closeParenToken, _body, diagnostics, GetAnnotations());
 
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PowerShellFunctionDefinitionSyntax(Kind, _keyword, _nameToken, _openParenToken, _parameters, _closeParenToken, _body, GetDiagnostics(), annotations);
@@ -2046,6 +2076,12 @@ internal sealed partial class PowerShellInvocationExpressionSyntax : ShellExpres
 
     internal override bool IsSeparatedListSlot(int index) => index is 2;
 
+    internal override GreenNode? CreateSeparator(int index) => index switch
+    {
+        2 => SyntaxFactory.Token(SyntaxKind.CommaToken),
+        _ => base.CreateSeparator(index),
+    };
+
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PowerShellInvocationExpressionSyntax(_target, _openParenToken, _arguments, _closeParenToken, diagnostics, GetAnnotations());
 
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PowerShellInvocationExpressionSyntax(_target, _openParenToken, _arguments, _closeParenToken, GetDiagnostics(), annotations);
@@ -2239,6 +2275,12 @@ internal sealed partial class PowerShellParamBlockSyntax : ShellStatementSyntax
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new PowerShellParamBlockSyntax(slots[0], RequiredSlot(slots[1]), RequiredSlot(slots[2]), slots[3], RequiredSlot(slots[4]), GetDiagnostics(), GetAnnotations());
 
     internal override bool IsSeparatedListSlot(int index) => index is 3;
+
+    internal override GreenNode? CreateSeparator(int index) => index switch
+    {
+        3 => SyntaxFactory.Token(SyntaxKind.CommaToken),
+        _ => base.CreateSeparator(index),
+    };
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PowerShellParamBlockSyntax(_attributes, _paramKeyword, _openParenToken, _parameters, _closeParenToken, diagnostics, GetAnnotations());
 
@@ -2694,6 +2736,12 @@ internal sealed partial class PowerShellTypeDefinitionSyntax : ShellStatementSyn
 
     internal override bool IsSeparatedListSlot(int index) => index is 4;
 
+    internal override GreenNode? CreateSeparator(int index) => index switch
+    {
+        4 => SyntaxFactory.Token(SyntaxKind.CommaToken),
+        _ => base.CreateSeparator(index),
+    };
+
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PowerShellTypeDefinitionSyntax(Kind, _attributes, _keyword, _nameToken, _colonToken, _baseTypes, _openBraceToken, _members, _closeBraceToken, diagnostics, GetAnnotations());
 
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PowerShellTypeDefinitionSyntax(Kind, _attributes, _keyword, _nameToken, _colonToken, _baseTypes, _openBraceToken, _members, _closeBraceToken, GetDiagnostics(), annotations);
@@ -3011,6 +3059,12 @@ internal sealed partial class ShellCommandListSyntax : ShellStatementSyntax
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new ShellCommandListSyntax(slots[0], GetDiagnostics(), GetAnnotations());
 
     internal override bool IsSeparatedListSlot(int index) => index is 0;
+
+    internal override GreenNode? CreateSeparator(int index) => index switch
+    {
+        0 => SyntaxFactory.Token(SyntaxKind.AmpersandAmpersandToken),
+        _ => base.CreateSeparator(index),
+    };
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new ShellCommandListSyntax(_pipelines, diagnostics, GetAnnotations());
 
@@ -3398,6 +3452,12 @@ internal sealed partial class ShellPipelineSyntax : ShellStatementSyntax
 
     internal override bool IsSeparatedListSlot(int index) => index is 1;
 
+    internal override GreenNode? CreateSeparator(int index) => index switch
+    {
+        1 => SyntaxFactory.Token(SyntaxKind.PipeToken),
+        _ => base.CreateSeparator(index),
+    };
+
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new ShellPipelineSyntax(_bangToken, _commands, diagnostics, GetAnnotations());
 
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new ShellPipelineSyntax(_bangToken, _commands, GetDiagnostics(), annotations);
@@ -3611,6 +3671,12 @@ internal sealed partial class ShellStatementListSyntax : ShellSyntaxNode
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new ShellStatementListSyntax(slots[0], GetDiagnostics(), GetAnnotations());
 
     internal override bool IsSeparatedListSlot(int index) => index is 0;
+
+    internal override GreenNode? CreateSeparator(int index) => index switch
+    {
+        0 => SyntaxFactory.Token(SyntaxKind.SemicolonToken),
+        _ => base.CreateSeparator(index),
+    };
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new ShellStatementListSyntax(_statements, diagnostics, GetAnnotations());
 

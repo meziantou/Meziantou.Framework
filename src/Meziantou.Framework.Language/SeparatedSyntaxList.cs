@@ -174,8 +174,28 @@ public readonly struct SeparatedSyntaxList<TNode> : IReadOnlyList<TNode>, IEquat
         return new SeparatedSyntaxList<TNode>(new SyntaxNodeOrTokenList(items));
     }
 
-    private static SyntaxNodeOrToken CreateSeparator(TNode node)
+    /// <summary>The separator to put between the elements when one is added.</summary>
+    /// <remarks>
+    /// A list that already holds one says what it looks like, spacing and all. One that does not -- a list of a
+    /// single element, which is where this matters -- asks the node that owns the slot, because the same language
+    /// separates different lists differently: a shell joins the commands of a pipeline with <c>|</c> and the
+    /// statements of a list with <c>;</c>, and taking the element's language-wide default would quietly turn one
+    /// into the other.
+    /// </remarks>
+    private SyntaxNodeOrToken CreateSeparator(TNode node)
     {
+        if (SeparatorCount > 0)
+            return GetSeparator(0);
+
+        if (Node?.Parent is { } owner)
+        {
+            for (var slot = 0; slot < owner.Green.SlotCount; slot++)
+            {
+                if (ReferenceEquals(owner.Green.GetSlot(slot), Green) && owner.Green.CreateSeparator(slot) is { } fromSlot)
+                    return new SyntaxToken(parent: null, fromSlot, position: 0, index: 0);
+            }
+        }
+
         if (node.Green.CreateSeparator() is not { } separator)
             throw new InvalidOperationException($"The language of '{node.GetType().Name}' does not define a separator for its lists; build the list with its separators instead.");
 

@@ -427,6 +427,16 @@ public abstract class SyntaxNode
                 node = only;
             }
         }
+        else
+        {
+            // The walk up stopped at the first node covering the span, which is the innermost of the nodes that
+            // share it. Without the option, the outermost of them is the answer, so keep going while the parent
+            // covers exactly the same range -- and no further than the node being asked.
+            while (!ReferenceEquals(node, this) && node.Parent is { } parent && parent.FullSpan == node.FullSpan)
+            {
+                node = parent;
+            }
+        }
 
         return node;
     }

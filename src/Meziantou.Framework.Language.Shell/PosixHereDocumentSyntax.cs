@@ -37,11 +37,8 @@ public sealed partial class PosixHereDocumentSyntax
             if (owner < 0)
                 return null;
 
-            foreach (var redirection in statements[owner].DescendantNodes().OfType<ShellRedirectionSyntax>())
+            foreach (var redirection in ShellRedirectionSyntax.HereDocumentRedirectionsIn(statements[owner]))
             {
-                if (redirection.OperatorToken.Kind() is not (SyntaxKind.LessThanLessThanToken or SyntaxKind.LessThanLessThanDashToken))
-                    continue;
-
                 if (ordinal-- == 0)
                     return redirection;
             }

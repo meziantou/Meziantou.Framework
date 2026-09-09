@@ -42,24 +42,33 @@ public sealed partial class ShellRedirectionSyntax
         }
     }
 
-    /// <summary>How many other here-document redirections precede this one inside <paramref name="owner"/>.</summary>
+    /// <summary>
+    /// The here-document redirections of <paramref name="owner"/>, in source order.
+    /// </summary>
     /// <remarks>
-    /// Counted over the whole statement the bodies are ordered against, not over the nearest statement above this
-    /// redirection. A pipeline is one statement holding several, and its bodies follow it in one sequence, so
+    /// Counted over the whole statement the bodies are ordered against, not over the nearest statement above the
+    /// redirection: a pipeline is one statement holding several, and its bodies follow it in one sequence, so
     /// counting inside the nearer one would give every branch of the pipeline the same ordinal.
+    /// <para>
+    /// A statement list of its own is where the walk stops. The body of a substitution has its own list and its own
+    /// here-documents, which follow the command line <em>inside</em> the substitution; counting them here would
+    /// shift every body of the list outside.
+    /// </para>
     /// </remarks>
+    internal static IEnumerable<ShellRedirectionSyntax> HereDocumentRedirectionsIn(ShellStatementSyntax owner)
+        => owner.DescendantNodes(node => node is not ShellStatementListSyntax)
+            .OfType<ShellRedirectionSyntax>()
+            .Where(redirection => redirection.OperatorToken.Kind() is SyntaxKind.LessThanLessThanToken or SyntaxKind.LessThanLessThanDashToken);
+
     private int CountPrecedingHereDocumentsIn(ShellStatementSyntax owner)
     {
         var ordinal = 0;
-        foreach (var redirection in owner.DescendantNodes().OfType<ShellRedirectionSyntax>())
+        foreach (var redirection in HereDocumentRedirectionsIn(owner))
         {
             if (ReferenceEquals(redirection, this))
                 break;
 
-            if (redirection.OperatorToken.Kind() is SyntaxKind.LessThanLessThanToken or SyntaxKind.LessThanLessThanDashToken)
-            {
-                ordinal++;
-            }
+            ordinal++;
         }
 
         return ordinal;

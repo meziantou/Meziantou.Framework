@@ -16,9 +16,42 @@ namespace Meziantou.Framework.Language.Shell;
 /// </example>
 public partial class ShellSyntaxRewriter : ShellSyntaxVisitor<SyntaxNode?>
 {
-    public virtual SyntaxToken VisitToken(SyntaxToken token) => token;
+    /// <summary>Rewrites a token, putting the trivia around it through <see cref="VisitTrivia"/>.</summary>
+    /// <remarks>
+    /// Nothing else reaches a token's trivia, so an override of <see cref="VisitTrivia"/> would never be called if
+    /// this returned the token untouched. A rewrite that returns the default trivium removes it.
+    /// </remarks>
+    public virtual SyntaxToken VisitToken(SyntaxToken token)
+    {
+        var leading = VisitList(token.LeadingTrivia);
+        var trailing = VisitList(token.TrailingTrivia);
+        if (leading == token.LeadingTrivia && trailing == token.TrailingTrivia)
+            return token;
+
+        return token.WithLeadingTrivia(leading).WithTrailingTrivia(trailing);
+    }
 
     public virtual SyntaxTrivia VisitTrivia(SyntaxTrivia trivia) => trivia;
+
+    /// <summary>Rewrites each trivium of a list, dropping the ones a rewrite turned into the default trivium.</summary>
+    public virtual SyntaxTriviaList VisitList(SyntaxTriviaList list)
+    {
+        List<SyntaxTrivia>? rewritten = null;
+        for (var i = 0; i < list.Count; i++)
+        {
+            var visited = VisitTrivia(list[i]);
+            if (rewritten is null && visited == list[i])
+                continue;
+
+            rewritten ??= [.. list.Take(i)];
+            if (visited.RawKind != 0)
+            {
+                rewritten.Add(visited);
+            }
+        }
+
+        return rewritten is null ? list : new SyntaxTriviaList(rewritten);
+    }
 
     public virtual SyntaxList<TNode> VisitList<TNode>(SyntaxList<TNode> list)
         where TNode : ShellSyntaxNode

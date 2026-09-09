@@ -553,6 +553,7 @@ namespace Meziantou.Framework.Language
         public Meziantou.Framework.Language.SyntaxTrivia this[int index] { get => throw null; }
         public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
+        public SyntaxTriviaList(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxTrivia> trivia) { }
         public bool Any() => throw null;
         public Meziantou.Framework.Language.SyntaxTrivia First() => throw null;
         public Meziantou.Framework.Language.SyntaxTrivia Last() => throw null;

@@ -1355,6 +1355,7 @@ namespace Meziantou.Framework.Language.Shell
     {
         public virtual Meziantou.Framework.Language.SyntaxToken VisitToken(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public virtual Meziantou.Framework.Language.SyntaxTrivia VisitTrivia(Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
+        public virtual Meziantou.Framework.Language.SyntaxTriviaList VisitList(Meziantou.Framework.Language.SyntaxTriviaList list) => throw null;
         public virtual Meziantou.Framework.Language.SyntaxList<TNode> VisitList<TNode>(Meziantou.Framework.Language.SyntaxList<TNode> list) where TNode : Meziantou.Framework.Language.Shell.ShellSyntaxNode => throw null;
         public virtual Meziantou.Framework.Language.SeparatedSyntaxList<TNode> VisitList<TNode>(Meziantou.Framework.Language.SeparatedSyntaxList<TNode> list) where TNode : Meziantou.Framework.Language.Shell.ShellSyntaxNode => throw null;
         public virtual Meziantou.Framework.Language.SyntaxTokenList VisitList(Meziantou.Framework.Language.SyntaxTokenList list) => throw null;

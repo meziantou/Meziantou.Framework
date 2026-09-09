@@ -266,4 +266,71 @@ public sealed class ShellEditingTests
         Assert.Equal(((ShellSyntaxTree)tree).GetDiagnostics().Count, tree.GetDiagnostics().Count);
         Assert.NotEmpty(tree.GetDiagnostics());
     }
+
+    /// <summary>
+    /// A command added to a pipeline is joined with a pipe, not with the separator a statement list would use.
+    /// The separator carries the spacing of the one already there; the spacing of the command itself is the
+    /// caller's, the same as it is for a replacement.
+    /// </summary>
+    [Fact]
+    public void AddingToAPipelineKeepsItAPipeline()
+    {
+        var tree = ShellSyntaxTree.ParseText("a | b", ShellDialect.Bash);
+        var pipeline = tree.GetRoot().DescendantNodes().OfType<ShellPipelineSyntax>().Single();
+
+        var added = SyntaxFactory.Command(ShellDialect.Bash, "c");
+        Assert.Equal("a | b |c", pipeline.WithCommands(pipeline.Commands.Add(added)).ToFullString());
+        Assert.Equal("a | b | c", pipeline.WithCommands(pipeline.Commands.Add(added.WithLeadingTrivia(SyntaxFactory.Space))).ToFullString());
+    }
+
+    /// <summary>
+    /// A pipeline of one command has no pipe to copy, so the node that owns the slot is what says a pipe goes there.
+    /// </summary>
+    [Fact]
+    public void AddingToAPipelineThatHasNoSeparatorYetStillUsesAPipe()
+    {
+        var pipeline = SyntaxFactory.Pipeline(SyntaxFactory.Command(ShellDialect.Bash, "a"));
+
+        var updated = pipeline.WithCommands(pipeline.Commands.Add(SyntaxFactory.Command(ShellDialect.Bash, "b")));
+
+        Assert.Equal("a|b", updated.ToFullString());
+        Assert.Equal(2, updated.Commands.Count);
+        Assert.Equal(SyntaxKind.PipeToken, updated.Commands.GetSeparator(0).Kind());
+    }
+
+    /// <summary>A statement list still gets the separator a statement list takes.</summary>
+    [Fact]
+    public void AddingToAStatementListUsesASemicolon()
+    {
+        var tree = ShellSyntaxTree.ParseText("a", ShellDialect.Bash);
+        var statements = tree.GetRoot().Statements;
+
+        var updated = statements.WithStatements(statements.Statements.Add(SyntaxFactory.Command(ShellDialect.Bash, "b")));
+
+        Assert.Equal(SyntaxKind.SemicolonToken, updated.Statements.GetSeparator(0).Kind());
+    }
+
+    /// <summary>
+    /// A here-document inside a substitution belongs to the statement list inside it, so it must not be counted
+    /// when pairing the bodies of the list outside.
+    /// </summary>
+    [Fact]
+    public void HereDocumentsInsideASubstitutionDoNotShiftTheOnesOutside()
+    {
+        const string Text = "cat <(cat <<INNER\ninner\nINNER\n) <<OUTER\nouter\nOUTER\n";
+        var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
+
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
+
+        var redirections = tree.GetRoot().DescendantNodes().OfType<ShellRedirectionSyntax>()
+            .Where(redirection => redirection.OperatorToken.Kind() == SyntaxKind.LessThanLessThanToken)
+            .ToArray();
+        var inner = redirections.Single(redirection => redirection.Target!.Value == "INNER");
+        var outer = redirections.Single(redirection => redirection.Target!.Value == "OUTER");
+
+        Assert.Contains("inner", inner.HereDocument!.ToFullString());
+        Assert.Contains("outer", outer.HereDocument!.ToFullString());
+        Assert.Same(outer, outer.HereDocument!.Redirection);
+        Assert.Same(inner, inner.HereDocument!.Redirection);
+    }
 }

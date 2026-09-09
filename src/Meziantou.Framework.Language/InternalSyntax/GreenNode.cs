@@ -145,6 +145,14 @@ internal abstract class GreenNode
     /// </remarks>
     internal virtual bool IsSeparatedListSlot(int index) => false;
 
+    /// <summary>The separator the separated list in <paramref name="index"/> holds between its elements.</summary>
+    /// <remarks>
+    /// A language may use a different separator in different places -- a shell joins the commands of a pipeline with
+    /// <c>|</c> and the statements of a list with <c>;</c> -- so the node that owns the slot answers, falling back to
+    /// the one separator the language uses everywhere else.
+    /// </remarks>
+    internal virtual GreenNode? CreateSeparator(int index) => CreateSeparator();
+
     public bool ContainsDiagnostics => (_flags & NodeFlags.ContainsDiagnostics) != NodeFlags.None;
     public bool ContainsAnnotations => (_flags & NodeFlags.ContainsAnnotations) != NodeFlags.None;
     public bool ContainsSkippedText => (_flags & NodeFlags.ContainsSkippedText) != NodeFlags.None;

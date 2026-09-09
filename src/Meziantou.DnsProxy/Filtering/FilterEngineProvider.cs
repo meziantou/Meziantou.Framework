@@ -11,8 +11,7 @@ internal sealed class FilterEngineProvider
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IOptions<DnsProxyOptions> _options;
     private readonly ILogger<FilterEngineProvider> _logger;
-    private DnsFilterEngine _engine;
-    private int _ruleCount;
+    private FilterSnapshot _snapshot;
 
     public FilterEngineProvider(IHttpClientFactory httpClientFactory, IOptions<DnsProxyOptions> options, ILogger<FilterEngineProvider> logger)
     {
@@ -22,13 +21,12 @@ internal sealed class FilterEngineProvider
 
         var initialRuleSet = new DnsFilterRuleSet();
         AddCachedFilterLists(initialRuleSet, options.Value);
-        _engine = new DnsFilterEngine(initialRuleSet);
-        _ruleCount = initialRuleSet.Count;
+        _snapshot = FilterSnapshot.Create(initialRuleSet);
     }
 
-    public DnsFilterEngine Engine => Volatile.Read(ref _engine);
+    public DnsFilterEngine Engine => Volatile.Read(ref _snapshot).Engine;
 
-    public int RuleCount => Volatile.Read(ref _ruleCount);
+    public int RuleCount => Volatile.Read(ref _snapshot).RuleCount;
 
     public async Task RefreshAsync(CancellationToken cancellationToken)
     {
@@ -72,8 +70,7 @@ internal sealed class FilterEngineProvider
             activity?.SetStatus(ActivityStatusCode.Error, $"{failedFilterCount} filter lists failed to load");
         }
 
-        Volatile.Write(ref _ruleCount, ruleSet.Count);
-        Volatile.Write(ref _engine, new DnsFilterEngine(ruleSet));
+        Volatile.Write(ref _snapshot, FilterSnapshot.Create(ruleSet));
     }
 
     private async Task<bool> TryLoadFilterAsync(HttpClient httpClient, DnsFilterRuleSet ruleSet, DnsProxyOptions options, FilterListOption filter, CancellationToken cancellationToken)
@@ -249,6 +246,15 @@ internal sealed class FilterEngineProvider
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(filter.Url))).ToLowerInvariant();
 
         return Path.Combine(cacheFolderPath, hash + ".txt");
+    }
+
+    /// <summary>
+    /// The engine and the rule count are published together, so a caller that uses <see cref="RuleCount"/> as a
+    /// readiness signal never gets an <see cref="Engine"/> still matching the previous rule set.
+    /// </summary>
+    private sealed record FilterSnapshot(DnsFilterEngine Engine, int RuleCount)
+    {
+        public static FilterSnapshot Create(DnsFilterRuleSet ruleSet) => new(new DnsFilterEngine(ruleSet), ruleSet.Count);
     }
 
     /// <summary>Fails the read as soon as more than <paramref name="maxSize"/> bytes have been consumed.</summary>

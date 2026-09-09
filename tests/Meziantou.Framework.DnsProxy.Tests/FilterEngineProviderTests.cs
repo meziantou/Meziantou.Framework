@@ -70,6 +70,53 @@ public sealed class FilterEngineProviderTests
     }
 
     [Fact]
+    public async Task RefreshAsync_DoesNotReportRulesBeforeTheEngineMatchesThem()
+    {
+        using var cacheDirectory = TemporaryDirectory.Create();
+        var options = Options.Create(new DnsProxyOptions
+        {
+            BlockListCacheFolderPath = cacheDirectory.FullPath,
+            Filters =
+            [
+                new FilterListOption
+                {
+                    Url = "https://filters.example/list.txt",
+                    Format = nameof(DnsFilterListFormat.AdBlock),
+                },
+            ],
+        });
+
+        // A large list makes building the engine slow enough for a reader to observe a rule count published before the
+        // engine that matches it.
+        var listText = string.Join('\n', Enumerable.Range(0, 20_000).Select(i => $"||blocked{i}.example.com^"));
+        using var serviceProvider = CreateServiceProvider(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(listText),
+        });
+        var factory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+
+        var provider = new FilterEngineProvider(
+            factory,
+            options,
+            NullLogger<FilterEngineProvider>.Instance);
+
+        // Callers use the rule count as a readiness signal, so the engine must already match the rules it reports.
+        using var readerTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var reader = Task.Factory.StartNew(() =>
+        {
+            while (provider.RuleCount is 0 && !readerTimeout.IsCancellationRequested)
+            {
+            }
+
+            return provider.Engine.Evaluate("blocked0.example.com").IsMatched;
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        await provider.RefreshAsync(CancellationToken.None);
+
+        Assert.True(await reader, "The provider reported loaded rules while the engine was still matching the previous rule set.");
+    }
+
+    [Fact]
     public async Task RefreshAsync_EmitsActivitiesWhenLoadingRemoteFilters()
     {
         using var cacheDirectory = TemporaryDirectory.Create();

@@ -114,7 +114,7 @@ public static class SyntaxNodeExtensions
     }
 
     /// <summary>Returns <paramref name="root"/> with <paramref name="newNodes"/> in place of <paramref name="oldNode"/>.</summary>
-    /// <remarks>Replacing one node with several requires that it sits in a list, or is the only thing in its place.</remarks>
+    /// <remarks>Replacing one node with several requires that it sits in a list, even one holding nothing but it.</remarks>
     /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="oldNode"/> is not part of <paramref name="root"/>, or is not somewhere several nodes can go.</exception>
     public static TRoot ReplaceNode<TRoot>(this TRoot root, SyntaxNode oldNode, IEnumerable<SyntaxNode> newNodes)
@@ -439,6 +439,13 @@ public static class SyntaxNodeExtensions
         if (!TryLocate(nodeInList, out var parent, out var slot, out var indexInList))
             throw new ArgumentException("The node is not part of this tree.", nameof(nodeInList));
 
+        // No index means either that the node fills its slot on its own or that it is the only element of a list,
+        // because a list of one collapses to that element. Only the parent can tell those apart, and only a list is
+        // somewhere several nodes can go: writing a list into the other kind of slot builds a tree whose typed
+        // children no longer have the type they say.
+        if (indexInList < 0 && !parent.Green.IsListSlot(slot))
+            throw new ArgumentException("The node is not somewhere several nodes can go.", nameof(nodeInList));
+
         var replacements = newNodes.Select(node => (GreenNode?)node.Green).ToArray();
         if (replacements.Length == 0 && !removeOriginal)
         {
@@ -449,24 +456,13 @@ public static class SyntaxNodeExtensions
 
         var slotGreen = parent.Green.GetSlot(slot);
 
-        GreenNode?[] items;
-        int start;
-        if (indexInList < 0)
-        {
-            // The node fills the slot on its own rather than sitting in a list.
-            items = [slotGreen];
-            start = 0;
-        }
-        else
-        {
-            items = GreenNodeList.ToArray(slotGreen);
-            start = indexInList;
-        }
+        var items = GreenNodeList.ToArray(slotGreen);
+        var start = Math.Max(indexInList, 0);
 
         // Asked of the parent rather than read off the contents: a list of one holds no separator to observe yet, and
         // it does not even look like a list, because a list collapses to its only element.
         var isSeparated = parent.Green.IsSeparatedListSlot(slot);
-        var spliced = Splice(items, start, replacements, removeOriginal, insertBefore, nodeInList.Green, isSeparated);
+        var spliced = Splice(items, start, replacements, removeOriginal, insertBefore, parent.Green, slot, isSeparated);
 
         var newSlots = new GreenNode?[parent.Green.SlotCount];
         for (var i = 0; i < newSlots.Length; i++)
@@ -490,9 +486,11 @@ public static class SyntaxNodeExtensions
     /// A separated list holds tokens between its nodes. Adding a node to one means adding a separator with it, and
     /// taking a node out means taking its separator too, or the list stops alternating and can no longer be read.
     /// Which kind of list this is comes from <paramref name="isSeparated"/>, because a list of one element has no
-    /// separator in it to go by.
+    /// separator in it to go by. The separator to add is the one the list already holds, so its spacing carries over;
+    /// failing that it is the one <paramref name="owner"/> declares for this slot, because a language may separate
+    /// one kind of list differently from another.
     /// </remarks>
-    private static GreenNode?[] Splice(GreenNode?[] items, int index, GreenNode?[] replacements, bool removeOriginal, bool insertBefore, GreenNode original, bool isSeparated)
+    private static GreenNode?[] Splice(GreenNode?[] items, int index, GreenNode?[] replacements, bool removeOriginal, bool insertBefore, GreenNode owner, int slot, bool isSeparated)
     {
         var result = new List<GreenNode?>(items);
 
@@ -508,7 +506,7 @@ public static class SyntaxNodeExtensions
             return [.. result];
         }
 
-        var separator = FindSeparator(items) ?? original.CreateSeparator()
+        var separator = FindSeparator(items) ?? owner.CreateSeparator(slot)
             ?? throw new InvalidOperationException("The language does not define a separator for its lists, so nodes cannot be spliced into one.");
 
         if (removeOriginal)

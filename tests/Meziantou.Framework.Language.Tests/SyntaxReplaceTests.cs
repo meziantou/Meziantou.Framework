@@ -525,4 +525,48 @@ public sealed class SyntaxReplaceTests
 
         Assert.Same(root, updated);
     }
+
+    /// <summary>
+    /// Rebuilding walks the spine from the root down to what changed, which in a deeply nested document is a long way.
+    /// </summary>
+    [Fact]
+    public void ReplaceNode_InADeeplyNestedDocument_DoesNotOverflowTheStack()
+    {
+        const int Depth = 10_000;
+
+        // Built from the inside out rather than parsed, so this measures the shared layer and not the toy parser.
+        var root = (TestRootSyntax)BuildNesting(Depth).CreateRed();
+        var innermost = root.DescendantNodes().OfType<TestAtomSyntax>().Single();
+
+        var updated = root.ReplaceNode(innermost, TestSyntax.Atom("b"));
+
+        Assert.Equal(new string('(', Depth) + "b" + new string(')', Depth), updated.ToFullString());
+
+        static InternalSyntax.GreenNode BuildNesting(int depth)
+        {
+            InternalSyntax.GreenNode green = new TestGreen.Atom(TestGreen.Token(TestSyntaxKind.IdentifierToken, "a"));
+            for (var i = 0; i < depth; i++)
+            {
+                green = new TestGreen.List(TestGreen.Token(TestSyntaxKind.OpenParenToken, "("), green, TestGreen.Token(TestSyntaxKind.CloseParenToken, ")"));
+            }
+
+            return new TestGreen.Root(green, TestGreen.Token(TestSyntaxKind.EndOfFileToken, ""));
+        }
+    }
+
+    /// <summary>
+    /// A slot that holds a single node is not a list, even though the only element of a list looks exactly like one.
+    /// </summary>
+    [Fact]
+    public void InsertNodesAfter_WhereOnlyOneNodeFits_IsRejected()
+    {
+        var root = TestSyntax.ParseRoot("(a)");
+        var only = Assert.IsType<TestListSyntax>(root.Value).Values[0];
+
+        Assert.Throws<ArgumentException>(() => root.InsertNodesAfter(root.Value!, [TestSyntax.Atom("b")]));
+        Assert.Throws<ArgumentException>(() => root.ReplaceNode(root.Value!, [TestSyntax.Atom("b")]));
+
+        // The only element of a list is still in a list, and takes as many nodes as ever.
+        Assert.Equal("(a,b)", root.InsertNodesAfter(only, [TestSyntax.Atom("b")]).ToFullString());
+    }
 }

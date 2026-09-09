@@ -39,6 +39,8 @@ internal sealed class XmlEmptyElementSyntax : XmlNodeSyntax
     };
 
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new XmlEmptyElementSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], RequiredSlot(slots[3]), GetDiagnostics(), GetAnnotations());
+
+    internal override bool IsListSlot(int index) => index is 2;
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new XmlEmptyElementSyntax(_lessThanToken, _nameToken, _attributes, _slashGreaterThanToken, diagnostics, GetAnnotations());
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new XmlEmptyElementSyntax(_lessThanToken, _nameToken, _attributes, _slashGreaterThanToken, GetDiagnostics(), annotations);
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Xml.XmlEmptyElementSyntax(this, parent, position);

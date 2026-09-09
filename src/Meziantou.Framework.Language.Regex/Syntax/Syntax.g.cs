@@ -36,6 +36,8 @@ internal sealed partial class RegexAlternationSyntax : RegexSyntaxNode
 
     internal override bool IsSeparatedListSlot(int index) => index is 0;
 
+    internal override bool IsListSlot(int index) => index is 0;
+
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexAlternationSyntax(_branches, Options, diagnostics, GetAnnotations());
 
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new RegexAlternationSyntax(_branches, Options, GetDiagnostics(), annotations);
@@ -486,6 +488,8 @@ internal sealed partial class RegexCharacterClassSyntax : RegexAtomSyntax
 
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCharacterClassSyntax(RequiredSlot(slots[0]), slots[1], slots[2], RequiredSlot(slots[3]), Options, GetDiagnostics(), GetAnnotations());
 
+    internal override bool IsListSlot(int index) => index is 2;
+
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexCharacterClassSyntax(_openBracketToken, _caretToken, _members, _closeBracketToken, Options, diagnostics, GetAnnotations());
 
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new RegexCharacterClassSyntax(_openBracketToken, _caretToken, _members, _closeBracketToken, Options, GetDiagnostics(), annotations);
@@ -591,6 +595,8 @@ internal sealed partial class RegexClassSetOperationSyntax : RegexSyntaxNode
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexClassSetOperationSyntax(slots[0], Options, GetDiagnostics(), GetAnnotations());
 
     internal override bool IsSeparatedListSlot(int index) => index is 0;
+
+    internal override bool IsListSlot(int index) => index is 0;
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexClassSetOperationSyntax(_operands, Options, diagnostics, GetAnnotations());
 
@@ -1410,6 +1416,8 @@ internal sealed partial class RegexSequenceSyntax : RegexSyntaxNode
 
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexSequenceSyntax(slots[0], Options, GetDiagnostics(), GetAnnotations());
 
+    internal override bool IsListSlot(int index) => index is 0;
+
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexSequenceSyntax(_terms, Options, diagnostics, GetAnnotations());
 
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new RegexSequenceSyntax(_terms, Options, GetDiagnostics(), annotations);
@@ -1477,6 +1485,8 @@ internal sealed partial class RegexSkippedTextSyntax : RegexAtomSyntax
     };
 
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexSkippedTextSyntax(slots[0], Options, GetDiagnostics(), GetAnnotations());
+
+    internal override bool IsListSlot(int index) => index is 0;
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexSkippedTextSyntax(_tokens, Options, diagnostics, GetAnnotations());
 

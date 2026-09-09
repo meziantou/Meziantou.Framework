@@ -136,6 +136,8 @@ internal static class TestGreen
 
         internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new Block(RequiredSlot(slots[0]), slots[1], RequiredSlot(slots[2]), GetDiagnostics(), GetAnnotations());
 
+        internal override bool IsListSlot(int index) => index is 1;
+
         internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new Block(_openBracketToken, _values, _closeBracketToken, diagnostics, GetAnnotations());
         internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new Block(_openBracketToken, _values, _closeBracketToken, GetDiagnostics(), annotations);
 

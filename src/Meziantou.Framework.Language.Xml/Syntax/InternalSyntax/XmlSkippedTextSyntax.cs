@@ -27,6 +27,8 @@ internal sealed class XmlSkippedTextSyntax : XmlNodeSyntax
     };
 
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new XmlSkippedTextSyntax(slots[0], GetDiagnostics(), GetAnnotations());
+
+    internal override bool IsListSlot(int index) => index is 0;
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new XmlSkippedTextSyntax(_tokens, diagnostics, GetAnnotations());
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new XmlSkippedTextSyntax(_tokens, GetDiagnostics(), annotations);
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Xml.XmlSkippedTextSyntax(this, parent, position);

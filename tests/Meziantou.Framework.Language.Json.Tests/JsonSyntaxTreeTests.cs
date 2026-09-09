@@ -857,6 +857,26 @@ public sealed class JsonSyntaxTreeTests
         Assert.Equal(2, updated.DescendantNodes().OfType<JsonArraySyntax>().Single().Elements.Count);
     }
 
+    /// <summary>
+    /// A member holds one value and not a list of them, which the tree cannot show: a list of one collapses to its
+    /// only element, so the slot of a member looks exactly like the slot of an array with one element in it.
+    /// </summary>
+    [Fact]
+    public void InsertNodesAfter_WhereOnlyOneNodeFits_IsRejected()
+    {
+        var tree = JsonSyntaxTree.ParseText("""{"a":1}""");
+        var root = tree.GetRoot();
+        var member = Assert.IsType<JsonObjectSyntax>(root.Value).Members[0];
+
+        Assert.Throws<ArgumentException>(() => root.InsertNodesAfter(member.Value, [SyntaxFactory.JsonNumber("2")]));
+        Assert.Throws<ArgumentException>(() => root.InsertNodesBefore(member.Value, [SyntaxFactory.JsonNumber("2")]));
+        Assert.Throws<ArgumentException>(() => root.ReplaceNode(member.Value, [SyntaxFactory.JsonNumber("2")]));
+
+        // The member still reads as a member: nothing was written into a slot that cannot hold it.
+        Assert.Equal("""{"a":1}""", root.ToFullString());
+        Assert.Equal("1", member.Value.ToFullString());
+    }
+
     [Fact]
     public void ReplaceNode_WithSeveralNodes_InAnArrayOfOneElement_StillAddsTheComma()
     {

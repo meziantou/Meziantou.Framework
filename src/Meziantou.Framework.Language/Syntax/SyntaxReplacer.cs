@@ -79,45 +79,119 @@ internal sealed class SyntaxReplacer
 
     private bool CouldContainATarget(TextSpan span) => _bounds is not { } bounds || span.IntersectsWith(bounds);
 
-    private GreenNode? RebuildNode(SyntaxNode node)
+    /// <summary>Rebuilds <paramref name="root"/>, replacing whatever was registered below it.</summary>
+    /// <remarks>
+    /// The descent keeps its own stack rather than recursing, so a deeply nested document does not become a deep call
+    /// stack. The pruning above keeps the walk to the spine down to what is being replaced, but that spine is as deep
+    /// as the target, and the parsers here are iterative: they read documents nested far deeper than a recursive walk
+    /// could rebuild.
+    /// </remarks>
+    private GreenNode? RebuildNode(SyntaxNode root)
+    {
+        var frame = StartFrame(root, out var resolved);
+        if (frame is null)
+            return resolved;
+
+        var stack = new Stack<Frame>();
+        stack.Push(frame);
+
+        // The result of the frame that finished last, waiting to be written into the slot its parent stopped at. It
+        // can legitimately be null -- that is a removal -- so a separate flag says whether one is pending.
+        GreenNode? completed = null;
+        var hasCompleted = false;
+
+        while (stack.Count > 0)
+        {
+            var current = stack.Peek();
+            if (hasCompleted)
+            {
+                current.Accept(completed);
+                hasCompleted = false;
+            }
+
+            var descended = false;
+            while (current.Slot < current.Green.SlotCount)
+            {
+                var index = current.Slot;
+                var childGreen = current.Green.GetSlot(index);
+                if (childGreen is null)
+                {
+                    current.Slot++;
+                    continue;
+                }
+
+                if (childGreen.IsToken)
+                {
+                    current.Accept(RebuildToken(current.Node, index, childGreen));
+                    continue;
+                }
+
+                if (current.Node.GetNodeSlot(index) is not { } childRed)
+                {
+                    current.Accept(RebuildTokenList(current.Node, index, childGreen));
+                    continue;
+                }
+
+                if (StartFrame(childRed, out var childResolved) is not { } childFrame)
+                {
+                    current.Accept(childResolved);
+                    continue;
+                }
+
+                // The slot stays where it is: the child's result arrives through Accept once its frame is done.
+                stack.Push(childFrame);
+                descended = true;
+                break;
+            }
+
+            if (descended)
+                continue;
+
+            stack.Pop();
+            completed = Finish(current);
+            hasCompleted = true;
+        }
+
+        return completed;
+    }
+
+    /// <summary>
+    /// Begins rebuilding <paramref name="node"/>, or answers outright with <paramref name="resolved"/> when there is
+    /// nothing under it to walk.
+    /// </summary>
+    private Frame? StartFrame(SyntaxNode node, out GreenNode? resolved)
     {
         if (_nodes.TryGetValue(node, out var replacement))
         {
             _replacedAnything = true;
+            resolved = replacement;
 
-            return replacement;
+            return null;
         }
 
-        var green = node.Green;
         var hasSlotEdit = _slotEdits.TryGetValue(node, out var edit);
         if (!hasSlotEdit && !CouldContainATarget(node.FullSpan))
-            return green;
-
-        GreenNode?[]? newSlots = null;
-        for (var i = 0; i < green.SlotCount; i++)
         {
-            var childGreen = green.GetSlot(i);
-            if (childGreen is null)
-                continue;
+            resolved = node.Green;
 
-            var newChild = childGreen.IsToken
-                ? RebuildToken(node, i, childGreen)
-                : node.GetNodeSlot(i) is { } childRed ? RebuildNode(childRed) : RebuildTokenList(node, i, childGreen);
-
-            if (ReferenceEquals(newChild, childGreen))
-                continue;
-
-            newSlots ??= CopySlots(green);
-            newSlots[i] = newChild;
+            return null;
         }
 
-        if (hasSlotEdit)
+        resolved = null;
+
+        return new Frame(node, hasSlotEdit ? edit : null);
+    }
+
+    private GreenNode? Finish(Frame frame)
+    {
+        var newSlots = frame.NewSlots;
+        if (frame.Edit is { } edit)
         {
-            newSlots = edit!(newSlots ?? CopySlots(green));
+            newSlots = edit(newSlots ?? CopySlots(frame.Green));
             _replacedAnything = true;
         }
 
-        return newSlots is null ? green : green.WithSlots(newSlots);
+        return newSlots is null ? frame.Green : frame.Green.WithSlots(newSlots);
     }
 
     /// <summary>
@@ -204,5 +278,33 @@ internal sealed class SyntaxReplacer
         }
 
         return slots;
+    }
+
+    /// <summary>One node part-way through being rebuilt: which slot the walk is at, and what it has produced so far.</summary>
+    private sealed class Frame(SyntaxNode node, Func<GreenNode?[], GreenNode?[]>? edit)
+    {
+        public SyntaxNode Node { get; } = node;
+
+        public GreenNode Green { get; } = node.Green;
+
+        public Func<GreenNode?[], GreenNode?[]>? Edit { get; } = edit;
+
+        /// <summary>The slot the walk is at, which is the one a result coming back belongs in.</summary>
+        public int Slot { get; set; }
+
+        /// <summary>The slots as rebuilt, left null while every one of them is still the original.</summary>
+        public GreenNode?[]? NewSlots { get; private set; }
+
+        /// <summary>Records what the current slot rebuilt to and moves on to the next.</summary>
+        public void Accept(GreenNode? value)
+        {
+            if (!ReferenceEquals(value, Green.GetSlot(Slot)))
+            {
+                NewSlots ??= CopySlots(Green);
+                NewSlots[Slot] = value;
+            }
+
+            Slot++;
+        }
     }
 }

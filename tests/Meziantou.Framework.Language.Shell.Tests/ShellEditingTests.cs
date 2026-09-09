@@ -298,6 +298,22 @@ public sealed class ShellEditingTests
         Assert.Equal(SyntaxKind.PipeToken, updated.Commands.GetSeparator(0).Kind());
     }
 
+    /// <summary>
+    /// Inserting into a pipeline of one command has no pipe to copy either, so the slot that holds the list is what
+    /// says a pipe goes there -- the language-wide separator of a shell is the semicolon, which would end it.
+    /// </summary>
+    [Fact]
+    public void InsertNodesAfter_InAPipelineOfOneCommand_StillUsesAPipe()
+    {
+        var pipeline = SyntaxFactory.Pipeline(SyntaxFactory.Command(ShellDialect.Bash, "a"));
+
+        var updated = pipeline.InsertNodesAfter(pipeline.Commands[0], [SyntaxFactory.Command(ShellDialect.Bash, "b")]);
+
+        Assert.Equal("a|b", updated.ToFullString());
+        Assert.Equal(2, updated.Commands.Count);
+        Assert.Equal(SyntaxKind.PipeToken, updated.Commands.GetSeparator(0).Kind());
+    }
+
     /// <summary>A statement list still gets the separator a statement list takes.</summary>
     [Fact]
     public void AddingToAStatementListUsesASemicolon()

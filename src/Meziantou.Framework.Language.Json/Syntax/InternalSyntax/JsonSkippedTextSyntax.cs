@@ -28,6 +28,8 @@ internal sealed class JsonSkippedTextSyntax : JsonValueSyntax
     internal override GreenNode? GetSlot(int index) => index == 0 ? _tokens : null;
 
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new JsonSkippedTextSyntax(slots[0], GetDiagnostics(), GetAnnotations());
+
+    internal override bool IsListSlot(int index) => index is 0;
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new JsonSkippedTextSyntax(_tokens, diagnostics, GetAnnotations());
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new JsonSkippedTextSyntax(_tokens, GetDiagnostics(), annotations);
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Json.JsonSkippedTextSyntax(this, parent, position);

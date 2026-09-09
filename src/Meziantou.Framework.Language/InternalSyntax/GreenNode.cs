@@ -145,6 +145,14 @@ internal abstract class GreenNode
     /// </remarks>
     internal virtual bool IsSeparatedListSlot(int index) => false;
 
+    /// <summary>Determines whether slot <paramref name="index"/> holds a list of children rather than a single one.</summary>
+    /// <remarks>
+    /// A list of one element collapses to that element, so a slot holding one child looks exactly like a slot that
+    /// only ever holds one. Editing needs to tell them apart, because several nodes can go where a list is and
+    /// nowhere else. A separated list is a list, so a node whose only lists are separated need not answer twice.
+    /// </remarks>
+    internal virtual bool IsListSlot(int index) => IsSeparatedListSlot(index);
+
     /// <summary>The separator the separated list in <paramref name="index"/> holds between its elements.</summary>
     /// <remarks>
     /// A language may use a different separator in different places -- a shell joins the commands of a pipeline with

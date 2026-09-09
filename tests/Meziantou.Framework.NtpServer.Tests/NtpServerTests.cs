@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.Ntp.Tests;
 
@@ -325,6 +326,119 @@ public sealed class NtpServerTests : IAsyncLifetime
 
         Assert.Equal(RequestCount, replies);
     }
+
+    [Fact]
+    public void RateLimiter_CollidingAddressesShareTheBucketBudget()
+    {
+        var (first, second) = FindAddressesInTheSameBucket();
+        var limiter = new NtpRateLimiter(maxRequestsPerWindow: 1, new FakeTimeProvider());
+
+        Assert.True(limiter.TryAcquire(first, out _));
+
+        // Rotating through addresses that land in the same bucket must not restart the bucket window:
+        // the budget is spent for the window, whichever colliding address spent it.
+        for (var i = 0; i < 100; i++)
+        {
+            Assert.False(limiter.TryAcquire(second, out _));
+            Assert.False(limiter.TryAcquire(first, out _));
+        }
+    }
+
+    [Fact]
+    public void RateLimiter_CollidingAddressesShareTheKissOfDeathBudget()
+    {
+        var (first, second) = FindAddressesInTheSameBucket();
+        var limiter = new NtpRateLimiter(maxRequestsPerWindow: 1, new FakeTimeProvider());
+
+        Assert.True(limiter.TryAcquire(first, out var isFirstRejection));
+        Assert.False(isFirstRejection);
+
+        Assert.False(limiter.TryAcquire(second, out isFirstRejection));
+        Assert.True(isFirstRejection);
+
+        Assert.False(limiter.TryAcquire(first, out isFirstRejection));
+        Assert.False(isFirstRejection);
+    }
+
+    [Fact]
+    public void RateLimiter_AddressesInDistinctBucketsHaveTheirOwnBudget()
+    {
+        var (first, second) = FindAddressesInDistinctBuckets();
+        var limiter = new NtpRateLimiter(maxRequestsPerWindow: 1, new FakeTimeProvider());
+
+        Assert.True(limiter.TryAcquire(first, out _));
+        Assert.False(limiter.TryAcquire(first, out _));
+
+        Assert.True(limiter.TryAcquire(second, out _));
+        Assert.False(limiter.TryAcquire(second, out _));
+    }
+
+    [Fact]
+    public void RateLimiter_RejectedRequestsDoNotExtendTheWindow()
+    {
+        var timeProvider = new FakeTimeProvider();
+        var address = IPAddress.Parse("192.0.2.1");
+        var limiter = new NtpRateLimiter(maxRequestsPerWindow: 1, timeProvider);
+
+        Assert.True(limiter.TryAcquire(address, out _));
+
+        // A source that keeps sending while throttled must not push its own window forever.
+        for (var i = 0; i < 10; i++)
+        {
+            timeProvider.Advance(TimeSpan.FromMilliseconds(90));
+            Assert.False(limiter.TryAcquire(address, out _));
+        }
+
+        timeProvider.Advance(TimeSpan.FromMilliseconds(100));
+        Assert.True(limiter.TryAcquire(address, out _));
+    }
+
+    /// <summary>Returns two distinct addresses that <see cref="NtpRateLimiter"/> maps onto the same bucket.</summary>
+    private static (IPAddress First, IPAddress Second) FindAddressesInTheSameBucket()
+    {
+        var seen = new Dictionary<int, IPAddress>();
+        foreach (var address in EnumerateAddresses())
+        {
+            if (seen.TryGetValue(GetBucketIndex(address), out var previous))
+                return (previous, address);
+
+            seen[GetBucketIndex(address)] = address;
+        }
+
+        throw new InvalidOperationException("The address space is larger than the bucket count, so a collision must exist");
+    }
+
+    private static (IPAddress First, IPAddress Second) FindAddressesInDistinctBuckets()
+    {
+        IPAddress? first = null;
+        foreach (var address in EnumerateAddresses())
+        {
+            if (first is null)
+            {
+                first = address;
+                continue;
+            }
+
+            if (GetBucketIndex(first) != GetBucketIndex(address))
+                return (first, address);
+        }
+
+        throw new InvalidOperationException("The buckets cannot all hold the whole address space");
+    }
+
+    private static IEnumerable<IPAddress> EnumerateAddresses()
+    {
+        for (var high = 0; high <= byte.MaxValue; high++)
+        {
+            for (var low = 0; low <= byte.MaxValue; low++)
+            {
+                yield return new IPAddress([203, 0, (byte)high, (byte)low]);
+            }
+        }
+    }
+
+    /// <summary>Mirrors the bucket mapping of <see cref="NtpRateLimiter"/>.</summary>
+    private static int GetBucketIndex(IPAddress address) => (int)((uint)address.GetHashCode() % 1024);
 
     [Fact]
     public async Task StartAsync_CalledTwiceThrows()

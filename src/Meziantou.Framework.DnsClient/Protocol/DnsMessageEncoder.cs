@@ -62,7 +62,11 @@ internal static class DnsMessageEncoder
         return writer.ToArray();
     }
 
-    public static DnsResponseMessage DecodeResponse(ReadOnlySpan<byte> data, bool preserveRawRecordData = false)
+    /// <param name="ageInSeconds">
+    /// How long the message has already been cached before reaching us. Record TTLs are reduced by this amount so a
+    /// response replayed from an HTTP cache does not look freshly resolved.
+    /// </param>
+    public static DnsResponseMessage DecodeResponse(ReadOnlySpan<byte> data, bool preserveRawRecordData = false, uint ageInSeconds = 0)
     {
         if (data.Length < 12)
             throw new DnsProtocolException("DNS message is too short (minimum 12 bytes for header).");
@@ -106,9 +110,9 @@ internal static class DnsMessageEncoder
         response.Questions = questions;
 
         // Answer, Authority, Additional sections
-        response.Answers = ReadRecords(ref reader, header.AnswerCount, preserveRawRecordData);
-        response.Authorities = ReadRecords(ref reader, header.AuthorityCount, preserveRawRecordData);
-        response.AdditionalRecords = ReadRecords(ref reader, header.AdditionalCount, preserveRawRecordData);
+        response.Answers = ReadRecords(ref reader, header.AnswerCount, preserveRawRecordData, ageInSeconds);
+        response.Authorities = ReadRecords(ref reader, header.AuthorityCount, preserveRawRecordData, ageInSeconds);
+        response.AdditionalRecords = ReadRecords(ref reader, header.AdditionalCount, preserveRawRecordData, ageInSeconds);
 
         // RFC 6891 6.1.3: the full RCODE is the OPT record's extended bits followed by the header's four bits.
         // Without this, BADVERS (16) and every other extended code decodes as the header's low nibble - BADVERS
@@ -122,7 +126,7 @@ internal static class DnsMessageEncoder
         return response;
     }
 
-    private static List<DnsRecord> ReadRecords(ref DnsWireReader reader, ushort count, bool preserveRawRecordData)
+    private static List<DnsRecord> ReadRecords(ref DnsWireReader reader, ushort count, bool preserveRawRecordData, uint ageInSeconds)
     {
         var records = new List<DnsRecord>(count);
         for (var i = 0; i < count; i++)
@@ -143,7 +147,9 @@ internal static class DnsMessageEncoder
             record.Name = name;
             record.RecordType = type;
             record.RecordClass = recordClass;
-            record.TimeToLive = ttl;
+            // RFC 6891 6.1.3: an OPT record's TTL field is not a lifetime but the extended RCODE, the EDNS version and
+            // the EDNS flags, so it must be kept exactly as it came off the wire.
+            record.TimeToLive = type is DnsQueryType.OPT ? ttl : ttl - Math.Min(ttl, ageInSeconds);
             record.DataLength = rdLength;
             if (preserveRawRecordData)
             {

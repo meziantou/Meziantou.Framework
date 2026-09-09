@@ -2,6 +2,7 @@ using System.Net;
 using Meziantou.Framework.DnsClient.Protocol;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
+using Meziantou.Framework.DnsClient.Response.Records;
 using Meziantou.Framework.DnsClient.Transport;
 
 using DnsResponseCode = Meziantou.Framework.DnsClient.Response.DnsResponseCode;
@@ -84,6 +85,184 @@ public sealed class DnsClientDnssecOptionsTests
         Assert.Equal(HttpVersionPolicy.RequestVersionOrLower, handler.RequestVersionPolicy);
     }
 
+    [Fact]
+    public async Task QueryAsync_Https_ResponseWithAnAgeHeader_ReducesTheRecordTimeToLives()
+    {
+        // RFC 8484 5.1: a response replayed by an HTTP cache still carries the TTLs the resolver first sent, so the
+        // time it spent in that cache has to come out of them.
+        using var handler = new TimeToLiveHttpMessageHandler(age: TimeSpan.FromSeconds(250));
+        using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
+        {
+            HttpHandler = handler,
+        });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, TestContext.Current.CancellationToken);
+
+        Assert.Equal(350u, Assert.Single(response.Answers).TimeToLive);
+        Assert.Equal(650u, Assert.Single(response.Authorities).TimeToLive);
+    }
+
+    [Fact]
+    public async Task QueryAsync_Https_ResponseWithoutAnAgeHeader_KeepsTheRecordTimeToLives()
+    {
+        using var handler = new TimeToLiveHttpMessageHandler(age: null);
+        using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
+        {
+            HttpHandler = handler,
+        });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, TestContext.Current.CancellationToken);
+
+        Assert.Equal(600u, Assert.Single(response.Answers).TimeToLive);
+        Assert.Equal(900u, Assert.Single(response.Authorities).TimeToLive);
+    }
+
+    [Fact]
+    public async Task QueryAsync_Https_ResponseWithAnAgeLongerThanTheTimeToLives_ClampsThemToZero()
+    {
+        using var handler = new TimeToLiveHttpMessageHandler(age: TimeSpan.FromSeconds(5000));
+        using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
+        {
+            HttpHandler = handler,
+        });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0u, Assert.Single(response.Answers).TimeToLive);
+        Assert.Equal(0u, Assert.Single(response.Authorities).TimeToLive);
+    }
+
+    [Fact]
+    public async Task QueryAsync_Https_ResponseWithAnAgeHeader_LeavesTheOptRecordMetadataIntact()
+    {
+        using var handler = new TimeToLiveHttpMessageHandler(age: TimeSpan.FromSeconds(250), optTimeToLive: 0x01008000);
+        using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
+        {
+            HttpHandler = handler,
+        });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, TestContext.Current.CancellationToken);
+        var opt = Assert.IsType<DnsOptRecord>(Assert.Single(response.AdditionalRecords));
+
+        Assert.Equal(0x01008000u, opt.TimeToLive);
+        Assert.True(opt.DnssecOk);
+    }
+
+    [Fact]
+    public async Task QueryAsync_Https_UnknownLengthResponseLargerThanADnsMessage_IsRejectedWithoutBufferingItAll()
+    {
+        // The response declares no Content-Length, so the size limit can only be enforced while reading the body.
+        using var handler = new StreamingHttpMessageHandler(totalLength: 1024 * 1024);
+        using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
+        {
+            HttpHandler = handler,
+        });
+
+        await Assert.ThrowsAsync<DnsProtocolException>(() => client.QueryAsync("example.com", DnsQueryType.A, TestContext.Current.CancellationToken));
+
+        Assert.True(handler.BytesRead <= MaxDnsMessageLength + 1, $"The transport read {handler.BytesRead} bytes of an oversized response instead of stopping at {MaxDnsMessageLength + 1}.");
+    }
+
+    [Fact]
+    public async Task QueryAsync_Https_UnknownLengthResponseWithinTheLimit_IsRead()
+    {
+        using var handler = new StreamingHttpMessageHandler(totalLength: null);
+        using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
+        {
+            HttpHandler = handler,
+        });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, TestContext.Current.CancellationToken);
+
+        Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
+        Assert.Equal("example.com", response.Questions[0].Name);
+    }
+
+    /// <summary>A DNS message can never exceed 65535 bytes; the transport must not buffer more than that.</summary>
+    private const int MaxDnsMessageLength = 65535;
+
+    /// <summary>Answers with a body of unknown length, counting how many bytes the transport actually pulls from it.</summary>
+    private sealed class StreamingHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly int? _totalLength;
+
+        /// <param name="totalLength">
+        /// The size of the padding body to answer with, representing a resolver that sends far more data than a DNS
+        /// message can hold, or <see langword="null" /> to answer with a well-formed response.
+        /// </param>
+        public StreamingHttpMessageHandler(int? totalLength)
+        {
+            _totalLength = totalLength;
+        }
+
+        public long BytesRead { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var query = await request.Content!.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            var body = _totalLength is { } length ? new byte[length] : CreateEmptyResponse(query);
+
+            // A non-seekable stream is what makes StreamContent report no Content-Length. The response owns it.
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StreamContent(new CountingStream(this, body)),
+            };
+        }
+
+        private sealed class CountingStream : Stream
+        {
+            private readonly StreamingHttpMessageHandler _owner;
+            private readonly byte[] _content;
+            private int _position;
+
+            public CountingStream(StreamingHttpMessageHandler owner, byte[] content)
+            {
+                _owner = owner;
+                _content = content;
+            }
+
+            public override bool CanRead => true;
+
+            public override bool CanSeek => false;
+
+            public override bool CanWrite => false;
+
+            public override long Length => throw new NotSupportedException();
+
+            public override long Position
+            {
+                get => throw new NotSupportedException();
+                set => throw new NotSupportedException();
+            }
+
+            public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+            public override int Read(Span<byte> buffer)
+            {
+                // Answer in small chunks, so a reader that ignores the limit has to come back for more.
+                var count = Math.Min(Math.Min(buffer.Length, 4096), _content.Length - _position);
+                _content.AsSpan(_position, count).CopyTo(buffer);
+                _position += count;
+                _owner.BytesRead += count;
+                return count;
+            }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+                => ValueTask.FromResult(Read(buffer.Span));
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+                => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+            public override void Flush() => throw new NotSupportedException();
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+            public override void SetLength(long value) => throw new NotSupportedException();
+
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
+    }
+
     private static bool IsCheckingDisabled(byte[] query)
     {
         var flags = (query[2] << 8) | query[3];
@@ -113,14 +292,41 @@ public sealed class DnsClientDnssecOptionsTests
     {
         public byte[] LastQuery { get; private set; } = [];
 
-        public Task<byte[]> SendAsync(byte[] query, CancellationToken cancellationToken)
+        public Task<DnsTransportResponse> SendAsync(byte[] query, CancellationToken cancellationToken)
         {
             LastQuery = query;
-            return Task.FromResult(CreateEmptyResponse(query));
+            return Task.FromResult(new DnsTransportResponse(CreateEmptyResponse(query)));
         }
 
         public void Dispose()
         {
+        }
+    }
+
+    /// <summary>Answers every query with an A record of TTL 600 and an SOA authority record of TTL 900.</summary>
+    private sealed class TimeToLiveHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly TimeSpan? _age;
+        private readonly uint _optTimeToLive;
+
+        public TimeToLiveHttpMessageHandler(TimeSpan? age, uint optTimeToLive = 0)
+        {
+            _age = age;
+            _optTimeToLive = optTimeToLive;
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var query = await request.Content!.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            var body = DnsTestMessages.CreateResponseWithTimeToLives(query, answerTimeToLive: 600, authorityTimeToLive: 900, _optTimeToLive);
+
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(body),
+            };
+
+            response.Headers.Age = _age;
+            return response;
         }
     }
 
@@ -317,10 +523,10 @@ public sealed class DnsClientDnssecOptionsTests
 
         public byte[] LastQuery { get; private set; } = [];
 
-        public Task<byte[]> SendAsync(byte[] query, CancellationToken cancellationToken)
+        public Task<DnsTransportResponse> SendAsync(byte[] query, CancellationToken cancellationToken)
         {
             LastQuery = query;
-            return Task.FromResult(_respond(query));
+            return Task.FromResult(new DnsTransportResponse(_respond(query)));
         }
 
         public void Dispose()

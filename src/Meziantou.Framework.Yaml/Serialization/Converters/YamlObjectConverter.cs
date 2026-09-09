@@ -3337,6 +3337,12 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             || underlying == typeof(long) || underlying == typeof(ulong)
             || underlying == typeof(float) || underlying == typeof(double)
             || underlying == typeof(decimal)
+#if NET11_0_OR_GREATER
+            || underlying == typeof(BFloat16)
+            || underlying == typeof(Decimal32)
+            || underlying == typeof(Decimal64)
+            || underlying == typeof(Decimal128)
+#endif
             || underlying == typeof(nint) || underlying == typeof(nuint);
     }
 

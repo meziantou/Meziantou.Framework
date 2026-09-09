@@ -54,9 +54,8 @@ public sealed class FunctionalTests
 
         var console = new ConsoleHelper(_testOutputHelper);
 
-        // --minimum-age 0: the .NET release index publishes every channel's latest SDK on the same day, so on a
-        // release day the default 7-day filter rejects all of them and nothing is updated. The age policy is not
-        // what this test covers.
+        // Every supported .NET channel publishes a new SDK on the same day, so the default 7-day minimum age
+        // rejects all of them during the week following a release. The age filter is covered by MinimumAgeTests.
         var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "DotNetSdk", "--minimum-age", "0"], console.ConfigureConsole);
         Assert.Equal(0, result);
 

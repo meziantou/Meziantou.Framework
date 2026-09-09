@@ -872,6 +872,62 @@ public sealed class DnsServerIntegrationTests
         }
     }
 
+    [Theory]
+    // A negative answer must not outlive the SOA MINIMUM, whether it is an NXDOMAIN or a NODATA answer.
+    [InlineData(DnsResponseCode.NameError, 3600u, 60u, "max-age=60")]
+    [InlineData(DnsResponseCode.NoError, 3600u, 60u, "max-age=60")]
+    // A zero MINIMUM forbids caching the negative answer at all.
+    [InlineData(DnsResponseCode.NameError, 600u, 0u, "no-store")]
+    [InlineData(DnsResponseCode.NoError, 600u, 0u, "no-store")]
+    // The SOA TTL still applies when it is the shorter of the two.
+    [InlineData(DnsResponseCode.NameError, 30u, 600u, "max-age=30")]
+    public async Task DoH_ResponseWithoutAnswers_CacheLifetimeIsCappedByTheSoaMinimum(DnsResponseCode responseCode, uint soaTimeToLive, uint soaMinimum, string expectedCacheControl)
+    {
+        await using var app = await StartDohServerAsync((context, ct) =>
+        {
+            var response = context.CreateResponse();
+            response.ResponseCode = responseCode;
+            response.Authorities.Add(new DnsResourceRecord
+            {
+                Name = "example.com",
+                Type = DnsQueryType.SOA,
+                Class = DnsQueryClass.IN,
+                TimeToLive = soaTimeToLive,
+                Data = new DnsSoaRecordData
+                {
+                    PrimaryNameServer = "ns1.example.com",
+                    ResponsibleMailbox = "hostmaster.example.com",
+                    Serial = 1,
+                    Refresh = 7200,
+                    Retry = 3600,
+                    Expire = 1209600,
+                    Minimum = soaMinimum,
+                },
+            });
+
+            return ValueTask.FromResult(response);
+        });
+
+        try
+        {
+            var address = app.Urls.First(u => u.StartsWith("http://", StringComparison.Ordinal));
+            using var httpClient = new HttpClient { BaseAddress = new Uri(address) };
+
+            using var content = new ByteArrayContent(CreateQueryBytes("missing.example.com", DnsQueryType.A));
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/dns-message");
+
+            using var response = await httpClient.PostAsync("/dns-query", content, XunitCancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            // RFC 8484 5.1: with an empty answer section the lifetime is bounded by the authority SOA MINIMUM.
+            Assert.Equal(expectedCacheControl, response.Headers.CacheControl?.ToString());
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
     [Fact]
     public async Task MapDnsHandler_CalledTwice_Throws()
     {
@@ -1042,14 +1098,9 @@ public sealed class DnsServerIntegrationTests
         public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
-    private static async Task<WebApplication> StartDohServerAsync()
+    private static Task<WebApplication> StartDohServerAsync()
     {
-        var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls("http://127.0.0.1:0");
-        builder.AddDnsServer(_ => { });
-
-        var app = builder.Build();
-        app.MapDnsHandler((context, ct) =>
+        return StartDohServerAsync((context, ct) =>
         {
             var response = context.CreateResponse();
             response.Answers.Add(new DnsResourceRecord
@@ -1063,6 +1114,16 @@ public sealed class DnsServerIntegrationTests
 
             return ValueTask.FromResult(response);
         });
+    }
+
+    private static async Task<WebApplication> StartDohServerAsync(DnsRequestDelegate handler)
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.AddDnsServer(_ => { });
+
+        var app = builder.Build();
+        app.MapDnsHandler(handler);
         app.MapDnsOverHttps("/dns-query");
 
         await app.StartAsync();

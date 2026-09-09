@@ -38,8 +38,8 @@ public sealed class AsyncReaderWriterLock
     private readonly Action<object?> _onCancellationRequestHandler;
     private readonly Lock _lock = new();
 
-    private readonly Queue<Waiter> _waitingWriters = new();
-    private readonly Queue<Waiter> _waitingReaders = new();
+    private readonly WaiterQueue<Waiter> _waitingWriters = new();
+    private readonly WaiterQueue<Waiter> _waitingReaders = new();
 
     // 0 when the lock is free, the number of readers holding it when positive, -1 when a writer holds it.
     private int _status;
@@ -168,26 +168,33 @@ public sealed class AsyncReaderWriterLock
     /// returned waiters are completed outside it.</summary>
     private List<Waiter>? GrantOwnership()
     {
-        if (_status != 0)
+        // A writer holds the lock, nothing can be granted until it releases.
+        if (_status < 0)
             return null;
 
         if (_waitingWriters.Count > 0)
         {
+            // Writers still have priority over the queued readers, so nothing is granted until the lock is free.
+            if (_status > 0)
+                return null;
+
             _status = -1;
-            return [_waitingWriters.Dequeue()];
+            return [_waitingWriters.Dequeue()!];
         }
 
         if (_waitingReaders.Count > 0)
         {
-            // Every queued reader is admitted at once. This also covers the case where the writers that were
-            // blocking them have all been canceled, which would otherwise leave the readers queued forever.
+            // Every queued reader is admitted at once. Readers only ever queue behind a writer, so once no writer
+            // is left they can join the readers already holding the lock instead of waiting for those to release.
+            // This also covers the case where the writers that were blocking them have all been canceled, which
+            // would otherwise leave the readers queued forever.
             var readers = new List<Waiter>(_waitingReaders.Count);
-            while (_waitingReaders.Count > 0)
+            while (_waitingReaders.Dequeue() is { } reader)
             {
-                readers.Add(_waitingReaders.Dequeue());
+                readers.Add(reader);
             }
 
-            _status = readers.Count;
+            _status += readers.Count;
             return readers;
         }
 
@@ -215,10 +222,10 @@ public sealed class AsyncReaderWriterLock
         List<Waiter>? toWake;
         lock (_lock)
         {
-            removed = RemoveMidQueue(waiter.IsWriter ? _waitingWriters : _waitingReaders, waiter);
+            removed = (waiter.IsWriter ? _waitingWriters : _waitingReaders).Remove(waiter);
 
-            // Removing a waiter can leave the lock free with others still queued behind it. GrantOwnership is a
-            // no-op unless _status is 0, so this only does something when that actually happened.
+            // Removing a waiter can unblock the ones queued behind it: the lock may now be free, or the canceled
+            // writer may have been the last one holding back readers that are compatible with the current owners.
             toWake = removed ? GrantOwnership() : null;
         }
 
@@ -233,28 +240,6 @@ public sealed class AsyncReaderWriterLock
             waiter.TrySetCanceled(waiter.CancellationToken);
             waiter.Registration.Dispose();
         }
-    }
-
-    private static bool RemoveMidQueue(Queue<Waiter> queue, Waiter valueToRemove)
-    {
-        var originalCount = queue.Count;
-        var dequeueCounter = 0;
-        var found = false;
-        while (dequeueCounter < originalCount)
-        {
-            dequeueCounter++;
-            var dequeued = queue.Dequeue();
-            if (!found && dequeued == valueToRemove)
-            { // only find 1 match
-                found = true;
-            }
-            else
-            {
-                queue.Enqueue(dequeued);
-            }
-        }
-
-        return found;
     }
 
     /// <summary>Represents a disposable releaser for an <see cref="AsyncReaderWriterLock"/>. Disposing the releaser releases either the reader or writer lock.</summary>
@@ -287,7 +272,7 @@ public sealed class AsyncReaderWriterLock
         }
     }
 
-    private sealed class Waiter : TaskCompletionSource<Releaser>
+    private sealed class Waiter : TaskCompletionSource<Releaser>, IWaiterQueueNode<Waiter>
     {
         internal Waiter(AsyncReaderWriterLock owner, bool writer, CancellationToken cancellationToken)
             : base(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -300,5 +285,9 @@ public sealed class AsyncReaderWriterLock
         internal bool IsWriter { get; }
         internal CancellationToken CancellationToken { get; }
         internal CancellationTokenRegistration Registration { get; }
+
+        public Waiter? Previous { get; set; }
+        public Waiter? Next { get; set; }
+        public bool IsQueued { get; set; }
     }
 }

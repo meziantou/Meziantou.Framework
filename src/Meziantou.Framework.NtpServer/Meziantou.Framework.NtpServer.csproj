@@ -8,6 +8,10 @@
     <PackageTags>ntp, sntp, time, server, networking</PackageTags>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.NtpServer.Tests" />
+  </ItemGroup>
+
   <!-- The wire format is defined once, in the client project, and shared as source. These types are
        internal, so compiling them into both assemblies does not create duplicate public API for a
        consumer that references both packages. -->

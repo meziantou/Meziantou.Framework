@@ -73,58 +73,110 @@ public sealed class YamlNumberHandlingConverter : YamlConverter
     private bool TryReadNamedFloat(string? text, out object? value)
     {
         value = null;
-        if (_underlyingType != typeof(double) && _underlyingType != typeof(float))
-        {
-            return false;
-        }
 
-        double? parsed = text switch
+        var literal = text switch
         {
-            "NaN" => double.NaN,
-            "Infinity" => double.PositiveInfinity,
-            "+Infinity" => double.PositiveInfinity,
-            "-Infinity" => double.NegativeInfinity,
-            _ => null,
+            "NaN" => NamedFloatLiteral.NaN,
+            "Infinity" or "+Infinity" => NamedFloatLiteral.PositiveInfinity,
+            "-Infinity" => NamedFloatLiteral.NegativeInfinity,
+            _ => NamedFloatLiteral.None,
         };
 
-        if (parsed is null)
+        if (literal is NamedFloatLiteral.None)
         {
             return false;
         }
 
-        value = _underlyingType == typeof(float) ? (float)parsed.Value : parsed.Value;
-        return true;
+        if (_underlyingType == typeof(double))
+        {
+            value = CreateNamedFloat<double>(literal);
+            return true;
+        }
+
+        if (_underlyingType == typeof(float))
+        {
+            value = CreateNamedFloat<float>(literal);
+            return true;
+        }
+
+#if NET11_0_OR_GREATER
+        if (_underlyingType == typeof(BFloat16))
+        {
+            value = CreateNamedFloat<BFloat16>(literal);
+            return true;
+        }
+
+        if (_underlyingType == typeof(Decimal32))
+        {
+            value = CreateNamedFloat<Decimal32>(literal);
+            return true;
+        }
+
+        if (_underlyingType == typeof(Decimal64))
+        {
+            value = CreateNamedFloat<Decimal64>(literal);
+            return true;
+        }
+
+        if (_underlyingType == typeof(Decimal128))
+        {
+            value = CreateNamedFloat<Decimal128>(literal);
+            return true;
+        }
+#endif
+
+        return false;
     }
+
+    private static object CreateNamedFloat<T>(NamedFloatLiteral literal)
+        where T : struct, IFloatingPointIeee754<T>
+        => literal switch
+        {
+            NamedFloatLiteral.NaN => T.NaN,
+            NamedFloatLiteral.PositiveInfinity => T.PositiveInfinity,
+            _ => T.NegativeInfinity,
+        };
 
     private static bool TryGetNamedFloatLiteral(object value, out string literal)
     {
-        double d;
         switch (value)
         {
             case double doubleValue:
-                d = doubleValue;
-                break;
+                return TryGetNamedFloatLiteral(doubleValue, out literal);
             case float floatValue:
-                d = floatValue;
-                break;
+                return TryGetNamedFloatLiteral(floatValue, out literal);
+#if NET11_0_OR_GREATER
+            case BFloat16 bfloat16Value:
+                return TryGetNamedFloatLiteral(bfloat16Value, out literal);
+            case Decimal32 decimal32Value:
+                return TryGetNamedFloatLiteral(decimal32Value, out literal);
+            case Decimal64 decimal64Value:
+                return TryGetNamedFloatLiteral(decimal64Value, out literal);
+            case Decimal128 decimal128Value:
+                return TryGetNamedFloatLiteral(decimal128Value, out literal);
+#endif
             default:
                 literal = string.Empty;
                 return false;
         }
+    }
 
-        if (double.IsNaN(d))
+    private static bool TryGetNamedFloatLiteral<T>(T value, out string literal)
+        where T : struct, IFloatingPointIeee754<T>
+    {
+        if (T.IsNaN(value))
         {
             literal = "NaN";
             return true;
         }
 
-        if (double.IsPositiveInfinity(d))
+        if (T.IsPositiveInfinity(value))
         {
             literal = "Infinity";
             return true;
         }
 
-        if (double.IsNegativeInfinity(d))
+        if (T.IsNegativeInfinity(value))
         {
             literal = "-Infinity";
             return true;
@@ -138,4 +190,12 @@ public sealed class YamlNumberHandlingConverter : YamlConverter
         => value is IFormattable formattable
             ? formattable.ToString(format: null, CultureInfo.InvariantCulture)
             : value.ToString() ?? string.Empty;
+
+    private enum NamedFloatLiteral
+    {
+        None,
+        NaN,
+        PositiveInfinity,
+        NegativeInfinity,
+    }
 }

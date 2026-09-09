@@ -64,6 +64,71 @@ public class AsyncAutoResetEventTests
     }
 
     [Fact]
+    public async Task WaitAsync_CancelingWaitersAtEveryPosition_PreservesTheOrderOfTheOthers()
+    {
+        // A canceled waiter is unlinked from the queue. The survivors must keep their FIFO order whether the
+        // canceled waiter was the head, the tail, or in the middle, and consecutive cancellations must not
+        // corrupt the queue.
+        var e = new AsyncAutoResetEvent(initialState: false);
+        var sources = new CancellationTokenSource[10];
+        var waiters = new Task[sources.Length];
+        for (var i = 0; i < sources.Length; i++)
+        {
+            sources[i] = new CancellationTokenSource();
+            waiters[i] = e.WaitAsync(sources[i].Token);
+        }
+
+        int[] canceled = [0, 3, 4, 7, 9];
+        foreach (var index in canceled)
+        {
+            await sources[index].CancelAsync();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiters[index]);
+        }
+
+        int[] survivors = [1, 2, 5, 6, 8];
+        foreach (var index in survivors)
+        {
+            Assert.False(waiters[index].IsCompleted);
+            e.Set();
+            await waiters[index].WaitAsync(Timeout);
+        }
+
+        // The queue is empty again, so a waiter that arrives now must still be reachable.
+        var late = e.WaitAsync();
+        e.Set();
+        await late.WaitAsync(Timeout);
+
+        foreach (var source in sources)
+        {
+            source.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task WaitAsync_CancelingEveryWaiter_LeavesTheQueueEmpty()
+    {
+        var e = new AsyncAutoResetEvent(initialState: false);
+        using var cts = new CancellationTokenSource();
+
+        var waiters = new Task[10];
+        for (var i = 0; i < waiters.Length; i++)
+        {
+            waiters[i] = e.WaitAsync(cts.Token);
+        }
+
+        await cts.CancelAsync();
+        foreach (var waiter in waiters)
+        {
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiter);
+        }
+
+        // The signal must go to a waiter that arrives afterwards, not to one of the canceled ones.
+        var late = e.WaitAsync();
+        e.Set();
+        await late.WaitAsync(Timeout);
+    }
+
+    [Fact]
     public async Task WaitAsync_CancellationRacingWithWait_DoesNotDeadlock()
     {
         // Regression test: WaitAsync used to complete a canceled waiter while still holding the

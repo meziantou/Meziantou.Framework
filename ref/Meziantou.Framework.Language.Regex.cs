@@ -769,7 +769,7 @@ namespace Meziantou.Framework.Language.Regex
         public override string? FilePath { get => throw null; }
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;
         public Meziantou.Framework.Language.Regex.RegexPatternSyntax GetRoot() => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public static Meziantou.Framework.Language.Regex.RegexSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern, Meziantou.Framework.Language.Regex.RegexDialect dialect) => throw null;
         public static Meziantou.Framework.Language.Regex.RegexSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern, Meziantou.Framework.Language.Regex.RegexParseOptions options) => throw null;
         public static Meziantou.Framework.Language.Regex.RegexSyntaxTree ParseJavaScriptLiteral(string literal) => throw null;

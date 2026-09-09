@@ -68,7 +68,7 @@ public sealed class JsonSyntaxTree : SyntaxTree
     }
 
     /// <summary>Gets every diagnostic in the tree, in source order.</summary>
-    public new IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics ??= [.. base.GetDiagnostics()];
+    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics ??= base.GetDiagnostics();
 
     /// <summary>Returns a tree over <paramref name="newText"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="newText"/> is <see langword="null"/>.</exception>

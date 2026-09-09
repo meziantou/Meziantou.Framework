@@ -388,7 +388,7 @@ namespace Meziantou.Framework.Language.Xml
         public override string? FilePath { get => throw null; }
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;
         public Meziantou.Framework.Language.Xml.XmlDocumentSyntax GetRoot() => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public static Meziantou.Framework.Language.Xml.XmlSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Xml")] string text) => throw null;
         public static Meziantou.Framework.Language.Xml.XmlSyntaxTree ParseText(Meziantou.Framework.Language.SourceText text) => throw null;
         public Meziantou.Framework.Language.Xml.XmlSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;

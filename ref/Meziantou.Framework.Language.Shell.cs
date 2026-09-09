@@ -1458,7 +1458,7 @@ namespace Meziantou.Framework.Language.Shell
         public override string? FilePath { get => throw null; }
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;
         public Meziantou.Framework.Language.Shell.ShellScriptSyntax GetRoot() => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public static Meziantou.Framework.Language.Shell.ShellSyntaxTree ParseText(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellSyntaxTree ParseText(string text, Meziantou.Framework.Language.Shell.ShellParseOptions options) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellStatementSyntax ParseCommand(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;

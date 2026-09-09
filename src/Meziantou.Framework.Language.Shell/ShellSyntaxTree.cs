@@ -37,7 +37,7 @@ public sealed class ShellSyntaxTree : SyntaxTree
     public new ShellScriptSyntax GetRoot() => _root;
 
     /// <summary>Gets everything wrong with the script, in the order the parser found it.</summary>
-    public new IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics;
+    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics;
 
     /// <summary>Parses <paramref name="text"/> as a complete script. Never throws; problems are reported as diagnostics.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="dialect"/> is <see langword="null"/>.</exception>

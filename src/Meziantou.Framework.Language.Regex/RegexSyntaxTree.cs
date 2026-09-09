@@ -44,7 +44,7 @@ public sealed class RegexSyntaxTree : SyntaxTree
     public new RegexPatternSyntax GetRoot() => _root;
 
     /// <summary>Gets everything the parser had to report, in source order.</summary>
-    public new IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics;
+    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics;
 
     /// <summary>Parses <paramref name="pattern"/>. Never throws; problems are reported as diagnostics.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="dialect"/> is <see langword="null"/>.</exception>

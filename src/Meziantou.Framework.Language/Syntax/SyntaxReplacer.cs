@@ -59,7 +59,9 @@ internal sealed class SyntaxReplacer
     /// </remarks>
     public void EditSlots(SyntaxNode node, Func<GreenNode?[], GreenNode?[]> edit)
     {
-        _slotEdits[node] = edit;
+        // Composed rather than replaced: a node can have more than one of its slots edited in the same pass, and
+        // keeping only the last registration would drop the others without saying so.
+        _slotEdits[node] = _slotEdits.TryGetValue(node, out var registered) ? slots => edit(registered(slots)) : edit;
         Extend(node.FullSpan);
     }
 

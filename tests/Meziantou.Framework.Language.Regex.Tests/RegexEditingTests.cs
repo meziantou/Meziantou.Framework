@@ -174,4 +174,30 @@ public sealed class RegexEditingTests
 
         Assert.Equal("a|b", updated.ToFullString());
     }
+
+    /// <summary>
+    /// Removing a run of branches that reaches the end of an alternation takes the separator in front of the run,
+    /// because there is none after it. Leaving it behind would add an empty branch, which matches anything.
+    /// </summary>
+    [Fact]
+    public void RemoveNodes_TakingTheEndOfAnAlternationTakesTheSeparatorBeforeIt()
+    {
+        var tree = RegexSyntaxTree.ParseText("a|b|c", RegexDialect.Net);
+        var branches = tree.GetRoot().Alternation.Branches;
+
+        var updated = tree.GetRoot().RemoveNodes([branches[1], branches[2]], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("a", updated.ToFullString());
+    }
+
+    [Fact]
+    public void RemoveNodes_TakingTheStartOfAnAlternationTakesTheSeparatorAfterIt()
+    {
+        var tree = RegexSyntaxTree.ParseText("a|b|c", RegexDialect.Net);
+        var branches = tree.GetRoot().Alternation.Branches;
+
+        var updated = tree.GetRoot().RemoveNodes([branches[0], branches[1]], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("c", updated.ToFullString());
+    }
 }

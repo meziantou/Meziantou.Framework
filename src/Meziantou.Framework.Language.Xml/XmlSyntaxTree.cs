@@ -31,7 +31,7 @@ public sealed class XmlSyntaxTree : SyntaxTree
     public new XmlDocumentSyntax GetRoot() => _root;
 
     /// <summary>Gets everything wrong with the document, in the order the parser found it.</summary>
-    public new IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics;
+    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics;
 
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     public static XmlSyntaxTree ParseText([StringSyntax(StringSyntaxAttribute.Xml)] string text) => ParseText(SourceText.From(text));

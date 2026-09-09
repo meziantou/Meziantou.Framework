@@ -891,4 +891,24 @@ public sealed class JsonSyntaxTreeTests
         Assert.Equal(text, tree.GetRoot().ToFullString());
         Assert.Contains(tree.GetDiagnostics(), diagnostic => string.Equals(diagnostic.Id, "JSON0012", StringComparison.Ordinal));
     }
+
+    /// <summary>A batch naming an element of another tree is rejected, the way a single foreign node is.</summary>
+    [Fact]
+    public void RemoveNodes_RejectsABatchHoldingANodeFromAnotherTree()
+    {
+        var first = Assert.IsType<JsonArraySyntax>(JsonSyntaxTree.ParseText("[1,2]").GetRoot().Value);
+        var second = Assert.IsType<JsonArraySyntax>(JsonSyntaxTree.ParseText("[3,4]").GetRoot().Value);
+
+        Assert.Throws<ArgumentException>(() => first.RemoveNodes([first.Elements[0], second.Elements[0]], SyntaxRemoveOptions.KeepNoTrivia));
+    }
+
+    /// <summary>Inserting nothing is not an error, and changes nothing.</summary>
+    [Fact]
+    public void InsertNodes_WithNothingToInsertReturnsTheSameTree()
+    {
+        var array = Assert.IsType<JsonArraySyntax>(JsonSyntaxTree.ParseText("[1,2]").GetRoot().Value);
+
+        Assert.Equal("[1,2]", array.InsertNodesAfter(array.Elements[0], []).ToFullString());
+        Assert.Equal("[1,2]", array.InsertNodesBefore(array.Elements[0], []).ToFullString());
+    }
 }

@@ -168,7 +168,7 @@ namespace Meziantou.Framework.Language.Json
         public static Meziantou.Framework.Language.Json.JsonSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string text, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxTree ParseText(Meziantou.Framework.Language.SourceText text, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxTree Create(Meziantou.Framework.Language.Json.JsonDocumentSyntax root, string? path = null) => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public Meziantou.Framework.Language.Json.JsonSyntaxTree WithChangedText(Meziantou.Framework.Language.SourceText newText) => throw null;
         public Meziantou.Framework.Language.Json.JsonSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;
         public Meziantou.Framework.Language.Json.JsonSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;

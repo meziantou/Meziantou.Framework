@@ -52,11 +52,15 @@ public abstract class SyntaxTree
     protected abstract SyntaxTree WithRootCore(SyntaxNode root);
 
     /// <summary>Gets every diagnostic in the tree, in source order.</summary>
-    public virtual IEnumerable<Diagnostic> GetDiagnostics()
+    /// <remarks>
+    /// A language that keeps its diagnostics in a list of its own rather than on the nodes overrides this, so that a
+    /// caller holding the tree through this type still sees them.
+    /// </remarks>
+    public virtual IReadOnlyList<Diagnostic> GetDiagnostics()
     {
         var root = GetRoot();
 
-        return SyntaxTreeDiagnostics.Enumerate(root.Green, root.Position, GetText());
+        return [.. SyntaxTreeDiagnostics.Enumerate(root.Green, root.Position, GetText())];
     }
 
     /// <summary>Gets the diagnostics at or below <paramref name="node"/>.</summary>

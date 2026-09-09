@@ -174,6 +174,10 @@ public static class SyntaxNodeExtensions
 
         foreach (var target in targets)
         {
+            // Membership is checked against the root being rebuilt, not merely against some parent: a node from
+            // another tree has a parent of its own and would otherwise be located happily and then never found.
+            EnsureInTree(root, target, "The node is not part of this tree.", nameof(nodes));
+
             if (target.Ancestors().Any(pending.Contains))
                 continue;
 
@@ -215,21 +219,33 @@ public static class SyntaxNodeExtensions
         }
 
         var items = GreenNodeList.ToArray(slots[slot]);
-        var removing = new HashSet<int>();
-        foreach (var index in indices)
-        {
-            removing.Add(index);
+        var removing = new HashSet<int>(indices);
 
-            // A separated list has to keep alternating, so the separator that went with the node goes too: the one
-            // after it, or the one before it when nothing follows. A neighbour that is a node rather than a token is
-            // a sibling in a list that has no separators at all, and taking it would delete something nobody asked to.
-            if (index + 1 < items.Length && items[index + 1] is { IsToken: true } && !removing.Contains(index + 1))
+        // A separated list has to keep alternating, so the separators go with the nodes. That is decided per run of
+        // adjacent removals rather than per node: two neighbours each looking for "the separator after me, or the one
+        // before me when nothing follows" can settle on the same one and leave another behind. A neighbour that is a
+        // node rather than a token is a sibling in a list that has no separators at all, and taking it would delete
+        // something nobody asked to.
+        var ordered = indices.Distinct().Order().ToArray();
+        for (var i = 0; i < ordered.Length; i++)
+        {
+            var first = ordered[i];
+
+            // Walk to the end of the run, taking the separators that sit inside it.
+            var last = first;
+            while (i + 1 < ordered.Length && ordered[i + 1] == last + 2 && items[last + 1] is { IsToken: true })
             {
-                removing.Add(index + 1);
+                removing.Add(last + 1);
+                last = ordered[++i];
             }
-            else if (index > 0 && items[index - 1] is { IsToken: true })
+
+            if (last + 1 < items.Length && items[last + 1] is { IsToken: true })
             {
-                removing.Add(index - 1);
+                removing.Add(last + 1);
+            }
+            else if (first > 0 && items[first - 1] is { IsToken: true })
+            {
+                removing.Add(first - 1);
             }
         }
 
@@ -424,6 +440,13 @@ public static class SyntaxNodeExtensions
             throw new ArgumentException("The node is not part of this tree.", nameof(nodeInList));
 
         var replacements = newNodes.Select(node => (GreenNode?)node.Green).ToArray();
+        if (replacements.Length == 0 && !removeOriginal)
+        {
+            // Inserting nothing is not an error: it is a caller whose sequence happened to come out empty. Only a
+            // replacement may be empty, and that one means "take the node out".
+            return root;
+        }
+
         var slotGreen = parent.Green.GetSlot(slot);
 
         GreenNode?[] items;

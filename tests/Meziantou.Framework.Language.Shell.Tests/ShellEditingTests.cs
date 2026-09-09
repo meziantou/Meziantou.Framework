@@ -239,4 +239,31 @@ public sealed class ShellEditingTests
             Assert.Same(redirection, redirection.HereDocument!.Redirection);
         }
     }
+
+    /// <summary>
+    /// Two removals in different slots of the same node both take effect. Registering them one after the other and
+    /// keeping only the last would drop one silently.
+    /// </summary>
+    [Fact]
+    public void RemoveNodes_TakesChildrenFromTwoSlotsOfTheSameNode()
+    {
+        var tree = ShellSyntaxTree.ParseText("if true; then echo a; elif false; then echo b; else echo c; fi", ShellDialect.Bash);
+        var conditional = tree.GetRoot().DescendantNodes().OfType<PosixIfStatementSyntax>().Single();
+
+        var updated = tree.GetRoot().RemoveNodes([conditional.ElifClauses[0], conditional.ElseClause!], SyntaxRemoveOptions.KeepNoTrivia);
+        var text = updated.ToFullString();
+
+        Assert.DoesNotContain("elif", text);
+        Assert.DoesNotContain("else", text);
+    }
+
+    /// <summary>The diagnostics of a tree that keeps them in a flat list still reach a language-independent caller.</summary>
+    [Fact]
+    public void GetDiagnostics_IsReachableThroughTheSharedTreeType()
+    {
+        SyntaxTree tree = ShellSyntaxTree.ParseText("if true", ShellDialect.Bash);
+
+        Assert.Equal(((ShellSyntaxTree)tree).GetDiagnostics().Count, tree.GetDiagnostics().Count);
+        Assert.NotEmpty(tree.GetDiagnostics());
+    }
 }

@@ -32,9 +32,13 @@ public class ThrottleExtensionsTests
     public void Throttle_UsesAConsistentSetOfArguments()
     {
         var timeProvider = new FakeTimeProvider();
+        using var invoked = new ManualResetEventSlim(initialState: false);
         var observed = new List<(int First, int Second)>();
-        var throttled = ((Action<int, int>)((first, second) => observed.Add((first, second))))
-            .Throttle(TimeSpan.FromSeconds(1), timeProvider);
+        var throttled = ((Action<int, int>)((first, second) =>
+        {
+            observed.Add((first, second));
+            invoked.Set();
+        })).Throttle(TimeSpan.FromSeconds(1), timeProvider);
 
         // Every call passes a matching pair, so the invocation must observe a matching pair
         for (var i = 0; i < 100; i++)
@@ -43,7 +47,11 @@ public class ThrottleExtensionsTests
         }
 
         timeProvider.Advance(TimeSpan.FromSeconds(2));
-        SpinWait.SpinUntil(() => observed.Count > 0, TimeSpan.FromSeconds(5));
+
+        // The invocation is queued to the thread pool, so it can be delayed well beyond the interval
+        // when the pool is saturated by the tests running beside this one. Block on the signal the
+        // action itself sets instead of spinning, and give it a budget large enough to survive that.
+        Assert.True(invoked.Wait(TimeSpan.FromSeconds(30)), "The throttled action was not invoked");
 
         Assert.Single(observed);
         Assert.Equal(observed[0].First, observed[0].Second);

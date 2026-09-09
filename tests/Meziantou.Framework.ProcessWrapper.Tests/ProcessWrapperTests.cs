@@ -569,12 +569,10 @@ public class ProcessWrapperTests
             File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
 
-        var result = ProcessWrapper.Create(executableName)
+        var processResult = await ExecuteRetryingOnTextFileBusyAsync(async () => await ProcessWrapper.Create(executableName)
             .WithWorkingDirectory(temporaryDirectoryPath)
             .WithSearchWorkingDirectory()
-            .ExecuteBufferedAsync();
-
-        var processResult = await result;
+            .ExecuteBufferedAsync());
 
         Assert.Equal("test-from-working-directory", processResult.Output.StandardOutput.First().Text.Trim());
     }
@@ -2134,6 +2132,29 @@ public class ProcessWrapperTests
         }
 
         return [text];
+    }
+
+    // Executing a file right after writing it races with every process started in parallel: a child forked while the
+    // file is still open for writing inherits that handle until it execs its own image, and execve refuses to run a
+    // file any process holds open for writing (ETXTBSY, "Text file busy"). Waiting for those children to exec is the
+    // only way to close the window, so retry while the file is busy. Any other failure, such as the executable not
+    // being found at all, is reported immediately.
+    private static async Task<T> ExecuteRetryingOnTextFileBusyAsync<T>(Func<Task<T>> execute)
+    {
+        const int TextFileBusy = 26;
+
+        var stopwatch = Stopwatch.StartNew();
+        while (true)
+        {
+            try
+            {
+                return await execute();
+            }
+            catch (System.ComponentModel.Win32Exception ex) when (!OperatingSystem.IsWindows() && ex.NativeErrorCode is TextFileBusy && stopwatch.Elapsed <= TimeSpan.FromSeconds(30))
+            {
+                await Task.Delay(50);
+            }
+        }
     }
 
     private static string NormalizeWorkingDirectoryPath(string path)

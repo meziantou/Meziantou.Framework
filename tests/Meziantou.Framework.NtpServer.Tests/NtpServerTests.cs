@@ -497,14 +497,36 @@ public sealed class NtpServerTests : IAsyncLifetime
     [Fact]
     public async Task Dispose_StopsListening()
     {
-        var server = new NtpServer(new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback });
-        await server.StartAsync(XunitCancellationToken);
-        var port = server.Port;
-        server.Dispose();
+        // Disposing the server releases its ephemeral port, and another server started by a test running in
+        // parallel -- in this process or in the sibling process running the other target framework -- can bind
+        // that very port and answer the query. Take the port over with a socket that never replies, which also
+        // proves the server released it, and start over on the rare occasion where somebody else won the race.
+        for (var attempt = 1; ; attempt++)
+        {
+            var server = new NtpServer(new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback });
+            await server.StartAsync(XunitCancellationToken);
+            var port = server.Port;
+            server.Dispose();
 
-        var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = port, Timeout = TimeSpan.FromSeconds(1) });
+            UdpClient portHolder;
+            try
+            {
+                portHolder = new UdpClient(new IPEndPoint(IPAddress.Loopback, port));
+            }
+            catch (SocketException) when (attempt < 5)
+            {
+                continue;
+            }
 
-        await Assert.ThrowsAnyAsync<Exception>(() => client.QueryAsync(XunitCancellationToken));
+            using (portHolder)
+            {
+                var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = port, Timeout = TimeSpan.FromSeconds(1) });
+
+                await Assert.ThrowsAnyAsync<Exception>(() => client.QueryAsync(XunitCancellationToken));
+            }
+
+            return;
+        }
     }
 
     [Fact]

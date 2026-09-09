@@ -43,6 +43,14 @@ internal static class TestSyntax
                         kind = TestSyntaxKind.CloseParenToken;
                         position++;
                         break;
+                    case '[':
+                        kind = TestSyntaxKind.OpenBracketToken;
+                        position++;
+                        break;
+                    case ']':
+                        kind = TestSyntaxKind.CloseBracketToken;
+                        position++;
+                        break;
                     case ',':
                         kind = TestSyntaxKind.CommaToken;
                         position++;
@@ -124,7 +132,27 @@ internal static class TestSyntax
             if (Current.RawKind == (int)TestSyntaxKind.OpenParenToken)
                 return ParseList();
 
+            if (Current.RawKind == (int)TestSyntaxKind.OpenBracketToken)
+                return ParseBlock();
+
             return new TestGreen.Atom(Eat(TestSyntaxKind.IdentifierToken));
+        }
+
+        /// <summary>Parses the bracketed form, whose values have no separators between them.</summary>
+        private TestGreen.Block ParseBlock()
+        {
+            var open = Eat(TestSyntaxKind.OpenBracketToken);
+            var items = new List<GreenNode?>();
+            while (Current.RawKind is not (int)TestSyntaxKind.CloseBracketToken and not (int)TestSyntaxKind.EndOfFileToken)
+            {
+                items.Add(ParseValue());
+            }
+
+            var close = Current.RawKind == (int)TestSyntaxKind.CloseBracketToken
+                ? Eat(TestSyntaxKind.CloseBracketToken)
+                : TestGreen.Token(TestSyntaxKind.CloseBracketToken, string.Empty, isMissing: true);
+
+            return new TestGreen.Block(open, InternalSyntax.SyntaxList.ListNode(items.ToArray()), close);
         }
 
         private TestGreen.List ParseList()

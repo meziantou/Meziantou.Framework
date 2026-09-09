@@ -20,6 +20,7 @@ internal static class JsonDiagnosticDescriptors
     public static readonly DiagnosticDescriptor ExpectedCommaOrEndOfArray = Error("JSON0009", "Expected a comma or the end of the array", "Expected a comma or the end of the array.");
     public static readonly DiagnosticDescriptor UnexpectedDataAfterRootValue = Error("JSON0010", "Unexpected data after the root value", "Unexpected data after the root JSON value.");
     public static readonly DiagnosticDescriptor LineBreakInString = Error("JSON0011", "Line break in a string", "Line breaks are not allowed in JSON strings.");
+    public static readonly DiagnosticDescriptor NestingTooDeep = Error("JSON0012", "Nesting too deep", "Objects and arrays cannot nest more than {0} deep.");
 
     private static DiagnosticDescriptor Error(string id, string title, string messageFormat) => new(id, title, messageFormat, DiagnosticSeverity.Error);
 }

@@ -1030,4 +1030,31 @@ public sealed class XmlSyntaxTreeTests
         namespaceManager.AddNamespace("s", "urn:sub-attr");
         return namespaceManager;
     }
+
+    /// <summary>
+    /// The content of an element is a plain list, with nothing between its children, so removing one child takes
+    /// only that child.
+    /// </summary>
+    [Fact]
+    public void RemoveNode_FromElementContent_TakesOnlyThatChild()
+    {
+        var tree = XmlSyntaxTree.ParseText("<r><a/><b/><c/></r>");
+        var root = tree.GetRoot().DescendantNodes().OfType<XmlElementSyntax>().First();
+
+        var updated = tree.GetRoot().RemoveNode(root.Content[1], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("<r><a/><c/></r>", updated.ToFullString());
+    }
+
+    [Fact]
+    public void InsertNodesAfter_InElementContent_AddsNoSeparator()
+    {
+        var tree = XmlSyntaxTree.ParseText("<r><a/></r>");
+        var root = tree.GetRoot().DescendantNodes().OfType<XmlElementSyntax>().First();
+        var added = XmlSyntaxTree.ParseText("<b/>").GetRoot().DescendantNodes().OfType<XmlEmptyElementSyntax>().Single();
+
+        var updated = tree.GetRoot().InsertNodesAfter(root.Content[0], [added]);
+
+        Assert.Equal("<r><a/><b/></r>", updated.ToFullString());
+    }
 }

@@ -34,7 +34,7 @@ internal sealed class JsonDocumentSyntax : JsonSyntaxNode
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new JsonDocumentSyntax(slots[0], slots[1]!, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new JsonDocumentSyntax(slots[0], RequiredSlot(slots[1]), GetDiagnostics(), GetAnnotations());
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new JsonDocumentSyntax(_values, _endOfFileToken, diagnostics, GetAnnotations());
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new JsonDocumentSyntax(_values, _endOfFileToken, GetDiagnostics(), annotations);
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Json.JsonDocumentSyntax(this, parent, position);

@@ -11,8 +11,10 @@ namespace Meziantou.Framework.Language;
 /// same way, so a caller sees a flat sequence of nodes and tokens and never a list of its own.
 /// </para>
 /// <para>
-/// The indexer walks the slots to find its answer, so it costs more than an array lookup. Enumerating carries the
-/// running position and slot from one step to the next, so prefer <c>foreach</c> over indexing in a loop.
+/// Reading a child walks the slots to find it, so it costs more than an array lookup, and enumerating pays that
+/// walk once per step rather than carrying a running position from one to the next. The walk is short -- it is over
+/// the slots of the node, not over the children of a list -- and the position of a child already created is read
+/// straight off it.
 /// </para>
 /// </remarks>
 [StructLayout(LayoutKind.Auto)]
@@ -122,14 +124,33 @@ public readonly struct ChildSyntaxList : IReadOnlyList<SyntaxNodeOrToken>, IEqua
     }
 
     /// <summary>Returns the child whose full span contains <paramref name="position"/>.</summary>
+    /// <remarks>
+    /// The slots of the node are walked, but a slot holding a list is searched rather than walked, so a list of many
+    /// thousands of elements costs a binary search instead of a scan. That matters because finding a token descends
+    /// one level per step and pays this at every one of them.
+    /// </remarks>
     internal static SyntaxNodeOrToken ChildThatContainsPosition(SyntaxNode node, int position, out int index)
     {
-        var count = CountChildren(node.Green);
-        for (index = 0; index < count; index++)
+        var green = node.Green;
+        var offset = position - node.Position;
+        var flattened = 0;
+        var running = 0;
+        for (var slot = 0; offset >= 0 && slot < green.SlotCount; slot++)
         {
-            var child = ItemInternal(node, index);
-            if (child.FullSpan.Contains(position))
-                return child;
+            if (green.GetSlot(slot) is not { } child)
+                continue;
+
+            // An empty slot ends where it starts, so this passes over it, which is what a span that contains nothing
+            // means.
+            if (offset < running + child.FullWidth)
+            {
+                index = flattened + (child is InternalSyntax.SyntaxList list ? list.FindSlotIndexContainingOffset(offset - running) : 0);
+
+                return ItemInternal(node, index);
+            }
+
+            running += child.FullWidth;
+            flattened += child.IsList ? child.SlotCount : 1;
         }
 
         index = -1;

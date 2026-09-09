@@ -18,25 +18,8 @@ internal sealed class SyntaxList : GreenNode
     private readonly int[]? _childOffsets;
 
     private SyntaxList(GreenNode[] children)
-        : base(ListKind)
+        : this(children, diagnostics: null, annotations: null)
     {
-        _children = children;
-        SlotCount = children.Length;
-
-        if (children.Length >= PrecomputeOffsetsThreshold)
-        {
-            _childOffsets = new int[children.Length];
-        }
-
-        for (var i = 0; i < children.Length; i++)
-        {
-            if (_childOffsets is not null)
-            {
-                _childOffsets[i] = FullWidth;
-            }
-
-            AdjustFlagsAndWidth(children[i]);
-        }
     }
 
     private SyntaxList(GreenNode[] children, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)

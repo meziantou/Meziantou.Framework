@@ -438,4 +438,91 @@ public sealed class SyntaxReplaceTests
 
         Assert.Throws<ArgumentException>(() => root.ReplaceTokens([mine, foreign], (_, _) => mine));
     }
+
+    /// <summary>
+    /// A list with no separators has nothing standing between its elements, so nothing goes with a removed one. The
+    /// bracketed form of the toy language is that list; the parenthesised form is the separated one.
+    /// </summary>
+    [Theory]
+    [InlineData(0, "[b c]")]
+    [InlineData(1, "[a c]")]
+    [InlineData(2, "[a b ]")]
+    public void RemoveNode_FromAListWithNoSeparators_TakesOnlyThatNode(int index, string expected)
+    {
+        var root = TestSyntax.ParseRoot("[a b c]");
+        var values = Assert.IsType<TestBlockSyntax>(root.Value).Values;
+
+        var updated = root.RemoveNode(values[index], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal(expected, updated.ToFullString());
+        Assert.Equal(2, Assert.IsType<TestBlockSyntax>(updated.Value).Values.Count);
+    }
+
+    [Fact]
+    public void InsertNodesAfter_InAListWithNoSeparators_AddsNoSeparator()
+    {
+        var root = TestSyntax.ParseRoot("[a]");
+        var values = Assert.IsType<TestBlockSyntax>(root.Value).Values;
+
+        var updated = root.InsertNodesAfter(values[0], [TestSyntax.Atom("b")]);
+
+        Assert.Equal("[ab]", updated.ToFullString());
+    }
+
+    /// <summary>
+    /// A separated list of one element holds no separator yet, so what kind of list it is cannot be read off its
+    /// contents. Getting that wrong puts two elements next to each other with nothing between them.
+    /// </summary>
+    [Fact]
+    public void InsertNodesAfter_InASeparatedListOfOneElement_StillAddsTheSeparator()
+    {
+        var root = TestSyntax.ParseRoot("(a)");
+        var values = Assert.IsType<TestListSyntax>(root.Value).Values;
+
+        var updated = root.InsertNodesAfter(values[0], [TestSyntax.Atom("b")]);
+
+        Assert.Equal("(a,b)", updated.ToFullString());
+        Assert.Equal(2, Assert.IsType<TestListSyntax>(updated.Value).Values.Count);
+    }
+
+    [Fact]
+    public void ReplaceNode_WithSeveralNodes_InASeparatedListOfOneElement_StillAddsTheSeparator()
+    {
+        var root = TestSyntax.ParseRoot("(a)");
+        var values = Assert.IsType<TestListSyntax>(root.Value).Values;
+
+        var updated = root.ReplaceNode(values[0], [TestSyntax.Atom("b"), TestSyntax.Atom("c")]);
+
+        Assert.Equal("(b,c)", updated.ToFullString());
+    }
+
+    [Fact]
+    public void ReplaceNodes_WithNothingToReplace_GivesTheRootBack()
+    {
+        var root = TestSyntax.ParseRoot("(a,b)");
+
+        var updated = root.ReplaceNodes<TestRootSyntax, TestValueSyntax>([], (_, _) => TestSyntax.Atom("z"));
+
+        Assert.Same(root, updated);
+    }
+
+    [Fact]
+    public void ReplaceTokens_WithNothingToReplace_GivesTheRootBack()
+    {
+        var root = TestSyntax.ParseRoot("(a,b)");
+
+        var updated = root.ReplaceTokens([], (_, _) => default);
+
+        Assert.Same(root, updated);
+    }
+
+    [Fact]
+    public void ReplaceTrivia_WithNothingToReplace_GivesTheRootBack()
+    {
+        var root = TestSyntax.ParseRoot("( a , b )");
+
+        var updated = root.ReplaceTrivia([], (_, _) => default);
+
+        Assert.Same(root, updated);
+    }
 }

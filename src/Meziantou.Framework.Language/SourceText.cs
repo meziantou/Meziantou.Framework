@@ -19,7 +19,13 @@ public sealed class SourceText
     public int Length => Text.Length;
     public IReadOnlyList<TextLine> Lines => _linesView;
 
-    public static SourceText From(string text) => new(text ?? string.Empty);
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    public static SourceText From(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        return new SourceText(text);
+    }
 
     /// <summary>
     /// Applies <paramref name="changes"/> from the end of the text backwards, so the spans of the changes that come

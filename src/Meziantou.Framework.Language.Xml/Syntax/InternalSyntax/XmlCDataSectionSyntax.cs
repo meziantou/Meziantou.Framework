@@ -34,7 +34,7 @@ internal sealed class XmlCDataSectionSyntax : XmlNodeSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new XmlCDataSectionSyntax(slots[0]!, slots[1]!, slots[2]!, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new XmlCDataSectionSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), GetDiagnostics(), GetAnnotations());
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new XmlCDataSectionSyntax(_startCDataToken, _textToken, _endCDataToken, diagnostics, GetAnnotations());
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new XmlCDataSectionSyntax(_startCDataToken, _textToken, _endCDataToken, GetDiagnostics(), annotations);
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Xml.XmlCDataSectionSyntax(this, parent, position);

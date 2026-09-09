@@ -22,7 +22,7 @@ internal sealed class JsonNumberSyntax : JsonValueSyntax
 
     internal override GreenNode? GetSlot(int index) => index == 0 ? _numberToken : null;
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new JsonNumberSyntax(slots[0]!, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new JsonNumberSyntax(RequiredSlot(slots[0]), GetDiagnostics(), GetAnnotations());
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new JsonNumberSyntax(_numberToken, diagnostics, GetAnnotations());
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new JsonNumberSyntax(_numberToken, GetDiagnostics(), annotations);
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Json.JsonNumberSyntax(this, parent, position);

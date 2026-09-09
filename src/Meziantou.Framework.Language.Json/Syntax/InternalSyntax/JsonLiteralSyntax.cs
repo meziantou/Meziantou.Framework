@@ -23,7 +23,7 @@ internal sealed class JsonLiteralSyntax : JsonValueSyntax
 
     internal override GreenNode? GetSlot(int index) => index == 0 ? _literalToken : null;
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new JsonLiteralSyntax(Kind, slots[0]!, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new JsonLiteralSyntax(Kind, RequiredSlot(slots[0]), GetDiagnostics(), GetAnnotations());
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new JsonLiteralSyntax(Kind, _literalToken, diagnostics, GetAnnotations());
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new JsonLiteralSyntax(Kind, _literalToken, GetDiagnostics(), annotations);
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Json.JsonLiteralSyntax(this, parent, position);

@@ -38,7 +38,7 @@ internal sealed class XmlDocumentTypeSyntax : XmlNodeSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new XmlDocumentTypeSyntax(slots[0]!, slots[1]!, slots[2]!, slots[3]!, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new XmlDocumentTypeSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), RequiredSlot(slots[3]), GetDiagnostics(), GetAnnotations());
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new XmlDocumentTypeSyntax(_startDocumentTypeToken, _nameToken, _contentToken, _greaterThanToken, diagnostics, GetAnnotations());
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new XmlDocumentTypeSyntax(_startDocumentTypeToken, _nameToken, _contentToken, _greaterThanToken, GetDiagnostics(), annotations);
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Xml.XmlDocumentTypeSyntax(this, parent, position);

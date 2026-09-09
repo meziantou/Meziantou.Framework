@@ -25,7 +25,7 @@ public sealed partial class ShellRedirectionSyntax
                     continue;
 
                 // The bodies follow the statement in the order their redirections appear inside it.
-                var ordinal = CountPrecedingHereDocumentsInOwner();
+                var ordinal = CountPrecedingHereDocumentsIn(statements[owner]);
                 for (var index = owner + 1; index < statements.Count; index++)
                 {
                     if (statements[index] is not PosixHereDocumentSyntax hereDocument)
@@ -42,13 +42,14 @@ public sealed partial class ShellRedirectionSyntax
         }
     }
 
-    /// <summary>How many other here-document redirections precede this one inside the statement that owns it.</summary>
-    private int CountPrecedingHereDocumentsInOwner()
+    /// <summary>How many other here-document redirections precede this one inside <paramref name="owner"/>.</summary>
+    /// <remarks>
+    /// Counted over the whole statement the bodies are ordered against, not over the nearest statement above this
+    /// redirection. A pipeline is one statement holding several, and its bodies follow it in one sequence, so
+    /// counting inside the nearer one would give every branch of the pipeline the same ordinal.
+    /// </remarks>
+    private int CountPrecedingHereDocumentsIn(ShellStatementSyntax owner)
     {
-        var owner = Ancestors().OfType<ShellStatementSyntax>().FirstOrDefault();
-        if (owner is null)
-            return 0;
-
         var ordinal = 0;
         foreach (var redirection in owner.DescendantNodes().OfType<ShellRedirectionSyntax>())
         {

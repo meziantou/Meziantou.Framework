@@ -15,6 +15,16 @@ namespace Meziantou.Framework.Language.Json.Syntax.InternalSyntax;
 /// </remarks>
 internal sealed class LanguageParser
 {
+    /// <summary>
+    /// How deeply objects and arrays may nest before the rest is kept as skipped text.
+    /// </summary>
+    /// <remarks>
+    /// The parser follows the shape of the document with its own call stack, so without a limit a deeply enough
+    /// nested document would end the process instead of reporting anything. The limit is far above anything a
+    /// document written to be read reaches, and well below the depth at which the stack runs out.
+    /// </remarks>
+    private const int MaxDepth = 256;
+
     private readonly Lexer _lexer;
     private readonly Blender? _blender;
     private readonly List<PendingDiagnostic> _pending = [];
@@ -22,6 +32,7 @@ internal sealed class LanguageParser
     private int _currentFullStart;
     private int _previousTokenTextEnd;
     private bool _previousTokenEndedTheLine;
+    private int _depth;
 
     public LanguageParser(SourceText source, Blender? blender = null)
     {
@@ -99,9 +110,8 @@ internal sealed class LanguageParser
         switch (CurrentKind)
         {
             case SyntaxKind.OpenBraceToken:
-                return ParseObject();
             case SyntaxKind.OpenBracketToken:
-                return ParseArray();
+                return ParseObjectOrArray(terminators);
             case SyntaxKind.StringToken:
                 return new JsonStringSyntax(EatToken());
             case SyntaxKind.NumberToken:
@@ -119,7 +129,33 @@ internal sealed class LanguageParser
         }
     }
 
-    private JsonSkippedTextSyntax ParseSkippedText(TerminatorState terminators)
+    /// <summary>Parses an object or an array, and refuses to descend past <see cref="MaxDepth"/>.</summary>
+    /// <remarks>
+    /// Past the limit the rest of the construct is kept as skipped text, so the promise the whole parser is built on
+    /// still holds: nothing is thrown, every character is reproduced, and what went wrong is a diagnostic.
+    /// </remarks>
+    private GreenNode ParseObjectOrArray(TerminatorState terminators)
+    {
+        if (_depth >= MaxDepth)
+        {
+            AddErrorAtCurrentToken(JsonDiagnosticDescriptors.NestingTooDeep, MaxDepth);
+
+            // The depth is already said to be the problem, so the tokens below it are not each reported as a surprise.
+            return ParseSkippedText(terminators, reportEachToken: false);
+        }
+
+        _depth++;
+        try
+        {
+            return CurrentKind == SyntaxKind.OpenBraceToken ? ParseObject() : ParseArray();
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    private JsonSkippedTextSyntax ParseSkippedText(TerminatorState terminators, bool reportEachToken = true)
     {
         var mark = _pending.Count;
         var start = _currentFullStart;
@@ -127,7 +163,11 @@ internal sealed class LanguageParser
 
         while (!IsTerminator(CurrentKind, terminators))
         {
-            AddErrorAtCurrentToken(JsonDiagnosticDescriptors.UnexpectedToken, _current.Text);
+            if (reportEachToken)
+            {
+                AddErrorAtCurrentToken(JsonDiagnosticDescriptors.UnexpectedToken, _current.Text);
+            }
+
             tokens.Add(EatToken());
         }
 

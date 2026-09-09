@@ -34,6 +34,8 @@ internal sealed partial class RegexAlternationSyntax : RegexSyntaxNode
 
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexAlternationSyntax(slots[0], Options, GetDiagnostics(), GetAnnotations());
 
+    internal override bool IsSeparatedListSlot(int index) => index is 0;
+
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexAlternationSyntax(_branches, Options, diagnostics, GetAnnotations());
 
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new RegexAlternationSyntax(_branches, Options, GetDiagnostics(), annotations);
@@ -64,7 +66,7 @@ internal sealed partial class RegexAnchorSyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexAnchorSyntax(slots[0]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexAnchorSyntax(RequiredSlot(slots[0]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexAnchorSyntax(_anchorToken, Options, diagnostics, GetAnnotations());
 
@@ -96,7 +98,7 @@ internal sealed partial class RegexAnyCharacterSyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexAnyCharacterSyntax(slots[0]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexAnyCharacterSyntax(RequiredSlot(slots[0]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexAnyCharacterSyntax(_dotToken, Options, diagnostics, GetAnnotations());
 
@@ -140,7 +142,7 @@ internal sealed partial class RegexAtomicGroupSyntax : RegexGroupSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexAtomicGroupSyntax(slots[0]!, slots[1]!, slots[2]!, slots[3]!, Options, InnerOptions, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexAtomicGroupSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), RequiredSlot(slots[3]), Options, InnerOptions, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexAtomicGroupSyntax(_openParenToken, _groupKindToken, _alternation, _closeParenToken, Options, InnerOptions, diagnostics, GetAnnotations());
 
@@ -172,7 +174,7 @@ internal sealed partial class RegexBackreferenceSyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexBackreferenceSyntax(slots[0]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexBackreferenceSyntax(RequiredSlot(slots[0]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexBackreferenceSyntax(_backreferenceToken, Options, diagnostics, GetAnnotations());
 
@@ -212,7 +214,7 @@ internal sealed partial class RegexBacktrackingVerbSyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexBacktrackingVerbSyntax(slots[0]!, slots[1]!, slots[2]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexBacktrackingVerbSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexBacktrackingVerbSyntax(_openParenToken, _verbToken, _closeParenToken, Options, diagnostics, GetAnnotations());
 
@@ -275,7 +277,7 @@ internal sealed partial class RegexBalancingGroupSyntax : RegexGroupSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexBalancingGroupSyntax(slots[0]!, slots[1]!, slots[2], slots[3]!, slots[4], slots[5], slots[6]!, slots[7]!, Options, InnerOptions, Number, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexBalancingGroupSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], RequiredSlot(slots[3]), slots[4], slots[5], RequiredSlot(slots[6]), RequiredSlot(slots[7]), Options, InnerOptions, Number, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexBalancingGroupSyntax(_openParenToken, _groupKindToken, _nameToken, _hyphenToken, _previousNameToken, _closeNameToken, _alternation, _closeParenToken, Options, InnerOptions, Number, diagnostics, GetAnnotations());
 
@@ -319,7 +321,7 @@ internal sealed partial class RegexBranchResetGroupSyntax : RegexGroupSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexBranchResetGroupSyntax(slots[0]!, slots[1]!, slots[2]!, slots[3]!, Options, InnerOptions, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexBranchResetGroupSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), RequiredSlot(slots[3]), Options, InnerOptions, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexBranchResetGroupSyntax(_openParenToken, _groupKindToken, _alternation, _closeParenToken, Options, InnerOptions, diagnostics, GetAnnotations());
 
@@ -363,7 +365,7 @@ internal sealed partial class RegexCalloutSyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCalloutSyntax(slots[0]!, slots[1]!, slots[2], slots[3]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCalloutSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], RequiredSlot(slots[3]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexCalloutSyntax(_openParenToken, _questionToken, _bodyToken, _closeParenToken, Options, diagnostics, GetAnnotations());
 
@@ -406,7 +408,7 @@ internal sealed partial class RegexCapturingGroupSyntax : RegexGroupSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCapturingGroupSyntax(slots[0]!, slots[1]!, slots[2]!, Options, InnerOptions, Number, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCapturingGroupSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), Options, InnerOptions, Number, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexCapturingGroupSyntax(_openParenToken, _alternation, _closeParenToken, Options, InnerOptions, Number, diagnostics, GetAnnotations());
 
@@ -438,7 +440,7 @@ internal sealed partial class RegexCharacterClassEscapeSyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCharacterClassEscapeSyntax(slots[0]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCharacterClassEscapeSyntax(RequiredSlot(slots[0]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexCharacterClassEscapeSyntax(_escapeToken, Options, diagnostics, GetAnnotations());
 
@@ -482,7 +484,7 @@ internal sealed partial class RegexCharacterClassSyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCharacterClassSyntax(slots[0]!, slots[1], slots[2], slots[3]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCharacterClassSyntax(RequiredSlot(slots[0]), slots[1], slots[2], RequiredSlot(slots[3]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexCharacterClassSyntax(_openBracketToken, _caretToken, _members, _closeBracketToken, Options, diagnostics, GetAnnotations());
 
@@ -514,7 +516,7 @@ internal sealed partial class RegexCharacterEscapeSyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCharacterEscapeSyntax(slots[0]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCharacterEscapeSyntax(RequiredSlot(slots[0]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexCharacterEscapeSyntax(_escapeToken, Options, diagnostics, GetAnnotations());
 
@@ -554,7 +556,7 @@ internal sealed partial class RegexCharacterRangeSyntax : RegexSyntaxNode
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCharacterRangeSyntax(slots[0]!, slots[1]!, slots[2], Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCharacterRangeSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexCharacterRangeSyntax(_start, _hyphenToken, _end, Options, diagnostics, GetAnnotations());
 
@@ -587,6 +589,8 @@ internal sealed partial class RegexClassSetOperationSyntax : RegexSyntaxNode
     };
 
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexClassSetOperationSyntax(slots[0], Options, GetDiagnostics(), GetAnnotations());
+
+    internal override bool IsSeparatedListSlot(int index) => index is 0;
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexClassSetOperationSyntax(_operands, Options, diagnostics, GetAnnotations());
 
@@ -626,7 +630,7 @@ internal sealed partial class RegexClassStringLiteralSyntax : RegexSyntaxNode
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexClassStringLiteralSyntax(slots[0]!, slots[1], slots[2], Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexClassStringLiteralSyntax(RequiredSlot(slots[0]), slots[1], slots[2], Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexClassStringLiteralSyntax(_startToken, _textToken, _closeBraceToken, Options, diagnostics, GetAnnotations());
 
@@ -662,7 +666,7 @@ internal sealed partial class RegexClassSubtractionSyntax : RegexSyntaxNode
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexClassSubtractionSyntax(slots[0]!, slots[1]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexClassSubtractionSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexClassSubtractionSyntax(_hyphenToken, _subtracted, Options, diagnostics, GetAnnotations());
 
@@ -702,7 +706,7 @@ internal sealed partial class RegexCollatingElementSyntax : RegexSyntaxNode
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCollatingElementSyntax(slots[0]!, slots[1], slots[2], Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexCollatingElementSyntax(RequiredSlot(slots[0]), slots[1], slots[2], Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexCollatingElementSyntax(_startToken, _textToken, _endToken, Options, diagnostics, GetAnnotations());
 
@@ -742,7 +746,7 @@ internal sealed partial class RegexConditionalReferenceSyntax : RegexSyntaxNode
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexConditionalReferenceSyntax(slots[0]!, slots[1], slots[2]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexConditionalReferenceSyntax(RequiredSlot(slots[0]), slots[1], RequiredSlot(slots[2]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexConditionalReferenceSyntax(_openParenToken, _nameToken, _closeParenToken, Options, diagnostics, GetAnnotations());
 
@@ -790,7 +794,7 @@ internal sealed partial class RegexConditionalSyntax : RegexGroupSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexConditionalSyntax(slots[0]!, slots[1]!, slots[2], slots[3]!, slots[4]!, Options, InnerOptions, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexConditionalSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], RequiredSlot(slots[3]), RequiredSlot(slots[4]), Options, InnerOptions, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexConditionalSyntax(_openParenToken, _questionToken, _condition, _alternation, _closeParenToken, Options, InnerOptions, diagnostics, GetAnnotations());
 
@@ -837,7 +841,7 @@ internal sealed partial class RegexInlineOptionsSyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexInlineOptionsSyntax(slots[0]!, slots[1]!, slots[2], slots[3]!, Options, AppliedOptions, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexInlineOptionsSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], RequiredSlot(slots[3]), Options, AppliedOptions, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexInlineOptionsSyntax(_openParenToken, _questionToken, _optionsToken, _closeParenToken, Options, AppliedOptions, diagnostics, GetAnnotations());
 
@@ -869,7 +873,7 @@ internal sealed partial class RegexLiteralSyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexLiteralSyntax(slots[0]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexLiteralSyntax(RequiredSlot(slots[0]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexLiteralSyntax(_literalToken, Options, diagnostics, GetAnnotations());
 
@@ -913,7 +917,7 @@ internal sealed partial class RegexLookaroundSyntax : RegexGroupSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexLookaroundSyntax(slots[0]!, slots[1]!, slots[2]!, slots[3]!, Options, InnerOptions, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexLookaroundSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), RequiredSlot(slots[3]), Options, InnerOptions, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexLookaroundSyntax(_openParenToken, _groupKindToken, _alternation, _closeParenToken, Options, InnerOptions, diagnostics, GetAnnotations());
 
@@ -957,7 +961,7 @@ internal sealed partial class RegexNamedBackreferenceSyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexNamedBackreferenceSyntax(slots[0]!, slots[1], slots[2], slots[3], Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexNamedBackreferenceSyntax(RequiredSlot(slots[0]), slots[1], slots[2], slots[3], Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexNamedBackreferenceSyntax(_startToken, _openNameToken, _nameToken, _closeNameToken, Options, diagnostics, GetAnnotations());
 
@@ -1012,7 +1016,7 @@ internal sealed partial class RegexNamedGroupSyntax : RegexGroupSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexNamedGroupSyntax(slots[0]!, slots[1]!, slots[2], slots[3], slots[4]!, slots[5]!, Options, InnerOptions, Number, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexNamedGroupSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], slots[3], RequiredSlot(slots[4]), RequiredSlot(slots[5]), Options, InnerOptions, Number, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexNamedGroupSyntax(_openParenToken, _groupKindToken, _nameToken, _closeNameToken, _alternation, _closeParenToken, Options, InnerOptions, Number, diagnostics, GetAnnotations());
 
@@ -1056,7 +1060,7 @@ internal sealed partial class RegexNonCapturingGroupSyntax : RegexGroupSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexNonCapturingGroupSyntax(slots[0]!, slots[1]!, slots[2]!, slots[3]!, Options, InnerOptions, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexNonCapturingGroupSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), RequiredSlot(slots[3]), Options, InnerOptions, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexNonCapturingGroupSyntax(_openParenToken, _groupKindToken, _alternation, _closeParenToken, Options, InnerOptions, diagnostics, GetAnnotations());
 
@@ -1108,7 +1112,7 @@ internal sealed partial class RegexOptionsGroupSyntax : RegexGroupSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexOptionsGroupSyntax(slots[0]!, slots[1]!, slots[2], slots[3], slots[4]!, slots[5]!, Options, InnerOptions, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexOptionsGroupSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], slots[3], RequiredSlot(slots[4]), RequiredSlot(slots[5]), Options, InnerOptions, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexOptionsGroupSyntax(_openParenToken, _questionToken, _optionsToken, _colonToken, _alternation, _closeParenToken, Options, InnerOptions, diagnostics, GetAnnotations());
 
@@ -1160,7 +1164,7 @@ internal sealed partial class RegexPatternSyntax : RegexSyntaxNode
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexPatternSyntax(slots[0], slots[1]!, slots[2], slots[3], slots[4], slots[5]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexPatternSyntax(slots[0], RequiredSlot(slots[1]), slots[2], slots[3], slots[4], RequiredSlot(slots[5]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexPatternSyntax(_openSlashToken, _alternation, _closeSlashToken, _flagsToken, _trailingToken, _endOfPatternToken, Options, diagnostics, GetAnnotations());
 
@@ -1200,7 +1204,7 @@ internal sealed partial class RegexPosixCharacterClassSyntax : RegexSyntaxNode
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexPosixCharacterClassSyntax(slots[0]!, slots[1], slots[2], Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexPosixCharacterClassSyntax(RequiredSlot(slots[0]), slots[1], slots[2], Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexPosixCharacterClassSyntax(_startToken, _nameToken, _endToken, Options, diagnostics, GetAnnotations());
 
@@ -1236,7 +1240,7 @@ internal sealed partial class RegexQuantifiedSyntax : RegexTermSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexQuantifiedSyntax(slots[0]!, slots[1]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexQuantifiedSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexQuantifiedSyntax(_term, _quantifier, Options, diagnostics, GetAnnotations());
 
@@ -1276,7 +1280,7 @@ internal sealed partial class RegexQuotedLiteralSyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexQuotedLiteralSyntax(slots[0]!, slots[1], slots[2], Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexQuotedLiteralSyntax(RequiredSlot(slots[0]), slots[1], slots[2], Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexQuotedLiteralSyntax(_startToken, _textToken, _endToken, Options, diagnostics, GetAnnotations());
 
@@ -1328,7 +1332,7 @@ internal sealed partial class RegexRangeQuantifierSyntax : RegexQuantifierSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexRangeQuantifierSyntax(slots[0]!, slots[1]!, slots[2], slots[3], slots[4]!, slots[5], Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexRangeQuantifierSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], slots[3], RequiredSlot(slots[4]), slots[5], Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexRangeQuantifierSyntax(_openBraceToken, _minToken, _commaToken, _maxToken, _closeBraceToken, _modifierToken, Options, diagnostics, GetAnnotations());
 
@@ -1372,7 +1376,7 @@ internal sealed partial class RegexRecursionSyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexRecursionSyntax(slots[0]!, slots[1]!, slots[2], slots[3]!, Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexRecursionSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], RequiredSlot(slots[3]), Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexRecursionSyntax(_openParenToken, _questionToken, _targetToken, _closeParenToken, Options, diagnostics, GetAnnotations());
 
@@ -1440,7 +1444,7 @@ internal sealed partial class RegexSimpleQuantifierSyntax : RegexQuantifierSynta
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexSimpleQuantifierSyntax(slots[0]!, slots[1], Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexSimpleQuantifierSyntax(RequiredSlot(slots[0]), slots[1], Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexSimpleQuantifierSyntax(_operatorToken, _modifierToken, Options, diagnostics, GetAnnotations());
 
@@ -1516,7 +1520,7 @@ internal sealed partial class RegexUnicodeCategorySyntax : RegexAtomSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexUnicodeCategorySyntax(slots[0]!, slots[1], slots[2], slots[3], Options, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new RegexUnicodeCategorySyntax(RequiredSlot(slots[0]), slots[1], slots[2], slots[3], Options, GetDiagnostics(), GetAnnotations());
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new RegexUnicodeCategorySyntax(_categoryStartToken, _openBraceToken, _nameToken, _closeBraceToken, Options, diagnostics, GetAnnotations());
 

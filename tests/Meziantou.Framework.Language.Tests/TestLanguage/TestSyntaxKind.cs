@@ -11,6 +11,8 @@ internal enum TestSyntaxKind
     CommaToken = 102,
     IdentifierToken = 103,
     EndOfFileToken = 104,
+    OpenBracketToken = 105,
+    CloseBracketToken = 106,
 
     WhitespaceTrivia = 200,
     EndOfLineTrivia = 201,
@@ -18,4 +20,5 @@ internal enum TestSyntaxKind
     TestRoot = 300,
     TestAtom = 301,
     TestList = 302,
+    TestBlock = 303,
 }

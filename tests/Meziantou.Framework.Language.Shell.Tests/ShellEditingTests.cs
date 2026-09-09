@@ -204,4 +204,39 @@ public sealed class ShellEditingTests
         // separator is added on top of it.
         Assert.Equal("echo   b a", command.WithArguments([.. command.Arguments.Reverse()]).ToFullString());
     }
+
+    /// <summary>
+    /// A command holds its elements in a plain list, with nothing between them, so removing one takes only that one.
+    /// </summary>
+    [Fact]
+    public void RemoveNode_FromACommand_TakesOnlyThatElement()
+    {
+        var tree = ShellSyntaxTree.ParseText("echo a b c", ShellDialect.Bash);
+        var command = tree.GetRoot().DescendantNodes().OfType<ShellCommandSyntax>().First();
+        var target = command.Elements[2];
+
+        var updated = tree.GetRoot().RemoveNode(target, SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("echo a c", updated.ToFullString());
+    }
+
+    /// <summary>
+    /// The bodies of a pipeline's here-documents follow it in one sequence, so each redirection has to find its own.
+    /// </summary>
+    [Fact]
+    public void HereDocument_OfEachRedirectionInAPipeline_IsItsOwnBody()
+    {
+        var tree = ShellSyntaxTree.ParseText("cat <<A | cat <<B\nbodyA\nA\nbodyB\nB\n", ShellDialect.Bash);
+        var redirections = tree.GetRoot().DescendantNodes().OfType<ShellRedirectionSyntax>().ToArray();
+
+        Assert.HasCount(2, redirections);
+        Assert.Contains("bodyA", redirections[0].HereDocument!.ToFullString());
+        Assert.Contains("bodyB", redirections[1].HereDocument!.ToFullString());
+
+        // The two directions of the link agree.
+        foreach (var redirection in redirections)
+        {
+            Assert.Same(redirection, redirection.HereDocument!.Redirection);
+        }
+    }
 }

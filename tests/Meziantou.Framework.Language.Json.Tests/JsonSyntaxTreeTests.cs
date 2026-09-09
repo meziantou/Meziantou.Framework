@@ -828,4 +828,67 @@ public sealed class JsonSyntaxTreeTests
         Assert.Same(tree.GetText(), diagnostic.Location.SourceText);
         Assert.Equal(1, diagnostic.Location.GetLineSpan().Start.Line);
     }
+
+    /// <summary>
+    /// A member always has a value, so taking it out would leave a member whose own type says the value is there and
+    /// whose property returns nothing. The edit is refused instead.
+    /// </summary>
+    [Fact]
+    public void RemoveNode_OfAChildThatFillsARequiredSlot_IsRejected()
+    {
+        var tree = JsonSyntaxTree.ParseText("""{"a":1}""");
+        var member = tree.GetRoot().DescendantNodes().OfType<JsonMemberSyntax>().Single();
+
+        Assert.Throws<InvalidOperationException>(() => tree.GetRoot().RemoveNode(member.Value, SyntaxRemoveOptions.KeepNoTrivia));
+    }
+
+    /// <summary>
+    /// An array of one element holds no comma yet, so what kind of list it is cannot be read off its contents.
+    /// </summary>
+    [Fact]
+    public void InsertNodesAfter_InAnArrayOfOneElement_StillAddsTheComma()
+    {
+        var tree = JsonSyntaxTree.ParseText("[1]");
+        var array = tree.GetRoot().DescendantNodes().OfType<JsonArraySyntax>().Single();
+
+        var updated = tree.GetRoot().InsertNodesAfter(array.Elements[0], [SyntaxFactory.JsonNumber("2")]);
+
+        Assert.Equal("[1,2]", updated.ToFullString());
+        Assert.Equal(2, updated.DescendantNodes().OfType<JsonArraySyntax>().Single().Elements.Count);
+    }
+
+    [Fact]
+    public void ReplaceNode_WithSeveralNodes_InAnArrayOfOneElement_StillAddsTheComma()
+    {
+        var tree = JsonSyntaxTree.ParseText("[1]");
+        var array = tree.GetRoot().DescendantNodes().OfType<JsonArraySyntax>().Single();
+
+        var updated = tree.GetRoot().ReplaceNode(array.Elements[0], [SyntaxFactory.JsonNumber("2"), SyntaxFactory.JsonNumber("3")]);
+
+        Assert.Equal("[2,3]", updated.ToFullString());
+    }
+
+    /// <summary>The document holds its values in a plain list, so removing one takes nothing else with it.</summary>
+    [Fact]
+    public void RemoveNode_FromTheDocumentsPlainList_TakesOnlyThatValue()
+    {
+        var tree = JsonSyntaxTree.ParseText("1 2 3");
+        var values = tree.GetRoot().Values;
+
+        var updated = tree.GetRoot().RemoveNode(values[1], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("1 3", updated.ToFullString());
+        Assert.Equal(2, updated.Values.Count);
+    }
+
+    [Fact]
+    public void ParseText_OfADocumentNestedTooDeeply_ReportsItRatherThanRunningOutOfStack()
+    {
+        var text = new string('[', 20_000) + new string(']', 20_000);
+
+        var tree = JsonSyntaxTree.ParseText(text);
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => string.Equals(diagnostic.Id, "JSON0012", StringComparison.Ordinal));
+    }
 }

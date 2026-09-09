@@ -126,6 +126,25 @@ internal abstract class GreenNode
     /// </remarks>
     internal abstract GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots);
 
+    /// <summary>Returns <paramref name="slot"/>, refusing the empty slot a required child cannot become.</summary>
+    /// <remarks>
+    /// A <see cref="WithSlots"/> override passes every required slot through here, so an edit that would leave a
+    /// node without a child its type says it always has is reported rather than producing a tree whose non-nullable
+    /// properties return <see langword="null"/>.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException"><paramref name="slot"/> is <see langword="null"/>.</exception>
+    protected static GreenNode RequiredSlot(GreenNode? slot)
+        => slot ?? throw new InvalidOperationException("The node cannot be left without this child, because it is not optional and does not sit in a list. Replace it instead of removing it, or remove the node that holds it.");
+
+    /// <summary>
+    /// Determines whether slot <paramref name="index"/> holds a list whose elements are separated by tokens.
+    /// </summary>
+    /// <remarks>
+    /// A list of one element holds no separator yet, so its contents cannot say what kind of list it is. Each node
+    /// type that has such a slot overrides this, which is what lets an insertion put the separator in.
+    /// </remarks>
+    internal virtual bool IsSeparatedListSlot(int index) => false;
+
     public bool ContainsDiagnostics => (_flags & NodeFlags.ContainsDiagnostics) != NodeFlags.None;
     public bool ContainsAnnotations => (_flags & NodeFlags.ContainsAnnotations) != NodeFlags.None;
     public bool ContainsSkippedText => (_flags & NodeFlags.ContainsSkippedText) != NodeFlags.None;

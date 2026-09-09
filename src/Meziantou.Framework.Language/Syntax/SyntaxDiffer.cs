@@ -16,24 +16,39 @@ internal static class SyntaxDiffer
         return Coalesce(changes);
     }
 
-    private static void Compare(SyntaxNodeOrToken oldItem, SyntaxNodeOrToken newItem, List<TextChange> changes)
+    /// <remarks>
+    /// The walk keeps its own stack rather than recursing, so the depth of the document does not become the depth of
+    /// the call stack, and it pairs the children off with two enumerators rather than indexing each one, so a wide
+    /// node is walked once instead of once per child.
+    /// </remarks>
+    private static void Compare(SyntaxNodeOrToken oldRoot, SyntaxNodeOrToken newRoot, List<TextChange> changes)
     {
-        if (ReferenceEquals(oldItem.UnderlyingNode, newItem.UnderlyingNode))
-            return;
+        var stack = new Stack<(SyntaxNodeOrToken Old, SyntaxNodeOrToken New)>();
+        stack.Push((oldRoot, newRoot));
 
-        var oldChildren = oldItem.ChildNodesAndTokens();
-        var newChildren = newItem.ChildNodesAndTokens();
-
-        // Once the shapes differ there is no useful pairing left, so report the whole thing as replaced.
-        if (oldItem.IsToken || newItem.IsToken || oldItem.RawKind != newItem.RawKind || oldChildren.Count != newChildren.Count)
+        while (stack.TryPop(out var pair))
         {
-            changes.Add(new TextChange(oldItem.FullSpan, newItem.ToFullString()));
-            return;
-        }
+            var (oldItem, newItem) = pair;
+            if (ReferenceEquals(oldItem.UnderlyingNode, newItem.UnderlyingNode))
+                continue;
 
-        for (var i = 0; i < oldChildren.Count; i++)
-        {
-            Compare(oldChildren[i], newChildren[i], changes);
+            var oldChildren = oldItem.ChildNodesAndTokens();
+            var newChildren = newItem.ChildNodesAndTokens();
+
+            // Once the shapes differ there is no useful pairing left, so report the whole thing as replaced.
+            if (oldItem.IsToken || newItem.IsToken || oldItem.RawKind != newItem.RawKind || oldChildren.Count != newChildren.Count)
+            {
+                changes.Add(new TextChange(oldItem.FullSpan, newItem.ToFullString()));
+                continue;
+            }
+
+            // Pushed back to front so the children come off the stack in source order, which is what Coalesce needs.
+            var oldEnumerator = oldChildren.Reverse().GetEnumerator();
+            var newEnumerator = newChildren.Reverse().GetEnumerator();
+            while (oldEnumerator.MoveNext() && newEnumerator.MoveNext())
+            {
+                stack.Push((oldEnumerator.Current, newEnumerator.Current));
+            }
         }
     }
 

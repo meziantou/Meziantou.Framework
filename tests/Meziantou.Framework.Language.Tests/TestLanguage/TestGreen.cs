@@ -53,7 +53,7 @@ internal static class TestGreen
 
         internal override GreenNode? GetSlot(int index) => index == 0 ? _identifierToken : null;
 
-        internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new Atom(slots[0]!, GetDiagnostics(), GetAnnotations());
+        internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new Atom(RequiredSlot(slots[0]), GetDiagnostics(), GetAnnotations());
 
         internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new Atom(_identifierToken, diagnostics, GetAnnotations());
         internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new Atom(_identifierToken, GetDiagnostics(), annotations);
@@ -92,12 +92,54 @@ internal static class TestGreen
             _ => null,
         };
 
-        internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new List(slots[0]!, slots[1], slots[2]!, GetDiagnostics(), GetAnnotations());
+        internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new List(RequiredSlot(slots[0]), slots[1], RequiredSlot(slots[2]), GetDiagnostics(), GetAnnotations());
+
+        internal override bool IsSeparatedListSlot(int index) => index is 1;
 
         internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new List(_openParenToken, _values, _closeParenToken, diagnostics, GetAnnotations());
         internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new List(_openParenToken, _values, _closeParenToken, GetDiagnostics(), annotations);
 
         internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new TestListSyntax(this, parent, position);
+    }
+
+    /// <summary>A bracketed run of values with nothing between them, so that a list with no separators is covered too.</summary>
+    public sealed class Block : Node
+    {
+        private readonly GreenNode _openBracketToken;
+        private readonly GreenNode? _values;
+        private readonly GreenNode _closeBracketToken;
+
+        public Block(GreenNode openBracketToken, GreenNode? values, GreenNode closeBracketToken)
+            : this(openBracketToken, values, closeBracketToken, diagnostics: null, annotations: null)
+        {
+        }
+
+        private Block(GreenNode openBracketToken, GreenNode? values, GreenNode closeBracketToken, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+            : base(TestSyntaxKind.TestBlock, diagnostics, annotations)
+        {
+            SlotCount = 3;
+            AdjustFlagsAndWidth(openBracketToken);
+            _openBracketToken = openBracketToken;
+            AdjustFlagsAndWidth(values);
+            _values = values;
+            AdjustFlagsAndWidth(closeBracketToken);
+            _closeBracketToken = closeBracketToken;
+        }
+
+        internal override GreenNode? GetSlot(int index) => index switch
+        {
+            0 => _openBracketToken,
+            1 => _values,
+            2 => _closeBracketToken,
+            _ => null,
+        };
+
+        internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new Block(RequiredSlot(slots[0]), slots[1], RequiredSlot(slots[2]), GetDiagnostics(), GetAnnotations());
+
+        internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new Block(_openBracketToken, _values, _closeBracketToken, diagnostics, GetAnnotations());
+        internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new Block(_openBracketToken, _values, _closeBracketToken, GetDiagnostics(), annotations);
+
+        internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new TestBlockSyntax(this, parent, position);
     }
 
     public sealed class Root : Node
@@ -127,7 +169,7 @@ internal static class TestGreen
             _ => null,
         };
 
-        internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new Root(slots[0], slots[1]!, GetDiagnostics(), GetAnnotations());
+        internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new Root(slots[0], RequiredSlot(slots[1]), GetDiagnostics(), GetAnnotations());
 
         internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new Root(_value, _endOfFileToken, diagnostics, GetAnnotations());
         internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new Root(_value, _endOfFileToken, GetDiagnostics(), annotations);

@@ -34,7 +34,7 @@ internal sealed class XmlCommentSyntax : XmlNodeSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new XmlCommentSyntax(slots[0]!, slots[1]!, slots[2]!, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new XmlCommentSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), GetDiagnostics(), GetAnnotations());
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new XmlCommentSyntax(_startCommentToken, _textToken, _endCommentToken, diagnostics, GetAnnotations());
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new XmlCommentSyntax(_startCommentToken, _textToken, _endCommentToken, GetDiagnostics(), annotations);
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Xml.XmlCommentSyntax(this, parent, position);

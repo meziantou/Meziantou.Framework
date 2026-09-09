@@ -34,7 +34,10 @@ internal sealed class JsonArraySyntax : JsonValueSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new JsonArraySyntax(slots[0]!, slots[1], slots[2]!, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new JsonArraySyntax(RequiredSlot(slots[0]), slots[1], RequiredSlot(slots[2]), GetDiagnostics(), GetAnnotations());
+
+    internal override bool IsSeparatedListSlot(int index) => index is 1;
+
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new JsonArraySyntax(_openBracketToken, _elements, _closeBracketToken, diagnostics, GetAnnotations());
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new JsonArraySyntax(_openBracketToken, _elements, _closeBracketToken, GetDiagnostics(), annotations);
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Json.JsonArraySyntax(this, parent, position);

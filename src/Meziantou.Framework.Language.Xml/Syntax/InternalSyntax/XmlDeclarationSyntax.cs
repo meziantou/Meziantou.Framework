@@ -34,7 +34,7 @@ internal sealed class XmlDeclarationSyntax : XmlNodeSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new XmlDeclarationSyntax(slots[0]!, slots[1], slots[2]!, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new XmlDeclarationSyntax(RequiredSlot(slots[0]), slots[1], RequiredSlot(slots[2]), GetDiagnostics(), GetAnnotations());
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new XmlDeclarationSyntax(_startDeclarationToken, _attributes, _endDeclarationToken, diagnostics, GetAnnotations());
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new XmlDeclarationSyntax(_startDeclarationToken, _attributes, _endDeclarationToken, GetDiagnostics(), annotations);
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Xml.XmlDeclarationSyntax(this, parent, position);

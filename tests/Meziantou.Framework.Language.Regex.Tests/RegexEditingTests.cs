@@ -121,4 +121,57 @@ public sealed class RegexEditingTests
             return node.WithLiteralToken(SyntaxFactory.Token(SyntaxKind.LiteralToken, to.ToString()).WithTriviaFrom(node.LiteralToken));
         }
     }
+
+    /// <summary>
+    /// A sequence holds its terms in a plain list, with nothing between them, so removing one takes only that one.
+    /// </summary>
+    [Theory]
+    [InlineData(0, "bc")]
+    [InlineData(1, "ac")]
+    [InlineData(2, "ab")]
+    public void RemoveNode_FromASequence_TakesOnlyThatTerm(int index, string expected)
+    {
+        var tree = RegexSyntaxTree.ParseText("abc", RegexDialect.Net);
+        var sequence = tree.GetRoot().DescendantNodes().OfType<RegexSequenceSyntax>().Single();
+        var term = sequence.ChildNodes().ElementAt(index);
+
+        var updated = tree.GetRoot().RemoveNode(term, SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal(expected, updated.ToFullString());
+    }
+
+    [Fact]
+    public void InsertNodesAfter_InASequence_AddsNoSeparator()
+    {
+        var tree = RegexSyntaxTree.ParseText("ab", RegexDialect.Net);
+        var sequence = tree.GetRoot().DescendantNodes().OfType<RegexSequenceSyntax>().Single();
+        var term = RegexSyntaxTree.ParseText("x", RegexDialect.Net).GetRoot().DescendantNodes().OfType<RegexLiteralSyntax>().Single();
+
+        var updated = tree.GetRoot().InsertNodesAfter(sequence.ChildNodes().First(), [term]);
+
+        Assert.Equal("axb", updated.ToFullString());
+    }
+
+    /// <summary>The branches of an alternation are separated by <c>|</c>, so an edit has to keep them alternating.</summary>
+    [Fact]
+    public void RemoveNode_FromAnAlternation_TakesTheBarWithIt()
+    {
+        var tree = RegexSyntaxTree.ParseText("a|b|c", RegexDialect.Net);
+        var branches = tree.GetRoot().Alternation.Branches;
+
+        var updated = tree.GetRoot().RemoveNode(branches[1], SyntaxRemoveOptions.KeepNoTrivia);
+
+        Assert.Equal("a|c", updated.ToFullString());
+    }
+
+    [Fact]
+    public void InsertNodesAfter_InAnAlternationOfOneBranch_StillAddsTheBar()
+    {
+        var tree = RegexSyntaxTree.ParseText("a", RegexDialect.Net);
+        var alternation = tree.GetRoot().Alternation;
+
+        var updated = tree.GetRoot().InsertNodesAfter(alternation.Branches[0], [SyntaxFactory.LiteralText("b", RegexDialect.Net)]);
+
+        Assert.Equal("a|b", updated.ToFullString());
+    }
 }

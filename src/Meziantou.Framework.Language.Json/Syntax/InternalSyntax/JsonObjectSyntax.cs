@@ -34,7 +34,10 @@ internal sealed class JsonObjectSyntax : JsonValueSyntax
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new JsonObjectSyntax(slots[0]!, slots[1], slots[2]!, GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new JsonObjectSyntax(RequiredSlot(slots[0]), slots[1], RequiredSlot(slots[2]), GetDiagnostics(), GetAnnotations());
+
+    internal override bool IsSeparatedListSlot(int index) => index is 1;
+
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new JsonObjectSyntax(_openBraceToken, _members, _closeBraceToken, diagnostics, GetAnnotations());
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new JsonObjectSyntax(_openBraceToken, _members, _closeBraceToken, GetDiagnostics(), annotations);
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Json.JsonObjectSyntax(this, parent, position);

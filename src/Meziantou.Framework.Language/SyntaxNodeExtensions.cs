@@ -26,6 +26,7 @@ public static class SyntaxNodeExtensions
     }
 
     /// <summary>Returns <paramref name="root"/> with each of <paramref name="nodes"/> replaced by what <paramref name="computeReplacement"/> returns for it.</summary>
+    /// <remarks>An empty sequence asks for nothing, and gives <paramref name="root"/> back unchanged.</remarks>
     /// <param name="root">The tree to rebuild.</param>
     /// <param name="nodes">The nodes to replace.</param>
     /// <param name="computeReplacement">Given the original node twice, returns what to put in its place.</param>
@@ -40,14 +41,16 @@ public static class SyntaxNodeExtensions
         ArgumentNullException.ThrowIfNull(computeReplacement);
 
         var replacer = new SyntaxReplacer();
+        var any = false;
         foreach (var node in nodes)
         {
             ArgumentNullException.ThrowIfNull(node, nameof(nodes));
             EnsureInTree(root, node, "One of the nodes is not part of this tree.", nameof(nodes));
             replacer.ReplaceNode(node, computeReplacement(node, node).Green);
+            any = true;
         }
 
-        return Rebuild(root, replacer, "One of the nodes is not part of this tree.", nameof(nodes));
+        return any ? Rebuild(root, replacer, "One of the nodes is not part of this tree.", nameof(nodes)) : root;
     }
 
     /// <summary>Returns <paramref name="root"/> with <paramref name="newToken"/> in place of <paramref name="oldToken"/>.</summary>
@@ -58,6 +61,7 @@ public static class SyntaxNodeExtensions
         => root.ReplaceTokens([oldToken], (_, _) => newToken);
 
     /// <summary>Returns <paramref name="root"/> with each of <paramref name="tokens"/> replaced by what <paramref name="computeReplacement"/> returns for it.</summary>
+    /// <remarks>An empty sequence asks for nothing, and gives <paramref name="root"/> back unchanged.</remarks>
     /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">One of <paramref name="tokens"/> is not part of <paramref name="root"/>.</exception>
     public static TRoot ReplaceTokens<TRoot>(this TRoot root, IEnumerable<SyntaxToken> tokens, Func<SyntaxToken, SyntaxToken, SyntaxToken> computeReplacement)
@@ -68,13 +72,15 @@ public static class SyntaxNodeExtensions
         ArgumentNullException.ThrowIfNull(computeReplacement);
 
         var replacer = new SyntaxReplacer();
+        var any = false;
         foreach (var token in tokens)
         {
             EnsureInTree(root, token.Parent, "One of the tokens is not part of this tree.", nameof(tokens));
             replacer.ReplaceToken(token, computeReplacement(token, token).Node);
+            any = true;
         }
 
-        return Rebuild(root, replacer, "One of the tokens is not part of this tree.", nameof(tokens));
+        return any ? Rebuild(root, replacer, "One of the tokens is not part of this tree.", nameof(tokens)) : root;
     }
 
     /// <summary>Returns <paramref name="root"/> with <paramref name="newTrivia"/> in place of <paramref name="oldTrivia"/>.</summary>
@@ -85,6 +91,7 @@ public static class SyntaxNodeExtensions
         => root.ReplaceTrivia([oldTrivia], (_, _) => newTrivia);
 
     /// <summary>Returns <paramref name="root"/> with each of <paramref name="trivia"/> replaced by what <paramref name="computeReplacement"/> returns for it.</summary>
+    /// <remarks>An empty sequence asks for nothing, and gives <paramref name="root"/> back unchanged.</remarks>
     /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">One of <paramref name="trivia"/> is not part of <paramref name="root"/>.</exception>
     public static TRoot ReplaceTrivia<TRoot>(this TRoot root, IEnumerable<SyntaxTrivia> trivia, Func<SyntaxTrivia, SyntaxTrivia, SyntaxTrivia> computeReplacement)
@@ -95,13 +102,15 @@ public static class SyntaxNodeExtensions
         ArgumentNullException.ThrowIfNull(computeReplacement);
 
         var replacer = new SyntaxReplacer();
+        var any = false;
         foreach (var item in trivia)
         {
             EnsureInTree(root, item.Token.Parent, "One of the trivia is not part of this tree.", nameof(trivia));
             replacer.ReplaceTrivia(item, computeReplacement(item, item).UnderlyingNode);
+            any = true;
         }
 
-        return Rebuild(root, replacer, "One of the trivia is not part of this tree.", nameof(trivia));
+        return any ? Rebuild(root, replacer, "One of the trivia is not part of this tree.", nameof(trivia)) : root;
     }
 
     /// <summary>Returns <paramref name="root"/> with <paramref name="newNodes"/> in place of <paramref name="oldNode"/>.</summary>
@@ -212,12 +221,13 @@ public static class SyntaxNodeExtensions
             removing.Add(index);
 
             // A separated list has to keep alternating, so the separator that went with the node goes too: the one
-            // after it, or the one before it when nothing follows.
-            if (index + 1 < items.Length && !removing.Contains(index + 1))
+            // after it, or the one before it when nothing follows. A neighbour that is a node rather than a token is
+            // a sibling in a list that has no separators at all, and taking it would delete something nobody asked to.
+            if (index + 1 < items.Length && items[index + 1] is { IsToken: true } && !removing.Contains(index + 1))
             {
                 removing.Add(index + 1);
             }
-            else if (index > 0)
+            else if (index > 0 && items[index - 1] is { IsToken: true })
             {
                 removing.Add(index - 1);
             }
@@ -430,7 +440,10 @@ public static class SyntaxNodeExtensions
             start = indexInList;
         }
 
-        var spliced = Splice(items, start, replacements, removeOriginal, insertBefore, nodeInList.Green);
+        // Asked of the parent rather than read off the contents: a list of one holds no separator to observe yet, and
+        // it does not even look like a list, because a list collapses to its only element.
+        var isSeparated = parent.Green.IsSeparatedListSlot(slot);
+        var spliced = Splice(items, start, replacements, removeOriginal, insertBefore, nodeInList.Green, isSeparated);
 
         var newSlots = new GreenNode?[parent.Green.SlotCount];
         for (var i = 0; i < newSlots.Length; i++)
@@ -451,13 +464,13 @@ public static class SyntaxNodeExtensions
     /// Splices nodes into the contents of a slot, adding the separators a separated list needs to stay alternating.
     /// </summary>
     /// <remarks>
-    /// A list is separated when it holds tokens between its nodes. Adding a node to one means adding a separator with
-    /// it, and taking a node out means taking its separator too, or the list stops alternating and can no longer be
-    /// read.
+    /// A separated list holds tokens between its nodes. Adding a node to one means adding a separator with it, and
+    /// taking a node out means taking its separator too, or the list stops alternating and can no longer be read.
+    /// Which kind of list this is comes from <paramref name="isSeparated"/>, because a list of one element has no
+    /// separator in it to go by.
     /// </remarks>
-    private static GreenNode?[] Splice(GreenNode?[] items, int index, GreenNode?[] replacements, bool removeOriginal, bool insertBefore, GreenNode original)
+    private static GreenNode?[] Splice(GreenNode?[] items, int index, GreenNode?[] replacements, bool removeOriginal, bool insertBefore, GreenNode original, bool isSeparated)
     {
-        var isSeparated = Array.Exists(items, item => item is { IsToken: true });
         var result = new List<GreenNode?>(items);
 
         if (!isSeparated)

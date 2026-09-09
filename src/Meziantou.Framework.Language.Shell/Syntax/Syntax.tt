@@ -152,6 +152,10 @@ internal sealed partial class <#= node.Name #> : <#= node.Base #>
     };
 
     internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new <#= node.Name #>(<#= SlotsFromSpan(node) #>GetDiagnostics(), GetAnnotations());
+<# if (SeparatedListSlots(node) is string separated && separated.Length > 0) { #>
+
+    internal override bool IsSeparatedListSlot(int index) => index is <#= separated #>;
+<# } #>
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new <#= node.Name #>(<#= GreenArguments(node, "diagnostics, GetAnnotations()") #>);
 
@@ -376,6 +380,22 @@ static string GreenArguments(NodeDef node, string tail)
     return string.Join(", ", parts);
 }
 
+// A node whose separated-list slots the untyped editing API cannot otherwise recognise: a list holding one element
+// has no separator in it to go by.
+static string SeparatedListSlots(NodeDef node)
+{
+    var parts = new List<int>();
+    for (var i = 0; i < node.Slots.Length; i++)
+    {
+        if (node.Slots[i].Kind == "s")
+        {
+            parts.Add(i);
+        }
+    }
+
+    return parts.Count == 0 ? "" : string.Join(" or ", parts);
+}
+
 static string SlotsFromSpan(NodeDef node)
 {
     var parts = new List<string>();
@@ -386,7 +406,7 @@ static string SlotsFromSpan(NodeDef node)
 
     for (var i = 0; i < node.Slots.Length; i++)
     {
-        parts.Add("slots[" + i + "]" + (node.Slots[i].Optional ? "" : "!"));
+        parts.Add(node.Slots[i].Optional ? "slots[" + i + "]" : "RequiredSlot(slots[" + i + "])");
     }
 
     return parts.Count == 0 ? "" : string.Join(", ", parts) + ", ";

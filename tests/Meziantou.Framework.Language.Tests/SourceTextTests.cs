@@ -3,9 +3,15 @@ namespace Meziantou.Framework.Language.Tests;
 public sealed class SourceTextTests
 {
     [Fact]
-    public void From_TreatsNullAsEmptyText()
+    public void From_RejectsNullText()
     {
-        var source = SourceText.From(null!);
+        Assert.Equal("text", Assert.Throws<ArgumentNullException>(() => SourceText.From(null!)).ParamName);
+    }
+
+    [Fact]
+    public void From_EmptyText_HasOneEmptyLine()
+    {
+        var source = SourceText.From("");
 
         Assert.Equal("", source.Text);
         Assert.Equal(0, source.Length);

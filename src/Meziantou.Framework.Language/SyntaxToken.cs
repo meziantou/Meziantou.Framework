@@ -180,7 +180,7 @@ public readonly struct SyntaxToken : IEquatable<SyntaxToken>
         _token?.WriteTo(writer);
     }
 
-    /// <summary>Determines whether the two tokens have the same kind, text, and trivia.</summary>
+    /// <summary>Determines whether the two tokens have the same kind and text, ignoring the trivia around them.</summary>
     public bool IsEquivalentTo(SyntaxToken token)
     {
         if (_token is null || token._token is null)

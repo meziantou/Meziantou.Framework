@@ -8,10 +8,10 @@ public static class ContainerDefinitionRedisExtensions
     extension(ContainerDefinition)
     {
         /// <summary>Creates a definition pre-configured for a Redis container (port 6379 and a readiness wait strategy).</summary>
-        /// <returns>A Redis container definition using the <c>redis:8.2</c> image.</returns>
+        /// <returns>A Redis container definition using the <c>redis:8.10</c> image.</returns>
         public static RedisContainerDefinition CreateRedis()
         {
-            return CreateRedis(ImageSource.FromRegistry("redis:8.2"));
+            return CreateRedis(ImageSource.FromRegistry("redis:8.10"));
         }
 
         /// <summary>Creates a definition pre-configured for a Redis container (port 6379 and a readiness wait strategy).</summary>

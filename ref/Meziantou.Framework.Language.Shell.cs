@@ -909,30 +909,6 @@ namespace Meziantou.Framework.Language.Shell
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
-    public sealed class ShellDiagnostic : System.IEquatable<Meziantou.Framework.Language.Shell.ShellDiagnostic>
-    {
-        public string Id { get => throw null; init { } }
-        public string Message { get => throw null; init { } }
-        public Meziantou.Framework.Language.Shell.ShellDiagnosticSeverity Severity { get => throw null; init { } }
-        public Meziantou.Framework.Language.Shell.TextSpan Span { get => throw null; init { } }
-        public ShellDiagnostic(string Id, string Message, Meziantou.Framework.Language.Shell.ShellDiagnosticSeverity Severity, Meziantou.Framework.Language.Shell.TextSpan Span) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.Language.Shell.ShellDiagnostic? left, Meziantou.Framework.Language.Shell.ShellDiagnostic? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.Language.Shell.ShellDiagnostic? left, Meziantou.Framework.Language.Shell.ShellDiagnostic? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.Language.Shell.ShellDiagnostic? other) => throw null;
-        public void Deconstruct(out string Id, out string Message, out Meziantou.Framework.Language.Shell.ShellDiagnosticSeverity Severity, out Meziantou.Framework.Language.Shell.TextSpan Span) => throw null;
-    }
-
-    public enum ShellDiagnosticSeverity
-    {
-        Hidden = 0,
-        Info = 1,
-        Warning = 2,
-        Error = 3
-    }
-
     [System.Diagnostics.DebuggerDisplay("{Name}")]
     public sealed class ShellDialect
     {
@@ -1362,8 +1338,8 @@ namespace Meziantou.Framework.Language.Shell
         public Meziantou.Framework.Language.Shell.ShellSyntaxTree? SyntaxTree { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode? Parent { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellDialect? Dialect { get => throw null; }
-        public Meziantou.Framework.Language.Shell.TextSpan Span { get => throw null; }
-        public Meziantou.Framework.Language.Shell.TextSpan FullSpan { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public bool ContainsDiagnostics { get => throw null; }
         public bool ContainsSkippedText { get => throw null; }
         protected ShellSyntaxNode(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, string fullText, int fullStart = 0, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? tokens = null) { }
@@ -1393,7 +1369,7 @@ namespace Meziantou.Framework.Language.Shell
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode Node { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxToken Token { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxKind Kind { get => throw null; }
-        public Meziantou.Framework.Language.Shell.TextSpan FullSpan { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public ShellSyntaxNodeOrToken(Meziantou.Framework.Language.Shell.ShellSyntaxNode node) { }
         public ShellSyntaxNodeOrToken(Meziantou.Framework.Language.Shell.ShellSyntaxToken token) { }
         public string ToFullString() => throw null;
@@ -1418,8 +1394,8 @@ namespace Meziantou.Framework.Language.Shell
         public string Text { get => throw null; }
         public string ValueText { get => throw null; }
         public bool IsMissing { get => throw null; }
-        public Meziantou.Framework.Language.Shell.TextSpan Span { get => throw null; }
-        public Meziantou.Framework.Language.Shell.TextSpan FullSpan { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia> LeadingTrivia { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia> TrailingTrivia { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode? Parent { get => throw null; }
@@ -1434,20 +1410,20 @@ namespace Meziantou.Framework.Language.Shell
     public sealed class ShellSyntaxTree
     {
         public string Text { get => throw null; }
-        public Meziantou.Framework.Language.Shell.SourceText SourceText { get => throw null; }
+        public Meziantou.Framework.Language.SourceText SourceText { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellParseOptions Options { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellDialect Dialect { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellScriptSyntax Root { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellDiagnostic> Diagnostics { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> Diagnostics { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellScriptSyntax GetRoot() => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellDiagnostic> GetDiagnostics() => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public static Meziantou.Framework.Language.Shell.ShellSyntaxTree ParseText(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellSyntaxTree ParseText(string text, Meziantou.Framework.Language.Shell.ShellParseOptions options) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellStatementSyntax ParseCommand(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellStatementSyntax ParseCommand(string text, Meziantou.Framework.Language.Shell.ShellParseOptions options) => throw null;
-        public Meziantou.Framework.Language.Shell.ShellSyntaxTree WithChanges(params Meziantou.Framework.Language.Shell.ShellTextChange[] changes) => throw null;
-        public Meziantou.Framework.Language.Shell.ShellSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellTextChange> changes) => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellTextChange> GetChanges(Meziantou.Framework.Language.Shell.ShellSyntaxTree oldTree) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.Shell.ShellSyntaxTree oldTree) => throw null;
         public bool IsEquivalentTo(Meziantou.Framework.Language.Shell.ShellSyntaxTree? other) => throw null;
     }
 
@@ -1456,8 +1432,8 @@ namespace Meziantou.Framework.Language.Shell
     {
         public Meziantou.Framework.Language.Shell.ShellSyntaxKind Kind { get => throw null; }
         public string Text { get => throw null; }
-        public Meziantou.Framework.Language.Shell.TextSpan Span { get => throw null; }
-        public Meziantou.Framework.Language.Shell.TextSpan FullSpan { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public bool IsComment { get => throw null; }
         public ShellSyntaxTrivia(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, string text, int start = 0) { }
         public Meziantou.Framework.Language.Shell.ShellSyntaxTrivia WithText(string text) => throw null;
@@ -1660,18 +1636,6 @@ namespace Meziantou.Framework.Language.Shell
         public virtual TResult VisitSkippedText(Meziantou.Framework.Language.Shell.ShellSkippedTextSyntax node) => throw null;
     }
 
-    public readonly struct ShellTextChange : System.IEquatable<Meziantou.Framework.Language.Shell.ShellTextChange>
-    {
-        public Meziantou.Framework.Language.Shell.TextSpan Span { get => throw null; }
-        public string NewText { get => throw null; }
-        public ShellTextChange(Meziantou.Framework.Language.Shell.TextSpan span, string newText) { }
-        public bool Equals(Meziantou.Framework.Language.Shell.ShellTextChange other) => throw null;
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
-        public override int GetHashCode() => throw null;
-        public static bool operator ==(Meziantou.Framework.Language.Shell.ShellTextChange left, Meziantou.Framework.Language.Shell.ShellTextChange right) => throw null;
-        public static bool operator !=(Meziantou.Framework.Language.Shell.ShellTextChange left, Meziantou.Framework.Language.Shell.ShellTextChange right) => throw null;
-    }
-
     public sealed class ShellUnaryExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
         public Meziantou.Framework.Language.Shell.ShellSyntaxToken? PrefixOperatorToken { get => throw null; }
@@ -1715,17 +1679,6 @@ namespace Meziantou.Framework.Language.Shell
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
-    public sealed class SourceText
-    {
-        public string Text { get => throw null; }
-        public int Length { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.TextLine> Lines { get => throw null; }
-        public static Meziantou.Framework.Language.Shell.SourceText From(string text) => throw null;
-        public Meziantou.Framework.Language.Shell.SourceText WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellTextChange> changes) => throw null;
-        public Meziantou.Framework.Language.Shell.TextLine GetLine(int position) => throw null;
-        public override string ToString() => throw null;
-    }
-
     public static class SyntaxFactory
     {
         public static Meziantou.Framework.Language.Shell.ShellSyntaxTree ParseText(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
@@ -1749,37 +1702,6 @@ namespace Meziantou.Framework.Language.Shell
         public static Meziantou.Framework.Language.Shell.ShellSkippedTextSyntax SkippedText(string text) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellRawExpressionSyntax RawExpression(string text) => throw null;
         public static bool RequiresQuoting(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
-    }
-
-    public readonly struct TextLine : System.IEquatable<Meziantou.Framework.Language.Shell.TextLine>
-    {
-        public int LineNumber { get => throw null; init { } }
-        public int Start { get => throw null; init { } }
-        public int End { get => throw null; init { } }
-        public string Text { get => throw null; init { } }
-        public TextLine(int LineNumber, int Start, int End, string Text) { }
-        public override string ToString() => throw null;
-        public static bool operator !=(Meziantou.Framework.Language.Shell.TextLine left, Meziantou.Framework.Language.Shell.TextLine right) => throw null;
-        public static bool operator ==(Meziantou.Framework.Language.Shell.TextLine left, Meziantou.Framework.Language.Shell.TextLine right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object obj) => throw null;
-        public bool Equals(Meziantou.Framework.Language.Shell.TextLine other) => throw null;
-        public void Deconstruct(out int LineNumber, out int Start, out int End, out string Text) => throw null;
-    }
-
-    public readonly struct TextSpan : System.IEquatable<Meziantou.Framework.Language.Shell.TextSpan>
-    {
-        public int Start { get => throw null; }
-        public int Length { get => throw null; }
-        public int End { get => throw null; }
-        public TextSpan(int start, int length) { }
-        public static Meziantou.Framework.Language.Shell.TextSpan FromBounds(int start, int end) => throw null;
-        public bool Equals(Meziantou.Framework.Language.Shell.TextSpan other) => throw null;
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
-        public override int GetHashCode() => throw null;
-        public static bool operator ==(Meziantou.Framework.Language.Shell.TextSpan left, Meziantou.Framework.Language.Shell.TextSpan right) => throw null;
-        public static bool operator !=(Meziantou.Framework.Language.Shell.TextSpan left, Meziantou.Framework.Language.Shell.TextSpan right) => throw null;
-        public override string ToString() => throw null;
     }
 
     public sealed class ZshAlwaysStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax

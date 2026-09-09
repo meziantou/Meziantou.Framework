@@ -20,8 +20,8 @@ namespace Meziantou.Framework.Language.Regex.Internals;
 /// </remarks>
 internal sealed class PosixRegexParser : PerlStyleRegexParser
 {
-    public PosixRegexParser(string text, RegexParseOptions parseOptions)
-        : base(text, parseOptions)
+    public PosixRegexParser(SourceText source, RegexParseOptions parseOptions)
+        : base(source, parseOptions)
     {
     }
 

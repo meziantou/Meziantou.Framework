@@ -14,13 +14,13 @@ public sealed class XmlDeclarationSyntax : XmlSyntaxNode
     private readonly IReadOnlyList<XmlSyntaxNode> _childNodes;
     private readonly List<DeclarationAttributeSegment> _attributeSegments;
 
-    public XmlDeclarationSyntax(string version, string? encoding, string? standalone, string fullText)
-        : base(XmlSyntaxKind.XmlDeclaration, fullText, [new XmlSyntaxToken(XmlSyntaxKind.DeclarationToken, fullText)])
+    public XmlDeclarationSyntax(string version, string? encoding, string? standalone, string fullText, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlDeclaration, fullText, [new XmlSyntaxToken(XmlSyntaxKind.DeclarationToken, fullText, fullStart: fullStart)], fullStart)
     {
         Version = version;
         Encoding = encoding;
         Standalone = standalone;
-        _attributeSegments = ParseAttributeSegments(fullText);
+        _attributeSegments = ParseAttributeSegments(fullText, fullStart);
         _childNodes = _attributeSegments.Select(item => (XmlSyntaxNode)item.Attribute).ToArray();
         VersionAttribute = _attributeSegments.FirstOrDefault(item => string.Equals(item.Attribute.Name, "version", StringComparison.Ordinal)).Attribute;
         EncodingAttribute = _attributeSegments.FirstOrDefault(item => string.Equals(item.Attribute.Name, "encoding", StringComparison.Ordinal)).Attribute;
@@ -101,7 +101,7 @@ public sealed class XmlDeclarationSyntax : XmlSyntaxNode
 
         var newAttributeText = " " + SyntaxFactory.Attribute(attributeName, value).ToFullString();
         var updatedText = fullText[..insertionIndex] + newAttributeText + fullText[insertionIndex..];
-        return new XmlDeclarationSyntax(version, encoding, standalone, updatedText);
+        return new XmlDeclarationSyntax(version, encoding, standalone, updatedText, FullSpan.Start);
     }
 
     private XmlDeclarationSyntax ReplaceSpan(TextSpan span, string replacement, string version, string? encoding, string? standalone)
@@ -111,7 +111,7 @@ public sealed class XmlDeclarationSyntax : XmlSyntaxNode
         builder.Append(fullText.AsSpan(0, span.Start));
         builder.Append(replacement);
         builder.Append(fullText.AsSpan(span.End));
-        return new XmlDeclarationSyntax(version, encoding, standalone, builder.ToString());
+        return new XmlDeclarationSyntax(version, encoding, standalone, builder.ToString(), FullSpan.Start);
     }
 
     private bool TryGetAttributeSegment(string attributeName, out DeclarationAttributeSegment segment)
@@ -129,7 +129,12 @@ public sealed class XmlDeclarationSyntax : XmlSyntaxNode
         return false;
     }
 
-    private static List<DeclarationAttributeSegment> ParseAttributeSegments(string declarationText)
+    /// <remarks>
+    /// The returned <see cref="DeclarationAttributeSegment.Span"/> stays relative to <paramref name="declarationText"/>,
+    /// because <see cref="ReplaceSpan"/> slices that text with it. Only the attribute nodes are given absolute
+    /// positions, by offsetting them with <paramref name="fullStart"/>.
+    /// </remarks>
+    private static List<DeclarationAttributeSegment> ParseAttributeSegments(string declarationText, int fullStart)
     {
         if (declarationText.Length == 0)
             return [];
@@ -210,7 +215,7 @@ public sealed class XmlDeclarationSyntax : XmlSyntaxNode
                 continue;
 
             var attributeText = declarationText[attributeStart..attributeEnd];
-            var attribute = new XmlAttributeSyntax(name, value, attributeText);
+            var attribute = new XmlAttributeSyntax(name, value, attributeText, fullStart + attributeStart);
             result.Add(new DeclarationAttributeSegment(attribute, TextSpan.FromBounds(attributeStart, attributeEnd)));
         }
 

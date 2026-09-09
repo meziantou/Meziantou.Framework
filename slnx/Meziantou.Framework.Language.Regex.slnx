@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.Language.Regex/Meziantou.Framework.Language.Regex.csproj" />
+    <Project Path="../src/Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Language.Regex.Tests/Meziantou.Framework.Language.Regex.Tests.csproj" />

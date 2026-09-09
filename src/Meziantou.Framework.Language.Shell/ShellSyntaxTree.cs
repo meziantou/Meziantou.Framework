@@ -5,12 +5,12 @@ namespace Meziantou.Framework.Language.Shell;
 /// <summary>Represents an immutable shell syntax tree with source text and diagnostics.</summary>
 public sealed class ShellSyntaxTree
 {
-    private readonly List<ShellDiagnostic> _diagnostics;
+    private readonly List<Diagnostic> _diagnostics;
 
-    private ShellSyntaxTree(string text, ShellParseOptions options, ShellScriptSyntax root, List<ShellDiagnostic> diagnostics)
+    private ShellSyntaxTree(SourceText sourceText, ShellParseOptions options, ShellScriptSyntax root, List<Diagnostic> diagnostics)
     {
-        Text = text;
-        SourceText = SourceText.From(text);
+        Text = sourceText.Text;
+        SourceText = sourceText;
         Options = options;
         Root = root;
         _diagnostics = diagnostics;
@@ -25,10 +25,10 @@ public sealed class ShellSyntaxTree
     public ShellDialect Dialect => Options.Dialect;
 
     public ShellScriptSyntax Root { get; }
-    public IReadOnlyList<ShellDiagnostic> Diagnostics => _diagnostics;
+    public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
 
     public ShellScriptSyntax GetRoot() => Root;
-    public IReadOnlyList<ShellDiagnostic> GetDiagnostics() => Diagnostics;
+    public IReadOnlyList<Diagnostic> GetDiagnostics() => Diagnostics;
 
     /// <summary>Parses <paramref name="text"/> as a complete script. Never throws; problems are reported as diagnostics.</summary>
     public static ShellSyntaxTree ParseText(string text, ShellDialect dialect)
@@ -43,33 +43,35 @@ public sealed class ShellSyntaxTree
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        text ??= string.Empty;
+        // Built once and handed to both the parser and the tree, so a diagnostic's location points at the same
+        // source text instance the tree exposes.
+        var source = SourceText.From(text);
 
         // The dialect family selects the parser; dialect features handle the differences within a family.
         ShellScriptSyntax root;
-        IReadOnlyList<ShellDiagnostic> diagnostics;
+        IReadOnlyList<Diagnostic> diagnostics;
         switch (options.Dialect.Family)
         {
             case ShellDialectFamily.PowerShell:
-                var powerShellParser = new PowerShellParser(text, options);
+                var powerShellParser = new PowerShellParser(source, options);
                 root = powerShellParser.ParseScript();
                 diagnostics = powerShellParser.Diagnostics;
                 break;
 
             case ShellDialectFamily.Cmd:
-                var cmdParser = new CmdParser(text, options);
+                var cmdParser = new CmdParser(source, options);
                 root = cmdParser.ParseScript();
                 diagnostics = cmdParser.Diagnostics;
                 break;
 
             default:
-                var posixParser = new PosixParser(text, options);
+                var posixParser = new PosixParser(source, options);
                 root = posixParser.ParseScript();
                 diagnostics = posixParser.Diagnostics;
                 break;
         }
 
-        return new ShellSyntaxTree(text, options, root, [.. diagnostics]);
+        return new ShellSyntaxTree(source, options, root, [.. diagnostics]);
     }
 
     /// <summary>
@@ -135,12 +137,12 @@ public sealed class ShellSyntaxTree
 
     private void AddTrailingContentDiagnostic(TextSpan span)
     {
-        _diagnostics.Add(new ShellDiagnostic("SHELL0101", "Unexpected content after the parsed statement.", ShellDiagnosticSeverity.Error, span));
+        _diagnostics.Add(new Diagnostic("SHELL0101", "Unexpected content after the parsed statement.", DiagnosticSeverity.Error, new Location(span, SourceText)));
     }
 
-    public ShellSyntaxTree WithChanges(params ShellTextChange[] changes) => WithChanges((IEnumerable<ShellTextChange>)changes);
+    public ShellSyntaxTree WithChanges(params TextChange[] changes) => WithChanges((IEnumerable<TextChange>)changes);
 
-    public ShellSyntaxTree WithChanges(IEnumerable<ShellTextChange> changes)
+    public ShellSyntaxTree WithChanges(IEnumerable<TextChange> changes)
     {
         ArgumentNullException.ThrowIfNull(changes);
 
@@ -151,7 +153,7 @@ public sealed class ShellSyntaxTree
     /// Returns the edit that turns <paramref name="oldTree"/>'s text into this tree's text. The common prefix and
     /// suffix are trimmed, so an edit in the middle of a script reports only the part that actually differs.
     /// </summary>
-    public IReadOnlyList<ShellTextChange> GetChanges(ShellSyntaxTree oldTree)
+    public IReadOnlyList<TextChange> GetChanges(ShellSyntaxTree oldTree)
     {
         ArgumentNullException.ThrowIfNull(oldTree);
 
@@ -185,7 +187,7 @@ public sealed class ShellSyntaxTree
             suffix--;
         }
 
-        return [new ShellTextChange(
+        return [new TextChange(
             TextSpan.FromBounds(prefix, oldText.Length - suffix),
             newText[prefix..(newText.Length - suffix)])];
     }

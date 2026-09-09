@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Language.Shell.Internals;
 internal sealed partial class PosixParser
 {
     private readonly PosixLexer _lexer;
-    private readonly List<ShellDiagnostic> _diagnostics = [];
+    private readonly List<Diagnostic> _diagnostics = [];
     private readonly ShellParseOptions _options;
     private readonly List<ShellSyntaxTrivia> _pendingTrivia = [];
     private readonly List<PendingHereDocument> _pendingHereDocuments = [];
@@ -20,13 +20,13 @@ internal sealed partial class PosixParser
     /// <summary>Open-parenthesis count inside the pattern of a <c>=~</c>, or -1 when no pattern is being read.</summary>
     private int _regexParenDepth = -1;
 
-    public PosixParser(string text, ShellParseOptions options)
+    public PosixParser(SourceText source, ShellParseOptions options)
     {
         _options = options;
-        _lexer = new PosixLexer(text, options.Dialect, _diagnostics);
+        _lexer = new PosixLexer(source, options.Dialect, _diagnostics);
     }
 
-    public IReadOnlyList<ShellDiagnostic> Diagnostics => _diagnostics;
+    public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
 
     public ShellScriptSyntax ParseScript()
     {
@@ -1147,6 +1147,6 @@ internal sealed partial class PosixParser
 
     private void AddDiagnostic(TextSpan span, string id, string message)
     {
-        _diagnostics.Add(new ShellDiagnostic(id, message, ShellDiagnosticSeverity.Error, span));
+        _diagnostics.Add(new Diagnostic(id, message, DiagnosticSeverity.Error, new Location(span, _lexer.Source)));
     }
 }

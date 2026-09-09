@@ -152,7 +152,7 @@ public sealed class RegexSyntaxTreeTests
     public void GetChanges_TrimsTheCommonPrefixAndSuffix()
     {
         var before = RegexSyntaxTree.ParseText("ab+c", RegexDialect.Net);
-        var after = before.WithChanges(new RegexTextChange(new TextSpan(2, 1), "*"));
+        var after = before.WithChanges(new TextChange(new TextSpan(2, 1), "*"));
 
         var change = Assert.Single(after.GetChanges(before));
         Assert.Equal(new TextSpan(2, 1), change.Span);

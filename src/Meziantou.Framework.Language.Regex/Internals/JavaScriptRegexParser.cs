@@ -5,8 +5,8 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
 {
     private readonly JavaScriptLiteral? _literal;
 
-    public JavaScriptRegexParser(string text, RegexParseOptions parseOptions, JavaScriptLiteral? literal)
-        : base(text, parseOptions)
+    public JavaScriptRegexParser(SourceText source, RegexParseOptions parseOptions, JavaScriptLiteral? literal)
+        : base(source, parseOptions)
     {
         _literal = literal;
     }

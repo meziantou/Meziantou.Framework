@@ -9,8 +9,8 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public sealed class XmlTextSyntax : XmlSyntaxNode
 {
-    public XmlTextSyntax(string text)
-        : base(XmlSyntaxKind.XmlText, text, [new XmlSyntaxToken(XmlSyntaxKind.TextToken, text)])
+    public XmlTextSyntax(string text, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlText, text, [new XmlSyntaxToken(XmlSyntaxKind.TextToken, text, fullStart: fullStart)], fullStart)
     {
         Text = text;
     }

@@ -18,19 +18,21 @@ namespace Meziantou.Framework.Language.Regex.Internals;
 /// </remarks>
 internal abstract class RegexParser
 {
-    private readonly List<RegexDiagnostic> _diagnostics = [];
+    private readonly List<Diagnostic> _diagnostics = [];
     private readonly Dictionary<int, TextSpan> _captureSpans = [];
     private int _depth;
 
-    protected RegexParser(string text, RegexParseOptions parseOptions)
+    protected RegexParser(SourceText source, RegexParseOptions parseOptions)
     {
-        Text = text;
+        Source = source;
+        Text = source.Text;
         ParseOptions = parseOptions;
         Options = parseOptions.PatternOptions;
-        Scanner = new RegexScanner(text, _diagnostics);
+        Scanner = new RegexScanner(source, _diagnostics);
         CaptureTable = RegexCaptureTable.Empty;
     }
 
+    protected SourceText Source { get; }
     protected string Text { get; }
     protected RegexScanner Scanner { get; }
     protected RegexParseOptions ParseOptions { get; }
@@ -44,7 +46,7 @@ internal abstract class RegexParser
 
     protected RegexCaptureTable CaptureTable { get; set; }
 
-    public IReadOnlyList<RegexDiagnostic> Diagnostics => _diagnostics;
+    public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
 
     public IReadOnlyList<RegexCaptureInfo> Captures { get; private set; } = [];
 

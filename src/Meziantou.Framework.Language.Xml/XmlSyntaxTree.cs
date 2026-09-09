@@ -4,15 +4,15 @@ namespace Meziantou.Framework.Language.Xml;
 /// <example>
 /// <code>
 /// var tree = XmlSyntaxTree.ParseText(xml);
-/// var updated = tree.WithChanges(new XmlTextChange(new TextSpan(0, 0), "&lt;!--generated--&gt;"));
+/// var updated = tree.WithChanges(new TextChange(new TextSpan(0, 0), "&lt;!--generated--&gt;"));
 /// </code>
 /// </example>
 public sealed class XmlSyntaxTree
 {
-    private XmlSyntaxTree(string text, XmlDocumentSyntax root, IReadOnlyList<XmlDiagnostic> diagnostics)
+    private XmlSyntaxTree(SourceText sourceText, XmlDocumentSyntax root, IReadOnlyList<Diagnostic> diagnostics)
     {
-        Text = text;
-        SourceText = SourceText.From(text);
+        Text = sourceText.Text;
+        SourceText = sourceText;
         Root = root;
         Diagnostics = diagnostics;
         Root.SetParentAndTree(parent: null, this);
@@ -21,32 +21,32 @@ public sealed class XmlSyntaxTree
     public string Text { get; }
     public SourceText SourceText { get; }
     public XmlDocumentSyntax Root { get; }
-    public IReadOnlyList<XmlDiagnostic> Diagnostics { get; }
+    public IReadOnlyList<Diagnostic> Diagnostics { get; }
 
     public XmlDocumentSyntax GetRoot() => Root;
-    public IReadOnlyList<XmlDiagnostic> GetDiagnostics() => Diagnostics;
+    public IReadOnlyList<Diagnostic> GetDiagnostics() => Diagnostics;
 
     public static XmlSyntaxTree ParseText([StringSyntax(StringSyntaxAttribute.Xml)] string text)
     {
-        var parser = new XmlParser(text ?? string.Empty);
+        var parser = new XmlParser(SourceText.From(text));
         return parser.Parse();
     }
 
-    public XmlSyntaxTree WithChanges(params XmlTextChange[] changes) => WithChanges((IEnumerable<XmlTextChange>)changes);
+    public XmlSyntaxTree WithChanges(params TextChange[] changes) => WithChanges((IEnumerable<TextChange>)changes);
 
-    public XmlSyntaxTree WithChanges(IEnumerable<XmlTextChange> changes)
+    public XmlSyntaxTree WithChanges(IEnumerable<TextChange> changes)
     {
         ArgumentNullException.ThrowIfNull(changes);
         return ParseText(SourceText.WithChanges(changes).Text);
     }
 
-    public IReadOnlyList<XmlTextChange> GetChanges(XmlSyntaxTree oldTree)
+    public IReadOnlyList<TextChange> GetChanges(XmlSyntaxTree oldTree)
     {
         ArgumentNullException.ThrowIfNull(oldTree);
         if (string.Equals(Text, oldTree.Text, StringComparison.Ordinal))
             return [];
 
-        return [new XmlTextChange(new TextSpan(0, oldTree.Text.Length), Text)];
+        return [new TextChange(new TextSpan(0, oldTree.Text.Length), Text)];
     }
 
     public bool IsEquivalentTo(XmlSyntaxTree? other)
@@ -100,15 +100,17 @@ public sealed class XmlSyntaxTree
     private sealed class XmlParser
     {
         private const string XmlDeclarationPrefix = "<?xml";
+        private readonly SourceText _source;
         private readonly string _text;
-        private readonly List<XmlDiagnostic> _diagnostics = [];
+        private readonly List<Diagnostic> _diagnostics = [];
         private readonly List<XmlSyntaxNode> _documentNodes = [];
         private readonly Stack<ElementBuilder> _elementStack = new();
         private int _position;
 
-        public XmlParser(string text)
+        public XmlParser(SourceText source)
         {
-            _text = text ?? string.Empty;
+            _source = source;
+            _text = source.Text;
         }
 
         public XmlSyntaxTree Parse()
@@ -167,11 +169,11 @@ public sealed class XmlSyntaxTree
             while (_elementStack.Count > 0)
             {
                 var unclosedElement = _elementStack.Pop();
-                _diagnostics.Add(new XmlDiagnostic(
+                _diagnostics.Add(new Diagnostic(
                     Id: "XML0001",
                     Message: $"Missing end tag for '{unclosedElement.Name}'.",
-                    Severity: XmlDiagnosticSeverity.Error,
-                    Span: new TextSpan(unclosedElement.Start, _text.Length - unclosedElement.Start)));
+                    Severity: DiagnosticSeverity.Error,
+                    Location: new Location(new TextSpan(unclosedElement.Start, _text.Length - unclosedElement.Start), _source)));
 
                 var fullText = _text.Substring(unclosedElement.Start);
                 var element = new XmlElementSyntax(
@@ -181,13 +183,14 @@ public sealed class XmlSyntaxTree
                     endTag: null,
                     isSelfClosing: false,
                     fullText,
-                    unclosedElement.StartTagText);
+                    unclosedElement.StartTagText,
+                    unclosedElement.Start);
 
                 AddNode(element);
             }
 
             var root = new XmlDocumentSyntax(_documentNodes, _text);
-            return new XmlSyntaxTree(_text, root, _diagnostics);
+            return new XmlSyntaxTree(_source, root, _diagnostics);
         }
 
         private bool IsAtEnd => _position >= _text.Length;
@@ -204,7 +207,7 @@ public sealed class XmlSyntaxTree
             var text = _text[start.._position];
             if (text.Length > 0)
             {
-                AddNode(new XmlTextSyntax(text));
+                AddNode(new XmlTextSyntax(text, start));
             }
         }
 
@@ -217,14 +220,14 @@ public sealed class XmlSyntaxTree
             {
                 AddDiagnostic(start, _text.Length - start, "XML0008", "Unterminated XML comment.");
                 var raw = _text[start..];
-                AddNode(new XmlCommentSyntax(raw.Length >= 4 ? raw[4..] : string.Empty, raw));
+                AddNode(new XmlCommentSyntax(raw.Length >= 4 ? raw[4..] : string.Empty, raw, start));
                 _position = _text.Length;
                 return;
             }
 
             var rawComment = _text[start..(end + 3)];
             var innerText = rawComment[4..^3];
-            AddNode(new XmlCommentSyntax(innerText, rawComment));
+            AddNode(new XmlCommentSyntax(innerText, rawComment, start));
             _position = end + 3;
         }
 
@@ -237,14 +240,14 @@ public sealed class XmlSyntaxTree
             {
                 AddDiagnostic(start, _text.Length - start, "XML0009", "Unterminated CDATA section.");
                 var raw = _text[start..];
-                AddNode(new XmlCDataSectionSyntax(raw.Length >= 9 ? raw[9..] : string.Empty, raw));
+                AddNode(new XmlCDataSectionSyntax(raw.Length >= 9 ? raw[9..] : string.Empty, raw, start));
                 _position = _text.Length;
                 return;
             }
 
             var rawCData = _text[start..(end + 3)];
             var innerText = rawCData[9..^3];
-            AddNode(new XmlCDataSectionSyntax(innerText, rawCData));
+            AddNode(new XmlCDataSectionSyntax(innerText, rawCData, start));
             _position = end + 3;
         }
 
@@ -257,7 +260,7 @@ public sealed class XmlSyntaxTree
             {
                 AddDiagnostic(start, _text.Length - start, "XML0007", "Unterminated XML declaration.");
                 var raw = _text[start..];
-                AddNode(new XmlSkippedTextSyntax(raw));
+                AddNode(new XmlSkippedTextSyntax(raw, start));
                 _position = _text.Length;
                 return;
             }
@@ -268,7 +271,7 @@ public sealed class XmlSyntaxTree
             attributes.TryGetValue("version", out var version);
             attributes.TryGetValue("encoding", out var encoding);
             attributes.TryGetValue("standalone", out var standalone);
-            AddNode(new XmlDeclarationSyntax(version ?? "1.0", encoding, standalone, rawDeclaration));
+            AddNode(new XmlDeclarationSyntax(version ?? "1.0", encoding, standalone, rawDeclaration, start));
             _position = end + 2;
         }
 
@@ -281,7 +284,7 @@ public sealed class XmlSyntaxTree
             {
                 AddDiagnostic(start, _text.Length - start, "XML0012", "Unterminated processing instruction.");
                 var raw = _text[start..];
-                AddNode(new XmlSkippedTextSyntax(raw));
+                AddNode(new XmlSkippedTextSyntax(raw, start));
                 _position = _text.Length;
                 return;
             }
@@ -302,7 +305,7 @@ public sealed class XmlSyntaxTree
                 data = inner[(firstSpaceIndex + 1)..].Trim();
             }
 
-            AddNode(new XmlProcessingInstructionSyntax(target, data, rawInstruction));
+            AddNode(new XmlProcessingInstructionSyntax(target, data, rawInstruction, start));
             _position = end + 2;
         }
 
@@ -355,7 +358,7 @@ public sealed class XmlSyntaxTree
 
             var value = raw.Length > 9 ? raw[9..^1].Trim() : string.Empty;
             var name = value.Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
-            AddNode(new XmlDocumentTypeSyntax(name, value, raw));
+            AddNode(new XmlDocumentTypeSyntax(name, value, raw, start));
         }
 
         private void ParseEndTag()
@@ -382,7 +385,7 @@ public sealed class XmlSyntaxTree
             if (_elementStack.Count == 0)
             {
                 AddDiagnostic(start, rawEndTag.Length, "XML0002", $"Unexpected end tag '{name}'.");
-                AddNode(new XmlSkippedTextSyntax(rawEndTag));
+                AddNode(new XmlSkippedTextSyntax(rawEndTag, start));
                 return;
             }
 
@@ -390,7 +393,7 @@ public sealed class XmlSyntaxTree
             if (string.Equals(top.Name, name, StringComparison.Ordinal))
             {
                 _ = _elementStack.Pop();
-                var endTag = new XmlEndTagSyntax(name, rawEndTag);
+                var endTag = new XmlEndTagSyntax(name, rawEndTag, start);
                 var fullText = _text[top.Start.._position];
                 var element = new XmlElementSyntax(
                     top.Name,
@@ -399,14 +402,15 @@ public sealed class XmlSyntaxTree
                     endTag,
                     isSelfClosing: false,
                     fullText,
-                    top.StartTagText);
+                    top.StartTagText,
+                    top.Start);
 
                 AddNode(element);
                 return;
             }
 
             AddDiagnostic(start, rawEndTag.Length, "XML0002", $"Mismatched end tag '{name}'.");
-            AddNode(new XmlSkippedTextSyntax(rawEndTag));
+            AddNode(new XmlSkippedTextSyntax(rawEndTag, start));
         }
 
         private void ParseElementOrSkippedText()
@@ -491,13 +495,13 @@ public sealed class XmlSyntaxTree
                 }
 
                 var rawAttribute = _text[attributeStart.._position];
-                attributes.Add(new XmlAttributeSyntax(attributeName, attributeValue, rawAttribute));
+                attributes.Add(new XmlAttributeSyntax(attributeName, attributeValue, rawAttribute, attributeStart));
             }
 
             var startTagText = _text[start.._position];
             if (isSelfClosing)
             {
-                AddNode(new XmlElementSyntax(name, attributes, [], endTag: null, isSelfClosing: true, startTagText, startTagText));
+                AddNode(new XmlElementSyntax(name, attributes, [], endTag: null, isSelfClosing: true, startTagText, startTagText, start));
                 return;
             }
 
@@ -516,7 +520,7 @@ public sealed class XmlSyntaxTree
 
             var raw = _text[start.._position];
             AddDiagnostic(start, raw.Length, "XML0010", message);
-            AddNode(new XmlSkippedTextSyntax(raw));
+            AddNode(new XmlSkippedTextSyntax(raw, start));
         }
 
         private void AddNode(XmlSyntaxNode node)
@@ -533,7 +537,7 @@ public sealed class XmlSyntaxTree
 
         private void AddDiagnostic(int start, int length, string id, string message)
         {
-            _diagnostics.Add(new XmlDiagnostic(id, message, XmlDiagnosticSeverity.Error, new TextSpan(start, length)));
+            _diagnostics.Add(new Diagnostic(id, message, DiagnosticSeverity.Error, new Location(new TextSpan(start, length), _source)));
         }
 
         private bool Match(string token)

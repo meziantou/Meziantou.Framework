@@ -81,8 +81,8 @@ internal static class RegexSyntaxAssert
 
         foreach (var diagnostic in tree.Diagnostics)
         {
-            var spanIsInsideSource = diagnostic.Span.Start >= 0 && diagnostic.Span.End <= text.Length;
-            Assert.True(spanIsInsideSource, $"{diagnostic.Id} has span {diagnostic.Span} outside a source of length {text.Length}.");
+            var spanIsInsideSource = diagnostic.Location.SourceSpan.Start >= 0 && diagnostic.Location.SourceSpan.End <= text.Length;
+            Assert.True(spanIsInsideSource, $"{diagnostic.Id} has span {diagnostic.Location.SourceSpan} outside a source of length {text.Length}.");
             Assert.NotEmpty(diagnostic.Message);
             Assert.StartsWith("REGEX".AsSpan(), diagnostic.Id.AsSpan());
         }

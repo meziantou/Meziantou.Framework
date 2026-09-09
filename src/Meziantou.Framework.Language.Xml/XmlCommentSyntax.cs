@@ -9,8 +9,10 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public sealed class XmlCommentSyntax : XmlSyntaxNode
 {
-    public XmlCommentSyntax(string text, string fullText)
-        : base(XmlSyntaxKind.XmlComment, fullText, [new XmlSyntaxToken(XmlSyntaxKind.CommentToken, text)])
+    private const string OpeningDelimiter = "<!--";
+
+    public XmlCommentSyntax(string text, string fullText, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlComment, fullText, [new XmlSyntaxToken(XmlSyntaxKind.CommentToken, text, fullStart: GetTextStart(fullText, fullStart))], fullStart)
     {
         Text = text;
     }
@@ -24,6 +26,12 @@ public sealed class XmlCommentSyntax : XmlSyntaxNode
             return this;
 
         return SyntaxFactory.Comment(text);
+    }
+
+    /// <summary>Returns where the comment text starts, skipping the opening delimiter when the node carries one.</summary>
+    private static int GetTextStart(string fullText, int fullStart)
+    {
+        return fullText.StartsWith(OpeningDelimiter, StringComparison.Ordinal) ? fullStart + OpeningDelimiter.Length : fullStart;
     }
 
     public override void Accept(XmlSyntaxVisitor visitor) => visitor.VisitComment(this);

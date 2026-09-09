@@ -9,8 +9,8 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public sealed class XmlAttributeSyntax : XmlSyntaxNode
 {
-    public XmlAttributeSyntax(string name, string value, string fullText)
-        : base(XmlSyntaxKind.XmlAttribute, fullText, [new XmlSyntaxToken(XmlSyntaxKind.IdentifierToken, name), new XmlSyntaxToken(XmlSyntaxKind.AttributeValueToken, value)])
+    public XmlAttributeSyntax(string name, string value, string fullText, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlAttribute, fullText, BuildTokens(name, value, fullText, fullStart), fullStart)
     {
         Name = name;
         Value = value;
@@ -42,7 +42,7 @@ public sealed class XmlAttributeSyntax : XmlSyntaxNode
             builder.Append(fullText.AsSpan(0, valueSpan.Start));
             builder.Append(escapedValue);
             builder.Append(fullText.AsSpan(valueSpan.End));
-            return new XmlAttributeSyntax(Name, value, builder.ToString());
+            return new XmlAttributeSyntax(Name, value, builder.ToString(), FullSpan.Start);
         }
 
         return SyntaxFactory.Attribute(Name, value);
@@ -60,7 +60,7 @@ public sealed class XmlAttributeSyntax : XmlSyntaxNode
         if (string.Equals(updated, fullText, StringComparison.Ordinal))
             return this;
 
-        return new XmlAttributeSyntax(Name, Value, updated);
+        return new XmlAttributeSyntax(Name, Value, updated, FullSpan.Start);
     }
 
     public XmlAttributeSyntax WithTrailingTrivia(IEnumerable<XmlSyntaxTrivia>? trailingTrivia)
@@ -86,7 +86,23 @@ public sealed class XmlAttributeSyntax : XmlSyntaxNode
         if (string.Equals(updated, fullText, StringComparison.Ordinal))
             return this;
 
-        return new XmlAttributeSyntax(Name, Value, updated);
+        return new XmlAttributeSyntax(Name, Value, updated, FullSpan.Start);
+    }
+
+    private static XmlSyntaxToken[] BuildTokens(string name, string value, string fullText, int fullStart)
+    {
+        var nameToken = new XmlSyntaxToken(XmlSyntaxKind.IdentifierToken, name, fullStart: fullStart + Math.Max(0, GetAttributeNameStart(fullText)));
+
+        // The value token covers the source between the quotes, which is not the value itself when the source
+        // escapes a character. Text therefore carries the source slice and ValueText the decoded value, so the
+        // token's span measures the range it actually occupies.
+        if (TryGetAttributeValueSpan(fullText, out var valueSpan, out _))
+        {
+            var sourceText = fullText.Substring(valueSpan.Start, valueSpan.Length);
+            return [nameToken, new XmlSyntaxToken(XmlSyntaxKind.AttributeValueToken, sourceText, value, fullStart: fullStart + valueSpan.Start)];
+        }
+
+        return [nameToken, new XmlSyntaxToken(XmlSyntaxKind.AttributeValueToken, value, fullStart: fullStart)];
     }
 
     private static bool TryGetAttributeValueSpan(string attributeText, out TextSpan span, out char quoteCharacter)

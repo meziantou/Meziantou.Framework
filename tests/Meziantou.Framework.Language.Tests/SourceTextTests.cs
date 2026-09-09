@@ -66,9 +66,12 @@ public sealed class SourceTextTests
     }
 
     [Fact]
-    public void GetLine_RejectsANegativePosition()
+    public void GetLine_RejectsAPositionOutsideTheText()
     {
         Assert.Equal("position", Assert.Throws<ArgumentOutOfRangeException>(() => SourceText.From("a").GetLine(-1)).ParamName);
+
+        // The end of the text is a position a span can finish at; anything past it indexes no character.
+        Assert.Equal("position", Assert.Throws<ArgumentOutOfRangeException>(() => SourceText.From("a").GetLine(2)).ParamName);
     }
 
     [Fact]
@@ -127,7 +130,7 @@ public sealed class SourceTextTests
         const string Text = "one\r\ntwo\n\nthree\rfour\n";
         var source = SourceText.From(Text);
 
-        for (var position = 0; position <= Text.Length + 5; position++)
+        for (var position = 0; position <= Text.Length; position++)
         {
             Assert.Equal(LastLineStartingAtOrBefore(source, position), source.GetLine(position));
         }

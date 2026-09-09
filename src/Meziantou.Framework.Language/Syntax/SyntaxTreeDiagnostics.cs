@@ -11,7 +11,16 @@ namespace Meziantou.Framework.Language.Syntax;
 /// </remarks>
 internal static class SyntaxTreeDiagnostics
 {
+    /// <summary>Returns every diagnostic at or below <paramref name="node"/>, in source order.</summary>
+    /// <remarks>
+    /// The walk cannot produce them in order on its own: a node's own diagnostic is found before its children are
+    /// visited, yet its offset may fall after theirs. They are ordered by position afterwards, which is stable, so
+    /// two diagnostics at the same position keep the order the walk found them in.
+    /// </remarks>
     public static IEnumerable<Diagnostic> Enumerate(GreenNode? node, int position, SourceText? sourceText)
+        => Walk(node, position, sourceText).OrderBy(diagnostic => diagnostic.Location.SourceSpan.Start);
+
+    private static IEnumerable<Diagnostic> Walk(GreenNode? node, int position, SourceText? sourceText)
     {
         if (node is null || !node.ContainsDiagnostics)
             yield break;

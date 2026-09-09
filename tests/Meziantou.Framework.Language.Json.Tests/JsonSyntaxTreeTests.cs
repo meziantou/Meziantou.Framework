@@ -589,6 +589,40 @@ public sealed class JsonSyntaxTreeTests
         Assert.Equal("""{"b":2,"d":4}""", updated.ToFullString());
     }
 
+    /// <summary>
+    /// Trivia kept from a removed member belongs where that member was, not where the first removal happened.
+    /// </summary>
+    [Fact]
+    public void RemoveNodes_KeepsEachRemovedMembersTriviaWhereItWas()
+    {
+        const string Text = """
+            {
+              // about a
+              "a": 1,
+              "b": 2,
+              // about c
+              "c": 3,
+              "d": 4
+            }
+            """;
+        var tree = JsonSyntaxTree.ParseText(Text);
+        var members = Assert.IsType<JsonObjectSyntax>(tree.GetRoot().Value).Members;
+
+        var updated = tree.GetRoot().RemoveNodes([members[0], members[2]], SyntaxRemoveOptions.KeepLeadingTrivia);
+        var result = updated.ToFullString();
+
+        // Each comment moves onto the member that now stands where the one it described was.
+        Assert.True(
+            result.IndexOf("// about a", StringComparison.Ordinal) < result.IndexOf("\"b\"", StringComparison.Ordinal),
+            result);
+        Assert.True(
+            result.IndexOf("\"b\"", StringComparison.Ordinal) < result.IndexOf("// about c", StringComparison.Ordinal),
+            result);
+        Assert.True(
+            result.IndexOf("// about c", StringComparison.Ordinal) < result.IndexOf("\"d\"", StringComparison.Ordinal),
+            result);
+    }
+
     [Fact]
     public void RemoveNode_LeavesTheDocumentReadableAndItsSpansConsistent()
     {

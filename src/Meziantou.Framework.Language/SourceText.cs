@@ -42,9 +42,15 @@ public sealed class SourceText
     }
 
     /// <summary>Gets the line containing the specified character position.</summary>
+    /// <remarks>
+    /// <paramref name="position"/> may be <see cref="Length"/>, which is where a span that runs to the end of the
+    /// text finishes; anything past that indexes no character and is rejected rather than reported as the last line.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="position"/> is negative or past the end.</exception>
     public TextLine GetLine(int position)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(position);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(position, Length);
 
         // A line's End stops before its line break, so a position is matched against where the next line starts
         // instead. Testing against End would put the second half of a CRLF on the following line. The answer is

@@ -220,37 +220,55 @@ public static class SyntaxNodeExtensions
             }
         }
 
-        var removed = new List<GreenNode>();
+        // Each run of adjacent removals keeps its trivia where it was, on whatever now stands in its place. Pooling
+        // the trivia of every removal in the list and attaching it at the first gap would carry the trivia of a later
+        // node backwards, past siblings that were not removed at all.
         var kept = new List<GreenNode?>();
-        var insertionIndex = -1;
-        for (var i = 0; i < items.Length; i++)
+        var run = new List<GreenNode>();
+        var attachments = new List<(int Index, GreenNode Residual)>();
+        for (var i = 0; i <= items.Length; i++)
         {
-            if (removing.Contains(i))
+            if (i < items.Length && removing.Contains(i))
             {
                 if (items[i] is { } item)
                 {
-                    removed.Add(item);
+                    run.Add(item);
                 }
 
-                insertionIndex = insertionIndex < 0 ? kept.Count : insertionIndex;
                 continue;
             }
 
-            kept.Add(items[i]);
+            if (run.Count > 0)
+            {
+                if (SyntaxNodeRemover.ResidualTrivia([.. run], options, parent.Green) is { } runResidual)
+                {
+                    attachments.Add((kept.Count, runResidual));
+                }
+
+                run.Clear();
+            }
+
+            if (i < items.Length)
+            {
+                kept.Add(items[i]);
+            }
         }
 
-        var residual = SyntaxNodeRemover.ResidualTrivia(removed, options, parent.Green);
-        if (residual is not null && insertionIndex >= 0)
+        // Only a run with nothing left beside it can have trivia to hand upward, and there is at most one of those.
+        GreenNode? residual = null;
+        foreach (var (index, runResidual) in attachments)
         {
-            if (insertionIndex < kept.Count)
+            if (index < kept.Count)
             {
-                kept[insertionIndex] = SyntaxNodeRemover.PrependLeadingTrivia(kept[insertionIndex]!, residual);
-                residual = null;
+                kept[index] = SyntaxNodeRemover.PrependLeadingTrivia(kept[index]!, runResidual);
             }
             else if (kept.Count > 0)
             {
-                kept[^1] = SyntaxNodeRemover.AppendTrailingTrivia(kept[^1]!, residual);
-                residual = null;
+                kept[^1] = SyntaxNodeRemover.AppendTrailingTrivia(kept[^1]!, runResidual);
+            }
+            else
+            {
+                residual = runResidual;
             }
         }
 

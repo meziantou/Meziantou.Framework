@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Language;
 
 /// <summary>What to do with the trivia around a node that is being removed.</summary>
 /// <remarks>
-/// A node's leading and trivia would normally disappear with it, which quietly throws away any comment sitting in
+/// A node's leading and trailing trivia would normally disappear with it, which quietly throws away any comment sitting in
 /// front of it. These say what to keep instead. Whatever is kept moves onto whatever now stands where the node was:
 /// the thing that follows it, or the thing before it when nothing follows.
 /// </remarks>

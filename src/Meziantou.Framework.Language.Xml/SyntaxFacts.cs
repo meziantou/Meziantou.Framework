@@ -4,6 +4,10 @@ namespace Meziantou.Framework.Language.Xml;
 public static class SyntaxFacts
 {
     /// <summary>Returns the text a kind is always spelled with, or an empty string when its text varies.</summary>
+    /// <remarks>
+    /// This is the canonical spelling. A document may write <c>&lt;?xml</c> and <c>&lt;!DOCTYPE</c> in any case, and
+    /// the token then carries what the document said; a token built from a kind alone gets the spelling here.
+    /// </remarks>
     public static string GetText(SyntaxKind kind) => kind switch
     {
         SyntaxKind.LessThanToken => "<",
@@ -14,11 +18,13 @@ public static class SyntaxFacts
         SyntaxKind.SingleQuoteToken => "'",
         SyntaxKind.DoubleQuoteToken => "\"",
         SyntaxKind.LessThanQuestionToken => "<?",
+        SyntaxKind.LessThanQuestionXmlToken => "<?xml",
         SyntaxKind.QuestionGreaterThanToken => "?>",
         SyntaxKind.XmlCommentStartToken => "<!--",
         SyntaxKind.XmlCommentEndToken => "-->",
         SyntaxKind.CDataStartToken => "<![CDATA[",
         SyntaxKind.CDataEndToken => "]]>",
+        SyntaxKind.DocumentTypeStartToken => "<!DOCTYPE",
         _ => "",
     };
 

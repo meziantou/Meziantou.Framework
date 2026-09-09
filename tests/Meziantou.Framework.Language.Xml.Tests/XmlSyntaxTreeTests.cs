@@ -792,6 +792,7 @@ public sealed class XmlSyntaxTreeTests
         "", "plain text", "<root><a></root>", "</a>", "<a><!--x", "<1bad>", "<a><![CDATA[d",
         "<?xml version", "<?pi", "<!DOCTYPE html", "<a b>", "<a b=c>x</a>", "<a @@@>", "<a></a >",
         "<a></a junk>", "<a>&amp;</a>", "<a b='1' c=\"2\" />", "<a\n  b='1'\n/>", "<!DOCTYPE a [<!ENTITY x \"y\">]><a/>",
+        "<a\u00B7b/>", "<\U00010330 x\u0300='1'/>", "<\u00AA/>", "</\U00010330>", "<?\U00010330 d?>", "<!DOCTYPE \U00010330>",
     };
 
     [Theory]
@@ -824,6 +825,71 @@ public sealed class XmlSyntaxTreeTests
             var damaged = text.Remove(index, 1);
             Assert.Equal(damaged, XmlSyntaxTree.ParseText(damaged).GetRoot().ToFullString());
         }
+    }
+
+    /// <summary>
+    /// Names follow the XML NameStartChar and NameChar productions rather than "is it a Unicode letter", which is a
+    /// different set in both directions.
+    /// </summary>
+    [Theory]
+    // The middle dot and the combining marks may appear in a name, though not start one.
+    [InlineData("<a\u00B7b/>", "a\u00B7b")]
+    [InlineData("<a\u0300/>", "a\u0300")]
+    [InlineData("<a\u203F b/>", "a\u203F")]
+    // A name may hold a character from outside the basic plane, written as a surrogate pair.
+    [InlineData("<\U00010330/>", "\U00010330")]
+    [InlineData("<a\U00010330b/>", "a\U00010330b")]
+    // Ordinary names still work.
+    [InlineData("<a:b-c.d/>", "a:b-c.d")]
+    [InlineData("<_x/>", "_x")]
+    public void ElementNamesFollowTheXmlNameProductions(string text, string expectedName)
+    {
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        var element = Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().Nodes[0]);
+        Assert.Equal(expectedName, element.Name);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    [Theory]
+    // A digit, the middle dot, and a combining mark may follow a name character but not begin one.
+    [InlineData("<1bad/>")]
+    [InlineData("<\u00B7bad/>")]
+    [InlineData("<\u0300bad/>")]
+    // These are Unicode letters that the XML productions leave out.
+    [InlineData("<\u00AA/>")]
+    [InlineData("<\u00B5/>")]
+    public void AnElementNameThatCannotStartIsSkippedText(string text)
+    {
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        Assert.IsType<XmlSkippedTextSyntax>(tree.GetRoot().Nodes[0]);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    /// <summary>
+    /// A lone surrogate is not a scalar value, so it can be no part of a name. It is built here rather than passed
+    /// as test data, which would replace it with U+FFFD -- a character XML does allow in a name.
+    /// </summary>
+    [Fact]
+    public void AnElementNameCannotStartWithALoneSurrogate()
+    {
+        var text = "<" + (char)0xD800 + "/>";
+        var tree = XmlSyntaxTree.ParseText(text);
+
+        Assert.IsType<XmlSkippedTextSyntax>(tree.GetRoot().Nodes[0]);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void AttributeNamesFollowTheXmlNameProductionsToo()
+    {
+        const string Text = "<root a\u00B7b='1' \U00010330='2' />";
+        var tree = XmlSyntaxTree.ParseText(Text);
+
+        var element = Assert.IsType<XmlEmptyElementSyntax>(tree.GetRoot().Nodes[0]);
+        Assert.Equal(["a\u00B7b", "\U00010330"], element.Attributes.Select(attribute => attribute.Name));
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
     }
 
     [Fact]

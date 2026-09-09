@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 using Meziantou.Framework.Language.InternalSyntax;
 using GreenToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
 
@@ -140,7 +141,7 @@ internal sealed class LanguageParser
                 return new XmlDeclarationSyntax(startToken, SyntaxFactory.List(CollectionsMarshal.AsSpan(attributes)), SyntaxFactory.Token(trivia, SyntaxKind.QuestionGreaterThanToken));
             }
 
-            if (IsAtEnd || !SyntaxFacts.IsNameStartCharacter(Current))
+            if (!IsAtNameStart())
             {
                 // Nothing here can be read as a pseudo-attribute, so the whole declaration is kept as skipped text.
                 _position = _text.Length;
@@ -169,10 +170,7 @@ internal sealed class LanguageParser
         var startToken = SyntaxFactory.Token(SyntaxKind.LessThanQuestionToken);
         var trivia = LexTagTrivia(limit: end);
         var nameStart = _position;
-        while (_position < end && SyntaxFacts.IsNameCharacter(Current))
-        {
-            _position++;
-        }
+        SkipNameCharacters(end);
 
         var nameToken = _position > nameStart
             ? SyntaxFactory.Token(trivia, SyntaxKind.IdentifierToken, _text[nameStart.._position])
@@ -193,10 +191,7 @@ internal sealed class LanguageParser
 
         var trivia = LexTagTrivia();
         var nameStart = _position;
-        while (!IsAtEnd && SyntaxFacts.IsNameCharacter(Current))
-        {
-            _position++;
-        }
+        SkipNameCharacters();
 
         var nameToken = _position > nameStart
             ? SyntaxFactory.Token(trivia, SyntaxKind.IdentifierToken, _text[nameStart.._position])
@@ -263,10 +258,7 @@ internal sealed class LanguageParser
 
         var trivia = LexTagTrivia();
         var nameStart = _position;
-        while (!IsAtEnd && SyntaxFacts.IsNameCharacter(Current))
-        {
-            _position++;
-        }
+        SkipNameCharacters();
 
         var name = _text[nameStart.._position];
         var nameToken = name.Length > 0
@@ -324,7 +316,7 @@ internal sealed class LanguageParser
     {
         var start = _position;
         _position++;
-        if (IsAtEnd || !SyntaxFacts.IsNameStartCharacter(Current))
+        if (!IsAtNameStart())
         {
             AddNode(ParseSkippedText(start, "Invalid start tag."));
 
@@ -333,10 +325,7 @@ internal sealed class LanguageParser
 
         var lessThanToken = SyntaxFactory.Token(SyntaxKind.LessThanToken);
         var nameStart = _position;
-        while (!IsAtEnd && SyntaxFacts.IsNameCharacter(Current))
-        {
-            _position++;
-        }
+        SkipNameCharacters();
 
         var name = _text[nameStart.._position];
         var nameToken = SyntaxFactory.Token(leading: null, SyntaxKind.IdentifierToken, name);
@@ -362,7 +351,7 @@ internal sealed class LanguageParser
                 return;
             }
 
-            if (IsAtEnd || !SyntaxFacts.IsNameStartCharacter(Current))
+            if (!IsAtNameStart())
             {
                 // The tag cannot be read any further, so the whole of it is kept as skipped text -- which is what the
                 // attributes read so far become part of again.
@@ -379,10 +368,7 @@ internal sealed class LanguageParser
     private XmlAttributeSyntax ParseAttribute(GreenNode? leadingTrivia)
     {
         var nameStart = _position;
-        while (!IsAtEnd && SyntaxFacts.IsNameCharacter(Current))
-        {
-            _position++;
-        }
+        SkipNameCharacters();
 
         var nameToken = SyntaxFactory.Token(leadingTrivia, SyntaxKind.IdentifierToken, _text[nameStart.._position]);
 
@@ -464,6 +450,58 @@ internal sealed class LanguageParser
 
     private XmlSkippedTextSyntax SkippedText(int start, int end)
         => new(SyntaxFactory.BadToken(leading: null, _text[start..end]));
+
+    /// <summary>Determines whether an XML name begins at the reading position.</summary>
+    private bool IsAtNameStart() => TryReadScalar(_position, out var scalar, out _) && SyntaxFacts.IsNameStartCharacter(scalar);
+
+    /// <summary>Advances past the name characters at the reading position.</summary>
+    /// <remarks>
+    /// A name character may sit outside the basic plane, so the scan moves in scalar values rather than in UTF-16
+    /// units. It does not require the first one to be a name <em>start</em> character: a tag whose name begins with a
+    /// digit is malformed, and reading it anyway is what keeps the document round-tripping.
+    /// </remarks>
+    private void SkipNameCharacters(int limit = int.MaxValue)
+    {
+        var end = Math.Min(limit, _text.Length);
+        while (_position < end && TryReadScalar(_position, out var scalar, out var length) && _position + length <= end && SyntaxFacts.IsNameCharacter(scalar))
+        {
+            _position += length;
+        }
+    }
+
+    /// <summary>Reads the scalar value at <paramref name="position"/>, and how many UTF-16 units it took.</summary>
+    /// <remarks>A lone surrogate is not a scalar value at all, so it can be no part of a name.</remarks>
+    private bool TryReadScalar(int position, out Rune scalar, out int length)
+    {
+        if (position >= _text.Length)
+        {
+            scalar = default;
+            length = 0;
+
+            return false;
+        }
+
+        var first = _text[position];
+        if (!char.IsSurrogate(first))
+        {
+            scalar = new Rune(first);
+            length = 1;
+
+            return true;
+        }
+
+        if (position + 1 < _text.Length && Rune.TryCreate(first, _text[position + 1], out scalar))
+        {
+            length = 2;
+
+            return true;
+        }
+
+        scalar = default;
+        length = 0;
+
+        return false;
+    }
 
     /// <summary>Claims the whitespace at the reading position, which inside a tag is trivia.</summary>
     private GreenNode? LexTagTrivia(int limit = int.MaxValue)

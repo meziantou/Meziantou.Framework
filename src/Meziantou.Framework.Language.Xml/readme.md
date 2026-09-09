@@ -222,5 +222,6 @@ edit expressed as text can change how everything after it reads.
 Nodes are shared between the trees an edit produces, so holding several versions of a document costs little more
 than holding one.
 
-This is a parser, not a validator. It reads the shape of a document without resolving entities, applying a schema, or
-checking that a name is well-formed beyond what it takes to read the tag.
+This is a parser, not a validator. It reads the shape of a document without resolving entities or applying a schema.
+Names do follow XML's own `NameStartChar` and `NameChar` productions, so a name may hold a combining mark, a middle
+dot, or a character from outside the basic plane, and a Unicode letter XML leaves out — `ª`, say — does not start one.

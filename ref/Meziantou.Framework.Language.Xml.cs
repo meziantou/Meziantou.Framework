@@ -60,8 +60,8 @@ namespace Meziantou.Framework.Language.Xml
     {
         public static string GetText(Meziantou.Framework.Language.Xml.SyntaxKind kind) => throw null;
         public static bool IsTrivia(Meziantou.Framework.Language.Xml.SyntaxKind kind) => throw null;
-        public static bool IsNameStartCharacter(char value) => throw null;
-        public static bool IsNameCharacter(char value) => throw null;
+        public static bool IsNameStartCharacter(System.Text.Rune value) => throw null;
+        public static bool IsNameCharacter(System.Text.Rune value) => throw null;
     }
 
     public enum SyntaxKind

@@ -2053,7 +2053,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             case SpecialType.System_UIntPtr:
                 return true;
             default:
-                return false;
+                return GetIeee754TypeName(underlying) is not null;
         }
     }
 

@@ -321,6 +321,12 @@ C: plain
 | `YamlSerializableAttribute` | context | Declares a root type for source generation. |
 | `YamlSourceGenerationOptionsAttribute` | context | Configures a generated context. |
 
+`YamlNumberHandlingAttribute` applies to `byte`, `sbyte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `nint`,
+`nuint`, `float`, `double`, `decimal`, and, on `net11.0`, `BFloat16`, `Decimal32`, `Decimal64`, and `Decimal128`, plus
+their `Nullable<T>` counterparts. `AllowNamedFloatingPointLiterals` reads and writes the quoted `NaN`, `Infinity`, and
+`-Infinity` literals for the floating-point types instead of the `.nan`, `.inf`, and `-.inf` scalars of the YAML core
+schema; it has no effect on the integer types.
+
 ### Naming policies
 
 `YamlNamingPolicyAttribute` overrides `YamlSerializerOptions.PropertyNamingPolicy`. On a type it applies to every

@@ -249,7 +249,7 @@ public sealed class RegexReviewFeedbackTests
     {
         var tree = RegexSyntaxTree.ParseJavaScriptLiteral("/ab/gi");
 
-        var updated = tree.WithChanges(new RegexTextChange(new TextSpan(3, 0), "c"));
+        var updated = tree.WithChanges(new TextChange(new TextSpan(3, 0), "c"));
 
         Assert.Equal("/abc/gi", updated.Text);
         Assert.True(updated.Root.IsJavaScriptLiteral);

@@ -5,12 +5,12 @@ namespace Meziantou.Framework.Language.Regex;
 /// <summary>Represents an immutable regular-expression syntax tree with source text and diagnostics.</summary>
 public sealed class RegexSyntaxTree
 {
-    private readonly List<RegexDiagnostic> _diagnostics;
+    private readonly List<Diagnostic> _diagnostics;
 
-    private RegexSyntaxTree(string text, RegexParseOptions options, RegexPatternSyntax root, List<RegexDiagnostic> diagnostics, IReadOnlyList<RegexCaptureInfo> captures, RegexPatternOptions patternOptions)
+    private RegexSyntaxTree(SourceText sourceText, RegexParseOptions options, RegexPatternSyntax root, List<Diagnostic> diagnostics, IReadOnlyList<RegexCaptureInfo> captures, RegexPatternOptions patternOptions)
     {
-        Text = text;
-        SourceText = SourceText.From(text);
+        Text = sourceText.Text;
+        SourceText = sourceText;
         Options = options;
         Root = root;
         Captures = captures;
@@ -32,13 +32,13 @@ public sealed class RegexSyntaxTree
     public RegexPatternOptions PatternOptions { get; }
 
     public RegexPatternSyntax Root { get; }
-    public IReadOnlyList<RegexDiagnostic> Diagnostics => _diagnostics;
+    public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
 
     /// <summary>The capture groups the pattern declares, in the order the engine numbers them.</summary>
     public IReadOnlyList<RegexCaptureInfo> Captures { get; }
 
     public RegexPatternSyntax GetRoot() => Root;
-    public IReadOnlyList<RegexDiagnostic> GetDiagnostics() => Diagnostics;
+    public IReadOnlyList<Diagnostic> GetDiagnostics() => Diagnostics;
 
     /// <summary>Parses <paramref name="pattern"/> as a complete pattern. Never throws; problems are reported as diagnostics.</summary>
     public static RegexSyntaxTree ParseText([StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexDialect dialect)
@@ -74,28 +74,32 @@ public sealed class RegexSyntaxTree
 
     private static RegexSyntaxTree Parse(string text, RegexParseOptions options, JavaScriptLiteral? literal)
     {
+        // Built once and shared by both passes and the tree, so a diagnostic's location points at the same source
+        // text instance the tree exposes.
+        var source = SourceText.From(text);
+
         // A pattern is numbered before it is parsed, because a backreference may name a group declared after it. The
         // numbering walk is the same parser over the same text, so the two cannot disagree about where the groups are.
-        var captureTable = CreateParser(text, options, literal).CollectCaptureTable();
+        var captureTable = CreateParser(source, options, literal).CollectCaptureTable();
 
-        var parser = CreateParser(text, options, literal);
+        var parser = CreateParser(source, options, literal);
         var root = parser.ParsePattern(captureTable);
 
-        return new RegexSyntaxTree(text, options, root, [.. parser.Diagnostics], parser.Captures, options.PatternOptions);
+        return new RegexSyntaxTree(source, options, root, [.. parser.Diagnostics], parser.Captures, options.PatternOptions);
     }
 
     /// <summary>The dialect family selects the parser; dialect features handle the differences within a family.</summary>
-    private static RegexParser CreateParser(string text, RegexParseOptions options, JavaScriptLiteral? literal) => options.Dialect.Family switch
+    private static RegexParser CreateParser(SourceText source, RegexParseOptions options, JavaScriptLiteral? literal) => options.Dialect.Family switch
     {
-        RegexDialectFamily.JavaScript => new JavaScriptRegexParser(text, options, literal),
-        RegexDialectFamily.Pcre => new PcreRegexParser(text, options),
-        RegexDialectFamily.Posix => new PosixRegexParser(text, options),
-        _ => new NetRegexParser(text, options),
+        RegexDialectFamily.JavaScript => new JavaScriptRegexParser(source, options, literal),
+        RegexDialectFamily.Pcre => new PcreRegexParser(source, options),
+        RegexDialectFamily.Posix => new PosixRegexParser(source, options),
+        _ => new NetRegexParser(source, options),
     };
 
-    public RegexSyntaxTree WithChanges(params RegexTextChange[] changes) => WithChanges((IEnumerable<RegexTextChange>)changes);
+    public RegexSyntaxTree WithChanges(params TextChange[] changes) => WithChanges((IEnumerable<TextChange>)changes);
 
-    public RegexSyntaxTree WithChanges(IEnumerable<RegexTextChange> changes)
+    public RegexSyntaxTree WithChanges(IEnumerable<TextChange> changes)
     {
         ArgumentNullException.ThrowIfNull(changes);
 
@@ -117,7 +121,7 @@ public sealed class RegexSyntaxTree
     /// Returns the edit that turns <paramref name="oldTree"/>'s text into this tree's text. The common prefix and
     /// suffix are trimmed, so an edit in the middle of a pattern reports only the part that actually differs.
     /// </summary>
-    public IReadOnlyList<RegexTextChange> GetChanges(RegexSyntaxTree oldTree)
+    public IReadOnlyList<TextChange> GetChanges(RegexSyntaxTree oldTree)
     {
         ArgumentNullException.ThrowIfNull(oldTree);
 
@@ -151,7 +155,7 @@ public sealed class RegexSyntaxTree
             suffix--;
         }
 
-        return [new RegexTextChange(
+        return [new TextChange(
             TextSpan.FromBounds(prefix, oldText.Length - suffix),
             newText[prefix..(newText.Length - suffix)])];
     }

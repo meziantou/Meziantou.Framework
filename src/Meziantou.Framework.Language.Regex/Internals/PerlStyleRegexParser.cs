@@ -40,8 +40,8 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     /// <summary>Takes the next capture number without noting it.</summary>
     protected override int NextAutoCapture() => _autocap++;
 
-    protected PerlStyleRegexParser(string text, RegexParseOptions parseOptions)
-        : base(text, parseOptions)
+    protected PerlStyleRegexParser(SourceText source, RegexParseOptions parseOptions)
+        : base(source, parseOptions)
     {
     }
 

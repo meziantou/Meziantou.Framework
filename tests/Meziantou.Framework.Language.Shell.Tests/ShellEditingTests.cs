@@ -87,8 +87,8 @@ public sealed class ShellEditingTests
         var tree = ShellSyntaxTree.ParseText("aaa bbb ccc", ShellDialect.Bash);
 
         var updated = tree.WithChanges(
-            new ShellTextChange(new TextSpan(0, 3), "xxx"),
-            new ShellTextChange(new TextSpan(8, 3), "zzz"));
+            new TextChange(new TextSpan(0, 3), "xxx"),
+            new TextChange(new TextSpan(8, 3), "zzz"));
 
         Assert.Equal("xxx bbb zzz", updated.Text);
     }
@@ -168,7 +168,7 @@ public sealed class ShellEditingTests
     public void EditedTree_StillRoundTrips()
     {
         var tree = ShellSyntaxTree.ParseText("# c\nls -la | grep x\n", ShellDialect.Bash);
-        var updated = tree.WithChanges(new ShellTextChange(new TextSpan(4, 2), "cd"));
+        var updated = tree.WithChanges(new TextChange(new TextSpan(4, 2), "cd"));
 
         Assert.Equal(updated.Text, updated.Root.ToFullString());
     }

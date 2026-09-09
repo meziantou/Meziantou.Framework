@@ -77,7 +77,7 @@ Console.WriteLine(tree.Root.ToFullString() == Pattern);   // True
 // Invalid input produces diagnostics instead of exceptions.
 foreach (var diagnostic in tree.Diagnostics)
 {
-    Console.WriteLine($"{diagnostic.Id} at {diagnostic.Span}: {diagnostic.Message}");
+    Console.WriteLine($"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
 }
 ```
 
@@ -203,7 +203,7 @@ Console.WriteLine(updated.ToFullString());   // a   z # keep this
 
 ```csharp
 var tree = RegexSyntaxTree.ParseText("ab+c", RegexDialect.Net);
-var updated = tree.WithChanges(new RegexTextChange(new TextSpan(2, 1), "*"));
+var updated = tree.WithChanges(new TextChange(new TextSpan(2, 1), "*"));
 
 Console.WriteLine(updated.Text);   // ab*c
 ```

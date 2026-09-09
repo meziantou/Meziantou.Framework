@@ -45,7 +45,7 @@ Console.WriteLine(tree.Root.ToFullString() == Script); // True
 // Invalid input produces diagnostics instead of exceptions.
 foreach (var diagnostic in tree.Diagnostics)
 {
-    Console.WriteLine($"{diagnostic.Id} at {diagnostic.Span}: {diagnostic.Message}");
+    Console.WriteLine($"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
 }
 ```
 
@@ -104,7 +104,7 @@ Console.WriteLine(updated.ToFullString()); // echo   new    # keep this
 
 ```csharp
 var tree = ShellSyntaxTree.ParseText("echo old", ShellDialect.Bash);
-var updated = tree.WithChanges(new ShellTextChange(new TextSpan(5, 3), "new"));
+var updated = tree.WithChanges(new TextChange(new TextSpan(5, 3), "new"));
 
 Console.WriteLine(updated.Root.ToFullString()); // echo new
 ```

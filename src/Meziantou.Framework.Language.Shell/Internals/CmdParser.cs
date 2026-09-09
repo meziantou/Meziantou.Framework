@@ -3,8 +3,9 @@ namespace Meziantou.Framework.Language.Shell.Internals;
 /// <summary>Parser for the Windows command interpreter. Never throws; unrecognized text is kept as skipped text.</summary>
 internal sealed partial class CmdParser
 {
+    private readonly SourceText _source;
     private readonly string _text;
-    private readonly List<ShellDiagnostic> _diagnostics = [];
+    private readonly List<Diagnostic> _diagnostics = [];
     private readonly ShellParseOptions _options;
     private readonly List<ShellSyntaxTrivia> _pendingTrivia = [];
     private int _position;
@@ -18,13 +19,14 @@ internal sealed partial class CmdParser
     private bool _stopAtCloseParen;
     private bool _stopAtEquality;
 
-    public CmdParser(string text, ShellParseOptions options)
+    public CmdParser(SourceText source, ShellParseOptions options)
     {
-        _text = text;
+        _source = source;
+        _text = source.Text;
         _options = options;
     }
 
-    public IReadOnlyList<ShellDiagnostic> Diagnostics => _diagnostics;
+    public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
 
     private bool IsAtEnd => _position >= _text.Length;
     private char Current => _position < _text.Length ? _text[_position] : '\0';

@@ -129,14 +129,29 @@ public static class SyntaxFactory
     public static XmlDocumentTypeSyntax DocumentType(string name, string? value = null)
     {
         ArgumentNullException.ThrowIfNull(name);
-        var text = string.IsNullOrEmpty(value) ? $"<!DOCTYPE {name}>" : $"<!DOCTYPE {value}>";
-        return new XmlDocumentTypeSyntax(name, value, text);
+
+        return new XmlDocumentTypeSyntax(name, value, $"<!DOCTYPE {BuildDocumentTypeContent(name, value)}>");
     }
 
     public static XmlSkippedTextSyntax SkippedText(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
         return new XmlSkippedTextSyntax(text);
+    }
+
+    /// <summary>Composes the text inside a document type declaration, which always begins with the name.</summary>
+    /// <remarks>
+    /// The parser sets <see cref="XmlDocumentTypeSyntax.Value"/> to the whole internal content, so a value that
+    /// already starts with the name is the complete content and is used as it stands. One that does not is the part
+    /// that follows the name, and the name is put back in front of it — otherwise the declaration would render
+    /// without the name it was given, which is not valid XML.
+    /// </remarks>
+    private static string BuildDocumentTypeContent(string name, string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return name;
+
+        return XmlDocumentTypeSyntax.StartsWithName(value, name) ? value : name + " " + value;
     }
 
     private static string BuildStartTag(string name, IReadOnlyList<XmlAttributeSyntax> attributes, bool isSelfClosing)

@@ -497,10 +497,12 @@ public sealed class NtpServerTests : IAsyncLifetime
     [Fact]
     public async Task Dispose_StopsListening()
     {
-        // Disposing the server releases its ephemeral port, and another server started by a test running in
-        // parallel -- in this process or in the sibling process running the other target framework -- can bind
-        // that very port and answer the query. Take the port over with a socket that never replies, which also
-        // proves the server released it, and start over on the rare occasion where somebody else won the race.
+        // Every test here binds an ephemeral port, so the port the server just released can be handed to
+        // another server started in parallel -- in this process or in the sibling process running the other
+        // target framework -- which then answers the query and the assertion never fires. Holding the port
+        // with a socket that never replies keeps it out of that pool; the bind also fails if Dispose stopped
+        // releasing the socket, which is the behavior under test, so only retry it a few times before letting
+        // the failure through.
         for (var attempt = 1; ; attempt++)
         {
             var server = new NtpServer(new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback });
@@ -508,23 +510,20 @@ public sealed class NtpServerTests : IAsyncLifetime
             var port = server.Port;
             server.Dispose();
 
-            UdpClient portHolder;
+            using var placeholder = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) { ExclusiveAddressUse = true };
             try
             {
-                portHolder = new UdpClient(new IPEndPoint(IPAddress.Loopback, port));
+                placeholder.Bind(new IPEndPoint(IPAddress.Loopback, port));
             }
             catch (SocketException) when (attempt < 5)
             {
+                // Somebody else won the race for the port before the placeholder could take it over
                 continue;
             }
 
-            using (portHolder)
-            {
-                var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = port, Timeout = TimeSpan.FromSeconds(1) });
+            var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = port, Timeout = TimeSpan.FromSeconds(1) });
 
-                await Assert.ThrowsAnyAsync<Exception>(() => client.QueryAsync(XunitCancellationToken));
-            }
-
+            await Assert.ThrowsAnyAsync<Exception>(() => client.QueryAsync(XunitCancellationToken));
             return;
         }
     }

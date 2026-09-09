@@ -9,8 +9,10 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public sealed class XmlCDataSectionSyntax : XmlSyntaxNode
 {
-    public XmlCDataSectionSyntax(string text, string fullText)
-        : base(XmlSyntaxKind.XmlCDataSection, fullText, [new XmlSyntaxToken(XmlSyntaxKind.CDataToken, text)])
+    private const string OpeningDelimiter = "<![CDATA[";
+
+    public XmlCDataSectionSyntax(string text, string fullText, int fullStart = 0)
+        : base(XmlSyntaxKind.XmlCDataSection, fullText, [new XmlSyntaxToken(XmlSyntaxKind.CDataToken, text, fullStart: GetTextStart(fullText, fullStart))], fullStart)
     {
         Text = text;
     }
@@ -24,6 +26,12 @@ public sealed class XmlCDataSectionSyntax : XmlSyntaxNode
             return this;
 
         return SyntaxFactory.CDataSection(text);
+    }
+
+    /// <summary>Returns where the section text starts, skipping the opening delimiter when the node carries one.</summary>
+    private static int GetTextStart(string fullText, int fullStart)
+    {
+        return fullText.StartsWith(OpeningDelimiter, StringComparison.Ordinal) ? fullStart + OpeningDelimiter.Length : fullStart;
     }
 
     public override void Accept(XmlSyntaxVisitor visitor) => visitor.VisitCDataSection(this);

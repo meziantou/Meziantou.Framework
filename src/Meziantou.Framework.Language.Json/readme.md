@@ -40,7 +40,7 @@ You can also use `WithChanges` for text-based incremental edits:
 
 ```csharp
 var tree = JsonSyntaxTree.ParseText("""{"a":1}""");
-var updated = tree.WithChanges(new JsonTextChange(new TextSpan(5, 1), "2"));
+var updated = tree.WithChanges(new TextChange(new TextSpan(5, 1), "2"));
 
 Console.WriteLine(updated.Root.ToFullString()); // {"a":2}
 ```

@@ -1491,9 +1491,22 @@ static string GetToolHelpText(string csproj, string latestTfm, string? toolName,
         throw new InvalidOperationException($"Process 'dotnet {string.Join(' ', runArgs)}' produced empty help output.");
     }
 
-    if (!string.IsNullOrEmpty(toolName))
+    var projectName = Path.GetFileNameWithoutExtension(csproj);
+    return RewriteUsageCommandName(helpText, projectName, string.IsNullOrEmpty(toolName) ? projectName : toolName);
+}
+
+// System.CommandLine names the root command after the running executable. 'dotnet run' starts the apphost,
+// whose file name has no extension on Unix, so the last segment of the project name (".Tool") gets trimmed off.
+// Only the usage line is rewritten: a description may legitimately mention the library the tool is built on.
+static string RewriteUsageCommandName(string helpText, string projectName, string commandName)
+{
+    string[] candidates = [projectName, Path.GetFileNameWithoutExtension(projectName)];
+    foreach (var candidate in candidates)
     {
-        helpText = helpText.Replace(Path.GetFileNameWithoutExtension(csproj), toolName, StringComparison.Ordinal);
+        var pattern = $@"(?<=^Usage:\r?\n  ){Regex.Escape(candidate)}(?=[ \r\n]|$)";
+        var rewritten = Regex.Replace(helpText, pattern, _ => commandName, RegexOptions.Multiline | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan);
+        if (rewritten != helpText)
+            return rewritten;
     }
 
     return helpText;

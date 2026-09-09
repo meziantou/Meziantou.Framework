@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Language.Regex.Internals;
 /// </remarks>
 internal sealed class RegexScanner
 {
-    private readonly List<RegexDiagnostic> _diagnostics;
+    private readonly List<Diagnostic> _diagnostics;
 
     // A peek is cached so that asking twice costs nothing and, more importantly, does not report the diagnostics of an
     // unterminated comment twice. The cache is keyed on the options as well as the position: an inline option setter
@@ -32,14 +32,16 @@ internal sealed class RegexScanner
     private int _triviaEnd;
     private RegexPatternOptions _triviaOptions;
     private List<RegexSyntaxTrivia>? _triviaCache;
-    private List<RegexDiagnostic>? _triviaDiagnostics;
+    private List<Diagnostic>? _triviaDiagnostics;
 
-    public RegexScanner(string text, List<RegexDiagnostic> diagnostics)
+    public RegexScanner(SourceText source, List<Diagnostic> diagnostics)
     {
-        Text = text;
+        Source = source;
+        Text = source.Text;
         _diagnostics = diagnostics;
     }
 
+    public SourceText Source { get; }
     public string Text { get; }
 
     /// <summary>The first character not yet claimed by a token or by trivia.</summary>
@@ -60,7 +62,7 @@ internal sealed class RegexScanner
     public char CharAt(int index) => index >= 0 && index < Text.Length ? Text[index] : '\0';
 
     public void AddDiagnostic(TextSpan span, string id, string message) =>
-        _diagnostics.Add(new RegexDiagnostic(id, message, RegexDiagnosticSeverity.Error, span));
+        _diagnostics.Add(new Diagnostic(id, message, DiagnosticSeverity.Error, new Location(span, Source)));
 
     /// <summary>Builds a token covering the text from <paramref name="start"/> to the reading position.</summary>
     public RegexSyntaxToken Token(RegexSyntaxKind kind, int start, IReadOnlyList<RegexSyntaxTrivia>? leadingTrivia = null, string? valueText = null)
@@ -190,6 +192,6 @@ internal sealed class RegexScanner
     private void AddDiagnosticToPeek(TextSpan span, string id, string message)
     {
         _triviaDiagnostics ??= [];
-        _triviaDiagnostics.Add(new RegexDiagnostic(id, message, RegexDiagnosticSeverity.Error, span));
+        _triviaDiagnostics.Add(new Diagnostic(id, message, DiagnosticSeverity.Error, new Location(span, Source)));
     }
 }

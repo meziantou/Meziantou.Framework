@@ -7,8 +7,8 @@ namespace Meziantou.Framework.Language.Regex.Internals;
 /// </remarks>
 internal sealed class NetRegexParser : PerlStyleRegexParser
 {
-    public NetRegexParser(string text, RegexParseOptions parseOptions)
-        : base(text, parseOptions)
+    public NetRegexParser(SourceText source, RegexParseOptions parseOptions)
+        : base(source, parseOptions)
     {
     }
 

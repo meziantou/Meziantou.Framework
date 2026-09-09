@@ -6,15 +6,17 @@ namespace Meziantou.Framework.Language.Shell.Internals;
 /// </summary>
 internal sealed class PowerShellLexer
 {
-    private readonly List<ShellDiagnostic> _diagnostics;
+    private readonly List<Diagnostic> _diagnostics;
 
-    public PowerShellLexer(string text, ShellDialect dialect, List<ShellDiagnostic> diagnostics)
+    public PowerShellLexer(SourceText source, ShellDialect dialect, List<Diagnostic> diagnostics)
     {
-        Text = text;
+        Source = source;
+        Text = source.Text;
         Dialect = dialect;
         _diagnostics = diagnostics;
     }
 
+    public SourceText Source { get; }
     public string Text { get; }
     public ShellDialect Dialect { get; }
     public int Position { get; set; }
@@ -119,7 +121,7 @@ internal sealed class PowerShellLexer
 
     public void AddDiagnostic(int start, int length, string id, string message)
     {
-        _diagnostics.Add(new ShellDiagnostic(id, message, ShellDiagnosticSeverity.Error, new TextSpan(start, Math.Max(0, length))));
+        _diagnostics.Add(new Diagnostic(id, message, DiagnosticSeverity.Error, new Location(new TextSpan(start, Math.Max(0, length)), Source)));
     }
 
     private void Add(ref List<ShellSyntaxTrivia>? trivia, ShellSyntaxKind kind, int start)

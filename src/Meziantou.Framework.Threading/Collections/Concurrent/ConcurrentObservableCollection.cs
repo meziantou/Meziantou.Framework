@@ -23,6 +23,7 @@ namespace Meziantou.Framework.Collections.Concurrent;
 public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, IList
 {
     private readonly SynchronizationContext _synchronizationContext;
+    private readonly Thread? _synchronizationContextThread;
     private readonly Lock _lock = new();
 
     private ImmutableList<T> _items = ImmutableList<T>.Empty;
@@ -53,6 +54,25 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     public ConcurrentObservableCollection(SynchronizationContext synchronizationContext)
     {
         _synchronizationContext = synchronizationContext ?? throw new ArgumentNullException(nameof(synchronizationContext));
+
+        // WPF and Windows Forms install a new SynchronizationContext instance for the same thread: WPF hands out a new
+        // DispatcherSynchronizationContext bound to the same Dispatcher while running a dispatcher operation, so comparing
+        // the instances reports the UI thread as a foreign thread. Both contexts run their callbacks on a single thread,
+        // so the thread they are installed on identifies them. A SynchronizationContext is not thread-affine in general
+        // (its callbacks can run on any thread), so every other context keeps the instance comparison.
+        if (IsThreadAffine(synchronizationContext) && SynchronizationContext.Current == synchronizationContext)
+        {
+            _synchronizationContextThread = Thread.CurrentThread;
+        }
+    }
+
+    private static bool IsThreadAffine(SynchronizationContext synchronizationContext)
+    {
+        // The assembly doesn't depend on a UI framework, so the types cannot be used directly. Both are sealed,
+        // so comparing the type name is enough. Override IsOnSynchronizationContextThread to support another
+        // thread-affine synchronization context.
+        return synchronizationContext.GetType().FullName is "System.Windows.Threading.DispatcherSynchronizationContext" // WPF
+            or "System.Windows.Forms.WindowsFormsSynchronizationContext"; // Windows Forms
     }
 
     private static SynchronizationContext GetCurrentSynchronizationContext()
@@ -65,9 +85,14 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     /// When it is, change notifications are raised synchronously instead of being posted to <see cref="SynchronizationContext"/>.
     /// </summary>
     /// <returns><see langword="true"/> when the current thread can raise the notifications directly; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// The current thread is considered to be the right one when it runs the <see cref="SynchronizationContext"/> provided to the
+    /// constructor. The WPF and Windows Forms synchronization contexts are also matched by thread, as they run their callbacks on a
+    /// single thread but expose several instances for it. Override this method to support another thread-affine context.
+    /// </remarks>
     protected internal virtual bool IsOnSynchronizationContextThread()
     {
-        return SynchronizationContext.Current == _synchronizationContext;
+        return SynchronizationContext.Current == _synchronizationContext || _synchronizationContextThread == Thread.CurrentThread;
     }
 
     /// <summary>

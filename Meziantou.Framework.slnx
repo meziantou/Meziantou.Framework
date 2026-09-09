@@ -269,6 +269,7 @@
     <Project Path="tests/Meziantou.Framework.Tests/Meziantou.Framework.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.TextDiff.Tests/Meziantou.Framework.TextDiff.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Threading.Tests/Meziantou.Framework.Threading.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Threading.Windows.Tests/Meziantou.Framework.Threading.Windows.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.TypeConverter.Tests/Meziantou.Framework.TypeConverter.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.UndoRedo.Tests/Meziantou.Framework.UndoRedo.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Unicode.Tests/Meziantou.Framework.Unicode.Tests.csproj" />

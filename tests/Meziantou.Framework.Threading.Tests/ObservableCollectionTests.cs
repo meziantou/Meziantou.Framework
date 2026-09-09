@@ -29,6 +29,22 @@ public sealed partial class ObservableCollectionTests : IDisposable
         BuiltIn,
     }
 
+    public enum UISynchronizationContextKind
+    {
+        Wpf,
+        WindowsForms,
+    }
+
+    private static SynchronizationContext CreateUISynchronizationContext(UISynchronizationContextKind kind)
+    {
+        return kind switch
+        {
+            UISynchronizationContextKind.Wpf => new System.Windows.Threading.DispatcherSynchronizationContext(),
+            UISynchronizationContextKind.WindowsForms => new System.Windows.Forms.WindowsFormsSynchronizationContext(),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+        };
+    }
+
     public static IEnumerable<object[]> GetCollections
     {
         get
@@ -317,6 +333,59 @@ public sealed partial class ObservableCollectionTests : IDisposable
         var thread = new Thread(() => Assert.Throws<InvalidOperationException>(() => observable.Count));
         thread.Start();
         thread.Join();
+    }
+
+    [Theory]
+    [InlineData(UISynchronizationContextKind.Wpf)]
+    [InlineData(UISynchronizationContextKind.WindowsForms)]
+    public void ObservableCollectionCanBeAccessedWhenTheUISynchronizationContextInstanceChanged(UISynchronizationContextKind kind)
+    {
+        // WPF installs a new DispatcherSynchronizationContext instance bound to the same Dispatcher while running a
+        // dispatcher operation, so the UI thread must be recognized even when the instance is not the captured one.
+        var context = CreateUISynchronizationContext(kind);
+        SynchronizationContext.SetSynchronizationContext(context);
+
+        var collection = new ConcurrentObservableCollection<int>(context);
+        var observable = collection.AsObservable;
+        using var eventAssert = new EventAssert(observable);
+
+        SynchronizationContext.SetSynchronizationContext(CreateUISynchronizationContext(kind));
+        collection.Add(1);
+
+        Assert.Equal([1], observable.ToList());
+        eventAssert.AssertPropertyChanged("Count", "Item[]");
+        eventAssert.AssertCollectionChangedAddItem(1);
+    }
+
+    [Fact]
+    public void ObservableCollectionCannotBeAccessedWhenAnUnknownSynchronizationContextInstanceChanged()
+    {
+        // A SynchronizationContext is not thread-affine in general, so a context that is not a known UI one is
+        // still matched by instance: running on the thread it was installed on doesn't mean it runs the callbacks
+        var collection = CreateCollection<int>();
+        var observable = collection.AsObservable;
+
+        SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+
+        Assert.Throws<InvalidOperationException>(() => observable.Count);
+    }
+
+    [Fact]
+    public void CollectionCreatedWithoutSynchronizationContextIsNotBoundToTheCreatingThread()
+    {
+        var previousSynchronizationContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(null);
+        try
+        {
+            // The default SynchronizationContext raises the notifications on the thread pool, so no thread owns the collection
+            var observable = new ConcurrentObservableCollection<int>().AsObservable;
+
+            Assert.Throws<InvalidOperationException>(() => observable.Count);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+        }
     }
 
     private sealed class QueuedSynchronizationContext : SynchronizationContext

@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
+    <!-- The collection is bound to a SynchronizationContext, so it is tested against the real WPF and Windows Forms ones -->
+    <UseWpf>true</UseWpf>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>Meziantou.Framework.Threading.Windows.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Threading/Meziantou.Framework.Threading.csproj" />
+  </ItemGroup>
+
+</Project>

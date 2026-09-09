@@ -43,6 +43,40 @@ public readonly struct SyntaxTrivia : IEquatable<SyntaxTrivia>
     public bool ContainsDiagnostics => _trivia?.ContainsDiagnostics ?? false;
     public bool ContainsAnnotations => _trivia?.ContainsAnnotations ?? false;
 
+    /// <summary>Returns this trivia carrying <paramref name="annotations"/> as well as the ones it already has.</summary>
+    public SyntaxTrivia WithAdditionalAnnotations(params SyntaxAnnotation[] annotations)
+    {
+        ArgumentNullException.ThrowIfNull(annotations);
+
+        return _trivia is null ? this : new SyntaxTrivia(default, _trivia.WithAdditionalAnnotations(annotations), position: 0, index: 0);
+    }
+
+    /// <summary>Returns this trivia without <paramref name="annotations"/>.</summary>
+    public SyntaxTrivia WithoutAnnotations(params SyntaxAnnotation[] annotations)
+    {
+        ArgumentNullException.ThrowIfNull(annotations);
+
+        return _trivia is null ? this : new SyntaxTrivia(default, _trivia.WithoutAnnotations(annotations), position: 0, index: 0);
+    }
+
+    /// <summary>Gets all the annotations of this trivia.</summary>
+    public IEnumerable<SyntaxAnnotation> GetAnnotations() => _trivia?.GetAnnotations() ?? [];
+
+    /// <summary>Gets the annotations of this trivia of the given kind.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="annotationKind"/> is <see langword="null"/>.</exception>
+    public IEnumerable<SyntaxAnnotation> GetAnnotations(string annotationKind)
+    {
+        ArgumentNullException.ThrowIfNull(annotationKind);
+
+        return GetAnnotations().Where(annotation => string.Equals(annotation.Kind, annotationKind, StringComparison.Ordinal));
+    }
+
+    /// <summary>Determines whether this trivia carries <paramref name="annotation"/>.</summary>
+    public bool HasAnnotation(SyntaxAnnotation? annotation) => annotation is not null && _trivia is not null && Array.IndexOf(_trivia.GetAnnotations(), annotation) >= 0;
+
+    /// <summary>Determines whether this trivia carries an annotation of the given kind.</summary>
+    public bool HasAnnotations(string annotationKind) => GetAnnotations(annotationKind).Any();
+
     /// <summary>Returns the text of this trivia.</summary>
     public override string ToString() => (_trivia as GreenTrivia)?.Text ?? string.Empty;
 

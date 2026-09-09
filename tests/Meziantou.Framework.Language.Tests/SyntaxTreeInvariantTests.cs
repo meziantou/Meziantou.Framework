@@ -157,12 +157,30 @@ public sealed class SyntaxTreeInvariantTests
     public void ADeeplyNestedDocument_DoesNotOverflowTheStack()
     {
         const int Depth = 10_000;
-        var text = new string('(', Depth) + "a" + new string(')', Depth);
 
-        var root = TestSyntax.ParseRoot(text);
+        // Built from the inside out rather than parsed, so this measures the shared layer and not the toy parser,
+        // whose own recursion is not what these tests are about.
+        var root = (TestRootSyntax)BuildNesting(Depth).CreateRed();
+        var expected = new string('(', Depth) + "a" + new string(')', Depth);
 
-        Assert.Equal(text, root.ToFullString());
-        Assert.Equal(text.Length, root.FullSpan.Length);
+        Assert.Equal(expected, root.ToFullString());
+        Assert.Equal(expected.Length, root.FullSpan.Length);
+        Assert.HasCount((2 * Depth) + 2, root.DescendantTokens().ToArray());
+
+        // Two trees built the same way, so comparing them has to walk all the way down rather than stopping at a
+        // shared node.
+        Assert.True(root.Green.IsEquivalentTo(BuildNesting(Depth)));
+
+        static InternalSyntax.GreenNode BuildNesting(int depth)
+        {
+            InternalSyntax.GreenNode green = new TestGreen.Atom(TestGreen.Token(TestSyntaxKind.IdentifierToken, "a"));
+            for (var i = 0; i < depth; i++)
+            {
+                green = new TestGreen.List(TestGreen.Token(TestSyntaxKind.OpenParenToken, "("), green, TestGreen.Token(TestSyntaxKind.CloseParenToken, ")"));
+            }
+
+            return new TestGreen.Root(green, TestGreen.Token(TestSyntaxKind.EndOfFileToken, ""));
+        }
     }
 
     [Fact]
@@ -222,6 +240,141 @@ public sealed class SyntaxTreeInvariantTests
         Assert.Equal(0, list.CloseParenToken.FullSpan.Length);
         Assert.Equal(2, list.CloseParenToken.FullSpan.Start);
         Assert.False(list.OpenParenToken.IsMissing);
+    }
+
+    [Theory]
+    [MemberData(nameof(Documents))]
+    public void FindToken_AgreesWithScanningEveryToken(string text)
+    {
+        var root = TestSyntax.ParseRoot(text);
+        var tokens = root.DescendantTokens().ToArray();
+
+        for (var position = 0; position <= text.Length; position++)
+        {
+            var expected = Array.Find(tokens, token => token.FullSpan.Contains(position));
+
+            // Nothing covers the very end of the text, where the zero-width end-of-file token sits.
+            if (expected == default)
+            {
+                expected = tokens[^1];
+            }
+
+            Assert.Equal(expected, root.FindToken(position));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Documents))]
+    public void SteppingForwardFromTheFirstToken_VisitsEveryTokenInOrder(string text)
+    {
+        var root = TestSyntax.ParseRoot(text);
+        var expected = root.DescendantTokens().ToArray();
+
+        var actual = new List<SyntaxToken>();
+        for (var token = root.GetFirstToken(); token != default; token = token.GetNextToken())
+        {
+            actual.Add(token);
+        }
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [MemberData(nameof(Documents))]
+    public void SteppingBackFromTheLastToken_VisitsEveryTokenInReverse(string text)
+    {
+        var root = TestSyntax.ParseRoot(text);
+        var expected = root.DescendantTokens().Reverse().ToArray();
+
+        var actual = new List<SyntaxToken>();
+        for (var token = root.GetLastToken(); token != default; token = token.GetPreviousToken())
+        {
+            actual.Add(token);
+        }
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [MemberData(nameof(Documents))]
+    public void DescendantTokens_AreInSourceOrder(string text)
+    {
+        var root = TestSyntax.ParseRoot(text);
+
+        Assert.Equal(text, string.Concat(root.DescendantTokens().Select(token => token.ToFullString())));
+    }
+
+    [Fact]
+    public void DescendantNodes_ReturnsParentsBeforeChildrenInSourceOrder()
+    {
+        var root = TestSyntax.ParseRoot("(a,(b,c),d)");
+
+        var kinds = root.DescendantNodes().Select(node => $"{((TestSyntaxNode)node).Kind()}:{node}").ToArray();
+
+        Assert.Equal(
+            ["TestList:(a,(b,c),d)", "TestAtom:a", "TestList:(b,c)", "TestAtom:b", "TestAtom:c", "TestAtom:d"],
+            kinds);
+    }
+
+    [Fact]
+    public void DescendantNodes_WithASpan_SkipsWhatDoesNotTouchIt()
+    {
+        const string Text = "(a,(b,c),d)";
+        var root = TestSyntax.ParseRoot(Text);
+        var span = TextSpan.FromBounds(Text.IndexOf('b', StringComparison.Ordinal), Text.IndexOf('c', StringComparison.Ordinal) + 1);
+
+        var nodes = root.DescendantNodes(span).Select(node => node.ToString()).ToArray();
+
+        Assert.Equal(["(a,(b,c),d)", "(b,c)", "b", "c"], nodes);
+    }
+
+    [Fact]
+    public void FindNode_ReturnsTheSmallestNodeCoveringTheSpan()
+    {
+        const string Text = "(a,(b,c),d)";
+        var root = TestSyntax.ParseRoot(Text);
+        var inner = TextSpan.FromBounds(Text.IndexOf('(', 1, StringComparison.Ordinal), Text.IndexOf(')', StringComparison.Ordinal) + 1);
+
+        Assert.Equal("(b,c)", root.FindNode(inner).ToString());
+        Assert.Equal("b", root.FindNode(new TextSpan(Text.IndexOf('b', StringComparison.Ordinal), 1)).ToString());
+    }
+
+    [Fact]
+    public void FindTrivia_ReturnsTheTriviaAtThePositionAndNothingOnATokensOwnText()
+    {
+        const string Text = "( a )";
+        var root = TestSyntax.ParseRoot(Text);
+
+        Assert.Equal(" ", root.FindTrivia(1).ToString());
+        Assert.Equal(" ", root.FindTrivia(3).ToString());
+        Assert.Equal(default, root.FindTrivia(2));
+    }
+
+    [Theory]
+    [MemberData(nameof(Documents))]
+    public void Walker_AtTokenDepth_SeesEveryToken(string text)
+    {
+        var root = TestSyntax.ParseRoot(text);
+        var walker = new CountingWalker(SyntaxWalkerDepth.Trivia);
+
+        walker.Visit(root);
+
+        Assert.Equal(root.DescendantTokens().Count(), walker.TokenCount);
+        Assert.Equal(root.DescendantTrivia().Count(), walker.TriviaCount);
+    }
+
+    private sealed class CountingWalker(SyntaxWalkerDepth depth) : SyntaxWalker(depth)
+    {
+        public int TokenCount { get; private set; }
+        public int TriviaCount { get; private set; }
+
+        protected override void VisitToken(SyntaxToken token)
+        {
+            TokenCount++;
+            base.VisitToken(token);
+        }
+
+        protected override void VisitTrivia(SyntaxTrivia trivia) => TriviaCount++;
     }
 
     private static IEnumerable<SyntaxNode> Descendants(SyntaxNode root)

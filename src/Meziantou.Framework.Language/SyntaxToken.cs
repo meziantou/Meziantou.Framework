@@ -120,6 +120,52 @@ public readonly struct SyntaxToken : IEquatable<SyntaxToken>
         return new SyntaxToken(parent: null, green.WithTrivia((token._token as GreenToken)?.LeadingTrivia, (token._token as GreenToken)?.TrailingTrivia), position: 0, index: 0);
     }
 
+    /// <summary>Returns this token carrying <paramref name="annotations"/> as well as the ones it already has.</summary>
+    public SyntaxToken WithAdditionalAnnotations(params SyntaxAnnotation[] annotations)
+    {
+        ArgumentNullException.ThrowIfNull(annotations);
+
+        return _token is null ? this : new SyntaxToken(parent: null, _token.WithAdditionalAnnotations(annotations), position: 0, index: 0);
+    }
+
+    /// <summary>Returns this token without <paramref name="annotations"/>.</summary>
+    public SyntaxToken WithoutAnnotations(params SyntaxAnnotation[] annotations)
+    {
+        ArgumentNullException.ThrowIfNull(annotations);
+
+        return _token is null ? this : new SyntaxToken(parent: null, _token.WithoutAnnotations(annotations), position: 0, index: 0);
+    }
+
+    /// <summary>Returns this token without any annotation of the given kind.</summary>
+    public SyntaxToken WithoutAnnotations(string annotationKind) => WithoutAnnotations([.. GetAnnotations(annotationKind)]);
+
+    /// <summary>Returns <paramref name="token"/> carrying this token's annotations as well as its own.</summary>
+    public SyntaxToken CopyAnnotationsTo(SyntaxToken token) => _token is null ? token : token.WithAdditionalAnnotations(_token.GetAnnotations());
+
+    /// <summary>Gets all the annotations of this token.</summary>
+    public IEnumerable<SyntaxAnnotation> GetAnnotations() => _token?.GetAnnotations() ?? [];
+
+    /// <summary>Gets the annotations of this token of the given kind.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="annotationKind"/> is <see langword="null"/>.</exception>
+    public IEnumerable<SyntaxAnnotation> GetAnnotations(string annotationKind)
+    {
+        ArgumentNullException.ThrowIfNull(annotationKind);
+
+        return GetAnnotations().Where(annotation => string.Equals(annotation.Kind, annotationKind, StringComparison.Ordinal));
+    }
+
+    /// <summary>Determines whether this token carries <paramref name="annotation"/>.</summary>
+    public bool HasAnnotation(SyntaxAnnotation? annotation) => annotation is not null && _token is not null && Array.IndexOf(_token.GetAnnotations(), annotation) >= 0;
+
+    /// <summary>Determines whether this token carries an annotation of the given kind.</summary>
+    public bool HasAnnotations(string annotationKind) => GetAnnotations(annotationKind).Any();
+
+    /// <summary>Returns the token that comes after this one in the tree, or <see cref="None"/> when there is none.</summary>
+    public SyntaxToken GetNextToken() => Syntax.SyntaxNavigator.GetNextToken(this);
+
+    /// <summary>Returns the token that comes before this one in the tree, or <see cref="None"/> when there is none.</summary>
+    public SyntaxToken GetPreviousToken() => Syntax.SyntaxNavigator.GetPreviousToken(this);
+
     /// <summary>Returns the text of this token, excluding its trivia.</summary>
     public override string ToString() => _token?.ToString() ?? string.Empty;
 

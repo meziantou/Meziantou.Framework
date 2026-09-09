@@ -40,9 +40,6 @@ public abstract class SyntaxNode
     /// <remarks>Each language exposes this as its own <c>SyntaxKind</c> enum through a <c>Kind()</c> method.</remarks>
     public int RawKind => Green.RawKind;
 
-    /// <summary>Gets the name of the language that produced this node.</summary>
-    public string Language => Green.Language;
-
     /// <summary>Gets the node this one is a child of, or <see langword="null"/> when it is the root.</summary>
     public SyntaxNode? Parent { get; }
 
@@ -125,6 +122,67 @@ public abstract class SyntaxNode
 
         return Position + offset;
     }
+
+    /// <summary>Gets the children of this node, with the lists among them flattened away.</summary>
+    public ChildSyntaxList ChildNodesAndTokens() => new(this);
+
+    /// <summary>Returns the first token below this node, or <see cref="SyntaxToken.None"/> when it has none.</summary>
+    public SyntaxToken GetFirstToken()
+    {
+        var node = this;
+        while (true)
+        {
+            SyntaxNode? next = null;
+            foreach (var child in node.ChildNodesAndTokens())
+            {
+                if (child.AsToken(out var token))
+                    return token;
+
+                if (child.AsNode(out var childNode) && childNode.Green.GetFirstTerminal() is not null)
+                {
+                    next = childNode;
+                    break;
+                }
+            }
+
+            if (next is null)
+                return default;
+
+            node = next;
+        }
+    }
+
+    /// <summary>Returns the last token below this node, or <see cref="SyntaxToken.None"/> when it has none.</summary>
+    public SyntaxToken GetLastToken()
+    {
+        var node = this;
+        while (true)
+        {
+            SyntaxNode? next = null;
+            foreach (var child in node.ChildNodesAndTokens().Reverse())
+            {
+                if (child.AsToken(out var token))
+                    return token;
+
+                if (child.AsNode(out var childNode) && childNode.Green.GetLastTerminal() is not null)
+                {
+                    next = childNode;
+                    break;
+                }
+            }
+
+            if (next is null)
+                return default;
+
+            node = next;
+        }
+    }
+
+    /// <summary>Gets the trivia in front of this node, which is the leading trivia of its first token.</summary>
+    public SyntaxTriviaList GetLeadingTrivia() => GetFirstToken().LeadingTrivia;
+
+    /// <summary>Gets the trivia after this node, which is the trailing trivia of its last token.</summary>
+    public SyntaxTriviaList GetTrailingTrivia() => GetLastToken().TrailingTrivia;
 
     /// <summary>Returns the text of this node, excluding the trivia at its outer edges.</summary>
     public override string ToString() => Green.ToString();

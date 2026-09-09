@@ -73,11 +73,12 @@ internal abstract class GreenNode
 
     public int RawKind { get; }
 
-    /// <summary>Gets the name of <see cref="RawKind"/> in the language that produced this node.</summary>
-    public abstract string KindText { get; }
-
-    /// <summary>Gets the name of the language that produced this node.</summary>
-    public abstract string Language { get; }
+    /// <summary>Gets the name of <see cref="RawKind"/>, for diagnostics and the debugger.</summary>
+    /// <remarks>
+    /// Each language overrides this once, on the base class of its own nodes, to return the name of its kind enum
+    /// member. The shared token, trivia, and list types are not tied to a language and keep the numeric default.
+    /// </remarks>
+    public virtual string KindText => RawKind.ToString(CultureInfo.InvariantCulture);
 
     public virtual bool IsToken => false;
     public virtual bool IsTrivia => false;
@@ -120,9 +121,10 @@ internal abstract class GreenNode
     /// <summary>Returns a copy of this node whose slots are <paramref name="slots"/>.</summary>
     /// <remarks>
     /// This is what lets the shared replace machinery rebuild any language's tree without knowing its node types.
-    /// An implementation must consume the slots in the same order <see cref="GetSlot"/> produces them.
+    /// An implementation must consume the slots in the same order <see cref="GetSlot"/> produces them. A list whose
+    /// last child was removed returns <see langword="null"/>, which the caller reads as an empty slot.
     /// </remarks>
-    internal abstract GreenNode WithSlots(ReadOnlySpan<GreenNode?> slots);
+    internal abstract GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots);
 
     public bool ContainsDiagnostics => (_flags & NodeFlags.ContainsDiagnostics) != NodeFlags.None;
     public bool ContainsAnnotations => (_flags & NodeFlags.ContainsAnnotations) != NodeFlags.None;
@@ -244,6 +246,16 @@ internal abstract class GreenNode
 
     /// <summary>Gets the value a token carries, which is its text unless the language decoded something else.</summary>
     internal virtual object? GetValue() => null;
+
+    /// <summary>
+    /// Creates the token a language puts between the elements of a separated list, or <see langword="null"/> when it
+    /// has none.
+    /// </summary>
+    /// <remarks>
+    /// Adding an element to a separated list needs a separator to go with it, and only the language knows what that
+    /// looks like. Each language overrides this once, on the base class of its own nodes.
+    /// </remarks>
+    internal virtual GreenNode? CreateSeparator() => null;
 
     public virtual void WriteTo(TextWriter writer) => WriteTo(writer, leading: true, trailing: true);
 

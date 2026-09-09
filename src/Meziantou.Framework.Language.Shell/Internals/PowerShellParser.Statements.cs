@@ -1,4 +1,9 @@
-namespace Meziantou.Framework.Language.Shell.Internals;
+using System.Runtime.InteropServices;
+using Meziantou.Framework.Language.InternalSyntax;
+using GreenFactory = Meziantou.Framework.Language.Shell.Syntax.InternalSyntax.SyntaxFactory;
+using Red = Meziantou.Framework.Language.Shell;
+
+namespace Meziantou.Framework.Language.Shell.Syntax.InternalSyntax;
 
 /// <summary>PowerShell control flow, declarations, and blocks.</summary>
 internal sealed partial class PowerShellParser
@@ -23,7 +28,7 @@ internal sealed partial class PowerShellParser
             elseClause = new PowerShellElseClauseSyntax(ReadKeywordToken(), ParseScriptBlock());
         }
 
-        return new PowerShellIfStatementSyntax(ifKeyword, openParen, condition, closeParen, body, elseIfClauses, elseClause);
+        return new PowerShellIfStatementSyntax(ifKeyword, openParen, condition, closeParen, body, ParserHelpers.List(elseIfClauses), elseClause);
     }
 
     private PowerShellWhileStatementSyntax ParseWhileStatement()
@@ -47,14 +52,14 @@ internal sealed partial class PowerShellParser
     private PowerShellForStatementSyntax ParseForStatement()
     {
         var forKeyword = ReadKeywordToken();
-        var openParen = ExpectCharacter('(', ShellSyntaxKind.OpenParenToken);
+        var openParen = ExpectCharacter('(', SyntaxKind.OpenParenToken);
 
         var initializer = ParseOptionalClauseExpression();
-        var firstSemicolon = TryReadCharacter(';', ShellSyntaxKind.SemicolonToken);
+        var firstSemicolon = TryReadCharacter(';', SyntaxKind.SemicolonToken);
         var condition = ParseOptionalClauseExpression();
-        var secondSemicolon = TryReadCharacter(';', ShellSyntaxKind.SemicolonToken);
+        var secondSemicolon = TryReadCharacter(';', SyntaxKind.SemicolonToken);
         var iterator = ParseOptionalClauseExpression();
-        var closeParen = ExpectCharacter(')', ShellSyntaxKind.CloseParenToken);
+        var closeParen = ExpectCharacter(')', SyntaxKind.CloseParenToken);
 
         return new PowerShellForStatementSyntax(forKeyword, openParen, initializer, firstSemicolon, condition, secondSemicolon, iterator, closeParen, ParseScriptBlock());
     }
@@ -84,20 +89,20 @@ internal sealed partial class PowerShellParser
         AccumulateInlineTrivia();
 
         return _lexer.Current == '|' && _lexer.Peek(1) != '|'
-            ? ContinuePipeline(new PowerShellExpressionStatementSyntax(expression, []))
+            ? ContinuePipeline(new PowerShellExpressionStatementSyntax(expression, null))
             : expression;
     }
 
     private PowerShellForEachStatementSyntax ParseForEachStatement()
     {
         var forEachKeyword = ReadKeywordToken();
-        var openParen = ExpectCharacter('(', ShellSyntaxKind.OpenParenToken);
+        var openParen = ExpectCharacter('(', SyntaxKind.OpenParenToken);
         AccumulateStatementTrivia();
         var variable = ParseVariableExpression();
         var inKeyword = ExpectKeyword("in");
         AccumulateStatementTrivia();
         var collection = ParseClause();
-        var closeParen = ExpectCharacter(')', ShellSyntaxKind.CloseParenToken);
+        var closeParen = ExpectCharacter(')', SyntaxKind.CloseParenToken);
 
         return new PowerShellForEachStatementSyntax(forEachKeyword, openParen, variable, inKeyword, collection, closeParen, ParseScriptBlock());
     }
@@ -106,7 +111,7 @@ internal sealed partial class PowerShellParser
     {
         var switchKeyword = ReadKeywordToken();
 
-        var parameters = new List<ShellSyntaxToken>();
+        var parameters = new List<ScannedToken>();
         while (true)
         {
             AccumulateInlineTrivia();
@@ -118,8 +123,8 @@ internal sealed partial class PowerShellParser
 
         // `switch -File data.txt { }` gives the value without parentheses.
         AccumulateStatementTrivia();
-        ShellSyntaxToken? openParen = null;
-        ShellSyntaxToken? closeParen = null;
+        ScannedToken openParen = default;
+        ScannedToken closeParen = default;
         ShellStatementListSyntax condition;
         if (_lexer.Current == '(')
         {
@@ -132,10 +137,10 @@ internal sealed partial class PowerShellParser
                 ? (ShellSyntaxNode)ParseTernaryExpression()
                 : ParseCommandWord();
 
-            condition = new ShellStatementListSyntax([new PowerShellExpressionStatementSyntax(value, [])]);
+            condition = new ShellStatementListSyntax(new PowerShellExpressionStatementSyntax(value, null));
         }
 
-        var openBrace = ExpectCharacter('{', ShellSyntaxKind.OpenBraceToken);
+        var openBrace = ExpectCharacter('{', SyntaxKind.OpenBraceToken);
 
         var clauses = new List<PowerShellSwitchClauseSyntax>();
         while (true)
@@ -153,7 +158,7 @@ internal sealed partial class PowerShellParser
                 break;
         }
 
-        return new PowerShellSwitchStatementSyntax(switchKeyword, parameters, openParen, condition, closeParen, openBrace, clauses, ExpectCharacter('}', ShellSyntaxKind.CloseBraceToken));
+        return new PowerShellSwitchStatementSyntax(switchKeyword, ParserHelpers.TokenList(parameters), openParen, condition, closeParen, openBrace, ParserHelpers.List(clauses), ExpectCharacter('}', SyntaxKind.CloseBraceToken));
     }
 
     /// <summary>Reads a switch clause pattern, which is a value, the <c>default</c> keyword, or a condition block.</summary>
@@ -166,7 +171,7 @@ internal sealed partial class PowerShellParser
         if (IsExpressionStart())
             return ParseTernaryExpression();
 
-        return new PowerShellLiteralExpressionSyntax(ShellSyntaxKind.PowerShellBareWord, ReadBareToken());
+        return new PowerShellLiteralExpressionSyntax(SyntaxKind.PowerShellBareWord, ReadBareToken());
     }
 
     private PowerShellTryStatementSyntax ParseTryStatement()
@@ -179,7 +184,7 @@ internal sealed partial class PowerShellParser
         {
             var catchKeyword = ReadKeywordToken();
             var types = new List<PowerShellTypeLiteralSyntax>();
-            var separators = new List<ShellSyntaxToken>();
+            var separators = new List<ScannedToken>();
             while (true)
             {
                 AccumulateStatementTrivia();
@@ -191,10 +196,10 @@ internal sealed partial class PowerShellParser
                 if (_lexer.Current != ',')
                     break;
 
-                separators.Add(ReadOperatorToken(ShellSyntaxKind.CommaToken, length: 1));
+                separators.Add(ReadOperatorToken(SyntaxKind.CommaToken, length: 1));
             }
 
-            catchClauses.Add(new PowerShellCatchClauseSyntax(catchKeyword, types, separators, ParseScriptBlock()));
+            catchClauses.Add(new PowerShellCatchClauseSyntax(catchKeyword, ParserHelpers.Separated(types, separators), ParseScriptBlock()));
         }
 
         PowerShellFinallyClauseSyntax? finallyClause = null;
@@ -203,7 +208,7 @@ internal sealed partial class PowerShellParser
             finallyClause = new PowerShellFinallyClauseSyntax(ReadKeywordToken(), ParseScriptBlock());
         }
 
-        return new PowerShellTryStatementSyntax(tryKeyword, body, catchClauses, finallyClause);
+        return new PowerShellTryStatementSyntax(tryKeyword, body, ParserHelpers.List(catchClauses), finallyClause);
     }
 
     private PowerShellTrapStatementSyntax ParseTrapStatement()
@@ -215,39 +220,39 @@ internal sealed partial class PowerShellParser
         return new PowerShellTrapStatementSyntax(trapKeyword, typeFilter, ParseScriptBlock());
     }
 
-    private PowerShellFunctionDefinitionSyntax ParseFunctionDefinition(ShellSyntaxKind kind)
+    private PowerShellFunctionDefinitionSyntax ParseFunctionDefinition(SyntaxKind kind)
     {
         var keyword = ReadKeywordToken();
         var nameToken = ReadBareToken();
 
-        ShellSyntaxToken? openParen = null;
-        ShellSyntaxToken? closeParen = null;
+        ScannedToken openParen = default;
+        ScannedToken closeParen = default;
         var parameters = new List<PowerShellParameterSyntax>();
-        var separators = new List<ShellSyntaxToken>();
+        var separators = new List<ScannedToken>();
 
         AccumulateStatementTrivia();
         if (_lexer.Current == '(')
         {
-            openParen = ReadOperatorToken(ShellSyntaxKind.OpenParenToken, length: 1);
+            openParen = ReadOperatorToken(SyntaxKind.OpenParenToken, length: 1);
             ParseParameterList(parameters, separators);
-            closeParen = ExpectCharacter(')', ShellSyntaxKind.CloseParenToken);
+            closeParen = ExpectCharacter(')', SyntaxKind.CloseParenToken);
         }
 
-        return new PowerShellFunctionDefinitionSyntax(kind, keyword, nameToken, openParen, parameters, separators, closeParen, ParseScriptBlock());
+        return new PowerShellFunctionDefinitionSyntax(kind, keyword, nameToken, openParen, ParserHelpers.Separated(parameters, separators), closeParen, ParseScriptBlock());
     }
 
     private PowerShellParamBlockSyntax ParseParamBlock(IReadOnlyList<PowerShellAttributeSyntax> attributes)
     {
         var paramKeyword = ReadKeywordToken();
-        var openParen = ExpectCharacter('(', ShellSyntaxKind.OpenParenToken);
+        var openParen = ExpectCharacter('(', SyntaxKind.OpenParenToken);
         var parameters = new List<PowerShellParameterSyntax>();
-        var separators = new List<ShellSyntaxToken>();
+        var separators = new List<ScannedToken>();
         ParseParameterList(parameters, separators);
 
-        return new PowerShellParamBlockSyntax(attributes, paramKeyword, openParen, parameters, separators, ExpectCharacter(')', ShellSyntaxKind.CloseParenToken));
+        return new PowerShellParamBlockSyntax(ParserHelpers.List(attributes), paramKeyword, openParen, ParserHelpers.Separated(parameters, separators), ExpectCharacter(')', SyntaxKind.CloseParenToken));
     }
 
-    private void ParseParameterList(List<PowerShellParameterSyntax> parameters, List<ShellSyntaxToken> separators)
+    private void ParseParameterList(List<PowerShellParameterSyntax> parameters, List<ScannedToken> separators)
     {
         while (true)
         {
@@ -262,7 +267,7 @@ internal sealed partial class PowerShellParser
             if (_lexer.Current != ',')
                 break;
 
-            separators.Add(ReadOperatorToken(ShellSyntaxKind.CommaToken, length: 1));
+            separators.Add(ReadOperatorToken(SyntaxKind.CommaToken, length: 1));
             if (_lexer.Position == positionBefore)
                 break;
         }
@@ -274,17 +279,17 @@ internal sealed partial class PowerShellParser
         AccumulateStatementTrivia();
         var variable = ParseVariableExpression();
 
-        ShellSyntaxToken? equalsToken = null;
+        ScannedToken equalsToken = default;
         ShellSyntaxNode? defaultValue = null;
         AccumulateStatementTrivia();
         if (_lexer.Current == '=' && _lexer.Peek(1) != '=')
         {
-            equalsToken = ReadOperatorToken(ShellSyntaxKind.EqualsToken, length: 1);
+            equalsToken = ReadOperatorToken(SyntaxKind.EqualsToken, length: 1);
             AccumulateStatementTrivia();
             defaultValue = ParseTernaryExpression();
         }
 
-        return new PowerShellParameterSyntax(attributes, variable, equalsToken, defaultValue);
+        return new PowerShellParameterSyntax(ParserHelpers.List(attributes), variable, equalsToken, defaultValue);
     }
 
     private List<PowerShellAttributeSyntax> ParseAttributeList()
@@ -307,18 +312,18 @@ internal sealed partial class PowerShellParser
 
     private PowerShellAttributeSyntax ParseAttribute()
     {
-        var openBracket = ReadOperatorToken(ShellSyntaxKind.OpenBracketToken, length: 1);
+        var openBracket = ReadOperatorToken(SyntaxKind.OpenBracketToken, length: 1);
         var nameToken = ReadTypeNameToken(insideBrackets: true);
 
-        ShellSyntaxToken? openParen = null;
-        ShellSyntaxToken? closeParen = null;
+        ScannedToken openParen = default;
+        ScannedToken closeParen = default;
         var arguments = new List<ShellExpressionSyntax>();
-        var separators = new List<ShellSyntaxToken>();
+        var separators = new List<ScannedToken>();
 
         AccumulateInlineTrivia();
         if (_lexer.Current == '(')
         {
-            openParen = ReadOperatorToken(ShellSyntaxKind.OpenParenToken, length: 1);
+            openParen = ReadOperatorToken(SyntaxKind.OpenParenToken, length: 1);
             while (true)
             {
                 AccumulateStatementTrivia();
@@ -330,7 +335,7 @@ internal sealed partial class PowerShellParser
                 AccumulateStatementTrivia();
                 if (_lexer.Current == ',')
                 {
-                    separators.Add(ReadOperatorToken(ShellSyntaxKind.CommaToken, length: 1));
+                    separators.Add(ReadOperatorToken(SyntaxKind.CommaToken, length: 1));
                     continue;
                 }
 
@@ -342,10 +347,10 @@ internal sealed partial class PowerShellParser
                 break;
             }
 
-            closeParen = ExpectCharacter(')', ShellSyntaxKind.CloseParenToken);
+            closeParen = ExpectCharacter(')', SyntaxKind.CloseParenToken);
         }
 
-        return new PowerShellAttributeSyntax(openBracket, nameToken, openParen, arguments, separators, closeParen, ExpectCharacter(']', ShellSyntaxKind.CloseBracketToken));
+        return new PowerShellAttributeSyntax(openBracket, nameToken, openParen, ParserHelpers.Separated(arguments, separators), closeParen, ExpectCharacter(']', SyntaxKind.CloseBracketToken));
     }
 
     /// <summary>
@@ -360,31 +365,31 @@ internal sealed partial class PowerShellParser
         if (_lexer.Current != '=' || _lexer.Peek(1) == '=')
             return value;
 
-        var equalsToken = ReadOperatorToken(ShellSyntaxKind.EqualsToken, length: 1);
+        var equalsToken = ReadOperatorToken(SyntaxKind.EqualsToken, length: 1);
         AccumulateStatementTrivia();
 
         return new PowerShellAssignmentExpressionSyntax(value, equalsToken, ParseTernaryExpression());
     }
 
-    private PowerShellNamedBlockSyntax ParseNamedBlock(ShellSyntaxKind kind) => new(kind, ReadKeywordToken(), ParseScriptBlock());
+    private PowerShellNamedBlockSyntax ParseNamedBlock(SyntaxKind kind) => new(kind, ReadKeywordToken(), ParseScriptBlock());
 
     private PowerShellTypeDefinitionSyntax ParseTypeDefinition(IReadOnlyList<PowerShellAttributeSyntax> attributes)
     {
         var keyword = ReadKeywordToken();
         var kind = string.Equals(keyword.Text, "enum", StringComparison.OrdinalIgnoreCase)
-            ? ShellSyntaxKind.PowerShellEnumDefinition
-            : ShellSyntaxKind.PowerShellClassDefinition;
+            ? SyntaxKind.PowerShellEnumDefinition
+            : SyntaxKind.PowerShellClassDefinition;
 
         var nameToken = ReadBareToken();
 
-        ShellSyntaxToken? colonToken = null;
+        ScannedToken colonToken = default;
         var baseTypes = new List<PowerShellTypeLiteralSyntax>();
-        var baseSeparators = new List<ShellSyntaxToken>();
+        var baseSeparators = new List<ScannedToken>();
 
         AccumulateStatementTrivia();
         if (_lexer.Current == ':')
         {
-            colonToken = ReadOperatorToken(ShellSyntaxKind.ColonToken, length: 1);
+            colonToken = ReadOperatorToken(SyntaxKind.ColonToken, length: 1);
             while (true)
             {
                 AccumulateStatementTrivia();
@@ -396,14 +401,14 @@ internal sealed partial class PowerShellParser
                 if (_lexer.Current != ',')
                     break;
 
-                baseSeparators.Add(ReadOperatorToken(ShellSyntaxKind.CommaToken, length: 1));
+                baseSeparators.Add(ReadOperatorToken(SyntaxKind.CommaToken, length: 1));
             }
         }
 
-        var openBrace = ExpectCharacter('{', ShellSyntaxKind.OpenBraceToken);
+        var openBrace = ExpectCharacter('{', SyntaxKind.OpenBraceToken);
         var members = ParseStatementList(stopCharacter: '}');
 
-        return new PowerShellTypeDefinitionSyntax(kind, attributes, keyword, nameToken, colonToken, baseTypes, baseSeparators, openBrace, members, ExpectCharacter('}', ShellSyntaxKind.CloseBraceToken));
+        return new PowerShellTypeDefinitionSyntax(kind, ParserHelpers.List(attributes), keyword, nameToken, colonToken, ParserHelpers.Separated(baseTypes, baseSeparators), openBrace, members, ExpectCharacter('}', SyntaxKind.CloseBraceToken));
     }
 
     /// <summary>A base type in a class declaration is written without brackets, unlike a type literal.</summary>
@@ -413,12 +418,12 @@ internal sealed partial class PowerShellParser
             return ParseTypeLiteral();
 
         var nameToken = ReadTypeNameToken();
-        var empty = MissingToken(ShellSyntaxKind.OpenBracketToken, nameToken.FullSpan.Start);
+        var empty = MissingToken(SyntaxKind.OpenBracketToken, nameToken.FullSpan.Start);
 
-        return new PowerShellTypeLiteralSyntax(empty, nameToken, MissingToken(ShellSyntaxKind.CloseBracketToken, _lexer.Position));
+        return new PowerShellTypeLiteralSyntax(empty, nameToken, MissingToken(SyntaxKind.CloseBracketToken, _lexer.Position));
     }
 
-    private PowerShellFlowStatementSyntax ParseFlowStatement(ShellSyntaxKind kind)
+    private PowerShellFlowStatementSyntax ParseFlowStatement(SyntaxKind kind)
     {
         var keyword = ReadKeywordToken();
 
@@ -430,7 +435,7 @@ internal sealed partial class PowerShellParser
         {
             // `break` and `continue` take a label, but `return`, `throw`, and `exit` take a whole pipeline, which is
             // why `return $x | Where-Object { $_ }` returns the piped result rather than piping the return statement.
-            if (kind is ShellSyntaxKind.PowerShellBreakStatement or ShellSyntaxKind.PowerShellContinueStatement)
+            if (kind is SyntaxKind.PowerShellBreakStatement or SyntaxKind.PowerShellContinueStatement)
             {
                 value = IsExpressionStart() ? ParseExpression() : ParseCommandWord();
             }
@@ -439,7 +444,7 @@ internal sealed partial class PowerShellParser
                 var expression = ParseExpression();
                 AccumulateInlineTrivia();
                 value = _lexer.Current == '|' && _lexer.Peek(1) != '|'
-                    ? ContinuePipeline(new PowerShellExpressionStatementSyntax(expression, []))
+                    ? ContinuePipeline(new PowerShellExpressionStatementSyntax(expression, null))
                     : expression;
             }
             else
@@ -465,14 +470,14 @@ internal sealed partial class PowerShellParser
     {
         var dataKeyword = ReadKeywordToken();
 
-        ShellSyntaxToken? nameToken = null;
+        ScannedToken nameToken = default;
         AccumulateInlineTrivia();
         if (!_lexer.IsAtEnd && _lexer.Current is not '{' and not '-')
         {
             nameToken = ReadBareToken();
         }
 
-        var parameters = new List<ShellSyntaxToken>();
+        var parameters = new List<ScannedToken>();
         while (true)
         {
             AccumulateInlineTrivia();
@@ -482,7 +487,7 @@ internal sealed partial class PowerShellParser
             parameters.Add(ReadParameterToken());
         }
 
-        return new PowerShellDataStatementSyntax(dataKeyword, nameToken, parameters, ParseScriptBlock());
+        return new PowerShellDataStatementSyntax(dataKeyword, nameToken, ParserHelpers.TokenList(parameters), ParseScriptBlock());
     }
 
     private PowerShellLabeledStatementSyntax ParseLabeledStatement()
@@ -495,18 +500,18 @@ internal sealed partial class PowerShellParser
             _lexer.Position++;
         }
 
-        var labelToken = _lexer.CreateToken(ShellSyntaxKind.LabelToken, start, trivia, fullStart);
+        var labelToken = _lexer.CreateToken(SyntaxKind.LabelToken, start, trivia, fullStart);
 
         return new PowerShellLabeledStatementSyntax(labelToken, ParseStatement());
     }
 
     // ---- shared pieces ----
 
-    private (ShellSyntaxToken OpenParen, ShellStatementListSyntax Condition, ShellSyntaxToken CloseParen) ParseParenthesizedCondition()
+    private (ScannedToken OpenParen, ShellStatementListSyntax Condition, ScannedToken CloseParen) ParseParenthesizedCondition()
     {
-        var openParen = ExpectCharacter('(', ShellSyntaxKind.OpenParenToken);
+        var openParen = ExpectCharacter('(', SyntaxKind.OpenParenToken);
         var condition = ParseStatementList(stopCharacter: ')');
-        var closeParen = ExpectCharacter(')', ShellSyntaxKind.CloseParenToken);
+        var closeParen = ExpectCharacter(')', SyntaxKind.CloseParenToken);
 
         return (openParen, condition, closeParen);
     }
@@ -514,10 +519,10 @@ internal sealed partial class PowerShellParser
     private PowerShellScriptBlockSyntax ParseScriptBlock()
     {
         AccumulateStatementTrivia();
-        var openBrace = ExpectCharacter('{', ShellSyntaxKind.OpenBraceToken);
+        var openBrace = ExpectCharacter('{', SyntaxKind.OpenBraceToken);
         var statements = ParseStatementList(stopCharacter: '}');
 
-        return new PowerShellScriptBlockSyntax(openBrace, statements, ExpectCharacter('}', ShellSyntaxKind.CloseBraceToken));
+        return new PowerShellScriptBlockSyntax(openBrace, statements, ExpectCharacter('}', SyntaxKind.CloseBraceToken));
     }
 
     // ---- token helpers ----
@@ -595,28 +600,28 @@ internal sealed partial class PowerShellParser
         return scan == start ? null : text[start..scan].ToLowerInvariant();
     }
 
-    private ShellSyntaxToken ReadKeywordToken()
+    private ScannedToken ReadKeywordToken()
     {
         AccumulateStatementTrivia();
         var keyword = PeekKeyword() ?? string.Empty;
 
-        return ReadOperatorToken(ShellSyntaxKind.KeywordToken, keyword.Length);
+        return ReadOperatorToken(SyntaxKind.KeywordToken, keyword.Length);
     }
 
-    private ShellSyntaxToken ExpectKeyword(params string[] keywords)
+    private ScannedToken ExpectKeyword(params string[] keywords)
     {
         AccumulateStatementTrivia();
         var actual = PeekKeyword();
         if (actual is not null && Array.IndexOf(keywords, actual) >= 0)
-            return ReadOperatorToken(ShellSyntaxKind.KeywordToken, actual.Length);
+            return ReadOperatorToken(SyntaxKind.KeywordToken, actual.Length);
 
         AddDiagnostic(new TextSpan(_lexer.Position, 0), "SHELL0012", $"Expected '{string.Join("' or '", keywords)}'.");
         var (trivia, fullStart) = TakeTrivia();
 
-        return MissingToken(ShellSyntaxKind.KeywordToken, fullStart, trivia);
+        return MissingToken(SyntaxKind.KeywordToken, fullStart, trivia);
     }
 
-    private ShellSyntaxToken ExpectCharacter(char expected, ShellSyntaxKind kind)
+    private ScannedToken ExpectCharacter(char expected, SyntaxKind kind)
     {
         AccumulateStatementTrivia();
         if (_lexer.Current == expected)
@@ -628,15 +633,15 @@ internal sealed partial class PowerShellParser
         return MissingToken(kind, fullStart, trivia);
     }
 
-    private ShellSyntaxToken? TryReadCharacter(char expected, ShellSyntaxKind kind)
+    private ScannedToken TryReadCharacter(char expected, SyntaxKind kind)
     {
         AccumulateStatementTrivia();
 
-        return _lexer.Current == expected ? ReadOperatorToken(kind, length: 1) : null;
+        return _lexer.Current == expected ? ReadOperatorToken(kind, length: 1) : default;
     }
 
     /// <summary>Reads a bare identifier such as a function or class name.</summary>
-    private ShellSyntaxToken ReadBareToken()
+    private ScannedToken ReadBareToken()
     {
         AccumulateStatementTrivia();
         var text = _lexer.Text;
@@ -652,10 +657,10 @@ internal sealed partial class PowerShellParser
             AddDiagnostic(new TextSpan(start, 0), "SHELL0013", "Expected a name.");
             var (trivia, fullStart) = TakeTrivia();
 
-            return MissingToken(ShellSyntaxKind.GenericToken, fullStart, trivia);
+            return MissingToken(SyntaxKind.GenericToken, fullStart, trivia);
         }
 
-        return ReadOperatorToken(ShellSyntaxKind.GenericToken, scan - start);
+        return ReadOperatorToken(SyntaxKind.GenericToken, scan - start);
     }
 
     /// <summary>Reads a type name, which may contain dots, generics, and array suffixes.</summary>
@@ -668,7 +673,7 @@ internal sealed partial class PowerShellParser
     /// <c>[Some.Type, Some.Assembly]</c> is not cut short at the comma. A line break still ends it, so an unterminated
     /// bracket cannot swallow the rest of the file.
     /// </param>
-    private ShellSyntaxToken ReadTypeNameToken(bool includeArgumentList = false, bool insideBrackets = false)
+    private ScannedToken ReadTypeNameToken(bool includeArgumentList = false, bool insideBrackets = false)
     {
         AccumulateInlineTrivia();
         var text = _lexer.Text;
@@ -722,10 +727,10 @@ internal sealed partial class PowerShellParser
         {
             var (trivia, fullStart) = TakeTrivia();
 
-            return MissingToken(ShellSyntaxKind.GenericToken, fullStart, trivia);
+            return MissingToken(SyntaxKind.GenericToken, fullStart, trivia);
         }
 
-        return ReadOperatorToken(ShellSyntaxKind.GenericToken, scan - start);
+        return ReadOperatorToken(SyntaxKind.GenericToken, scan - start);
     }
 
     /// <summary>Returns the index just past the parenthesized group that starts at <paramref name="index"/>.</summary>
@@ -764,7 +769,7 @@ internal sealed partial class PowerShellParser
         return index;
     }
 
-    private ShellSyntaxToken ReadParameterToken()
+    private ScannedToken ReadParameterToken()
     {
         AccumulateInlineTrivia();
         var text = _lexer.Text;
@@ -775,6 +780,6 @@ internal sealed partial class PowerShellParser
             scan++;
         }
 
-        return ReadOperatorToken(ShellSyntaxKind.ParameterToken, scan - start);
+        return ReadOperatorToken(SyntaxKind.ParameterToken, scan - start);
     }
 }

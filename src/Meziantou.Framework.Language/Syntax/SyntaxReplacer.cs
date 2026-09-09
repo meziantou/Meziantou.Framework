@@ -100,7 +100,7 @@ internal sealed class SyntaxReplacer
 
             var newChild = childGreen.IsToken
                 ? RebuildToken(node, i, childGreen)
-                : node.GetNodeSlot(i) is { } childRed ? RebuildNode(childRed) : childGreen;
+                : node.GetNodeSlot(i) is { } childRed ? RebuildNode(childRed) : RebuildTokenList(node, i, childGreen);
 
             if (ReferenceEquals(newChild, childGreen))
                 continue;
@@ -118,9 +118,42 @@ internal sealed class SyntaxReplacer
         return newSlots is null ? green : green.WithSlots(newSlots);
     }
 
-    private GreenNode? RebuildToken(SyntaxNode parent, int slot, GreenNode green)
+    /// <summary>
+    /// Rebuilds a slot holding a list of tokens rather than of nodes.
+    /// </summary>
+    /// <remarks>
+    /// Such a list has no red node of its own, so the tokens inside it are only reachable from here. Without this a
+    /// token in a list -- the tokens of a skipped-text node, say -- could never be replaced.
+    /// </remarks>
+    private GreenNode? RebuildTokenList(SyntaxNode parent, int slot, GreenNode green)
     {
         var position = parent.GetChildPosition(slot);
+        if (!CouldContainATarget(new TextSpan(position, green.FullWidth)))
+            return green;
+
+        GreenNode?[]? newSlots = null;
+        for (var i = 0; i < green.SlotCount; i++)
+        {
+            var childGreen = green.GetSlot(i);
+            if (childGreen is null)
+                continue;
+
+            var newChild = RebuildTokenAt(childGreen, position);
+            position += childGreen.FullWidth;
+            if (ReferenceEquals(newChild, childGreen))
+                continue;
+
+            newSlots ??= CopySlots(green);
+            newSlots[i] = newChild;
+        }
+
+        return newSlots is null ? green : green.WithSlots(newSlots);
+    }
+
+    private GreenNode? RebuildToken(SyntaxNode parent, int slot, GreenNode green) => RebuildTokenAt(green, parent.GetChildPosition(slot));
+
+    private GreenNode? RebuildTokenAt(GreenNode green, int position)
+    {
         if (_tokens.TryGetValue((green, position), out var replacement))
         {
             _replacedAnything = true;

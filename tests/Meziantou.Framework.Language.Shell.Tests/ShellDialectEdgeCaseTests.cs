@@ -10,10 +10,10 @@ public sealed class ShellDialectEdgeCaseTests
     {
         var tree = ShellSyntaxTree.ParseText(text, dialect);
 
-        Assert.Equal(text, tree.Root.ToFullString());
-        Assert.Empty(tree.Diagnostics);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Empty(tree.GetDiagnostics());
 
-        return Assert.Single(tree.Root.Statements.Statements);
+        return Assert.Single(tree.GetRoot().Statements.Statements);
     }
 
     // ---- POSIX ----
@@ -36,10 +36,10 @@ public sealed class ShellDialectEdgeCaseTests
     public void Posix_HereDocumentBodyStopsAtTheExactDelimiterLine(string text, string expectedBody)
     {
         var tree = ShellSyntaxTree.ParseText(text, ShellDialect.Bash);
-        Assert.Equal(text, tree.Root.ToFullString());
-        Assert.Empty(tree.Diagnostics);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Empty(tree.GetDiagnostics());
 
-        var hereDocument = Assert.Single(tree.Root.DescendantNodes().OfType<PosixHereDocumentSyntax>());
+        var hereDocument = Assert.Single(tree.GetRoot().DescendantNodes().OfType<PosixHereDocumentSyntax>());
         Assert.Equal(expectedBody, hereDocument.BodyToken.Text);
         Assert.NotNull(hereDocument.Redirection?.HereDocument);
     }
@@ -50,13 +50,13 @@ public sealed class ShellDialectEdgeCaseTests
         const string Text = "cat <<EOF | wc -l\nx\nEOF\n";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
 
-        Assert.Equal(Text, tree.Root.ToFullString());
-        Assert.Empty(tree.Diagnostics);
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
+        Assert.Empty(tree.GetDiagnostics());
 
         // The pipeline is the whole command line; the body follows it.
-        var pipeline = Assert.IsType<ShellPipelineSyntax>(tree.Root.Statements.Statements[0]);
+        var pipeline = Assert.IsType<ShellPipelineSyntax>(tree.GetRoot().Statements.Statements[0]);
         Assert.HasCount(2, pipeline.Commands);
-        var hereDocument = Assert.Single(tree.Root.DescendantNodes().OfType<PosixHereDocumentSyntax>());
+        var hereDocument = Assert.Single(tree.GetRoot().DescendantNodes().OfType<PosixHereDocumentSyntax>());
         Assert.Equal("\nx\n", hereDocument.BodyToken.Text);
     }
 
@@ -82,7 +82,7 @@ public sealed class ShellDialectEdgeCaseTests
     {
         var tree = ShellSyntaxTree.ParseText("echo x\\", ShellDialect.Bash);
 
-        Assert.Equal("echo x\\", tree.Root.ToFullString());
+        Assert.Equal("echo x\\", tree.GetRoot().ToFullString());
     }
 
     // ---- PowerShell ----
@@ -171,7 +171,7 @@ public sealed class ShellDialectEdgeCaseTests
         var command = Assert.IsType<ShellCommandSyntax>(Single("echo a ^\r\n b\r\n", ShellDialect.Cmd));
 
         Assert.Equal(["a", "b"], command.Arguments.Select(argument => argument.Value));
-        Assert.Contains(command.DescendantTrivia(), trivia => trivia.Kind == ShellSyntaxKind.LineContinuationTrivia);
+        Assert.Contains(command.DescendantTrivia(), trivia => trivia.Kind() == SyntaxKind.LineContinuationTrivia);
     }
 
     [Fact]

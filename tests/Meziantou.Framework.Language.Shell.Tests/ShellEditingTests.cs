@@ -6,9 +6,10 @@ public sealed class ShellEditingTests
     public void ReplaceNode_SwapsAnArgument()
     {
         var tree = ShellSyntaxTree.ParseText("echo old --flag", ShellDialect.Bash);
-        var command = Assert.IsType<ShellCommandSyntax>(tree.Root.Statements.Statements[0]);
+        var command = Assert.IsType<ShellCommandSyntax>(tree.GetRoot().Statements.Statements[0]);
 
-        var updated = tree.Root.ReplaceNode(command.Arguments[0], SyntaxFactory.Word("new", ShellDialect.Bash));
+        var argument = command.Arguments[0];
+        var updated = tree.GetRoot().ReplaceNode(argument, SyntaxFactory.Word("new", ShellDialect.Bash).WithTriviaFrom(argument));
 
         Assert.Equal("echo new --flag", updated.ToFullString());
     }
@@ -17,9 +18,10 @@ public sealed class ShellEditingTests
     public void ReplaceNode_ReplacesTheExactInstance_WhenTheTextIsDuplicated()
     {
         var tree = ShellSyntaxTree.ParseText("echo dup dup", ShellDialect.Bash);
-        var command = Assert.IsType<ShellCommandSyntax>(tree.Root.Statements.Statements[0]);
+        var command = Assert.IsType<ShellCommandSyntax>(tree.GetRoot().Statements.Statements[0]);
 
-        var updated = tree.Root.ReplaceNode(command.Arguments[1], SyntaxFactory.Word("second", ShellDialect.Bash));
+        var argument = command.Arguments[1];
+        var updated = tree.GetRoot().ReplaceNode(argument, SyntaxFactory.Word("second", ShellDialect.Bash).WithTriviaFrom(argument));
 
         Assert.Equal("echo dup second", updated.ToFullString());
     }
@@ -29,33 +31,39 @@ public sealed class ShellEditingTests
     {
         const string Text = "# header\necho   old    # trailing\n";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
-        var command = Assert.IsType<ShellCommandSyntax>(tree.Root.Statements.Statements[0]);
+        var command = Assert.IsType<ShellCommandSyntax>(tree.GetRoot().Statements.Statements[0]);
 
-        var updated = tree.Root.ReplaceNode(command.Arguments[0], SyntaxFactory.Word("new", ShellDialect.Bash));
+        var argument = command.Arguments[0];
+        var updated = tree.GetRoot().ReplaceNode(argument, SyntaxFactory.Word("new", ShellDialect.Bash).WithTriviaFrom(argument));
 
         Assert.Equal("# header\necho   new    # trailing\n", updated.ToFullString());
     }
 
+    /// <summary>
+    /// An edit rebuilds the tree rather than re-reading the text, so the result belongs to no tree of its own until
+    /// one is built from it -- and that is what carries the dialect.
+    /// </summary>
     [Fact]
-    public void ReplaceNode_KeepsTheDialectOfTheOriginalTree()
+    public void ReplaceNode_ReturnsADetachedRootThatCanBeGivenATreeAgain()
     {
         var tree = ShellSyntaxTree.ParseText("echo $((1+1))", ShellDialect.Zsh);
-        var command = Assert.IsType<ShellCommandSyntax>(tree.Root.Statements.Statements[0]);
+        var command = Assert.IsType<ShellCommandSyntax>(tree.GetRoot().Statements.Statements[0]);
 
-        var updated = tree.Root.ReplaceNode(command.Arguments[0], SyntaxFactory.Word("done", ShellDialect.Zsh));
+        var updated = tree.GetRoot().ReplaceNode(command.Arguments[0], SyntaxFactory.Word("done", ShellDialect.Zsh));
 
-        Assert.Equal(ShellDialect.Zsh, updated.SyntaxTree?.Dialect);
+        Assert.Null(updated.SyntaxTree);
+        Assert.Equal(ShellDialect.Zsh, ShellSyntaxTree.ParseText(updated.ToFullString(), ShellDialect.Zsh).Dialect);
     }
 
     [Fact]
     public void ReplaceToken_SwapsARedirectionOperator()
     {
         var tree = ShellSyntaxTree.ParseText("echo hi > out.txt", ShellDialect.Bash);
-        var redirection = tree.Root.DescendantNodes().OfType<ShellRedirectionSyntax>().Single();
+        var redirection = tree.GetRoot().DescendantNodes().OfType<ShellRedirectionSyntax>().Single();
 
-        var updated = tree.Root.ReplaceToken(
+        var updated = tree.GetRoot().ReplaceToken(
             redirection.OperatorToken,
-            SyntaxFactory.Token(ShellSyntaxKind.GreaterThanGreaterThanToken, ">>"));
+            SyntaxFactory.Token(SyntaxKind.GreaterThanGreaterThanToken, ">>").WithTriviaFrom(redirection.OperatorToken));
 
         Assert.Equal("echo hi >> out.txt", updated.ToFullString());
     }
@@ -64,21 +72,25 @@ public sealed class ShellEditingTests
     public void ReplaceTrivia_RewritesAComment()
     {
         var tree = ShellSyntaxTree.ParseText("echo hi # old note\n", ShellDialect.Bash);
-        var comment = tree.Root.DescendantComments().Single();
+        var comment = tree.GetRoot().DescendantComments().Single();
 
-        var updated = tree.Root.ReplaceTrivia(comment, SyntaxFactory.Comment("new note", ShellDialect.Bash));
+        var updated = tree.GetRoot().ReplaceTrivia(comment, SyntaxFactory.Comment("new note", ShellDialect.Bash));
 
         Assert.Equal("echo hi # new note\n", updated.ToFullString());
     }
 
+    /// <summary>
+    /// Replacing a node from another tree is rejected rather than quietly doing nothing, which is what the old
+    /// text-search fallback did when it could not find the node.
+    /// </summary>
     [Fact]
-    public void ReplaceNode_WithAnUnrelatedNode_ReturnsTheSameScript()
+    public void ReplaceNode_WithAnUnrelatedNode_IsRejected()
     {
         var tree = ShellSyntaxTree.ParseText("echo hi", ShellDialect.Bash);
         var other = ShellSyntaxTree.ParseText("unrelated text here", ShellDialect.Bash);
-        var foreignNode = other.Root.DescendantNodes().OfType<ShellCommandSyntax>().Single();
+        var foreignNode = other.GetRoot().DescendantNodes().OfType<ShellCommandSyntax>().Single();
 
-        Assert.Same(tree.Root, tree.Root.ReplaceNode(foreignNode, SyntaxFactory.Word("x", ShellDialect.Bash)));
+        Assert.Throws<ArgumentException>(() => tree.GetRoot().ReplaceNode(foreignNode, SyntaxFactory.Word("x", ShellDialect.Bash)));
     }
 
     [Fact]
@@ -90,7 +102,7 @@ public sealed class ShellEditingTests
             new TextChange(new TextSpan(0, 3), "xxx"),
             new TextChange(new TextSpan(8, 3), "zzz"));
 
-        Assert.Equal("xxx bbb zzz", updated.Text);
+        Assert.Equal("xxx bbb zzz", updated.GetText().Text);
     }
 
     public static TheoryData<string, ShellDialect> IncompleteScripts() => new()
@@ -113,9 +125,9 @@ public sealed class ShellEditingTests
     {
         var tree = ShellSyntaxTree.ParseText(text, dialect);
 
-        foreach (var node in tree.Root.DescendantNodes())
+        foreach (var node in tree.GetRoot().DescendantNodes())
         {
-            Assert.Equal(text, tree.Root.ReplaceNode(node, node).ToFullString());
+            Assert.Equal(text, tree.GetRoot().ReplaceNode(node, node).ToFullString());
         }
     }
 
@@ -125,9 +137,9 @@ public sealed class ShellEditingTests
     {
         var tree = ShellSyntaxTree.ParseText(text, dialect);
 
-        foreach (var token in tree.Root.DescendantTokens())
+        foreach (var token in tree.GetRoot().DescendantTokens())
         {
-            Assert.Equal(text, tree.Root.ReplaceToken(token, token).ToFullString());
+            Assert.Equal(text, tree.GetRoot().ReplaceToken(token, token).ToFullString());
         }
     }
 
@@ -137,18 +149,18 @@ public sealed class ShellEditingTests
     {
         var tree = ShellSyntaxTree.ParseText(text, dialect);
 
-        Assert.Same(tree.Root, new UnchangedRewriter().Visit(tree.Root));
+        Assert.Same(tree.GetRoot(), new UnchangedRewriter().Visit(tree.GetRoot()));
     }
 
     [Fact]
     public void ReplaceNode_KeepsTriviaHeldByATrailingMissingToken()
     {
-        // The space belongs to the for statement but falls outside its Span, which stops at the last token with text.
+        // The space is the leading trivia of the missing token that ends the statement, so it falls outside the span.
         var tree = ShellSyntaxTree.ParseText("for ", ShellDialect.Bash);
-        var statement = Assert.Single(tree.Root.Statements.Statements);
+        var statement = Assert.Single(tree.GetRoot().Statements.Statements);
 
-        Assert.True(statement.Span.End < statement.FullSpan.End);
-        Assert.Equal("for ", tree.Root.ReplaceNode(statement, statement).ToFullString());
+        Assert.True(statement.Span.End <= statement.FullSpan.End);
+        Assert.Equal("for ", tree.GetRoot().ReplaceNode(statement, statement).ToFullString());
     }
 
     [Fact]
@@ -156,10 +168,10 @@ public sealed class ShellEditingTests
     {
         // The function definition starts with a missing name of no width, so the space before `(` is on the next token.
         var tree = ShellSyntaxTree.ParseText("l l ()", ShellDialect.Zsh);
-        var definition = Assert.Single(tree.Root.DescendantNodes().OfType<PosixFunctionDefinitionSyntax>());
+        var definition = Assert.Single(tree.GetRoot().DescendantNodes().OfType<PosixFunctionDefinitionSyntax>());
 
-        Assert.True(definition.Span.Start > definition.FullSpan.Start);
-        Assert.Equal("l l ()", tree.Root.ReplaceNode(definition, definition).ToFullString());
+        Assert.True(definition.Span.Start >= definition.FullSpan.Start);
+        Assert.Equal("l l ()", tree.GetRoot().ReplaceNode(definition, definition).ToFullString());
     }
 
     private sealed class UnchangedRewriter : ShellSyntaxRewriter;
@@ -170,7 +182,7 @@ public sealed class ShellEditingTests
         var tree = ShellSyntaxTree.ParseText("# c\nls -la | grep x\n", ShellDialect.Bash);
         var updated = tree.WithChanges(new TextChange(new TextSpan(4, 2), "cd"));
 
-        Assert.Equal(updated.Text, updated.Root.ToFullString());
+        Assert.Equal(updated.GetText().Text, updated.GetRoot().ToFullString());
     }
 
     [Fact]

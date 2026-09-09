@@ -1,0 +1,519 @@
+<#@ template debug="true" hostspecific="false" language="C#" #>
+<#@ output extension=".g.cs" #>
+<#
+    // The shape of every shell node, in source order.
+    //
+    // A slot is written "<kind>:<Name>[:<Type>]", where the kind is one of:
+    //   t   a token            t?  a token the source may not have
+    //   n   a child node       n?  a child node the source may not have
+    //   l   a list of nodes    s   a list of nodes with separators between them
+    //   tl  a list of tokens
+    //
+    // Node(name, base, kind, visit, slots...) fixes a node's kind; MultiKind(name, base, visit, slots...) is for the
+    // handful of classes that serve several kinds and take theirs from the parser.
+    //
+    // Only the structure is described here. Everything a node computes from its own parts -- a name, a value, which
+    // of its children are arguments -- stays in the hand-written half of the partial class.
+    var nodes = new[]
+    {
+        Node("CmdCallStatementSyntax", "ShellStatementSyntax", "CmdCallStatement", "CmdCall", "t:CallKeyword", "n:Target:ShellStatementSyntax"),
+        Node("CmdElseClauseSyntax", "ShellSyntaxNode", "CmdElseClause", "CmdElseClause", "t:ElseKeyword", "n:Body:ShellStatementSyntax"),
+        Node("CmdForStatementSyntax", "ShellStatementSyntax", "CmdForStatement", "CmdFor", "t:ForKeyword", "t?:SwitchToken", "l:SwitchArguments:ShellWordSyntax", "t:VariableToken", "t:InKeyword", "t:OpenParenToken", "l:Items:ShellWordSyntax", "t:CloseParenToken", "t:DoKeyword", "n:Body:ShellStatementSyntax"),
+        Node("CmdGotoStatementSyntax", "ShellStatementSyntax", "CmdGotoStatement", "CmdGoto", "t:GotoKeyword", "t:LabelToken"),
+        Node("CmdIfStatementSyntax", "ShellStatementSyntax", "CmdIfStatement", "CmdIf", "t:IfKeyword", "t?:CaseInsensitiveToken", "t?:NotKeyword", "n:Condition:ShellExpressionSyntax", "n:Body:ShellStatementSyntax", "n?:ElseClause:CmdElseClauseSyntax"),
+        Node("CmdLabelStatementSyntax", "ShellStatementSyntax", "CmdLabelStatement", "CmdLabel", "t:ColonToken", "t:NameToken"),
+        Node("CmdParenthesizedBlockSyntax", "ShellStatementSyntax", "CmdParenthesizedBlock", "CmdBlock", "t:OpenParenToken", "n:Statements:ShellStatementListSyntax", "t:CloseParenToken"),
+        Node("CmdSetStatementSyntax", "ShellStatementSyntax", "CmdSetStatement", "CmdSet", "t:SetKeyword", "t?:SwitchToken", "t?:NameToken", "t?:EqualsToken", "n?:Value:ShellWordSyntax"),
+        Node("CmdVariableReferenceSyntax", "ShellWordPartSyntax", "CmdVariableReference", "CmdVariableReference", "t:OpenToken", "t:NameToken", "t?:CloseToken"),
+        Node("PosixArithmeticExpansionSyntax", "ShellWordPartSyntax", "PosixArithmeticExpansion", "ArithmeticExpansion", "t:OpenToken", "n:Expression:ShellExpressionSyntax", "t:CloseToken"),
+        Node("PosixArrayAssignmentSyntax", "ShellSyntaxNode", "PosixArrayAssignment", "ArrayAssignment", "t:NameToken", "t:EqualsToken", "t:OpenParenToken", "l:Elements:ShellWordSyntax", "t:CloseParenToken"),
+        Node("PosixCaseClauseSyntax", "ShellSyntaxNode", "PosixCaseClause", "CaseClause", "t?:OpenParenToken", "s:Patterns:ShellWordSyntax", "t:CloseParenToken", "n:Body:ShellStatementListSyntax", "t?:TerminatorToken"),
+        Node("PosixCaseStatementSyntax", "ShellStatementSyntax", "PosixCaseStatement", "CaseStatement", "t:CaseKeyword", "n:Subject:ShellWordSyntax", "t:InKeyword", "l:Clauses:PosixCaseClauseSyntax", "t:EsacKeyword"),
+        MultiKind("PosixCompoundStatementSyntax", "ShellStatementSyntax", "CompoundStatement", "t:OpenToken", "n:Statements:ShellStatementListSyntax", "t:CloseToken"),
+        MultiKind("PosixDelimitedExpressionStatementSyntax", "ShellStatementSyntax", "DelimitedExpressionStatement", "t:OpenToken", "n:Expression:ShellExpressionSyntax", "t:CloseToken"),
+        Node("PosixElifClauseSyntax", "ShellSyntaxNode", "PosixElifClause", "ElifClause", "t:ElifKeyword", "n:Condition:ShellStatementListSyntax", "t:ThenKeyword", "n:Body:ShellStatementListSyntax"),
+        Node("PosixElseClauseSyntax", "ShellSyntaxNode", "PosixElseClause", "ElseClause", "t:ElseKeyword", "n:Body:ShellStatementListSyntax"),
+        MultiKind("PosixForStatementSyntax", "ShellStatementSyntax", "ForStatement", "t:Keyword", "t:VariableToken", "t?:InKeyword", "l:Items:ShellWordSyntax", "t?:ListTerminatorToken", "t:DoKeyword", "n:Body:ShellStatementListSyntax", "t:DoneKeyword"),
+        Node("PosixFunctionDefinitionSyntax", "ShellStatementSyntax", "PosixFunctionDefinition", "FunctionDefinition", "t?:FunctionKeyword", "t:NameToken", "t?:OpenParenToken", "t?:CloseParenToken", "n:Body:ShellStatementSyntax"),
+        Node("PosixHereDocumentSyntax", "ShellStatementSyntax", "PosixHereDocument", "HereDocument", "t:BodyToken", "t:DelimiterToken"),
+        Node("PosixIfStatementSyntax", "ShellStatementSyntax", "PosixIfStatement", "IfStatement", "t:IfKeyword", "n:Condition:ShellStatementListSyntax", "t:ThenKeyword", "n:Body:ShellStatementListSyntax", "l:ElifClauses:PosixElifClauseSyntax", "n?:ElseClause:PosixElseClauseSyntax", "t:FiKeyword"),
+        MultiKind("PosixPrefixedStatementSyntax", "ShellStatementSyntax", "PrefixedStatement", "t:Keyword", "t?:NameToken", "n:Statement:ShellStatementSyntax"),
+        Node("PosixProcessSubstitutionSyntax", "ShellWordPartSyntax", "PosixProcessSubstitution", "ProcessSubstitution", "t:OpenToken", "n:Statements:ShellStatementListSyntax", "t:CloseToken"),
+        MultiKind("PosixWhileStatementSyntax", "ShellStatementSyntax", "WhileStatement", "t:Keyword", "n:Condition:ShellStatementListSyntax", "t:DoKeyword", "n:Body:ShellStatementListSyntax", "t:DoneKeyword"),
+        Node("PowerShellArrayLiteralSyntax", "ShellExpressionSyntax", "PowerShellArrayLiteral", "ArrayLiteral", "s:Elements:ShellExpressionSyntax"),
+        Node("PowerShellAssignmentExpressionSyntax", "ShellExpressionSyntax", "PowerShellAssignmentExpression", "AssignmentExpression", "n:Target:ShellExpressionSyntax", "t:OperatorToken", "n:Value:ShellSyntaxNode"),
+        Node("PowerShellAttributeSyntax", "ShellSyntaxNode", "PowerShellAttribute", "Attribute", "t:OpenBracketToken", "t:NameToken", "t?:OpenParenToken", "s:Arguments:ShellExpressionSyntax", "t?:CloseParenToken", "t:CloseBracketToken"),
+        MultiKind("PowerShellBinaryExpressionSyntax", "ShellExpressionSyntax", "BinaryExpression", "n:Left:ShellExpressionSyntax", "t:OperatorToken", "n:Right:ShellExpressionSyntax"),
+        Node("PowerShellCastExpressionSyntax", "ShellExpressionSyntax", "PowerShellCastExpression", "CastExpression", "n:Type:PowerShellTypeLiteralSyntax", "n:Operand:ShellExpressionSyntax"),
+        Node("PowerShellCatchClauseSyntax", "ShellSyntaxNode", "PowerShellCatchClause", "CatchClause", "t:CatchKeyword", "s:TypeFilters:PowerShellTypeLiteralSyntax", "n:Body:PowerShellScriptBlockSyntax"),
+        Node("PowerShellDataStatementSyntax", "ShellStatementSyntax", "PowerShellDataStatement", "DataStatement", "t:DataKeyword", "t?:NameToken", "tl:ParameterTokens", "n:Body:PowerShellScriptBlockSyntax"),
+        Node("PowerShellDoStatementSyntax", "ShellStatementSyntax", "PowerShellDoStatement", "DoStatement", "t:DoKeyword", "n:Body:PowerShellScriptBlockSyntax", "t:ConditionKeyword", "t:OpenParenToken", "n:Condition:ShellStatementListSyntax", "t:CloseParenToken"),
+        Node("PowerShellElseClauseSyntax", "ShellSyntaxNode", "PowerShellElseClause", "PowerShellElseClause", "t:ElseKeyword", "n:Body:PowerShellScriptBlockSyntax"),
+        Node("PowerShellElseIfClauseSyntax", "ShellSyntaxNode", "PowerShellElseIfClause", "ElseIfClause", "t:ElseIfKeyword", "t:OpenParenToken", "n:Condition:ShellStatementListSyntax", "t:CloseParenToken", "n:Body:PowerShellScriptBlockSyntax"),
+        MultiKind("PowerShellExpandableStringSyntax", "ShellExpressionSyntax", "ExpandableString", "t:OpenToken", "l:Parts:ShellSyntaxNode", "t:CloseToken"),
+        Node("PowerShellExpressionStatementSyntax", "ShellStatementSyntax", "PowerShellExpressionStatement", "ExpressionStatement", "n:Expression:ShellSyntaxNode", "l:Redirections:ShellRedirectionSyntax"),
+        Node("PowerShellFinallyClauseSyntax", "ShellSyntaxNode", "PowerShellFinallyClause", "FinallyClause", "t:FinallyKeyword", "n:Body:PowerShellScriptBlockSyntax"),
+        MultiKind("PowerShellFlowStatementSyntax", "ShellStatementSyntax", "FlowStatement", "t:Keyword", "n?:Value:ShellSyntaxNode"),
+        Node("PowerShellForEachStatementSyntax", "ShellStatementSyntax", "PowerShellForEachStatement", "ForEachStatement", "t:ForEachKeyword", "t:OpenParenToken", "n:Variable:ShellExpressionSyntax", "t:InKeyword", "n:Collection:ShellSyntaxNode", "t:CloseParenToken", "n:Body:PowerShellScriptBlockSyntax"),
+        Node("PowerShellForStatementSyntax", "ShellStatementSyntax", "PowerShellForStatement", "PowerShellForStatement", "t:ForKeyword", "t:OpenParenToken", "n?:Initializer:ShellSyntaxNode", "t?:FirstSemicolonToken", "n?:Condition:ShellSyntaxNode", "t?:SecondSemicolonToken", "n?:Iterator:ShellSyntaxNode", "t:CloseParenToken", "n:Body:PowerShellScriptBlockSyntax"),
+        MultiKind("PowerShellFunctionDefinitionSyntax", "ShellStatementSyntax", "PowerShellFunctionDefinition", "t:Keyword", "t:NameToken", "t?:OpenParenToken", "s:Parameters:PowerShellParameterSyntax", "t?:CloseParenToken", "n:Body:PowerShellScriptBlockSyntax"),
+        Node("PowerShellHashEntrySyntax", "ShellSyntaxNode", "PowerShellHashEntry", "HashEntry", "n:Key:ShellSyntaxNode", "t:EqualsToken", "n:Value:ShellSyntaxNode", "t?:SeparatorToken"),
+        Node("PowerShellHashLiteralSyntax", "ShellExpressionSyntax", "PowerShellHashLiteral", "HashLiteral", "t:OpenToken", "l:Entries:PowerShellHashEntrySyntax", "t:CloseBraceToken"),
+        Node("PowerShellIfStatementSyntax", "ShellStatementSyntax", "PowerShellIfStatement", "PowerShellIfStatement", "t:IfKeyword", "t:OpenParenToken", "n:Condition:ShellStatementListSyntax", "t:CloseParenToken", "n:Body:PowerShellScriptBlockSyntax", "l:ElseIfClauses:PowerShellElseIfClauseSyntax", "n?:ElseClause:PowerShellElseClauseSyntax"),
+        Node("PowerShellIndexExpressionSyntax", "ShellExpressionSyntax", "PowerShellIndex", "IndexExpression", "n:Target:ShellExpressionSyntax", "t:OpenBracketToken", "n:Index:ShellSyntaxNode", "t:CloseBracketToken"),
+        Node("PowerShellInvocationExpressionSyntax", "ShellExpressionSyntax", "PowerShellInvocation", "Invocation", "n:Target:ShellExpressionSyntax", "t:OpenParenToken", "s:Arguments:ShellExpressionSyntax", "t:CloseParenToken"),
+        Node("PowerShellLabeledStatementSyntax", "ShellStatementSyntax", "PowerShellLabeledStatement", "LabeledStatement", "t:LabelToken", "n:Statement:ShellStatementSyntax"),
+        MultiKind("PowerShellLiteralExpressionSyntax", "ShellExpressionSyntax", "PowerShellLiteral", "t:Token"),
+        Node("PowerShellMemberAccessExpressionSyntax", "ShellExpressionSyntax", "PowerShellMemberAccess", "MemberAccess", "n:Target:ShellExpressionSyntax", "t:OperatorToken", "t:MemberNameToken"),
+        MultiKind("PowerShellNamedBlockSyntax", "ShellStatementSyntax", "NamedBlock", "t:Keyword", "n:Body:PowerShellScriptBlockSyntax"),
+        Node("PowerShellParamBlockSyntax", "ShellStatementSyntax", "PowerShellParamBlock", "ParamBlock", "l:Attributes:PowerShellAttributeSyntax", "t:ParamKeyword", "t:OpenParenToken", "s:Parameters:PowerShellParameterSyntax", "t:CloseParenToken"),
+        Node("PowerShellParameterSyntax", "ShellSyntaxNode", "PowerShellParameter", "Parameter", "l:Attributes:PowerShellAttributeSyntax", "n:Variable:ShellExpressionSyntax", "t?:EqualsToken", "n?:DefaultValue:ShellSyntaxNode"),
+        Node("PowerShellParenthesizedExpressionSyntax", "ShellExpressionSyntax", "PowerShellParenthesizedExpression", "ParenthesizedExpression", "t:OpenParenToken", "n:Statements:ShellStatementListSyntax", "t:CloseParenToken"),
+        Node("PowerShellScriptBlockSyntax", "ShellExpressionSyntax", "PowerShellScriptBlock", "ScriptBlock", "t:OpenBraceToken", "n:Statements:ShellStatementListSyntax", "t:CloseBraceToken"),
+        MultiKind("PowerShellSubExpressionSyntax", "ShellExpressionSyntax", "SubExpression", "t:OpenToken", "n:Statements:ShellStatementListSyntax", "t:CloseParenToken"),
+        Node("PowerShellSwitchClauseSyntax", "ShellSyntaxNode", "PowerShellSwitchClause", "SwitchClause", "n:Pattern:ShellSyntaxNode", "n:Body:PowerShellScriptBlockSyntax"),
+        Node("PowerShellSwitchStatementSyntax", "ShellStatementSyntax", "PowerShellSwitchStatement", "SwitchStatement", "t:SwitchKeyword", "tl:ParameterTokens", "t?:OpenParenToken", "n:Condition:ShellStatementListSyntax", "t?:CloseParenToken", "t:OpenBraceToken", "l:Clauses:PowerShellSwitchClauseSyntax", "t:CloseBraceToken"),
+        Node("PowerShellTernaryExpressionSyntax", "ShellExpressionSyntax", "PowerShellTernaryExpression", "TernaryExpression", "n:Condition:ShellExpressionSyntax", "t:QuestionToken", "n:WhenTrue:ShellExpressionSyntax", "t:ColonToken", "n:WhenFalse:ShellExpressionSyntax"),
+        Node("PowerShellTrapStatementSyntax", "ShellStatementSyntax", "PowerShellTrapStatement", "TrapStatement", "t:TrapKeyword", "n?:TypeFilter:PowerShellTypeLiteralSyntax", "n:Body:PowerShellScriptBlockSyntax"),
+        Node("PowerShellTryStatementSyntax", "ShellStatementSyntax", "PowerShellTryStatement", "TryStatement", "t:TryKeyword", "n:Body:PowerShellScriptBlockSyntax", "l:CatchClauses:PowerShellCatchClauseSyntax", "n?:FinallyClause:PowerShellFinallyClauseSyntax"),
+        MultiKind("PowerShellTypeDefinitionSyntax", "ShellStatementSyntax", "TypeDefinition", "l:Attributes:PowerShellAttributeSyntax", "t:Keyword", "t:NameToken", "t?:ColonToken", "s:BaseTypes:PowerShellTypeLiteralSyntax", "t:OpenBraceToken", "n:Members:ShellStatementListSyntax", "t:CloseBraceToken"),
+        Node("PowerShellTypeLiteralSyntax", "ShellExpressionSyntax", "PowerShellTypeLiteral", "TypeLiteral", "t:OpenBracketToken", "t:NameToken", "t:CloseBracketToken"),
+        MultiKind("PowerShellUnaryExpressionSyntax", "ShellExpressionSyntax", "UnaryExpression", "t?:PrefixOperatorToken", "n:Operand:ShellExpressionSyntax", "t?:PostfixOperatorToken"),
+        Node("PowerShellUsingStatementSyntax", "ShellStatementSyntax", "PowerShellUsingStatement", "UsingStatement", "t:UsingKeyword", "t:KindToken", "n:Target:ShellSyntaxNode"),
+        Node("PowerShellVariableExpressionSyntax", "ShellExpressionSyntax", "PowerShellVariableExpression", "PowerShellVariable", "t:SigilToken", "t:NameToken"),
+        Node("PowerShellWhileStatementSyntax", "ShellStatementSyntax", "PowerShellWhileStatement", "PowerShellWhileStatement", "t:WhileKeyword", "t:OpenParenToken", "n:Condition:ShellStatementListSyntax", "t:CloseParenToken", "n:Body:PowerShellScriptBlockSyntax"),
+        Node("ShellAssignmentSyntax", "ShellSyntaxNode", "Assignment", "Assignment", "t:NameToken", "t:EqualsToken", "n?:Value:ShellWordSyntax"),
+        Node("ShellBinaryExpressionSyntax", "ShellExpressionSyntax", "BinaryExpression", "BinaryExpression", "n:Left:ShellExpressionSyntax", "t:OperatorToken", "n:Right:ShellExpressionSyntax"),
+        Node("ShellCommandListSyntax", "ShellStatementSyntax", "CommandList", "CommandList", "s:Pipelines:ShellStatementSyntax"),
+        Node("ShellCommandSubstitutionSyntax", "ShellWordPartSyntax", "CommandSubstitution", "CommandSubstitution", "t:OpenToken", "n:Statements:ShellStatementListSyntax", "t:CloseToken"),
+        Node("ShellCommandSyntax", "ShellStatementSyntax", "Command", "Command", "l:Elements:ShellSyntaxNode"),
+        Node("ShellConditionalExpressionSyntax", "ShellExpressionSyntax", "ConditionalExpression", "ShellConditionalExpression", "n:Condition:ShellExpressionSyntax", "t:QuestionToken", "n:WhenTrue:ShellExpressionSyntax", "t:ColonToken", "n:WhenFalse:ShellExpressionSyntax"),
+        Node("ShellEmbeddedExpressionSyntax", "ShellWordPartSyntax", "EmbeddedExpression", "EmbeddedExpression", "n:Expression:ShellSyntaxNode"),
+        Node("ShellEmptyStatementSyntax", "ShellStatementSyntax", "EmptyStatement", "EmptyStatement"),
+        Node("ShellEscapeSequenceSyntax", "ShellWordPartSyntax", "EscapeSequence", "EscapeSequence", "t:EscapeToken"),
+        Node("ShellGlobSyntax", "ShellWordPartSyntax", "Glob", "Glob", "t:GlobToken"),
+        Node("ShellGroupedExpressionSyntax", "ShellExpressionSyntax", "GroupedExpression", "GroupedExpression", "t:OpenParenToken", "n:Expression:ShellExpressionSyntax", "t:CloseParenToken"),
+        Node("ShellLiteralWordPartSyntax", "ShellWordPartSyntax", "LiteralWordPart", "LiteralWordPart", "t:TextToken"),
+        Node("ShellOperandExpressionSyntax", "ShellExpressionSyntax", "OperandExpression", "OperandExpression", "n:Word:ShellWordSyntax"),
+        Node("ShellPipelineSyntax", "ShellStatementSyntax", "Pipeline", "Pipeline", "t?:BangToken", "s:Commands:ShellStatementSyntax"),
+        Node("ShellQuotedStringSyntax", "ShellWordPartSyntax", "QuotedString", "QuotedString", "t:OpenQuoteToken", "l:Parts:ShellWordPartSyntax", "t:CloseQuoteToken"),
+        Node("ShellRawExpressionSyntax", "ShellExpressionSyntax", "RawExpression", "RawExpression", "t:TextToken"),
+        Node("ShellRedirectionSyntax", "ShellSyntaxNode", "Redirection", "Redirection", "t?:IoNumberToken", "t:OperatorToken", "n?:Target:ShellWordSyntax"),
+        Node("ShellScriptSyntax", "ShellSyntaxNode", "ShellScript", "Script", "n:Statements:ShellStatementListSyntax", "t:EndOfFileToken"),
+        Node("ShellSkippedTextSyntax", "ShellStatementSyntax", "SkippedText", "SkippedText", "tl:Tokens"),
+        Node("ShellStatementListSyntax", "ShellSyntaxNode", "StatementList", "StatementList", "s:Statements:ShellStatementSyntax"),
+        MultiKind("ShellUnaryExpressionSyntax", "ShellExpressionSyntax", "ShellUnaryExpression", "t?:PrefixOperatorToken", "n:Operand:ShellExpressionSyntax", "t?:PostfixOperatorToken"),
+        Node("ShellVariableReferenceSyntax", "ShellWordPartSyntax", "VariableReference", "VariableReference", "t:IntroducerToken", "t?:OpenBraceToken", "t:NameToken", "t?:CloseBraceToken"),
+        Node("ShellWordSyntax", "ShellSyntaxNode", "Word", "Word", "l:Parts:ShellWordPartSyntax"),
+        Node("ZshAlwaysStatementSyntax", "ShellStatementSyntax", "ZshAlwaysStatement", "ZshAlwaysStatement", "n:Body:ShellStatementSyntax", "t:AlwaysKeyword", "n:AlwaysBody:ShellStatementSyntax"),
+        Node("ZshForeachStatementSyntax", "ShellStatementSyntax", "ZshForeachStatement", "ZshForeachStatement", "t:Keyword", "t:VariableToken", "t:OpenParenToken", "l:Items:ShellWordSyntax", "t:CloseParenToken", "n:Body:ShellStatementListSyntax", "t?:EndKeyword"),
+        Node("ZshRepeatStatementSyntax", "ShellStatementSyntax", "ZshRepeatStatement", "ZshRepeatStatement", "t:RepeatKeyword", "n:Count:ShellWordSyntax", "t?:ListTerminatorToken", "t?:DoKeyword", "n:Body:ShellStatementListSyntax", "t?:DoneKeyword"),
+    };
+#>
+// <auto-generated />
+// Generated from Syntax.tt. Edit the template, then run: dotnet run ./eng/update-all.cs
+#nullable enable
+
+using Meziantou.Framework.Language.InternalSyntax;
+using GreenNode = Meziantou.Framework.Language.InternalSyntax.GreenNode;
+
+#pragma warning disable MA0048 // File name must match type name
+
+namespace Meziantou.Framework.Language.Shell.Syntax.InternalSyntax
+{
+<# foreach (var node in nodes) { #>
+internal sealed partial class <#= node.Name #> : <#= node.Base #>
+{
+<# foreach (var slot in node.Slots) { #>
+    private readonly GreenNode<#= slot.Optional ? "?" : "" #> _<#= Camel(slot.Name) #>;
+<# } #>
+
+    public <#= node.Name #>(<#= GreenParameters(node) #>)
+        : this(<#= GreenParameterNames(node, "diagnostics: null, annotations: null") #>)
+    {
+    }
+
+    private <#= node.Name #>(<#= GreenParametersWithTail(node) #>SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+        : base(<#= node.MultiKind ? "kind" : "SyntaxKind." + node.Kind #>, diagnostics, annotations)
+    {
+        SlotCount = <#= node.Slots.Length #>;
+<# foreach (var slot in node.Slots) { #>
+        AdjustFlagsAndWidth(<#= Camel(slot.Name) #>);
+        _<#= Camel(slot.Name) #> = <#= Camel(slot.Name) #>;
+<# } #>
+    }
+
+    internal override GreenNode? GetSlot(int index) => index switch
+    {
+<# for (var i = 0; i < node.Slots.Length; i++) { #>
+        <#= i #> => _<#= Camel(node.Slots[i].Name) #>,
+<# } #>
+        _ => null,
+    };
+
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new <#= node.Name #>(<#= SlotsFromSpan(node) #>GetDiagnostics(), GetAnnotations());
+
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new <#= node.Name #>(<#= GreenArguments(node, "diagnostics, GetAnnotations()") #>);
+
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new <#= node.Name #>(<#= GreenArguments(node, "GetDiagnostics(), annotations") #>);
+
+    internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Shell.<#= node.Name #>(this, parent, position);
+}
+
+<# } #>
+}
+
+namespace Meziantou.Framework.Language.Shell
+{
+<# foreach (var node in nodes) { #>
+public sealed partial class <#= node.Name #> : <#= node.Base #>
+{
+<# foreach (var slot in node.Slots) { if (slot.Kind is "n" or "n?" or "l" or "s") { #>
+    private SyntaxNode? _<#= Camel(slot.Name) #>;
+<# } } #>
+
+    internal <#= node.Name #>(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
+    {
+    }
+
+<# for (var i = 0; i < node.Slots.Length; i++) { var slot = node.Slots[i]; #>
+<# if (slot.Kind is "t" or "t?") { #>
+    public SyntaxToken <#= slot.Name #> => new(this, Green.GetSlot(<#= i #>), <#= i == 0 ? "Position" : "GetChildPosition(" + i + ")" #>, GetChildIndex(<#= i #>));
+<# } else if (slot.Kind == "tl") { #>
+    public SyntaxTokenList <#= slot.Name #> => new(this, Green.GetSlot(<#= i #>), <#= i == 0 ? "Position" : "GetChildPosition(" + i + ")" #>, GetChildIndex(<#= i #>));
+<# } else if (slot.Kind == "l") { #>
+    public SyntaxList<<#= slot.Type #>> <#= slot.Name #> => new(GetRed(ref _<#= Camel(slot.Name) #>, <#= i #>));
+<# } else if (slot.Kind == "s") { #>
+    public SeparatedSyntaxList<<#= slot.Type #>> <#= slot.Name #>
+    {
+        get
+        {
+            var red = GetRed(ref _<#= Camel(slot.Name) #>, <#= i #>);
+
+            return red is null ? default : new SeparatedSyntaxList<<#= slot.Type #>>(new SyntaxNodeOrTokenList(red, GetChildIndex(<#= i #>)));
+        }
+    }
+<# } else if (slot.Kind == "n") { #>
+    public <#= slot.Type #> <#= slot.Name #> => (<#= slot.Type #>)GetRed(ref _<#= Camel(slot.Name) #>, <#= i #>)!;
+<# } else { #>
+    public <#= slot.Type #>? <#= slot.Name #> => (<#= slot.Type #>?)GetRed(ref _<#= Camel(slot.Name) #>, <#= i #>);
+<# } #>
+
+<# } #>
+<# if (node.Slots.Length > 0) { #>
+    /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
+    public <#= node.Name #> Update(<#= RedParameters(node) #>)
+    {
+        if (<#= UnchangedCondition(node) #>)
+            return this;
+
+        return SyntaxFactory.<#= FactoryName(node) #>(<#= RedArguments(node) #>).WithAnnotationsFrom(this);
+    }
+
+<# for (var i = 0; i < node.Slots.Length; i++) { var slot = node.Slots[i]; #>
+    /// <summary>Returns this node with <paramref name="<#= Camel(slot.Name) #>"/> in place of its <see cref="<#= slot.Name #>"/>.</summary>
+    public <#= node.Name #> With<#= slot.Name #>(<#= RedSlotType(slot) #> <#= Camel(slot.Name) #>) => Update(<#= WithArguments(node, i) #>);
+
+<# } #>
+<# } #>
+    internal override SyntaxNode? GetNodeSlot(int index) => index switch
+    {
+<# for (var i = 0; i < node.Slots.Length; i++) { if (node.Slots[i].Kind is "n" or "n?" or "l" or "s") { #>
+        <#= i #> => GetRed(ref _<#= Camel(node.Slots[i].Name) #>, <#= i #>),
+<# } } #>
+        _ => null,
+    };
+
+    internal override SyntaxNode? GetCachedSlot(int index) => index switch
+    {
+<# for (var i = 0; i < node.Slots.Length; i++) { if (node.Slots[i].Kind is "n" or "n?" or "l" or "s") { #>
+        <#= i #> => _<#= Camel(node.Slots[i].Name) #>,
+<# } } #>
+        _ => null,
+    };
+
+    public override void Accept(ShellSyntaxVisitor visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        visitor.Visit<#= node.Visit #>(this);
+    }
+
+    public override TResult? Accept<TResult>(ShellSyntaxVisitor<TResult> visitor)
+        where TResult : default
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        return visitor.Visit<#= node.Visit #>(this);
+    }
+}
+
+<# } #>
+
+public abstract partial class ShellSyntaxVisitor
+{
+<# foreach (var node in nodes) { #>
+    public virtual void Visit<#= node.Visit #>(<#= node.Name #> node) => DefaultVisit(node);
+<# } #>
+}
+
+public abstract partial class ShellSyntaxVisitor<TResult>
+{
+<# foreach (var node in nodes) { #>
+    public virtual TResult? Visit<#= node.Visit #>(<#= node.Name #> node) => DefaultVisit(node);
+<# } #>
+}
+
+public partial class ShellSyntaxRewriter
+{
+<# foreach (var node in nodes) { if (node.Slots.Length > 0) { #>
+    public override SyntaxNode? Visit<#= node.Visit #>(<#= node.Name #> node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node.Update(<#= RewriteArguments(node) #>);
+    }
+
+<# } } #>
+}
+
+public static partial class SyntaxFactory
+{
+<# foreach (var node in nodes) { #>
+    /// <summary>Builds a <see cref="<#= node.Name #>"/> from its parts.</summary>
+    public static <#= node.Name #> <#= FactoryName(node) #>(<#= FactoryParameters(node) #>)
+        => (<#= node.Name #>)new Syntax.InternalSyntax.<#= node.Name #>(<#= FactoryArguments(node) #>).CreateRed();
+
+<# } #>
+}
+}
+<#+
+record Slot(string Kind, string Name, string Type)
+{
+    public bool Optional => Kind is "t?" or "n?" or "l" or "s" or "tl";
+}
+
+record NodeDef(string Name, string Base, string Kind, string Visit, Slot[] Slots, bool MultiKind);
+
+static NodeDef Node(string name, string baseName, string kind, string visit, params string[] slots)
+    => new(name, baseName, kind, visit, ParseSlots(slots), MultiKind: false);
+
+static NodeDef MultiKind(string name, string baseName, string visit, params string[] slots)
+    => new(name, baseName, "", visit, ParseSlots(slots), MultiKind: true);
+
+static Slot[] ParseSlots(string[] slots)
+{
+    var parsed = new Slot[slots.Length];
+    for (var i = 0; i < slots.Length; i++)
+    {
+        var parts = slots[i].Split(':');
+        parsed[i] = new Slot(parts[0], parts[1], parts.Length > 2 ? parts[2] : "");
+    }
+
+    return parsed;
+}
+
+static string Camel(string name) => char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+static string GreenParameters(NodeDef node)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("SyntaxKind kind");
+    }
+
+    foreach (var slot in node.Slots)
+    {
+        parts.Add("GreenNode" + (slot.Optional ? "?" : "") + " " + Camel(slot.Name));
+    }
+
+    return string.Join(", ", parts);
+}
+
+/// <summary>The green constructor parameters, with a trailing comma when there are any.</summary>
+static string GreenParametersWithTail(NodeDef node)
+{
+    var parameters = GreenParameters(node);
+
+    return parameters.Length == 0 ? "" : parameters + ", ";
+}
+
+static string GreenParameterNames(NodeDef node, string tail)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("kind");
+    }
+
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(Camel(slot.Name));
+    }
+
+    parts.Add(tail);
+
+    return string.Join(", ", parts);
+}
+
+static string GreenArguments(NodeDef node, string tail)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("Kind");
+    }
+
+    foreach (var slot in node.Slots)
+    {
+        parts.Add("_" + Camel(slot.Name));
+    }
+
+    parts.Add(tail);
+
+    return string.Join(", ", parts);
+}
+
+static string SlotsFromSpan(NodeDef node)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("Kind");
+    }
+
+    for (var i = 0; i < node.Slots.Length; i++)
+    {
+        parts.Add("slots[" + i + "]" + (node.Slots[i].Optional ? "" : "!"));
+    }
+
+    return parts.Count == 0 ? "" : string.Join(", ", parts) + ", ";
+}
+
+static string RedSlotType(Slot slot) => slot.Kind switch
+{
+    "t" or "t?" => "SyntaxToken",
+    "tl" => "SyntaxTokenList",
+    "l" => "SyntaxList<" + slot.Type + ">",
+    "s" => "SeparatedSyntaxList<" + slot.Type + ">",
+    "n" => slot.Type,
+    _ => slot.Type + "?",
+};
+
+static string RedParameters(NodeDef node)
+{
+    var parts = new List<string>();
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(RedSlotType(slot) + " " + Camel(slot.Name));
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string RedArguments(NodeDef node)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("Kind()");
+    }
+
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(Camel(slot.Name));
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string UnchangedCondition(NodeDef node)
+{
+    var parts = new List<string>();
+    for (var i = 0; i < node.Slots.Length; i++)
+    {
+        var slot = node.Slots[i];
+        parts.Add(slot.Kind switch
+        {
+            "t" or "t?" or "tl" => Camel(slot.Name) + ".Node == Green.GetSlot(" + i + ")",
+            "l" or "s" => Camel(slot.Name) + ".Green == Green.GetSlot(" + i + ")",
+            "n" => "ReferenceEquals(" + Camel(slot.Name) + ".Green, Green.GetSlot(" + i + "))",
+            _ => "ReferenceEquals(" + Camel(slot.Name) + "?.Green, Green.GetSlot(" + i + "))",
+        });
+    }
+
+    return string.Join(" && ", parts);
+}
+
+static string FactoryName(NodeDef node) => node.Name.EndsWith("Syntax", StringComparison.Ordinal) ? node.Name.Substring(0, node.Name.Length - "Syntax".Length) : node.Name;
+
+static string WithArguments(NodeDef node, int index)
+{
+    var parts = new List<string>();
+    for (var i = 0; i < node.Slots.Length; i++)
+    {
+        parts.Add(i == index ? Camel(node.Slots[i].Name) : node.Slots[i].Name);
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string RewriteArguments(NodeDef node)
+{
+    var parts = new List<string>();
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(slot.Kind switch
+        {
+            "t" or "t?" => "VisitToken(node." + slot.Name + ")",
+            "tl" => "VisitList(node." + slot.Name + ")",
+            "l" or "s" => "VisitList(node." + slot.Name + ")",
+            "n" => "(" + slot.Type + "?)Visit(node." + slot.Name + ") ?? node." + slot.Name,
+            _ => "node." + slot.Name + " is null ? null : (" + slot.Type + "?)Visit(node." + slot.Name + ")",
+        });
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string FactoryParameters(NodeDef node)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("SyntaxKind kind");
+    }
+
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(RedSlotType(slot) + " " + Camel(slot.Name));
+    }
+
+    return string.Join(", ", parts);
+}
+
+static string FactoryArguments(NodeDef node)
+{
+    var parts = new List<string>();
+    if (node.MultiKind)
+    {
+        parts.Add("kind");
+    }
+
+    foreach (var slot in node.Slots)
+    {
+        parts.Add(slot.Kind switch
+        {
+            "t" => "Required(" + Camel(slot.Name) + ")",
+            "t?" or "tl" => Camel(slot.Name) + ".Node",
+            "l" or "s" => Camel(slot.Name) + ".Green",
+            "n" => Camel(slot.Name) + ".Green",
+            _ => Camel(slot.Name) + "?.Green",
+        });
+    }
+
+    return string.Join(", ", parts);
+}
+#>

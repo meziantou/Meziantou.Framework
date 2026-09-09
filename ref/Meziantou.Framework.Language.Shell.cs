@@ -6,323 +6,399 @@ namespace Meziantou.Framework.Language.Shell
 {
     public sealed class CmdCallStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CallKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CallKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementSyntax Target { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public CmdCallStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken callKeyword, Meziantou.Framework.Language.Shell.ShellStatementSyntax target) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.CmdCallStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken callKeyword, Meziantou.Framework.Language.Shell.ShellStatementSyntax target) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdCallStatementSyntax WithCallKeyword(Meziantou.Framework.Language.SyntaxToken callKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdCallStatementSyntax WithTarget(Meziantou.Framework.Language.Shell.ShellStatementSyntax target) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class CmdElseClauseSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ElseKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ElseKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public CmdElseClauseSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken elseKeyword, Meziantou.Framework.Language.Shell.ShellStatementSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.CmdElseClauseSyntax Update(Meziantou.Framework.Language.SyntaxToken elseKeyword, Meziantou.Framework.Language.Shell.ShellStatementSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdElseClauseSyntax WithElseKeyword(Meziantou.Framework.Language.SyntaxToken elseKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdElseClauseSyntax WithBody(Meziantou.Framework.Language.Shell.ShellStatementSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class CmdForStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ForKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? SwitchToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax> SwitchArguments { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken VariableToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken InKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Items { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken DoKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellStatementSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public string VariableName { get => throw null; }
-        public CmdForStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken forKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken? switchToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax>? switchArguments, Meziantou.Framework.Language.Shell.ShellSyntaxToken variableToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken inKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax>? items, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken doKeyword, Meziantou.Framework.Language.Shell.ShellStatementSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken ForKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken SwitchToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> SwitchArguments { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken VariableToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken InKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Items { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken DoKeyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementSyntax Body { get => throw null; }
+        public Meziantou.Framework.Language.Shell.CmdForStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken forKeyword, Meziantou.Framework.Language.SyntaxToken switchToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> switchArguments, Meziantou.Framework.Language.SyntaxToken variableToken, Meziantou.Framework.Language.SyntaxToken inKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> items, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.SyntaxToken doKeyword, Meziantou.Framework.Language.Shell.ShellStatementSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdForStatementSyntax WithForKeyword(Meziantou.Framework.Language.SyntaxToken forKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdForStatementSyntax WithSwitchToken(Meziantou.Framework.Language.SyntaxToken switchToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdForStatementSyntax WithSwitchArguments(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> switchArguments) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdForStatementSyntax WithVariableToken(Meziantou.Framework.Language.SyntaxToken variableToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdForStatementSyntax WithInKeyword(Meziantou.Framework.Language.SyntaxToken inKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdForStatementSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdForStatementSyntax WithItems(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> items) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdForStatementSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdForStatementSyntax WithDoKeyword(Meziantou.Framework.Language.SyntaxToken doKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdForStatementSyntax WithBody(Meziantou.Framework.Language.Shell.ShellStatementSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class CmdGotoStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken GotoKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken LabelToken { get => throw null; }
         public string Label { get => throw null; }
-        public CmdGotoStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken gotoKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken labelToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken GotoKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken LabelToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.CmdGotoStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken gotoKeyword, Meziantou.Framework.Language.SyntaxToken labelToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdGotoStatementSyntax WithGotoKeyword(Meziantou.Framework.Language.SyntaxToken gotoKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdGotoStatementSyntax WithLabelToken(Meziantou.Framework.Language.SyntaxToken labelToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class CmdIfStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken IfKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? CaseInsensitiveToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? NotKeyword { get => throw null; }
+        public bool IsCaseInsensitive { get => throw null; }
+        public bool IsNegated { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken IfKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CaseInsensitiveToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NotKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Condition { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementSyntax Body { get => throw null; }
         public Meziantou.Framework.Language.Shell.CmdElseClauseSyntax? ElseClause { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public bool IsCaseInsensitive { get => throw null; }
-        public bool IsNegated { get => throw null; }
-        public CmdIfStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken ifKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken? caseInsensitiveToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? notKeyword, Meziantou.Framework.Language.Shell.ShellExpressionSyntax condition, Meziantou.Framework.Language.Shell.ShellStatementSyntax body, Meziantou.Framework.Language.Shell.CmdElseClauseSyntax? elseClause) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.CmdIfStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken ifKeyword, Meziantou.Framework.Language.SyntaxToken caseInsensitiveToken, Meziantou.Framework.Language.SyntaxToken notKeyword, Meziantou.Framework.Language.Shell.ShellExpressionSyntax condition, Meziantou.Framework.Language.Shell.ShellStatementSyntax body, Meziantou.Framework.Language.Shell.CmdElseClauseSyntax? elseClause) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdIfStatementSyntax WithIfKeyword(Meziantou.Framework.Language.SyntaxToken ifKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdIfStatementSyntax WithCaseInsensitiveToken(Meziantou.Framework.Language.SyntaxToken caseInsensitiveToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdIfStatementSyntax WithNotKeyword(Meziantou.Framework.Language.SyntaxToken notKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdIfStatementSyntax WithCondition(Meziantou.Framework.Language.Shell.ShellExpressionSyntax condition) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdIfStatementSyntax WithBody(Meziantou.Framework.Language.Shell.ShellStatementSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdIfStatementSyntax WithElseClause(Meziantou.Framework.Language.Shell.CmdElseClauseSyntax? elseClause) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class CmdLabelStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ColonToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken NameToken { get => throw null; }
         public string Name { get => throw null; }
-        public CmdLabelStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken colonToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken nameToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken ColonToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.CmdLabelStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken colonToken, Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdLabelStatementSyntax WithColonToken(Meziantou.Framework.Language.SyntaxToken colonToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdLabelStatementSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class CmdParenthesizedBlockSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Statements { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public CmdParenthesizedBlockSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.CmdParenthesizedBlockSyntax Update(Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdParenthesizedBlockSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdParenthesizedBlockSyntax WithStatements(Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdParenthesizedBlockSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class CmdSetStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken SetKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? SwitchToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? NameToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? EqualsToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellWordSyntax? Value { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public string Name { get => throw null; }
         public bool IsArithmetic { get => throw null; }
         public bool IsPrompt { get => throw null; }
-        public CmdSetStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken setKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken? switchToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? nameToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? equalsToken, Meziantou.Framework.Language.Shell.ShellWordSyntax? value) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken SetKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken SwitchToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken EqualsToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellWordSyntax? Value { get => throw null; }
+        public Meziantou.Framework.Language.Shell.CmdSetStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken setKeyword, Meziantou.Framework.Language.SyntaxToken switchToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken equalsToken, Meziantou.Framework.Language.Shell.ShellWordSyntax? value) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdSetStatementSyntax WithSetKeyword(Meziantou.Framework.Language.SyntaxToken setKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdSetStatementSyntax WithSwitchToken(Meziantou.Framework.Language.SyntaxToken switchToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdSetStatementSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdSetStatementSyntax WithEqualsToken(Meziantou.Framework.Language.SyntaxToken equalsToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdSetStatementSyntax WithValue(Meziantou.Framework.Language.Shell.ShellWordSyntax? value) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class CmdVariableReferenceSyntax : Meziantou.Framework.Language.Shell.ShellWordPartSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken NameToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? CloseToken { get => throw null; }
         public string Name { get => throw null; }
         public bool IsDelayed { get => throw null; }
         public bool IsLoopVariable { get => throw null; }
-        public CmdVariableReferenceSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken nameToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? closeToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken OpenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.CmdVariableReferenceSyntax Update(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdVariableReferenceSyntax WithOpenToken(Meziantou.Framework.Language.SyntaxToken openToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdVariableReferenceSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.CmdVariableReferenceSyntax WithCloseToken(Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixArithmeticExpansionSyntax : Meziantou.Framework.Language.Shell.ShellWordPartSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Expression { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseToken { get => throw null; }
         public string ExpressionText { get => throw null; }
-        public PosixArithmeticExpansionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax expression, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken OpenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Expression { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PosixArithmeticExpansionSyntax Update(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax expression, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixArithmeticExpansionSyntax WithOpenToken(Meziantou.Framework.Language.SyntaxToken openToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixArithmeticExpansionSyntax WithExpression(Meziantou.Framework.Language.Shell.ShellExpressionSyntax expression) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixArithmeticExpansionSyntax WithCloseToken(Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixArrayAssignmentSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken NameToken { get => throw null; }
         public string Name { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken EqualsToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Elements { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PosixArrayAssignmentSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken nameToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken equalsToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax>? elements, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken EqualsToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Elements { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PosixArrayAssignmentSyntax Update(Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken equalsToken, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> elements, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixArrayAssignmentSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixArrayAssignmentSyntax WithEqualsToken(Meziantou.Framework.Language.SyntaxToken equalsToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixArrayAssignmentSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixArrayAssignmentSyntax WithElements(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> elements) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixArrayAssignmentSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixCaseClauseSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? OpenParenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Patterns { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> PatternSeparatorTokens { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> PatternSeparatorTokens { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Patterns { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Body { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? TerminatorToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PosixCaseClauseSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken? openParenToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax>? patterns, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? patternSeparatorTokens, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.Shell.ShellSyntaxToken? terminatorToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken TerminatorToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax Update(Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> patterns, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.SyntaxToken terminatorToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax WithPatterns(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> patterns) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax WithBody(Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax WithTerminatorToken(Meziantou.Framework.Language.SyntaxToken terminatorToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixCaseStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CaseKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CaseKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellWordSyntax Subject { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken InKeyword { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax> Clauses { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken EsacKeyword { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PosixCaseStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken caseKeyword, Meziantou.Framework.Language.Shell.ShellWordSyntax subject, Meziantou.Framework.Language.Shell.ShellSyntaxToken inKeyword, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax>? clauses, Meziantou.Framework.Language.Shell.ShellSyntaxToken esacKeyword) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken InKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax> Clauses { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken EsacKeyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PosixCaseStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken caseKeyword, Meziantou.Framework.Language.Shell.ShellWordSyntax subject, Meziantou.Framework.Language.SyntaxToken inKeyword, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax> clauses, Meziantou.Framework.Language.SyntaxToken esacKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixCaseStatementSyntax WithCaseKeyword(Meziantou.Framework.Language.SyntaxToken caseKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixCaseStatementSyntax WithSubject(Meziantou.Framework.Language.Shell.ShellWordSyntax subject) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixCaseStatementSyntax WithInKeyword(Meziantou.Framework.Language.SyntaxToken inKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixCaseStatementSyntax WithClauses(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax> clauses) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixCaseStatementSyntax WithEsacKeyword(Meziantou.Framework.Language.SyntaxToken esacKeyword) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixCompoundStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Statements { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public bool IsSubshell { get => throw null; }
-        public PosixCompoundStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellSyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken OpenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Statements { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PosixCompoundStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixCompoundStatementSyntax WithOpenToken(Meziantou.Framework.Language.SyntaxToken openToken) => throw null;
         public Meziantou.Framework.Language.Shell.PosixCompoundStatementSyntax WithStatements(Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixCompoundStatementSyntax WithCloseToken(Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixDelimitedExpressionStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Expression { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public bool IsArithmetic { get => throw null; }
-        public PosixDelimitedExpressionStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellSyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax expression, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken OpenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Expression { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PosixDelimitedExpressionStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax expression, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixDelimitedExpressionStatementSyntax WithOpenToken(Meziantou.Framework.Language.SyntaxToken openToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixDelimitedExpressionStatementSyntax WithExpression(Meziantou.Framework.Language.Shell.ShellExpressionSyntax expression) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixDelimitedExpressionStatementSyntax WithCloseToken(Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixElifClauseSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ElifKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ElifKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Condition { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ThenKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ThenKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PosixElifClauseSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken elifKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.Shell.ShellSyntaxToken thenKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PosixElifClauseSyntax Update(Meziantou.Framework.Language.SyntaxToken elifKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken thenKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixElifClauseSyntax WithElifKeyword(Meziantou.Framework.Language.SyntaxToken elifKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixElifClauseSyntax WithCondition(Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixElifClauseSyntax WithThenKeyword(Meziantou.Framework.Language.SyntaxToken thenKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixElifClauseSyntax WithBody(Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixElseClauseSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ElseKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ElseKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PosixElseClauseSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken elseKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PosixElseClauseSyntax Update(Meziantou.Framework.Language.SyntaxToken elseKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixElseClauseSyntax WithElseKeyword(Meziantou.Framework.Language.SyntaxToken elseKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixElseClauseSyntax WithBody(Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixForStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken Keyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken VariableToken { get => throw null; }
         public string VariableName { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? InKeyword { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Items { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? ListTerminatorToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken DoKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Body { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken DoneKeyword { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public bool IsSelect { get => throw null; }
-        public PosixForStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellSyntaxToken keyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken variableToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? inKeyword, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax>? items, Meziantou.Framework.Language.Shell.ShellSyntaxToken? listTerminatorToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken doKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.Shell.ShellSyntaxToken doneKeyword) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken Keyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken VariableToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken InKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Items { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ListTerminatorToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken DoKeyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Body { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken DoneKeyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PosixForStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.SyntaxToken variableToken, Meziantou.Framework.Language.SyntaxToken inKeyword, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> items, Meziantou.Framework.Language.SyntaxToken listTerminatorToken, Meziantou.Framework.Language.SyntaxToken doKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.SyntaxToken doneKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixForStatementSyntax WithKeyword(Meziantou.Framework.Language.SyntaxToken keyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixForStatementSyntax WithVariableToken(Meziantou.Framework.Language.SyntaxToken variableToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixForStatementSyntax WithInKeyword(Meziantou.Framework.Language.SyntaxToken inKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixForStatementSyntax WithItems(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> items) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixForStatementSyntax WithListTerminatorToken(Meziantou.Framework.Language.SyntaxToken listTerminatorToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixForStatementSyntax WithDoKeyword(Meziantou.Framework.Language.SyntaxToken doKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixForStatementSyntax WithBody(Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixForStatementSyntax WithDoneKeyword(Meziantou.Framework.Language.SyntaxToken doneKeyword) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixFunctionDefinitionSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? FunctionKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken NameToken { get => throw null; }
         public string Name { get => throw null; }
         public bool IsAnonymous { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? OpenParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken FunctionKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PosixFunctionDefinitionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken? functionKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken nameToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? openParenToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? closeParenToken, Meziantou.Framework.Language.Shell.ShellStatementSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PosixFunctionDefinitionSyntax Update(Meziantou.Framework.Language.SyntaxToken functionKeyword, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.ShellStatementSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixFunctionDefinitionSyntax WithFunctionKeyword(Meziantou.Framework.Language.SyntaxToken functionKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixFunctionDefinitionSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixFunctionDefinitionSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixFunctionDefinitionSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixFunctionDefinitionSyntax WithBody(Meziantou.Framework.Language.Shell.ShellStatementSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixHereDocumentSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken BodyToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken DelimiterToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellRedirectionSyntax? Redirection { get => throw null; }
         public bool StripsLeadingTabs { get => throw null; }
         public bool IsQuotedDelimiter { get => throw null; }
-        public PosixHereDocumentSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken bodyToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken delimiterToken, Meziantou.Framework.Language.Shell.ShellRedirectionSyntax? redirection) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken BodyToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken DelimiterToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PosixHereDocumentSyntax Update(Meziantou.Framework.Language.SyntaxToken bodyToken, Meziantou.Framework.Language.SyntaxToken delimiterToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixHereDocumentSyntax WithBodyToken(Meziantou.Framework.Language.SyntaxToken bodyToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixHereDocumentSyntax WithDelimiterToken(Meziantou.Framework.Language.SyntaxToken delimiterToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixIfStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken IfKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken IfKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Condition { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ThenKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ThenKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Body { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PosixElifClauseSyntax> ElifClauses { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PosixElifClauseSyntax> ElifClauses { get => throw null; }
         public Meziantou.Framework.Language.Shell.PosixElseClauseSyntax? ElseClause { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken FiKeyword { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PosixIfStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken ifKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.Shell.ShellSyntaxToken thenKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PosixElifClauseSyntax>? elifClauses, Meziantou.Framework.Language.Shell.PosixElseClauseSyntax? elseClause, Meziantou.Framework.Language.Shell.ShellSyntaxToken fiKeyword) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken FiKeyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PosixIfStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken ifKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken thenKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PosixElifClauseSyntax> elifClauses, Meziantou.Framework.Language.Shell.PosixElseClauseSyntax? elseClause, Meziantou.Framework.Language.SyntaxToken fiKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixIfStatementSyntax WithIfKeyword(Meziantou.Framework.Language.SyntaxToken ifKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixIfStatementSyntax WithCondition(Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixIfStatementSyntax WithThenKeyword(Meziantou.Framework.Language.SyntaxToken thenKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixIfStatementSyntax WithBody(Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixIfStatementSyntax WithElifClauses(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PosixElifClauseSyntax> elifClauses) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixIfStatementSyntax WithElseClause(Meziantou.Framework.Language.Shell.PosixElseClauseSyntax? elseClause) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixIfStatementSyntax WithFiKeyword(Meziantou.Framework.Language.SyntaxToken fiKeyword) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixPrefixedStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken Keyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? NameToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken Keyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementSyntax Statement { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PosixPrefixedStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellSyntaxToken keyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken? nameToken, Meziantou.Framework.Language.Shell.ShellStatementSyntax statement) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PosixPrefixedStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.Shell.ShellStatementSyntax statement) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixPrefixedStatementSyntax WithKeyword(Meziantou.Framework.Language.SyntaxToken keyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixPrefixedStatementSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixPrefixedStatementSyntax WithStatement(Meziantou.Framework.Language.Shell.ShellStatementSyntax statement) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixProcessSubstitutionSyntax : Meziantou.Framework.Language.Shell.ShellWordPartSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Statements { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public bool IsInput { get => throw null; }
         public bool IsFileSubstitution { get => throw null; }
-        public PosixProcessSubstitutionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken OpenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Statements { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PosixProcessSubstitutionSyntax Update(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixProcessSubstitutionSyntax WithOpenToken(Meziantou.Framework.Language.SyntaxToken openToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixProcessSubstitutionSyntax WithStatements(Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixProcessSubstitutionSyntax WithCloseToken(Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PosixWhileStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken Keyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Condition { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken DoKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Body { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken DoneKeyword { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public bool IsUntil { get => throw null; }
-        public PosixWhileStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellSyntaxToken keyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.Shell.ShellSyntaxToken doKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.Shell.ShellSyntaxToken doneKeyword) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken Keyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Condition { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken DoKeyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Body { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken DoneKeyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PosixWhileStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken doKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.SyntaxToken doneKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixWhileStatementSyntax WithKeyword(Meziantou.Framework.Language.SyntaxToken keyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixWhileStatementSyntax WithCondition(Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixWhileStatementSyntax WithDoKeyword(Meziantou.Framework.Language.SyntaxToken doKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixWhileStatementSyntax WithBody(Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PosixWhileStatementSyntax WithDoneKeyword(Meziantou.Framework.Language.SyntaxToken doneKeyword) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellArrayLiteralSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> Elements { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> SeparatorTokens { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellArrayLiteralSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax>? elements, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? separatorTokens) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> Elements { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellArrayLiteralSyntax Update(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> elements) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellArrayLiteralSyntax WithElements(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> elements) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -330,27 +406,33 @@ namespace Meziantou.Framework.Language.Shell
     public sealed class PowerShellAssignmentExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Target { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OperatorToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OperatorToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode Value { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellAssignmentExpressionSyntax(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target, Meziantou.Framework.Language.Shell.ShellSyntaxToken operatorToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode value) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellAssignmentExpressionSyntax Update(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target, Meziantou.Framework.Language.SyntaxToken operatorToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode value) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellAssignmentExpressionSyntax WithTarget(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellAssignmentExpressionSyntax WithOperatorToken(Meziantou.Framework.Language.SyntaxToken operatorToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellAssignmentExpressionSyntax WithValue(Meziantou.Framework.Language.Shell.ShellSyntaxNode value) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellAttributeSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenBracketToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken NameToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? OpenParenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> Arguments { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> SeparatorTokens { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? CloseParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseBracketToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public string Name { get => throw null; }
         public bool IsTypeConstraint { get => throw null; }
-        public PowerShellAttributeSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken openBracketToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken nameToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? openParenToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax>? arguments, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? separatorTokens, Meziantou.Framework.Language.Shell.ShellSyntaxToken? closeParenToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeBracketToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken OpenBracketToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> Arguments { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseBracketToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax Update(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> arguments, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax WithOpenBracketToken(Meziantou.Framework.Language.SyntaxToken openBracketToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax WithArguments(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> arguments) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax WithCloseBracketToken(Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -358,10 +440,12 @@ namespace Meziantou.Framework.Language.Shell
     public sealed class PowerShellBinaryExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Left { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OperatorToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OperatorToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Right { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellBinaryExpressionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellExpressionSyntax left, Meziantou.Framework.Language.Shell.ShellSyntaxToken operatorToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax right) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellBinaryExpressionSyntax Update(Meziantou.Framework.Language.Shell.ShellExpressionSyntax left, Meziantou.Framework.Language.SyntaxToken operatorToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax right) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellBinaryExpressionSyntax WithLeft(Meziantou.Framework.Language.Shell.ShellExpressionSyntax left) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellBinaryExpressionSyntax WithOperatorToken(Meziantou.Framework.Language.SyntaxToken operatorToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellBinaryExpressionSyntax WithRight(Meziantou.Framework.Language.Shell.ShellExpressionSyntax right) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -370,81 +454,98 @@ namespace Meziantou.Framework.Language.Shell
     {
         public Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax Type { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Operand { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellCastExpressionSyntax(Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax type, Meziantou.Framework.Language.Shell.ShellExpressionSyntax operand) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellCastExpressionSyntax Update(Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax type, Meziantou.Framework.Language.Shell.ShellExpressionSyntax operand) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellCastExpressionSyntax WithType(Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax type) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellCastExpressionSyntax WithOperand(Meziantou.Framework.Language.Shell.ShellExpressionSyntax operand) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellCatchClauseSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CatchKeyword { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax> TypeFilters { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> SeparatorTokens { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CatchKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax> TypeFilters { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellCatchClauseSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken catchKeyword, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax>? typeFilters, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? separatorTokens, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax Update(Meziantou.Framework.Language.SyntaxToken catchKeyword, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax> typeFilters, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax WithCatchKeyword(Meziantou.Framework.Language.SyntaxToken catchKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax WithTypeFilters(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax> typeFilters) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellDataStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken DataKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? NameToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> ParameterTokens { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken DataKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxTokenList ParameterTokens { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellDataStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken dataKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken? nameToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? parameterTokens, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellDataStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken dataKeyword, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxTokenList parameterTokens, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellDataStatementSyntax WithDataKeyword(Meziantou.Framework.Language.SyntaxToken dataKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellDataStatementSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellDataStatementSyntax WithParameterTokens(Meziantou.Framework.Language.SyntaxTokenList parameterTokens) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellDataStatementSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellDoStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken DoKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ConditionKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Condition { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public bool IsUntil { get => throw null; }
-        public PowerShellDoStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken doKeyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body, Meziantou.Framework.Language.Shell.ShellSyntaxToken conditionKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken DoKeyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ConditionKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Condition { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellDoStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken doKeyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body, Meziantou.Framework.Language.SyntaxToken conditionKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellDoStatementSyntax WithDoKeyword(Meziantou.Framework.Language.SyntaxToken doKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellDoStatementSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellDoStatementSyntax WithConditionKeyword(Meziantou.Framework.Language.SyntaxToken conditionKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellDoStatementSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellDoStatementSyntax WithCondition(Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellDoStatementSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellElseClauseSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ElseKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ElseKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellElseClauseSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken elseKeyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax Update(Meziantou.Framework.Language.SyntaxToken elseKeyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax WithElseKeyword(Meziantou.Framework.Language.SyntaxToken elseKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellElseIfClauseSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ElseIfKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ElseIfKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Condition { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellElseIfClauseSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken elseIfKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax Update(Meziantou.Framework.Language.SyntaxToken elseIfKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax WithElseIfKeyword(Meziantou.Framework.Language.SyntaxToken elseIfKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax WithCondition(Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellExpandableStringSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> Parts { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellExpandableStringSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellSyntaxToken openToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode>? parts, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken OpenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> Parts { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellExpandableStringSyntax Update(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> parts, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellExpandableStringSyntax WithOpenToken(Meziantou.Framework.Language.SyntaxToken openToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellExpandableStringSyntax WithParts(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> parts) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellExpandableStringSyntax WithCloseToken(Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -452,78 +553,99 @@ namespace Meziantou.Framework.Language.Shell
     public sealed class PowerShellExpressionStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode Expression { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellRedirectionSyntax> Redirections { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellExpressionStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxNode expression, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellRedirectionSyntax>? redirections) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellRedirectionSyntax> Redirections { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellExpressionStatementSyntax Update(Meziantou.Framework.Language.Shell.ShellSyntaxNode expression, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellRedirectionSyntax> redirections) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellExpressionStatementSyntax WithExpression(Meziantou.Framework.Language.Shell.ShellSyntaxNode expression) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellExpressionStatementSyntax WithRedirections(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellRedirectionSyntax> redirections) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellFinallyClauseSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken FinallyKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken FinallyKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellFinallyClauseSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken finallyKeyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellFinallyClauseSyntax Update(Meziantou.Framework.Language.SyntaxToken finallyKeyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellFinallyClauseSyntax WithFinallyKeyword(Meziantou.Framework.Language.SyntaxToken finallyKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellFinallyClauseSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellFlowStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken Keyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken Keyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode? Value { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellFlowStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellSyntaxToken keyword, Meziantou.Framework.Language.Shell.ShellSyntaxNode? value) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellFlowStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.Shell.ShellSyntaxNode? value) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellFlowStatementSyntax WithKeyword(Meziantou.Framework.Language.SyntaxToken keyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellFlowStatementSyntax WithValue(Meziantou.Framework.Language.Shell.ShellSyntaxNode? value) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellForEachStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ForEachKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ForEachKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Variable { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken InKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken InKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode Collection { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellForEachStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken forEachKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax variable, Meziantou.Framework.Language.Shell.ShellSyntaxToken inKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxNode collection, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellForEachStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken forEachKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax variable, Meziantou.Framework.Language.SyntaxToken inKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxNode collection, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForEachStatementSyntax WithForEachKeyword(Meziantou.Framework.Language.SyntaxToken forEachKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForEachStatementSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForEachStatementSyntax WithVariable(Meziantou.Framework.Language.Shell.ShellExpressionSyntax variable) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForEachStatementSyntax WithInKeyword(Meziantou.Framework.Language.SyntaxToken inKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForEachStatementSyntax WithCollection(Meziantou.Framework.Language.Shell.ShellSyntaxNode collection) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForEachStatementSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForEachStatementSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellForStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ForKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ForKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode? Initializer { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? FirstSemicolonToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken FirstSemicolonToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode? Condition { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? SecondSemicolonToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken SecondSemicolonToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode? Iterator { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellForStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken forKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode? initializer, Meziantou.Framework.Language.Shell.ShellSyntaxToken? firstSemicolonToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode? condition, Meziantou.Framework.Language.Shell.ShellSyntaxToken? secondSemicolonToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode? iterator, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken forKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode? initializer, Meziantou.Framework.Language.SyntaxToken firstSemicolonToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode? condition, Meziantou.Framework.Language.SyntaxToken secondSemicolonToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode? iterator, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax WithForKeyword(Meziantou.Framework.Language.SyntaxToken forKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax WithInitializer(Meziantou.Framework.Language.Shell.ShellSyntaxNode? initializer) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax WithFirstSemicolonToken(Meziantou.Framework.Language.SyntaxToken firstSemicolonToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax WithCondition(Meziantou.Framework.Language.Shell.ShellSyntaxNode? condition) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax WithSecondSemicolonToken(Meziantou.Framework.Language.SyntaxToken secondSemicolonToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax WithIterator(Meziantou.Framework.Language.Shell.ShellSyntaxNode? iterator) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellFunctionDefinitionSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken Keyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken NameToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? OpenParenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellParameterSyntax> Parameters { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> ParameterSeparatorTokens { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? CloseParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public string Name { get => throw null; }
         public bool IsFilter { get => throw null; }
-        public PowerShellFunctionDefinitionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellSyntaxToken keyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken nameToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? openParenToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellParameterSyntax>? parameters, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? parameterSeparatorTokens, Meziantou.Framework.Language.Shell.ShellSyntaxToken? closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken Keyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellParameterSyntax> Parameters { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellFunctionDefinitionSyntax Update(Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellParameterSyntax> parameters, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellFunctionDefinitionSyntax WithKeyword(Meziantou.Framework.Language.SyntaxToken keyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellFunctionDefinitionSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellFunctionDefinitionSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellFunctionDefinitionSyntax WithParameters(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellParameterSyntax> parameters) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellFunctionDefinitionSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellFunctionDefinitionSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -531,37 +653,48 @@ namespace Meziantou.Framework.Language.Shell
     public sealed class PowerShellHashEntrySyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode Key { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken EqualsToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken EqualsToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode Value { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? SeparatorToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellHashEntrySyntax(Meziantou.Framework.Language.Shell.ShellSyntaxNode key, Meziantou.Framework.Language.Shell.ShellSyntaxToken equalsToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode value, Meziantou.Framework.Language.Shell.ShellSyntaxToken? separatorToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken SeparatorToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax Update(Meziantou.Framework.Language.Shell.ShellSyntaxNode key, Meziantou.Framework.Language.SyntaxToken equalsToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode value, Meziantou.Framework.Language.SyntaxToken separatorToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax WithKey(Meziantou.Framework.Language.Shell.ShellSyntaxNode key) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax WithEqualsToken(Meziantou.Framework.Language.SyntaxToken equalsToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax WithValue(Meziantou.Framework.Language.Shell.ShellSyntaxNode value) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax WithSeparatorToken(Meziantou.Framework.Language.SyntaxToken separatorToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellHashLiteralSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax> Entries { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseBraceToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellHashLiteralSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken openToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax>? entries, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeBraceToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken OpenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax> Entries { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseBraceToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellHashLiteralSyntax Update(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax> entries, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellHashLiteralSyntax WithOpenToken(Meziantou.Framework.Language.SyntaxToken openToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellHashLiteralSyntax WithEntries(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax> entries) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellHashLiteralSyntax WithCloseBraceToken(Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellIfStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken IfKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken IfKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Condition { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax> ElseIfClauses { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax> ElseIfClauses { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax? ElseClause { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellIfStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken ifKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax>? elseIfClauses, Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax? elseClause) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken ifKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax> elseIfClauses, Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax? elseClause) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax WithIfKeyword(Meziantou.Framework.Language.SyntaxToken ifKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax WithCondition(Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax WithElseIfClauses(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax> elseIfClauses) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax WithElseClause(Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax? elseClause) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -569,11 +702,14 @@ namespace Meziantou.Framework.Language.Shell
     public sealed class PowerShellIndexExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Target { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenBracketToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenBracketToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode Index { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseBracketToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellIndexExpressionSyntax(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target, Meziantou.Framework.Language.Shell.ShellSyntaxToken openBracketToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode index, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeBracketToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken CloseBracketToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellIndexExpressionSyntax Update(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target, Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode index, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellIndexExpressionSyntax WithTarget(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellIndexExpressionSyntax WithOpenBracketToken(Meziantou.Framework.Language.SyntaxToken openBracketToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellIndexExpressionSyntax WithIndex(Meziantou.Framework.Language.Shell.ShellSyntaxNode index) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellIndexExpressionSyntax WithCloseBracketToken(Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -581,115 +717,133 @@ namespace Meziantou.Framework.Language.Shell
     public sealed class PowerShellInvocationExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Target { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> Arguments { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> SeparatorTokens { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellInvocationExpressionSyntax(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target, Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax>? arguments, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? separatorTokens, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> Arguments { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellInvocationExpressionSyntax Update(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> arguments, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellInvocationExpressionSyntax WithTarget(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellInvocationExpressionSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellInvocationExpressionSyntax WithArguments(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> arguments) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellInvocationExpressionSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellLabeledStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken LabelToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellStatementSyntax Statement { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public string Label { get => throw null; }
-        public PowerShellLabeledStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken labelToken, Meziantou.Framework.Language.Shell.ShellStatementSyntax statement) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken LabelToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementSyntax Statement { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellLabeledStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken labelToken, Meziantou.Framework.Language.Shell.ShellStatementSyntax statement) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellLabeledStatementSyntax WithLabelToken(Meziantou.Framework.Language.SyntaxToken labelToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellLabeledStatementSyntax WithStatement(Meziantou.Framework.Language.Shell.ShellStatementSyntax statement) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellLiteralExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken Token { get => throw null; }
         public string Value { get => throw null; }
-        public PowerShellLiteralExpressionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellSyntaxToken token) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken Token { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellLiteralExpressionSyntax Update(Meziantou.Framework.Language.SyntaxToken token) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellLiteralExpressionSyntax WithToken(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellMemberAccessExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Target { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OperatorToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken MemberNameToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public bool IsStatic { get => throw null; }
-        public PowerShellMemberAccessExpressionSyntax(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target, Meziantou.Framework.Language.Shell.ShellSyntaxToken operatorToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken memberNameToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Target { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OperatorToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken MemberNameToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellMemberAccessExpressionSyntax Update(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target, Meziantou.Framework.Language.SyntaxToken operatorToken, Meziantou.Framework.Language.SyntaxToken memberNameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellMemberAccessExpressionSyntax WithTarget(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellMemberAccessExpressionSyntax WithOperatorToken(Meziantou.Framework.Language.SyntaxToken operatorToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellMemberAccessExpressionSyntax WithMemberNameToken(Meziantou.Framework.Language.SyntaxToken memberNameToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellNamedBlockSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken Keyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken Keyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellNamedBlockSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellSyntaxToken keyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellNamedBlockSyntax Update(Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellNamedBlockSyntax WithKeyword(Meziantou.Framework.Language.SyntaxToken keyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellNamedBlockSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellParamBlockSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> Attributes { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ParamKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellParameterSyntax> Parameters { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> SeparatorTokens { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellParamBlockSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax>? attributes, Meziantou.Framework.Language.Shell.ShellSyntaxToken paramKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellParameterSyntax>? parameters, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? separatorTokens, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> Attributes { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ParamKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellParameterSyntax> Parameters { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellParamBlockSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> attributes, Meziantou.Framework.Language.SyntaxToken paramKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellParameterSyntax> parameters, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellParamBlockSyntax WithAttributes(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> attributes) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellParamBlockSyntax WithParamKeyword(Meziantou.Framework.Language.SyntaxToken paramKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellParamBlockSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellParamBlockSyntax WithParameters(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellParameterSyntax> parameters) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellParamBlockSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellParameterSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> Attributes { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> Attributes { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Variable { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? EqualsToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken EqualsToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode? DefaultValue { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellParameterSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax>? attributes, Meziantou.Framework.Language.Shell.ShellExpressionSyntax variable, Meziantou.Framework.Language.Shell.ShellSyntaxToken? equalsToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode? defaultValue) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellParameterSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> attributes, Meziantou.Framework.Language.Shell.ShellExpressionSyntax variable, Meziantou.Framework.Language.SyntaxToken equalsToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode? defaultValue) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellParameterSyntax WithAttributes(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> attributes) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellParameterSyntax WithVariable(Meziantou.Framework.Language.Shell.ShellExpressionSyntax variable) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellParameterSyntax WithEqualsToken(Meziantou.Framework.Language.SyntaxToken equalsToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellParameterSyntax WithDefaultValue(Meziantou.Framework.Language.Shell.ShellSyntaxNode? defaultValue) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellParenthesizedExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Statements { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellParenthesizedExpressionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellParenthesizedExpressionSyntax Update(Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellParenthesizedExpressionSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellParenthesizedExpressionSyntax WithStatements(Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellParenthesizedExpressionSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellScriptBlockSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenBraceToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenBraceToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Statements { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseBraceToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellScriptBlockSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken openBraceToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeBraceToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken CloseBraceToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Update(Meziantou.Framework.Language.SyntaxToken openBraceToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax WithOpenBraceToken(Meziantou.Framework.Language.SyntaxToken openBraceToken) => throw null;
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax WithStatements(Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax WithCloseBraceToken(Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellSubExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Statements { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public bool IsArray { get => throw null; }
-        public PowerShellSubExpressionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellSyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken OpenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Statements { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellSubExpressionSyntax Update(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellSubExpressionSyntax WithOpenToken(Meziantou.Framework.Language.SyntaxToken openToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellSubExpressionSyntax WithStatements(Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellSubExpressionSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -698,24 +852,32 @@ namespace Meziantou.Framework.Language.Shell
     {
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode Pattern { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellSwitchClauseSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxNode pattern, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellSwitchClauseSyntax Update(Meziantou.Framework.Language.Shell.ShellSyntaxNode pattern, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellSwitchClauseSyntax WithPattern(Meziantou.Framework.Language.Shell.ShellSyntaxNode pattern) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellSwitchClauseSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellSwitchStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken SwitchKeyword { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> ParameterTokens { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken SwitchKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxTokenList ParameterTokens { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Condition { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? CloseParenToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenBraceToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellSwitchClauseSyntax> Clauses { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseBraceToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellSwitchStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken switchKeyword, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? parameterTokens, Meziantou.Framework.Language.Shell.ShellSyntaxToken? openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.Shell.ShellSyntaxToken? closeParenToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken openBraceToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellSwitchClauseSyntax>? clauses, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeBraceToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenBraceToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellSwitchClauseSyntax> Clauses { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseBraceToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellSwitchStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken switchKeyword, Meziantou.Framework.Language.SyntaxTokenList parameterTokens, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.SyntaxToken openBraceToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellSwitchClauseSyntax> clauses, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellSwitchStatementSyntax WithSwitchKeyword(Meziantou.Framework.Language.SyntaxToken switchKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellSwitchStatementSyntax WithParameterTokens(Meziantou.Framework.Language.SyntaxTokenList parameterTokens) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellSwitchStatementSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellSwitchStatementSyntax WithCondition(Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellSwitchStatementSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellSwitchStatementSyntax WithOpenBraceToken(Meziantou.Framework.Language.SyntaxToken openBraceToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellSwitchStatementSyntax WithClauses(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellSwitchClauseSyntax> clauses) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellSwitchStatementSyntax WithCloseBraceToken(Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -723,123 +885,152 @@ namespace Meziantou.Framework.Language.Shell
     public sealed class PowerShellTernaryExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Condition { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken QuestionToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken QuestionToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax WhenTrue { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ColonToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ColonToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax WhenFalse { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellTernaryExpressionSyntax(Meziantou.Framework.Language.Shell.ShellExpressionSyntax condition, Meziantou.Framework.Language.Shell.ShellSyntaxToken questionToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenTrue, Meziantou.Framework.Language.Shell.ShellSyntaxToken colonToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenFalse) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellTernaryExpressionSyntax Update(Meziantou.Framework.Language.Shell.ShellExpressionSyntax condition, Meziantou.Framework.Language.SyntaxToken questionToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenTrue, Meziantou.Framework.Language.SyntaxToken colonToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenFalse) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTernaryExpressionSyntax WithCondition(Meziantou.Framework.Language.Shell.ShellExpressionSyntax condition) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTernaryExpressionSyntax WithQuestionToken(Meziantou.Framework.Language.SyntaxToken questionToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTernaryExpressionSyntax WithWhenTrue(Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenTrue) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTernaryExpressionSyntax WithColonToken(Meziantou.Framework.Language.SyntaxToken colonToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTernaryExpressionSyntax WithWhenFalse(Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenFalse) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellTrapStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken TrapKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken TrapKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax? TypeFilter { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellTrapStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken trapKeyword, Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax? typeFilter, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellTrapStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken trapKeyword, Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax? typeFilter, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTrapStatementSyntax WithTrapKeyword(Meziantou.Framework.Language.SyntaxToken trapKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTrapStatementSyntax WithTypeFilter(Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax? typeFilter) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTrapStatementSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellTryStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken TryKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken TryKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax> CatchClauses { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax> CatchClauses { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellFinallyClauseSyntax? FinallyClause { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellTryStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken tryKeyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax>? catchClauses, Meziantou.Framework.Language.Shell.PowerShellFinallyClauseSyntax? finallyClause) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellTryStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken tryKeyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax> catchClauses, Meziantou.Framework.Language.Shell.PowerShellFinallyClauseSyntax? finallyClause) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTryStatementSyntax WithTryKeyword(Meziantou.Framework.Language.SyntaxToken tryKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTryStatementSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTryStatementSyntax WithCatchClauses(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax> catchClauses) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTryStatementSyntax WithFinallyClause(Meziantou.Framework.Language.Shell.PowerShellFinallyClauseSyntax? finallyClause) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellTypeDefinitionSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> Attributes { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken Keyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken NameToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? ColonToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax> BaseTypes { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> BaseTypeSeparatorTokens { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenBraceToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Members { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseBraceToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public string Name { get => throw null; }
-        public PowerShellTypeDefinitionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax>? attributes, Meziantou.Framework.Language.Shell.ShellSyntaxToken keyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken nameToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? colonToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax>? baseTypes, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? baseTypeSeparatorTokens, Meziantou.Framework.Language.Shell.ShellSyntaxToken openBraceToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax members, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeBraceToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> Attributes { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken Keyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ColonToken { get => throw null; }
+        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax> BaseTypes { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenBraceToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Members { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseBraceToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellTypeDefinitionSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> attributes, Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken colonToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax> baseTypes, Meziantou.Framework.Language.SyntaxToken openBraceToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax members, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTypeDefinitionSyntax WithAttributes(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> attributes) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTypeDefinitionSyntax WithKeyword(Meziantou.Framework.Language.SyntaxToken keyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTypeDefinitionSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTypeDefinitionSyntax WithColonToken(Meziantou.Framework.Language.SyntaxToken colonToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTypeDefinitionSyntax WithBaseTypes(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax> baseTypes) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTypeDefinitionSyntax WithOpenBraceToken(Meziantou.Framework.Language.SyntaxToken openBraceToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTypeDefinitionSyntax WithMembers(Meziantou.Framework.Language.Shell.ShellStatementListSyntax members) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTypeDefinitionSyntax WithCloseBraceToken(Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellTypeLiteralSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenBracketToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken NameToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseBracketToken { get => throw null; }
         public string Name { get => throw null; }
-        public PowerShellTypeLiteralSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken openBracketToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken nameToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeBracketToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken OpenBracketToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseBracketToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax Update(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax WithOpenBracketToken(Meziantou.Framework.Language.SyntaxToken openBracketToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax WithCloseBracketToken(Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellUnaryExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? PrefixOperatorToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken PrefixOperatorToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Operand { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? PostfixOperatorToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellUnaryExpressionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellSyntaxToken? prefixOperatorToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax operand, Meziantou.Framework.Language.Shell.ShellSyntaxToken? postfixOperatorToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken PostfixOperatorToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellUnaryExpressionSyntax Update(Meziantou.Framework.Language.SyntaxToken prefixOperatorToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax operand, Meziantou.Framework.Language.SyntaxToken postfixOperatorToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellUnaryExpressionSyntax WithPrefixOperatorToken(Meziantou.Framework.Language.SyntaxToken prefixOperatorToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellUnaryExpressionSyntax WithOperand(Meziantou.Framework.Language.Shell.ShellExpressionSyntax operand) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellUnaryExpressionSyntax WithPostfixOperatorToken(Meziantou.Framework.Language.SyntaxToken postfixOperatorToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellUsingStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken UsingKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken KindToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken UsingKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken KindToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode Target { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellUsingStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken usingKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken kindToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode target) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellUsingStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken usingKeyword, Meziantou.Framework.Language.SyntaxToken kindToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode target) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellUsingStatementSyntax WithUsingKeyword(Meziantou.Framework.Language.SyntaxToken usingKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellUsingStatementSyntax WithKindToken(Meziantou.Framework.Language.SyntaxToken kindToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellUsingStatementSyntax WithTarget(Meziantou.Framework.Language.Shell.ShellSyntaxNode target) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellVariableExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken SigilToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken NameToken { get => throw null; }
         public string Name { get => throw null; }
         public bool IsSplatted { get => throw null; }
-        public PowerShellVariableExpressionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken sigilToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken nameToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken SigilToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.PowerShellVariableExpressionSyntax Update(Meziantou.Framework.Language.SyntaxToken sigilToken, Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellVariableExpressionSyntax WithSigilToken(Meziantou.Framework.Language.SyntaxToken sigilToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellVariableExpressionSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class PowerShellWhileStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken WhileKeyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken WhileKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Condition { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax Body { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public PowerShellWhileStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken whileKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.PowerShellWhileStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken whileKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellWhileStatementSyntax WithWhileKeyword(Meziantou.Framework.Language.SyntaxToken whileKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellWhileStatementSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellWhileStatementSyntax WithCondition(Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellWhileStatementSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.PowerShellWhileStatementSyntax WithBody(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ShellAssignmentSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken NameToken { get => throw null; }
         public string Name { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken EqualsToken { get => throw null; }
         public bool IsAppend { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken EqualsToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellWordSyntax? Value { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ShellAssignmentSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken nameToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken equalsToken, Meziantou.Framework.Language.Shell.ShellWordSyntax? value) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.ShellAssignmentSyntax Update(Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken equalsToken, Meziantou.Framework.Language.Shell.ShellWordSyntax? value) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellAssignmentSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellAssignmentSyntax WithEqualsToken(Meziantou.Framework.Language.SyntaxToken equalsToken) => throw null;
         public Meziantou.Framework.Language.Shell.ShellAssignmentSyntax WithValue(Meziantou.Framework.Language.Shell.ShellWordSyntax? value) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
@@ -847,36 +1038,38 @@ namespace Meziantou.Framework.Language.Shell
 
     public sealed class ShellBinaryExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Left { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OperatorToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Right { get => throw null; }
         public string OperatorText { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ShellBinaryExpressionSyntax(Meziantou.Framework.Language.Shell.ShellExpressionSyntax left, Meziantou.Framework.Language.Shell.ShellSyntaxToken operatorToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax right) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Left { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OperatorToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Right { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellBinaryExpressionSyntax Update(Meziantou.Framework.Language.Shell.ShellExpressionSyntax left, Meziantou.Framework.Language.SyntaxToken operatorToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax right) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellBinaryExpressionSyntax WithLeft(Meziantou.Framework.Language.Shell.ShellExpressionSyntax left) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellBinaryExpressionSyntax WithOperatorToken(Meziantou.Framework.Language.SyntaxToken operatorToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellBinaryExpressionSyntax WithRight(Meziantou.Framework.Language.Shell.ShellExpressionSyntax right) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ShellCommandListSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> Pipelines { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> OperatorTokens { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ShellCommandListSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellStatementSyntax>? pipelines, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? operatorTokens) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
-        public Meziantou.Framework.Language.Shell.ShellCommandListSyntax WithPipelines(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellStatementSyntax>? pipelines) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> OperatorTokens { get => throw null; }
+        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> Pipelines { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellCommandListSyntax Update(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> pipelines) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellCommandListSyntax WithPipelines(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> pipelines) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ShellCommandSubstitutionSyntax : Meziantou.Framework.Language.Shell.ShellWordPartSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Statements { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public bool IsBackquoted { get => throw null; }
-        public ShellCommandSubstitutionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken OpenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Statements { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellCommandSubstitutionSyntax Update(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellCommandSubstitutionSyntax WithOpenToken(Meziantou.Framework.Language.SyntaxToken openToken) => throw null;
         public Meziantou.Framework.Language.Shell.ShellCommandSubstitutionSyntax WithStatements(Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellCommandSubstitutionSyntax WithCloseToken(Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -887,11 +1080,11 @@ namespace Meziantou.Framework.Language.Shell
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Arguments { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellAssignmentSyntax> Assignments { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellRedirectionSyntax> Redirections { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public string? NameValue { get => throw null; }
-        public ShellCommandSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode>? elements) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
-        public Meziantou.Framework.Language.Shell.ShellCommandSyntax WithChildNodes(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellSyntaxNode>? elements) => throw null;
-        public Meziantou.Framework.Language.Shell.ShellCommandSyntax WithArguments(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellWordSyntax>? arguments) => throw null;
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> Elements { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellCommandSyntax WithArguments(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellWordSyntax> arguments) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellCommandSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> elements) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellCommandSyntax WithElements(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> elements) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -899,12 +1092,16 @@ namespace Meziantou.Framework.Language.Shell
     public sealed class ShellConditionalExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Condition { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken QuestionToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken QuestionToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax WhenTrue { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken ColonToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ColonToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax WhenFalse { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ShellConditionalExpressionSyntax(Meziantou.Framework.Language.Shell.ShellExpressionSyntax condition, Meziantou.Framework.Language.Shell.ShellSyntaxToken questionToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenTrue, Meziantou.Framework.Language.Shell.ShellSyntaxToken colonToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenFalse) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.ShellConditionalExpressionSyntax Update(Meziantou.Framework.Language.Shell.ShellExpressionSyntax condition, Meziantou.Framework.Language.SyntaxToken questionToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenTrue, Meziantou.Framework.Language.SyntaxToken colonToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenFalse) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellConditionalExpressionSyntax WithCondition(Meziantou.Framework.Language.Shell.ShellExpressionSyntax condition) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellConditionalExpressionSyntax WithQuestionToken(Meziantou.Framework.Language.SyntaxToken questionToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellConditionalExpressionSyntax WithWhenTrue(Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenTrue) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellConditionalExpressionSyntax WithColonToken(Meziantou.Framework.Language.SyntaxToken colonToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellConditionalExpressionSyntax WithWhenFalse(Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenFalse) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -959,70 +1156,87 @@ namespace Meziantou.Framework.Language.Shell
     public sealed class ShellEmbeddedExpressionSyntax : Meziantou.Framework.Language.Shell.ShellWordPartSyntax
     {
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode Expression { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ShellEmbeddedExpressionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxNode expression) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.ShellEmbeddedExpressionSyntax Update(Meziantou.Framework.Language.Shell.ShellSyntaxNode expression) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellEmbeddedExpressionSyntax WithExpression(Meziantou.Framework.Language.Shell.ShellSyntaxNode expression) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ShellEmptyStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public ShellEmptyStatementSyntax(int position = 0) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ShellEscapeSequenceSyntax : Meziantou.Framework.Language.Shell.ShellWordPartSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken EscapeToken { get => throw null; }
         public string Value { get => throw null; }
-        public ShellEscapeSequenceSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken escapeToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken EscapeToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellEscapeSequenceSyntax Update(Meziantou.Framework.Language.SyntaxToken escapeToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellEscapeSequenceSyntax WithEscapeToken(Meziantou.Framework.Language.SyntaxToken escapeToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public abstract class ShellExpressionSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        protected ShellExpressionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, string fullText, int fullStart = 0, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? tokens = null) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+    }
+
+    public static class ShellExtensions
+    {
+        public static Meziantou.Framework.Language.Shell.SyntaxKind Kind(this Meziantou.Framework.Language.SyntaxNode? node) => throw null;
+        public static Meziantou.Framework.Language.Shell.SyntaxKind Kind(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
+        public static Meziantou.Framework.Language.Shell.SyntaxKind Kind(this Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
+        public static Meziantou.Framework.Language.Shell.SyntaxKind Kind(this Meziantou.Framework.Language.SyntaxNodeOrToken nodeOrToken) => throw null;
+        public static bool IsKind(this Meziantou.Framework.Language.SyntaxNode? node, Meziantou.Framework.Language.Shell.SyntaxKind kind) => throw null;
+        public static bool IsKind(this Meziantou.Framework.Language.SyntaxToken token, Meziantou.Framework.Language.Shell.SyntaxKind kind) => throw null;
+        public static bool IsKind(this Meziantou.Framework.Language.SyntaxTrivia trivia, Meziantou.Framework.Language.Shell.SyntaxKind kind) => throw null;
+        public static bool IsKind(this Meziantou.Framework.Language.SyntaxNodeOrToken nodeOrToken, Meziantou.Framework.Language.Shell.SyntaxKind kind) => throw null;
+        public static bool IsPresent(this Meziantou.Framework.Language.SyntaxToken token) => throw null;
+        public static bool IsComment(this Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
     }
 
     public sealed class ShellGlobSyntax : Meziantou.Framework.Language.Shell.ShellWordPartSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken GlobToken { get => throw null; }
         public bool IsRecursive { get => throw null; }
         public bool IsBracketExpression { get => throw null; }
         public bool HasQualifier { get => throw null; }
-        public ShellGlobSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken globToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken GlobToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellGlobSyntax Update(Meziantou.Framework.Language.SyntaxToken globToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellGlobSyntax WithGlobToken(Meziantou.Framework.Language.SyntaxToken globToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ShellGroupedExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Expression { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ShellGroupedExpressionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax expression, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellGroupedExpressionSyntax Update(Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax expression, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellGroupedExpressionSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellGroupedExpressionSyntax WithExpression(Meziantou.Framework.Language.Shell.ShellExpressionSyntax expression) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellGroupedExpressionSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ShellLiteralWordPartSyntax : Meziantou.Framework.Language.Shell.ShellWordPartSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken TextToken { get => throw null; }
         public string Value { get => throw null; }
-        public ShellLiteralWordPartSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken textToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken TextToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax Update(Meziantou.Framework.Language.SyntaxToken textToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax WithTextToken(Meziantou.Framework.Language.SyntaxToken textToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ShellOperandExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellWordSyntax Word { get => throw null; }
         public string? Value { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ShellOperandExpressionSyntax(Meziantou.Framework.Language.Shell.ShellWordSyntax word) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.ShellWordSyntax Word { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellOperandExpressionSyntax Update(Meziantou.Framework.Language.Shell.ShellWordSyntax word) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellOperandExpressionSyntax WithWord(Meziantou.Framework.Language.Shell.ShellWordSyntax word) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -1043,47 +1257,50 @@ namespace Meziantou.Framework.Language.Shell
 
     public sealed class ShellPipelineSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? BangToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> Commands { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> OperatorTokens { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ShellPipelineSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken? bangToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellStatementSyntax>? commands, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? operatorTokens) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
-        public Meziantou.Framework.Language.Shell.ShellPipelineSyntax WithCommands(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellStatementSyntax>? commands) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> OperatorTokens { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken BangToken { get => throw null; }
+        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> Commands { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellPipelineSyntax Update(Meziantou.Framework.Language.SyntaxToken bangToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> commands) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellPipelineSyntax WithBangToken(Meziantou.Framework.Language.SyntaxToken bangToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellPipelineSyntax WithCommands(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> commands) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ShellQuotedStringSyntax : Meziantou.Framework.Language.Shell.ShellWordPartSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenQuoteToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordPartSyntax> Parts { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseQuoteToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public bool IsVerbatim { get => throw null; }
         public bool IsAnsiC { get => throw null; }
-        public ShellQuotedStringSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken openQuoteToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordPartSyntax> parts, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeQuoteToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
-        public Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax WithParts(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellWordPartSyntax>? parts) => throw null;
+        public Meziantou.Framework.Language.SyntaxToken OpenQuoteToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordPartSyntax> Parts { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseQuoteToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax Update(Meziantou.Framework.Language.SyntaxToken openQuoteToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordPartSyntax> parts, Meziantou.Framework.Language.SyntaxToken closeQuoteToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax WithOpenQuoteToken(Meziantou.Framework.Language.SyntaxToken openQuoteToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax WithParts(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordPartSyntax> parts) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax WithCloseQuoteToken(Meziantou.Framework.Language.SyntaxToken closeQuoteToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ShellRawExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken TextToken { get => throw null; }
         public string Text { get => throw null; }
-        public ShellRawExpressionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken textToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken TextToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellRawExpressionSyntax Update(Meziantou.Framework.Language.SyntaxToken textToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellRawExpressionSyntax WithTextToken(Meziantou.Framework.Language.SyntaxToken textToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ShellRedirectionSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? IoNumberToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OperatorToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellWordSyntax? Target { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public Meziantou.Framework.Language.Shell.PosixHereDocumentSyntax? HereDocument { get => throw null; }
-        public ShellRedirectionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken? ioNumberToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken operatorToken, Meziantou.Framework.Language.Shell.ShellWordSyntax? target) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken IoNumberToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OperatorToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellWordSyntax? Target { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellRedirectionSyntax Update(Meziantou.Framework.Language.SyntaxToken ioNumberToken, Meziantou.Framework.Language.SyntaxToken operatorToken, Meziantou.Framework.Language.Shell.ShellWordSyntax? target) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellRedirectionSyntax WithIoNumberToken(Meziantou.Framework.Language.SyntaxToken ioNumberToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellRedirectionSyntax WithOperatorToken(Meziantou.Framework.Language.SyntaxToken operatorToken) => throw null;
         public Meziantou.Framework.Language.Shell.ShellRedirectionSyntax WithTarget(Meziantou.Framework.Language.Shell.ShellWordSyntax? target) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
@@ -1092,13 +1309,10 @@ namespace Meziantou.Framework.Language.Shell
     public sealed class ShellScriptSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Statements { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken EndOfFileToken { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ShellScriptSyntax(Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.Shell.ShellSyntaxToken endOfFileToken, string? fullText = null) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken EndOfFileToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellScriptSyntax Update(Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
         public Meziantou.Framework.Language.Shell.ShellScriptSyntax WithStatements(Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellScriptSyntax ReplaceNode(Meziantou.Framework.Language.Shell.ShellSyntaxNode oldNode, Meziantou.Framework.Language.Shell.ShellSyntaxNode newNode) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellScriptSyntax ReplaceToken(Meziantou.Framework.Language.Shell.ShellSyntaxToken oldToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken newToken) => throw null;
-        public override Meziantou.Framework.Language.Shell.ShellScriptSyntax ReplaceTrivia(Meziantou.Framework.Language.Shell.ShellSyntaxTrivia oldTrivia, Meziantou.Framework.Language.Shell.ShellSyntaxTrivia newTrivia) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellScriptSyntax WithEndOfFileToken(Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -1106,315 +1320,143 @@ namespace Meziantou.Framework.Language.Shell
     public sealed class ShellSkippedTextSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
         public string Text { get => throw null; }
-        public ShellSkippedTextSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> tokens, int fullStart) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxTokenList Tokens { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellSkippedTextSyntax Update(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellSkippedTextSyntax WithTokens(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ShellStatementListSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> Statements { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> SeparatorTokens { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ShellStatementListSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellStatementSyntax>? statements, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? separatorTokens = null) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
-        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax WithStatements(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellStatementSyntax>? statements) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> SeparatorTokens { get => throw null; }
+        public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> Statements { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Update(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> statements) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellStatementListSyntax WithStatements(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> statements) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public abstract class ShellStatementSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        protected ShellStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, string fullText, int fullStart = 0, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? tokens = null) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
     }
 
-    public enum ShellSyntaxKind
+    public abstract class ShellSyntaxNode : Meziantou.Framework.Language.SyntaxNode
     {
-        None = 0,
-        ShellScript = 1,
-        StatementList = 2,
-        EmptyStatement = 3,
-        Command = 4,
-        Pipeline = 5,
-        CommandList = 6,
-        Redirection = 7,
-        Assignment = 8,
-        Word = 9,
-        LiteralWordPart = 10,
-        QuotedString = 11,
-        VariableReference = 12,
-        CommandSubstitution = 13,
-        EscapeSequence = 14,
-        Glob = 15,
-        RawExpression = 16,
-        BinaryExpression = 17,
-        PrefixUnaryExpression = 18,
-        PostfixUnaryExpression = 19,
-        GroupedExpression = 20,
-        ConditionalExpression = 21,
-        OperandExpression = 22,
-        EmbeddedExpression = 23,
-        SkippedText = 24,
-        BareTextToken = 25,
-        SingleQuoteToken = 26,
-        DoubleQuoteToken = 27,
-        DollarSingleQuoteToken = 28,
-        DollarDoubleQuoteToken = 29,
-        BacktickToken = 30,
-        DollarToken = 31,
-        DollarOpenParenToken = 32,
-        DollarOpenBraceToken = 33,
-        OpenParenToken = 34,
-        CloseParenToken = 35,
-        OpenBraceToken = 36,
-        CloseBraceToken = 37,
-        OpenBracketToken = 38,
-        CloseBracketToken = 39,
-        PipeToken = 40,
-        PipeAmpersandToken = 41,
-        AmpersandAmpersandToken = 42,
-        PipePipeToken = 43,
-        AmpersandToken = 44,
-        SemicolonToken = 45,
-        SemicolonSemicolonToken = 46,
-        SemicolonAmpersandToken = 47,
-        SemicolonSemicolonAmpersandToken = 48,
-        OpenBracketBracketToken = 49,
-        CloseBracketBracketToken = 50,
-        OpenParenParenToken = 51,
-        CloseParenParenToken = 52,
-        LessThanOpenParenToken = 53,
-        EqualsOpenParenToken = 54,
-        GreaterThanOpenParenToken = 55,
-        KeywordToken = 56,
-        ColonColonToken = 57,
-        DotToken = 58,
-        CommaToken = 59,
-        AtParenToken = 60,
-        AtBraceToken = 61,
-        DollarOpenParenPowerShellToken = 62,
-        ParameterToken = 63,
-        OperatorToken = 64,
-        NumberToken = 65,
-        HereStringStartToken = 66,
-        HereStringEndToken = 67,
-        GenericToken = 68,
-        LabelToken = 69,
-        QuestionQuestionToken = 70,
-        ColonToken = 71,
-        SplatToken = 72,
-        LessThanToken = 73,
-        GreaterThanToken = 74,
-        GreaterThanGreaterThanToken = 75,
-        GreaterThanPipeToken = 76,
-        LessThanAmpersandToken = 77,
-        GreaterThanAmpersandToken = 78,
-        LessThanGreaterThanToken = 79,
-        LessThanLessThanToken = 80,
-        LessThanLessThanDashToken = 81,
-        LessThanLessThanLessThanToken = 82,
-        AmpersandGreaterThanToken = 83,
-        AmpersandGreaterThanGreaterThanToken = 84,
-        EqualsToken = 85,
-        PlusEqualsToken = 86,
-        ExclamationToken = 87,
-        AsteriskToken = 88,
-        AsteriskAsteriskToken = 89,
-        QuestionToken = 90,
-        BracketExpressionToken = 91,
-        IoNumberToken = 92,
-        VariableNameToken = 93,
-        EscapeToken = 94,
-        BadToken = 95,
-        EndOfFileToken = 96,
-        WhitespaceTrivia = 97,
-        EndOfLineTrivia = 98,
-        SingleLineCommentTrivia = 99,
-        CmdRemCommentTrivia = 100,
-        CmdDoubleColonCommentTrivia = 101,
-        MultiLineCommentTrivia = 102,
-        LineContinuationTrivia = 103,
-        PosixIfStatement = 104,
-        PosixElifClause = 105,
-        PosixElseClause = 106,
-        PosixForStatement = 107,
-        PosixWhileStatement = 108,
-        PosixUntilStatement = 109,
-        PosixSelectStatement = 110,
-        PosixCaseStatement = 111,
-        PosixCaseClause = 112,
-        PosixFunctionDefinition = 113,
-        PosixSubshell = 114,
-        PosixGroup = 115,
-        PosixConditionalExpression = 116,
-        PosixArithmeticCommand = 117,
-        PosixArithmeticExpansion = 118,
-        PosixHereDocument = 119,
-        PosixProcessSubstitution = 120,
-        PosixArrayAssignment = 121,
-        PosixTimeStatement = 122,
-        PosixCoprocStatement = 123,
-        PosixHereDocumentBody = 124,
-        ZshForeachStatement = 125,
-        ZshRepeatStatement = 126,
-        ZshAlwaysStatement = 127,
-        CmdCallStatement = 128,
-        CmdElseClause = 129,
-        CmdForStatement = 130,
-        CmdGotoStatement = 131,
-        CmdIfStatement = 132,
-        CmdLabelStatement = 133,
-        CmdParenthesizedBlock = 134,
-        CmdSetStatement = 135,
-        CmdVariableReference = 136,
-        PowerShellArrayExpression = 137,
-        PowerShellArrayLiteral = 138,
-        PowerShellAssignmentExpression = 139,
-        PowerShellAttribute = 140,
-        PowerShellBareWord = 141,
-        PowerShellBeginBlock = 142,
-        PowerShellBinaryExpression = 143,
-        PowerShellBreakStatement = 144,
-        PowerShellCastExpression = 145,
-        PowerShellCatchClause = 146,
-        PowerShellClassDefinition = 147,
-        PowerShellCleanBlock = 148,
-        PowerShellCommand = 149,
-        PowerShellContinueStatement = 150,
-        PowerShellDataStatement = 151,
-        PowerShellDoStatement = 152,
-        PowerShellDynamicParamBlock = 153,
-        PowerShellElseClause = 154,
-        PowerShellElseIfClause = 155,
-        PowerShellEndBlock = 156,
-        PowerShellEnumDefinition = 157,
-        PowerShellExitStatement = 158,
-        PowerShellExpandableString = 159,
-        PowerShellExpressionStatement = 160,
-        PowerShellFunctionDefinition = 161,
-        PowerShellFilterDefinition = 162,
-        PowerShellFinallyClause = 163,
-        PowerShellForEachStatement = 164,
-        PowerShellForStatement = 165,
-        PowerShellHashEntry = 166,
-        PowerShellHashLiteral = 167,
-        PowerShellHereString = 168,
-        PowerShellIfStatement = 169,
-        PowerShellIndex = 170,
-        PowerShellInvocation = 171,
-        PowerShellLabeledStatement = 172,
-        PowerShellMemberAccess = 173,
-        PowerShellNumberLiteral = 174,
-        PowerShellParamBlock = 175,
-        PowerShellParameter = 176,
-        PowerShellParenthesizedExpression = 177,
-        PowerShellPostfixUnaryExpression = 178,
-        PowerShellPrefixUnaryExpression = 179,
-        PowerShellProcessBlock = 180,
-        PowerShellRangeExpression = 181,
-        PowerShellReturnStatement = 182,
-        PowerShellScriptBlock = 183,
-        PowerShellStringLiteral = 184,
-        PowerShellSubExpression = 185,
-        PowerShellSwitchClause = 186,
-        PowerShellSwitchStatement = 187,
-        PowerShellTernaryExpression = 188,
-        PowerShellThrowStatement = 189,
-        PowerShellTrapStatement = 190,
-        PowerShellTryStatement = 191,
-        PowerShellTypeLiteral = 192,
-        PowerShellUnaryExpression = 193,
-        PowerShellUsingStatement = 194,
-        PowerShellVariableExpression = 195,
-        PowerShellWhileStatement = 196,
-        PowerShellWorkflowDefinition = 197
-    }
-
-    public abstract class ShellSyntaxNode
-    {
-        protected string FullText { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxKind Kind { get => throw null; }
-        public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken> Tokens { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxTree? SyntaxTree { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellSyntaxNode? Parent { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellDialect? Dialect { get => throw null; }
-        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
-        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
-        public bool ContainsDiagnostics { get => throw null; }
-        public bool ContainsSkippedText { get => throw null; }
-        protected ShellSyntaxNode(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, string fullText, int fullStart = 0, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? tokens = null) { }
-        public virtual string ToFullString() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellSyntaxNodeOrToken> ChildNodesAndTokens() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellSyntaxNode> DescendantNodes() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellSyntaxNode> DescendantNodesAndSelf() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellSyntaxNodeOrToken> DescendantNodesAndTokens() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellSyntaxNode> Ancestors() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellSyntaxNode> AncestorsAndSelf() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellSyntaxToken> DescendantTokens() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia> DescendantTrivia() => throw null;
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia> DescendantComments() => throw null;
-        public virtual Meziantou.Framework.Language.Shell.ShellScriptSyntax ReplaceNode(Meziantou.Framework.Language.Shell.ShellSyntaxNode oldNode, Meziantou.Framework.Language.Shell.ShellSyntaxNode newNode) => throw null;
-        public virtual Meziantou.Framework.Language.Shell.ShellScriptSyntax ReplaceToken(Meziantou.Framework.Language.Shell.ShellSyntaxToken oldToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken newToken) => throw null;
-        public virtual Meziantou.Framework.Language.Shell.ShellScriptSyntax ReplaceTrivia(Meziantou.Framework.Language.Shell.ShellSyntaxTrivia oldTrivia, Meziantou.Framework.Language.Shell.ShellSyntaxTrivia newTrivia) => throw null;
-        public bool IsEquivalentTo(Meziantou.Framework.Language.Shell.ShellSyntaxNode? other) => throw null;
-        public override string ToString() => throw null;
+        public Meziantou.Framework.Language.Shell.SyntaxKind Kind() => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxTrivia> DescendantComments() => throw null;
         public abstract void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor);
         public abstract TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor);
     }
 
-    public readonly struct ShellSyntaxNodeOrToken : System.IEquatable<Meziantou.Framework.Language.Shell.ShellSyntaxNodeOrToken>
+    public class ShellSyntaxRewriter : Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<Meziantou.Framework.Language.SyntaxNode>
     {
-        public bool IsNode { get => throw null; }
-        public bool IsToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxNode Node { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken Token { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxKind Kind { get => throw null; }
-        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
-        public ShellSyntaxNodeOrToken(Meziantou.Framework.Language.Shell.ShellSyntaxNode node) { }
-        public ShellSyntaxNodeOrToken(Meziantou.Framework.Language.Shell.ShellSyntaxToken token) { }
-        public string ToFullString() => throw null;
-        public bool Equals(Meziantou.Framework.Language.Shell.ShellSyntaxNodeOrToken other) => throw null;
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
-        public override int GetHashCode() => throw null;
-        public static bool operator ==(Meziantou.Framework.Language.Shell.ShellSyntaxNodeOrToken left, Meziantou.Framework.Language.Shell.ShellSyntaxNodeOrToken right) => throw null;
-        public static bool operator !=(Meziantou.Framework.Language.Shell.ShellSyntaxNodeOrToken left, Meziantou.Framework.Language.Shell.ShellSyntaxNodeOrToken right) => throw null;
+        public virtual Meziantou.Framework.Language.SyntaxToken VisitToken(Meziantou.Framework.Language.SyntaxToken token) => throw null;
+        public virtual Meziantou.Framework.Language.SyntaxTrivia VisitTrivia(Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
+        public virtual Meziantou.Framework.Language.SyntaxList<TNode> VisitList<TNode>(Meziantou.Framework.Language.SyntaxList<TNode> list) where TNode : Meziantou.Framework.Language.Shell.ShellSyntaxNode => throw null;
+        public virtual Meziantou.Framework.Language.SeparatedSyntaxList<TNode> VisitList<TNode>(Meziantou.Framework.Language.SeparatedSyntaxList<TNode> list) where TNode : Meziantou.Framework.Language.Shell.ShellSyntaxNode => throw null;
+        public virtual Meziantou.Framework.Language.SyntaxTokenList VisitList(Meziantou.Framework.Language.SyntaxTokenList list) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCmdCall(Meziantou.Framework.Language.Shell.CmdCallStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCmdElseClause(Meziantou.Framework.Language.Shell.CmdElseClauseSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCmdFor(Meziantou.Framework.Language.Shell.CmdForStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCmdGoto(Meziantou.Framework.Language.Shell.CmdGotoStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCmdIf(Meziantou.Framework.Language.Shell.CmdIfStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCmdLabel(Meziantou.Framework.Language.Shell.CmdLabelStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCmdBlock(Meziantou.Framework.Language.Shell.CmdParenthesizedBlockSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCmdSet(Meziantou.Framework.Language.Shell.CmdSetStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCmdVariableReference(Meziantou.Framework.Language.Shell.CmdVariableReferenceSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitArithmeticExpansion(Meziantou.Framework.Language.Shell.PosixArithmeticExpansionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitArrayAssignment(Meziantou.Framework.Language.Shell.PosixArrayAssignmentSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCaseClause(Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCaseStatement(Meziantou.Framework.Language.Shell.PosixCaseStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCompoundStatement(Meziantou.Framework.Language.Shell.PosixCompoundStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitDelimitedExpressionStatement(Meziantou.Framework.Language.Shell.PosixDelimitedExpressionStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitElifClause(Meziantou.Framework.Language.Shell.PosixElifClauseSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitElseClause(Meziantou.Framework.Language.Shell.PosixElseClauseSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitForStatement(Meziantou.Framework.Language.Shell.PosixForStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitFunctionDefinition(Meziantou.Framework.Language.Shell.PosixFunctionDefinitionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitHereDocument(Meziantou.Framework.Language.Shell.PosixHereDocumentSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitIfStatement(Meziantou.Framework.Language.Shell.PosixIfStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitPrefixedStatement(Meziantou.Framework.Language.Shell.PosixPrefixedStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitProcessSubstitution(Meziantou.Framework.Language.Shell.PosixProcessSubstitutionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitWhileStatement(Meziantou.Framework.Language.Shell.PosixWhileStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitArrayLiteral(Meziantou.Framework.Language.Shell.PowerShellArrayLiteralSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitAssignmentExpression(Meziantou.Framework.Language.Shell.PowerShellAssignmentExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitAttribute(Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitBinaryExpression(Meziantou.Framework.Language.Shell.PowerShellBinaryExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCastExpression(Meziantou.Framework.Language.Shell.PowerShellCastExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCatchClause(Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitDataStatement(Meziantou.Framework.Language.Shell.PowerShellDataStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitDoStatement(Meziantou.Framework.Language.Shell.PowerShellDoStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitPowerShellElseClause(Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitElseIfClause(Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitExpandableString(Meziantou.Framework.Language.Shell.PowerShellExpandableStringSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitExpressionStatement(Meziantou.Framework.Language.Shell.PowerShellExpressionStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitFinallyClause(Meziantou.Framework.Language.Shell.PowerShellFinallyClauseSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitFlowStatement(Meziantou.Framework.Language.Shell.PowerShellFlowStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitForEachStatement(Meziantou.Framework.Language.Shell.PowerShellForEachStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitPowerShellForStatement(Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitPowerShellFunctionDefinition(Meziantou.Framework.Language.Shell.PowerShellFunctionDefinitionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitHashEntry(Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitHashLiteral(Meziantou.Framework.Language.Shell.PowerShellHashLiteralSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitPowerShellIfStatement(Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitIndexExpression(Meziantou.Framework.Language.Shell.PowerShellIndexExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitInvocation(Meziantou.Framework.Language.Shell.PowerShellInvocationExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitLabeledStatement(Meziantou.Framework.Language.Shell.PowerShellLabeledStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitPowerShellLiteral(Meziantou.Framework.Language.Shell.PowerShellLiteralExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitMemberAccess(Meziantou.Framework.Language.Shell.PowerShellMemberAccessExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitNamedBlock(Meziantou.Framework.Language.Shell.PowerShellNamedBlockSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitParamBlock(Meziantou.Framework.Language.Shell.PowerShellParamBlockSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitParameter(Meziantou.Framework.Language.Shell.PowerShellParameterSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitParenthesizedExpression(Meziantou.Framework.Language.Shell.PowerShellParenthesizedExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitScriptBlock(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitSubExpression(Meziantou.Framework.Language.Shell.PowerShellSubExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitSwitchClause(Meziantou.Framework.Language.Shell.PowerShellSwitchClauseSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitSwitchStatement(Meziantou.Framework.Language.Shell.PowerShellSwitchStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitTernaryExpression(Meziantou.Framework.Language.Shell.PowerShellTernaryExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitTrapStatement(Meziantou.Framework.Language.Shell.PowerShellTrapStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitTryStatement(Meziantou.Framework.Language.Shell.PowerShellTryStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitTypeDefinition(Meziantou.Framework.Language.Shell.PowerShellTypeDefinitionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitTypeLiteral(Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitUnaryExpression(Meziantou.Framework.Language.Shell.PowerShellUnaryExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitUsingStatement(Meziantou.Framework.Language.Shell.PowerShellUsingStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitPowerShellVariable(Meziantou.Framework.Language.Shell.PowerShellVariableExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitPowerShellWhileStatement(Meziantou.Framework.Language.Shell.PowerShellWhileStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitAssignment(Meziantou.Framework.Language.Shell.ShellAssignmentSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitBinaryExpression(Meziantou.Framework.Language.Shell.ShellBinaryExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCommandList(Meziantou.Framework.Language.Shell.ShellCommandListSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCommandSubstitution(Meziantou.Framework.Language.Shell.ShellCommandSubstitutionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitCommand(Meziantou.Framework.Language.Shell.ShellCommandSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitShellConditionalExpression(Meziantou.Framework.Language.Shell.ShellConditionalExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitEmbeddedExpression(Meziantou.Framework.Language.Shell.ShellEmbeddedExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitEscapeSequence(Meziantou.Framework.Language.Shell.ShellEscapeSequenceSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitGlob(Meziantou.Framework.Language.Shell.ShellGlobSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitGroupedExpression(Meziantou.Framework.Language.Shell.ShellGroupedExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitLiteralWordPart(Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitOperandExpression(Meziantou.Framework.Language.Shell.ShellOperandExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitPipeline(Meziantou.Framework.Language.Shell.ShellPipelineSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitQuotedString(Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitRawExpression(Meziantou.Framework.Language.Shell.ShellRawExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitRedirection(Meziantou.Framework.Language.Shell.ShellRedirectionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitScript(Meziantou.Framework.Language.Shell.ShellScriptSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitSkippedText(Meziantou.Framework.Language.Shell.ShellSkippedTextSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitStatementList(Meziantou.Framework.Language.Shell.ShellStatementListSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitShellUnaryExpression(Meziantou.Framework.Language.Shell.ShellUnaryExpressionSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitVariableReference(Meziantou.Framework.Language.Shell.ShellVariableReferenceSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitWord(Meziantou.Framework.Language.Shell.ShellWordSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitZshAlwaysStatement(Meziantou.Framework.Language.Shell.ZshAlwaysStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitZshForeachStatement(Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax node) => throw null;
+        public override Meziantou.Framework.Language.SyntaxNode? VisitZshRepeatStatement(Meziantou.Framework.Language.Shell.ZshRepeatStatementSyntax node) => throw null;
     }
 
-    public class ShellSyntaxRewriter : Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<Meziantou.Framework.Language.Shell.ShellSyntaxNode>
+    public sealed class ShellSyntaxTree : Meziantou.Framework.Language.SyntaxTree
     {
-        public override Meziantou.Framework.Language.Shell.ShellSyntaxNode? Visit(Meziantou.Framework.Language.Shell.ShellSyntaxNode? node) => throw null;
-        protected override Meziantou.Framework.Language.Shell.ShellSyntaxNode? DefaultVisit(Meziantou.Framework.Language.Shell.ShellSyntaxNode node) => throw null;
-        protected virtual Meziantou.Framework.Language.Shell.ShellSyntaxNode? VisitCore(Meziantou.Framework.Language.Shell.ShellSyntaxNode node) => throw null;
-    }
-
-    [System.Diagnostics.DebuggerDisplay("{Kind}: '{Text}'")]
-    public sealed class ShellSyntaxToken
-    {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxKind Kind { get => throw null; }
-        public string Text { get => throw null; }
-        public string ValueText { get => throw null; }
-        public bool IsMissing { get => throw null; }
-        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
-        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia> LeadingTrivia { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia> TrailingTrivia { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxNode? Parent { get => throw null; }
-        public ShellSyntaxToken(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, string text, string? valueText = null, bool isMissing = false, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia>? leadingTrivia = null, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia>? trailingTrivia = null, int fullStart = 0) { }
-        public string ToFullString() => throw null;
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken WithText(string text) => throw null;
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken WithLeadingTrivia(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia>? leadingTrivia) => throw null;
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken WithTrailingTrivia(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia>? trailingTrivia) => throw null;
-        public override string ToString() => throw null;
-    }
-
-    public sealed class ShellSyntaxTree
-    {
-        public string Text { get => throw null; }
-        public Meziantou.Framework.Language.SourceText SourceText { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellParseOptions Options { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellDialect Dialect { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellScriptSyntax Root { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> Diagnostics { get => throw null; }
+        public override string? FilePath { get => throw null; }
+        public override Meziantou.Framework.Language.SourceText GetText() => throw null;
         public Meziantou.Framework.Language.Shell.ShellScriptSyntax GetRoot() => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public static Meziantou.Framework.Language.Shell.ShellSyntaxTree ParseText(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
@@ -1423,87 +1465,70 @@ namespace Meziantou.Framework.Language.Shell
         public static Meziantou.Framework.Language.Shell.ShellStatementSyntax ParseCommand(string text, Meziantou.Framework.Language.Shell.ShellParseOptions options) => throw null;
         public Meziantou.Framework.Language.Shell.ShellSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;
         public Meziantou.Framework.Language.Shell.ShellSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.Shell.ShellSyntaxTree oldTree) => throw null;
+        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.SyntaxTree oldTree) => throw null;
         public bool IsEquivalentTo(Meziantou.Framework.Language.Shell.ShellSyntaxTree? other) => throw null;
-    }
-
-    [System.Diagnostics.DebuggerDisplay("{Kind}: '{Text}'")]
-    public sealed class ShellSyntaxTrivia
-    {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxKind Kind { get => throw null; }
-        public string Text { get => throw null; }
-        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
-        public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
-        public bool IsComment { get => throw null; }
-        public ShellSyntaxTrivia(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, string text, int start = 0) { }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxTrivia WithText(string text) => throw null;
-        public override string ToString() => throw null;
+        protected override Meziantou.Framework.Language.SyntaxNode GetRootCore() => throw null;
+        protected override Meziantou.Framework.Language.SyntaxTree WithChangedTextCore(Meziantou.Framework.Language.SourceText newText) => throw null;
+        protected override Meziantou.Framework.Language.SyntaxTree WithRootCore(Meziantou.Framework.Language.SyntaxNode root) => throw null;
     }
 
     public abstract class ShellSyntaxVisitor
     {
         public virtual void Visit(Meziantou.Framework.Language.Shell.ShellSyntaxNode? node) { }
-        protected virtual void DefaultVisit(Meziantou.Framework.Language.Shell.ShellSyntaxNode node) { }
-        public virtual void VisitScript(Meziantou.Framework.Language.Shell.ShellScriptSyntax node) { }
-        public virtual void VisitStatementList(Meziantou.Framework.Language.Shell.ShellStatementListSyntax node) { }
-        public virtual void VisitCommand(Meziantou.Framework.Language.Shell.ShellCommandSyntax node) { }
-        public virtual void VisitPipeline(Meziantou.Framework.Language.Shell.ShellPipelineSyntax node) { }
-        public virtual void VisitCommandList(Meziantou.Framework.Language.Shell.ShellCommandListSyntax node) { }
-        public virtual void VisitRedirection(Meziantou.Framework.Language.Shell.ShellRedirectionSyntax node) { }
-        public virtual void VisitAssignment(Meziantou.Framework.Language.Shell.ShellAssignmentSyntax node) { }
-        public virtual void VisitWord(Meziantou.Framework.Language.Shell.ShellWordSyntax node) { }
-        public virtual void VisitLiteralWordPart(Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax node) { }
-        public virtual void VisitQuotedString(Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax node) { }
-        public virtual void VisitVariableReference(Meziantou.Framework.Language.Shell.ShellVariableReferenceSyntax node) { }
-        public virtual void VisitCommandSubstitution(Meziantou.Framework.Language.Shell.ShellCommandSubstitutionSyntax node) { }
-        public virtual void VisitEscapeSequence(Meziantou.Framework.Language.Shell.ShellEscapeSequenceSyntax node) { }
+        public virtual void DefaultVisit(Meziantou.Framework.Language.Shell.ShellSyntaxNode node) { }
+        public virtual void VisitCmdCall(Meziantou.Framework.Language.Shell.CmdCallStatementSyntax node) { }
+        public virtual void VisitCmdElseClause(Meziantou.Framework.Language.Shell.CmdElseClauseSyntax node) { }
+        public virtual void VisitCmdFor(Meziantou.Framework.Language.Shell.CmdForStatementSyntax node) { }
+        public virtual void VisitCmdGoto(Meziantou.Framework.Language.Shell.CmdGotoStatementSyntax node) { }
+        public virtual void VisitCmdIf(Meziantou.Framework.Language.Shell.CmdIfStatementSyntax node) { }
+        public virtual void VisitCmdLabel(Meziantou.Framework.Language.Shell.CmdLabelStatementSyntax node) { }
+        public virtual void VisitCmdBlock(Meziantou.Framework.Language.Shell.CmdParenthesizedBlockSyntax node) { }
+        public virtual void VisitCmdSet(Meziantou.Framework.Language.Shell.CmdSetStatementSyntax node) { }
+        public virtual void VisitCmdVariableReference(Meziantou.Framework.Language.Shell.CmdVariableReferenceSyntax node) { }
         public virtual void VisitArithmeticExpansion(Meziantou.Framework.Language.Shell.PosixArithmeticExpansionSyntax node) { }
-        public virtual void VisitGlob(Meziantou.Framework.Language.Shell.ShellGlobSyntax node) { }
-        public virtual void VisitRawExpression(Meziantou.Framework.Language.Shell.ShellRawExpressionSyntax node) { }
-        public virtual void VisitIfStatement(Meziantou.Framework.Language.Shell.PosixIfStatementSyntax node) { }
-        public virtual void VisitElifClause(Meziantou.Framework.Language.Shell.PosixElifClauseSyntax node) { }
-        public virtual void VisitElseClause(Meziantou.Framework.Language.Shell.PosixElseClauseSyntax node) { }
-        public virtual void VisitWhileStatement(Meziantou.Framework.Language.Shell.PosixWhileStatementSyntax node) { }
-        public virtual void VisitForStatement(Meziantou.Framework.Language.Shell.PosixForStatementSyntax node) { }
-        public virtual void VisitCaseStatement(Meziantou.Framework.Language.Shell.PosixCaseStatementSyntax node) { }
+        public virtual void VisitArrayAssignment(Meziantou.Framework.Language.Shell.PosixArrayAssignmentSyntax node) { }
         public virtual void VisitCaseClause(Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax node) { }
-        public virtual void VisitFunctionDefinition(Meziantou.Framework.Language.Shell.PosixFunctionDefinitionSyntax node) { }
+        public virtual void VisitCaseStatement(Meziantou.Framework.Language.Shell.PosixCaseStatementSyntax node) { }
         public virtual void VisitCompoundStatement(Meziantou.Framework.Language.Shell.PosixCompoundStatementSyntax node) { }
         public virtual void VisitDelimitedExpressionStatement(Meziantou.Framework.Language.Shell.PosixDelimitedExpressionStatementSyntax node) { }
+        public virtual void VisitElifClause(Meziantou.Framework.Language.Shell.PosixElifClauseSyntax node) { }
+        public virtual void VisitElseClause(Meziantou.Framework.Language.Shell.PosixElseClauseSyntax node) { }
+        public virtual void VisitForStatement(Meziantou.Framework.Language.Shell.PosixForStatementSyntax node) { }
+        public virtual void VisitFunctionDefinition(Meziantou.Framework.Language.Shell.PosixFunctionDefinitionSyntax node) { }
         public virtual void VisitHereDocument(Meziantou.Framework.Language.Shell.PosixHereDocumentSyntax node) { }
-        public virtual void VisitProcessSubstitution(Meziantou.Framework.Language.Shell.PosixProcessSubstitutionSyntax node) { }
-        public virtual void VisitArrayAssignment(Meziantou.Framework.Language.Shell.PosixArrayAssignmentSyntax node) { }
+        public virtual void VisitIfStatement(Meziantou.Framework.Language.Shell.PosixIfStatementSyntax node) { }
         public virtual void VisitPrefixedStatement(Meziantou.Framework.Language.Shell.PosixPrefixedStatementSyntax node) { }
+        public virtual void VisitProcessSubstitution(Meziantou.Framework.Language.Shell.PosixProcessSubstitutionSyntax node) { }
+        public virtual void VisitWhileStatement(Meziantou.Framework.Language.Shell.PosixWhileStatementSyntax node) { }
         public virtual void VisitArrayLiteral(Meziantou.Framework.Language.Shell.PowerShellArrayLiteralSyntax node) { }
         public virtual void VisitAssignmentExpression(Meziantou.Framework.Language.Shell.PowerShellAssignmentExpressionSyntax node) { }
         public virtual void VisitAttribute(Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax node) { }
         public virtual void VisitBinaryExpression(Meziantou.Framework.Language.Shell.PowerShellBinaryExpressionSyntax node) { }
+        public virtual void VisitCastExpression(Meziantou.Framework.Language.Shell.PowerShellCastExpressionSyntax node) { }
         public virtual void VisitCatchClause(Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax node) { }
         public virtual void VisitDataStatement(Meziantou.Framework.Language.Shell.PowerShellDataStatementSyntax node) { }
         public virtual void VisitDoStatement(Meziantou.Framework.Language.Shell.PowerShellDoStatementSyntax node) { }
+        public virtual void VisitPowerShellElseClause(Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax node) { }
         public virtual void VisitElseIfClause(Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax node) { }
         public virtual void VisitExpandableString(Meziantou.Framework.Language.Shell.PowerShellExpandableStringSyntax node) { }
         public virtual void VisitExpressionStatement(Meziantou.Framework.Language.Shell.PowerShellExpressionStatementSyntax node) { }
         public virtual void VisitFinallyClause(Meziantou.Framework.Language.Shell.PowerShellFinallyClauseSyntax node) { }
         public virtual void VisitFlowStatement(Meziantou.Framework.Language.Shell.PowerShellFlowStatementSyntax node) { }
         public virtual void VisitForEachStatement(Meziantou.Framework.Language.Shell.PowerShellForEachStatementSyntax node) { }
+        public virtual void VisitPowerShellForStatement(Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax node) { }
+        public virtual void VisitPowerShellFunctionDefinition(Meziantou.Framework.Language.Shell.PowerShellFunctionDefinitionSyntax node) { }
         public virtual void VisitHashEntry(Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax node) { }
         public virtual void VisitHashLiteral(Meziantou.Framework.Language.Shell.PowerShellHashLiteralSyntax node) { }
+        public virtual void VisitPowerShellIfStatement(Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax node) { }
         public virtual void VisitIndexExpression(Meziantou.Framework.Language.Shell.PowerShellIndexExpressionSyntax node) { }
         public virtual void VisitInvocation(Meziantou.Framework.Language.Shell.PowerShellInvocationExpressionSyntax node) { }
         public virtual void VisitLabeledStatement(Meziantou.Framework.Language.Shell.PowerShellLabeledStatementSyntax node) { }
+        public virtual void VisitPowerShellLiteral(Meziantou.Framework.Language.Shell.PowerShellLiteralExpressionSyntax node) { }
         public virtual void VisitMemberAccess(Meziantou.Framework.Language.Shell.PowerShellMemberAccessExpressionSyntax node) { }
         public virtual void VisitNamedBlock(Meziantou.Framework.Language.Shell.PowerShellNamedBlockSyntax node) { }
         public virtual void VisitParamBlock(Meziantou.Framework.Language.Shell.PowerShellParamBlockSyntax node) { }
         public virtual void VisitParameter(Meziantou.Framework.Language.Shell.PowerShellParameterSyntax node) { }
         public virtual void VisitParenthesizedExpression(Meziantou.Framework.Language.Shell.PowerShellParenthesizedExpressionSyntax node) { }
-        public virtual void VisitPowerShellElseClause(Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax node) { }
-        public virtual void VisitPowerShellForStatement(Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax node) { }
-        public virtual void VisitPowerShellFunctionDefinition(Meziantou.Framework.Language.Shell.PowerShellFunctionDefinitionSyntax node) { }
-        public virtual void VisitPowerShellIfStatement(Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax node) { }
-        public virtual void VisitPowerShellLiteral(Meziantou.Framework.Language.Shell.PowerShellLiteralExpressionSyntax node) { }
-        public virtual void VisitPowerShellVariable(Meziantou.Framework.Language.Shell.PowerShellVariableExpressionSyntax node) { }
-        public virtual void VisitPowerShellWhileStatement(Meziantou.Framework.Language.Shell.PowerShellWhileStatementSyntax node) { }
         public virtual void VisitScriptBlock(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax node) { }
         public virtual void VisitSubExpression(Meziantou.Framework.Language.Shell.PowerShellSubExpressionSyntax node) { }
         public virtual void VisitSwitchClause(Meziantou.Framework.Language.Shell.PowerShellSwitchClauseSyntax node) { }
@@ -1515,93 +1540,93 @@ namespace Meziantou.Framework.Language.Shell
         public virtual void VisitTypeLiteral(Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax node) { }
         public virtual void VisitUnaryExpression(Meziantou.Framework.Language.Shell.PowerShellUnaryExpressionSyntax node) { }
         public virtual void VisitUsingStatement(Meziantou.Framework.Language.Shell.PowerShellUsingStatementSyntax node) { }
+        public virtual void VisitPowerShellVariable(Meziantou.Framework.Language.Shell.PowerShellVariableExpressionSyntax node) { }
+        public virtual void VisitPowerShellWhileStatement(Meziantou.Framework.Language.Shell.PowerShellWhileStatementSyntax node) { }
+        public virtual void VisitAssignment(Meziantou.Framework.Language.Shell.ShellAssignmentSyntax node) { }
+        public virtual void VisitBinaryExpression(Meziantou.Framework.Language.Shell.ShellBinaryExpressionSyntax node) { }
+        public virtual void VisitCommandList(Meziantou.Framework.Language.Shell.ShellCommandListSyntax node) { }
+        public virtual void VisitCommandSubstitution(Meziantou.Framework.Language.Shell.ShellCommandSubstitutionSyntax node) { }
+        public virtual void VisitCommand(Meziantou.Framework.Language.Shell.ShellCommandSyntax node) { }
+        public virtual void VisitShellConditionalExpression(Meziantou.Framework.Language.Shell.ShellConditionalExpressionSyntax node) { }
         public virtual void VisitEmbeddedExpression(Meziantou.Framework.Language.Shell.ShellEmbeddedExpressionSyntax node) { }
-        public virtual void VisitCastExpression(Meziantou.Framework.Language.Shell.PowerShellCastExpressionSyntax node) { }
-        public virtual void VisitCmdBlock(Meziantou.Framework.Language.Shell.CmdParenthesizedBlockSyntax node) { }
-        public virtual void VisitCmdCall(Meziantou.Framework.Language.Shell.CmdCallStatementSyntax node) { }
-        public virtual void VisitCmdElseClause(Meziantou.Framework.Language.Shell.CmdElseClauseSyntax node) { }
-        public virtual void VisitCmdFor(Meziantou.Framework.Language.Shell.CmdForStatementSyntax node) { }
-        public virtual void VisitCmdGoto(Meziantou.Framework.Language.Shell.CmdGotoStatementSyntax node) { }
-        public virtual void VisitCmdIf(Meziantou.Framework.Language.Shell.CmdIfStatementSyntax node) { }
-        public virtual void VisitCmdLabel(Meziantou.Framework.Language.Shell.CmdLabelStatementSyntax node) { }
-        public virtual void VisitCmdSet(Meziantou.Framework.Language.Shell.CmdSetStatementSyntax node) { }
-        public virtual void VisitCmdVariableReference(Meziantou.Framework.Language.Shell.CmdVariableReferenceSyntax node) { }
         public virtual void VisitEmptyStatement(Meziantou.Framework.Language.Shell.ShellEmptyStatementSyntax node) { }
+        public virtual void VisitEscapeSequence(Meziantou.Framework.Language.Shell.ShellEscapeSequenceSyntax node) { }
+        public virtual void VisitGlob(Meziantou.Framework.Language.Shell.ShellGlobSyntax node) { }
+        public virtual void VisitGroupedExpression(Meziantou.Framework.Language.Shell.ShellGroupedExpressionSyntax node) { }
+        public virtual void VisitLiteralWordPart(Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax node) { }
+        public virtual void VisitOperandExpression(Meziantou.Framework.Language.Shell.ShellOperandExpressionSyntax node) { }
+        public virtual void VisitPipeline(Meziantou.Framework.Language.Shell.ShellPipelineSyntax node) { }
+        public virtual void VisitQuotedString(Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax node) { }
+        public virtual void VisitRawExpression(Meziantou.Framework.Language.Shell.ShellRawExpressionSyntax node) { }
+        public virtual void VisitRedirection(Meziantou.Framework.Language.Shell.ShellRedirectionSyntax node) { }
+        public virtual void VisitScript(Meziantou.Framework.Language.Shell.ShellScriptSyntax node) { }
+        public virtual void VisitSkippedText(Meziantou.Framework.Language.Shell.ShellSkippedTextSyntax node) { }
+        public virtual void VisitStatementList(Meziantou.Framework.Language.Shell.ShellStatementListSyntax node) { }
+        public virtual void VisitShellUnaryExpression(Meziantou.Framework.Language.Shell.ShellUnaryExpressionSyntax node) { }
+        public virtual void VisitVariableReference(Meziantou.Framework.Language.Shell.ShellVariableReferenceSyntax node) { }
+        public virtual void VisitWord(Meziantou.Framework.Language.Shell.ShellWordSyntax node) { }
+        public virtual void VisitZshAlwaysStatement(Meziantou.Framework.Language.Shell.ZshAlwaysStatementSyntax node) { }
         public virtual void VisitZshForeachStatement(Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax node) { }
         public virtual void VisitZshRepeatStatement(Meziantou.Framework.Language.Shell.ZshRepeatStatementSyntax node) { }
-        public virtual void VisitZshAlwaysStatement(Meziantou.Framework.Language.Shell.ZshAlwaysStatementSyntax node) { }
-        public virtual void VisitBinaryExpression(Meziantou.Framework.Language.Shell.ShellBinaryExpressionSyntax node) { }
-        public virtual void VisitShellUnaryExpression(Meziantou.Framework.Language.Shell.ShellUnaryExpressionSyntax node) { }
-        public virtual void VisitGroupedExpression(Meziantou.Framework.Language.Shell.ShellGroupedExpressionSyntax node) { }
-        public virtual void VisitShellConditionalExpression(Meziantou.Framework.Language.Shell.ShellConditionalExpressionSyntax node) { }
-        public virtual void VisitOperandExpression(Meziantou.Framework.Language.Shell.ShellOperandExpressionSyntax node) { }
-        public virtual void VisitSkippedText(Meziantou.Framework.Language.Shell.ShellSkippedTextSyntax node) { }
     }
 
     public abstract class ShellSyntaxVisitor<TResult>
     {
         public virtual TResult Visit(Meziantou.Framework.Language.Shell.ShellSyntaxNode? node) => throw null;
-        protected virtual TResult DefaultVisit(Meziantou.Framework.Language.Shell.ShellSyntaxNode node) => throw null;
-        public virtual TResult VisitScript(Meziantou.Framework.Language.Shell.ShellScriptSyntax node) => throw null;
-        public virtual TResult VisitStatementList(Meziantou.Framework.Language.Shell.ShellStatementListSyntax node) => throw null;
-        public virtual TResult VisitCommand(Meziantou.Framework.Language.Shell.ShellCommandSyntax node) => throw null;
-        public virtual TResult VisitPipeline(Meziantou.Framework.Language.Shell.ShellPipelineSyntax node) => throw null;
-        public virtual TResult VisitCommandList(Meziantou.Framework.Language.Shell.ShellCommandListSyntax node) => throw null;
-        public virtual TResult VisitRedirection(Meziantou.Framework.Language.Shell.ShellRedirectionSyntax node) => throw null;
-        public virtual TResult VisitAssignment(Meziantou.Framework.Language.Shell.ShellAssignmentSyntax node) => throw null;
-        public virtual TResult VisitWord(Meziantou.Framework.Language.Shell.ShellWordSyntax node) => throw null;
-        public virtual TResult VisitLiteralWordPart(Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax node) => throw null;
-        public virtual TResult VisitQuotedString(Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax node) => throw null;
-        public virtual TResult VisitVariableReference(Meziantou.Framework.Language.Shell.ShellVariableReferenceSyntax node) => throw null;
-        public virtual TResult VisitCommandSubstitution(Meziantou.Framework.Language.Shell.ShellCommandSubstitutionSyntax node) => throw null;
-        public virtual TResult VisitEscapeSequence(Meziantou.Framework.Language.Shell.ShellEscapeSequenceSyntax node) => throw null;
+        public virtual TResult DefaultVisit(Meziantou.Framework.Language.Shell.ShellSyntaxNode node) => throw null;
+        public virtual TResult VisitCmdCall(Meziantou.Framework.Language.Shell.CmdCallStatementSyntax node) => throw null;
+        public virtual TResult VisitCmdElseClause(Meziantou.Framework.Language.Shell.CmdElseClauseSyntax node) => throw null;
+        public virtual TResult VisitCmdFor(Meziantou.Framework.Language.Shell.CmdForStatementSyntax node) => throw null;
+        public virtual TResult VisitCmdGoto(Meziantou.Framework.Language.Shell.CmdGotoStatementSyntax node) => throw null;
+        public virtual TResult VisitCmdIf(Meziantou.Framework.Language.Shell.CmdIfStatementSyntax node) => throw null;
+        public virtual TResult VisitCmdLabel(Meziantou.Framework.Language.Shell.CmdLabelStatementSyntax node) => throw null;
+        public virtual TResult VisitCmdBlock(Meziantou.Framework.Language.Shell.CmdParenthesizedBlockSyntax node) => throw null;
+        public virtual TResult VisitCmdSet(Meziantou.Framework.Language.Shell.CmdSetStatementSyntax node) => throw null;
+        public virtual TResult VisitCmdVariableReference(Meziantou.Framework.Language.Shell.CmdVariableReferenceSyntax node) => throw null;
         public virtual TResult VisitArithmeticExpansion(Meziantou.Framework.Language.Shell.PosixArithmeticExpansionSyntax node) => throw null;
-        public virtual TResult VisitGlob(Meziantou.Framework.Language.Shell.ShellGlobSyntax node) => throw null;
-        public virtual TResult VisitRawExpression(Meziantou.Framework.Language.Shell.ShellRawExpressionSyntax node) => throw null;
-        public virtual TResult VisitIfStatement(Meziantou.Framework.Language.Shell.PosixIfStatementSyntax node) => throw null;
-        public virtual TResult VisitElifClause(Meziantou.Framework.Language.Shell.PosixElifClauseSyntax node) => throw null;
-        public virtual TResult VisitElseClause(Meziantou.Framework.Language.Shell.PosixElseClauseSyntax node) => throw null;
-        public virtual TResult VisitWhileStatement(Meziantou.Framework.Language.Shell.PosixWhileStatementSyntax node) => throw null;
-        public virtual TResult VisitForStatement(Meziantou.Framework.Language.Shell.PosixForStatementSyntax node) => throw null;
-        public virtual TResult VisitCaseStatement(Meziantou.Framework.Language.Shell.PosixCaseStatementSyntax node) => throw null;
+        public virtual TResult VisitArrayAssignment(Meziantou.Framework.Language.Shell.PosixArrayAssignmentSyntax node) => throw null;
         public virtual TResult VisitCaseClause(Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax node) => throw null;
-        public virtual TResult VisitFunctionDefinition(Meziantou.Framework.Language.Shell.PosixFunctionDefinitionSyntax node) => throw null;
+        public virtual TResult VisitCaseStatement(Meziantou.Framework.Language.Shell.PosixCaseStatementSyntax node) => throw null;
         public virtual TResult VisitCompoundStatement(Meziantou.Framework.Language.Shell.PosixCompoundStatementSyntax node) => throw null;
         public virtual TResult VisitDelimitedExpressionStatement(Meziantou.Framework.Language.Shell.PosixDelimitedExpressionStatementSyntax node) => throw null;
+        public virtual TResult VisitElifClause(Meziantou.Framework.Language.Shell.PosixElifClauseSyntax node) => throw null;
+        public virtual TResult VisitElseClause(Meziantou.Framework.Language.Shell.PosixElseClauseSyntax node) => throw null;
+        public virtual TResult VisitForStatement(Meziantou.Framework.Language.Shell.PosixForStatementSyntax node) => throw null;
+        public virtual TResult VisitFunctionDefinition(Meziantou.Framework.Language.Shell.PosixFunctionDefinitionSyntax node) => throw null;
         public virtual TResult VisitHereDocument(Meziantou.Framework.Language.Shell.PosixHereDocumentSyntax node) => throw null;
-        public virtual TResult VisitProcessSubstitution(Meziantou.Framework.Language.Shell.PosixProcessSubstitutionSyntax node) => throw null;
-        public virtual TResult VisitArrayAssignment(Meziantou.Framework.Language.Shell.PosixArrayAssignmentSyntax node) => throw null;
+        public virtual TResult VisitIfStatement(Meziantou.Framework.Language.Shell.PosixIfStatementSyntax node) => throw null;
         public virtual TResult VisitPrefixedStatement(Meziantou.Framework.Language.Shell.PosixPrefixedStatementSyntax node) => throw null;
+        public virtual TResult VisitProcessSubstitution(Meziantou.Framework.Language.Shell.PosixProcessSubstitutionSyntax node) => throw null;
+        public virtual TResult VisitWhileStatement(Meziantou.Framework.Language.Shell.PosixWhileStatementSyntax node) => throw null;
         public virtual TResult VisitArrayLiteral(Meziantou.Framework.Language.Shell.PowerShellArrayLiteralSyntax node) => throw null;
         public virtual TResult VisitAssignmentExpression(Meziantou.Framework.Language.Shell.PowerShellAssignmentExpressionSyntax node) => throw null;
         public virtual TResult VisitAttribute(Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax node) => throw null;
         public virtual TResult VisitBinaryExpression(Meziantou.Framework.Language.Shell.PowerShellBinaryExpressionSyntax node) => throw null;
+        public virtual TResult VisitCastExpression(Meziantou.Framework.Language.Shell.PowerShellCastExpressionSyntax node) => throw null;
         public virtual TResult VisitCatchClause(Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax node) => throw null;
         public virtual TResult VisitDataStatement(Meziantou.Framework.Language.Shell.PowerShellDataStatementSyntax node) => throw null;
         public virtual TResult VisitDoStatement(Meziantou.Framework.Language.Shell.PowerShellDoStatementSyntax node) => throw null;
+        public virtual TResult VisitPowerShellElseClause(Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax node) => throw null;
         public virtual TResult VisitElseIfClause(Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax node) => throw null;
         public virtual TResult VisitExpandableString(Meziantou.Framework.Language.Shell.PowerShellExpandableStringSyntax node) => throw null;
         public virtual TResult VisitExpressionStatement(Meziantou.Framework.Language.Shell.PowerShellExpressionStatementSyntax node) => throw null;
         public virtual TResult VisitFinallyClause(Meziantou.Framework.Language.Shell.PowerShellFinallyClauseSyntax node) => throw null;
         public virtual TResult VisitFlowStatement(Meziantou.Framework.Language.Shell.PowerShellFlowStatementSyntax node) => throw null;
         public virtual TResult VisitForEachStatement(Meziantou.Framework.Language.Shell.PowerShellForEachStatementSyntax node) => throw null;
+        public virtual TResult VisitPowerShellForStatement(Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax node) => throw null;
+        public virtual TResult VisitPowerShellFunctionDefinition(Meziantou.Framework.Language.Shell.PowerShellFunctionDefinitionSyntax node) => throw null;
         public virtual TResult VisitHashEntry(Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax node) => throw null;
         public virtual TResult VisitHashLiteral(Meziantou.Framework.Language.Shell.PowerShellHashLiteralSyntax node) => throw null;
+        public virtual TResult VisitPowerShellIfStatement(Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax node) => throw null;
         public virtual TResult VisitIndexExpression(Meziantou.Framework.Language.Shell.PowerShellIndexExpressionSyntax node) => throw null;
         public virtual TResult VisitInvocation(Meziantou.Framework.Language.Shell.PowerShellInvocationExpressionSyntax node) => throw null;
         public virtual TResult VisitLabeledStatement(Meziantou.Framework.Language.Shell.PowerShellLabeledStatementSyntax node) => throw null;
+        public virtual TResult VisitPowerShellLiteral(Meziantou.Framework.Language.Shell.PowerShellLiteralExpressionSyntax node) => throw null;
         public virtual TResult VisitMemberAccess(Meziantou.Framework.Language.Shell.PowerShellMemberAccessExpressionSyntax node) => throw null;
         public virtual TResult VisitNamedBlock(Meziantou.Framework.Language.Shell.PowerShellNamedBlockSyntax node) => throw null;
         public virtual TResult VisitParamBlock(Meziantou.Framework.Language.Shell.PowerShellParamBlockSyntax node) => throw null;
         public virtual TResult VisitParameter(Meziantou.Framework.Language.Shell.PowerShellParameterSyntax node) => throw null;
         public virtual TResult VisitParenthesizedExpression(Meziantou.Framework.Language.Shell.PowerShellParenthesizedExpressionSyntax node) => throw null;
-        public virtual TResult VisitPowerShellElseClause(Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax node) => throw null;
-        public virtual TResult VisitPowerShellForStatement(Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax node) => throw null;
-        public virtual TResult VisitPowerShellFunctionDefinition(Meziantou.Framework.Language.Shell.PowerShellFunctionDefinitionSyntax node) => throw null;
-        public virtual TResult VisitPowerShellIfStatement(Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax node) => throw null;
-        public virtual TResult VisitPowerShellLiteral(Meziantou.Framework.Language.Shell.PowerShellLiteralExpressionSyntax node) => throw null;
-        public virtual TResult VisitPowerShellVariable(Meziantou.Framework.Language.Shell.PowerShellVariableExpressionSyntax node) => throw null;
-        public virtual TResult VisitPowerShellWhileStatement(Meziantou.Framework.Language.Shell.PowerShellWhileStatementSyntax node) => throw null;
         public virtual TResult VisitScriptBlock(Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax node) => throw null;
         public virtual TResult VisitSubExpression(Meziantou.Framework.Language.Shell.PowerShellSubExpressionSyntax node) => throw null;
         public virtual TResult VisitSwitchClause(Meziantou.Framework.Language.Shell.PowerShellSwitchClauseSyntax node) => throw null;
@@ -1613,88 +1638,202 @@ namespace Meziantou.Framework.Language.Shell
         public virtual TResult VisitTypeLiteral(Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax node) => throw null;
         public virtual TResult VisitUnaryExpression(Meziantou.Framework.Language.Shell.PowerShellUnaryExpressionSyntax node) => throw null;
         public virtual TResult VisitUsingStatement(Meziantou.Framework.Language.Shell.PowerShellUsingStatementSyntax node) => throw null;
+        public virtual TResult VisitPowerShellVariable(Meziantou.Framework.Language.Shell.PowerShellVariableExpressionSyntax node) => throw null;
+        public virtual TResult VisitPowerShellWhileStatement(Meziantou.Framework.Language.Shell.PowerShellWhileStatementSyntax node) => throw null;
+        public virtual TResult VisitAssignment(Meziantou.Framework.Language.Shell.ShellAssignmentSyntax node) => throw null;
+        public virtual TResult VisitBinaryExpression(Meziantou.Framework.Language.Shell.ShellBinaryExpressionSyntax node) => throw null;
+        public virtual TResult VisitCommandList(Meziantou.Framework.Language.Shell.ShellCommandListSyntax node) => throw null;
+        public virtual TResult VisitCommandSubstitution(Meziantou.Framework.Language.Shell.ShellCommandSubstitutionSyntax node) => throw null;
+        public virtual TResult VisitCommand(Meziantou.Framework.Language.Shell.ShellCommandSyntax node) => throw null;
+        public virtual TResult VisitShellConditionalExpression(Meziantou.Framework.Language.Shell.ShellConditionalExpressionSyntax node) => throw null;
         public virtual TResult VisitEmbeddedExpression(Meziantou.Framework.Language.Shell.ShellEmbeddedExpressionSyntax node) => throw null;
-        public virtual TResult VisitCastExpression(Meziantou.Framework.Language.Shell.PowerShellCastExpressionSyntax node) => throw null;
-        public virtual TResult VisitCmdBlock(Meziantou.Framework.Language.Shell.CmdParenthesizedBlockSyntax node) => throw null;
-        public virtual TResult VisitCmdCall(Meziantou.Framework.Language.Shell.CmdCallStatementSyntax node) => throw null;
-        public virtual TResult VisitCmdElseClause(Meziantou.Framework.Language.Shell.CmdElseClauseSyntax node) => throw null;
-        public virtual TResult VisitCmdFor(Meziantou.Framework.Language.Shell.CmdForStatementSyntax node) => throw null;
-        public virtual TResult VisitCmdGoto(Meziantou.Framework.Language.Shell.CmdGotoStatementSyntax node) => throw null;
-        public virtual TResult VisitCmdIf(Meziantou.Framework.Language.Shell.CmdIfStatementSyntax node) => throw null;
-        public virtual TResult VisitCmdLabel(Meziantou.Framework.Language.Shell.CmdLabelStatementSyntax node) => throw null;
-        public virtual TResult VisitCmdSet(Meziantou.Framework.Language.Shell.CmdSetStatementSyntax node) => throw null;
-        public virtual TResult VisitCmdVariableReference(Meziantou.Framework.Language.Shell.CmdVariableReferenceSyntax node) => throw null;
         public virtual TResult VisitEmptyStatement(Meziantou.Framework.Language.Shell.ShellEmptyStatementSyntax node) => throw null;
+        public virtual TResult VisitEscapeSequence(Meziantou.Framework.Language.Shell.ShellEscapeSequenceSyntax node) => throw null;
+        public virtual TResult VisitGlob(Meziantou.Framework.Language.Shell.ShellGlobSyntax node) => throw null;
+        public virtual TResult VisitGroupedExpression(Meziantou.Framework.Language.Shell.ShellGroupedExpressionSyntax node) => throw null;
+        public virtual TResult VisitLiteralWordPart(Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax node) => throw null;
+        public virtual TResult VisitOperandExpression(Meziantou.Framework.Language.Shell.ShellOperandExpressionSyntax node) => throw null;
+        public virtual TResult VisitPipeline(Meziantou.Framework.Language.Shell.ShellPipelineSyntax node) => throw null;
+        public virtual TResult VisitQuotedString(Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax node) => throw null;
+        public virtual TResult VisitRawExpression(Meziantou.Framework.Language.Shell.ShellRawExpressionSyntax node) => throw null;
+        public virtual TResult VisitRedirection(Meziantou.Framework.Language.Shell.ShellRedirectionSyntax node) => throw null;
+        public virtual TResult VisitScript(Meziantou.Framework.Language.Shell.ShellScriptSyntax node) => throw null;
+        public virtual TResult VisitSkippedText(Meziantou.Framework.Language.Shell.ShellSkippedTextSyntax node) => throw null;
+        public virtual TResult VisitStatementList(Meziantou.Framework.Language.Shell.ShellStatementListSyntax node) => throw null;
+        public virtual TResult VisitShellUnaryExpression(Meziantou.Framework.Language.Shell.ShellUnaryExpressionSyntax node) => throw null;
+        public virtual TResult VisitVariableReference(Meziantou.Framework.Language.Shell.ShellVariableReferenceSyntax node) => throw null;
+        public virtual TResult VisitWord(Meziantou.Framework.Language.Shell.ShellWordSyntax node) => throw null;
+        public virtual TResult VisitZshAlwaysStatement(Meziantou.Framework.Language.Shell.ZshAlwaysStatementSyntax node) => throw null;
         public virtual TResult VisitZshForeachStatement(Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax node) => throw null;
         public virtual TResult VisitZshRepeatStatement(Meziantou.Framework.Language.Shell.ZshRepeatStatementSyntax node) => throw null;
-        public virtual TResult VisitZshAlwaysStatement(Meziantou.Framework.Language.Shell.ZshAlwaysStatementSyntax node) => throw null;
-        public virtual TResult VisitBinaryExpression(Meziantou.Framework.Language.Shell.ShellBinaryExpressionSyntax node) => throw null;
-        public virtual TResult VisitShellUnaryExpression(Meziantou.Framework.Language.Shell.ShellUnaryExpressionSyntax node) => throw null;
-        public virtual TResult VisitGroupedExpression(Meziantou.Framework.Language.Shell.ShellGroupedExpressionSyntax node) => throw null;
-        public virtual TResult VisitShellConditionalExpression(Meziantou.Framework.Language.Shell.ShellConditionalExpressionSyntax node) => throw null;
-        public virtual TResult VisitOperandExpression(Meziantou.Framework.Language.Shell.ShellOperandExpressionSyntax node) => throw null;
-        public virtual TResult VisitSkippedText(Meziantou.Framework.Language.Shell.ShellSkippedTextSyntax node) => throw null;
+    }
+
+    public class ShellSyntaxWalker : Meziantou.Framework.Language.Shell.ShellSyntaxVisitor
+    {
+        protected Meziantou.Framework.Language.SyntaxWalkerDepth Depth { get => throw null; }
+        public ShellSyntaxWalker(Meziantou.Framework.Language.SyntaxWalkerDepth depth = 0) { }
+        public override void DefaultVisit(Meziantou.Framework.Language.Shell.ShellSyntaxNode node) { }
+        public virtual void VisitToken(Meziantou.Framework.Language.SyntaxToken token) { }
+        public virtual void VisitTrivia(Meziantou.Framework.Language.SyntaxTrivia trivia) { }
     }
 
     public sealed class ShellUnaryExpressionSyntax : Meziantou.Framework.Language.Shell.ShellExpressionSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? PrefixOperatorToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Operand { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? PostfixOperatorToken { get => throw null; }
         public string OperatorText { get => throw null; }
         public bool IsPostfix { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ShellUnaryExpressionSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, Meziantou.Framework.Language.Shell.ShellSyntaxToken? prefixOperatorToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax operand, Meziantou.Framework.Language.Shell.ShellSyntaxToken? postfixOperatorToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken PrefixOperatorToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellExpressionSyntax Operand { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken PostfixOperatorToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellUnaryExpressionSyntax Update(Meziantou.Framework.Language.SyntaxToken prefixOperatorToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax operand, Meziantou.Framework.Language.SyntaxToken postfixOperatorToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellUnaryExpressionSyntax WithPrefixOperatorToken(Meziantou.Framework.Language.SyntaxToken prefixOperatorToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellUnaryExpressionSyntax WithOperand(Meziantou.Framework.Language.Shell.ShellExpressionSyntax operand) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellUnaryExpressionSyntax WithPostfixOperatorToken(Meziantou.Framework.Language.SyntaxToken postfixOperatorToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ShellVariableReferenceSyntax : Meziantou.Framework.Language.Shell.ShellWordPartSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken IntroducerToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? OpenBraceToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken NameToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? CloseBraceToken { get => throw null; }
         public string Name { get => throw null; }
         public bool IsBraced { get => throw null; }
-        public ShellVariableReferenceSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken introducerToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? openBraceToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken nameToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? closeBraceToken) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken IntroducerToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenBraceToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseBraceToken { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ShellVariableReferenceSyntax Update(Meziantou.Framework.Language.SyntaxToken introducerToken, Meziantou.Framework.Language.SyntaxToken openBraceToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellVariableReferenceSyntax WithIntroducerToken(Meziantou.Framework.Language.SyntaxToken introducerToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellVariableReferenceSyntax WithOpenBraceToken(Meziantou.Framework.Language.SyntaxToken openBraceToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellVariableReferenceSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellVariableReferenceSyntax WithCloseBraceToken(Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public abstract class ShellWordPartSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        protected ShellWordPartSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, string fullText, int fullStart = 0, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>? tokens = null) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
     }
 
     public sealed class ShellWordSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordPartSyntax> Parts { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
         public string? Value { get => throw null; }
-        public ShellWordSyntax(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordPartSyntax> parts) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordPartSyntax> Parts { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellWordSyntax WithText(string text) => throw null;
-        public Meziantou.Framework.Language.Shell.ShellWordSyntax WithParts(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Shell.ShellWordPartSyntax>? parts) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellWordSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordPartSyntax> parts) => throw null;
+        public Meziantou.Framework.Language.Shell.ShellWordSyntax WithParts(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordPartSyntax> parts) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public static class SyntaxFactory
     {
-        public static Meziantou.Framework.Language.Shell.ShellSyntaxTree ParseText(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
-        public static Meziantou.Framework.Language.Shell.ShellSyntaxToken Token(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, string text, string? valueText = null, bool isMissing = false, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia>? leadingTrivia = null, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia>? trailingTrivia = null) => throw null;
-        public static Meziantou.Framework.Language.Shell.ShellSyntaxTrivia Trivia(Meziantou.Framework.Language.Shell.ShellSyntaxKind kind, string text) => throw null;
-        public static Meziantou.Framework.Language.Shell.ShellSyntaxTrivia Whitespace(string text = " ") => throw null;
-        public static Meziantou.Framework.Language.Shell.ShellSyntaxTrivia EndOfLine(string text = "\n") => throw null;
-        public static Meziantou.Framework.Language.Shell.ShellSyntaxTrivia Comment(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
-        public static Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax Literal(string text, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxTrivia>? leadingTrivia = null) => throw null;
+        public static Meziantou.Framework.Language.SyntaxTrivia Space { get => throw null; }
+        public static Meziantou.Framework.Language.Shell.CmdCallStatementSyntax CmdCallStatement(Meziantou.Framework.Language.SyntaxToken callKeyword, Meziantou.Framework.Language.Shell.ShellStatementSyntax target) => throw null;
+        public static Meziantou.Framework.Language.Shell.CmdElseClauseSyntax CmdElseClause(Meziantou.Framework.Language.SyntaxToken elseKeyword, Meziantou.Framework.Language.Shell.ShellStatementSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.CmdForStatementSyntax CmdForStatement(Meziantou.Framework.Language.SyntaxToken forKeyword, Meziantou.Framework.Language.SyntaxToken switchToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> switchArguments, Meziantou.Framework.Language.SyntaxToken variableToken, Meziantou.Framework.Language.SyntaxToken inKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> items, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.SyntaxToken doKeyword, Meziantou.Framework.Language.Shell.ShellStatementSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.CmdGotoStatementSyntax CmdGotoStatement(Meziantou.Framework.Language.SyntaxToken gotoKeyword, Meziantou.Framework.Language.SyntaxToken labelToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.CmdIfStatementSyntax CmdIfStatement(Meziantou.Framework.Language.SyntaxToken ifKeyword, Meziantou.Framework.Language.SyntaxToken caseInsensitiveToken, Meziantou.Framework.Language.SyntaxToken notKeyword, Meziantou.Framework.Language.Shell.ShellExpressionSyntax condition, Meziantou.Framework.Language.Shell.ShellStatementSyntax body, Meziantou.Framework.Language.Shell.CmdElseClauseSyntax? elseClause) => throw null;
+        public static Meziantou.Framework.Language.Shell.CmdLabelStatementSyntax CmdLabelStatement(Meziantou.Framework.Language.SyntaxToken colonToken, Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.CmdParenthesizedBlockSyntax CmdParenthesizedBlock(Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.CmdSetStatementSyntax CmdSetStatement(Meziantou.Framework.Language.SyntaxToken setKeyword, Meziantou.Framework.Language.SyntaxToken switchToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken equalsToken, Meziantou.Framework.Language.Shell.ShellWordSyntax? value) => throw null;
+        public static Meziantou.Framework.Language.Shell.CmdVariableReferenceSyntax CmdVariableReference(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixArithmeticExpansionSyntax PosixArithmeticExpansion(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax expression, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixArrayAssignmentSyntax PosixArrayAssignment(Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken equalsToken, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> elements, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax PosixCaseClause(Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> patterns, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.SyntaxToken terminatorToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixCaseStatementSyntax PosixCaseStatement(Meziantou.Framework.Language.SyntaxToken caseKeyword, Meziantou.Framework.Language.Shell.ShellWordSyntax subject, Meziantou.Framework.Language.SyntaxToken inKeyword, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PosixCaseClauseSyntax> clauses, Meziantou.Framework.Language.SyntaxToken esacKeyword) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixCompoundStatementSyntax PosixCompoundStatement(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixDelimitedExpressionStatementSyntax PosixDelimitedExpressionStatement(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax expression, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixElifClauseSyntax PosixElifClause(Meziantou.Framework.Language.SyntaxToken elifKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken thenKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixElseClauseSyntax PosixElseClause(Meziantou.Framework.Language.SyntaxToken elseKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixForStatementSyntax PosixForStatement(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.SyntaxToken variableToken, Meziantou.Framework.Language.SyntaxToken inKeyword, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> items, Meziantou.Framework.Language.SyntaxToken listTerminatorToken, Meziantou.Framework.Language.SyntaxToken doKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.SyntaxToken doneKeyword) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixFunctionDefinitionSyntax PosixFunctionDefinition(Meziantou.Framework.Language.SyntaxToken functionKeyword, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.ShellStatementSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixHereDocumentSyntax PosixHereDocument(Meziantou.Framework.Language.SyntaxToken bodyToken, Meziantou.Framework.Language.SyntaxToken delimiterToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixIfStatementSyntax PosixIfStatement(Meziantou.Framework.Language.SyntaxToken ifKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken thenKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PosixElifClauseSyntax> elifClauses, Meziantou.Framework.Language.Shell.PosixElseClauseSyntax? elseClause, Meziantou.Framework.Language.SyntaxToken fiKeyword) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixPrefixedStatementSyntax PosixPrefixedStatement(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.Shell.ShellStatementSyntax statement) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixProcessSubstitutionSyntax PosixProcessSubstitution(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PosixWhileStatementSyntax PosixWhileStatement(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken doKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.SyntaxToken doneKeyword) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellArrayLiteralSyntax PowerShellArrayLiteral(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> elements) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellAssignmentExpressionSyntax PowerShellAssignmentExpression(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target, Meziantou.Framework.Language.SyntaxToken operatorToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode value) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax PowerShellAttribute(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> arguments, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellBinaryExpressionSyntax PowerShellBinaryExpression(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.Shell.ShellExpressionSyntax left, Meziantou.Framework.Language.SyntaxToken operatorToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax right) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellCastExpressionSyntax PowerShellCastExpression(Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax type, Meziantou.Framework.Language.Shell.ShellExpressionSyntax operand) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax PowerShellCatchClause(Meziantou.Framework.Language.SyntaxToken catchKeyword, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax> typeFilters, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellDataStatementSyntax PowerShellDataStatement(Meziantou.Framework.Language.SyntaxToken dataKeyword, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxTokenList parameterTokens, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellDoStatementSyntax PowerShellDoStatement(Meziantou.Framework.Language.SyntaxToken doKeyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body, Meziantou.Framework.Language.SyntaxToken conditionKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax PowerShellElseClause(Meziantou.Framework.Language.SyntaxToken elseKeyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax PowerShellElseIfClause(Meziantou.Framework.Language.SyntaxToken elseIfKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellExpandableStringSyntax PowerShellExpandableString(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> parts, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellExpressionStatementSyntax PowerShellExpressionStatement(Meziantou.Framework.Language.Shell.ShellSyntaxNode expression, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellRedirectionSyntax> redirections) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellFinallyClauseSyntax PowerShellFinallyClause(Meziantou.Framework.Language.SyntaxToken finallyKeyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellFlowStatementSyntax PowerShellFlowStatement(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.Shell.ShellSyntaxNode? value) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellForEachStatementSyntax PowerShellForEachStatement(Meziantou.Framework.Language.SyntaxToken forEachKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax variable, Meziantou.Framework.Language.SyntaxToken inKeyword, Meziantou.Framework.Language.Shell.ShellSyntaxNode collection, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellForStatementSyntax PowerShellForStatement(Meziantou.Framework.Language.SyntaxToken forKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode? initializer, Meziantou.Framework.Language.SyntaxToken firstSemicolonToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode? condition, Meziantou.Framework.Language.SyntaxToken secondSemicolonToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode? iterator, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellFunctionDefinitionSyntax PowerShellFunctionDefinition(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellParameterSyntax> parameters, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax PowerShellHashEntry(Meziantou.Framework.Language.Shell.ShellSyntaxNode key, Meziantou.Framework.Language.SyntaxToken equalsToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode value, Meziantou.Framework.Language.SyntaxToken separatorToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellHashLiteralSyntax PowerShellHashLiteral(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellHashEntrySyntax> entries, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellIfStatementSyntax PowerShellIfStatement(Meziantou.Framework.Language.SyntaxToken ifKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellElseIfClauseSyntax> elseIfClauses, Meziantou.Framework.Language.Shell.PowerShellElseClauseSyntax? elseClause) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellIndexExpressionSyntax PowerShellIndexExpression(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target, Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode index, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellInvocationExpressionSyntax PowerShellInvocationExpression(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellExpressionSyntax> arguments, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellLabeledStatementSyntax PowerShellLabeledStatement(Meziantou.Framework.Language.SyntaxToken labelToken, Meziantou.Framework.Language.Shell.ShellStatementSyntax statement) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellLiteralExpressionSyntax PowerShellLiteralExpression(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxToken token) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellMemberAccessExpressionSyntax PowerShellMemberAccessExpression(Meziantou.Framework.Language.Shell.ShellExpressionSyntax target, Meziantou.Framework.Language.SyntaxToken operatorToken, Meziantou.Framework.Language.SyntaxToken memberNameToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellNamedBlockSyntax PowerShellNamedBlock(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellParamBlockSyntax PowerShellParamBlock(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> attributes, Meziantou.Framework.Language.SyntaxToken paramKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellParameterSyntax> parameters, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellParameterSyntax PowerShellParameter(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> attributes, Meziantou.Framework.Language.Shell.ShellExpressionSyntax variable, Meziantou.Framework.Language.SyntaxToken equalsToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode? defaultValue) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellParenthesizedExpressionSyntax PowerShellParenthesizedExpression(Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax PowerShellScriptBlock(Meziantou.Framework.Language.SyntaxToken openBraceToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellSubExpressionSyntax PowerShellSubExpression(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellSwitchClauseSyntax PowerShellSwitchClause(Meziantou.Framework.Language.Shell.ShellSyntaxNode pattern, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellSwitchStatementSyntax PowerShellSwitchStatement(Meziantou.Framework.Language.SyntaxToken switchKeyword, Meziantou.Framework.Language.SyntaxTokenList parameterTokens, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.SyntaxToken openBraceToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellSwitchClauseSyntax> clauses, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellTernaryExpressionSyntax PowerShellTernaryExpression(Meziantou.Framework.Language.Shell.ShellExpressionSyntax condition, Meziantou.Framework.Language.SyntaxToken questionToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenTrue, Meziantou.Framework.Language.SyntaxToken colonToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenFalse) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellTrapStatementSyntax PowerShellTrapStatement(Meziantou.Framework.Language.SyntaxToken trapKeyword, Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax? typeFilter, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellTryStatementSyntax PowerShellTryStatement(Meziantou.Framework.Language.SyntaxToken tryKeyword, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellCatchClauseSyntax> catchClauses, Meziantou.Framework.Language.Shell.PowerShellFinallyClauseSyntax? finallyClause) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellTypeDefinitionSyntax PowerShellTypeDefinition(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.PowerShellAttributeSyntax> attributes, Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken colonToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax> baseTypes, Meziantou.Framework.Language.SyntaxToken openBraceToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax members, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellTypeLiteralSyntax PowerShellTypeLiteral(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellUnaryExpressionSyntax PowerShellUnaryExpression(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxToken prefixOperatorToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax operand, Meziantou.Framework.Language.SyntaxToken postfixOperatorToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellUsingStatementSyntax PowerShellUsingStatement(Meziantou.Framework.Language.SyntaxToken usingKeyword, Meziantou.Framework.Language.SyntaxToken kindToken, Meziantou.Framework.Language.Shell.ShellSyntaxNode target) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellVariableExpressionSyntax PowerShellVariableExpression(Meziantou.Framework.Language.SyntaxToken sigilToken, Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.PowerShellWhileStatementSyntax PowerShellWhileStatement(Meziantou.Framework.Language.SyntaxToken whileKeyword, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax condition, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.PowerShellScriptBlockSyntax body) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellAssignmentSyntax ShellAssignment(Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken equalsToken, Meziantou.Framework.Language.Shell.ShellWordSyntax? value) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellBinaryExpressionSyntax ShellBinaryExpression(Meziantou.Framework.Language.Shell.ShellExpressionSyntax left, Meziantou.Framework.Language.SyntaxToken operatorToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax right) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellCommandListSyntax ShellCommandList(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> pipelines) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellCommandSubstitutionSyntax ShellCommandSubstitution(Meziantou.Framework.Language.SyntaxToken openToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken closeToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellCommandSyntax ShellCommand(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> elements) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellConditionalExpressionSyntax ShellConditionalExpression(Meziantou.Framework.Language.Shell.ShellExpressionSyntax condition, Meziantou.Framework.Language.SyntaxToken questionToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenTrue, Meziantou.Framework.Language.SyntaxToken colonToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax whenFalse) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellEmbeddedExpressionSyntax ShellEmbeddedExpression(Meziantou.Framework.Language.Shell.ShellSyntaxNode expression) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellEmptyStatementSyntax ShellEmptyStatement() => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellEscapeSequenceSyntax ShellEscapeSequence(Meziantou.Framework.Language.SyntaxToken escapeToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellGlobSyntax ShellGlob(Meziantou.Framework.Language.SyntaxToken globToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellGroupedExpressionSyntax ShellGroupedExpression(Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax expression, Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax ShellLiteralWordPart(Meziantou.Framework.Language.SyntaxToken textToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellOperandExpressionSyntax ShellOperandExpression(Meziantou.Framework.Language.Shell.ShellWordSyntax word) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellPipelineSyntax ShellPipeline(Meziantou.Framework.Language.SyntaxToken bangToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> commands) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax ShellQuotedString(Meziantou.Framework.Language.SyntaxToken openQuoteToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordPartSyntax> parts, Meziantou.Framework.Language.SyntaxToken closeQuoteToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellRawExpressionSyntax ShellRawExpression(Meziantou.Framework.Language.SyntaxToken textToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellRedirectionSyntax ShellRedirection(Meziantou.Framework.Language.SyntaxToken ioNumberToken, Meziantou.Framework.Language.SyntaxToken operatorToken, Meziantou.Framework.Language.Shell.ShellWordSyntax? target) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellScriptSyntax ShellScript(Meziantou.Framework.Language.Shell.ShellStatementListSyntax statements, Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellSkippedTextSyntax ShellSkippedText(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellStatementListSyntax ShellStatementList(Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> statements) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellUnaryExpressionSyntax ShellUnaryExpression(Meziantou.Framework.Language.Shell.SyntaxKind kind, Meziantou.Framework.Language.SyntaxToken prefixOperatorToken, Meziantou.Framework.Language.Shell.ShellExpressionSyntax operand, Meziantou.Framework.Language.SyntaxToken postfixOperatorToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellVariableReferenceSyntax ShellVariableReference(Meziantou.Framework.Language.SyntaxToken introducerToken, Meziantou.Framework.Language.SyntaxToken openBraceToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken closeBraceToken) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellWordSyntax ShellWord(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordPartSyntax> parts) => throw null;
+        public static Meziantou.Framework.Language.Shell.ZshAlwaysStatementSyntax ZshAlwaysStatement(Meziantou.Framework.Language.Shell.ShellStatementSyntax body, Meziantou.Framework.Language.SyntaxToken alwaysKeyword, Meziantou.Framework.Language.Shell.ShellStatementSyntax alwaysBody) => throw null;
+        public static Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax ZshForeachStatement(Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.SyntaxToken variableToken, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> items, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.SyntaxToken endKeyword) => throw null;
+        public static Meziantou.Framework.Language.Shell.ZshRepeatStatementSyntax ZshRepeatStatement(Meziantou.Framework.Language.SyntaxToken repeatKeyword, Meziantou.Framework.Language.Shell.ShellWordSyntax count, Meziantou.Framework.Language.SyntaxToken listTerminatorToken, Meziantou.Framework.Language.SyntaxToken doKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.SyntaxToken doneKeyword) => throw null;
+        public static Meziantou.Framework.Language.SyntaxTrivia Whitespace(string text = " ") => throw null;
+        public static Meziantou.Framework.Language.SyntaxTrivia EndOfLine(string text = "\n") => throw null;
+        public static Meziantou.Framework.Language.SyntaxTrivia Trivia(Meziantou.Framework.Language.Shell.SyntaxKind kind, string text) => throw null;
+        public static Meziantou.Framework.Language.SyntaxTrivia Comment(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken Token(Meziantou.Framework.Language.Shell.SyntaxKind kind, string text, string? valueText = null) => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken Token(Meziantou.Framework.Language.Shell.SyntaxKind kind) => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken MissingToken(Meziantou.Framework.Language.Shell.SyntaxKind kind) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellLiteralWordPartSyntax Literal(string text) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellWordSyntax Word(params Meziantou.Framework.Language.Shell.ShellWordPartSyntax[] parts) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellWordSyntax Word(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellQuotedStringSyntax QuotedString(string value, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellVariableReferenceSyntax VariableReference(string name, Meziantou.Framework.Language.Shell.ShellDialect dialect, bool braced = false) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellCommandSyntax Command(Meziantou.Framework.Language.Shell.ShellDialect dialect, string name, params string[] arguments) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellCommandSyntax Command(Meziantou.Framework.Language.Shell.ShellWordSyntax name, params Meziantou.Framework.Language.Shell.ShellWordSyntax[] arguments) => throw null;
-        public static Meziantou.Framework.Language.Shell.ShellRedirectionSyntax Redirection(Meziantou.Framework.Language.Shell.ShellSyntaxKind operatorKind, string operatorText, Meziantou.Framework.Language.Shell.ShellWordSyntax target) => throw null;
+        public static Meziantou.Framework.Language.Shell.ShellRedirectionSyntax Redirection(Meziantou.Framework.Language.Shell.SyntaxKind operatorKind, string operatorText, Meziantou.Framework.Language.Shell.ShellWordSyntax target) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellAssignmentSyntax Assignment(string name, Meziantou.Framework.Language.Shell.ShellWordSyntax? value) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellPipelineSyntax Pipeline(params Meziantou.Framework.Language.Shell.ShellStatementSyntax[] commands) => throw null;
         public static Meziantou.Framework.Language.Shell.ShellStatementListSyntax StatementList(params Meziantou.Framework.Language.Shell.ShellStatementSyntax[] statements) => throw null;
@@ -1704,43 +1843,266 @@ namespace Meziantou.Framework.Language.Shell
         public static bool RequiresQuoting(string text, Meziantou.Framework.Language.Shell.ShellDialect dialect) => throw null;
     }
 
+    public static class SyntaxFacts
+    {
+        public static string GetText(Meziantou.Framework.Language.Shell.SyntaxKind kind) => throw null;
+        public static bool IsTrivia(Meziantou.Framework.Language.Shell.SyntaxKind kind) => throw null;
+        public static bool IsComment(Meziantou.Framework.Language.Shell.SyntaxKind kind) => throw null;
+    }
+
+    public enum SyntaxKind
+    {
+        None = 0,
+        List = 1,
+        ShellScript = 2,
+        StatementList = 3,
+        EmptyStatement = 4,
+        Command = 5,
+        Pipeline = 6,
+        CommandList = 7,
+        Redirection = 8,
+        Assignment = 9,
+        Word = 10,
+        LiteralWordPart = 11,
+        QuotedString = 12,
+        VariableReference = 13,
+        CommandSubstitution = 14,
+        EscapeSequence = 15,
+        Glob = 16,
+        RawExpression = 17,
+        BinaryExpression = 18,
+        PrefixUnaryExpression = 19,
+        PostfixUnaryExpression = 20,
+        GroupedExpression = 21,
+        ConditionalExpression = 22,
+        OperandExpression = 23,
+        EmbeddedExpression = 24,
+        SkippedText = 25,
+        BareTextToken = 26,
+        SingleQuoteToken = 27,
+        DoubleQuoteToken = 28,
+        DollarSingleQuoteToken = 29,
+        DollarDoubleQuoteToken = 30,
+        BacktickToken = 31,
+        DollarToken = 32,
+        DollarOpenParenToken = 33,
+        DollarOpenBraceToken = 34,
+        OpenParenToken = 35,
+        CloseParenToken = 36,
+        OpenBraceToken = 37,
+        CloseBraceToken = 38,
+        OpenBracketToken = 39,
+        CloseBracketToken = 40,
+        PipeToken = 41,
+        PipeAmpersandToken = 42,
+        AmpersandAmpersandToken = 43,
+        PipePipeToken = 44,
+        AmpersandToken = 45,
+        SemicolonToken = 46,
+        SemicolonSemicolonToken = 47,
+        SemicolonAmpersandToken = 48,
+        SemicolonSemicolonAmpersandToken = 49,
+        OpenBracketBracketToken = 50,
+        CloseBracketBracketToken = 51,
+        OpenParenParenToken = 52,
+        CloseParenParenToken = 53,
+        LessThanOpenParenToken = 54,
+        EqualsOpenParenToken = 55,
+        GreaterThanOpenParenToken = 56,
+        KeywordToken = 57,
+        ColonColonToken = 58,
+        DotToken = 59,
+        CommaToken = 60,
+        AtParenToken = 61,
+        AtBraceToken = 62,
+        DollarOpenParenPowerShellToken = 63,
+        ParameterToken = 64,
+        OperatorToken = 65,
+        NumberToken = 66,
+        HereStringStartToken = 67,
+        HereStringEndToken = 68,
+        GenericToken = 69,
+        LabelToken = 70,
+        QuestionQuestionToken = 71,
+        ColonToken = 72,
+        SplatToken = 73,
+        LessThanToken = 74,
+        GreaterThanToken = 75,
+        GreaterThanGreaterThanToken = 76,
+        GreaterThanPipeToken = 77,
+        LessThanAmpersandToken = 78,
+        GreaterThanAmpersandToken = 79,
+        LessThanGreaterThanToken = 80,
+        LessThanLessThanToken = 81,
+        LessThanLessThanDashToken = 82,
+        LessThanLessThanLessThanToken = 83,
+        AmpersandGreaterThanToken = 84,
+        AmpersandGreaterThanGreaterThanToken = 85,
+        EqualsToken = 86,
+        PlusEqualsToken = 87,
+        ExclamationToken = 88,
+        AsteriskToken = 89,
+        AsteriskAsteriskToken = 90,
+        QuestionToken = 91,
+        BracketExpressionToken = 92,
+        IoNumberToken = 93,
+        VariableNameToken = 94,
+        EscapeToken = 95,
+        BadToken = 96,
+        EndOfFileToken = 97,
+        WhitespaceTrivia = 98,
+        EndOfLineTrivia = 99,
+        SingleLineCommentTrivia = 100,
+        CmdRemCommentTrivia = 101,
+        CmdDoubleColonCommentTrivia = 102,
+        MultiLineCommentTrivia = 103,
+        LineContinuationTrivia = 104,
+        PosixIfStatement = 105,
+        PosixElifClause = 106,
+        PosixElseClause = 107,
+        PosixForStatement = 108,
+        PosixWhileStatement = 109,
+        PosixUntilStatement = 110,
+        PosixSelectStatement = 111,
+        PosixCaseStatement = 112,
+        PosixCaseClause = 113,
+        PosixFunctionDefinition = 114,
+        PosixSubshell = 115,
+        PosixGroup = 116,
+        PosixConditionalExpression = 117,
+        PosixArithmeticCommand = 118,
+        PosixArithmeticExpansion = 119,
+        PosixHereDocument = 120,
+        PosixProcessSubstitution = 121,
+        PosixArrayAssignment = 122,
+        PosixTimeStatement = 123,
+        PosixCoprocStatement = 124,
+        PosixHereDocumentBody = 125,
+        ZshForeachStatement = 126,
+        ZshRepeatStatement = 127,
+        ZshAlwaysStatement = 128,
+        CmdCallStatement = 129,
+        CmdElseClause = 130,
+        CmdForStatement = 131,
+        CmdGotoStatement = 132,
+        CmdIfStatement = 133,
+        CmdLabelStatement = 134,
+        CmdParenthesizedBlock = 135,
+        CmdSetStatement = 136,
+        CmdVariableReference = 137,
+        PowerShellArrayExpression = 138,
+        PowerShellArrayLiteral = 139,
+        PowerShellAssignmentExpression = 140,
+        PowerShellAttribute = 141,
+        PowerShellBareWord = 142,
+        PowerShellBeginBlock = 143,
+        PowerShellBinaryExpression = 144,
+        PowerShellBreakStatement = 145,
+        PowerShellCastExpression = 146,
+        PowerShellCatchClause = 147,
+        PowerShellClassDefinition = 148,
+        PowerShellCleanBlock = 149,
+        PowerShellCommand = 150,
+        PowerShellContinueStatement = 151,
+        PowerShellDataStatement = 152,
+        PowerShellDoStatement = 153,
+        PowerShellDynamicParamBlock = 154,
+        PowerShellElseClause = 155,
+        PowerShellElseIfClause = 156,
+        PowerShellEndBlock = 157,
+        PowerShellEnumDefinition = 158,
+        PowerShellExitStatement = 159,
+        PowerShellExpandableString = 160,
+        PowerShellExpressionStatement = 161,
+        PowerShellFunctionDefinition = 162,
+        PowerShellFilterDefinition = 163,
+        PowerShellFinallyClause = 164,
+        PowerShellForEachStatement = 165,
+        PowerShellForStatement = 166,
+        PowerShellHashEntry = 167,
+        PowerShellHashLiteral = 168,
+        PowerShellHereString = 169,
+        PowerShellIfStatement = 170,
+        PowerShellIndex = 171,
+        PowerShellInvocation = 172,
+        PowerShellLabeledStatement = 173,
+        PowerShellMemberAccess = 174,
+        PowerShellNumberLiteral = 175,
+        PowerShellParamBlock = 176,
+        PowerShellParameter = 177,
+        PowerShellParenthesizedExpression = 178,
+        PowerShellPostfixUnaryExpression = 179,
+        PowerShellPrefixUnaryExpression = 180,
+        PowerShellProcessBlock = 181,
+        PowerShellRangeExpression = 182,
+        PowerShellReturnStatement = 183,
+        PowerShellScriptBlock = 184,
+        PowerShellStringLiteral = 185,
+        PowerShellSubExpression = 186,
+        PowerShellSwitchClause = 187,
+        PowerShellSwitchStatement = 188,
+        PowerShellTernaryExpression = 189,
+        PowerShellThrowStatement = 190,
+        PowerShellTrapStatement = 191,
+        PowerShellTryStatement = 192,
+        PowerShellTypeLiteral = 193,
+        PowerShellUnaryExpression = 194,
+        PowerShellUsingStatement = 195,
+        PowerShellVariableExpression = 196,
+        PowerShellWhileStatement = 197,
+        PowerShellWorkflowDefinition = 198
+    }
+
     public sealed class ZshAlwaysStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
         public Meziantou.Framework.Language.Shell.ShellStatementSyntax Body { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken AlwaysKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken AlwaysKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementSyntax AlwaysBody { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ZshAlwaysStatementSyntax(Meziantou.Framework.Language.Shell.ShellStatementSyntax body, Meziantou.Framework.Language.Shell.ShellSyntaxToken alwaysKeyword, Meziantou.Framework.Language.Shell.ShellStatementSyntax alwaysBody) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.Shell.ZshAlwaysStatementSyntax Update(Meziantou.Framework.Language.Shell.ShellStatementSyntax body, Meziantou.Framework.Language.SyntaxToken alwaysKeyword, Meziantou.Framework.Language.Shell.ShellStatementSyntax alwaysBody) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshAlwaysStatementSyntax WithBody(Meziantou.Framework.Language.Shell.ShellStatementSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshAlwaysStatementSyntax WithAlwaysKeyword(Meziantou.Framework.Language.SyntaxToken alwaysKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshAlwaysStatementSyntax WithAlwaysBody(Meziantou.Framework.Language.Shell.ShellStatementSyntax alwaysBody) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ZshForeachStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken Keyword { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken VariableToken { get => throw null; }
-        public string VariableName { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken OpenParenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Items { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken CloseParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken Keyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken VariableToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Items { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Body { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? EndKeyword { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ZshForeachStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken keyword, Meziantou.Framework.Language.Shell.ShellSyntaxToken variableToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken openParenToken, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax>? items, Meziantou.Framework.Language.Shell.ShellSyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.Shell.ShellSyntaxToken? endKeyword) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken EndKeyword { get => throw null; }
+        public string VariableName { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken keyword, Meziantou.Framework.Language.SyntaxToken variableToken, Meziantou.Framework.Language.SyntaxToken openParenToken, Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> items, Meziantou.Framework.Language.SyntaxToken closeParenToken, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.SyntaxToken endKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax WithKeyword(Meziantou.Framework.Language.SyntaxToken keyword) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax WithVariableToken(Meziantou.Framework.Language.SyntaxToken variableToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax WithOpenParenToken(Meziantou.Framework.Language.SyntaxToken openParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax WithItems(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> items) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax WithCloseParenToken(Meziantou.Framework.Language.SyntaxToken closeParenToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax WithBody(Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshForeachStatementSyntax WithEndKeyword(Meziantou.Framework.Language.SyntaxToken endKeyword) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }
 
     public sealed class ZshRepeatStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken RepeatKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken RepeatKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellWordSyntax Count { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? ListTerminatorToken { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? DoKeyword { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken ListTerminatorToken { get => throw null; }
+        public Meziantou.Framework.Language.SyntaxToken DoKeyword { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Body { get => throw null; }
-        public Meziantou.Framework.Language.Shell.ShellSyntaxToken? DoneKeyword { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> ChildNodes { get => throw null; }
-        public ZshRepeatStatementSyntax(Meziantou.Framework.Language.Shell.ShellSyntaxToken repeatKeyword, Meziantou.Framework.Language.Shell.ShellWordSyntax count, Meziantou.Framework.Language.Shell.ShellSyntaxToken? listTerminatorToken, Meziantou.Framework.Language.Shell.ShellSyntaxToken? doKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.Shell.ShellSyntaxToken? doneKeyword) : base(default(Meziantou.Framework.Language.Shell.ShellSyntaxKind), default(string), default(int), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellSyntaxToken>)) { }
+        public Meziantou.Framework.Language.SyntaxToken DoneKeyword { get => throw null; }
+        public Meziantou.Framework.Language.Shell.ZshRepeatStatementSyntax Update(Meziantou.Framework.Language.SyntaxToken repeatKeyword, Meziantou.Framework.Language.Shell.ShellWordSyntax count, Meziantou.Framework.Language.SyntaxToken listTerminatorToken, Meziantou.Framework.Language.SyntaxToken doKeyword, Meziantou.Framework.Language.Shell.ShellStatementListSyntax body, Meziantou.Framework.Language.SyntaxToken doneKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshRepeatStatementSyntax WithRepeatKeyword(Meziantou.Framework.Language.SyntaxToken repeatKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshRepeatStatementSyntax WithCount(Meziantou.Framework.Language.Shell.ShellWordSyntax count) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshRepeatStatementSyntax WithListTerminatorToken(Meziantou.Framework.Language.SyntaxToken listTerminatorToken) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshRepeatStatementSyntax WithDoKeyword(Meziantou.Framework.Language.SyntaxToken doKeyword) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshRepeatStatementSyntax WithBody(Meziantou.Framework.Language.Shell.ShellStatementListSyntax body) => throw null;
+        public Meziantou.Framework.Language.Shell.ZshRepeatStatementSyntax WithDoneKeyword(Meziantou.Framework.Language.SyntaxToken doneKeyword) => throw null;
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) => throw null;
     }

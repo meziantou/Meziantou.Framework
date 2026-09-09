@@ -1,9 +1,20 @@
 namespace Meziantou.Framework.Language.Shell;
 
-/// <summary>Identifies the kind of shell syntax node, token, or trivia.</summary>
-public enum ShellSyntaxKind
+/// <summary>Identifies what a node, token, or trivium in a shell tree is.</summary>
+/// <example>
+/// <code>
+/// if (node.Kind() == SyntaxKind.Command)
+/// {
+///     // handle a simple command
+/// }
+/// </code>
+/// </example>
+public enum SyntaxKind
 {
-    None,
+    None = 0,
+
+    /// <summary>A list of nodes or tokens. Reserved for the list node the shared layer builds.</summary>
+    List = 1,
 
     // ---- Nodes shared by every dialect ----
     ShellScript,

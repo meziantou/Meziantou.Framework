@@ -11,6 +11,7 @@ namespace Meziantou.Framework.Language
         public Meziantou.Framework.Language.DiagnosticSeverity Severity { get => throw null; init { } }
         public Meziantou.Framework.Language.Location Location { get => throw null; init { } }
         public Diagnostic(string Id, string Message, Meziantou.Framework.Language.DiagnosticSeverity Severity, Meziantou.Framework.Language.Location Location) { }
+        public static Meziantou.Framework.Language.Diagnostic Create(Meziantou.Framework.Language.DiagnosticDescriptor descriptor, Meziantou.Framework.Language.Location location, params object?[] arguments) => throw null;
         public override string ToString() => throw null;
         public static bool operator !=(Meziantou.Framework.Language.Diagnostic? left, Meziantou.Framework.Language.Diagnostic? right) => throw null;
         public static bool operator ==(Meziantou.Framework.Language.Diagnostic? left, Meziantou.Framework.Language.Diagnostic? right) => throw null;
@@ -90,6 +91,9 @@ namespace Meziantou.Framework.Language
         public static Meziantou.Framework.Language.SourceText From(string text) => throw null;
         public Meziantou.Framework.Language.SourceText WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;
         public Meziantou.Framework.Language.TextLine GetLine(int position) => throw null;
+        public string ToString(Meziantou.Framework.Language.TextSpan span) => throw null;
+        public Meziantou.Framework.Language.SourceText GetSubText(Meziantou.Framework.Language.TextSpan span) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChangeRange> GetChangeRanges(Meziantou.Framework.Language.SourceText oldText) => throw null;
         public override string ToString() => throw null;
     }
 
@@ -103,6 +107,21 @@ namespace Meziantou.Framework.Language
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.Language.TextChange left, Meziantou.Framework.Language.TextChange right) => throw null;
         public static bool operator !=(Meziantou.Framework.Language.TextChange left, Meziantou.Framework.Language.TextChange right) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public readonly struct TextChangeRange : System.IEquatable<Meziantou.Framework.Language.TextChangeRange>
+    {
+        public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
+        public int NewLength { get => throw null; }
+        public int Delta { get => throw null; }
+        public TextChangeRange(Meziantou.Framework.Language.TextSpan span, int newLength) { }
+        public static Meziantou.Framework.Language.TextChangeRange Collapse(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChangeRange> changes) => throw null;
+        public bool Equals(Meziantou.Framework.Language.TextChangeRange other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.Language.TextChangeRange left, Meziantou.Framework.Language.TextChangeRange right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Language.TextChangeRange left, Meziantou.Framework.Language.TextChangeRange right) => throw null;
         public override string ToString() => throw null;
     }
 
@@ -122,18 +141,31 @@ namespace Meziantou.Framework.Language
         public void Deconstruct(out int LineNumber, out int Start, out int End, out string Text) => throw null;
     }
 
-    public readonly struct TextSpan : System.IEquatable<Meziantou.Framework.Language.TextSpan>
+    public readonly struct TextSpan : System.IComparable<Meziantou.Framework.Language.TextSpan>, System.IEquatable<Meziantou.Framework.Language.TextSpan>
     {
         public int Start { get => throw null; }
         public int Length { get => throw null; }
         public int End { get => throw null; }
+        public bool IsEmpty { get => throw null; }
         public TextSpan(int start, int length) { }
         public static Meziantou.Framework.Language.TextSpan FromBounds(int start, int end) => throw null;
+        public bool Contains(int position) => throw null;
+        public bool Contains(Meziantou.Framework.Language.TextSpan span) => throw null;
+        public bool OverlapsWith(Meziantou.Framework.Language.TextSpan span) => throw null;
+        public bool IntersectsWith(Meziantou.Framework.Language.TextSpan span) => throw null;
+        public bool IntersectsWith(int position) => throw null;
+        public Meziantou.Framework.Language.TextSpan? Overlap(Meziantou.Framework.Language.TextSpan span) => throw null;
+        public Meziantou.Framework.Language.TextSpan? Intersection(Meziantou.Framework.Language.TextSpan span) => throw null;
+        public int CompareTo(Meziantou.Framework.Language.TextSpan other) => throw null;
         public bool Equals(Meziantou.Framework.Language.TextSpan other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.Language.TextSpan left, Meziantou.Framework.Language.TextSpan right) => throw null;
         public static bool operator !=(Meziantou.Framework.Language.TextSpan left, Meziantou.Framework.Language.TextSpan right) => throw null;
+        public static bool operator <(Meziantou.Framework.Language.TextSpan left, Meziantou.Framework.Language.TextSpan right) => throw null;
+        public static bool operator <=(Meziantou.Framework.Language.TextSpan left, Meziantou.Framework.Language.TextSpan right) => throw null;
+        public static bool operator >(Meziantou.Framework.Language.TextSpan left, Meziantou.Framework.Language.TextSpan right) => throw null;
+        public static bool operator >=(Meziantou.Framework.Language.TextSpan left, Meziantou.Framework.Language.TextSpan right) => throw null;
         public override string ToString() => throw null;
     }
 }

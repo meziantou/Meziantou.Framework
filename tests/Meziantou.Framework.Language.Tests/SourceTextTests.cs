@@ -120,4 +120,92 @@ public sealed class SourceTextTests
 
         Assert.Equal("abc", source.Text);
     }
+
+    [Fact]
+    public void GetLine_MatchesALinearScanForEveryPosition()
+    {
+        const string Text = "one\r\ntwo\n\nthree\rfour\n";
+        var source = SourceText.From(Text);
+
+        for (var position = 0; position <= Text.Length + 5; position++)
+        {
+            Assert.Equal(LastLineStartingAtOrBefore(source, position), source.GetLine(position));
+        }
+
+        static TextLine LastLineStartingAtOrBefore(SourceText source, int position)
+        {
+            var result = source.Lines[0];
+            foreach (var line in source.Lines)
+            {
+                if (line.Start <= position)
+                {
+                    result = line;
+                }
+            }
+
+            return result;
+        }
+    }
+
+    [Fact]
+    public void ToString_ReturnsTheCharactersOfTheSpan()
+    {
+        var source = SourceText.From("one\ntwo");
+
+        Assert.Equal("ne\ntw", source.ToString(new TextSpan(1, 5)));
+        Assert.Equal("", source.ToString(new TextSpan(7, 0)));
+    }
+
+    [Fact]
+    public void ToString_RejectsASpanPastTheEnd()
+    {
+        Assert.Equal("span", Assert.Throws<ArgumentOutOfRangeException>(() => SourceText.From("abc").ToString(new TextSpan(2, 2))).ParamName);
+    }
+
+    [Fact]
+    public void GetSubText_ReturnsTheSpanAsItsOwnSourceText()
+    {
+        var subText = SourceText.From("one\ntwo\nthree").GetSubText(TextSpan.FromBounds(4, 11));
+
+        Assert.Equal("two\nthr", subText.Text);
+        Assert.HasCount(2, subText.Lines);
+    }
+
+    [Fact]
+    public void GetChangeRanges_ReturnsNothingForEqualText()
+    {
+        var source = SourceText.From("abc");
+
+        Assert.Empty(source.GetChangeRanges(source));
+        Assert.Empty(source.GetChangeRanges(SourceText.From("abc")));
+    }
+
+    [Theory]
+    [InlineData("abc", "abXc", 2, 0, 1)]
+    [InlineData("abc", "ac", 1, 1, 0)]
+    [InlineData("abc", "aXc", 1, 1, 1)]
+    [InlineData("", "abc", 0, 0, 3)]
+    [InlineData("abc", "", 0, 3, 0)]
+    [InlineData("aaa", "aaaa", 3, 0, 1)]
+    public void GetChangeRanges_TrimsTheCommonPrefixAndSuffix(string oldText, string newText, int start, int oldLength, int newLength)
+    {
+        var range = Assert.Single(SourceText.From(newText).GetChangeRanges(SourceText.From(oldText)));
+
+        Assert.Equal(new TextChangeRange(new TextSpan(start, oldLength), newLength), range);
+    }
+
+    [Theory]
+    [InlineData("abc", "abXc")]
+    [InlineData("one\ntwo", "one\ntwo\nthree")]
+    [InlineData("{\"a\":1}", "{\"a\":2}")]
+    [InlineData("abc", "")]
+    public void GetChangeRanges_DescribesAChangeThatReproducesTheNewText(string oldText, string newText)
+    {
+        var old = SourceText.From(oldText);
+        var range = Assert.Single(SourceText.From(newText).GetChangeRanges(old));
+
+        var replacement = newText.Substring(range.Span.Start, range.NewLength);
+
+        Assert.Equal(newText, old.WithChanges([new TextChange(range.Span, replacement)]).Text);
+    }
 }

@@ -49,6 +49,49 @@ public sealed class DelayedCancellationTokenSourceTests
         await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(30));
     }
 
+    [Theory]
+    [InlineData(-2)]
+    [InlineData(-1000)]
+    [InlineData(4294967295)]
+    public void Constructor_ThrowsWhenTheDelayIsOutOfRange(double milliseconds)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        {
+            using var cts = new DelayedCancellationTokenSource(CancellationToken.None, TimeSpan.FromMilliseconds(milliseconds));
+        });
+    }
+
+    [Fact]
+    public async Task Token_IsNotCancelled_WhenTheDelayIsInfinite()
+    {
+        using var source = new CancellationTokenSource();
+        using var cts = new DelayedCancellationTokenSource(source.Token, Timeout.InfiniteTimeSpan);
+
+        await source.CancelAsync();
+
+        await Task.Delay(200);
+        Assert.False(cts.Token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_RethrowsTheExceptionThrownByARegisteredCallback()
+    {
+        using var source = new CancellationTokenSource();
+        using var cts = new DelayedCancellationTokenSource(source.Token, TimeSpan.FromMilliseconds(10));
+        using var cancelling = new ManualResetEventSlim(initialState: false);
+        using var registration = cts.Token.Register(() =>
+        {
+            cancelling.Set();
+            throw new InvalidOperationException("Callback failure");
+        });
+
+        await source.CancelAsync();
+        Assert.True(cancelling.Wait(TimeSpan.FromSeconds(30)));
+
+        var exception = await Assert.Throws<AggregateException>(async () => await cts.DisposeAsync());
+        Assert.IsType<InvalidOperationException>(Assert.Single(exception.InnerExceptions));
+    }
+
     [Fact]
     public void Token_IsNotCancelled_WhenTheSourceTokenIsNotCancelled()
     {

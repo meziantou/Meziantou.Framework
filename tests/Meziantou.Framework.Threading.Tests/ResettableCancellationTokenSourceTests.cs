@@ -47,12 +47,14 @@ public sealed class ResettableCancellationTokenSourceTests
 
         Assert.True(token.IsCancellationRequested);
         Assert.False(cts.IsCancellationRequested);
+        Assert.NotEqual(token, cts.Token);
     }
 
     [Fact]
     public void Reset_ProducesAFreshTokenAfterCancellation()
     {
         using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        var token = cts.Token;
         cts.Cancel();
         Assert.True(cts.IsCancellationRequested);
 
@@ -60,6 +62,48 @@ public sealed class ResettableCancellationTokenSourceTests
 
         Assert.False(cts.IsCancellationRequested);
         Assert.False(cts.Token.IsCancellationRequested);
+        Assert.NotEqual(token, cts.Token);
+    }
+
+    [Fact]
+    public void Reset_ReusesTheToken_WhenCancellationWasNotRequested()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        var token = cts.Token;
+
+        cts.Reset();
+
+        Assert.Equal(token, cts.Token);
+
+        cts.Cancel();
+
+        Assert.True(token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void Reset_DropsTheRegistrationsOfTheReusedToken()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        var invoked = false;
+        using (cts.Token.Register(() => invoked = true))
+        {
+            cts.Reset();
+            cts.Cancel();
+        }
+
+        Assert.False(invoked);
+    }
+
+    [Fact]
+    public void Reset_DisarmsAPendingCancelAfter()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        cts.CancelAfter(TimeSpan.FromMilliseconds(50));
+
+        cts.Reset();
+
+        Assert.False(cts.Token.WaitHandle.WaitOne(TimeSpan.FromSeconds(1)));
+        Assert.False(cts.IsCancellationRequested);
     }
 
     [Fact]

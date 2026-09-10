@@ -5,10 +5,24 @@ namespace Meziantou.Framework.Threading;
 /// All members are safe to call concurrently. Note that the callbacks registered on <see cref="Token"/> run while the
 /// internal lock is held, so a callback must not block waiting on another thread that uses the same instance.
 /// <para>
-/// <see cref="Reset"/> replaces the underlying <see cref="CancellationTokenSource"/>, so a <see cref="CancellationToken"/>
-/// obtained before the reset belongs to the previous generation: it never reacts to a later <see cref="Cancel"/>. Read
-/// <see cref="Token"/> again after resetting.
+/// <see cref="Reset"/> reuses the underlying <see cref="CancellationTokenSource"/> when it can, so whether a
+/// <see cref="CancellationToken"/> obtained before the reset belongs to the previous generation depends on the state
+/// of that source:
 /// </para>
+/// <list type="bullet">
+/// <item>
+/// When cancellation has already been requested - through <see cref="Cancel"/>, through an elapsed
+/// <see cref="CancelAfter"/> delay, or because <see cref="ResettableCancellationTokenSourceOptions.CancelOnReset"/>
+/// is set - the source cannot be reused and is replaced. The previous token stays canceled and never reacts to a
+/// later <see cref="Cancel"/>.
+/// </item>
+/// <item>
+/// Otherwise the same source is reused, so the previous token is the very token <see cref="Token"/> returns
+/// afterwards and it does react to a later <see cref="Cancel"/>. The reset also removes the callbacks already
+/// registered on that token, which are never invoked, and disarms a pending <see cref="CancelAfter"/> delay.
+/// </item>
+/// </list>
+/// <para>Read <see cref="Token"/> again after resetting rather than relying on either behavior.</para>
 /// </remarks>
 /// <example>
 /// <code><![CDATA[
@@ -90,6 +104,11 @@ public sealed class ResettableCancellationTokenSource : IDisposable
     }
 
     /// <summary>Resets the cancellation token source to its initial state.</summary>
+    /// <remarks>
+    /// The underlying <see cref="CancellationTokenSource"/> is reused when cancellation has not been requested, so the
+    /// token read before the reset can be the very token <see cref="Token"/> returns afterwards. See the remarks on
+    /// <see cref="ResettableCancellationTokenSource"/> for the exact behavior.
+    /// </remarks>
     public void Reset()
     {
         lock (_lock)

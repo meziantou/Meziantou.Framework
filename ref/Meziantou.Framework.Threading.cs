@@ -137,14 +137,6 @@ namespace Meziantou.Framework.Threading
         }
     }
 
-    public sealed class DelayedCancellationTokenSource : System.IAsyncDisposable, System.IDisposable
-    {
-        public System.Threading.CancellationToken Token { get => throw null; }
-        public DelayedCancellationTokenSource(System.Threading.CancellationToken cancellationToken, System.TimeSpan delay) { }
-        public void Dispose() { }
-        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
-    }
-
     public sealed class KeyedAsyncLock<TKey>
     {
         public KeyedAsyncLock(System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }

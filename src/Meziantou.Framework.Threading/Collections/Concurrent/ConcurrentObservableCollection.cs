@@ -446,7 +446,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
         ((ICollection)Items).CopyTo(array, index);
     }
 
-    private static bool IsCompatibleObject(object? value)
+    internal static bool IsCompatibleObject(object? value)
     {
         // Non-null values are fine. Only accept nulls if T is a class or Nullable<U>.
         // Note that default(T) is not equal to null for value types except when T is Nullable<U>.

@@ -294,6 +294,68 @@ public sealed partial class ObservableCollectionTests : IDisposable
         Assert.False(((IList)collection).Contains(null));
     }
 
+    [Theory]
+    [MemberData(nameof(GetCollections))]
+    public void Contains_WrongItemType(CollectionKind kind)
+    {
+        var collection = CreateCollection(kind);
+        collection.Add(1);
+
+        Assert.False(((IList)collection).Contains("1"));
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCollections))]
+    public void IndexOf_WrongItemType(CollectionKind kind)
+    {
+        var collection = CreateCollection(kind);
+        collection.Add(1);
+
+        Assert.Equal(-1, ((IList)collection).IndexOf("1"));
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCollections))]
+    public void IndexOf_Struct_Null(CollectionKind kind)
+    {
+        var collection = CreateCollection(kind);
+        collection.Add(1);
+
+        Assert.Equal(-1, ((IList)collection).IndexOf(null));
+    }
+
+    [Fact]
+    public void IndexOf_Null_ReferenceType()
+    {
+        var collection = CreateCollection<string?>();
+        collection.AddRange("a", null);
+
+        Assert.Equal(1, ((IList)collection).IndexOf(null));
+        Assert.Equal(1, ((IList)collection.AsObservable).IndexOf(null));
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCollections))]
+    public void SetItem_WrongItemType(CollectionKind kind)
+    {
+        var collection = CreateCollection(kind);
+        collection.Add(1);
+
+        Assert.Throws<ArgumentException>(() => ((IList)collection)[0] = "1");
+        Assert.Equal([1], collection.ToList());
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCollections))]
+    public void SetItem_Struct_Null(CollectionKind kind)
+    {
+        var collection = CreateCollection(kind);
+        collection.Add(1);
+
+        Assert.Throws<ArgumentNullException>(() => ((IList)collection)[0] = null);
+        Assert.Equal([1], collection.ToList());
+    }
+
     [Fact]
     public void ChangesFromAnotherThreadAreNotifiedOnTheSynchronizationContext()
     {
